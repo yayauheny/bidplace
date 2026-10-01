@@ -14,6 +14,8 @@
 
 **Дополнение 2026-10-01, shared UI lifecycle:** на `fix/shared-ui-lifecycle` от `d375179` выполнены R13, R14 и L06 из R35. C04, L01 и L06 → `NEEDS_VERIFICATION`: браузеры не запускались. R35 не закрыт, C07 остаётся `QUEUED`, C08 остаётся `VERIFIED`. R15–R17, R25, R28, R29, R32–R34 не запускались. D04, D05, D09, D10 и L04 остаются `NEEDS_VERIFICATION`. T04 и T06 остаются `PARTIAL`. См. evidence ниже.
 
+**Дополнение 2026-10-01, R14 return focus:** на `fix/shared-ui-lifecycle` исправлены два возврата фокуса `AppDialog` после R14. `@rn-primitives/dialog` 1.5.2 остаётся единственным владельцем focus lifecycle. L01 остаётся `NEEDS_VERIFICATION`: браузеры не запускались. Остальные verification статусы не повышены. См. evidence ниже.
+
 Текущая задача сохраняет roadmap и prompts, не запускает production-изменения и не создаёт PR. Утверждение roadmap не является выбором архитектурных вариантов R22–R27.
 
 ## 1. Правила исполнения и ведения roadmap
@@ -493,6 +495,7 @@ T01 находится в Wave 1, потому что исправляет **о�
 - **Done/status:** L01 → `VERIFIED` только при отсутствии конкурирующих owners внутри мигрированного dialog.
 - **Отчёт:** G с removed mechanism → primitive API → semantic tests.
 - **Actual (2026-10-01):** `AppDialog` no longer searches `document.querySelector('[role="dialog"] …')` and no longer runs its own autofocus or restore timers. `@rn-primitives/dialog` `1.5.2` owns initial focus, the Tab loop, Escape, and outside dismiss. These dialogs open without `Dialog.Trigger`, and the installed modal content cancels the scope's previous-element restore, so `onCloseAutoFocus` prevents that default and focuses the captured opener with `{ preventScroll: true }` only while this instance is still closed. A reopen before that unmount callback does not steal focus. `useOverlayFocusTrap` stays for Search and `FilterSheet`. Search URL, history, positioning, and portal were not changed. Web tests load `dialog.web.mjs` and native tests load `dialog.mjs` in jsdom: 8 web tests and 1 native test passed. Sheet exit remains `SlideOutDown` with `ReduceMotion.System`. Chromium, WebKit, and a native device were not run, so L01 → `NEEDS_VERIFICATION`.
+- **Correction (2026-10-01):** Two return-focus gaps remained. A reopen before the deferred close callback stored `document.body` over the captured opener, so the next close left focus on `body`. Unmounting an open `AppDialog` without `open=false` left `openRef` true, so that callback returned after `preventDefault` and did not restore a connected opener. `onOpenAutoFocus` now keeps the previous opener when the active element is `body`, `documentElement`, disconnected, or already inside the dialog. The close callback skips restore only while this same instance is still mounted and open. Before the change, those two new web cases failed on `body`; a completed close followed by a different opener already returned to that opener. After: `AppDialog.spec.ts` 11 passed and `AppDialog.native.spec.ts` 1 passed. Chromium, WebKit, and a device were not run, so L01 stays `NEEDS_VERIFICATION`.
 
 ### R15. Упростить author form средствами RHF/Zod
 
@@ -1155,6 +1158,39 @@ remaining limitations: C04, L01, and L06 are not VERIFIED without browsers. The 
 blocked-by: none for these three scopes. Browser and device confirmation remains.
 ```
 
+### R14 return-focus correction
+
+```text
+scope: AppDialog return focus after a rapid reopen and after unmount while open. This does not replace the R14 record above and does not close L01.
+status: correction implemented. L01 remains NEEDS_VERIFICATION. C04, L06, D04, D05, D09, D10, L04, and R32 remain NEEDS_VERIFICATION. T04 and T06 remain PARTIAL. C07 remains QUEUED. C08 remains VERIFIED. R35 remains open.
+branch: fix/shared-ui-lifecycle
+base SHA: d375179f8ed9435bdb5e14a0124f448dcfa5b8b7
+parent: b268f9d153f47226f0f9f20d2ef8ad07262962e9
+commit: f61bdd049e9679d989d88e2185576bbc8d491054
+before:
+  rapid close, reopen before the deferred close callback, then close again → document.activeElement stayed body. The new onOpenAutoFocus stored body over the original opener.
+  parent stopped rendering an open AppDialog without open=false, opener stayed connected → openRef stayed true, onCloseAutoFocus returned after preventDefault, focus stayed on body.
+  completed close, then a different opener, then open and close → already returned to the new opener with preventScroll. That case passed before this correction (1 passed, 2 failed, 8 skipped).
+after:
+  onOpenAutoFocus does not replace the captured opener with body, documentElement, a disconnected node, or an element already inside the dialog.
+  onCloseAutoFocus skips restore only while this same instance is mounted and open. Unmount restores the connected opener with focus({ preventScroll: true }).
+  the completed later cycle still returns to the new opener.
+preserved: @rn-primitives/dialog 1.5.2 as the only focus owner; initial focus; Tab trap; Escape and outside close; one close; disconnected opener; preventScroll; sheet SlideOutDown with ReduceMotion.System; native accessibility-focus fallback. Search URL, history, navigation, image recovery, and API contracts were not changed.
+meaningful checks:
+  AppDialog.spec.ts 11 passed and AppDialog.native.spec.ts 1 passed against dialog.web.mjs and dialog.mjs.
+  External review harness /private/tmp/bidplace-shared-ui-review-probes-2026-10-01/AppDialog.review.spec.ts 10 passed, including both probes.
+skipped: Chromium, WebKit, 390/1024/1440 screenshots, native device, API server, database, migrations, seed. No .env was read.
+validation commands and exit codes on Node v22.20.0 / pnpm 11.7.0:
+  EXPO_NO_DOTENV=1 pnpm exec turbo run typecheck build --filter='@bidplace/mobile...' → 0 (8 tasks, 6 cache hits)
+  pnpm --filter @bidplace/mobile lint → 0
+  pnpm --filter @bidplace/mobile test → 0 (106 files, 509 tests)
+  pnpm --filter @bidplace/mobile test:e2e-fence → 0
+  git -c core.fsmonitor=false diff --check → 0
+runtime environment: Node v22.20.0 and pnpm 11.7.0
+remaining limitations: L01 is not VERIFIED without browsers. useOverlayFocusTrap remains for Search and FilterSheet.
+blocked-by: none for this correction. Browser and device confirmation remains.
+```
+
 Для `VERIFIED` обязательны:
 
 1. Проблема устранена либо Phase 0 доказал, что она уже устранена на новой базе.
@@ -1329,7 +1365,7 @@ blocked-by: none for these three scopes. Browser and device confirmation remains
 | A03     | Parent/revision field ownership и ручное копирование                         | P2 / HIGH             | W6 → R24                             | DECISION_REQUIRED  | R02/R18–R21; ownership decision                              | E0; field/write/read matrix                                                    |
 | A04     | Два владельца navigation: Router и browser history                           | P2 / HIGH             | W6 → R25                             | DECISION_REQUIRED  | R05/R06/R14; navigation decision                             | E0/E1; transition/browser matrix                                               |
 | A05     | Старые активные API без текущих UI consumers                                 | P2 / HIGH             | W6 → R26                             | DECISION_REQUIRED  | R10/R24; retirement decision                                 | E0; endpoint/consumer compatibility inventory                                  |
-| L01     | Ручные focus timers/global lookup конкурируют с dialog primitive             | P2 / HIGH             | W4 → R14                             | NEEDS_VERIFICATION | R01/R09                                                      | 2026-10-01: AppDialog uses `@rn-primitives/dialog` 1.5.2. Document search and recursive focus timers removed. Web 8 + native jsdom 1 passed. Chromium/WebKit/device NOT RUN. |
+| L01     | Ручные focus timers/global lookup конкурируют с dialog primitive             | P2 / HIGH             | W4 → R14                             | NEEDS_VERIFICATION | R01/R09                                                      | 2026-10-01: AppDialog uses `@rn-primitives/dialog` 1.5.2. Document search and recursive focus timers removed. Web 8 + native jsdom 1 passed. Chromium/WebKit/device NOT RUN. Correction: rapid second close and unmount-while-open restore the connected opener with preventScroll. Targeted web 11 + native 1 passed. Browsers still NOT RUN. |
 | L02     | RHF используется частично, остаются manual errors и field plumbing           | P2 / HIGH             | W4 → R15, R16                        | QUEUED             | R03/R05/R06                                                  | E0/E1; form/state regressions                                                  |
 | L03     | Handwritten env parser и repeated request-time loading                       | P2 / HIGH             | W4 → R17                             | QUEUED             | R04                                                          | E0/E1; synthetic config/security matrix                                        |
 | L04     | Нет AbortSignal; дублируется request setup JSON/blob                         | P2 / HIGH             | W2 → R08                             | NEEDS_VERIFICATION | согласовать включение с R07                                  | Public reads pass AbortSignal; browser search scenario NOT RUN.               |

@@ -5,6 +5,31 @@
 > commerce-schema references below do not mean that Listing, Bid, Order,
 > lifecycle, realtime, discovery or activity modules are currently booted.
 
+## 2026-10-01 — Dialog return focus after reopen and unmount
+
+- `Needs verification` (mobile web): `AppDialog` still uses `@rn-primitives/dialog`
+  1.5.2 as the only focus owner. `onOpenAutoFocus` does not replace a captured
+  opener with `document.body`, `documentElement`, a disconnected node, or an
+  element already inside the dialog. The deferred `onCloseAutoFocus` skips
+  restore only while that same instance is mounted and open. A closed or
+  unmounted instance restores `focus({ preventScroll: true })` on the
+  connected opener.
+- Before: a rapid close, reopen, and second close left focus on `body`, and
+  unmounting an open dialog without `open=false` did the same. A completed
+  close followed by a different opener already returned to that opener.
+- After: `apps/mobile/src/components/ui/AppDialog.tsx`,
+  `AppDialog.spec.ts` (11), and `AppDialog.native.spec.ts` (1), on Node
+  v22.20.0 / pnpm 11.7.0. The mobile suite is 106 files and 509 tests. Lint,
+  the mobile graph typecheck and build, the e2e fence, and diff check passed.
+  Commands are in `docs/audits/current/00-EXECUTION-ROADMAP.md`.
+- `Unchanged`: Search URL and history, navigation, image recovery, routes,
+  auth, server contracts, and the canonical Pen file. L01 stays needs
+  verification. C04, L06, D04, D05, D09, D10, L04, and R32 stay needs
+  verification. T04 and T06 stay partial. C07 stays open, so R35 stays open.
+  C08 stays verified.
+- Browser, device, API bootstrap, database, migration, and seed checks were
+  not run.
+
 ## 2026-10-01 — Shared button, dialog, and image lifetimes
 
 - `Needs verification` (mobile): `PrimaryButton`, `SecondaryButton`, and

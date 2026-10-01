@@ -4,6 +4,21 @@
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
+## 2026-10-01 — Dialog return focus after reopen and unmount
+
+- `Needs verification` (mobile web): `AppDialog` still takes initial focus, the
+  Tab loop, Escape, outside close, and return focus from `@rn-primitives/dialog`
+  1.5.2. A reopen that lands on `body` before the deferred close callback no
+  longer replaces the captured opener, so the next close returns there without
+  scrolling. Removing an open dialog while its opener stays connected also
+  returns focus there. A finished close followed by another opener returns to
+  that later opener.
+- Before this correction, the rapid second close and the unmount left focus on
+  `body`. The later-opener cycle already returned correctly.
+- `Unchanged`: sheet slide-out, reduced motion, Search and filter focus traps,
+  canonical Pen file, design tokens, and Figma source packages. Chromium,
+  WebKit, and 390/1024/1440 screenshots were not run.
+
 ## 2026-10-01 — Shared action, dialog, and image lifetimes
 
 - `Needs verification` (mobile web): shared primary, secondary, and destructive
