@@ -42,11 +42,12 @@ export function readSqlCount(value: SqlCount | undefined): number {
   );
 }
 
-// timestamp(3) stores the UTC wall time. AT TIME ZONE 'UTC' makes the
-// timestamptz parameter compare as that same wall time in any session zone.
+// timestamp(3) without time zone stores the UTC wall time. Convert the
+// timestamptz bounds to that timestamp so the comparison ignores the session
+// TimeZone and the bare column can use a range index condition.
 function inUtcPeriod(column: Prisma.Sql, from: Date, to: Date): Prisma.Sql {
-  return Prisma.sql`(${column} AT TIME ZONE 'UTC') >= ${from}
-    AND (${column} AT TIME ZONE 'UTC') <= ${to}`;
+  return Prisma.sql`${column} >= (${from}::timestamptz AT TIME ZONE 'UTC')
+    AND ${column} <= (${to}::timestamptz AT TIME ZONE 'UTC')`;
 }
 
 function utcDayCounts(

@@ -123,6 +123,8 @@ describe('AdminAnalyticsService', () => {
       .find((query) => sqlText(query).includes('COUNT(DISTINCT'));
     expect(activeQuery?.values).toEqual([sevenDayFrom, now]);
     expect(sqlText(activeQuery!)).not.toContain('2026-08-13');
+    expect(sqlText(activeQuery!)).toContain("::timestamptz AT TIME ZONE 'UTC'");
+    expect(sqlText(activeQuery!)).not.toContain('created_at" AT TIME ZONE');
     expect(prisma.product.count).toHaveBeenCalledWith({
       where: {
         status: 'PENDING_REVIEW',

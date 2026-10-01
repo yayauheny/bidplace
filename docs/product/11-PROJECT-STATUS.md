@@ -34,6 +34,17 @@
   evidence of `docs/audits/current/00-EXECUTION-ROADMAP.md`.
 - `Partial`: D07. Moderation reads (R19) and catalog facets (R21) are still
   open. `05-MVP-RFC.md` §16 leftover event names stay DB-derived or deferred.
+- Index predicate correction, same overview contract: `inUtcPeriod` compares
+  the bare `timestamp(3)` column with
+  `(bound::timestamptz AT TIME ZONE 'UTC')`. On an isolated fixture of 100000
+  rows outside the period and 10 inside, the previous column-side predicate
+  was a sequential scan that removed 100000 rows by filter for active users,
+  acquisition, and views growth. The corrected queries returned the same rows,
+  including under `Europe/Minsk` and `America/Los_Angeles`, and the date range
+  was an index condition. Active users still filtered non-null `user_id` and
+  removed 0 rows; views still filtered `listing_viewed` and removed 0 rows.
+  This is one plan observation, not a measured speedup. The correction checks
+  are in the R20 evidence.
 - `Unchanged`: analytics ingestion, attribution writes, admin permissions,
   contracts, schema, and migrations. Browsers were not run. No founder
   decision was added.
