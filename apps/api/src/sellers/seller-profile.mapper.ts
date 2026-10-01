@@ -115,10 +115,6 @@ export const sellerProfilePhotoSelect = {
   profilePhotoObjectKey: true,
 } satisfies Prisma.SellerProfileSelect;
 
-export type SellerProfilePhotoRecord = Prisma.SellerProfileGetPayload<{
-  select: typeof sellerProfilePhotoSelect;
-}>;
-
 export function sellerProfilePhotoUrl(slug: string): string {
   return `/api/sellers/${slug}/photo`;
 }
