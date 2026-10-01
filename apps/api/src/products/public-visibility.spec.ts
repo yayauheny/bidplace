@@ -1,19 +1,19 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  publicProductContentSql,
-  publicProductContentWhere,
+  portfolioProductContentSql,
+  portfolioProductContentWhere,
 } from './public-visibility';
 
 describe('public product content visibility', () => {
   it('keeps creator condition and packaging optional in Prisma queries', () => {
-    expect(publicProductContentWhere).not.toHaveProperty('condition');
-    expect(publicProductContentWhere).not.toHaveProperty('packaging');
+    expect(portfolioProductContentWhere).not.toHaveProperty('condition');
+    expect(portfolioProductContentWhere).not.toHaveProperty('packaging');
   });
 
   it('uses only required portfolio Work fields in SQL queries', () => {
-    expect(publicProductContentSql.text).not.toContain('"condition"');
-    expect(publicProductContentSql.text).not.toContain('"packaging"');
-    expect(publicProductContentSql.text).not.toContain('"delivery_info"');
+    expect(portfolioProductContentSql.text).not.toContain('"condition"');
+    expect(portfolioProductContentSql.text).not.toContain('"packaging"');
+    expect(portfolioProductContentSql.text).not.toContain('"delivery_info"');
   });
 });

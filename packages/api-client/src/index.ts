@@ -8,7 +8,6 @@ export {
   ApiClientError,
   classifyApiError,
   getApiErrorCode,
-  getBidTooLowMinimum,
   parseApiError,
   type ApiClientErrorKind,
 } from './errors';

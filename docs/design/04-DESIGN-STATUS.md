@@ -1,8 +1,17 @@
 # bidplace — статус дизайна и UI-реализации
 
-Последнее обновление: 2026-09-30
+Последнее обновление: 2026-10-01
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
+
+## 2026-10-01 — Unused alert and filter dropdown removed
+
+- `Implemented` (code only): `SessionAlert` and its web variant had no mounted
+  caller and were removed. `FilterMenu` and `focusable-anchor` had no catalog
+  caller and were removed. Live sort and filter stay on `FilterSheet` through
+  `CatalogFilterSheet`. `OverlayHost` stays mounted and no longer portals.
+- `Unchanged`: filter sheet layout, tokens, routes, and the canonical Pen file.
+  Chromium and WebKit were not run. This does not visually accept `FilterSheet`.
 
 ## 2026-09-30 — Achievement draft lock and parent actions
 
@@ -794,7 +803,7 @@ Creator / Profile / MVP v1`): centered hero, 120px avatar, handle/copy,
 | AuctionCard   | `k5vYGf` | implemented shared card with media hover and responsive grid                    |
 | CreatorCard   | `SrXPq`  | reusable production component uses public discipline; visual acceptance remains |
 | AuctionPlayer | `X6Ksg`  | implemented controlled transaction component                                    |
-| FilterMenu    | shared discovery controls | implemented shared sort/facet control in `components/layout` |
+| FilterMenu    | shared discovery controls | removed; no runtime consumer. Live sort/filter is FilterSheet via CatalogFilterSheet. Visual acceptance of FilterSheet is unchanged |
 | ProductTabs   | `Jh9jr`  | implemented keyboard tabs with deep-link/back history                           |
 | AmbientImageBackground | shared atmosphere | one shell-level image-derived background for Product and Creator; runtime verified |
 

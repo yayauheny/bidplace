@@ -76,8 +76,8 @@
   verification reads sampled objects and compares their checksums without logging
   content or credentials.
 - `apps/mobile/src/lib/environment.ts` owns API origin validation and `getApiAssetUrl`, which resolves relative media paths while preserving valid absolute HTTP(S) URLs. Media components own truthful missing/error presentation without changing API visibility rules.
-- `apps/mobile/src/components/layout/OverlayHost.tsx` owns the web-only overlay boundary for AppShell descendants. Desktop account dropdowns are portaled into the shared host and positioned from trigger rectangles; ordinary page content keeps the lower semantic layer.
-- `apps/mobile/src/components/layout/index.ts` is the shared public barrel for shell/header/overlay primitives and discovery `FilterMenu` (single dismiss + focus-return contract). Pure helpers such as `account-menu-hover.ts`, `header-chrome.ts`, `dismissible-overlay.ts` and `focusable-anchor.ts` stay outside that barrel so Node/Playwright can import them without loading React Native.
+- `apps/mobile/src/components/layout/OverlayHost.tsx` stays mounted by AppShell. It keeps the relative content child and the absolute `app-overlay-host` layer. It does not portal descendants and does not export positioning helpers.
+- `apps/mobile/src/components/layout/index.ts` exports the shell, auth and form page primitives, `OverlayHost`, and `navigateBack`. Catalog sort and filter use `FilterSheet` through `CatalogFilterSheet`. `header-chrome.ts` and `dismissible-overlay.ts` stay outside that barrel. The unused `FilterMenu` and `focusable-anchor` helpers were removed.
 - `apps/api/src/products/products.mapper.ts` and `apps/api/src/products/products-catalog.query.ts` own the canonical public catalog selection and CTE/order SQL; `products.service.ts` keeps only use-cases and orchestration.
 - `packages/contracts` owns runtime HTTP and event shapes; `packages/api-client` validates responses with those schemas. Public catalog reads can pass an optional `AbortSignal` through that client into `fetch`. Mutations stay uncancelled unless a caller passes a signal.
 - `packages/contracts/src/seller-profile.ts` owns the reusable public-link and handoff-contact validation shapes consumed by both seller write contracts and the profile editor; client-side field feedback does not replace server validation. Public `socialLink`, `telegramUrl`, `instagramUrl` and `websiteUrl` use shared `httpsUrlSchema` and accept only `https:` URLs. Telegram/Instagram `@handle` forms stay on the separate handoff schemas.
@@ -183,7 +183,7 @@ SellerProfile
   failures use `console.info` via `logInfrastructureError`; Expo LogBox is not
   used as UI. Public `AppShell` does not show session
   bootstrap chrome. `ProtectedRoute` owns blocking session failure.
-  `SessionAlert` remains an unused-for-now reusable primitive.
+  The unused `SessionAlert` primitive was removed.
   Validation, password, conflict, rate-limit and domain/not-found copy still
   use the older form mapper and are a future migration.
 - Public Work/Author catalog, ProductImage and seller-photo access share

@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 
 import {
   authorCabinetPrimaryAction,
-  authorCabinetQuery,
   authorCabinetVisibilityActions,
   authorCabinetWorksFromPages,
   authorCabinetWorkState,
@@ -70,10 +69,6 @@ describe('author cabinet state', () => {
         isSuspended: true,
       }),
     ).toEqual({ canHide: false, canRestore: false });
-  });
-
-  it('uses the canonical owner pagination size', () => {
-    expect(authorCabinetQuery(2)).toEqual({ page: 2, limit: 20 });
   });
 
   it('retains page one while appending a later cabinet page', () => {

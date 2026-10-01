@@ -14,21 +14,6 @@ export function isPrismaUniqueConstraintError(error: unknown): boolean {
   return hasPrismaErrorCode(error, PRISMA_UNIQUE_CONSTRAINT_ERROR_CODE);
 }
 
-export function getPrismaUniqueConstraintTargets(error: unknown): string[] {
-  if (!isPrismaUniqueConstraintError(error)) {
-    return [];
-  }
-
-  const target = (error as { meta?: { target?: unknown } }).meta?.target;
-  if (Array.isArray(target)) {
-    return target.filter((value): value is string => typeof value === 'string');
-  }
-  if (typeof target === 'string') {
-    return [target];
-  }
-  return [];
-}
-
 export function isPrismaSerializableConflictError(error: unknown): boolean {
   return hasPrismaErrorCode(error, PRISMA_SERIALIZABLE_CONFLICT_ERROR_CODE);
 }

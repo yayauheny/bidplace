@@ -1,9 +1,8 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import { productWriteRequestSchema, type Product } from '@bidplace/contracts';
 
 import {
-  persistProductDraftBeforeSubmit,
   productDraftToWriteRequest,
   productToDraftFormValues,
   shouldHydrateProductDraft,
@@ -93,32 +92,5 @@ describe('product draft form lifecycle', () => {
     expect(request).not.toHaveProperty('packaging');
     expect(request).not.toHaveProperty('deliveryInfo');
     expect(request).not.toHaveProperty('creationIntro');
-  });
-
-  it('persists the current values before submit', async () => {
-    const calls: string[] = [];
-    const result = await persistProductDraftBeforeSubmit(
-      async () => {
-        calls.push('persist');
-      },
-      async () => {
-        calls.push('submit');
-        return 'submitted';
-      },
-    );
-
-    expect(result).toBe('submitted');
-    expect(calls).toEqual(['persist', 'submit']);
-  });
-
-  it('does not submit when persistence fails', async () => {
-    const submit = vi.fn();
-
-    await expect(
-      persistProductDraftBeforeSubmit(async () => {
-        throw new Error('save failed');
-      }, submit),
-    ).rejects.toThrow('save failed');
-    expect(submit).not.toHaveBeenCalled();
   });
 });

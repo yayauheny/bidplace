@@ -1,7 +1,6 @@
 import { View, type ViewStyle } from 'react-native';
 
 import { FigmaButton } from '../figma/FigmaButton';
-import { FigmaIconButton } from '../figma/FigmaIconButton';
 import { type FigmaIconName } from '../figma/figma-icon-names';
 
 type ButtonProps = {
@@ -95,38 +94,4 @@ export function TextButton({
       variant="ghost"
     />
   );
-}
-
-export function IconButton({
-  icon,
-  label,
-  onPress,
-  disabled,
-  selected = false,
-}: {
-  icon: FigmaIconName;
-  label: string;
-  onPress: () => void;
-  disabled?: boolean;
-  selected?: boolean;
-}) {
-  return (
-    <FigmaIconButton
-      icon={icon}
-      label={label}
-      onPress={onPress}
-      disabled={disabled}
-      selected={selected}
-    />
-  );
-}
-
-export function BackButton({
-  onPress,
-  label = 'Назад',
-}: {
-  onPress: () => void;
-  label?: string;
-}) {
-  return <IconButton icon="arrow-left-01" label={label} onPress={onPress} />;
 }

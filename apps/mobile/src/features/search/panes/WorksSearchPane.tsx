@@ -6,7 +6,6 @@ import { WorkCoverCardGrid } from '../../../components/figma/WorkCoverCardGrid';
 import { FigmaButton } from '../../../components/figma/FigmaButton';
 import { usePortfolioWorks } from '../../products/use-portfolio-works';
 import { SearchPaneStatus } from './search-pane-status';
-import { searchPaginationView } from './search-pagination';
 
 export function WorksSearchPane({
   query,
@@ -19,8 +18,6 @@ export function WorksSearchPane({
       sort: 'newest',
     },
   );
-  const pagination = searchPaginationView(works);
-
   return (
     <SearchPaneStatus
       isPending={works.isPending}
@@ -31,13 +28,13 @@ export function WorksSearchPane({
       loading={<WorksSkeleton />}
     >
       <View style={{ gap: figmaTokens.space.x3 }}>
-        <WorkCoverCardGrid items={pagination.items} columns={2} />
-        {pagination.nextPage ? (
+        <WorkCoverCardGrid items={works.items} columns={2} />
+        {works.hasNextPage ? (
           <FigmaButton
-            label={pagination.nextPage.label}
+            label="Показать ещё"
             variant="outline"
             width="full"
-            loading={pagination.nextPage.loading}
+            loading={works.isFetchingNextPage}
             onPress={() => void works.fetchNextPage()}
           />
         ) : null}

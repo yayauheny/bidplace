@@ -30,10 +30,6 @@ export function assertProductRevisionTransition(
   }
 }
 
-export function hasPublishedRevision(status: ProductStatus): boolean {
-  return status === 'APPROVED' || status === 'ARCHIVED';
-}
-
 export function canAuthorEditRevision(status: ProductStatus): boolean {
   return status === 'DRAFT' || status === 'CHANGES_REQUESTED' || status === 'REJECTED';
 }

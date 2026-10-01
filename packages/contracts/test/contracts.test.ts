@@ -8,7 +8,6 @@ import {
   isEditableProductStatus,
   listingStatusSchema,
   productWriteRequestSchema,
-  publicProductSchema,
   portfolioWorksQuerySchema,
   portfolioWorkDetailResponseSchema,
   portfolioHomeResponseSchema,
@@ -326,14 +325,6 @@ describe('shared contracts', () => {
     expect(
       productWriteRequestSchema.safeParse({ title: 'Personal item' }).success,
     ).toBe(true);
-  });
-  it('keeps condition and packaging optional for public creator Products', () => {
-    expect(publicProductSchema.shape.condition.safeParse(null).success).toBe(
-      true,
-    );
-    expect(publicProductSchema.shape.packaging.safeParse(null).success).toBe(
-      true,
-    );
   });
   it('rejects an unknown listing leftover status', () => {
     expect(listingStatusSchema.safeParse('active').success).toBe(false);

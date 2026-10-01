@@ -5,6 +5,42 @@
 > commerce-schema references below do not mean that Listing, Bid, Order,
 > lifecycle, realtime, discovery or activity modules are currently booted.
 
+## 2026-10-01 — Confirmed unused code and duplicate helpers
+
+- `Implemented`: confirmed mobile files and helpers with no production caller
+  were removed, including `CatalogGrid`, `product-about`, `SessionAlert`,
+  unused layout helpers, `FilterMenu`, `focusable-anchor`, `OverlayPortal`,
+  and `persistProductDraftBeforeSubmit`. `OverlayHost` stays mounted with its
+  relative content layer and absolute `app-overlay-host` layer, without a
+  portal. Live `CreatorCardGrid`, `FigmaIconButton`, reactive
+  `useReducedMotion`, share/QR, auth epoch, and analytics test seams stay.
+  `AppIcon` keeps the dialog `x` icon.
+- `Implemented`: confirmed API and package leftovers were removed, including
+  the empty `UsersModule`, unused image and product re-exports, the ignored
+  `_imageSelect` argument, and the never-thrown `RevisionMediaStorageError`
+  translation in `putStoredImage`. Image storage calls, transaction
+  boundaries, portfolio visibility predicates, `publicAuthorCityWhere`, and
+  the existing permission and listing guards stay. Seller, Product, and
+  Listing persistence parsers stay because their current and archived
+  consumers are the parser spec and the contracts barrel.
+- `Implemented`: search panes read query items and paging flags directly.
+  Debounce owns its timer. `parseQuery` uses the same safe parse as
+  `parseBody`. Product image upload MIME checks use
+  `acceptSupportedUploadMimeType`. Product image DTOs use
+  `toImageContracts`. Blob reads return `response.blob()` without a catch
+  that rethrew the same cause. Seller profile upload rejection still uses
+  `done(null, false)`.
+- Coverage: mobile search pane and debounce specs, API parse and product
+  image mapper specs, existing image MIME and request-cancellation specs,
+  and the remaining mobile, API, contracts, and api-client suites on Node
+  v22.20.0 / pnpm 11.7.0.
+- `Unchanged`: routes, auth policy, server contracts, button `compact`,
+  admin `productAction`, and keyed image retry. C07 and L06 stay open. C04
+  stays partial until the compact button work. D04, D05, D09, D10, and L04
+  stay needs verification. T04 and T06 stay partial.
+- Browser verification, API bootstrap, database integration, migrations, and
+  seed were not run.
+
 ## 2026-09-30 — Achievement editor lifecycle
 
 - `Needs verification` (mobile web): an achievement add locks year, month,

@@ -121,12 +121,6 @@ export function figmaButtonLabelColor(variant: FigmaButtonVariant) {
     : figmaTokens.color.ink;
 }
 
-export function figmaButtonLabelTypography(size: FigmaButtonSize) {
-  return size === 'compact'
-    ? figmaTokens.typography.buttonCompact
-    : figmaTokens.typography.button;
-}
-
 function buttonFill(variant: FigmaButtonVariant, active: boolean) {
   switch (variant) {
     case 'solid':

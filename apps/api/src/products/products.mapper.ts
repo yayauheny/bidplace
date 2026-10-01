@@ -157,16 +157,7 @@ export function toContractProduct(product: ProductRecord): Product {
     deliveryInfo: product.deliveryInfo ?? null,
     publishedAt: product.publishedAt?.toISOString() ?? null,
     status: product.status,
-    images: product.images.map((image) => ({
-      id: image.id,
-      position: image.position,
-      url: `/api/images/${image.id}`,
-      mimeType: image.mimeType,
-      byteLength: image.byteLength,
-      checksum: image.checksum,
-      width: image.width ?? null,
-      height: image.height ?? null,
-    })),
+    images: toImageContracts(product.images),
     createdAt: product.createdAt.toISOString(),
     updatedAt: product.updatedAt.toISOString(),
   };

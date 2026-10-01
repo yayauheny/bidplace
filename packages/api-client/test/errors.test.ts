@@ -5,7 +5,6 @@ import {
   ApiClientError,
   createNetworkError,
   getApiErrorCode,
-  getBidTooLowMinimum,
   parseApiError,
   throwApiClientResponseError,
 } from '../src/errors';
@@ -54,7 +53,7 @@ describe('api-client errors', () => {
     });
   });
 
-  it('exposes helpers for code and bid minimum', () => {
+  it('exposes the API error code', () => {
     const error = new ApiClientError('Bid must be at least 11.50', {
       kind: 'bad_request',
       status: 400,
@@ -63,8 +62,6 @@ describe('api-client errors', () => {
     });
 
     expect(getApiErrorCode(error)).toBe(ApiErrorCode.BID_TOO_LOW);
-    expect(getBidTooLowMinimum(error)).toBe(11.5);
-    expect(getBidTooLowMinimum(new Error('nope'))).toBeNull();
   });
 
   it('keeps requestId and diagnostic message off the UI contract', async () => {
