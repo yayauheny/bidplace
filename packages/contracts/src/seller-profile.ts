@@ -142,65 +142,6 @@ export const sellerProfileCreateRequestSchema = z
   })
   .strict();
 
-const sellerProfileBaseWriteSchema = z
-  .object({
-    slug: slugSchema,
-    sellerType: sellerTypeSchema,
-    discipline: sellerDisciplineSchema.optional(),
-    fullName: z.string().trim().min(1),
-    country: z.string().trim().min(1),
-    city: z.string().trim().min(1),
-    practice: z.string().trim().min(1).nullable().optional(),
-    biography: z.string().trim().min(1).nullable().optional(),
-    socialLink: sellerPublicUrlSchema.nullable().optional(),
-    telegramUrl: sellerPublicUrlSchema.nullable().optional(),
-    instagramUrl: sellerPublicUrlSchema.nullable().optional(),
-    websiteUrl: sellerPublicUrlSchema.nullable().optional(),
-    publicEmail: sellerPublicEmailSchema.nullable().optional(),
-    shortDescription: z.string().trim().min(1),
-    handoffContactType: handoffContactTypeSchema,
-    handoffContactValue: z.string().trim().min(1),
-    handoffInitiator: handoffInitiatorSchema.optional(),
-  })
-  .strict()
-  .superRefine((value, context) => {
-    const contactValue = value.handoffContactValue.trim();
-
-    if (
-      value.handoffContactType === 'TELEGRAM' &&
-      !sellerTelegramHandleSchema.safeParse(contactValue).success
-    ) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['handoffContactValue'],
-        message: 'Telegram contact must be @username or https://t.me/username',
-      });
-    }
-
-    if (
-      value.handoffContactType === 'PHONE' &&
-      !sellerPhoneHandleSchema.safeParse(contactValue).success
-    ) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['handoffContactValue'],
-        message: 'Phone contact must be in E.164 format',
-      });
-    }
-
-    if (
-      value.handoffContactType === 'INSTAGRAM' &&
-      !sellerInstagramHandleSchema.safeParse(contactValue).success
-    ) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['handoffContactValue'],
-        message:
-          'Instagram contact must be @username or https://instagram.com/username',
-      });
-    }
-  });
-
 export const sellerProfileUpdateRequestSchema = z
   .object({
     slug: slugSchema.optional(),

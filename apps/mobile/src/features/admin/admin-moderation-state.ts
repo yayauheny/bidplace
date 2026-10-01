@@ -6,10 +6,6 @@ export type ModerationFilter =
   | 'APPROVED'
   | 'CHANGES_REQUESTED';
 
-export type ModerationTarget =
-  | { kind: 'revision'; id: string; updatedAt: string }
-  | { kind: 'parent'; status: string; updatedAt: string };
-
 export function sellerMatchesFilter(
   seller: AdminSellerProfile,
   filter: ModerationFilter,
