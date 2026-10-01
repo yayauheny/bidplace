@@ -10,7 +10,10 @@ Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 const nativeHarness = vi.hoisted(() => {
   const harness = {
     setAccessibilityFocus: vi.fn(),
-    hardwareBack: vi.fn(() => ({ remove() {} })),
+    hardwareBack: vi.fn((handler: () => boolean | null | undefined) => {
+      void handler;
+      return { remove() {} };
+    }),
     findNodeHandle: (node: unknown) => (node ? 7 : null),
   };
   (globalThis as { __dialogNative?: typeof harness }).__dialogNative = harness;
@@ -141,11 +144,12 @@ function mount(node: ReactNode) {
 describe('AppDialog native focus fallback', () => {
   it('moves accessibility focus through the installed dialog when it opens', async () => {
     const view = mount(
-      createElement(
-        AppDialog,
-        { open: true, title: 'Нативное', onClose: () => undefined },
-        createElement('input', { 'aria-label': 'Поле' }),
-      ),
+      createElement(AppDialog, {
+        open: true,
+        title: 'Нативное',
+        onClose: () => undefined,
+        children: createElement('input', { 'aria-label': 'Поле' }),
+      }),
     );
 
     await act(async () => {

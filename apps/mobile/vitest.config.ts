@@ -9,10 +9,22 @@ const rnPrimitivesPortalStub = fileURLToPath(
   new URL('./vitest/rn-primitives-portal.ts', import.meta.url),
 );
 
-function loadEsbuild() {
+type EsbuildJsxTransform = {
+  transformSync: (
+    source: string,
+    options: {
+      loader: 'jsx';
+      jsx: 'automatic';
+      format: 'esm';
+      sourcefile: string;
+    },
+  ) => { code: string; map?: string };
+};
+
+function loadEsbuild(): EsbuildJsxTransform {
   const require = createRequire(process.argv[1] ?? import.meta.url);
   const vitePkg = require.resolve('vite/package.json');
-  return createRequire(vitePkg)('esbuild') as typeof import('esbuild');
+  return createRequire(vitePkg)('esbuild') as EsbuildJsxTransform;
 }
 
 function rnPrimitivesForVitest(): Plugin {

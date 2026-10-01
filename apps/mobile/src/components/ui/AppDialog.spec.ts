@@ -229,19 +229,16 @@ function ClosableDialog({
   closes: { count: number };
 }) {
   const [open, setOpen] = useState(true);
-  return createElement(
-    AppDialog,
-    {
-      open,
-      presentation,
-      title,
-      onClose: () => {
-        closes.count += 1;
-        setOpen(false);
-      },
+  return createElement(AppDialog, {
+    open,
+    presentation,
+    title,
+    onClose: () => {
+      closes.count += 1;
+      setOpen(false);
     },
-    dialogChildren(),
-  );
+    children: dialogChildren(),
+  });
 }
 
 describe('AppDialog web focus lifecycle', () => {
@@ -251,11 +248,12 @@ describe('AppDialog web focus lifecycle', () => {
     document.body.append(opener);
     opener.focus();
     const view = mount(
-      createElement(
-        AppDialog,
-        { open: true, title: 'Заголовок', onClose: () => undefined },
-        dialogChildren(),
-      ),
+      createElement(AppDialog, {
+        open: true,
+        title: 'Заголовок',
+        onClose: () => undefined,
+        children: dialogChildren(),
+      }),
     );
     await flush();
 
@@ -361,11 +359,12 @@ describe('AppDialog web focus lifecycle', () => {
           { type: 'button', onClick: () => setOpen(true) },
           'Снова',
         ),
-        createElement(
-          AppDialog,
-          { open, title: 'Быстрый', onClose: () => setOpen(false) },
-          dialogChildren(),
-        ),
+        createElement(AppDialog, {
+          open,
+          title: 'Быстрый',
+          onClose: () => setOpen(false),
+          children: dialogChildren(),
+        }),
       );
     }
 
@@ -400,20 +399,18 @@ describe('AppDialog web focus lifecycle', () => {
       return createElement(
         'div',
         null,
-        createElement(
-          AppDialog,
-          { open: true, title: 'Первый', onClose: () => undefined },
-          createElement('input', { 'aria-label': 'Поле первого' }),
-        ),
-        createElement(
-          AppDialog,
-          {
-            open: second,
-            title: 'Второй',
-            onClose: () => setSecond(false),
-          },
-          createElement('input', { 'aria-label': 'Поле второго' }),
-        ),
+        createElement(AppDialog, {
+          open: true,
+          title: 'Первый',
+          onClose: () => undefined,
+          children: createElement('input', { 'aria-label': 'Поле первого' }),
+        }),
+        createElement(AppDialog, {
+          open: second,
+          title: 'Второй',
+          onClose: () => setSecond(false),
+          children: createElement('input', { 'aria-label': 'Поле второго' }),
+        }),
         createElement(
           'button',
           { type: 'button', onClick: () => setSecond(true) },
@@ -509,11 +506,12 @@ describe('AppDialog web focus lifecycle', () => {
   it('does not search the document for another dialog control', async () => {
     const query = vi.spyOn(document, 'querySelector');
     const view = mount(
-      createElement(
-        AppDialog,
-        { open: true, title: 'Поиск', onClose: () => undefined },
-        dialogChildren(),
-      ),
+      createElement(AppDialog, {
+        open: true,
+        title: 'Поиск',
+        onClose: () => undefined,
+        children: dialogChildren(),
+      }),
     );
     await flush();
     const dialog = dialogByTitle('Поиск');
