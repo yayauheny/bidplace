@@ -19,7 +19,8 @@ const harness = vi.hoisted(() => ({
 
 vi.mock('react-native', () => ({
   Platform: { OS: 'web' },
-  View: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
+  View: ({ children }: { children?: ReactNode }) =>
+    createElement('div', null, children),
   Image: () => null,
   ScrollView: ({ children }: { children?: ReactNode }) =>
     createElement('div', null, children),
@@ -27,7 +28,8 @@ vi.mock('react-native', () => ({
 
 vi.mock('expo-router', () => ({
   useRouter: () => ({ push: harness.push, replace: vi.fn() }),
-  Link: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
+  Link: ({ children }: { children?: ReactNode }) =>
+    createElement('div', null, children),
 }));
 
 vi.mock('../../providers/api-provider', () => ({
@@ -43,7 +45,8 @@ vi.mock('../../providers/api-provider', () => ({
 }));
 
 vi.mock('../../components/layout', () => ({
-  AppShell: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
+  AppShell: ({ children }: { children?: ReactNode }) =>
+    createElement('div', null, children),
   FormPageShell: ({ children }: { children?: ReactNode }) =>
     createElement('div', null, children),
 }));
@@ -114,9 +117,7 @@ vi.mock('../../components/ui', () => {
       title?: string;
       children?: ReactNode;
     }) =>
-      open
-        ? createElement('div', { role: 'dialog' }, title, children)
-        : null,
+      open ? createElement('div', { role: 'dialog' }, title, children) : null,
     AppText: ({ children }: { children?: ReactNode }) =>
       createElement('span', null, children),
     DestructiveButton: PressButton,
@@ -127,7 +128,8 @@ vi.mock('../../components/ui', () => {
       title?: string;
       children?: ReactNode;
     }) => createElement('section', null, title, children),
-    PageHeader: ({ title }: { title: string }) => createElement('h1', null, title),
+    PageHeader: ({ title }: { title: string }) =>
+      createElement('h1', null, title),
     PrimaryButton: PressButton,
     ResilientRemoteImage: ({
       uri,
@@ -163,6 +165,7 @@ vi.mock('../../components/ui', () => {
 import { getApiAssetUrl } from '../../lib/environment';
 import { formatAchievementDate } from '../sellers/achievement-date';
 import { AdminModerationScreen } from './admin-moderation-screen';
+import { moderationListQueryKey } from './admin-moderation-state';
 
 const sellerId = '00000000-0000-4000-8000-000000000001';
 const legacyId = '00000000-0000-4000-8000-000000000002';
@@ -337,12 +340,35 @@ async function flush() {
 }
 
 async function until(container: HTMLElement, marker: string) {
-  for (let attempt = 0; attempt < 12; attempt += 1) {
-    if (container.textContent?.includes(marker)) return;
+  await untilMatch(container, (text) => text.includes(marker), marker);
+}
+
+async function untilMatch(
+  container: HTMLElement,
+  predicate: (text: string) => boolean,
+  label: string,
+) {
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    if (predicate(container.textContent ?? '')) return;
     await flush();
   }
-  throw new Error(`Timed out waiting for ${marker}. Body: ${container.textContent}`);
+  throw new Error(
+    `Timed out waiting for ${label}. Body: ${container.textContent}`,
+  );
 }
+
+function sellerCache(sellerProfiles: unknown[]) {
+  return {
+    pages: [{ sellerProfiles, nextCursor: null }],
+    pageParams: [null],
+  };
+}
+
+const pendingSellerKey = moderationListQueryKey(
+  'seller-profiles',
+  'PENDING_REVIEW',
+  '',
+);
 
 function clickButton(container: ParentNode, label: string) {
   const button = [...container.querySelectorAll('button')].find(
@@ -387,12 +413,20 @@ afterEach(() => {
 
 describe('admin moderation revision projection', () => {
   it('shows an approved parent with a pending revision in both queues and keeps legacy approval on the parent', async () => {
-    harness.listSellerProfiles.mockResolvedValue({
-      sellerProfiles: [revisionSeller(seenAt), legacySeller(), quietSeller()],
-    });
+    const queued = [revisionSeller(seenAt), legacySeller(), quietSeller()];
+    harness.listSellerProfiles.mockImplementation(async (query) => ({
+      sellerProfiles: queued.filter((seller) =>
+        matchesRequestedSeller(seller, query?.filter ?? 'ALL'),
+      ),
+      nextCursor: null,
+    }));
     harness.updateSellerStatus.mockResolvedValue({});
     const view = mount(createElement(AdminModerationScreen));
     await until(view.container, 'Pending author');
+    expect(harness.listSellerProfiles).toHaveBeenCalledWith(
+      { filter: 'PENDING_REVIEW', search: undefined },
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
 
     expect(view.container.textContent).toContain('Legacy author');
     expect(view.container.textContent).toContain('Профиль без ревизии');
@@ -404,19 +438,35 @@ describe('admin moderation revision projection', () => {
     expect(view.container.textContent).not.toContain('Published author');
 
     clickButton(view.container, 'Одобрены');
-    await flush();
+    await untilMatch(
+      view.container,
+      (text) =>
+        text.includes('Quiet author') && !text.includes('Legacy author'),
+      'approved queue',
+    );
     expect(view.container.textContent).toContain('Pending author');
     expect(view.container.textContent).toContain('Quiet author');
     expect(view.container.textContent).not.toContain('Legacy author');
 
     clickButton(view.container, 'Все статусы');
-    await flush();
-    expect(view.container.textContent?.match(/Pending author/g)).toHaveLength(1);
+    await untilMatch(
+      view.container,
+      (text) => text.includes('Legacy author') && text.includes('Quiet author'),
+      'all statuses',
+    );
+    expect(view.container.textContent?.match(/Pending author/g)).toHaveLength(
+      1,
+    );
     expect(view.container.textContent).toContain('Legacy author');
     expect(view.container.textContent).toContain('Quiet author');
 
     clickButton(view.container, 'Ожидают проверки');
-    await flush();
+    await untilMatch(
+      view.container,
+      (text) =>
+        text.includes('Профиль без ревизии') && !text.includes('Quiet author'),
+      'pending queue',
+    );
     clickCardButton(view.container, 'Профиль без ревизии', 'Одобрить');
     await flush();
     expect(harness.updateSellerStatus).toHaveBeenCalledWith(legacyId, {
@@ -513,11 +563,15 @@ describe('admin moderation revision projection', () => {
       sellerProfiles: [photoSeller(seenAt, seenChecksum)],
     });
     const view = mount(createElement(AdminModerationScreen));
-    await until(view.container, `photo:${sellerId}:${revisionId}:${seenAt}:${seenChecksum}`);
+    await until(
+      view.container,
+      `photo:${sellerId}:${revisionId}:${seenAt}:${seenChecksum}`,
+    );
     act(() => {
-      view.queryClient.setQueryData(['admin', 'seller-profiles'], {
-        sellerProfiles: [photoSeller(freshAt, freshChecksum)],
-      });
+      view.queryClient.setQueryData(
+        pendingSellerKey,
+        sellerCache([photoSeller(freshAt, freshChecksum)]),
+      );
     });
     await flush();
     expect(view.container.textContent).toContain(
@@ -558,18 +612,23 @@ describe('admin moderation revision projection', () => {
     );
     await until(view.container, 'Выставка с фото');
     expect(
-      view.container.querySelector('img[alt="Достижение"]')?.getAttribute('src'),
+      view.container
+        .querySelector('img[alt="Достижение"]')
+        ?.getAttribute('src'),
     ).toBe(firstUrl);
 
     act(() => {
-      view.queryClient.setQueryData(['admin', 'seller-profiles'], {
-        sellerProfiles: [achievementImageSeller(nextId)],
-      });
+      view.queryClient.setQueryData(
+        pendingSellerKey,
+        sellerCache([achievementImageSeller(nextId)]),
+      );
     });
     await flush();
     const nextUrl = getApiAssetUrl(`/api/author-achievements/${nextId}/image`);
     expect(
-      view.container.querySelector('img[alt="Достижение"]')?.getAttribute('src'),
+      view.container
+        .querySelector('img[alt="Достижение"]')
+        ?.getAttribute('src'),
     ).toBe(nextUrl);
     expect(
       [...view.container.querySelectorAll('img')].some(
@@ -578,7 +637,309 @@ describe('admin moderation revision projection', () => {
     ).toBe(false);
     view.unmount();
   });
+
+  it('renders the server page for the requested filter', async () => {
+    harness.listSellerProfiles.mockResolvedValue({
+      sellerProfiles: [quietSeller()],
+      nextCursor: null,
+    });
+    const view = mount(createElement(AdminModerationScreen));
+    await until(view.container, 'Quiet author');
+    expect(harness.listSellerProfiles).toHaveBeenCalledWith(
+      { filter: 'PENDING_REVIEW', search: undefined },
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
+    view.unmount();
+  });
+
+  it('loads the next seller page, blocks a repeated request, and retries after an error', async () => {
+    let rejectNext: (error: Error) => void = () => undefined;
+    harness.listSellerProfiles
+      .mockResolvedValueOnce({
+        sellerProfiles: [revisionSeller(seenAt)],
+        nextCursor: 'cursor-1',
+      })
+      .mockImplementationOnce(
+        () =>
+          new Promise((_resolve, reject) => {
+            rejectNext = reject;
+          }),
+      )
+      .mockResolvedValueOnce({
+        sellerProfiles: [legacySeller()],
+        nextCursor: null,
+      });
+    const view = mount(createElement(AdminModerationScreen));
+    await until(view.container, 'Показать ещё');
+    clickButton(view.container, 'Показать ещё');
+    await flush();
+    const pending = buttonNamed(view.container, 'Показать ещё');
+    expect(pending.disabled).toBe(true);
+    clickButton(view.container, 'Показать ещё');
+    expect(harness.listSellerProfiles).toHaveBeenCalledTimes(2);
+    await act(async () => {
+      rejectNext(new Error('offline'));
+    });
+    await until(view.container, 'Не удалось загрузить следующую страницу.');
+    expect(view.container.textContent).toContain('Pending author');
+    clickButton(view.container, 'Повторить');
+    await until(view.container, 'Legacy author');
+    expect(view.container.textContent).toContain('Pending author');
+    const cursors = harness.listSellerProfiles.mock.calls.map(
+      (call) => call[0]?.cursor,
+    );
+    expect(cursors.filter((cursor) => cursor === 'cursor-1')).toHaveLength(2);
+    view.unmount();
+  });
+
+  it('starts a new cursor when the search changes', async () => {
+    harness.listSellerProfiles.mockImplementation(async (query) => {
+      if (query?.search === 'Later') {
+        return {
+          sellerProfiles: query.cursor
+            ? [legacySeller()]
+            : [revisionSeller(seenAt)],
+          nextCursor: query.cursor ? null : 'cursor-search',
+        };
+      }
+      return { sellerProfiles: [quietSeller()], nextCursor: 'cursor-old' };
+    });
+    const view = mount(createElement(AdminModerationScreen));
+    await until(view.container, 'Quiet author');
+    await typeLabeledField(view.container, 'Найти автора', '   ');
+    await flush();
+    expect(harness.listSellerProfiles).toHaveBeenCalledTimes(1);
+    await typeLabeledField(view.container, 'Найти автора', 'Later');
+    await until(view.container, 'Pending author');
+    expect(view.container.textContent).not.toContain('Quiet author');
+    const firstSearch = harness.listSellerProfiles.mock.calls.find(
+      (call) => call[0]?.search === 'Later',
+    );
+    expect(firstSearch?.[0]).toMatchObject({
+      filter: 'PENDING_REVIEW',
+      search: 'Later',
+    });
+    expect(firstSearch?.[0].cursor).toBeUndefined();
+    clickButton(view.container, 'Показать ещё');
+    await until(view.container, 'Legacy author');
+    const continued = harness.listSellerProfiles.mock.calls.filter(
+      (call) =>
+        call[0]?.search === 'Later' && call[0]?.cursor === 'cursor-search',
+    );
+    expect(continued).toHaveLength(1);
+    view.unmount();
+  });
+
+  it('approves a seller on the next page and replaces that page after a conflict', async () => {
+    let phase: 'open' | 'fresh' = 'open';
+    harness.listSellerProfiles.mockImplementation(async (query) => {
+      if (phase === 'fresh') {
+        return { sellerProfiles: [laterSeller(freshAt)], nextCursor: null };
+      }
+      if (query?.cursor === 'cursor-2') {
+        return { sellerProfiles: [laterSeller(seenAt)], nextCursor: null };
+      }
+      return {
+        sellerProfiles: [revisionSeller(seenAt)],
+        nextCursor: 'cursor-2',
+      };
+    });
+    harness.updateSellerStatus.mockImplementation(async () => {
+      phase = 'fresh';
+      throw new ApiClientError('conflict', { kind: 'conflict', status: 409 });
+    });
+    const view = mount(createElement(AdminModerationScreen));
+    await until(view.container, 'Показать ещё');
+    clickButton(view.container, 'Показать ещё');
+    await until(view.container, 'Later author');
+    const cursorReads = () =>
+      harness.listSellerProfiles.mock.calls.filter(
+        (call) => call[0]?.cursor === 'cursor-2',
+      ).length;
+    const readsBeforeConflict = cursorReads();
+    clickCardButton(view.container, 'Later author', 'Одобрить');
+    await untilMatch(
+      view.container,
+      (text) =>
+        text.includes('Карточка устарела') &&
+        text.includes('Later author') &&
+        !text.includes('Pending author') &&
+        (text.match(/Later author/g) ?? []).length === 1,
+      'conflict refresh',
+    );
+    expect(cursorReads()).toBe(readsBeforeConflict);
+    expect(harness.updateSellerStatus).toHaveBeenCalledWith(laterSellerId, {
+      status: 'APPROVED',
+      reason: undefined,
+      target: {
+        kind: 'revision',
+        id: laterRevisionId,
+        updatedAt: seenAt,
+      },
+    });
+    clickCardButton(view.container, 'Later author', 'Одобрить');
+    await flush();
+    expect(harness.updateSellerStatus).toHaveBeenLastCalledWith(laterSellerId, {
+      status: 'APPROVED',
+      reason: undefined,
+      target: {
+        kind: 'revision',
+        id: laterRevisionId,
+        updatedAt: freshAt,
+      },
+    });
+    view.unmount();
+  });
+
+  it('approves a product on the next page and drops that page after refresh', async () => {
+    harness.listSellerProfiles.mockResolvedValue({
+      sellerProfiles: [],
+      nextCursor: null,
+    });
+    let refreshed = false;
+    harness.listProducts.mockImplementation(async (query) => {
+      if (refreshed) {
+        return { products: [pendingProduct()], nextCursor: null };
+      }
+      if (query?.cursor === 'product-cursor') {
+        return { products: [laterProduct()], nextCursor: null };
+      }
+      return { products: [pendingProduct()], nextCursor: 'product-cursor' };
+    });
+    harness.updateProductStatus.mockImplementation(async () => {
+      refreshed = true;
+      return {};
+    });
+    const view = mount(createElement(AdminModerationScreen));
+    await until(view.container, 'Модерация');
+    clickButton(view.container, 'Работы');
+    await until(view.container, 'Показать ещё');
+    clickButton(view.container, 'Показать ещё');
+    await until(view.container, 'Later work');
+    clickButtonNear(view.container, 'Later work', 'Одобрить');
+    await untilMatch(
+      view.container,
+      (text) => text.includes('Pending work') && !text.includes('Later work'),
+      'refreshed product page',
+    );
+    expect(harness.updateProductStatus).toHaveBeenCalledWith(laterProductId, {
+      status: 'APPROVED',
+      reason: undefined,
+      target: {
+        kind: 'revision',
+        id: laterProductRevisionId,
+        updatedAt: seenAt,
+      },
+    });
+    expect(
+      harness.listProducts.mock.calls.filter(
+        (call) => call[0]?.cursor === 'product-cursor',
+      ),
+    ).toHaveLength(1);
+    view.unmount();
+  });
 });
+
+function matchesRequestedSeller(
+  seller: { parentStatus: string; reviewTarget: { status: string } | null },
+  filter: string,
+) {
+  if (filter === 'ALL') return true;
+  if (filter === 'APPROVED') return seller.parentStatus === 'APPROVED';
+  if (seller.reviewTarget) return seller.reviewTarget.status === filter;
+  return seller.parentStatus === filter;
+}
+
+function buttonNamed(container: ParentNode, label: string) {
+  const button = [...container.querySelectorAll('button')].find(
+    (item) => item.textContent === label,
+  );
+  if (!(button instanceof HTMLButtonElement)) {
+    throw new Error(`Missing button ${label}`);
+  }
+  return button;
+}
+
+function clickButtonNear(container: ParentNode, marker: string, label: string) {
+  let best: { button: HTMLButtonElement; length: number } | null = null;
+  for (const item of container.querySelectorAll('button')) {
+    if (item.textContent !== label) continue;
+    let node = item.parentElement;
+    while (node && node !== container) {
+      const text = node.textContent ?? '';
+      if (text.includes(marker)) {
+        if (!best || text.length < best.length) {
+          best = { button: item, length: text.length };
+        }
+        break;
+      }
+      node = node.parentElement;
+    }
+  }
+  if (!best) throw new Error(`Missing ${label} in ${marker}`);
+  const button = best.button;
+  act(() => {
+    button.click();
+  });
+}
+
+async function typeLabeledField(
+  container: ParentNode,
+  label: string,
+  value: string,
+) {
+  const field = container.querySelector(`input[aria-label="${label}"]`);
+  if (!(field instanceof HTMLInputElement)) {
+    throw new Error(`Missing field ${label}`);
+  }
+  await act(async () => {
+    const setter = Object.getOwnPropertyDescriptor(
+      HTMLInputElement.prototype,
+      'value',
+    )?.set;
+    setter?.call(field, value);
+    field.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+}
+
+const laterSellerId = '00000000-0000-4000-8000-000000000031';
+const laterRevisionId = '00000000-0000-4000-8000-000000000032';
+const laterProductId = '00000000-0000-4000-8000-000000000033';
+const laterProductRevisionId = '00000000-0000-4000-8000-000000000034';
+
+function laterSeller(updatedAt: string) {
+  const seller = revisionSeller(updatedAt);
+  return {
+    ...seller,
+    id: laterSellerId,
+    reviewTarget: {
+      ...seller.reviewTarget,
+      id: laterRevisionId,
+      updatedAt,
+      content: {
+        ...seller.reviewTarget.content,
+        fullName: 'Later author',
+      },
+    },
+  };
+}
+
+function laterProduct() {
+  const product = pendingProduct();
+  return {
+    ...product,
+    id: laterProductId,
+    publicId: 'laterwork01',
+    reviewTarget: {
+      ...product.reviewTarget,
+      id: laterProductRevisionId,
+      content: {
+        ...product.reviewTarget.content,
+        title: 'Later work',
+      },
+    },
+  };
+}
 
 function photoSeller(updatedAt: string, checksum: string) {
   const seller = revisionSeller(updatedAt);

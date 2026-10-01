@@ -6,33 +6,12 @@ export type ModerationFilter =
   | 'APPROVED'
   | 'CHANGES_REQUESTED';
 
-export function sellerMatchesFilter(
-  seller: AdminSellerProfile,
+export function moderationListQueryKey(
+  resource: 'seller-profiles' | 'products',
   filter: ModerationFilter,
+  search: string,
 ) {
-  if (filter === 'ALL') return true;
-  if (filter === 'APPROVED') return seller.parentStatus === 'APPROVED';
-  if (seller.reviewTarget) return seller.reviewTarget.status === filter;
-  return seller.parentStatus === filter;
-}
-
-export function productMatchesFilter(
-  product: AdminProduct,
-  filter: ModerationFilter,
-) {
-  if (filter === 'ALL') return true;
-  if (filter === 'APPROVED') return product.parentStatus === 'APPROVED';
-  return product.reviewTarget?.status === filter;
-}
-
-export function sellerSearchText(seller: AdminSellerProfile) {
-  const source = seller.reviewTarget?.content ?? seller.parent;
-  return `${source.fullName} ${source.slug} ${source.discipline ?? ''}`;
-}
-
-export function productSearchText(product: AdminProduct) {
-  const source = product.reviewTarget?.content ?? product.parent;
-  return `${source.title ?? ''} ${product.sellerProfile.fullName} ${product.sellerProfile.slug}`;
+  return ['admin', resource, filter, search.trim()] as const;
 }
 
 export function displayedSeller(seller: AdminSellerProfile) {
@@ -43,11 +22,12 @@ export function displayedProduct(product: AdminProduct) {
   return product.reviewTarget?.content ?? product.parent;
 }
 
-export function revisionTarget(input: {
-  id: string;
-  updatedAt: string;
-}) {
-  return { kind: 'revision' as const, id: input.id, updatedAt: input.updatedAt };
+export function revisionTarget(input: { id: string; updatedAt: string }) {
+  return {
+    kind: 'revision' as const,
+    id: input.id,
+    updatedAt: input.updatedAt,
+  };
 }
 
 export function parentTarget<Status extends string>(input: {

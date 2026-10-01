@@ -8,6 +8,7 @@ import {
   adminSellerStatusResponseSchema,
   adminSellerProfilesResponseSchema,
   adminProductsResponseSchema,
+  adminModerationListQuerySchema,
   adminSellerStatusUpdateRequestSchema,
   adminUserRevokeSessionsRequestSchema,
   adminUserStatusResponseSchema,
@@ -16,6 +17,7 @@ import {
   adminUsersLookupResponseSchema,
   productResponseSchema,
   type AdminAnalyticsQuery,
+  type AdminModerationListQueryInput,
   type AdminProductStatusUpdateRequest,
   type AdminSellerStatusUpdateRequest,
   type AdminUserRevokeSessionsRequest,
@@ -31,20 +33,44 @@ import {
   type RequestContext,
 } from './request';
 
+function moderationListQuery(query: AdminModerationListQueryInput) {
+  const parsed = adminModerationListQuerySchema.parse(query);
+  return {
+    limit: parsed.limit,
+    filter: parsed.filter,
+    search: parsed.search,
+    cursor: parsed.cursor,
+  };
+}
+
 export function createAdminClient(context: RequestContext) {
   return {
-    listSellerProfiles() {
+    listSellerProfiles(
+      query: AdminModerationListQueryInput = {},
+      options?: ReadCallOptions,
+    ) {
       return requestJson(
         context,
         '/api/admin/seller-profiles',
         adminSellerProfilesResponseSchema,
+        {
+          query: moderationListQuery(query),
+          ...signalRequestOptions(options),
+        },
       );
     },
-    listProducts() {
+    listProducts(
+      query: AdminModerationListQueryInput = {},
+      options?: ReadCallOptions,
+    ) {
       return requestJson(
         context,
         '/api/admin/products',
         adminProductsResponseSchema,
+        {
+          query: moderationListQuery(query),
+          ...signalRequestOptions(options),
+        },
       );
     },
     getSellerRevisionPhoto(
@@ -136,7 +162,11 @@ export function createAdminClient(context: RequestContext) {
         },
       );
     },
-    setCuratorSelection(publicId: string, curatorSlug: string, note: string | null) {
+    setCuratorSelection(
+      publicId: string,
+      curatorSlug: string,
+      note: string | null,
+    ) {
       return requestJson(
         context,
         '/api/admin/curator-selection',
