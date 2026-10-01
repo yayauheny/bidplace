@@ -5,6 +5,31 @@
 > commerce-schema references below do not mean that Listing, Bid, Order,
 > lifecycle, realtime, discovery or activity modules are currently booted.
 
+## 2026-10-01 — Narrow image authorization and portfolio Work reads
+
+- `Implemented`: `ImagesService.get` authorizes a Product image from revision
+  membership, product status, `publishedRevisionId`, and the seller's user id
+  and status. The read no longer includes biography or achievements.
+  Owner, admin, and public approved membership still receive the stored bytes.
+  Anonymous and stranger reads of private or pending images stay 404.
+  `isPublic` and Cache-Control are unchanged.
+- `Implemented`: public portfolio Work hydration selects product id, public id,
+  `publishedAt`, the public seller profile, and the published revision gallery.
+  Parent product fields and the parent image relation are not selected.
+  Published revision content, image order, completeness checks, and page order
+  stay in place. Owner and moderation reads still use `productSelect`.
+- Coverage: `images.service.ts`, `products.mapper.ts`, `products.service.ts`,
+  `images.service.spec.ts`, `products.mapper.spec.ts`,
+  `products.service.spec.ts`, and
+  `portfolio-published-revision.integration.spec.ts`, on Node v22.20.0 /
+  pnpm 11.7.0. API unit tests are 48 files and 306 tests. Integration is
+  23 files and 77 tests. Lint, the API graph typecheck and build, and diff
+  check passed. Commands are in `docs/audits/current/00-EXECUTION-ROADMAP.md`.
+- `Unchanged`: upload selectors, row locks, storage transactions, visibility
+  predicates, response contracts, and the canonical Pen file. D06 is verified.
+  The two-phase catalog visibility race stays open for R23.
+- Browser checks were not run.
+
 ## 2026-10-01 — Author draft validation before save and exit
 
 - `Needs verification` (mobile): save, submit, step, back, and exit read the
