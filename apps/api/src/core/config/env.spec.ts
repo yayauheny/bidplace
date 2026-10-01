@@ -1,3 +1,7 @@
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
@@ -5,7 +9,7 @@ import {
   resolveCorsOrigin,
   resolveServerEnvFilePath,
 } from './env';
-import { ENV_PROFILE_ERROR } from './env-profile';
+import { ENV_PROFILE_ERROR, requiresProductionSecurity } from './env-profile';
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -424,5 +428,129 @@ describe('ANALYTICS_INGEST_ENABLED', () => {
         ANALYTICS_INGEST_ENABLED: 'false',
       }).ANALYTICS_INGEST_ENABLED,
     ).toBe(false);
+  });
+});
+
+const syntheticDirectories: string[] = [];
+
+afterEach(() => {
+  for (const directory of syntheticDirectories.splice(0)) {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+function writeSyntheticServerEnv(contents: string): string {
+  const directory = mkdtempSync(join(tmpdir(), 'bidplace-server-env-'));
+  syntheticDirectories.push(directory);
+  const filePath = join(directory, 'synthetic.env');
+  writeFileSync(filePath, contents);
+  return filePath;
+}
+
+function loadSyntheticServerEnv(
+  contents: string,
+  env: NodeJS.ProcessEnv = {},
+): ReturnType<typeof loadServerEnv> {
+  const before = new Set(Object.keys(process.env));
+  vi.stubEnv('BIDPLACE_ENV_FILE', writeSyntheticServerEnv(contents));
+
+  try {
+    return loadServerEnv(env);
+  } finally {
+    for (const key of Object.keys(process.env)) {
+      if (!before.has(key)) {
+        delete process.env[key];
+      }
+    }
+  }
+}
+
+const syntheticDatabaseUrl =
+  'postgresql://synthetic:synthetic@127.0.0.1:5432/synthetic';
+const shortJwtSecret = 'synthetic-short-jwt';
+
+const productionProfileLines = [
+  'NODE_ENV=production',
+  'APP_ENV=production',
+  `DATABASE_URL=${syntheticDatabaseUrl}`,
+  'JWT_SECRET=synthetic-production-jwt-secret-32',
+  'SMTP_HOST=smtp.example.com',
+  'SMTP_PORT=465',
+  'SMTP_SECURE=true',
+  'SMTP_AUTH_MODE=none',
+  'SMTP_FROM=no-reply@example.com',
+  'PASSWORD_RESET_URL_BASE=http://localhost:8081',
+  'SERVICE_RULES_OWNER=Bidplace',
+  'SERVICE_RULES_CONTACT=support@example.com',
+  'SERVICE_RULES_TEXT=Rules text',
+  'TEST_EMAIL_BYPASS=false',
+  'MEDIA_STORAGE_PROVIDER=s3',
+  'S3_ENDPOINT=http://127.0.0.1:9000',
+  'S3_REGION=us-east-1',
+  'S3_BUCKET=synthetic-media',
+  'S3_ACCESS_KEY_ID=synthetic-access-key',
+  'S3_SECRET_ACCESS_KEY=synthetic-secret-key',
+];
+
+describe('leading env-file BOM', () => {
+  it('rejects production NODE_ENV when APP_ENV is absent', () => {
+    const contents = [
+      'NODE_ENV=production',
+      `DATABASE_URL=${syntheticDatabaseUrl}`,
+      `JWT_SECRET=${shortJwtSecret}`,
+    ].join('\n');
+
+    expect(() => loadSyntheticServerEnv(contents)).toThrow(
+      ENV_PROFILE_ERROR.productionNodeForbidsLocalApp,
+    );
+    expect(() => loadSyntheticServerEnv(`\uFEFF${contents}`)).toThrow(
+      ENV_PROFILE_ERROR.productionNodeForbidsLocalApp,
+    );
+  });
+
+  it('rejects production APP_ENV when NODE_ENV is absent', () => {
+    const contents = [
+      'APP_ENV=production',
+      `DATABASE_URL=${syntheticDatabaseUrl}`,
+      `JWT_SECRET=${shortJwtSecret}`,
+    ].join('\n');
+
+    expect(() => loadSyntheticServerEnv(contents)).toThrow(
+      ENV_PROFILE_ERROR.productionAppRequiresProductionNode,
+    );
+    expect(() => loadSyntheticServerEnv(`\uFEFF${contents}`)).toThrow(
+      ENV_PROFILE_ERROR.productionAppRequiresProductionNode,
+    );
+  });
+
+  it('keeps a complete production profile when the file starts with a BOM', () => {
+    const env = loadSyntheticServerEnv(
+      `\uFEFF${productionProfileLines.join('\n')}`,
+    );
+
+    expect(env.NODE_ENV).toBe('production');
+    expect(env.APP_ENV).toBe('production');
+    expect(requiresProductionSecurity(env)).toBe(true);
+    expect(Object.isFrozen(env)).toBe(true);
+  });
+
+  it('lets the explicit env override a BOM-prefixed production file', () => {
+    const env = loadSyntheticServerEnv(
+      [
+        '\uFEFFNODE_ENV=production',
+        `DATABASE_URL=${syntheticDatabaseUrl}`,
+        `JWT_SECRET=${shortJwtSecret}`,
+      ].join('\n'),
+      {
+        NODE_ENV: 'test',
+        APP_ENV: 'local',
+        DATABASE_URL: syntheticDatabaseUrl,
+        JWT_SECRET: shortJwtSecret,
+      },
+    );
+
+    expect(env.NODE_ENV).toBe('test');
+    expect(env.APP_ENV).toBe('local');
+    expect(requiresProductionSecurity(env)).toBe(false);
   });
 });

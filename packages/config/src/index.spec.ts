@@ -89,6 +89,22 @@ describe('loadEnvFile', () => {
       '\uFEFFBOM': 'value',
     });
   });
+
+  it('strips one leading BOM and keeps a BOM inside a quoted value', () => {
+    const filePath = writeSyntheticEnv(
+      `\uFEFFFOO=bar\nQUOTED="pre\uFEFFpost"\n\uFEFFSECOND=kept\n\uFEFF\uFEFFDOUBLE=kept`,
+    );
+
+    expect(loadEnvFile(filePath)).toEqual({
+      FOO: 'bar',
+      QUOTED: 'pre\uFEFFpost',
+      '\uFEFFSECOND': 'kept',
+      '\uFEFF\uFEFFDOUBLE': 'kept',
+    });
+    expect(loadEnvFile(writeSyntheticEnv('\uFEFF\uFEFFFOO=bar'))).toEqual({
+      '\uFEFFFOO': 'bar',
+    });
+  });
 });
 
 describe('createEnvInput', () => {

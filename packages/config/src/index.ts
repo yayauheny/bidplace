@@ -8,7 +8,10 @@ export function loadEnvFile(filePath: string): Record<string, string> {
     return {};
   }
 
-  const parsed = parseEnvFile(readFileSync(filePath, 'utf8'));
+  const contents = readFileSync(filePath, 'utf8');
+  const parsed = parseEnvFile(
+    contents.charCodeAt(0) === 0xfeff ? contents.slice(1) : contents,
+  );
   const entries: Record<string, string> = {};
 
   for (const [key, value] of Object.entries(parsed)) {
