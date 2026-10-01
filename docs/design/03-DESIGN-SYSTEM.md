@@ -157,8 +157,8 @@ later dock interaction and is not wired here.
 composes `InfrastructurePageStatus`. Inline presentation keeps copy + outline
 retry without the logo, for Search, catalog lists, seller works tab, and author
 achievements. Feature screens pass only query status and `onRetry`.
-`SessionAlert` stays a reusable banner primitive and is not mounted by public
-`AppShell`.
+Public infrastructure errors use `InfrastructureErrorState`. The unused
+`SessionAlert` banner was removed and is not mounted.
 
 ## 4. Screen compositions
 
@@ -186,8 +186,9 @@ exposes its expanded state.
 - Buttons and links remain visually and semantically distinct.
 - Dropdown/menu is not a generic select; sort/filter controls use appropriate
   listbox/select semantics.
-- Implementation: shared discovery dropdown `components/layout/FilterMenu.tsx`
-  (single dismiss + focus return contract for all sort/filter controls).
+- Implementation: catalog sort and filter use `components/figma/FilterSheet.tsx`
+  through `features/discovery/CatalogFilterSheet.tsx`. The unused
+  `components/layout/FilterMenu.tsx` dropdown was removed.
 - Status chips are informational unless the contract makes them controls.
 - Loading disables only the action in progress and keeps result/error legible.
 - Destructive actions retain explicit confirmation where product docs require
