@@ -1,10 +1,15 @@
-import { isTestEmailBypassEnabled, loadServerEnv } from '../core/config';
+import {
+  isTestEmailBypassEnabled,
+  SERVER_ENV,
+  type ServerEnv,
+} from '../core/config';
 import { PrismaService } from '../core/database';
 import { MailTransport } from '../core/mail';
 import { RateLimitService } from '../core/rate-limit';
 import {
   ConflictException,
   ForbiddenException,
+  Inject,
   Injectable,
   ServiceUnavailableException,
 } from '@nestjs/common';
@@ -29,12 +34,13 @@ export class OtpService {
     private readonly prisma: PrismaService,
     private readonly mail: MailTransport,
     private readonly rateLimits: RateLimitService,
+    @Inject(SERVER_ENV) private readonly env: ServerEnv,
   ) {}
 
   async request(userId: string, context?: OtpRequestContext): Promise<void> {
     const ip = resolveIp(context);
     this.consumeRequestLimits(userId, ip);
-    const env = loadServerEnv();
+    const env = this.env;
 
     const user = await this.prisma.user.findUnique({
       where: { id: userId },

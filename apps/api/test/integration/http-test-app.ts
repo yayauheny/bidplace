@@ -28,7 +28,7 @@ export async function createHttpTestApp(
     ...serverEnv,
     CORS_ORIGIN: resolveCorsOrigin(serverEnv),
   };
-  const app = await NestFactory.create(AppModule, {
+  const app = await NestFactory.create(AppModule.forRoot(serverEnv), {
     logger: false,
     abortOnError: false,
   });

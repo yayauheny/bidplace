@@ -24,8 +24,8 @@ import {
   toContractUser,
 } from './auth.mapper';
 import { PasswordHasherService } from './password-hasher.service';
+import { SERVER_ENV, type ServerEnv } from '../core/config';
 import { PrismaService, isPrismaUniqueConstraintError } from '../core/database';
-import { loadServerEnv } from '../core/config';
 import { resolveServiceRules } from '../core/rules';
 
 function normalizeEmail(email: string): string {
@@ -52,6 +52,7 @@ export class AuthService {
     @Inject(PrismaService) private readonly prisma: PrismaService,
     private readonly passwordHasher: PasswordHasherService,
     private readonly authTokenService: AuthTokenService,
+    @Inject(SERVER_ENV) private readonly env: ServerEnv,
   ) {}
 
   async register(input: RegisterRequest): Promise<AuthSessionResult> {
@@ -142,7 +143,7 @@ export class AuthService {
 
   async getRules(): Promise<ServiceRulesResponse> {
     return {
-      rules: resolveServiceRules(loadServerEnv()),
+      rules: resolveServiceRules(this.env),
     };
   }
 

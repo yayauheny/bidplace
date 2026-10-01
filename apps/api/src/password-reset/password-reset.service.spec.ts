@@ -1,6 +1,7 @@
 import { ApiErrorCode } from '@bidplace/contracts';
 import { describe, expect, it, vi, afterEach } from 'vitest';
 
+import { syntheticServerEnv } from '../core/config/synthetic-server-env';
 import { AppException } from '../core/errors';
 import {
   PasswordResetService,
@@ -20,12 +21,16 @@ const mail: MailTransport = {
   send: vi.fn().mockResolvedValue(undefined),
 };
 
-function createService(prisma: unknown) {
+function createService(
+  prisma: unknown,
+  overrides: NodeJS.ProcessEnv = {},
+) {
   return new PasswordResetService(
     prisma as never,
     passwordHasher as never,
     mail,
     rateLimits as never,
+    syntheticServerEnv(overrides),
   );
 }
 
@@ -76,7 +81,7 @@ describe('PasswordResetService', () => {
   });
 
   it('creates a token and sends mail for active users', async () => {
-    vi.stubEnv('PASSWORD_RESET_URL_BASE', 'http://localhost:8081');
+    vi.stubEnv('PASSWORD_RESET_URL_BASE', 'http://ignored.example');
     const tx = {
       passwordResetToken: {
         updateMany: vi.fn().mockResolvedValue({ count: 0 }),
@@ -114,7 +119,9 @@ describe('PasswordResetService', () => {
       expect.objectContaining({
         to: 'user@example.com',
         subject: 'bidplace password reset',
-        text: expect.stringContaining('/reset-password?token='),
+        text: expect.stringContaining(
+          'http://localhost:8081/reset-password?token=',
+        ),
       }),
     );
   });
@@ -168,7 +175,6 @@ describe('PasswordResetService', () => {
   });
 
   it('ignores resend cooldown for already-used tokens', async () => {
-    vi.stubEnv('PASSWORD_RESET_URL_BASE', 'http://localhost:8081');
     const tx = {
       passwordResetToken: {
         updateMany: vi.fn().mockResolvedValue({ count: 0 }),
@@ -203,7 +209,6 @@ describe('PasswordResetService', () => {
   });
 
   it('deletes the token but still completes when mail delivery fails', async () => {
-    vi.stubEnv('PASSWORD_RESET_URL_BASE', 'http://localhost:8081');
     vi.mocked(mail.send).mockRejectedValueOnce(new Error('smtp down'));
 
     const tx = {

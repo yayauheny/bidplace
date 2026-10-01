@@ -12,7 +12,7 @@ async function bootstrap() {
     ...serverEnv,
     CORS_ORIGIN: resolveCorsOrigin(serverEnv),
   };
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule.forRoot(serverEnv));
   configureHttpApp(app, runtimeEnv);
 
   await app.listen(runtimeEnv.API_PORT);

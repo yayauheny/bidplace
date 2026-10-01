@@ -1,9 +1,13 @@
 import { ApiErrorCode } from '@bidplace/contracts';
-import { HttpStatus, Injectable, Logger } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
 import { createHash, randomBytes } from 'node:crypto';
 
 import { PasswordHasherService } from '../auth/password-hasher.service';
-import { type ServerEnv, loadServerEnv, resolveCorsOrigin } from '../core/config';
+import {
+  SERVER_ENV,
+  type ServerEnv,
+  resolveCorsOrigin,
+} from '../core/config';
 import { PrismaService } from '../core/database';
 import { AppException } from '../core/errors';
 import { MailTransport } from '../core/mail';
@@ -45,6 +49,7 @@ export class PasswordResetService {
     private readonly passwordHasher: PasswordHasherService,
     private readonly mail: MailTransport,
     private readonly rateLimits: RateLimitService,
+    @Inject(SERVER_ENV) private readonly env: ServerEnv,
   ) {}
 
   async requestReset(
@@ -79,7 +84,7 @@ export class PasswordResetService {
       return;
     }
 
-    const env = loadServerEnv();
+    const env = this.env;
     const resetUrlBase = resolveResetUrlBase(env);
     const rawToken = randomBytes(32).toString('base64url');
     const tokenHash = hashToken(rawToken);

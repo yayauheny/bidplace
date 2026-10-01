@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import {
+  syntheticProductionServerEnv,
+  syntheticServerEnv,
+} from '../core/config/synthetic-server-env';
 import { AuthController } from './auth.controller';
 
 afterEach(() => {
@@ -11,7 +15,10 @@ describe('AuthController logout', () => {
     const authService = {
       logout: vi.fn(),
     };
-    const controller = new AuthController(authService as never);
+    const controller = new AuthController(
+      authService as never,
+      syntheticServerEnv(),
+    );
     const response = {
       clearCookie: vi.fn(),
     };
@@ -33,7 +40,10 @@ describe('AuthController logout', () => {
     const authService = {
       logout: vi.fn(),
     };
-    const controller = new AuthController(authService as never);
+    const controller = new AuthController(
+      authService as never,
+      syntheticServerEnv(),
+    );
     const response = {
       clearCookie: vi.fn(),
     };
@@ -56,14 +66,17 @@ describe('AuthController logout', () => {
     expect(response.clearCookie).toHaveBeenCalledOnce();
   });
 
-  it('sets the secure cookie flag on the production profile', async () => {
-    vi.stubEnv('NODE_ENV', 'production');
-    vi.stubEnv('APP_ENV', 'production');
+  it('sets the secure cookie flag from the injected production profile', async () => {
+    vi.stubEnv('NODE_ENV', 'development');
+    vi.stubEnv('APP_ENV', 'local');
 
     const authService = {
       logout: vi.fn(),
     };
-    const controller = new AuthController(authService as never);
+    const controller = new AuthController(
+      authService as never,
+      syntheticProductionServerEnv(),
+    );
     const response = {
       clearCookie: vi.fn(),
     };

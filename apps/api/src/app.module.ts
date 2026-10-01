@@ -1,4 +1,5 @@
 import {
+  type DynamicModule,
   type MiddlewareConsumer,
   Module,
   type NestModule,
@@ -8,6 +9,7 @@ import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { AuthModule } from './auth/auth.module';
 import { CategoriesModule } from './categories/categories.module';
+import { ServerEnvModule, type ServerEnv } from './core/config';
 import { DatabaseModule } from './core/database';
 import { ImageStoreModule } from './core/image-store';
 import { MailModule } from './core/mail';
@@ -27,38 +29,44 @@ import { ImagesModule } from './images/images.module';
 import { SellersModule } from './sellers/sellers.module';
 import { PortfolioModule } from './portfolio/portfolio.module';
 
-@Module({
-  imports: [
-    HealthModule,
-    ClockModule,
-    PublicIdModule,
-    ImageStoreModule,
-    MailModule,
-    CategoriesModule,
-    DatabaseModule,
-    AuthModule,
-    AnalyticsModule,
-    ProductsModule,
-    OtpModule,
-    PasswordResetModule,
-    AdminModule,
-    ImagesModule,
-    SellersModule,
-    PortfolioModule,
-  ],
-  providers: [
-    {
-      provide: APP_FILTER,
-      useClass: ApiExceptionFilter,
-    },
-    {
-      provide: APP_INTERCEPTOR,
-      useClass: RequestLoggingInterceptor,
-    },
-  ],
-})
+@Module({})
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {
     consumer.apply(RequestIdMiddleware).forRoutes('*');
+  }
+
+  static forRoot(env: ServerEnv): DynamicModule {
+    return {
+      module: AppModule,
+      imports: [
+        ServerEnvModule.forRoot(env),
+        HealthModule,
+        ClockModule,
+        PublicIdModule,
+        ImageStoreModule,
+        MailModule,
+        CategoriesModule,
+        DatabaseModule,
+        AuthModule,
+        AnalyticsModule,
+        ProductsModule,
+        OtpModule,
+        PasswordResetModule,
+        AdminModule,
+        ImagesModule,
+        SellersModule,
+        PortfolioModule,
+      ],
+      providers: [
+        {
+          provide: APP_FILTER,
+          useClass: ApiExceptionFilter,
+        },
+        {
+          provide: APP_INTERCEPTOR,
+          useClass: RequestLoggingInterceptor,
+        },
+      ],
+    };
   }
 }

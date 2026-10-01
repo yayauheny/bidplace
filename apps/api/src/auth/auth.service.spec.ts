@@ -1,6 +1,7 @@
 import { ConflictException, UnauthorizedException } from '@nestjs/common';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { syntheticServerEnv } from '../core/config/synthetic-server-env';
 import { authCredentialsSelect, authUserContractSelect } from './auth.mapper';
 import { AuthService } from './auth.service';
 import { AuthTokenService } from './auth-token.service';
@@ -43,6 +44,10 @@ function createPrismaUser(overrides: Partial<PrismaUser> = {}): PrismaUser {
 }
 
 describe('AuthService', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   const prisma = {
     user: {
       findFirst: vi.fn(),
@@ -66,6 +71,7 @@ describe('AuthService', () => {
     prisma,
     passwordHasher,
     authTokenService,
+    syntheticServerEnv(),
   );
 
   beforeEach(() => {
@@ -236,6 +242,24 @@ describe('AuthService', () => {
         password: 'super-secret',
       }),
     ).rejects.toBeInstanceOf(UnauthorizedException);
+  });
+
+  it('reads service rules from the injected config', async () => {
+    vi.stubEnv('SERVICE_RULES_TEXT', 'from-process');
+    const rulesService = new AuthService(
+      prisma,
+      passwordHasher,
+      authTokenService,
+      syntheticServerEnv({
+        SERVICE_RULES_TEXT: 'from-snapshot',
+      }),
+    );
+
+    await expect(rulesService.getRules()).resolves.toEqual({
+      rules: expect.objectContaining({
+        text: 'from-snapshot',
+      }),
+    });
   });
 
   it('invalidates existing sessions on logout', async () => {

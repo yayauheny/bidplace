@@ -1,6 +1,6 @@
 import { appendFile } from 'node:fs/promises';
 
-import { loadServerEnv, requiresProductionSecurity } from '../config';
+import { type ServerEnv, requiresProductionSecurity } from '../config';
 import type { MailMessage } from './mail-message';
 import { MailTransport } from './mail-transport';
 
@@ -23,8 +23,12 @@ function extractPasswordResetToken(text: string): string | undefined {
 }
 
 export class LocalMailTransport extends MailTransport {
+  constructor(private readonly env: ServerEnv) {
+    super();
+  }
+
   async send(message: MailMessage): Promise<void> {
-    const env = loadServerEnv();
+    const env = this.env;
 
     if (requiresProductionSecurity(env)) {
       throw new Error('Local mail transport cannot run in production');

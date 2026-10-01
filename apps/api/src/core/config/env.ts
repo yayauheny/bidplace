@@ -211,6 +211,14 @@ const serverEnvSchema = z
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;
 
+export const SERVER_ENV = Symbol('SERVER_ENV');
+
+export function parseServerEnv(env: NodeJS.ProcessEnv): ServerEnv {
+  const parsed: ServerEnv = parseEnv(serverEnvSchema, env);
+  Object.freeze(parsed);
+  return parsed;
+}
+
 export function resolveCorsOrigin(
   env: Pick<ServerEnv, 'NODE_ENV' | 'APP_ENV' | 'CORS_ORIGIN'>,
 ): string | undefined {
@@ -264,5 +272,5 @@ export function loadServerEnv(env: NodeJS.ProcessEnv = process.env): ServerEnv {
     }
   }
 
-  return parseEnv(serverEnvSchema, envInput);
+  return parseServerEnv(envInput);
 }
