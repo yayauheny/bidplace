@@ -169,6 +169,7 @@ vi.mock('../../components/ui', () => {
 import { getApiAssetUrl } from '../../lib/environment';
 import { formatAchievementDate } from '../sellers/achievement-date';
 import { AdminModerationScreen } from './admin-moderation-screen';
+import { advanceAuthEpoch } from '../../lib/query-cache';
 import { moderationListQueryKey } from './admin-moderation-state';
 
 const sellerId = '00000000-0000-4000-8000-000000000001';
@@ -335,6 +336,44 @@ function mount(node: ReactNode) {
       container.remove();
     },
   };
+}
+
+function deferredPage() {
+  let resolvePage: (value: unknown) => void = () => undefined;
+  const signal = { current: undefined as AbortSignal | undefined };
+  return {
+    get signal() {
+      return signal.current;
+    },
+    promise(next: AbortSignal | undefined) {
+      signal.current = next;
+      return new Promise((resolve) => {
+        resolvePage = resolve;
+      });
+    },
+    resolve(value: unknown) {
+      resolvePage(value);
+    },
+  };
+}
+
+function pageCount(client: QueryClient, key: readonly unknown[]) {
+  const data = client.getQueryData<{ pages: unknown[] }>(key);
+  return data?.pages.length ?? 0;
+}
+
+function holdCancelQueries(client: QueryClient) {
+  const original = client.cancelQueries.bind(client);
+  const releases: Array<() => void> = [];
+  client.cancelQueries = ((filters, options) => {
+    const pending = original(filters, options);
+    return new Promise((resolve, reject) => {
+      releases.push(() => {
+        pending.then(resolve, reject);
+      });
+    });
+  }) as QueryClient['cancelQueries'];
+  return releases;
 }
 
 async function flush() {
@@ -1040,6 +1079,283 @@ describe('admin moderation revision projection', () => {
     });
     await until(view.container, 'Other author');
     expect(view.container.textContent).not.toContain('Stale author');
+    view.unmount();
+  });
+
+  it('cancels an active later page before refresh and still loads a fresh next page', async () => {
+    const pending = deferredPage();
+    let refreshed = false;
+    harness.listSellerProfiles.mockImplementation((query, options) => {
+      if (query?.cursor === 'old-cursor')
+        return pending.promise(options?.signal);
+      if (query?.cursor === 'fresh-cursor') {
+        return Promise.resolve({
+          sellerProfiles: [laterSeller(seenAt)],
+          nextCursor: null,
+        });
+      }
+      if (refreshed) {
+        return Promise.resolve({
+          sellerProfiles: [namedSeller('Fresh author')],
+          nextCursor: 'fresh-cursor',
+        });
+      }
+      return Promise.resolve({
+        sellerProfiles: [revisionSeller(seenAt)],
+        nextCursor: 'old-cursor',
+      });
+    });
+    harness.updateSellerStatus.mockImplementation(async () => {
+      refreshed = true;
+      return {};
+    });
+    const view = mount(createElement(AdminModerationScreen));
+    await until(view.container, 'Показать ещё');
+    clickButton(view.container, 'Показать ещё');
+    await flush();
+    expect(pending.signal?.aborted).toBe(false);
+    clickButton(view.container, 'Одобрить');
+    await until(view.container, 'Fresh author');
+    expect(pending.signal?.aborted).toBe(true);
+    pending.resolve({
+      sellerProfiles: [namedSeller('Restored author')],
+      nextCursor: null,
+    });
+    await flush();
+    expect(view.container.textContent).not.toContain('Restored author');
+    expect(pageCount(view.queryClient, pendingSellerKey)).toBe(1);
+    clickButton(view.container, 'Показать ещё');
+    await until(view.container, 'Later author');
+    expect(pageCount(view.queryClient, pendingSellerKey)).toBe(2);
+    view.unmount();
+  });
+
+  it('does not let an inactive later page restore pages trimmed by refresh', async () => {
+    const pending = deferredPage();
+    harness.listSellerProfiles.mockImplementation((query, options) => {
+      if (query?.cursor === 'old-cursor')
+        return pending.promise(options?.signal);
+      return Promise.resolve({
+        sellerProfiles: [revisionSeller(seenAt)],
+        nextCursor: 'old-cursor',
+      });
+    });
+    harness.listProducts.mockResolvedValue({
+      products: [pendingProduct()],
+      nextCursor: null,
+    });
+    harness.updateProductStatus.mockResolvedValue({});
+    const view = mount(createElement(AdminModerationScreen));
+    await until(view.container, 'Показать ещё');
+    clickButton(view.container, 'Показать ещё');
+    await flush();
+    clickButton(view.container, 'Работы');
+    await until(view.container, 'Pending work');
+    expect(pending.signal?.aborted).toBe(false);
+    clickButton(view.container, 'Одобрить');
+    await flush();
+    await flush();
+    expect(pending.signal?.aborted).toBe(true);
+    expect(pageCount(view.queryClient, pendingSellerKey)).toBe(1);
+    pending.resolve({
+      sellerProfiles: [laterSeller(seenAt)],
+      nextCursor: 'restored-cursor',
+    });
+    await flush();
+    expect(pageCount(view.queryClient, pendingSellerKey)).toBe(1);
+    const cached = view.queryClient.getQueryData<{
+      pages: Array<{ nextCursor: string | null }>;
+    }>(pendingSellerKey);
+    expect(cached?.pages[0]?.nextCursor).toBe('old-cursor');
+    view.unmount();
+  });
+
+  it('cancels in-flight fetches for other moderation filter and search keys', async () => {
+    harness.listSellerProfiles.mockResolvedValue({
+      sellerProfiles: [revisionSeller(seenAt)],
+      nextCursor: null,
+    });
+    harness.listProducts.mockResolvedValue({
+      products: [pendingProduct()],
+      nextCursor: null,
+    });
+    harness.updateProductStatus.mockResolvedValue({});
+    const view = mount(createElement(AdminModerationScreen));
+    await until(view.container, 'Pending author');
+    const filterKey = moderationListQueryKey('seller-profiles', 'APPROVED', '');
+    const searchKey = moderationListQueryKey(
+      'seller-profiles',
+      'PENDING_REVIEW',
+      'Later',
+    );
+    const twoPages = {
+      pages: [
+        { sellerProfiles: [quietSeller()], nextCursor: 'page-2' },
+        { sellerProfiles: [quietSeller()], nextCursor: 'page-3' },
+      ],
+      pageParams: [null, 'page-2'],
+    };
+    view.queryClient.setQueryData(filterKey, twoPages);
+    view.queryClient.setQueryData(searchKey, twoPages);
+    const filterFetch = deferredPage();
+    const searchFetch = deferredPage();
+    const filterRead = view.queryClient.fetchInfiniteQuery({
+      queryKey: filterKey,
+      initialPageParam: 'page-3',
+      queryFn: ({ signal }) => filterFetch.promise(signal),
+      getNextPageParam: (page: { nextCursor: string | null }) =>
+        page.nextCursor ?? undefined,
+    });
+    const searchRead = view.queryClient.fetchInfiniteQuery({
+      queryKey: searchKey,
+      initialPageParam: 'page-3',
+      queryFn: ({ signal }) => searchFetch.promise(signal),
+      getNextPageParam: (page: { nextCursor: string | null }) =>
+        page.nextCursor ?? undefined,
+    });
+    await flush();
+    expect(filterFetch.signal?.aborted).toBe(false);
+    expect(searchFetch.signal?.aborted).toBe(false);
+    clickButton(view.container, 'Работы');
+    await until(view.container, 'Pending work');
+    clickButton(view.container, 'Одобрить');
+    await flush();
+    await flush();
+    expect(filterFetch.signal?.aborted).toBe(true);
+    expect(searchFetch.signal?.aborted).toBe(true);
+    expect(pageCount(view.queryClient, filterKey)).toBe(1);
+    expect(pageCount(view.queryClient, searchKey)).toBe(1);
+    filterFetch.resolve({
+      sellerProfiles: [namedSeller('Restored author')],
+      nextCursor: null,
+    });
+    searchFetch.resolve({
+      sellerProfiles: [namedSeller('Restored author')],
+      nextCursor: null,
+    });
+    await flush();
+    await Promise.allSettled([filterRead, searchRead]);
+    expect(pageCount(view.queryClient, filterKey)).toBe(1);
+    expect(pageCount(view.queryClient, searchKey)).toBe(1);
+    view.unmount();
+  });
+
+  it('cancels a later page when refresh follows a conflict', async () => {
+    const pending = deferredPage();
+    harness.listSellerProfiles.mockImplementation((query, options) => {
+      if (query?.cursor === 'old-cursor')
+        return pending.promise(options?.signal);
+      return Promise.resolve({
+        sellerProfiles: [revisionSeller(seenAt)],
+        nextCursor: 'old-cursor',
+      });
+    });
+    harness.listProducts.mockResolvedValue({
+      products: [pendingProduct()],
+      nextCursor: null,
+    });
+    harness.updateProductStatus.mockRejectedValue(
+      new ApiClientError('conflict', { kind: 'conflict', status: 409 }),
+    );
+    const view = mount(createElement(AdminModerationScreen));
+    await until(view.container, 'Показать ещё');
+    clickButton(view.container, 'Показать ещё');
+    await flush();
+    clickButton(view.container, 'Работы');
+    await until(view.container, 'Pending work');
+    clickButton(view.container, 'Одобрить');
+    await until(view.container, 'Карточка устарела');
+    expect(pending.signal?.aborted).toBe(true);
+    pending.resolve({
+      sellerProfiles: [laterSeller(seenAt)],
+      nextCursor: null,
+    });
+    await flush();
+    expect(pageCount(view.queryClient, pendingSellerKey)).toBe(1);
+    view.unmount();
+  });
+
+  it('drops loaded pages after cancelling the following fetch and ignores its late result', async () => {
+    const pending = deferredPage();
+    let page = 0;
+    harness.listSellerProfiles.mockImplementation((query, options) => {
+      if (query?.cursor === 'page-3') return pending.promise(options?.signal);
+      page += 1;
+      if (page === 1) {
+        return Promise.resolve({
+          sellerProfiles: [revisionSeller(seenAt)],
+          nextCursor: 'page-2',
+        });
+      }
+      return Promise.resolve({
+        sellerProfiles: [laterSeller(seenAt)],
+        nextCursor: 'page-3',
+      });
+    });
+    harness.updateSellerStatus.mockResolvedValue({});
+    const view = mount(createElement(AdminModerationScreen));
+    await until(view.container, 'Показать ещё');
+    clickButton(view.container, 'Показать ещё');
+    await until(view.container, 'Later author');
+    expect(pageCount(view.queryClient, pendingSellerKey)).toBe(2);
+    clickButton(view.container, 'Показать ещё');
+    await flush();
+    clickButton(view.container, 'Одобрить');
+    await flush();
+    await flush();
+    expect(pending.signal?.aborted).toBe(true);
+    expect(pageCount(view.queryClient, pendingSellerKey)).toBe(1);
+    pending.resolve({
+      sellerProfiles: [namedSeller('Restored author')],
+      nextCursor: null,
+    });
+    await flush();
+    expect(pageCount(view.queryClient, pendingSellerKey)).toBe(1);
+    expect(view.container.textContent).not.toContain('Restored author');
+    view.unmount();
+  });
+
+  it('does not trim or refetch moderation lists after the auth epoch changes', async () => {
+    const pending = deferredPage();
+    let page = 0;
+    harness.listSellerProfiles.mockImplementation((query, options) => {
+      if (query?.cursor === 'page-3') return pending.promise(options?.signal);
+      page += 1;
+      if (page === 1) {
+        return Promise.resolve({
+          sellerProfiles: [revisionSeller(seenAt)],
+          nextCursor: 'page-2',
+        });
+      }
+      return Promise.resolve({
+        sellerProfiles: [laterSeller(seenAt)],
+        nextCursor: 'page-3',
+      });
+    });
+    harness.updateSellerStatus.mockResolvedValue({});
+    const view = mount(createElement(AdminModerationScreen));
+    await until(view.container, 'Показать ещё');
+    clickButton(view.container, 'Показать ещё');
+    await until(view.container, 'Later author');
+    const releases = holdCancelQueries(view.queryClient);
+    clickButton(view.container, 'Показать ещё');
+    await flush();
+    clickButton(view.container, 'Одобрить');
+    await flush();
+    expect(releases).toHaveLength(2);
+    advanceAuthEpoch(view.queryClient);
+    await act(async () => {
+      releases.splice(0).forEach((release) => release());
+    });
+    await flush();
+    expect(pageCount(view.queryClient, pendingSellerKey)).toBe(2);
+    pending.resolve({
+      sellerProfiles: [namedSeller('Restored author')],
+      nextCursor: null,
+    });
+    await flush();
+    expect(pageCount(view.queryClient, pendingSellerKey)).toBe(2);
+    expect(view.container.textContent).toContain('Later author');
     view.unmount();
   });
 });

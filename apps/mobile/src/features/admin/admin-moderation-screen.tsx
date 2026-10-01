@@ -4,6 +4,7 @@ import {
   useMutation,
   useQueryClient,
   type InfiniteData,
+  type QueryClient,
 } from '@tanstack/react-query';
 import {
   ADMIN_MODERATION_MAX_SEARCH,
@@ -32,6 +33,7 @@ import {
   TextButton,
   TextField,
 } from '../../components/ui';
+import { currentAuthEpoch } from '../../lib/query-cache';
 import { useApiClient } from '../../providers/api-provider';
 import { getApiAssetUrl } from '../../lib/environment';
 import {
@@ -78,6 +80,28 @@ type Confirmation =
     };
 type ProductModerationAction = 'APPROVED' | 'CHANGES_REQUESTED' | 'REJECTED';
 type ModerationTab = 'authors' | 'works' | 'users';
+
+async function refreshModerationLists(queryClient: QueryClient) {
+  const epoch = currentAuthEpoch(queryClient);
+  await Promise.all([
+    queryClient.cancelQueries({ queryKey: ['admin', 'seller-profiles'] }),
+    queryClient.cancelQueries({ queryKey: ['admin', 'products'] }),
+  ]);
+  if (currentAuthEpoch(queryClient) !== epoch) return;
+  queryClient.setQueriesData<InfiniteData<AdminSellersData>>(
+    { queryKey: ['admin', 'seller-profiles'] },
+    (data) => keepFirstModerationPage(data),
+  );
+  queryClient.setQueriesData<InfiniteData<AdminProductsData>>(
+    { queryKey: ['admin', 'products'] },
+    (data) => keepFirstModerationPage(data),
+  );
+  if (currentAuthEpoch(queryClient) !== epoch) return;
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: ['admin', 'seller-profiles'] }),
+    queryClient.invalidateQueries({ queryKey: ['admin', 'products'] }),
+  ]);
+}
 
 function keepFirstModerationPage<TPage>(data: InfiniteData<TPage> | undefined) {
   if (!data || data.pages.length < 2) return data;
@@ -146,18 +170,7 @@ export function AdminModerationScreen() {
   const [productAction, setProductAction] =
     useState<ProductModerationAction | null>(null);
   const refresh = () => {
-    queryClient.setQueriesData<InfiniteData<AdminSellersData>>(
-      { queryKey: ['admin', 'seller-profiles'] },
-      (data) => keepFirstModerationPage(data),
-    );
-    queryClient.setQueriesData<InfiniteData<AdminProductsData>>(
-      { queryKey: ['admin', 'products'] },
-      (data) => keepFirstModerationPage(data),
-    );
-    void queryClient.invalidateQueries({
-      queryKey: ['admin', 'seller-profiles'],
-    });
-    void queryClient.invalidateQueries({ queryKey: ['admin', 'products'] });
+    void refreshModerationLists(queryClient);
   };
   const sellerStatus = useMutation({
     mutationFn: ({
