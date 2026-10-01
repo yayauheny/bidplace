@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   ADMIN_MODERATION_DEFAULT_LIMIT,
   ADMIN_MODERATION_MAX_LIMIT,
+  ADMIN_MODERATION_MAX_SEARCH,
   adminModerationListQuerySchema,
   adminProductStatusUpdateRequestSchema,
   adminProductsResponseSchema,
@@ -137,6 +138,16 @@ describe('admin moderation contracts', () => {
     expect(adminModerationListQuerySchema.safeParse({ limit: 0 }).success).toBe(
       false,
     );
+    expect(
+      adminModerationListQuerySchema.safeParse({
+        search: 'а'.repeat(ADMIN_MODERATION_MAX_SEARCH),
+      }).success,
+    ).toBe(true);
+    expect(
+      adminModerationListQuerySchema.safeParse({
+        search: 'а'.repeat(ADMIN_MODERATION_MAX_SEARCH + 1),
+      }).success,
+    ).toBe(false);
     expect(
       adminModerationListQuerySchema.safeParse({ limit: 101 }).success,
     ).toBe(false);

@@ -279,6 +279,7 @@ const adminProductReviewTargetSchema = z
 
 export const ADMIN_MODERATION_DEFAULT_LIMIT = 50;
 export const ADMIN_MODERATION_MAX_LIMIT = 100;
+export const ADMIN_MODERATION_MAX_SEARCH = 200;
 
 export const adminModerationFilterSchema = z.enum([
   'ALL',
@@ -370,7 +371,7 @@ export const adminModerationListQuerySchema = z
       .max(ADMIN_MODERATION_MAX_LIMIT)
       .default(ADMIN_MODERATION_DEFAULT_LIMIT),
     filter: adminModerationFilterSchema.default('ALL'),
-    search: z.string().trim().max(200).optional(),
+    search: z.string().trim().max(ADMIN_MODERATION_MAX_SEARCH).optional(),
   })
   .strict()
   .transform((value) => ({

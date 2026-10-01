@@ -4,6 +4,10 @@
 import { act, createElement, type ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import {
+  ADMIN_MODERATION_MAX_SEARCH,
+  adminModerationListQuerySchema,
+} from '@bidplace/contracts';
 import { ApiClientError } from '@bidplace/api-client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -838,6 +842,206 @@ describe('admin moderation revision projection', () => {
     ).toHaveLength(1);
     view.unmount();
   });
+
+  it('keeps the author search focused and editable while the next query is pending', async () => {
+    let resolveSearch: (value: unknown) => void = () => undefined;
+    harness.listSellerProfiles.mockImplementation((query) => {
+      if (query?.search) {
+        return new Promise((resolve) => {
+          resolveSearch = resolve;
+        });
+      }
+      return Promise.resolve({
+        sellerProfiles: [revisionSeller(seenAt)],
+        nextCursor: null,
+      });
+    });
+    const view = mount(createElement(AdminModerationScreen));
+    await until(view.container, 'Pending author');
+    const input = view.container.querySelector(
+      'input[aria-label="Найти автора"]',
+    );
+    if (!(input instanceof HTMLInputElement)) throw new Error('Missing search');
+    input.focus();
+    await typeLabeledField(view.container, 'Найти автора', 'Later');
+    await flush();
+    expect(
+      view.container.querySelector('input[aria-label="Найти автора"]'),
+    ).toBe(input);
+    expect(document.activeElement).toBe(input);
+    expect(view.container.textContent).not.toContain('Pending author');
+    await typeLabeledField(view.container, 'Найти автора', 'Later more');
+    await flush();
+    expect(
+      view.container.querySelector('input[aria-label="Найти автора"]'),
+    ).toBe(input);
+    expect(input.value).toBe('Later more');
+    expect(harness.listSellerProfiles.mock.calls.at(-1)?.[0].search).toBe(
+      'Later more',
+    );
+    await act(async () => {
+      resolveSearch({ sellerProfiles: [legacySeller()], nextCursor: null });
+    });
+    await until(view.container, 'Legacy author');
+    view.unmount();
+  });
+
+  it('keeps the work search focused while its query is pending', async () => {
+    let resolveSearch: (value: unknown) => void = () => undefined;
+    harness.listSellerProfiles.mockResolvedValue({
+      sellerProfiles: [],
+      nextCursor: null,
+    });
+    harness.listProducts.mockImplementation((query) => {
+      if (query?.search) {
+        return new Promise((resolve) => {
+          resolveSearch = resolve;
+        });
+      }
+      return Promise.resolve({
+        products: [pendingProduct()],
+        nextCursor: null,
+      });
+    });
+    const view = mount(createElement(AdminModerationScreen));
+    await until(view.container, 'Модерация');
+    clickButton(view.container, 'Работы');
+    await until(view.container, 'Pending work');
+    const input = view.container.querySelector(
+      'input[aria-label="Найти работу"]',
+    );
+    if (!(input instanceof HTMLInputElement)) throw new Error('Missing search');
+    input.focus();
+    await typeLabeledField(view.container, 'Найти работу', 'Vessel');
+    await flush();
+    expect(
+      view.container.querySelector('input[aria-label="Найти работу"]'),
+    ).toBe(input);
+    expect(document.activeElement).toBe(input);
+    expect(view.container.textContent).not.toContain('Pending work');
+    await act(async () => {
+      resolveSearch({ products: [pendingProduct()], nextCursor: null });
+    });
+    await until(view.container, 'Pending work');
+    view.unmount();
+  });
+
+  it('lets an over-limit search be corrected without leaving the moderation shell', async () => {
+    harness.listSellerProfiles.mockImplementation(async (query) => {
+      adminModerationListQuerySchema.parse(query);
+      return { sellerProfiles: [revisionSeller(seenAt)], nextCursor: null };
+    });
+    const view = mount(createElement(AdminModerationScreen));
+    await until(view.container, 'Pending author');
+    await typeLabeledField(
+      view.container,
+      'Найти автора',
+      'a'.repeat(ADMIN_MODERATION_MAX_SEARCH + 1),
+    );
+    await flush();
+    await flush();
+    const input = view.container.querySelector(
+      'input[aria-label="Найти автора"]',
+    );
+    expect(input).toBeInstanceOf(HTMLInputElement);
+    expect(view.container.textContent).toContain(
+      `Поиск не длиннее ${ADMIN_MODERATION_MAX_SEARCH} символов.`,
+    );
+    expect(view.container.textContent).not.toContain('Pending author');
+    expect(
+      harness.listSellerProfiles.mock.calls.some(
+        (call) =>
+          String(call[0]?.search ?? '').length > ADMIN_MODERATION_MAX_SEARCH,
+      ),
+    ).toBe(false);
+    await typeLabeledField(view.container, 'Найти автора', 'Later');
+    await until(view.container, 'Pending author');
+    view.unmount();
+  });
+
+  it('changes filter and tab while a search query is still pending', async () => {
+    harness.listSellerProfiles.mockImplementation((query) => {
+      if (query?.search === 'Later' && query?.filter === 'PENDING_REVIEW') {
+        return new Promise(() => undefined);
+      }
+      if (query?.filter === 'APPROVED') {
+        return Promise.resolve({
+          sellerProfiles: [quietSeller()],
+          nextCursor: null,
+        });
+      }
+      return Promise.resolve({
+        sellerProfiles: [revisionSeller(seenAt)],
+        nextCursor: null,
+      });
+    });
+    harness.listProducts.mockResolvedValue({
+      products: [pendingProduct()],
+      nextCursor: null,
+    });
+    const view = mount(createElement(AdminModerationScreen));
+    await until(view.container, 'Pending author');
+    await typeLabeledField(view.container, 'Найти автора', 'Later');
+    await flush();
+    expect(view.container.textContent).not.toContain('Pending author');
+    clickButton(view.container, 'Одобрены');
+    await until(view.container, 'Quiet author');
+    expect(
+      view.container.querySelector('input[aria-label="Найти автора"]'),
+    ).not.toBeNull();
+    expect(harness.listSellerProfiles.mock.calls.at(-1)?.[0]).toMatchObject({
+      filter: 'APPROVED',
+      search: 'Later',
+    });
+    clickButton(view.container, 'Работы');
+    await until(view.container, 'Pending work');
+    expect(
+      view.container.querySelector('input[aria-label="Найти работу"]'),
+    ).not.toBeNull();
+    view.unmount();
+  });
+
+  it('ignores a late response from the search that is no longer current', async () => {
+    const resolvers = new Map<string, (value: unknown) => void>();
+    const signals = new Map<string, AbortSignal>();
+    harness.listSellerProfiles.mockImplementation((query, options) => {
+      if (!query?.search) {
+        return Promise.resolve({
+          sellerProfiles: [revisionSeller(seenAt)],
+          nextCursor: null,
+        });
+      }
+      signals.set(query.search, options.signal);
+      return new Promise((resolve) => {
+        resolvers.set(query.search, resolve);
+      });
+    });
+    const view = mount(createElement(AdminModerationScreen));
+    await until(view.container, 'Pending author');
+    await typeLabeledField(view.container, 'Найти автора', 'Later');
+    await flush();
+    await typeLabeledField(view.container, 'Найти автора', 'Other');
+    await flush();
+    const laterSignal = signals.get('Later');
+    expect(laterSignal?.aborted).toBe(true);
+    await act(async () => {
+      resolvers.get('Later')?.({
+        sellerProfiles: [namedSeller('Stale author')],
+        nextCursor: null,
+      });
+    });
+    await flush();
+    expect(view.container.textContent).not.toContain('Stale author');
+    await act(async () => {
+      resolvers.get('Other')?.({
+        sellerProfiles: [namedSeller('Other author')],
+        nextCursor: null,
+      });
+    });
+    await until(view.container, 'Other author');
+    expect(view.container.textContent).not.toContain('Stale author');
+    view.unmount();
+  });
 });
 
 function matchesRequestedSeller(
@@ -906,6 +1110,20 @@ const laterSellerId = '00000000-0000-4000-8000-000000000031';
 const laterRevisionId = '00000000-0000-4000-8000-000000000032';
 const laterProductId = '00000000-0000-4000-8000-000000000033';
 const laterProductRevisionId = '00000000-0000-4000-8000-000000000034';
+
+function namedSeller(fullName: string) {
+  const seller = revisionSeller(seenAt);
+  return {
+    ...seller,
+    reviewTarget: {
+      ...seller.reviewTarget,
+      content: {
+        ...seller.reviewTarget.content,
+        fullName,
+      },
+    },
+  };
+}
 
 function laterSeller(updatedAt: string) {
   const seller = revisionSeller(updatedAt);
