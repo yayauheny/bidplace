@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 
 import {
+  type AdminModerationCursor,
   type AdminModerationListQuery,
   type AdminProductStatusUpdateRequest,
   type AdminSellerStatusUpdateRequest,
@@ -34,8 +35,11 @@ import {
   latestModerationReasonSql,
   moderationListOrderBy,
   moderationPage,
+  orderRowsByIds,
+  productModerationSearchSql,
   productModerationWhere,
   readModerationCursor,
+  sellerModerationSearchSql,
   sellerModerationWhere,
 } from './admin-moderation-list';
 import {
@@ -58,13 +62,7 @@ export class AdminModerationService {
 
   async listSellerProfiles(query: AdminModerationListQuery) {
     const cursor = readModerationCursor(query.cursor);
-    const rows = await this.prisma.sellerProfile.findMany({
-      where: sellerModerationWhere(query, cursor),
-      select: adminSellerListSelect,
-      orderBy: moderationListOrderBy,
-      take: query.limit + 1,
-    });
-    const { page, nextCursor } = moderationPage(rows, query.limit);
+    const { page, nextCursor } = await this.loadSellerPage(query, cursor);
     const ids = page.map(({ id }) => id);
     const [blockingSellers, reasons] = await Promise.all([
       ids.length === 0
@@ -98,13 +96,7 @@ export class AdminModerationService {
 
   async listProducts(query: AdminModerationListQuery) {
     const cursor = readModerationCursor(query.cursor);
-    const rows = await this.prisma.product.findMany({
-      where: productModerationWhere(query, cursor),
-      select: adminProductListSelect,
-      orderBy: moderationListOrderBy,
-      take: query.limit + 1,
-    });
-    const { page, nextCursor } = moderationPage(rows, query.limit);
+    const { page, nextCursor } = await this.loadProductPage(query, cursor);
     const reasons = await this.latestModerationReasons(
       'PRODUCT',
       page.map(({ id }) => id),
@@ -116,6 +108,84 @@ export class AdminModerationService {
       ),
       nextCursor,
     });
+  }
+
+  private async loadSellerPage(
+    query: AdminModerationListQuery,
+    cursor: AdminModerationCursor | null,
+  ) {
+    if (!query.search) {
+      const rows = await this.prisma.sellerProfile.findMany({
+        where: sellerModerationWhere(query, cursor),
+        select: adminSellerListSelect,
+        orderBy: moderationListOrderBy,
+        take: query.limit + 1,
+      });
+      return moderationPage(rows, query.limit);
+    }
+    const idRows = await this.prisma.$queryRaw<
+      Array<{ id: string; created_at: Date | string }>
+    >(sellerModerationSearchSql(query.search, query, cursor));
+    return this.hydrateModerationPage(idRows, query.limit, (ids) =>
+      this.prisma.sellerProfile.findMany({
+        where: { id: { in: ids } },
+        select: adminSellerListSelect,
+      }),
+    );
+  }
+
+  private async loadProductPage(
+    query: AdminModerationListQuery,
+    cursor: AdminModerationCursor | null,
+  ) {
+    if (!query.search) {
+      const rows = await this.prisma.product.findMany({
+        where: productModerationWhere(query, cursor),
+        select: adminProductListSelect,
+        orderBy: moderationListOrderBy,
+        take: query.limit + 1,
+      });
+      return moderationPage(rows, query.limit);
+    }
+    const idRows = await this.prisma.$queryRaw<
+      Array<{ id: string; created_at: Date | string }>
+    >(productModerationSearchSql(query.search, query, cursor));
+    return this.hydrateModerationPage(idRows, query.limit, (ids) =>
+      this.prisma.product.findMany({
+        where: { id: { in: ids } },
+        select: adminProductListSelect,
+      }),
+    );
+  }
+
+  private async hydrateModerationPage<
+    T extends { id: string; createdAt: Date },
+  >(
+    idRows: Array<{ id: string; created_at: Date | string }>,
+    limit: number,
+    load: (ids: string[]) => Promise<T[]>,
+  ) {
+    const bounded = moderationPage(
+      idRows.map((row) => ({
+        id: row.id,
+        createdAt:
+          row.created_at instanceof Date
+            ? row.created_at
+            : new Date(row.created_at),
+      })),
+      limit,
+    );
+    if (bounded.page.length === 0) {
+      return { page: [] as T[], nextCursor: null };
+    }
+    const rows = await load(bounded.page.map((row) => row.id));
+    return {
+      page: orderRowsByIds(
+        bounded.page.map((row) => row.id),
+        rows,
+      ),
+      nextCursor: bounded.nextCursor,
+    };
   }
 
   async getSellerRevisionPhoto(profileId: string, revisionId: string) {

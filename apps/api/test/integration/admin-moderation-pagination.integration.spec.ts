@@ -84,10 +84,13 @@ async function createSeller(input: {
   slug: string;
   status: 'DRAFT' | 'PENDING_REVIEW' | 'APPROVED' | 'CHANGES_REQUESTED';
   createdAt: Date;
+  discipline?: string | null;
   revision?: {
     id: string;
     fullName: string;
     status: 'PENDING_REVIEW' | 'CHANGES_REQUESTED' | 'APPROVED';
+    slug?: string;
+    discipline?: string | null;
   };
 }) {
   const user = await createUser('user', input.slug);
@@ -100,7 +103,7 @@ async function createSeller(input: {
       fullName: input.fullName,
       country: 'BY',
       city: 'Minsk',
-      discipline: 'Керамика',
+      discipline: 'discipline' in input ? input.discipline : 'Керамика',
       profilePhotoMimeType: 'image/png',
       profilePhotoByteLength: permissionImage.byteLength,
       profilePhotoChecksum: '0'.repeat(64),
@@ -117,9 +120,10 @@ async function createSeller(input: {
       sellerProfileId: input.id,
       version: 1,
       status: input.revision.status,
-      slug: `${input.slug}-revision`,
+      slug: input.revision.slug ?? `${input.slug}-revision`,
       fullName: input.revision.fullName,
-      discipline: 'Керамика',
+      discipline:
+        'discipline' in input.revision ? input.revision.discipline : 'Керамика',
       country: 'BY',
       city: 'Minsk',
       shortDescription: 'Revision fixture',
@@ -135,7 +139,7 @@ async function createProduct(input: {
   id: string;
   publicId: string;
   sellerProfileId: string;
-  title: string;
+  title: string | null;
   status: 'PENDING_REVIEW' | 'APPROVED';
   createdAt: Date;
   revision?: {
@@ -614,5 +618,318 @@ describe('admin moderation pagination', () => {
     expect(selected[0]?.reason).toBe('tied-high');
     expect(history).toBe(5);
     expect(selected.length).toBeLessThan(history);
+  });
+
+  it('treats search wildcards as literal text for authors and works', async () => {
+    const admin = await createUser('admin', 'literal-admin');
+    const api = client('203.0.113.27');
+    await login(api, admin);
+    const plainId = '00000000-0000-4000-8000-00000000e601';
+    const percentId = '00000000-0000-4000-8000-00000000e602';
+    const underscoreId = '00000000-0000-4000-8000-00000000e603';
+    const slashId = '00000000-0000-4000-8000-00000000e604';
+    await createSeller({
+      id: plainId,
+      fullName: 'Plain ceramics author',
+      slug: 'plain-ceramics-author',
+      status: 'APPROVED',
+      createdAt: new Date('2026-09-26T18:00:00.000Z'),
+    });
+    await createSeller({
+      id: percentId,
+      fullName: 'Percent % maker',
+      slug: 'percent-maker',
+      status: 'APPROVED',
+      createdAt: new Date('2026-09-26T18:00:01.000Z'),
+    });
+    await createSeller({
+      id: underscoreId,
+      fullName: 'Underscore author',
+      slug: 'literal_under_token',
+      status: 'APPROVED',
+      createdAt: new Date('2026-09-26T18:00:02.000Z'),
+    });
+    await createSeller({
+      id: slashId,
+      fullName: 'Slash\\maker',
+      slug: 'slash-maker',
+      status: 'APPROVED',
+      createdAt: new Date('2026-09-26T18:00:03.000Z'),
+    });
+
+    const sellerIdsFor = async (search: string) => {
+      const response = await api.get(
+        listPath('seller-profiles', { limit: 100, search }),
+      );
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as SellerList;
+      return body.sellerProfiles.map((seller) => seller.id);
+    };
+
+    expect(await sellerIdsFor('%')).toContain(percentId);
+    expect(await sellerIdsFor('%')).not.toContain(plainId);
+    expect(await sellerIdsFor('_')).toContain(underscoreId);
+    expect(await sellerIdsFor('_')).not.toContain(plainId);
+    expect(await sellerIdsFor('\\')).toContain(slashId);
+    expect(await sellerIdsFor('\\')).not.toContain(plainId);
+    expect(await sellerIdsFor('literal_under_token')).toContain(underscoreId);
+    expect(await sellerIdsFor('literalXunder_token')).not.toContain(
+      underscoreId,
+    );
+    expect(await sellerIdsFor('plain ceramics')).toContain(plainId);
+    expect(await sellerIdsFor('PERCENT % MAKER')).toContain(percentId);
+
+    const plainWorkId = '00000000-0000-4000-8000-00000000e701';
+    const percentWorkId = '00000000-0000-4000-8000-00000000e702';
+    const underscoreWorkId = '00000000-0000-4000-8000-00000000e703';
+    const slashWorkId = '00000000-0000-4000-8000-00000000e704';
+    await createProduct({
+      id: plainWorkId,
+      publicId: 'plainvessel',
+      sellerProfileId: plainId,
+      title: 'Plain vessel',
+      status: 'APPROVED',
+      createdAt: new Date('2026-09-26T18:01:00.000Z'),
+    });
+    await createProduct({
+      id: percentWorkId,
+      publicId: 'percentwool',
+      sellerProfileId: percentId,
+      title: '100% wool',
+      status: 'APPROVED',
+      createdAt: new Date('2026-09-26T18:01:01.000Z'),
+    });
+    await createProduct({
+      id: underscoreWorkId,
+      publicId: 'underscore1',
+      sellerProfileId: underscoreId,
+      title: 'under_score cup',
+      status: 'APPROVED',
+      createdAt: new Date('2026-09-26T18:01:02.000Z'),
+    });
+    await createProduct({
+      id: slashWorkId,
+      publicId: 'slashvessel',
+      sellerProfileId: slashId,
+      title: 'slash\\vessel',
+      status: 'APPROVED',
+      createdAt: new Date('2026-09-26T18:01:03.000Z'),
+    });
+
+    const productIdsFor = async (search: string) => {
+      const response = await api.get(
+        listPath('products', { limit: 100, search }),
+      );
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as ProductList;
+      return body.products.map((product) => product.id);
+    };
+
+    expect(await productIdsFor('%')).toContain(percentWorkId);
+    expect(await productIdsFor('%')).not.toContain(plainWorkId);
+    expect(await productIdsFor('_')).toContain(underscoreWorkId);
+    expect(await productIdsFor('_')).not.toContain(plainWorkId);
+    expect(await productIdsFor('\\')).toContain(slashWorkId);
+    expect(await productIdsFor('\\')).not.toContain(plainWorkId);
+    expect(await productIdsFor('under_score cup')).toContain(underscoreWorkId);
+    expect(await productIdsFor('underXscore cup')).not.toContain(
+      underscoreWorkId,
+    );
+    expect(await productIdsFor('PLAIN VESSEL')).toContain(plainWorkId);
+  });
+
+  it('matches the previous joined display text and keeps search pagination', async () => {
+    const admin = await createUser('admin', 'joined-admin');
+    const api = client('203.0.113.28');
+    await login(api, admin);
+    const boundaryId = '00000000-0000-4000-8000-00000000e301';
+    const disciplineId = '00000000-0000-4000-8000-00000000e302';
+    const blankId = '00000000-0000-4000-8000-00000000e303';
+    const earlierId = '00000000-0000-4000-8000-00000000e304';
+    const laterId = '00000000-0000-4000-8000-00000000e305';
+    const tiedLowId = '00000000-0000-4000-8000-00000000e401';
+    const tiedHighId = '00000000-0000-4000-8000-00000000e402';
+    await createSeller({
+      id: boundaryId,
+      fullName: 'Hidden parent name',
+      slug: 'parent-maker',
+      status: 'APPROVED',
+      createdAt: new Date('2026-09-26T19:00:00.000Z'),
+      revision: {
+        id: '00000000-0000-4000-8000-00000000e311',
+        fullName: 'Maker Alpha',
+        slug: 'parent-maker-revision',
+        status: 'PENDING_REVIEW',
+      },
+    });
+    await createSeller({
+      id: disciplineId,
+      fullName: 'Quiet',
+      slug: 'quiet-maker',
+      status: 'APPROVED',
+      discipline: 'Керамика',
+      createdAt: new Date('2026-09-26T19:00:01.000Z'),
+    });
+    await createSeller({
+      id: blankId,
+      fullName: 'Blank Discipline',
+      slug: 'blank-discipline',
+      status: 'APPROVED',
+      discipline: null,
+      createdAt: new Date('2026-09-26T19:00:02.000Z'),
+    });
+    await createSeller({
+      id: earlierId,
+      fullName: 'BoundaryAlpha earlier',
+      slug: 'boundary-earlier',
+      status: 'APPROVED',
+      createdAt: new Date('2026-09-26T19:00:03.000Z'),
+    });
+    await createSeller({
+      id: laterId,
+      fullName: 'Maker BoundaryAlpha',
+      slug: 'parent-boundary',
+      status: 'APPROVED',
+      createdAt: new Date('2026-09-26T19:00:04.000Z'),
+    });
+    const tiedAt = new Date('2026-09-26T19:00:05.000Z');
+    await createSeller({
+      id: tiedHighId,
+      fullName: 'SameStampToken high',
+      slug: 'same-stamp-high',
+      status: 'APPROVED',
+      createdAt: tiedAt,
+    });
+    await createSeller({
+      id: tiedLowId,
+      fullName: 'SameStampToken low',
+      slug: 'same-stamp-low',
+      status: 'APPROVED',
+      createdAt: tiedAt,
+    });
+
+    const sellerIdsFor = async (
+      search: string,
+      extra: Record<string, string | number | undefined> = {},
+    ) => {
+      const response = await api.get(
+        listPath('seller-profiles', { limit: 100, search, ...extra }),
+      );
+      expect(response.status).toBe(200);
+      return (await response.json()) as SellerList;
+    };
+
+    const boundary = await sellerIdsFor('Alpha parent-maker-revision');
+    expect(boundary.sellerProfiles.map((seller) => seller.id)).toContain(
+      boundaryId,
+    );
+    const hidden = await sellerIdsFor('Hidden parent name');
+    expect(hidden.sellerProfiles.map((seller) => seller.id)).not.toContain(
+      boundaryId,
+    );
+    const nameToSlug = await sellerIdsFor('Alpha parent-maker');
+    expect(nameToSlug.sellerProfiles.map((seller) => seller.id)).toContain(
+      boundaryId,
+    );
+    const slugToDiscipline = await sellerIdsFor('quiet-maker Керамика');
+    expect(
+      slugToDiscipline.sellerProfiles.map((seller) => seller.id),
+    ).toContain(disciplineId);
+    const blank = await sellerIdsFor('blank-discipline');
+    expect(blank.sellerProfiles.map((seller) => seller.id)).toContain(blankId);
+    const blankMiss = await sellerIdsFor('blank-discipline Керамика');
+    expect(blankMiss.sellerProfiles.map((seller) => seller.id)).not.toContain(
+      blankId,
+    );
+
+    const firstPage = await sellerIdsFor('BoundaryAlpha', { limit: 1 });
+    expect(firstPage.sellerProfiles.map((seller) => seller.id)).toEqual([
+      earlierId,
+    ]);
+    expect(firstPage.nextCursor).toEqual(expect.any(String));
+    const secondPage = await sellerIdsFor('BoundaryAlpha', {
+      limit: 1,
+      cursor: firstPage.nextCursor ?? undefined,
+    });
+    expect(secondPage.sellerProfiles.map((seller) => seller.id)).toEqual([
+      laterId,
+    ]);
+    const joinedOnly = await sellerIdsFor('BoundaryAlpha parent-boundary');
+    expect(joinedOnly.sellerProfiles.map((seller) => seller.id)).toEqual([
+      laterId,
+    ]);
+
+    const tiedFirst = await sellerIdsFor('SameStampToken', { limit: 1 });
+    expect(tiedFirst.sellerProfiles.map((seller) => seller.id)).toEqual([
+      tiedLowId,
+    ]);
+    const tiedSecond = await sellerIdsFor('SameStampToken', {
+      limit: 1,
+      cursor: tiedFirst.nextCursor ?? undefined,
+    });
+    expect(tiedSecond.sellerProfiles.map((seller) => seller.id)).toEqual([
+      tiedHighId,
+    ]);
+    expect(tiedSecond.nextCursor).toBeNull();
+
+    const workSellerId = '00000000-0000-4000-8000-00000000e306';
+    const workId = '00000000-0000-4000-8000-00000000e501';
+    const blankWorkId = '00000000-0000-4000-8000-00000000e502';
+    const revisedWorkId = '00000000-0000-4000-8000-00000000e503';
+    await createSeller({
+      id: workSellerId,
+      fullName: 'Maker Alpha',
+      slug: 'parent-maker-work',
+      status: 'APPROVED',
+      createdAt: new Date('2026-09-26T19:00:06.000Z'),
+    });
+    await createProduct({
+      id: workId,
+      publicId: 'remotevessl',
+      sellerProfileId: workSellerId,
+      title: 'Remote vessel',
+      status: 'APPROVED',
+      createdAt: new Date('2026-09-26T19:01:00.000Z'),
+    });
+    await createProduct({
+      id: blankWorkId,
+      publicId: 'blanktitle1',
+      sellerProfileId: blankId,
+      title: null,
+      status: 'APPROVED',
+      createdAt: new Date('2026-09-26T19:01:01.000Z'),
+    });
+    await createProduct({
+      id: revisedWorkId,
+      publicId: 'revisedtitl',
+      sellerProfileId: boundaryId,
+      title: 'Old parent title',
+      status: 'APPROVED',
+      createdAt: new Date('2026-09-26T19:01:02.000Z'),
+      revision: {
+        id: '00000000-0000-4000-8000-00000000e513',
+        title: 'Edited vessel',
+        status: 'PENDING_REVIEW',
+      },
+    });
+
+    const productIdsFor = async (search: string) => {
+      const response = await api.get(
+        listPath('products', { limit: 100, search }),
+      );
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as ProductList;
+      return body.products.map((product) => product.id);
+    };
+
+    expect(await productIdsFor('vessel Maker')).toContain(workId);
+    expect(await productIdsFor('Alpha parent-maker-work')).toContain(workId);
+    expect(await productIdsFor('Hidden parent name')).not.toContain(workId);
+    expect(await productIdsFor('Blank Discipline')).toContain(blankWorkId);
+    expect(await productIdsFor('missing-title')).not.toContain(blankWorkId);
+    expect(await productIdsFor('Edited vessel')).toContain(revisedWorkId);
+    expect(await productIdsFor('Old parent title')).not.toContain(
+      revisedWorkId,
+    );
   });
 });

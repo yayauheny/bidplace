@@ -12,7 +12,9 @@ import {
   isAfterModerationCursor,
   latestModerationReasonSql,
   moderationPage,
+  productModerationSearchSql,
   productModerationWhere,
+  sellerModerationSearchSql,
   sellerModerationWhere,
 } from './admin-moderation-list';
 
@@ -154,81 +156,50 @@ describe('admin moderation list queries', () => {
     expect(productModerationWhere(query, null)).toEqual({});
   });
 
-  it('searches the revision text when a review target exists, otherwise the parent', () => {
-    const sellers = sellerModerationWhere(
-      adminModerationListQuerySchema.parse({ search: 'Керамика' }),
+  it('searches the joined display text with literal LIKE wildcards', () => {
+    const sellers = adminModerationListQuerySchema.parse({
+      search: 'Alpha%_\\ parent',
+      filter: 'PENDING_REVIEW',
+    });
+    const sellerSql = sellerModerationSearchSql(sellers.search ?? '', sellers, {
+      createdAt: '2026-09-26T12:00:00.000Z',
+      id: '00000000-0000-4000-8000-000000000010',
+    });
+    const sellerText = sellerSql.strings.join(' ');
+    expect(sellerText).toContain(
+      `rev."full_name" || ' ' || rev."slug" || ' ' || COALESCE(rev."discipline", '')`,
+    );
+    expect(sellerText).toContain(
+      `sp."full_name" || ' ' || sp."slug" || ' ' || COALESCE(sp."discipline", '')`,
+    );
+    expect(sellerText).toContain(`ILIKE`);
+    expect(sellerText).toContain(`ESCAPE '\\'`);
+    expect(sellerText).toContain('ORDER BY sp."created_at" ASC, sp."id" ASC');
+    expect(sellerText).not.toContain('Alpha%');
+    expect(sellerSql.values).toContain('%Alpha\\%\\_\\\\ parent%');
+    expect(
+      sellerModerationWhere(sellers, null).AND?.some((filter) =>
+        JSON.stringify(filter).includes('contains'),
+      ),
+    ).toBe(false);
+
+    const products = adminModerationListQuerySchema.parse({
+      search: 'Vessel_title',
+      filter: 'APPROVED',
+    });
+    const productSql = productModerationSearchSql(
+      products.search ?? '',
+      products,
       null,
     );
-    expect(sellers).toEqual({
-      AND: [
-        { status: { not: 'DRAFT' } },
-        {
-          OR: [
-            {
-              editingRevision: {
-                is: {
-                  OR: [
-                    { fullName: { contains: 'Керамика', mode: 'insensitive' } },
-                    { slug: { contains: 'Керамика', mode: 'insensitive' } },
-                    {
-                      discipline: { contains: 'Керамика', mode: 'insensitive' },
-                    },
-                  ],
-                },
-              },
-            },
-            {
-              AND: [
-                { editingRevisionId: null },
-                {
-                  OR: [
-                    { fullName: { contains: 'Керамика', mode: 'insensitive' } },
-                    { slug: { contains: 'Керамика', mode: 'insensitive' } },
-                    {
-                      discipline: { contains: 'Керамика', mode: 'insensitive' },
-                    },
-                  ],
-                },
-              ],
-            },
-          ],
-        },
-      ],
-    });
-    expect(
-      productModerationWhere(
-        adminModerationListQuerySchema.parse({ search: 'Vessel' }),
-        null,
-      ),
-    ).toEqual({
-      AND: [
-        {
-          OR: [
-            {
-              editingRevision: {
-                is: { title: { contains: 'Vessel', mode: 'insensitive' } },
-              },
-            },
-            {
-              AND: [
-                { editingRevisionId: null },
-                { title: { contains: 'Vessel', mode: 'insensitive' } },
-              ],
-            },
-            {
-              sellerProfile: {
-                fullName: { contains: 'Vessel', mode: 'insensitive' },
-              },
-            },
-            {
-              sellerProfile: {
-                slug: { contains: 'Vessel', mode: 'insensitive' },
-              },
-            },
-          ],
-        },
-      ],
-    });
+    const productText = productSql.strings.join(' ');
+    expect(productText).toContain(`COALESCE(rev."title", '')`);
+    expect(productText).toContain(
+      `|| ' ' || sp."full_name" || ' ' || sp."slug"`,
+    );
+    expect(productText).toContain(`ESCAPE '\\'`);
+    expect(productText).not.toContain('Vessel_title');
+    expect(productSql.values).toContain('%Vessel\\_title%');
   });
 
   it('bounds the latest-reason query to the page targets', () => {

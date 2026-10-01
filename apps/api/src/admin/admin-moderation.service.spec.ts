@@ -148,6 +148,57 @@ describe('AdminModerationService', () => {
     expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
   });
 
+  it('hydrates a searched seller page in SQL order without reading the extra row', async () => {
+    const sellerProfile = sellerProfileRecord();
+    const laterId = '00000000-0000-4000-8000-000000000099';
+    const extraId = '00000000-0000-4000-8000-000000000098';
+    const prisma = {
+      sellerProfile: {
+        findMany: vi
+          .fn()
+          .mockResolvedValueOnce([
+            { ...sellerProfile, id: laterId },
+            sellerProfile,
+          ])
+          .mockResolvedValueOnce([]),
+      },
+      $queryRaw: vi
+        .fn()
+        .mockResolvedValueOnce([
+          { id: sellerId, created_at: now },
+          { id: laterId, created_at: new Date('2026-09-26T12:00:01.000Z') },
+          { id: extraId, created_at: new Date('2026-09-26T12:00:02.000Z') },
+        ])
+        .mockResolvedValueOnce([
+          { target_id: sellerId, reason: 'Newest reason' },
+        ]),
+    };
+    const service = moderationService(prisma);
+    const query = adminModerationListQuerySchema.parse({
+      search: 'Alpha parent',
+      limit: 2,
+    });
+
+    await expect(service.listSellerProfiles(query)).resolves.toMatchObject({
+      sellerProfiles: [{ id: sellerId }, { id: laterId }],
+      nextCursor: expect.any(String),
+    });
+    expect(prisma.sellerProfile.findMany).toHaveBeenNthCalledWith(1, {
+      where: { id: { in: [sellerId, laterId] } },
+      select: expect.any(Object),
+    });
+    expect(sqlText(prisma.$queryRaw.mock.calls[0]?.[0])).toContain('ILIKE');
+    expect(sqlText(prisma.$queryRaw.mock.calls[1]?.[0])).toContain(
+      'DISTINCT ON ("target_id")',
+    );
+    expect(JSON.stringify(prisma.$queryRaw.mock.calls[1]?.[0])).toContain(
+      sellerId,
+    );
+    expect(JSON.stringify(prisma.$queryRaw.mock.calls[1]?.[0])).not.toContain(
+      extraId,
+    );
+  });
+
   it('projects product moderation context without per-product reads', async () => {
     const product = {
       ...productRecord(),

@@ -7,6 +7,8 @@ import {
 import { BadRequestException } from '@nestjs/common';
 import { Prisma } from '@bidplace/database';
 
+import { escapeLikePattern } from '../products/products-catalog.query';
+
 export const moderationListOrderBy = [
   { createdAt: 'asc' as const },
   { id: 'asc' as const },
@@ -51,10 +53,6 @@ export function moderationKeysetWhere(cursor: AdminModerationCursor | null):
   };
 }
 
-function textContains(search: string): Prisma.StringFilter {
-  return { contains: search, mode: 'insensitive' };
-}
-
 function sellerReviewOrLegacy(
   status: 'PENDING_REVIEW' | 'CHANGES_REQUESTED',
 ): Prisma.SellerProfileWhereInput {
@@ -81,41 +79,9 @@ export function sellerModerationWhere(
   ) {
     filters.push(sellerReviewOrLegacy(query.filter));
   }
-  const search = sellerSearchWhere(query.search);
-  if (search) filters.push(search);
   const keyset = moderationKeysetWhere(cursor);
   if (keyset) filters.push(keyset);
   return { AND: filters };
-}
-
-function sellerSearchWhere(
-  search: string | undefined,
-): Prisma.SellerProfileWhereInput | undefined {
-  if (!search) return undefined;
-  const displayedText: Prisma.SellerProfileRevisionWhereInput = {
-    OR: [
-      { fullName: textContains(search) },
-      { slug: textContains(search) },
-      { discipline: textContains(search) },
-    ],
-  };
-  return {
-    OR: [
-      { editingRevision: { is: displayedText } },
-      {
-        AND: [
-          { editingRevisionId: null },
-          {
-            OR: [
-              { fullName: textContains(search) },
-              { slug: textContains(search) },
-              { discipline: textContains(search) },
-            ],
-          },
-        ],
-      },
-    ],
-  };
 }
 
 function productReviewStatus(
@@ -137,26 +103,127 @@ export function productModerationWhere(
   ) {
     filters.push(productReviewStatus(query.filter));
   }
-  const search = productSearchWhere(query.search);
-  if (search) filters.push(search);
   const keyset = moderationKeysetWhere(cursor);
   if (keyset) filters.push(keyset);
   return filters.length > 0 ? { AND: filters } : {};
 }
 
-function productSearchWhere(
-  search: string | undefined,
-): Prisma.ProductWhereInput | undefined {
-  if (!search) return undefined;
-  const title = textContains(search);
-  return {
-    OR: [
-      { editingRevision: { is: { title } } },
-      { AND: [{ editingRevisionId: null }, { title }] },
-      { sellerProfile: { fullName: title } },
-      { sellerProfile: { slug: title } },
-    ],
-  };
+function moderationLikePattern(search: string): string {
+  return `%${escapeLikePattern(search)}%`;
+}
+
+export function sellerModerationSearchSql(
+  search: string,
+  query: AdminModerationListQuery,
+  cursor: AdminModerationCursor | null,
+): Prisma.Sql {
+  const filters: Prisma.Sql[] = [
+    Prisma.sql`sp."status" <> CAST('DRAFT' AS "SellerProfileStatus")`,
+    Prisma.sql`(
+      CASE
+        WHEN sp."editing_revision_id" IS NOT NULL THEN
+          rev."full_name" || ' ' || rev."slug" || ' ' || COALESCE(rev."discipline", '')
+        ELSE
+          sp."full_name" || ' ' || sp."slug" || ' ' || COALESCE(sp."discipline", '')
+      END
+    ) ILIKE ${moderationLikePattern(search)} ESCAPE '\\'`,
+  ];
+  if (query.filter === 'APPROVED') {
+    filters.push(
+      Prisma.sql`sp."status" = CAST('APPROVED' AS "SellerProfileStatus")`,
+    );
+  } else if (
+    query.filter === 'PENDING_REVIEW' ||
+    query.filter === 'CHANGES_REQUESTED'
+  ) {
+    filters.push(Prisma.sql`(
+      (
+        sp."editing_revision_id" IS NOT NULL
+        AND rev."status" = CAST(${query.filter} AS "SellerProfileRevisionStatus")
+      )
+      OR (
+        sp."editing_revision_id" IS NULL
+        AND sp."status" = CAST(${query.filter} AS "SellerProfileStatus")
+      )
+    )`);
+  }
+  if (cursor) {
+    const createdAt = new Date(cursor.createdAt);
+    filters.push(Prisma.sql`(
+      sp."created_at" > ${createdAt}
+      OR (
+        sp."created_at" = ${createdAt}
+        AND sp."id" > ${cursor.id}::uuid
+      )
+    )`);
+  }
+  return Prisma.sql`
+    SELECT sp."id", sp."created_at"
+    FROM "seller_profiles" sp
+    LEFT JOIN "seller_profile_revisions" rev
+      ON rev."id" = sp."editing_revision_id"
+    WHERE ${Prisma.join(filters, ' AND ')}
+    ORDER BY sp."created_at" ASC, sp."id" ASC
+    LIMIT ${query.limit + 1}
+  `;
+}
+
+export function productModerationSearchSql(
+  search: string,
+  query: AdminModerationListQuery,
+  cursor: AdminModerationCursor | null,
+): Prisma.Sql {
+  const filters: Prisma.Sql[] = [
+    Prisma.sql`(
+      CASE
+        WHEN p."editing_revision_id" IS NOT NULL THEN COALESCE(rev."title", '')
+        ELSE COALESCE(p."title", '')
+      END || ' ' || sp."full_name" || ' ' || sp."slug"
+    ) ILIKE ${moderationLikePattern(search)} ESCAPE '\\'`,
+  ];
+  if (query.filter === 'APPROVED') {
+    filters.push(Prisma.sql`p."status" = CAST('APPROVED' AS "ProductStatus")`);
+  } else if (
+    query.filter === 'PENDING_REVIEW' ||
+    query.filter === 'CHANGES_REQUESTED'
+  ) {
+    filters.push(Prisma.sql`(
+      p."editing_revision_id" IS NOT NULL
+      AND rev."status" = CAST(${query.filter} AS "ProductStatus")
+    )`);
+  }
+  if (cursor) {
+    const createdAt = new Date(cursor.createdAt);
+    filters.push(Prisma.sql`(
+      p."created_at" > ${createdAt}
+      OR (
+        p."created_at" = ${createdAt}
+        AND p."id" > ${cursor.id}::uuid
+      )
+    )`);
+  }
+  return Prisma.sql`
+    SELECT p."id", p."created_at"
+    FROM "products" p
+    INNER JOIN "seller_profiles" sp
+      ON sp."id" = p."seller_profile_id"
+    LEFT JOIN "product_revisions" rev
+      ON rev."id" = p."editing_revision_id"
+    WHERE ${Prisma.join(filters, ' AND ')}
+    ORDER BY p."created_at" ASC, p."id" ASC
+    LIMIT ${query.limit + 1}
+  `;
+}
+
+export function orderRowsByIds<T extends { id: string }>(
+  ids: readonly string[],
+  rows: readonly T[],
+): T[] {
+  const byId = new Map(rows.map((row) => [row.id, row]));
+  return ids.flatMap((id) => {
+    const row = byId.get(id);
+    return row ? [row] : [];
+  });
 }
 
 export function moderationPage<T extends { id: string; createdAt: Date }>(
