@@ -10,7 +10,11 @@ import {
 } from './enums';
 import { isoDateTimeSchema, slugSchema, uuidSchema } from './primitives';
 import { portfolioAchievementSchema } from './portfolio';
-import { creationStepSchema, productImageSchema, productSchema } from './product';
+import {
+  creationStepSchema,
+  productImageSchema,
+  productSchema,
+} from './product';
 import {
   sellerDisciplineSchema,
   sellerProfileResponseSchema,
@@ -124,7 +128,10 @@ export const adminProductStatusUpdateRequestSchema = z
 
 export const adminUsersLookupQuerySchema = z
   .object({
-    email: z.string().email().transform((value) => value.trim().toLowerCase()),
+    email: z
+      .string()
+      .email()
+      .transform((value) => value.trim().toLowerCase()),
   })
   .strict();
 
@@ -270,6 +277,120 @@ const adminProductReviewTargetSchema = z
   })
   .strict();
 
+export const ADMIN_MODERATION_DEFAULT_LIMIT = 50;
+export const ADMIN_MODERATION_MAX_LIMIT = 100;
+
+export const adminModerationFilterSchema = z.enum([
+  'ALL',
+  'PENDING_REVIEW',
+  'APPROVED',
+  'CHANGES_REQUESTED',
+]);
+
+const adminModerationCursorObjectSchema = z
+  .object({
+    createdAt: isoDateTimeSchema,
+    id: uuidSchema,
+  })
+  .strict();
+
+export type AdminModerationCursor = z.infer<
+  typeof adminModerationCursorObjectSchema
+>;
+
+function encodeBase64Url(value: string): string {
+  return globalThis
+    .btoa(value)
+    .replaceAll('+', '-')
+    .replaceAll('/', '_')
+    .replaceAll('=', '');
+}
+
+function decodeBase64Url(value: string): string | null {
+  if (!/^[A-Za-z0-9_-]+$/.test(value)) return null;
+  if (value.length % 4 === 1) return null;
+  const padded = value + '='.repeat((4 - (value.length % 4)) % 4);
+  try {
+    return globalThis.atob(padded.replaceAll('-', '+').replaceAll('_', '/'));
+  } catch {
+    return null;
+  }
+}
+
+export function encodeAdminModerationCursor(
+  cursor: AdminModerationCursor,
+): string {
+  return encodeBase64Url(
+    JSON.stringify({
+      createdAt: cursor.createdAt,
+      id: cursor.id.toLowerCase(),
+    }),
+  );
+}
+
+export function parseAdminModerationCursor(
+  value: string,
+): AdminModerationCursor | null {
+  const json = decodeBase64Url(value.trim());
+  if (json == null) return null;
+  try {
+    const parsed = adminModerationCursorObjectSchema.safeParse(
+      JSON.parse(json),
+    );
+    if (!parsed.success) return null;
+    return {
+      createdAt: parsed.data.createdAt,
+      id: parsed.data.id.toLowerCase(),
+    };
+  } catch {
+    return null;
+  }
+}
+
+const adminModerationCursorSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .superRefine((value, context) => {
+    if (!parseAdminModerationCursor(value)) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Invalid moderation cursor',
+      });
+    }
+  });
+
+export const adminModerationListQuerySchema = z
+  .object({
+    cursor: adminModerationCursorSchema.optional(),
+    limit: z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(ADMIN_MODERATION_MAX_LIMIT)
+      .default(ADMIN_MODERATION_DEFAULT_LIMIT),
+    filter: adminModerationFilterSchema.default('ALL'),
+    search: z.string().trim().max(200).optional(),
+  })
+  .strict()
+  .transform((value) => ({
+    cursor: value.cursor,
+    limit: value.limit,
+    filter: value.filter,
+    search: value.search ? value.search : undefined,
+  }));
+
+export type AdminModerationFilter = z.infer<typeof adminModerationFilterSchema>;
+export type AdminModerationListQuery = z.output<
+  typeof adminModerationListQuerySchema
+>;
+export type AdminModerationListQueryInput = {
+  cursor?: string;
+  limit?: number;
+  filter?: AdminModerationFilter;
+  search?: string;
+};
+
 export const adminSellerProfileSchema = z
   .object({
     id: uuidSchema,
@@ -286,7 +407,10 @@ export const adminSellerProfileSchema = z
   })
   .strict();
 export const adminSellerProfilesResponseSchema = z
-  .object({ sellerProfiles: z.array(adminSellerProfileSchema) })
+  .object({
+    sellerProfiles: z.array(adminSellerProfileSchema),
+    nextCursor: adminModerationCursorSchema.nullable(),
+  })
   .strict();
 export const adminProductSchema = z
   .object({
@@ -311,7 +435,10 @@ export const adminProductSchema = z
   })
   .strict();
 export const adminProductsResponseSchema = z
-  .object({ products: z.array(adminProductSchema) })
+  .object({
+    products: z.array(adminProductSchema),
+    nextCursor: adminModerationCursorSchema.nullable(),
+  })
   .strict();
 
 export type AdminSellerStatusUpdateRequest = z.infer<
@@ -332,4 +459,8 @@ export type AdminUserRevokeSessionsRequest = z.infer<
   typeof adminUserRevokeSessionsRequestSchema
 >;
 export type AdminSellerProfile = z.infer<typeof adminSellerProfileSchema>;
+export type AdminSellerProfilesResponse = z.infer<
+  typeof adminSellerProfilesResponseSchema
+>;
 export type AdminProduct = z.infer<typeof adminProductSchema>;
+export type AdminProductsResponse = z.infer<typeof adminProductsResponseSchema>;

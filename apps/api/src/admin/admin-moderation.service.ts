@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 
 import {
+  type AdminModerationListQuery,
   type AdminProductStatusUpdateRequest,
   type AdminSellerStatusUpdateRequest,
   adminProductsResponseSchema,
@@ -30,6 +31,14 @@ import {
 } from '../sellers/seller-profile.mapper';
 import { assertSellerProfileRevisionTransition } from '../sellers/seller-profile-revision-state';
 import {
+  latestModerationReasonSql,
+  moderationListOrderBy,
+  moderationPage,
+  productModerationWhere,
+  readModerationCursor,
+  sellerModerationWhere,
+} from './admin-moderation-list';
+import {
   adminProductListSelect,
   adminSellerListSelect,
   adminSellerRevisionSelect,
@@ -47,54 +56,65 @@ export class AdminModerationService {
     private readonly imageStore: ImageStore,
   ) {}
 
-  async listSellerProfiles() {
-    const sellerProfiles = await this.prisma.sellerProfile.findMany({
-      where: { status: { not: 'DRAFT' } },
+  async listSellerProfiles(query: AdminModerationListQuery) {
+    const cursor = readModerationCursor(query.cursor);
+    const rows = await this.prisma.sellerProfile.findMany({
+      where: sellerModerationWhere(query, cursor),
       select: adminSellerListSelect,
-      orderBy: { createdAt: 'asc' },
+      orderBy: moderationListOrderBy,
+      take: query.limit + 1,
     });
-    const ids = sellerProfiles.map(({ id }) => id);
+    const { page, nextCursor } = moderationPage(rows, query.limit);
+    const ids = page.map(({ id }) => id);
     const [blockingSellers, reasons] = await Promise.all([
-      this.prisma.sellerProfile.findMany({
-        where: {
-          id: { in: ids },
-          products: {
-            some: {
-              listings: { some: { status: { in: ['SCHEDULED', 'LIVE'] } } },
+      ids.length === 0
+        ? Promise.resolve([])
+        : this.prisma.sellerProfile.findMany({
+            where: {
+              id: { in: ids },
+              products: {
+                some: {
+                  listings: { some: { status: { in: ['SCHEDULED', 'LIVE'] } } },
+                },
+              },
             },
-          },
-        },
-        select: { id: true },
-      }),
+            select: { id: true },
+          }),
       this.latestModerationReasons('SELLER_PROFILE', ids),
     ]);
     const blockingSellerIds = new Set(blockingSellers.map(({ id }) => id));
 
     return adminSellerProfilesResponseSchema.parse({
-      sellerProfiles: sellerProfiles.map((sellerProfile) =>
+      sellerProfiles: page.map((sellerProfile) =>
         toAdminSellerProfile(
           sellerProfile,
           reasons.get(sellerProfile.id) ?? null,
           blockingSellerIds.has(sellerProfile.id),
         ),
       ),
+      nextCursor,
     });
   }
 
-  async listProducts() {
-    const products = await this.prisma.product.findMany({
+  async listProducts(query: AdminModerationListQuery) {
+    const cursor = readModerationCursor(query.cursor);
+    const rows = await this.prisma.product.findMany({
+      where: productModerationWhere(query, cursor),
       select: adminProductListSelect,
-      orderBy: { createdAt: 'asc' },
+      orderBy: moderationListOrderBy,
+      take: query.limit + 1,
     });
+    const { page, nextCursor } = moderationPage(rows, query.limit);
     const reasons = await this.latestModerationReasons(
       'PRODUCT',
-      products.map(({ id }) => id),
+      page.map(({ id }) => id),
     );
 
     return adminProductsResponseSchema.parse({
-      products: products.map((product) =>
+      products: page.map((product) =>
         toAdminProduct(product, reasons.get(product.id) ?? null),
       ),
+      nextCursor,
     });
   }
 
@@ -158,8 +178,7 @@ export class AdminModerationService {
       const editingRevision = sellerProfile.editingRevision;
       const isRevisionReview = input.target.kind === 'revision';
       const isVisibilityTransition =
-        (sellerProfile.status === 'APPROVED' &&
-          input.status === 'SUSPENDED') ||
+        (sellerProfile.status === 'APPROVED' && input.status === 'SUSPENDED') ||
         (sellerProfile.status === 'SUSPENDED' && input.status === 'APPROVED');
       this.assertFreshSellerTarget(sellerProfile, input);
 
@@ -421,7 +440,11 @@ export class AdminModerationService {
     productId: string,
     input: AdminProductStatusUpdateRequest,
   ) {
-    const product = await this.updateProductStatus(adminUserId, productId, input);
+    const product = await this.updateProductStatus(
+      adminUserId,
+      productId,
+      input,
+    );
     return toProductResponse(
       await this.prisma.product.findUniqueOrThrow({
         where: { id: product.id },
@@ -462,7 +485,10 @@ export class AdminModerationService {
       this.logger.warn('Blocked stale seller parent target');
       throw new ConflictException('Moderation target is stale');
     }
-    if (sellerProfile.editingRevision && !this.isSellerVisibility(sellerProfile.status, input.status)) {
+    if (
+      sellerProfile.editingRevision &&
+      !this.isSellerVisibility(sellerProfile.status, input.status)
+    ) {
       this.logger.warn(
         'Blocked parent target that would review an editing revision',
       );
@@ -519,20 +545,13 @@ export class AdminModerationService {
     targetType: 'SELLER_PROFILE' | 'PRODUCT',
     targetIds: string[],
   ) {
-    const auditEvents = await this.prisma.auditEvent.findMany({
-      where: {
-        targetType,
-        targetId: { in: targetIds },
-        reason: { not: null },
-      },
-      orderBy: { createdAt: 'desc' },
-      select: { targetId: true, reason: true },
-    });
     const reasons = new Map<string, string>();
-    for (const event of auditEvents) {
-      if (event.reason && !reasons.has(event.targetId)) {
-        reasons.set(event.targetId, event.reason);
-      }
+    if (targetIds.length === 0) return reasons;
+    const rows = await this.prisma.$queryRaw<
+      Array<{ target_id: string; reason: string | null }>
+    >(latestModerationReasonSql(targetType, targetIds));
+    for (const row of rows) {
+      if (row.reason) reasons.set(row.target_id, row.reason);
     }
     return reasons;
   }
@@ -648,9 +667,9 @@ export class AdminModerationService {
     const profilePhotoObjectKey = sellerProfile.profilePhotoObjectKey ?? null;
     const hasRevisionPhoto = Boolean(
       profilePhotoMimeType &&
-        profilePhotoByteLength &&
-        profilePhotoChecksum &&
-        profilePhotoObjectKey,
+      profilePhotoByteLength &&
+      profilePhotoChecksum &&
+      profilePhotoObjectKey,
     );
     const hasLegacyPhoto = Boolean(sellerProfile.profilePhotoData?.byteLength);
     if (
