@@ -101,6 +101,17 @@ export function canWritePrivateCache(
   return true;
 }
 
+export async function refreshPrivateQuery(
+  queryClient: QueryClient,
+  queryKey: QueryKey,
+  epoch = currentAuthEpoch(queryClient),
+): Promise<void> {
+  if (!canWritePrivateCache(queryClient, epoch)) return;
+  await queryClient.cancelQueries({ queryKey });
+  if (!canWritePrivateCache(queryClient, epoch)) return;
+  await queryClient.invalidateQueries({ queryKey });
+}
+
 export async function clearAuthenticatedSession(
   queryClient: QueryClient,
 ): Promise<void> {
