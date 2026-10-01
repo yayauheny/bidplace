@@ -4,6 +4,42 @@
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
+## 2026-10-01 — Dialog return focus after reopen and unmount
+
+- `Needs verification` (mobile web): `AppDialog` still takes initial focus, the
+  Tab loop, Escape, outside close, and return focus from `@rn-primitives/dialog`
+  1.5.2. A reopen that lands on `body` before the deferred close callback no
+  longer replaces the captured opener, so the next close returns there without
+  scrolling. Removing an open dialog while its opener stays connected also
+  returns focus there. A finished close followed by another opener returns to
+  that later opener.
+- Before this correction, the rapid second close and the unmount left focus on
+  `body`. The later-opener cycle already returned correctly.
+- `Unchanged`: sheet slide-out, reduced motion, Search and filter focus traps,
+  canonical Pen file, design tokens, and Figma source packages. Chromium,
+  WebKit, and 390/1024/1440 screenshots were not run.
+
+## 2026-10-01 — Shared action, dialog, and image lifetimes
+
+- `Needs verification` (mobile web): shared primary, secondary, and destructive
+  buttons honor `compact` by selecting the existing compact size. Admin
+  moderation actions are the live callers. Disabled and loading still block
+  the action. `TextButton` is unchanged. Button tokens, radius, and variants
+  are unchanged. The canonical buttons package `292:5058` remains the
+  outline/black primary reference; this did not add a new size.
+- `Needs verification` (mobile web): `AppDialog` takes initial focus, the Tab
+  loop, Escape, outside close, and return focus from `@rn-primitives/dialog`
+  1.5.2. Return focus does not scroll the page. Sheet close still uses the
+  existing slide-out and system reduced-motion setting. Search and filter
+  overlays keep their own focus trap.
+- `Needs verification` (mobile web): a remote image starts a new recovery
+  when its URI changes and keeps the current recovery when the URI does not.
+  The placeholder and «Повторить» remain. Fit, position, transition, blur, and
+  recycling behavior are unchanged.
+- `Unchanged`: canonical Pen file, design tokens, and Figma source packages.
+  Chromium, WebKit, and 390/1024/1440 screenshots were not run. This does not
+  visually accept the admin buttons, dialogs, or image fallback.
+
 ## 2026-10-01 — Unused font registrations removed
 
 - `Implemented` (loader only): `useFonts` registers `Inter_400Regular`,

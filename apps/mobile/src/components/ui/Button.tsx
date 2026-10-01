@@ -24,9 +24,9 @@ export function PrimaryButton({
   width = 'content',
   alignSelf,
   compact,
+  size,
   ...props
 }: ButtonProps) {
-  void compact;
   const resolvedWidth = resolvedButtonWidth(width);
   return (
     <View
@@ -34,7 +34,12 @@ export function PrimaryButton({
         alignSelf: alignSelf ?? (resolvedWidth === 'full' ? 'stretch' : 'flex-start'),
       }}
     >
-      <FigmaButton {...props} variant="solid" width={resolvedWidth} />
+      <FigmaButton
+        {...props}
+        size={compact ? 'compact' : size}
+        variant="solid"
+        width={resolvedWidth}
+      />
     </View>
   );
 }
@@ -43,9 +48,9 @@ export function SecondaryButton({
   width = 'content',
   alignSelf,
   compact,
+  size,
   ...props
 }: ButtonProps) {
-  void compact;
   const resolvedWidth = resolvedButtonWidth(width);
   return (
     <View
@@ -53,7 +58,12 @@ export function SecondaryButton({
         alignSelf: alignSelf ?? (resolvedWidth === 'full' ? 'stretch' : 'flex-start'),
       }}
     >
-      <FigmaButton {...props} variant="outline" width={resolvedWidth} />
+      <FigmaButton
+        {...props}
+        size={compact ? 'compact' : size}
+        variant="outline"
+        width={resolvedWidth}
+      />
     </View>
   );
 }
@@ -62,9 +72,9 @@ export function DestructiveButton({
   width = 'content',
   alignSelf,
   compact,
+  size,
   ...props
 }: ButtonProps) {
-  void compact;
   const resolvedWidth = resolvedButtonWidth(width);
   return (
     <View
@@ -72,7 +82,12 @@ export function DestructiveButton({
         alignSelf: alignSelf ?? (resolvedWidth === 'full' ? 'stretch' : 'flex-start'),
       }}
     >
-      <FigmaButton {...props} variant="danger" width={resolvedWidth} />
+      <FigmaButton
+        {...props}
+        size={compact ? 'compact' : size}
+        variant="danger"
+        width={resolvedWidth}
+      />
     </View>
   );
 }

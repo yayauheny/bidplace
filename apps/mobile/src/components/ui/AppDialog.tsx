@@ -1,6 +1,6 @@
 import * as Dialog from '@rn-primitives/dialog';
 import type { ReactNode } from 'react';
-import { useCallback, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { Platform, ScrollView, useWindowDimensions, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
@@ -27,6 +27,15 @@ type AppDialogProps = {
   children: ReactNode;
 };
 
+function connectedDialogOpener(active: Element | null, scope: EventTarget | null) {
+  if (!(active instanceof HTMLElement)) return null;
+  if (scope instanceof Node && scope.contains(active)) return null;
+  if (!active.isConnected) return null;
+  const root = active.ownerDocument;
+  if (active === root.body || active === root.documentElement) return null;
+  return active;
+}
+
 export function AppDialog({
   open,
   presentation = 'dialog',
@@ -38,63 +47,15 @@ export function AppDialog({
   const { height, width } = useWindowDimensions();
   const viewportGutter = designTokens.space.x5;
   const returnFocusRef = useRef<HTMLElement | null>(null);
-  const restoreFocus = useCallback(() => {
-    if (Platform.OS !== 'web') return;
-    const element = returnFocusRef.current;
-    if (element?.isConnected) {
-      const focusTrigger = (attempt: number) => {
-        if (!element.isConnected) return;
-        element.focus({ preventScroll: true });
-        if (document.activeElement === element || attempt >= 3) {
-          returnFocusRef.current = null;
-          return;
-        }
-        window.setTimeout(() => focusTrigger(attempt + 1), 16);
-      };
-      window.setTimeout(() => focusTrigger(0), 0);
-    }
-  }, []);
-
+  const openRef = useRef(open);
+  const instanceMountedRef = useRef(false);
+  openRef.current = open;
   useEffect(() => {
-    if (
-      !open ||
-      Platform.OS !== 'web' ||
-      typeof document === 'undefined' ||
-      returnFocusRef.current
-    ) {
-      return;
-    }
-    const activeElement = document.activeElement;
-    if (
-      activeElement instanceof HTMLElement &&
-      !activeElement.closest('[role="dialog"]')
-    ) {
-      returnFocusRef.current = activeElement;
-    }
-  }, [open]);
-
-  useEffect(() => {
-    if (!open || Platform.OS !== 'web' || typeof document === 'undefined') {
-      return;
-    }
-    const focusDialogControl = (attempt: number) => {
-      const control = document.querySelector<HTMLElement>(
-        '[role="dialog"] input:not([disabled]), [role="dialog"] textarea:not([disabled]), [role="dialog"] select:not([disabled]), [role="dialog"] button:not([disabled]), [role="dialog"] a[href]',
-      );
-      if (control) {
-        control.focus({ preventScroll: true });
-        if (document.activeElement === control || attempt >= 10) return;
-      }
-      if (attempt < 10)
-        window.setTimeout(() => focusDialogControl(attempt + 1), 50);
-    };
-    const focusTimer = window.setTimeout(() => focusDialogControl(0), 0);
-
+    instanceMountedRef.current = true;
     return () => {
-      window.clearTimeout(focusTimer);
-      restoreFocus();
+      instanceMountedRef.current = false;
     };
-  }, [open, restoreFocus]);
+  }, []);
 
   const isSheet = presentation === 'sheet';
   const overlay = (
@@ -113,18 +74,29 @@ export function AppDialog({
     <Dialog.Content
       asChild
       forceMount={isSheet ? true : undefined}
-      onOpenAutoFocus={() => {
-        if (Platform.OS !== 'web' || typeof document === 'undefined') {
-          return;
-        }
-        if (document.activeElement instanceof HTMLElement) {
-          returnFocusRef.current = document.activeElement;
-        }
-      }}
-      onCloseAutoFocus={(event) => {
-        event.preventDefault();
-        restoreFocus();
-      }}
+      {...(Platform.OS === 'web'
+        ? {
+            onOpenAutoFocus: (event: Event) => {
+              if (typeof document === 'undefined') return;
+              const opener = connectedDialogOpener(document.activeElement, event.currentTarget);
+              if (!opener) return;
+              returnFocusRef.current = opener;
+            },
+            onCloseAutoFocus: (event: Event) => {
+              // The installed dialog focuses its trigger and cancels the
+              // scope's previous-element restore. These dialogs open without
+              // Dialog.Trigger, so return focus stays on this callback.
+              // A deferred close must not steal focus from this same live
+              // instance after it opens again. Unmount leaves `open` true.
+              event.preventDefault();
+              if (openRef.current && instanceMountedRef.current) return;
+              const element = returnFocusRef.current;
+              returnFocusRef.current = null;
+              if (!element?.isConnected) return;
+              element.focus({ preventScroll: true });
+            },
+          }
+        : {})}
       nativeID="app-dialog-content"
       style={{
         width: '100%',
