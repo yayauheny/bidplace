@@ -1,4 +1,5 @@
 import { sellerPublicEmailSchema, sellerPublicUrlSchema } from '@bidplace/contracts';
+import { z } from 'zod';
 
 import { normalizeInstagram, normalizeTelegram } from './contact-normalization';
 
@@ -11,12 +12,80 @@ type PublicLinkField =
 
 export type ProfileFieldErrors = Partial<Record<PublicLinkField | 'city', string>>;
 
+const profileDraftErrorFields = [
+  'city',
+  'socialLink',
+  'telegramUrl',
+  'instagramUrl',
+  'websiteUrl',
+  'publicEmail',
+] as const satisfies ReadonlyArray<keyof ProfileFieldErrors>;
+
 export function getPublicLinkError(value: string): string | undefined {
   if (!value.trim()) return undefined;
   return sellerPublicUrlSchema.safeParse(value.trim()).success
     ? undefined
     : 'Введите HTTPS-ссылку, начиная с https://';
 }
+
+function acceptsOptionalPublicLink(value: string) {
+  return getPublicLinkError(value) === undefined;
+}
+
+function acceptsOptionalHandle(
+  value: string,
+  normalize: (input: string) => string | null | undefined,
+) {
+  if (!value.trim()) return true;
+  return normalize(value) !== undefined;
+}
+
+function acceptsOptionalPublicEmail(value: string) {
+  if (!value.trim()) return true;
+  return sellerPublicEmailSchema.safeParse(value).success;
+}
+
+export const profileDraftSchema = z
+  .object({
+    slug: z.string(),
+    fullName: z.string(),
+    discipline: z.string(),
+    country: z.string(),
+    city: z.string().refine((value) => value.trim().length > 0, 'Укажите город'),
+    practice: z.string(),
+    socialLink: z.string().refine(acceptsOptionalPublicLink, 'Введите HTTPS-ссылку, начиная с https://'),
+    telegramUrl: z
+      .string()
+      .refine(
+        (value) => acceptsOptionalHandle(value, normalizeTelegram),
+        'Введите Telegram username или HTTPS-ссылку',
+      ),
+    instagramUrl: z
+      .string()
+      .refine(
+        (value) => acceptsOptionalHandle(value, normalizeInstagram),
+        'Введите Instagram username или HTTPS-ссылку',
+      ),
+    websiteUrl: z.string().refine(acceptsOptionalPublicLink, 'Введите HTTPS-ссылку, начиная с https://'),
+    publicEmail: z.string().refine(acceptsOptionalPublicEmail, 'Введите корректный email'),
+    shortDescription: z.string(),
+  })
+  .strict();
+
+const emptyProfileDraft = {
+  slug: '',
+  fullName: '',
+  discipline: '',
+  country: '',
+  city: '',
+  practice: '',
+  socialLink: '',
+  telegramUrl: '',
+  instagramUrl: '',
+  websiteUrl: '',
+  publicEmail: '',
+  shortDescription: '',
+};
 
 export function getProfileFieldErrors(fields: {
   city: string;
@@ -26,32 +95,23 @@ export function getProfileFieldErrors(fields: {
   websiteUrl: string;
   publicEmail?: string;
 }): ProfileFieldErrors {
+  const parsed = profileDraftSchema.safeParse({
+    ...emptyProfileDraft,
+    ...fields,
+    publicEmail: fields.publicEmail ?? '',
+  });
+  if (parsed.success) return {};
   const errors: ProfileFieldErrors = {};
-  if (!fields.city.trim()) {
-    errors.city = 'Укажите город';
+  for (const issue of parsed.error.issues) {
+    const key = issue.path[0];
+    if (typeof key !== 'string') continue;
+    if (!profileDraftErrorFields.includes(key as (typeof profileDraftErrorFields)[number])) continue;
+    const field = key as keyof ProfileFieldErrors;
+    if (!errors[field]) errors[field] = issue.message;
   }
-  const publicFields: Array<'socialLink' | 'websiteUrl'> = [
-    'socialLink',
-    'websiteUrl',
-  ];
-
-  for (const field of publicFields) {
-    const error = getPublicLinkError(fields[field]);
-    if (error) errors[field] = error;
-  }
-
-  if (fields.telegramUrl.trim() && normalizeTelegram(fields.telegramUrl) === undefined) {
-    errors.telegramUrl = 'Введите Telegram username или HTTPS-ссылку';
-  }
-  if (fields.instagramUrl.trim() && normalizeInstagram(fields.instagramUrl) === undefined) {
-    errors.instagramUrl = 'Введите Instagram username или HTTPS-ссылку';
-  }
-  if (
-    fields.publicEmail?.trim() &&
-    !sellerPublicEmailSchema.safeParse(fields.publicEmail).success
-  ) {
-    errors.publicEmail = 'Введите корректный email';
-  }
-
   return errors;
+}
+
+export function profileDraftBlocksSave(errors: Partial<Record<keyof ProfileFieldErrors, unknown>>) {
+  return profileDraftErrorFields.some((field) => errors[field] !== undefined);
 }

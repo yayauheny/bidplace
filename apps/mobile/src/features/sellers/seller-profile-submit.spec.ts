@@ -1297,4 +1297,30 @@ describe('seller profile save reconciliation', () => {
     vi.unstubAllGlobals();
     view.unmount();
   });
+
+  it('keeps raw contact text in the field and normalizes it only in the save payload', async () => {
+    harness.getMyProfile.mockResolvedValue(response('APPROVED', 'DRAFT'));
+    harness.updateProfile.mockResolvedValue(savedProfile());
+    const view = mount();
+    await until(
+      view.container,
+      () => view.container.querySelector<HTMLInputElement>('[aria-label="Город"]')?.value === 'Minsk',
+      'profile',
+    );
+    setInput(view.container, 'Telegram', '@maker_art');
+    setInput(view.container, 'Instagram', '@maker.art');
+    setInput(view.container, 'Сайт', 'https://example.com/studio');
+    expect(inputValue(view.container, 'Telegram')).toBe('@maker_art');
+    expect(inputValue(view.container, 'Instagram')).toBe('@maker.art');
+    click(view.container, 'Сохранить');
+    await flush();
+    expect(harness.updateProfile.mock.calls[0]?.[0]).toEqual(
+      expect.objectContaining({
+        telegramUrl: 'https://t.me/maker_art',
+        instagramUrl: 'https://instagram.com/maker.art',
+        websiteUrl: 'https://example.com/studio',
+      }),
+    );
+    view.unmount();
+  });
 });
