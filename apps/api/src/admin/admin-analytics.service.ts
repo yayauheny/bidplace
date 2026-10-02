@@ -6,6 +6,17 @@ import {
 import { Injectable } from '@nestjs/common';
 
 import { PrismaService } from '../core/database';
+import {
+  acquisitionBySourceSql,
+  countActiveUsersSql,
+  listingViewDaySql,
+  publishedWorkDaySql,
+  readSqlCount,
+  sellerCreationDaySql,
+  userCreationDaySql,
+  type DayCountRow,
+  type SourceCountRow,
+} from './admin-analytics.query';
 
 const DAY_MS = 86_400_000;
 const STUCK_REVIEW_MS = 7 * DAY_MS;
@@ -46,10 +57,6 @@ function resolvePeriodRange(
   }
 }
 
-function utcDateKey(value: Date): string {
-  return value.toISOString().slice(0, 10);
-}
-
 function eachUtcDate(from: Date, to: Date): string[] {
   const dates: string[] = [];
   let cursor = Date.UTC(
@@ -75,6 +82,26 @@ function rate(numerator: number, denominator: number): number | null {
   return numerator / denominator;
 }
 
+function dayCountMap(rows: DayCountRow[]): Map<string, number> {
+  return new Map(rows.map((row) => [row.date, readSqlCount(row.count)]));
+}
+
+function compareSources(
+  left: { source: string; visitors: number },
+  right: { source: string; visitors: number },
+): number {
+  if (left.visitors !== right.visitors) {
+    return right.visitors - left.visitors;
+  }
+  if (left.source < right.source) {
+    return -1;
+  }
+  if (left.source > right.source) {
+    return 1;
+  }
+  return 0;
+}
+
 @Injectable()
 export class AdminAnalyticsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -90,10 +117,10 @@ export class AdminAnalyticsService {
     const [
       users,
       newUsers,
-      activeUsers,
+      activeUserRows,
       creators,
       publishedWorks,
-      attributions,
+      attributionRows,
       listingViewed,
       sellerProfilesCreated,
       productsCreated,
@@ -103,21 +130,16 @@ export class AdminAnalyticsService {
       recentWorks,
       stuckProducts,
       stuckSellers,
-      growthUsers,
-      growthViews,
-      growthSellers,
-      growthWorks,
+      userDays,
+      viewDays,
+      sellerDays,
+      workDays,
     ] = await Promise.all([
       this.prisma.user.count(),
       this.prisma.user.count({ where: { createdAt: periodFilter } }),
-      this.prisma.analyticsEvent.findMany({
-        where: {
-          createdAt: periodFilter,
-          userId: { not: null },
-        },
-        distinct: ['userId'],
-        select: { userId: true },
-      }),
+      this.prisma.$queryRaw<Array<{ count: number | bigint }>>(
+        countActiveUsersSql(from, to),
+      ),
       this.prisma.sellerProfile.count(),
       this.prisma.product.count({
         where: {
@@ -125,14 +147,7 @@ export class AdminAnalyticsService {
           publishedRevisionId: { not: null },
         },
       }),
-      this.prisma.acquisitionAttribution.findMany({
-        where: { capturedAt: periodFilter },
-        select: {
-          source: true,
-          userId: true,
-          linkedAt: true,
-        },
-      }),
+      this.prisma.$queryRaw<SourceCountRow[]>(acquisitionBySourceSql(from, to)),
       this.prisma.analyticsEvent.count({
         where: { eventName: 'listing_viewed', createdAt: periodFilter },
       }),
@@ -186,92 +201,26 @@ export class AdminAnalyticsService {
           updatedAt: { lt: stuckBefore },
         },
       }),
-      this.prisma.user.findMany({
-        where: { createdAt: periodFilter },
-        select: { createdAt: true },
-      }),
-      this.prisma.analyticsEvent.findMany({
-        where: { eventName: 'listing_viewed', createdAt: periodFilter },
-        select: { createdAt: true },
-      }),
-      this.prisma.sellerProfile.findMany({
-        where: { createdAt: periodFilter },
-        select: { createdAt: true },
-      }),
-      this.prisma.product.findMany({
-        where: { publishedAt: periodFilter },
-        select: { publishedAt: true },
-      }),
+      this.prisma.$queryRaw<DayCountRow[]>(userCreationDaySql(from, to)),
+      this.prisma.$queryRaw<DayCountRow[]>(listingViewDaySql(from, to)),
+      this.prisma.$queryRaw<DayCountRow[]>(sellerCreationDaySql(from, to)),
+      this.prisma.$queryRaw<DayCountRow[]>(publishedWorkDaySql(from, to)),
     ]);
 
-    const acquisitionBySource = new Map<
-      string,
-      { visitors: number; signups: number }
-    >();
-
-    for (const row of attributions) {
-      const source = row.source ?? 'direct';
-      const bucket = acquisitionBySource.get(source) ?? {
-        visitors: 0,
-        signups: 0,
-      };
-      bucket.visitors += 1;
-      if (
-        row.userId &&
-        row.linkedAt &&
-        row.linkedAt >= from &&
-        row.linkedAt <= to
-      ) {
-        bucket.signups += 1;
-      }
-      acquisitionBySource.set(source, bucket);
-    }
-
-    const bySource = [...acquisitionBySource.entries()]
-      .map(([source, counts]) => ({
-        source,
-        visitors: counts.visitors,
-        signups: counts.signups,
+    const bySource = attributionRows
+      .map((row) => ({
+        source: row.source,
+        visitors: readSqlCount(row.visitors),
+        signups: readSqlCount(row.signups),
       }))
-      .sort((left, right) => right.visitors - left.visitors);
+      .sort(compareSources);
     const totalVisitors = bySource.reduce((sum, row) => sum + row.visitors, 0);
     const totalSignups = bySource.reduce((sum, row) => sum + row.signups, 0);
-
+    const usersByDay = dayCountMap(userDays);
+    const viewsByDay = dayCountMap(viewDays);
+    const sellersByDay = dayCountMap(sellerDays);
+    const worksByDay = dayCountMap(workDays);
     const growthDates = eachUtcDate(from, to);
-    const growthMap = new Map(
-      growthDates.map((date) => [
-        date,
-        {
-          date,
-          newUsers: 0,
-          listingViews: 0,
-          newSellers: 0,
-          newWorks: 0,
-        },
-      ]),
-    );
-
-    const bump = (
-      rows: Array<{ createdAt?: Date; publishedAt?: Date | null }>,
-      key: 'newUsers' | 'listingViews' | 'newSellers' | 'newWorks',
-      field: 'createdAt' | 'publishedAt' = 'createdAt',
-    ) => {
-      for (const row of rows) {
-        const value = row[field];
-        if (!value) {
-          continue;
-        }
-        const bucket = growthMap.get(utcDateKey(value));
-        if (bucket) {
-          bucket[key] += 1;
-        }
-      }
-    };
-
-    bump(growthUsers, 'newUsers');
-    bump(growthViews, 'listingViews');
-    bump(growthSellers, 'newSellers');
-    bump(growthWorks, 'newWorks', 'publishedAt');
 
     const overview: AdminAnalyticsOverview = {
       period: query.period,
@@ -281,7 +230,7 @@ export class AdminAnalyticsService {
         users: metric(users, 'Total User count all time', 'postgresql'),
         newUsers: metric(newUsers, 'Users created in period', 'postgresql'),
         activeUsers: metric(
-          activeUsers.length,
+          readSqlCount(activeUserRows[0]?.count),
           'Distinct User.id that emitted product analytics events in period',
           'analytics',
         ),
@@ -308,11 +257,7 @@ export class AdminAnalyticsService {
         ),
       },
       sellerFunnel: {
-        registeredUsers: metric(
-          newUsers,
-          'New users in period',
-          'postgresql',
-        ),
+        registeredUsers: metric(newUsers, 'New users in period', 'postgresql'),
         sellerProfiles: metric(
           sellerProfilesCreated,
           'SellerProfile created in period',
@@ -329,7 +274,13 @@ export class AdminAnalyticsService {
           'postgresql',
         ),
       },
-      growth: growthDates.map((date) => growthMap.get(date)!),
+      growth: growthDates.map((date) => ({
+        date,
+        newUsers: usersByDay.get(date) ?? 0,
+        listingViews: viewsByDay.get(date) ?? 0,
+        newSellers: sellersByDay.get(date) ?? 0,
+        newWorks: worksByDay.get(date) ?? 0,
+      })),
       recent: {
         users: recentUsers.map((user) => ({
           id: user.id,

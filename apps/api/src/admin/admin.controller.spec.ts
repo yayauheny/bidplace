@@ -2,7 +2,9 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { adminModerationListQuerySchema } from '@bidplace/contracts';
 
+import { BearerAuthGuard } from '../auth';
 import { AdminController } from './admin.controller';
+import { AdminGuard } from './admin.guard';
 
 function controllerWith(moderation: object) {
   return new AdminController(
@@ -15,6 +17,16 @@ function controllerWith(moderation: object) {
 }
 
 describe('AdminController', () => {
+  it('keeps analytics overview behind bearer auth and the admin guard', () => {
+    const guards = Reflect.getMetadata('__guards__', AdminController) as
+      | unknown[]
+      | undefined;
+
+    expect(guards).toEqual(
+      expect.arrayContaining([BearerAuthGuard, AdminGuard]),
+    );
+  });
+
   it('delegates seller moderation projections without a Prisma dependency', async () => {
     const response = { sellerProfiles: [], nextCursor: null };
     const moderation = {

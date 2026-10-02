@@ -26,9 +26,11 @@
 
 **Дополнение 2026-10-01, R17 BOM:** один начальный U+FEFF снимается до `util.parseEnv`, поэтому production-файл не читается как development/local. `@bidplace/config` test входит в root `test:unit`. L03 остаётся `VERIFIED`. См. R17 evidence.
 
-**Дополнение 2026-10-01, R19:** на `fix/moderation-bounded-reads` от `95dac4c` списки модерации читаются страницами `createdAt,id` (default 50, maximum 100). Фильтры и поиск считаются на сервере. Последняя причина — один SQL-ряд на target текущей страницы. D07 → `PARTIAL`: R20 и R21 не начинались, moderation browser NOT RUN. См. R19 evidence.
+**Дополнение 2026-10-01, R19:** на `fix/moderation-bounded-reads` от `95dac4c` списки модерации читаются страницами `createdAt,id` (default 50, maximum 100). Фильтры и поиск считаются на сервере. Последняя причина — один SQL-ряд на target текущей страницы. D07 → `PARTIAL`: moderation browser NOT RUN. См. R19 evidence.
 
 **Дополнение 2026-10-01, коррекция R19:** на той же ветке от `6e74b02` исправлены четыре замечания review. Поиск не снимает controls. Refresh отменяет незавершённые страницы до trim. Поиск снова идёт по прежней склеенной строке, а `%`, `_` и `\` остаются буквальными. Коррекция не принята самостоятельно. D07 остаётся `PARTIAL`. См. R19 correction evidence.
+
+**Дополнение 2026-10-01, R20:** на `fix/analytics-database-aggregation` от `95dac4c` admin overview считает active users, acquisition и UTC growth в PostgreSQL. Коррекция review оставляет колонку даты голой и приводит границы периода к UTC `timestamp without time zone`, чтобы существующий индекс мог дать range Index Cond. D07 остаётся `PARTIAL`: R21 не начат. См. R20 evidence.
 
 **Дополнение 2026-10-02, cursor TimeZone:** поисковый keyset сравнивает параметр курсора как UTC wall time, а не через TimeZone сессии. D07 остаётся `PARTIAL`. См. R19 search cursor timezone evidence.
 
@@ -643,6 +645,7 @@ T01 находится в Wave 1, потому что исправляет **о�
 - **STOP:** обнаружена неоднозначность metric semantics — отдельное решение, без «оптимизации» смысла.
 - **Done/status:** D07 → `PARTIAL`.
 - **Отчёт:** G с semantic equivalence и объёмом выбранных строк.
+- **Actual (2026-10-01):** выполнено на `fix/analytics-database-aggregation` от `95dac4c11a66f0e2e2931b1c3f45e86e52514ec0`. Code commit `fc9e369c6b010b05c226a55ec47f6b461b7c0eaa`. Active users, acquisition и UTC growth больше не читают сырые строки ради JS-группировки. Review correction от `a7a8e8fe0fe6e4b4a8fe3ebbd55d4648fe3f4ce6` переносит `AT TIME ZONE 'UTC'` с колонки на параметр: колонка `timestamp(3) without time zone` сравнивается с `(bound::timestamptz AT TIME ZONE 'UTC')`. Recent и drilldown остаются `take` 8 и 50. Контракт overview, ingestion, attribution writes, admin permissions, schema и migrations не менялись. D07 → `PARTIAL`. См. R20 evidence.
 
 ### R21. Убрать full-table загрузки для facets
 
@@ -1608,6 +1611,68 @@ blocked-by: none for this correction. Browser confirmation remains.
 - D04, D05, D09, D10, L04, and R32 were not moved to `VERIFIED`. T04 and T06 stay `PARTIAL`.
 - Browsers, API bootstrap, database, migrations, and seed were not run. `10-CODE-ARCHITECTURE.md` and the canonical Pen file were not changed.
 
+### R20 evidence
+
+```text
+scope: R20 admin analytics aggregation only. Not R19, R21, or R22–R27.
+finding IDs: analytics part of D07
+status: PARTIAL. D07 stays open until R19 and R21.
+branch: fix/analytics-database-aggregation
+base SHA: 95dac4c11a66f0e2e2931b1c3f45e86e52514ec0
+ancestor checked before this branch: f5d8b0ac80ced03e3155ea130955b596e312d762
+code commit: fc9e369c6b010b05c226a55ec47f6b461b7c0eaa
+changed contracts: none
+semantic parity: the 7-day synthetic fixture JSON matches the overview produced by the previous service before this change. Active users are COUNT DISTINCT non-null user ids. Acquisition counts attribution rows captured in the period, coalesces null source to direct, and counts a signup only when that same row has a user and linkedAt inside the period. Growth returns UTC day counts; the service still fills every UTC date from the period start through the period end, including zero days. today is UTC midnight through now. 7d/30d/90d are now minus exactly 7/30/90 days through now, inclusive. custom uses the requested from/to. Stuck moderation stays PENDING_REVIEW with updatedAt strictly before now minus 7 days. A zero visitor total still yields a null rate; visitors with zero signups yield 0. Recent reads stay at 8 and drilldowns at 50. No transaction snapshot was added.
+signup reading: analytics-metrics.md says signups are attributions with a linked user and linkedAt in the period. It does not explicitly require counting a row whose capturedAt is outside the period. The previous intersection is unchanged. That metric was not stopped.
+tie order: equal visitor counts now sort by source using UTF-16 code unit order. The previous findMany had no ORDER BY, so tied sources were not a defined sequence. The parity fixture has visitor counts 3, 2, and 1, so its full JSON does not depend on the tie-break.
+row volume, no timing claim:
+  Parity fixture: 9 analytics events and 7 attribution rows stored. Aggregate queries returned 1 active-user row, 3 source rows, 3 user-day rows, 4 listing-day rows, 2 seller-day rows, and 2 work-day rows. The previous reads would have returned 2 distinct user rows, 6 in-period attribution rows, 3 user timestamps, 6 listing timestamps, 2 seller timestamps, and 2 work timestamps.
+  Volume fixture: 48 listing_viewed events, 20 attribution rows, and 3 users created on one UTC day. Aggregate queries returned 1, 4, 1, 5, 0, and 0 rows. The growth array is still 8 buckets. The sum of listing views is 48. Active users are 3.
+tests/scenarios: empty data; repeated events and null userId; exact from/to and rows outside the range; UTC midnight and partial first/last days; today, 7d, 30d, 90d, and custom, including zero buckets; null/direct merge, empty source, several anonymous rows of one source, capturedAt outside with linkedAt inside and the reverse; zero denominator; admin 401/403/200; full JSON comparison; Europe/Minsk and America/Los_Angeles session zones.
+validation commands and exit codes on Node v22.20.0 / pnpm 11.7.0:
+  BIDPLACE_ENV_FILE=/dev/null pnpm exec turbo run typecheck build --filter='@bidplace/api...' → 0 (9 tasks)
+  pnpm --filter @bidplace/api lint → 0
+  BIDPLACE_ENV_FILE=/dev/null pnpm --filter @bidplace/api test --exclude src/core/config/env.spec.ts → 0 (49 files, 286 tests)
+  env -u BIDPLACE_ENV_FILE pnpm --filter @bidplace/api test src/core/config/env.spec.ts → 0 (37 tests). Lookups stay on /repo/missing.env and synthetic files. No real .env was read.
+  BIDPLACE_ENV_FILE=/dev/null pnpm --filter @bidplace/api test:integration → 0 (24 files, 84 tests) on local disposable bidplace_integration, isolated itest_ schemas. PostgreSQL 16.14. Prisma 6.19.3.
+  git diff --check → 0
+runtime environment: Node v22.20.0, pnpm 11.7.0, PostgreSQL 16.14, Prisma 6.19.3
+evidence links: apps/api/src/admin/admin-analytics.query.ts; admin-analytics.service.ts; admin-analytics.service.spec.ts; admin.guard.spec.ts; test/integration/admin-analytics-aggregation.integration.spec.ts; admin-analytics-seven-day.json
+remaining limitations: D07 is PARTIAL. R19 moderation reads and R21 facet reads are not done. Equal-visitor source order is now deterministic; it was previously the unordered scan order. userId on acquisition_attributions is unique, so two linked rows for one user cannot be stored; row counting is proven with multiple anonymous rows of one source. No timing claim.
+blocked-by: none for R20. D07 remains blocked on R19 and R21.
+browser: NOT RUN
+root migrate/seed: NOT RUN
+
+index predicate correction, review HEAD a7a8e8fe0fe6e4b4a8fe3ebbd55d4648fe3f4ce6:
+  cause: inUtcPeriod compared (column AT TIME ZONE 'UTC') with timestamptz bounds. timestamp(3) without time zone stores UTC wall time, so the conversion kept the timezone meaning and blocked a range Index Cond on the existing date indexes.
+  durable fix: the column stays bare. Bounds are parameterized Prisma.sql values cast explicitly: column >= (from::timestamptz AT TIME ZONE 'UTC') AND column <= (to::timestamptz AT TIME ZONE 'UTC'). No expression indexes, no planner override, and no dependence on session TimeZone.
+  fixture: isolated itest_ schema, 100000 rows outside 2026-08-13T15:00:00.000Z..2026-08-20T15:00:00.000Z and 10 inside, ANALYZE, no enable_seqscan change. EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON).
+  before, column-side predicate:
+    active users: Seq Scan, Filter includes created_at AT TIME ZONE 'UTC' and user_id IS NOT NULL, Actual Rows 10, Rows Removed by Filter 100000.
+    acquisition: Seq Scan, Filter is the captured_at AT TIME ZONE range, Actual Rows 10, Rows Removed by Filter 100000.
+    views growth: Seq Scan, Filter includes event_name = listing_viewed and the created_at AT TIME ZONE range, Actual Rows 10, Rows Removed by Filter 100000.
+  after, parameter-side predicate, same results as the before queries:
+    active users: Index Scan using analytics_events_created_at_idx. Index Cond created_at >= '2026-08-13 15:00:00'::timestamp without time zone AND created_at <= '2026-08-20 15:00:00'::timestamp without time zone. Filter user_id IS NOT NULL, Rows Removed by Filter 0, Actual Rows 10.
+    acquisition: Index Scan using acquisition_attributions_captured_at_idx. Index Cond is the same bounds on captured_at. No date Filter, Actual Rows 10, Rows Removed by Filter absent.
+    views growth: Index Scan using analytics_events_created_at_idx. Index Cond is the same bounds on created_at. Filter event_name = listing_viewed, Rows Removed by Filter 0, Actual Rows 10.
+  semantic parity of the correction: the three before and after queries returned equal rows, including inside transactions with TimeZone set to Europe/Minsk and America/Los_Angeles. Existing R20 integration coverage stayed green: boundaries, nulls, UTC buckets, and those two session zones. Tests do not pin an index name, cost, or time. This is one plan observation, not a timing claim.
+  correction checks on Node v22.20.0 / pnpm 11.7.0 / PostgreSQL 16.14 / Prisma 6.19.3:
+    BIDPLACE_ENV_FILE=/dev/null pnpm exec turbo run typecheck build --filter='@bidplace/api...' → 0 (9 tasks)
+    pnpm --filter @bidplace/api lint → 0
+    BIDPLACE_ENV_FILE=/dev/null pnpm --filter @bidplace/api test --exclude src/core/config/env.spec.ts → 0 (49 files, 286 tests)
+    env -u BIDPLACE_ENV_FILE pnpm --filter @bidplace/api test src/core/config/env.spec.ts → 0 (37 tests)
+    env -u INTEGRATION_DATABASE_URL BIDPLACE_ENV_FILE=/dev/null pnpm --filter @bidplace/api test:integration → 0 (24 files, 84 tests)
+    git diff --check → 0
+  NOT RUN: browsers, root migrate, root seed, and any claim that the plan change is a measured speedup.
+```
+
+### Проверка документа — 2026-10-01 R20
+
+- R20 выполнен на `fix/analytics-database-aggregation` от `95dac4c`. D07 → `PARTIAL`.
+- Коррекция review переводит UTC-границы на сторону параметра. Синтетический план: 100000 строк вне периода больше не отбрасываются Filter после Seq Scan; диапазон даты входит в Index Cond. Ускорение по одному замеру не заявлено.
+- R19, R21 и R22–R27 не менялись. Контракт overview, ingestion, permissions, schema и migrations не менялись.
+- Браузеры не запускались. Root migrate и seed не запускались. Integration harness мигрировал только изолированные `itest_` schemas в `bidplace_integration`. Канонический Pen не менялся. `10-CODE-ARCHITECTURE.md` не менялся: граница admin overview та же.
+
 ## 6. Полная coverage matrix
 
 `E0` — исходный аудит; `E1` — повторная статическая проверка в этом planning pass; `E2` — targeted review PR #12 (`014711fa2ef4f78ad28e4759168d42ef04d5b794` → `7d2d5479f1087835271c1eb23985f2886049abb6`): logout UI отсутствовал уже на base. Это evidence наличия finding, не его исправления.
@@ -1620,7 +1685,7 @@ blocked-by: none for this correction. Browser confirmation remains.
 | D04     | Save response стирает новые поля/фото                                        | P1 / HIGH             | W2 → R05, R06                        | NEEDS_VERIFICATION | R03/R04; R06 после R05                                       | Current R05+R06 evidence: NEEDS_VERIFICATION. Chromium/WebKit NOT RUN.        |
 | D05     | Invalidation использует obsolete owner keys                                  | P2 / HIGH             | W2 → R07                             | NEEDS_VERIFICATION | R05                                                          | Current R07 evidence: NEEDS_VERIFICATION. Chromium/WebKit NOT RUN.            |
 | D06     | Избыточные image-auth и portfolio selectors                                  | P2 / HIGH             | W5 → R18                             | VERIFIED           | R10                                                          | 2026-10-01 `fix/narrow-read-selectors` from `6c0fac7`. Auth and portfolio selects narrowed. V-API and V-INTEGRATION passed. Synthetic selected JSON shrank with the same public Work and media results. |
-| D07     | Неограниченные moderation/history/analytics/facets reads                     | P2 / HIGH             | W5 → R19, R20, R21                   | PARTIAL            | R02/R18                                                      | 2026-10-01 R19 on `fix/moderation-bounded-reads` from `95dac4c`. Admin lists are cursor pages. Latest reason SQL returns one row per page target. R20 and R21 not started. Moderation browser NOT RUN. The R19 review correction and the 2026-10-02 search-cursor TimeZone predicate are prepared on that branch and are not accepted. |
+| D07     | Неограниченные moderation/history/analytics/facets reads                     | P2 / HIGH             | W5 → R19, R20, R21                   | PARTIAL            | R02/R18; R21 ещё открыт, R19 browser NOT RUN                 | 2026-10-02: R19 admin lists are cursor pages; latest reason is one SQL row per page target; the review correction and search-cursor UTC predicate are in the MVP branch and are not accepted by that record. Moderation browser NOT RUN. R20 analytics aggregates are in PostgreSQL; the 7d JSON matched the previous overview; date bounds use a parameter-side UTC timestamp and one 100010-row plan used a range Index Cond. R21 facets remain. |
 | D08     | AuthProvider/API logout есть, но нет доступного пользователю UI              | P1 / HIGH             | W1 → R30                             | VERIFIED           | —                                                            | Behavioral logout + Chromium 4/4 + WebKit 4/4, including private-history Back |
 | C01     | Unreachable mobile/API files, helpers и exports                              | P2 / HIGH             | W3 → R09, R10                        | VERIFIED           | R01/R04/R05–R07                                              | 2026-10-01 inventory on `fix/audit-unused-code`. Confirmed unreachable files removed. Live OverlayHost, CreatorCardGrid, share URL, reduced motion, and portfolio predicates retained. Browser NOT RUN. |
 | C02     | Legacy exports и never-thrown compatibility error                            | P3 / HIGH–MEDIUM      | W3 → R10                             | PARTIAL            | R04; consumer verification                                   | Never-thrown `RevisionMediaStorageError` and confirmed unused exports removed. Seller/Product/Listing persistence parsers retained: HEAD and archive `19eb40e` consumers are spec and barrel only. |
