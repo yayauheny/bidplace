@@ -5,6 +5,77 @@
 > commerce-schema references below do not mean that Listing, Bid, Order,
 > lifecycle, realtime, discovery or activity modules are currently booted.
 
+## 2026-10-02 — R19 search cursor time zone
+
+- `Partial`: admin search pages compare the cursor instant as UTC wall time.
+  `created_at` stays a `timestamp(3)` without time zone. The bound parameter is
+  `timestamptz AT TIME ZONE 'UTC'` for both the greater-than and the equal
+  check, for authors and works. A session TimeZone no longer drops or repeats
+  a later page.
+- Before: UTC returned three tied and one-millisecond rows once. Europe/Minsk
+  stopped after the first row. America/Los_Angeles repeated the first page.
+- After: UTC, Europe/Minsk, and America/Los_Angeles each return those three
+  rows once for both lists, and `nextCursor` ends. The TimeZone is set only
+  inside the transaction that runs the list query.
+- Coverage: `admin-moderation-list.ts` and
+  `admin-moderation-pagination.integration.spec.ts`. Node v22.20.0 / pnpm
+  11.7.0. API unit tests are 49 files and 288 tests, plus 37 env tests.
+  Integration is 24 files and 91 tests on local disposable
+  `bidplace_integration` schemas. Commands are in the R19 search cursor
+  timezone evidence of `docs/audits/current/00-EXECUTION-ROADMAP.md`.
+- `Unchanged`: literal search, joined display text, revision filters, page
+  size, reason reads, permissions, and public contracts. R20 and R21 were not
+  started. D07 stays partial. Browsers were not run. This correction is not
+  accepted by this record.
+
+## 2026-10-01 — R19 moderation read correction
+
+- `Partial`: the admin moderation shell keeps search, filters, and tabs mounted
+  while a new list query is loading or has failed. The results area shows
+  loading, error, empty, retry, and a search longer than 200 characters. That
+  over-limit value is not sent and is not truncated. Refresh cancels in-flight
+  seller and product pages before it trims the cache. Search matches the
+  previous joined display text, and `%`, `_`, and `\` are literal.
+- Coverage: `admin-moderation-screen.tsx`, `admin-moderation-list.ts`,
+  `admin-moderation.service.ts`, and
+  `admin-moderation-pagination.integration.spec.ts`. Node v22.20.0 / pnpm
+  11.7.0. API unit tests are 49 files and 288 tests, plus 37 env tests.
+  Integration is 24 files and 85 tests on local disposable
+  `bidplace_integration` schemas. Mobile tests are 108 files and 543 tests.
+  Commands are in the R19 correction evidence of
+  `docs/audits/current/00-EXECUTION-ROADMAP.md`.
+- `Unchanged`: page size, keyset order, latest-reason scope, permissions,
+  moderation transitions, append-only audit, public list APIs, and
+  `productAction`. R20 and R21 were not started. D07 stays partial. Browsers
+  were not run. This correction is not accepted by this record. No `.pen`
+  file was changed.
+
+## 2026-10-01 — Bounded admin moderation reads
+
+- `Implemented`: admin seller and product lists are cursor pages. The default
+  page is 50 and the maximum is 100, ordered by `createdAt` ascending and then
+  `id` ascending. `nextCursor` is null when the page is the last one. An
+  invalid cursor is rejected. Review and visibility filters, and search, run
+  on the server using the revision projection from R02. The latest non-empty
+  moderation reason is one SQL row per target on the current page.
+- `Implemented`: the admin screen loads the next page, retries a failed next
+  page, and starts again when the filter or search changes. Approve, reject,
+  changes, suspend, and a conflict refresh replace the loaded pages so a stale
+  later page is not kept. `productAction` and its error text are unchanged.
+- Coverage: `admin-moderation-list.ts`, `admin-moderation.service.ts`,
+  `admin.controller.ts`, `packages/contracts/src/admin.ts`,
+  `packages/api-client/src/admin.ts`, `admin-moderation-screen.tsx`, and
+  `admin-moderation-pagination.integration.spec.ts`. On the synthetic fixture,
+  limit 1 returns one seller while five audit rows remain for that target;
+  the latest-reason query returns one row. Node v22.20.0 / pnpm 11.7.0.
+  API unit tests are 49 files and 287 tests, plus 37 env tests. Integration
+  is 24 files and 83 tests on local disposable `bidplace_integration`
+  schemas. Mobile tests are 108 files and 532 tests. Commands are in the R19
+  evidence of `docs/audits/current/00-EXECUTION-ROADMAP.md`.
+- `Unchanged`: moderation transitions, append-only audit, permissions, and
+  public list APIs. R20 and R21 were not started. D07 stays partial.
+  Browsers were not run. No `.pen` file was changed.
+
 ## 2026-10-01 — Leading env BOM and config unit discovery
 
 - `Implemented`: `loadEnvFile` removes one leading U+FEFF and then calls Node

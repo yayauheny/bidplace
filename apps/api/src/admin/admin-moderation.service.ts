@@ -1,6 +1,8 @@
 import { createHash } from 'node:crypto';
 
 import {
+  type AdminModerationCursor,
+  type AdminModerationListQuery,
   type AdminProductStatusUpdateRequest,
   type AdminSellerStatusUpdateRequest,
   adminProductsResponseSchema,
@@ -30,6 +32,17 @@ import {
 } from '../sellers/seller-profile.mapper';
 import { assertSellerProfileRevisionTransition } from '../sellers/seller-profile-revision-state';
 import {
+  latestModerationReasonSql,
+  moderationListOrderBy,
+  moderationPage,
+  orderRowsByIds,
+  productModerationSearchSql,
+  productModerationWhere,
+  readModerationCursor,
+  sellerModerationSearchSql,
+  sellerModerationWhere,
+} from './admin-moderation-list';
+import {
   adminProductListSelect,
   adminSellerListSelect,
   adminSellerRevisionSelect,
@@ -47,55 +60,132 @@ export class AdminModerationService {
     private readonly imageStore: ImageStore,
   ) {}
 
-  async listSellerProfiles() {
-    const sellerProfiles = await this.prisma.sellerProfile.findMany({
-      where: { status: { not: 'DRAFT' } },
-      select: adminSellerListSelect,
-      orderBy: { createdAt: 'asc' },
-    });
-    const ids = sellerProfiles.map(({ id }) => id);
+  async listSellerProfiles(query: AdminModerationListQuery) {
+    const cursor = readModerationCursor(query.cursor);
+    const { page, nextCursor } = await this.loadSellerPage(query, cursor);
+    const ids = page.map(({ id }) => id);
     const [blockingSellers, reasons] = await Promise.all([
-      this.prisma.sellerProfile.findMany({
-        where: {
-          id: { in: ids },
-          products: {
-            some: {
-              listings: { some: { status: { in: ['SCHEDULED', 'LIVE'] } } },
+      ids.length === 0
+        ? Promise.resolve([])
+        : this.prisma.sellerProfile.findMany({
+            where: {
+              id: { in: ids },
+              products: {
+                some: {
+                  listings: { some: { status: { in: ['SCHEDULED', 'LIVE'] } } },
+                },
+              },
             },
-          },
-        },
-        select: { id: true },
-      }),
+            select: { id: true },
+          }),
       this.latestModerationReasons('SELLER_PROFILE', ids),
     ]);
     const blockingSellerIds = new Set(blockingSellers.map(({ id }) => id));
 
     return adminSellerProfilesResponseSchema.parse({
-      sellerProfiles: sellerProfiles.map((sellerProfile) =>
+      sellerProfiles: page.map((sellerProfile) =>
         toAdminSellerProfile(
           sellerProfile,
           reasons.get(sellerProfile.id) ?? null,
           blockingSellerIds.has(sellerProfile.id),
         ),
       ),
+      nextCursor,
     });
   }
 
-  async listProducts() {
-    const products = await this.prisma.product.findMany({
-      select: adminProductListSelect,
-      orderBy: { createdAt: 'asc' },
-    });
+  async listProducts(query: AdminModerationListQuery) {
+    const cursor = readModerationCursor(query.cursor);
+    const { page, nextCursor } = await this.loadProductPage(query, cursor);
     const reasons = await this.latestModerationReasons(
       'PRODUCT',
-      products.map(({ id }) => id),
+      page.map(({ id }) => id),
     );
 
     return adminProductsResponseSchema.parse({
-      products: products.map((product) =>
+      products: page.map((product) =>
         toAdminProduct(product, reasons.get(product.id) ?? null),
       ),
+      nextCursor,
     });
+  }
+
+  private async loadSellerPage(
+    query: AdminModerationListQuery,
+    cursor: AdminModerationCursor | null,
+  ) {
+    if (!query.search) {
+      const rows = await this.prisma.sellerProfile.findMany({
+        where: sellerModerationWhere(query, cursor),
+        select: adminSellerListSelect,
+        orderBy: moderationListOrderBy,
+        take: query.limit + 1,
+      });
+      return moderationPage(rows, query.limit);
+    }
+    const idRows = await this.prisma.$queryRaw<
+      Array<{ id: string; created_at: Date | string }>
+    >(sellerModerationSearchSql(query.search, query, cursor));
+    return this.hydrateModerationPage(idRows, query.limit, (ids) =>
+      this.prisma.sellerProfile.findMany({
+        where: { id: { in: ids } },
+        select: adminSellerListSelect,
+      }),
+    );
+  }
+
+  private async loadProductPage(
+    query: AdminModerationListQuery,
+    cursor: AdminModerationCursor | null,
+  ) {
+    if (!query.search) {
+      const rows = await this.prisma.product.findMany({
+        where: productModerationWhere(query, cursor),
+        select: adminProductListSelect,
+        orderBy: moderationListOrderBy,
+        take: query.limit + 1,
+      });
+      return moderationPage(rows, query.limit);
+    }
+    const idRows = await this.prisma.$queryRaw<
+      Array<{ id: string; created_at: Date | string }>
+    >(productModerationSearchSql(query.search, query, cursor));
+    return this.hydrateModerationPage(idRows, query.limit, (ids) =>
+      this.prisma.product.findMany({
+        where: { id: { in: ids } },
+        select: adminProductListSelect,
+      }),
+    );
+  }
+
+  private async hydrateModerationPage<
+    T extends { id: string; createdAt: Date },
+  >(
+    idRows: Array<{ id: string; created_at: Date | string }>,
+    limit: number,
+    load: (ids: string[]) => Promise<T[]>,
+  ) {
+    const bounded = moderationPage(
+      idRows.map((row) => ({
+        id: row.id,
+        createdAt:
+          row.created_at instanceof Date
+            ? row.created_at
+            : new Date(row.created_at),
+      })),
+      limit,
+    );
+    if (bounded.page.length === 0) {
+      return { page: [] as T[], nextCursor: null };
+    }
+    const rows = await load(bounded.page.map((row) => row.id));
+    return {
+      page: orderRowsByIds(
+        bounded.page.map((row) => row.id),
+        rows,
+      ),
+      nextCursor: bounded.nextCursor,
+    };
   }
 
   async getSellerRevisionPhoto(profileId: string, revisionId: string) {
@@ -158,8 +248,7 @@ export class AdminModerationService {
       const editingRevision = sellerProfile.editingRevision;
       const isRevisionReview = input.target.kind === 'revision';
       const isVisibilityTransition =
-        (sellerProfile.status === 'APPROVED' &&
-          input.status === 'SUSPENDED') ||
+        (sellerProfile.status === 'APPROVED' && input.status === 'SUSPENDED') ||
         (sellerProfile.status === 'SUSPENDED' && input.status === 'APPROVED');
       this.assertFreshSellerTarget(sellerProfile, input);
 
@@ -421,7 +510,11 @@ export class AdminModerationService {
     productId: string,
     input: AdminProductStatusUpdateRequest,
   ) {
-    const product = await this.updateProductStatus(adminUserId, productId, input);
+    const product = await this.updateProductStatus(
+      adminUserId,
+      productId,
+      input,
+    );
     return toProductResponse(
       await this.prisma.product.findUniqueOrThrow({
         where: { id: product.id },
@@ -462,7 +555,10 @@ export class AdminModerationService {
       this.logger.warn('Blocked stale seller parent target');
       throw new ConflictException('Moderation target is stale');
     }
-    if (sellerProfile.editingRevision && !this.isSellerVisibility(sellerProfile.status, input.status)) {
+    if (
+      sellerProfile.editingRevision &&
+      !this.isSellerVisibility(sellerProfile.status, input.status)
+    ) {
       this.logger.warn(
         'Blocked parent target that would review an editing revision',
       );
@@ -519,20 +615,13 @@ export class AdminModerationService {
     targetType: 'SELLER_PROFILE' | 'PRODUCT',
     targetIds: string[],
   ) {
-    const auditEvents = await this.prisma.auditEvent.findMany({
-      where: {
-        targetType,
-        targetId: { in: targetIds },
-        reason: { not: null },
-      },
-      orderBy: { createdAt: 'desc' },
-      select: { targetId: true, reason: true },
-    });
     const reasons = new Map<string, string>();
-    for (const event of auditEvents) {
-      if (event.reason && !reasons.has(event.targetId)) {
-        reasons.set(event.targetId, event.reason);
-      }
+    if (targetIds.length === 0) return reasons;
+    const rows = await this.prisma.$queryRaw<
+      Array<{ target_id: string; reason: string | null }>
+    >(latestModerationReasonSql(targetType, targetIds));
+    for (const row of rows) {
+      if (row.reason) reasons.set(row.target_id, row.reason);
     }
     return reasons;
   }
@@ -648,9 +737,9 @@ export class AdminModerationService {
     const profilePhotoObjectKey = sellerProfile.profilePhotoObjectKey ?? null;
     const hasRevisionPhoto = Boolean(
       profilePhotoMimeType &&
-        profilePhotoByteLength &&
-        profilePhotoChecksum &&
-        profilePhotoObjectKey,
+      profilePhotoByteLength &&
+      profilePhotoChecksum &&
+      profilePhotoObjectKey,
     );
     const hasLegacyPhoto = Boolean(sellerProfile.profilePhotoData?.byteLength);
     if (

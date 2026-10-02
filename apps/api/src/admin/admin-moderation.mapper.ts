@@ -125,6 +125,7 @@ export const adminProductListSelect = {
     orderBy: { position: 'asc' },
     select: creationStepSelect,
   },
+  createdAt: true,
   sellerProfile: { select: { slug: true, fullName: true, status: true } },
   listings: {
     where: { status: { in: ['SCHEDULED', 'LIVE'] } },
@@ -253,9 +254,7 @@ function sellerContent(record: {
   };
 }
 
-function creationSteps(
-  steps: AdminProductListRecord['creationSteps'],
-) {
+function creationSteps(steps: AdminProductListRecord['creationSteps']) {
   return steps.map((step) => ({
     id: step.id,
     position: step.position,

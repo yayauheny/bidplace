@@ -1,5 +1,6 @@
 import {
   adminAnalyticsQuerySchema,
+  adminModerationListQuerySchema,
   adminCuratorSelectionRequestSchema,
   adminCuratorSelectionResponseSchema,
   adminOkResponseSchema,
@@ -57,14 +58,17 @@ export class AdminController {
   }
 
   @Get('seller-profiles')
-  async listSellers() {
-    return this.moderation.listSellerProfiles();
+  async listSellers(@Query() query: unknown) {
+    return this.moderation.listSellerProfiles(
+      parseQuery(adminModerationListQuerySchema, query),
+    );
   }
 
   @Get('seller-profiles/:id/revisions/:revisionId/photo')
   async sellerRevisionPhoto(
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
-    @Param('revisionId', new ParseUUIDPipe({ version: '4' })) revisionId: string,
+    @Param('revisionId', new ParseUUIDPipe({ version: '4' }))
+    revisionId: string,
     @Res()
     response: {
       setHeader(name: string, value: string): void;
@@ -79,8 +83,10 @@ export class AdminController {
   }
 
   @Get('products')
-  async listProducts() {
-    return this.moderation.listProducts();
+  async listProducts(@Query() query: unknown) {
+    return this.moderation.listProducts(
+      parseQuery(adminModerationListQuerySchema, query),
+    );
   }
 
   @Patch('seller-profiles/:id/status')

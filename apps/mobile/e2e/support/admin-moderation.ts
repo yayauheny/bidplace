@@ -21,12 +21,25 @@ export async function moderateSeller(
   status = 'APPROVED',
   reason?: string,
 ) {
-  const listed = await request.get(`${e2eApiBaseURL}/api/admin/seller-profiles`);
-  if (!listed.ok()) {
-    throw new Error(await listed.text());
+  let cursor: string | null = null;
+  let item: AdminSeller | undefined;
+  for (let page = 0; page < 20 && !item; page += 1) {
+    const url = new URL(`${e2eApiBaseURL}/api/admin/seller-profiles`);
+    url.searchParams.set('filter', 'ALL');
+    url.searchParams.set('limit', '100');
+    if (cursor) url.searchParams.set('cursor', cursor);
+    const listed = await request.get(url.toString());
+    if (!listed.ok()) {
+      throw new Error(await listed.text());
+    }
+    const body = (await listed.json()) as {
+      sellerProfiles: AdminSeller[];
+      nextCursor: string | null;
+    };
+    item = body.sellerProfiles.find((profile) => profile.id === profileId);
+    cursor = body.nextCursor;
+    if (!cursor) break;
   }
-  const body = (await listed.json()) as { sellerProfiles: AdminSeller[] };
-  const item = body.sellerProfiles.find((profile) => profile.id === profileId);
   if (!item) {
     throw new Error(`Seller ${profileId} is not in the admin queue`);
   }
@@ -35,7 +48,11 @@ export async function moderateSeller(
     review &&
     review.status === 'PENDING_REVIEW' &&
     revisionReviewStatuses.has(status)
-      ? { kind: 'revision' as const, id: review.id, updatedAt: review.updatedAt }
+      ? {
+          kind: 'revision' as const,
+          id: review.id,
+          updatedAt: review.updatedAt,
+        }
       : {
           kind: 'parent' as const,
           status: item.parentStatus,
