@@ -90,8 +90,8 @@ export class PortfolioService {
     ]);
     return portfolioDiscoveryFacetsResponseSchema.parse({
       materials: normalizeFacetValues(materials),
-      cities: normalizeFacetValues(authors.map((author) => author.city)),
-      tags: normalizeFacetValues(authors.map((author) => author.discipline)),
+      cities: normalizeFacetValues(authors.cities),
+      tags: normalizeFacetValues(authors.tags),
     });
   }
 

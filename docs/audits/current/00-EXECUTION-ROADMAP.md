@@ -34,6 +34,8 @@
 
 **Дополнение 2026-10-02, cursor TimeZone:** поисковый keyset сравнивает параметр курсора как UTC wall time, а не через TimeZone сессии. D07 остаётся `PARTIAL`. См. R19 search cursor timezone evidence.
 
+**Дополнение 2026-10-02, R21:** `fix/catalog-facet-reads` включён поверх `afb70a9`. Public portfolio facets читают distinct values из существующих visibility CTE. D07 остаётся `PARTIAL`: moderation browser NOT RUN. См. R21 evidence.
+
 Текущая задача сохраняет roadmap и prompts, не запускает production-изменения и не создаёт PR. Утверждение roadmap не является выбором архитектурных вариантов R22–R27.
 
 ## 1. Правила исполнения и ведения roadmap
@@ -664,6 +666,7 @@ T01 находится в Wave 1, потому что исправляет **о�
 - **Validation:** V-API, portfolio filters integration; synthetic high-row-count fixture.
 - **STOP:** оптимизация требует data migration или изменения нормализации.
 - **Done/status:** D07 → `VERIFIED` только после R19–R21.
+- **Actual (2026-10-01):** materials, cities и tags читаются `SELECT DISTINCT` из живых public CTE. City и discipline — два независимых набора, не пары author. `normalizeFacetValues` остаётся владельцем trim, `toLocaleLowerCase('ru-RU')` и `localeCompare`. Скалярные поля не разворачиваются через unnest. D07 остаётся `PARTIAL`. См. R21 evidence.
 - **Отчёт:** G с bounded reads и equality результата.
 
 ### Wave 6 — архитектурные решения
@@ -1434,6 +1437,42 @@ remaining limitations: L02 is not VERIFIED without browsers. The dirty-profile e
 blocked-by: none for this correction. Browser confirmation remains.
 ```
 
+### R21 evidence
+
+```text
+scope: R21 public portfolio facets only. Not R19, R20, R23, schema, taxonomy, or filter behavior.
+finding IDs: facets part of D07
+status: PARTIAL. Distinct public facet reads are implemented and checked. This branch now also contains R19 and R20 from afb70a9. D07 is not VERIFIED because the moderation browser check is still NOT RUN.
+base SHA: 95dac4c11a66f0e2e2931b1c3f45e86e52514ec0
+ancestor of the stated verified HEAD: f5d8b0ac80ced03e3155ea130955b596e312d762
+branch: fix/catalog-facet-reads
+commit: 4d3aed2dd729e6712b62320ca897cd60bf5e4f8f
+changed contracts: none. portfolioDiscoveryFacetsResponseSchema, filter query matching, and DEC-089 remain. Materials, city, and discipline stay scalar strings; no array unnest.
+approach: durable fix. SELECT DISTINCT on the existing portfolio and public-author CTEs. City and discipline are separate distinct reads, so the application does not receive one pair per author. JS normalizeFacetValues still trims, drops blanks, dedupes with toLocaleLowerCase('ru-RU'), and sorts with localeCompare('ru-RU'). SQL LOWER/COLLATE was not used. PostgreSQL BTRIM remains only in the existing ASCII-blank predicates.
+tests/scenarios: unit normalizer keeps the first supplied spelling, drops null/blank/tab/nbsp-only values, collapses repeated values, and sorts Cyrillic with the ru-RU base comparator. SQL assertions require DISTINCT, the published-revision and approved-author predicates, and reject LOWER/unnest and a city/discipline pair select. Integration baseline keeps cities [Гродно, Минск] and tags [Живопись, Керамика]; the material key is холст. Visibility fixture excludes draft, ARCHIVED hide, pending review, suspended author, editing-revision materials, parent-only materials, blank title, missing revision image, missing published revision, null publishedAt, blank author city, and null revision category. An author with no works still contributes a city and tag. An nbsp-only city is dropped by JS trim while its discipline remains. Empty data returns three empty arrays. Volume fixture below.
+volume evidence, same disposable schema, no timing claim:
+  36 qualifying material rows → 2 distinct material rows. Values: Холст, Дерево.
+  25 author pair rows → 2 distinct city rows and 2 distinct discipline rows. Values: Минск, Гродно and Живопись, Керамика.
+  Those distinct stored values normalize to the same HTTP JSON a full-row read would produce, because this fixture has no case collision:
+    materials: [Дерево, Холст]
+    cities: [Гродно, Минск]
+    tags: [Живопись, Керамика]
+  A second fixture returned 9 full material rows and 7 distinct raw strings, and 8 author pairs against 7 distinct cities plus 8 distinct disciplines. The HTTP response kept only the normalized public keys.
+representative limitation: when stored strings differ only by case, normalizeFacetValues keeps the first row from the unordered DISTINCT result. The previous full scan was also unordered. On the baseline fixture the previous expectation was Холст and this DISTINCT read returned холст. Both are the same locale key. No ORDER BY, collation, or new canonical spelling was added.
+validation commands and exit codes on Node v22.20.0 / pnpm 11.7.0:
+  BIDPLACE_ENV_FILE=/dev/null pnpm exec turbo run typecheck build --filter='@bidplace/api...' → 0 (9 tasks)
+  pnpm --filter @bidplace/api lint → 0
+  BIDPLACE_ENV_FILE=/dev/null pnpm --filter @bidplace/api test --exclude src/core/config/env.spec.ts → 0 (48 files, 283 tests)
+  env -u BIDPLACE_ENV_FILE pnpm --filter @bidplace/api test src/core/config/env.spec.ts → 0 (1 file, 37 tests). The spec uses its existing mocked file lookup. No .env was read.
+  BIDPLACE_ENV_FILE=/dev/null pnpm --filter @bidplace/api test:integration → 0 (23 files, 80 tests)
+  git diff --check → 0 before the documentation commit
+runtime environment: Node v22.20.0 and pnpm 11.7.0. Integration used local disposable postgres:16-alpine bidplace-r02-postgres on 127.0.0.1:5432. INTEGRATION_DATABASE_URL was unset, so the harness used bidplace_integration and an isolated itest_ schema via prisma migrate deploy. prisma migrate reset, root migrate, and seed were not run.
+evidence links: apps/api/src/portfolio/portfolio.service.ts; apps/api/src/products/products.service.ts; apps/api/src/sellers/sellers.service.ts; apps/api/test/integration/portfolio-filters.integration.spec.ts
+remaining limitations: D07 is not closed. R19 and R20 are in this tree from the mvp-release merge; their own records still leave the moderation browser NOT RUN. The case-collision spelling follows unordered DISTINCT order. ASCII-only blanks are still removed by the existing BTRIM predicate; other Unicode blanks still reach JS trim. Browsers were not run. No latency or constant-size claim.
+blocked-by: none for the facet reads. Moderation browser confirmation remains for D07.
+NOT RUN: browsers; root migrate; root seed; R23. R19 and R20 were not re-run in this merge.
+```
+
 Для `VERIFIED` обязательны:
 
 1. Проблема устранена либо Phase 0 доказал, что она уже устранена на новой базе.
@@ -1685,7 +1724,7 @@ index predicate correction, review HEAD a7a8e8fe0fe6e4b4a8fe3ebbd55d4648fe3f4ce6
 | D04     | Save response стирает новые поля/фото                                        | P1 / HIGH             | W2 → R05, R06                        | NEEDS_VERIFICATION | R03/R04; R06 после R05                                       | Current R05+R06 evidence: NEEDS_VERIFICATION. Chromium/WebKit NOT RUN.        |
 | D05     | Invalidation использует obsolete owner keys                                  | P2 / HIGH             | W2 → R07                             | NEEDS_VERIFICATION | R05                                                          | Current R07 evidence: NEEDS_VERIFICATION. Chromium/WebKit NOT RUN.            |
 | D06     | Избыточные image-auth и portfolio selectors                                  | P2 / HIGH             | W5 → R18                             | VERIFIED           | R10                                                          | 2026-10-01 `fix/narrow-read-selectors` from `6c0fac7`. Auth and portfolio selects narrowed. V-API and V-INTEGRATION passed. Synthetic selected JSON shrank with the same public Work and media results. |
-| D07     | Неограниченные moderation/history/analytics/facets reads                     | P2 / HIGH             | W5 → R19, R20, R21                   | PARTIAL            | R02/R18; R21 ещё открыт, R19 browser NOT RUN                 | 2026-10-02: R19 admin lists are cursor pages; latest reason is one SQL row per page target; the review correction and search-cursor UTC predicate are in the MVP branch and are not accepted by that record. Moderation browser NOT RUN. R20 analytics aggregates are in PostgreSQL; the 7d JSON matched the previous overview; date bounds use a parameter-side UTC timestamp and one 100010-row plan used a range Index Cond. R21 facets remain. |
+| D07     | Неограниченные moderation/history/analytics/facets reads                     | P2 / HIGH             | W5 → R19, R20, R21                   | PARTIAL            | R02/R18; R19 browser NOT RUN                                 | 2026-10-02: R19 admin lists are cursor pages; latest reason is one SQL row per page target; the review correction and search-cursor UTC predicate are in the MVP branch and are not accepted by that record. Moderation browser NOT RUN. R20 analytics aggregates are in PostgreSQL; the 7d JSON matched the previous overview; date bounds use a parameter-side UTC timestamp and one 100010-row plan used a range Index Cond. R21 public facets are distinct CTE reads. D07 is not VERIFIED. |
 | D08     | AuthProvider/API logout есть, но нет доступного пользователю UI              | P1 / HIGH             | W1 → R30                             | VERIFIED           | —                                                            | Behavioral logout + Chromium 4/4 + WebKit 4/4, including private-history Back |
 | C01     | Unreachable mobile/API files, helpers и exports                              | P2 / HIGH             | W3 → R09, R10                        | VERIFIED           | R01/R04/R05–R07                                              | 2026-10-01 inventory on `fix/audit-unused-code`. Confirmed unreachable files removed. Live OverlayHost, CreatorCardGrid, share URL, reduced motion, and portfolio predicates retained. Browser NOT RUN. |
 | C02     | Legacy exports и never-thrown compatibility error                            | P3 / HIGH–MEDIUM      | W3 → R10                             | PARTIAL            | R04; consumer verification                                   | Never-thrown `RevisionMediaStorageError` and confirmed unused exports removed. Seller/Product/Listing persistence parsers retained: HEAD and archive `19eb40e` consumers are spec and barrel only. |

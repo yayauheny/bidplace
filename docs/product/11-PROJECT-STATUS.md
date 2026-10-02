@@ -28,6 +28,37 @@
   started. D07 stays partial. Browsers were not run. This correction is not
   accepted by this record.
 
+## 2026-10-01 — Distinct public portfolio facet reads
+
+- `Implemented`: `GET /api/portfolio/facets` reads distinct values from the
+  existing public catalog CTEs (`products.service.ts`
+  `listPortfolioMaterialFacets`, `sellers.service.ts` `listPublicFacets`,
+  `portfolio.service.ts` `facets`). Materials come from the published Work
+  revision. Cities and tags use the current public author predicates as two
+  separate distinct reads. `normalizeFacetValues` still trims, drops blanks,
+  deduplicates with `toLocaleLowerCase('ru-RU')`, and sorts with
+  `localeCompare`. Draft, hidden (`ARCHIVED`), suspended, and non-public
+  revisions do not add values.
+- On one synthetic fixture, 36 qualifying material rows became 2 distinct
+  rows and 25 author pairs became 2 city rows plus 2 tag rows. The facets
+  JSON stayed `{ materials: [Дерево, Холст], cities: [Гродно, Минск], tags:
+  [Живопись, Керамика] }`. The transferred row count follows distinct stored
+  values. This is not a latency claim.
+- Coverage: `portfolio.service.spec.ts`, `products.service.spec.ts`,
+  `sellers.service.spec.ts`, and
+  `portfolio-filters.integration.spec.ts`. Node v22.20.0 / pnpm 11.7.0. API
+  unit tests are 48 files and 283 tests, plus 37 env tests. Integration is
+  23 files and 80 tests on disposable `bidplace_integration` schemas.
+  Commands are in the R21 evidence of
+  `docs/audits/current/00-EXECUTION-ROADMAP.md`.
+- `Unchanged`: the response schema, filter matching, taxonomy, and visibility
+  predicates. When stored strings differ only by case, the kept spelling is
+  the first unordered distinct row. The baseline fixture previously observed
+  `Холст` and this read observed `холст`; both are the same locale key, and
+  no new spelling canon was added. D07 stays partial: R19 and R20 are in this
+  tree, and the moderation browser check is still not run. Browsers were not
+  run. No founder decision was added.
+
 ## 2026-10-01 — R19 moderation read correction
 
 - `Partial`: the admin moderation shell keeps search, filters, and tabs mounted

@@ -131,6 +131,75 @@ describe('PortfolioService', () => {
     );
   });
 
+  it('normalizes distinct facet values with the existing locale rules', async () => {
+    const products = {
+      listPortfolioMaterialFacets: vi.fn().mockResolvedValue([
+        ...Array.from({ length: 12 }, () => 'Холст'),
+        ' холст ',
+        'Дерево',
+        'дерево',
+        'Бронза',
+        '',
+        '   ',
+        '\t',
+        '\u00A0',
+        '\u00A0Бронза\u00A0',
+        null,
+      ]),
+    };
+    const sellers = {
+      listPublicFacets: vi.fn().mockResolvedValue({
+        cities: [
+          ...Array.from({ length: 8 }, () => 'Минск'),
+          ' Минск ',
+          'Гродно',
+          'гродно',
+          '',
+          '   ',
+          '\u00A0',
+          null,
+        ],
+        tags: [
+          ...Array.from({ length: 8 }, () => 'Живопись'),
+          ' живопись ',
+          'Керамика',
+          '',
+          '   ',
+          null,
+        ],
+      }),
+    };
+    const service = new PortfolioService(
+      products as never,
+      sellers as never,
+      {} as never,
+    );
+
+    await expect(service.facets()).resolves.toEqual({
+      materials: ['Бронза', 'Дерево', 'Холст'],
+      cities: ['Гродно', 'Минск'],
+      tags: ['Живопись', 'Керамика'],
+    });
+  });
+
+  it('returns empty facet arrays when the distinct reads are empty', async () => {
+    const service = new PortfolioService(
+      {
+        listPortfolioMaterialFacets: vi.fn().mockResolvedValue([]),
+      } as never,
+      {
+        listPublicFacets: vi.fn().mockResolvedValue({ cities: [], tags: [] }),
+      } as never,
+      {} as never,
+    );
+
+    await expect(service.facets()).resolves.toEqual({
+      materials: [],
+      cities: [],
+      tags: [],
+    });
+  });
+
   it('requires a city when loading a public portfolio author', async () => {
     const sellers = {
       getApprovedPublicAuthor: vi.fn().mockResolvedValue(null),

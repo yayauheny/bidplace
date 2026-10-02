@@ -893,4 +893,38 @@ describe('SellersService', () => {
     ).rejects.toThrow('Achievement image not found');
     expect(get).not.toHaveBeenCalled();
   });
+
+  it('reads distinct public cities and disciplines as separate sets', async () => {
+    const queryRaw = vi
+      .fn()
+      .mockResolvedValueOnce([{ city: 'Минск' }, { city: ' Минск ' }])
+      .mockResolvedValueOnce([
+        { discipline: 'Живопись' },
+        { discipline: null },
+        { discipline: '   ' },
+      ]);
+    const service = new SellersService(
+      { $queryRaw: queryRaw } as never,
+      imageStore as never,
+    );
+
+    await expect(service.listPublicFacets()).resolves.toEqual({
+      cities: ['Минск', ' Минск '],
+      tags: ['Живопись', null, '   '],
+    });
+
+    expect(queryRaw).toHaveBeenCalledTimes(2);
+    const citySql = String(queryRaw.mock.calls[0]?.[0]?.sql);
+    const tagSql = String(queryRaw.mock.calls[1]?.[0]?.sql);
+    expect(citySql).toContain('SELECT DISTINCT "city"');
+    expect(tagSql).toContain('SELECT DISTINCT "discipline"');
+    expect(citySql).not.toContain('SELECT "city", "discipline"');
+    expect(tagSql).not.toContain('SELECT "city", "discipline"');
+    for (const sql of [citySql, tagSql]) {
+      expect(sql).toContain(`author."status" = 'APPROVED'`);
+      expect(sql).toContain(`NULLIF(BTRIM(author."city"), '') IS NOT NULL`);
+      expect(sql).not.toContain('LOWER(');
+      expect(sql).not.toContain('unnest');
+    }
+  });
 });
