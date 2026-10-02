@@ -1712,6 +1712,92 @@ index predicate correction, review HEAD a7a8e8fe0fe6e4b4a8fe3ebbd55d4648fe3f4ce6
 - R19, R21 и R22–R27 не менялись. Контракт overview, ingestion, permissions, schema и migrations не менялись.
 - Браузеры не запускались. Root migrate и seed не запускались. Integration harness мигрировал только изолированные `itest_` schemas в `bidplace_integration`. Канонический Pen не менялся. `10-CODE-ARCHITECTURE.md` не менялся: граница admin overview та же.
 
+### R28-A evidence — 2026-10-03
+
+```text
+scope: R28-A behavior tests only. H01–H06, S01–S07, and the AdminRevisionPhoto clarification. Not R29, R33, C07, a broad T06 harness merge, new scenarios, or a dead-code sweep.
+status: PARTIAL. R28, T02, and T06 stay open. This record does not accept B3, C, or R28. D04, D05, D09, D10, L04, and the other existing NEEDS_VERIFICATION and PARTIAL findings stay at their previous status. Findings total remains 38.
+branch: fix/behavior-test-coverage
+base SHA: 2728212cad2b39d32246899f429baedea60fa675
+code final SHA: 2ae66857ea20b3c82d4788a9320cecfe71bc588e
+commits:
+  A/H01–H06 487d0a301b6dd8fe54cbc4e37ae92b0e7ab61d05 test: observe portfolio catalog hooks from their own views
+  B1/S01–S03 e35cc9cd6efe3cbaeac70fe8748757b59b468a46 test: cover catalog consumer behavior
+  B2/S04–S07 4312cecf19a398e9ab55c94f7a9f6474dbf3ea6e test: cover work and search primitives
+  B3 2ae66857ea20b3c82d4788a9320cecfe71bc588e fix issue: clarify revision photo reload coverage
+changed files, all tests:
+  apps/mobile/src/features/products/use-portfolio-catalog-hooks.spec.ts
+  apps/mobile/src/lib/category-query-identity.spec.ts
+  apps/mobile/src/features/products/product-list-catalog.spec.ts
+  apps/mobile/src/features/products/catalog-intro-style.spec.ts
+  apps/mobile/src/features/products/product-list-screen.spec.ts
+  apps/mobile/src/features/products/product-screen.spec.ts
+  apps/mobile/src/components/figma/figma-tabs.spec.ts
+  apps/mobile/src/features/search/search-overlay-surface.spec.ts
+  apps/mobile/src/features/admin/AdminRevisionPhoto.spec.ts
+production diff: none
+
+H01–H06, use-portfolio-catalog-hooks.spec.ts, 18 tests. Real works and authors catalog hooks. H01 first page from the passed route state. H02 one new id when page 2 overlaps page 1. H03 keeps page 1 after a non-retryable page 2 error and retries that page. H04 works fields q, category, material, and sort, and authors fields q, tag, city, and sort, each start a new first page. H05 aborts the pending request when query identity changes. H06 aborts it when the last observer unmounts.
+
+Nine source-reading cases replaced. Retained: PAYMENT_DELIVERY_STUB unit in product-screen.spec.ts; the first catalog-intro-style token assertion (bodySmall, Inter_400Regular, 14/20/-0.14, weight 400, ink #2A2A2A, textSecondary #8A8A8A); the FigmaTabs color helper.
+  S01 category-query-identity.spec.ts:18. Risk: a consumer can miss categoryKeys.all. Owner: ProductListScreen, ProductDraftScreen, PublicSellerScreen, CategoriesSearchPane, each on a fresh QueryClient. Result: the category query is observed, observer count is greater than 0, and the cache entry matches the category response.
+  S02 product-list-catalog.spec.ts:13 and :18, catalog-intro-style.spec.ts:29. Risk: catalog chrome or intro can drift from the screen. Owners: ProductListScreen and the authors catalog. Result: both catalogs hide «Все работы» and have no tablist or tab. Order is screen title, catalog intro, Filter/Sort, then the card. Both intros go to AppText as bodySmall without a secondary tone.
+  S03 product-list-screen.spec.ts:13. Risk: Back can show without history or skip router.back. Owner: the works catalog and WorkBackControl. Result: canGoBack false hides Back. canGoBack true renders WorkBackControl, and a click calls router.back once.
+  S04 product-screen.spec.ts:25. Risk: the work header can gain a Like control or drop Back or Share. Owners: WorkHeader.tsx and WorkHeader.web.tsx with WorkActions and FigmaIconButton. Result: each header has one «Назад» and one «Поделиться работой», no Like or heart, and each callback runs once. Header callbacks are not ProductScreen navigation evidence.
+  S05 figma-tabs.spec.ts:17. Risk: content inset can land on the outer tablist. Owner: FigmaTabs.web. Result: inset 24 sets rail paddingLeft and paddingRight to 24px. The outer tablist keeps its divider and does not take that inset. Default inset is 0. DOM style, compared through CSSOM.
+  S06 search-overlay-surface.spec.ts:10. Risk: the web dialog can stay in the host, or the native modal can drop its close wiring. Owners: SearchOverlaySurface.web and the native search-overlay-surface module loaded with vi.importActual. Result: the web dialog and sentinel portal to document.body outside the host and leave on unmount. The native modal is visible, transparent, and animationType none; onRequestClose calls onClose once. This is not device evidence.
+  S07 search-overlay-surface.spec.ts:20. Risk: outside dismissal can fire twice or after unmount. Owners: SearchOverlay, the web surface and layer, useDismissibleOverlay, and useOverlayFocusTrap. Result: pointerdown plus click inside the dialog does not dismiss. The same sequence on the dimmer calls onDismiss once. After unmount, a new outside event does not call the callback.
+
+B3 AdminRevisionPhoto.spec.ts. The first case is named for reload when the review target changes and for revoke of the previous object URL. The second resolve of the already settled first promise, and the assertion that treated it as a late response, are removed. The case still checks the first load, the identity change, loading, the new photo, created URLs blob:photo-0 and blob:photo-1, and revoke on unmount. The following case, "does not let an older response replace a newer photo that already loaded", is unchanged: the first request stays pending until the second photo loads, then the late first response does not replace it. The file still has 5 tests. Production AdminRevisionPhoto and useAdminObjectUrl were not edited.
+
+runtime counts from saved logs, Node v22.20.0 / pnpm 11.7.0. Historical counts are not rewritten to the latest total.
+  baseline after package dist: bidplace-r28-baseline-after-build.log, 108 files / 543 tests, exit 0
+  A targeted: bidplace-r28-hooks-corrected.log, 18 passed, exit 0. Authors-only: bidplace-r28-hooks-authors-only.log, 9 passed / 9 skipped, exit 0. Full: bidplace-r28-hooks-final-mobile-test.log, 109 / 561, exit 0
+  B1 full suite before the canGoBack boolean annotation: bidplace-r28-s01-s03-final-mobile-test.log, 109 / 566, exit 0. That suite was not rerun after the annotation. After it: bidplace-r28-b1-targeted.log, 4 files / 11 tests, exit 0
+  B2 targeted: bidplace-r28-b2-targeted.log, 3 files / 9 tests, exit 0. Full: bidplace-r28-b2-final-mobile-test.log, 109 / 569, exit 0
+  B3 targeted: bidplace-r28-b3-targeted.log, 1 file / 5 tests, exit 0. Full: bidplace-r28-b3-final-mobile-test.log, 109 / 569, exit 0. The case count did not change, so the suite total stayed 569.
+
+cache and exits:
+  A final typecheck and build: bidplace-r28-hooks-final-typecheck-build.log, 8 successful, exit 0
+  B1 before the annotation: bidplace-r28-s01-s03-final-typecheck-build.log, exit 2, TS2322 at product-list-screen.spec.ts. After the annotation: bidplace-r28-b1-typecheck-build.log, 8 successful, 6 cache hits, mobile typecheck and build cache miss, exit 0
+  B2 first typecheck: bidplace-r28-b2-typecheck.log, exit 2, TS5097 and TS2769. Corrected typecheck: bidplace-r28-b2-corrected-typecheck.log, 7 successful, 6 cache hits, mobile typecheck cache miss, exit 0. Final graph: bidplace-r28-b2-final-typecheck-build.log, 8 successful, 7 cache hits including mobile typecheck 126541c63eaa9745, mobile build cache miss, exit 0
+  B3 typecheck and build: bidplace-r28-b3-final-typecheck-build.log, 8 successful, 6 cache hits, mobile typecheck cache miss 4a285f4b454f76dd, mobile build cache miss cfd77d63f059c17b, exit 0
+  B3 lint: bidplace-r28-b3-final-lint.log, exit 0. E2E fence: bidplace-r28-b3-e2e-fence.log, exit 0. diff --check: bidplace-r28-b3-diff-check.log, exit 0
+  Lint, e2e fence, and diff --check for A, B1, and B2 are in the matching bidplace-r28-hooks-final-*, bidplace-r28-b1-*, and bidplace-r28-b2-final-* / bidplace-r28-b2-e2e-fence / bidplace-r28-b2-diff-check logs, each exit 0.
+
+previous failures, kept visible:
+  Fresh-worktree mobile test before package dist: bidplace-r28-baseline-mobile-test.log. Vite could not resolve @bidplace/design-tokens. 67 files failed to load, 41 passed, and 2 tests failed. This is a missing-dist bootstrap failure. The green baseline is the later 108 / 543 log.
+  First H01–H06 run: 11 failed / 7 passed. No separate full stdout log was saved. That output is not reconstructed here and is not recorded as a service defect. Review classified three harness defects. The accepted correction is 487d0a3.
+  First S01–S03 targeted run: bidplace-r28-s01-s03.log, exit 1, 4 files, no tests, SyntaxError: Unexpected token 'typeof' from react-native Flow. Corrected targeted log is bidplace-r28-s01-s03-corrected.log, 4 files / 11 tests, exit 0.
+  B1 TS2322 and B2 TS5097/TS2769 remain in the logs above. The corrections were the boolean annotation, unsuffixed component imports, children inside props, typed vi.importActual for the native surface, and CSSOM comparison for the divider.
+
+existing browser owners, not executed in this package:
+  Home → Work → Back, including the Back button and history, is apps/mobile/e2e/back-navigation-lifecycle.spec.ts:14.
+  work-header-motion.spec.ts covers header geometry, action persistence, and gallery swipe.
+  work-page-back.spec.ts is the helper unit.
+  Citing those files is not a browser run. S04 does not verify ProductScreen router navigation.
+
+negative controls, described only, NOT RUN:
+  Remove the request signal from a catalog hook. Omit one identity field. Return a duplicate id.
+  S01: drop categoryKeys.all from one consumer.
+  S02: mount a catalog segment with role tablist or tab.
+  S03: canGoBack true without calling router.back.
+  S04: add Like to WorkActions.
+  S05: move the rail padding onto the outer tablist.
+  S06: leave the portal inside the host.
+  S07: add a second outside-dismiss listener on the dimmer.
+
+residual final-sweep candidates, by reference to the post-cleanup evidence in this file, not removed here: figmaDeferredIconNames, figmaDeferredDockItemIds, figmaUnusedDockVariantIds, and orphan fixtures, helpers, and mocks after a future harness merge. The source-text examples named in that historical line, category-query-identity and catalog-intro-style, were replaced in this package. T06 harness duplication and mutation sanity remain later steps. R29 was not started.
+static resolver, CSSOM, and compiler probes used while correcting B2 are separate from the Vitest and Turbo runs listed above.
+NOT RUN: browsers, API server, database, Prisma, migrate, seed, root verify, mutation copies, and negative controls.
+```
+
+### Проверка документа — 2026-10-03 R28-A
+
+- R28-A evidence is recorded. R28, T02, and T06 stay `PARTIAL`. The historical card and earlier supplements are unchanged, including lines that still say R28 was not started.
+- The coverage matrix and the findings total are unchanged. D04, D05, D09, D10, and L04 were not moved to `VERIFIED`.
+- Browsers, API bootstrap, database, migrations, and seed were not run. `10-CODE-ARCHITECTURE.md` and the canonical Pen file were not changed.
+
 ## 6. Полная coverage matrix
 
 `E0` — исходный аудит; `E1` — повторная статическая проверка в этом planning pass; `E2` — targeted review PR #12 (`014711fa2ef4f78ad28e4759168d42ef04d5b794` → `7d2d5479f1087835271c1eb23985f2886049abb6`): logout UI отсутствовал уже на base. Это evidence наличия finding, не его исправления.
