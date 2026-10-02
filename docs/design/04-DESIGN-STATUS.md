@@ -4,6 +4,20 @@
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
+## 2026-10-01 — Moderation search stays with the queue
+
+- `Needs verification` (mobile web behavior): Authors and Works keep the search
+  field, status filters, and tabs mounted while a new moderation query is
+  loading or has failed. Loading, error, empty, retry, and a search longer
+  than 200 characters render in the results area. The same field can be
+  corrected. Previous cards are not shown as the results of the new query.
+- Before: a pending search, a failed search, or a 201-character paste replaced
+  the screen and removed the field.
+- After: the field stays in place, including its focus while the query is
+  pending. The component tests cover both queues. Chromium, WebKit, and
+  390/1024/1440 screenshots were not run. This does not visually accept the
+  moderation screen.
+
 ## 2026-10-01 — Author exit follows the current draft
 
 - `Needs verification` (mobile web behavior): the author exit confirm button

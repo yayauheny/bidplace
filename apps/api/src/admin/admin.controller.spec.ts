@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
+import { adminModerationListQuerySchema } from '@bidplace/contracts';
+
 import { BearerAuthGuard } from '../auth';
 import { AdminController } from './admin.controller';
 import { AdminGuard } from './admin.guard';
@@ -26,25 +28,36 @@ describe('AdminController', () => {
   });
 
   it('delegates seller moderation projections without a Prisma dependency', async () => {
-    const response = { sellerProfiles: [] };
+    const response = { sellerProfiles: [], nextCursor: null };
     const moderation = {
       listSellerProfiles: vi.fn().mockResolvedValue(response),
     };
 
-    await expect(controllerWith(moderation).listSellers()).resolves.toBe(
+    await expect(controllerWith(moderation).listSellers({})).resolves.toBe(
       response,
     );
-    expect(moderation.listSellerProfiles).toHaveBeenCalledOnce();
+    expect(moderation.listSellerProfiles).toHaveBeenCalledWith(
+      adminModerationListQuerySchema.parse({}),
+    );
   });
 
   it('delegates product moderation projections without a Prisma dependency', async () => {
-    const response = { products: [] };
+    const response = { products: [], nextCursor: null };
     const moderation = { listProducts: vi.fn().mockResolvedValue(response) };
+    const query = adminModerationListQuerySchema.parse({
+      limit: '100',
+      filter: 'PENDING_REVIEW',
+      search: ' Ceramic ',
+    });
 
-    await expect(controllerWith(moderation).listProducts()).resolves.toBe(
-      response,
-    );
-    expect(moderation.listProducts).toHaveBeenCalledOnce();
+    await expect(
+      controllerWith(moderation).listProducts({
+        limit: '100',
+        filter: 'PENDING_REVIEW',
+        search: ' Ceramic ',
+      }),
+    ).resolves.toBe(response);
+    expect(moderation.listProducts).toHaveBeenCalledWith(query);
   });
 
   it('delegates product status changes and canonical readback to moderation', async () => {
