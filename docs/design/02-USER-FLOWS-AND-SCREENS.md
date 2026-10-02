@@ -54,6 +54,12 @@ The admin author card shows the revision approval publishes, including an
 achievement date at its stored month or day precision. A null date is omitted.
 The revision photo is the photo of that same review target.
 
+Search, status filters, and the Authors and Works tabs stay on the moderation
+screen while a new list query is loading or has failed. A search longer than
+200 characters stays in the field and can be corrected. Loading, empty, error,
+retry, and that limit message appear in the results area. The previous cards
+are not treated as the results of the new query.
+
 When a guest opens a protected internal route, Login receives its validated
 pathname and query as `redirectTo`; successful authentication returns to that
 route. External targets and auth routes are never restored.

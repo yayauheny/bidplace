@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { encodeAdminModerationCursor } from '@bidplace/contracts';
 
 import { createApiClient } from '../src';
 
@@ -85,7 +86,10 @@ describe('admin client', () => {
       },
     });
 
-    const photo = await client.admin.getSellerRevisionPhoto(sellerId, revisionId);
+    const photo = await client.admin.getSellerRevisionPhoto(
+      sellerId,
+      revisionId,
+    );
     expect(requested).toBe(
       `https://api.example.test/api/admin/seller-profiles/${sellerId}/revisions/${revisionId}/photo`,
     );
@@ -112,5 +116,73 @@ describe('admin client', () => {
     const image = await client.admin.getProductImage(imageId);
     expect(requested).toBe(`https://api.example.test/api/images/${imageId}`);
     expect(image.size).toBe(4);
+  });
+
+  it('sends a moderation page query and returns the next cursor', async () => {
+    const cursor = encodeAdminModerationCursor({
+      createdAt: '2026-09-26T12:00:00.000Z',
+      id: sellerId,
+    });
+    const requested: string[] = [];
+    const client = createApiClient({
+      baseUrl: 'https://api.example.test',
+      fetchImpl: async (url, init) => {
+        requested.push(String(url));
+        if (String(url).includes('/seller-profiles')) {
+          expect(init?.signal).toBe(controller.signal);
+        }
+        const path = new URL(String(url)).pathname;
+        const body = path.endsWith('/products')
+          ? { products: [], nextCursor: null }
+          : { sellerProfiles: [], nextCursor: cursor };
+        return new Response(JSON.stringify(body), {
+          headers: { 'content-type': 'application/json' },
+        });
+      },
+    });
+    const controller = new AbortController();
+
+    const sellers = await client.admin.listSellerProfiles(
+      {
+        filter: 'PENDING_REVIEW',
+        search: '  Ceramic  ',
+        limit: 25,
+        cursor,
+      },
+      { signal: controller.signal },
+    );
+    const products = await client.admin.listProducts();
+
+    const sellerUrl = new URL(requested[0] ?? '');
+    expect(sellerUrl.pathname).toBe('/api/admin/seller-profiles');
+    expect(sellerUrl.searchParams.get('filter')).toBe('PENDING_REVIEW');
+    expect(sellerUrl.searchParams.get('search')).toBe('Ceramic');
+    expect(sellerUrl.searchParams.get('limit')).toBe('25');
+    expect(sellerUrl.searchParams.get('cursor')).toBe(cursor);
+    expect(sellers.nextCursor).toBe(cursor);
+
+    const productUrl = new URL(requested[1] ?? '');
+    expect(productUrl.pathname).toBe('/api/admin/products');
+    expect(productUrl.searchParams.get('filter')).toBe('ALL');
+    expect(productUrl.searchParams.get('limit')).toBe('50');
+    expect(productUrl.searchParams.get('search')).toBeNull();
+    expect(productUrl.searchParams.get('cursor')).toBeNull();
+    expect(products.nextCursor).toBeNull();
+  });
+
+  it('rejects an invalid moderation cursor before the list request', async () => {
+    let called = false;
+    const client = createApiClient({
+      baseUrl: 'https://api.example.test',
+      fetchImpl: async () => {
+        called = true;
+        return new Response('{}');
+      },
+    });
+
+    expect(() => client.admin.listProducts({ cursor: 'not-a-cursor' })).toThrow(
+      /Invalid moderation cursor/,
+    );
+    expect(called).toBe(false);
   });
 });

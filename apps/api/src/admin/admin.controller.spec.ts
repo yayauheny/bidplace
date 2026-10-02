@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 
+import { adminModerationListQuerySchema } from '@bidplace/contracts';
+
+import { BearerAuthGuard } from '../auth';
 import { AdminController } from './admin.controller';
+import { AdminGuard } from './admin.guard';
 
 function controllerWith(moderation: object) {
   return new AdminController(
@@ -13,26 +17,47 @@ function controllerWith(moderation: object) {
 }
 
 describe('AdminController', () => {
+  it('keeps analytics overview behind bearer auth and the admin guard', () => {
+    const guards = Reflect.getMetadata('__guards__', AdminController) as
+      | unknown[]
+      | undefined;
+
+    expect(guards).toEqual(
+      expect.arrayContaining([BearerAuthGuard, AdminGuard]),
+    );
+  });
+
   it('delegates seller moderation projections without a Prisma dependency', async () => {
-    const response = { sellerProfiles: [] };
+    const response = { sellerProfiles: [], nextCursor: null };
     const moderation = {
       listSellerProfiles: vi.fn().mockResolvedValue(response),
     };
 
-    await expect(controllerWith(moderation).listSellers()).resolves.toBe(
+    await expect(controllerWith(moderation).listSellers({})).resolves.toBe(
       response,
     );
-    expect(moderation.listSellerProfiles).toHaveBeenCalledOnce();
+    expect(moderation.listSellerProfiles).toHaveBeenCalledWith(
+      adminModerationListQuerySchema.parse({}),
+    );
   });
 
   it('delegates product moderation projections without a Prisma dependency', async () => {
-    const response = { products: [] };
+    const response = { products: [], nextCursor: null };
     const moderation = { listProducts: vi.fn().mockResolvedValue(response) };
+    const query = adminModerationListQuerySchema.parse({
+      limit: '100',
+      filter: 'PENDING_REVIEW',
+      search: ' Ceramic ',
+    });
 
-    await expect(controllerWith(moderation).listProducts()).resolves.toBe(
-      response,
-    );
-    expect(moderation.listProducts).toHaveBeenCalledOnce();
+    await expect(
+      controllerWith(moderation).listProducts({
+        limit: '100',
+        filter: 'PENDING_REVIEW',
+        search: ' Ceramic ',
+      }),
+    ).resolves.toBe(response);
+    expect(moderation.listProducts).toHaveBeenCalledWith(query);
   });
 
   it('delegates product status changes and canonical readback to moderation', async () => {
@@ -45,21 +70,27 @@ describe('AdminController', () => {
       controllerWith(moderation).updateProduct(
         { sub: 'admin-id' },
         'product-id',
-        { status: 'APPROVED', target: {
-          kind: 'parent',
-          status: 'PENDING_REVIEW',
-          updatedAt: '2026-09-26T12:00:00.000Z',
-        } },
+        {
+          status: 'APPROVED',
+          target: {
+            kind: 'parent',
+            status: 'PENDING_REVIEW',
+            updatedAt: '2026-09-26T12:00:00.000Z',
+          },
+        },
       ),
     ).resolves.toBe(response);
     expect(moderation.updateProductStatusAndReadback).toHaveBeenCalledWith(
       'admin-id',
       'product-id',
-      { status: 'APPROVED', target: {
-        kind: 'parent',
-        status: 'PENDING_REVIEW',
-        updatedAt: '2026-09-26T12:00:00.000Z',
-      } },
+      {
+        status: 'APPROVED',
+        target: {
+          kind: 'parent',
+          status: 'PENDING_REVIEW',
+          updatedAt: '2026-09-26T12:00:00.000Z',
+        },
+      },
     );
   });
 });

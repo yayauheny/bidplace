@@ -1,12 +1,22 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { ConflictException } from '@nestjs/common';
+import { adminModerationListQuerySchema } from '@bidplace/contracts';
+import { BadRequestException, ConflictException } from '@nestjs/common';
 
+import {
+  moderationListOrderBy,
+  productModerationWhere,
+  sellerModerationWhere,
+} from './admin-moderation-list';
 import { AdminModerationService } from './admin-moderation.service';
 import {
   sellerProfileAuthSelect,
   sellerProfileResponseSelect,
 } from '../sellers/seller-profile.mapper';
+
+function sqlText(query: { strings?: readonly string[] } | undefined) {
+  return query?.strings?.join(' ') ?? '';
+}
 
 function moderationService(prisma: object) {
   return new AdminModerationService(prisma as never, { get: vi.fn() } as never);
@@ -22,6 +32,7 @@ function transactionPrisma(tx: object) {
 
 const sellerId = '00000000-0000-4000-8000-000000000001';
 const productId = '00000000-0000-4000-8000-000000000002';
+const listQuery = adminModerationListQuerySchema.parse({});
 const stepId = '00000000-0000-4000-8000-000000000003';
 const now = new Date('2026-09-26T12:00:00.000Z');
 const revisionTarget = {
@@ -105,16 +116,13 @@ describe('AdminModerationService', () => {
           .mockResolvedValueOnce([sellerProfile])
           .mockResolvedValueOnce([{ id: sellerId }]),
       },
-      auditEvent: {
-        findMany: vi.fn().mockResolvedValue([
-          { targetId: sellerId, reason: 'Newest reason' },
-          { targetId: sellerId, reason: 'Older reason' },
-        ]),
-      },
+      $queryRaw: vi
+        .fn()
+        .mockResolvedValue([{ target_id: sellerId, reason: 'Newest reason' }]),
     };
     const service = moderationService(prisma);
 
-    await expect(service.listSellerProfiles()).resolves.toMatchObject({
+    await expect(service.listSellerProfiles(listQuery)).resolves.toMatchObject({
       sellerProfiles: [
         {
           id: sellerId,
@@ -124,22 +132,70 @@ describe('AdminModerationService', () => {
           hasBlockingListing: true,
         },
       ],
+      nextCursor: null,
     });
     expect(prisma.sellerProfile.findMany).toHaveBeenNthCalledWith(
       1,
       expect.objectContaining({
-        where: { status: { not: 'DRAFT' } },
-        orderBy: { createdAt: 'asc' },
+        where: sellerModerationWhere(listQuery, null),
+        orderBy: moderationListOrderBy,
+        take: listQuery.limit + 1,
       }),
     );
-    expect(prisma.auditEvent.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({
-          targetType: 'SELLER_PROFILE',
-          reason: { not: null },
-        }),
-        orderBy: { createdAt: 'desc' },
-      }),
+    expect(sqlText(prisma.$queryRaw.mock.calls[0]?.[0])).toContain(
+      'DISTINCT ON ("target_id")',
+    );
+    expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
+  });
+
+  it('hydrates a searched seller page in SQL order without reading the extra row', async () => {
+    const sellerProfile = sellerProfileRecord();
+    const laterId = '00000000-0000-4000-8000-000000000099';
+    const extraId = '00000000-0000-4000-8000-000000000098';
+    const prisma = {
+      sellerProfile: {
+        findMany: vi
+          .fn()
+          .mockResolvedValueOnce([
+            { ...sellerProfile, id: laterId },
+            sellerProfile,
+          ])
+          .mockResolvedValueOnce([]),
+      },
+      $queryRaw: vi
+        .fn()
+        .mockResolvedValueOnce([
+          { id: sellerId, created_at: now },
+          { id: laterId, created_at: new Date('2026-09-26T12:00:01.000Z') },
+          { id: extraId, created_at: new Date('2026-09-26T12:00:02.000Z') },
+        ])
+        .mockResolvedValueOnce([
+          { target_id: sellerId, reason: 'Newest reason' },
+        ]),
+    };
+    const service = moderationService(prisma);
+    const query = adminModerationListQuerySchema.parse({
+      search: 'Alpha parent',
+      limit: 2,
+    });
+
+    await expect(service.listSellerProfiles(query)).resolves.toMatchObject({
+      sellerProfiles: [{ id: sellerId }, { id: laterId }],
+      nextCursor: expect.any(String),
+    });
+    expect(prisma.sellerProfile.findMany).toHaveBeenNthCalledWith(1, {
+      where: { id: { in: [sellerId, laterId] } },
+      select: expect.any(Object),
+    });
+    expect(sqlText(prisma.$queryRaw.mock.calls[0]?.[0])).toContain('ILIKE');
+    expect(sqlText(prisma.$queryRaw.mock.calls[1]?.[0])).toContain(
+      'DISTINCT ON ("target_id")',
+    );
+    expect(JSON.stringify(prisma.$queryRaw.mock.calls[1]?.[0])).toContain(
+      sellerId,
+    );
+    expect(JSON.stringify(prisma.$queryRaw.mock.calls[1]?.[0])).not.toContain(
+      extraId,
     );
   });
 
@@ -169,16 +225,15 @@ describe('AdminModerationService', () => {
     };
     const prisma = {
       product: { findMany: vi.fn().mockResolvedValue([product]) },
-      auditEvent: {
-        findMany: vi.fn().mockResolvedValue([
-          { targetId: productId, reason: 'Newest product reason' },
-          { targetId: productId, reason: 'Older product reason' },
+      $queryRaw: vi
+        .fn()
+        .mockResolvedValue([
+          { target_id: productId, reason: 'Newest product reason' },
         ]),
-      },
     };
     const service = moderationService(prisma);
 
-    await expect(service.listProducts()).resolves.toMatchObject({
+    await expect(service.listProducts(listQuery)).resolves.toMatchObject({
       products: [
         {
           id: productId,
@@ -201,19 +256,127 @@ describe('AdminModerationService', () => {
           hasBlockingListing: true,
         },
       ],
+      nextCursor: null,
     });
     expect(prisma.product.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ orderBy: { createdAt: 'asc' } }),
-    );
-    expect(prisma.auditEvent.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: expect.objectContaining({
-          targetType: 'PRODUCT',
-          reason: { not: null },
-        }),
-        orderBy: { createdAt: 'desc' },
+        where: productModerationWhere(listQuery, null),
+        orderBy: moderationListOrderBy,
+        take: listQuery.limit + 1,
       }),
     );
+    expect(sqlText(prisma.$queryRaw.mock.calls[0]?.[0])).toContain(
+      '"reason" <> \'\'',
+    );
+    expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
+  });
+
+  it('pages sellers by createdAt and id and keeps one reason row per page target', async () => {
+    const sameTime = new Date('2026-09-26T12:00:00.000Z');
+    const later = new Date('2026-09-26T12:00:01.000Z');
+    const ids = [
+      '00000000-0000-4000-8000-000000000011',
+      '00000000-0000-4000-8000-000000000012',
+      '00000000-0000-4000-8000-000000000013',
+    ];
+    const rows = ids.map((id, index) => ({
+      ...sellerProfileRecord(),
+      id,
+      createdAt: index === 2 ? later : sameTime,
+    }));
+    const prisma = {
+      sellerProfile: {
+        findMany: vi
+          .fn()
+          .mockResolvedValueOnce(rows.slice(0, 2))
+          .mockResolvedValueOnce([]),
+      },
+      $queryRaw: vi
+        .fn()
+        .mockResolvedValue([{ target_id: ids[0], reason: 'Latest for first' }]),
+    };
+    const service = moderationService(prisma);
+    const query = adminModerationListQuerySchema.parse({ limit: 1 });
+
+    const page = await service.listSellerProfiles(query);
+
+    expect(prisma.sellerProfile.findMany.mock.calls[0]?.[0]).toMatchObject({
+      take: 2,
+    });
+    expect(page.sellerProfiles).toHaveLength(1);
+    expect(page.sellerProfiles[0]?.id).toBe(ids[0]);
+    expect(page.sellerProfiles[0]?.lastModerationReason).toBe(
+      'Latest for first',
+    );
+    expect(page.nextCursor).toEqual(expect.any(String));
+    expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
+    const auditQuery = JSON.stringify(prisma.$queryRaw.mock.calls[0]?.[0]);
+    expect(auditQuery).toContain(ids[0]);
+    expect(auditQuery).not.toContain(ids[1]);
+    expect(auditQuery).not.toContain(ids[2]);
+    expect(sqlText(prisma.$queryRaw.mock.calls[0]?.[0])).toContain(
+      'ORDER BY "target_id", "created_at" DESC, "id" DESC',
+    );
+
+    prisma.sellerProfile.findMany
+      .mockResolvedValueOnce([rows[1], rows[2]])
+      .mockResolvedValueOnce([]);
+    prisma.$queryRaw.mockResolvedValueOnce([{ target_id: ids[1], reason: '' }]);
+    const next = await service.listSellerProfiles({
+      ...query,
+      cursor: page.nextCursor ?? undefined,
+    });
+    expect(next.sellerProfiles.map((seller) => seller.id)).toEqual([ids[1]]);
+    expect(next.sellerProfiles[0]?.lastModerationReason).toBeNull();
+    expect(prisma.sellerProfile.findMany).toHaveBeenNthCalledWith(
+      3,
+      expect.objectContaining({
+        where: sellerModerationWhere(query, {
+          createdAt: sameTime.toISOString(),
+          id: ids[0],
+        }),
+        take: 2,
+      }),
+    );
+  });
+
+  it('rejects an invalid cursor before reading moderation rows', async () => {
+    const prisma = {
+      sellerProfile: { findMany: vi.fn() },
+      product: { findMany: vi.fn() },
+      $queryRaw: vi.fn(),
+    };
+    const service = moderationService(prisma);
+
+    await expect(
+      service.listSellerProfiles({ ...listQuery, cursor: 'not-a-cursor' }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    await expect(
+      service.listProducts({ ...listQuery, cursor: 'not-a-cursor' }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(prisma.sellerProfile.findMany).not.toHaveBeenCalled();
+    expect(prisma.product.findMany).not.toHaveBeenCalled();
+    expect(prisma.$queryRaw).not.toHaveBeenCalled();
+  });
+
+  it('does not query audit rows for an empty page', async () => {
+    const prisma = {
+      sellerProfile: { findMany: vi.fn().mockResolvedValue([]) },
+      product: { findMany: vi.fn().mockResolvedValue([]) },
+      $queryRaw: vi.fn(),
+    };
+    const service = moderationService(prisma);
+
+    await expect(service.listSellerProfiles(listQuery)).resolves.toEqual({
+      sellerProfiles: [],
+      nextCursor: null,
+    });
+    await expect(service.listProducts(listQuery)).resolves.toEqual({
+      products: [],
+      nextCursor: null,
+    });
+    expect(prisma.sellerProfile.findMany).toHaveBeenCalledTimes(1);
+    expect(prisma.$queryRaw).not.toHaveBeenCalled();
   });
 
   it('returns the canonical product response after a committed status update', async () => {
@@ -247,7 +410,9 @@ describe('AdminModerationService', () => {
         reason: 'Archive the published work',
         target: parentModerationTarget('APPROVED'),
       }),
-    ).resolves.toMatchObject({ product: { id: productId, status: 'ARCHIVED' } });
+    ).resolves.toMatchObject({
+      product: { id: productId, status: 'ARCHIVED' },
+    });
     expect(prisma.product.findUniqueOrThrow).toHaveBeenCalledOnce();
   });
 

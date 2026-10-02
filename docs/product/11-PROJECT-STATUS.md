@@ -5,6 +5,29 @@
 > commerce-schema references below do not mean that Listing, Bid, Order,
 > lifecycle, realtime, discovery or activity modules are currently booted.
 
+## 2026-10-02 — R19 search cursor time zone
+
+- `Partial`: admin search pages compare the cursor instant as UTC wall time.
+  `created_at` stays a `timestamp(3)` without time zone. The bound parameter is
+  `timestamptz AT TIME ZONE 'UTC'` for both the greater-than and the equal
+  check, for authors and works. A session TimeZone no longer drops or repeats
+  a later page.
+- Before: UTC returned three tied and one-millisecond rows once. Europe/Minsk
+  stopped after the first row. America/Los_Angeles repeated the first page.
+- After: UTC, Europe/Minsk, and America/Los_Angeles each return those three
+  rows once for both lists, and `nextCursor` ends. The TimeZone is set only
+  inside the transaction that runs the list query.
+- Coverage: `admin-moderation-list.ts` and
+  `admin-moderation-pagination.integration.spec.ts`. Node v22.20.0 / pnpm
+  11.7.0. API unit tests are 49 files and 288 tests, plus 37 env tests.
+  Integration is 24 files and 91 tests on local disposable
+  `bidplace_integration` schemas. Commands are in the R19 search cursor
+  timezone evidence of `docs/audits/current/00-EXECUTION-ROADMAP.md`.
+- `Unchanged`: literal search, joined display text, revision filters, page
+  size, reason reads, permissions, and public contracts. R20 and R21 were not
+  started. D07 stays partial. Browsers were not run. This correction is not
+  accepted by this record.
+
 ## 2026-10-01 — Distinct public portfolio facet reads
 
 - `Implemented`: `GET /api/portfolio/facets` reads distinct values from the
@@ -32,8 +55,102 @@
   predicates. When stored strings differ only by case, the kept spelling is
   the first unordered distinct row. The baseline fixture previously observed
   `Холст` and this read observed `холст`; both are the same locale key, and
-  no new spelling canon was added. D07 stays partial until R19 and R20.
-  Browsers were not run. No founder decision was added.
+  no new spelling canon was added. D07 stays partial: R19 and R20 are in this
+  tree, and the moderation browser check is still not run. Browsers were not
+  run. No founder decision was added.
+
+## 2026-10-01 — R19 moderation read correction
+
+- `Partial`: the admin moderation shell keeps search, filters, and tabs mounted
+  while a new list query is loading or has failed. The results area shows
+  loading, error, empty, retry, and a search longer than 200 characters. That
+  over-limit value is not sent and is not truncated. Refresh cancels in-flight
+  seller and product pages before it trims the cache. Search matches the
+  previous joined display text, and `%`, `_`, and `\` are literal.
+- Coverage: `admin-moderation-screen.tsx`, `admin-moderation-list.ts`,
+  `admin-moderation.service.ts`, and
+  `admin-moderation-pagination.integration.spec.ts`. Node v22.20.0 / pnpm
+  11.7.0. API unit tests are 49 files and 288 tests, plus 37 env tests.
+  Integration is 24 files and 85 tests on local disposable
+  `bidplace_integration` schemas. Mobile tests are 108 files and 543 tests.
+  Commands are in the R19 correction evidence of
+  `docs/audits/current/00-EXECUTION-ROADMAP.md`.
+- `Unchanged`: page size, keyset order, latest-reason scope, permissions,
+  moderation transitions, append-only audit, public list APIs, and
+  `productAction`. R20 and R21 were not started. D07 stays partial. Browsers
+  were not run. This correction is not accepted by this record. No `.pen`
+  file was changed.
+
+## 2026-10-01 — Bounded admin moderation reads
+
+- `Implemented`: admin seller and product lists are cursor pages. The default
+  page is 50 and the maximum is 100, ordered by `createdAt` ascending and then
+  `id` ascending. `nextCursor` is null when the page is the last one. An
+  invalid cursor is rejected. Review and visibility filters, and search, run
+  on the server using the revision projection from R02. The latest non-empty
+  moderation reason is one SQL row per target on the current page.
+- `Implemented`: the admin screen loads the next page, retries a failed next
+  page, and starts again when the filter or search changes. Approve, reject,
+  changes, suspend, and a conflict refresh replace the loaded pages so a stale
+  later page is not kept. `productAction` and its error text are unchanged.
+- Coverage: `admin-moderation-list.ts`, `admin-moderation.service.ts`,
+  `admin.controller.ts`, `packages/contracts/src/admin.ts`,
+  `packages/api-client/src/admin.ts`, `admin-moderation-screen.tsx`, and
+  `admin-moderation-pagination.integration.spec.ts`. On the synthetic fixture,
+  limit 1 returns one seller while five audit rows remain for that target;
+  the latest-reason query returns one row. Node v22.20.0 / pnpm 11.7.0.
+  API unit tests are 49 files and 287 tests, plus 37 env tests. Integration
+  is 24 files and 83 tests on local disposable `bidplace_integration`
+  schemas. Mobile tests are 108 files and 532 tests. Commands are in the R19
+  evidence of `docs/audits/current/00-EXECUTION-ROADMAP.md`.
+- `Unchanged`: moderation transitions, append-only audit, permissions, and
+  public list APIs. R20 and R21 were not started. D07 stays partial.
+  Browsers were not run. No `.pen` file was changed.
+
+## 2026-10-01 — Admin analytics aggregates in PostgreSQL
+
+- `Implemented`: `GET /api/admin/analytics/overview` still returns the same
+  overview contract. Active users are `COUNT(DISTINCT user_id)` for non-null
+  ids in the period. Acquisition groups `AcquisitionAttribution` by
+  `coalesce(source, 'direct')` in the database. Growth reads UTC day counts
+  and the service fills the zero buckets. `apps/api/src/admin/admin-analytics.query.ts`
+  and `admin-analytics.service.ts`.
+- Signup counts stay inside the captured-at cohort: a row counts only when
+  `capturedAt` is in the period and `userId` plus `linkedAt` are also in that
+  period. `docs/product/analytics-metrics.md` does not explicitly require
+  counting a linked row whose capture is outside the period, so that metric
+  was not redefined.
+- Equal visitor counts are ordered by source after the visitor count. The
+  previous read had no order, so tied sources were not a defined sequence.
+  The checked 7-day fixture has distinct visitor counts, and its full JSON
+  matches the overview from before this change.
+- Recent lists stay at 8 rows. Drilldowns stay at 50. Stuck moderation is
+  still `PENDING_REVIEW` with `updatedAt` strictly older than seven days.
+  No new transaction snapshot was added.
+- Coverage: `admin-analytics.service.spec.ts`, `admin.guard.spec.ts`,
+  `admin.controller.spec.ts`, and
+  `test/integration/admin-analytics-aggregation.integration.spec.ts`, on
+  Node v22.20.0 / pnpm 11.7.0 / PostgreSQL 16.14. API unit tests are 49 files
+  and 286 tests, plus 37 env tests. Integration is 24 files and 84 tests on
+  local disposable `bidplace_integration` schemas. Commands are in the R20
+  evidence of `docs/audits/current/00-EXECUTION-ROADMAP.md`.
+- `Partial`: D07. Catalog facets (R21) are still open. R19 moderation reads
+  are in this tree; the moderation browser check is still not run.
+  `05-MVP-RFC.md` §16 leftover event names stay DB-derived or deferred.
+- Index predicate correction, same overview contract: `inUtcPeriod` compares
+  the bare `timestamp(3)` column with
+  `(bound::timestamptz AT TIME ZONE 'UTC')`. On an isolated fixture of 100000
+  rows outside the period and 10 inside, the previous column-side predicate
+  was a sequential scan that removed 100000 rows by filter for active users,
+  acquisition, and views growth. The corrected queries returned the same rows,
+  including under `Europe/Minsk` and `America/Los_Angeles`, and the date range
+  was an index condition. Active users still filtered non-null `user_id` and
+  removed 0 rows; views still filtered `listing_viewed` and removed 0 rows.
+  This is one plan observation, not a measured speedup. The correction checks
+  are in the R20 evidence.
+- `Unchanged`: analytics ingestion, attribution writes, admin permissions,
+  contracts, schema, and migrations. Browsers were not run. No founder
+  decision was added.
 
 ## 2026-10-01 — Leading env BOM and config unit discovery
 
