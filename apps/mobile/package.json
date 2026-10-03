@@ -48,12 +48,13 @@
     "typescript": "~6.0.3"
   },
   "scripts": {
-    "start": "pnpm --filter @bidplace/design-tokens build && expo start",
+    "build:api-client": "pnpm -r --filter=@bidplace/api-client... run build",
+    "start": "pnpm run build:api-client && pnpm --filter @bidplace/design-tokens build && expo start",
     "dev": "pnpm run start",
-    "build": "pnpm --filter @bidplace/design-tokens build && expo export",
-    "android": "pnpm --filter @bidplace/design-tokens build && expo start --android",
-    "ios": "pnpm --filter @bidplace/design-tokens build && expo start --ios",
-    "web": "pnpm --filter @bidplace/design-tokens build && expo start --web",
+    "build": "pnpm run build:api-client && pnpm --filter @bidplace/design-tokens build && expo export",
+    "android": "pnpm run build:api-client && pnpm --filter @bidplace/design-tokens build && expo start --android",
+    "ios": "pnpm run build:api-client && pnpm --filter @bidplace/design-tokens build && expo start --ios",
+    "web": "pnpm run build:api-client && pnpm --filter @bidplace/design-tokens build && expo start --web",
     "test:e2e-fence": "node e2e/test-e2e-fence.mjs",
     "test:e2e": "playwright test",
     "test:e2e:stabilization": "playwright test --config=playwright.stabilization.config.ts",
