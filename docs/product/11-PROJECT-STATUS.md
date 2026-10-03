@@ -5,6 +5,12 @@
 > commerce-schema references below do not mean that Listing, Bid, Order,
 > lifecycle, realtime, discovery or activity modules are currently booted.
 
+## 2026-10-03 — Residual test cleanup
+
+- `Partial`: five specs now call the shared `flush`. Three private Figma metadata lists and the unused catalog `enabled` argument are removed. `useInfiniteQuery` stays explicitly enabled. The mobile suite is 109 files and 568 tests.
+- Owner report: `docs/audits/current/09-TEST-CLEANUP-FOLLOWUP.md`, R28-C section. Commands: R28-C evidence in `docs/audits/current/00-EXECUTION-ROADMAP.md`.
+- `Unchanged`: the matrix still lists R28, T02, and T06 as partial until review. The recommendation is to close those three. R29 and T05 are not verified. D04, D05, D09, D10, L04, and R32 stay needs verification. No E2E file was deleted.
+
 ## 2026-10-03 — Test cleanup follow-up
 
 - `Partial`: identical `flush`, `setInput`, and `inputValue` live in

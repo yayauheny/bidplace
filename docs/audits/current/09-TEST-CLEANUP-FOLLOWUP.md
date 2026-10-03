@@ -162,3 +162,67 @@ R29 / T05 stay not verified. Their remaining work is the browser matrix and dura
 ## NOT RUN
 
 Browsers, Playwright test execution, API server, database, Prisma CLI, migrate, seed, root verify, and any mutation inside the accepted worktree. `.env` was not read. `.pen` and canonical Figma files were not edited. `10-CODE-ARCHITECTURE.md` was not edited.
+
+# R28-C residual cleanup — 2026-10-03
+
+The R28-B sections above stay as history. This section records the residual cleanup after accepted `15d42bf`. It does not accept the package.
+
+## Scope
+
+- Branch: `fix/behavior-test-coverage`
+- Integration base: `2728212cad2b39d32246899f429baedea60fa675`
+- Starting SHA: `15d42bf7142fa3149c9af3c3d263ffe7c991bbe1`
+- A: `907246796b3f595ed3f52306b1cc92e498d17602` — `test: reuse the shared flush in five specs`
+- B: `63bb18596b0b1540096cf2bafe38e918d5114e5d` — `test: drop unused Figma inventory constants`
+- C: `8029aef45827d9a7e27e1e60f584167352981897` — `test: drop the unused catalog hook enabled argument`
+- Original checkout `fix/form-field-ownership` was not switched.
+- No merge, rebase, cherry-pick, push, or pull request.
+
+Commit A imports `flush` from `apps/mobile/src/testing/dom.ts` in five specs and deletes the local function. The helper file was not rewritten. Commit B removes `figmaDeferredIconNames`, `figmaDeferredDockItemIds`, and `figmaUnusedDockVariantIds`, their barrel exports, and the single deferred-icon case. Commit C removes the unused second argument of `usePortfolioWorks` and `usePortfolioAuthors` and leaves `enabled: true` on `useInfiniteQuery`.
+
+## Consumer evidence
+
+Before B, those three constants had no consumer outside their declarations, the private mobile barrel, and specs that compared the arrays to themselves. After B, `*.{ts,tsx,js,mjs}` has no remaining reference. `figmaIconNames`, `figmaDockItemIds`, `figmaDockItems`, icon implementations, and the dock assets stay.
+
+Before C, production callers passed only route state: `ProductListScreen`, `PublicAuthorsScreen`, `WorksSearchPane`, and `AuthorsSearchPane`. The hook spec does the same. No `enabled: false` caller was added.
+
+## Counts
+
+| Run | Result | Log |
+| --- | --- | --- |
+| Baseline, HEAD `15d42bf` | 109 files / 569 tests, exit 0, start 13:43:47, 10.47s | `/Users/yayauheny/projects/bidplace-r28c-baseline-mobile-test.log` |
+| Targeted A | 5 files / 35 tests, exit 0, start 13:44:38, 1.73s | `/Users/yayauheny/projects/bidplace-r28c-flush-targeted.log` |
+| Targeted B | 2 files / 5 tests, exit 0, start 13:45:19, 150ms | `/Users/yayauheny/projects/bidplace-r28c-metadata-targeted.log` |
+| Targeted C | 18 tests, exit 0, start 13:45:37, 989ms | `/Users/yayauheny/projects/bidplace-r28c-hooks-targeted.log` |
+| Final | 109 files / 568 tests, exit 0, start 13:46:28, 9.59s | `/Users/yayauheny/projects/bidplace-r28c-final-mobile-test.log` |
+
+568 is 569 minus the one deleted deferred-icon `it`. Spec file count stays 109. Lint, typecheck, build, `test:e2e-fence`, and `git diff --check` exited 0 before the edits and again after C. Final Turbo: six dependency tasks were cache hits; mobile typecheck `4dcc24e15aa117e6` and mobile build `2673b3a9d0fc6265` were cache misses. The fence script is not a browser run.
+
+## Acceptance matrix
+
+Recommendation only. The matrix in `00-EXECUTION-ROADMAP.md` stays `PARTIAL` until review.
+
+| Item | Criterion | Result |
+| --- | --- | --- |
+| R28 | Source-text behavior checks have owner tests, and M01–M11 catch the named break | Met in R28-A/B. Corrected M04 is one assertion failure and three passes. |
+| R28 | Five identical `flush` bodies use the existing helper | Met, `9072467`. Unlike flush and setInput copies were left in place. |
+| R28 | Helper-only metadata and the unused `enabled` argument are gone without a behavior change | Met, `63bb185` and `8029aef`. `enabled: true` stays explicit. |
+| R28 | A new browser spec replaces a source test | Not required. R28-A/B added no such replacement, and this package adds none. |
+| R28 remainder | None inside the card | Recommend `VERIFIED`. |
+| T02 | Dead-helper tests and helper-only assertions of removed symbols | Met. R09/R10 removed the earlier dead helpers. This package removed the three metadata constants and one `it`. |
+| T02 | Source-text inventory | Met. The named source-reading cases were replaced earlier. `figmaIconNames` equality remains because that array is the live registry. |
+| T02 remainder | None | Recommend `VERIFIED`. |
+| T06 | Real parent/child consumers | Met. `author-application-achievements.spec.ts` mounts `SellerProfileScreen`, which renders `AuthorApplicationAchievements`. The file covers blocked parent submit/logout/exit, a write that does not start after a parent transition, release after success/failure/unmount, input kept after the save snapshot, retired-session results, a late initial GET, a stale GET after delete, and picker/blob after lock/unlock. This package did not edit that spec. |
+| T06 | Identical DOM helpers | Met, including the five flush copies in A. |
+| T06 | QueryClient, transports, and typed fixtures | Closed as KEEP. Attempt counts stay 8, 12, and 20. AdminRevisionPhoto waits two microtasks. AppDialog waits two timeouts. Three local `setInput` helpers dispatch through a different input path. A shared form framework was not added. |
+| T06 remainder | None for the unit seam | Recommend `VERIFIED` for T06. D10 stays `NEEDS_VERIFICATION` because Chromium and WebKit were not run. That browser gap does not cancel the unit seam. |
+
+## Residual sweep
+
+- KEEP: live icon registry, four dock items, route selection, accessibility, catalog observer harness, and the unlike local helpers named above.
+- DELETE PROPOSAL, not executed: `creator-profile.spec.ts`, case `creator profile creation stages public identity, links and private handoff`. Its three-step strings are absent from `apps/mobile/src`. Replacement owners are `author-revision-flow.spec.ts` and `author-application-publication.spec.ts`. Deletion belongs to R29 and needs a browser run of the four-step and privacy cases first.
+- DEFER: R29 durations and the maintained browser matrix, including page-2 cases that depend on seed size. Return when a browser run is the assigned task.
+
+## NOT RUN
+
+Browsers, Playwright test execution, API server, database, Prisma CLI, migrate, seed, root verify, and new mutations. `10-E2E-SCOPE-PLAN.md`, protected product documents, `.pen`, and canonical Figma files were not edited.
