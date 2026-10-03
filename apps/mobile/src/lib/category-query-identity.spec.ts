@@ -564,42 +564,83 @@ function nextNotifyTurn() {
   });
 }
 
+type CategoryPublication = 'ready' | 'failed' | 'disposed';
+
+function hasCategoryPayload(data: unknown) {
+  if (typeof data !== 'object' || data === null || !('categories' in data)) return false;
+  const categories = data.categories;
+  if (!Array.isArray(categories)) return false;
+  return categories.some(
+    (item) =>
+      typeof item === 'object' &&
+      item !== null &&
+      'id' in item &&
+      item.id === categoryId,
+  );
+}
+
+function hasObservedCategoryPayload(queryClient: QueryClient) {
+  return queryClient.getQueryCache().findAll().some((query) => {
+    return (
+      (query.getObserversCount() ?? 0) > 0 &&
+      query.state.status === 'success' &&
+      hasCategoryPayload(query.state.data)
+    );
+  });
+}
+
+function hasObservedCategoryFailure(queryClient: QueryClient) {
+  return queryClient.getQueryCache().findAll().some((query) => {
+    const [root] = query.queryKey;
+    return (
+      root === 'categories' &&
+      (query.getObserversCount() ?? 0) > 0 &&
+      query.state.status === 'error'
+    );
+  });
+}
+
 async function publishMountedConsumer(view: Mounted, paths: string[], readyText: string) {
   const requests = await Promise.all(paths.map((pathname) => view.transport.take(pathname)));
   let unsubscribe = () => {};
-  view.releaseSubscriptions = () => {
+  let outcome: CategoryPublication | undefined;
+  let settle: (next: CategoryPublication) => void = () => {};
+  const finish = (next: CategoryPublication) => {
+    if (outcome) return;
+    outcome = next;
     unsubscribe();
     unsubscribe = () => {};
+    settle(next);
   };
-  const published = new Promise<void>((resolve) => {
-    const matches = () => {
-      const query = view.queryClient.getQueryCache().find({
-        queryKey: categoryKeys.all,
-        exact: true,
-      });
-      return query?.state.status === 'success' && (query.getObserversCount() ?? 0) > 0;
+  view.releaseSubscriptions = () => {
+    finish('disposed');
+  };
+  const published = new Promise<CategoryPublication>((resolve) => {
+    settle = resolve;
+    const read = () => {
+      if (outcome) return;
+      if (hasObservedCategoryFailure(view.queryClient)) {
+        finish('failed');
+        return;
+      }
+      if (hasObservedCategoryPayload(view.queryClient)) finish('ready');
     };
-    if (matches()) {
-      resolve();
-      return;
-    }
-    unsubscribe = view.queryClient.getQueryCache().subscribe(() => {
-      if (!matches()) return;
-      unsubscribe();
-      resolve();
-    });
+    read();
+    unsubscribe = view.queryClient.getQueryCache().subscribe(read);
   });
   try {
     await act(async () => {
       for (const request of requests) {
         request.resolve(jsonResponse(bodyFor(request.url)));
       }
-      await published;
-      await nextNotifyTurn();
+      const publication = await published;
+      if (publication === 'ready') await nextNotifyTurn();
     });
   } finally {
     view.releaseSubscriptions();
   }
+  if (outcome === 'failed') throw new Error('category publication failed');
+  if (outcome !== 'ready') throw new Error('category publication disposed');
   expect(view.root.textContent).toContain(readyText);
 }
 
