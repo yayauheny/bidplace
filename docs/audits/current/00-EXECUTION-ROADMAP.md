@@ -36,7 +36,7 @@
 
 **Дополнение 2026-10-02, R21:** `fix/catalog-facet-reads` включён поверх `afb70a9`. Public portfolio facets читают distinct values из существующих visibility CTE. D07 остаётся `PARTIAL`: moderation browser NOT RUN. См. R21 evidence.
 
-**Дополнение 2026-10-03, R28-B:** на `fix/behavior-test-coverage` от `9e43535` намеренные поломки M01–M11 обнаружены owner-тестами R28-A, а одинаковые `flush`, `setInput` и `inputValue` вынесены в `apps/mobile/src/testing/dom.ts` (`feb8450`). Полный mobile suite остаётся 109 файлов / 569 тестов. R28, T02 и T06 остаются `PARTIAL`. R29 и T05 не `VERIFIED`: браузеры и timings не запускались. D04, D05, D09, D10, L04 и R32 не повышены. R22, R23, R25 и R33 не внедрялись. См. R28-B evidence.
+**Дополнение 2026-10-03, R28-B:** на `fix/behavior-test-coverage` от `9e43535` одинаковые `flush`, `setInput` и `inputValue` вынесены в `apps/mobile/src/testing/dom.ts` (`feb8450`). M01–M03 и M05–M11 падают на assertion. Исторические M04 — таймауты readiness, а не assertion и не дефект остальных consumer. Коррекция harness — `8f3998e`: исправленный M04 падает на `getObserversCount()` только у изменённого consumer. Полный mobile suite остаётся 109 файлов / 569 тестов. R28, T02 и T06 остаются `PARTIAL`. Браузерный replacement в R28 не добавлялся и не является его gate. R29 и T05 не `VERIFIED`: браузеры и timings не запускались. D04, D05, D09, D10, L04 и R32 не повышены. R22, R23, R25 и R33 не внедрялись. См. R28-B evidence.
 
 Текущая задача сохраняет roadmap и prompts, не запускает production-изменения и не создаёт PR. Утверждение roadmap не является выбором архитектурных вариантов R22–R27.
 
@@ -1811,11 +1811,14 @@ status: PARTIAL. R28, T02, and T06 stay open. R29 and T05 are not VERIFIED. D04,
 branch: fix/behavior-test-coverage
 starting SHA: 9e4353585705ef794807a3664635fcad45fde7f7
 helper commit: feb845064de1c04d776f856615db8ff827eae1a2 test: share identical DOM test helpers
+harness correction: 8f3998e77c7536a53a89d8f268b37ecef3510365 test: settle category publication without the shared key
 owner reports: docs/audits/current/09-TEST-CLEANUP-FOLLOWUP.md and docs/audits/current/10-E2E-SCOPE-PLAN.md
 mutation copies: /private/tmp/bidplace-r28b-mutations/patches and /private/tmp/bidplace-r28b-mutations/logs
 production diff: none
 
-M01–M11 each ran in an isolated copy of 9e43535. Vitest printed RUN v4.1.10 /private/tmp/bidplace-r28b-mutations/pilot/apps/mobile. Every intended break failed the named behavior. Extra failures are the same missing signal, missing q, duplicate id, shared category wait, rail padding, or host portal. The unpatched category spec in that copy passed 4/4. Mutations were not committed.
+M01–M03 and M05–M11 each ran in an isolated copy of 9e43535. Vitest printed RUN v4.1.10 /private/tmp/bidplace-r28b-mutations/pilot/apps/mobile. Those fifteen copies failed on the named assertion. Extra failures there are the same missing signal, missing q, duplicate id, rail padding, or host portal. The four historical M04 logs are readiness timeouts at 5000ms, including later cases in the same process. Those later timeouts are harness contamination: publishMountedConsumer waited for categoryKeys.all, and the pending act scope survived the first timeout. They are not additional production defects. The unpatched category spec in that copy passed 4/4. Mutations were not committed.
+
+Corrected M04, after 8f3998e, is in /private/tmp/bidplace-r28b-m04-correction/. Each of the four copies changes one key to ['categories', 'detached'] and runs the whole category spec. Each log is 1 failed and 3 passed, exit 1, on expect(query?.getObserversCount()).toBeGreaterThan(0) receiving undefined. No corrected log times out. The unmodified spec is 4 passed, exit 0, bidplace-r28b-m04fix-category.log. The fifteen other mutations were not repeated. Full suite after the harness change: bidplace-r28b-m04fix-mobile-test.log, 109/569, exit 0. Typecheck cache miss 0ad03b0c5c8c3539, then cache hit on the build graph. Mobile build cache miss e5bde5eeba87db29. Lint, fence, and diff --check exit 0.
 
 Helper extraction moved only the proven-identical flush, setInput, and inputValue into apps/mobile/src/testing/dom.ts. it, it.each, and expect lines in the commit are unchanged. until stays at 8, 12, or 20 attempts. Unlike setInput and flush copies stay local.
 
@@ -1823,14 +1826,14 @@ Measured runtime: baseline and post-extraction mobile suite are both 109 files /
 
 Checks, all exit 0: bidplace-r28b-final-mobile-test.log 109/569; bidplace-r28b-final-lint.log; bidplace-r28b-final-typecheck-build.log 8 successful, mobile typecheck cache hit 9c129db50c02a7ea, mobile build cache miss f553b134d4f70cb1; bidplace-r28b-final-e2e-fence.log; bidplace-r28b-final-diff-check.log. Targeted consumers: bidplace-r28b-helper-targeted.log, 11 files / 115 tests.
 
-Remaining before R28/T02/T06 can close: deferred figmaDeferredIconNames, figmaDeferredDockItemIds, figmaUnusedDockVariantIds, and the catalog enabled parameter; leftover identical flush copies outside this allowlist; no Playwright run of a browser replacement. R29 still needs durations and a maintained browser matrix. The only DELETE PROPOSAL is creator-profile.spec.ts "creator profile creation stages public identity, links and private handoff": its three-step strings are absent from apps/mobile/src, and the four-step owners are author-revision-flow.spec.ts and author-application-publication.spec.ts. It was not deleted.
+Remaining before R28/T02/T06 can close: deferred figmaDeferredIconNames, figmaDeferredDockItemIds, figmaUnusedDockVariantIds, and the catalog enabled parameter; leftover identical flush copies outside this allowlist; T06 parent/achievement seam stays with R32. R28-A/B did not add a browser replacement, so a Playwright run of one is not an R28 gate. R29/T05 still need durations and a maintained browser matrix. D04, D05, D09, D10, L04, and R32 keep their own browser requirements. The only DELETE PROPOSAL is creator-profile.spec.ts "creator profile creation stages public identity, links and private handoff": its three-step strings are absent from apps/mobile/src, and the four-step owners are author-revision-flow.spec.ts and author-application-publication.spec.ts. It was not deleted. The seven earlier wizard cases and the four logout cases are mapped separately in 10-E2E-SCOPE-PLAN.md. Only the approved-author logout and the three final wizard cases own browser Back.
 
 NOT RUN: browsers, API server, database, Prisma, migrate, seed, root verify, and mutations inside the accepted worktree.
 ```
 
 ### Проверка документа — 2026-10-03 R28-B
 
-- R28-B evidence is recorded. R28, T02, and T06 stay `PARTIAL`. R29 and T05 are not `VERIFIED`.
+- R28-B evidence is recorded. Historical M04 stays a readiness timeout. The corrected M04 assertion results are appended. R28, T02, and T06 stay `PARTIAL`. R29 and T05 are not `VERIFIED`. A browser replacement is not an R28 gate.
 - The historical R28-A block and the coverage matrix are unchanged. The findings total stays 38.
 - D04, D05, D09, D10, L04, and R32 were not raised. Browsers were not run. `10-CODE-ARCHITECTURE.md` and the canonical Pen file were not changed.
 

@@ -7,13 +7,12 @@
 
 ## 2026-10-03 — Test cleanup follow-up
 
-- `Partial`: the accepted catalog, chrome, Back, Share, tab inset, and search
-  overlay tests fail the specified local breaks. Identical `flush`, `setInput`,
-  and `inputValue` now live in `apps/mobile/src/testing/dom.ts`. The mobile
-  suite stays 109 files and 569 tests.
-- Owner reports: `docs/audits/current/09-TEST-CLEANUP-FOLLOWUP.md` and
-  `docs/audits/current/10-E2E-SCOPE-PLAN.md`. Commands are in the R28-B
-  evidence of `docs/audits/current/00-EXECUTION-ROADMAP.md`.
+- `Partial`: identical `flush`, `setInput`, and `inputValue` live in
+  `apps/mobile/src/testing/dom.ts`. The category publication wait no longer
+  blocks on `categoryKeys.all`. The mobile suite stays 109 files and 569 tests.
+- Owner report: `docs/audits/current/09-TEST-CLEANUP-FOLLOWUP.md`. E2E mapping:
+  `docs/audits/current/10-E2E-SCOPE-PLAN.md`. Commands are in the R28-B evidence
+  of `docs/audits/current/00-EXECUTION-ROADMAP.md`.
 - `Unchanged`: R28, T02, and T06 stay partial. R29 and T05 are not verified.
   D04, D05, D09, D10, L04, and R32 stay needs verification. No E2E file was
   deleted. Browsers, API, database, migrations, and seed were not run.

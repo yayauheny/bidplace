@@ -7,6 +7,7 @@ Owner report for the mutation check of the accepted R28-A tests, the identical-h
 - Branch: `fix/behavior-test-coverage`
 - Starting SHA: `9e4353585705ef794807a3664635fcad45fde7f7`
 - Helper extraction: `feb845064de1c04d776f856615db8ff827eae1a2` — `test: share identical DOM test helpers`
+- Category harness correction: `8f3998e77c7536a53a89d8f268b37ecef3510365` — `test: settle category publication without the shared key`
 - Integration base of the previous package: `2728212cad2b39d32246899f429baedea60fa675`
 - Original checkout `fix/form-field-ownership` was not switched.
 - Production diff of the helper commit: empty. The commit is `apps/mobile/src/testing/dom.ts` plus import and local-definition edits in 11 specs.
@@ -37,7 +38,7 @@ Every copy started at `9e4353585705ef794807a3664635fcad45fde7f7`. One production
 
 Each log records `MUTATION`, `COPY`, `FILE`, `SHA256`, the Vitest command, and `RUN v4.1.10 /private/tmp/bidplace-r28b-mutations/pilot/apps/mobile`. That `RUN` line is the evidence that Vitest loaded the copy. An unpatched `category-query-identity.spec.ts` in the same copy passed 4/4 (`category-unpatched.log`, exit 0).
 
-Every intended break was detected by an assertion of the named behavior. Extra failures listed below are the same mechanism, not a second risk. No copy stayed green. No syntax, resolve, or bootstrap failure was used as proof.
+Fifteen of the nineteen historical copies failed on an assertion of the named behavior. M01–M03 and M05–M11 are those copies. Extra failures in that set are the same mechanism, not a second risk. The four historical M04 copies are not in that set: they timed out inside readiness and did not reach the shared-key assertions. No copy stayed green. No syntax, resolve, or bootstrap failure was used as proof.
 
 | Id | Break | Owner test that caught it | Exit | Extra same-mechanism failures |
 | --- | --- | --- | --- | --- |
@@ -47,10 +48,10 @@ Every intended break was detected by an assertion of the named behavior. Extra f
 | M02-authors | authors `queryFn` omits `q` | H01 authors | 1 | H03 authors and H04 authors `q` / `tag` / `city` / `sort` |
 | M03-works | `uniqueCatalogItems` replaced by concatenation | H02 works, expected 13 ids, received 14 | 1 | H03 works, same 13 vs 14 |
 | M03-authors | same concatenation | H02 authors | 1 | H03 authors |
-| M04 ProductListScreen | `queryKey` changed from `categoryKeys.all` to `['categories', 'detached']` | `'ProductListScreen' keeps an active observer on categoryKeys.all` timed out at 5000ms | 1 | the three later consumers in the same file also timed out |
-| M04 ProductDraftScreen | same key change in that screen only | ProductDraftScreen case timed out | 1 | PublicSellerScreen and CategoriesSearchPane timed out after it; ProductListScreen passed |
-| M04 PublicSellerScreen | same | PublicSellerScreen case timed out | 1 | CategoriesSearchPane timed out after it |
-| M04 CategoriesSearchPane | same | CategoriesSearchPane case timed out; the other three passed | 1 | none |
+| M04 ProductListScreen, historical | `queryKey` changed from `categoryKeys.all` to `['categories', 'detached']` | readiness timed out at 5000ms before `getObserversCount()` | 1 | the three later cases also timed out. That is harness contamination, not three more production breaks |
+| M04 ProductDraftScreen, historical | same key change in that screen only | ProductDraftScreen readiness timed out | 1 | PublicSellerScreen and CategoriesSearchPane timed out after it; ProductListScreen passed |
+| M04 PublicSellerScreen, historical | same | PublicSellerScreen readiness timed out | 1 | CategoriesSearchPane timed out after it |
+| M04 CategoriesSearchPane, historical | same | CategoriesSearchPane readiness timed out; the other three passed | 1 | none |
 | M05-works-tab | Works renders a tablist whose text is «Все работы» | `hides the HIDE_FOR_FIRST_MVP catalog-segment tab` | 1 | none |
 | M05-works-tone | Works intro `tone="secondary"` | `'Works' intro uses bodySmall without a secondary tone` | 1 | none |
 | M05-authors-tone | Authors intro `tone="secondary"` | `'Authors' intro uses bodySmall without a secondary tone` | 1 | Authors was not asked to catch tabs or card order, and it did not |
@@ -61,7 +62,24 @@ Every intended break was detected by an assertion of the named behavior. Extra f
 | M10 | native surface drops `onRequestClose={onClose}` | `onClose` called 0 times, expected 1 | 1 | none |
 | M11 | dimmer path calls `closeWith('pointerdown')` twice | `onDismiss` called 2 times, expected 1 | 1 | none |
 
-M04 is a related timeout, not an unrelated flake. `publishMountedConsumer` waits until `categoryKeys.all` is success with observers greater than 0. A detached key never satisfies that wait, so the case hits 5000ms. Later cases in the same file then time out because that wait never releases the shared transport. The unpatched file in the same copy is green, so the copy itself loads. The test was not changed.
+The historical M04 logs stay readiness timeouts. `publishMountedConsumer` waited until `categoryKeys.all` was already success with observers greater than 0, which is the invariant the test callback asserts. A detached key never satisfied that wait, so `await published` stayed inside `act`. `releaseSubscriptions` only unsubscribed. After the first 5000ms timeout the later cases in the same process also timed out. Those later timeouts are not evidence that the unpatched consumers lost `categoryKeys.all`. The unpatched file in the same copy passed 4/4. Logs: `/private/tmp/bidplace-r28b-mutations/logs/M04-*.log`.
+
+## Corrected M04
+
+`8f3998e77c7536a53a89d8f268b37ecef3510365` changes only the readiness and disposal path in `category-query-identity.spec.ts`. The four `it.each` rows, fixtures, test names, and the assertions on `categoryKeys.all`, observer count, and `categoriesBody` are unchanged. Readiness now waits for some observed successful query that holds the categories payload. It does not look up `categoryKeys.all`. Failure or disposal settles that wait, so the `act` scope does not stay open.
+
+Unmodified spec: `/Users/yayauheny/projects/bidplace-r28b-m04fix-category.log`, 4 passed, exit 0, 69ms. No act warning or unhandled rejection is in that log.
+
+Each corrected copy changed one production key to `['categories', 'detached']` and ran the whole file, not a filtered case. Patches and logs: `/private/tmp/bidplace-r28b-m04-correction/patches` and `.../logs`. Starting SHA recorded in the logs is `fb779f17affc3da16f5acb93cdda9980da599776`; the spec under test is the corrected file, SHA256 `104f36bff8a77c31001381485eab445b9ca982a556a923e09d7c2647799e38ef`. Vitest printed `RUN v4.1.10 /private/tmp/bidplace-r28b-m04-correction/tree/apps/mobile`. The copies were restored after the runs. The accepted worktree production files were not patched.
+
+| Copy | Result |
+| --- | --- |
+| ProductListScreen | 1 failed, 3 passed, exit 1. `query?.getObserversCount()` received `undefined` at `toBeGreaterThan(0)` |
+| ProductDraftScreen | 1 failed, 3 passed, exit 1. Same assertion |
+| PublicSellerScreen | 1 failed, 3 passed, exit 1. Same assertion |
+| CategoriesSearchPane | 1 failed, 3 passed, exit 1. Same assertion |
+
+None of the four corrected logs contains `Test timed out`. The other fifteen historical mutations were not repeated.
 
 ## Phase 2 — helper reuse
 
@@ -90,7 +108,19 @@ No production symbol was deleted. No test-only symbol met DELETE NOW: every rema
 | Catalog observer harness | KEEP | Mutation M01–M03 detected the hook risks through that harness. |
 | Commerce inventory, share/QR, `productAction`, auth epoch, portfolio predicates | KEEP | Live product contracts. This sweep did not find them unused. |
 
-Source-text assertions that R28-A already replaced (category key, catalog chrome, intro tone, Back, Share, tab inset, search portal and dismiss) were detected by M04–M11. The remaining source-text examples are the deferred icon and dock inventory constants above. They restate a constant. They do not observe a screen.
+M05–M11 detected the catalog chrome, intro tone, Back, Share, tab inset, and search portal or dismiss breaks by assertion. Historical M04 did not: it stopped in readiness. The corrected M04 runs reach `getObserversCount()`. The remaining source-text examples are the deferred icon and dock inventory constants above. They restate a constant. They do not observe a screen.
+
+## Checks after the category harness correction
+
+| Command | Exit | Notes |
+| --- | --- | --- |
+| `EXPO_NO_DOTENV=1 BIDPLACE_ENV_FILE=/dev/null pnpm exec turbo run typecheck --filter='@bidplace/mobile...'` | 0 | `/Users/yayauheny/projects/bidplace-r28b-m04fix-typecheck.log`. Mobile typecheck cache miss `0ad03b0c5c8c3539`. |
+| Category spec | 0 | 4 passed. `/Users/yayauheny/projects/bidplace-r28b-m04fix-category.log` |
+| `EXPO_NO_DOTENV=1 pnpm --filter @bidplace/mobile test` | 0 | 109 / 569. `/Users/yayauheny/projects/bidplace-r28b-m04fix-mobile-test.log`, start 11:41:02, duration 8.96s |
+| `pnpm --filter @bidplace/mobile lint` | 0 | `/Users/yayauheny/projects/bidplace-r28b-m04fix-lint.log` |
+| `EXPO_NO_DOTENV=1 BIDPLACE_ENV_FILE=/dev/null pnpm exec turbo run typecheck build --filter='@bidplace/mobile...'` | 0 | `/Users/yayauheny/projects/bidplace-r28b-m04fix-typecheck-build.log`. 8 successful. Mobile typecheck cache hit `0ad03b0c5c8c3539`. Mobile build cache miss `e5bde5eeba87db29`. |
+| `pnpm --filter @bidplace/mobile test:e2e-fence` | 0 | `/Users/yayauheny/projects/bidplace-r28b-m04fix-e2e-fence.log` |
+| `git -c core.fsmonitor=false diff --check` | 0 | `/Users/yayauheny/projects/bidplace-r28b-m04fix-diff-check.log` |
 
 ## Checks after extraction
 
@@ -114,7 +144,7 @@ R28, T02, and T06 stay `PARTIAL`. Recommended status: do not mark them `VERIFIED
 
 Done in this package:
 
-- Accepted R28-A owners fail the specified local breaks (M01–M11).
+- M01–M03 and M05–M11 fail on the named assertion. Historical M04 is recorded as readiness timeouts. Corrected M04 fails the shared-key observer assertion for the patched consumer and passes the other three cases.
 - Three identical helpers live in one test-only module, and the full mobile suite stays 109/569.
 - Remaining deferred symbols and unlike helpers are named.
 - E2E reduction is planned in `10-E2E-SCOPE-PLAN.md` and was not applied.
@@ -123,10 +153,11 @@ Still required before R28 / T02 / T06 can close:
 
 - A later, explicit decision for the deferred icon and dock constants and for the catalog `enabled` parameter. This package does not delete them.
 - Any further helper merge has to compare bodies again. The leftover `flush` copies match the extracted body but were not on this allowlist. `until` attempt counts must stay distinct.
-- Browser specs that replace a source-text risk still need a Playwright run. This package did not run one.
 - T06 parent/achievement seam stays with R32. Harness setup, QueryClient, and transport were not unified here.
 
-R29 / T05 stay not verified. There are no browser durations.
+R28-A replaced the named source-reading cases with hook and component tests. This package did not add a browser replacement, so a Playwright run of one is not an R28 gate.
+
+R29 / T05 stay not verified. Their remaining work is the browser matrix and durations in `10-E2E-SCOPE-PLAN.md`. D04, D05, D09, D10, L04, and R32 keep their own browser requirements.
 
 ## NOT RUN
 
