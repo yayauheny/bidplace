@@ -6,6 +6,8 @@ import { createRoot, type Root } from 'react-dom/client';
 import { ApiClientError } from '@bidplace/api-client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { flush } from '../../testing/dom';
+
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
 const harness = vi.hoisted(() => ({
@@ -83,12 +85,6 @@ function click(container: ParentNode, label: string) {
   if (!target) throw new Error(`Missing button ${label}`);
   act(() => {
     target.click();
-  });
-}
-
-async function flush() {
-  await act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 0));
   });
 }
 
