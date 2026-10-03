@@ -36,6 +36,10 @@
 
 **Дополнение 2026-10-02, R21:** `fix/catalog-facet-reads` включён поверх `afb70a9`. Public portfolio facets читают distinct values из существующих visibility CTE. D07 остаётся `PARTIAL`: moderation browser NOT RUN. См. R21 evidence.
 
+**Дополнение 2026-10-03, R28-B:** на `fix/behavior-test-coverage` от `9e43535` одинаковые `flush`, `setInput` и `inputValue` вынесены в `apps/mobile/src/testing/dom.ts` (`feb8450`). M01–M03 и M05–M11 падают на assertion. Исторические M04 — таймауты readiness, а не assertion и не дефект остальных consumer. Коррекция harness — `8f3998e`: исправленный M04 падает на `getObserversCount()` только у изменённого consumer. Полный mobile suite остаётся 109 файлов / 569 тестов. R28, T02 и T06 остаются `PARTIAL`. Браузерный replacement в R28 не добавлялся и не является его gate. R29 и T05 не `VERIFIED`: браузеры и timings не запускались. D04, D05, D09, D10, L04 и R32 не повышены. R22, R23, R25 и R33 не внедрялись. См. R28-B evidence.
+
+**Дополнение 2026-10-03, R28-C:** на `fix/behavior-test-coverage` от `15d42bf` пять одинаковых `flush` переведены на `apps/mobile/src/testing/dom.ts` (`9072467`). Удалены три приватных metadata constants и один helper-only `it` (`63bb185`). У `usePortfolioWorks` и `usePortfolioAuthors` снят неиспользуемый `enabled` (`8029aef`); `useInfiniteQuery` остаётся с явным `enabled: true`. Полный mobile suite: 109 файлов / 568 тестов. Рекомендация reviewer — закрыть R28, T02 и unit-часть T06. Этот пакет их не принимает. R29 и T05 не `VERIFIED`. D04, D05, D09, D10, L04 и R32 не повышены. Findings total остаётся 38. См. R28-C evidence.
+
 Текущая задача сохраняет roadmap и prompts, не запускает production-изменения и не создаёт PR. Утверждение roadmap не является выбором архитектурных вариантов R22–R27.
 
 ## 1. Правила исполнения и ведения roadmap
@@ -1712,6 +1716,183 @@ index predicate correction, review HEAD a7a8e8fe0fe6e4b4a8fe3ebbd55d4648fe3f4ce6
 - R19, R21 и R22–R27 не менялись. Контракт overview, ingestion, permissions, schema и migrations не менялись.
 - Браузеры не запускались. Root migrate и seed не запускались. Integration harness мигрировал только изолированные `itest_` schemas в `bidplace_integration`. Канонический Pen не менялся. `10-CODE-ARCHITECTURE.md` не менялся: граница admin overview та же.
 
+### R28-A evidence — 2026-10-03
+
+```text
+scope: R28-A behavior tests only. H01–H06, S01–S07, and the AdminRevisionPhoto clarification. Not R29, R33, C07, a broad T06 harness merge, new scenarios, or a dead-code sweep.
+status: PARTIAL. R28, T02, and T06 stay open. This record does not accept B3, C, or R28. D04, D05, D09, D10, L04, and the other existing NEEDS_VERIFICATION and PARTIAL findings stay at their previous status. Findings total remains 38.
+branch: fix/behavior-test-coverage
+base SHA: 2728212cad2b39d32246899f429baedea60fa675
+code final SHA: 2ae66857ea20b3c82d4788a9320cecfe71bc588e
+commits:
+  A/H01–H06 487d0a301b6dd8fe54cbc4e37ae92b0e7ab61d05 test: observe portfolio catalog hooks from their own views
+  B1/S01–S03 e35cc9cd6efe3cbaeac70fe8748757b59b468a46 test: cover catalog consumer behavior
+  B2/S04–S07 4312cecf19a398e9ab55c94f7a9f6474dbf3ea6e test: cover work and search primitives
+  B3 2ae66857ea20b3c82d4788a9320cecfe71bc588e fix issue: clarify revision photo reload coverage
+changed files, all tests:
+  apps/mobile/src/features/products/use-portfolio-catalog-hooks.spec.ts
+  apps/mobile/src/lib/category-query-identity.spec.ts
+  apps/mobile/src/features/products/product-list-catalog.spec.ts
+  apps/mobile/src/features/products/catalog-intro-style.spec.ts
+  apps/mobile/src/features/products/product-list-screen.spec.ts
+  apps/mobile/src/features/products/product-screen.spec.ts
+  apps/mobile/src/components/figma/figma-tabs.spec.ts
+  apps/mobile/src/features/search/search-overlay-surface.spec.ts
+  apps/mobile/src/features/admin/AdminRevisionPhoto.spec.ts
+production diff: none
+
+H01–H06, use-portfolio-catalog-hooks.spec.ts, 18 tests. Real works and authors catalog hooks. H01 first page from the passed route state. H02 one new id when page 2 overlaps page 1. H03 keeps page 1 after a non-retryable page 2 error and retries that page. H04 works fields q, category, material, and sort, and authors fields q, tag, city, and sort, each start a new first page. H05 aborts the pending request when query identity changes. H06 aborts it when the last observer unmounts.
+
+Nine source-reading cases replaced. Retained: PAYMENT_DELIVERY_STUB unit in product-screen.spec.ts; the first catalog-intro-style token assertion (bodySmall, Inter_400Regular, 14/20/-0.14, weight 400, ink #2A2A2A, textSecondary #8A8A8A); the FigmaTabs color helper.
+  S01 category-query-identity.spec.ts:18. Risk: a consumer can miss categoryKeys.all. Owner: ProductListScreen, ProductDraftScreen, PublicSellerScreen, CategoriesSearchPane, each on a fresh QueryClient. Result: the category query is observed, observer count is greater than 0, and the cache entry matches the category response.
+  S02 product-list-catalog.spec.ts:13 and :18, catalog-intro-style.spec.ts:29. Risk: catalog chrome or intro can drift from the screen. Works / ProductListScreen: no «Все работы», no tablist or tab, and the order is title, intro, Filter/Sort, then the card. Works and Authors / ProductListScreen and PublicAuthorsScreen: the intro is passed to AppText as bodySmall without a secondary tone. The Authors intro case does not check tabs or card order.
+  S03 product-list-screen.spec.ts:13. Risk: Back can show without history or skip router.back. Owner: the works catalog and WorkBackControl. Result: canGoBack false hides Back. canGoBack true renders WorkBackControl, and a click calls router.back once.
+  S04 product-screen.spec.ts:25. Risk: the work header can gain a Like control or drop Back or Share. Owners: WorkHeader.tsx and WorkHeader.web.tsx with WorkActions and FigmaIconButton. Result: each header has one «Назад» and one «Поделиться работой», no Like or heart, and each callback runs once. Header callbacks are not ProductScreen navigation evidence.
+  S05 figma-tabs.spec.ts:17. Risk: content inset can land on the outer tablist. Owner: FigmaTabs.web. Result: inset 24 sets rail paddingLeft and paddingRight to 24px. The outer tablist keeps its divider and does not take that inset. Default inset is 0. DOM style, compared through CSSOM.
+  S06 search-overlay-surface.spec.ts:10. Risk: the web dialog can stay in the host, or the native modal can drop its close wiring. Owners: SearchOverlaySurface.web and the native search-overlay-surface module loaded with vi.importActual. Result: the web dialog and sentinel portal to document.body outside the host and leave on unmount. The native modal is visible, transparent, and animationType none; onRequestClose calls onClose once. This is not device evidence.
+  S07 search-overlay-surface.spec.ts:20. Risk: outside dismissal can fire twice or after unmount. Owners: SearchOverlay, the web surface and layer, useDismissibleOverlay, and useOverlayFocusTrap. Result: pointerdown plus click inside the dialog does not dismiss. The same sequence on the dimmer calls onDismiss once. After unmount, a new outside event does not call the callback.
+
+B3 AdminRevisionPhoto.spec.ts. The first case is named for reload when the review target changes and for revoke of the previous object URL. The second resolve of the already settled first promise, and the assertion that treated it as a late response, are removed. The case still checks the first load, the identity change, loading, the new photo, created URLs blob:photo-0 and blob:photo-1, and revoke on unmount. The following case, "does not let an older response replace a newer photo that already loaded", is unchanged: the first request stays pending until the second photo loads, then the late first response does not replace it. The file still has 5 tests. Production AdminRevisionPhoto and useAdminObjectUrl were not edited.
+
+runtime counts from saved logs, Node v22.20.0 / pnpm 11.7.0. Historical counts are not rewritten to the latest total.
+  baseline unit after contracts, api-client, and design-tokens dist: bidplace-r28-baseline-after-build.log, 108 files / 543 tests, exit 0. Lint in that same log is recorded in the chronology below.
+  A targeted: bidplace-r28-hooks-corrected.log, 18 passed, exit 0. Authors-only: bidplace-r28-hooks-authors-only.log, 9 passed / 9 skipped, exit 0. Full: bidplace-r28-hooks-final-mobile-test.log, 109 / 561, exit 0
+  B1 full suite before the canGoBack boolean annotation: bidplace-r28-s01-s03-final-mobile-test.log, 109 / 566, exit 0. That suite was not rerun after the annotation. After it: bidplace-r28-b1-targeted.log, 4 files / 11 tests, exit 0
+  B2 targeted: bidplace-r28-b2-targeted.log, 3 files / 9 tests, exit 0. Full: bidplace-r28-b2-final-mobile-test.log, 109 / 569, exit 0
+  B3 targeted: bidplace-r28-b3-targeted.log, 1 file / 5 tests, exit 0. Full: bidplace-r28-b3-final-mobile-test.log, 109 / 569, exit 0. The case count did not change, so the suite total stayed 569.
+
+cache and exits:
+  A final typecheck and build: bidplace-r28-hooks-final-typecheck-build.log, 8 successful, exit 0
+  B1 before the annotation: bidplace-r28-s01-s03-final-typecheck-build.log, exit 2, TS2322 at product-list-screen.spec.ts. After the annotation: bidplace-r28-b1-typecheck-build.log, 8 successful, 6 cache hits, mobile typecheck and build cache miss, exit 0
+  B2 first typecheck: bidplace-r28-b2-typecheck.log, exit 2, TS5097 and TS2769. Corrected typecheck: bidplace-r28-b2-corrected-typecheck.log, 7 successful, 6 cache hits, mobile typecheck cache miss, exit 0. Final graph: bidplace-r28-b2-final-typecheck-build.log, 8 successful, 7 cache hits including mobile typecheck 126541c63eaa9745, mobile build cache miss, exit 0
+  B3 typecheck and build: bidplace-r28-b3-final-typecheck-build.log, 8 successful, 6 cache hits, mobile typecheck cache miss 4a285f4b454f76dd, mobile build cache miss cfd77d63f059c17b, exit 0
+  B3 lint: bidplace-r28-b3-final-lint.log, exit 0. E2E fence: bidplace-r28-b3-e2e-fence.log, exit 0. diff --check: bidplace-r28-b3-diff-check.log, exit 0
+  Lint, e2e fence, and diff --check for A, B1, and B2 are in the matching bidplace-r28-hooks-final-*, bidplace-r28-b1-*, and bidplace-r28-b2-final-* / bidplace-r28-b2-e2e-fence / bidplace-r28-b2-diff-check logs, each exit 0.
+
+previous failures, kept visible:
+  Before contracts, api-client, and design-tokens dist: bidplace-r28-baseline-mobile-test.log, exit 1. Those three workspace entries were missing. Runner summary: 67 failed / 41 passed files; 2 failed / 182 passed tests. 65 suites collected no tests. Two tests ran and failed on a dependency resolve, both for @bidplace/design-tokens: interactive-hit-style "uses token surfaces on native and skips dataset", and FigmaGlassSurface web "keeps React Native style arrays instead of dropping them". This is bootstrap, not a behavioral mismatch. The later unit baseline is 108 / 543.
+  After those three packages were built, that unit baseline passed. The same bidplace-r28-baseline-after-build.log then records lint exit 1: packages/database/dist/index.js is missing from e2e/support/e2e-fixtures.ts and e2e/support/revision-moderation-fixture.ts.
+  Cached database restore, recorded in bidplace-r28-baseline-lint-after-database.log: generate LOCAL HIT b4477602dca4dc41, build LOCAL HIT 9f4d9476a66677e3. These are saved turbo outputs. Prisma CLI, a database, API, migrations, and seed were not run. Lint in that log exited 0.
+  After that restore: bidplace-r28-baseline-remaining.log, typecheck and build 8 successful / 8 cache hits, exit 0; e2e fence exit 0; diff --check exit 0.
+  First H01–H06 run: 11 failed / 7 passed. No separate full stdout log was saved. That output is not reconstructed here and is not recorded as a service defect. Review classified three harness defects. The accepted correction is 487d0a3.
+  First S01–S03 targeted run: bidplace-r28-s01-s03.log, exit 1, 4 files, no tests, SyntaxError: Unexpected token 'typeof' from react-native Flow. Corrected targeted log is bidplace-r28-s01-s03-corrected.log, 4 files / 11 tests, exit 0.
+  B1 TS2322 and B2 TS5097/TS2769 remain in the logs above. The corrections were the boolean annotation, unsuffixed component imports, children inside props, typed vi.importActual for the native surface, and CSSOM comparison for the divider.
+
+existing browser owners, not executed in this package:
+  Home → Work → Back, including the Back button and history, is apps/mobile/e2e/back-navigation-lifecycle.spec.ts:14.
+  work-header-motion.spec.ts covers header geometry, action persistence, and gallery swipe.
+  work-page-back.spec.ts is the helper unit.
+  Citing those files is not a browser run. S04 does not verify ProductScreen router navigation.
+
+negative controls, described only, NOT RUN:
+  Remove the request signal from a catalog hook. Omit one identity field. Return a duplicate id.
+  S01: drop categoryKeys.all from one consumer.
+  S02: mount a catalog segment with role tablist or tab.
+  S03: canGoBack true without calling router.back.
+  S04: add Like to WorkActions.
+  S05: move the rail padding onto the outer tablist.
+  S06: leave the portal inside the host.
+  S07: add a second outside-dismiss listener on the dimmer.
+
+residual final-sweep candidates, by reference to the post-cleanup evidence in this file, not removed here: figmaDeferredIconNames, figmaDeferredDockItemIds, figmaUnusedDockVariantIds, and orphan fixtures, helpers, and mocks after a future harness merge. The source-text examples named in that historical line, category-query-identity and catalog-intro-style, were replaced in this package. T06 harness duplication and mutation sanity remain later steps. R29 was not started.
+static resolver, CSSOM, and compiler probes used while correcting B2 are separate from the Vitest and Turbo runs listed above.
+NOT RUN: browsers, API server, database, Prisma, migrate, seed, root verify, mutation copies, and negative controls.
+```
+
+### Проверка документа — 2026-10-03 R28-A
+
+- R28-A evidence is recorded. R28, T02, and T06 stay `PARTIAL`. The historical card and earlier supplements are unchanged, including lines that still say R28 was not started.
+- The coverage matrix and the findings total are unchanged. D04, D05, D09, D10, and L04 were not moved to `VERIFIED`.
+- Browsers, API bootstrap, database, migrations, and seed were not run. `10-CODE-ARCHITECTURE.md` and the canonical Pen file were not changed.
+
+### R28-B evidence — 2026-10-03
+
+```text
+scope: mutation sanity of the accepted R28-A owners, extraction of three identical test helpers, and a read-only E2E reduction plan. Not an E2E deletion, not R22/R23/R25/R33, and not a production change.
+status: PARTIAL. R28, T02, and T06 stay open. R29 and T05 are not VERIFIED. D04, D05, D09, D10, L04, and R32 stay at their previous status. Findings total remains 38.
+branch: fix/behavior-test-coverage
+starting SHA: 9e4353585705ef794807a3664635fcad45fde7f7
+helper commit: feb845064de1c04d776f856615db8ff827eae1a2 test: share identical DOM test helpers
+harness correction: 8f3998e77c7536a53a89d8f268b37ecef3510365 test: settle category publication without the shared key
+owner reports: docs/audits/current/09-TEST-CLEANUP-FOLLOWUP.md and docs/audits/current/10-E2E-SCOPE-PLAN.md
+mutation copies: /private/tmp/bidplace-r28b-mutations/patches and /private/tmp/bidplace-r28b-mutations/logs
+production diff: none
+
+M01–M03 and M05–M11 each ran in an isolated copy of 9e43535. Vitest printed RUN v4.1.10 /private/tmp/bidplace-r28b-mutations/pilot/apps/mobile. Those fifteen copies failed on the named assertion. Extra failures there are the same missing signal, missing q, duplicate id, rail padding, or host portal. The four historical M04 logs are readiness timeouts at 5000ms, including later cases in the same process. Those later timeouts are harness contamination: publishMountedConsumer waited for categoryKeys.all, and the pending act scope survived the first timeout. They are not additional production defects. The unpatched category spec in that copy passed 4/4. Mutations were not committed.
+
+Corrected M04, after 8f3998e, is in /private/tmp/bidplace-r28b-m04-correction/. Each of the four copies changes one key to ['categories', 'detached'] and runs the whole category spec. Each log is 1 failed and 3 passed, exit 1, on expect(query?.getObserversCount()).toBeGreaterThan(0) receiving undefined. No corrected log times out. The unmodified spec is 4 passed, exit 0, bidplace-r28b-m04fix-category.log. The fifteen other mutations were not repeated. Full suite after the harness change: bidplace-r28b-m04fix-mobile-test.log, 109/569, exit 0. Typecheck cache miss 0ad03b0c5c8c3539, then cache hit on the build graph. Mobile build cache miss e5bde5eeba87db29. Lint, fence, and diff --check exit 0.
+
+Helper extraction moved only the proven-identical flush, setInput, and inputValue into apps/mobile/src/testing/dom.ts. it, it.each, and expect lines in the commit are unchanged. until stays at 8, 12, or 20 attempts. Unlike setInput and flush copies stay local.
+
+Measured runtime: baseline and post-extraction mobile suite are both 109 files / 569 tests, exit 0. AST is 477 src declarations and 100 e2e test() declarations. The e2e number is not a browser run.
+
+Checks, all exit 0: bidplace-r28b-final-mobile-test.log 109/569; bidplace-r28b-final-lint.log; bidplace-r28b-final-typecheck-build.log 8 successful, mobile typecheck cache hit 9c129db50c02a7ea, mobile build cache miss f553b134d4f70cb1; bidplace-r28b-final-e2e-fence.log; bidplace-r28b-final-diff-check.log. Targeted consumers: bidplace-r28b-helper-targeted.log, 11 files / 115 tests.
+
+Remaining before R28/T02/T06 can close: deferred figmaDeferredIconNames, figmaDeferredDockItemIds, figmaUnusedDockVariantIds, and the catalog enabled parameter; leftover identical flush copies outside this allowlist; T06 parent/achievement seam stays with R32. R28-A/B did not add a browser replacement, so a Playwright run of one is not an R28 gate. R29/T05 still need durations and a maintained browser matrix. D04, D05, D09, D10, L04, and R32 keep their own browser requirements. The only DELETE PROPOSAL is creator-profile.spec.ts "creator profile creation stages public identity, links and private handoff": its three-step strings are absent from apps/mobile/src, and the four-step owners are author-revision-flow.spec.ts and author-application-publication.spec.ts. It was not deleted. The seven earlier wizard cases and the four logout cases are mapped separately in 10-E2E-SCOPE-PLAN.md. Only the approved-author logout and the three final wizard cases own browser Back.
+
+NOT RUN: browsers, API server, database, Prisma, migrate, seed, root verify, and mutations inside the accepted worktree.
+```
+
+### Проверка документа — 2026-10-03 R28-B
+
+- R28-B evidence is recorded. Historical M04 stays a readiness timeout. The corrected M04 assertion results are appended. R28, T02, and T06 stay `PARTIAL`. R29 and T05 are not `VERIFIED`. A browser replacement is not an R28 gate.
+- The historical R28-A block and the coverage matrix are unchanged. The findings total stays 38.
+- D04, D05, D09, D10, L04, and R32 were not raised. Browsers were not run. `10-CODE-ARCHITECTURE.md` and the canonical Pen file were not changed.
+
+### R28-C evidence — 2026-10-03
+
+```text
+scope: five identical flush copies, three private metadata constants, and the unused catalog enabled parameter. Not an E2E deletion, not a browser replacement, and not R22/R23/R25/R33.
+status: recorded for review. R28, T02, and T06 stay PARTIAL in the matrix until a reviewer accepts the recommendation below. R29 and T05 are not VERIFIED. D04, D05, D09, D10, L04, and R32 stay at their previous status. Findings total remains 38.
+branch: fix/behavior-test-coverage
+integration base: 2728212cad2b39d32246899f429baedea60fa675
+starting SHA: 15d42bf7142fa3149c9af3c3d263ffe7c991bbe1
+A: 907246796b3f595ed3f52306b1cc92e498d17602 test: reuse the shared flush in five specs
+B: 63bb18596b0b1540096cf2bafe38e918d5114e5d test: drop unused Figma inventory constants
+C: 8029aef45827d9a7e27e1e60f584167352981897 test: drop the unused catalog hook enabled argument
+owner report: docs/audits/current/09-TEST-CLEANUP-FOLLOWUP.md
+
+Diff:
+A — account-logout-button.spec.ts, account-logout-reachability.spec.ts, verify-email-logout.spec.ts, author-cabinet-work-cache.spec.ts, admin-moderation-screen.spec.ts. Local flush bodies matched apps/mobile/src/testing/dom.ts. The helper was not rewritten. Assertions, fixtures, until counts, and unlike flush/setInput copies were not edited.
+B — figma-icon-names.ts, floating-dock.ts, components/figma/index.ts, figma-icon-names.spec.ts, floating-dock.spec.ts. Removed figmaDeferredIconNames, figmaDeferredDockItemIds, figmaUnusedDockVariantIds, their barrel exports, and the one deferred-icon it. Live figmaIconNames, dock items, icons, and assets stay.
+C — use-portfolio-works.ts and use-portfolio-authors.ts. The second parameter is gone. useInfiniteQuery keeps enabled: true. queryKey, page size, queryFn, and the hook spec were not edited.
+
+Consumers before deletion: the three constants appeared only as their declarations, the private mobile barrel, and specs that restated the arrays. Documentation mentions were not treated as runtime consumers. After deletion, a search of ts/tsx/js/mjs has no remaining reference. Catalog callers pass only route state: ProductListScreen, PublicAuthorsScreen, WorksSearchPane, AuthorsSearchPane, and use-portfolio-catalog-hooks.spec.ts.
+
+Runtime: baseline at 15d42bf is 109 files / 569 tests. Final is 109 files / 568 tests. The difference is the one deleted deferred-icon it.
+
+Checks, all exit 0, Node v22.20.0 / pnpm 11.7.0 / Vitest 4.1.10:
+baseline test bidplace-r28c-baseline-mobile-test.log, 109/569, start 13:43:47, 10.47s
+baseline lint bidplace-r28c-baseline-lint.log
+baseline typecheck+build bidplace-r28c-baseline-typecheck-build.log, 8 cache hits: design-tokens typecheck 51af8ef023409d45, contracts typecheck 21df80b23b533f08, contracts build 425e77c240477454, api-client typecheck 86b49fae070f4b99, design-tokens build 206179f93e09e4eb, api-client build edb62ef9cf2e3eae, mobile typecheck 0ad03b0c5c8c3539, mobile build e5bde5eeba87db29
+baseline fence bidplace-r28c-baseline-e2e-fence.log; diff --check bidplace-r28c-baseline-diff-check.log
+targeted A bidplace-r28c-flush-targeted.log, 5 files / 35 tests, start 13:44:38, 1.73s
+targeted B bidplace-r28c-metadata-targeted.log, 2 files / 5 tests, start 13:45:19, 150ms
+targeted C bidplace-r28c-hooks-targeted.log, 18 tests, start 13:45:37, 989ms
+final test bidplace-r28c-final-mobile-test.log, 109/568, start 13:46:28, 9.59s
+final lint bidplace-r28c-final-lint.log
+final typecheck+build bidplace-r28c-final-typecheck-build.log, 8 successful. Cache hits: the six package tasks above. Cache misses: mobile typecheck 4dcc24e15aa117e6, mobile build 2673b3a9d0fc6265
+final fence bidplace-r28c-final-e2e-fence.log is the local fence script, not a browser run
+final diff --check bidplace-r28c-final-diff-check.log
+
+Acceptance, recommendation only:
+R28 — met. Source-text owners, mutation sanity, identical flush reuse, metadata removal, and the unused enabled argument are recorded. No source test was replaced by a browser spec, so a Playwright run is not an R28 gate. Recommend VERIFIED.
+T02 — met. Dead-helper tests and the helper-only deferred assertions are gone. The remaining figmaIconNames equality checks the live registry. Recommend VERIFIED.
+T06 — unit seam met. author-application-achievements.spec.ts renders SellerProfileScreen, which mounts AuthorApplicationAchievements. Parent submit/logout/exit, late reads, stale session, and picker/blob cases are in that file. Identical DOM helpers are shared. QueryClient, transports, until 8/12/20, and the unlike setInput/flush copies stay local because their timing differs; a shared form framework was not created. Recommend VERIFIED for this unit finding. D10 browser acceptance stays NEEDS_VERIFICATION on its own row and does not reopen the unit seam.
+
+KEEP: live icon and dock registries; AdminRevisionPhoto flush (two microtasks); AppDialog flush (two timeouts); local setInput in product-draft-fields, seller-profile-fields, and author-application-achievements; distinct until attempt counts; catalog observer harness.
+DELETE PROPOSAL, not executed: creator-profile.spec.ts "creator profile creation stages public identity, links and private handoff". It stays with R29.
+DEFER: R29 browser matrix and durations, including conditional page-2 seed cases. Return when a browser run is in scope.
+
+NOT RUN: browsers, Playwright tests, API server, database, Prisma, migrate, seed, root verify, and new mutations. 10-E2E-SCOPE-PLAN.md was not edited.
+```
+
+### Проверка документа — 2026-10-03 R28-C
+
+- R28-C evidence is recorded. The recommendation is to close R28, T02, and the unit part of T06. The matrix status stays `PARTIAL` until review accepts that recommendation.
+- R29 and T05 stay not `VERIFIED`. D04, D05, D09, D10, L04, and R32 were not raised. Findings total stays 38.
+- Browsers were not run. `10-CODE-ARCHITECTURE.md` and the canonical Pen file were not changed.
+
 ## 6. Полная coverage matrix
 
 `E0` — исходный аудит; `E1` — повторная статическая проверка в этом planning pass; `E2` — targeted review PR #12 (`014711fa2ef4f78ad28e4759168d42ef04d5b794` → `7d2d5479f1087835271c1eb23985f2886049abb6`): logout UI отсутствовал уже на base. Это evidence наличия finding, не его исправления.
@@ -1743,7 +1924,7 @@ index predicate correction, review HEAD a7a8e8fe0fe6e4b4a8fe3ebbd55d4648fe3f4ce6
 | S01     | Work ownership разбросан по Sellers/Products/Portfolio                       | P2 / HIGH             | W6 → R24                             | DECISION_REQUIRED  | A03 decision                                                 | E0; module/route/data ownership graph                                          |
 | S02     | Исторические ui/figma имена скрывают реальный master ownership               | P3 / HIGH             | W6 → R27                             | DECISION_REQUIRED  | R09/R13/R14; cost/value decision                             | E0; master/wrapper/export inventory                                            |
 | T01     | Contracts/database tests выпадают из discovery/build boundaries              | P2 / HIGH             | W1 → R04                             | VERIFIED           | —                                                            | Current R04 evidence: discovery, database smoke, clean dist                    |
-| T02     | Dead-helper и source-text tests с низкой доказательной ценностью             | P2 / HIGH             | W3/W7 → R09, R10, R28                | PARTIAL            | соответствующий production cleanup                           | Helper-only tests for removed symbols deleted. Source-text inventory and R28 harness cleanup remain. |
+| T02     | Dead-helper и source-text tests с низкой доказательной ценностью             | P2 / HIGH             | W3/W7 → R09, R10, R28                | PARTIAL            | соответствующий production cleanup                           | R28-C recommends VERIFIED and does not self-accept. Dead helpers and the three helper-only metadata constants are gone. The live `figmaIconNames` equality stays as the icon registry. |
 | T03     | Maintained author E2E описывают старый flow                                  | P1 / HIGH             | W1 → R03                             | NEEDS_VERIFICATION | R02                                                          | Current R03 evidence: specs updated; Chromium/WebKit NOT RUN.                  |
 | T04     | Не покрыты реальные seams: queue, submit, save race, overlay, S3, visibility | P1 / HIGH             | W1/W2/W6 → R01–R03, R05–R06, R22–R23 | PARTIAL            | UI части готовы к работе; полное закрытие зависит от A01/A02 | R01 overlay verified; R03 submit and R05–R07 save/cache are NEEDS_VERIFICATION; R32 achievement parent seam is NEEDS_VERIFICATION; queue/S3/visibility открыты |
 | T05     | Дублирование browser сценариев и дорогого setup                              | P3 / MEDIUM           | W7 → R29                             | QUEUED             | R03/R14/R28; сохранить A04 coverage                          | E0 static overlap; требуются timings/full matrix                               |
@@ -1752,7 +1933,7 @@ index predicate correction, review HEAD a7a8e8fe0fe6e4b4a8fe3ebbd55d4648fe3f4ce6
 | C06     | persistProductDraftBeforeSubmit имеет только test consumers                  | P3 / HIGH             | W3 → R09                             | VERIFIED           | R05–R07; повторный consumer graph                            | 2026-10-01: helper and its helper-only tests removed. Product draft save/submit regressions remain. |
 | A06     | Несколько владельцев profile query policy и session generation               | P2 / HIGH             | W6 → R33                             | DECISION_REQUIRED  | R31/R32; выбор ownership                                     | key/options/writer inventory, без заявления runtime race                       |
 | L05     | Admin media вручную ведёт request lifecycle                                  | P3 / HIGH             | W4 → R34                             | BLOCKED            | R08; решение R33 и необходимые prerequisites                 | useAdminObjectUrl production lifecycle; semantic comparison pending            |
-| T06     | Дублированный harness и пропущенная parent/achievement граница               | P2 / HIGH             | W2/W7 → R32, R28                     | PARTIAL            | R28 harness cleanup                                          | R32 covers the real parent/achievement seam. Harness cleanup remains R28.     |
+| T06     | Дублированный harness и пропущенная parent/achievement граница               | P2 / HIGH             | W2/W7 → R32, R28                     | PARTIAL            | R28 harness cleanup                                          | R28-C recommends VERIFIED for the unit seam and does not self-accept. `author-application-achievements.spec.ts` mounts `SellerProfileScreen`. Identical DOM helpers are shared. Unlike harnesses stay local. D10 browser stays NEEDS_VERIFICATION. |
 | C07     | Admin productAction дублирует mutation variables                             | P3 / HIGH             | W4 → R35                             | QUEUED             | Проверить R02 на base                                        | Left open 2026-10-01. After a failed Work action, a successful Author action clears `productAction` but not the previous product mutation error. `mutation.variables` alone changes the message shown on return to Work. |
 | C08     | Search helpers переупаковывают flags/timer; duplicated Zod parsing           | P3 / HIGH             | W4 → R35                             | VERIFIED           | Повторный consumer inventory                                 | 2026-10-01: panes use query flags, debounce owns its timer, `parseQuery` aliases `parseBody`. Unit checks passed. Browser search NOT RUN. |
 | L06     | Image uri reset вручную синхронизирует несколько состояний                   | P3 / MEDIUM           | W4 → R35                             | NEEDS_VERIFICATION | Component prototype с сохранением retry semantics            | 2026-10-01: recovery lifetime is `key={uri}`. Retry delays, exhaustion, cache-bust, and recycling stay. Real component 9 tests passed. Browser media NOT RUN. |

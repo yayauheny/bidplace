@@ -6,6 +6,8 @@ import { createRoot, type Root } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { flush, inputValue, setInput } from '../../testing/dom';
+
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
 const productId = '11111111-1111-4111-8111-111111111111';
@@ -219,12 +221,6 @@ function mount(props: {
   };
 }
 
-async function flush() {
-  await act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 0));
-  });
-}
-
 async function until(container: HTMLElement, predicate: () => boolean, label: string) {
   for (let attempt = 0; attempt < 20; attempt += 1) {
     if (predicate()) return;
@@ -243,22 +239,6 @@ function click(container: ParentNode, label: string) {
   act(() => {
     target.click();
   });
-}
-
-function setInput(container: ParentNode, label: string, value: string) {
-  const input = container.querySelector(`[aria-label="${label}"]`);
-  if (!(input instanceof HTMLInputElement)) throw new Error(`Missing field ${label}`);
-  const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
-  act(() => {
-    setter?.call(input, value);
-    input.dispatchEvent(new Event('input', { bubbles: true }));
-  });
-}
-
-function inputValue(container: ParentNode, label: string) {
-  const input = container.querySelector(`[aria-label="${label}"]`);
-  if (!(input instanceof HTMLInputElement)) throw new Error(`Missing field ${label}`);
-  return input.value;
 }
 
 function formIsDirty() {

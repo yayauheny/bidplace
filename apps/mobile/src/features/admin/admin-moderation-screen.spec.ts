@@ -11,6 +11,8 @@ import {
 import { ApiClientError } from '@bidplace/api-client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { flush } from '../../testing/dom';
+
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
 const harness = vi.hoisted(() => ({
@@ -379,12 +381,6 @@ function holdCancelQueries(client: QueryClient) {
     });
   }) as QueryClient['cancelQueries'];
   return releases;
-}
-
-async function flush() {
-  await act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 0));
-  });
 }
 
 async function until(container: HTMLElement, marker: string) {

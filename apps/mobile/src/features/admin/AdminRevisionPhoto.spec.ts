@@ -139,7 +139,7 @@ afterEach(() => {
 });
 
 describe('AdminRevisionPhoto', () => {
-  it('reloads when the review target identity changes and ignores a late previous response', async () => {
+  it('reloads when the review target changes and revokes the previous object URL', async () => {
     const first = deferred<Blob>();
     const second = deferred<Blob>();
     harness.getSellerRevisionPhoto
@@ -162,10 +162,6 @@ describe('AdminRevisionPhoto', () => {
     expect(revoked).toContain('blob:photo-0');
 
     second.resolve(new Blob(['pending-bytes']));
-    await flush();
-    expect(shownSrc(view.container)).toBe('blob:photo-1');
-
-    first.resolve(new Blob(['late-bytes']));
     await flush();
     expect(shownSrc(view.container)).toBe('blob:photo-1');
     expect(created).toEqual(['blob:photo-0', 'blob:photo-1']);

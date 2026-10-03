@@ -6,6 +6,8 @@ import { createRoot, type Root } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { flush } from '../../testing/dom';
+
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
 const harness = vi.hoisted(() => ({
@@ -149,12 +151,6 @@ function mount(node: ReactNode) {
       container.remove();
     },
   };
-}
-
-async function flush() {
-  await act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 0));
-  });
 }
 
 async function until(container: HTMLElement, marker: string) {

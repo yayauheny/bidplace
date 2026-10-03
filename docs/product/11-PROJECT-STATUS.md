@@ -5,6 +5,37 @@
 > commerce-schema references below do not mean that Listing, Bid, Order,
 > lifecycle, realtime, discovery or activity modules are currently booted.
 
+## 2026-10-03 — Residual test cleanup
+
+- `Partial`: five specs now call the shared `flush`. Three private Figma metadata lists and the unused catalog `enabled` argument are removed. `useInfiniteQuery` stays explicitly enabled. The mobile suite is 109 files and 568 tests.
+- Owner report: `docs/audits/current/09-TEST-CLEANUP-FOLLOWUP.md`, R28-C section. Commands: R28-C evidence in `docs/audits/current/00-EXECUTION-ROADMAP.md`.
+- `Unchanged`: the matrix still lists R28, T02, and T06 as partial until review. The recommendation is to close those three. R29 and T05 are not verified. D04, D05, D09, D10, L04, and R32 stay needs verification. No E2E file was deleted.
+
+## 2026-10-03 — Test cleanup follow-up
+
+- `Partial`: identical `flush`, `setInput`, and `inputValue` live in
+  `apps/mobile/src/testing/dom.ts`. The category publication wait no longer
+  blocks on `categoryKeys.all`. The mobile suite stays 109 files and 569 tests.
+- Owner report: `docs/audits/current/09-TEST-CLEANUP-FOLLOWUP.md`. E2E mapping:
+  `docs/audits/current/10-E2E-SCOPE-PLAN.md`. Commands are in the R28-B evidence
+  of `docs/audits/current/00-EXECUTION-ROADMAP.md`.
+- `Unchanged`: R28, T02, and T06 stay partial. R29 and T05 are not verified.
+  D04, D05, D09, D10, L04, and R32 stay needs verification. No E2E file was
+  deleted. Browsers, API, database, migrations, and seed were not run.
+
+## 2026-10-03 — Behavior test coverage
+
+- `Partial`: catalog hook tests drive the works and authors hooks, and nine
+  former source-reading cases now drive their production owners. The revision
+  photo reload case names the target change and the revoked object URL. The
+  pending older response case is still there.
+- Coverage and commands: `docs/audits/current/00-EXECUTION-ROADMAP.md`, R28-A
+  evidence. Node v22.20.0. After that correction the mobile suite is 109 files
+  and 569 tests. The diff is nine spec files. Production files are unchanged.
+- `Unchanged`: R28, T02, and T06 stay partial. D04, D05, D09, D10, and L04 stay
+  needs verification. Mutation checks, browsers, API, database, migrations, and
+  seed were not run. This record does not accept the package.
+
 ## 2026-10-02 — R19 search cursor time zone
 
 - `Partial`: admin search pages compare the cursor instant as UTC wall time.

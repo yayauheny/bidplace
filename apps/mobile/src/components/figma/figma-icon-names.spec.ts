@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { figmaDeferredIconNames, figmaIconNames } from './figma-icon-names';
+import { figmaIconNames } from './figma-icon-names';
 
 describe('Figma icon registry', () => {
   it('keeps the Компоненты icon set plus dock extras', () => {
@@ -32,14 +32,6 @@ describe('Figma icon registry', () => {
       'calendar-01',
       'ai-magic',
       'user',
-      'shopping-basket-01',
-    ]);
-  });
-
-  it('marks OAuth, AI and cart icons as deferred for First MVP', () => {
-    expect(figmaDeferredIconNames).toEqual([
-      'google',
-      'ai-magic',
       'shopping-basket-01',
     ]);
   });

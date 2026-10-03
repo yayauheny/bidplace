@@ -2,17 +2,14 @@ import { describe, expect, it } from 'vitest';
 
 import {
   dockItemAccessibility,
-  figmaDeferredDockItemIds,
   figmaDockItemIds,
   figmaDockItems,
-  figmaUnusedDockVariantIds,
   isFigmaDockItemSelected,
 } from './floating-dock';
 
 describe('Figma floating dock', () => {
   it('uses Home Search Add Profile and no cart', () => {
     expect(figmaDockItemIds).toEqual(['home', 'search', 'plus', 'profile']);
-    expect(figmaDeferredDockItemIds).toEqual(['cart']);
     expect(figmaDockItems.map((item) => item.icon)).toEqual([
       'logo',
       'search-01',
@@ -21,11 +18,7 @@ describe('Figma floating dock', () => {
     ]);
   });
 
-  it('rejects the split search FAB and five-icon cart pill variants', () => {
-    expect(figmaUnusedDockVariantIds).toEqual([
-      'split-search-fab',
-      'five-icon-cart-pill',
-    ]);
+  it('keeps four dock items without a cart', () => {
     expect(figmaDockItemIds).not.toContain('cart');
     expect(figmaDockItems).toHaveLength(4);
   });

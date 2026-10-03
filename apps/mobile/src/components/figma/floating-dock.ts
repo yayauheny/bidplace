@@ -4,13 +4,6 @@ export const figmaDockItemIds = ['home', 'search', 'plus', 'profile'] as const;
 
 export type FigmaDockItemId = (typeof figmaDockItemIds)[number];
 
-export const figmaDeferredDockItemIds = ['cart'] as const;
-
-export const figmaUnusedDockVariantIds = [
-  'split-search-fab',
-  'five-icon-cart-pill',
-] as const;
-
 export type FigmaDockItem = {
   id: FigmaDockItemId;
   label: string;
