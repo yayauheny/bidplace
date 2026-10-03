@@ -48,8 +48,18 @@ test('approved author replaces a published achievement without publishing the dr
     await fillControl(page.getByLabel('Год'), '2026');
     await fillControl(page.getByLabel('Месяц'), '4');
     await fillControl(page.getByLabel('Описание достижения'), draftBody);
-    await page.getByRole('button', { name: 'Сохранить достижение' }).click();
-    await expect(page.getByText(draftBody)).toBeVisible();
+    const [savedResponse] = await Promise.all([
+      page.waitForResponse(
+        (response) =>
+          response.request().method() === 'POST' &&
+          response.url() ===
+            `${e2eApiBaseURL}/api/author/application/achievements`,
+      ),
+      page.getByRole('button', { name: 'Сохранить достижение' }).click(),
+    ]);
+    expect(savedResponse.ok()).toBeTruthy();
+    await expect(page.getByLabel('Описание достижения')).toHaveValue('');
+    await expect(page.getByText(draftBody, { exact: true })).toBeVisible();
 
     const application = await context.request.get(
       `${e2eApiBaseURL}/api/author/application`,
