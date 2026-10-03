@@ -303,7 +303,7 @@ function imageIdentity(
 }
 
 async function expectGallery(page: Page, title: string, images: RevisionImage[]) {
-  const gallery = page.getByTestId('work-gallery').getByRole('img');
+  const gallery = page.getByTestId('work-gallery').locator('[role="img"]');
   await expectDecoded(
     gallery,
     images.map((image) => ({ width: image.width, height: image.height })),
