@@ -12,10 +12,7 @@ import {
   type PortfolioAuthorsRouteState,
 } from './portfolio-authors-query';
 
-export function usePortfolioAuthors(
-  state: PortfolioAuthorsRouteState,
-  enabled = true,
-) {
+export function usePortfolioAuthors(state: PortfolioAuthorsRouteState) {
   const api = useApiClient();
   const listQuery = {
     ...toPortfolioAuthorsListQuery(state),
@@ -27,7 +24,7 @@ export function usePortfolioAuthors(
     queryFn: ({ pageParam, signal }) =>
       api.portfolio.listAuthors({ ...listQuery, page: pageParam }, { signal }),
     getNextPageParam: (page) => nextCatalogPage(page.pagination),
-    enabled,
+    enabled: true,
     retry: retryTransientPublicQuery,
   });
   const items = uniqueCatalogItems(

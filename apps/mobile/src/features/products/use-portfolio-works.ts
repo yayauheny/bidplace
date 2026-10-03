@@ -12,10 +12,7 @@ import {
   type PortfolioWorksRouteState,
 } from './portfolio-works-query';
 
-export function usePortfolioWorks(
-  state: PortfolioWorksRouteState,
-  enabled = true,
-) {
+export function usePortfolioWorks(state: PortfolioWorksRouteState) {
   const api = useApiClient();
   const listQuery = {
     ...toPortfolioWorksListQuery(state),
@@ -27,7 +24,7 @@ export function usePortfolioWorks(
     queryFn: ({ pageParam, signal }) =>
       api.portfolio.listWorks({ ...listQuery, page: pageParam }, { signal }),
     getNextPageParam: (page) => nextCatalogPage(page.pagination),
-    enabled,
+    enabled: true,
     retry: retryTransientPublicQuery,
   });
   const items = uniqueCatalogItems(
