@@ -15,7 +15,6 @@ export { OverlayDimmer } from './OverlayDimmer';
 export { WorkCoverCard } from './WorkCoverCard';
 export { WorkCoverCardGrid } from './WorkCoverCardGrid';
 export {
-  figmaDeferredIconNames,
   figmaIconNames,
   type FigmaIconName,
 } from './figma-icon-names';
@@ -25,11 +24,7 @@ export {
   type FigmaButtonSize,
   type FigmaButtonVariant,
 } from './figma-button-style';
-export {
-  figmaDeferredDockItemIds,
-  figmaDockItems,
-  figmaUnusedDockVariantIds,
-} from './floating-dock';
+export { figmaDockItems } from './floating-dock';
 export { getWorkCoverOverlay } from './work-cover-fields';
 
 export { ShareSheet } from './ShareSheet';

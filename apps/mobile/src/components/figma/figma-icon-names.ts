@@ -30,10 +30,3 @@ export const figmaIconNames = [
 ] as const;
 
 export type FigmaIconName = (typeof figmaIconNames)[number];
-
-/** Present in Figma, not rendered on First MVP surfaces. */
-export const figmaDeferredIconNames = [
-  'google',
-  'ai-magic',
-  'shopping-basket-01',
-] as const satisfies ReadonlyArray<FigmaIconName>;
