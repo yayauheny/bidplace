@@ -105,7 +105,7 @@ test('admin reviews a pending seller revision without exposing it publicly', asy
   await expect(page.getByText(fixture.pendingAchievement.body).first()).toBeVisible();
   await expect(page.getByText(fixture.publishedAchievement.body)).toHaveCount(0);
   await expect(page.getByText('Изображение достижения недоступно')).toHaveCount(0);
-  await expectDecoded(page.locator('img[alt="Достижение"]'), [
+  await expectDecoded(page.getByRole('img', { name: 'Достижение', exact: true }), [
     {
       width: fixture.pendingAchievement.width,
       height: fixture.pendingAchievement.height,
