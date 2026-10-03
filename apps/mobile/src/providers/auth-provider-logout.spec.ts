@@ -6,6 +6,8 @@ import { createRoot, type Root } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { flush } from '../testing/dom';
+
 import { authKeys } from '../lib/query-cache';
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
@@ -91,12 +93,6 @@ function mount(queryClient: QueryClient) {
       container.remove();
     },
   };
-}
-
-async function flush() {
-  await act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 0));
-  });
 }
 
 afterEach(() => {

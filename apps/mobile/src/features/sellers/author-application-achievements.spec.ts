@@ -6,6 +6,8 @@ import { createRoot, type Root } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { flush, inputValue } from '../../testing/dom';
+
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
 const userA = { id: 'user-a' };
@@ -274,12 +276,6 @@ function mount(session: { id: string } = userA) {
   };
 }
 
-async function flush() {
-  await act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 0));
-  });
-}
-
 async function until(container: HTMLElement, predicate: () => boolean, label: string) {
   for (let attempt = 0; attempt < 20; attempt += 1) {
     if (predicate()) return;
@@ -309,12 +305,6 @@ function clickInOneTurn(container: ParentNode, labels: string[]) {
   act(() => {
     for (const target of targets) target.click();
   });
-}
-
-function inputValue(container: ParentNode, label: string) {
-  const input = container.querySelector(`[aria-label="${label}"]`);
-  if (!(input instanceof HTMLInputElement)) throw new Error(`Missing field ${label}`);
-  return input.value;
 }
 
 function setInput(container: ParentNode, label: string, value: string) {

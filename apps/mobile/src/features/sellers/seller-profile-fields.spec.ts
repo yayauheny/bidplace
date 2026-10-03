@@ -16,6 +16,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { FormProvider, useForm, type UseFormReturn } from 'react-hook-form';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { flush } from '../../testing/dom';
+
 import { profileDraftSchema } from './profile-validation';
 import {
   ProfileFieldWriteGuard,
@@ -128,12 +130,6 @@ function mount() {
       container.remove();
     },
   };
-}
-
-async function flush() {
-  await act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 0));
-  });
 }
 
 function input(container: ParentNode, label: string) {

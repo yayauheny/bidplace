@@ -7,6 +7,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ApiClientError } from '@bidplace/api-client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { flush } from '../testing/dom';
+
 import {
   authKeys,
   canWritePrivateCache,
@@ -86,12 +88,6 @@ function mount(queryClient: QueryClient) {
       container.remove();
     },
   };
-}
-
-async function flush() {
-  await act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 0));
-  });
 }
 
 async function settleInitialSession(view: { container: HTMLElement }) {

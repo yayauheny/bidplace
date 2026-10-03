@@ -7,6 +7,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createApiClient, type ApiClient } from '@bidplace/api-client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { flush } from '../../testing/dom';
+
 import { ProtectedRoute } from './protected-route';
 import { AuthProvider, useAuth } from '../../providers/auth-provider';
 
@@ -158,12 +160,6 @@ function mount(outcomes: MeOutcome[], onRefreshFailure: (error: unknown) => void
       queryClient.clear();
     },
   };
-}
-
-async function flush() {
-  await act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 0));
-  });
 }
 
 async function settle(container: HTMLElement, text: string) {
