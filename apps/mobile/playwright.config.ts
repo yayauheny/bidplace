@@ -29,7 +29,7 @@ export default defineConfig({
   webServer: [
     {
       command:
-        'corepack pnpm --filter @bidplace/api... build && node apps/mobile/e2e/prepare.mjs && node apps/api/dist/main.js',
+        'corepack pnpm --filter @bidplace/database generate && corepack pnpm --filter @bidplace/api... build && node apps/mobile/e2e/prepare.mjs && node apps/api/dist/main.js',
       cwd: '../..',
       url: `${apiBaseURL}/api/health/ready`,
       reuseExistingServer: false,
@@ -48,7 +48,7 @@ export default defineConfig({
       },
     },
     {
-      command: `corepack pnpm --filter @bidplace/design-tokens build && corepack pnpm --filter @bidplace/mobile exec expo start --web --clear --port ${webPort}`,
+      command: `corepack pnpm --filter @bidplace/mobile run build:api-client && corepack pnpm --filter @bidplace/design-tokens build && corepack pnpm --filter @bidplace/mobile exec expo start --web --clear --port ${webPort}`,
       cwd: '../..',
       url: webBaseURL,
       reuseExistingServer: false,
