@@ -16,11 +16,19 @@
   support load-more through their existing query hooks. The older first-page-only
   Search record below is historical. Mandatory isolated Search page-2 owners and
   server-derived button expectations replace a stale no-load-more assertion.
-- `Needs verification`: final default Chromium/WebKit regression and dedicated
-  media gate. Combined `3d06036` verify passed; its full browser run had 204 passed
-  / 4 failed (two stale Search assertions and two post-MVP visual failures). The permanent
-  [release audit](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md) owns findings
-  and results. R29/T05 and external public-launch gates remain open.
+- `Implemented` (functional integration verified): code/test HEAD `0f1a499`;
+  final `pnpm verify` exit 0, API 358 / mobile 581 unit, integration 112,
+  builds 8/8. Full Chromium/WebKit: 210 passed / 2 failed, 0 skipped/retries,
+  11.8m; only post-MVP Home Opening visual failures. Dedicated media: 2 passed,
+  58.0s, no retries/skips. Critical author/auth/Work/media lifecycle passes.
+- `Partial`: full browser/R29/T05 gate due to those two visual failures. Threshold,
+  golden and `.pen` unchanged. The combined package is ready for release transfer;
+  release ref `6c0fac7` is unchanged and release-HEAD regression is not run.
+- `Needs verification`: live R2/CDN/cache/purge, production startup/email/restore,
+  portfolio Rules/Privacy and conditional valuable-data cutover. No deployment,
+  push or PR. The permanent
+  [release audit](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md) owns exact
+  commands, findings, classification and preserved evidence.
 
 ## 2026-10-04 — Portfolio Work runtime and critical media flow
 

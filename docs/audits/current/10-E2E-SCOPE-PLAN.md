@@ -32,8 +32,10 @@ Implemented in the temporary integration package from `b9d0f5f`:
 
 `search-pagination.spec.ts` separately owns mandatory Search Works/Authors page 2
 with isolated queries; the mixed-data tabs owner checks actual response pagination.
-Runtime pagination pre-dates this package. Verification on the combined final HEAD
-is pending; see the release audit.
+Runtime pagination pre-dates this package. Final combined 0f1a499: default
+210 passed / 2 post-MVP Home Opening visual failed; both catalog/Search page-2
+owners passed. Dedicated media 2 passed. R29/T05 remains Partial/open, not
+VERIFIED; see the permanent release audit.
 
 ## Family decisions
 

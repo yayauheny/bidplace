@@ -4,6 +4,48 @@
 Ветка: `feature/portfolio-media-lifecycle`. Release —
 `feature/portfolio-mvp-release`; перенос в неё не выполнялся.
 
+## Финальный результат integration pass
+
+Проверенный code/test HEAD: `0f1a4996ec1ef6737c8b1888b7ee5b44f1b95aed`,
+`feature/portfolio-mvp-integration`. Media/Work implementation — `047f2c7` на
+`feature/portfolio-media-lifecycle`. Integration собрана от release `6c0fac7`;
+release ref не изменён. Последующий commit обновляет только status/evidence docs.
+
+- **Critical portfolio lifecycle проходит** в Chromium/WebKit: author/auth,
+  create/upload/save/submit/moderation/publish/public/PREVIEW/FULL,
+  edit/atomic republish/hide/revoke. Unknown upload response не дублирует gallery;
+  delivery outage сохраняет старую публикацию и показывает waiting, recovery
+  публикует подготовленную revision. Полный HTTP integration также проверяет ban,
+  ownership, bad/reused keys, restore, exact purge и retry.
+- **`pnpm verify` exit 0**: typecheck/lint, API unit 358, mobile unit 581,
+  contracts 32, API-client 28, config 8, database 1, ops 31; integration
+  27 files / 112 passed; build 8/8.
+- **Default browser: 210 passed / 2 failed**, 0 skipped, 0 retries,
+  706.1s (11.8m), exit 1. Единственные failures — V01 Home Opening visual,
+  по одному на engine; post-MVP по утверждённому scope. Полный suite не green.
+- **Dedicated media browser: 2 passed / 0 failed**, 0 skipped/retries,
+  58.0s, exit 0. Реальный Nest/Prisma/Sharp/UI; synthetic R2/purge transport.
+- **Критических code blockers больше не обнаружено. Пакет готов к переносу в
+  release и проверке release HEAD.** R29/T05 остаётся Partial/open по полному
+  gate: два visual failures не скрыты. Новых сервисов/dependencies/architecture,
+  timeout/threshold изменений, canonical design edits нет.
+
+Evidence на этом HEAD:
+
+- `/private/tmp/bidplace-portfolio-integration-final-verify.log`;
+- `/private/tmp/bidplace-portfolio-integration-final-browser.log`, `.json`,
+  `-artifacts/`;
+- `/private/tmp/bidplace-portfolio-integration-final-media.log`, `.json`,
+  `-artifacts/`;
+- `/private/tmp/bidplace-portfolio-integration-final-source.json` — SHA256 tracked
+  source, проверен после verify/browser/media; отличается только owned
+  disposable fence port в test copy (55433), root остаётся 5432.
+
+До первого public traffic остаются D01 (live R2/CDN/cache/purge), D03
+(production startup/TLS/email/restore) и D04 (минимальные portfolio Rules/Privacy).
+L01 нужен только если существующие ценные данные должны попасть в production.
+В этом code pass внешняя конфигурация и deployment не выполнялись. Push/PR нет.
+
 ## Живой журнал проблем
 
 Обновляется во время работы. P1 — безопасность или critical path; P2 — регрессия
@@ -38,11 +80,11 @@
 | E05 | Search authors probe использовал q=discipline, которое не входит в text-search поля | P3 test fixture | initial search proof: works 2 passed, authors 2 failed | Не production defect | Сейчас: explicit fullName-prefix query в isolated fixture, final proof 6/6 passed | q ищет fullName/slug/shortDescription; tag — отдельный filter |
 | L01 | Неизвестен состав ценных legacy данных | P2 conditional | Cutover inventory не подключался | Блокирует только перенос нужных данных | Минимальный importer уже сделан в предыдущем scope и проверен; больше tooling не делать | Не запускать на личной/production БД без inventory/backup/maintenance |
 | D01 | Live R2 custom domain/cache/purge не проверен | P1 deployment gate | Transport doubles, внешние bucket/domain не подключались | До публичного traffic нужно подтвердить | Deployment acceptance, не новый code scope | Green application tests не доказывают Cloudflare config или ≤5 минут purge |
-| D02 | Release HEAD ещё не проверен; temporary integration кандидат собран | P1 release gate | feature/portfolio-mvp-release / integration 3d06036 | Нельзя назвать release branch ready | Сейчас: combined verify/browser regression; release ref не менять | Media/Work 047f2c7 + deterministic page-2 owners b9d0f5f; full regression выполняется |
+| D02 | Release ref ещё не интегрирован/проверен; temporary integration подтверждён | P1 release gate | release 6c0fac7 / integration 0f1a499 | Code package готов; сам release HEAD ещё не ready | Теперь: перенос подтверждённого пакета и release HEAD regression; автоматически не выполнялся | verify green, default 210 passed + 2 post-MVP visual, media 2 passed; release ref сохранён |
 | D03 | Production startup/TLS, реальная email delivery и restore drill не подтверждены | P1 deployment gate | RFC §16.9, test email transport; площадка/SMTP не выбраны в сообщениях основателя | Не code blocker этого прохода; проверить до public traffic | Deployment pass, без hosting/SMTP implementation здесь | Unit/browser doubles не доказывают внешнюю доставку или production конфигурацию; production env fail closed |
 | D04 | Portfolio Rules/Privacy ещё не подготовлены по сообщению основателя | P1 public-launch gate | Ответ основателя, RFC §13 / §16.6 | До первого публичного запуска нужен минимальный пакет фактического portfolio продукта | Отдельный launch gate; технические проверки не останавливает | Не создавать marketplace документы, не выдавать technical green за выполнение RFC legal gate |
 
-Текущий checkpoint: full unit зелёный (358 API / 581 mobile, включая cache
+Checkpoint перед integration: full unit зелёный (358 API / 581 mobile, включая cache
 negative case), typecheck/lint/build 17/17; integration 112/112, включая bad key,
 multi-file key и prior-revision replay 409. Browser v5: 40 passed / 2 failed
 (только frost Author geometry); все author/Work, session retry, links validation,
@@ -223,25 +265,27 @@ R29/T05 остаётся открытым: targeted evidence не заменяе
   не исследовался и не переносился. Инструмент проверен на disposable PostgreSQL.
 - Home Opening visual parity остаётся реальным дефектом. Он не мешает проверить
   portfolio lifecycle на временном integration HEAD, но full visual gate не green.
-- Полный Chromium/WebKit regression на временном integration HEAD, затем на
-  `feature/portfolio-mvp-release` — ещё не выполнен. Никакого merge/push/PR нет.
+- Полный Chromium/WebKit regression на temporary integration 0f1a499 выполнен:
+  210 passed / 2 post-MVP visual failed; dedicated media 2 passed. Перенос и
+  regression на `feature/portfolio-mvp-release` ещё не выполнены. Push/PR нет.
 
-**Пакет готов к integration regression.** Critical code blockers закрыты, полный
-backend/local verify зелёный; это не подтверждение первого public deployment.
+**Integration regression завершён; пакет готов к переносу в release.** Critical
+code blockers закрыты, backend/local verify зелёный; первый public deployment
+ещё требует внешних gates.
 После интеграции нужна проверка конкретного integration/release HEAD и внешних
 D01/D03/D04 gates. Cosmetic V01 и небольшие W08/W10 не задерживают этот code pass.
 
 Пакет включает media kernel от 316b6c1 и этот Work/author/runtime follow-up.
-Подготовка integration:
+Integration handoff:
 
-1. Создать временный integration HEAD от актуального
-   `feature/portfolio-mvp-release` и интегрировать media package. В этом проходе
-   release ref не менялся.
-2. Сверить отдельный test scope package `b9d0f5f` с текущими author locator и
-   creator replacement: не терять deterministic page-2 owners; документацию
-   согласовать с этим audit, а не переносить старые статусы поверх новых.
-3. На том же source HEAD выполнить `pnpm verify`, полный default browser matrix
-   (0 retries) **и отдельный media gate**:
+1. Выполнено: temporary integration от `feature/portfolio-mvp-release` включает
+   media package. Release ref не менялся.
+2. Выполнено: test scope package `b9d0f5f` сверен с текущими author locators и
+   creator replacement; deterministic page-2 owners сохранены, старые статусы
+   не перенесены поверх новых. Дополнительный T08 подтверждён и исправлен.
+3. Выполнено на source HEAD 0f1a499: `pnpm verify`, full default browser matrix
+   (210 passed / 2 post-MVP visual failures, 0 retries) **и media gate** (2 passed).
+   Команды для повторения gate:
 
    ```bash
    pnpm --filter @bidplace/mobile exec playwright test --workers=1 --retries=0
@@ -301,3 +345,30 @@ updated tabs/history owner passed. Lint and mobile typecheck exit 0. Evidence:
 `/private/tmp/bidplace-portfolio-search-final.log`, `.json`, `-artifacts/`.
 T08 confirmed **STALE TEST**, no production Search changes. E05 corrected.
 Final integration commit is being saved; then full verify/default/media gates.
+
+Final integration candidate `0f1a4996ec1ef6737c8b1888b7ee5b44f1b95aed`:
+`pnpm verify` **exit 0**, API 358 / mobile 581 / integration 112 / ops 31,
+8/8 build tasks. Evidence: `/private/tmp/bidplace-portfolio-integration-final-verify.log`.
+Final tracked-source manifest matches after verify; source unchanged except
+owned disposable fence port in the test copy. Full browser 212-case matrix
+is starting; media gate follows. Release ref is unchanged.
+
+Final matrix checkpoint: Chromium auth/author/Work wizard, updated Search tabs
+and both mandatory Search page-2 owners passed on 0f1a499. No new runtime
+failure markers. Source remains frozen; WebKit and dedicated media are pending.
+
+Final full browser matrix on 0f1a499: **210 passed / 2 failed / 0 skipped /
+0 retries / 11.8m / exit 1**. Only failures: V01 Home Opening visual, one per
+engine; both classified post-MVP. All auth/author/Work, old R29 runtime owners,
+mandatory catalog/Search page 2 passed. Threshold/golden unchanged. Evidence:
+`/private/tmp/bidplace-portfolio-integration-final-browser.log`, `.json`,
+`-artifacts/`. Source SHA256 rechecked: only owned test-copy fence port differs.
+Dedicated media gate starts on the same frozen source.
+
+Final dedicated media gate completed: **2 passed, 0 failed, 0 skipped,
+0 retries, 58.0s, exit 0** on the same 0f1a499 source. Source manifest still
+matches except the owned fence port. Final summary above supersedes intermediate
+checkpoints. No live provider or production data was accessed.
+
+Own disposable `bidplace-media-integration` removed after all runs completed.
+Evidence files remain; user PostgreSQL and production state were not changed.
