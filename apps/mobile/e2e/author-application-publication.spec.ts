@@ -73,6 +73,7 @@ test('city application is approved and appears in the public authors catalog', a
     await page.getByLabel('Telegram').fill('@city_author');
     await page.getByRole('button', { name: 'Закрыть' }).click();
     await page.getByRole('button', { name: 'Сохранить и выйти' }).click();
+    await expect(page).toHaveURL(/\/$/);
     await page.goto('/profile');
     await expect(page.getByRole('progressbar').getByText('Шаг 2 из 4')).toBeVisible();
     await expect(page.getByLabel('Telegram')).toHaveValue('https://t.me/city_author');
@@ -83,6 +84,7 @@ test('city application is approved and appears in the public authors catalog', a
     await page.getByRole('textbox', { name: 'Короткое описание *', exact: true }).last().fill('Авторская практика.');
     await page.getByRole('button', { name: 'Закрыть' }).click();
     await page.getByRole('button', { name: 'Сохранить и выйти' }).click();
+    await expect(page).toHaveURL(/\/$/);
     await page.goto('/profile');
     await expect(page.getByRole('progressbar').getByText('Шаг 3 из 4')).toBeVisible();
     await expect(page.getByRole('textbox', { name: 'Дисциплина *', exact: true }).last()).toHaveValue('Керамика');

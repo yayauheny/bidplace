@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import { loginFormSchema, resetPasswordFormSchema } from './schemas';
+import { registerRequestSchema } from '@bidplace/contracts';
+
+import { loginFormSchema, registerFormSchema, resetPasswordFormSchema } from './schemas';
 
 describe('login form validation', () => {
   it('uses Russian validation copy for an invalid email', () => {
@@ -19,6 +21,26 @@ describe('login form validation', () => {
     if (!result.success) {
       expect(result.error.flatten().fieldErrors.password).toEqual(['Введите пароль']);
     }
+  });
+});
+
+describe('registration form validation', () => {
+  it.each([
+    [undefined, undefined],
+    [null, null],
+    ['', null],
+    [' \t\n ', null],
+    ['  +375291234567  ', '+375291234567'],
+  ])('normalizes optional phone %j to %j before the API request', (phone, expected) => {
+    const registration = registerFormSchema.parse({
+      email: 'author@example.com',
+      password: 'password123',
+      displayName: 'Автор',
+      phone,
+    });
+
+    expect(registration.phone).toBe(expected);
+    expect(registerRequestSchema.safeParse(registration).success).toBe(true);
   });
 });
 

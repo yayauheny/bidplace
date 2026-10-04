@@ -72,7 +72,13 @@
   metadata, ownership, checksum and deterministic object key; S3-compatible storage
   retains binary bytes when `MEDIA_STORAGE_PROVIDER=s3`. Production configuration
   fails closed without complete S3 settings. `scripts/ops/backfill-media-to-s3.mjs`
-  is dry-run by default and validates checksums before object writes; restore
+  is dry-run by default, scans all five media owners in bounded pages, verifies
+  source and target checksum/type/length, retains DB bytes and supports reruns.
+  Metadata-only references require a verified target object or shared source
+  bytes; this tool does not copy objects from another S3 provider. The confirmed
+  target is separate private/public R2 buckets with native Cloudflare CDN, a Neon
+  operation journal and retry inside NestJS (`DEC-097`). This target is not yet
+  implemented; see the [implementation plan](../audits/2026-10-04-R2-MEDIA-IMPLEMENTATION-PLAN.md). Restore
   verification reads sampled objects and compares their checksums without logging
   content or credentials.
 - `apps/mobile/src/lib/environment.ts` owns API origin validation and `getApiAssetUrl`, which resolves relative media paths while preserving valid absolute HTTP(S) URLs. Media components own truthful missing/error presentation without changing API visibility rules.

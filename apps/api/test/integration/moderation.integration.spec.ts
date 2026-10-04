@@ -138,6 +138,34 @@ async function adminAndApplicant(fixture: PermissionFixture) {
 }
 
 describe('seller application and moderation audit over HTTP and PostgreSQL', () => {
+  it('rejects approval of a submitted revision without discipline and preserves its unpublished state', async () => {
+    const fixture = await createPermissionFixture(prisma);
+    const { adminClient, applicantClient } = await adminAndApplicant(fixture);
+    const profile = await createApplication(applicantClient);
+    expect((await applicantClient.post('/author/application/submit')).status).toBe(201);
+    const before = await prisma.sellerProfile.findUniqueOrThrow({
+      where: { id: profile.id },
+    });
+    await prisma.sellerProfileRevision.update({
+      where: { id: before.editingRevisionId! },
+      data: { discipline: null },
+    });
+    const auditBefore = await auditFor('SELLER_PROFILE', profile.id);
+    const rejected = await adminClient.patch(
+      `/admin/seller-profiles/${profile.id}/status`,
+      await sellerModerationRequest(prisma, profile.id, 'APPROVED'),
+    );
+
+    expect(rejected.status).toBe(409);
+    expect(await prisma.sellerProfile.findUniqueOrThrow({ where: { id: profile.id } })).toEqual(before);
+    const revision = await prisma.sellerProfileRevision.findUniqueOrThrow({
+      where: { id: before.editingRevisionId! },
+    });
+    expect(revision.status).toBe('PENDING_REVIEW');
+    expect(before.publishedRevisionId).toBeNull();
+    expect(await auditFor('SELLER_PROFILE', profile.id)).toEqual(auditBefore);
+  });
+
   it('normalizes and persists a real seller application as DRAFT', async () => {
     const fixture = await createPermissionFixture(prisma);
     const applicant = new HttpTestClient(

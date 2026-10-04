@@ -4,11 +4,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { View } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
-import {
-  AppText,
-  PrimaryButton,
-  TextField,
-} from '../../components/ui';
+import { AppText, PrimaryButton, TextField } from '../../components/ui';
 import { FigmaButton } from '../../components/figma/FigmaButton';
 import { MotionPressable } from '../../components/ui/MotionPressable';
 import { useAnalytics } from '../../providers/analytics-provider';
@@ -31,11 +27,20 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
     resolver: zodResolver(loginFormSchema),
     defaultValues: { email: '', password: '' },
   });
+  useEffect(() => {
+    if (form.formState.isSubmitSuccessful && auth.isAuthenticated) {
+      router.replace(redirectTo as Href);
+    }
+  }, [
+    auth.isAuthenticated,
+    form.formState.isSubmitSuccessful,
+    redirectTo,
+    router,
+  ]);
   const submit = form.handleSubmit(async (values) => {
     setSubmitError(null);
     try {
       await auth.login(values);
-      router.replace(redirectTo as Href);
     } catch (error) {
       setSubmitError(getUserFacingErrorMessage(error, 'Не удалось войти'));
     }
@@ -151,6 +156,16 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
     resolver: zodResolver(registerFormSchema),
     defaultValues: { email: '', password: '', phone: '', displayName: '' },
   });
+  useEffect(() => {
+    if (form.formState.isSubmitSuccessful && auth.isAuthenticated) {
+      router.replace(redirectTo as Href);
+    }
+  }, [
+    auth.isAuthenticated,
+    form.formState.isSubmitSuccessful,
+    redirectTo,
+    router,
+  ]);
 
   useEffect(() => {
     if (trackedRegistrationStart.current) {
@@ -165,7 +180,6 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
     try {
       const response = await auth.register(values);
       analytics.identify(response.user.id, { claimAcquisition: true });
-      router.replace(redirectTo as Href);
     } catch (error) {
       setSubmitError(
         getUserFacingErrorMessage(error, 'Не удалось зарегистрироваться'),

@@ -723,6 +723,7 @@ export class AdminModerationService {
 
   private requiredApprovedSellerPhoto(sellerProfile: {
     fullName: string | null;
+    discipline: string | null;
     city: string | null;
     shortDescription: string | null;
     profilePhotoMimeType?: string | null;
@@ -744,6 +745,7 @@ export class AdminModerationService {
     const hasLegacyPhoto = Boolean(sellerProfile.profilePhotoData?.byteLength);
     if (
       !sellerProfile.fullName ||
+      !sellerProfile.discipline ||
       !sellerProfile.city ||
       !sellerProfile.shortDescription ||
       (!hasRevisionPhoto && !hasLegacyPhoto)
@@ -775,6 +777,7 @@ export class AdminModerationService {
 
   private assertSellerApprovalRequirements(sellerProfile: {
     fullName: string | null;
+    discipline: string | null;
     city: string | null;
     shortDescription: string | null;
     profilePhotoData: Uint8Array | null;

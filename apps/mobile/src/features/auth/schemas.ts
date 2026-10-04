@@ -15,7 +15,7 @@ export const registerFormSchema = z
   .object({
     email: emailField,
     password: z.string({ required_error: 'Введите пароль' }).min(8, 'Пароль должен содержать не менее 8 символов'),
-    phone: z.string().trim().min(1).nullable().optional(),
+    phone: z.string().trim().transform((value) => value || null).nullable().optional(),
     displayName: z.string({ required_error: 'Введите имя' }).trim().min(1, 'Введите имя'),
   })
   .strict();

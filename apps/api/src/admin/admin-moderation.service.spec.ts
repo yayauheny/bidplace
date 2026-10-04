@@ -470,6 +470,60 @@ describe('AdminModerationService', () => {
     });
   });
 
+  it.each(
+    [
+      {
+        name: 'legacy parent',
+        status: 'PENDING_REVIEW' as const,
+        revision: false,
+      },
+      {
+        name: 'suspended parent',
+        status: 'SUSPENDED' as const,
+        revision: false,
+      },
+      { name: 'pending revision', status: 'APPROVED' as const, revision: true },
+    ].flatMap((scenario) =>
+      [null, ''].map((discipline) => ({ ...scenario, discipline })),
+    ),
+  )(
+    'blocks approval of $name with missing discipline $discipline without writes or audit',
+    async ({ status, revision, discipline }) => {
+      const profile = {
+        ...sellerProfileRecord(),
+        status,
+        discipline: revision ? 'Painting' : discipline,
+        profilePhotoData: new Uint8Array([1]),
+        editingRevision: revision
+          ? {
+              ...sellerProfileRecord(),
+              id: revisionTarget.id,
+              discipline,
+            }
+          : null,
+      };
+      const tx = {
+        sellerProfile: {
+          findUnique: vi.fn().mockResolvedValue(profile),
+          update: vi.fn(),
+        },
+        sellerProfileRevision: { update: vi.fn() },
+        auditEvent: { create: vi.fn() },
+      };
+      const service = moderationService(transactionPrisma(tx));
+
+      await expect(
+        service.updateSellerStatus('admin-id', sellerId, {
+          status: 'APPROVED',
+          target: revision ? revisionTarget : parentModerationTarget(status),
+        }),
+      ).rejects.toBeInstanceOf(ConflictException);
+      expect(tx.sellerProfile.update).not.toHaveBeenCalled();
+      expect(tx.sellerProfileRevision.update).not.toHaveBeenCalled();
+      expect(tx.auditEvent.create).not.toHaveBeenCalled();
+    },
+  );
+
   it('requests changes for an editing revision without hiding the published product', async () => {
     const product = {
       id: 'product-id',
@@ -721,6 +775,7 @@ describe('AdminModerationService', () => {
           status: 'SUSPENDED',
           updatedAt: now,
           fullName: 'Published name',
+          discipline: 'Painting',
           city: 'Minsk',
           shortDescription: 'Published description',
           profilePhotoData: new Uint8Array([1]),
@@ -760,6 +815,7 @@ describe('AdminModerationService', () => {
           status: 'PENDING_REVIEW',
           updatedAt: now,
           fullName: 'Legacy author',
+          discipline: 'Painting',
           city: 'Minsk',
           shortDescription: 'Legacy description',
           profilePhotoData: new Uint8Array([1]),

@@ -52,6 +52,7 @@
     "start": "pnpm run build:api-client && pnpm --filter @bidplace/design-tokens build && expo start",
     "dev": "pnpm run start",
     "build": "pnpm run build:api-client && pnpm --filter @bidplace/design-tokens build && expo export",
+    "build:web": "pnpm run build --platform web",
     "android": "pnpm run build:api-client && pnpm --filter @bidplace/design-tokens build && expo start --android",
     "ios": "pnpm run build:api-client && pnpm --filter @bidplace/design-tokens build && expo start --ios",
     "web": "pnpm run build:api-client && pnpm --filter @bidplace/design-tokens build && expo start --web",
@@ -61,7 +62,8 @@
     "test:e2e:all": "playwright test",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "clean": "rm -rf dist .expo expo-env.d.ts .turbo"
   },
   "private": true
 }

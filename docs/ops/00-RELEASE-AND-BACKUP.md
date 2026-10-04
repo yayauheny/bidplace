@@ -11,7 +11,7 @@ Operational runbook for the pilot single-replica stack. Product contracts remain
 - Product image metadata, checksums and object keys live in PostgreSQL; production
   image bytes live in S3-compatible object storage. A database dump alone does
   not restore media bytes.
-- Mobile web is built and hosted separately (`expo export` or static host). The Compose `app` profile ships API + Postgres only.
+- Mobile web is built and hosted separately (`expo export` or static host). The historical Compose `app` override ships API + Postgres only.
 
 ## Toolchain and clean checkout gate
 
@@ -37,7 +37,32 @@ because they create a disposable database and start local services.
 
 GitHub Actions runs the same deterministic gate on push and pull requests via [`.github/workflows/verify.yml`](../../.github/workflows/verify.yml). Full browser E2E is intentionally **not** part of automatic CI/CD because it is slow and resource-heavy. Chromium E2E remains available as a manual `workflow_dispatch` workflow in [`.github/workflows/browser-e2e.yml`](../../.github/workflows/browser-e2e.yml), while the full Chromium/WebKit matrix remains a manual release gate.
 
-## Deploy (single-replica Compose)
+## Public portfolio packaging (hosting undecided)
+
+`make build` produces the workspace and `make build-web` produces web assets in
+`apps/mobile/dist`; serve SPA fallback for direct author/work/auth links.
+`apps/api/Dockerfile` packages the existing NestJS runtime. Frozen install includes
+all copied workspace manifests and the Expo patch; API-only deploy allows its
+unused mobile patch. Production build and native Argon2/Sharp/Prisma plus HTTP
+startup were checked on Linux arm64 with synthetic settings. Real Neon TLS,
+SMTP, R2 and CDN still require provider acceptance.
+
+The public runtime uses external Neon PostgreSQL and the confirmed private/public
+R2 + native CDN design. `bid.place` is purchased; no hosting provider, deploy
+command or production Compose target has been selected. Inject configuration via
+runtime settings, apply reviewed migrations, serve TLS, configure exact CORS and
+proxy trust, then verify auth/OTP/reset, public media cache/revocation and restore.
+Current local checks and remaining gates:
+[launch audit](../audits/2026-10-04-PUBLIC-LAUNCH-READINESS.md).
+
+## Historical pilot (single-replica Compose)
+
+This is the existing pilot configuration, not the selected public release target.
+The public portfolio release uses external Neon PostgreSQL and Cloudflare R2/CDN;
+hosting remains undecided. Default `docker-compose.yml` is local PostgreSQL only.
+The existing API profile is in `docker-compose.app.yml`, so local dev no longer
+requires production SMTP variables. Do not use its exposed local DB, localhost
+CORS default or unconditional proxy trust as a public deployment configuration.
 
 ### Pre-deploy
 
@@ -63,7 +88,7 @@ Compose forwards both; empty values normalize to absent for `SMTP_AUTH_MODE=none
 
 ```bash
 # Build and start API + Postgres
-docker compose --profile app up -d --build
+docker compose -f docker-compose.yml -f docker-compose.app.yml --profile app up -d --build
 
 # Apply migrations against the running database
 pnpm db:migrate
@@ -88,11 +113,52 @@ Compose reads the required keys from `.env` at the repo root. Default local Post
 
 ### Rollback
 
-1. Stop the API container: `docker compose --profile app stop api`
+1. Stop the API container: `docker compose -f docker-compose.yml -f docker-compose.app.yml --profile app stop api`
 2. Run the previous API image tag.
 3. If the migration was unsafe or partially applied, restore the pre-deploy dump into a fresh database or roll back schema per migration notes, then restart API.
 
 Do not run multiple API replicas behind a load balancer in the pilot; rate limits and cron are not multi-instance safe.
+
+## Media backfill and R2 cutover
+
+Current CLI: `pnpm ops:backfill-media`, dry-run by default; `--apply` enables
+object writes and missing-key updates. Runtime selection is a separate operation.
+The CLI consumes the source `DATABASE_URL` and target `S3_*` settings from an
+operator-controlled environment; do not print or commit credentials.
+
+It covers Product images, seller parent photos, creation-step images, seller
+revision photos and achievement images. All source metadata and retained bytes
+are checked before writes. Existing target objects are read and verified before
+reuse; an incompatible object is not overwritten. After PUT the CLI reads and
+checks SHA-256, length and MIME type before recording a missing DB key. Repeated
+apply verifies existing objects and does not rewrite a valid object.
+
+1. Confirm the intended source dataset and target bucket. This script copies
+   bytes retained in PostgreSQL; it does not fetch an old S3 provider. A
+   metadata-only reference needs an existing target or another matching source
+   row. Resolve missing objects explicitly before cutover.
+2. Freeze uploads, media edits and moderation for the migration window. Paging
+   does not provide a cross-table transaction snapshot. Record DB and object
+   backups and the previous runtime configuration.
+3. Run dry-run and review the five owner counts plus shared-key inventory.
+   A source checksum failure must be investigated; do not skip that row.
+4. Run `ops:media-preflight` on the actual R2 target, then apply backfill. Run
+   apply again: uploads and missing-key updates should be zero and all unique
+   objects verified. Original DB bytes stay intact.
+5. Switch the API to the verified target with `MEDIA_STORAGE_PROVIDER=s3`.
+   Verify all five media classes through owner/admin/public reads and denied
+   draft/stranger reads. Enable the separately approved CDN architecture and
+   verify cache hits, replacement, unpublication and seller suspension.
+6. Complete DB + object restore verification before reopening writes/traffic.
+
+Rollback while writes are frozen: restore the previous runtime configuration;
+retained bytes/backups remain available. After new R2-only writes begin, a
+provider rollback requires copying those new objects too; switching to the old
+database alone is not a complete rollback. Do not delete old DB bytes or objects
+as part of this migration.
+
+Live R2/SMTP/CDN evidence remains a release prerequisite. Current verification
+and open choices: [launch audit](../audits/2026-10-04-PUBLIC-LAUNCH-READINESS.md).
 
 ## Backup
 
@@ -173,8 +239,7 @@ pnpm ops:staging-smoke
 ## Deferred (post-pilot)
 
 - Multi-instance API and shared rate-limit state
-- Object storage for media with DB metadata only
+- Removal of legacy DB media bytes after a verified object-store cutover
 - Full browser/device/a11y CI matrix
-- Production SMTP delivery smoke beyond local transports
 
 See also [`docs/product/13-APPLICATION-SECURITY.md`](../product/13-APPLICATION-SECURITY.md) for backup encryption and multi-instance rate-limit notes.

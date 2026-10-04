@@ -2,14 +2,8 @@
 
 Курируемая площадка прямых продаж значимых, авторских, ограниченных или связанных с конкретным человеком вещей.
 
-Текущий фокус:
-
-- timed auctions;
-- seller pages;
-- direct-link sharing;
-- сбор ставок;
-- определение победителя;
-- foundation под future payments, delivery, moderation и trust layer.
+Первый публичный релиз — portfolio-only MVP: авторы, работы и прямые ссылки.
+Продажи, ставки, платежи и связанные workflow отложены.
 
 ## Что это за проект
 
@@ -26,19 +20,19 @@
 
 ## Текущий статус
 
-Репозиторий находится в Phase 0: техническая устойчивость перед первым реальным пилотом.
+Репозиторий готовится к первому публичному portfolio MVP.
 
 Источник истины по продукту, архитектуре и фактическому состоянию находится в `docs/product/`.
 
 Ключевой сценарий MVP:
 
-- seller создаёт Product и Auction Listing;
-- публикует ссылку;
-- buyer делает ставки;
-- система закрывает аукцион по таймеру;
-- система определяет победителя и создаёт минимальный Order из состояния базы данных.
+- автор регистрируется и подтверждает email;
+- заполняет профиль и создаёт работы с изображениями;
+- после модерации профиль и работы доступны публично;
+- опубликованные изображения выдаются через Cloudflare R2/CDN.
 
-Полный handoff и подтверждение продажи пока не реализованы. Актуальный снимок: [`docs/product/11-PROJECT-STATUS.md`](docs/product/11-PROJECT-STATUS.md).
+R2/CDN ещё требуют реализации и внешней проверки; локальные auth-проверки пройдены.
+Актуальный снимок: [`docs/product/11-PROJECT-STATUS.md`](docs/product/11-PROJECT-STATUS.md).
 
 ## Документация
 
@@ -96,9 +90,9 @@ docs/
 - Prisma — ORM и миграции
 - UUID — primary key strategy
 - REST API с префиксом `/api`
-- WebSocket для realtime ставок
-- Cron внутри backend для закрытия аукционов на MVP
-- Изображения хранятся в PostgreSQL как `ProductImage`; внешнее object storage пока не реализовано
+- Commerce-модули сохранены, но выключены в portfolio runtime
+- Медиа используют `ImageStore`: PostgreSQL для legacy/local и S3-compatible adapter;
+  целевая production-архитектура — private/public R2 buckets и Cloudflare CDN
 - Shared contracts и design tokens, без общего UI-kit на старте
 
 ## Локальный запуск
@@ -109,14 +103,64 @@ docs/
 - pnpm 11.7.0 (`corepack enable` или установка вручную)
 - Docker Desktop или Docker Engine (PostgreSQL для dev, integration и restore drill)
 
-### Быстрый старт
+### Quick start
+
+Один раз создайте корневой `.env` из шаблона и задайте локальную конфигурацию.
+Production credentials для локальной разработки не нужны.
 
 ```bash
-pnpm install
 cp .env.example .env
-pnpm docker:up
-pnpm dev
+make install
+make dev
 ```
+
+`make dev` ждёт готовности локального PostgreSQL, генерирует Prisma client,
+применяет существующие migrations к настроенной БД и запускает NestJS + Expo.
+API: `http://localhost:3001/api`; web: `http://localhost:8081`.
+БД не очищается и demo seed автоматически не выполняется. Перед запуском проверьте,
+что локальный `DATABASE_URL` указывает на предназначенную для разработки БД.
+
+Для отдельного процесса: `make dev-api` или `make dev-web`.
+Для внешней dev-БД запустите `make generate`, `make db-migrate` и нужные процессы
+отдельно; `make dev-infra` поднимает только локальный PostgreSQL.
+
+### Проверка и пересборка
+
+```bash
+make rebuild
+make check
+make test
+make build-web
+```
+
+`make rebuild` последовательно очищает build/generated/cache, устанавливает
+зависимости по lockfile, выполняет codegen и собирает весь workspace через Turbo.
+`make clean` сохраняет `node_modules`, конфигурацию и данные БД.
+`make check` ничего не исправляет автоматически. `make test` запускает unit и ops
+тесты; integration и браузерные release gates выполняются отдельно.
+
+| Target       | Команда / действие                                                            |
+| ------------ | ----------------------------------------------------------------------------- |
+| `help`       | Краткое описание всех целей                                                   |
+| `doctor`     | Node/pnpm/Docker/Compose и наличие конфигурации, без чтения env-содержимого   |
+| `install`    | `pnpm install --frozen-lockfile` → `make generate`                            |
+| `dev`        | `dev-infra` → `generate` → `db-migrate` → `pnpm dev`                          |
+| `dev-api`    | `turbo run dev --filter=@bidplace/api`                                        |
+| `dev-web`    | `pnpm --filter @bidplace/mobile web`                                          |
+| `dev-infra`  | `pnpm docker:up`: PostgreSQL с ожиданием healthcheck                          |
+| `build`      | `pnpm build`: весь dependency graph                                           |
+| `build-web`  | `turbo run build:web --filter=@bidplace/mobile`: web + shared packages/tokens |
+| `rebuild`    | `clean` → `install` (включая generate) → `build`                              |
+| `generate`   | `turbo run generate`: сейчас Prisma client; tokens собирает build             |
+| `db-migrate` | `pnpm db:migrate`: `prisma migrate deploy`, без reset                         |
+| `check`      | `pnpm typecheck` → `pnpm lint` → `pnpm format:check`                          |
+| `test`       | `pnpm test:unit` → `pnpm test:ops`                                            |
+| `clean`      | Workspace `dist`, Expo/Turbo caches и generated Prisma; работает до install   |
+
+`make help` и `make doctor` не требуют установки workspace dependencies.
+`doctor` проверяет только наличие env-файла или имён runtime keys; корректность
+обязательных значений проверяет API при старте. Для команд нужен GNU Make
+(стандартный `make` в macOS/Linux). Deploy targets появятся после выбора hosting.
 
 ### Verify gate
 
@@ -167,7 +211,9 @@ Backend использует `DATABASE_URL` из корневого `.env`.
 ALLOW_DESTRUCTIVE_DEMO_SEED=true pnpm db:reset:demo
 ```
 
-Seed создаёт одного admin и три BYN Product Listings: scheduled, live и ended.
+Этот legacy seed предназначен для disposable local/test БД. Для production
+нужен отдельный обозначенный demo catalog без тестовых логинов; его импорт ещё
+не реализован.
 
 Prisma Client в `packages/database/src/generated/prisma/` является локальным generated output и не коммитится. Turbo task `generate` создаёт client один раз перед `build`, `typecheck` и `test`. Для прямого запуска package scripts сначала выполните `pnpm db:generate` или `pnpm exec turbo run build --filter=@bidplace/database`.
 

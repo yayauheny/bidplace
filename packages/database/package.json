@@ -6,7 +6,7 @@
   "scripts": {
     "generate": "node ./node_modules/prisma/build/index.js generate --schema=prisma/schema.prisma",
     "db:generate": "pnpm run generate",
-    "migrate": "node --env-file ../../.env ./node_modules/prisma/build/index.js migrate deploy --schema=prisma/schema.prisma",
+    "migrate": "node --env-file-if-exists ../../.env ./node_modules/prisma/build/index.js migrate deploy --schema=prisma/schema.prisma",
     "db:migrate": "pnpm run migrate",
     "seed": "pnpm run generate && pnpm run build && node --env-file ../../.env prisma/seed.js",
     "db:seed": "pnpm run seed",

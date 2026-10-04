@@ -1,8 +1,20 @@
 # bidplace — статус дизайна и UI-реализации
 
-Последнее обновление: 2026-10-01
+Последнее обновление: 2026-10-04
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
+
+## 2026-10-04 — Auth forms and completed author exit
+
+- `Implemented` (verified behavior): registration accepts the existing optional
+  phone left blank. Successful login/register returns to the validated internal
+  destination after authenticated context is committed. Chromium and WebKit
+  cover verification, reload, logout and password recovery through real forms.
+- City publication tests wait for completed save-and-exit before navigating.
+  Targeted browser evidence: 16 passed, 0 skipped, 0 flaky; see
+  [launch audit](../audits/2026-10-04-PUBLIC-LAUNCH-READINESS.md).
+- Layout, tokens and canonical design files did not change. Full responsive,
+  accessibility and visual acceptance are still `Needs verification`.
 
 ## 2026-10-01 — Moderation search stays with the queue
 

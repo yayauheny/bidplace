@@ -1,9 +1,61 @@
 # bidplace — текущий статус проекта
 
 > The dated entries below are historical implementation records. The 2026-09-24
-> snapshot is authoritative for the executable portfolio runtime; retained
+> snapshot describes the base portfolio runtime; later dated entries record
+> subsequent verified changes. Retained
 > commerce-schema references below do not mean that Listing, Bid, Order,
 > lifecycle, realtime, discovery or activity modules are currently booted.
+
+## 2026-10-04 — Developer commands and API container
+
+- `Implemented`: root `Makefile` exposes 15 local development/build/check targets.
+  `doctor` checks toolchain and config presence without reading env contents.
+  `make dev` waits for PostgreSQL, applies migrations and starts API + Expo;
+  `build-web` includes shared packages/tokens. `rebuild` runs clean → locked
+  install → generate → build sequentially. `clean` preserves dependencies and
+  DB data. README contains Quick start and exact target mappings.
+- `Implemented`: local Compose no longer interpolates production API settings;
+  the existing pilot API profile moved to `docker-compose.app.yml`. No provider
+  deployment target or new infrastructure was introduced. Database migration
+  accepts process configuration without requiring an env file. Turbo passes
+  runtime variables to uncached `dev` tasks; build remains strict.
+- `Implemented`: API Docker build copies the Expo patch and all included package
+  manifests before frozen install. API-only deploy tolerates the unused mobile
+  patch without relaxing patch application for used packages.
+- Verification: isolated `make rebuild` (8 uncached successful tasks), `make
+  build-web` (4 successful tasks), `make test` and dev smoke passed. Production
+  container on Linux arm64: health/readiness, empty Authors/Home 200; anonymous
+  session 401; native Argon2/Sharp/Prisma passed. No external SMTP/R2 calls.
+- `Needs verification`: `make check` types/lint passed; formatting still fails on
+  existing repository files. HEAD comparison found 372 baseline files; new
+  formatting warnings were corrected and Expo generated artifacts excluded.
+  Global format debt, full maintained browser gate and live providers remain
+  open; these local checks do not prove a public deployment.
+
+## 2026-10-04 — Public launch auth verification and media backfill
+
+- `Implemented`: blank optional registration phone becomes `null`; successful
+  login/register navigation waits for canonical authenticated context. Real
+  forms cover registration, email verification, invalid login, reload, logout,
+  password recovery, old-password rejection and single-use reset links.
+  `auth-form.tsx`, `schemas.ts`, `schemas.spec.ts`, `e2e/auth-lifecycle.spec.ts`.
+- `Implemented`: `AdminModerationService` requires `discipline` before approving
+  legacy, suspended-parent or revision targets. Six negative unit cases and
+  HTTP/PostgreSQL regression prove 409 without publication or audit writes.
+  This closes the separate server gap recorded in the locator entry below.
+- `Partial`: media backfill now inventories all five media owners in bounded
+  pages, verifies source and target checksum/type/length, avoids conflicting
+  target overwrite, supports reruns and retains original DB bytes. Nine unit
+  cases plus real Prisma/PostgreSQL with a synthetic transport passed. A live
+  R2 migration and CDN deployment have not happened. The selected private/public
+  R2 + native CDN target and NestJS retry are confirmed in `DEC-097`; runtime
+  implementation remains pending.
+- Verification: `pnpm verify` exit 0; 342 API unit, 573 mobile unit, 31 ops and
+  102 integration tests. Targeted Chromium/WebKit run: 16 passed, 0 skipped,
+  0 flaky. Publication tests now wait for completed save-and-exit navigation.
+  Full maintained browser baseline and external SMTP/R2/TLS checks remain open.
+  Details and remaining launch gates:
+  [launch audit](../audits/2026-10-04-PUBLIC-LAUNCH-READINESS.md).
 
 ## 2026-10-04 — City publication browser locator
 

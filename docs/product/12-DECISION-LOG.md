@@ -2080,3 +2080,47 @@ The Figma Search frames are an overlay on the current page. A submit-only
 
 Category taxonomy and media are decided, or overlay result limits require
 in-overlay pagination.
+
+
+## DEC-097 — Portfolio release uses R2 and native Cloudflare CDN
+
+Date: 2026-10-04
+Status: Confirmed
+Source: explicit founder answers Q01–Q10 and final portfolio-only release scope.
+Reaffirms `DEC-082`–`DEC-084`; does not activate commerce capability.
+
+### Decision
+
+First public release includes email/password auth, author profiles, portfolio
+editing/publication, existing moderation and direct R2/CDN media delivery.
+Private SOURCE remains byte-identical, including original metadata; published
+public derivatives strip private metadata. Two separate buckets use the portable
+S3 boundary and a custom media domain. No Cloudflare Worker, Images, Redis,
+Kafka, external queue service or separate worker process.
+
+Publication waits for all media and preserves the previous snapshot until ready.
+Admin sees pending delivery. Neon stores a durable operation journal; unfinished
+operations retry inside existing NestJS. Hide/suspend/delete delete public
+variants and purge CDN with a target of ≤5 minutes. This Q01 answer explicitly
+replaces the earlier founder instruction to defer revocation. Downloaded copies
+cannot be recalled.
+
+JPEG/PNG/WebP retain current upload caps. HEIC and 20 MiB/~50 MP follow resource
+verification after MVP. Work FULL loads on viewer open; avatars and achievements
+do not automatically receive FULL. No original-archive guarantee, tariffs or
+90-day retention. Internal backup targets start at RPO ~24h / RTO ~1 day and
+require restore verification. Migration may briefly freeze media writes and
+moderation, without dual write; public reads should remain available.
+
+Domain is `bid.place`; PostgreSQL is Neon. Container hosting is undecided,
+including Render as a candidate. Production includes a labelled demo catalog
+without known-password test accounts. Google follows launch. Self-hosted SMTP/
+Postfix is excluded; existing Nodemailer may use minimal external SMTP.
+Portfolio Rules/Privacy are pending and do not stop technical implementation.
+
+### Implementation boundary
+
+Confirmed choices are not evidence of implementation. Current runtime still
+uses one ImageStore bucket and API media reads. Exact phased plan and remaining
+operational inputs: [R2/CDN second pass](../audits/2026-10-04-R2-MEDIA-IMPLEMENTATION-PLAN.md).
+Lazy FULL generation is not implicitly selected by the lazy loading requirement.
