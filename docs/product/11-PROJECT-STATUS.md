@@ -17,9 +17,11 @@
   `AuthTokenService` requires three base64url JWT segments and compares the
   signed signature encoding with `timingSafeEqual`; trailing segments, padding,
   punctuation and alternate signature pad bits are rejected.
-- Evidence: auth guard/token units and HTTP media/logout/session regressions
-  pass; backend typecheck/build and lint pass. `Needs verification`: the next
-  release HEAD's full verify/browser/media gate. Exact results and source
+- `Implemented` (release verification): auth guard/token units and HTTP
+  media/logout/session regressions pass. On release code/test HEAD `6af9096`,
+  `pnpm verify` exits 0 (API 372, integration 123, builds 8/8); dedicated media
+  passes in both engines. Full Chromium/WebKit remains `Partial`: 210 passed
+  and the same two known Home Opening visual failures, no skips/retries. Exact results and source
   reproduction are in the [permanent audit](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md).
   Existing valid sessions, roles, ownership and anonymous catalog contracts are
   preserved. No Google OAuth, new dependencies or UI changes are included.
@@ -35,9 +37,12 @@
 - `Partial`: A02/R23 consistency beyond visibility. Total remains from ID
   selection; a concurrent revoke can shorten a page. Search/filter changes on
   republish and a consistent snapshot are outside this local fix.
-- `Needs verification`: transfer and regression on the next release HEAD.
-  Backend typecheck/build (9 tasks), lint, targeted ProductsService tests and
-  the catalog integration file pass. Exact evidence and current branch are in
+- `Implemented` (release transfer and regression): both local fix commits were
+  cherry-picked without conflicts into `feature/portfolio-mvp-release`, code/test
+  HEAD `6af9096`. Full verify, browser and media results are recorded above;
+  all browser statuses match the previous release baseline. Backend typecheck/build,
+  lint, targeted ProductsService tests and the catalog integration file pass.
+  Exact evidence and current branch are in
   the [permanent audit](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md).
   UI, public contracts, Prisma and deployment configuration are unchanged.
 
