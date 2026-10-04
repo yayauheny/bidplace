@@ -24,7 +24,7 @@ test.beforeEach(async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
 });
 
-test('Works keeps filters in the URL and paginates without duplicates', async ({
+test('Works keeps filters in the URL and restores them after Back', async ({
   page,
   request,
 }) => {
@@ -52,34 +52,9 @@ test('Works keeps filters in the URL and paginates without duplicates', async ({
   expect(firstPage.works).toHaveLength(
     Math.min(firstPage.pagination.limit, firstPage.pagination.total),
   );
-  const hasNextPage =
-    firstPage.pagination.page * firstPage.pagination.limit <
-    firstPage.pagination.total;
 
   const workLinks = page.locator('a[href^="/product/"]');
   await expect(workLinks).toHaveCount(firstPage.works.length);
-  if (hasNextPage) {
-    const nextPageResponse = page.waitForResponse((response) => {
-      const url = new URL(response.url());
-      return (
-        url.pathname === '/api/works' &&
-        url.searchParams.get('page') === '2' &&
-        response.ok()
-      );
-    });
-    await page.getByRole('button', { name: 'Показать ещё' }).click();
-    const nextPage = (await (await nextPageResponse).json()) as WorksPage;
-    await expect(workLinks).toHaveCount(
-      firstPage.works.length + nextPage.works.length,
-    );
-    expect(firstPage.works.length + nextPage.works.length).toBeGreaterThan(
-      firstPage.works.length,
-    );
-  } else {
-    await expect(page.getByRole('button', { name: 'Показать ещё' })).toHaveCount(
-      0,
-    );
-  }
   await expectNoHorizontalOverflow(page);
   const hrefs = await workLinks.evaluateAll((links) =>
     links.map((link) => link.getAttribute('href')),

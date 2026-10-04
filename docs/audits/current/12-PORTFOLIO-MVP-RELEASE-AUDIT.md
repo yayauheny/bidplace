@@ -48,8 +48,14 @@ ShareSheet и Home states passed в обоих браузерах. Media v4 — 
 55.5s**, с исправленным E04: HTTP fault/tick 200, WebP CDN 200, два FULL, responsive
 control bounds, republish/revoke. Полный pnpm verify exit 0, frost v4 — 2 passed / 0 failed, 43.6s.
 V01 остаётся post-MVP. Code blockers critical portfolio flow больше не обнаружены.
-Следующий checkpoint: commit и временный integration HEAD; полный browser regression
-готовится, release ref пока не меняется.
+Integration checkpoint: пакет сохранён в `047f2c75f6cedca193879f932cb58013d10952ea`.
+Создана `feature/portfolio-mvp-integration` от release `6c0fac7`, fast-forward
+включил media package; release ref не изменён. Durable fix для test coverage —
+перенести deterministic page-2 owners из `b9d0f5f` и убрать только прежние условные
+assertions. Acceptable workaround — оставить обе группы assertions, но это сохраняет
+избыточный условный owner. Hack — отключить pagination/ослабить assertions — отвергнут.
+Старые status docs и уже исправленные author locators из test package не переносятся
+поверх новых. Full browser matrix готовится, source во время прогона заморожен.
 
 ## Scope и результат
 

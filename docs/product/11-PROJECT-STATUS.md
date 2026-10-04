@@ -6,6 +6,17 @@
 > commerce-schema references below do not mean that Listing, Bid, Order,
 > lifecycle, realtime, discovery or activity modules are currently booted.
 
+## 2026-10-04 — Portfolio integration candidate
+
+- `Implemented` (candidate assembled): `feature/portfolio-mvp-integration` starts
+  from release `6c0fac7` and includes the verified media/Work package `047f2c7`.
+  The release ref is unchanged. Deterministic catalog page-2 owners from `b9d0f5f`
+  are included; earlier conditional owners retain filters/sort/Back coverage.
+- `Needs verification`: full `pnpm verify`, default Chromium/WebKit regression
+  and dedicated media gate on this combined HEAD. The permanent
+  [release audit](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md) owns findings
+  and results. R29/T05 and external public-launch gates remain open.
+
 ## 2026-10-04 — Portfolio Work runtime and critical media flow
 
 - `Implemented` (application behavior): stable single-file upload identities and

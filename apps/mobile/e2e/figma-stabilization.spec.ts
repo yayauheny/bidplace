@@ -17,7 +17,7 @@ test.beforeEach(async ({ page }, info) => {
   }
 });
 
-test('Works sort, URL, back, and pagination stay server-owned', async ({
+test('Works sort, URL, and back stay server-owned', async ({
   page,
 }) => {
   await page.goto('/works');
@@ -38,23 +38,13 @@ test('Works sort, URL, back, and pagination stay server-owned', async ({
   await page.getByRole('button', { name: 'Применить' }).click();
   await expect(page).toHaveURL(/\/works(?:\?sort=newest)?$/);
 
-  const before = await workLinks.count();
-  const more = page.getByRole('button', { name: 'Показать ещё' });
-  if (await more.isVisible()) {
-    await more.click();
-    await expect(workLinks).not.toHaveCount(before);
-    const hrefs = await workLinks.evaluateAll((links) =>
-      links.map((link) => link.getAttribute('href')),
-    );
-    expect(new Set(hrefs).size).toBe(hrefs.length);
-  }
   await page.screenshot({
     path: resolve(artifactDir, `${engine(page)}-works-sort-390.png`),
     fullPage: true,
   });
 });
 
-test('Authors date-added label, URL, back, and pagination', async ({
+test('Authors date-added label, URL, and back stay server-owned', async ({
   page,
 }) => {
   await page.goto('/authors');
@@ -70,12 +60,6 @@ test('Authors date-added label, URL, back, and pagination', async ({
 
   const authorLinks = page.locator('a[href^="/seller/"]');
   await expect(authorLinks.first()).toBeVisible();
-  const before = await authorLinks.count();
-  const more = page.getByRole('button', { name: 'Показать ещё' });
-  if (await more.isVisible()) {
-    await more.click();
-    await expect(authorLinks).not.toHaveCount(before);
-  }
   await expectNoHorizontalOverflow(page);
   await page.screenshot({
     path: resolve(artifactDir, `${engine(page)}-authors-sort-390.png`),

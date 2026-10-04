@@ -539,6 +539,229 @@ export async function createAdminModerationFixture(): Promise<AdminModerationFix
   };
 }
 
+const catalogPageEpoch = new Date(Date.UTC(2020, 0, 1));
+
+function catalogPhoto() {
+  const photo = readFileSync(
+    resolve(__dirname, '../fixtures/profile-photo.png'),
+  );
+  return {
+    photo,
+    checksum: createHash('sha256').update(photo).digest('hex'),
+  };
+}
+
+async function deleteSellerProfiles(
+  prisma: PrismaClient,
+  profileIds: string[],
+  userIds: string[],
+) {
+  if (profileIds.length > 0) {
+    await prisma.sellerProfile.deleteMany({ where: { id: { in: profileIds } } });
+  }
+  if (userIds.length > 0) {
+    await prisma.user.deleteMany({ where: { id: { in: userIds } } });
+  }
+}
+
+export async function createIsolatedWorksPaginationFixture(): Promise<{
+  categoryId: string;
+  material: string;
+  pageTwoPublicId: string;
+  publicIds: string[];
+  cleanup: () => Promise<void>;
+}> {
+  const suffix = randomUUID().slice(0, 8);
+  const material = `e2epage2m${suffix}`;
+  const prisma = new PrismaClient({
+    datasources: { db: { url: databaseUrl } },
+  });
+  const profileIds: string[] = [];
+  const userIds: string[] = [];
+  let categoryId = '';
+  let closed = false;
+  const cleanup = async () => {
+    if (closed) return;
+    closed = true;
+    try {
+      if (profileIds.length > 0) {
+        const products = await prisma.product.findMany({
+          where: { sellerProfileId: { in: profileIds } },
+          select: { id: true },
+        });
+        const productIds = products.map((product) => product.id);
+        if (productIds.length > 0) {
+          await prisma.product.updateMany({
+            where: { id: { in: productIds } },
+            data: { publishedRevisionId: null, editingRevisionId: null },
+          });
+          await prisma.productRevisionImage.deleteMany({
+            where: { revision: { productId: { in: productIds } } },
+          });
+          await prisma.productRevision.deleteMany({
+            where: { productId: { in: productIds } },
+          });
+          await prisma.productImage.deleteMany({
+            where: { productId: { in: productIds } },
+          });
+          await prisma.product.deleteMany({ where: { id: { in: productIds } } });
+        }
+      }
+      await deleteSellerProfiles(prisma, profileIds, userIds);
+      if (categoryId) {
+        await prisma.category.delete({ where: { id: categoryId } });
+      }
+    } finally {
+      await prisma.$disconnect();
+    }
+  };
+
+  try {
+    const { photo, checksum } = catalogPhoto();
+    const seller = await createUser(
+      prisma,
+      uniqueEmail('page2-works', suffix),
+      `page2-works-${suffix}`,
+    );
+    userIds.push(seller.id);
+    const category = await prisma.category.create({
+      data: {
+        slug: `e2e-page2-${suffix}`,
+        name: `E2E page2 ${suffix}`,
+      },
+    });
+    categoryId = category.id;
+    const profile = await prisma.sellerProfile.create({
+      data: {
+        userId: seller.id,
+        slug: `page2works${suffix}`,
+        sellerType: 'creator',
+        fullName: `Page2 works ${suffix}`,
+        discipline: `e2epage2works${suffix}`,
+        country: 'BY',
+        city: 'Minsk',
+        shortDescription: 'Isolated works page fixture',
+        profilePhotoMimeType: 'image/png',
+        profilePhotoByteLength: photo.byteLength,
+        profilePhotoChecksum: checksum,
+        profilePhotoData: photo,
+        status: 'APPROVED',
+      },
+    });
+    profileIds.push(profile.id);
+    const publicIds: string[] = [];
+    for (let index = 0; index < 13; index += 1) {
+      const publicId = `p${String(index).padStart(2, '0')}${suffix}`;
+      publicIds.push(publicId);
+      const title = `Page2 work ${suffix} ${index}`;
+      const product = await prisma.product.create({
+        data: {
+          publicId,
+          sellerProfileId: profile.id,
+          categoryId: category.id,
+          title,
+          story: 'Isolated catalog page fixture.',
+          materials: material,
+          status: 'APPROVED',
+          publishedAt: new Date(catalogPageEpoch.getTime() + (12 - index) * 1000),
+          images: {
+            create: {
+              position: 0,
+              mimeType: 'image/png',
+              byteLength: photo.byteLength,
+              data: photo,
+              checksum,
+            },
+          },
+        },
+        include: { images: { orderBy: { position: 'asc' } } },
+      });
+      await attachPublishedProductRevision(prisma, product);
+    }
+    return {
+      categoryId,
+      material,
+      pageTwoPublicId: publicIds[12]!,
+      publicIds,
+      cleanup,
+    };
+  } catch (error) {
+    await cleanup();
+    throw error;
+  }
+}
+
+export async function createIsolatedAuthorsPaginationFixture(): Promise<{
+  tag: string;
+  city: string;
+  pageTwoSlug: string;
+  slugs: string[];
+  cleanup: () => Promise<void>;
+}> {
+  const suffix = randomUUID().slice(0, 8);
+  const tag = `e2epage2tag${suffix}`;
+  const city = `e2epage2city${suffix}`;
+  const prisma = new PrismaClient({
+    datasources: { db: { url: databaseUrl } },
+  });
+  const profileIds: string[] = [];
+  const userIds: string[] = [];
+  let closed = false;
+  const cleanup = async () => {
+    if (closed) return;
+    closed = true;
+    try {
+      await deleteSellerProfiles(prisma, profileIds, userIds);
+    } finally {
+      await prisma.$disconnect();
+    }
+  };
+
+  try {
+    const { photo, checksum } = catalogPhoto();
+    const slugs: string[] = [];
+    for (let index = 0; index < 9; index += 1) {
+      const author = await createUser(
+        prisma,
+        uniqueEmail(`page2-author-${index}`, suffix),
+        `page2-author-${index}-${suffix}`,
+      );
+      userIds.push(author.id);
+      const slug = `page2a${index}${suffix}`;
+      slugs.push(slug);
+      const profile = await prisma.sellerProfile.create({
+        data: {
+          userId: author.id,
+          slug,
+          sellerType: 'creator',
+          fullName: `Page2 author ${suffix} ${index}`,
+          discipline: tag,
+          country: 'BY',
+          city,
+          shortDescription: 'Isolated authors page fixture',
+          profilePhotoMimeType: 'image/png',
+          profilePhotoByteLength: photo.byteLength,
+          profilePhotoChecksum: checksum,
+          profilePhotoData: photo,
+          status: 'APPROVED',
+          createdAt: new Date(catalogPageEpoch.getTime() + (8 - index) * 1000),
+        },
+      });
+      profileIds.push(profile.id);
+    }
+    return {
+      tag,
+      city,
+      pageTwoSlug: slugs[8]!,
+      slugs,
+      cleanup,
+    };
+  } catch (error) {
+    await cleanup();
+    throw error;
+  }
+}
+
 export async function approveProduct(productId: string): Promise<void> {
   const prisma = new PrismaClient({
     datasources: { db: { url: databaseUrl } },
