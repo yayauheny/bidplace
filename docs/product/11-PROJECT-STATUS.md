@@ -5,6 +5,32 @@
 > commerce-schema references below do not mean that Listing, Bid, Order,
 > lifecycle, realtime, discovery or activity modules are currently booted.
 
+## 2026-10-04 — Browser pagination owners
+
+- `Partial`: catalog page 2 has a required browser owner in
+  `apps/mobile/e2e/catalog-pagination.spec.ts`. It creates 13 works in one
+  category and material, and 9 authors in one tag and city, then requires
+  «Показать ещё», a real `page=2` request with those filters, one known
+  second-page id, unique links, and no button after the last page. The
+  conditional page-2 branches were removed from `discovery-launch.spec.ts` and
+  `figma-stabilization.spec.ts`. URL, filter, reset, sort, Back, radio labels,
+  overflow, and screenshots stay in those files. Search empty and error stay
+  in both stabilization and the search overlay because their failure modes
+  differ.
+- `Needs verification`: the obsolete three-step creator-profile case is still
+  present. The four-step submit in `author-revision-flow.spec.ts` does not
+  reach «На модерации» while the submit control is still in progress. The
+  public-privacy case in `creator-profile.spec.ts` passed both browsers.
+  `profile-validation.spec.ts` passed 12 unit tests.
+- The full Chromium/WebKit baseline before this move was 168 passed, 32
+  failed, 0 skipped, 0 retries, 32.1m, exit 1. After the move the same suite
+  was 175 passed, 29 failed, 0 skipped, 0 retries, 32.7m, exit 1, across 204
+  tests. Neither run is green. Wall time did not drop. Commands and evidence:
+  [execution roadmap](../audits/current/00-EXECUTION-ROADMAP.md#2026-10-04--r29-browser-scope).
+- `Unchanged`: R29/T05 stay open. The production approval guard still does not
+  require `discipline`, while the public seller mapper does. This package does
+  not close that server gap.
+
 ## 2026-10-04 — City publication browser locator
 
 - `Implemented`: `author-application-publication.spec.ts` selects the public

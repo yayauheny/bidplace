@@ -1945,6 +1945,74 @@ run; no E2E scope was removed and `10-E2E-SCOPE-PLAN.md` was not changed.
 The server approval/`discipline` mapper mismatch remains a separate scope.
 No architecture, product contract or canonical design reference changed.
 
+### 2026-10-04 — R29 browser scope
+
+Base: `433c8d4eb0500ea8056c128ad45a0c04bbafcddd` (`02da191` cherry-picked onto
+`786f50a`). Branch: `fix/browser-suite-scope`.
+
+Baseline before the pagination move, full Chromium then WebKit, one worker,
+no retries, disposable `bidplace_e2e`: **168 passed, 32 failed, 0 skipped,
+0 flaky, 32.1m, exit 1**. Chromium test time 957.2s, WebKit 930.1s. This
+baseline is not green. Evidence:
+
+- `/private/tmp/bidplace-r29-full-baseline-20261004.log`
+- `/private/tmp/bidplace-r29-full-baseline-20261004.json`
+- `/private/tmp/bidplace-r29-full-baseline-20261004-artifacts/`
+
+The 32 failures are listed in that log. They include the obsolete three-step
+creator-profile case, the four-step submit that stays on step 4 while
+«Отправить на проверку» is in progress, the strict `Одобрен` match fixed
+after the baseline, and separate connection, wizard file-chooser, search,
+and visual failures. Those last groups were not rewritten for a green suite.
+
+Executed from `10-E2E-SCOPE-PLAN.md`:
+
+- Added `catalog-pagination.spec.ts` and the isolated 13-work / 9-author
+  fixtures in `e2e-fixtures.ts`. Cleanup deletes only those records.
+- Removed the three conditional page-2 branches. URL, filters, reset, sort,
+  Back, radio labels, overflow, and screenshots stay. Owner mapping is in
+  the execution section of `10-E2E-SCOPE-PLAN.md`.
+- Search empty/error cases both stay.
+- The three-step creator-profile case stays because
+  `new author submits the four-step application` fails on Chromium and WebKit
+  before «На модерации». Public privacy passed both browsers.
+  `profile-validation.spec.ts`: 12 passed.
+- `getByText('Одобрен')` is now exact, and the locked name field is asserted
+  with `not.toBeEditable()` because the control is readonly. That editing
+  revision case then passed both browsers.
+
+Moved-owner proof: 12 passed, 0 failed, 85.7s, exit 0.
+`/private/tmp/bidplace-r29-pagination-owner-move.log` and the matching `.json`.
+
+Full suite after the move, Chromium then WebKit, one worker, no retries,
+disposable `bidplace_e2e`: **175 passed, 29 failed, 0 skipped, 0 flaky,
+32.7m, exit 1**. Chromium 88 passed, 9 failed, 5 timed out, 972.7s. WebKit
+87 passed, 10 failed, 5 timed out, 952.7s. 204 tests, up from 200. This run
+is not green. Evidence:
+
+- `/private/tmp/bidplace-r29-full-after-20261004.log`
+- `/private/tmp/bidplace-r29-full-after-20261004.json`
+- `/private/tmp/bidplace-r29-full-after-20261004-artifacts/`
+
+Compared with the baseline, the four pagination cases passed. The editing
+revision case passed both browsers after the locator correction. Search
+overlay tabs passed both browsers without an edit to that file. City
+publication failed on Chromium (`Telegram` value `""`) and passed on WebKit;
+the baseline had the opposite browser. WebKit `allows browser Back from a
+clean Work without saving` failed on a URL mismatch and had passed in the
+baseline. The other baseline failures remain, including the four-step submit
+and the three-step creator-profile case. Wall time went from 32.1m to 32.7m.
+That is not a speedup.
+
+V-MOBILE on this tree: turbo typecheck and build for `@bidplace/mobile...`
+exit 0 (1m35s), mobile lint exit 0, unit tests 109 files / 568 passed,
+`test:e2e-fence` exit 0, `git diff --check` exit 0.
+
+T05 stays `QUEUED`. The maintained suite is not green, the obsolete
+three-step case remains, and this record does not accept R29.
+The server approval/`discipline` gap stays a separate scope. Findings total
+stays 38. No architecture, product contract, or canonical Pen file changed.
+
 ## 6. Полная coverage matrix
 
 `E0` — исходный аудит; `E1` — повторная статическая проверка в этом planning pass; `E2` — targeted review PR #12 (`014711fa2ef4f78ad28e4759168d42ef04d5b794` → `7d2d5479f1087835271c1eb23985f2886049abb6`): logout UI отсутствовал уже на base. Это evidence наличия finding, не его исправления.

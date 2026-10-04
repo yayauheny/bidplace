@@ -1,6 +1,28 @@
 # R29 preparation — E2E scope plan — 2026-10-03
 
-Plan only. No E2E file, Playwright config, or fixture was edited. Playwright was not executed, so this document does not report durations or a smaller suite. Declaration count: 26 files under `apps/mobile/e2e`, 100 `test(` calls. That is AST, not a browser run.
+## Execution — 2026-10-04
+
+The preparation text below stays the decision record. This section is what that record became in code.
+
+Page 2 now has a required owner, `apps/mobile/e2e/catalog-pagination.spec.ts`:
+
+| Old assertion | Risk | Owner kept |
+| --- | --- | --- |
+| `discovery-launch.spec.ts` conditional «Показать ещё» inside `Works keeps filters in the URL and paginates without duplicates` | A second works page for the active filters, without duplicate hrefs | `isolated works category and material require a second page`. 13 works, one category and material, known page-2 public id once, `page=2` keeps those filters, button required, button absent after the last page. Cleanup deletes only those records. |
+| `figma-stabilization.spec.ts` conditional «Показать ещё» inside `Works sort, URL, back, and pagination stay server-owned` | Load-more increases the works links without duplicate hrefs | Same works owner. Sort, URL, and Back stay in `Works sort, URL, and back stay server-owned`. |
+| `figma-stabilization.spec.ts` conditional «Показать ещё» inside `Authors date-added label, URL, back, and pagination` | Load-more increases the author links | `isolated authors tag and city require a second page`. 9 authors, one tag and city, known page-2 slug once, `page=2` keeps those filters, button required, button absent after the last page. Radio labels, `sort=name`, and Back stay in `Authors date-added label, URL, and back stay server-owned`. |
+
+Search empty and error stay in both `figma-stabilization.spec.ts` and `search-overlay.spec.ts`. One shows a works HTTP 500 retry button and does not click it. The other aborts authors, clicks «Повторить», and expects the author link back.
+
+`creator-profile.spec.ts` `creator profile creation stages public identity, links and private handoff` stays. Its three-step strings are still absent from `apps/mobile/src`, and the public-privacy case in the same file passed Chromium and WebKit. `profile-validation.spec.ts` passed 12 unit tests. The four-step browser owner did not: `new author submits the four-step application` still shows step 4 with «Отправить на проверку» in progress and never reaches «На модерации» within the existing expect. That case was not deleted.
+
+Chromium and WebKit proof of the moved owners, one worker, disposable `bidplace_e2e`: 12 passed, 0 failed, 85.7s, exit 0. Evidence: `/private/tmp/bidplace-r29-pagination-owner-move.log` and the matching `.json`.
+
+Full maintained suite after the move, same browsers and worker: 175 passed, 29 failed, 0 skipped, 0 retries, 32.7m, exit 1. Chromium 88 passed / 9 failed / 5 timed out in 972.7s. WebKit 87 passed / 10 failed / 5 timed out in 952.7s. The four new pagination cases passed. The suite is not green, so T05 stays open. Evidence: `/private/tmp/bidplace-r29-full-after-20261004.log` and the matching `.json`.
+
+The original plan text follows.
+
+Plan only at the time it was written. Declaration count then: 26 files under `apps/mobile/e2e`, 100 `test(` calls. That count was AST, not a browser run. The 2026-10-04 execution adds `catalog-pagination.spec.ts` and renames the three tests above.
 
 A DELETE PROPOSAL below is a proposal. It is not a deletion. Each one names the current owner and the replacement, or the product copy that is absent from `apps/mobile/src`.
 
@@ -12,7 +34,7 @@ Production page sizes stay `WORKS_PAGE_SIZE = 12` (`apps/mobile/src/features/pro
 
 The hook tests already use 13 works and 9 authors with an overlapping id (`use-portfolio-catalog-hooks.spec.ts`, H02). Those tests do not click «Показать ещё» in a browser.
 
-Conditional browser branches, which skip page 2 when the seed has no next page:
+These were the conditional branches before the 2026-10-04 move. They are not the current tests:
 
 - `apps/mobile/e2e/discovery-launch.spec.ts` lines 55–82, inside `Works keeps filters in the URL and paginates without duplicates`. `hasNextPage` is computed from the live first response. The button is clicked only inside that branch. Otherwise the test expects the button count to be 0.
 - `apps/mobile/e2e/figma-stabilization.spec.ts` lines 41–50, inside `Works sort, URL, back, and pagination stay server-owned`. The button is clicked only when `more.isVisible()`.
@@ -26,7 +48,7 @@ Future fixture contract, for a later package:
 - After the click, the rendered links contain that id once, and the set of hrefs has no duplicates.
 - The observed request is page 2 for that same filter scope.
 
-Until that fixture exists, the three branches stay. They are not DELETE PROPOSALs. The surrounding URL, sort, and back assertions stay in the current tests.
+The 2026-10-04 execution section records that this fixture now exists and the three conditional branches moved. The surrounding URL, sort, and back assertions stayed.
 
 ## Family decisions
 
@@ -159,11 +181,12 @@ S04 and S06 remain component evidence. They are not substitutes for this list.
 - `author-revision-flow.spec.ts`: `new author submits the four-step application`; `approved author submits an editing revision without changing the public page until approve`
 - `back-navigation-lifecycle.spec.ts`: `Home → Work → Back does not flash loading or keep Work after Home`; `inactive Home stays laid out and is not pointer or keyboard reachable`; `Work → Author → Back does not flash Author or a collapsed Work gallery`; `Search → Author → Back restores Search without a naked Home frame`; `direct Works catalog has no history Back control`; `Search → Work → Back restores Search without a Work flash after overlay`
 - `creator-profile.spec.ts`: `creator profile creation stages public identity, links and private handoff`; `public creator profile shows only public data and remains responsive`
-- `discovery-launch.spec.ts`: `Works keeps filters in the URL and paginates without duplicates`; `Authors filters and sort are server-backed and URL-owned`; `Search overlay live-updates without submit`
+- `catalog-pagination.spec.ts`: `isolated works category and material require a second page`; `isolated authors tag and city require a second page`
+- `discovery-launch.spec.ts`: `Works keeps filters in the URL and restores them after Back`; `Authors filters and sort are server-backed and URL-owned`; `Search overlay live-updates without submit`
 - `figma-cover-frost.spec.ts`: `cover frost keeps Figma regions and samples artwork once on web`
 - `figma-error-state.spec.ts`: `public API failure renders one coherent retry state`; `protected session failure reuses the shared retry state`; `session check failure on Home keeps public content without infrastructure UI`; `page infrastructure state replaces Home chrome`; `home pending uses the branded mark without loading copy`; `search active-tab failure keeps chrome and one inline state`
 - `figma-glass-dock.spec.ts`: `floating dock is one glass capsule with live blur and no icon halo`; `dock glass samples page content without a split search FAB`
-- `figma-stabilization.spec.ts`: `Works sort, URL, back, and pagination stay server-owned`; `Authors date-added label, URL, back, and pagination`; `Search overlay results, empty, and inline error`; `Work page and ShareSheet focus, Escape, and download`; `auth forms fit 390 without overflow`; `card hover and focus keep geometry`; `390 zoom 200% and reduced motion keep Home and Works usable`
+- `figma-stabilization.spec.ts`: `Works sort, URL, and back stay server-owned`; `Authors date-added label, URL, and back stay server-owned`; `Search overlay results, empty, and inline error`; `Work page and ShareSheet focus, Escape, and download`; `auth forms fit 390 without overflow`; `card hover and focus keep geometry`; `390 zoom 200% and reduced motion keep Home and Works usable`
 - `home-figma.spec.ts`: `selected opening, null opening, and catalog empty states`; `renders curator heading only when the selection has a note`; `loading, error retry, broken media, long copy, zoom and motion`; `keyboard and centered phone column at 390, 1024 and 1440`
 - `media-resilience.spec.ts`: `cold-start guest author profile renders its photo`; `guest author photo logs a failed request and keeps a safe fallback`
 - `navigation.spec.ts`: `guest 390 dock is one four-item capsule without auction chrome`; `guest dock search, home, profile and plus stay inside the capsule`; `pending seller plus opens the application profile, not create-work`; `approved seller plus opens the existing create-work flow`; `admin dock hides plus and opens admin from profile`

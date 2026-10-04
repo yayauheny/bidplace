@@ -55,7 +55,7 @@ test('approved author submits an editing revision without changing the public pa
 
   try {
     await page.goto('/profile');
-    await expect(page.getByText('Одобрен')).toBeVisible();
+    await expect(page.getByText('Одобрен', { exact: true })).toBeVisible();
     await page.getByLabel('Имя или название').fill(draftName);
     await page.getByRole('button', { name: 'Сохранить', exact: true }).click();
     await expect(page.getByLabel('Имя или название')).toHaveValue(draftName);
@@ -63,9 +63,9 @@ test('approved author submits an editing revision without changing the public pa
     await expect(submit).toBeVisible();
     await submit.click();
     await expect(page.getByText('Заявка на проверке')).toBeVisible();
-    await expect(page.getByText('Одобрен')).toBeVisible();
+    await expect(page.getByText('Одобрен', { exact: true })).toBeVisible();
     await expect(submit).toHaveCount(0);
-    await expect(page.getByLabel('Имя или название')).toBeDisabled();
+    await expect(page.getByLabel('Имя или название')).not.toBeEditable();
 
     const guest = await browser.newPage();
     await guest.goto(`/authors/${author.slug}`);
