@@ -20,8 +20,9 @@
   recorded post-MVP; no golden/threshold or canonical Pen/Figma changes.
   Temporary integration 0f1a499: full default browser 210 passed / 2 visual
   failed; separate media 2 passed. Functional auth/author/Work/media behavior is
-  verified on that HEAD. Release-HEAD regression and real CDN acceptance remain
-  unverified.
+  verified on that HEAD. Release 9af7ecc reproduced the same full browser
+  statuses (210 passed / 2 known visual failed) and media 2 passed. Real CDN and
+  native/complete visual acceptance remain unverified.
 - Permanent evidence and all remaining findings:
   [portfolio release audit](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md).
 

@@ -6,6 +6,22 @@
 > commerce-schema references below do not mean that Listing, Bid, Order,
 > lifecycle, realtime, discovery or activity modules are currently booted.
 
+## 2026-10-04 — Portfolio release verification
+
+- `Implemented` (release code verification): `feature/portfolio-mvp-release`
+  fast-forwarded to confirmed integration 9af7ecc without conflicts. Production,
+  tests, Prisma, auth and media code are identical to the integration package.
+  Sequential release-source checks: `pnpm verify` exit 0, integration 112,
+  builds 8/8; full Chromium/WebKit 210 passed / 2 failed, 0 skips/retries, 12.0m;
+  dedicated media 2 passed, 55.8s. Every test status/attempt matches baseline.
+- `Partial`: full visual/R29/T05 gate; only known Home Opening visual failures
+  remain post-MVP. Golden, threshold, timeout and canonical design files unchanged.
+- `Implemented` (handoff prepared): docs-only evidence commit preserves verified
+  application/test tree; release is ready for authorized normal push. Actual
+  verified release SHA, source manifest, inventory and exact evidence live in the
+  [permanent release audit](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md).
+  External deployment/provider acceptance was outside this pass.
+
 ## 2026-10-04 — Portfolio integration candidate
 
 - `Implemented` (candidate assembled): `feature/portfolio-mvp-integration` starts

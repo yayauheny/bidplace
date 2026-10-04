@@ -1,10 +1,51 @@
 # Portfolio-only MVP — постоянный release audit
 
 Дата: 2026-10-04. База: `316b6c18c96f854a46d3ee12bddb9194710365e9`.
-Ветка: `feature/portfolio-media-lifecycle`. Release —
-`feature/portfolio-mvp-release`; перенос в неё не выполнялся.
+Текущая ветка: `feature/portfolio-mvp-release`. Media implementation сохранена
+в `feature/portfolio-media-lifecycle`; integration package перенесён fast-forward.
 
-## Финальный результат integration pass
+## Release verification и handoff
+
+Фактический release HEAD, на котором последовательно выполнены все проверки:
+`9af7ecc5f4062405014e9b83b9b3b77d4240370b`. Это integration HEAD с docs;
+код/tests идентичны подтверждённому `0f1a499`. Release перенесён fast-forward,
+конфликтов нет. Текущий evidence commit меняет только этот audit, product status
+и design status; application/test tree должен оставаться идентичным проверенному
+release HEAD. Финальный deploy SHA определяется этим docs-only commit и указан
+в Git release ref/handoff; это не новая версия production/test кода.
+
+| Release gate | Фактический результат | Integration baseline |
+| --- | --- | --- |
+| `pnpm verify` | exit 0; API 358, mobile 581, integration 112, ops 31; build 8/8 | Совпадает |
+| Full Chromium/WebKit, workers=1/retries=0 | 210 passed / 2 failed / 0 skipped / 0 retries, 719.4s, exit 1 | Все 212 статусов/attempts совпадают |
+| Dedicated media, workers=1/retries=0 | 2 passed / 0 failed / 0 skipped / 0 retries, 55.8s, exit 0 | Оба статуса/attempts совпадают |
+
+Единственные browser failures — `Home Opening author column matches first-fold
+390×860 capture`, один Chromium и один WebKit. V01 — подтверждённый post-MVP debt;
+golden/threshold/timeout, production logic и tests не менялись. Новых critical
+failures нет. **Release code package принят для normal push/deployment handoff.**
+R29/T05 полный visual gate остаётся Partial/open.
+
+Evidence:
+
+- `/private/tmp/bidplace-release-verify.log`;
+- `/private/tmp/bidplace-release-browser.log`, `.json`, `-artifacts/`;
+- `/private/tmp/bidplace-release-media.log`, `.json`, `-artifacts/`;
+- `/private/tmp/bidplace-release-browser-baseline-comparison.json`;
+- `/private/tmp/bidplace-release-final-attestation.json` — final release SHA,
+  docs-only delta и результат проверки remote ref после normal push;
+- `/private/tmp/bidplace-release-regression-source.json` — tracked source SHA256;
+  повторно проверен после каждого gate. Только owned test-copy fence port 55433
+  отличается; root fence остаётся 5432, как и в integration baseline.
+
+Main checkout `/Users/yayauheny/projects/bidplace` — release branch. Старый
+одноимённый каталог `bidplace-portfolio-mvp-release` остаётся detached 69307f8 с
+незакоммиченными изменениями и не является источником этого release package.
+Inventory остальных checkouts сохранён; чужие изменения не переносились.
+Normal push разрешён основателем при этих результатах; force push исключён.
+Внешняя конфигурация и deployment в этот проход не входили.
+
+## Финальный результат integration pass (исторический checkpoint)
 
 Проверенный code/test HEAD: `0f1a4996ec1ef6737c8b1888b7ee5b44f1b95aed`,
 `feature/portfolio-mvp-integration`. Media/Work implementation — `047f2c7` на
@@ -78,9 +119,10 @@ L01 нужен только если существующие ценные да�
 | E03 | Изменение test copy во время browser run включило HMR | P3 | Первый диагностический прогон | Только недостоверное evidence | Сейчас: такой run отброшен, все результаты подтверждены на frozen source | Никогда не sync/build shared packages во время browser verification |
 | E04 | Media test routes зарегистрированы после Nest 404-handler; команды fault/tick возвращали 404 | P1 verification | bidplace-work-media-final/v3.log, проверка HTTP statuses | Прежний green НЕ доказывает R2 outage/CDN image delivery | Сейчас: routes до app.init, явный existing tick, fault/status/WebP assertions; media v4: 2 passed, HTTP/WebP asserted | Предыдущий test игнорировал ответы команд и image 404; production retry не меняется |
 | E05 | Search authors probe использовал q=discipline, которое не входит в text-search поля | P3 test fixture | initial search proof: works 2 passed, authors 2 failed | Не production defect | Сейчас: explicit fullName-prefix query в isolated fixture, final proof 6/6 passed | q ищет fullName/slug/shortDescription; tag — отдельный filter |
+| G01 | Четыре dirty checkout и семь missing/prunable registrations | P3 repo hygiene | Read-only inventory всех 43 worktrees | Не блокирует чистый main release checkout; опасно включать неизвестные изменения | Сейчас: inventory, сохранить чужие изменения; cleanup вне scope | Старый одноимённый detached checkout не является release ref; выбран только подтверждённый Git package |
 | L01 | Неизвестен состав ценных legacy данных | P2 conditional | Cutover inventory не подключался | Блокирует только перенос нужных данных | Минимальный importer уже сделан в предыдущем scope и проверен; больше tooling не делать | Не запускать на личной/production БД без inventory/backup/maintenance |
 | D01 | Live R2 custom domain/cache/purge не проверен | P1 deployment gate | Transport doubles, внешние bucket/domain не подключались | До публичного traffic нужно подтвердить | Deployment acceptance, не новый code scope | Green application tests не доказывают Cloudflare config или ≤5 минут purge |
-| D02 | Release ref ещё не интегрирован/проверен; temporary integration подтверждён | P1 release gate | release 6c0fac7 / integration 0f1a499 | Code package готов; сам release HEAD ещё не ready | Теперь: перенос подтверждённого пакета и release HEAD regression; автоматически не выполнялся | verify green, default 210 passed + 2 post-MVP visual, media 2 passed; release ref сохранён |
+| D02 | Release transfer и release-source regression требовали подтверждения | P1 closed | release 9af7ecc, текущий handoff | Critical code blocker закрыт | Сейчас: FF без конфликтов; verify green, full 210/2 известных visual, media 2/2; normal push следующий | Все per-test статусы совпадают с baseline, production/test tree не меняется |
 | D03 | Production startup/TLS, реальная email delivery и restore drill не подтверждены | P1 deployment gate | RFC §16.9, test email transport; площадка/SMTP не выбраны в сообщениях основателя | Не code blocker этого прохода; проверить до public traffic | Deployment pass, без hosting/SMTP implementation здесь | Unit/browser doubles не доказывают внешнюю доставку или production конфигурацию; production env fail closed |
 | D04 | Portfolio Rules/Privacy ещё не подготовлены по сообщению основателя | P1 public-launch gate | Ответ основателя, RFC §13 / §16.6 | До первого публичного запуска нужен минимальный пакет фактического portfolio продукта | Отдельный launch gate; технические проверки не останавливает | Не создавать marketplace документы, не выдавать technical green за выполнение RFC legal gate |
 
@@ -257,7 +299,7 @@ R29/T05 остаётся открытым: targeted evidence не заменяе
    и страницы до включения трафика. Bytes сохраняются; это не авторизует destructive
    demo seed в production. Состав ценных исходных данных пока не установлен.
 
-## Remaining gates и integration recommendation
+## Remaining gates и integration recommendation (исторический integration checkpoint)
 
 - Реальный R2 custom domain/cache/purge ещё не проверен: транспортные doubles
   доказывают application flow, а не конфигурацию Cloudflare или SLA ≤5 минут.
@@ -372,3 +414,59 @@ checkpoints. No live provider or production data was accessed.
 
 Own disposable `bidplace-media-integration` removed after all runs completed.
 Evidence files remain; user PostgreSQL and production state were not changed.
+
+## Release transfer pass — 2026-10-04
+
+Founder request: transfer confirmed 9af7ecc package to release, sequentially
+verify/default-browser/media, then normal push if baseline matches. No code/test,
+visual, threshold, timeout or provider changes in this pass.
+
+Refs fetched from origin successfully. Before transfer: local release 6c0fac7,
+remote release 37527d2; both are ancestors of confirmed integration 9af7ecc.
+Durable fix selected: `merge --ff-only 9af7ecc` preserves the exact tested tree.
+Acceptable workaround: cherry-pick/recreate package, unnecessary history/conflict
+risk; hack: force-push or ignore unknown remote changes — rejected.
+
+Transfer completed without conflicts. Actual release verification HEAD:
+`9af7ecc5f4062405014e9b83b9b3b77d4240370b`. Diff vs integration HEAD is empty;
+diff vs tested code/test 0f1a499 contains only four docs. Frozen source manifest:
+`/private/tmp/bidplace-release-regression-source.json`. Results pending.
+
+Worktree inventory: 43 registrations, 32 clean, 4 dirty, 7 missing/prunable;
+read-only check used `--no-optional-locks` / disabled fsmonitor. Dirty unrelated
+checkouts: figma-visual-parity (artifacts), mobile-web-final-validation
+(artifacts), rejected-product-recovery (code/docs), old detached checkout
+`bidplace-portfolio-mvp-release` at 69307f8 (code/tests/docs). None was reset,
+cleaned, switched or merged. Main release checkout was clean before transfer.
+Detailed inventory: `/private/tmp/bidplace-release-worktree-inventory.json`.
+
+Sequential plan: `pnpm verify` → full Chromium/WebKit (workers=1/retries=0)
+→ dedicated media (workers=1/retries=0). Only known V01 visual failures accepted
+as post-MVP. Then docs-only evidence commit; verify code/test identity to this
+release HEAD before normal push. No provider/deployment work.
+
+Release gate 1 completed on 9af7ecc: `pnpm verify` **exit 0**. Typecheck/lint,
+unit/ops/fence, backend integration and build pass; build 8/8 (Turbo cache).
+Evidence: `/private/tmp/bidplace-release-verify.log`. Source SHA256 matches after
+verify. For browser only, owned test-copy fence port changes to 55433; root fence
+stays 5432, same isolation exception as integration baseline. Full browser next.
+
+Release browser checkpoint: Chromium completed auth/author/Work, catalog/Search
+page 2 and history owners. Only known V01 visual failure so far; WebKit starts.
+Frozen verification copy unchanged; main checkout has audit-only progress edits.
+
+Release gate 2 completed: **210 passed / 2 failed / 0 skipped / 0 retries /
+719.4s / exit 1**. Only known V01 Home Opening visual
+failures, one per engine. All 212 per-test statuses and attempt/retry counts
+match integration baseline, not just totals. Source checksum still matches
+except the owned fence port. Evidence: `/private/tmp/bidplace-release-browser.log`,
+`.json`, `-artifacts/`; comparison:
+`/private/tmp/bidplace-release-browser-baseline-comparison.json`.
+Dedicated media gate runs next on the same frozen 9af7ecc source.
+
+Release gate 3 completed: **2 passed / 0 failed / 0 skipped / 0 retries /
+55.8s / exit 0**. Per-test statuses/attempts match integration
+media baseline. Frozen source manifest rechecked after all three sequential gates.
+All requested checks completed; final changes limited to evidence/status docs.
+
+Own `bidplace-release-regression` stopped/removed after all gates. Evidence retained.
