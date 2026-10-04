@@ -6,7 +6,8 @@
 
 ## 2026-10-05 — Product correctness follow-up
 
-Ветка `feature/portfolio-google-design`, база `00d7ed6`. Release ref сохраняется.
+Работа начата в `feature/portfolio-google-design`, база `00d7ed6`; два fixes
+перенесены в `feature/portfolio-mvp-release` отдельными cherry-picks.
 Этот проход исправляет подтверждённые ошибки публичности и session HTTP boundary;
 Google OAuth, визуальные изменения и архитектурный refactoring не входят в пакет.
 Критерии: скрытые/заблокированные данные не попадают в catalog hydration после
@@ -20,9 +21,9 @@ headers как workaround и подавление ошибок через fallba
 
 | ID | Проблема | Severity | Где найдена | Влияние на MVP | Решение сейчас / post-MVP | Причина |
 | --- | --- | --- | --- | --- | --- | --- |
-| P01 | После выбора catalog ID финальный read проверяет только ID; hide/suspend/ban между запросами может вернуть непубличную работу/автора | P1 | ProductsService.loadPortfolioCatalogPage, SellersService.listPortfolioAuthors; старый A02/R23 | Public visibility / moderation | Сейчас: исправлено, шесть PostgreSQL interleavings проходят; release regression pending | Изменение публичности учитывается при hydration; A02/R23 остаётся Partial вне этой границы |
-| P02 | Ошибка разбора Authorization или percent-encoded session cookie выходит из optional/logout guard до проверки токена | P2 | OptionalBearerAuthGuard, LogoutAuthGuard | Media HTTP 500; logout не очищает повреждённую cookie | Сейчас: исправлено, malformed media/logout HTTP и units проходят; release regression pending | Invalid supplied credentials дают 401, logout очищает cookie; DB failures не скрываются |
-| P03 | JWT verifier игнорирует четвёртую часть и допускает неканоническую signature encoding | P2 | AuthTokenService.verify | Ослабленная проверка формата сессии; не обход подписи/ownership | Сейчас: исправлено, five strict-format unit cases + HTTP session regression проходят; release regression pending | Валидна ровно подписанная JWT serialization; прежние корректные сессии сохраняются |
+| P01 | После выбора catalog ID финальный read проверяет только ID; hide/suspend/ban между запросами может вернуть непубличную работу/автора | P1 | ProductsService.loadPortfolioCatalogPage, SellersService.listPortfolioAuthors; старый A02/R23 | Public visibility / moderation | Сейчас: исправлено, шесть PostgreSQL interleavings и release regression подтверждены | Изменение публичности учитывается при hydration; A02/R23 остаётся Partial вне этой границы |
+| P02 | Ошибка разбора Authorization или percent-encoded session cookie выходит из optional/logout guard до проверки токена | P2 | OptionalBearerAuthGuard, LogoutAuthGuard | Media HTTP 500; logout не очищает повреждённую cookie | Сейчас: исправлено, malformed media/logout HTTP, units и release regression подтверждены | Invalid supplied credentials дают 401, logout очищает cookie; DB failures не скрываются |
+| P03 | JWT verifier игнорирует четвёртую часть и допускает неканоническую signature encoding | P2 | AuthTokenService.verify | Ослабленная проверка формата сессии; не обход подписи/ownership | Сейчас: исправлено, five strict-format unit cases, HTTP session и release regression подтверждены | Валидна ровно подписанная JWT serialization; прежние корректные сессии сохраняются |
 | P04 | Старый roadmap содержит устаревшие browser verification статусы | P3 docs | 00-EXECUTION-ROADMAP.md, R29/T05 и другие исторические строки | Не runtime blocker | Сейчас: R29/T05 синхронизирован как Partial и связан с актуальным evidence; остальные IDs сохраняют свой acceptance | Full release: 210/2 известных visual, не прежние 29 failures и не полностью green |
 
 Checkpoint: baseline production с новыми tests воспроизводит 11 auth unit
@@ -33,10 +34,11 @@ P02: HTTP media 500 вместо 401, logout 500 вместо 201; empty cookie 
 `/private/tmp/bidplace-product-auth-red.log`,
 `/private/tmp/bidplace-product-http-red.log`.
 Первый rerun выявил пропущенный import существующего Work predicate в новой
-правке (`product-unit-green.log`: 40/2, `product-http-green.log`: 14/13); import
-исправлен до commit. Эти логи не являются green evidence. Повторные проверки
-IN_PROGRESS. Внешние
-deployment gates D01/D03/D04 и Home Opening V01 остаются открытыми.
+правке (`bidplace-product-unit-green.log`: 40/2,
+`bidplace-product-http-green.log`: 14/13); import
+исправлен до commit. Эти логи не являются green evidence; повторные успешные
+проверки записаны ниже. Внешние deployment gates D01/D03/D04 и Home Opening V01
+остаются открытыми.
 
 Граница P01: hydration повторяет visibility predicates. Pagination total всё
 ещё относится к первой выборке; page может укоротиться при одновременном revoke.
@@ -49,7 +51,7 @@ exit 0. Evidence: `/private/tmp/bidplace-product-unit-green-v2.log`,
 `/private/tmp/bidplace-product-http-green-v2.log`,
 `/private/tmp/bidplace-product-api-graph.log`,
 `/private/tmp/bidplace-product-api-lint.log`. Эти проверки подтверждают fixes;
-полный release gate ещё не запускался.
+на этом checkpoint полный release gate ещё не запускался.
 
 Этап 1 закоммичен: `9ca2488` — catalog visibility, controlled DB regressions и
 актуализация A02/R29 статусов. Этап 2 — только auth boundary и его regression
@@ -57,7 +59,57 @@ tests. После двух логичных commits выполняется пе�
 в release и проверка итогового release-source HEAD. По просьбе основателя после
 этого пакета выполнение останавливается.
 
-## Release verification и handoff
+Release checkpoint: feature commits `9ca2488` / `d0f1d1a` перенесены cherry-pick
+без конфликтов как `3803791` / `6af9096`. Фактический проверяемый release source:
+`6af9096c6d88e7c178a1e40e942f1977e7b30a25`. `pnpm verify` exit 0: API 372,
+mobile 581, integration 27 files / 123, build 8/8. Source manifest проверен;
+full Chromium/WebKit и media gate workers=1/retries=0 завершены.
+Evidence: `/private/tmp/bidplace-product-release-verify.log`,
+`/private/tmp/bidplace-product-release-source.json`.
+Own disposable PostgreSQL — `bidplace-product-correctness`, port 55434.
+Для browser copy был изменён только expectedPort fence на 55434 после успешного
+verify; repository fence остаётся 5432. После browser/media copy восстановлена:
+все 1274 tracked source hashes совпадают с проверенным release HEAD.
+
+Browser checkpoint: 210 passed / 2 failed / 0 skipped / 0 retries, 714.9s,
+exit 1. Только известный V01 Home Opening visual failure в каждом engine; все
+212 test statuses/attempts совпадают с прежним release baseline. Новых critical
+failures нет. Evidence: `/private/tmp/bidplace-product-release-browser.log`,
+`.json`, `-artifacts/`,
+`/private/tmp/bidplace-product-release-browser-baseline-comparison.json`.
+Production/test source во время прогона не меняется; root audit updates не
+копируются в test tree.
+
+### Итог текущего code pass
+
+Проверенный production/test release HEAD:
+`6af9096c6d88e7c178a1e40e942f1977e7b30a25`. После него evidence commit меняет
+только audit, roadmap и product status; final deploy SHA хранится в release ref
+и `/private/tmp/bidplace-product-release-final-attestation.json`. Это тот же
+проверенный application/test tree, без новых изменений runtime.
+
+| Gate | Результат | Сравнение с прежним release |
+| --- | --- | --- |
+| `pnpm verify` | exit 0; API 372, mobile 581, integration 27 files / 123; build 8/8 | +14 API units и +11 HTTP/DB regressions |
+| Full Chromium/WebKit, workers=1/retries=0 | 210 passed / 2 failed / 0 skipped / 0 retries, 714.9s, exit 1 | Все 212 статусов/attempts совпадают |
+| Dedicated media, workers=1/retries=0 | 2 passed / 0 failed / 0 skipped / 0 retries, 54.6s, exit 0 | Оба статуса/attempts совпадают |
+
+Critical author/auth/Work/media flow проходит. Media gate использует реальные
+Nest/HTTP/Prisma/Sharp/UI и synthetic R2/purge transport; live Cloudflare этим
+не подтверждён. Известные V01 Home Opening failures остаются post-MVP и явно
+failing; R29/T05 — Partial. Новых critical code blockers не обнаружено.
+Snapshot/count/filter часть A02/R23 остаётся post-MVP; D01/D03/D04 — отдельные
+внешние public-launch gates. Google OAuth и дизайн не начаты.
+
+Дополнительное evidence: `/private/tmp/bidplace-product-release-media.log`,
+`.json`, `-artifacts/`,
+`/private/tmp/bidplace-product-release-source-final-check.json`.
+Source manifest проверен после восстановления copy fence; repository non-doc
+source совпадает с замороженным проверенным HEAD. Final evidence commit
+подготовлен для normal push release; force push/PR не входят в задачу.
+После завершения текущего пакета выполнение останавливается по просьбе основателя.
+
+## 2026-10-04 — Release verification и handoff (исторический checkpoint)
 
 Фактический release HEAD, на котором последовательно выполнены все проверки:
 `9af7ecc5f4062405014e9b83b9b3b77d4240370b`. Это integration HEAD с docs;
