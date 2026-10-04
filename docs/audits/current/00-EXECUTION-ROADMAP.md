@@ -1893,6 +1893,58 @@ NOT RUN: browsers, Playwright tests, API server, database, Prisma, migrate, seed
 - R29 and T05 stay not `VERIFIED`. D04, D05, D09, D10, L04, and R32 were not raised. Findings total stays 38.
 - Browsers were not run. `10-CODE-ARCHITECTURE.md` and the canonical Pen file were not changed.
 
+### 2026-10-04 — City publication locator follow-up
+
+Base: `786f50a46af258f7bec8f88e4ca4eccd9ddcc632`; branch:
+`fix/city-publication-locator`. The shared seller fixture's `discipline` correction
+is already on that base.
+
+Durable fix: `author-application-publication.spec.ts` asserts and clicks the same
+author link identified by the test's unique `@slug` in its accessible name.
+The broad display-name assertion and `.first()` click are removed. Production,
+fixtures, assertions about city validation, approval and the destination URL
+are otherwise unchanged.
+
+Targeted browser command: `pnpm --filter @bidplace/mobile exec playwright test
+e2e/account-logout.spec.ts e2e/author-application-publication.spec.ts --workers=1
+--max-failures=1 --reporter=line,json`. Chromium followed by WebKit, logout before
+publication, one disposable `bidplace_e2e` database, no reset between files or
+projects: **12 passed, 0 failed, 0 skipped, 79.9 s, exit 0**. The API build,
+Prisma generate, disposable reset/migrations and seed ran through the existing
+Playwright web-server setup. Both `Автор с городом` rows remain `APPROVED` with
+`Керамика`: `city-author-1791104393995` and `city-author-1791104419172`.
+
+Verification used Node v22.20.0 / pnpm 11.7.0 in a temporary tracked-source
+snapshot with the changed spec and no `.env` files. API/web ports: 3029/8129;
+`EXPO_NO_DOTENV=1`, `BIDPLACE_ENV_FILE=/dev/null`. The tested code matches the
+working tree; existing installed dependencies were reused.
+
+V-MOBILE checks, all exit 0:
+
+- `pnpm exec turbo run typecheck build --filter='@bidplace/mobile...'`: 8 tasks,
+  no cache hits; web, Android and iOS export, 2m35.142s.
+- `pnpm --filter @bidplace/mobile lint`.
+- `pnpm --filter @bidplace/mobile test`: 109 files / 568 tests, 14.37s.
+- `pnpm --filter @bidplace/mobile test:e2e-fence`.
+- `git -c core.fsmonitor=false diff --check`.
+
+Static-check logs: `/private/tmp/bidplace-city-locator-typecheck-build.log`,
+`-lint.log`, `-mobile-test.log` and `-e2e-fence.log` with the same prefix.
+Snapshot commands use `pnpm_config_verify_deps_before_run=warn` to prevent an
+implicit dependency install when reusing the installed dependency tree.
+
+Evidence, separate from the earlier failed fixture run:
+
+- `/private/tmp/bidplace-city-locator-regression.log`
+- `/private/tmp/bidplace-city-locator-regression.json`
+- `/private/tmp/bidplace-city-locator-regression-artifacts/`
+- `/private/tmp/bidplace-city-locator-regression-db-evidence.log`
+
+R29/T05 remain open: the full Chromium/WebKit baseline and steps A–D were not
+run; no E2E scope was removed and `10-E2E-SCOPE-PLAN.md` was not changed.
+The server approval/`discipline` mapper mismatch remains a separate scope.
+No architecture, product contract or canonical design reference changed.
+
 ## 6. Полная coverage matrix
 
 `E0` — исходный аудит; `E1` — повторная статическая проверка в этом planning pass; `E2` — targeted review PR #12 (`014711fa2ef4f78ad28e4759168d42ef04d5b794` → `7d2d5479f1087835271c1eb23985f2886049abb6`): logout UI отсутствовал уже на base. Это evidence наличия finding, не его исправления.
