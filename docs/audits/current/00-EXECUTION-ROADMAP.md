@@ -2,6 +2,15 @@
 
 **Canonical файл:** `/Users/yayauheny/projects/bidplace/docs/audits/current/00-EXECUTION-ROADMAP.md`
 
+**Актуализация 2026-10-05:** подтверждённый release baseline — `00d7ed6`.
+Последние release/browser результаты принадлежат
+[`12-PORTFOLIO-MVP-RELEASE-AUDIT.md`](12-PORTFOLIO-MVP-RELEASE-AUDIT.md).
+R29/T05 — `PARTIAL`: полный Chromium/WebKit выполнен, остались два известных
+Home Opening visual failures. A02/R23 — `PARTIAL`: локальный hydration visibility
+fix и шесть PostgreSQL interleavings проверены; snapshot/count/filter consistency
+не закрыта. Остальные исторические `NEEDS_VERIFICATION` не повышаются без
+сопоставления с acceptance конкретного ID. Ниже сохраняется история этапов.
+
 **Источник:** последний полный аудит в этой беседе, baseline `7d2d547`. Исходный аудит и существующие audit-файлы сохраняются.
 
 **Результат планирования:** 29 findings (28 исходных + D08 из targeted review PR #12) распределены по семи волнам и 30 небольшим scopes: 24 Implementation и 6 Plan.
@@ -713,7 +722,7 @@ T01 находится в Wave 1, потому что исправляет **о�
 - **Acceptance/tests:** управляемое concurrency interleaving для hide и suspend, published revision change, total/page consistency.
 - **Validation сейчас:** read-only query inspection; существующие catalog unit tests.
 - **STOP:** требование «немедленно скрывать» конфликтует с выбранной snapshot semantics.
-- **Status:** `DECISION_REQUIRED`; T04 остаётся частично blocked.
+- **Current status (2026-10-05):** `PARTIAL`. Hydration повторяет existing visibility predicates; hide/suspend/ban interleavings подтверждены PostgreSQL tests. Total/page snapshot и concurrent republish filters остаются post-MVP; см. P01 в постоянном release audit. Общая T04 не закрыта.
 - **Отчёт:** P, без заявления о воспроизведённой утечке, пока нет runtime evidence.
 
 ### R24. Parent/revision ownership и границы Work modules
@@ -1965,7 +1974,7 @@ No architecture, product contract or canonical design reference changed.
 | C04     | Ignored `compact` и `_imageSelect`                                           | P2 / HIGH             | W3 → R10, R13                        | NEEDS_VERIFICATION | R04/R09                                                      | 2026-10-01: `_imageSelect` stays removed. Shared action buttons pass the existing compact size. `Button.spec.ts` 6 tests passed. Browser 390/1024/1440 NOT RUN. |
 | C05     | Zod отсутствует в api-client manifest; React types mismatch                  | P2 / HIGH             | W3 → R12                             | VERIFIED           | R11                                                          | 2026-10-01: api-client declares Zod 3. React 19.2 types replace React 18 types on root and mobile. Isolated deploy and typecheck passed. |
 | A01     | S3 side effects внутри retryable DB transaction                              | P1 / HIGH             | W6 → R22                             | DECISION_REQUIRED  | R10/R18; consistency decision                                | E0; fake-store failure matrix, затем implementation                            |
-| A02     | Двухфазный public catalog read допускает visibility race                     | P1 / MEDIUM           | W6 → R23                             | DECISION_REQUIRED  | R18/R21; consistency guarantee                               | E0 static risk; требуется controlled concurrency                               |
+| A02     | Двухфазный public catalog read допускает visibility race                     | P1 / MEDIUM           | W6 → R23                             | PARTIAL            | R18/R21; remaining snapshot/count/filter guarantee            | 2026-10-05: hydration visibility fix + six real PostgreSQL interleavings; P01 in release audit. Remaining consistency scope stays open. |
 | A03     | Parent/revision field ownership и ручное копирование                         | P2 / HIGH             | W6 → R24                             | DECISION_REQUIRED  | R02/R18–R21; ownership decision                              | E0; field/write/read matrix                                                    |
 | A04     | Два владельца navigation: Router и browser history                           | P2 / HIGH             | W6 → R25                             | DECISION_REQUIRED  | R05/R06/R14; navigation decision                             | E0/E1; transition/browser matrix                                               |
 | A05     | Старые активные API без текущих UI consumers                                 | P2 / HIGH             | W6 → R26                             | DECISION_REQUIRED  | R10/R24; retirement decision                                 | E0; endpoint/consumer compatibility inventory                                  |
@@ -1979,7 +1988,7 @@ No architecture, product contract or canonical design reference changed.
 | T02     | Dead-helper и source-text tests с низкой доказательной ценностью             | P2 / HIGH             | W3/W7 → R09, R10, R28                | PARTIAL            | соответствующий production cleanup                           | R28-C recommends VERIFIED and does not self-accept. Dead helpers and the three helper-only metadata constants are gone. The live `figmaIconNames` equality stays as the icon registry. |
 | T03     | Maintained author E2E описывают старый flow                                  | P1 / HIGH             | W1 → R03                             | NEEDS_VERIFICATION | R02                                                          | Current R03 evidence: specs updated; Chromium/WebKit NOT RUN.                  |
 | T04     | Не покрыты реальные seams: queue, submit, save race, overlay, S3, visibility | P1 / HIGH             | W1/W2/W6 → R01–R03, R05–R06, R22–R23 | PARTIAL            | UI части готовы к работе; полное закрытие зависит от A01/A02 | R01 overlay verified; R03 submit and R05–R07 save/cache are NEEDS_VERIFICATION; R32 achievement parent seam is NEEDS_VERIFICATION; queue/S3/visibility открыты |
-| T05     | Дублирование browser сценариев и дорогого setup                              | P3 / MEDIUM           | W7 → R29                             | QUEUED             | R03/R14/R28; сохранить A04 coverage                          | E0 static overlap; требуются timings/full matrix                               |
+| T05     | Дублирование browser сценариев и дорогого setup                              | P3 / MEDIUM           | W7 → R29                             | PARTIAL            | R03/R14/R28; сохранить A04 coverage                          | Full maintained release matrix and timings exist; two known Home Opening visual failures remain. Latest evidence: permanent release audit. |
 | D09     | Refresh auth identity сохраняет private cache/epoch прежнего user            | P1 / HIGH             | W2 → R31                             | NEEDS_VERIFICATION | Интеграционная база с epoch corrections                      | Current R31 evidence. Chromium/WebKit and cross-tab cookie replacement NOT RUN. |
 | D10     | Achievement add очищает более новый ввод; child lifecycle вне coordination   | P2 / HIGH (input), MEDIUM (coordination) | W2 → R32                  | NEEDS_VERIFICATION | R31/R06                                                      | Current R32 evidence. Chromium/WebKit achievement scenarios NOT RUN.          |
 | C06     | persistProductDraftBeforeSubmit имеет только test consumers                  | P3 / HIGH             | W3 → R09                             | VERIFIED           | R05–R07; повторный consumer graph                            | 2026-10-01: helper and its helper-only tests removed. Product draft save/submit regressions remain. |
