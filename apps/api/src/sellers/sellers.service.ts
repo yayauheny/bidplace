@@ -1,3 +1,4 @@
+import { MediaLifecycleService } from '../core/media/media-lifecycle.service';
 import {
   sellerProductDetailResponseSchema,
   sellerProductListResponseSchema,
@@ -9,6 +10,7 @@ import {
 } from '@bidplace/contracts';
 import { Prisma } from '@bidplace/database';
 import {
+  Inject,
   ConflictException,
   ForbiddenException,
   Injectable,
@@ -22,11 +24,7 @@ import {
   PrismaService,
   runReadCommittedTransaction,
 } from '../core/database';
-import {
-  emptyImageBytes,
-  ImageStore,
-  imageKey,
-} from '../core/image-store';
+import { emptyImageBytes, ImageStore, imageKey } from '../core/image-store';
 import { type ValidatedImageUpload } from '../images/image-policy';
 import {
   productRevisionOwnerSelect,
@@ -102,7 +100,9 @@ function publicProfileRevisionData(input: SellerProfileUpdateRequest) {
       ? { instagramUrl: input.instagramUrl }
       : {}),
     ...(input.websiteUrl !== undefined ? { websiteUrl: input.websiteUrl } : {}),
-    ...(input.publicEmail !== undefined ? { publicEmail: input.publicEmail } : {}),
+    ...(input.publicEmail !== undefined
+      ? { publicEmail: input.publicEmail }
+      : {}),
     ...(input.shortDescription !== undefined
       ? { shortDescription: input.shortDescription }
       : {}),
@@ -116,6 +116,8 @@ export class SellersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly imageStore: ImageStore,
+    @Inject(MediaLifecycleService)
+    private readonly media?: MediaLifecycleService,
   ) {}
 
   async getMine(userId: string) {
@@ -161,8 +163,9 @@ export class SellersService {
       throw new NotFoundException('Seller profile not found');
     }
     return (
-      sellerProfile.editingRevision?.achievements.map(toPortfolioAchievement) ??
-      []
+      sellerProfile.editingRevision?.achievements.map((achievement) =>
+        toPortfolioAchievement(achievement),
+      ) ?? []
     );
   }
 
@@ -181,6 +184,29 @@ export class SellersService {
     return sellerProfile.editingRevision;
   }
 
+  private async preparePhoto(
+    userId: string,
+    photo: ValidatedImageUpload,
+    purpose: 'AUTHOR_PHOTO' | 'ACHIEVEMENT',
+  ) {
+    if (!this.media?.enabled) return { photo, asset: undefined };
+    if (!photo.source)
+      throw new ConflictException('Original upload bytes are required');
+    const asset = await this.media.stage(userId, purpose, photo.source);
+    const preview = await this.media.readPreview(asset.id);
+    if (!preview) throw new ConflictException('Prepared preview is missing');
+    return {
+      asset,
+      photo: {
+        ...photo,
+        buffer: Buffer.from(preview.bytes),
+        mimeType: 'image/webp' as const,
+        width: asset.preview.width,
+        height: asset.preview.height,
+      },
+    };
+  }
+
   async create(
     userId: string,
     input: SellerProfileCreateRequest,
@@ -193,6 +219,13 @@ export class SellersService {
     if (existing) {
       throw new ConflictException('Seller profile already exists');
     }
+
+    const prepared = await this.preparePhoto(
+      userId,
+      profilePhoto,
+      'AUTHOR_PHOTO',
+    );
+    profilePhoto = prepared.photo;
 
     try {
       const sellerProfile = await this.prisma.$transaction(async (tx) => {
@@ -224,21 +257,30 @@ export class SellersService {
               .update(profilePhoto.buffer)
               .digest('hex'),
             profilePhotoData: emptyImageBytes,
+            ...(prepared.asset
+              ? { profilePhotoAssetId: prepared.asset.id }
+              : {}),
           },
           select: sellerProfileOwnerSelect,
         });
 
-        await this.imageStore.put(
-          imageKey.sellerPhoto(created.id),
-          {
-            bytes: profilePhoto.buffer,
-            mimeType: profilePhoto.mimeType,
-          },
-          tx,
-        );
+        if (prepared.asset) await this.media!.attach(tx, prepared.asset.id);
+        else
+          await this.imageStore.put(
+            imageKey.sellerPhoto(created.id),
+            {
+              bytes: profilePhoto.buffer,
+              mimeType: profilePhoto.mimeType,
+            },
+            tx,
+          );
         await tx.sellerProfile.update({
           where: { id: created.id },
-          data: { profilePhotoObjectKey: imageKey.sellerPhoto(created.id) },
+          data: {
+            profilePhotoObjectKey:
+              prepared.asset?.preview.objectKey ??
+              imageKey.sellerPhoto(created.id),
+          },
         });
 
         const revision = await tx.sellerProfileRevision.create({
@@ -264,7 +306,12 @@ export class SellersService {
             profilePhotoChecksum: createHash('sha256')
               .update(profilePhoto.buffer)
               .digest('hex'),
-            profilePhotoObjectKey: imageKey.sellerPhoto(created.id),
+            profilePhotoObjectKey:
+              prepared.asset?.preview.objectKey ??
+              imageKey.sellerPhoto(created.id),
+            ...(prepared.asset
+              ? { profilePhotoAssetId: prepared.asset.id }
+              : {}),
           },
         });
         await tx.sellerProfile.update({
@@ -320,10 +367,18 @@ export class SellersService {
         );
       }
 
+      const prepared = profilePhoto
+        ? await this.preparePhoto(userId, profilePhoto, 'AUTHOR_PHOTO')
+        : undefined;
+      if (prepared) profilePhoto = prepared.photo;
       const sellerProfile = await runReadCommittedTransaction(
         this.prisma,
         async (tx) => {
           const editing = await ensureEditableEditingRevision(tx, userId);
+          if (this.media?.enabled)
+            await this.media.assertNotPending(tx, {
+              profileId: editing.profileId,
+            });
           const profilePhotoData = profilePhoto
             ? {
                 profilePhotoMimeType: profilePhoto.mimeType,
@@ -331,9 +386,12 @@ export class SellersService {
                 profilePhotoChecksum: createHash('sha256')
                   .update(profilePhoto.buffer)
                   .digest('hex'),
-                profilePhotoObjectKey: imageKey.sellerProfileRevision(
-                  editing.revisionId,
-                ),
+                profilePhotoObjectKey:
+                  prepared?.asset?.preview.objectKey ??
+                  imageKey.sellerProfileRevision(editing.revisionId),
+                ...(prepared?.asset
+                  ? { profilePhotoAssetId: prepared.asset.id }
+                  : {}),
               }
             : {};
           await tx.sellerProfileRevision.update({
@@ -343,7 +401,8 @@ export class SellersService {
               ...profilePhotoData,
             },
           });
-          if (profilePhoto) {
+          if (prepared?.asset) await this.media!.attach(tx, prepared.asset.id);
+          if (profilePhoto && !prepared?.asset) {
             await this.imageStore.put(
               imageKey.sellerProfileRevision(editing.revisionId),
               { bytes: profilePhoto.buffer, mimeType: profilePhoto.mimeType },
@@ -369,8 +428,12 @@ export class SellersService {
 
     const data = Object.fromEntries(
       Object.entries(input).filter(([, value]) => value !== undefined),
-    ) as Prisma.SellerProfileUpdateInput;
+    ) as Prisma.SellerProfileUncheckedUpdateInput;
 
+    const prepared = profilePhoto
+      ? await this.preparePhoto(userId, profilePhoto, 'AUTHOR_PHOTO')
+      : undefined;
+    if (prepared) profilePhoto = prepared.photo;
     try {
       const sellerProfile = await runReadCommittedTransaction(
         this.prisma,
@@ -383,7 +446,12 @@ export class SellersService {
                 profilePhotoChecksum: createHash('sha256')
                   .update(profilePhoto.buffer)
                   .digest('hex'),
-                profilePhotoObjectKey: imageKey.sellerPhoto(editing.profileId),
+                profilePhotoObjectKey:
+                  prepared?.asset?.preview.objectKey ??
+                  imageKey.sellerPhoto(editing.profileId),
+                ...(prepared?.asset
+                  ? { profilePhotoAssetId: prepared.asset.id }
+                  : {}),
               }
             : {};
           await tx.sellerProfile.update({
@@ -394,7 +462,8 @@ export class SellersService {
             where: { id: editing.revisionId },
             data: { ...publicProfileRevisionData(input), ...profilePhotoData },
           });
-          if (profilePhoto) {
+          if (prepared?.asset) await this.media!.attach(tx, prepared.asset.id);
+          if (profilePhoto && !prepared?.asset) {
             await this.imageStore.put(
               imageKey.sellerPhoto(editing.profileId),
               { bytes: profilePhoto.buffer, mimeType: profilePhoto.mimeType },
@@ -432,7 +501,8 @@ export class SellersService {
         include: { editingRevision: true },
       });
       const revision = profile.editingRevision;
-      if (!revision) throw new NotFoundException('Seller profile revision not found');
+      if (!revision)
+        throw new NotFoundException('Seller profile revision not found');
       assertProfileRevisionReadyToSubmit(revision);
       await tx.sellerProfileRevision.update({
         where: { id: revision.id },
@@ -470,7 +540,9 @@ export class SellersService {
       } else if (stage === 'ABOUT') {
         const revision = profile.editingRevision;
         if (!revision.discipline || !revision.shortDescription) {
-          throw new ConflictException('Author profile is missing required fields');
+          throw new ConflictException(
+            'Author profile is missing required fields',
+          );
         }
         await tx.sellerProfile.update({
           where: { id: profile.id },
@@ -491,6 +563,15 @@ export class SellersService {
     input: PortfolioAchievementWriteRequest,
     image?: ValidatedImageUpload,
   ) {
+    if (image && this.media?.enabled) {
+      await runReadCommittedTransaction(this.prisma, async (tx) => {
+        await ensureEditableEditingRevision(tx, userId);
+      });
+    }
+    const prepared = image
+      ? await this.preparePhoto(userId, image, 'ACHIEVEMENT')
+      : undefined;
+    if (prepared) image = prepared.photo;
     return runReadCommittedTransaction(this.prisma, async (tx) => {
       const editing = await ensureEditableEditingRevision(tx, userId);
       const position = await tx.sellerProfileRevisionAchievement.count({
@@ -498,6 +579,12 @@ export class SellersService {
       });
       const achievement = await tx.sellerProfileRevisionAchievement.create({
         data: {
+          ...(prepared?.asset
+            ? {
+                mediaAssetId: prepared.asset.id,
+                objectKey: prepared.asset.preview.objectKey,
+              }
+            : {}),
           revisionId: editing.revisionId,
           position,
           occurredAt: new Date(
@@ -517,7 +604,8 @@ export class SellersService {
             : null,
         },
       });
-      if (image) {
+      if (prepared?.asset) await this.media!.attach(tx, prepared.asset.id);
+      if (image && !prepared?.asset) {
         const objectKey = imageKey.sellerAchievement(achievement.id);
         await tx.sellerProfileRevisionAchievement.update({
           where: { id: achievement.id },
@@ -569,7 +657,7 @@ export class SellersService {
               id: targetAchievementId,
               revisionId: editing.revisionId,
             },
-            select: { id: true, objectKey: true },
+            select: { id: true, objectKey: true, mediaAssetId: true },
           },
         );
         if (!achievement) {
@@ -578,6 +666,10 @@ export class SellersService {
         await tx.sellerProfileRevisionAchievement.delete({
           where: { id: achievement.id },
         });
+        if (achievement.mediaAssetId && this.media?.enabled) {
+          await this.media.enqueueCleanup(tx, [achievement.mediaAssetId]);
+          return null;
+        }
         let deletedKey: string | null = null;
         if (achievement.objectKey) {
           const remainingReferences =
@@ -633,6 +725,7 @@ export class SellersService {
         editingRevision: {
           select: {
             profilePhotoObjectKey: true,
+            profilePhotoAssetId: true,
           },
         },
       },
@@ -640,9 +733,14 @@ export class SellersService {
     if (!sellerProfile?.editingRevision?.profilePhotoObjectKey) {
       throw new NotFoundException('Seller profile photo not found');
     }
-    const stored = await this.imageStore.get(
-      sellerProfile.editingRevision.profilePhotoObjectKey,
-    );
+    const stored =
+      sellerProfile.editingRevision.profilePhotoAssetId && this.media?.enabled
+        ? await this.media.readPreview(
+            sellerProfile.editingRevision.profilePhotoAssetId,
+          )
+        : await this.imageStore.get(
+            sellerProfile.editingRevision.profilePhotoObjectKey,
+          );
     if (!stored) {
       throw new NotFoundException('Seller profile photo not found');
     }
@@ -664,6 +762,7 @@ export class SellersService {
           mimeType: true,
           objectKey: true,
           revisionId: true,
+          mediaAssetId: true,
           revision: {
             select: {
               sellerProfile: {
@@ -687,7 +786,10 @@ export class SellersService {
     if (profile.userId !== userId && role !== 'admin' && !isPublic) {
       throw new NotFoundException('Achievement image not found');
     }
-    const stored = await this.imageStore.get(achievement.objectKey);
+    const stored =
+      achievement.mediaAssetId && this.media?.enabled
+        ? await this.media.readPreview(achievement.mediaAssetId)
+        : await this.imageStore.get(achievement.objectKey);
     if (!stored) {
       throw new NotFoundException('Achievement image not found');
     }
@@ -890,10 +992,13 @@ export class SellersService {
       throw new NotFoundException('Seller profile not found');
     }
 
-    const stored = await this.imageStore.get(
-      sellerProfile.profilePhotoObjectKey ??
-        imageKey.sellerPhoto(sellerProfile.id),
-    );
+    const stored =
+      sellerProfile.profilePhotoAssetId && this.media?.enabled
+        ? await this.media.readPreview(sellerProfile.profilePhotoAssetId)
+        : await this.imageStore.get(
+            sellerProfile.profilePhotoObjectKey ??
+              imageKey.sellerPhoto(sellerProfile.id),
+          );
 
     if (!stored) {
       throw new NotFoundException('Seller profile not found');

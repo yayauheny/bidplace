@@ -1,6 +1,7 @@
 import { productSchema } from '@bidplace/contracts';
 import { describe, expect, it } from 'vitest';
 
+import { publicMediaAssetSelect } from '../core/media/media.mapper';
 import { publicSellerProfileSelect } from '../sellers/seller-profile.mapper';
 import {
   portfolioCatalogProductSelect,
@@ -14,9 +15,7 @@ const publishedImageId = 'b0d82a10-3170-49eb-904f-a8bc87d311a6';
 const editingImageId = 'c0d82a10-3170-49eb-904f-a8bc87d311a7';
 const laterImageId = 'd0d82a10-3170-49eb-904f-a8bc87d311a8';
 
-function productWithImages(
-  images: ProductRecord['images'],
-): ProductRecord {
+function productWithImages(images: ProductRecord['images']): ProductRecord {
   return {
     id: 'a0d82a10-3170-49eb-904f-a8bc87d311a5',
     publicId: 'pubId000001',
@@ -171,6 +170,7 @@ describe('portfolioCatalogProductSelect', () => {
       portfolioCatalogProductSelect.publishedRevision.select.images.select.image
         .select,
     ).toEqual({
+      mediaAsset: { select: publicMediaAssetSelect },
       id: true,
       mimeType: true,
       byteLength: true,

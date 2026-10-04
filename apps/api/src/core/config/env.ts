@@ -75,12 +75,20 @@ const serverEnvSchema = z
     S3_BUCKET: z.string().min(1).optional(),
     S3_ACCESS_KEY_ID: z.string().min(1).optional(),
     S3_SECRET_ACCESS_KEY: z.string().min(1).optional(),
+    S3_PUBLIC_BUCKET: z.string().min(1).optional(),
+    MEDIA_PUBLIC_BASE_URL: z.string().url().optional(),
+    CLOUDFLARE_ZONE_ID: z
+      .string()
+      .regex(/^[a-f0-9]{32}$/)
+      .optional(),
+    CLOUDFLARE_CACHE_TOKEN: z.string().min(1).optional(),
   })
   .passthrough()
   .refine(
     (env) => env.LOT_IMAGE_MAX_TOTAL_BYTES >= env.LOT_IMAGE_MAX_FILE_BYTES,
     {
-      message: 'LOT_IMAGE_MAX_TOTAL_BYTES must be at least LOT_IMAGE_MAX_FILE_BYTES',
+      message:
+        'LOT_IMAGE_MAX_TOTAL_BYTES must be at least LOT_IMAGE_MAX_FILE_BYTES',
       path: ['LOT_IMAGE_MAX_TOTAL_BYTES'],
     },
   )
@@ -108,7 +116,8 @@ const serverEnvSchema = z
       context.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['SMTP_AUTH_MODE'],
-        message: 'SMTP_AUTH_MODE must be explicit when SMTP credentials are configured',
+        message:
+          'SMTP_AUTH_MODE must be explicit when SMTP credentials are configured',
       });
     }
 
@@ -174,13 +183,62 @@ const serverEnvSchema = z
           message: 'MEDIA_STORAGE_PROVIDER=s3 is required in production',
         });
       }
-
     } else if (env.TEST_EMAIL_BYPASS && !isExplicitLocalTestProfile(env)) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['TEST_EMAIL_BYPASS'],
         message: ENV_PROFILE_ERROR.testEmailBypassRequiresLocalTest,
       });
+    }
+
+    if (
+      env.S3_PUBLIC_BUCKET ||
+      env.MEDIA_PUBLIC_BASE_URL ||
+      requiresProductionSecurity(env)
+    ) {
+      for (const key of [
+        'S3_PUBLIC_BUCKET',
+        'MEDIA_PUBLIC_BASE_URL',
+        'CLOUDFLARE_ZONE_ID',
+        'CLOUDFLARE_CACHE_TOKEN',
+      ] as const) {
+        if (!env[key])
+          context.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: [key],
+            message: `${key} is required for public media delivery`,
+          });
+      }
+      if (env.S3_PUBLIC_BUCKET === env.S3_BUCKET)
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['S3_PUBLIC_BUCKET'],
+          message: 'Private and public media buckets must differ',
+        });
+      if (env.MEDIA_STORAGE_PROVIDER !== 's3')
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['MEDIA_STORAGE_PROVIDER'],
+          message: 'Public media requires S3 storage',
+        });
+      if (env.MEDIA_PUBLIC_BASE_URL) {
+        const url = new URL(env.MEDIA_PUBLIC_BASE_URL);
+        if (
+          url.protocol !== 'https:' ||
+          url.username ||
+          url.password ||
+          url.search ||
+          url.hash ||
+          url.pathname !== '/' ||
+          url.hostname.endsWith('.r2.dev')
+        ) {
+          context.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['MEDIA_PUBLIC_BASE_URL'],
+            message: 'Public media requires an HTTPS custom-domain origin',
+          });
+        }
+      }
     }
 
     if (env.MEDIA_STORAGE_PROVIDER === 's3') {

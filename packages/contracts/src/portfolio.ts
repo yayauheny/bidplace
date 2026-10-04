@@ -1,3 +1,4 @@
+import { publicMediaUrlSchema } from './media';
 import { z } from 'zod';
 
 import { paginationMetaSchema, paginationQuerySchema } from './pagination';
@@ -8,13 +9,21 @@ import {
   sellerProfileRevisionStatusSchema,
   sellerStatusSchema,
 } from './enums';
-import { achievementOccurredDateSchema, isoDateTimeSchema, slugSchema, uuidSchema } from './primitives';
+import {
+  achievementOccurredDateSchema,
+  isoDateTimeSchema,
+  slugSchema,
+  uuidSchema,
+} from './primitives';
 
 const publicText = z.string().trim().min(1);
 
 export const portfolioAchievementImageSchema = z
   .object({
-    url: z.string().regex(/^\/api\/author-achievements\/[0-9a-f-]+\/image$/),
+    url: z.union([
+      z.string().regex(/^\/api\/author-achievements\/[0-9a-f-]+\/image$/),
+      publicMediaUrlSchema,
+    ]),
     mimeType: publicText,
     byteLength: z.number().int().positive(),
     checksum: z.string().length(64),
@@ -58,9 +67,10 @@ export const portfolioAuthorSchema = z
     discipline: publicText,
     practice: z.string().trim().min(1).nullable(),
     biography: z.string().trim().min(1).nullable(),
-    profilePhotoUrl: z
-      .string()
-      .regex(/^\/api\/sellers\/[A-Za-z0-9_-]+\/photo$/),
+    profilePhotoUrl: z.union([
+      z.string().regex(/^\/api\/sellers\/[A-Za-z0-9_-]+\/photo$/),
+      publicMediaUrlSchema,
+    ]),
     telegramUrl: z.string().url().nullable(),
     instagramUrl: z.string().url().nullable(),
     websiteUrl: z.string().url().nullable(),
@@ -241,17 +251,14 @@ export const portfolioAuthorApplicationResponseSchema = z
   })
   .strict();
 
-const portfolioAchievementOccurredDateWriteSchema = z.preprocess(
-  (value) => {
-    if (typeof value !== 'string') return value;
-    try {
-      return JSON.parse(value);
-    } catch {
-      return value;
-    }
-  },
-  portfolioAchievementSchema.shape.occurredDate.unwrap(),
-);
+const portfolioAchievementOccurredDateWriteSchema = z.preprocess((value) => {
+  if (typeof value !== 'string') return value;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return value;
+  }
+}, portfolioAchievementSchema.shape.occurredDate.unwrap());
 
 export const portfolioAchievementWriteRequestSchema = z
   .object({

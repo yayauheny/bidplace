@@ -104,6 +104,7 @@ model User {
   sessionVersion    Int                   @default(0) @map("session_version")
   createdAt         DateTime              @default(now()) @map("created_at")
   updatedAt         DateTime              @updatedAt @map("updated_at")
+  mediaAssets       MediaAsset[]
   sellerProfile     SellerProfile?
   bids              Bid[]
   buyerOrders       Order[]               @relation("OrderBuyer")
@@ -150,6 +151,7 @@ model SellerProfile {
   createdAt           DateTime            @default(now()) @map("created_at")
   updatedAt           DateTime            @updatedAt @map("updated_at")
   user                User                @relation(fields: [userId], references: [id], onDelete: Restrict)
+  mediaOperations MediaOperation[]
   products            Product[]
   curatorSelections   CuratorSelection[]  @relation("CuratorSelectionCurator")
   revisions           SellerProfileRevision[] @relation("SellerProfileRevisions")
@@ -157,6 +159,10 @@ model SellerProfile {
   publishedRevision   SellerProfileRevision? @relation("SellerProfilePublishedRevision", fields: [publishedRevisionId], references: [id], onDelete: Restrict)
 
   @@map("seller_profiles")
+  profilePhotoAssetId String? @map("profile_photo_asset_id") @db.Uuid
+  profilePhotoAsset MediaAsset? @relation(fields: [profilePhotoAssetId], references: [id], onDelete: Restrict)
+  @@index([profilePhotoAssetId])
+
 }
 
 model SellerProfileRevision {
@@ -195,6 +201,10 @@ model SellerProfileRevision {
   @@index([sellerProfileId, status])
   @@index([profilePhotoObjectKey])
   @@map("seller_profile_revisions")
+  profilePhotoAssetId String? @map("profile_photo_asset_id") @db.Uuid
+  profilePhotoAsset MediaAsset? @relation(fields: [profilePhotoAssetId], references: [id], onDelete: Restrict)
+  @@index([profilePhotoAssetId])
+
 }
 
 model SellerProfileRevisionAchievement {
@@ -215,6 +225,10 @@ model SellerProfileRevisionAchievement {
   @@unique([revisionId, position])
   @@index([objectKey])
   @@map("seller_profile_revision_achievements")
+  mediaAssetId String? @map("media_asset_id") @db.Uuid
+  mediaAsset MediaAsset? @relation(fields: [mediaAssetId], references: [id], onDelete: Restrict)
+  @@index([mediaAssetId])
+
 }
 
 model Category {
@@ -254,6 +268,7 @@ model Product {
   updatedAt       DateTime      @updatedAt @map("updated_at")
   sellerProfile   SellerProfile @relation(fields: [sellerProfileId], references: [id], onDelete: Restrict)
   category        Category?     @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  mediaOperations MediaOperation[]
   images          ProductImage[]
   creationSteps   ProductCreationStep[]
   listings        Listing[]
@@ -318,6 +333,10 @@ model ProductImage {
   @@index([productId])
   @@unique([productId, position])
   @@map("product_images")
+  mediaAssetId String? @map("media_asset_id") @db.Uuid
+  mediaAsset MediaAsset? @relation(fields: [mediaAssetId], references: [id], onDelete: Restrict)
+  @@index([mediaAssetId])
+
 }
 
 model ProductRevisionImage {
@@ -353,6 +372,10 @@ model ProductCreationStep {
   @@unique([productId, position])
   @@index([productId])
   @@map("product_creation_steps")
+  mediaAssetId String? @map("media_asset_id") @db.Uuid
+  mediaAsset MediaAsset? @relation(fields: [mediaAssetId], references: [id], onDelete: Restrict)
+  @@index([mediaAssetId])
+
 }
 
 model Listing {
@@ -562,4 +585,125 @@ model CuratorSelection {
 
   @@index([curatorSellerProfileId])
   @@map("curator_selections")
+}
+
+
+enum MediaPurpose {
+  WORK_IMAGE
+  AUTHOR_PHOTO
+  ACHIEVEMENT
+  LEGACY_CREATION_STEP
+}
+enum MediaProvenance {
+  ORIGINAL
+  LEGACY_NORMALIZED
+}
+enum MediaTier {
+  PRIVATE
+  PUBLIC
+}
+enum MediaVariant {
+  SOURCE
+  PREVIEW
+  FULL
+}
+enum MediaAssetState {
+  STAGING
+  READY
+  FAILED
+}
+enum MediaObjectState {
+  PLANNED
+  READY
+  DELETE_PENDING
+  DELETED
+}
+enum MediaOperationKind {
+  UPLOAD
+  PUBLISH
+  REVOKE
+  CLEANUP
+}
+enum MediaOperationState {
+  PENDING
+  RUNNING
+  FAILED
+  DONE
+  CANCELLED
+}
+model MediaAsset {
+  id String @id @default(uuid()) @db.Uuid
+  ownerUserId String @map("owner_user_id") @db.Uuid
+  purpose MediaPurpose
+  sourceProvenance MediaProvenance @default(ORIGINAL) @map("source_provenance")
+  state MediaAssetState @default(STAGING)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  owner User @relation(fields: [ownerUserId], references: [id], onDelete: Restrict)
+  objects MediaObject[]
+  profilePhotos SellerProfile[]
+  revisionPhotos SellerProfileRevision[]
+  achievements SellerProfileRevisionAchievement[]
+  images ProductImage[]
+  creationSteps ProductCreationStep[]
+  @@map("media_assets")
+}
+model MediaObject {
+  id String @id @default(uuid()) @db.Uuid
+  assetId String @map("asset_id") @db.Uuid
+  variant MediaVariant
+  tier MediaTier
+  pipelineVersion String @map("pipeline_version") @db.VarChar(16)
+  objectKey String @map("object_key") @db.VarChar(255)
+  mimeType String @map("mime_type") @db.VarChar(100)
+  byteLength Int @map("byte_length")
+  sha256 String @db.Char(64)
+  width Int
+  height Int
+  publicUrl String? @map("public_url") @db.VarChar(1024)
+  state MediaObjectState @default(PLANNED)
+  leaseToken String? @map("lease_token") @db.Uuid
+  leaseUntil DateTime? @map("lease_until")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  asset MediaAsset @relation(fields: [assetId], references: [id], onDelete: Restrict)
+  manifests MediaOperationObject[]
+  @@unique([tier, objectKey])
+  @@unique([assetId, variant, tier, pipelineVersion])
+  @@map("media_objects")
+}
+model MediaOperation {
+  id String @id @default(uuid()) @db.Uuid
+  kind MediaOperationKind
+  state MediaOperationState @default(PENDING)
+  identity String @unique @db.VarChar(255)
+  profileId String? @map("profile_id") @db.Uuid
+  productId String? @map("product_id") @db.Uuid
+  revisionId String? @map("revision_id") @db.Uuid
+  expectedRevisionAt DateTime? @map("expected_revision_at")
+  restore Boolean @default(false)
+  previousRevisionId String? @map("previous_revision_id") @db.Uuid
+  actorUserId String? @map("actor_user_id") @db.Uuid
+  attemptCount Int @default(0) @map("attempt_count")
+  nextAttemptAt DateTime @default(now()) @map("next_attempt_at")
+  leaseUntil DateTime? @map("lease_until")
+  leaseToken String? @map("lease_token") @db.Uuid
+  errorCode String? @map("error_code") @db.VarChar(100)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  profile SellerProfile? @relation(fields: [profileId], references: [id], onDelete: SetNull)
+  product Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  objects MediaOperationObject[]
+  @@index([state, nextAttemptAt])
+  @@index([profileId, productId, kind, state])
+  @@map("media_operations")
+}
+model MediaOperationObject {
+  operationId String @map("operation_id") @db.Uuid
+  objectId String @map("object_id") @db.Uuid
+  state MediaObjectState @default(PLANNED)
+  operation MediaOperation @relation(fields: [operationId], references: [id], onDelete: Restrict)
+  object MediaObject @relation(fields: [objectId], references: [id], onDelete: Restrict)
+  @@id([operationId, objectId])
+  @@map("media_operation_objects")
 }

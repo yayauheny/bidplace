@@ -41,6 +41,10 @@ const productionSecurityEnv = {
   S3_ENDPOINT: 'http://minio.local',
   S3_REGION: 'us-east-1',
   S3_BUCKET: 'bidplace-media',
+  S3_PUBLIC_BUCKET: 'bidplace-public',
+  MEDIA_PUBLIC_BASE_URL: 'https://media.example.com',
+  CLOUDFLARE_ZONE_ID: 'a'.repeat(32),
+  CLOUDFLARE_CACHE_TOKEN: 'test',
   S3_ACCESS_KEY_ID: 'test-access-key',
   S3_SECRET_ACCESS_KEY: 'test-secret-key',
 } as const;
@@ -211,7 +215,9 @@ describe('NODE_ENV × APP_ENV matrix', () => {
         APP_ENV: 'production',
         S3_SECRET_ACCESS_KEY: '',
       }),
-    ).toThrow('S3_SECRET_ACCESS_KEY is required when MEDIA_STORAGE_PROVIDER=s3');
+    ).toThrow(
+      'S3_SECRET_ACCESS_KEY is required when MEDIA_STORAGE_PROVIDER=s3',
+    );
   });
 
   it('rejects production builds without required SMTP config', () => {
@@ -488,6 +494,10 @@ const productionProfileLines = [
   'S3_ENDPOINT=http://127.0.0.1:9000',
   'S3_REGION=us-east-1',
   'S3_BUCKET=synthetic-media',
+  'S3_PUBLIC_BUCKET=synthetic-public',
+  'MEDIA_PUBLIC_BASE_URL=https://media.example.com',
+  `CLOUDFLARE_ZONE_ID=${'a'.repeat(32)}`,
+  'CLOUDFLARE_CACHE_TOKEN=test',
   'S3_ACCESS_KEY_ID=synthetic-access-key',
   'S3_SECRET_ACCESS_KEY=synthetic-secret-key',
 ];
@@ -552,5 +562,39 @@ describe('leading env-file BOM', () => {
     expect(env.NODE_ENV).toBe('test');
     expect(env.APP_ENV).toBe('local');
     expect(requiresProductionSecurity(env)).toBe(false);
+  });
+});
+
+describe('public media deployment configuration', () => {
+  it.each([
+    'S3_PUBLIC_BUCKET',
+    'MEDIA_PUBLIC_BASE_URL',
+    'CLOUDFLARE_ZONE_ID',
+    'CLOUDFLARE_CACHE_TOKEN',
+  ] as const)('requires %s in production', (key) => {
+    stubMissingEnvFile();
+    expect(() =>
+      loadServerEnv({
+        ...productionSecurityEnv,
+        NODE_ENV: 'production',
+        APP_ENV: 'production',
+        [key]: undefined,
+      }),
+    ).toThrow(key);
+  });
+  it('rejects shared private/public buckets and development public domains', () => {
+    stubMissingEnvFile();
+    expect(() =>
+      loadServerEnv({
+        ...productionSecurityEnv,
+        S3_PUBLIC_BUCKET: productionSecurityEnv.S3_BUCKET,
+      }),
+    ).toThrow('must differ');
+    expect(() =>
+      loadServerEnv({
+        ...productionSecurityEnv,
+        MEDIA_PUBLIC_BASE_URL: 'https://example.r2.dev',
+      }),
+    ).toThrow('custom-domain');
   });
 });

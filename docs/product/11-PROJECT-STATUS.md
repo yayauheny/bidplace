@@ -6,6 +6,39 @@
 > commerce-schema references below do not mean that Listing, Bid, Order,
 > lifecycle, realtime, discovery or activity modules are currently booted.
 
+## 2026-10-04 — R2 media lifecycle implementation in progress
+
+- `Partial`: `core/media` and the additive `20261004170000_media_lifecycle`
+  migration implement private/public transport, SOURCE identity, WebP PREVIEW/FULL,
+  operation manifests, operation/object leases, retry in the existing Nest process,
+  delayed revision publication, cancellation, cleanup and exact-URL CDN purge.
+  New media is attached by Images/Sellers after external writes; public Work/Author
+  contracts support HTTPS derivative URLs. Owner/admin DTOs expose publication state.
+- `Needs verification`: this is a working implementation package, not the release
+  completion requested by the founder. Remaining code: connect upload idempotency
+  to HTTP/client actions; operator import of all five legacy owners into assets;
+  admin waiting/error presentation and viewer FULL loading; Work lifecycle HTTP
+  matrix, stale-intent/restore coverage, bounded-processing benchmark and live
+  provider acceptance. Existing transport-only backfill is not that importer.
+- `Not implemented in this package`: author/work browser defect corrections,
+  classification of every R29 failure, integration into
+  `feature/portfolio-mvp-release`, and regression from release HEAD. No reduction
+  of the maintained release gate was made. No `.pen`, hosting or SMTP changes.
+- Verified kernel checks: repository `pnpm verify` passed (API 357 unit tests,
+  contracts 32, API client 28, mobile 573; API integration 110; builds 8/8).
+  After the last restoration change, API typecheck/lint/build and the eight media
+  integration scenarios passed again. Evidence:
+  `/private/tmp/bidplace-media-root-verify-final.log`,
+  `/private/tmp/bidplace-media-final-api-checks.log`,
+  `/private/tmp/bidplace-media-integration-expanded.log`.
+  This does not substitute for release-HEAD browser verification.
+- Verification uses an isolated tracked-source copy without personal dotenv files,
+  Node 22.20.0, pnpm 11.7.0 and disposable PostgreSQL on port 55433. Eight new
+  PostgreSQL scenarios cover outage/restart, purge retry, late PUT cancellation,
+  idempotency, old snapshot preservation, shared references, rollback cleanup,
+  and restore racing DELETE. Provider tests use synthetic stores; they do not
+  prove live R2/CDN operation.
+
 ## 2026-10-04 — Developer commands and API container
 
 - `Implemented`: root `Makefile` exposes 15 local development/build/check targets.
@@ -23,7 +56,7 @@
   manifests before frozen install. API-only deploy tolerates the unused mobile
   patch without relaxing patch application for used packages.
 - Verification: isolated `make rebuild` (8 uncached successful tasks), `make
-  build-web` (4 successful tasks), `make test` and dev smoke passed. Production
+build-web` (4 successful tasks), `make test` and dev smoke passed. Production
   container on Linux arm64: health/readiness, empty Authors/Home 200; anonymous
   session 401; native Argon2/Sharp/Prisma passed. No external SMTP/R2 calls.
 - `Needs verification`: `make check` types/lint passed; formatting still fails on
@@ -140,7 +173,7 @@
 - On one synthetic fixture, 36 qualifying material rows became 2 distinct
   rows and 25 author pairs became 2 city rows plus 2 tag rows. The facets
   JSON stayed `{ materials: [Дерево, Холст], cities: [Гродно, Минск], tags:
-  [Живопись, Керамика] }`. The transferred row count follows distinct stored
+[Живопись, Керамика] }`. The transferred row count follows distinct stored
   values. This is not a latency claim.
 - Coverage: `portfolio.service.spec.ts`, `products.service.spec.ts`,
   `sellers.service.spec.ts`, and
@@ -2583,7 +2616,7 @@ verification.
 - `Implemented`: authenticated `/verify-email` reuses the existing OTP API,
   refreshes `['user','me']` after success, and returns only to a validated
   internal Author destination. Full production SMTP delivery remains `Needs
-  verification` in staging.
+verification` in staging.
 
 - `Implemented`: `POST /auth/logout` uses `LogoutAuthGuard` to identify only a valid current session. It always clears the session cookie, including when the submitted cookie is missing, expired, malformed, or stale; server-side session invalidation runs only for an authenticated current session. `apps/api/src/auth/logout-auth.guard.spec.ts` covers invalid, stale, and current tokens.
 

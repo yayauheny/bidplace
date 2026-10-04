@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 
 import {
+  Inject,
   ConflictException,
   BadRequestException,
   ForbiddenException,
@@ -10,6 +11,7 @@ import {
 import { type ProductStatus, type SellerStatus } from '@bidplace/contracts';
 import { type Prisma } from '@bidplace/database';
 
+import { MediaLifecycleService } from '../core/media/media-lifecycle.service';
 import { PrismaService, runReadCommittedTransaction } from '../core/database';
 import { emptyImageBytes, ImageStore, imageKey } from '../core/image-store';
 import {
@@ -26,6 +28,7 @@ import { canAuthorEditRevision } from '../products/product-revision-state';
 import { assertApprovedSeller } from '../sellers/seller-capability';
 
 export const productImageAuthorizationSelect = {
+  mediaAssetId: true,
   revisions: { select: { revisionId: true } },
   product: {
     select: {
@@ -50,6 +53,8 @@ export class ImagesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly imageStore: ImageStore,
+    @Inject(MediaLifecycleService)
+    private readonly media?: MediaLifecycleService,
   ) {}
 
   async add(
@@ -67,6 +72,8 @@ export class ImagesService {
       product.images,
       files.map((file) => ({ byteLength: file.buffer.byteLength })),
     );
+
+    if (this.media?.enabled) return this.addMedia(userId, productId, files);
 
     const validated = await validateAndNormalizeProductImageUploads(files);
 
@@ -133,6 +140,57 @@ export class ImagesService {
     return { ok: true as const };
   }
 
+  private async addMedia(
+    userId: string,
+    productId: string,
+    files: readonly RawImageUpload[],
+  ) {
+    const media = this.media!;
+    const assets: Array<Awaited<ReturnType<MediaLifecycleService['stage']>>> =
+      [];
+    for (const file of files)
+      assets.push(await media.stage(userId, 'WORK_IMAGE', file));
+    await runReadCommittedTransaction(this.prisma, async (tx) => {
+      const product = await this.requireWritableOwnerInTx(
+        tx,
+        userId,
+        productId,
+      );
+      await media.assertNotPending(tx, { productId });
+      assertProductImageCapacity(
+        product.images,
+        assets.map((asset) => ({ byteLength: asset.source.byteLength })),
+      );
+      if (!product.editingRevisionId)
+        throw new ConflictException('Product editing revision is missing');
+      for (const [index, asset] of assets.entries()) {
+        await media.attach(tx, asset.id);
+        const row = await tx.productImage.create({
+          data: {
+            productId,
+            position: product.nextProductImagePosition + index,
+            mediaAssetId: asset.id,
+            objectKey: asset.preview.objectKey,
+            mimeType: asset.preview.mimeType,
+            byteLength: asset.source.byteLength,
+            checksum: asset.preview.sha256,
+            width: asset.preview.width,
+            height: asset.preview.height,
+            data: emptyImageBytes,
+          },
+        });
+        await tx.productRevisionImage.create({
+          data: {
+            revisionId: product.editingRevisionId,
+            imageId: row.id,
+            position: product.images.length + index,
+          },
+        });
+      }
+    });
+    return { ok: true as const };
+  }
+
   async remove(userId: string, productId: string, imageId: string) {
     const product = await this.requireEditableOwner(
       this.prisma,
@@ -145,11 +203,7 @@ export class ImagesService {
     }
 
     await runReadCommittedTransaction(this.prisma, async (tx) => {
-      const locked = await this.requireWritableOwnerInTx(
-        tx,
-        userId,
-        productId,
-      );
+      const locked = await this.requireWritableOwnerInTx(tx, userId, productId);
       if (!locked.images.some((image) => image.id === imageId)) {
         throw new NotFoundException('Image not found');
       }
@@ -177,7 +231,14 @@ export class ImagesService {
         orderBy: { position: 'asc' },
       });
       if (revisionReferences === 0) {
-        await this.imageStore.delete(imageKey.productImage(imageId), tx);
+        if (this.media?.enabled) {
+          const image = await tx.productImage.findUniqueOrThrow({
+            where: { id: imageId },
+            select: { mediaAssetId: true },
+          });
+          if (image.mediaAssetId)
+            await this.media.enqueueCleanup(tx, [image.mediaAssetId]);
+        } else await this.imageStore.delete(imageKey.productImage(imageId), tx);
         await tx.productImage.delete({ where: { id: imageId } });
         if (!locked.usesRevisionImageOrder) {
           const temporaryBase = remaining.length + 1;
@@ -231,11 +292,7 @@ export class ImagesService {
     }
 
     await runReadCommittedTransaction(this.prisma, async (tx) => {
-      const locked = await this.requireWritableOwnerInTx(
-        tx,
-        userId,
-        productId,
-      );
+      const locked = await this.requireWritableOwnerInTx(tx, userId, productId);
       const knownLockedIds = new Set(locked.images.map((image) => image.id));
       if (
         imageIds.length !== knownLockedIds.size ||
@@ -297,6 +354,44 @@ export class ImagesService {
     });
     if (!step) throw new NotFoundException('Creation step not found');
 
+    if (this.media?.enabled) {
+      const asset = await this.media.stage(
+        userId,
+        'LEGACY_CREATION_STEP',
+        file,
+      );
+      await runReadCommittedTransaction(this.prisma, async (tx) => {
+        await this.requireWritableOwnerInTx(
+          tx,
+          userId,
+          productId,
+          'creation-story',
+        );
+        await this.media!.assertNotPending(tx, { productId });
+        const current = await tx.productCreationStep.findFirst({
+          where: { id: stepId, productId },
+        });
+        if (!current) throw new NotFoundException('Creation step not found');
+        await this.media!.attach(tx, asset.id);
+        await tx.productCreationStep.update({
+          where: { id: stepId },
+          data: {
+            mediaAssetId: asset.id,
+            objectKey: asset.preview.objectKey,
+            mimeType: asset.preview.mimeType,
+            byteLength: asset.preview.byteLength,
+            checksum: asset.preview.sha256,
+            width: asset.preview.width,
+            height: asset.preview.height,
+            data: null,
+          },
+        });
+        if (current.mediaAssetId)
+          await this.media!.enqueueCleanup(tx, [current.mediaAssetId]);
+      });
+      return { ok: true as const };
+    }
+
     const validatedFiles = await validateAndNormalizeProductImageUploads([
       file,
     ]);
@@ -351,6 +446,7 @@ export class ImagesService {
         mimeType: true,
         byteLength: true,
         checksum: true,
+        mediaAssetId: true,
         product: {
           select: {
             status: true,
@@ -372,7 +468,10 @@ export class ImagesService {
       throw new NotFoundException('Creation step image not found');
     }
 
-    const stored = await this.imageStore.get(imageKey.creationStep(stepId));
+    const stored =
+      step.mediaAssetId && this.media?.enabled
+        ? await this.media.readPreview(step.mediaAssetId)
+        : await this.imageStore.get(imageKey.creationStep(stepId));
     if (!stored) {
       throw new NotFoundException('Creation step image not found');
     }
@@ -409,7 +508,10 @@ export class ImagesService {
       throw new NotFoundException('Image not found');
     }
 
-    const stored = await this.imageStore.get(imageKey.productImage(imageId));
+    const stored =
+      image.mediaAssetId && this.media?.enabled
+        ? await this.media.readPreview(image.mediaAssetId)
+        : await this.imageStore.get(imageKey.productImage(imageId));
     if (!stored) {
       throw new NotFoundException('Image not found');
     }

@@ -40,6 +40,7 @@ export type RawImageUpload = {
 };
 
 export type ValidatedImageUpload = {
+  source?: RawImageUpload;
   buffer: Buffer;
   mimeType: SupportedImageMimeType;
   width?: number;
@@ -68,16 +69,14 @@ export function assertProductImageCapacity(
   }
 }
 
-export function detectImageMimeType(buffer: Buffer): SupportedImageMimeType | null {
+export function detectImageMimeType(
+  buffer: Buffer,
+): SupportedImageMimeType | null {
   if (buffer.length < 12) {
     return null;
   }
 
-  if (
-    buffer[0] === 0xff &&
-    buffer[1] === 0xd8 &&
-    buffer[2] === 0xff
-  ) {
+  if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) {
     return 'image/jpeg';
   }
 
@@ -113,9 +112,7 @@ export function detectImageMimeType(buffer: Buffer): SupportedImageMimeType | nu
 function assertSupportedMimeType(
   mimetype: string,
 ): asserts mimetype is SupportedImageMimeType {
-  if (
-    !supportedImageMimeTypes.includes(mimetype as SupportedImageMimeType)
-  ) {
+  if (!supportedImageMimeTypes.includes(mimetype as SupportedImageMimeType)) {
     throw new BadRequestException('Unsupported image type');
   }
 }
@@ -136,7 +133,9 @@ function assertStaticImageMetadata(
   const width = metadata.width;
   const height = metadata.height;
   if (!width || !height) {
-    throw new BadRequestException(`${mimeType} payload is corrupted or not decodable`);
+    throw new BadRequestException(
+      `${mimeType} payload is corrupted or not decodable`,
+    );
   }
 
   if (
@@ -158,7 +157,12 @@ function assertStaticImageMetadata(
 async function normalizeStaticImage(
   buffer: Buffer,
   mimeType: SupportedImageMimeType,
-): Promise<{ buffer: Buffer; width: number; height: number; mimeType: SupportedImageMimeType }> {
+): Promise<{
+  buffer: Buffer;
+  width: number;
+  height: number;
+  mimeType: SupportedImageMimeType;
+}> {
   const outputMimeType: SupportedImageMimeType =
     mimeType === 'image/png' ? 'image/png' : 'image/jpeg';
   const outputFormat = outputMimeType === 'image/png' ? 'png' : 'jpeg';
@@ -179,7 +183,9 @@ async function normalizeStaticImage(
       mimeType: outputMimeType,
     };
   } catch {
-    throw new BadRequestException(`${mimeType} payload is corrupted or not decodable`);
+    throw new BadRequestException(
+      `${mimeType} payload is corrupted or not decodable`,
+    );
   }
 }
 
@@ -207,7 +213,9 @@ export async function validateAndNormalizeProductImageUploads(
     }
 
     if (detectedMimeType !== file.mimetype) {
-      throw new BadRequestException('Image MIME type does not match file contents');
+      throw new BadRequestException(
+        'Image MIME type does not match file contents',
+      );
     }
 
     let metadata: Metadata;
@@ -224,9 +232,13 @@ export async function validateAndNormalizeProductImageUploads(
 
     assertStaticImageMetadata(detectedMimeType, metadata);
 
-    const normalized = await normalizeStaticImage(file.buffer, detectedMimeType);
+    const normalized = await normalizeStaticImage(
+      file.buffer,
+      detectedMimeType,
+    );
 
     validated.push({
+      source: file,
       buffer: normalized.buffer,
       mimeType: normalized.mimeType,
       width: normalized.width,
@@ -238,7 +250,8 @@ export async function validateAndNormalizeProductImageUploads(
 }
 
 /** @deprecated Prefer validateAndNormalizeProductImageUploads */
-export const validateProductImageUploads = validateAndNormalizeProductImageUploads;
+export const validateProductImageUploads =
+  validateAndNormalizeProductImageUploads;
 
 export const PRIVATE_IMAGE_CACHE_CONTROL = 'private, no-store';
 export const IMMUTABLE_PUBLIC_IMAGE_CACHE_CONTROL =

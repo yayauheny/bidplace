@@ -1,3 +1,4 @@
+import { MediaLifecycleService } from '../core/media/media-lifecycle.service';
 import {
   creationStoryResponseSchema,
   productResponseSchema,
@@ -9,6 +10,7 @@ import {
 } from '@bidplace/contracts';
 import { Prisma } from '@bidplace/database';
 import {
+  Inject,
   ConflictException,
   ForbiddenException,
   Injectable,
@@ -54,6 +56,8 @@ export class ProductsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly publicIds: PublicIdService,
+    @Inject(MediaLifecycleService)
+    private readonly media?: MediaLifecycleService,
   ) {}
 
   async create(userId: string, input: ProductWriteRequest) {
@@ -560,6 +564,29 @@ export class ProductsService {
         );
       }
 
+      if (this.media?.enabled) {
+        if (nextStatus === 'ARCHIVED')
+          await this.media.enqueueRevoke(tx, { productId: id });
+        else {
+          const revision = await tx.productRevision.findUniqueOrThrow({
+            where: { id: product.publishedRevisionId },
+          });
+          await this.media.enqueuePublication(
+            tx,
+            { productId: id },
+            revision,
+            product.publishedRevisionId,
+            userId,
+            true,
+          );
+          return toProductResponse(
+            await tx.product.findUniqueOrThrow({
+              where: { id },
+              select: productSelect,
+            }),
+          );
+        }
+      }
       await tx.product.update({
         where: { id },
         data: { status: nextStatus },
@@ -823,7 +850,7 @@ export class ProductsService {
         dimensions: published.dimensions,
         year: published.year,
         uniqueness: published.uniqueness?.trim() || null,
-        images: toImageContracts(images),
+        images: toImageContracts(images, 'public'),
         publishedAt: product.publishedAt.toISOString(),
       },
       sellerProfile: toPublicSellerProfile(product.sellerProfile),

@@ -1,3 +1,7 @@
+import {
+  publishedProductData,
+  publishedSellerProfileData,
+} from '../core/media/publication-fields';
 import { createHash } from 'node:crypto';
 
 import {
@@ -11,6 +15,7 @@ import {
 } from '@bidplace/contracts';
 import {
   ConflictException,
+  Inject,
   Injectable,
   Logger,
   NotFoundException,
@@ -21,6 +26,7 @@ import {
   runReadCommittedTransaction,
   runSerializableTransaction,
 } from '../core/database';
+import { MediaLifecycleService } from '../core/media/media-lifecycle.service';
 import { ImageStore } from '../core/image-store';
 import { productSelect, toProductResponse } from '../products/products.mapper';
 import { missingProductApprovalFields } from '../products/product-requirements';
@@ -58,6 +64,8 @@ export class AdminModerationService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly imageStore: ImageStore,
+    @Inject(MediaLifecycleService)
+    private readonly media?: MediaLifecycleService,
   ) {}
 
   async listSellerProfiles(query: AdminModerationListQuery) {
@@ -312,6 +320,23 @@ export class AdminModerationService {
               })
             : null;
 
+        if (input.status === 'APPROVED' && this.media?.enabled) {
+          await this.media.enqueuePublication(
+            tx,
+            { profileId: sellerProfileId },
+            editingRevision,
+            sellerProfile.publishedRevisionId,
+            adminUserId,
+          );
+          return tx.sellerProfile.findUniqueOrThrow({
+            where: { id: sellerProfileId },
+            select: sellerProfileResponseSelect,
+          });
+        }
+        if (this.media?.enabled)
+          await this.media.cancelPublication(tx, {
+            profileId: sellerProfileId,
+          });
         await tx.sellerProfileRevision.update({
           where: { id: editingRevision.id },
           data: { status: revisionStatus, reviewedAt: new Date() },
@@ -322,7 +347,7 @@ export class AdminModerationService {
             ? await tx.sellerProfile.update({
                 where: { id: sellerProfileId },
                 data: {
-                  ...this.publishedSellerProfileData(editingRevision),
+                  ...publishedSellerProfileData(editingRevision),
                   ...approvedPhoto,
                   status:
                     sellerProfile.status === 'PENDING_REVIEW'
@@ -357,8 +382,27 @@ export class AdminModerationService {
         return updated;
       }
 
+      if (this.media?.enabled && input.status === 'SUSPENDED')
+        await this.media.enqueueRevoke(tx, { profileId: sellerProfileId });
       if (input.status === 'APPROVED') {
         this.assertSellerApprovalRequirements(sellerProfile);
+        if (this.media?.enabled && sellerProfile.publishedRevisionId) {
+          const revision = await tx.sellerProfileRevision.findUniqueOrThrow({
+            where: { id: sellerProfile.publishedRevisionId },
+          });
+          await this.media.enqueuePublication(
+            tx,
+            { profileId: sellerProfileId },
+            revision,
+            sellerProfile.publishedRevisionId,
+            adminUserId,
+            true,
+          );
+          return tx.sellerProfile.findUniqueOrThrow({
+            where: { id: sellerProfileId },
+            select: sellerProfileResponseSelect,
+          });
+        }
       }
 
       const updated = await tx.sellerProfile.update({
@@ -448,6 +492,18 @@ export class AdminModerationService {
           }
         }
 
+        if (input.status === 'APPROVED' && this.media?.enabled) {
+          await this.media.enqueuePublication(
+            tx,
+            { productId },
+            editingRevision,
+            product.publishedRevisionId,
+            adminUserId,
+          );
+          return product;
+        }
+        if (this.media?.enabled)
+          await this.media.cancelPublication(tx, { productId });
         await tx.productRevision.update({
           where: { id: editingRevision.id },
           data: { status: input.status, reviewedAt: new Date() },
@@ -457,7 +513,7 @@ export class AdminModerationService {
             ? await tx.product.update({
                 where: { id: productId },
                 data: {
-                  ...this.publishedProductData(editingRevision),
+                  ...publishedProductData(editingRevision),
                   status:
                     product.status === 'ARCHIVED' ? 'ARCHIVED' : 'APPROVED',
                   publishedRevisionId: editingRevision.id,
@@ -484,7 +540,27 @@ export class AdminModerationService {
         return updated;
       }
 
+      if (this.media?.enabled && input.status === 'ARCHIVED')
+        await this.media.enqueueRevoke(tx, { productId });
       assertProductRevisionTransition('admin', product.status, input.status);
+      if (
+        input.status === 'APPROVED' &&
+        this.media?.enabled &&
+        product.publishedRevisionId
+      ) {
+        const revision = await tx.productRevision.findUniqueOrThrow({
+          where: { id: product.publishedRevisionId },
+        });
+        await this.media.enqueuePublication(
+          tx,
+          { productId },
+          revision,
+          product.publishedRevisionId,
+          adminUserId,
+          true,
+        );
+        return product;
+      }
       const updated = await tx.product.update({
         where: { id: productId },
         data: { status: input.status },
@@ -651,74 +727,6 @@ export class AdminModerationService {
     };
 
     return allowed[current]?.has(next) ?? false;
-  }
-
-  private publishedProductData(revision: {
-    categoryId: string | null;
-    title: string | null;
-    story: string | null;
-    technique: string | null;
-    materials: string | null;
-    dimensions: string | null;
-    weight: string | null;
-    year: number | null;
-    condition: string | null;
-    uniqueness: string | null;
-    provenance: string | null;
-    city: string | null;
-    packaging: string | null;
-    deliveryInfo: string | null;
-    creationIntro: string | null;
-  }) {
-    return {
-      categoryId: revision.categoryId,
-      title: revision.title,
-      story: revision.story,
-      technique: revision.technique,
-      materials: revision.materials,
-      dimensions: revision.dimensions,
-      weight: revision.weight,
-      year: revision.year,
-      condition: revision.condition,
-      uniqueness: revision.uniqueness,
-      provenance: revision.provenance,
-      city: revision.city,
-      packaging: revision.packaging,
-      deliveryInfo: revision.deliveryInfo,
-      creationIntro: revision.creationIntro,
-    };
-  }
-
-  private publishedSellerProfileData(revision: {
-    slug: string;
-    discipline: string | null;
-    fullName: string;
-    country: string;
-    city: string | null;
-    practice: string | null;
-    biography: string | null;
-    socialLink: string | null;
-    telegramUrl: string | null;
-    instagramUrl: string | null;
-    websiteUrl: string | null;
-    publicEmail: string | null;
-    shortDescription: string | null;
-  }) {
-    return {
-      slug: revision.slug,
-      discipline: revision.discipline,
-      fullName: revision.fullName,
-      country: revision.country,
-      city: revision.city,
-      practice: revision.practice,
-      biography: revision.biography,
-      socialLink: revision.socialLink,
-      telegramUrl: revision.telegramUrl,
-      instagramUrl: revision.instagramUrl,
-      websiteUrl: revision.websiteUrl,
-      publicEmail: revision.publicEmail,
-      shortDescription: revision.shortDescription,
-    };
   }
 
   private requiredApprovedSellerPhoto(sellerProfile: {

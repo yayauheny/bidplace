@@ -12,3 +12,5 @@ export * from './pagination';
 export * from './primitives';
 export * from './seller-profile';
 export * from './user';
+
+export * from './media';

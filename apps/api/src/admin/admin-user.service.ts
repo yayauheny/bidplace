@@ -1,8 +1,10 @@
+import { MediaLifecycleService } from '../core/media/media-lifecycle.service';
 import {
   type AdminUserRevokeSessionsRequest,
   type AdminUserStatusUpdateRequest,
 } from '@bidplace/contracts';
 import {
+  Inject,
   ForbiddenException,
   Injectable,
   Logger,
@@ -41,7 +43,11 @@ function assertIncidentTargetAllowed(
 export class AdminUserService {
   private readonly logger = new Logger(AdminUserService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(MediaLifecycleService)
+    private readonly media?: MediaLifecycleService,
+  ) {}
 
   async lookupByEmail(email: string) {
     const normalizedEmail = normalizeEmail(email);
@@ -87,6 +93,14 @@ export class AdminUserService {
         return user;
       }
 
+      if (input.status === 'banned' && this.media?.enabled) {
+        const profile = await tx.sellerProfile.findUnique({
+          where: { userId },
+          select: { id: true },
+        });
+        if (profile)
+          await this.media.enqueueRevoke(tx, { profileId: profile.id });
+      }
       const updated = await tx.user.update({
         where: { id: userId },
         data: {

@@ -1,3 +1,4 @@
+import { publicMediaUrlSchema, mediaDeliverySchema } from './media';
 import { z } from 'zod';
 
 import { type ProductStatus, productStatusSchema } from './enums';
@@ -23,7 +24,21 @@ export const productImageSchema = z
   .object({
     id: uuidSchema,
     position: z.number().int().nonnegative(),
-    url: z.string().regex(/^\/api\/images\/[0-9a-f-]+$/),
+    full: z
+      .object({
+        url: publicMediaUrlSchema,
+        mimeType: z.string(),
+        byteLength: z.number().int().positive(),
+        checksum: z.string().length(64),
+        width: z.number().int().positive(),
+        height: z.number().int().positive(),
+      })
+      .strict()
+      .optional(),
+    url: z.union([
+      z.string().regex(/^\/api\/images\/[0-9a-f-]+$/),
+      publicMediaUrlSchema,
+    ]),
     mimeType: z.string(),
     byteLength: z.number().int().positive(),
     checksum: z.string().length(64),
@@ -34,7 +49,10 @@ export const productImageSchema = z
 
 export const creationStepImageSchema = z
   .object({
-    url: z.string().regex(/^\/api\/creation-steps\/[0-9a-f-]+\/image$/),
+    url: z.union([
+      z.string().regex(/^\/api\/creation-steps\/[0-9a-f-]+\/image$/),
+      publicMediaUrlSchema,
+    ]),
     mimeType: z.string(),
     byteLength: z.number().int().positive(),
     checksum: z.string().length(64),
@@ -136,7 +154,10 @@ export const creationStepOrderRequestSchema = z
   .strict();
 
 export const productResponseSchema = z
-  .object({ product: productSchema })
+  .object({
+    publication: mediaDeliverySchema.optional(),
+    product: productSchema,
+  })
   .strict();
 
 export type Product = z.infer<typeof productSchema>;

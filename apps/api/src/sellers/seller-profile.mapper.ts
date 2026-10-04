@@ -1,3 +1,9 @@
+import {
+  publicMediaAssetSelect,
+  mediaDeliverySelect,
+  publicVariant,
+  type PublicMediaAsset,
+} from '../core/media/media.mapper';
 import { sellerProfileResponseSchema } from '@bidplace/contracts';
 import { type Prisma } from '@bidplace/database';
 
@@ -19,6 +25,7 @@ export const publicSellerProfileSelect = {
   shortDescription: true,
   publishedRevision: {
     select: {
+      profilePhotoAsset: { select: publicMediaAssetSelect },
       achievements: {
         orderBy: [
           { occurredAt: { sort: 'desc', nulls: 'last' } },
@@ -33,6 +40,7 @@ export const publicSellerProfileSelect = {
           byteLength: true,
           checksum: true,
           objectKey: true,
+          mediaAsset: { select: publicMediaAssetSelect },
         },
       },
     },
@@ -44,6 +52,7 @@ export type PublicSellerProfileRecord = Prisma.SellerProfileGetPayload<{
 }>;
 
 export const sellerProfileResponseSelect = {
+  mediaOperations: mediaDeliverySelect,
   id: true,
   userId: true,
   slug: true,
@@ -113,22 +122,27 @@ export const sellerProfilePhotoSelect = {
   userId: true,
   status: true,
   profilePhotoObjectKey: true,
+  profilePhotoAssetId: true,
 } satisfies Prisma.SellerProfileSelect;
 
 export function sellerProfilePhotoUrl(slug: string): string {
   return `/api/sellers/${slug}/photo`;
 }
 
-export function toPortfolioAchievement(achievement: {
-  id: string;
-  occurredAt: Date | null;
-  occurredAtPrecision?: 'MONTH' | 'DAY' | null;
-  body: string;
-  mimeType: string | null;
-  byteLength: number | null;
-  checksum: string | null;
-  objectKey: string | null;
-}) {
+export function toPortfolioAchievement(
+  achievement: {
+    id: string;
+    occurredAt: Date | null;
+    occurredAtPrecision?: 'MONTH' | 'DAY' | null;
+    body: string;
+    mimeType: string | null;
+    byteLength: number | null;
+    checksum: string | null;
+    objectKey: string | null;
+    mediaAsset?: PublicMediaAsset | null;
+  },
+  visibility: 'private' | 'public' = 'private',
+) {
   return {
     id: achievement.id,
     occurredDate: achievement.occurredAt
@@ -152,6 +166,15 @@ export function toPortfolioAchievement(achievement: {
             mimeType: achievement.mimeType,
             byteLength: achievement.byteLength,
             checksum: achievement.checksum,
+            ...(visibility === 'public' && achievement.mediaAsset
+              ? {
+                  url:
+                    publicVariant(achievement.mediaAsset, 'PREVIEW')?.url ??
+                    (() => {
+                      throw new Error('Published achievement is not delivered');
+                    })(),
+                }
+              : {}),
           }
         : null,
   };
@@ -171,7 +194,11 @@ export function toPublicSellerProfile(
     sellerType: sellerProfile.sellerType,
     discipline: sellerProfile.discipline,
     fullName: sellerProfile.fullName,
-    profilePhotoUrl: sellerProfilePhotoUrl(sellerProfile.slug),
+    profilePhotoUrl:
+      publicVariant(
+        sellerProfile.publishedRevision?.profilePhotoAsset,
+        'PREVIEW',
+      )?.url ?? sellerProfilePhotoUrl(sellerProfile.slug),
     country: sellerProfile.country,
     city: sellerProfile.city?.trim() || null,
     practice: sellerProfile.practice ?? null,
@@ -183,8 +210,9 @@ export function toPublicSellerProfile(
     publicEmail: sellerProfile.publicEmail ?? null,
     shortDescription: sellerProfile.shortDescription,
     achievements:
-      sellerProfile.publishedRevision?.achievements.map(toPortfolioAchievement) ??
-      [],
+      sellerProfile.publishedRevision?.achievements.map((item) =>
+        toPortfolioAchievement(item, 'public'),
+      ) ?? [],
   };
 }
 
@@ -199,6 +227,7 @@ export function toSellerProfileResponse(
     profilePhotoChecksum: _profilePhotoChecksum,
     profilePhotoData: _profilePhotoData,
     editingRevision,
+    mediaOperations,
     ...sellerProfileResponse
   } = sellerProfile as SellerProfileResponseRecord & {
     profilePhotoMimeType?: string | null;
@@ -237,8 +266,10 @@ export function toSellerProfileResponse(
       ...publicFields,
       applicationStage: sellerProfileResponse.applicationStage ?? null,
       city:
-        (revisionOwnsFields ? publicFields.city : sellerProfileResponse.city)
-          ?.trim() || null,
+        (revisionOwnsFields
+          ? publicFields.city
+          : sellerProfileResponse.city
+        )?.trim() || null,
       practice: revisionOwnsFields
         ? publicFields.practice
         : sellerProfileResponse.practice,
@@ -258,12 +289,13 @@ export function toSellerProfileResponse(
         ? publicFields.websiteUrl
         : sellerProfileResponse.websiteUrl,
       publicEmail: revisionOwnsFields
-        ? publicFields.publicEmail ?? null
-        : sellerProfileResponse.publicEmail ?? null,
+        ? (publicFields.publicEmail ?? null)
+        : (sellerProfileResponse.publicEmail ?? null),
       profilePhotoUrl: sellerProfilePhotoUrl(sellerProfile.slug),
       createdAt: sellerProfile.createdAt.toISOString(),
       updatedAt: sellerProfile.updatedAt.toISOString(),
     },
+    ...(mediaOperations?.[0] ? { publication: mediaOperations[0] } : {}),
     editingRevision: editingRevision
       ? {
           id: editingRevision.id,

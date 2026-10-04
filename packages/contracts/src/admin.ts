@@ -1,3 +1,4 @@
+import { mediaDeliverySchema } from './media';
 import { z } from 'zod';
 
 import { userRoleSchema, userStatusSchema } from './enums';
@@ -394,6 +395,7 @@ export type AdminModerationListQueryInput = {
 
 export const adminSellerProfileSchema = z
   .object({
+    publication: mediaDeliverySchema.optional(),
     id: uuidSchema,
     userId: uuidSchema,
     parentStatus: sellerStatusSchema,
@@ -415,6 +417,7 @@ export const adminSellerProfilesResponseSchema = z
   .strict();
 export const adminProductSchema = z
   .object({
+    publication: mediaDeliverySchema.optional(),
     id: uuidSchema,
     publicId: z.string().regex(/^[A-Za-z0-9_-]{11}$/),
     sellerProfileId: uuidSchema,

@@ -11,6 +11,7 @@ import { AuthModule } from './auth/auth.module';
 import { CategoriesModule } from './categories/categories.module';
 import { ServerEnvModule, type ServerEnv } from './core/config';
 import { DatabaseModule } from './core/database';
+import { MediaModule } from './core/media/media.module';
 import { ImageStoreModule } from './core/image-store';
 import { MailModule } from './core/mail';
 import { ApiExceptionFilter } from './core/errors';
@@ -44,6 +45,7 @@ export class AppModule implements NestModule {
         ClockModule,
         PublicIdModule,
         ImageStoreModule,
+        MediaModule,
         MailModule,
         CategoriesModule,
         DatabaseModule,

@@ -1,3 +1,4 @@
+import { publicMediaUrlSchema, mediaDeliverySchema } from './media';
 import { z } from 'zod';
 
 import {
@@ -34,9 +35,10 @@ export const sellerPhoneHandleSchema = z
   .min(1)
   .regex(/^\+[1-9]\d{1,14}$/);
 
-const sellerProfilePhotoUrlSchema = z
-  .string()
-  .regex(/^\/api\/sellers\/[A-Za-z0-9_-]+\/photo$/);
+const sellerProfilePhotoUrlSchema = z.union([
+  z.string().regex(/^\/api\/sellers\/[A-Za-z0-9_-]+\/photo$/),
+  publicMediaUrlSchema,
+]);
 
 export const sellerDisciplineSchema = z.string().trim().min(1).max(160);
 export const sellerPublicUrlSchema = httpsUrlSchema;
@@ -109,9 +111,7 @@ export const publicSellerProfileSchema = sellerProfileSchema
               .object({
                 url: z
                   .string()
-                  .regex(
-                    /^\/api\/author-achievements\/[0-9a-f-]+\/image$/,
-                  ),
+                  .regex(/^\/api\/author-achievements\/[0-9a-f-]+\/image$/),
                 mimeType: z.string().trim().min(1),
                 byteLength: z.number().int().positive(),
                 checksum: z.string().length(64),
@@ -218,6 +218,7 @@ export const sellerProfileUpdateRequestSchema = z
 
 export const sellerProfileResponseSchema = z
   .object({
+    publication: mediaDeliverySchema.optional(),
     sellerProfile: sellerProfileSchema,
     editingRevision: z
       .object({

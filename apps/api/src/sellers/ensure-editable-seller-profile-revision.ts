@@ -84,6 +84,7 @@ export async function ensureEditableEditingRevision(
       profilePhotoByteLength: published.profilePhotoByteLength,
       profilePhotoChecksum: published.profilePhotoChecksum,
       profilePhotoObjectKey: published.profilePhotoObjectKey,
+      profilePhotoAssetId: published.profilePhotoAssetId,
     },
   });
   await tx.sellerProfile.update({
@@ -105,6 +106,7 @@ export async function ensureEditableEditingRevision(
         byteLength: source.byteLength,
         checksum: source.checksum,
         objectKey: source.objectKey,
+        mediaAssetId: source.mediaAssetId,
         data: source.data,
       },
     });

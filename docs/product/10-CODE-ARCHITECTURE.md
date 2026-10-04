@@ -3,6 +3,31 @@
 Последнее обновление: 2026-10-01
 Статус: Confirmed technical boundaries for the portfolio-first MVP implementation.
 
+## 2026-10-04 — Media lifecycle boundary (Partial)
+
+`core/media/MediaLifecycleService` owns additive `MediaAsset`, `MediaObject`,
+`MediaOperation` and durable `MediaOperationObject` manifests. The existing Nest
+process reconciles persisted operations without another worker or queue service.
+Short DB transactions record intent/attach/switch; tiered S3 writes happen outside
+transactions. Operations claim exact objects with renewable leases, so restore
+cannot overlap an unfinished DELETE of the same object. SOURCE is private and
+byte-identical; metadata-stripped WebP derivatives use immutable asset/pipeline
+keys. Cloudflare purge is a separate `PublicMediaCache` boundary.
+
+`S3_BUCKET` is private; `S3_PUBLIC_BUCKET` must differ. HTTPS
+`MEDIA_PUBLIC_BASE_URL` is a custom-domain origin. `CLOUDFLARE_ZONE_ID` and
+`CLOUDFLARE_CACHE_TOKEN` configure exact-URL purge; no secrets enter contracts.
+Public objects use browser revalidation and a separate edge TTL. SOURCE uses
+`pipelineVersion=source` as a non-null identity discriminator; derivatives use
+`p1`. SQL constraints prevent public SOURCE and invalid dimensions.
+
+Legacy ImageStore/read paths remain until importer/cutover verification. The
+backend package is **Partial**: owner/admin publication DTOs are present, while
+client waiting/FULL behavior, HTTP upload idempotency, legacy asset importer and
+release browser regression remain pending. The historical single-bucket description
+below applies to legacy records; it must not be treated as production readiness.
+See [`11-PROJECT-STATUS.md`](11-PROJECT-STATUS.md) for remaining gates.
+
 ## Applications and shared boundaries
 
 - `apps/api` is the authoritative NestJS HTTP process. Controllers parse shared Zod contracts; services own business rules and Prisma transactions. Its active product modules are Health, Auth, Analytics, Products, OTP, Password Reset, Admin, Images, Sellers and Portfolio; Categories and core database/mail/time/public-id/image-store modules support that graph. Listing, Bid, Order, Discovery, Activity, lifecycle and Socket.IO application modules are not on the default boot graph.

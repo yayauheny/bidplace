@@ -1,9 +1,16 @@
+import {
+  publicMediaAssetSelect,
+  mediaDeliverySelect,
+  publicVariant,
+  type PublicMediaAsset,
+} from '../core/media/media.mapper';
 import { productResponseSchema, type Product } from '@bidplace/contracts';
 import { type Prisma } from '@bidplace/database';
 
 import { publicSellerProfileSelect } from '../sellers/seller-profile.mapper';
 
 export const productImageBlobSelect = {
+  mediaAsset: { select: publicMediaAssetSelect },
   id: true,
   mimeType: true,
   byteLength: true,
@@ -63,6 +70,7 @@ export const productRevisionOwnerSelect = {
 } satisfies Prisma.ProductRevisionSelect;
 
 export const productSelect = {
+  mediaOperations: mediaDeliverySelect,
   id: true,
   publicId: true,
   sellerProfileId: true,
@@ -97,6 +105,7 @@ export type ProductRecord = Prisma.ProductGetPayload<{
 }>;
 
 type GalleryImage = {
+  mediaAsset?: PublicMediaAsset | null;
   id: string;
   position: number;
   mimeType: string;
@@ -113,17 +122,32 @@ type RevisionGallery = {
   }>;
 };
 
-export function toImageContracts(images: readonly GalleryImage[]) {
-  return images.map((image) => ({
-    id: image.id,
-    position: image.position,
-    url: `/api/images/${image.id}`,
-    mimeType: image.mimeType,
-    byteLength: image.byteLength,
-    checksum: image.checksum,
-    width: image.width ?? null,
-    height: image.height ?? null,
-  }));
+export function toImageContracts(
+  images: readonly GalleryImage[],
+  visibility: 'private' | 'public' = 'private',
+) {
+  return images.map((image) => {
+    const preview =
+      visibility === 'public'
+        ? publicVariant(image.mediaAsset, 'PREVIEW')
+        : null;
+    const full =
+      visibility === 'public' ? publicVariant(image.mediaAsset, 'FULL') : null;
+    if (visibility === 'public' && image.mediaAsset && !preview)
+      throw new Error('Published media is not delivered');
+    return {
+      id: image.id,
+      position: image.position,
+      url: `/api/images/${image.id}`,
+      mimeType: image.mimeType,
+      byteLength: image.byteLength,
+      checksum: image.checksum,
+      width: image.width ?? null,
+      height: image.height ?? null,
+      ...(preview ?? {}),
+      ...(full ? { full } : {}),
+    };
+  });
 }
 
 export function toRevisionGalleryImages(
@@ -195,7 +219,12 @@ export function toOwnerContractProduct(
 }
 
 export function toProductResponse(product: ProductRecord) {
-  return productResponseSchema.parse({ product: toContractProduct(product) });
+  return productResponseSchema.parse({
+    product: toContractProduct(product),
+    ...(product.mediaOperations?.[0]
+      ? { publication: product.mediaOperations[0] }
+      : {}),
+  });
 }
 
 export const portfolioCatalogProductSelect = {

@@ -1,3 +1,4 @@
+import { mediaDeliverySelect } from '../core/media/media.mapper';
 import { type Prisma } from '@bidplace/database';
 
 import { imageKey } from '../core/image-store/image-key';
@@ -63,6 +64,7 @@ export const adminSellerRevisionSelect = {
 } satisfies Prisma.SellerProfileRevisionSelect;
 
 export const adminSellerListSelect = {
+  mediaOperations: mediaDeliverySelect,
   id: true,
   userId: true,
   status: true,
@@ -88,6 +90,7 @@ export const adminSellerListSelect = {
 } satisfies Prisma.SellerProfileSelect;
 
 export const adminProductListSelect = {
+  mediaOperations: mediaDeliverySelect,
   id: true,
   publicId: true,
   sellerProfileId: true,
@@ -322,6 +325,9 @@ export function toAdminSellerProfile(
     ? selectSellerRevisionPhotoSource(revision, seller)
     : null;
   return {
+    ...(seller.mediaOperations?.[0]
+      ? { publication: seller.mediaOperations[0] }
+      : {}),
     id: seller.id,
     userId: seller.userId,
     parentStatus: seller.status,
@@ -347,7 +353,9 @@ export function toAdminSellerProfile(
                   checksum: photo.checksum,
                 }
               : null,
-            achievements: revision.achievements.map(toPortfolioAchievement),
+            achievements: revision.achievements.map((item) =>
+              toPortfolioAchievement(item),
+            ),
           },
         }
       : null,
@@ -363,6 +371,9 @@ export function toAdminProduct(
   const revision = product.editingRevision;
   const revisionImages = toRevisionGalleryImages(revision);
   return {
+    ...(product.mediaOperations?.[0]
+      ? { publication: product.mediaOperations[0] }
+      : {}),
     id: product.id,
     publicId: product.publicId,
     sellerProfileId: product.sellerProfileId,
