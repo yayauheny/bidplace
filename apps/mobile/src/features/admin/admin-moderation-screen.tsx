@@ -19,6 +19,8 @@ import { View } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
 
 import { FormPageShell } from '../../components/layout';
+import { MediaDeliveryNotice } from '../../components/shared/MediaDeliveryNotice';
+import { mediaDeliveryPending } from '../../components/shared/media-delivery';
 import { InfrastructurePageStatus } from '../../components/shared/InfrastructurePageStatus';
 import { infrastructurePageFetchStatus } from '../../components/shared/infrastructure-page-status';
 import {
@@ -149,6 +151,7 @@ export function AdminModerationScreen() {
       ),
     getNextPageParam: (page) => page.nextCursor ?? undefined,
     enabled: moderationTab === 'authors' && searchError == null,
+    refetchInterval: (query) => query.state.data?.pages.some((page) => page.sellerProfiles.some((seller) => mediaDeliveryPending(seller.publication))) ? 5000 : false,
   });
   const products = useInfiniteQuery({
     queryKey: moderationListQueryKey(
@@ -164,6 +167,7 @@ export function AdminModerationScreen() {
       ),
     getNextPageParam: (page) => page.nextCursor ?? undefined,
     enabled: moderationTab === 'works' && searchError == null,
+    refetchInterval: (query) => query.state.data?.pages.some((page) => page.products.some((product) => mediaDeliveryPending(product.publication))) ? 5000 : false,
   });
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
   const [moderationReason, setModerationReason] = useState('');
@@ -436,6 +440,7 @@ export function AdminModerationScreen() {
                       'Неизвестный статус продавца',
                     )}
                   >
+                    <MediaDeliveryNotice delivery={seller.publication} />
                     <AppText role="bodySmall" tone="secondary">
                       {presentEnum(
                         seller.sellerType,
@@ -652,6 +657,7 @@ export function AdminModerationScreen() {
                       'Неизвестный статус предмета',
                     )}
                   >
+                    <MediaDeliveryNotice delivery={product.publication} />
                     {content.images.length > 0 ? (
                       content.images.map((image) => (
                         <AdminReviewImage

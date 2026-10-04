@@ -370,6 +370,7 @@ describe('ImagesService', () => {
             sellerProfile: {
               userId: 'owner-id',
               status: 'APPROVED',
+              user: { status: 'active' },
             },
           },
         }),
@@ -402,6 +403,7 @@ describe('ImagesService', () => {
             sellerProfile: {
               userId: 'owner-id',
               status: 'APPROVED',
+              user: { status: 'active' },
             },
           },
         }),
@@ -428,6 +430,7 @@ describe('ImagesService', () => {
         sellerProfile: {
           userId: 'owner-id',
           status: 'APPROVED',
+              user: { status: 'active' },
           id: '1e14b6f1-e63b-4f6b-8131-a01f6ab4dc61',
           slug: 'seller-slug',
           sellerType: 'creator',
@@ -572,6 +575,7 @@ describe('ImagesService', () => {
       sellerProfile: {
         userId: 'owner-id',
         status: 'APPROVED',
+              user: { status: 'active' },
       },
       listings: [],
       images: [
@@ -670,6 +674,7 @@ describe('ImagesService', () => {
       sellerProfile: {
         userId: 'owner-id',
         status: 'APPROVED',
+              user: { status: 'active' },
       },
       listings: [],
       images: [
@@ -734,6 +739,7 @@ describe('ImagesService', () => {
       sellerProfile: {
         userId: 'owner-id',
         status: 'APPROVED',
+              user: { status: 'active' },
       },
       listings: [],
       images: [
@@ -794,6 +800,7 @@ describe('ImagesService', () => {
       sellerProfile: {
         userId: 'owner-id',
         status: 'APPROVED',
+              user: { status: 'active' },
       },
       listings: [],
       images: [
@@ -835,6 +842,7 @@ describe('ImagesService', () => {
       sellerProfile: {
         userId: 'owner-id',
         status: 'APPROVED',
+              user: { status: 'active' },
       },
       listings: [],
       images: [
@@ -887,6 +895,7 @@ describe('ImagesService', () => {
           sellerProfile: {
             userId: 'owner-id',
             status: 'APPROVED',
+              user: { status: 'active' },
           },
           listings: [],
           images: [],
@@ -908,6 +917,7 @@ describe('ImagesService', () => {
           sellerProfile: {
             userId: 'owner-id',
             status: 'APPROVED',
+              user: { status: 'active' },
           },
           listings: [],
           images: [],

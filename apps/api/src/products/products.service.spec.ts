@@ -245,6 +245,7 @@ describe('ProductsService', () => {
   it('keeps public portfolio visibility independent from listings', () => {
     expect(portfolioCatalogProductWhere.sellerProfile).toEqual({
       status: 'APPROVED',
+      user: { status: 'active' },
       city: { not: '' },
     });
     expect(portfolioCatalogProductWhere).not.toHaveProperty('listings');

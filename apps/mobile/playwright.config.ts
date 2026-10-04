@@ -14,6 +14,8 @@ const databaseUrl =
 
 export default defineConfig({
   testDir: './e2e',
+  // R2 transport fault scenarios have their own server in playwright.media.config.ts.
+  testIgnore: '**/work-media-lifecycle.spec.ts',
   globalTimeout: 45 * 60_000,
   timeout: 60_000,
   workers: 1,

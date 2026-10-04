@@ -121,6 +121,7 @@ export const sellerProfilePhotoSelect = {
   slug: true,
   userId: true,
   status: true,
+  user: { select: { status: true } },
   profilePhotoObjectKey: true,
   profilePhotoAssetId: true,
 } satisfies Prisma.SellerProfileSelect;

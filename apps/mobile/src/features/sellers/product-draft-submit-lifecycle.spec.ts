@@ -519,6 +519,25 @@ describe('product draft submit lifecycle', () => {
     view.unmount();
   });
 
+  it('retries an unknown upload response with the same blobs and identity without reopening the picker', async () => {
+    const image = new Blob(['image'], { type: 'image/png' });
+    harness.launchImageLibraryAsync.mockResolvedValue({ canceled: false, assets: [{ uri: 'blob:image' }] });
+    harness.addImages.mockRejectedValueOnce(new Error('response lost')).mockResolvedValue({ ok: true });
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, blob: async () => image })));
+    const view = mount();
+    await until(view.container, () => Boolean(button(view.container, 'Добавить изображения')), 'images');
+    act(() => button(view.container, 'Добавить изображения')?.click());
+    await until(view.container, () => Boolean(button(view.container, 'Повторить загрузку')), 'retry');
+    act(() => button(view.container, 'Повторить загрузку')?.click());
+    await flush();
+    expect(harness.launchImageLibraryAsync).toHaveBeenCalledTimes(1);
+    expect(harness.addImages).toHaveBeenCalledTimes(2);
+    expect(harness.addImages.mock.calls[1]).toEqual(harness.addImages.mock.calls[0]);
+    expect(harness.addImages.mock.calls[0]?.[2]).toEqual(expect.any(String));
+    vi.unstubAllGlobals();
+    view.unmount();
+  });
+
   it('does not upload a work image chosen by the previous session', async () => {
     const imageA = new Blob(['image-a'], { type: 'image/png' });
     let resolvePicker: (value: { canceled: boolean; assets: Array<{ uri: string }> }) => void = () => undefined;

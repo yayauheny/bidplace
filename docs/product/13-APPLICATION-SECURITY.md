@@ -1,6 +1,6 @@
 # bidplace — application security (engineering)
 
-Последнее обновление: 2026-09-14
+Последнее обновление: 2026-10-04
 Статус: Confirmed (engineering owner)
 
 ## 1. Purpose and non-goals
@@ -65,13 +65,15 @@ investigations. Those stay in [`09-TRUST-AND-AUCTION-INTEGRITY.md`](09-TRUST-AND
 | Sequential bounded normalize | Implemented | Metadata gate (`animated: true` for detection) → `rotate().toFormat(jpeg\|png)` with `limitInputPixels`; normalize uses `animated: false` |
 | Upload rate limit | Implemented | `@RateLimit` 10/min per user on product + creation-step upload POSTs and author achievement upload/delete |
 | Achievement / revision photo visibility | Implemented | Public achievement GET only from the published revision; owner/admin can read draft; anonymous/stranger draft reads 404. Owner application photo is private `no-store`. |
-| Canonical storage | Partial | S3-compatible `ImageStore` is required in production; live object-store drill remains pending |
+| Active author visibility | Implemented | Public Work/Author queries, catalogs and binary media require active author user in addition to existing APPROVED/published-revision guards. Admin private photo reads use `private, no-store`; `work-media-http.integration.spec.ts` + `sellers.controller.spec.ts`. |
+| Work upload replay | Implemented | Single-file HTTP key is scoped by owner/purpose/Work; checksum conflict and earlier-revision attachment reject with 409. Authz remains before stage and repeats in locked attach TX; `work-media-http.integration.spec.ts`. |
+| Canonical storage | Partial | Private SOURCE and metadata-stripped public WebP derivatives are implemented in `core/media`; existing ImageStore serves legacy records until verified cutover. Live R2/CDN/restore acceptance remains pending. Architecture owner: `10-CODE-ARCHITECTURE.md`. |
 
 Primary code: `apps/api/src/images/image-policy.ts`, `images.service.ts`, `images.controller.ts`, `portfolio.controller.ts`, `sellers.service.ts`.
 Tests: `image-policy.spec.ts`, `image-upload-safety.integration.spec.ts`, `seller-permissions.integration.spec.ts`, `portfolio-published-revision.integration.spec.ts`.
 
 **Pros:** cheap failures for non-owners; bounded decode; no animated surface in MVP catalog.  
-**Cons:** no object storage, CDN, thumbnails, or versioned mutable URLs yet; JPEG re-encode for jpeg/webp input.  
+**Cons:** live provider acceptance and legacy cutover remain unverified; legacy normalization keeps its existing JPEG/PNG behavior.
 **Revisit when:** creators need motion assets, larger prints, or off-DB media; revisit animated policy explicitly with product/design.
 
 ## 5. Rate limits and enumeration

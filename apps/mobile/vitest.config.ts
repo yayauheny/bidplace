@@ -58,6 +58,7 @@ export default defineConfig({
   plugins: [rnPrimitivesForVitest()],
   test: {
     environment: 'node',
+    setupFiles: ['./vitest/worklets.ts'],
     include: ['src/**/*.spec.ts'],
     server: {
       deps: {

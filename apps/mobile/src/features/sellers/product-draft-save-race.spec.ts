@@ -248,6 +248,11 @@ function formIsDirty() {
 }
 
 beforeEach(() => {
+  window.history.replaceState({}, '');
+  vi.spyOn(window.history, 'back').mockImplementation(() => {
+    window.history.replaceState({}, '');
+    window.dispatchEvent(new PopStateEvent('popstate', { state: {} }));
+  });
   harness.replace.mockReset();
   harness.setParams.mockReset();
   harness.dispatch.mockReset();
@@ -267,6 +272,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.restoreAllMocks();
   document.body.replaceChildren();
 });
 

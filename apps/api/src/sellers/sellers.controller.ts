@@ -130,7 +130,7 @@ export class SellersController {
     response.setHeader(
       'Cache-Control',
       getImageCacheControl({
-        isPublic: photo.status === 'APPROVED',
+        isPublic: photo.isPublic,
         kind: 'seller-photo',
       }),
     );

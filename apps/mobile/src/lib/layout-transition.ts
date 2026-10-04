@@ -17,9 +17,11 @@ export const controlLayoutTransition = LinearTransition.duration(
   .easing(controlEasing)
   .reduceMotion(ReduceMotion.System);
 
-export const sheetEnter = SlideInDown.duration(designTokens.motion.control)
-  .easing(controlEasing)
-  .reduceMotion(ReduceMotion.System);
+export const sheetEnter = (onFinished: (finished: boolean) => void) =>
+  SlideInDown.duration(designTokens.motion.control)
+    .easing(controlEasing)
+    .reduceMotion(ReduceMotion.System)
+    .withCallback(onFinished);
 
 export const sheetExit = SlideOutDown.duration(designTokens.motion.control)
   .easing(controlEasing)

@@ -56,6 +56,7 @@ test('cover frost keeps Figma regions and samples artwork once on web', async ({
               city: 'Минск',
               discipline: 'Живопись',
               practice: null,
+              biography: null,
               profilePhotoUrl: '/api/sellers/test-author/photo',
               telegramUrl: null,
               instagramUrl: null,
@@ -75,6 +76,7 @@ test('cover frost keeps Figma regions and samples artwork once on web', async ({
             city: 'Минск',
             discipline: 'Керамика',
             practice: null,
+              biography: null,
             profilePhotoUrl: '/api/sellers/frost-author/photo',
             telegramUrl: null,
             instagramUrl: null,
@@ -152,15 +154,15 @@ test('cover frost keeps Figma regions and samples artwork once on web', async ({
   const workCard = page.locator('a[href^="/product/"]').first();
   const authorCard = page.locator('a[href^="/seller/"]').first();
   expect(await workCard.boundingBox()).toMatchObject({
-    width: 366,
-    height: 488,
+    width: 264,
+    height: 352,
   });
   expect(await authorCard.boundingBox()).toMatchObject({
-    width: 366,
-    height: 488,
+    width: 322,
+    height: 430,
   });
   await expect(workCard).toHaveCSS('border-radius', '24px');
-  await expect(authorCard).toHaveCSS('border-radius', '28px');
+  await expect(authorCard).toHaveCSS('border-radius', '24px');
 
   const frostShot = await workFrost.screenshot();
   await workCard.screenshot({

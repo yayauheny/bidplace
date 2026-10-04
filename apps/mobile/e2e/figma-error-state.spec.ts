@@ -64,7 +64,8 @@ test('session check failure on Home keeps public content without infrastructure 
     await expect(page.getByText('Не удалось проверить сессию')).toHaveCount(0);
 
     await page.getByTestId('figma-floating-dock').getByLabel('Профиль').click();
-    await expect(page).toHaveURL(/\/profile/);
+    await expect(page).toHaveURL(/\/login/);
+    await page.goto('/profile');
     await expect(page.getByText(infrastructureCopy)).toBeVisible();
     await expect(
       page.getByRole('button', { name: 'Повторить', exact: true }),

@@ -7,7 +7,16 @@ const imageUploadResponseSchema = z.object({ ok: z.literal(true) }).strict();
 
 export function createImagesClient(context: RequestContext) {
   return {
-    add(productId: string, images: Blob[]) {
+    async add(productId: string, images: Blob[], idempotencyKey?: string) {
+      if (idempotencyKey) {
+        for (const [index, image] of images.entries()) {
+          await requestJson(context, `/api/products/${productId}/images`, imageUploadResponseSchema, {
+            method: 'POST', body: { images: [image] }, asFormData: true,
+            headers: { 'Idempotency-Key': `${idempotencyKey}:${index}` },
+          });
+        }
+        return { ok: true as const };
+      }
       return requestJson(
         context,
         `/api/products/${productId}/images`,

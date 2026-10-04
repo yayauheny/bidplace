@@ -47,6 +47,7 @@ vi.mock('react-native-reanimated', () => {
         record.reduceMotion = mode;
         return api;
       },
+      withCallback() { return api; },
       record,
     };
     return api;

@@ -6,6 +6,44 @@
 > commerce-schema references below do not mean that Listing, Bid, Order,
 > lifecycle, realtime, discovery or activity modules are currently booted.
 
+## 2026-10-04 — Portfolio Work runtime and critical media flow
+
+- `Implemented` (application behavior): stable single-file upload identities and
+  client retry, pending submit/completed approve replay, owner/admin media waiting
+  states with bounded polling, PREVIEW-only Work page and lazy selected FULL viewer.
+  `ImagesController/ImagesService`, `ProductsService`, `AdminModerationService`,
+  `dashboard.ts`, `api-client/images.ts`, `MediaDeliveryNotice`, `WorkGallery`.
+- `Implemented`: Work save/submit retires its history guard before navigation;
+  shared AppDialog completes focus after entering. Public Work/Author/catalog/media
+  reads require active author user; private admin photo reads are no-store.
+  HTTP/PostgreSQL regression covers upload conflicts, permissions, duplicate
+  actions, delivery outage, atomic republish, hide/restore/ban and exact purge.
+- `Implemented` (tool only): minimal dry-run/maintenance legacy importer attaches
+  all five existing owners through the same media lifecycle, verifies source and
+  retains Bytes. Disposable integration covers cross-page import, corrupt source,
+  outage/resume and rerun. It has not run on real data; no further legacy work is
+  part of the current MVP priority.
+- Critical browser evidence: all author/Work wizard owners pass in Chromium and
+  WebKit (`bidplace-work-critical-v5`: 40 passed; only two frost stale assertions
+  failed). Dedicated media v4: 2 passed, 55.5s, no retries/skips; two-file unknown
+  upload response, actual synthetic CDN WebP 200, explicit outage/recovery, FULL
+  switching and 390/1024/1440 control bounds, edit/republish/hide/revoke. The earlier
+  media v2 green is not acceptance: test commands returned unchecked 404. This
+  harness defect is corrected and recorded in the audit.
+- `Partial`: public release. Live R2/custom-domain/cache/purge, real-data cutover
+  if required, production startup/email/restore and Rules/Privacy acceptance remain
+  unverified. The package stays on `feature/portfolio-media-lifecycle`; no release
+  integration, push or PR. Full release regression/R29/T05 remains open. Home
+  Opening visual parity is post-MVP under the founder's latest scope; thresholds
+  and canonical design files are unchanged.
+- Verification checkpoint: full unit (358 API, 32 contracts, 28 API client,
+  581 mobile), integration 112, graph typecheck/lint/build 17/17 and ops 31 passed.
+  Final `pnpm verify` exit 0 (8/8 builds); frost follow-up 2 passed, 43.6s.
+  The package is ready for integration regression, not accepted as a live release.
+  Exact commands/results and remaining public-launch gates are recorded in the permanent
+  [release audit](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md), which owns
+  every finding, severity, decision and exact command/evidence.
+
 ## 2026-10-04 — R2 media lifecycle implementation in progress
 
 - `Partial`: `core/media` and the additive `20261004170000_media_lifecycle`

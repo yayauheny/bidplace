@@ -27,6 +27,7 @@ describe('SellersController photo binary response', () => {
     const sellers = {
       getPhoto: vi.fn().mockResolvedValue({
         status: 'APPROVED',
+        isPublic: true,
         profilePhotoMimeType: 'image/png',
         profilePhotoData: new Uint8Array(png),
       }),
@@ -60,5 +61,21 @@ describe('SellersController photo binary response', () => {
       undefined,
       undefined,
     );
+  });
+
+  it('does not cache an approved but non-public photo read by an administrator', async () => {
+    const sellers = {
+      getPhoto: vi.fn().mockResolvedValue({
+        status: 'APPROVED',
+        isPublic: false,
+        profilePhotoMimeType: 'image/png',
+        profilePhotoData: new Uint8Array(png),
+      }),
+    };
+    const response = responseMock();
+    await new SellersController(sellers as never).getPhoto(
+      'banned-author', { sub: 'admin-id', role: 'admin' }, response,
+    );
+    expect(response.headers.get('Cache-Control')).toBe('private, no-store');
   });
 });

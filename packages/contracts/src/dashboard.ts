@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { mediaDeliverySchema } from './media';
 
 import { categorySchema } from './category';
 import { productStatusSchema } from './enums';
@@ -20,6 +21,7 @@ export const sellerProductListResponseSchema = z
 export const sellerProductDetailResponseSchema = z
   .object({
     product: productSchema,
+    publication: mediaDeliverySchema.optional(),
     editingRevision: z
       .object({
         id: uuidSchema,

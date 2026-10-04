@@ -103,6 +103,7 @@ export type ProductDraftImagesStepProps = {
   removeOrReorderError: boolean;
 
   onChooseImages: () => void;
+  onRetryUpload?: () => void;
   onMoveImage: (imageId: string, direction: -1 | 1) => void;
   onDeleteImage: (imageId: string) => void;
 
@@ -124,6 +125,7 @@ export function ProductDraftImagesStep({
   imageSelectionError,
   removeOrReorderError,
   onChooseImages,
+  onRetryUpload,
   onMoveImage,
   onDeleteImage,
   onBackToAbout,
@@ -168,6 +170,7 @@ export function ProductDraftImagesStep({
             Не удалось загрузить изображения.
           </AppText>
         ) : null}
+        {uploadError && onRetryUpload ? <SecondaryButton label="Повторить загрузку" disabled={uploadPending || !editable} onPress={onRetryUpload} /> : null}
         {imageSelectionError ? (
           <AppText role="bodySmall" tone="danger">
             {imageSelectionError}

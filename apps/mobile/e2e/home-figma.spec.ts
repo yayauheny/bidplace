@@ -151,7 +151,7 @@ test('loading, error retry, broken media, long copy, zoom and motion', async ({
     home.release = resolveHold;
   });
   const pending = page.goto('/');
-  await expect(page.getByRole('progressbar')).toBeVisible();
+  await expect(page.getByTestId('infrastructure-page-status-loading')).toBeVisible();
   await page.screenshot({
     path: resolve(artifactDir, 'home-loading-390.png'),
   });

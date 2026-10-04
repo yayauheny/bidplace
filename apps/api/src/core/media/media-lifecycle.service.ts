@@ -94,7 +94,7 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
     userId: string,
     purpose: MediaPurpose,
     file: RawImageUpload,
-    idempotencyKey = randomUUID(),
+    idempotencyKey: string = randomUUID(),
   ) {
     if (!this.enabled) throw new Error('Media lifecycle is disabled');
     if (!/^[a-zA-Z0-9:_-]{1,100}$/.test(idempotencyKey))
@@ -784,7 +784,7 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
           profilePhotoMimeType: data.profilePhotoMimeType,
           profilePhotoByteLength: data.profilePhotoByteLength,
           profilePhotoChecksum: data.profilePhotoChecksum,
-          profilePhotoData: new Uint8Array(0),
+          profilePhotoData: operation.restore ? profile.profilePhotoData : new Uint8Array(0),
           publishedRevisionId: revision.id,
           status: 'APPROVED',
         },

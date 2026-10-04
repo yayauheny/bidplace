@@ -37,6 +37,7 @@ export const portfolioCatalogProductWhere = {
   status: 'APPROVED',
   sellerProfile: {
     status: 'APPROVED',
+    user: { status: 'active' },
     city: publicAuthorCityWhere,
   },
   ...portfolioProductContentWhere,
@@ -46,6 +47,7 @@ export const portfolioDirectProductWhere = {
   status: 'APPROVED',
   sellerProfile: {
     status: 'APPROVED',
+    user: { status: 'active' },
     city: publicAuthorCityWhere,
   },
   ...portfolioProductContentWhere,

@@ -4,6 +4,24 @@
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
+## 2026-10-04 — Work delivery states and FULL viewer
+
+- `Implemented` (mobile-web runtime): Work save/submit and browser Back preserve
+  data and settle navigation; author submit/moderation, owner/public revision
+  boundaries and privacy pass in both browsers. Owner/admin show media waiting or
+  retry error instead of claiming an undelivered publication is ready.
+- `Implemented` (targeted behavior): WorkGallery uses PREVIEW before opening;
+  selected FULL and navigation mount only inside AppDialog. Two-image browser
+  scenario verifies real synthetic WebP responses, FULL switching, focus,
+  Escape/return focus, reduced motion and controls within 390/1024/1440 bounds.
+  Shared sheet focus completes after entering without stealing focus already
+  inside. Existing tokens/components are reused; viewer controls can wrap.
+- `Partial`: full visual/native acceptance. Home Opening golden mismatch is
+  recorded post-MVP; no golden/threshold or canonical Pen/Figma changes.
+  Full release-HEAD regression and real CDN acceptance remain unverified.
+- Permanent evidence and all remaining findings:
+  [portfolio release audit](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md).
+
 ## 2026-10-04 — Auth forms and completed author exit
 
 - `Implemented` (verified behavior): registration accepts the existing optional

@@ -11,6 +11,8 @@ import type { Product, ProductStatus, SellerProductDetailResponse } from '@bidpl
 import { designTokens } from '@bidplace/design-tokens';
 
 import { AppShell, FormPageShell } from '../../components/layout';
+import { MediaDeliveryNotice } from '../../components/shared/MediaDeliveryNotice';
+import { mediaDeliveryPending } from '../../components/shared/media-delivery';
 import { InfrastructurePageStatus } from '../../components/shared/InfrastructurePageStatus';
 import {
   combineInfrastructurePageStatus,
@@ -120,15 +122,12 @@ export function ProductDraftScreen({
   const [inputsLocked, setInputsLocked] = useState(false);
   const pendingNavigation = useRef<(() => void) | null>(null);
   const persistCurrentFormRef = useRef<() => Promise<boolean>>(async () => false);
-  const browserNavigation = useRef<{
-    id: string;
-    restoring: boolean;
-    allow: boolean;
-  } | null>(null);
+  const browserNavigation = useRef<{ id: string; restoring: boolean; allow: boolean } | null>(null);
   const [pendingNavigationVersion, setPendingNavigationVersion] = useState(0);
   const [imagePendingDelete, setImagePendingDelete] = useState<string | null>(
     null,
   );
+  const pendingUpload = useRef<{ images: Blob[]; key: string } | null>(null);
   const [imageSelectionError, setImageSelectionError] = useState<string | null>(
     null,
   );
@@ -182,6 +181,7 @@ export function ProductDraftScreen({
       return committed;
     },
     enabled: Boolean(productId),
+    refetchInterval: (query) => mediaDeliveryPending(query.state.data?.publication) ? 5000 : false,
   });
   const existingProduct = productDetail.data?.product;
   const persistedRevisionUpdatedAt =
@@ -273,6 +273,7 @@ export function ProductDraftScreen({
     if (seenAuthEpoch.current === authEpoch) return;
     seenAuthEpoch.current = authEpoch;
     sessionOperation.current += 1;
+    pendingUpload.current = null;
     saveGeneration.current += 1;
     imageSelection.current += 1;
     detailReads.current += 1;
@@ -324,13 +325,26 @@ export function ProductDraftScreen({
   const invalidateSavedProduct = (savedProductId: string) =>
     invalidateOwnerWorks(queryClient, savedProductId);
 
+  const retireBrowserGuard = async () => {
+    const guard = browserNavigation.current;
+    if (!guard || guard.allow || typeof window === 'undefined' || window.history.state?.[productDraftHistoryGuardKey] !== guard.id) return;
+    guard.allow = true;
+    await new Promise<void>((resolve) => {
+      window.addEventListener('popstate', () => resolve(), { once: true });
+      window.history.back();
+    });
+  };
+
   const save = useMutation({
     mutationFn: ({ values }: ProductSaveRequest) => {
       const id = persistedProductId.current;
       const body = productDraftToWriteRequest(values);
       return id ? api.products.update(id, body) : api.products.create(body);
     },
-    onSuccess: ({ product }, request) => {
+    onSuccess: async ({ product }, request) => {
+      if (request.generation !== saveGeneration.current) return;
+      if (!canWritePrivateCache(queryClient, request.authEpoch)) return;
+      await retireBrowserGuard();
       if (request.generation !== saveGeneration.current) return;
       if (!canWritePrivateCache(queryClient, request.authEpoch)) return;
       rememberSavedProduct(product, request.values);
@@ -347,6 +361,9 @@ export function ProductDraftScreen({
     },
     onSuccess: async (result, request) => {
       if (!result) return;
+      if (request.generation !== saveGeneration.current) return;
+      if (!canWritePrivateCache(queryClient, request.authEpoch)) return;
+      await retireBrowserGuard();
       if (request.generation !== saveGeneration.current) return;
       if (!canWritePrivateCache(queryClient, request.authEpoch)) return;
       rememberSavedProduct(result.product, request.currentValues);
@@ -383,11 +400,13 @@ export function ProductDraftScreen({
       const epoch = currentAuthEpoch(queryClient);
       const id = persistedProductId.current;
       if (!id) throw new Error('Product is not saved');
-      await api.images.add(id, images);
+      const key = pendingUpload.current?.key;
+      await api.images.add(id, images, key);
       return epoch;
     },
     onSuccess: (epoch) => {
       if (!canWritePrivateCache(queryClient, epoch)) return;
+      pendingUpload.current = null;
       const id = persistedProductId.current;
       if (!id) return;
       return invalidateOwnerWorks(queryClient, id);
@@ -476,7 +495,6 @@ export function ProductDraftScreen({
       endLockedTransition();
     });
   });
-
   useEffect(() => {
     if (typeof window === 'undefined' || !form.formState.isDirty) return;
 
@@ -493,10 +511,10 @@ export function ProductDraftScreen({
     );
 
     const persistAndContinueBrowserBack = () => {
+      guard.allow = true;
       const operation = sessionOperation.current;
       void persistCurrentFormRef.current().then((persisted) => {
-        if (sessionOperation.current !== operation || !persisted) return;
-        guard.allow = true;
+        if (sessionOperation.current !== operation || !persisted) { guard.allow = false; return; }
         endLockedTransition();
         window.history.go(-2);
       });
@@ -522,12 +540,6 @@ export function ProductDraftScreen({
       window.removeEventListener('popstate', onPopState);
       if (browserNavigation.current === guard) {
         browserNavigation.current = null;
-      }
-      if (
-        !guard.allow &&
-        window.history.state?.[productDraftHistoryGuardKey] === guard.id
-      ) {
-        window.history.back();
       }
     };
   }, [form.formState.isDirty, productId]);
@@ -695,6 +707,7 @@ export function ProductDraftScreen({
         }),
       );
       if (!stillOwnsImages()) return;
+      pendingUpload.current = { images, key: crypto.randomUUID() };
       upload.mutate(images);
     } catch {
       if (!stillOwnsImages()) return;
@@ -831,6 +844,7 @@ export function ProductDraftScreen({
         </AppText>
       </View>
 
+      <MediaDeliveryNotice delivery={productDetail.data?.publication} />
       {moderationNotice ? (
         <FormSection title={moderationNotice.title}>
           <AppText role="bodySmall" tone="danger">
@@ -924,6 +938,7 @@ export function ProductDraftScreen({
           uploadError={upload.isError}
           imageSelectionError={imageSelectionError}
           removeOrReorderError={removeImage.isError || reorderImages.isError}
+          onRetryUpload={() => { if (pendingUpload.current && !upload.isPending && !transitionLock.current) upload.mutate(pendingUpload.current.images); }}
           onChooseImages={() => void chooseImages()}
           onMoveImage={reorder}
           onDeleteImage={(imageId) => setImagePendingDelete(imageId)}

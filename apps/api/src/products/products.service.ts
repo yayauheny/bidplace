@@ -361,6 +361,7 @@ export class ProductsService {
         select: {
           ...productWriteGuardSelect,
           editingRevisionId: true,
+          editingRevision: { select: { status: true } },
           publishedRevisionId: true,
           title: true,
           story: true,
@@ -374,6 +375,27 @@ export class ProductsService {
           images: { select: { id: true }, take: 1 },
         },
       });
+
+      if (
+        current?.editingRevisionId &&
+        current.editingRevision?.status === 'PENDING_REVIEW'
+      ) {
+        if (current.sellerProfile.userId !== userId)
+          throw new ForbiddenException('Product is not owned by user');
+        assertApprovedSeller(current.sellerProfile.status as SellerStatus);
+        if (current.listings.length > 0)
+          throw new ConflictException('Product is locked by an active Listing');
+        const revision = await tx.productRevision.findUniqueOrThrow({
+          where: { id: current.editingRevisionId },
+          select: productRevisionOwnerSelect,
+        });
+        const product = await tx.product.findUniqueOrThrow({
+          where: { id }, select: productSelect,
+        });
+        return productResponseSchema.parse({
+          product: toOwnerContractProduct(product, revision),
+        });
+      }
 
       if (
         current &&

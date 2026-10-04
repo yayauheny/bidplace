@@ -44,6 +44,7 @@ async function createEditableProduct(page: Page, title: string) {
   await fillProductStepOne(page, title);
   const product = await createDraftThroughStepOne(page);
   await page.goto('/profile');
+  await expect(page.getByText('Профиль автора', { exact: true })).toBeVisible();
   await page.goto(`/products/${product.id}`);
   await expect(page.getByLabel('Название')).toHaveValue(title);
   return product;

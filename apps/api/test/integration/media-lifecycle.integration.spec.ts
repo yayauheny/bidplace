@@ -15,6 +15,8 @@ import { PublicMediaCache } from '../../src/core/media/public-media-cache';
 import { syntheticServerEnv } from '../../src/core/config/synthetic-server-env';
 import { AdminModerationService } from '../../src/admin/admin-moderation.service';
 import { PostgresImageStore } from '../../src/core/image-store';
+import { importLegacyMedia } from '../../src/core/media/import-legacy-media';
+import { mediaChecksum } from '../../src/core/media/media-object-store';
 
 class MemoryStore extends MediaObjectStore {
   objects = new Map<string, StoredMedia>();
@@ -169,6 +171,47 @@ async function approve(
   });
 }
 describe('durable media lifecycle on PostgreSQL', () => {
+  it('imports all five legacy owners across bounded pages, preserves Bytes, refuses corruption and can resume after public delivery failure', async () => {
+    const s = setup();
+    const user = await prisma.user.create({ data: { email: `legacy-${randomUUID()}@test.local`, passwordHash: 'unusable', displayName: 'Legacy' } });
+    const photo = { profilePhotoData: bytes, profilePhotoMimeType: 'image/png', profilePhotoByteLength: bytes.byteLength, profilePhotoChecksum: mediaChecksum(bytes) };
+    const profile = await prisma.sellerProfile.create({ data: { userId: user.id, slug: `legacy-${randomUUID()}`, fullName: 'Legacy author', country: 'BY', city: 'Minsk', discipline: 'Автор', sellerType: 'creator', shortDescription: 'Existing portfolio', status: 'APPROVED', ...photo } });
+    const revision = await prisma.sellerProfileRevision.create({ data: { sellerProfileId: profile.id, version: 1, status: 'APPROVED', slug: profile.slug, fullName: profile.fullName, country: profile.country, city: profile.city, discipline: profile.discipline, shortDescription: profile.shortDescription, ...photo } });
+    await prisma.sellerProfile.update({ where: { id: profile.id }, data: { publishedRevisionId: revision.id, editingRevisionId: revision.id } });
+    const category = await prisma.category.create({ data: { slug: `legacy-${randomUUID()}`, name: 'Legacy' } });
+    const imageData = { data: bytes, mimeType: 'image/png', byteLength: bytes.byteLength, checksum: mediaChecksum(bytes) };
+    const product = await prisma.product.create({ data: { publicId: randomUUID().replaceAll('-', '').slice(0, 11), sellerProfileId: profile.id, categoryId: category.id, title: 'Preserved work', status: 'APPROVED', publishedAt: new Date(), images: { create: Array.from({ length: 7 }, (_, position) => ({ position, ...imageData })) } }, include: { images: true } });
+    const workRevision = await prisma.productRevision.create({ data: { productId: product.id, version: 1, status: 'APPROVED', title: product.title, categoryId: category.id, images: { create: product.images.map(image => ({ imageId: image.id, position: image.position })) } } });
+    await prisma.product.update({ where: { id: product.id }, data: { publishedRevisionId: workRevision.id, editingRevisionId: workRevision.id } });
+    const achievement = await prisma.sellerProfileRevisionAchievement.create({ data: { revisionId: revision.id, position: 0, body: 'Existing achievement', ...imageData } });
+    const step = await prisma.productCreationStep.create({ data: { productId: product.id, position: 0, title: 'Existing step', body: 'Preserved', ...imageData } });
+    const legacyStore = new PostgresImageStore(prisma as never);
+    expect(await importLegacyMedia(prisma as never, s.media, legacyStore)).toEqual({ inspected: 11, imported: 0, publications: 0 });
+    expect(await prisma.mediaAsset.count({ where: { ownerUserId: user.id } })).toBe(0);
+    await prisma.productImage.update({ where: { id: product.images[0]!.id }, data: { checksum: '0'.repeat(64) } });
+    await expect(importLegacyMedia(prisma as never, s.media, legacyStore, true)).rejects.toThrow('Legacy media verification failed');
+    await prisma.productImage.update({ where: { id: product.images[0]!.id }, data: { checksum: mediaChecksum(bytes) } });
+    s.store.failPublic = true;
+    await expect(importLegacyMedia(prisma as never, s.media, legacyStore, true)).rejects.toThrow('Legacy public delivery is incomplete');
+    expect(await prisma.productImage.count({ where: { productId: product.id, mediaAssetId: { not: null } } })).toBe(7);
+    s.store.failPublic = false;
+    expect(await importLegacyMedia(prisma as never, s.media, legacyStore, true)).toEqual({ inspected: 0, imported: 0, publications: 1 });
+    const assetsBefore = await prisma.mediaAsset.count({ where: { ownerUserId: user.id } });
+    await importLegacyMedia(prisma as never, s.media, legacyStore, true);
+    expect(await prisma.mediaAsset.count({ where: { ownerUserId: user.id } })).toBe(assetsBefore);
+    expect((await prisma.sellerProfile.findUniqueOrThrow({ where: { id: profile.id } })).profilePhotoData).toEqual(new Uint8Array(bytes));
+    expect((await prisma.sellerProfileRevision.findUniqueOrThrow({ where: { id: revision.id } })).profilePhotoData).toEqual(new Uint8Array(bytes));
+    expect((await prisma.sellerProfileRevisionAchievement.findUniqueOrThrow({ where: { id: achievement.id } })).data).toEqual(new Uint8Array(bytes));
+    expect((await prisma.productCreationStep.findUniqueOrThrow({ where: { id: step.id } })).data).toEqual(new Uint8Array(bytes));
+    for (const image of await prisma.productImage.findMany({ where: { productId: product.id }, include: { mediaAsset: { include: { objects: true } } } })) {
+      expect(image.data).toEqual(new Uint8Array(bytes));
+      expect(image.mediaAsset?.sourceProvenance).toBe('LEGACY_NORMALIZED');
+      const source = image.mediaAsset!.objects.find(object => object.variant === 'SOURCE')!;
+      expect((await s.store.get('PRIVATE', source.objectKey))?.bytes).toEqual(bytes);
+      expect(image.mediaAsset!.objects.some(object => object.tier === 'PUBLIC' && object.state === 'READY')).toBe(true);
+    }
+  });
+
   it('keeps first publication private during outage and recovers with the same intent after restart', async () => {
     const s = setup();
     const fixture = await author(s.media);

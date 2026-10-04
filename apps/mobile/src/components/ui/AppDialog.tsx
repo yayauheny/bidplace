@@ -1,8 +1,9 @@
 import * as Dialog from '@rn-primitives/dialog';
-import type { ReactNode } from 'react';
-import { useEffect, useRef } from 'react';
+import type { ElementRef, ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { Platform, ScrollView, useWindowDimensions, View } from 'react-native';
 import Animated from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
 
 import { designTokens } from '@bidplace/design-tokens';
 import {
@@ -27,7 +28,10 @@ type AppDialogProps = {
   children: ReactNode;
 };
 
-function connectedDialogOpener(active: Element | null, scope: EventTarget | null) {
+function connectedDialogOpener(
+  active: Element | null,
+  scope: EventTarget | null,
+) {
   if (!(active instanceof HTMLElement)) return null;
   if (scope instanceof Node && scope.contains(active)) return null;
   if (!active.isConnected) return null;
@@ -47,9 +51,31 @@ export function AppDialog({
   const { height, width } = useWindowDimensions();
   const viewportGutter = designTokens.space.x5;
   const returnFocusRef = useRef<HTMLElement | null>(null);
+  const closeButtonRef = useRef<ElementRef<typeof MotionPressable>>(null);
   const openRef = useRef(open);
   const instanceMountedRef = useRef(false);
   openRef.current = open;
+  const focusAfterEnter = useCallback(() => {
+    if (
+      Platform.OS !== 'web' ||
+      !openRef.current ||
+      !instanceMountedRef.current
+    )
+      return;
+    const button = closeButtonRef.current;
+    if (!(button instanceof HTMLElement)) return;
+    if (button.closest('[role="dialog"]')?.contains(document.activeElement))
+      return;
+    button.focus({ preventScroll: true });
+  }, []);
+  const entering = useMemo(
+    () =>
+      sheetEnter((finished) => {
+        'worklet';
+        if (finished) scheduleOnRN(focusAfterEnter);
+      }),
+    [focusAfterEnter],
+  );
   useEffect(() => {
     instanceMountedRef.current = true;
     return () => {
@@ -78,9 +104,15 @@ export function AppDialog({
         ? {
             onOpenAutoFocus: (event: Event) => {
               if (typeof document === 'undefined') return;
-              const opener = connectedDialogOpener(document.activeElement, event.currentTarget);
-              if (!opener) return;
-              returnFocusRef.current = opener;
+              const opener = connectedDialogOpener(
+                document.activeElement,
+                event.currentTarget,
+              );
+              if (opener) returnFocusRef.current = opener;
+              const button = closeButtonRef.current;
+              if (!button) return;
+              event.preventDefault();
+              button.focus();
             },
             onCloseAutoFocus: (event: Event) => {
               // The installed dialog focuses its trigger and cancels the
@@ -157,6 +189,7 @@ export function AppDialog({
             </AppText>
           </Dialog.Title>
           <MotionPressable
+            ref={closeButtonRef}
             accessibilityRole="button"
             accessibilityLabel="Закрыть окно"
             onPress={onClose}
@@ -216,7 +249,7 @@ export function AppDialog({
           <AppDialogFrame style={frameStyle}>
             {open ? (
               <Animated.View
-                entering={sheetEnter}
+                entering={entering}
                 exiting={sheetExit}
                 style={{ width: '100%' }}
               >

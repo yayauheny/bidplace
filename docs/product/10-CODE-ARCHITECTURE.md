@@ -1,6 +1,6 @@
 # bidplace — архитектура кода
 
-Последнее обновление: 2026-10-01
+Последнее обновление: 2026-10-04
 Статус: Confirmed technical boundaries for the portfolio-first MVP implementation.
 
 ## 2026-10-04 — Media lifecycle boundary (Partial)
@@ -21,11 +21,27 @@ Public objects use browser revalidation and a separate edge TTL. SOURCE uses
 `pipelineVersion=source` as a non-null identity discriminator; derivatives use
 `p1`. SQL constraints prevent public SOURCE and invalid dimensions.
 
-Legacy ImageStore/read paths remain until importer/cutover verification. The
-backend package is **Partial**: owner/admin publication DTOs are present, while
-client waiting/FULL behavior, HTTP upload idempotency, legacy asset importer and
-release browser regression remain pending. The historical single-bucket description
-below applies to legacy records; it must not be treated as production readiness.
+`POST /api/products/:id/images` optionally accepts `Idempotency-Key` for one
+image. Client selections retain one key per file across retries; server stage
+scopes it by owner/purpose/Work and rejects checksum conflicts or attachment to
+an earlier revision. Submit replay returns the existing pending revision;
+completed approve replay requires its exact DONE journal identity. This is limited
+to Work actions, without a global HTTP idempotency framework.
+
+Owner Work detail shares the existing publication DTO. Owner/author/admin poll
+only active delivery states and show waiting/errors. WorkGallery mounts PREVIEW;
+the selected FULL is mounted only while its shared AppDialog viewer is open.
+Public Work/Author queries and binary proxy authorization require an active
+author user as well as existing publication/revision checks; privileged private
+reads are never publicly cached.
+
+`core/media/import-legacy-media.ts` attaches all five legacy owner types using
+the existing lifecycle, checksum/length/type verification and CAS, preserving
+Bytes. Its one-time CLI defaults to dry-run; apply requires maintenance and
+verified public delivery before traffic resumes. Legacy ImageStore/read paths
+remain until importer/cutover verification. The package is **Partial** until live
+provider acceptance and release integration regression. The historical single-bucket
+description below applies to legacy records, not the target production topology.
 See [`11-PROJECT-STATUS.md`](11-PROJECT-STATUS.md) for remaining gates.
 
 ## Applications and shared boundaries
@@ -102,8 +118,9 @@ See [`11-PROJECT-STATUS.md`](11-PROJECT-STATUS.md) for remaining gates.
   Metadata-only references require a verified target object or shared source
   bytes; this tool does not copy objects from another S3 provider. The confirmed
   target is separate private/public R2 buckets with native Cloudflare CDN, a Neon
-  operation journal and retry inside NestJS (`DEC-097`). This target is not yet
-  implemented; see the [implementation plan](../audits/2026-10-04-R2-MEDIA-IMPLEMENTATION-PLAN.md). Restore
+  operation journal and retry inside NestJS (`DEC-097`). The runtime is implemented
+  in `core/media`; live provider/cutover and release checks remain open (boundary
+  above). See the [implementation result](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Restore
   verification reads sampled objects and compares their checksums without logging
   content or credentials.
 - `apps/mobile/src/lib/environment.ts` owns API origin validation and `getApiAssetUrl`, which resolves relative media paths while preserving valid absolute HTTP(S) URLs. Media components own truthful missing/error presentation without changing API visibility rules.

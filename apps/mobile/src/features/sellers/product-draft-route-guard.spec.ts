@@ -245,6 +245,30 @@ afterEach(() => {
 });
 
 describe('product draft route removal', () => {
+  it('waits for the browser guard pop before resetting the saved form or releasing navigation', async () => {
+    const back = vi.spyOn(window.history, 'back').mockImplementation(() => undefined);
+    harness.updateProduct.mockResolvedValue({ product: { ...detail().product, title: 'Dirty title' } });
+    const view = mount();
+    await until(view.container, () => view.container.querySelector<HTMLInputElement>('[aria-label="Название"]')?.value === 'Saved title', 'title');
+    setInput(view.container, 'Название', 'Dirty title');
+    await flush();
+    act(() => [...view.container.querySelectorAll('button')].find(button => button.textContent === 'Сохранить изменения')?.click());
+    await flush();
+    expect(back).toHaveBeenCalledTimes(1);
+    expect(harness.preventRemove).toBe(true);
+    expect(view.container.querySelector<HTMLInputElement>('[aria-label="Название"]')?.value).toBe('Dirty title');
+    await act(async () => {
+      window.history.replaceState({}, '');
+      window.dispatchEvent(new PopStateEvent('popstate', { state: {} }));
+      await Promise.resolve();
+    });
+    await flush();
+    expect(harness.preventRemove).toBe(false);
+    expect(view.container.querySelector<HTMLInputElement>('[aria-label="Название"]')?.disabled).toBe(false);
+    view.unmount();
+    back.mockRestore();
+  });
+
   it('keeps route removal blocked until a delayed save succeeds once', async () => {
     let resolveSave: (value: { product: ReturnType<typeof detail>['product'] }) => void = () => undefined;
     harness.updateProduct.mockImplementation(

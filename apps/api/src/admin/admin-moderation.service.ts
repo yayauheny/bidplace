@@ -458,6 +458,18 @@ export class AdminModerationService {
       const isVisibilityTransition =
         (product.status === 'APPROVED' && input.status === 'ARCHIVED') ||
         (product.status === 'ARCHIVED' && input.status === 'APPROVED');
+      if (
+        this.media?.enabled && product.status === 'APPROVED' &&
+        input.status === 'APPROVED' && input.target.kind === 'revision' &&
+        product.publishedRevisionId === input.target.id
+      ) {
+        const delivered = await tx.mediaOperation.findUnique({
+          where: { identity: `publish:${input.target.id}:${new Date(input.target.updatedAt).toISOString()}` },
+          select: { productId: true, state: true },
+        });
+        if (delivered?.productId === productId && delivered.state === 'DONE')
+          return product;
+      }
       this.assertFreshProductTarget(product, input);
 
       if (!isRevisionReview && !isVisibilityTransition) {

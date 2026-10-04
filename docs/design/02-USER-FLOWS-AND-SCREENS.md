@@ -168,6 +168,18 @@ from Figma iPhone `y=44` / tabs `y=186`. Canonical tokens
 
 ## 7. Work
 
+Work page uses PREVIEW. Opening a gallery photo mounts the selected FULL in the
+shared AppDialog viewer; closing removes it. Previous/next operate inside the
+viewer without preloading the full gallery. Legacy images without a FULL URL
+retain their existing image. Image loading/error stays with ResilientRemoteImage.
+
+Owner Work/author and admin show publication waiting or delivery error while the
+existing Nest executor retries. A first publication remains unavailable until
+media delivery; a replacement keeps the previous public revision until atomic
+publish. Successful Work save/submit completes its dirty-history guard before
+navigation. Detailed implementation evidence lives in
+[Work lifecycle result](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md).
+
 Hero chrome follows Frame 76 (`745:21332`) relative to the web gallery, not the
 Figma iOS status bar: 12px from the hero top, 20px side inset, 48×48 glass Back,
 Like hidden, Share kept. Inactive gallery dots (`745:21219`) are `color.border`

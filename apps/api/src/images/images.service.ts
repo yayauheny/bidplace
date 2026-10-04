@@ -38,6 +38,7 @@ export const productImageAuthorizationSelect = {
         select: {
           userId: true,
           status: true,
+          user: { select: { status: true } },
         },
       },
     },
@@ -61,19 +62,22 @@ export class ImagesService {
     userId: string,
     productId: string,
     files: readonly RawImageUpload[],
+    idempotencyKey?: string,
   ) {
+    if (idempotencyKey !== undefined && (!/^[a-zA-Z0-9:_-]{1,100}$/.test(idempotencyKey) || files.length !== 1))
+      throw new BadRequestException('An idempotent upload requires one image and a valid key');
     const product = await this.requireEditableOwner(
       this.prisma,
       userId,
       productId,
     );
 
+    if (this.media?.enabled) return this.addMedia(userId, productId, files, idempotencyKey);
+
     assertProductImageCapacity(
       product.images,
       files.map((file) => ({ byteLength: file.buffer.byteLength })),
     );
-
-    if (this.media?.enabled) return this.addMedia(userId, productId, files);
 
     const validated = await validateAndNormalizeProductImageUploads(files);
 
@@ -144,12 +148,13 @@ export class ImagesService {
     userId: string,
     productId: string,
     files: readonly RawImageUpload[],
+    idempotencyKey?: string,
   ) {
     const media = this.media!;
     const assets: Array<Awaited<ReturnType<MediaLifecycleService['stage']>>> =
       [];
     for (const file of files)
-      assets.push(await media.stage(userId, 'WORK_IMAGE', file));
+      assets.push(await media.stage(userId, 'WORK_IMAGE', file, idempotencyKey ? createHash('sha256').update(`${productId}:${idempotencyKey}`).digest('hex') : undefined));
     await runReadCommittedTransaction(this.prisma, async (tx) => {
       const product = await this.requireWritableOwnerInTx(
         tx,
@@ -157,13 +162,20 @@ export class ImagesService {
         productId,
       );
       await media.assertNotPending(tx, { productId });
+      const attached = await tx.productImage.findMany({
+        where: { productId, mediaAssetId: { in: assets.map((asset) => asset.id) } },
+        select: { mediaAssetId: true, revisions: { select: { revisionId: true } } },
+      });
+      if (attached.some((image) => !image.revisions.some((revision) => revision.revisionId === product.editingRevisionId)))
+        throw new ConflictException('Upload identity belongs to an earlier revision');
+      const pending = assets.filter((asset) => !attached.some((image) => image.mediaAssetId === asset.id));
       assertProductImageCapacity(
         product.images,
-        assets.map((asset) => ({ byteLength: asset.source.byteLength })),
+        pending.map((asset) => ({ byteLength: asset.source.byteLength })),
       );
       if (!product.editingRevisionId)
         throw new ConflictException('Product editing revision is missing');
-      for (const [index, asset] of assets.entries()) {
+      for (const [index, asset] of pending.entries()) {
         await media.attach(tx, asset.id);
         const row = await tx.productImage.create({
           data: {
@@ -450,7 +462,7 @@ export class ImagesService {
         product: {
           select: {
             status: true,
-            sellerProfile: { select: { userId: true, status: true } },
+            sellerProfile: { select: { userId: true, status: true, user: { select: { status: true } } } },
           },
         },
       },
@@ -463,7 +475,8 @@ export class ImagesService {
     const isAdmin = role === 'admin';
     const isPublic =
       step.product.status === 'APPROVED' &&
-      step.product.sellerProfile.status === 'APPROVED';
+      step.product.sellerProfile.status === 'APPROVED' &&
+      step.product.sellerProfile.user.status === 'active';
     if (!isOwner && !isAdmin && !isPublic) {
       throw new NotFoundException('Creation step image not found');
     }
@@ -499,6 +512,7 @@ export class ImagesService {
     const isPublic =
       image.product.status === 'APPROVED' &&
       image.product.sellerProfile.status === 'APPROVED' &&
+      image.product.sellerProfile.user.status === 'active' &&
       image.product.publishedRevisionId !== null &&
       image.revisions.some(
         ({ revisionId }) => revisionId === image.product.publishedRevisionId,

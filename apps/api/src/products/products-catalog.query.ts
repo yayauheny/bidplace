@@ -61,9 +61,11 @@ export function portfolioCatalogCte(query: PortfolioWorksQuery): Prisma.Sql {
       p."published_at"
     FROM "products" p
     INNER JOIN "seller_profiles" sp ON sp."id" = p."seller_profile_id"
+    INNER JOIN "users" author_user ON author_user."id" = sp."user_id"
     INNER JOIN "product_revisions" published
       ON published."id" = p."published_revision_id"
     WHERE sp."status" = 'APPROVED'
+      AND author_user."status" = 'active'
       AND NULLIF(BTRIM(sp."city"), '') IS NOT NULL
       AND ${portfolioProductContentSql}
       AND ${Prisma.join(filters, ' AND ')}

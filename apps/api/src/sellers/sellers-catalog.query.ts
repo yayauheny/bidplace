@@ -50,6 +50,8 @@ export function publicAuthorCte(
       author."discipline",
       author."created_at"
     FROM "seller_profiles" author
-    WHERE ${Prisma.join(filters, ' AND ')}
+    INNER JOIN "users" author_user ON author_user."id" = author."user_id"
+    WHERE author_user."status" = 'active'
+      AND ${Prisma.join(filters, ' AND ')}
   )`;
 }

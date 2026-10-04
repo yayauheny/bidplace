@@ -1,5 +1,12 @@
 # R29 preparation — E2E scope plan — 2026-10-03
 
+2026-10-04 follow-up: author/Work failures and replacement evidence are owned by
+[`12-PORTFOLIO-MVP-RELEASE-AUDIT.md`](12-PORTFOLIO-MVP-RELEASE-AUDIT.md).
+The media lifecycle has a separate browser owner,
+`work-media-lifecycle.spec.ts`, run with `playwright.media.config.ts` because it
+uses a test transport server. Integration/release regression must run both the
+maintained default browser suite and that media gate. This does not close R29/T05.
+
 Plan only. No E2E file, Playwright config, or fixture was edited. Playwright was not executed, so this document does not report durations or a smaller suite. Declaration count: 26 files under `apps/mobile/e2e`, 100 `test(` calls. That is AST, not a browser run.
 
 A DELETE PROPOSAL below is a proposal. It is not a deletion. Each one names the current owner and the replacement, or the product copy that is absent from `apps/mobile/src`.
@@ -66,7 +73,7 @@ No test in this family is a DELETE PROPOSAL.
 
 | Test | Risk | Level | Decision |
 | --- | --- | --- | --- |
-| `creator-profile.spec.ts` — `creator profile creation stages public identity, links and private handoff` | Three-step wizard: «Шаг 2 из 3», «Шаг 3 из 3», «Создать профиль», «URL-slug», «Контакт для передачи». | browser | DELETE PROPOSAL. Those strings have no match in `apps/mobile/src`. The live application is four steps. |
+| `creator-profile.spec.ts` — `four-step creator application validates public links before submit` | Four-step flow, invalid website blocks continue, public links/slug persist, submit reaches pending. | browser | REPLACED obsolete three-step owner only after canonical four-step submit passed both browsers. Details: `12-PORTFOLIO-MVP-RELEASE-AUDIT.md`. |
 | `creator-profile.spec.ts` — `public creator profile shows only public data and remains responsive` | Public name is visible, private contact and both buyer emails are absent, Share remains, 1440 and 390 do not overflow. | browser | KEEP. |
 
 Replacement for the three-step path:
@@ -158,7 +165,7 @@ S04 and S06 remain component evidence. They are not substitutes for this list.
 - `author-header-motion.spec.ts`: `shows the expanded creator identity at rest`; `parks one compact identity after the natural handoff`; `restores expanded identity on reverse without losing tabs`
 - `author-revision-flow.spec.ts`: `new author submits the four-step application`; `approved author submits an editing revision without changing the public page until approve`
 - `back-navigation-lifecycle.spec.ts`: `Home → Work → Back does not flash loading or keep Work after Home`; `inactive Home stays laid out and is not pointer or keyboard reachable`; `Work → Author → Back does not flash Author or a collapsed Work gallery`; `Search → Author → Back restores Search without a naked Home frame`; `direct Works catalog has no history Back control`; `Search → Work → Back restores Search without a Work flash after overlay`
-- `creator-profile.spec.ts`: `creator profile creation stages public identity, links and private handoff`; `public creator profile shows only public data and remains responsive`
+- `creator-profile.spec.ts`: `four-step creator application validates public links before submit`; `public creator profile shows only public data and remains responsive`
 - `discovery-launch.spec.ts`: `Works keeps filters in the URL and paginates without duplicates`; `Authors filters and sort are server-backed and URL-owned`; `Search overlay live-updates without submit`
 - `figma-cover-frost.spec.ts`: `cover frost keeps Figma regions and samples artwork once on web`
 - `figma-error-state.spec.ts`: `public API failure renders one coherent retry state`; `protected session failure reuses the shared retry state`; `session check failure on Home keeps public content without infrastructure UI`; `page infrastructure state replaces Home chrome`; `home pending uses the branded mark without loading copy`; `search active-tab failure keeps chrome and one inline state`

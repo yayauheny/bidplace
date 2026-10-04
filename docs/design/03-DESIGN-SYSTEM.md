@@ -380,6 +380,11 @@ from below, exits downward, and the backdrop fades (`motion.control`,
 `cubic-bezier(0.2, 0, 0, 1)`, reduced motion). Geometry is unchanged. The
 native branch is a stub.
 
+On web AppDialog focuses its close control when opened. A sheet also completes
+initial focus after its entering animation if focus is still outside the dialog;
+it never steals focus already inside. The existing Escape/trap/return-focus
+behavior and motion geometry remain shared with the Work FULL viewer.
+
 Filter/sort sheets are dialogs with radio/checkbox rows, local draft, and
 Apply/Reset. They are not `role="menu"`.
 

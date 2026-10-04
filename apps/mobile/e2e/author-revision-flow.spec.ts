@@ -25,8 +25,10 @@ async function completeAuthorApplication(page: Page, slug: string) {
   await page.getByRole('textbox', { name: 'Короткое описание *', exact: true }).last().fill('Первая биография.');
   await page.getByRole('button', { name: 'Продолжить' }).click();
   await expect(page).toHaveURL(/\/profile\?step=4/);
+  const submitted = page.waitForResponse(response => response.url().endsWith('/api/author/application/submit') && response.request().method() === 'POST');
   await page.getByRole('button', { name: 'Отправить на проверку' }).click();
-  await expect(page.getByText('На модерации')).toBeVisible();
+  expect((await submitted).status()).toBe(201);
+  await expect(page.getByText('На модерации', { exact: true }).last()).toBeVisible();
   await expect(page.getByRole('button', { name: 'Отправить на проверку' })).toHaveCount(0);
 }
 
@@ -55,7 +57,7 @@ test('approved author submits an editing revision without changing the public pa
 
   try {
     await page.goto('/profile');
-    await expect(page.getByText('Одобрен')).toBeVisible();
+    await expect(page.getByText('Одобрен', { exact: true }).last()).toBeVisible();
     await page.getByLabel('Имя или название').fill(draftName);
     await page.getByRole('button', { name: 'Сохранить', exact: true }).click();
     await expect(page.getByLabel('Имя или название')).toHaveValue(draftName);
@@ -63,9 +65,9 @@ test('approved author submits an editing revision without changing the public pa
     await expect(submit).toBeVisible();
     await submit.click();
     await expect(page.getByText('Заявка на проверке')).toBeVisible();
-    await expect(page.getByText('Одобрен')).toBeVisible();
+    await expect(page.getByText('Одобрен', { exact: true }).last()).toBeVisible();
     await expect(submit).toHaveCount(0);
-    await expect(page.getByLabel('Имя или название')).toBeDisabled();
+    await expect(page.getByLabel('Имя или название')).not.toBeEditable();
 
     const guest = await browser.newPage();
     await guest.goto(`/authors/${author.slug}`);

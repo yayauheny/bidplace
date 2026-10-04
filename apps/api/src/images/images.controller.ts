@@ -4,6 +4,7 @@ import {
   Controller,
   Delete,
   Get,
+  Headers,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -60,10 +61,11 @@ export class ImagesController {
     @Param('productId', new ParseUUIDPipe({ version: '4' }))
     productId: string,
     @UploadedFiles() files: RawImageUpload[] = [],
+    @Headers('idempotency-key') idempotencyKey?: string,
   ) {
     if (!files.length)
       throw new BadRequestException('At least one image is required');
-    return this.images.add(auth.sub, productId, files);
+    return this.images.add(auth.sub, productId, files, idempotencyKey);
   }
 
   @Post('products/:productId/creation-steps/:stepId/image')

@@ -653,6 +653,7 @@ describe('SellersService', () => {
         findFirst: vi.fn().mockResolvedValue({
           id: 'a0d82a10-3170-49eb-904f-a8bc87d311a5',
           publicId: 'publicId001',
+          mediaOperations: [],
           sellerProfileId: '1e14b6f1-e63b-4f6b-8131-a01f6ab4dc61',
           categoryId: null,
           title: 'Work',
@@ -736,6 +737,7 @@ describe('SellersService', () => {
         findFirst: vi.fn().mockResolvedValue({
           id: 'a0d82a10-3170-49eb-904f-a8bc87d311a5',
           publicId: 'publicId001',
+          mediaOperations: [],
           sellerProfileId: '1e14b6f1-e63b-4f6b-8131-a01f6ab4dc61',
           categoryId: null,
           title: 'Published title',
@@ -818,6 +820,7 @@ describe('SellersService', () => {
         findFirst: vi.fn().mockResolvedValue({
           id: 'a0d82a10-3170-49eb-904f-a8bc87d311a5',
           publicId: 'publicId001',
+          mediaOperations: [],
           sellerProfileId: '1e14b6f1-e63b-4f6b-8131-a01f6ab4dc61',
           categoryId: null,
           title: 'Work',
@@ -876,6 +879,7 @@ describe('SellersService', () => {
             sellerProfile: {
               userId: 'owner-id',
               status: 'APPROVED',
+              user: { status: 'active' },
               publishedRevisionId: 'published-revision-id',
             },
           },

@@ -770,6 +770,7 @@ export class SellersService {
                   userId: true,
                   status: true,
                   publishedRevisionId: true,
+                  user: { select: { status: true } },
                 },
               },
             },
@@ -782,6 +783,7 @@ export class SellersService {
     const profile = achievement.revision.sellerProfile;
     const isPublic =
       profile.status === 'APPROVED' &&
+      profile.user.status === 'active' &&
       profile.publishedRevisionId === achievement.revisionId;
     if (profile.userId !== userId && role !== 'admin' && !isPublic) {
       throw new NotFoundException('Achievement image not found');
@@ -855,6 +857,7 @@ export class SellersService {
 
     return sellerProductDetailResponseSchema.parse({
       product: toOwnerContractProduct(product, product.editingRevision),
+      ...(product.mediaOperations[0] ? { publication: product.mediaOperations[0] } : {}),
       editingRevision: product.editingRevision
         ? {
             id: product.editingRevision.id,
@@ -959,6 +962,7 @@ export class SellersService {
       where: {
         slug,
         status: 'APPROVED',
+        user: { status: 'active' },
         ...(options.requireCity ? { city: publicAuthorCityWhere } : {}),
       },
       select: publicSellerProfileSelect,
@@ -986,7 +990,7 @@ export class SellersService {
 
     const isOwner = sellerProfile.userId === userId;
     const isAdmin = role === 'admin';
-    const isPublic = sellerProfile.status === 'APPROVED';
+    const isPublic = sellerProfile.status === 'APPROVED' && sellerProfile.user.status === 'active';
 
     if (!isOwner && !isAdmin && !isPublic) {
       throw new NotFoundException('Seller profile not found');
@@ -1006,6 +1010,7 @@ export class SellersService {
 
     return {
       status: sellerProfile.status,
+      isPublic,
       profilePhotoMimeType: stored.mimeType,
       profilePhotoData: stored.bytes,
     };

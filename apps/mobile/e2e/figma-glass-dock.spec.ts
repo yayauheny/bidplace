@@ -252,6 +252,7 @@ async function mockPortfolioHome(page: Page) {
               city: 'Минск',
               discipline: 'Живопись',
               practice: null,
+              biography: null,
               profilePhotoUrl: '/api/sellers/test-author/photo',
               telegramUrl: null,
               instagramUrl: null,

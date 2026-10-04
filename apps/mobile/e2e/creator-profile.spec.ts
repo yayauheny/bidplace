@@ -6,87 +6,42 @@ import {
 } from './support/e2e-fixtures';
 import { authenticatedPage } from './support/auth-session';
 import { fillControl } from './support/fill-control';
+import { e2eApiBaseURL } from './support/e2e-env';
 
-test('creator profile creation stages public identity, links and private handoff', async ({
-  browser,
-}) => {
-  test.setTimeout(120_000);
+test('four-step creator application validates public links before submit', async ({ browser }) => {
   const { buyer } = await createBuyerFixture();
   const { context, page } = await authenticatedPage(browser, buyer);
   const slug = `creator-${Date.now()}`;
-
   try {
     await page.goto('/profile');
-    const chooserPromise = page.waitForEvent('filechooser');
+    const chooser = page.waitForEvent('filechooser');
     await page.getByRole('button', { name: 'Добавить фото' }).click();
-    await (await chooserPromise).setFiles('e2e/fixtures/profile-photo.png');
+    await (await chooser).setFiles('e2e/fixtures/profile-photo.png');
     await fillControl(page.getByLabel('Имя или название'), 'Новый автор');
-    await fillControl(page.getByLabel('URL-slug'), slug);
-    await fillControl(page.getByLabel('Дисциплина'), 'Керамика');
+    await fillControl(page.getByLabel('Никнейм'), slug);
     await fillControl(page.getByLabel('Страна'), 'BY');
     await fillControl(page.getByLabel('Город'), 'Минск');
-    await fillControl(
-      page.getByLabel('Публичная ссылка'),
-      `https://example.com/${slug}`,
-    );
-    await fillControl(
-      page.getByLabel('Короткое описание'),
-      'Авторская практика.',
-    );
     await page.getByRole('button', { name: 'Продолжить' }).click();
-
-    await expect(page.getByText('Шаг 2 из 3')).toBeVisible();
-    await fillControl(page.getByLabel('Telegram'), 'not-a-url');
-    await fillControl(page.getByLabel('Instagram'), 'not-a-url');
-    await fillControl(page.getByLabel('Сайт'), 'not-a-url');
-    await fillControl(
-      page.getByLabel('Основная публичная ссылка'),
-      'not-a-url',
-    );
-    await expect(
-      page.getByText('Введите HTTPS-ссылку, начиная с https://'),
-    ).toHaveCount(4);
-    await expect(
-      page.getByRole('button', { name: 'Продолжить' }),
-    ).toBeDisabled();
-    await fillControl(
-      page.getByLabel('Telegram'),
-      `https://t.me/${slug.replaceAll('-', '_')}`,
-    );
-    await fillControl(
-      page.getByLabel('Instagram'),
-      `https://instagram.com/${slug}`,
-    );
-    await fillControl(page.getByLabel('Сайт'), `https://example.com/${slug}`);
-    await fillControl(
-      page.getByLabel('Основная публичная ссылка'),
-      `https://example.com/${slug}`,
-    );
+    await expect(page).toHaveURL(/\/profile\?step=2/);
+    await fillControl(page.getByLabel('Сайт', { exact: true }).last(), 'not-a-url');
+    await expect(page.getByRole('button', { name: 'Продолжить' })).toBeDisabled();
+    await fillControl(page.getByLabel('Telegram', { exact: true }).last(), `https://t.me/${slug.replaceAll('-', '_')}`);
+    await fillControl(page.getByLabel('Instagram', { exact: true }).last(), 'https://instagram.com/portfolio_author');
+    await fillControl(page.getByLabel('Сайт', { exact: true }).last(), `https://example.com/${slug}`);
     await page.getByRole('button', { name: 'Продолжить' }).click();
-
-    await expect(page.getByText('Шаг 3 из 3')).toBeVisible();
-    await fillControl(page.getByLabel('Контакт для передачи'), 'creator');
-    await expect(
-      page.getByText('Введите Telegram @username или https://t.me/username'),
-    ).toBeVisible();
-    await expect(
-      page.getByRole('button', { name: 'Создать профиль' }),
-    ).toBeDisabled();
-    await fillControl(
-      page.getByLabel('Контакт для передачи'),
-      '@handoff_creator',
-    );
-    const responsePromise = page.waitForResponse(
-      (response) =>
-        response.url().endsWith('/api/seller/profile') &&
-        response.request().method() === 'POST',
-    );
-    await page.getByRole('button', { name: 'Создать профиль' }).click();
-    expect((await responsePromise).ok()).toBeTruthy();
-    await expect(page.getByText('На модерации')).toBeVisible();
-  } finally {
-    await context.close();
-  }
+    await expect(page).toHaveURL(/\/profile\?step=3/);
+    await fillControl(page.getByRole('textbox', { name: 'Дисциплина *', exact: true }).last(), 'Керамика');
+    await fillControl(page.getByRole('textbox', { name: 'Короткое описание *', exact: true }).last(), 'Авторская практика.');
+    await page.getByRole('button', { name: 'Продолжить' }).click();
+    await expect(page).toHaveURL(/\/profile\?step=4/);
+    const submitted = page.waitForResponse(response => response.url().endsWith('/api/author/application/submit') && response.request().method() === 'POST');
+    await page.getByRole('button', { name: 'Отправить на проверку' }).click();
+    expect((await submitted).status()).toBe(201);
+    await expect(page.getByText('На модерации', { exact: true }).last()).toBeVisible();
+    const profile = await (await context.request.get(`${e2eApiBaseURL}/api/seller/profile`)).json();
+    expect(profile.sellerProfile.slug).toBe(slug);
+    expect(profile.sellerProfile.websiteUrl).toBe(`https://example.com/${slug}`);
+  } finally { await context.close(); }
 });
 
 test('public creator profile shows only public data and remains responsive', async ({

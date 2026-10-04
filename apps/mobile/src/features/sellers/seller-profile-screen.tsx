@@ -10,6 +10,8 @@ import { ApiClientError } from '@bidplace/api-client';
 import type { SellerProfileResponse } from '@bidplace/contracts';
 import { designTokens } from '@bidplace/design-tokens';
 import { AppShell, FormPageColumns, FormPageShell } from '../../components/layout';
+import { MediaDeliveryNotice } from '../../components/shared/MediaDeliveryNotice';
+import { mediaDeliveryPending } from '../../components/shared/media-delivery';
 import { InfrastructurePageStatus } from '../../components/shared/InfrastructurePageStatus';
 import { infrastructurePageFetchStatus } from '../../components/shared/infrastructure-page-status';
 import { AppDialog, AppText, FormSection, ImagePlaceholder, PageHeader, PrimaryButton, ResilientRemoteImage, SecondaryButton } from '../../components/ui';
@@ -162,6 +164,7 @@ function useProfileData() {
     },
     retry: false,
     structuralSharing: keepConfirmedPendingProfile,
+    refetchInterval: (query) => mediaDeliveryPending(query.state.data?.publication) ? 5000 : false,
   });
 }
 
@@ -655,6 +658,7 @@ export function SellerProfileScreen() {
         {isApplicationWizard ? <SecondaryButton label="Закрыть" disabled={revisionSubmitActive || inputsLocked || achievementWriteActive} onPress={() => requestExit('home')} /> : null}
       </View>
       {isApplicationWizard ? <SellerProfileCreationStepSelector profileStep={profileStep} /> : null}
+      <MediaDeliveryNotice delivery={query.data?.publication} />
       {isApplicationWizard && profileStep > 1 ? <SecondaryButton label="Назад" width="block" loading={saveMutation.isPending} disabled={saveMutation.isPending || accountLogout.busy || revisionSubmitActive || inputsLocked || achievementWriteActive} onPress={() => void goToPreviousStep()} /> : null}
       {(!isApplicationWizard || profileStep === 1) ? <FormPageColumns sidebarFirstOnCompact sidebar={<FormSection title="Фото профиля" description="Квадратный портрет или логотип автора.">
         {preview && !photoFailed ? photoBlob ? <LocalPreviewImage source={{ uri: preview }} resizeMode="cover" style={{ width: '100%', aspectRatio: 1, borderRadius: designTokens.radius.image }} onError={() => setPhotoFailed(true)} /> : <ResilientRemoteImage uri={preview} component="AuthorPhoto" accessibilityLabel="Фото профиля" fallbackLabel="Фото профиля недоступно" style={{ width: '100%', aspectRatio: 1, borderRadius: designTokens.radius.image }} contentFit="cover" /> : <ImagePlaceholder ratio={1} label="Фото профиля недоступно или не выбрано" style={{ width: '100%', aspectRatio: 1 }} />}
