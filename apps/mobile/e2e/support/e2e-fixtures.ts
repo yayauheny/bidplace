@@ -693,6 +693,7 @@ export async function createIsolatedWorksPaginationFixture(): Promise<{
 
 export async function createIsolatedAuthorsPaginationFixture(): Promise<{
   tag: string;
+  searchQuery: string;
   city: string;
   pageTwoSlug: string;
   slugs: string[];
@@ -701,6 +702,7 @@ export async function createIsolatedAuthorsPaginationFixture(): Promise<{
   const suffix = randomUUID().slice(0, 8);
   const tag = `e2epage2tag${suffix}`;
   const city = `e2epage2city${suffix}`;
+  const searchQuery = `Page2 author ${suffix}`;
   const prisma = new PrismaClient({
     datasources: { db: { url: databaseUrl } },
   });
@@ -734,7 +736,7 @@ export async function createIsolatedAuthorsPaginationFixture(): Promise<{
           userId: author.id,
           slug,
           sellerType: 'creator',
-          fullName: `Page2 author ${suffix} ${index}`,
+          fullName: `${searchQuery} ${index}`,
           discipline: tag,
           country: 'BY',
           city,
@@ -751,6 +753,7 @@ export async function createIsolatedAuthorsPaginationFixture(): Promise<{
     }
     return {
       tag,
+      searchQuery,
       city,
       pageTwoSlug: slugs[8]!,
       slugs,

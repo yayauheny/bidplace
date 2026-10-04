@@ -29,14 +29,16 @@
 | T05 | Session error test ждёт неверный Dock destination | P2 | figma-error-state, real auth retry | Ложный failure | Сейчас: unknown auth → login; explicit protected retry → profile; подтверждено browser gate | Два разных подтверждённых состояния auth |
 | T06 | Home loading test ждёт progressbar | P3 | home-figma / branded InfrastructurePageStatus | Не блокирует | Сейчас: current branded owner, остальные state assertions проходят | UI уже заменён ранее, production не менялся |
 | T07 | Browser Back fixture уходит до завершения profile setup | P2 | WebKit dirty/clean Back /cabinet | Ложный failure критического flow | Сейчас: ждать profile content; оба Back проходят | Expected URL и saved-value assertions сохранены |
+| T08 | Search overlay tabs требует отсутствие load-more при наличии page 2 | P2 stale test | integration 3d06036, оба engine; Works probe page 2 passed | Только stale assertion; runtime pagination уже существовал до этого пакета | Сейчас: server pagination boundary в mixed-data owner + обязательные isolated Search page-2 owners | Реальный page=2 на 13 работах подтверждён, existing search-panes units покрывают Works/Authors; production не меняется |
 | V01 | Home Opening visual mismatch >0.12 | P3 | visual/home-opening-figma, оба браузера | Не блокирует portfolio lifecycle | Post-MVP; тест остаётся failing, golden/threshold не меняются | Основатель исключил косметику из текущего scope |
 | E01 | Worklets не исполняется в Node Vitest | P3 | Full mobile unit import | Только test runtime | Сейчас: Vitest bridge adapter, full mobile 581 passed | Реальный bridge проверяется Expo/browser; dependency уже установлен |
 | E02 | Prisma advisory lock timeout под parallel build | P3 | Full integration setup | Только test execution | Сейчас: один worker, без увеличения timeout; 112 passed | Разные schemas используют общий migration lock; результаты не считать production defects |
 | E03 | Изменение test copy во время browser run включило HMR | P3 | Первый диагностический прогон | Только недостоверное evidence | Сейчас: такой run отброшен, все результаты подтверждены на frozen source | Никогда не sync/build shared packages во время browser verification |
 | E04 | Media test routes зарегистрированы после Nest 404-handler; команды fault/tick возвращали 404 | P1 verification | bidplace-work-media-final/v3.log, проверка HTTP statuses | Прежний green НЕ доказывает R2 outage/CDN image delivery | Сейчас: routes до app.init, явный existing tick, fault/status/WebP assertions; media v4: 2 passed, HTTP/WebP asserted | Предыдущий test игнорировал ответы команд и image 404; production retry не меняется |
+| E05 | Search authors probe использовал q=discipline, которое не входит в text-search поля | P3 test fixture | initial search proof: works 2 passed, authors 2 failed | Не production defect | Сейчас: explicit fullName-prefix query в isolated fixture, final proof 6/6 passed | q ищет fullName/slug/shortDescription; tag — отдельный filter |
 | L01 | Неизвестен состав ценных legacy данных | P2 conditional | Cutover inventory не подключался | Блокирует только перенос нужных данных | Минимальный importer уже сделан в предыдущем scope и проверен; больше tooling не делать | Не запускать на личной/production БД без inventory/backup/maintenance |
 | D01 | Live R2 custom domain/cache/purge не проверен | P1 deployment gate | Transport doubles, внешние bucket/domain не подключались | До публичного traffic нужно подтвердить | Deployment acceptance, не новый code scope | Green application tests не доказывают Cloudflare config или ≤5 минут purge |
-| D02 | Release integration HEAD ещё не собран/проверен | P1 release gate | feature/portfolio-mvp-release | Нельзя назвать release branch ready | После critical gate подготовить handoff; не merge автоматически | Существует отдельный test branch и итоговый full regression не проводился |
+| D02 | Release HEAD ещё не проверен; temporary integration кандидат собран | P1 release gate | feature/portfolio-mvp-release / integration 3d06036 | Нельзя назвать release branch ready | Сейчас: combined verify/browser regression; release ref не менять | Media/Work 047f2c7 + deterministic page-2 owners b9d0f5f; full regression выполняется |
 | D03 | Production startup/TLS, реальная email delivery и restore drill не подтверждены | P1 deployment gate | RFC §16.9, test email transport; площадка/SMTP не выбраны в сообщениях основателя | Не code blocker этого прохода; проверить до public traffic | Deployment pass, без hosting/SMTP implementation здесь | Unit/browser doubles не доказывают внешнюю доставку или production конфигурацию; production env fail closed |
 | D04 | Portfolio Rules/Privacy ещё не подготовлены по сообщению основателя | P1 public-launch gate | Ответ основателя, RFC §13 / §16.6 | До первого публичного запуска нужен минимальный пакет фактического portfolio продукта | Отдельный launch gate; технические проверки не останавливает | Не создавать marketplace документы, не выдавать technical green за выполнение RFC legal gate |
 
@@ -254,3 +256,48 @@ D01/D03/D04 gates. Cosmetic V01 и небольшие W08/W10 не задерж�
    release и проверять release HEAD. Deploy/startup/live-provider acceptance
    выполняются по существующему launch checklist; hosting/SMTP/Google/monitoring
    и новая infrastructure не реализовывались здесь.
+
+## Integration execution checkpoint
+
+`3d060361db61536d673f1da8aa32207f05171ef9` — temporary integration candidate,
+release ref остаётся `6c0fac75dc3557ffbe2aad1824c6b0585028a1b3`.
+Из test package перенесены четыре pagination files; author fixes уже содержатся
+в media package. Старые product-status записи не копировались поверх новых.
+Полный `pnpm verify` на integration candidate завершён: exit 0; API 358, mobile
+581, integration 112; build 8/8. Evidence:
+`/private/tmp/bidplace-portfolio-integration-verify.log`. Source manifest после
+verify совпадает по всем tracked files. Default browser matrix выполняется, 208 cases / 1 worker / 0 retries.
+Chromium достиг Work wizard; author/auth/page-2/ShareSheet/Home states прошли,
+Chromium завершён: новый Search overlay tabs failure T08 и ожидаемый visual V01.
+Work/auth/author/page-2 owners прошли; WebKit выполняется. Итог пока не зафиксирован.
+Tracked source SHA256 manifest сохранён в
+`/private/tmp/bidplace-portfolio-integration-source.json`. Test copy без dotenv.
+Для browser-run будет изменён только ожидаемый порт disposable fence на 55433,
+который принадлежит этому прогону; production/root fence сохраняет 5432.
+Во время browser matrix code/build shared packages не меняются.
+
+First full integration matrix completed on 3d06036: **204 passed, 4 failed,
+0 skipped, 0 retries, 11.7m, exit 1**. Both failures per browser: T08 Search
+expects no load-more despite existing pagination, and V01 Home Opening visual.
+All author/auth/Work/page-2 runtime owners passed in both engines. Evidence:
+`/private/tmp/bidplace-portfolio-integration-browser.log`, `.json`, `-artifacts/`.
+T08 will be reproduced with 13 matching works / 9 authors before updating its
+stale expectation. Durable fix: preserve current runtime pagination and assert
+actual server page boundary; acceptable workaround: conditional check in existing
+mixed-data owner only; hack: remove the assertion with no replacement — rejected.
+
+Search proof before stale assertion update: works page 2 passed Chromium/WebKit;
+authors 2 failures caused by new probe fixture query E05, not runtime. Evidence:
+`/private/tmp/bidplace-portfolio-search-proof.log`, `.json`, `-artifacts/`.
+The author fixture now exposes its fullName prefix explicitly; no query contract
+change. Mixed-data Search owner now checks the real first response's pagination.
+Existing runtime `WorksSearchPane/AuthorsSearchPane` and load-more unit behavior
+are unchanged. Full final matrix and dedicated media gate are next.
+
+Search final targeted gate: **6 passed, 0 failed, 0 skipped, 0 retries,
+48.9s, exit 0**, both engines. Required Works 13→12+1 and Authors 9→8+1,
+same q/sort on page 2, last href once, no duplicates, no button after last page;
+updated tabs/history owner passed. Lint and mobile typecheck exit 0. Evidence:
+`/private/tmp/bidplace-portfolio-search-final.log`, `.json`, `-artifacts/`.
+T08 confirmed **STALE TEST**, no production Search changes. E05 corrected.
+Final integration commit is being saved; then full verify/default/media gates.

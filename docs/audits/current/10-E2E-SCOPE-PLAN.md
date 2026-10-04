@@ -30,7 +30,10 @@ Implemented in the temporary integration package from `b9d0f5f`:
   owners; their URL, filters, reset, sort, Back and label assertions remain.
 - Search empty/error owners remain because their failure modes differ.
 
-Verification on the combined integration HEAD is pending; see the release audit.
+`search-pagination.spec.ts` separately owns mandatory Search Works/Authors page 2
+with isolated queries; the mixed-data tabs owner checks actual response pagination.
+Runtime pagination pre-dates this package. Verification on the combined final HEAD
+is pending; see the release audit.
 
 ## Family decisions
 

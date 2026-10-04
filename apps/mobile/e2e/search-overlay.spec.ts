@@ -2,6 +2,8 @@ import { resolve } from 'node:path';
 
 import { expect, test, type Page } from '@playwright/test';
 
+import { portfolioWorksResponseSchema } from '@bidplace/contracts';
+
 import { e2eEvidenceDir } from './support/evidence-dir';
 
 const apiPort = process.env.E2E_API_PORT ?? '3001';
@@ -83,11 +85,17 @@ test('Search overlay tabs, live query, navigation, and close', async ({
     path: resolve(e2eEvidenceDir, 'search-overlay/authors-empty-q-390.png'),
   });
 
+  const initialWorksResponse = page.waitForResponse((response) =>
+    isListResponse(response, '/api/works'),
+  );
   await overlay.getByRole('tab', { name: 'Работы' }).click();
+  const { pagination } = portfolioWorksResponseSchema.parse(
+    await (await initialWorksResponse).json(),
+  );
   await expect(overlay.locator('a[href^="/product/"]').first()).toBeVisible();
   await expect(
     overlay.getByRole('button', { name: /Показать ещё/ }),
-  ).toHaveCount(0);
+  ).toHaveCount(pagination.page * pagination.limit < pagination.total ? 1 : 0);
   await page.screenshot({
     path: resolve(e2eEvidenceDir, 'search-overlay/works-empty-q-390.png'),
   });

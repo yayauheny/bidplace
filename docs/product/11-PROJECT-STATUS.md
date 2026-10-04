@@ -12,8 +12,13 @@
   from release `6c0fac7` and includes the verified media/Work package `047f2c7`.
   The release ref is unchanged. Deterministic catalog page-2 owners from `b9d0f5f`
   are included; earlier conditional owners retain filters/sort/Back coverage.
-- `Needs verification`: full `pnpm verify`, default Chromium/WebKit regression
-  and dedicated media gate on this combined HEAD. The permanent
+- `Implemented` (existing Search behavior, test alignment): Search Works/Authors
+  support load-more through their existing query hooks. The older first-page-only
+  Search record below is historical. Mandatory isolated Search page-2 owners and
+  server-derived button expectations replace a stale no-load-more assertion.
+- `Needs verification`: final default Chromium/WebKit regression and dedicated
+  media gate. Combined `3d06036` verify passed; its full browser run had 204 passed
+  / 4 failed (two stale Search assertions and two post-MVP visual failures). The permanent
   [release audit](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md) owns findings
   and results. R29/T05 and external public-launch gates remain open.
 
