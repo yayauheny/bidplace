@@ -905,7 +905,12 @@ export class SellersService {
     }
 
     const sellers = await this.prisma.sellerProfile.findMany({
-      where: { id: { in: pageRows.map((row) => row.id) } },
+      where: {
+        id: { in: pageRows.map((row) => row.id) },
+        status: 'APPROVED',
+        user: { status: 'active' },
+        ...(options.requireCity ? { city: publicAuthorCityWhere } : {}),
+      },
       select: {
         ...publicSellerProfileSelect,
         _count: {

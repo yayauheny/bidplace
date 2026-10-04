@@ -1,6 +1,6 @@
 # bidplace — application security (engineering)
 
-Последнее обновление: 2026-10-04
+Последнее обновление: 2026-10-05
 Статус: Confirmed (engineering owner)
 
 ## 1. Purpose and non-goals
@@ -66,6 +66,7 @@ investigations. Those stay in [`09-TRUST-AND-AUCTION-INTEGRITY.md`](09-TRUST-AND
 | Upload rate limit | Implemented | `@RateLimit` 10/min per user on product + creation-step upload POSTs and author achievement upload/delete |
 | Achievement / revision photo visibility | Implemented | Public achievement GET only from the published revision; owner/admin can read draft; anonymous/stranger draft reads 404. Owner application photo is private `no-store`. |
 | Active author visibility | Implemented | Public Work/Author queries, catalogs and binary media require active author user in addition to existing APPROVED/published-revision guards. Admin private photo reads use `private, no-store`; `work-media-http.integration.spec.ts` + `sellers.controller.spec.ts`. |
+| Catalog hydration visibility | Implemented | Catalog hydration repeats APPROVED/active/published checks after selecting IDs. Controlled PostgreSQL hide/suspend/ban interleavings in `portfolio-filters.integration.spec.ts` exclude revoked records. Counts retain the first-query snapshot. |
 | Work upload replay | Implemented | Single-file HTTP key is scoped by owner/purpose/Work; checksum conflict and earlier-revision attachment reject with 409. Authz remains before stage and repeats in locked attach TX; `work-media-http.integration.spec.ts`. |
 | Canonical storage | Partial | Private SOURCE and metadata-stripped public WebP derivatives are implemented in `core/media`; existing ImageStore serves legacy records until verified cutover. Live R2/CDN/restore acceptance remains pending. Architecture owner: `10-CODE-ARCHITECTURE.md`. |
 

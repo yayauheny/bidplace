@@ -5,6 +5,9 @@ import { portfolioCatalogCte } from '../../src/products/products-catalog.query';
 import { ProductsService } from '../../src/products/products.service';
 import { SellersService } from '../../src/sellers/sellers.service';
 import { publicAuthorCte } from '../../src/sellers/sellers-catalog.query';
+import { PrismaService } from '../../src/core/database';
+import { ImageStore } from '../../src/core/image-store';
+import { PublicIdService } from '../../src/core/public-id';
 import {
   createHttpTestApp,
   HttpTestClient,
@@ -250,6 +253,118 @@ const previousAuthorFacetSql = Prisma.sql`
   FROM filtered`;
 
 describe('portfolio catalog SQL filters and pagination', () => {
+  it.each(['hide', 'suspend', 'ban', 'unpublish'] as const)(
+    'excludes a Work when %s commits between catalog selection and hydration',
+    async (transition) => {
+      const fixture = await createPermissionFixture(prisma);
+      const target = await publishWork({
+        sellerProfileId: fixture.sellers.approved.profileId,
+        categoryId: fixture.categoryId,
+        publicId: 'raceWork001',
+        title: 'Hydration race target',
+        materials: 'Canvas',
+        publishedAt: new Date('2026-09-02T00:00:00.000Z'),
+      });
+      const control = await publishWork({
+        sellerProfileId: fixture.sellers.otherApproved.profileId,
+        categoryId: fixture.categoryId,
+        publicId: 'raceWork002',
+        title: 'Hydration race control',
+        materials: 'Canvas',
+        publishedAt: new Date('2026-09-01T00:00:00.000Z'),
+      });
+      let hydrated = false;
+      const racePrisma = prisma.$extends({
+        query: {
+          product: {
+            async findMany({ args, query }) {
+              expect(hydrated).toBe(false);
+              expect(args.where?.id).toEqual({ in: [target.id, control.id] });
+              if (transition === 'hide' || transition === 'unpublish') {
+                await prisma.product.update({
+                  where: { id: target.id },
+                  data: transition === 'hide'
+                    ? { status: 'ARCHIVED' }
+                    : { publishedRevisionId: null },
+                });
+              } else {
+                await prisma.sellerProfile.update({
+                  where: { id: fixture.sellers.approved.profileId },
+                  data: transition === 'suspend'
+                    ? { status: 'SUSPENDED' }
+                    : { user: { update: { status: 'banned' } } },
+                });
+              }
+              hydrated = true;
+              return query(args);
+            },
+          },
+        },
+      });
+      const service = new ProductsService(
+        racePrisma as unknown as PrismaService,
+        http.app.get(PublicIdService),
+      );
+
+      const response = await service.listPortfolio({
+        page: 1, limit: 8, sort: 'newest', q: 'Hydration race',
+      });
+
+      expect(hydrated).toBe(true);
+      expect(response.items.map((item) => item.product.publicId)).toEqual([control.publicId]);
+      expect(response.pagination).toEqual({ page: 1, limit: 8, total: 2 });
+    },
+  );
+
+  it.each(['suspend', 'ban'] as const)(
+    'excludes an Author when %s commits between catalog selection and hydration',
+    async (transition) => {
+      const fixture = await createPermissionFixture(prisma);
+      const targetId = fixture.sellers.approved.profileId;
+      const controlId = fixture.sellers.otherApproved.profileId;
+      await prisma.sellerProfile.update({
+        where: { id: targetId },
+        data: { fullName: 'Hydration author target' },
+      });
+      await prisma.sellerProfile.update({
+        where: { id: controlId },
+        data: { fullName: 'Hydration author control' },
+      });
+      let hydrated = false;
+      const racePrisma = prisma.$extends({
+        query: {
+          sellerProfile: {
+            async findMany({ args, query }) {
+              expect(hydrated).toBe(false);
+              expect(args.where?.id).toEqual({ in: [controlId, targetId] });
+              await prisma.sellerProfile.update({
+                where: { id: targetId },
+                data: transition === 'suspend'
+                  ? { status: 'SUSPENDED' }
+                  : { user: { update: { status: 'banned' } } },
+              });
+              hydrated = true;
+              return query(args);
+            },
+          },
+        },
+      });
+      const service = new SellersService(
+        racePrisma as unknown as PrismaService,
+        http.app.get(ImageStore),
+      );
+
+      const response = await service.listPortfolioAuthors(
+        { page: 1, limit: 8, sort: 'name', q: 'Hydration author' },
+        { requireCity: true },
+      );
+
+      expect(hydrated).toBe(true);
+      expect(response.sellers.map((item) => item.sellerProfile.fullName)).toEqual(['Hydration author control']);
+      expect(response.pagination).toEqual({ page: 1, limit: 8, total: 2 });
+    },
+  );
+
   it('returns normalized facets from public authors and published works only', async () => {
     const fixture = await createPermissionFixture(prisma);
     const guest = new HttpTestClient(http.baseUrl, 'http://localhost:8081');

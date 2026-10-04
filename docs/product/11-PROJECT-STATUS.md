@@ -6,6 +6,23 @@
 > commerce-schema references below do not mean that Listing, Bid, Order,
 > lifecycle, realtime, discovery or activity modules are currently booted.
 
+## 2026-10-05 — Catalog visibility during concurrent revoke
+
+- `Implemented`: `ProductsService.loadPortfolioCatalogPage` and
+  `SellersService.listPortfolioAuthors` reapply existing public visibility on
+  hydration. Hide, author suspension and user ban committed after catalog ID
+  selection exclude the target; an unaffected item keeps its order. Six real
+  PostgreSQL interleavings in `portfolio-filters.integration.spec.ts` pass,
+  including an unpublished-revision negative case.
+- `Partial`: A02/R23 consistency beyond visibility. Total remains from ID
+  selection; a concurrent revoke can shorten a page. Search/filter changes on
+  republish and a consistent snapshot are outside this local fix.
+- `Needs verification`: transfer and regression on the next release HEAD.
+  Backend typecheck/build (9 tasks), lint, targeted ProductsService tests and
+  the catalog integration file pass. Exact evidence and current branch are in
+  the [permanent audit](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md).
+  UI, public contracts, Prisma and deployment configuration are unchanged.
+
 ## 2026-10-04 — Portfolio release verification
 
 - `Implemented` (release code verification): `feature/portfolio-mvp-release`

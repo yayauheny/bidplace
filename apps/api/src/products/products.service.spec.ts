@@ -828,7 +828,7 @@ describe('ProductsService', () => {
     expect(pageQueryText).toContain('p."published_revision_id" IS NOT NULL');
     expect(prisma.product.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { id: { in: [product.id] } },
+        where: { id: { in: [product.id] }, ...portfolioCatalogProductWhere },
         select: portfolioCatalogProductSelect,
       }),
     );

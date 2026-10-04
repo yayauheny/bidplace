@@ -43,7 +43,10 @@ import {
   productWriteGuardSelect,
   writableProductWhere,
 } from './product-write-guard';
-import { portfolioDirectProductWhere } from './public-visibility';
+import {
+  portfolioCatalogProductWhere,
+  portfolioDirectProductWhere,
+} from './public-visibility';
 import {
   assertProductRevisionTransition,
   canAuthorEditRevision,
@@ -827,7 +830,10 @@ export class ProductsService {
     }
 
     const products = await this.prisma.product.findMany({
-      where: { id: { in: pageRows.map((row) => row.id) } },
+      where: {
+        id: { in: pageRows.map((row) => row.id) },
+        ...portfolioCatalogProductWhere,
+      },
       select: portfolioCatalogProductSelect,
     });
     const productsById = new Map(

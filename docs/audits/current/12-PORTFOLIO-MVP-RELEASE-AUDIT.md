@@ -1,8 +1,55 @@
 # Portfolio-only MVP — постоянный release audit
 
 Дата: 2026-10-04. База: `316b6c18c96f854a46d3ee12bddb9194710365e9`.
-Текущая ветка: `feature/portfolio-mvp-release`. Media implementation сохранена
+Проверенная release-ветка: `feature/portfolio-mvp-release`. Media implementation сохранена
 в `feature/portfolio-media-lifecycle`; integration package перенесён fast-forward.
+
+## 2026-10-05 — Product correctness follow-up
+
+Ветка `feature/portfolio-google-design`, база `00d7ed6`. Release ref сохраняется.
+Этот проход исправляет подтверждённые ошибки публичности и session HTTP boundary;
+Google OAuth, визуальные изменения и архитектурный refactoring не входят в пакет.
+Критерии: скрытые/заблокированные данные не попадают в catalog hydration после
+committed revoke; malformed credentials не вызывают 500; logout очищает invalid
+cookie; корректные JWT и гостевые публичные чтения продолжают работать.
+
+Выбраны durable fixes: существующие visibility predicates на hydration query и
+локальная строгая валидация auth boundary. Repeatable Read всего каталога — более
+широкий вариант с другим snapshot contract; не выбран. Удаление проблемных auth
+headers как workaround и подавление ошибок через fallback не применяются.
+
+| ID | Проблема | Severity | Где найдена | Влияние на MVP | Решение сейчас / post-MVP | Причина |
+| --- | --- | --- | --- | --- | --- | --- |
+| P01 | После выбора catalog ID финальный read проверяет только ID; hide/suspend/ban между запросами может вернуть непубличную работу/автора | P1 | ProductsService.loadPortfolioCatalogPage, SellersService.listPortfolioAuthors; старый A02/R23 | Public visibility / moderation | Сейчас: исправлено, шесть PostgreSQL interleavings проходят; release regression pending | Изменение публичности учитывается при hydration; A02/R23 остаётся Partial вне этой границы |
+| P02 | Ошибка разбора Authorization или percent-encoded session cookie выходит из optional/logout guard до проверки токена | P2 | OptionalBearerAuthGuard, LogoutAuthGuard | Media HTTP 500; logout не очищает повреждённую cookie | Сейчас: malformed auth regression и локальная корректировка, IN_PROGRESS | Public media должно сохранять auth failure contract, logout уже поддерживает invalid session |
+| P03 | JWT verifier игнорирует четвёртую часть и допускает неканоническую signature encoding | P2 | AuthTokenService.verify | Ослабленная проверка формата сессии; не обход подписи/ownership | Сейчас: strict format regression и проверка signature, IN_PROGRESS | Валидна ровно подписанная JWT serialization |
+| P04 | Старый roadmap содержит устаревшие browser verification статусы | P3 docs | 00-EXECUTION-ROADMAP.md, R29/T05 и другие исторические строки | Не runtime blocker | Сейчас: R29/T05 синхронизирован как Partial и связан с актуальным evidence; остальные IDs сохраняют свой acceptance | Full release: 210/2 известных visual, не прежние 29 failures и не полностью green |
+
+Checkpoint: baseline production с новыми tests воспроизводит 11 auth unit
+failures (9 passed) и 10 HTTP/DB failures (17 passed). P01: пять visibility races
+падают, unpublish case уже проходит и сохраняется как negative regression.
+P02: HTTP media 500 вместо 401, logout 500 вместо 201; empty cookie даёт guest
+200. P03: extra JWT segment даёт HTTP 200 вместо 401. Evidence:
+`/private/tmp/bidplace-product-auth-red.log`,
+`/private/tmp/bidplace-product-http-red.log`.
+Первый rerun выявил пропущенный import существующего Work predicate в новой
+правке (`product-unit-green.log`: 40/2, `product-http-green.log`: 14/13); import
+исправлен до commit. Эти логи не являются green evidence. Повторные проверки
+IN_PROGRESS. Внешние
+deployment gates D01/D03/D04 и Home Opening V01 остаются открытыми.
+
+Граница P01: hydration повторяет visibility predicates. Pagination total всё
+ещё относится к первой выборке; page может укоротиться при одновременном revoke.
+Изменения после hydration не отзывают уже сформированный response. Согласованный
+snapshot и повторное применение search/filter при concurrent republish остаются
+post-MVP частью A02/R23; finding целиком не объявляется закрытым.
+
+Targeted v2: unit 42/42, HTTP/DB 27/27, backend typecheck/build 9/9 и lint
+exit 0. Evidence: `/private/tmp/bidplace-product-unit-green-v2.log`,
+`/private/tmp/bidplace-product-http-green-v2.log`,
+`/private/tmp/bidplace-product-api-graph.log`,
+`/private/tmp/bidplace-product-api-lint.log`. Эти проверки подтверждают fixes;
+полный release gate ещё не запускался.
 
 ## Release verification и handoff
 
