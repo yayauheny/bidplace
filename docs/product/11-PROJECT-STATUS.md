@@ -5,6 +5,21 @@
 > commerce-schema references below do not mean that Listing, Bid, Order,
 > lifecycle, realtime, discovery or activity modules are currently booted.
 
+## 2026-10-04 — City publication browser locator
+
+- `Implemented`: `author-application-publication.spec.ts` selects the public
+  author link by the current test's unique `@slug`, then opens that same link.
+  Duplicate display names across Chromium and WebKit no longer cause a strict
+  locator failure or select the earlier browser's author.
+- Verification: logout followed by publication, one worker and one disposable
+  database across both browsers: 12 passed, 0 failed, 0 skipped. Both approved
+  city authors remain in that database. Commands and evidence:
+  [execution roadmap](../audits/current/00-EXECUTION-ROADMAP.md#2026-10-04--city-publication-locator-follow-up).
+- `Needs verification`: the full R29/T05 browser baseline, timings and cleanup
+  remain open. The production approval guard still lacks the `discipline`
+  requirement enforced by the public seller mapper; this test correction does
+  not close that separate server gap.
+
 ## 2026-10-03 — Residual test cleanup
 
 - `Partial`: five specs now call the shared `flush`. Three private Figma metadata lists and the unused catalog `enabled` argument are removed. `useInfiniteQuery` stays explicitly enabled. The mobile suite is 109 files and 568 tests.
