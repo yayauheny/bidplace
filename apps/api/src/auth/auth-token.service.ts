@@ -48,7 +48,10 @@ export class AuthTokenService {
   verify(token: string): AuthTokenPayload {
     const [encodedHeader, encodedPayload, signature] = token.split('.');
 
-    if (!encodedHeader || !encodedPayload || !signature) {
+    if (
+      !encodedHeader || !encodedPayload || !signature ||
+      !/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(token)
+    ) {
       throw new Error('Invalid token format');
     }
 
@@ -57,8 +60,8 @@ export class AuthTokenService {
       this.secret,
     );
 
-    const expectedBuffer = Buffer.from(expectedSignature, 'base64url');
-    const providedBuffer = Buffer.from(signature, 'base64url');
+    const expectedBuffer = Buffer.from(expectedSignature);
+    const providedBuffer = Buffer.from(signature);
 
     if (
       expectedBuffer.length !== providedBuffer.length ||
