@@ -77,4 +77,37 @@ describe('AuthTokenService', () => {
 
     expect(() => service.verify(token)).toThrow('Token expired');
   });
+
+  it.each([
+    { name: 'a fourth segment', change: (token: string) => `${token}.extra` },
+    { name: 'an empty fourth segment', change: (token: string) => `${token}.` },
+    { name: 'signature padding', change: (token: string) => `${token}=` },
+    { name: 'signature punctuation', change: (token: string) => `${token}!` },
+  ])('rejects a signed JWT with $name', ({ change }) => {
+    const service = new AuthTokenService('unit-format-key');
+    const token = service.sign({
+      sub: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+      email: 'format@example.test',
+      role: 'user',
+      sessionVersion: 0,
+    });
+
+    expect(() => service.verify(change(token))).toThrow('Invalid token format');
+  });
+
+  it('rejects alternate signature pad bits even when decoded signature bytes match', () => {
+    const service = new AuthTokenService('unit-format-key');
+    const token = service.sign({
+      sub: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+      email: 'format@example.test',
+      role: 'user',
+      sessionVersion: 0,
+    });
+    const [header, payload, signature] = token.split('.') as [string, string, string];
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+    const alternate = signature.slice(0, -1) + alphabet[alphabet.indexOf(signature.at(-1)!) ^ 1];
+    expect(Buffer.from(alternate, 'base64url')).toEqual(Buffer.from(signature, 'base64url'));
+
+    expect(() => service.verify(`${header}.${payload}.${alternate}`)).toThrow('Invalid token signature');
+  });
 });

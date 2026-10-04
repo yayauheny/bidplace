@@ -18,6 +18,7 @@ investigations. Those stay in [`09-TRUST-AND-AUCTION-INTEGRITY.md`](09-TRUST-AND
 | --- | --- | --- |
 | Password hashing (Argon2) | Implemented | `apps/api/src/auth/` |
 | Session JWT with current status, session version and role | Implemented | `auth-token.service.ts`, `bearer-auth.guard.ts`, `optional-bearer-auth.guard.ts` |
+| Strict JWT encoding and malformed-session handling | Implemented | Exactly three base64url segments; canonical signature comparison. Optional auth rejects malformed supplied credentials with 401; anonymous media remains public. Logout clears malformed cookies without revoking another account. Token/optional/logout units + `auth-transport.integration.spec.ts`. |
 | Neutral forgot-password (no email enumeration) | Implemented | `password-reset/` + `password-reset.integration.spec.ts` |
 | Reset token stored as SHA-256 only; single-use + session bump in one TX | Implemented | `password-reset.service.ts` |
 | SMTP single-recipient guard | Implemented | `core/email/smtp-transport.ts` |

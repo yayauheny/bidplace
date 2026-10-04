@@ -51,6 +51,56 @@ function cookiePair(setCookie: string): string {
 }
 
 describe('auth HTTP transport', () => {
+  it.each([
+    { name: 'malformed bearer header', headers: { authorization: 'Bearer invalid extra' } },
+    { name: 'malformed session cookie', headers: { cookie: 'bidplace_session=%E0%A4%A' } },
+    { name: 'empty session cookie', headers: { cookie: 'bidplace_session=' } },
+  ])('returns 401 for $name on media while preserving anonymous public access', async ({ headers }) => {
+    const fixture = await createPermissionFixture(prisma);
+    const profile = await prisma.sellerProfile.findUniqueOrThrow({
+      where: { id: fixture.sellers.approved.profileId },
+      select: { slug: true },
+    });
+    const url = new URL(`/api/sellers/${profile.slug}/photo`, http.baseUrl);
+    expect((await fetch(url)).status).toBe(200);
+
+    const response = await fetch(url, { headers });
+
+    expect(response.status).toBe(401);
+    expect((await response.json()).code).toBe('unauthorized');
+    expect((await fetch(new URL('/api/works', http.baseUrl), { headers })).status).toBe(200);
+  });
+
+  it('clears a malformed session cookie through logout without changing any account', async () => {
+    await createPermissionFixture(prisma);
+    const before = await permissionState(prisma);
+
+    const response = await fetch(new URL('/api/auth/logout', http.baseUrl), {
+      method: 'POST',
+      headers: { cookie: 'bidplace_session=%E0%A4%A' },
+    });
+
+    expect(response.status).toBe(201);
+    expect(await response.json()).toEqual({ ok: true });
+    expect(response.headers.getSetCookie()[0]).toContain('bidplace_session=;');
+    expect(response.headers.getSetCookie()[0]).toContain('Expires=Thu, 01 Jan 1970');
+    expect(await permissionState(prisma)).toEqual(before);
+  });
+
+  it('rejects extra JWT segments over HTTP while keeping the original session valid', async () => {
+    const fixture = await createPermissionFixture(prisma);
+    const client = new HttpTestClient(http.baseUrl, 'http://localhost:8081', '10.0.2.8');
+    const response = await login(client, fixture.buyer);
+    const cookie = cookiePair(response.headers.getSetCookie()[0]!);
+
+    const malformed = await fetch(new URL('/api/auth/me', http.baseUrl), {
+      headers: { cookie: `${cookie}.extra` },
+    });
+
+    expect(malformed.status).toBe(401);
+    expect((await client.get('/auth/me')).status).toBe(200);
+  });
+
   it('returns the accepted rules version in the authenticated user response', async () => {
     const fixture = await createPermissionFixture(prisma);
     const client = new HttpTestClient(

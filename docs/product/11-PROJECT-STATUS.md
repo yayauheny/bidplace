@@ -6,6 +6,24 @@
 > commerce-schema references below do not mean that Listing, Bid, Order,
 > lifecycle, realtime, discovery or activity modules are currently booted.
 
+## 2026-10-05 — Malformed session HTTP boundary
+
+- `Implemented`: `OptionalBearerAuthGuard` returns 401 for malformed bearer
+  headers, malformed session-cookie encoding and an empty supplied cookie.
+  Requests without credentials still access public media. User persistence
+  failures remain server failures and are not treated as anonymous access.
+- `Implemented`: `LogoutAuthGuard` permits invalid-cookie cleanup through the
+  existing logout contract, without attaching a user or changing an account.
+  `AuthTokenService` requires three base64url JWT segments and compares the
+  signed signature encoding with `timingSafeEqual`; trailing segments, padding,
+  punctuation and alternate signature pad bits are rejected.
+- Evidence: auth guard/token units and HTTP media/logout/session regressions
+  pass; backend typecheck/build and lint pass. `Needs verification`: the next
+  release HEAD's full verify/browser/media gate. Exact results and source
+  reproduction are in the [permanent audit](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md).
+  Existing valid sessions, roles, ownership and anonymous catalog contracts are
+  preserved. No Google OAuth, new dependencies or UI changes are included.
+
 ## 2026-10-05 — Catalog visibility during concurrent revoke
 
 - `Implemented`: `ProductsService.loadPortfolioCatalogPage` and

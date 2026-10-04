@@ -38,22 +38,21 @@ export class OptionalBearerAuthGuard implements CanActivate {
     context: Pick<ExecutionContext, 'switchToHttp'>,
   ): Promise<boolean> {
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
-    const token = this.extractToken(
-      request.headers.authorization,
-      request.headers.cookie,
-    );
-
-    if (!token) {
-      return true;
-    }
-
     const auth = (() => {
       try {
-        return this.authTokenService.verify(token);
+        const token = this.extractToken(
+          request.headers.authorization,
+          request.headers.cookie,
+        );
+        return token === null ? null : this.authTokenService.verify(token);
       } catch {
         throw new UnauthorizedException('Invalid bearer token');
       }
     })();
+
+    if (auth === null) {
+      return true;
+    }
 
     const user = await this.prisma.user.findUnique({
       where: {

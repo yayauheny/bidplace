@@ -21,8 +21,8 @@ headers как workaround и подавление ошибок через fallba
 | ID | Проблема | Severity | Где найдена | Влияние на MVP | Решение сейчас / post-MVP | Причина |
 | --- | --- | --- | --- | --- | --- | --- |
 | P01 | После выбора catalog ID финальный read проверяет только ID; hide/suspend/ban между запросами может вернуть непубличную работу/автора | P1 | ProductsService.loadPortfolioCatalogPage, SellersService.listPortfolioAuthors; старый A02/R23 | Public visibility / moderation | Сейчас: исправлено, шесть PostgreSQL interleavings проходят; release regression pending | Изменение публичности учитывается при hydration; A02/R23 остаётся Partial вне этой границы |
-| P02 | Ошибка разбора Authorization или percent-encoded session cookie выходит из optional/logout guard до проверки токена | P2 | OptionalBearerAuthGuard, LogoutAuthGuard | Media HTTP 500; logout не очищает повреждённую cookie | Сейчас: malformed auth regression и локальная корректировка, IN_PROGRESS | Public media должно сохранять auth failure contract, logout уже поддерживает invalid session |
-| P03 | JWT verifier игнорирует четвёртую часть и допускает неканоническую signature encoding | P2 | AuthTokenService.verify | Ослабленная проверка формата сессии; не обход подписи/ownership | Сейчас: strict format regression и проверка signature, IN_PROGRESS | Валидна ровно подписанная JWT serialization |
+| P02 | Ошибка разбора Authorization или percent-encoded session cookie выходит из optional/logout guard до проверки токена | P2 | OptionalBearerAuthGuard, LogoutAuthGuard | Media HTTP 500; logout не очищает повреждённую cookie | Сейчас: исправлено, malformed media/logout HTTP и units проходят; release regression pending | Invalid supplied credentials дают 401, logout очищает cookie; DB failures не скрываются |
+| P03 | JWT verifier игнорирует четвёртую часть и допускает неканоническую signature encoding | P2 | AuthTokenService.verify | Ослабленная проверка формата сессии; не обход подписи/ownership | Сейчас: исправлено, five strict-format unit cases + HTTP session regression проходят; release regression pending | Валидна ровно подписанная JWT serialization; прежние корректные сессии сохраняются |
 | P04 | Старый roadmap содержит устаревшие browser verification статусы | P3 docs | 00-EXECUTION-ROADMAP.md, R29/T05 и другие исторические строки | Не runtime blocker | Сейчас: R29/T05 синхронизирован как Partial и связан с актуальным evidence; остальные IDs сохраняют свой acceptance | Full release: 210/2 известных visual, не прежние 29 failures и не полностью green |
 
 Checkpoint: baseline production с новыми tests воспроизводит 11 auth unit
@@ -50,6 +50,12 @@ exit 0. Evidence: `/private/tmp/bidplace-product-unit-green-v2.log`,
 `/private/tmp/bidplace-product-api-graph.log`,
 `/private/tmp/bidplace-product-api-lint.log`. Эти проверки подтверждают fixes;
 полный release gate ещё не запускался.
+
+Этап 1 закоммичен: `9ca2488` — catalog visibility, controlled DB regressions и
+актуализация A02/R29 статусов. Этап 2 — только auth boundary и его regression
+tests. После двух логичных commits выполняется перенос важного для MVP пакета
+в release и проверка итогового release-source HEAD. По просьбе основателя после
+этого пакета выполнение останавливается.
 
 ## Release verification и handoff
 

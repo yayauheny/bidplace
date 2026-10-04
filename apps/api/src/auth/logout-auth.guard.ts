@@ -69,14 +69,13 @@ export class LogoutAuthGuard implements CanActivate {
     authorization: string | null | undefined,
     cookieHeader: string | null | undefined,
   ): string | null {
-    if (authorization) {
-      try {
+    try {
+      if (authorization) {
         return extractBearerToken(authorization);
-      } catch {
-        return null;
       }
+      return readCookie(cookieHeader, AUTH_TOKEN_COOKIE_NAME) ?? null;
+    } catch {
+      return null;
     }
-
-    return readCookie(cookieHeader, AUTH_TOKEN_COOKIE_NAME) ?? null;
   }
 }

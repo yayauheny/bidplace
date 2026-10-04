@@ -68,6 +68,18 @@ describe('LogoutAuthGuard', () => {
     expect(request).not.toHaveProperty('auth');
   });
 
+  it('allows logout to clear a session cookie with malformed encoding', async () => {
+    const request = { headers: { cookie: 'bidplace_session=%E0%A4%A' } };
+
+    await expect(
+      guard.canActivate({ switchToHttp: () => ({ getRequest: () => request }) }),
+    ).resolves.toBe(true);
+
+    expect(request).not.toHaveProperty('auth');
+    expect(authTokenService.verify).not.toHaveBeenCalled();
+    expect(prisma.user.findUnique).not.toHaveBeenCalled();
+  });
+
   it('attaches a user only for a valid current session', async () => {
     authTokenService.verify.mockReturnValue({
       sub: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
