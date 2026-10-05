@@ -1,5 +1,26 @@
 # bidplace — текущий статус проекта
 
+## 2026-10-05 — Confirmed image delete during an in-flight save
+
+- `Implemented`: an approved work editor that confirms image deletion while an
+  ordinary save is still running waits for that save, then calls
+  `images.remove` with the same image id. The delete dialog closes only after
+  that remove succeeds. A save that does not persist leaves the dialog open
+  and sends no DELETE. Other callers of `persistCurrentForm()` still receive
+  `false` while a save is in flight, so route removal during an ordinary save
+  still does not navigate.
+- Screen: `apps/mobile/src/features/sellers/product-draft-screen.tsx`.
+  Regression: `product-draft-save-race.spec.ts`. Route guard:
+  `product-draft-route-guard.spec.ts`.
+- `Partial` (F01) and `Needs verification` (F11/D08) are unchanged. This
+  screen fix does not close a dead process or live CDN purge.
+- Checks on Node 22.20.0 / pnpm 11.7.0, branch `fix/portfolio-media-execution`,
+  code `2c9dc89eb185e478860da2f9178bc7d0421a3b00`: `pnpm verify` exit 0
+  (typecheck 13/13, lint 2/2, config 8, API unit 389, contracts 32, api-client
+  28, database 1, mobile 583, ops 31/0, integration 132, build 8/8). Dedicated
+  media Playwright after the fix: 2 passed, 1.0m, Chromium 26.3s, WebKit 12.0s,
+  workers 1, retries 0, disposable `bidplace_e2e` only. No push or deploy.
+
 ## 2026-10-05 — Non-blocking media recovery
 
 - `Implemented` (F29): API startup schedules the existing five-second recovery

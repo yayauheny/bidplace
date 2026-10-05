@@ -634,3 +634,72 @@ git merge --ff-only f10021d2fb362ce3f81ffa9c77208a5efc069ea9
 A docs-only child of that commit changes no code and can be fast-forwarded
 instead. If origin release moves first, stop and integrate it before
 transferring. Do not force-push or recreate the history.
+
+## 2026-10-05 — Browser failures before release transfer
+
+Classified on `fix/portfolio-media-execution` from
+`d4e0b0b7ef2e283792635f1e97132dcc7cf38cc2`. Release stays
+`507bb5b422878a38099b70ce7bfd9a59e9c16189` and remains an ancestor. No new
+branch. Release, push, and deploy were not run. Golden, thresholds, timeouts,
+and the media architecture were not changed. A later green rerun is not the
+explanation of either original failure.
+
+### Confirmed image delete dropped while a save is in flight
+
+- Problem: the first Chromium media-lifecycle failure left «Удалить изображение?»
+  open and the counter at `2/10 изображений` after the confirm click.
+- Severity: high. The confirmed delete is lost. The dialog does not close.
+- Evidence: `work-media-lifecycle.spec.ts:293` expected `1/10 изображений` and
+  timed out at 5s. The retained error context and screenshot show the confirm
+  dialog over the editor, title `Revised chromium-1791200160150`, counter still
+  `2/10`. WebKit passed that same run. The original trace zip and the disposable
+  database from that run were not retained: the identical rerun replaced
+  `test-results`, and `prepare.mjs` reset `bidplace_e2e`. The terminal log has
+  no request log, so that first run does not itself show a DELETE status or a
+  revision-image row change.
+- Controlled proof, before the fix: an approved editor starts «Сохранить
+  изменения», then confirms delete while that save is still pending.
+  `updateProduct` is called once. `images.remove` is not called while the save
+  is pending and is still not called after the delayed save resolves. So no
+  DELETE is sent, the previous save does finish, and the owner query cannot
+  refresh a delete that never happened. The dialog stays open because
+  `removeImage` `onSuccess` never runs.
+- Cause: for `APPROVED`, the confirm handler calls `persistCurrentForm()`.
+  That function returns `false` immediately when `saveInFlight` is already
+  true, and the handler then returns without `removeImage.mutate`.
+- MVP impact: an approved author can lose a confirmed gallery delete. The
+  public media lifecycle after a completed delete is unchanged.
+- Classification: production defect. It is not a test that should wait for the
+  save, and it is not a test-environment miss. The later identical media rerun
+  that passed 2/2 does not explain the open dialog.
+- Decision: durable fix in
+  `apps/mobile/src/features/sellers/product-draft-screen.tsx`, commit
+  `2c9dc89eb185e478860da2f9178bc7d0421a3b00`. `persistCurrentForm()` still
+  returns `false` to every other caller while a save is in flight, so route
+  removal during an ordinary save still does not navigate. Only the delete
+  confirm handler awaits the already running save promise. A save that does
+  not persist still does not delete. Regression:
+  `product-draft-save-race.spec.ts` «deletes the confirmed image after an
+  in-flight save instead of dropping the action». The test confirms delete
+  before the delayed save resolves and expects `removeImage` only after that
+  save persists, once, with the same image id. The e2e timeout was not raised
+  and the confirm click was not repeated.
+
+### Compact author header settle
+
+- Problem: WebKit `author-header-motion.spec.ts:245` «parks one compact
+  identity after the natural handoff» timed out.
+- Severity: low.
+- Evidence: the 1500ms poll for compact avatar `y === 12` timed out in the
+  first full Chromium/WebKit run (209 passed / 3 failed). Chromium passed the
+  same test in that run at 2.2s. The failure screenshot already shows the
+  compact header: truncated handle, socials, share, tabs, and works. An
+  isolated WebKit rerun passed in 18.5s, exit 0.
+- MVP impact: none. Auth, author, Work, and media flows are unaffected.
+- Classification: post-MVP visual timing. The compact header was already
+  parked; the 1500ms poll missed the settle once. The successful rerun is not
+  a substitute for that classification.
+- Decision: do not change the design, the golden, or the 1500ms timeout.
+
+F01 and F11/D08 stay open for a separate staging acceptance. Local tests do
+not close a dead process or a live CDN purge. DEC-097 is not withdrawn.

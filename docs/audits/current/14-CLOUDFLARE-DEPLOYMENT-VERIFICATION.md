@@ -126,6 +126,16 @@ Node 22.20.0, pnpm 11.7.0. Этот проход не повторял image ver
 | full Chromium/WebKit `--workers=1 --retries=0` | первый прогон 209 passed / 3 failed, 12.3m. Home Opening прежние. Дополнительно WebKit compact handoff, 1500ms; изолированный повтор этого теста прошёл |
 | media config `--workers=1 --retries=0` | первый прогон 1 failed / 1 passed; идентичный повтор 2 passed, 1.0m |
 
+## 2026-10-05 — Delete-during-save follow-up
+
+Первый Chromium media отказ классифицирован как production defect и исправлен
+в `2c9dc89eb185e478860da2f9178bc7d0421a3b00`. WebKit compact header остаётся
+post-MVP. После исправления dedicated media gate: 2 passed, 1.0m, workers 1,
+retries 0, disposable `bidplace_e2e`. Полная запись:
+`docs/audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md`. Статус по-прежнему
+**NOT READY FOR STAGING**. F01 и F11/D08 локальными тестами не закрываются.
+Image verify в этом проходе не повторялся.
+
 ## Критерии и решение
 
 Проверенный SPA export, linux/amd64 Nest image, тонкий Worker, изолированные

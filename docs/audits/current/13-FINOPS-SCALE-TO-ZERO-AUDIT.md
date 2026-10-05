@@ -214,6 +214,15 @@ Opening. Третий — WebKit compact handoff, poll 1500ms на `y === 12`; C
 открыты. Реальный staging должен отдельно подтвердить спящий Container и live
 CDN/purge. DEC-097 не отменён.
 
+## 2026-10-05 — Browser failure classification
+
+Первый Chromium media отказ — production defect: подтверждённое удаление
+изображения терялось, пока обычное сохранение ещё шло. Исправление
+`2c9dc89eb185e478860da2f9178bc7d0421a3b00`. WebKit compact header — post-MVP
+visual timing; дизайн не менялся. Успешный повтор не объясняет первый отказ.
+Полная запись: `docs/audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md`.
+F01 и F11/D08 остаются открытыми. Media architecture не менялась.
+
 ## 2026-10-05 — F13/F14 upload safety
 
 Сравнение до правки:
