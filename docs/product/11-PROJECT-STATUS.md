@@ -1,5 +1,23 @@
 # bidplace — текущий статус проекта
 
+## 2026-10-05 — Portfolio MVP local completion
+
+- `Implemented`: work creation in the media browser test uses `fillControl`,
+  so a controlled title must hold its value before save. An approved gallery
+  add or reorder waits for an in-flight ordinary save and then continues. A
+  save that does not persist does not add or reorder.
+- Screen: `apps/mobile/src/features/sellers/product-draft-screen.tsx`.
+  Browser: `apps/mobile/e2e/work-media-lifecycle.spec.ts`.
+  Regression: `product-draft-save-race.spec.ts`.
+- `Partial` (F01) and `Needs verification` (F11/D08) are unchanged. Local gates
+  do not accept a sleeping Container or a live CDN purge.
+- Checks on Node 22.20.0 / pnpm 11.7.0, code
+  `a8d0acb50be727ceda257289deb3c9d042beed66`: `pnpm verify` exit 0
+  (mobile 587, integration 132, API unit 389). `pnpm cloudflare:check` exit 0.
+  Staging and production SPA exports exit 0. Image verify exit 0. Full
+  Chromium/WebKit: 210 passed / 2 failed Home Opening visual, 12.2m. Dedicated
+  media on the same code: 2 passed, then 2 passed. No push or deploy.
+
 ## 2026-10-05 — One confirmed image delete while a save is in flight
 
 - `Implemented`: two confirms of the same image while an ordinary save is

@@ -735,3 +735,131 @@ not close a dead process or a live CDN purge. DEC-097 is not withdrawn.
   `POST /api/products`. The trace reaches creation only, so this is the
   earlier test-environment miss, not a second delete. The timeout was not
   raised.
+
+## 2026-10-05 — Portfolio MVP local completion
+
+Verified runtime code: `a8d0acb50be727ceda257289deb3c9d042beed66`.
+Release before transfer: `507bb5b422878a38099b70ce7bfd9a59e9c16189`.
+Disposable database only. Golden, thresholds, timeouts, and retries were not
+changed. Push and deploy were not run.
+
+### WebKit create form lost the title fill
+
+- Problem: dedicated media WebKit stopped on `/products/new`. The page looked
+  blank in one screenshot and no `POST /api/products` was sent.
+- Severity: high for the gate. The create step did not start.
+- Evidence: preserved before any rerun in
+  `docs/audits/current/evidence/2026-10-05-webkit-products-new-1/`.
+  The trace zip is local only because it contains a disposable session cookie.
+  Login, profile, application, and profile reads were 201/200. The bundle
+  started `main`. The only console message was the existing `pointerEvents`
+  warning; there was no page error. `E2E art` was clicked and stayed checked.
+  Playwright `fill` returned without error, then save showed an empty title,
+  `Введите название`, and `Проверьте обязательные поля`. Screenshot 2 shows
+  that rendered form. No product POST was sent because validation blocked it.
+- MVP impact: the media lifecycle could not create the work on that WebKit run.
+  Chromium in the same run completed the lifecycle.
+- Classification: test synchronization. The app correctly refused an empty
+  title. The media spec used raw `fill` on a controlled field. The wizard
+  already uses `fillControl`, which repeats the fill until the field holds
+  the value. A later green run is not the explanation; the retained trace is.
+- Decision: fixed now in `work-media-lifecycle.spec.ts` by using `fillControl`
+  for the create title and the later revise title. The helper timeout stays
+  10s. The test timeout was not raised.
+
+### Gallery add and reorder dropped during an in-flight save
+
+- Problem: for an approved work, choosing images or reordering them called
+  `persistCurrentForm()` while a save was already running, received `false`,
+  and returned before the picker or `images.reorder`.
+- Severity: high. The same class as the lost delete confirm.
+- Evidence: `product-draft-screen.tsx` `chooseImages` and `reorder`.
+  Regressions in `product-draft-save-race.spec.ts` expect the picker and one
+  reorder only after the delayed save resolves.
+- MVP impact: an approved author can lose an add or a reorder clicked during
+  save. Submit during an in-flight save still returns immediately; that skip
+  is the existing submit guard, not this defect.
+- Classification: production defect.
+- Decision: fixed now. Both actions await the in-flight save, then continue.
+  A save that does not persist still does not add or reorder. Route removal
+  and other `persistCurrentForm()` callers are unchanged.
+
+### Auth and permissions
+
+- Problem: none new. Guest, another user, owner, and admin product boundaries
+  already live in `seller-permissions.integration.spec.ts`. Logout invalidates
+  the previous session in `auth-transport.integration.spec.ts`. A stale token
+  role is replaced by the current database role in `bearer-auth.guard.spec.ts`.
+- Severity: not a new defect.
+- Evidence: those tests are part of `pnpm verify` on this code: API unit 389,
+  integration 132, both exit 0. No separate temporary auth-review script was
+  found, so no extra permanent regression was added.
+- MVP impact: none beyond the existing permanent coverage.
+- Classification: already covered.
+- Decision: no new auth test.
+
+### Final gates on `a8d0acb`
+
+Node 22.20.0 / pnpm 11.7.0. Workers 1, retries 0.
+
+| Проверка | Результат |
+|---|---|
+| `pnpm verify` | exit 0: typecheck 13/13, lint 2/2, config 8, API unit 389, contracts 32, api-client 28, database 1, mobile 587, ops 31/0, integration 132, build 8/8 |
+| `pnpm cloudflare:check` | exit 0: 26 unit + 7 script |
+| `pnpm cloudflare:build:staging` | exit 0: SPA for `https://staging.bid.place` |
+| `pnpm build:web` | exit 0: SPA for `https://bid.place` |
+| `pnpm cloudflare:image:verify` | exit 0: linux/amd64 native modules, migrated disposable DB, HTTP/auth boundary, SIGTERM |
+| full Chromium/WebKit | 210 passed / 2 failed, 12.2m, exit 1 |
+| dedicated media run 1 | 2 passed, 1.1m: Chromium 28.1s, WebKit 16.0s |
+| dedicated media run 2 | 2 passed, 1.0m: Chromium 26.7s, WebKit 11.3s, same `a8d0acb` |
+
+The two full-suite failures are the known Home Opening visual debt:
+Chromium `0.12231040564373898`, WebKit `0.12205687830687831`, threshold
+`0.12`. Compact-header timing did not fail in this run; it stays the earlier
+post-MVP classification. No unclassified critical failure remains.
+
+### Cloud handoff
+
+Code on this commit is ready to fast-forward onto
+`feature/portfolio-mvp-release`. Staging is not ready. Public launch is not
+ready. F01, F11, and D08 stay open. DEC-097 is not withdrawn. Local mocks do
+not close them.
+
+Operator setup still missing, from `docs/ops/CLOUDFLARE-DEPLOYMENT.md` and the
+current Wrangler contract:
+
+- Cloudflare account resources: Workers `bidplace-staging` and
+  `bidplace-production`, four R2 buckets, public media hosts, Worker custom
+  domains `staging.bid.place` and `bid.place`.
+- Non-secret vars in `env.staging.vars` and `env.production.vars`, including
+  `S3_ENDPOINT`, `CLOUDFLARE_ZONE_ID`, SMTP host/from, and the public rules
+  fields. Deploy preflight fails closed while they are empty.
+- Runtime secrets entered by the operator, not stored in the repo:
+  `DATABASE_URL`, `JWT_SECRET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`,
+  `SMTP_USERNAME`, `SMTP_PASSWORD`, `CLOUDFLARE_CACHE_TOKEN`. Separate values
+  per environment. No Global API Key.
+- A separate Neon staging branch and an operator migration:
+  `pnpm cloudflare:migrate staging`. Production migration needs
+  `--confirm-production` after backup.
+- Cache rule on each public media host: ignore the entire query string, do not
+  raise browser TTL, do not apply that rule to the API.
+- Founder choice still open for D09: application secrets in Cloudflare, not
+  copied into GitHub. A deploy token is only needed if Actions deploys.
+
+Live acceptance, after that setup and `pnpm cloudflare:deploy:staging`:
+
+- F11/D08: hide or revoke a published work, then the old media URL, the same
+  URL with `?media_retry=1`, and an arbitrary query must miss. `purge
+  success=true` is only request acceptance.
+- F01: let the Container sleep with no browser polling or health probe. A
+  revoke that becomes due while it is asleep must still complete within the
+  DEC-097 five minutes, or the gap stays open. A cold request after sleep is a
+  separate check and does not close F01.
+- Author → work → private upload → submit → moderation → public PREVIEW →
+  FULL viewer → edit/republish → hide, on the real R2 and CDN.
+
+The old smoke sentence that the media loop keeps issuing SQL whenever the
+container is awake is stale. A successful empty recovery stops the
+five-second timer. The timer remains only while revoke or cleanup work is
+outstanding, or a recovery read failed. The deployment note is corrected in
+the same docs commit.

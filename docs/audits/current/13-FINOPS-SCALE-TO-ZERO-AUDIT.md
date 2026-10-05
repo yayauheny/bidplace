@@ -223,6 +223,11 @@ visual timing; дизайн не менялся. Успешный повтор �
 Полная запись: `docs/audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md`.
 F01 и F11/D08 остаются открытыми. Media architecture не менялась.
 
+Локальное завершение portfolio MVP: runtime `a8d0acb50be727ceda257289deb3c9d042beed66`.
+WebKit create fill классифицирован как синхронизация теста и исправлен.
+Два последовательных media 2/2 и полный browser gate записаны в release audit.
+Пустой recovery по-прежнему не оставляет пятисекундный цикл. F01 не закрыт.
+
 ## 2026-10-05 — F13/F14 upload safety
 
 Сравнение до правки:

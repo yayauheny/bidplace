@@ -136,6 +136,19 @@ retries 0, disposable `bidplace_e2e`. Полная запись:
 **NOT READY FOR STAGING**. F01 и F11/D08 локальными тестами не закрываются.
 Image verify в этом проходе не повторялся.
 
+## 2026-10-05 — Local MVP completion
+
+Проверенный runtime `a8d0acb50be727ceda257289deb3c9d042beed66`. Код готов к
+fast-forward в `feature/portfolio-mvp-release`. Staging не готов. Публичный
+запуск не готов. F01, F11 и D08 открыты. D10 в реестре выше описывает прежний
+постоянный пятисекундный цикл; текущий executor снимает timer после успешного
+пустого чтения. DEC-097 не отменён.
+
+Полный Chromium/WebKit: 210 passed / 2 failed, 12.2m, только Home Opening
+visual. Dedicated media на том же коде: два последовательных 2/2.
+`pnpm cloudflare:check`, staging export, production export и image verify —
+exit 0. Push и deploy нет.
+
 ## Критерии и решение
 
 Проверенный SPA export, linux/amd64 Nest image, тонкий Worker, изолированные

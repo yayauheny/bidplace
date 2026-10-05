@@ -200,7 +200,9 @@ Smart Tiered Cache может уменьшить R2 misses между PoPs; вк
 - Image/source/frontend не содержат runtime credentials; не печатать их при проверке.
   Локальная проверка исходников не заменяет cloud secret/inventory verification.
 - Дать контейнеру уснуть без browser polling/health probes, проверить новый cold
-  request и Neon activity. Во время работы existing media loop всё ещё делает SQL.
+  request и Neon activity. Успешный пустой recovery снимает пятисекундный timer.
+  Timer остаётся, только пока есть REVOKE/CLEANUP или чтение recovery не удалось.
+  Спящий Container сам не просыпается для DEC-097; это отдельный live acceptance.
 
 ## Защита, logs и экономичные настройки
 
