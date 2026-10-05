@@ -101,6 +101,7 @@ describe('AnalyticsService', () => {
         linkedAt: null,
       }),
     });
+    expect(prisma.acquisitionAttribution.findUnique).toHaveBeenCalledTimes(1);
     expect(prisma.analyticsEvent.createMany).toHaveBeenCalledWith({
       data: [
         expect.objectContaining({
@@ -112,6 +113,44 @@ describe('AnalyticsService', () => {
         }),
       ],
     });
+  });
+
+  it('writes view events without an attribution read', async () => {
+    const prisma = {
+      acquisitionAttribution: {
+        findUnique: vi.fn(),
+        create: vi.fn(),
+        findFirst: vi.fn(),
+        update: vi.fn(),
+      },
+      analyticsEvent: {
+        createMany: vi.fn().mockResolvedValue({ count: 2 }),
+      },
+    };
+    const service = createService(prisma, {
+      NODE_ENV: 'development',
+      ANALYTICS_INGEST_ENABLED: 'true',
+    });
+
+    const result = await service.ingest({
+      anonymousId,
+      environment: 'local',
+      platform: 'web',
+      events: [
+        {
+          name: 'listing_viewed',
+          properties: { productPublicId: 'P1' },
+        },
+        {
+          name: 'seller_viewed',
+          properties: { sellerProfileId: userId },
+        },
+      ],
+    });
+
+    expect(result).toEqual({ accepted: 2 });
+    expect(prisma.acquisitionAttribution.findUnique).not.toHaveBeenCalled();
+    expect(prisma.analyticsEvent.createMany).toHaveBeenCalledTimes(1);
   });
 
   it('never overwrites first-touch attribution fields', async () => {

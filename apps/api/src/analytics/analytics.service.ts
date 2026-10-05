@@ -32,7 +32,9 @@ export class AnalyticsService {
     const now = this.clock.now();
     const userId = authUserId;
 
-    await this.upsertAttribution(input, userId, now);
+    if (input.attribution || input.claimAcquisition) {
+      await this.upsertAttribution(input, userId, now);
+    }
 
     if (input.events.length > 0) {
       await this.prisma.analyticsEvent.createMany({

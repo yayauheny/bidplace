@@ -162,4 +162,41 @@ describe('AnalyticsClient track', () => {
     );
     expect(events).toHaveLength(1);
   });
+
+  it('batches same-turn views and does not resend stored attribution', async () => {
+    const ingest = vi.fn().mockResolvedValue({ accepted: 1 });
+    const analytics = createAnalytics({
+      ingest,
+      getEnvironment: () => 'test',
+      getPlatform: () => 'web',
+      isEnabled: () => true,
+    });
+
+    await analytics.init();
+    await analytics.captureAttributionFromLaunch(
+      'https://bidplace.test/product/abc?utm_source=ig&utm_medium=social',
+    );
+    await analytics.flush();
+    expect(ingest).toHaveBeenCalledTimes(1);
+    expect(ingest.mock.calls[0]?.[0].events).toEqual([]);
+    expect(ingest.mock.calls[0]?.[0].attribution).toEqual(
+      expect.objectContaining({ source: 'ig', medium: 'social' }),
+    );
+
+    ingest.mockClear();
+    analytics.track('listing_viewed', { productPublicId: 'abcdefghijk' });
+    analytics.track('seller_viewed', {
+      sellerProfileId: '11111111-1111-4111-8111-111111111111',
+    });
+    analytics.track('registration_started', {});
+    await analytics.flush();
+
+    expect(ingest).toHaveBeenCalledTimes(1);
+    expect(ingest.mock.calls[0]?.[0].attribution).toBeUndefined();
+    expect(ingest.mock.calls[0]?.[0].events.map((event: { name: string }) => event.name)).toEqual([
+      'listing_viewed',
+      'seller_viewed',
+      'registration_started',
+    ]);
+  });
 });

@@ -138,7 +138,7 @@ export class AnalyticsClient {
     if (saved) {
       this.firstTouch = saved;
       this.pendingAttributionSync = true;
-      void this.flush();
+      void this.scheduleFlush();
     }
   }
 
@@ -175,7 +175,7 @@ export class AnalyticsClient {
     this.identity = identifyUser(this.identity, userId);
     if (options?.claimAcquisition) {
       this.pendingClaimAcquisition = true;
-      void this.flush();
+      void this.scheduleFlush();
     }
   }
 
@@ -213,27 +213,30 @@ export class AnalyticsClient {
       } as AnalyticsEventInput;
 
       this.queue.push(event);
-      void this.flush();
+      void this.scheduleFlush();
     } catch {
       // Analytics must never break product flows.
     }
   }
 
   async flush(): Promise<void> {
+    await this.scheduleFlush();
+  }
+
+  private scheduleFlush(): Promise<void> {
     if (!this.isEnabled()) {
-      return;
+      return Promise.resolve();
     }
 
-    if (this.flushPromise) {
-      return this.flushPromise;
+    if (!this.flushPromise) {
+      this.flushPromise = Promise.resolve()
+        .then(() => this.flushInternal())
+        .finally(() => {
+          this.flushPromise = null;
+        });
     }
 
-    this.flushPromise = this.flushInternal();
-    try {
-      await this.flushPromise;
-    } finally {
-      this.flushPromise = null;
-    }
+    return this.flushPromise;
   }
 
   private async flushInternal(): Promise<void> {
@@ -259,10 +262,7 @@ export class AnalyticsClient {
       const claimAcquisition = this.pendingClaimAcquisition;
       const syncAttribution = this.pendingAttributionSync;
       const appVersion = this.getAppVersion?.();
-      const sendableAttribution =
-        syncAttribution || batch.length > 0 || claimAcquisition
-          ? attribution
-          : undefined;
+      const sendableAttribution = syncAttribution ? attribution : undefined;
 
       if (
         batch.length === 0 &&
