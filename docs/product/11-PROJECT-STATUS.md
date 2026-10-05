@@ -1,5 +1,34 @@
 # bidplace — текущий статус проекта
 
+## 2026-10-05 — Non-blocking media recovery
+
+- `Implemented` (F29): API startup schedules the existing five-second recovery
+  timer and returns. `app.init()` no longer waits for revoke or cleanup against
+  object storage. No new scheduler was added, and the timeout was not increased.
+- `Implemented` (F30): one failed abandoned-staging scan keeps the next attempt
+  on that same timer. Empty counts after the failed scan do not count as
+  success. After a later empty pass, fifteen minutes add no further reads.
+  Shutdown cancels the timers.
+- `Implemented` (F27, F28): the earlier recovery guarantees stay. A read error
+  and young staging still leave a one-shot timer. Attached assets, an active
+  lease, and a needed private SOURCE stay. Publication and upload are not
+  retried by the executor.
+- `Partial` (F01): the idle loop stays off. A dead process with nothing to wake
+  it still does not guarantee the DEC-097 revoke within five minutes.
+- `Needs verification`: live Cloudflare cache and purge. This package is not
+  ready for staging.
+- Checks on Node 22.20.0 / pnpm 11.7.0, branch `fix/portfolio-media-execution`,
+  code `1d6ab422d3896a1f0a64d9d0d32ea60bd7221c9c` from
+  `59b5de6fa999502a645462107d132d6a1d92993e`: `pnpm verify` exit 0
+  (typecheck 13/13, lint 2/2, config 8, API unit 389, contracts 32, api-client
+  28, database 1, mobile 582, ops 31/0, integration 132, build 8/8).
+  `pnpm cloudflare:check` exit 0 (26 unit + 7 script).
+  `pnpm cloudflare:image:verify` exit 0. Dedicated media Playwright 2 passed,
+  1.0m, workers 1, retries 0. Full Chromium/WebKit: 210 passed / 2 failed,
+  0 skipped, 0 retries, 12.0m. Both failures are Home Opening visual mismatch
+  (Chromium 0.12231040564373898, WebKit 0.12205687830687831, threshold 0.12)
+  and stay post-MVP debt. No push or deploy.
+
 ## 2026-10-05 — Media recovery after a failed read
 
 - `Implemented` (F27): a database read error during revoke or cleanup recovery

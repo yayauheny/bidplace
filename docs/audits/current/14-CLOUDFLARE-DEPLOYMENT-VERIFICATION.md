@@ -84,6 +84,26 @@ Node 22.20.0, pnpm 11.7.0.
 | full Chromium/WebKit `--workers=1 --retries=0` | 210 passed / 2 failed, 0 skipped, 0 retries, 12.8m. Оба отказа — Home Opening, mismatch около 0.122 при пороге 0.12, post-MVP |
 | `git diff --check` | PASS; no `.pen` changes |
 
+## 2026-10-05 — Non-blocking recovery follow-up
+
+Продолжение `fix/portfolio-media-execution`, code
+`1d6ab422d3896a1f0a64d9d0d32ea60bd7221c9c` от
+`59b5de6fa999502a645462107d132d6a1d92993e`. Новая ветка не создавалась.
+Release branch не менялся. Push и deploy нет. Секреты и аккаунты не читались.
+Пакет остаётся **NOT READY FOR STAGING**: F01 и F11/D08 открыты. Локальные
+тесты не подтверждают спящий Container и live CDN/purge. Golden, thresholds и
+timeouts не менялись. Два Home Opening visual failures остаются post-MVP.
+
+Node 22.20.0, pnpm 11.7.0.
+
+| Проверка | Результат |
+|---|---|
+| `pnpm verify` | exit 0: typecheck 13/13, lint 2/2, config 8, API unit 389, contracts 32, api-client 28, database 1, mobile 582, ops 31/0, integration 132, build 8/8 |
+| `pnpm cloudflare:check` | exit 0: 26 unit + 7 script |
+| `pnpm cloudflare:image:verify` | linux/amd64: native modules, migrated disposable DB, HTTP/auth boundary, SIGTERM passed |
+| media config `--workers=1 --retries=0` | 2 passed, 1.0m, Chromium and WebKit |
+| full Chromium/WebKit `--workers=1 --retries=0` | 210 passed / 2 failed, 0 skipped, 0 retries, 12.0m. Home Opening: Chromium 0.12231040564373898, WebKit 0.12205687830687831, threshold 0.12 |
+
 ## Критерии и решение
 
 Проверенный SPA export, linux/amd64 Nest image, тонкий Worker, изолированные

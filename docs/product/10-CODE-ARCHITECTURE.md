@@ -285,12 +285,14 @@ SellerProfile
   that switch commits. A busy lease or a swallowed `run()` result is not success.
   Retry uses the same operation identity. A missing upload SOURCE requires the
   file to be sent again. Hide, suspend, ban and replacement still enqueue revoke.
-  The Nest executor retries only `REVOKE` and `CLEANUP`. A failed read keeps a
-  one-shot timer; the timer is removed after a successful read shows no work,
-  or on shutdown. Staging intent and young `STAGING` assets keep the existing
-  ten-minute orphan scan. The executor does not poll while that queue is empty
-  and does not retry publication or upload. `DEC-097` revoke within five
-  minutes is not withdrawn.
+  The Nest executor retries only `REVOKE` and `CLEANUP`. Startup schedules the
+  existing five-second timer and does not wait for recovery before the API
+  finishes initializing. A failed tick, including a failed abandoned-staging
+  scan, keeps that timer even when later counts are zero. The timer is removed
+  after a successful read shows no work, or on shutdown. Staging intent and
+  young `STAGING` assets keep the existing ten-minute orphan scan. The executor
+  does not poll while that queue is empty and does not retry publication or
+  upload. `DEC-097` revoke within five minutes is not withdrawn.
 - `ImageStore` now selects PostgreSQL only for legacy/backfill compatibility or an
   S3-compatible adapter for configured production storage. New media paths persist
   metadata and deterministic keys in PostgreSQL while the object store holds bytes;

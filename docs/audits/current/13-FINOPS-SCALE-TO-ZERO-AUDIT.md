@@ -60,7 +60,7 @@ CDN rules и производительность не измерены. `Сей
 
 | ID | Проблема / severity | Где найдена | Влияет на MVP | Решение сейчас / post-MVP и причина |
 |---|---|---|---|---|
-| F01 | 5s reconciliation / High | `apps/api/src/core/media/media-lifecycle.service.ts` | Да: публикация, отзыв, расходы Neon | Частично. Публикация подтверждается в инициировавшем запросе, пустой 5s loop при простое снят. Executor REVOKE/CLEANUP сохранён. F27/F28 исправлены: ошибка чтения и молодой STAGING оставляют одноразовый timer, подтверждённый простой его снимает. Отдельно: DEC-097 revoke ≤5 минут после мёртвого процесса без пробуждения не гарантирован. |
+| F01 | 5s reconciliation / High | `apps/api/src/core/media/media-lifecycle.service.ts` | Да: публикация, отзыв, расходы Neon | Частично. Публикация подтверждается в инициировавшем запросе, пустой 5s loop при простое снят. Executor REVOKE/CLEANUP сохранён. F27/F28 исправлены: ошибка чтения и молодой STAGING оставляют одноразовый timer, подтверждённый простой его снимает. F29/F30 исправлены: старт API не ждёт recovery, а упавший scan старых STAGING сохраняет timer. Отдельно: DEC-097 revoke ≤5 минут после мёртвого процесса без пробуждения не гарантирован. |
 | F02 | Unlimited provider retry и неисправимый UPLOAD / High | `media-lifecycle.service.ts` run/fail | Да: outage и pending state | Исправлено для публикации и UPLOAD: повтор — то же явное действие и та же identity. Потерянный SOURCE получает `SOURCE_RESEND_REQUIRED` и не подхватывается executor. REVOKE по-прежнему повторяется executor-ом, потому что DEC-097 не отменён. |
 | F03 | Четыре 5s delivery polling owners / Medium | admin, seller profile, product draft | Да: UI ожидания и нагрузка | Исправлено: `refetchInterval` снят. FAILED/PENDING/RUNNING показывают повтор действия и не планируют новый poll. |
 | F04 | Analytics: HTTP и DB write на view, без retention / High на росте | analytics client, API service, analytics tables | Наблюдаемость, не core flow | Частично: события одного хода объединены, attribution не читается без attribution/claim. По подтверждённому ответу основателя флаги и основные метрики сохраняются. События всё ещё пишутся в Neon; retention и sampling не утверждены. |
@@ -88,6 +88,8 @@ CDN rules и производительность не измерены. `Сей
 | F26 | Unbounded legacy owner list и большие admin aggregates | sellers service `:802–819`, admin analytics `:111+` | Не основной текущий cabinet path | Post-MVP; endpoint существует, но runtime call из текущих screens не найден. Не выдавать dormant путь за активный N+1 каждого public request. |
 | F27 | DB outage останавливает recovery executor / High | `media-lifecycle.service.ts` recover/orphan callbacks | Да: REVOKE/CLEANUP могут остаться без исполнения при живом процессе | Исправлено локально. Ошибка чтения означает неизвестное состояние и оставляет следующий одноразовый timer. Таймер снимается только после успешного подтверждения, что работы нет, либо при shutdown. |
 | F28 | Young STAGING после restart или failed stage остаётся без orphan trigger / Medium | `media-lifecycle.service.ts` startup recover и `stage()` | Да: накопление частичных private objects и manifests | Исправлено локально. Молодой STAGING при старте и сохранённый staging intent до записи объектов получают одноразовый grace timer. Прикреплённые assets, действующий lease и READY SOURCE не удаляются. Пустой простой не опрашивается. |
+| F29 | Startup recovery блокирует `app.init()` / High | `media-lifecycle.service.ts` `onModuleInit` | Да: медленный REVOKE/CLEANUP задерживает весь API | Исправлено локально. Старт только ставит уже существующий одноразовый timer на 5 секунд и не ждёт `recover()`. Новый scheduler не добавлен, timeout не увеличен. |
+| F30 | Ошибка scan старых STAGING теряет retry / Medium | `media-lifecycle.service.ts` `recover()` после падения `tick()` | Да: abandoned STAGING может остаться без следующей попытки при живом процессе | Исправлено локально. Упавший `tick()` сохраняет следующий проход через существующий timer до проверки counts. Нулевые counts после ошибки scan не считаются успехом. После успешного пустого прохода чтения прекращаются. |
 
 ## 2026-10-05 — Review `e26e912`: recovery blockers F27/F28
 
@@ -153,6 +155,43 @@ browser suite и live Cloudflare acceptance этим review не повторя�
 Evidence: `media-lifecycle.service.ts`, `media-lifecycle.recovery.spec.ts`, `media-lifecycle.integration.spec.ts`.
 
 Проверки на Node 22.20.0 / pnpm 11.7.0, code `659a6cc648aef7269fedfc96ce8a56a901d22bf8`: `pnpm verify` exit 0 (API unit 387, integration 132, mobile 582, ops 31/0, build 8/8); `pnpm cloudflare:check` exit 0; staging и production SPA export exit 0; `pnpm cloudflare:image:verify` exit 0; dedicated media config 2 passed; полный Chromium/WebKit 210 passed / 2 failed Home Opening. Push и deploy не выполнялись. F11 остаётся `Needs verification`.
+
+## 2026-10-05 — F29/F30 startup recovery
+
+Повторная проверка F27/F28 на `59b5de6fa999502a645462107d132d6a1d92993e` оставила два края. Новая ветка не создавалась. Архитектура не расширялась.
+
+**F29 / High / MVP.** `onModuleInit` делал `await recover()`. Nest не заканчивает `app.init()`, пока этот hook не вернётся. Зависший REVOKE или CLEANUP в R2 задерживает доступность всего API.
+
+**F30 / Medium / MVP.** `tick()` падает на `mediaAsset.findMany` для старых STAGING. Следующие counts возвращают нули, epochs совпадают, и timer снимается. Пустые counts не подтверждают, что упавший scan выполнился. Следующей попытки нет, пока кто-то снова не поставит работу.
+
+Воспроизведение до правки, `media-lifecycle.recovery.spec.ts`, Node 22.20.0:
+
+- Реальный `NestFactory.create` плюс `app.init()` при `findMany`, который не резолвится: за 1 секунду статус `blocked`.
+- Один отказ `mediaAsset.findMany` и нулевые counts: через 5 секунд новых чтений нет (`expected 4 to be greater than 4`).
+
+Сравнение:
+
+| Вариант | Класс | Почему |
+|---|---|---|
+| Старт только вызывает существующий `arm()` на 5 секунд. Упавший `tick()` вызывает тот же `arm()` до проверки counts, поэтому нулевой count не снимает новый timer. Успешный пустой проход и shutdown по-прежнему снимают timers | Durable fix | `app.init()` не ждёт R2. Повтор scan идёт тем же одноразовым timer. Пустой простой не читает SQL. |
+| Поднять timeout hook или вынести recovery в новый scheduler | Acceptable workaround | Либо оставляет блокировку, либо расширяет архитектуру, которую этот пакет запрещает. |
+| Не ждать `recover()` и считать упавший scan успешным, если counts нулевые | Hack | API стартует, но потерянный STAGING больше не очищается. |
+
+Выбран durable fix. Timeout 5 секунд и orphan timeout 10 минут не менялись. Publication и UPLOAD автоматически не повторяются. Прикреплённые assets, действующий lease и нужный private SOURCE по-прежнему не удаляются. F01 не закрыт: мёртвый процесс без пробуждения не гарантирует отзыв за 5 минут. F11/D08 не закрыты: локальные тесты не подтверждают live CDN/purge.
+
+После правки те же regression-тесты: unit `media-lifecycle.recovery.spec.ts` 6/6, integration `media-lifecycle.integration.spec.ts` 15/15.
+
+Проверки на Node 22.20.0 / pnpm 11.7.0, ветка `fix/portfolio-media-execution`, code `1d6ab422d3896a1f0a64d9d0d32ea60bd7221c9c` от `59b5de6fa999502a645462107d132d6a1d92993e`. Push и deploy не выполнялись. Golden, thresholds и timeouts не менялись.
+
+| Проверка | Результат |
+|---|---|
+| `pnpm verify` | exit 0: typecheck 13/13, lint 2/2, config 8, API unit 389, contracts 32, api-client 28, database 1, mobile 582, ops 31/0, integration 132, build 8/8 |
+| `pnpm cloudflare:check` | exit 0: 26 unit + 7 script |
+| `pnpm cloudflare:image:verify` | exit 0: linux/amd64 image, native modules, migrated disposable DB, HTTP/auth boundary and SIGTERM passed |
+| media Playwright `--config=playwright.media.config.ts --workers=1 --retries=0` | 2 passed, 1.0m |
+| full Chromium/WebKit `--workers=1 --retries=0` | 210 passed / 2 failed, 0 skipped, 0 retries, 12.0m. Оба отказа — Home Opening visual: Chromium 0.12231040564373898, WebKit 0.12205687830687831, threshold 0.12. Остаются post-MVP |
+
+F01 остаётся открытым: локальные тесты не подтверждают отзыв при спящем Container. F11/D08 остаются `Needs verification`: локальные тесты не подтверждают live CDN/purge. Перед integration regression нужен повтор portfolio browser gate на объединённом дереве без изменения golden. Локальный green не является live acceptance.
 
 ## 2026-10-05 — F13/F14 upload safety
 
