@@ -40,6 +40,8 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
   readonly enabled: boolean;
   private timer: ReturnType<typeof setTimeout> | undefined = undefined;
   private orphanTimer: ReturnType<typeof setTimeout> | undefined = undefined;
+  private recoveryEpoch = 0;
+  private orphanEpoch = 0;
   private stopped = false;
   private readonly logger = new Logger(MediaLifecycleService.name);
   constructor(
@@ -50,32 +52,55 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
   ) {
     this.enabled = Boolean(env.S3_PUBLIC_BUCKET);
   }
-  onModuleInit() {
-    if (this.enabled) void this.recover();
+  async onModuleInit() {
+    if (this.enabled) await this.recover();
   }
   onModuleDestroy() {
     this.stopped = true;
-    if (this.timer) clearTimeout(this.timer);
-    if (this.orphanTimer) clearTimeout(this.orphanTimer);
-    this.timer = undefined;
-    this.orphanTimer = undefined;
+    this.disarmRecovery();
+    this.disarmOrphanScan();
   }
   private arm() {
-    if (this.stopped || this.timer) return;
+    if (this.stopped) return;
+    this.recoveryEpoch += 1;
+    if (this.timer) return;
     this.timer = setTimeout(() => {
       this.timer = undefined;
-      void this.recover();
+      return this.recover();
     }, 5_000);
     this.timer.unref();
   }
+  private disarmRecovery() {
+    if (!this.timer) return;
+    clearTimeout(this.timer);
+    this.timer = undefined;
+  }
   private async recover() {
+    const recoveryEpoch = this.recoveryEpoch;
+    const orphanEpoch = this.orphanEpoch;
     try {
       await this.tick();
     } catch {
       this.logger.error('Media reconciliation failed');
     }
     if (this.stopped) return;
-    if (await this.revokeWorkOutstanding().catch(() => false)) this.arm();
+    try {
+      if (await this.revokeWorkOutstanding()) this.arm();
+      else if (recoveryEpoch === this.recoveryEpoch) this.disarmRecovery();
+    } catch {
+      this.logger.error('Media reconciliation failed');
+      this.arm();
+    }
+    if (this.stopped) return;
+    try {
+      const young = await this.youngStagingCount();
+      if (this.stopped) return;
+      if (young > 0) this.armOrphanScan();
+      else if (orphanEpoch === this.orphanEpoch) this.disarmOrphanScan();
+    } catch {
+      this.logger.error('Media reconciliation failed');
+      this.armOrphanScan();
+    }
   }
   private async revokeWorkOutstanding() {
     return (
@@ -87,32 +112,28 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
       })) > 0
     );
   }
+  private youngStagingCount() {
+    return this.prisma.mediaAsset.count({
+      where: {
+        state: 'STAGING',
+        createdAt: { gte: new Date(Date.now() - 10 * 60_000) },
+      },
+    });
+  }
   private armOrphanScan() {
-    if (this.stopped || this.orphanTimer) return;
+    if (this.stopped) return;
+    this.orphanEpoch += 1;
+    if (this.orphanTimer) return;
     this.orphanTimer = setTimeout(() => {
       this.orphanTimer = undefined;
-      void this.tick()
-        .catch(() => this.logger.error('Media reconciliation failed'))
-        .finally(() => {
-          void this.prisma.mediaAsset
-            .count({
-              where: {
-                state: 'STAGING',
-                createdAt: { gte: new Date(Date.now() - 10 * 60_000) },
-              },
-            })
-            .then((young) => {
-              if (young > 0) this.armOrphanScan();
-            })
-            .catch(() => undefined);
-          void this.revokeWorkOutstanding()
-            .then((pending) => {
-              if (pending) this.arm();
-            })
-            .catch(() => undefined);
-        });
+      return this.recover();
     }, 10 * 60_000);
     this.orphanTimer.unref();
+  }
+  private disarmOrphanScan() {
+    if (!this.orphanTimer) return;
+    clearTimeout(this.orphanTimer);
+    this.orphanTimer = undefined;
   }
   async tick() {
     const now = new Date();
@@ -212,6 +233,7 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
         });
       }
     }
+    this.armOrphanScan();
     const source = operation.objects.find(
       (x) => x.object.variant === 'SOURCE',
     )?.object;
@@ -270,7 +292,6 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
       throw new ConflictException(
         'Media upload expired; retry with a new identity',
       );
-    this.armOrphanScan();
     const preview = asset.objects.find(
       (x) => x.variant === 'PREVIEW' && x.tier === 'PRIVATE',
     );

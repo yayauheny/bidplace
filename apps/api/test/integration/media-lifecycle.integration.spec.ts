@@ -1,5 +1,13 @@
 import { randomUUID } from 'node:crypto';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
 import sharp from 'sharp';
 import type { MediaTier, PrismaClient } from '@bidplace/database';
 import {
@@ -21,6 +29,8 @@ import { mediaChecksum } from '../../src/core/media/media-object-store';
 class MemoryStore extends MediaObjectStore {
   objects = new Map<string, StoredMedia>();
   failPublic = false;
+  privateWritesBeforeFailure = Number.POSITIVE_INFINITY;
+  privateWrites = 0;
   afterPublicPut?: () => Promise<void>;
   beforeDelete?: () => Promise<void>;
   async get(tier: MediaTier, key: string) {
@@ -30,6 +40,11 @@ class MemoryStore extends MediaObjectStore {
     return null;
   }
   async put(tier: MediaTier, key: string, value: StoredMedia) {
+    if (tier === 'PRIVATE') {
+      this.privateWrites += 1;
+      if (this.privateWrites > this.privateWritesBeforeFailure)
+        throw new Error('Provider outage');
+    }
     if (tier === 'PUBLIC' && this.failPublic)
       throw new Error('Provider outage');
     this.objects.set(`${tier}:${key}`, value);
@@ -833,5 +848,297 @@ describe('durable media lifecycle on PostgreSQL', () => {
     await expect(s.media.deliver(upload.id)).rejects.toThrow(
       'Upload source must be resent',
     );
+  });
+});
+
+describe('scheduled media recovery on PostgreSQL', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  function useSchedulerClock() {
+    const started = Date.now();
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(started);
+    let now = started;
+    const realSetTimeout = globalThis.setTimeout;
+    const realClearTimeout = globalThis.clearTimeout;
+    const queue = new Map<object, { at: number; run: () => unknown }>();
+    vi.spyOn(globalThis, 'setTimeout').mockImplementation(((
+      fn: TimerHandler,
+      delay?: number,
+      ...args: unknown[]
+    ) => {
+      if (delay === 5_000 || delay === 10 * 60_000) {
+        const handle = {
+          unref() {
+            return handle;
+          },
+          ref() {
+            return handle;
+          },
+        };
+        queue.set(handle, {
+          at: now + delay,
+          run: () => (fn as (...inner: unknown[]) => unknown)(...args),
+        });
+        return handle as unknown as ReturnType<typeof setTimeout>;
+      }
+      return realSetTimeout(fn, delay, ...args);
+    }) as typeof setTimeout);
+    vi.spyOn(globalThis, 'clearTimeout').mockImplementation(((id?: unknown) => {
+      if (id && typeof id === 'object' && queue.delete(id)) return;
+      realClearTimeout(id as ReturnType<typeof setTimeout>);
+    }) as typeof clearTimeout);
+    return {
+      started,
+      async advance(ms: number) {
+        now += ms;
+        vi.setSystemTime(now);
+        const due = [...queue.entries()].filter(([, timer]) => timer.at <= now);
+        for (const [handle] of due) queue.delete(handle);
+        for (const [, timer] of due) await timer.run();
+      },
+    };
+  }
+
+  async function user() {
+    return prisma.user.create({
+      data: {
+        email: `recover-${randomUUID()}@example.com`,
+        passwordHash: 'unusable',
+        displayName: 'Recovery author',
+        emailVerifiedAt: new Date(),
+      },
+    });
+  }
+
+  it('continues a pending revoke after the database returns without a new enqueue or restart', async () => {
+    const clock = useSchedulerClock();
+    const s = setup();
+    const f = await author(s.media);
+    await approve(s.media, f.profile, f.user.id);
+    await prisma.$transaction(async (tx) => {
+      await tx.sellerProfile.update({
+        where: { id: f.profile.id },
+        data: { status: 'SUSPENDED' },
+      });
+      await s.media.enqueueRevoke(tx, { profileId: f.profile.id });
+    });
+    const revoke = await prisma.mediaOperation.findFirstOrThrow({
+      where: { profileId: f.profile.id, kind: 'REVOKE', state: 'PENDING' },
+    });
+    const revokesBefore = await prisma.mediaOperation.count({
+      where: { profileId: f.profile.id, kind: 'REVOKE' },
+    });
+    const operation = prisma.mediaOperation;
+    const asset = prisma.mediaAsset;
+    const originalFindMany = operation.findMany;
+    const originalCount = operation.count;
+    const originalAssetFindMany = asset.findMany;
+    const originalAssetCount = asset.count;
+    const unavailable = () => Promise.reject(new Error('database unavailable'));
+    operation.findMany = unavailable as typeof operation.findMany;
+    operation.count = unavailable as typeof operation.count;
+    asset.findMany = unavailable as typeof asset.findMany;
+    asset.count = unavailable as typeof asset.count;
+    try {
+      await clock.advance(5_000);
+    } finally {
+      operation.findMany = originalFindMany;
+      operation.count = originalCount;
+      asset.findMany = originalAssetFindMany;
+      asset.count = originalAssetCount;
+    }
+    expect(
+      (
+        await prisma.mediaOperation.findUniqueOrThrow({
+          where: { id: revoke.id },
+        })
+      ).state,
+    ).toBe('PENDING');
+    expect(
+      await s.store.get('PUBLIC', f.asset.preview.objectKey),
+    ).not.toBeNull();
+    await clock.advance(5_000);
+    expect(
+      (
+        await prisma.mediaOperation.findUniqueOrThrow({
+          where: { id: revoke.id },
+        })
+      ).state,
+    ).toBe('DONE');
+    expect(await s.store.get('PUBLIC', f.asset.preview.objectKey)).toBeNull();
+    expect(
+      await s.store.get('PRIVATE', f.asset.source.objectKey),
+    ).not.toBeNull();
+    expect(
+      await prisma.mediaOperation.count({
+        where: { profileId: f.profile.id, kind: 'REVOKE' },
+      }),
+    ).toBe(revokesBefore);
+    s.media.onModuleDestroy();
+  });
+
+  it('cleans a one-minute-old staging upload after restart once the grace period elapses', async () => {
+    const clock = useSchedulerClock();
+    const started = clock.started;
+    const store = new MemoryStore();
+    const first = setup(store);
+    const owner = await user();
+    const staged = await first.media.stage(owner.id, 'AUTHOR_PHOTO', {
+      buffer: bytes,
+      mimetype: 'image/png',
+    });
+    first.media.onModuleDestroy();
+    await prisma.mediaAsset.update({
+      where: { id: staged.id },
+      data: { createdAt: new Date(started - 60_000) },
+    });
+    const restarted = setup(store);
+    await restarted.media.onModuleInit();
+    expect(await store.get('PRIVATE', staged.source.objectKey)).not.toBeNull();
+    expect(
+      (await prisma.mediaAsset.findUniqueOrThrow({ where: { id: staged.id } }))
+        .state,
+    ).toBe('STAGING');
+    await clock.advance(10 * 60_000);
+    await clock.advance(5_000);
+    expect(await store.get('PRIVATE', staged.source.objectKey)).toBeNull();
+    expect(
+      (await prisma.mediaAsset.findUniqueOrThrow({ where: { id: staged.id } }))
+        .state,
+    ).toBe('FAILED');
+    expect(
+      (
+        await prisma.mediaOperation.findFirstOrThrow({
+          where: {
+            kind: 'CLEANUP',
+            objects: { some: { object: { assetId: staged.id } } },
+          },
+        })
+      ).state,
+    ).toBe('DONE');
+    restarted.media.onModuleDestroy();
+  });
+
+  it('cleans a partially stored upload after the grace period and does not retry the upload', async () => {
+    const clock = useSchedulerClock();
+    const started = clock.started;
+    const store = new MemoryStore();
+    store.privateWritesBeforeFailure = 1;
+    const s = setup(store);
+    const owner = await user();
+    await expect(
+      s.media.stage(owner.id, 'AUTHOR_PHOTO', {
+        buffer: bytes,
+        mimetype: 'image/png',
+      }),
+    ).rejects.toThrow('Provider outage');
+    const asset = await prisma.mediaAsset.findFirstOrThrow({
+      where: { ownerUserId: owner.id, purpose: 'AUTHOR_PHOTO' },
+      include: { objects: true },
+    });
+    const source = asset.objects.find((object) => object.variant === 'SOURCE');
+    expect(source).toBeTruthy();
+    expect(await store.get('PRIVATE', source!.objectKey)).not.toBeNull();
+    const upload = await prisma.mediaOperation.findFirstOrThrow({
+      where: {
+        kind: 'UPLOAD',
+        objects: { some: { objectId: source!.id } },
+      },
+    });
+    expect(upload.state).toBe('FAILED');
+    await clock.advance(20_000);
+    expect(
+      (
+        await prisma.mediaOperation.findUniqueOrThrow({
+          where: { id: upload.id },
+        })
+      ).attemptCount,
+    ).toBe(upload.attemptCount);
+    expect(await store.get('PRIVATE', source!.objectKey)).not.toBeNull();
+    await prisma.mediaAsset.update({
+      where: { id: asset.id },
+      data: { createdAt: new Date(started - 60_000) },
+    });
+    await clock.advance(10 * 60_000);
+    await clock.advance(5_000);
+    expect(await store.get('PRIVATE', source!.objectKey)).toBeNull();
+    expect(
+      (
+        await prisma.mediaOperation.findUniqueOrThrow({
+          where: { id: upload.id },
+        })
+      ).state,
+    ).toBe('FAILED');
+    s.media.onModuleDestroy();
+  });
+
+  it('does not delete an attached asset or a leased object from the scheduled scan', async () => {
+    const clock = useSchedulerClock();
+    const started = clock.started;
+    const store = new MemoryStore();
+    const s = setup(store);
+    const f = await author(s.media);
+    const owner = await user();
+    const leased = await s.media.stage(owner.id, 'WORK_IMAGE', {
+      buffer: bytes,
+      mimetype: 'image/png',
+    });
+    s.media.onModuleDestroy();
+    await prisma.mediaAsset.update({
+      where: { id: f.asset.id },
+      data: { createdAt: new Date(started - 60_000) },
+    });
+    await prisma.mediaAsset.update({
+      where: { id: leased.id },
+      data: { createdAt: new Date(started - 11 * 60_000) },
+    });
+    const leasedSource = await prisma.mediaObject.findFirstOrThrow({
+      where: { assetId: leased.id, variant: 'SOURCE' },
+    });
+    await prisma.mediaOperation.create({
+      data: {
+        kind: 'PUBLISH',
+        state: 'RUNNING',
+        identity: `lease:${randomUUID()}`,
+        leaseUntil: new Date(started + 60 * 60_000),
+        objects: { create: [{ objectId: leasedSource.id }] },
+      },
+    });
+    await prisma.mediaObject.update({
+      where: { id: leasedSource.id },
+      data: { leaseUntil: new Date(started + 60 * 60_000) },
+    });
+    const restarted = setup(store);
+    await restarted.media.onModuleInit();
+    await clock.advance(10 * 60_000 + 5_000);
+    expect(await store.get('PRIVATE', f.asset.source.objectKey)).not.toBeNull();
+    expect(
+      (
+        await prisma.mediaAsset.findUniqueOrThrow({
+          where: { id: f.asset.id },
+        })
+      ).state,
+    ).toBe('READY');
+    expect(
+      await prisma.mediaOperation.count({
+        where: {
+          kind: 'CLEANUP',
+          objects: { some: { object: { assetId: f.asset.id } } },
+        },
+      }),
+    ).toBe(0);
+    expect(await store.get('PRIVATE', leased.source.objectKey)).not.toBeNull();
+    expect(
+      (
+        await prisma.mediaObject.findUniqueOrThrow({
+          where: { id: leasedSource.id },
+        })
+      ).state,
+    ).not.toBe('DELETED');
+    restarted.media.onModuleDestroy();
   });
 });
