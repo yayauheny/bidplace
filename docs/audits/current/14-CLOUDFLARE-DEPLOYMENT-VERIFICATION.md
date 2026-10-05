@@ -290,7 +290,10 @@ migration не запускалась. Прежний вывод, что `suspen
 умолчанию плана, `-1` отключает её. Организация на Neon Free (`free_v3`).
 Upgrade Neon не покупался. Data API не включён. Зона остаётся Free Website.
 Cloudflare Pro не покупался. Wrangler не аутентифицирован. Секреты не читались.
-Staging **NOT READY**. Приложение не запущено.
+Staging **NOT READY**. Приложение не запущено. Ветка Neon staging создана,
+отдельная роль нет. `SERVICE_RULES_TEXT` не утверждён. `cloudflare:check`,
+staging SPA build и image verify на локальной disposable DB прошли. Neon
+migrate и deploy не запускались.
 
 ## 2026-10-05 — Active zone and media CDN
 

@@ -116,8 +116,8 @@ tokens для диагностики/rotation, но ограничение ко�
 - `SMTP_SECURE=true` — implicit TLS. Порт 587 и STARTTLS этот endpoint не принимает.
 - `SMTP_AUTH_MODE=login`
 
-`SMTP_FROM` остаётся пустым, пока оператор не укажет адрес. Preflight падает,
-пока он пуст. Не подставлять фиктивный адрес.
+`SMTP_FROM` — `noreply@bid.place`. Пустое значение по-прежнему валит preflight.
+`SERVICE_RULES_TEXT` пуст, пока черновик не утверждён, и тоже валит preflight.
 
 Официальные источники:
 [SMTP](https://developers.cloudflare.com/email-service/api/send-emails/smtp/),
@@ -347,11 +347,11 @@ handoff-абзацы сохраняют историю проверок. `DEC-10
 | Что ввести | Куда | Как проверить | Статус |
 |---|---|---|---|
 | Workers `bidplace-staging` и `bidplace-production`, custom domains `staging.bid.place` и `bid.place`; `workers.dev` и preview URLs выключены | Cloudflare account `56b0c4b96497366c262447d2a18bf632`. Имена и routes уже в `deploy/cloudflare/wrangler.jsonc` | В dashboard оба Worker существуют, hostname открывает свой Worker | Needs verification. Зона `bid.place` Active. Workers не развёрнуты. Корень `bid.place` не привязывать без отдельного разрешения |
-| Отдельный Neon staging branch/database и роль без доступа к production. Runtime URL — TLS pooler | Neon; затем secret `DATABASE_URL` отдельно для staging и production. Миграция: `pnpm cloudflare:migrate staging` после backup. Production — `pnpm cloudflare:migrate production --confirm-production` | Роль staging не читает production. URL не печатать. После будущего deploy `/api/health/ready` отвечает | Needs verification |
-| Четыре R2 bucket из контракта, public hosts `media-staging.bid.place` и `media.bid.place`, cache rule ignore entire query string на каждом media host. Browser TTL не повышать. Правило не применять к API | R2 location `weur`. Cache ruleset `85b85dfb40204a2d9d978a03b4dab4b0` | `r2.dev` выключен. Staging media host active. Production media host был pending. Query string exclude all, TTL respect origin, API host не в expression | Partial. CDN подключён. Live purge ещё не проверен |
-| Email Sending на Workers Paid, onboard домена отправителя, DNS которые добавляет Cloudflare: MX, SPF и DKIM на `cf-bounce`, DMARC на `_dmarc`. Адрес `SMTP_FROM` на этом домене | Email Service и `env.staging.vars` / `env.production.vars`. Host `smtp.mx.cloudflare.net`, port `465`, `SMTP_SECURE=true`, `login` уже заданы | Домен `bid.place` enabled. DNS `cf-bounce` и `_dmarc` на месте. Preflight падает, пока `SMTP_FROM` пуст | Partial. Onboard есть. Адрес отправителя и token ещё не заданы |
+| Отдельный Neon staging branch/database и роль без доступа к production. Runtime URL — TLS pooler | Neon CLI 8.0.10. Staging `br-summer-wind-b2gz0gcm`, endpoint `ep-twilight-recipe-b2ials8i`, parent `br-polished-haze-b2d6rop9`. Autopause `0` | Сейчас на обеих ветках только скопированный `neondb_owner`. Отдельная роль ещё не создана, поэтому доступ к production не опровергнут | Partial. Ветка есть. Изоляция credentials нет |
+| Четыре R2 bucket из контракта, public hosts `media-staging.bid.place` и `media.bid.place`, cache rule ignore entire query string на каждом media host. Browser TTL не повышать. Правило не применять к API | R2 location `weur`. Cache ruleset `85b85dfb40204a2d9d978a03b4dab4b0` | `r2.dev` выключен. Оба media host: ownership и SSL active. Query string exclude all, TTL respect origin, API host не в expression | Partial. CDN подключён. Live purge ещё не проверен |
+| Email Sending на Workers Paid, onboard домена отправителя, DNS которые добавляет Cloudflare: MX, SPF и DKIM на `cf-bounce`, DMARC на `_dmarc`. Адрес `SMTP_FROM` на этом домене | `SMTP_FROM=noreply@bid.place`. Домен enabled, selector `cf-bounce`. Implicit TLS отвечает `220`/`221` | Preflight больше не останавливается на пустом `SMTP_FROM`. Доставка в ящик не проверена: SMTP token не вводился | Partial. Транспорт доступен. Доставка нет |
 | Runtime secrets по именам: `DATABASE_URL`, `JWT_SECRET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `SMTP_USERNAME` (литерал `api_token`), `SMTP_PASSWORD` (отдельный Email Sending: Edit token), `CLOUDFLARE_CACHE_TOKEN` | `pnpm exec wrangler secret put <NAME> --config deploy/cloudflare/wrangler.jsonc --env <staging\|production>`. Восстанавливаемая копия — зашифрованное хранилище оператора вне GitHub и Cloudflare | Wrangler показывает наличие имён. Значения не печатать. Staging и production различаются | Needs verification |
-| Пустые публичные vars: `SMTP_FROM`, `SERVICE_RULES_OWNER`, `SERVICE_RULES_CONTACT`, `SERVICE_RULES_TEXT`. `S3_ENDPOINT` и `CLOUDFLARE_ZONE_ID` уже заполнены | `env.staging.vars` и `env.production.vars` | `validateConfig` проходит, когда оставшиеся поля непусты. До этого preflight падает на пустом `SMTP_FROM` и правилах | Needs verification. Подтверждённых правил сервиса в материалах нет |
+| Публичные vars: подтверждённые `SMTP_FROM`, `SERVICE_RULES_OWNER`, `SERVICE_RULES_CONTACT`. `SERVICE_RULES_TEXT` пуст, пока черновик не утверждён | `env.staging.vars` и `env.production.vars` | `validateConfig` падает на пустом `SERVICE_RULES_TEXT`. Отдельная fixture с пустым `SMTP_FROM` тоже падает | Partial. Owner, contact и from записаны. Текст правил нет |
 
 Live acceptance после этих настроек и будущего staging deploy. Локальные тесты
 её не закрывают:

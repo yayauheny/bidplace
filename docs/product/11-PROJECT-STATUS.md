@@ -10,29 +10,39 @@
   domain and `r2.dev` stays disabled. Cache rule
   `85b85dfb40204a2d9d978a03b4dab4b0` ignores the entire query string only on
   those two media hosts. Browser and edge TTL stay `respect_origin`.
-- `Partial`: Email Sending for `bid.place` is enabled. Existing `cf-bounce`
-  MX/SPF/DKIM and `_dmarc` records were left in place. The earlier account
-  limits call now returns HTTP 200, quota 200 per day, sent 0. That daily
-  figure is not a replacement for the monthly included quota. No Workers
-  email binding was added. `SMTP_FROM` is still empty.
+- `Partial`: Email Sending for `bid.place` is enabled. DKIM selector
+  `cf-bounce`, return path `cf-bounce.bid.place`. MX, SPF, DKIM, and DMARC
+  records are present. `smtp.mx.cloudflare.net:465` accepts implicit TLS
+  and answers `220`/`221`. That is not mailbox delivery. The earlier
+  unauthorized limits call is stale: the same call now returns HTTP 200,
+  quota 200 per day, sent 0. That daily figure does not replace the monthly
+  included quota. No Workers email binding was added. Confirmed
+  `SMTP_FROM` is `noreply@bid.place`.
+- `Partial`: confirmed `SERVICE_RULES_OWNER` and `SERVICE_RULES_CONTACT` are
+  `work.evles@gmail.com` in both Wrangler environments. `SERVICE_RULES_TEXT`
+  stays empty. The approval line was left as the placeholder
+  `[утверждаю / мои изменения]`, so the draft was not written into config.
+  Preflight still fails closed on that empty text.
 - `Confirmed` for the current Neon bill shape: organization
   `org-flat-night-30430100` is plan `free` / `free_v3`. Project
-  `bidplace (main)` `calm-rain-59989397` has one branch, `production`
-  `br-polished-haze-b2d6rop9`, database `neondb`, 0 public tables. There is
-  no branch named `main`. Endpoint `ep-withered-shadow-b230htte` stores
-  `suspend_timeout_seconds=0`. In the Neon API that value means the plan
-  default, and `-1` would disable scale-to-zero. Free uses a 5-minute
-  default and cannot turn it off. No Neon upgrade was purchased. Data API
-  is absent (`404`) and stays off. No migration was applied. Neon tools
-  remain read-only, so a staging branch was not created.
+  `bidplace (main)` `calm-rain-59989397` has production branch
+  `br-polished-haze-b2d6rop9` and staging branch `br-summer-wind-b2gz0gcm`.
+  There is no branch named `main`. Staging endpoint
+  `ep-twilight-recipe-b2ials8i` stores `suspend_timeout_seconds=0`, which
+  remains the plan default. No Neon upgrade, Auth, or Data API. Staging
+  Data API is absent (`404`). No migration was applied. The only role on
+  both branches is `neondb_owner`, copied with the branch. Separate staging
+  credentials are not established, and different hostnames do not prove
+  isolation.
 - `Needs verification`: the endpoint read itself marks compute active, so
   this check did not watch an idle suspend. Free has no paid overage; hitting
-  the compute quota suspends the database until the next period.
-- `Needs verification`: Email Sending API returned unauthorized for the
-  connected Cloudflare token. `SMTP_FROM` and service-rules vars stay empty.
-  Wrangler is not logged in. No secrets were read or stored. No deploy.
-- Confirmed public service-rules owner, contact, and text were not found.
-  They were not invented.
+  the compute quota suspends the database until the next period. Staging
+  reports `pooler_enabled=false` while still publishing a pooled hostname.
+- `Partial`: Wrangler CLI 4.147.0 is logged into account
+  `56b0c4b96497366c262447d2a18bf632`. Worker `bidplace-staging` does not
+  exist yet, so secrets are not stored. No secret values were read. No deploy.
+  `pnpm cloudflare:check`, the staging SPA build, and image verify on a
+  disposable local database passed. Neon `migrate deploy` was not run.
 
 ## 2026-10-05 — Revoke deadline withdrawn
 
@@ -60,8 +70,9 @@
   отдельный API token с Email Sending: Edit. `SMTP_FROM` — адрес на домене,
   подключённом к Email Sending. SDK, email binding и новый adapter не добавлены.
 - Контракт: `deploy/cloudflare/wrangler.jsonc` задаёт host, port `465` и
-  `SMTP_SECURE=true` для staging и production. `SMTP_FROM` пуст до ввода
-  оператором. Username и password остаются Worker secrets.
+`SMTP_SECURE=true` для staging и production. Позже подтверждённый
+`SMTP_FROM` записан как `noreply@bid.place`; см. верхний раздел. Username и
+password остаются Worker secrets.
 - Совместимость: `apps/api/src/core/email/smtp-transport.ts` и
   `smtp-transport.spec.ts`. Runtime не переписывался.
 - `Needs verification`: Email Sending в аккаунте, Workers Paid, DNS домена

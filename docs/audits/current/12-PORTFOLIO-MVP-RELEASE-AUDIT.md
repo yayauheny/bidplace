@@ -938,11 +938,12 @@ Secrets, `.env`, `.cursor/`, and `trace.zip` were not read.
 
 | ID | Проблема / severity | Где | Влияние на MVP | Решение / причина |
 |---|---|---|---|---|
-| W01 | Зона `bid.place` не делегирована / High | Cloudflare zone `f10d49913e125d8b0d424018322aeb07`, status `pending`. Porkbun NS: `maceio`, `curitiba`, `salvador`, `fortaleza.ns.porkbun.com` | Custom domains, cache rules, Email Sending DNS и Worker routes не станут рабочими | Зона создана. Оператор ставит NS `clay.ns.cloudflare.com` и `sky.ns.cloudflare.com`. Ожидание DNS не считается настройкой |
-| W02 | Neon branch name / High | Project `bidplace (main)` `calm-rain-59989397`. Единственная ветка `production` `br-polished-haze-b2d6rop9`, database `neondb`, 0 public tables. Ветки `main` нет | Нельзя мигрировать production, пока выбор не подтверждён | Миграция и staging branch не создавались. Neon MCP read-only |
+| W01 | Зона `bid.place` не делегирована / High | Cloudflare zone `f10d49913e125d8b0d424018322aeb07`, status `pending`. Porkbun NS: `maceio`, `curitiba`, `salvador`, `fortaleza.ns.porkbun.com` | Custom domains, cache rules, Email Sending DNS и Worker routes не станут рабочими | Снято: зона Active. Оба media host active. Worker routes ещё не развёрнуты |
+| W02 | Neon branch name / High | Project `bidplace (main)` `calm-rain-59989397`. Единственная ветка `production` `br-polished-haze-b2d6rop9`, database `neondb`, 0 public tables. Ветки `main` нет | Нельзя мигрировать production, пока выбор не подтверждён | Production target подтверждён. Staging `br-summer-wind-b2gz0gcm` создана. Миграция не применялась |
 | W03 | Прежний вывод «автопауза выключена» неверен / исправлено | Endpoint `ep-withered-shadow-b230htte`, `suspend_timeout_seconds=0` | Ошибочные $19/месяц не должны блокировать Free-старт и не требуют upgrade | `0` — пауза по умолчанию плана; `-1` отключает scale-to-zero. Организация `org-flat-night-30430100`: `plan=free`, `subscription_type=free_v3`. На Free пауза 5 минут и её нельзя отключить. Upgrade не покупался. Чтение endpoint само будит compute, поэтому факт засыпания после простоя этим вызовом не наблюдался. На Free нет платного перерасхода: исчерпание квоты приостанавливает базу |
-| W04 | Email Sending token scope / High | `GET /accounts/{id}/email/sending/limits` → 2036 Unauthorized. Wrangler не залогинен | OTP/reset нельзя настроить этим токеном | Secrets не создавались. `SMTP_FROM` пуст |
-| W05 | Service rules не подтверждены / High | `SERVICE_RULES_*` пусты. В канонических материалах нет публичного текста | Production validation не пройдёт с выдуманным текстом | Значения не подставлены. Deploy не запускался |
+| W04 | Email Sending token scope / High | `GET /accounts/{id}/email/sending/limits` → 2036 Unauthorized. Wrangler не залогинен | OTP/reset нельзя настроить этим токеном | 401 снят: limits HTTP 200, домен enabled, Wrangler залогинен. SMTP token и доставка в ящик ещё нет |
+| W05 | Service rules не подтверждены / High | `SERVICE_RULES_*` пусты. В канонических материалах нет публичного текста | Production validation не пройдёт с выдуманным текстом | Owner и contact записаны. Текст не утверждён, поле пустое, deploy не запускался |
+| W06 | Staging credentials не отделены от production / High | Обе ветки имеют только `neondb_owner` с одним timestamp создания | URL staging endpoint может открыть production тем же паролем владельца | Роль `bidplace_staging` создавать только на child. Секрет приложения не ставить, пока роль не существует лишь на staging |
 
 R2 buckets созданы в `weur` и остаются закрытыми, `r2.dev` disabled:
 `bidplace-staging-media-private`, `bidplace-staging-media-public`,
@@ -976,3 +977,43 @@ is absent, and the connected Neon tools cannot create branches. No connection
 string was requested. Neon Auth and Data API stay off. Wrangler CLI is still
 not logged in, which is separate from the Cloudflare connector. Staging deploy
 has not run. The root `bid.place` Worker route was not attached.
+
+## 2026-10-06 — Staging branch created, isolation not proven
+
+Neon CLI 8.0.10 supports `--no-secrets`. After `neon auth`, the project had
+only `production` `br-polished-haze-b2d6rop9`. One normal child was created:
+`staging` `br-summer-wind-b2gz0gcm`, endpoint `ep-twilight-recipe-b2ials8i`.
+No expiration, no schema-only copy, no Auth, no Data API, no upgrade.
+`suspend_timeout_seconds` is `0`. `neon init`, `checkout`, and `env pull`
+were not used. No connection string was printed or stored.
+
+Both branches list only `neondb_owner`, and the staging role timestamp matches
+the production role. That is a copied owner, not a separate credential.
+Different endpoints do not prove the staging URL cannot open production.
+Staging Data API remains `404`. `pooler_enabled` is `false`; a pooled hostname
+is still present. Migrations were not applied. The 22 Prisma files contain
+`DROP NOT NULL` / `DROP DEFAULT` only, with no `DROP TABLE`, `TRUNCATE`, or
+`DELETE`.
+
+`media.bid.place` ownership and SSL are now active, as is
+`media-staging.bid.place`. Private buckets remain closed. The cache rule is
+unchanged. Email Sending for `bid.place` is enabled, and `dns get` returns
+the existing `cf-bounce` and `_dmarc` records. Implicit TLS to
+`smtp.mx.cloudflare.net:465` returned `220` and `221` without `AUTH`. That
+does not prove mailbox delivery. The old 401 note is withdrawn.
+
+Confirmed public values are in both Wrangler environments: `SMTP_FROM`
+`noreply@bid.place`, owner and contact `work.evles@gmail.com`.
+`SERVICE_RULES_TEXT` is empty because the reply kept the placeholder
+`[утверждаю / мои изменения]`. Preflight still rejects that empty value.
+`TEST_EMAIL_BYPASS` stays `false`. Wrangler is logged into the existing
+account. Worker `bidplace-staging` does not exist, so no runtime secret is
+stored. Production and the apex route were not deployed.
+
+`pnpm cloudflare:check` passed. SMTP transport spec passed 4/4. Staging SPA
+export verified `https://staging.bid.place`. `pnpm cloudflare:image:verify`
+passed on a disposable local database: linux/amd64, native modules, all local
+migrations, HTTP/auth boundary, and SIGTERM. That local migrate is not the
+Neon migrate. `pnpm cloudflare:deploy:staging` was not run: `validateConfig`
+still rejects empty `SERVICE_RULES_TEXT`, and the copied owner role is not an
+isolated staging credential.
