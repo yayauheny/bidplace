@@ -60,7 +60,7 @@ CDN rules и производительность не измерены. `Сей
 
 | ID | Проблема / severity | Где найдена | Влияет на MVP | Решение сейчас / post-MVP и причина |
 |---|---|---|---|---|
-| F01 | 5s reconciliation / High | `apps/api/src/core/media/media-lifecycle.service.ts` | Да: публикация, отзыв, расходы Neon | Частично. Публикация подтверждается в инициировавшем запросе, пустой 5s loop при простое снят. Executor REVOKE/CLEANUP сохранён. Перед интеграцией исправить recovery-регрессии F27/F28. Отдельно: DEC-097 revoke ≤5 минут после мёртвого процесса без пробуждения не гарантирован. |
+| F01 | 5s reconciliation / High | `apps/api/src/core/media/media-lifecycle.service.ts` | Да: публикация, отзыв, расходы Neon | Частично. Публикация подтверждается в инициировавшем запросе, пустой 5s loop при простое снят. Executor REVOKE/CLEANUP сохранён. F27/F28 исправлены: ошибка чтения и молодой STAGING оставляют одноразовый timer, подтверждённый простой его снимает. Отдельно: DEC-097 revoke ≤5 минут после мёртвого процесса без пробуждения не гарантирован. |
 | F02 | Unlimited provider retry и неисправимый UPLOAD / High | `media-lifecycle.service.ts` run/fail | Да: outage и pending state | Исправлено для публикации и UPLOAD: повтор — то же явное действие и та же identity. Потерянный SOURCE получает `SOURCE_RESEND_REQUIRED` и не подхватывается executor. REVOKE по-прежнему повторяется executor-ом, потому что DEC-097 не отменён. |
 | F03 | Четыре 5s delivery polling owners / Medium | admin, seller profile, product draft | Да: UI ожидания и нагрузка | Исправлено: `refetchInterval` снят. FAILED/PENDING/RUNNING показывают повтор действия и не планируют новый poll. |
 | F04 | Analytics: HTTP и DB write на view, без retention / High на росте | analytics client, API service, analytics tables | Наблюдаемость, не core flow | Частично: события одного хода объединены, attribution не читается без attribution/claim. По подтверждённому ответу основателя флаги и основные метрики сохраняются. События всё ещё пишутся в Neon; retention и sampling не утверждены. |
@@ -86,8 +86,8 @@ CDN rules и производительность не измерены. `Сей
 | F24 | Runtime deployment, cache/sleep/region/probe policies не versioned | отсутствуют Worker/Wrangler/provider deployment configs | Да: цена и cloud correctness | До deploy зафиксировать выбранные настройки, только минимальный provider adapter. Аудит не выбирает platform и не создаёт инфраструктуру. |
 | F25 | STAGING scan без state/createdAt index, retained READY SOURCE и старые revisions | media schema `:633–649`, remove `:907–919` | Storage/scan cost на росте | Post-MVP после F01: измерить EXPLAIN и retained bytes; индексы/retention локально, не универсальный migration/GC framework. |
 | F26 | Unbounded legacy owner list и большие admin aggregates | sellers service `:802–819`, admin analytics `:111+` | Не основной текущий cabinet path | Post-MVP; endpoint существует, но runtime call из текущих screens не найден. Не выдавать dormant путь за активный N+1 каждого public request. |
-| F27 | DB outage останавливает recovery executor / High | `media-lifecycle.service.ts:71–78`, также error branches orphan callback | Да: REVOKE/CLEANUP могут остаться без исполнения при живом процессе | Сейчас, перед интеграцией: сохранить recovery trigger при неизвестном состоянии БД; отсутствие работы должно быть подтверждено успешным чтением. `.catch(() => false)` превращает outage в «работы нет». |
-| F28 | Young STAGING после restart или failed stage остаётся без orphan trigger / Medium | `media-lifecycle.service.ts:53–54,90–114,131–138,258–273` | Да: накопление частичных private objects и manifests | Сейчас, перед интеграцией: восстановить одноразовый orphan trigger для молодых STAGING при старте и после сохранения staging intent, включая ошибку записи. Не возвращать постоянный пустой poll. |
+| F27 | DB outage останавливает recovery executor / High | `media-lifecycle.service.ts` recover/orphan callbacks | Да: REVOKE/CLEANUP могут остаться без исполнения при живом процессе | Исправлено локально. Ошибка чтения означает неизвестное состояние и оставляет следующий одноразовый timer. Таймер снимается только после успешного подтверждения, что работы нет, либо при shutdown. |
+| F28 | Young STAGING после restart или failed stage остаётся без orphan trigger / Medium | `media-lifecycle.service.ts` startup recover и `stage()` | Да: накопление частичных private objects и manifests | Исправлено локально. Молодой STAGING при старте и сохранённый staging intent до записи объектов получают одноразовый grace timer. Прикреплённые assets, действующий lease и READY SOURCE не удаляются. Пустой простой не опрашивается. |
 
 ## 2026-10-05 — Review `e26e912`: recovery blockers F27/F28
 
@@ -133,6 +133,26 @@ browser suite и live Cloudflare acceptance этим review не повторя�
 Предыдущие 210 passed / два Home Opening failures остаются отчётом исполнителя.
 Пакет требует F27/F28 перед рекомендацией к integration regression; F11/D08 и
 пробуждение остановленного процесса остаются отдельными открытыми вопросами.
+
+## 2026-10-05 — F27/F28 recovery triggers
+
+Сравнение:
+
+| Вариант | Класс | Почему |
+|---|---|---|
+| Ошибка чтения оставляет следующий одноразовый timer; молодой STAGING и сохранённый staging intent получают grace timer; подтверждённое отсутствие работы и shutdown снимают timers | Durable fix | Сохраняет журнал, leases и DEC-097 executor. Простой не читает SQL повторно. |
+| Рестарт сервера или следующее enqueue как единственный способ продолжить | Acceptable workaround | Для живого процесса после короткого отказа БД этого недостаточно. |
+| Считать ошибку чтения отсутствием работы или вернуть постоянный пустой 5s poll | Hack | Либо теряет отзыв, либо возвращает простой Neon. |
+
+Выбран durable fix. Публикация, UPLOAD и потерянный SOURCE по-прежнему не повторяются executor-ом. F11 и пробуждение остановленного Container не закрыты.
+
+Доказательство простоя: `media-lifecycle.recovery.spec.ts` после пустого startup и после возврата БД без оставшейся работы продвигает fake time на 15 минут и видит тот же набор чтений. Scheduler не планирует следующий запрос.
+
+Доказательство recovery: pending REVOKE переживает отказ чтения и после возврата БД доходит до DONE тем же timer, без нового enqueue и без рестарта. STAGING возрастом одна минута после restart очищается, когда наступает существующий grace period. Частичная запись с отказом provider очищается тем же путём, а UPLOAD остаётся FAILED. Прикреплённый asset и объект с действующим lease не удаляются.
+
+Evidence: `media-lifecycle.service.ts`, `media-lifecycle.recovery.spec.ts`, `media-lifecycle.integration.spec.ts`.
+
+Проверки на Node 22.20.0 / pnpm 11.7.0, code `659a6cc648aef7269fedfc96ce8a56a901d22bf8`: `pnpm verify` exit 0 (API unit 387, integration 132, mobile 582, ops 31/0, build 8/8); `pnpm cloudflare:check` exit 0; staging и production SPA export exit 0; `pnpm cloudflare:image:verify` exit 0; dedicated media config 2 passed; полный Chromium/WebKit 210 passed / 2 failed Home Opening. Push и deploy не выполнялись. F11 остаётся `Needs verification`.
 
 ## 2026-10-05 — F13/F14 upload safety
 

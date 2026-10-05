@@ -63,6 +63,27 @@ Node 22.20.0, pnpm 11.7.0.
 | full Chromium/WebKit `--workers=1 --retries=0` | 210 passed / 2 failed, 0 skipped, 0 retries, 11.8m. Оба отказа — Home Opening visual, post-MVP |
 | `git diff --check` | PASS; no `.pen` changes |
 
+## 2026-10-05 — Recovery trigger follow-up
+
+Code `659a6cc648aef7269fedfc96ce8a56a901d22bf8` на
+`fix/portfolio-media-execution`. Push и deploy нет. Секреты и аккаунты не
+читались. Пакет остаётся **NOT READY FOR STAGING**: F11/D08 и пробуждение
+остановленного Container не закрыты. Пустой 5s poll не возвращён.
+
+Node 22.20.0, pnpm 11.7.0.
+
+| Проверка | Результат |
+|---|---|
+| `pnpm verify` | exit 0: typecheck 13/13, config 8, API unit 387, contracts 32, api-client 28, database 1, mobile 582, ops 31/0, integration 132, build 8/8 |
+| `pnpm cloudflare:check` | exit 0: 26 unit + 7 script |
+| `pnpm cloudflare:build:staging` | SPA export verified for `https://staging.bid.place` |
+| `pnpm build:web` | SPA export verified for `https://bid.place` |
+| `pnpm cloudflare:image:verify` | linux/amd64: native modules, migrated disposable DB, HTTP/auth boundary, SIGTERM passed |
+| `playwright test work-media-lifecycle.spec.ts --workers=1 --retries=0` | No tests found. Maintained `playwright.config.ts` ignores that file |
+| media config `--workers=1 --retries=0` | 2 passed, 1.1m, Chromium and WebKit |
+| full Chromium/WebKit `--workers=1 --retries=0` | 210 passed / 2 failed, 0 skipped, 0 retries, 12.8m. Оба отказа — Home Opening, mismatch около 0.122 при пороге 0.12, post-MVP |
+| `git diff --check` | PASS; no `.pen` changes |
+
 ## Критерии и решение
 
 Проверенный SPA export, linux/amd64 Nest image, тонкий Worker, изолированные

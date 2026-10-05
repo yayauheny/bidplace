@@ -1,5 +1,34 @@
 # bidplace — текущий статус проекта
 
+## 2026-10-05 — Media recovery after a failed read
+
+- `Implemented` (F27): a database read error during revoke or cleanup recovery
+  keeps a later one-shot attempt. Recovery stops only after a successful read
+  shows no `REVOKE` or `CLEANUP` work, or when the process shuts down.
+- `Implemented` (F28): a restart with staging younger than ten minutes schedules
+  the existing grace-period cleanup. Saving a staging intent schedules that
+  cleanup even if the later object write fails. Attached assets, an active
+  lease, and a needed private SOURCE stay. Publication and upload are not
+  retried by the executor.
+- `Partial` (F01): the idle loop stays off, and F27/F28 no longer drop recovery
+  on a live process. A dead process with nothing to wake it still does not
+  guarantee the DEC-097 revoke within five minutes.
+- `Needs verification`: live Cloudflare cache and purge. This package is not
+  ready for staging.
+- Checks on Node 22.20.0 / pnpm 11.7.0, branch `fix/portfolio-media-execution`,
+  code `659a6cc648aef7269fedfc96ce8a56a901d22bf8`: `pnpm verify` exit 0
+  (typecheck 13/13, config 8, API unit 387, contracts 32, api-client 28,
+  database 1, mobile 582, ops 31/0, integration 132, build 8/8).
+  `pnpm cloudflare:check` exit 0 (26 unit + 7 script). Staging SPA verified for
+  `https://staging.bid.place`. Production SPA verified for `https://bid.place`.
+  `pnpm cloudflare:image:verify` exit 0. The literal Playwright file command
+  reported no tests because the maintained config ignores
+  `work-media-lifecycle.spec.ts`. The dedicated media config then passed 2/2
+  in 1.1m, workers 1, retries 0. Full Chromium/WebKit: 210 passed / 2 failed,
+  0 skipped, 0 retries, 12.8m. Both failures are Home Opening visual mismatch
+  about 0.122 against the 0.12 threshold and stay post-MVP debt.
+  `git diff --check` passed; no `.pen` changes. No push or deploy.
+
 ## 2026-10-05 — Synchronous publication and view attribution
 
 - `Partial` (F01): approve, restore and unhide confirm media delivery before
