@@ -23,6 +23,7 @@ const harness = vi.hoisted(() => ({
   updateProduct: vi.fn(),
   submitProduct: vi.fn(),
   addImages: vi.fn(),
+  removeImage: vi.fn(),
 }));
 
 vi.mock('react-native', () => ({
@@ -55,7 +56,7 @@ vi.mock('../../providers/api-provider', () => ({
       update: harness.updateProduct,
       submit: harness.submitProduct,
     },
-    images: { add: harness.addImages, remove: vi.fn(), reorder: vi.fn() },
+    images: { add: harness.addImages, remove: harness.removeImage, reorder: vi.fn() },
   }),
 }));
 
@@ -241,6 +242,16 @@ function click(container: ParentNode, label: string) {
   });
 }
 
+function clickNth(container: ParentNode, label: string, index: number) {
+  const target = [...container.querySelectorAll('button')].filter(
+    (button) => button.textContent === label,
+  )[index];
+  if (!target) throw new Error(`Missing button ${label} at ${index}`);
+  act(() => {
+    target.click();
+  });
+}
+
 function formIsDirty() {
   const event = new Event('beforeunload', { cancelable: true });
   window.dispatchEvent(event);
@@ -262,6 +273,7 @@ beforeEach(() => {
   harness.updateProduct.mockReset();
   harness.submitProduct.mockReset();
   harness.addImages.mockReset();
+  harness.removeImage.mockReset();
   harness.listCategories.mockResolvedValue({
     categories: [{ id: categoryId, slug: 'painting', name: 'Painting' }],
   });
@@ -551,6 +563,43 @@ describe('product draft save reconciliation', () => {
       expect.objectContaining({ title: 'Title B' }),
     );
     expect(harness.submitProduct).not.toHaveBeenCalled();
+    view.unmount();
+  });
+
+  it('deletes the confirmed image after an in-flight save instead of dropping the action', async () => {
+    const imageId = '55555555-5555-4555-8555-555555555555';
+    const approved = detail('Saved title', 'Oil');
+    approved.product.status = 'APPROVED';
+    approved.editingRevision.status = 'APPROVED';
+    harness.getProduct.mockResolvedValue(approved);
+    let resolveSave: (value: { product: ReturnType<typeof product> }) => void = () => undefined;
+    harness.updateProduct.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveSave = resolve;
+        }),
+    );
+    const view = mount({ productId });
+    await until(view.container, () => findButton(view.container, 'Сохранить изменения') instanceof HTMLButtonElement, 'save');
+    setInput(view.container, 'Название', 'Revised title');
+    click(view.container, 'Сохранить изменения');
+    await flush();
+    expect(harness.updateProduct).toHaveBeenCalledTimes(1);
+    clickNth(view.container, 'Удалить изображение', 0);
+    await flush();
+    clickNth(view.container, 'Удалить изображение', 1);
+    await flush();
+    expect(harness.removeImage).not.toHaveBeenCalled();
+    await act(async () => {
+      resolveSave({
+        product: { ...approved.product, title: 'Revised title' },
+      });
+      await Promise.resolve();
+    });
+    await flush();
+    expect(harness.removeImage).toHaveBeenCalledTimes(1);
+    expect(harness.removeImage).toHaveBeenCalledWith(productId, imageId);
+    expect(harness.updateProduct).toHaveBeenCalledTimes(1);
     view.unmount();
   });
 });

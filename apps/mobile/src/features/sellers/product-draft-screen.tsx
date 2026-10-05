@@ -119,6 +119,7 @@ export function ProductDraftScreen({
   const persistedProductId = useRef<string | null>(productId ?? null);
   const transitionLock = useRef(false);
   const saveInFlight = useRef(false);
+  const pendingSave = useRef<Promise<boolean> | null>(null);
   const saveGeneration = useRef(0);
   const imageSelection = useRef(0);
   const sessionOperation = useRef(0);
@@ -492,32 +493,40 @@ export function ProductDraftScreen({
       const generation = saveGeneration.current + 1;
       saveGeneration.current = generation;
       saveInFlight.current = true;
+      let settle: (persisted: boolean) => void = () => undefined;
+      const pending = new Promise<boolean>((resolve) => {
+        settle = resolve;
+      });
+      pendingSave.current = pending;
       const snapshot = form.getValues();
       const authEpochAtSave = currentAuthEpoch(queryClient);
       const stillOwnsSave = () =>
         sessionOperation.current === operation &&
         canWritePrivateCache(queryClient, authEpochAtSave);
-      if (!productDraftFormSchema.safeParse(snapshot).success) {
-        await form.trigger();
-        if (!stillOwnsSave()) return false;
-        releaseSave(generation);
-        if (mode === 'transition') endLockedTransition();
-        return false;
-      }
-      try {
-        await save.mutateAsync({
-          values: snapshot,
-          authEpoch: authEpochAtSave,
-          generation,
-        });
-        if (!stillOwnsSave()) return false;
-        return true;
-      } catch {
-        if (stillOwnsSave() && mode === 'transition') endLockedTransition();
-        return false;
-      } finally {
-        if (sessionOperation.current === operation) releaseSave(generation);
-      }
+      void (async () => {
+        let persisted = false;
+        try {
+          if (!productDraftFormSchema.safeParse(snapshot).success) {
+            await form.trigger();
+            if (stillOwnsSave() && mode === 'transition') endLockedTransition();
+            return;
+          }
+          await save.mutateAsync({
+            values: snapshot,
+            authEpoch: authEpochAtSave,
+            generation,
+          });
+          if (!stillOwnsSave()) return;
+          persisted = true;
+        } catch {
+          if (stillOwnsSave() && mode === 'transition') endLockedTransition();
+        } finally {
+          if (sessionOperation.current === operation) releaseSave(generation);
+          if (pendingSave.current === pending) pendingSave.current = null;
+          settle(persisted);
+        }
+      })();
+      return pending;
     },
     [form, save],
   );
@@ -1091,11 +1100,12 @@ export function ProductDraftScreen({
                   void (async () => {
                     const operation = sessionOperation.current;
                     const epoch = currentAuthEpoch(queryClient);
-                    if (
-                      editorStatus === 'APPROVED' &&
-                      !(await persistCurrentForm())
-                    ) {
-                      return;
+                    if (editorStatus === 'APPROVED') {
+                      const inFlight = pendingSave.current;
+                      const persisted = inFlight
+                        ? await inFlight
+                        : await persistCurrentForm();
+                      if (!persisted) return;
                     }
                     if (
                       sessionOperation.current !== operation ||
