@@ -1,12 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import {
-  mediaDeliveryMessage,
-  mediaDeliveryPending,
-  mediaDeliveryRefetchInterval,
-} from './media-delivery';
+import { mediaDeliveryMessage, mediaDeliveryPending } from './media-delivery';
 describe('media delivery state', () => {
   it.each(['PENDING', 'RUNNING', 'FAILED'] as const)(
-    'announces %s without scheduling another poll',
+    'announces %s and asks for a manual retry',
     (state) => {
       const delivery = {
         id: 'operation',
@@ -15,7 +11,6 @@ describe('media delivery state', () => {
         attemptCount: 1,
       };
       expect(mediaDeliveryPending(delivery)).toBe(true);
-      expect(mediaDeliveryRefetchInterval(delivery)).toBe(false);
       expect(mediaDeliveryMessage(delivery)).toContain('Повторите действие');
     },
   );

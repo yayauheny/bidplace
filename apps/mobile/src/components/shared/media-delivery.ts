@@ -6,11 +6,6 @@ export function mediaDeliveryPending(delivery: MediaDelivery): boolean {
     delivery && ['PENDING', 'RUNNING', 'FAILED'].includes(delivery.state),
   );
 }
-export function mediaDeliveryRefetchInterval(
-  _delivery: MediaDelivery,
-): number | false {
-  return false;
-}
 export function mediaDeliveryMessage(delivery: MediaDelivery): string | null {
   if (!mediaDeliveryPending(delivery)) return null;
   return delivery?.state === 'FAILED'
