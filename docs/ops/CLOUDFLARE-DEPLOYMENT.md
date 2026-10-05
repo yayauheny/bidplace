@@ -258,7 +258,9 @@ Worker **и image**. Не ограничиваться rollback Worker version: 
 
 На двух public media hosts настроить cache rule: cache eligible, **Ignore query
 string целиком**, browser TTL respect origin, edge TTL respect `s-maxage` (код:
-86400s). Не повышать browser TTL: текущий `max-age=0` нужен для revoke ≤5min.
+86400s). Не повышать browser TTL: origin отдаёт `max-age=0`. `DEC-101` снимает
+цель отзыва ≤5 минут; старый URL может оставаться до успешного purge и
+recovery.
 Никаких cookie/Origin/header cache-key variants. Expression должен match host/path
 без GET-only ограничения, иначе purge может не применить тот же key. Не применять
 ignore-query к application API: там параметры фильтров меняют JSON.
@@ -288,10 +290,12 @@ Smart Tiered Cache может уменьшить R2 misses между PoPs; вк
   workers.dev/version URLs выключены. Источник авторизации — Nest.
 - Image/source/frontend не содержат runtime credentials; не печатать их при проверке.
   Локальная проверка исходников не заменяет cloud secret/inventory verification.
-- Дать контейнеру уснуть без browser polling/health probes, проверить новый cold
-  request и Neon activity. Успешный пустой recovery снимает пятисекундный timer.
-  Timer остаётся, только пока есть REVOKE/CLEANUP или чтение recovery не удалось.
-  Спящий Container сам не просыпается для DEC-097; это отдельный live acceptance.
+- Остановить и снова запустить Container. Незавершённый REVOKE должен
+  продолжиться после запуска. Успешный пустой recovery снимает пятисекундный
+  timer и прекращает SQL-чтения. Timer остаётся, только пока есть
+  REVOKE/CLEANUP или чтение recovery не удалось. `DEC-101` не требует, чтобы
+  спящий процесс сам проснулся ради снятого пятиминутного срока. Старый
+  публичный URL может работать до успешного восстановления.
 
 ## Защита, logs и экономичные настройки
 
@@ -311,7 +315,8 @@ startup/errors доступны; existing Nest request logs сохранены, 
 Нет внешнего периодического `/ready` и keepalive. Даже `/health` будит Container;
 использовать ручной deploy smoke, не частый origin monitor. No useless polling
 остается **Partial**: текущий journal executor 5s сохранён, analytics enabled
-сохранён. Полный removal требует отдельного подтверждённого scope. Цена зависит
+сохранён. `DEC-101` снимает пятиминутный срок и не удаляет executor. Полный
+removal требует отдельного подтверждённого scope. Цена зависит
 от активности; см. [FinOps audit](../audits/current/13-FINOPS-SCALE-TO-ZERO-AUDIT.md).
 
 ## Common failures
@@ -324,3 +329,35 @@ startup/errors доступны; existing Nest request logs сохранены, 
 - OTP/reset не доставляются: SMTP TLS/auth/from/DNS; не включать production bypass.
 - БД не засыпает: incoming browser polls, media SQL loop, analytics, external probes;
   default idle Container timeout сам не устраняет application SQL во время работы.
+
+## Актуальный operator checklist
+
+Этот список — единственный текущий перечень недостающих настроек. Более ранние
+handoff-абзацы сохраняют историю проверок. `DEC-101` снимает требование
+самостоятельно проснуться ради пятиминутного срока. Значения секретов сюда не
+входят. Этот пакет их не создавал и не читал.
+
+| Что ввести | Куда | Как проверить | Статус |
+|---|---|---|---|
+| Workers `bidplace-staging` и `bidplace-production`, custom domains `staging.bid.place` и `bid.place`; `workers.dev` и preview URLs выключены | Cloudflare account. Имена и routes уже в `deploy/cloudflare/wrangler.jsonc` | В dashboard оба Worker существуют, hostname открывает свой Worker. Deploy этой волной не выполняется | Needs verification |
+| Отдельный Neon staging branch/database и роль без доступа к production. Runtime URL — TLS pooler | Neon; затем secret `DATABASE_URL` отдельно для staging и production. Миграция: `pnpm cloudflare:migrate staging` после backup. Production — `pnpm cloudflare:migrate production --confirm-production` | Роль staging не читает production. URL не печатать. После будущего deploy `/api/health/ready` отвечает | Needs verification |
+| Четыре R2 bucket из контракта, public hosts `media-staging.bid.place` и `media.bid.place`, cache rule ignore entire query string на каждом media host. Browser TTL не повышать. Правило не применять к API | R2 и Cache Rules. `S3_ENDPOINT` и `CLOUDFLARE_ZONE_ID` — в vars обоих environments | Buckets существуют и не отдаются через публичный `r2.dev`. Опубликованный объект открывается с custom domain. Query-варианты делят cache key | Needs verification. Имена в контракте; ресурсы не подтверждены |
+| Email Sending на Workers Paid, onboard домена отправителя, DNS которые добавляет Cloudflare: MX, SPF и DKIM на `cf-bounce`, DMARC на `_dmarc`. Адрес `SMTP_FROM` на этом домене | Email Service и `env.staging.vars` / `env.production.vars`. Host `smtp.mx.cloudflare.net`, port `465`, `SMTP_SECURE=true`, `login` уже заданы | Preflight больше не называет пустой `SMTP_FROM`. Доставка в ящик — отдельная live-проверка ниже | Needs verification. `SMTP_FROM` пуст, preflight fail-closed |
+| Runtime secrets по именам: `DATABASE_URL`, `JWT_SECRET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `SMTP_USERNAME` (литерал `api_token`), `SMTP_PASSWORD` (отдельный Email Sending: Edit token), `CLOUDFLARE_CACHE_TOKEN` | `pnpm exec wrangler secret put <NAME> --config deploy/cloudflare/wrangler.jsonc --env <staging\|production>`. Восстанавливаемая копия — зашифрованное хранилище оператора вне GitHub и Cloudflare | Wrangler показывает наличие имён. Значения не печатать. Staging и production различаются | Needs verification |
+| Пустые публичные vars: `S3_ENDPOINT`, `CLOUDFLARE_ZONE_ID`, `SMTP_FROM`, `SERVICE_RULES_OWNER`, `SERVICE_RULES_CONTACT`, `SERVICE_RULES_TEXT` | `env.staging.vars` и `env.production.vars`. Разные значения окружений не смешивать | `validateConfig` проходит, когда они непусты, zone id — 32 hex, endpoint — R2 host аккаунта. До этого preflight падает | Needs verification |
+
+Live acceptance после этих настроек и будущего staging deploy. Локальные тесты
+её не закрывают:
+
+- реальная доставка OTP и reset и полный auth flow: регистрация, код из ящика,
+  verified login, forgot/reset по ссылке окружения, logout делает старую сессию
+  недействительной;
+- author → work → private upload → submit → moderation → public PREVIEW → FULL
+  → edit/republish → hide;
+- после `DONE` и фактической очистки CDN старый media URL, тот же URL с
+  `?media_retry=1` и произвольный query недоступны. `purge success=true` —
+  только приём запроса. F11/D08 этим локальным пакетом не закрывается;
+- pending `REVOKE` продолжается после остановки и следующего запуска;
+- успешный пустой recovery прекращает SQL-чтения;
+- самостоятельное пробуждение спящего процесса только ради снятого срока не
+  требуется. Старый публичный URL может работать до успешного восстановления.

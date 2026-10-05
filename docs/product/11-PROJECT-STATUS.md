@@ -1,5 +1,23 @@
 # bidplace — текущий статус проекта
 
+## 2026-10-05 — Revoke deadline withdrawn
+
+- `Accepted MVP limitation` (F01, deadline): a stopped, crashed, or sleeping
+  process does not guarantee public revoke within five minutes. `DEC-101`
+  revises that target in `DEC-097` and `DEC-099`. This is not an implemented
+  wake and not a runtime fix. Earlier notes in this file that the deadline is
+  not withdrawn describe the state before this decision.
+- `Needs verification` (F01, retry/recovery): deletion of public copies, CDN
+  purge, the journal, the existing `REVOKE`/`CLEANUP` executor, and recovery
+  of unfinished operations after the process starts remain required. Private
+  SOURCE stays. An old public URL may work until recovery succeeds. Live
+  confirmation is still open.
+- No executor, cron, alarm, service, or timer change.
+- `05-MVP-RFC.md` keeps hidden works out of the public profile and does not
+  set a CDN deadline. The RFC was not edited.
+- `Needs verification` (F11/D08) is unchanged. Local tests do not accept a
+  live CDN purge.
+
 ## 2026-10-05 — Cloudflare Email Service SMTP
 
 - `Confirmed` (`DEC-100`): исходящая почта остаётся на существующем Nodemailer.

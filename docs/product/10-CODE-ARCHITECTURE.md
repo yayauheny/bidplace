@@ -292,7 +292,10 @@ SellerProfile
   after a successful read shows no work, or on shutdown. Staging intent and
   young `STAGING` assets keep the existing ten-minute orphan scan. The executor
   does not poll while that queue is empty and does not retry publication or
-  upload. `DEC-097` revoke within five minutes is not withdrawn.
+  upload. `DEC-101` withdraws the five-minute deadline after a stop, crash, or
+  sleep. The executor, purge, and recovery after startup stay. Private SOURCE
+  stays. An old public URL may remain until that recovery succeeds. This is
+  not a wake of a stopped process.
 - `ImageStore` now selects PostgreSQL only for legacy/backfill compatibility or an
   S3-compatible adapter for configured production storage. New media paths persist
   metadata and deterministic keys in PostgreSQL while the object store holds bytes;

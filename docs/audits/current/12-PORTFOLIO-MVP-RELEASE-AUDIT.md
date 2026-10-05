@@ -904,3 +904,28 @@ the frontend bundle.
 
 Status: SMTP choice `Confirmed`. Account setup, DNS, credentials, and mailbox
 delivery `Needs verification`.
+
+## 2026-10-05 — Revoke deadline withdrawn
+
+Founder answer: «Снять жёсткий срок, сохранить удаление и retry (рекомендую)».
+`DEC-101` revises the ≤5 minute purge target in `DEC-097` and the `DEC-099`
+sentences that keep that deadline. Historical entries are unchanged.
+`05-MVP-RFC.md` still requires hidden works to stay out of the public profile
+and does not set a CDN deadline, so the RFC was not edited.
+
+The missing deadline while the process is stopped, crashed, or asleep is an
+accepted MVP limitation. It is not an implemented wake and not a runtime fix.
+Deletion of public copies, CDN purge, the journal, the existing
+`REVOKE`/`CLEANUP` executor, and recovery of unfinished operations after the
+process starts remain required. Private SOURCE stays. An old public URL may
+work until recovery succeeds. No executor, cron, alarm, service, or timer was
+changed. Retry/recovery stays `Needs verification`. F11/D08 stays open; local
+tests do not close it.
+
+The five-minute sleep check in the local-completion handoff above is
+superseded for that deadline. The current missing-settings list is the single
+operator checklist in `docs/ops/CLOUDFLARE-DEPLOYMENT.md`.
+
+Code on this branch is ready to fast-forward onto
+`feature/portfolio-mvp-release`. Staging is not ready. Public launch is not
+ready. This package does not move the release branch and does not deploy.

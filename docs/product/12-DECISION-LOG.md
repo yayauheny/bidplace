@@ -2226,3 +2226,36 @@ Account setup, DNS onboarding, credential entry, and delivery of the
 verification code and the password-reset message to a real mailbox are
 `Needs verification`. SMTP acceptance is not mailbox delivery. No token was
 created and no account, DNS, or deploy was changed by this decision.
+
+## DEC-101 — Public revoke keeps deletion and retry without a hard deadline
+
+Date: 2026-10-05
+Status: Confirmed
+Source: founder answer «Снять жёсткий срок, сохранить удаление и retry
+(рекомендую)».
+Revises the ≤5 minute CDN purge target in `DEC-097` (“Hide/suspend/delete
+delete public variants and purge CDN with a target of ≤5 minutes”) and the
+`DEC-099` sentences that keep that deadline and reject recovery which waits
+until the process starts again. Does not revise publication, the journal,
+private SOURCE, or the Cloudflare and Neon budget.
+
+### Decision
+
+The mandatory public revoke within five minutes after a failure, stop, or
+sleep of the process is withdrawn for MVP. Deletion of public copies, CDN
+purge, the operation journal, the existing `REVOKE`/`CLEANUP` executor, and
+recovery of unfinished operations after the process starts all stay. Private
+SOURCE stays. An old public URL may keep working until that recovery succeeds.
+
+No executor was removed. No cron, alarm, or new service was added. Timers were
+not changed. This decision does not implement a wake of a stopped process and
+is not a runtime fix.
+
+`05-MVP-RFC.md` requires hidden works to stay out of the public profile. It
+does not set a five-minute CDN deadline, so the RFC is unchanged.
+
+### F01
+
+The missing deadline while the process is stopped is an accepted MVP
+limitation. Retry and recovery remain required. Their live check is still
+`Needs verification`. Local tests do not close CDN purge (`F11`/`D08`).

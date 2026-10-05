@@ -262,4 +262,18 @@ resource/vars/secrets setup и live smoke; **не production release acceptance*
 tokens и доставка OTP/reset в ящик остаются `Needs verification`. SMTP
 acceptance эту проверку не закрывает. Токены не создавались, аккаунт, DNS и
 deploy не менялись, значения секретов не читались. Staging по-прежнему
-**NOT READY**. F01 и F11/D08 не закрыты.
+**NOT READY**. F11/D08 не закрыт.
+
+## 2026-10-05 — Revoke deadline withdrawn
+
+`DEC-101` снимает обязательный отзыв ≤5 минут после сбоя, остановки или сна.
+D10 по-прежнему не позволяет заявлять, что polling устранён: executor и timer
+сохранены, cron и новый сервис не добавлены. Отсутствие гарантии срока при
+остановленном процессе — принятая для MVP ограниченность. Восстановление
+pending `REVOKE` после запуска и прекращение SQL-чтений после пустого recovery
+остаются `Needs verification`. F11/D08 локальными тестами не закрывается.
+Самостоятельное пробуждение только ради снятого срока не требуется.
+
+Актуальный перечень недостающих настроек — checklist в
+`docs/ops/CLOUDFLARE-DEPLOYMENT.md`. Staging **NOT READY**. Публичный запуск
+не готов. Release branch этой записью не двигался.
