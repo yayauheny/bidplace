@@ -291,3 +291,14 @@ migration не запускалась. Прежний вывод, что `suspen
 Upgrade Neon не покупался. Data API не включён. Зона остаётся Free Website.
 Cloudflare Pro не покупался. Wrangler не аутентифицирован. Секреты не читались.
 Staging **NOT READY**. Приложение не запущено.
+
+## 2026-10-05 — Active zone and media CDN
+
+Зона `bid.place` Active, план Free Website. Email Sending для `bid.place`
+включён; прежний 401 на limits сменился на HTTP 200, квота API 200 в день,
+отправлено 0. `media-staging.bid.place` active на staging public bucket.
+`media.bid.place` привязан к production public bucket и на момент проверки
+был pending. Private buckets без custom domain, `r2.dev` выключен. Cache rule
+игнорирует query string только на двух media hosts. Workers email binding не
+добавлялся. Neon staging branch не создана: CLI нет, write-инструмента нет,
+connection string не запрашивался. Wrangler CLI не залогинен. Deploy нет.

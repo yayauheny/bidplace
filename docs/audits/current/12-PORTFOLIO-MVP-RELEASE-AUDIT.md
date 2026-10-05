@@ -954,3 +954,25 @@ Cloudflare Pro не покупался. Workers Paid этим токеном н�
 залогинен. Data API на ветке `production` отсутствует и не включался.
 Приложение не развёрнуто и не запущено. Потолок $10 автоматически не
 гарантируется.
+
+## 2026-10-05 — Zone active, media CDN attached
+
+Zone `bid.place` is `active` on Free Website. The earlier `pending` note is
+stale. Email Sending for `bid.place` is enabled. The account limits call that
+previously returned 401 now returns HTTP 200: quota 200 per day, sent 0. DNS
+for `cf-bounce` and `_dmarc` was not overwritten. Mail stays on Nodemailer
+SMTP. No `send_email` binding was added.
+
+`media-staging.bid.place` → `bidplace-staging-media-public`, status active.
+`media.bid.place` → `bidplace-media-public`, status pending at this read.
+Both custom domains use TLS 1.2. Private buckets have no custom domain.
+`r2.dev` remains disabled. Cache ruleset `85b85dfb40204a2d9d978a03b4dab4b0`
+matches only the two media hosts, excludes the entire query string, and keeps
+browser and edge TTL at respect origin. The API host is not in that expression.
+
+Neon production branch `br-polished-haze-b2d6rop9` is the confirmed parent.
+A staging child was not created: the Neon CLI is not installed, `NEON_API_KEY`
+is absent, and the connected Neon tools cannot create branches. No connection
+string was requested. Neon Auth and Data API stay off. Wrangler CLI is still
+not logged in, which is separate from the Cloudflare connector. Staging deploy
+has not run. The root `bid.place` Worker route was not attached.

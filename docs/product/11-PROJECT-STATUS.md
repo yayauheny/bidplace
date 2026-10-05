@@ -3,14 +3,18 @@
 ## 2026-10-05 — Cloudflare resources started, not deployed
 
 - `Partial`: Cloudflare account `56b0c4b96497366c262447d2a18bf632`. Zone
-  `bid.place` `f10d49913e125d8b0d424018322aeb07` is `pending`. Nameservers are
-  `clay.ns.cloudflare.com` and `sky.ns.cloudflare.com`. Porkbun still lists
-  `maceio`, `curitiba`, `salvador`, and `fortaleza.ns.porkbun.com`. Delegation
-  is not done.
-- `Partial`: four R2 buckets exist in `weur`, private, `r2.dev` disabled:
-  `bidplace-staging-media-private`, `bidplace-staging-media-public`,
-  `bidplace-media-private`, `bidplace-media-public`. Custom media hostnames
-  and the query-string cache rule are not attached while the zone is pending.
+  `bid.place` `f10d49913e125d8b0d424018322aeb07` is `active` on Free Website.
+  `media-staging.bid.place` is attached to `bidplace-staging-media-public`
+  and is active. `media.bid.place` is attached to `bidplace-media-public`
+  and was still `pending` at the last read. Private buckets have no custom
+  domain and `r2.dev` stays disabled. Cache rule
+  `85b85dfb40204a2d9d978a03b4dab4b0` ignores the entire query string only on
+  those two media hosts. Browser and edge TTL stay `respect_origin`.
+- `Partial`: Email Sending for `bid.place` is enabled. Existing `cf-bounce`
+  MX/SPF/DKIM and `_dmarc` records were left in place. The earlier account
+  limits call now returns HTTP 200, quota 200 per day, sent 0. That daily
+  figure is not a replacement for the monthly included quota. No Workers
+  email binding was added. `SMTP_FROM` is still empty.
 - `Confirmed` for the current Neon bill shape: organization
   `org-flat-night-30430100` is plan `free` / `free_v3`. Project
   `bidplace (main)` `calm-rain-59989397` has one branch, `production`
