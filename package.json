@@ -31,9 +31,19 @@
     "clean": "turbo clean && rm -rf node_modules",
     "docker:up": "docker compose up -d --wait postgres",
     "docker:down": "docker compose down",
-    "docker:logs": "docker compose logs -f"
+    "docker:logs": "docker compose logs -f",
+    "build:web": "node scripts/cloudflare/build-web.mjs production",
+    "build:api": "pnpm exec turbo run build --filter=@bidplace/api...",
+    "cloudflare:check": "pnpm exec tsc -p deploy/cloudflare/tsconfig.json && pnpm exec eslint deploy/cloudflare scripts/cloudflare --ext .ts,.mts,.mjs,.cjs && pnpm exec vitest run --config deploy/cloudflare/vitest.config.mts && node --test scripts/cloudflare/*.spec.mjs",
+    "cloudflare:image:verify": "node scripts/cloudflare/verify-image.mjs",
+    "cloudflare:deploy": "node scripts/cloudflare/deploy.mjs production",
+    "cloudflare:deploy:staging": "node scripts/cloudflare/deploy.mjs staging",
+    "cloudflare:build:staging": "node scripts/cloudflare/build-web.mjs staging",
+    "cloudflare:migrate": "node scripts/cloudflare/migrate.mjs"
   },
   "devDependencies": {
+    "@cloudflare/containers": "0.3.7",
+    "@cloudflare/workers-types": "5.20261004.1",
     "@types/node": "^22.13.10",
     "@types/react": "~19.2.18",
     "@typescript-eslint/eslint-plugin": "^8.23.0",
@@ -45,6 +55,7 @@
     "prettier": "^3.5.3",
     "turbo": "^2.4.4",
     "typescript": "^5.8.3",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.10",
+    "wrangler": "4.147.0"
   }
 }

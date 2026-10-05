@@ -2124,3 +2124,25 @@ Confirmed choices are not evidence of implementation. Current runtime still
 uses one ImageStore bucket and API media reads. Exact phased plan and remaining
 operational inputs: [R2/CDN second pass](../audits/2026-10-04-R2-MEDIA-IMPLEMENTATION-PLAN.md).
 Lazy FULL generation is not implicitly selected by the lazy loading requirement.
+
+## DEC-098 — Cloudflare application deployment boundary
+
+Date: 2026-10-05
+Status: Confirmed
+Source: founder's pasted deployment implementation task and domain clarification.
+Revises only hosting and the application Worker restriction in `DEC-097`.
+
+`bid.place`, registered at Porkbun, is the primary domain. `bidplace.lol` is
+reserved for a future development environment. The selected target is a thin
+Cloudflare Worker routing API to a private Nest Container and serving Expo Web
+Static Assets, with Neon PostgreSQL. Public media continues to use R2 Custom
+Domain/native CDN; the application Worker does not proxy media or own auth,
+permissions, business rules or database queries. The required Container DO is
+an infrastructure adapter, not a business database or queue.
+
+Separate staging/production configuration and secrets are required. Production
+source remains the existing `feature/portfolio-mvp-release`. No real deployment
+is authorized before credentials and environment readiness. Secrets storage
+location and media polling optimization were asked separately and are not
+inferred as new founder decisions. `DEC-097` media journal, atomic publication
+and revocation semantics remain in force.

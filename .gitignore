@@ -25,3 +25,5 @@ apps/mobile/playwright-report/
 /backups/
 /docs.zip
 /docs 2.zip
+.wrangler/
+.dev.vars*

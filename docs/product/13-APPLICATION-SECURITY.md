@@ -3,6 +3,24 @@
 Последнее обновление: 2026-10-05
 Статус: Confirmed (engineering owner)
 
+## 2026-10-05 — Cloudflare deployment boundary (Partial)
+
+The deployment Worker preserves Nest JWT/session/role/ownership checks. It
+routes API only through the private Container binding; public JSON caching is
+allowlisted and bypasses credentials, private routes, mutations and unsafe
+responses. Forwarding strips client-supplied proxy headers and uses Cloudflare's
+ingress IP for existing Nest limits. Worker unit coverage verifies that boundary.
+
+Recursive Docker exclusions and the image filename gate prevent repository
+dotenv/dev-vars files from entering the runtime image. Required Worker secret
+names and the Container env allowlist are explicit. Static build checks use a
+synthetic canary to detect non-public setting leakage and assert the target API
+origin. Live WAF/rate rules, origin bypass, bucket privacy, secrets and purge are
+`Needs verification`; prepared configuration is not evidence of cloud setup.
+Exact checks/manual acceptance are owned by the
+[deployment verification](../audits/current/14-CLOUDFLARE-DEPLOYMENT-VERIFICATION.md)
+and [runbook](../ops/CLOUDFLARE-DEPLOYMENT.md).
+
 ## 1. Purpose and non-goals
 
 This document owns **application-layer attacker defense** for the bidplace API and

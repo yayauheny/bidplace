@@ -1,5 +1,26 @@
 # bidplace — текущий статус проекта
 
+## 2026-10-05 — Cloudflare deployment package
+
+- `Implemented` (prepared code): Worker API routing + anonymous public JSON cache,
+  Expo SPA Static Assets, one basic private Container, separate staging/production
+  vars and required secrets. `deploy/cloudflare`, `scripts/cloudflare` own the
+  deployment/image/migration gates; GitHub Verify includes edge/web/image checks.
+- `Implemented` (local verification): Worker typecheck/lint, 26 unit + 7 script
+  tests; API dependency graph 14/14 and mobile graph 9/9, API 372 / mobile 581
+  tests; ops 31 and E2E fence pass. Both target web exports and Wrangler dry-runs
+  pass. Native amd64 smoke covers migrations/HTTP/auth/SIGTERM; local Wrangler
+  runtime serves root and Work/Author deep links. Metro export now clears stale
+  origin state; build canary proves tested non-public settings are absent.
+- `Partial`: actual staging/production readiness. Resource setup, domains/DNS,
+  SMTP/rules vars, independent Neon/R2/JWT secrets, live CDN/purge and full cloud
+  portfolio smoke are outstanding. Existing journal retry/polling and analytics
+  remain unchanged; neither scale-to-zero optimization nor live secret setup is
+  claimed. Runtime secret location and media optimization await founder answers.
+- Source: updated remote release `507bb5b`; work stays in separate deployment
+  branch, without release integration/push/deploy. Exact results, registry and
+  manual blockers: [deployment verification](../audits/current/14-CLOUDFLARE-DEPLOYMENT-VERIFICATION.md).
+
 ## 2026-10-05 — Container runtime safety
 
 - `Implemented`: recursive `.dockerignore` excludes nested dotenv and dev-vars

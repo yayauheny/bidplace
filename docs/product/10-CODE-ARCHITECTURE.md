@@ -1,7 +1,28 @@
 # bidplace — архитектура кода
 
-Последнее обновление: 2026-10-04
+Последнее обновление: 2026-10-05
 Статус: Confirmed technical boundaries for the portfolio-first MVP implementation.
+
+## 2026-10-05 — Cloudflare application deployment (Partial)
+
+`deploy/cloudflare` owns the thin Worker routing `/api/*` to one private Nest
+Container (existing Dockerfile, root build context, linux/amd64) and serving Expo
+SPA Static Assets. The required `PortfolioApi` Durable Object is only a Container
+adapter; auth/permissions and all database access remain in Nest. `DEC-098`
+updates the hosting portion of `DEC-097`; public/private R2 boundaries are unchanged.
+
+Anonymous JSON GET has an explicit allowlist and short cache TTL; Cookie/Bearer,
+private/admin/mutation/error responses bypass storage. The Worker removes
+untrusted proxy headers before forwarding Cloudflare's ingress IP to Nest.
+Runtime vars/secrets are allowlisted into Container env; no secrets are embedded
+in static assets/image. Existing media reconciliation is preserved and can issue
+SQL while Container runs; natural Container sleep is not an automatic retry SLA.
+
+Staging/production configs, deploy/image/migration scripts and CI gates are
+prepared. Live domains, secrets, Neon/R2 and cache behavior remain unverified.
+The [deployment runbook](../ops/CLOUDFLARE-DEPLOYMENT.md) owns setup/configuration;
+the [verification record](../audits/current/14-CLOUDFLARE-DEPLOYMENT-VERIFICATION.md)
+owns exact results and blockers. Migration is a separate operator step, never cold start.
 
 ## 2026-10-04 — Media lifecycle boundary (Partial)
 

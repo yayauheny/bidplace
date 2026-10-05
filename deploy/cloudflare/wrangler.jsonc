@@ -1,0 +1,191 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "bidplace-unconfigured",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-05",
+  "workers_dev": false,
+  "preview_urls": false,
+  "assets": {
+    "directory": "../../apps/mobile/dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": [
+      "/api",
+      "/api/*"
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": [
+        "PortfolioApi"
+      ]
+    }
+  ],
+  "secrets": {
+    "required": [
+      "DATABASE_URL",
+      "JWT_SECRET",
+      "S3_ACCESS_KEY_ID",
+      "S3_SECRET_ACCESS_KEY",
+      "SMTP_USERNAME",
+      "SMTP_PASSWORD",
+      "CLOUDFLARE_CACHE_TOKEN"
+    ]
+  },
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "enabled": true,
+      "invocation_logs": false
+    }
+  },
+  "env": {
+    "staging": {
+      "name": "bidplace-staging",
+      "routes": [
+        {
+          "pattern": "staging.bid.place",
+          "custom_domain": true
+        }
+      ],
+      "workers_dev": false,
+      "preview_urls": false,
+      "containers": [
+        {
+          "class_name": "PortfolioApi",
+          "image": "../../apps/api/Dockerfile",
+          "image_build_context": "../..",
+          "instance_type": "basic",
+          "max_instances": 1,
+          "observability": {
+            "enabled": true
+          }
+        }
+      ],
+      "durable_objects": {
+        "bindings": [
+          {
+            "name": "API",
+            "class_name": "PortfolioApi"
+          }
+        ]
+      },
+      "secrets": {
+        "required": [
+          "DATABASE_URL",
+          "JWT_SECRET",
+          "S3_ACCESS_KEY_ID",
+          "S3_SECRET_ACCESS_KEY",
+          "SMTP_USERNAME",
+          "SMTP_PASSWORD",
+          "CLOUDFLARE_CACHE_TOKEN"
+        ]
+      },
+      "vars": {
+        "NODE_ENV": "production",
+        "APP_ENV": "staging",
+        "API_PORT": "3001",
+        "API_URL": "https://staging.bid.place",
+        "CORS_ORIGIN": "https://staging.bid.place",
+        "TRUST_PROXY": "true",
+        "RATE_LIMIT_MAX_BUCKETS": "10000",
+        "RATE_LIMIT_CLEANUP_INTERVAL_MS": "60000",
+        "LOT_IMAGE_MAX_FILES": "8",
+        "LOT_IMAGE_MAX_FILE_BYTES": "5242880",
+        "LOT_IMAGE_MAX_TOTAL_BYTES": "41943040",
+        "SMTP_HOST": "",
+        "SMTP_PORT": "587",
+        "SMTP_SECURE": "false",
+        "SMTP_AUTH_MODE": "login",
+        "SMTP_FROM": "",
+        "SERVICE_RULES_OWNER": "",
+        "SERVICE_RULES_CONTACT": "",
+        "SERVICE_RULES_TEXT": "",
+        "PASSWORD_RESET_URL_BASE": "https://staging.bid.place",
+        "TEST_EMAIL_BYPASS": "false",
+        "ANALYTICS_INGEST_ENABLED": "true",
+        "MEDIA_STORAGE_PROVIDER": "s3",
+        "S3_ENDPOINT": "",
+        "S3_REGION": "auto",
+        "S3_BUCKET": "bidplace-staging-media-private",
+        "S3_PUBLIC_BUCKET": "bidplace-staging-media-public",
+        "MEDIA_PUBLIC_BASE_URL": "https://media-staging.bid.place",
+        "CLOUDFLARE_ZONE_ID": ""
+      }
+    },
+    "production": {
+      "name": "bidplace-production",
+      "routes": [
+        {
+          "pattern": "bid.place",
+          "custom_domain": true
+        }
+      ],
+      "workers_dev": false,
+      "preview_urls": false,
+      "containers": [
+        {
+          "class_name": "PortfolioApi",
+          "image": "../../apps/api/Dockerfile",
+          "image_build_context": "../..",
+          "instance_type": "basic",
+          "max_instances": 1,
+          "observability": {
+            "enabled": true
+          }
+        }
+      ],
+      "durable_objects": {
+        "bindings": [
+          {
+            "name": "API",
+            "class_name": "PortfolioApi"
+          }
+        ]
+      },
+      "secrets": {
+        "required": [
+          "DATABASE_URL",
+          "JWT_SECRET",
+          "S3_ACCESS_KEY_ID",
+          "S3_SECRET_ACCESS_KEY",
+          "SMTP_USERNAME",
+          "SMTP_PASSWORD",
+          "CLOUDFLARE_CACHE_TOKEN"
+        ]
+      },
+      "vars": {
+        "NODE_ENV": "production",
+        "APP_ENV": "production",
+        "API_PORT": "3001",
+        "API_URL": "https://bid.place",
+        "CORS_ORIGIN": "https://bid.place",
+        "TRUST_PROXY": "true",
+        "RATE_LIMIT_MAX_BUCKETS": "10000",
+        "RATE_LIMIT_CLEANUP_INTERVAL_MS": "60000",
+        "LOT_IMAGE_MAX_FILES": "8",
+        "LOT_IMAGE_MAX_FILE_BYTES": "5242880",
+        "LOT_IMAGE_MAX_TOTAL_BYTES": "41943040",
+        "SMTP_HOST": "",
+        "SMTP_PORT": "587",
+        "SMTP_SECURE": "false",
+        "SMTP_AUTH_MODE": "login",
+        "SMTP_FROM": "",
+        "SERVICE_RULES_OWNER": "",
+        "SERVICE_RULES_CONTACT": "",
+        "SERVICE_RULES_TEXT": "",
+        "PASSWORD_RESET_URL_BASE": "https://bid.place",
+        "TEST_EMAIL_BYPASS": "false",
+        "ANALYTICS_INGEST_ENABLED": "true",
+        "MEDIA_STORAGE_PROVIDER": "s3",
+        "S3_ENDPOINT": "",
+        "S3_REGION": "auto",
+        "S3_BUCKET": "bidplace-media-private",
+        "S3_PUBLIC_BUCKET": "bidplace-media-public",
+        "MEDIA_PUBLIC_BASE_URL": "https://media.bid.place",
+        "CLOUDFLARE_ZONE_ID": ""
+      }
+    }
+  }
+}

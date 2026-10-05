@@ -61,3 +61,12 @@ jobs:
 
       - name: Verify workspace
         run: pnpm verify
+
+      - name: Verify Cloudflare routing and configuration
+        run: pnpm cloudflare:check
+
+      - name: Build staging static assets
+        run: pnpm cloudflare:build:staging
+
+      - name: Verify production-like amd64 container
+        run: pnpm cloudflare:image:verify

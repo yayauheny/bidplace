@@ -37,29 +37,32 @@ because they create a disposable database and start local services.
 
 GitHub Actions runs the same deterministic gate on push and pull requests via [`.github/workflows/verify.yml`](../../.github/workflows/verify.yml). Full browser E2E is intentionally **not** part of automatic CI/CD because it is slow and resource-heavy. Chromium E2E remains available as a manual `workflow_dispatch` workflow in [`.github/workflows/browser-e2e.yml`](../../.github/workflows/browser-e2e.yml), while the full Chromium/WebKit matrix remains a manual release gate.
 
-## Public portfolio packaging (hosting undecided)
+## Public portfolio packaging (Cloudflare target)
 
 `make build` produces the workspace and `make build-web` produces web assets in
 `apps/mobile/dist`; serve SPA fallback for direct author/work/auth links.
 `apps/api/Dockerfile` packages the existing NestJS runtime. Frozen install includes
 all copied workspace manifests and the Expo patch; API-only deploy allows its
 unused mobile patch. Production build and native Argon2/Sharp/Prisma plus HTTP
-startup were checked on Linux arm64 with synthetic settings. Real Neon TLS,
-SMTP, R2 and CDN still require provider acceptance.
+startup were checked on Linux arm64 with synthetic settings in the earlier pass.
+The Cloudflare package additionally verifies linux/amd64 with a disposable DB.
+Real Neon TLS, SMTP, R2 and CDN still require provider acceptance.
 
 The public runtime uses external Neon PostgreSQL and the confirmed private/public
-R2 + native CDN design. `bid.place` is purchased; no hosting provider, deploy
-command or production Compose target has been selected. Inject configuration via
-runtime settings, apply reviewed migrations, serve TLS, configure exact CORS and
-proxy trust, then verify auth/OTP/reset, public media cache/revocation and restore.
-Current local checks and remaining gates:
-[launch audit](../audits/2026-10-04-PUBLIC-LAUNCH-READINESS.md).
+R2 + native CDN design. The selected application target is a thin Cloudflare
+Worker, Expo Static Assets and one private Nest Container under `bid.place`
+(`DEC-098`). The prepared scripts, runtime secret contract, isolated staging,
+separate migrations and provider smoke are owned by the
+[Cloudflare deployment runbook](CLOUDFLARE-DEPLOYMENT.md); exact local results and
+manual blockers are in the
+[deployment verification](../audits/current/14-CLOUDFLARE-DEPLOYMENT-VERIFICATION.md).
+Prepared code is not evidence of an actual cloud deployment.
 
 ## Historical pilot (single-replica Compose)
 
 This is the existing pilot configuration, not the selected public release target.
-The public portfolio release uses external Neon PostgreSQL and Cloudflare R2/CDN;
-hosting remains undecided. Default `docker-compose.yml` is local PostgreSQL only.
+The public portfolio release targets Cloudflare Containers/Static Assets,
+external Neon PostgreSQL and Cloudflare R2/CDN. Default `docker-compose.yml` is local PostgreSQL only.
 The existing API profile is in `docker-compose.app.yml`, so local dev no longer
 requires production SMTP variables. Do not use its exposed local DB, localhost
 CORS default or unconditional proxy trust as a public deployment configuration.

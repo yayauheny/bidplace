@@ -15,5 +15,8 @@ allowBuilds:
   esbuild: true
   prisma: true
   unrs-resolver: false
+  workerd: true
+minimumReleaseAgeExclude:
+  - '@cloudflare/workers-types@5.20261004.1'
 patchedDependencies:
   expo-router@57.0.4: patches/expo-router@57.0.4.patch
