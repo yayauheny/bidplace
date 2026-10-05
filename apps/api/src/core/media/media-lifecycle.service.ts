@@ -20,6 +20,14 @@ import { mediaChecksum, MediaObjectStore } from './media-object-store';
 import { PublicMediaCache, publicMediaUrl } from './public-media-cache';
 
 const activeStates = ['PENDING', 'RUNNING', 'FAILED'] as const;
+
+export function mediaUploadIdentity(
+  userId: string,
+  purpose: MediaPurpose,
+  idempotencyKey: string,
+) {
+  return `upload:${userId}:${purpose}:${idempotencyKey}`;
+}
 const objectInclude = {
   objects: { include: { object: true } },
 } satisfies Prisma.MediaOperationInclude;
@@ -100,7 +108,7 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
     if (!/^[a-zA-Z0-9:_-]{1,100}$/.test(idempotencyKey))
       throw new ConflictException('Invalid media idempotency identity');
     const pipeline = await buildMediaPipeline(file, purpose);
-    const identity = `upload:${userId}:${purpose}:${idempotencyKey}`;
+    const identity = mediaUploadIdentity(userId, purpose, idempotencyKey);
     let operation = await this.prisma.mediaOperation.findUnique({
       where: { identity },
       include: objectInclude,
@@ -784,7 +792,9 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
           profilePhotoMimeType: data.profilePhotoMimeType,
           profilePhotoByteLength: data.profilePhotoByteLength,
           profilePhotoChecksum: data.profilePhotoChecksum,
-          profilePhotoData: operation.restore ? profile.profilePhotoData : new Uint8Array(0),
+          profilePhotoData: operation.restore
+            ? profile.profilePhotoData
+            : new Uint8Array(0),
           publishedRevisionId: revision.id,
           status: 'APPROVED',
         },

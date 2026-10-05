@@ -11,7 +11,11 @@ import {
 import { type ProductStatus, type SellerStatus } from '@bidplace/contracts';
 import { type Prisma } from '@bidplace/database';
 
-import { MediaLifecycleService } from '../core/media/media-lifecycle.service';
+import {
+  MediaLifecycleService,
+  mediaUploadIdentity,
+} from '../core/media/media-lifecycle.service';
+import { mediaChecksum } from '../core/media/media-object-store';
 import { PrismaService, runReadCommittedTransaction } from '../core/database';
 import { emptyImageBytes, ImageStore, imageKey } from '../core/image-store';
 import {
@@ -64,15 +68,22 @@ export class ImagesService {
     files: readonly RawImageUpload[],
     idempotencyKey?: string,
   ) {
-    if (idempotencyKey !== undefined && (!/^[a-zA-Z0-9:_-]{1,100}$/.test(idempotencyKey) || files.length !== 1))
-      throw new BadRequestException('An idempotent upload requires one image and a valid key');
+    if (
+      idempotencyKey !== undefined &&
+      (!/^[a-zA-Z0-9:_-]{1,100}$/.test(idempotencyKey) || files.length !== 1)
+    )
+      throw new BadRequestException(
+        'An idempotent upload requires one image and a valid key',
+      );
     const product = await this.requireEditableOwner(
       this.prisma,
       userId,
       productId,
     );
 
-    if (this.media?.enabled) return this.addMedia(userId, productId, files, idempotencyKey);
+    if (this.media?.enabled) {
+      return this.addMedia(userId, productId, product, files, idempotencyKey);
+    }
 
     assertProductImageCapacity(
       product.images,
@@ -147,14 +158,39 @@ export class ImagesService {
   private async addMedia(
     userId: string,
     productId: string,
+    product: {
+      editingRevisionId: string | null;
+      images: readonly { byteLength: number }[];
+    },
     files: readonly RawImageUpload[],
     idempotencyKey?: string,
   ) {
     const media = this.media!;
+    if (
+      await this.replayAttachedWorkUpload(
+        userId,
+        productId,
+        product.editingRevisionId,
+        files,
+        idempotencyKey,
+      )
+    ) {
+      return { ok: true as const };
+    }
+    assertProductImageCapacity(
+      product.images,
+      files.map((file) => ({ byteLength: file.buffer.byteLength })),
+    );
+    const scopedKey = idempotencyKey
+      ? createHash('sha256')
+          .update(`${productId}:${idempotencyKey}`)
+          .digest('hex')
+      : undefined;
     const assets: Array<Awaited<ReturnType<MediaLifecycleService['stage']>>> =
       [];
-    for (const file of files)
-      assets.push(await media.stage(userId, 'WORK_IMAGE', file, idempotencyKey ? createHash('sha256').update(`${productId}:${idempotencyKey}`).digest('hex') : undefined));
+    for (const file of files) {
+      assets.push(await media.stage(userId, 'WORK_IMAGE', file, scopedKey));
+    }
     await runReadCommittedTransaction(this.prisma, async (tx) => {
       const product = await this.requireWritableOwnerInTx(
         tx,
@@ -163,12 +199,29 @@ export class ImagesService {
       );
       await media.assertNotPending(tx, { productId });
       const attached = await tx.productImage.findMany({
-        where: { productId, mediaAssetId: { in: assets.map((asset) => asset.id) } },
-        select: { mediaAssetId: true, revisions: { select: { revisionId: true } } },
+        where: {
+          productId,
+          mediaAssetId: { in: assets.map((asset) => asset.id) },
+        },
+        select: {
+          mediaAssetId: true,
+          revisions: { select: { revisionId: true } },
+        },
       });
-      if (attached.some((image) => !image.revisions.some((revision) => revision.revisionId === product.editingRevisionId)))
-        throw new ConflictException('Upload identity belongs to an earlier revision');
-      const pending = assets.filter((asset) => !attached.some((image) => image.mediaAssetId === asset.id));
+      if (
+        attached.some(
+          (image) =>
+            !image.revisions.some(
+              (revision) => revision.revisionId === product.editingRevisionId,
+            ),
+        )
+      )
+        throw new ConflictException(
+          'Upload identity belongs to an earlier revision',
+        );
+      const pending = assets.filter(
+        (asset) => !attached.some((image) => image.mediaAssetId === asset.id),
+      );
       assertProductImageCapacity(
         product.images,
         pending.map((asset) => ({ byteLength: asset.source.byteLength })),
@@ -201,6 +254,70 @@ export class ImagesService {
       }
     });
     return { ok: true as const };
+  }
+
+  private async replayAttachedWorkUpload(
+    userId: string,
+    productId: string,
+    editingRevisionId: string | null,
+    files: readonly RawImageUpload[],
+    idempotencyKey?: string,
+  ): Promise<boolean> {
+    if (!idempotencyKey) return false;
+    const file = files[0];
+    if (!file) return false;
+    const operation = await this.prisma.mediaOperation.findUnique({
+      where: {
+        identity: mediaUploadIdentity(
+          userId,
+          'WORK_IMAGE',
+          createHash('sha256')
+            .update(`${productId}:${idempotencyKey}`)
+            .digest('hex'),
+        ),
+      },
+      include: { objects: { include: { object: true } } },
+    });
+    if (!operation) return false;
+    const source = operation.objects.find(
+      (item) => item.object.variant === 'SOURCE',
+    )?.object;
+    if (
+      !source ||
+      source.sha256 !== mediaChecksum(file.buffer) ||
+      source.mimeType !== file.mimetype
+    ) {
+      throw new ConflictException('Idempotency identity has different content');
+    }
+    if (operation.state === 'CANCELLED') {
+      throw new ConflictException('Media upload was cancelled');
+    }
+    const asset = await this.prisma.mediaAsset.findUnique({
+      where: { id: source.assetId },
+      select: { state: true },
+    });
+    if (asset?.state === 'FAILED') {
+      throw new ConflictException(
+        'Media upload expired; retry with a new identity',
+      );
+    }
+    const attached = await this.prisma.productImage.findMany({
+      where: { productId, mediaAssetId: source.assetId },
+      select: { revisions: { select: { revisionId: true } } },
+    });
+    if (
+      attached.some(
+        (image) =>
+          !image.revisions.some(
+            (revision) => revision.revisionId === editingRevisionId,
+          ),
+      )
+    ) {
+      throw new ConflictException(
+        'Upload identity belongs to an earlier revision',
+      );
+    }
+    return attached.length > 0;
   }
 
   async remove(userId: string, productId: string, imageId: string) {
@@ -462,7 +579,13 @@ export class ImagesService {
         product: {
           select: {
             status: true,
-            sellerProfile: { select: { userId: true, status: true, user: { select: { status: true } } } },
+            sellerProfile: {
+              select: {
+                userId: true,
+                status: true,
+                user: { select: { status: true } },
+              },
+            },
           },
         },
       },

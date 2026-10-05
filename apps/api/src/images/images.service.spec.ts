@@ -1,5 +1,9 @@
+import { createHash } from 'node:crypto';
+
 import { ForbiddenException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { mediaChecksum } from '../core/media/media-object-store';
 
 import {
   ImagesService,
@@ -430,7 +434,7 @@ describe('ImagesService', () => {
         sellerProfile: {
           userId: 'owner-id',
           status: 'APPROVED',
-              user: { status: 'active' },
+          user: { status: 'active' },
           id: '1e14b6f1-e63b-4f6b-8131-a01f6ab4dc61',
           slug: 'seller-slug',
           sellerType: 'creator',
@@ -488,8 +492,9 @@ describe('ImagesService', () => {
       bytes: storedBytes,
       mimeType: 'image/png',
     });
-    const findUnique = vi.fn(async (args: { select: Record<string, unknown> }) =>
-      projectSelected(args.select, wideRow),
+    const findUnique = vi.fn(
+      async (args: { select: Record<string, unknown> }) =>
+        projectSelected(args.select, wideRow),
     );
     const service = new ImagesService(
       { productImage: { findUnique } } as never,
@@ -509,7 +514,9 @@ describe('ImagesService', () => {
 
     findUnique.mockClear();
     imageStore.get.mockClear();
-    await expect(service.get('image-id', 'stranger-id', 'user')).resolves.toEqual({
+    await expect(
+      service.get('image-id', 'stranger-id', 'user'),
+    ).resolves.toEqual({
       mimeType: 'image/png',
       data: storedBytes,
       isPublic: true,
@@ -519,21 +526,26 @@ describe('ImagesService', () => {
       ...wideRow,
       revisions: [{ revisionId: 'editing-revision' }],
     };
-    findUnique.mockImplementation(async (args: { select: Record<string, unknown> }) =>
-      projectSelected(args.select, privateRow),
+    findUnique.mockImplementation(
+      async (args: { select: Record<string, unknown> }) =>
+        projectSelected(args.select, privateRow),
     );
     imageStore.get.mockClear();
     await expect(service.get('image-id')).rejects.toThrow('Image not found');
-    await expect(service.get('image-id', 'stranger-id', 'user')).rejects.toThrow(
-      'Image not found',
-    );
+    await expect(
+      service.get('image-id', 'stranger-id', 'user'),
+    ).rejects.toThrow('Image not found');
     expect(imageStore.get).not.toHaveBeenCalled();
-    await expect(service.get('image-id', 'owner-id', 'user')).resolves.toMatchObject({
+    await expect(
+      service.get('image-id', 'owner-id', 'user'),
+    ).resolves.toMatchObject({
       mimeType: 'image/png',
       data: storedBytes,
       isPublic: false,
     });
-    await expect(service.get('image-id', 'admin-id', 'admin')).resolves.toMatchObject({
+    await expect(
+      service.get('image-id', 'admin-id', 'admin'),
+    ).resolves.toMatchObject({
       isPublic: false,
     });
 
@@ -541,12 +553,15 @@ describe('ImagesService', () => {
       ...wideRow,
       product: { ...wideRow.product, status: 'PENDING_REVIEW' },
     };
-    findUnique.mockImplementation(async (args: { select: Record<string, unknown> }) =>
-      projectSelected(args.select, pendingProduct),
+    findUnique.mockImplementation(
+      async (args: { select: Record<string, unknown> }) =>
+        projectSelected(args.select, pendingProduct),
     );
     imageStore.get.mockClear();
     await expect(service.get('image-id')).rejects.toThrow('Image not found');
-    await expect(service.get('image-id', 'owner-id', 'user')).resolves.toMatchObject({
+    await expect(
+      service.get('image-id', 'owner-id', 'user'),
+    ).resolves.toMatchObject({
       isPublic: false,
     });
 
@@ -557,8 +572,9 @@ describe('ImagesService', () => {
     );
     expect(imageStore.get).not.toHaveBeenCalled();
 
-    findUnique.mockImplementation(async (args: { select: Record<string, unknown> }) =>
-      projectSelected(args.select, wideRow),
+    findUnique.mockImplementation(
+      async (args: { select: Record<string, unknown> }) =>
+        projectSelected(args.select, wideRow),
     );
     imageStore.get.mockResolvedValue(null);
     await expect(service.get('image-id', 'owner-id', 'admin')).rejects.toThrow(
@@ -575,7 +591,7 @@ describe('ImagesService', () => {
       sellerProfile: {
         userId: 'owner-id',
         status: 'APPROVED',
-              user: { status: 'active' },
+        user: { status: 'active' },
       },
       listings: [],
       images: [
@@ -674,7 +690,7 @@ describe('ImagesService', () => {
       sellerProfile: {
         userId: 'owner-id',
         status: 'APPROVED',
-              user: { status: 'active' },
+        user: { status: 'active' },
       },
       listings: [],
       images: [
@@ -739,7 +755,7 @@ describe('ImagesService', () => {
       sellerProfile: {
         userId: 'owner-id',
         status: 'APPROVED',
-              user: { status: 'active' },
+        user: { status: 'active' },
       },
       listings: [],
       images: [
@@ -800,7 +816,7 @@ describe('ImagesService', () => {
       sellerProfile: {
         userId: 'owner-id',
         status: 'APPROVED',
-              user: { status: 'active' },
+        user: { status: 'active' },
       },
       listings: [],
       images: [
@@ -842,7 +858,7 @@ describe('ImagesService', () => {
       sellerProfile: {
         userId: 'owner-id',
         status: 'APPROVED',
-              user: { status: 'active' },
+        user: { status: 'active' },
       },
       listings: [],
       images: [
@@ -895,7 +911,7 @@ describe('ImagesService', () => {
           sellerProfile: {
             userId: 'owner-id',
             status: 'APPROVED',
-              user: { status: 'active' },
+            user: { status: 'active' },
           },
           listings: [],
           images: [],
@@ -917,7 +933,7 @@ describe('ImagesService', () => {
           sellerProfile: {
             userId: 'owner-id',
             status: 'APPROVED',
-              user: { status: 'active' },
+            user: { status: 'active' },
           },
           listings: [],
           images: [],
@@ -1003,6 +1019,186 @@ describe('ImagesService', () => {
     expect(validateAndNormalizeProductImageUploads).toHaveBeenCalledTimes(1);
     expect(create).not.toHaveBeenCalled();
     expect(imageStore.put).not.toHaveBeenCalled();
+  });
+});
+
+describe('ImagesService media gallery admission', () => {
+  const file = { buffer: Buffer.from('same-bytes'), mimetype: 'image/png' };
+
+  function gallery(count: number, byteLength = 1) {
+    return Array.from({ length: count }, (_, position) => ({
+      position,
+      byteLength,
+    }));
+  }
+
+  function createMediaHarness(options: {
+    images?: { position: number; byteLength: number }[];
+    lockedImages?: { position: number; byteLength: number }[];
+    operation?: unknown;
+    assetState?: string;
+    attached?: { revisions: { revisionId: string }[] }[];
+  }) {
+    const product = createApprovedProduct(options.images ?? []);
+    const locked = createApprovedProduct(
+      options.lockedImages ?? options.images ?? [],
+    );
+    const stage = vi.fn().mockResolvedValue({
+      id: 'asset-new',
+      preview: {
+        objectKey: 'assets/asset-new/p1/preview.webp',
+        mimeType: 'image/webp',
+        sha256: 'b'.repeat(64),
+        width: 8,
+        height: 8,
+      },
+      source: { byteLength: file.buffer.byteLength },
+    });
+    const create = vi.fn().mockResolvedValue({ id: 'image-id' });
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ id: 'product-id' }]),
+      product: { findUnique: vi.fn().mockResolvedValue(locked) },
+      productImage: {
+        findMany: vi.fn().mockResolvedValue([]),
+        create,
+        update: vi.fn(),
+      },
+      productRevisionImage: { create: vi.fn() },
+    };
+    const prisma = {
+      product: { findUnique: vi.fn().mockResolvedValue(product) },
+      mediaOperation: {
+        findUnique: vi.fn().mockResolvedValue(options.operation ?? null),
+      },
+      mediaAsset: {
+        findUnique: vi
+          .fn()
+          .mockResolvedValue({ state: options.assetState ?? 'READY' }),
+      },
+      productImage: {
+        findMany: vi.fn().mockResolvedValue(options.attached ?? []),
+      },
+      $transaction: vi.fn(
+        async (callback: (client: typeof tx) => Promise<unknown>) =>
+          callback(tx),
+      ),
+    };
+    const service = new ImagesService(
+      prisma as never,
+      createImageStoreMock() as never,
+      {
+        enabled: true,
+        stage,
+        assertNotPending: vi.fn(),
+        attach: vi.fn(),
+      } as never,
+    );
+    return { service, stage, prisma, create };
+  }
+
+  function storedUpload(sha256 = mediaChecksum(file.buffer)) {
+    return {
+      state: 'DONE' as const,
+      objects: [
+        {
+          object: {
+            variant: 'SOURCE' as const,
+            sha256,
+            mimeType: 'image/png',
+            assetId: 'asset-existing',
+          },
+        },
+      ],
+    };
+  }
+
+  it('rejects a full gallery before stage and provider writes', async () => {
+    const { service, stage, prisma } = createMediaHarness({
+      images: gallery(imagePolicy.productImageUploadLimits.maxFiles),
+    });
+
+    await expect(
+      service.add('owner-id', 'product-id', [file], 'new-upload'),
+    ).rejects.toThrow(
+      `A Product can have at most ${imagePolicy.productImageUploadLimits.maxFiles} images`,
+    );
+    expect(stage).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('rejects an oversized gallery before stage', async () => {
+    const { service, stage } = createMediaHarness({
+      images: [
+        {
+          position: 0,
+          byteLength: imagePolicy.productImageUploadLimits.maxTotalBytes,
+        },
+      ],
+    });
+
+    await expect(service.add('owner-id', 'product-id', [file])).rejects.toThrow(
+      `A Product cannot exceed ${imagePolicy.productImageUploadLimits.maxTotalBytes} total image bytes`,
+    );
+    expect(stage).not.toHaveBeenCalled();
+  });
+
+  it('keeps the locked recheck when a concurrent upload fills the gallery', async () => {
+    const { service, stage, create } = createMediaHarness({
+      images: gallery(imagePolicy.productImageUploadLimits.maxFiles - 1),
+      lockedImages: gallery(imagePolicy.productImageUploadLimits.maxFiles),
+    });
+
+    await expect(service.add('owner-id', 'product-id', [file])).rejects.toThrow(
+      `A Product can have at most ${imagePolicy.productImageUploadLimits.maxFiles} images`,
+    );
+    expect(stage).toHaveBeenCalledTimes(1);
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it('replays an attached upload without staging when the gallery is full', async () => {
+    const { service, stage, prisma, create } = createMediaHarness({
+      images: gallery(imagePolicy.productImageUploadLimits.maxFiles),
+      operation: storedUpload(),
+      attached: [{ revisions: [{ revisionId: 'revision-id' }] }],
+    });
+
+    await expect(
+      service.add('owner-id', 'product-id', [file], 'same-upload'),
+    ).resolves.toEqual({ ok: true });
+    expect(stage).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(create).not.toHaveBeenCalled();
+    expect(prisma.mediaOperation.findUnique).toHaveBeenCalledWith({
+      where: {
+        identity: `upload:owner-id:WORK_IMAGE:${createHash('sha256').update('product-id:same-upload').digest('hex')}`,
+      },
+      include: { objects: { include: { object: true } } },
+    });
+  });
+
+  it('keeps the content conflict for a reused key before stage', async () => {
+    const { service, stage } = createMediaHarness({
+      images: gallery(imagePolicy.productImageUploadLimits.maxFiles),
+      operation: storedUpload('f'.repeat(64)),
+    });
+
+    await expect(
+      service.add('owner-id', 'product-id', [file], 'same-upload'),
+    ).rejects.toThrow('Idempotency identity has different content');
+    expect(stage).not.toHaveBeenCalled();
+  });
+
+  it('keeps the earlier-revision conflict before a capacity rejection', async () => {
+    const { service, stage } = createMediaHarness({
+      images: gallery(imagePolicy.productImageUploadLimits.maxFiles),
+      operation: storedUpload(),
+      attached: [{ revisions: [{ revisionId: 'old-revision' }] }],
+    });
+
+    await expect(
+      service.add('owner-id', 'product-id', [file], 'same-upload'),
+    ).rejects.toThrow('Upload identity belongs to an earlier revision');
+    expect(stage).not.toHaveBeenCalled();
   });
 });
 
