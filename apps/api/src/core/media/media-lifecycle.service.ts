@@ -52,8 +52,8 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
   ) {
     this.enabled = Boolean(env.S3_PUBLIC_BUCKET);
   }
-  async onModuleInit() {
-    if (this.enabled) await this.recover();
+  onModuleInit() {
+    if (this.enabled) this.arm();
   }
   onModuleDestroy() {
     this.stopped = true;
@@ -78,12 +78,15 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
   private async recover() {
     const recoveryEpoch = this.recoveryEpoch;
     const orphanEpoch = this.orphanEpoch;
+    let tickFailed = false;
     try {
       await this.tick();
     } catch {
+      tickFailed = true;
       this.logger.error('Media reconciliation failed');
     }
     if (this.stopped) return;
+    if (tickFailed) this.arm();
     try {
       if (await this.revokeWorkOutstanding()) this.arm();
       else if (recoveryEpoch === this.recoveryEpoch) this.disarmRecovery();
