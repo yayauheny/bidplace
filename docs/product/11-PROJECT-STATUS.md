@@ -1,5 +1,40 @@
 # bidplace — текущий статус проекта
 
+## 2026-10-05 — Synchronous publication and view attribution
+
+- `Partial` (F01): approve, restore and unhide confirm media delivery before
+  HTTP success. A busy lease, a failed provider call or a missing publication
+  switch is not success. The previous published snapshot stays until the switch
+  commits. The idle 5-second reconciliation loop no longer runs when no
+  `REVOKE` or `CLEANUP` work exists. The executor itself remains, so
+  `DEC-097` revoke within five minutes is not withdrawn and F01 is not closed.
+- `Implemented` (F02, publication and upload): retry uses the same journal
+  identity. A lost upload SOURCE is `SOURCE_RESEND_REQUIRED` and is not retried
+  by the executor. The file must be sent again through the existing upload API.
+- `Implemented` (F03): author, work and admin screens no longer poll delivery
+  every five seconds. Pending and failed delivery show a manual retry message.
+- `Implemented` (analytics requests): same-turn `listing_viewed`,
+  `seller_viewed` and `registration_started` leave as one ingest after
+  attribution is already stored, and that request does not read attribution.
+  The event rows are still written to Neon. Analytics flags are unchanged.
+- `Needs verification`: live Cloudflare cache and purge, including the base
+  URL, `?media_retry=1` and an arbitrary query after hide or revoke. Local
+  checks do not replace that acceptance.
+- Checks on Node 22.20.0 / pnpm 11.7.0, branch `fix/portfolio-media-execution`
+  from `2a3a11024a101e91f47553ff7ecb76b4f9f1367a`: `pnpm verify` exit 0
+  (typecheck 13/13, config 8, API unit 383, contracts 32, api-client 28,
+  database 1, mobile 582, ops 31/0, integration 128, build 8/8).
+  `pnpm cloudflare:check` exit 0 (26 unit + 7 script). Staging SPA verified for
+  `https://staging.bid.place`. Production SPA verified for `https://bid.place`.
+  `pnpm cloudflare:image:verify` exit 0. Dedicated media Playwright
+  `--workers=1 --retries=0`: the first WebKit run timed out waiting for
+  `POST /api/products` before publication; the identical rerun passed 2/2 in
+  54.9s. Full Chromium/WebKit: 210 passed / 2 failed, 0 skipped, 0 retries,
+  11.8m. Both failures are Home Opening visual mismatch about 0.122 against
+  the 0.12 threshold and stay post-MVP debt. `git diff --check` passed; no
+  `.pen` changes. No push or deploy. Local checks do not replace live
+  Cloudflare acceptance.
+
 ## 2026-10-05 — Portfolio upload safety
 
 - `Implemented`: profile photo create and update share `images:profile-photo-upload`

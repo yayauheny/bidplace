@@ -2146,3 +2146,29 @@ is authorized before credentials and environment readiness. Secrets storage
 location and media polling optimization were asked separately and are not
 inferred as new founder decisions. `DEC-097` media journal, atomic publication
 and revocation semantics remain in force.
+
+## DEC-099 — Explicit publication, manual retry, revoke executor kept
+
+Date: 2026-10-05
+Status: Confirmed
+Source: founder instruction on the portfolio load reduction.
+Does not revise the ≤5 minute public revoke in `DEC-097`. An answer about a
+future route change is not permission to leave old public CDN links available.
+
+Publication runs as the explicit approve, restore or unhide action. The action
+prepares media, then the existing short transaction switches the published
+snapshot. HTTP success means the journal operation is done and the published
+revision matches. After an error, the same user or admin retries that action.
+Journal identity, idempotency and state checks stay. A lost upload SOURCE
+requires the file to be sent again. There is no single PostgreSQL and R2
+transaction.
+
+Hide, suspend, ban and replacement still revoke public objects. The existing
+Nest executor remains for `REVOKE` and `CLEANUP`, including recovery after
+restart while the process is running. Removing that executor, or treating
+manual recovery as enough after a dead process, is not accepted.
+
+`listing_viewed`, `seller_viewed`, `registration_started` and the admin metric
+definitions stay. Analytics flags stay on. The operating budget for Cloudflare
+and Neon is about $5–7 per month, with a ceiling of $10. That budget does not
+authorize sampling, history deletion or a new analytics service.

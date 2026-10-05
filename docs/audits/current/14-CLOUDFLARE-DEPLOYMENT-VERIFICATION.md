@@ -39,6 +39,30 @@ proxy-header sanitization, public JSON cache, private/public R2 и один Cont
 этим follow-up не переписывались. Историческая таблица ниже остаётся записью
 deployment pass и не переписывается этими результатами.
 
+## 2026-10-05 — Synchronous publication follow-up
+
+Ветка `fix/portfolio-media-execution` создана от
+`2a3a11024a101e91f47553ff7ecb76b4f9f1367a`. Push и deploy нет. Секреты и
+аккаунты не читались и не менялись. Статус пакета остаётся
+**NOT READY FOR STAGING**: live cache/purge (F11, D08) не принимались.
+
+D10 больше не крутит пустой 5s loop. Executor REVOKE/CLEANUP сохранён.
+F01 не закрыт, потому что мёртвый процесс без пробуждения по-прежнему не
+гарантирует отзыв за 5 минут из DEC-097.
+
+Node 22.20.0, pnpm 11.7.0.
+
+| Проверка | Результат |
+|---|---|
+| `pnpm verify` | exit 0: typecheck 13/13, config 8, API unit 383, contracts 32, api-client 28, database 1, mobile 582, ops 31/0, integration 128, build 8/8 |
+| `pnpm cloudflare:check` | exit 0: 26 unit + 7 script |
+| `pnpm cloudflare:build:staging` | SPA export verified for `https://staging.bid.place` |
+| `pnpm build:web` | SPA export verified for `https://bid.place` |
+| `pnpm cloudflare:image:verify` | linux/amd64: native modules, migrated disposable DB, HTTP/auth boundary, SIGTERM passed |
+| media Playwright `--workers=1 --retries=0` | Идентичный повтор: 2 passed, 54.9s. Первый WebKit остановился на ожидании `POST /api/products` до публикации |
+| full Chromium/WebKit `--workers=1 --retries=0` | 210 passed / 2 failed, 0 skipped, 0 retries, 11.8m. Оба отказа — Home Opening visual, post-MVP |
+| `git diff --check` | PASS; no `.pen` changes |
+
 ## Критерии и решение
 
 Проверенный SPA export, linux/amd64 Nest image, тонкий Worker, изолированные

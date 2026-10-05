@@ -60,9 +60,9 @@ CDN rules и производительность не измерены. `Сей
 
 | ID | Проблема / severity | Где найдена | Влияет на MVP | Решение сейчас / post-MVP и причина |
 |---|---|---|---|---|
-| F01 | 5s reconciliation / High | `apps/api/src/core/media/media-lifecycle.service.ts:44–81` | Да: публикация, отзыв, расходы Neon | Сейчас: согласовать sync/manual execution с журналом; пустой loop делает до 1 036 800 чтений/30d при непрерывной работе. Не удалить executor отдельно. |
-| F02 | Unlimited provider retry и неисправимый UPLOAD / High | тот же файл `:546–555,606–612` | Да: outage и pending state | Сейчас в пакете F01: transient retry по явному действию, terminal/source-resend состояние; неизвестный исход сохранять в журнале. Фиксированный retry 15s не имеет attempt cap. |
-| F03 | Четыре 5s delivery polling owners / Medium | admin `:154,170`, seller profile `:167`, product draft `:184` | Да: UI ожидания и нагрузка | Сейчас вместе с F01: результат mutation + invalidate + ручной refresh/retry. `FAILED` также считается pending; polling не ограничен длительностью. |
+| F01 | 5s reconciliation / High | `apps/api/src/core/media/media-lifecycle.service.ts` | Да: публикация, отзыв, расходы Neon | Частично. Публикация подтверждается в инициировавшем запросе, пустой 5s loop при простое снят. Executor REVOKE/CLEANUP сохранён и не крутится без такой работы. Не закрыто: DEC-097 revoke ≤5 минут после мёртвого процесса без пробуждения не гарантирован. |
+| F02 | Unlimited provider retry и неисправимый UPLOAD / High | `media-lifecycle.service.ts` run/fail | Да: outage и pending state | Исправлено для публикации и UPLOAD: повтор — то же явное действие и та же identity. Потерянный SOURCE получает `SOURCE_RESEND_REQUIRED` и не подхватывается executor. REVOKE по-прежнему повторяется executor-ом, потому что DEC-097 не отменён. |
+| F03 | Четыре 5s delivery polling owners / Medium | admin, seller profile, product draft | Да: UI ожидания и нагрузка | Исправлено: `refetchInterval` снят. FAILED/PENDING/RUNNING показывают повтор действия и не планируют новый poll. |
 | F04 | Analytics: HTTP и DB write на view, без retention / High на росте | analytics client `:200–299`, API service `:28–130`, schema `:535–575` | Наблюдаемость, не core flow | Сейчас предложено отключить оба existing flags; если данные нужны — batching и согласованная retention. Не отключено этим аудитом. |
 | F05 | Два user lookup на verified mutation / Medium | Bearer guard `:52`, Verified guard `:20` | Да: auth и DB | Сейчас: единый свежий request user snapshot с email verification. Сохранить проверку ban/role/sessionVersion; stateless JWT здесь неприемлем. |
 | F06 | Public JSON достигает origin без подтверждённого edge cache / High на росте | portfolio controller/service, public products/authors/categories | Да: catalog и Neon | Сейчас: whitelist public GET + короткий TTL, исключить private/auth/admin и personalized responses. Worker/runtime config в repo отсутствует. |
@@ -107,15 +107,39 @@ F11 остаётся `Needs verification`. `CloudflarePublicMediaCache.purge` п
 
 Sync/manual recovery не является утверждённым пересмотром `DEC-097`. Ручное восстановление конфликтует с целью автоматического revoke ≤5 минут после crash/outage: остановленный процесс сам не запускает journal. Q01 ниже остаётся открытым предложением, не решением.
 
+## 2026-10-05 — синхронная публикация, executor отзыва сохранён
+
+Сравнение:
+
+| Вариант | Класс | Почему |
+|---|---|---|
+| Подтверждать публикацию в том же запросе по журналу и `publishedRevisionId`; снять пустой 5s loop; оставить executor только для REVOKE/CLEANUP и разового orphan scan | Durable fix | Сохраняет журнал, identity и предыдущий snapshot. Убирает простой Neon. Не обещает одну транзакцию PostgreSQL+R2. |
+| Реже будить тот же loop | Acceptable workaround | Меньше SQL, простой остаётся, а HTTP по-прежнему может означать только enqueue. |
+| Удалить executor и считать F01 закрытым | Hack | Отменяет цель отзыва ≤5 минут из DEC-097 без отдельного подтверждения. |
+
+Выбран durable fix. F01 не закрыт: если процесс мёртв и его ничто не будит, автоматический отзыв за 5 минут по-прежнему не гарантирован. Executor не удалён.
+
+Аналитика на одном сценарии после уже сохранённой attribution: `listing_viewed` + `seller_viewed` + `registration_started` в одном ходе дают 1 HTTP ingest и 0 чтений attribution. Раньше каждый `track()` открывал свой запрос, и каждый запрос читал attribution. Сами события по-прежнему пишутся в Neon через `createMany`. Флаги `ANALYTICS_INGEST_ENABLED` и `EXPO_PUBLIC_ANALYTICS_ENABLED` не менялись.
+
+Evidence: `media-lifecycle.service.ts`, `admin-moderation.service.ts`, `products.service.ts`, `media-delivery.ts`, `analytics/client.ts`, `analytics.service.ts`; `media-lifecycle.integration.spec.ts`, `work-media-http.integration.spec.ts`, `analytics.spec.ts`, `analytics.service.spec.ts`.
+
+Измерение на одном сценарии, unit: после сохранения attribution три события одного хода — 1 HTTP и поле attribution отсутствует (`analytics.spec.ts`). Сервер для `listing_viewed` + `seller_viewed` без attribution вызывает `createMany` один раз и не вызывает `acquisitionAttribution.findUnique` (`analytics.service.spec.ts`). Просмотры по-прежнему пишутся в Neon.
+
+Проверки пакета на Node 22.20.0 / pnpm 11.7.0: `pnpm verify` exit 0; `pnpm cloudflare:check` exit 0; staging и production SPA export exit 0; `pnpm cloudflare:image:verify` exit 0; dedicated media 2 passed на повторе; полный Chromium/WebKit 210 passed / 2 failed Home Opening. Push и deploy не выполнялись. F11 остаётся `Needs verification`.
+
 ## Таймеры, polling и retry: полный runtime inventory
+
+Числа в этой таблице — предел до изменения 2026-10-05. Пустой 5s media loop и
+polling доставки на author, work и admin сняты. Текущее состояние описано в
+разделе «синхронная публикация» выше.
 
 | Механизм | Частота / budget | HTTP в час / за 30d | DB и compute impact | Нужность / предложение |
 |---|---|---|---|---|
-| Nest media recursive timeout | 5s после завершения tick | 0 inbound; provider requests только при operations | ≤720 ticks/h; ≤518 400/30d; idle ≥2 ORM reads/tick → до 1 036 800; per replica | Сейчас обеспечивает media acceptance; заменить только целым sync/manual flow. |
-| Admin authors polling | 5s, enabled только author tab и pending | ≤720 × loaded pages/h; ≤518 400 × pages/30d active foreground | Auth SELECT + list query/relations; pages infinite query могут refetch целиком | Pending ожидание полезно сейчас; при sync заменить result/refresh. |
-| Admin works polling | Аналогично, только works tab | Аналогично | Auth SELECT + moderation list/relations | Две admin tabs не считаются одновременно активными автоматически. |
-| Seller profile delivery | 5s при PENDING/RUNNING/FAILED | ≤720/h; ≤518 400/30d | Guard + profile/revision/journal reads | Нет верхней продолжительности ожидания. |
-| Work draft delivery | Аналогично | ≤720/h; ≤518 400/30d | Guard + owner detail + latest audit reason | Pending revision сохраняет correctness; refresh вручную при sync. |
+| Nest media recursive timeout | Было 5s после завершения tick | 0 inbound; provider requests только при operations | Было ≤720 ticks/h; ≤518 400/30d; idle ≥2 ORM reads/tick → до 1 036 800; per replica | Снято для простоя. Executor остаётся и будится только при REVOKE/CLEANUP или разовом orphan scan. |
+| Admin authors polling | Было 5s, author tab и pending | Было ≤720 × loaded pages/h | Auth SELECT + list query/relations | Снято. Экран показывает ошибку или ожидание и ручной повтор. |
+| Admin works polling | Было аналогично, works tab | Аналогично | Auth SELECT + moderation list/relations | Снято вместе с authors. |
+| Seller profile delivery | Было 5s при PENDING/RUNNING/FAILED | Было ≤720/h | Guard + profile/revision/journal reads | Снято. Повтор — то же действие публикации. |
+| Work draft delivery | Было аналогично | Было ≤720/h | Guard + owner detail + latest audit reason | Снято. Повтор — то же действие. |
 | Rate-limit cleanup | 60s, unref | 0 / 0 | ≤43 200 scans/30d, только RAM; ещё scan каждого consume | Не причина Neon SQL; inexpensive periodic cleanup можно сохранить. |
 | Image recovery timeout | 1/3/8s, 3 retries после ошибки | Не periodic: 4 attempts/image/mount | CDN/R2; legacy/private URI — API + DB | Bounded, но outage ×4. Manual reset даёт новый budget. |
 | React Query | Global 1 retry; public override 2 retries | ≤2 либо ≤3 attempts/query/failure episode | Origin/DB multiplication; successful path ×1 | Сохранить transient-only policy, не retry 401/403/404/conflict. |
@@ -124,11 +148,11 @@ Sync/manual recovery не является утверждённым пересм
 | Search debounce | Одноразовый timeout после input, отмена при изменении | Зависит от typing, 0 idle | Снижает search calls, не держит DB ночью | Сохранить. |
 | Share image object URL revoke | Одноразовый 1s | 0 / 0 | Локальное освобождение browser memory | Сохранить. |
 
-TanStack Query по умолчанию не polling в скрытой browser tab. Это не основание
-считать расход нулевым: active foreground tab с FAILED publication продолжает
-опрос; route-unmount/focus необходимо проверять отдельно. Одинаковый query key
-может дедуплицировать observers. Значения в таблице — предел для одного owner,
-не сумма всех возможных пользователей и не число измеренных SQL statements.
+TanStack Query по умолчанию не polling в скрытой browser tab. Delivery refetch
+на author, work и admin больше не планируется, включая FAILED. Одинаковый query
+key может дедуплицировать observers. Исторические значения в таблице — предел
+для одного owner до снятия polling, не сумма всех пользователей и не число
+измеренных SQL statements.
 [TanStack polling options](https://tanstack.com/query/v5/docs/framework/react/reference/useQuery).
 
 В runtime search не найдены cron/ScheduleModule, отдельный queue worker,

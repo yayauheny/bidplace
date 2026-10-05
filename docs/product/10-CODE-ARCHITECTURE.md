@@ -279,6 +279,14 @@ SellerProfile
   the capacity check. Replaying bytes already attached to the current revision does
   not create another image. See
   `13-APPLICATION-SECURITY.md` and `apps/api/src/images/image-policy.ts`.
+- Publication is confirmed in the request that enqueued it. HTTP success means the
+  journal operation is `DONE` and the published revision matches. R2 work stays
+  outside the database transaction; the previous public snapshot remains until
+  that switch commits. A busy lease or a swallowed `run()` result is not success.
+  Retry uses the same operation identity. A missing upload SOURCE requires the
+  file to be sent again. Hide, suspend, ban and replacement still enqueue revoke.
+  The Nest executor retries only `REVOKE` and `CLEANUP`, and it does not poll
+  while that queue is empty. `DEC-097` revoke within five minutes is not withdrawn.
 - `ImageStore` now selects PostgreSQL only for legacy/backfill compatibility or an
   S3-compatible adapter for configured production storage. New media paths persist
   metadata and deterministic keys in PostgreSQL while the object store holds bytes;
