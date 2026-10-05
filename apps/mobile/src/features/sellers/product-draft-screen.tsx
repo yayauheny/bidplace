@@ -120,6 +120,7 @@ export function ProductDraftScreen({
   const transitionLock = useRef(false);
   const saveInFlight = useRef(false);
   const pendingSave = useRef<Promise<boolean> | null>(null);
+  const deleteConfirmLock = useRef(false);
   const saveGeneration = useRef(0);
   const imageSelection = useRef(0);
   const sessionOperation = useRef(0);
@@ -140,6 +141,7 @@ export function ProductDraftScreen({
     allow: boolean;
   } | null>(null);
   const [pendingNavigationVersion, setPendingNavigationVersion] = useState(0);
+  const [deleteConfirmLocked, setDeleteConfirmLocked] = useState(false);
   const [imagePendingDelete, setImagePendingDelete] = useState<string | null>(
     null,
   );
@@ -1094,10 +1096,14 @@ export function ProductDraftScreen({
           >
             <DestructiveButton
               label="Удалить изображение"
-              loading={removeImage.isPending}
+              loading={deleteConfirmLocked || removeImage.isPending}
               onPress={() => {
-                if (imagePendingDelete) {
-                  void (async () => {
+                if (!imagePendingDelete || deleteConfirmLock.current) return;
+                const imageId = imagePendingDelete;
+                deleteConfirmLock.current = true;
+                setDeleteConfirmLocked(true);
+                void (async () => {
+                  try {
                     const operation = sessionOperation.current;
                     const epoch = currentAuthEpoch(queryClient);
                     if (editorStatus === 'APPROVED') {
@@ -1113,16 +1119,20 @@ export function ProductDraftScreen({
                     ) {
                       return;
                     }
-                    removeImage.mutate(imagePendingDelete, {
-                      onSuccess: () => setImagePendingDelete(null),
-                    });
-                  })();
-                }
+                    await removeImage.mutateAsync(imageId);
+                    setImagePendingDelete(null);
+                  } catch {
+                    // The dialog stays open so the same confirm can be repeated.
+                  } finally {
+                    deleteConfirmLock.current = false;
+                    setDeleteConfirmLocked(false);
+                  }
+                })();
               }}
             />
             <SecondaryButton
               label="Отмена"
-              disabled={removeImage.isPending}
+              disabled={deleteConfirmLocked || removeImage.isPending}
               onPress={() => setImagePendingDelete(null)}
             />
           </AppDialog>

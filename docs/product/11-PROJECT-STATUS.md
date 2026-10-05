@@ -1,5 +1,28 @@
 # bidplace — текущий статус проекта
 
+## 2026-10-05 — One confirmed image delete while a save is in flight
+
+- `Implemented`: two confirms of the same image while an ordinary save is
+  still waiting produce one `images.remove` for that image id. The confirm
+  lock starts before the first await and stays through the save wait and the
+  DELETE. A failed save sends no DELETE, releases the lock, and a later
+  confirm can delete. A session cleared before the save finishes sends no
+  DELETE. The existing delete-button loading state and cancel disabled state
+  cover the attempt. Other `persistCurrentForm()` callers and the route guard
+  are unchanged.
+- Screen: `apps/mobile/src/features/sellers/product-draft-screen.tsx`.
+  Regression: `product-draft-save-race.spec.ts`. Route guard:
+  `product-draft-route-guard.spec.ts`.
+- `Partial` (F01) and `Needs verification` (F11/D08) are unchanged.
+- Checks on Node 22.20.0 / pnpm 11.7.0, branch `fix/portfolio-media-execution`:
+  targeted save-race and route-guard tests 16 passed. `pnpm verify` exit 0
+  (typecheck 13/13, lint 2/2, config 8, API unit 389, contracts 32, api-client
+  28, database 1, mobile 585, ops 31/0, integration 132, build 8/8). Dedicated
+  media Playwright on disposable `bidplace_e2e`: Chromium passed the lifecycle
+  in 26.6s. WebKit timed out at creation, `work-media-lifecycle.spec.ts:126`,
+  blank `/products/new`, no `POST /api/products`. That miss is before delete.
+  Workers 1, retries 0. Timeout was not raised. No push or deploy.
+
 ## 2026-10-05 — Confirmed image delete during an in-flight save
 
 - `Implemented`: an approved work editor that confirms image deletion while an

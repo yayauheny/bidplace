@@ -703,3 +703,35 @@ explanation of either original failure.
 
 F01 and F11/D08 stay open for a separate staging acceptance. Local tests do
 not close a dead process or a live CDN purge. DEC-097 is not withdrawn.
+
+### Two delete confirms while the save is still waiting
+
+- Problem: two confirms of the same image, issued before the ordinary save
+  responds, both wait for `pendingSave` and then both call `images.remove`
+  with that image id.
+- Severity: high. One confirmed delete becomes two DELETE requests.
+- Evidence: the regression «deletes the confirmed image after an in-flight
+  save» with a second confirm before `resolveSave` expected one `removeImage`
+  and received two. The confirm button stayed enabled during the wait because
+  `loading` followed only `removeImage.isPending`, which is still false while
+  the save is in flight.
+- MVP impact: an approved author can submit the same gallery delete twice.
+  The rest of `persistCurrentForm()` and the route guard stay as they were.
+- Classification: production defect left by the single-confirm fix. A second
+  click is a real user action, so waiting longer in the test would hide it.
+- Decision: one confirm owns the action from before the first await, through
+  the save wait and the DELETE. A repeat confirm does not start another
+  delete. The lock clears when the attempt finishes or fails. The existing
+  destructive-button loading state and the cancel button's disabled state
+  cover that whole attempt. No debounce, sleep, timeout, or design change.
+  Regressions in `product-draft-save-race.spec.ts`: two confirms before the
+  save resolves delete once; a failed save deletes nothing and a later confirm
+  still can; a session cleared before the save finishes deletes nothing.
+  Before the lock, that double confirm received two `removeImage` calls.
+- Checks: targeted save-race and route-guard tests 16 passed. `pnpm verify`
+  exit 0, mobile unit 585. Dedicated media gate, workers 1, retries 0,
+  disposable `bidplace_e2e`: Chromium passed in 26.6s. WebKit failed at
+  `work-media-lifecycle.spec.ts:126` with a blank `/products/new` and no
+  `POST /api/products`. The trace reaches creation only, so this is the
+  earlier test-environment miss, not a second delete. The timeout was not
+  raised.

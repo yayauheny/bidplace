@@ -81,18 +81,22 @@ vi.mock('../../components/ui', () => {
     label,
     onPress,
     disabled,
+    loading,
   }: {
     label: string;
     onPress?: () => void;
     disabled?: boolean;
+    loading?: boolean;
   }) {
+    const inactive = Boolean(disabled || loading);
     return createElement(
       'button',
       {
         type: 'button',
-        disabled: Boolean(disabled),
+        disabled: inactive,
+        'aria-busy': loading ? 'true' : undefined,
         onClick: () => {
-          if (disabled) return;
+          if (inactive) return;
           onPress?.();
         },
       },
@@ -588,8 +592,14 @@ describe('product draft save reconciliation', () => {
     clickNth(view.container, 'Удалить изображение', 0);
     await flush();
     clickNth(view.container, 'Удалить изображение', 1);
+    clickNth(view.container, 'Удалить изображение', 1);
     await flush();
     expect(harness.removeImage).not.toHaveBeenCalled();
+    const confirm = [...view.container.querySelectorAll('button')].filter(
+      (button) => button.textContent === 'Удалить изображение',
+    )[1];
+    expect(confirm).toHaveProperty('disabled', true);
+    expect(findButton(view.container, 'Отмена')).toHaveProperty('disabled', true);
     await act(async () => {
       resolveSave({
         product: { ...approved.product, title: 'Revised title' },
@@ -600,6 +610,88 @@ describe('product draft save reconciliation', () => {
     expect(harness.removeImage).toHaveBeenCalledTimes(1);
     expect(harness.removeImage).toHaveBeenCalledWith(productId, imageId);
     expect(harness.updateProduct).toHaveBeenCalledTimes(1);
+    view.unmount();
+  });
+
+  it('does not delete when the in-flight save fails and accepts a later confirm', async () => {
+    const imageId = '55555555-5555-4555-8555-555555555555';
+    const approved = detail('Saved title', 'Oil');
+    approved.product.status = 'APPROVED';
+    approved.editingRevision.status = 'APPROVED';
+    harness.getProduct.mockResolvedValue(approved);
+    let rejectSave: (error: Error) => void = () => undefined;
+    let resolveRetry: (value: { product: ReturnType<typeof product> }) => void = () => undefined;
+    let attempt = 0;
+    harness.updateProduct.mockImplementation(
+      () =>
+        new Promise((resolve, reject) => {
+          attempt += 1;
+          if (attempt === 1) rejectSave = reject;
+          else resolveRetry = resolve;
+        }),
+    );
+    const view = mount({ productId });
+    await until(view.container, () => findButton(view.container, 'Сохранить изменения') instanceof HTMLButtonElement, 'save');
+    setInput(view.container, 'Название', 'Revised title');
+    click(view.container, 'Сохранить изменения');
+    await flush();
+    clickNth(view.container, 'Удалить изображение', 0);
+    await flush();
+    clickNth(view.container, 'Удалить изображение', 1);
+    await act(async () => {
+      rejectSave(new Error('save failed'));
+      await Promise.resolve();
+    });
+    await flush();
+    expect(harness.removeImage).not.toHaveBeenCalled();
+    expect(findButton(view.container, 'Отмена')).toHaveProperty('disabled', false);
+    clickNth(view.container, 'Удалить изображение', 1);
+    await flush();
+    expect(harness.updateProduct).toHaveBeenCalledTimes(2);
+    expect(harness.removeImage).not.toHaveBeenCalled();
+    await act(async () => {
+      resolveRetry({
+        product: { ...approved.product, title: 'Revised title' },
+      });
+      await Promise.resolve();
+    });
+    await flush();
+    expect(harness.removeImage).toHaveBeenCalledTimes(1);
+    expect(harness.removeImage).toHaveBeenCalledWith(productId, imageId);
+    view.unmount();
+  });
+
+  it('does not delete when the session is cleared before the in-flight save finishes', async () => {
+    const approved = detail('Saved title', 'Oil');
+    approved.product.status = 'APPROVED';
+    approved.editingRevision.status = 'APPROVED';
+    harness.getProduct.mockResolvedValue(approved);
+    let resolveSave: (value: { product: ReturnType<typeof product> }) => void = () => undefined;
+    harness.updateProduct.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveSave = resolve;
+        }),
+    );
+    const view = mount({ productId });
+    await until(view.container, () => findButton(view.container, 'Сохранить изменения') instanceof HTMLButtonElement, 'save');
+    setInput(view.container, 'Название', 'Revised title');
+    click(view.container, 'Сохранить изменения');
+    await flush();
+    clickNth(view.container, 'Удалить изображение', 0);
+    await flush();
+    clickNth(view.container, 'Удалить изображение', 1);
+    await act(async () => {
+      await clearAuthenticatedSession(view.queryClient);
+    });
+    await act(async () => {
+      resolveSave({
+        product: { ...approved.product, title: 'Revised title' },
+      });
+      await Promise.resolve();
+    });
+    await flush();
+    expect(harness.removeImage).not.toHaveBeenCalled();
     view.unmount();
   });
 });
