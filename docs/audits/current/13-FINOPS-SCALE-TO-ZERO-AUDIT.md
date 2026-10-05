@@ -60,10 +60,10 @@ CDN rules и производительность не измерены. `Сей
 
 | ID | Проблема / severity | Где найдена | Влияет на MVP | Решение сейчас / post-MVP и причина |
 |---|---|---|---|---|
-| F01 | 5s reconciliation / High | `apps/api/src/core/media/media-lifecycle.service.ts` | Да: публикация, отзыв, расходы Neon | Частично. Публикация подтверждается в инициировавшем запросе, пустой 5s loop при простое снят. Executor REVOKE/CLEANUP сохранён и не крутится без такой работы. Не закрыто: DEC-097 revoke ≤5 минут после мёртвого процесса без пробуждения не гарантирован. |
+| F01 | 5s reconciliation / High | `apps/api/src/core/media/media-lifecycle.service.ts` | Да: публикация, отзыв, расходы Neon | Частично. Публикация подтверждается в инициировавшем запросе, пустой 5s loop при простое снят. Executor REVOKE/CLEANUP сохранён. Перед интеграцией исправить recovery-регрессии F27/F28. Отдельно: DEC-097 revoke ≤5 минут после мёртвого процесса без пробуждения не гарантирован. |
 | F02 | Unlimited provider retry и неисправимый UPLOAD / High | `media-lifecycle.service.ts` run/fail | Да: outage и pending state | Исправлено для публикации и UPLOAD: повтор — то же явное действие и та же identity. Потерянный SOURCE получает `SOURCE_RESEND_REQUIRED` и не подхватывается executor. REVOKE по-прежнему повторяется executor-ом, потому что DEC-097 не отменён. |
 | F03 | Четыре 5s delivery polling owners / Medium | admin, seller profile, product draft | Да: UI ожидания и нагрузка | Исправлено: `refetchInterval` снят. FAILED/PENDING/RUNNING показывают повтор действия и не планируют новый poll. |
-| F04 | Analytics: HTTP и DB write на view, без retention / High на росте | analytics client `:200–299`, API service `:28–130`, schema `:535–575` | Наблюдаемость, не core flow | Сейчас предложено отключить оба existing flags; если данные нужны — batching и согласованная retention. Не отключено этим аудитом. |
+| F04 | Analytics: HTTP и DB write на view, без retention / High на росте | analytics client, API service, analytics tables | Наблюдаемость, не core flow | Частично: события одного хода объединены, attribution не читается без attribution/claim. По подтверждённому ответу основателя флаги и основные метрики сохраняются. События всё ещё пишутся в Neon; retention и sampling не утверждены. |
 | F05 | Два user lookup на verified mutation / Medium | Bearer guard `:52`, Verified guard `:20` | Да: auth и DB | Сейчас: единый свежий request user snapshot с email verification. Сохранить проверку ban/role/sessionVersion; stateless JWT здесь неприемлем. |
 | F06 | Public JSON достигает origin без подтверждённого edge cache / High на росте | portfolio controller/service, public products/authors/categories | Да: catalog и Neon | Сейчас: whitelist public GET + короткий TTL, исключить private/auth/admin и personalized responses. Worker/runtime config в repo отсутствует. |
 | F07 | Public queries stale immediately / Medium | `apps/mobile/src/lib/query-client.ts:22`, public hooks/screens | Да: navigation и повторные чтения | Сейчас: согласованные staleTime; проверить explicit invalidation после publish/edit/hide. Window-focus refetch уже выключен. |
@@ -86,6 +86,53 @@ CDN rules и производительность не измерены. `Сей
 | F24 | Runtime deployment, cache/sleep/region/probe policies не versioned | отсутствуют Worker/Wrangler/provider deployment configs | Да: цена и cloud correctness | До deploy зафиксировать выбранные настройки, только минимальный provider adapter. Аудит не выбирает platform и не создаёт инфраструктуру. |
 | F25 | STAGING scan без state/createdAt index, retained READY SOURCE и старые revisions | media schema `:633–649`, remove `:907–919` | Storage/scan cost на росте | Post-MVP после F01: измерить EXPLAIN и retained bytes; индексы/retention локально, не универсальный migration/GC framework. |
 | F26 | Unbounded legacy owner list и большие admin aggregates | sellers service `:802–819`, admin analytics `:111+` | Не основной текущий cabinet path | Post-MVP; endpoint существует, но runtime call из текущих screens не найден. Не выдавать dormant путь за активный N+1 каждого public request. |
+| F27 | DB outage останавливает recovery executor / High | `media-lifecycle.service.ts:71–78`, также error branches orphan callback | Да: REVOKE/CLEANUP могут остаться без исполнения при живом процессе | Сейчас, перед интеграцией: сохранить recovery trigger при неизвестном состоянии БД; отсутствие работы должно быть подтверждено успешным чтением. `.catch(() => false)` превращает outage в «работы нет». |
+| F28 | Young STAGING после restart или failed stage остаётся без orphan trigger / Medium | `media-lifecycle.service.ts:53–54,90–114,131–138,258–273` | Да: накопление частичных private objects и manifests | Сейчас, перед интеграцией: восстановить одноразовый orphan trigger для молодых STAGING при старте и после сохранения staging intent, включая ошибку записи. Не возвращать постоянный пустой poll. |
+
+## 2026-10-05 — Review `e26e912`: recovery blockers F27/F28
+
+Проверен локальный `fix/portfolio-media-execution` HEAD
+`e26e912b22c58bf4b2f7e20b021a4aacd1f1fe6f` относительно `2a3a110`.
+Production-код в этом review не менялся. Отдельная ветка
+`fix/portfolio-media-recovery-review` хранит только уточнение этого аудита.
+
+**F27 / High / MVP / исправить сейчас.** При запланированном recovery с
+незавершённым REVOKE временный отказ БД ломает и `tick()`, и проверку
+`revokeWorkOutstanding()`. Последняя возвращает `false` через catch, таймер уже
+снят перед callback, новый не ставится. После восстановления БД процесс остаётся
+живым, но отзыв не возобновляется без нового enqueue или рестарта. Это отдельный
+локальный дефект, а не уже известное ограничение остановленного Container.
+
+**F28 / Medium / MVP / исправить сейчас.** При рестарте через минуту после
+частичной загрузки `tick()` не выбирает STAGING моложе десяти минут, UPLOAD
+исключён из executor, а `onModuleInit()` не ставит orphan timer. Через десять
+минут очередной scan сам не возникает. Дополнительно `stage()` ставит этот timer
+только после успешной записи объектов; ошибка до строки 273 также может оставить
+частичную загрузку без trigger. Последующие независимые операции иногда маскируют
+проблему, но не обеспечивают очистку.
+
+Воспроизведение на заново собранном текущем API с fake timers и синтетическим
+Prisma stub, без сети, production БД, dotenv или credentials:
+
+- Pending REVOKE сначала ставит timer; во время его callback БД недоступна,
+  после возврата БД `scheduledRetries = 0`, новых чтений нет.
+- Один STAGING возрастом одна минута при старте: один initial asset scan,
+  `scheduledOrphanScans = 0`, будущего scan нет.
+- Локальный воспроизводитель: `/private/tmp/bidplace-e26e912-recovery-review.cjs`.
+  Сценарии и результаты выше сохранены здесь независимо от времени жизни tmp.
+
+Durable fix — локальные изменения существующих recovery/orphan triggers и
+regression tests для обеих ситуаций, включая failed stage. Acceptable workaround
+— принудительный рестарт или следующее enqueue; для сохранённой гарантии отзыва
+этого недостаточно. Hack — считать ошибку чтения БД отсутствием работы или просто
+вернуть постоянный пустой 5s poll. Новые сервисы и изменение DEC-097 не нужны.
+
+Независимо повторены: API analytics/cache unit 10/10, mobile analytics/delivery
+unit 12/12, API build, `git diff --check` — PASS, Node 22.20.0. Полные `pnpm verify`,
+browser suite и live Cloudflare acceptance этим review не повторялись.
+Предыдущие 210 passed / два Home Opening failures остаются отчётом исполнителя.
+Пакет требует F27/F28 перед рекомендацией к integration regression; F11/D08 и
+пробуждение остановленного процесса остаются отдельными открытыми вопросами.
 
 ## 2026-10-05 — F13/F14 upload safety
 
