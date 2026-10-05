@@ -70,67 +70,76 @@ export class AdminUserService {
     userId: string,
     input: AdminUserStatusUpdateRequest,
   ) {
-    return runSerializableTransaction(this.prisma, async (tx) => {
-      const user = await tx.user.findUnique({
-        where: { id: userId },
-        select: {
-          id: true,
-          email: true,
-          displayName: true,
-          role: true,
-          status: true,
-        },
-      });
-
-      if (!user) {
-        this.logger.warn('Admin user status target was not found');
-        throw new NotFoundException('User not found');
-      }
-
-      assertIncidentTargetAllowed(adminUserId, user, 'status');
-
-      if (user.status === input.status) {
-        return user;
-      }
-
-      if (input.status === 'banned' && this.media?.enabled) {
-        const profile = await tx.sellerProfile.findUnique({
-          where: { userId },
-          select: { id: true },
+    let profileId: string | undefined;
+    const updatedUser = await runSerializableTransaction(
+      this.prisma,
+      async (tx) => {
+        const user = await tx.user.findUnique({
+          where: { id: userId },
+          select: {
+            id: true,
+            email: true,
+            displayName: true,
+            role: true,
+            status: true,
+          },
         });
-        if (profile)
-          await this.media.enqueueRevoke(tx, { profileId: profile.id });
-      }
-      const updated = await tx.user.update({
-        where: { id: userId },
-        data: {
-          status: input.status,
-          ...(input.status === 'banned'
-            ? { sessionVersion: { increment: 1 } }
-            : {}),
-        },
-        select: {
-          id: true,
-          email: true,
-          displayName: true,
-          role: true,
-          status: true,
-        },
-      });
 
-      await tx.auditEvent.create({
-        data: {
-          actorUserId: adminUserId,
-          targetType: 'USER',
-          targetId: user.id,
-          oldStatus: user.status,
-          newStatus: input.status,
-          reason: input.reason,
-        },
-      });
+        if (!user) {
+          this.logger.warn('Admin user status target was not found');
+          throw new NotFoundException('User not found');
+        }
 
-      return updated;
-    });
+        assertIncidentTargetAllowed(adminUserId, user, 'status');
+
+        if (user.status === input.status) {
+          return user;
+        }
+
+        if (input.status === 'banned' && this.media?.enabled) {
+          const profile = await tx.sellerProfile.findUnique({
+            where: { userId },
+            select: { id: true },
+          });
+          if (profile) {
+            profileId = profile.id;
+            await this.media.enqueueRevoke(tx, { profileId: profile.id });
+          }
+        }
+        const updated = await tx.user.update({
+          where: { id: userId },
+          data: {
+            status: input.status,
+            ...(input.status === 'banned'
+              ? { sessionVersion: { increment: 1 } }
+              : {}),
+          },
+          select: {
+            id: true,
+            email: true,
+            displayName: true,
+            role: true,
+            status: true,
+          },
+        });
+
+        await tx.auditEvent.create({
+          data: {
+            actorUserId: adminUserId,
+            targetType: 'USER',
+            targetId: user.id,
+            oldStatus: user.status,
+            newStatus: input.status,
+            reason: input.reason,
+          },
+        });
+
+        return updated;
+      },
+    );
+    if (profileId && this.media?.enabled)
+      await this.media.deliverOutstanding({ profileId }, 'REVOKE');
+    return updatedUser;
   }
 
   async revokeSessions(

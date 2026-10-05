@@ -39,6 +39,7 @@ type Operation = Prisma.MediaOperationGetPayload<{
 export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
   readonly enabled: boolean;
   private timer?: ReturnType<typeof setTimeout>;
+  private orphanTimer?: ReturnType<typeof setTimeout>;
   private stopped = false;
   private readonly logger = new Logger(MediaLifecycleService.name);
   constructor(
@@ -50,25 +51,74 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
     this.enabled = Boolean(env.S3_PUBLIC_BUCKET);
   }
   onModuleInit() {
-    if (this.enabled) this.schedule();
+    if (this.enabled) void this.recover();
   }
   onModuleDestroy() {
     this.stopped = true;
     if (this.timer) clearTimeout(this.timer);
+    if (this.orphanTimer) clearTimeout(this.orphanTimer);
+    this.timer = undefined;
+    this.orphanTimer = undefined;
   }
-  private schedule() {
-    if (this.stopped) return;
+  private arm() {
+    if (this.stopped || this.timer) return;
     this.timer = setTimeout(() => {
-      void this.tick()
-        .catch(() => this.logger.error('Media reconciliation failed'))
-        .finally(() => this.schedule());
+      this.timer = undefined;
+      void this.recover();
     }, 5_000);
     this.timer.unref();
+  }
+  private async recover() {
+    try {
+      await this.tick();
+    } catch {
+      this.logger.error('Media reconciliation failed');
+    }
+    if (this.stopped) return;
+    if (await this.revokeWorkOutstanding().catch(() => false)) this.arm();
+  }
+  private async revokeWorkOutstanding() {
+    return (
+      (await this.prisma.mediaOperation.count({
+        where: {
+          kind: { in: ['REVOKE', 'CLEANUP'] },
+          state: { in: ['PENDING', 'RUNNING', 'FAILED'] },
+        },
+      })) > 0
+    );
+  }
+  private armOrphanScan() {
+    if (this.stopped || this.orphanTimer) return;
+    this.orphanTimer = setTimeout(() => {
+      this.orphanTimer = undefined;
+      void this.tick()
+        .catch(() => this.logger.error('Media reconciliation failed'))
+        .finally(() => {
+          void this.prisma.mediaAsset
+            .count({
+              where: {
+                state: 'STAGING',
+                createdAt: { gte: new Date(Date.now() - 10 * 60_000) },
+              },
+            })
+            .then((young) => {
+              if (young > 0) this.armOrphanScan();
+            })
+            .catch(() => undefined);
+          void this.revokeWorkOutstanding()
+            .then((pending) => {
+              if (pending) this.arm();
+            })
+            .catch(() => undefined);
+        });
+    }, 10 * 60_000);
+    this.orphanTimer.unref();
   }
   async tick() {
     const now = new Date();
     const operations = await this.prisma.mediaOperation.findMany({
       where: {
+        kind: { in: ['REVOKE', 'CLEANUP'] },
         OR: [
           { state: { in: ['PENDING', 'FAILED'] }, nextAttemptAt: { lte: now } },
           { state: 'RUNNING', leaseUntil: { lt: now } },
@@ -220,6 +270,7 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
       throw new ConflictException(
         'Media upload expired; retry with a new identity',
       );
+    this.armOrphanScan();
     const preview = asset.objects.find(
       (x) => x.variant === 'PREVIEW' && x.tier === 'PRIVATE',
     );
@@ -271,13 +322,40 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
     restore = false,
   ) {
     const identity = restore
-      ? `restore:${revision.id}:${randomUUID()}`
+      ? `restore:${target.profileId ?? target.productId}:${revision.id}:${revision.updatedAt.toISOString()}`
       : `publish:${revision.id}:${revision.updatedAt.toISOString()}`;
     const existing = await tx.mediaOperation.findUnique({
       where: { identity },
     });
-    if (existing && existing.state !== 'CANCELLED') return existing;
-    if (existing) throw new ConflictException('Publication was cancelled');
+    if (existing?.state === 'CANCELLED')
+      throw new ConflictException('Publication was cancelled');
+    if (existing && existing.state !== 'DONE') return existing;
+    if (existing?.state === 'DONE') {
+      if (!restore) return existing;
+      const current = target.profileId
+        ? await tx.sellerProfile.findUnique({
+            where: { id: target.profileId },
+            select: { status: true, publishedRevisionId: true },
+          })
+        : await tx.product.findUnique({
+            where: { id: target.productId! },
+            select: { status: true, publishedRevisionId: true },
+          });
+      if (
+        current?.status === 'APPROVED' &&
+        current.publishedRevisionId === revision.id
+      )
+        return existing;
+      return tx.mediaOperation.update({
+        where: { id: existing.id },
+        data: {
+          state: 'PENDING',
+          errorCode: null,
+          leaseToken: null,
+          leaseUntil: null,
+        },
+      });
+    }
     const assetIds = await this.revisionAssets(
       tx,
       target,
@@ -441,6 +519,7 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
           },
         },
       });
+      this.arm();
     }
   }
 
@@ -480,6 +559,7 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
       });
       cursor = objects.at(-1)!.id;
     }
+    this.arm();
   }
   async enqueueCleanup(tx: Prisma.TransactionClient, assetIds: string[]) {
     const objects = await tx.mediaObject.findMany({
@@ -496,6 +576,7 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
           },
         },
       });
+    this.arm();
   }
   async readPreview(assetId: string) {
     const preview = await this.prisma.mediaObject.findFirstOrThrow({
@@ -551,12 +632,16 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
       data: { leaseToken: null, leaseUntil: null },
     });
   }
-  private async fail(id: string, token: string) {
+  private async fail(
+    id: string,
+    token: string,
+    errorCode = 'MEDIA_DELIVERY_FAILED',
+  ) {
     await this.prisma.mediaOperation.updateMany({
       where: { id, leaseToken: token, state: 'RUNNING' },
       data: {
         state: 'FAILED',
-        errorCode: 'MEDIA_DELIVERY_FAILED',
+        errorCode,
         nextAttemptAt: new Date(Date.now() + 15_000),
         leaseUntil: null,
         leaseToken: null,
@@ -616,7 +701,7 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
         )?.object;
         if (!source) throw new Error('Missing SOURCE manifest');
         const bytes = await this.store.get('PRIVATE', source.objectKey);
-        if (!bytes) throw new Error('Upload bytes must be resent');
+        if (!bytes) throw new Error('SOURCE_RESEND_REQUIRED');
         const asset = await this.prisma.mediaAsset.findUniqueOrThrow({
           where: { id: source.assetId },
         });
@@ -643,8 +728,14 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
           errorCode: null,
         },
       });
-    } catch {
-      await this.fail(id, token);
+    } catch (error) {
+      await this.fail(
+        id,
+        token,
+        error instanceof Error && error.message === 'SOURCE_RESEND_REQUIRED'
+          ? 'SOURCE_RESEND_REQUIRED'
+          : 'MEDIA_DELIVERY_FAILED',
+      );
     } finally {
       await this.release(token);
       const fresh = await this.prisma.mediaOperation.findUnique({
@@ -944,5 +1035,78 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
         data: { state: 'DELETED' },
       });
     }
+  }
+  async deliver(id: string) {
+    await this.run(id);
+    const operation = await this.prisma.mediaOperation.findUniqueOrThrow({
+      where: { id },
+    });
+    if (operation.state === 'DONE') {
+      if (
+        operation.kind === 'PUBLISH' &&
+        !(await this.publicationApplied(operation))
+      )
+        throw new ConflictException('Publication was not applied');
+      if (operation.kind === 'PUBLISH')
+        await this.deliverOutstanding(
+          operation.profileId
+            ? { profileId: operation.profileId }
+            : { productId: operation.productId! },
+          'REVOKE',
+        );
+      return;
+    }
+    if (operation.state === 'FAILED')
+      throw new ConflictException(
+        operation.errorCode === 'SOURCE_RESEND_REQUIRED'
+          ? 'Upload source must be resent'
+          : 'Media delivery failed; retry this action',
+      );
+    if (operation.state === 'CANCELLED')
+      throw new ConflictException('Publication was cancelled');
+    throw new ConflictException(
+      'Publication is in progress; retry to confirm the result',
+    );
+  }
+  async deliverOutstanding(
+    target: { profileId?: string; productId?: string },
+    kind: 'REVOKE' | 'PUBLISH',
+  ) {
+    const operations = await this.prisma.mediaOperation.findMany({
+      where: {
+        ...target,
+        kind,
+        state: { in: ['PENDING', 'FAILED', 'RUNNING'] },
+      },
+      select: { id: true },
+      orderBy: { createdAt: 'asc' },
+    });
+    for (const operation of operations) await this.deliver(operation.id);
+  }
+  private async publicationApplied(operation: {
+    revisionId: string | null;
+    profileId: string | null;
+    productId: string | null;
+  }) {
+    if (!operation.revisionId) return false;
+    if (operation.profileId) {
+      const profile = await this.prisma.sellerProfile.findUnique({
+        where: { id: operation.profileId },
+        select: { publishedRevisionId: true, status: true },
+      });
+      return (
+        profile?.publishedRevisionId === operation.revisionId &&
+        profile.status === 'APPROVED'
+      );
+    }
+    if (!operation.productId) return false;
+    const product = await this.prisma.product.findUnique({
+      where: { id: operation.productId },
+      select: { publishedRevisionId: true, status: true },
+    });
+    return (
+      product?.publishedRevisionId === operation.revisionId &&
+      product.status === 'APPROVED'
+    );
   }
 }

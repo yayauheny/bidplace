@@ -222,16 +222,11 @@ describe('Work media lifecycle over authenticated HTTP and PostgreSQL', () => {
       work.id,
       'APPROVED',
     );
-    expect(
-      (await admin.client.patch(`/admin/products/${work.id}/status`, approval))
-        .status,
-    ).toBe(200);
-    expect(
-      (await admin.client.patch(`/admin/products/${work.id}/status`, approval))
-        .status,
-    ).toBe(200);
     unavailable = true;
-    await run('PUBLISH', work.id);
+    expect(
+      (await admin.client.patch(`/admin/products/${work.id}/status`, approval))
+        .status,
+    ).toBe(409);
     const pending = await author.client.get(`/seller/products/${work.id}`);
     expect((await pending.json()).publication.state).toBe('FAILED');
     expect(
@@ -239,7 +234,10 @@ describe('Work media lifecycle over authenticated HTTP and PostgreSQL', () => {
         .status,
     ).toBe(404);
     unavailable = false;
-    await run('PUBLISH', work.id);
+    expect(
+      (await admin.client.patch(`/admin/products/${work.id}/status`, approval))
+        .status,
+    ).toBe(200);
     const publishedAudits = await db.prisma.auditEvent.count({
       where: { targetId: work.id },
     });
@@ -288,16 +286,20 @@ describe('Work media lifecycle over authenticated HTTP and PostgreSQL', () => {
     expect(
       (await author.client.post(`/products/${work.id}/submit`)).status,
     ).toBe(201);
+    const revisionApproval = await productModerationRequest(
+      db.prisma,
+      work.id,
+      'APPROVED',
+    );
+    unavailable = true;
     expect(
       (
         await admin.client.patch(
           `/admin/products/${work.id}/status`,
-          await productModerationRequest(db.prisma, work.id, 'APPROVED'),
+          revisionApproval,
         )
       ).status,
-    ).toBe(200);
-    unavailable = true;
-    await run('PUBLISH', work.id);
+    ).toBe(409);
     expect(
       (
         await (
@@ -310,8 +312,14 @@ describe('Work media lifecycle over authenticated HTTP and PostgreSQL', () => {
         .publishedRevisionId,
     ).toBe(oldPublicId);
     unavailable = false;
-    await run('PUBLISH', work.id);
-    await run('REVOKE', work.id);
+    expect(
+      (
+        await admin.client.patch(
+          `/admin/products/${work.id}/status`,
+          revisionApproval,
+        )
+      ).status,
+    ).toBe(200);
     const revised = await (
       await new HttpTestClient(http.baseUrl).get(`/works/${work.publicId}`)
     ).json();

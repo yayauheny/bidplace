@@ -393,7 +393,8 @@ export class ProductsService {
           select: productRevisionOwnerSelect,
         });
         const product = await tx.product.findUniqueOrThrow({
-          where: { id }, select: productSelect,
+          where: { id },
+          select: productSelect,
         });
         return productResponseSchema.parse({
           product: toOwnerContractProduct(product, revision),
@@ -559,80 +560,100 @@ export class ProductsService {
     id: string,
     nextStatus: 'APPROVED' | 'ARCHIVED',
   ) {
-    return runReadCommittedTransaction(this.prisma, async (tx) => {
-      await lockProductRowForUpdate(tx, id);
-      const product = await tx.product.findUnique({
-        where: { id },
-        select: {
-          ...productWriteGuardSelect,
-          publishedRevisionId: true,
-        },
-      });
-      if (!product) {
-        throw new NotFoundException('Product not found');
-      }
-      if (product.sellerProfile.userId !== userId) {
-        throw new ForbiddenException('Product is not owned by user');
-      }
-      assertApprovedSeller(product.sellerProfile.status as SellerStatus);
-      assertProductRevisionTransition(
-        'author',
-        product.status as ProductStatus,
-        nextStatus,
-      );
-      if (product.publishedRevisionId == null) {
-        throw new ConflictException('Product has no published revision');
-      }
-      if (nextStatus === 'ARCHIVED' && product.listings.length > 0) {
-        throw new ConflictException(
-          'Work cannot be hidden while a scheduled or live listing exists',
+    let deliveryId: string | undefined;
+    const response = await runReadCommittedTransaction(
+      this.prisma,
+      async (tx) => {
+        await lockProductRowForUpdate(tx, id);
+        const product = await tx.product.findUnique({
+          where: { id },
+          select: {
+            ...productWriteGuardSelect,
+            publishedRevisionId: true,
+          },
+        });
+        if (!product) {
+          throw new NotFoundException('Product not found');
+        }
+        if (product.sellerProfile.userId !== userId) {
+          throw new ForbiddenException('Product is not owned by user');
+        }
+        assertApprovedSeller(product.sellerProfile.status as SellerStatus);
+        assertProductRevisionTransition(
+          'author',
+          product.status as ProductStatus,
+          nextStatus,
         );
-      }
-
-      if (this.media?.enabled) {
-        if (nextStatus === 'ARCHIVED')
-          await this.media.enqueueRevoke(tx, { productId: id });
-        else {
-          const revision = await tx.productRevision.findUniqueOrThrow({
-            where: { id: product.publishedRevisionId },
-          });
-          await this.media.enqueuePublication(
-            tx,
-            { productId: id },
-            revision,
-            product.publishedRevisionId,
-            userId,
-            true,
-          );
-          return toProductResponse(
-            await tx.product.findUniqueOrThrow({
-              where: { id },
-              select: productSelect,
-            }),
+        if (product.publishedRevisionId == null) {
+          throw new ConflictException('Product has no published revision');
+        }
+        if (nextStatus === 'ARCHIVED' && product.listings.length > 0) {
+          throw new ConflictException(
+            'Work cannot be hidden while a scheduled or live listing exists',
           );
         }
-      }
-      await tx.product.update({
-        where: { id },
-        data: { status: nextStatus },
-      });
-      await tx.auditEvent.create({
-        data: {
-          actorUserId: userId,
-          targetType: 'PRODUCT',
-          targetId: id,
-          oldStatus: product.status,
-          newStatus: nextStatus,
-          reason: null,
-        },
-      });
 
-      const updated = await tx.product.findUniqueOrThrow({
-        where: { id },
-        select: productSelect,
-      });
-      return toProductResponse(updated);
-    });
+        if (this.media?.enabled) {
+          if (nextStatus === 'ARCHIVED')
+            await this.media.enqueueRevoke(tx, { productId: id });
+          else {
+            const revision = await tx.productRevision.findUniqueOrThrow({
+              where: { id: product.publishedRevisionId },
+            });
+            const operation = await this.media.enqueuePublication(
+              tx,
+              { productId: id },
+              revision,
+              product.publishedRevisionId,
+              userId,
+              true,
+            );
+            deliveryId = operation.id;
+            return toProductResponse(
+              await tx.product.findUniqueOrThrow({
+                where: { id },
+                select: productSelect,
+              }),
+            );
+          }
+        }
+        await tx.product.update({
+          where: { id },
+          data: { status: nextStatus },
+        });
+        await tx.auditEvent.create({
+          data: {
+            actorUserId: userId,
+            targetType: 'PRODUCT',
+            targetId: id,
+            oldStatus: product.status,
+            newStatus: nextStatus,
+            reason: null,
+          },
+        });
+
+        const updated = await tx.product.findUniqueOrThrow({
+          where: { id },
+          select: productSelect,
+        });
+        return toProductResponse(updated);
+      },
+    );
+    if (this.media?.enabled) {
+      try {
+        if (deliveryId) await this.media.deliver(deliveryId);
+      } finally {
+        await this.media.deliverOutstanding({ productId: id }, 'REVOKE');
+      }
+      if (deliveryId)
+        return toProductResponse(
+          await this.prisma.product.findUniqueOrThrow({
+            where: { id },
+            select: productSelect,
+          }),
+        );
+    }
+    return response;
   }
 
   async replaceCreationStory(

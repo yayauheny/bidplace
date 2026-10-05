@@ -173,42 +173,202 @@ async function approve(
 describe('durable media lifecycle on PostgreSQL', () => {
   it('imports all five legacy owners across bounded pages, preserves Bytes, refuses corruption and can resume after public delivery failure', async () => {
     const s = setup();
-    const user = await prisma.user.create({ data: { email: `legacy-${randomUUID()}@test.local`, passwordHash: 'unusable', displayName: 'Legacy' } });
-    const photo = { profilePhotoData: bytes, profilePhotoMimeType: 'image/png', profilePhotoByteLength: bytes.byteLength, profilePhotoChecksum: mediaChecksum(bytes) };
-    const profile = await prisma.sellerProfile.create({ data: { userId: user.id, slug: `legacy-${randomUUID()}`, fullName: 'Legacy author', country: 'BY', city: 'Minsk', discipline: 'Автор', sellerType: 'creator', shortDescription: 'Existing portfolio', status: 'APPROVED', ...photo } });
-    const revision = await prisma.sellerProfileRevision.create({ data: { sellerProfileId: profile.id, version: 1, status: 'APPROVED', slug: profile.slug, fullName: profile.fullName, country: profile.country, city: profile.city, discipline: profile.discipline, shortDescription: profile.shortDescription, ...photo } });
-    await prisma.sellerProfile.update({ where: { id: profile.id }, data: { publishedRevisionId: revision.id, editingRevisionId: revision.id } });
-    const category = await prisma.category.create({ data: { slug: `legacy-${randomUUID()}`, name: 'Legacy' } });
-    const imageData = { data: bytes, mimeType: 'image/png', byteLength: bytes.byteLength, checksum: mediaChecksum(bytes) };
-    const product = await prisma.product.create({ data: { publicId: randomUUID().replaceAll('-', '').slice(0, 11), sellerProfileId: profile.id, categoryId: category.id, title: 'Preserved work', status: 'APPROVED', publishedAt: new Date(), images: { create: Array.from({ length: 7 }, (_, position) => ({ position, ...imageData })) } }, include: { images: true } });
-    const workRevision = await prisma.productRevision.create({ data: { productId: product.id, version: 1, status: 'APPROVED', title: product.title, categoryId: category.id, images: { create: product.images.map(image => ({ imageId: image.id, position: image.position })) } } });
-    await prisma.product.update({ where: { id: product.id }, data: { publishedRevisionId: workRevision.id, editingRevisionId: workRevision.id } });
-    const achievement = await prisma.sellerProfileRevisionAchievement.create({ data: { revisionId: revision.id, position: 0, body: 'Existing achievement', ...imageData } });
-    const step = await prisma.productCreationStep.create({ data: { productId: product.id, position: 0, title: 'Existing step', body: 'Preserved', ...imageData } });
+    const user = await prisma.user.create({
+      data: {
+        email: `legacy-${randomUUID()}@test.local`,
+        passwordHash: 'unusable',
+        displayName: 'Legacy',
+      },
+    });
+    const photo = {
+      profilePhotoData: bytes,
+      profilePhotoMimeType: 'image/png',
+      profilePhotoByteLength: bytes.byteLength,
+      profilePhotoChecksum: mediaChecksum(bytes),
+    };
+    const profile = await prisma.sellerProfile.create({
+      data: {
+        userId: user.id,
+        slug: `legacy-${randomUUID()}`,
+        fullName: 'Legacy author',
+        country: 'BY',
+        city: 'Minsk',
+        discipline: 'Автор',
+        sellerType: 'creator',
+        shortDescription: 'Existing portfolio',
+        status: 'APPROVED',
+        ...photo,
+      },
+    });
+    const revision = await prisma.sellerProfileRevision.create({
+      data: {
+        sellerProfileId: profile.id,
+        version: 1,
+        status: 'APPROVED',
+        slug: profile.slug,
+        fullName: profile.fullName,
+        country: profile.country,
+        city: profile.city,
+        discipline: profile.discipline,
+        shortDescription: profile.shortDescription,
+        ...photo,
+      },
+    });
+    await prisma.sellerProfile.update({
+      where: { id: profile.id },
+      data: {
+        publishedRevisionId: revision.id,
+        editingRevisionId: revision.id,
+      },
+    });
+    const category = await prisma.category.create({
+      data: { slug: `legacy-${randomUUID()}`, name: 'Legacy' },
+    });
+    const imageData = {
+      data: bytes,
+      mimeType: 'image/png',
+      byteLength: bytes.byteLength,
+      checksum: mediaChecksum(bytes),
+    };
+    const product = await prisma.product.create({
+      data: {
+        publicId: randomUUID().replaceAll('-', '').slice(0, 11),
+        sellerProfileId: profile.id,
+        categoryId: category.id,
+        title: 'Preserved work',
+        status: 'APPROVED',
+        publishedAt: new Date(),
+        images: {
+          create: Array.from({ length: 7 }, (_, position) => ({
+            position,
+            ...imageData,
+          })),
+        },
+      },
+      include: { images: true },
+    });
+    const workRevision = await prisma.productRevision.create({
+      data: {
+        productId: product.id,
+        version: 1,
+        status: 'APPROVED',
+        title: product.title,
+        categoryId: category.id,
+        images: {
+          create: product.images.map((image) => ({
+            imageId: image.id,
+            position: image.position,
+          })),
+        },
+      },
+    });
+    await prisma.product.update({
+      where: { id: product.id },
+      data: {
+        publishedRevisionId: workRevision.id,
+        editingRevisionId: workRevision.id,
+      },
+    });
+    const achievement = await prisma.sellerProfileRevisionAchievement.create({
+      data: {
+        revisionId: revision.id,
+        position: 0,
+        body: 'Existing achievement',
+        ...imageData,
+      },
+    });
+    const step = await prisma.productCreationStep.create({
+      data: {
+        productId: product.id,
+        position: 0,
+        title: 'Existing step',
+        body: 'Preserved',
+        ...imageData,
+      },
+    });
     const legacyStore = new PostgresImageStore(prisma as never);
-    expect(await importLegacyMedia(prisma as never, s.media, legacyStore)).toEqual({ inspected: 11, imported: 0, publications: 0 });
-    expect(await prisma.mediaAsset.count({ where: { ownerUserId: user.id } })).toBe(0);
-    await prisma.productImage.update({ where: { id: product.images[0]!.id }, data: { checksum: '0'.repeat(64) } });
-    await expect(importLegacyMedia(prisma as never, s.media, legacyStore, true)).rejects.toThrow('Legacy media verification failed');
-    await prisma.productImage.update({ where: { id: product.images[0]!.id }, data: { checksum: mediaChecksum(bytes) } });
+    expect(
+      await importLegacyMedia(prisma as never, s.media, legacyStore),
+    ).toEqual({ inspected: 11, imported: 0, publications: 0 });
+    expect(
+      await prisma.mediaAsset.count({ where: { ownerUserId: user.id } }),
+    ).toBe(0);
+    await prisma.productImage.update({
+      where: { id: product.images[0]!.id },
+      data: { checksum: '0'.repeat(64) },
+    });
+    await expect(
+      importLegacyMedia(prisma as never, s.media, legacyStore, true),
+    ).rejects.toThrow('Legacy media verification failed');
+    await prisma.productImage.update({
+      where: { id: product.images[0]!.id },
+      data: { checksum: mediaChecksum(bytes) },
+    });
     s.store.failPublic = true;
-    await expect(importLegacyMedia(prisma as never, s.media, legacyStore, true)).rejects.toThrow('Legacy public delivery is incomplete');
-    expect(await prisma.productImage.count({ where: { productId: product.id, mediaAssetId: { not: null } } })).toBe(7);
+    await expect(
+      importLegacyMedia(prisma as never, s.media, legacyStore, true),
+    ).rejects.toThrow('Legacy public delivery is incomplete');
+    expect(
+      await prisma.productImage.count({
+        where: { productId: product.id, mediaAssetId: { not: null } },
+      }),
+    ).toBe(7);
     s.store.failPublic = false;
-    expect(await importLegacyMedia(prisma as never, s.media, legacyStore, true)).toEqual({ inspected: 0, imported: 0, publications: 1 });
-    const assetsBefore = await prisma.mediaAsset.count({ where: { ownerUserId: user.id } });
+    expect(
+      await importLegacyMedia(prisma as never, s.media, legacyStore, true),
+    ).toEqual({ inspected: 0, imported: 0, publications: 1 });
+    const assetsBefore = await prisma.mediaAsset.count({
+      where: { ownerUserId: user.id },
+    });
     await importLegacyMedia(prisma as never, s.media, legacyStore, true);
-    expect(await prisma.mediaAsset.count({ where: { ownerUserId: user.id } })).toBe(assetsBefore);
-    expect((await prisma.sellerProfile.findUniqueOrThrow({ where: { id: profile.id } })).profilePhotoData).toEqual(new Uint8Array(bytes));
-    expect((await prisma.sellerProfileRevision.findUniqueOrThrow({ where: { id: revision.id } })).profilePhotoData).toEqual(new Uint8Array(bytes));
-    expect((await prisma.sellerProfileRevisionAchievement.findUniqueOrThrow({ where: { id: achievement.id } })).data).toEqual(new Uint8Array(bytes));
-    expect((await prisma.productCreationStep.findUniqueOrThrow({ where: { id: step.id } })).data).toEqual(new Uint8Array(bytes));
-    for (const image of await prisma.productImage.findMany({ where: { productId: product.id }, include: { mediaAsset: { include: { objects: true } } } })) {
+    expect(
+      await prisma.mediaAsset.count({ where: { ownerUserId: user.id } }),
+    ).toBe(assetsBefore);
+    expect(
+      (
+        await prisma.sellerProfile.findUniqueOrThrow({
+          where: { id: profile.id },
+        })
+      ).profilePhotoData,
+    ).toEqual(new Uint8Array(bytes));
+    expect(
+      (
+        await prisma.sellerProfileRevision.findUniqueOrThrow({
+          where: { id: revision.id },
+        })
+      ).profilePhotoData,
+    ).toEqual(new Uint8Array(bytes));
+    expect(
+      (
+        await prisma.sellerProfileRevisionAchievement.findUniqueOrThrow({
+          where: { id: achievement.id },
+        })
+      ).data,
+    ).toEqual(new Uint8Array(bytes));
+    expect(
+      (
+        await prisma.productCreationStep.findUniqueOrThrow({
+          where: { id: step.id },
+        })
+      ).data,
+    ).toEqual(new Uint8Array(bytes));
+    for (const image of await prisma.productImage.findMany({
+      where: { productId: product.id },
+      include: { mediaAsset: { include: { objects: true } } },
+    })) {
       expect(image.data).toEqual(new Uint8Array(bytes));
       expect(image.mediaAsset?.sourceProvenance).toBe('LEGACY_NORMALIZED');
-      const source = image.mediaAsset!.objects.find(object => object.variant === 'SOURCE')!;
-      expect((await s.store.get('PRIVATE', source.objectKey))?.bytes).toEqual(bytes);
-      expect(image.mediaAsset!.objects.some(object => object.tier === 'PUBLIC' && object.state === 'READY')).toBe(true);
+      const source = image.mediaAsset!.objects.find(
+        (object) => object.variant === 'SOURCE',
+      )!;
+      expect((await s.store.get('PRIVATE', source.objectKey))?.bytes).toEqual(
+        bytes,
+      );
+      expect(
+        image.mediaAsset!.objects.some(
+          (object) => object.tier === 'PUBLIC' && object.state === 'READY',
+        ),
+      ).toBe(true);
     }
   });
 
@@ -216,15 +376,13 @@ describe('durable media lifecycle on PostgreSQL', () => {
     const s = setup();
     const fixture = await author(s.media);
     s.store.failPublic = true;
-    const operation = await approve(s.media, fixture.profile, fixture.user.id);
-    await s.media.run(operation.id);
-    expect(
-      (
-        await prisma.mediaOperation.findUniqueOrThrow({
-          where: { id: operation.id },
-        })
-      ).state,
-    ).toBe('FAILED');
+    await expect(
+      approve(s.media, fixture.profile, fixture.user.id),
+    ).rejects.toThrow('Media delivery failed');
+    const operation = await prisma.mediaOperation.findFirstOrThrow({
+      where: { profileId: fixture.profile.id, kind: 'PUBLISH' },
+    });
+    expect(operation.state).toBe('FAILED');
     expect(
       (
         await prisma.sellerProfile.findUniqueOrThrow({
@@ -233,7 +391,7 @@ describe('durable media lifecycle on PostgreSQL', () => {
       ).publishedRevisionId,
     ).toBeNull();
     s.store.failPublic = false;
-    await setup(s.store, s.cache).media.run(operation.id);
+    await setup(s.store, s.cache).media.deliver(operation.id);
     expect(
       (
         await prisma.sellerProfile.findUniqueOrThrow({
@@ -292,7 +450,6 @@ describe('durable media lifecycle on PostgreSQL', () => {
   it('cleans a late public PUT when publication is cancelled during delivery', async () => {
     const s = setup();
     const f = await author(s.media);
-    const op = await approve(s.media, f.profile, f.user.id);
     s.store.afterPublicPut = async () => {
       await prisma.$transaction(async (tx) => {
         await tx.sellerProfile.update({
@@ -302,7 +459,9 @@ describe('durable media lifecycle on PostgreSQL', () => {
         await s.media.enqueueRevoke(tx, { profileId: f.profile.id });
       });
     };
-    await s.media.run(op.id);
+    await expect(approve(s.media, f.profile, f.user.id)).rejects.toThrow(
+      'Publication was cancelled',
+    );
     const revokes = await prisma.mediaOperation.findMany({
       where: {
         kind: 'REVOKE',
@@ -395,7 +554,9 @@ describe('durable media lifecycle on PostgreSQL', () => {
       ),
     );
     s.store.failPublic = true;
-    await s.media.run(operation.id);
+    await expect(s.media.deliver(operation.id)).rejects.toThrow(
+      'Media delivery failed',
+    );
     const before = await prisma.sellerProfile.findUniqueOrThrow({
       where: { id: f.profile.id },
     });
@@ -405,7 +566,7 @@ describe('durable media lifecycle on PostgreSQL', () => {
       await s.store.get('PUBLIC', f.asset.preview.objectKey),
     ).not.toBeNull();
     s.store.failPublic = false;
-    await s.media.run(operation.id);
+    await s.media.deliver(operation.id);
     expect(
       (
         await prisma.sellerProfile.findUniqueOrThrow({
@@ -575,5 +736,102 @@ describe('durable media lifecycle on PostgreSQL', () => {
       (await prisma.product.findUniqueOrThrow({ where: { id: work.id } }))
         .status,
     ).toBe('APPROVED');
+  });
+
+  it('does not treat a busy lease or a background tick as a confirmed publication', async () => {
+    const s = setup();
+    const fixture = await author(s.media);
+    const operation = await prisma.$transaction((tx) =>
+      s.media.enqueuePublication(
+        tx,
+        { profileId: fixture.profile.id },
+        fixture.profile.revision,
+        null,
+        fixture.user.id,
+      ),
+    );
+    await prisma.mediaOperation.update({
+      where: { id: operation.id },
+      data: {
+        state: 'RUNNING',
+        leaseUntil: new Date(Date.now() + 60_000),
+        leaseToken: randomUUID(),
+      },
+    });
+    await expect(s.media.deliver(operation.id)).rejects.toThrow(
+      'Publication is in progress',
+    );
+    expect(
+      (
+        await prisma.sellerProfile.findUniqueOrThrow({
+          where: { id: fixture.profile.id },
+        })
+      ).publishedRevisionId,
+    ).toBeNull();
+    await prisma.mediaOperation.update({
+      where: { id: operation.id },
+      data: { state: 'PENDING', leaseUntil: null, leaseToken: null },
+    });
+    await s.media.tick();
+    expect(
+      (
+        await prisma.mediaOperation.findUniqueOrThrow({
+          where: { id: operation.id },
+        })
+      ).state,
+    ).toBe('PENDING');
+    await s.media.deliver(operation.id);
+    expect(
+      (
+        await prisma.sellerProfile.findUniqueOrThrow({
+          where: { id: fixture.profile.id },
+        })
+      ).publishedRevisionId,
+    ).toBe(fixture.profile.revision.id);
+  });
+
+  it('requires the file again when upload SOURCE bytes are gone and does not retry that from the executor', async () => {
+    const s = setup();
+    const fixture = await author(s.media);
+    const staged = await s.media.stage(fixture.user.id, 'WORK_IMAGE', {
+      buffer: bytes,
+      mimetype: 'image/png',
+    });
+    const upload = await prisma.mediaOperation.findFirstOrThrow({
+      where: {
+        kind: 'UPLOAD',
+        objects: {
+          some: { object: { assetId: staged.id, variant: 'SOURCE' } },
+        },
+      },
+      include: { objects: { include: { object: true } } },
+    });
+    const source = upload.objects.find(
+      (item) => item.object.variant === 'SOURCE',
+    )!;
+    s.store.objects.delete(`PRIVATE:${source.object.objectKey}`);
+    await prisma.mediaOperation.update({
+      where: { id: upload.id },
+      data: { state: 'PENDING', leaseToken: null, leaseUntil: null },
+    });
+    await s.media.run(upload.id);
+    expect(
+      (
+        await prisma.mediaOperation.findUniqueOrThrow({
+          where: { id: upload.id },
+        })
+      ).errorCode,
+    ).toBe('SOURCE_RESEND_REQUIRED');
+    await s.media.tick();
+    expect(
+      (
+        await prisma.mediaOperation.findUniqueOrThrow({
+          where: { id: upload.id },
+        })
+      ).state,
+    ).toBe('FAILED');
+    await expect(s.media.deliver(upload.id)).rejects.toThrow(
+      'Upload source must be resent',
+    );
   });
 });

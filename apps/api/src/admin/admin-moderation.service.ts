@@ -242,188 +242,213 @@ export class AdminModerationService {
     sellerProfileId: string,
     input: AdminSellerStatusUpdateRequest,
   ) {
-    return runSerializableTransaction(this.prisma, async (tx) => {
-      const sellerProfile = await tx.sellerProfile.findUnique({
-        where: { id: sellerProfileId },
-        include: { editingRevision: true },
-      });
-
-      if (!sellerProfile) {
-        this.logger.warn('Seller moderation target was not found');
-        throw new NotFoundException('Seller profile not found');
-      }
-
-      const editingRevision = sellerProfile.editingRevision;
-      const isRevisionReview = input.target.kind === 'revision';
-      const isVisibilityTransition =
-        (sellerProfile.status === 'APPROVED' && input.status === 'SUSPENDED') ||
-        (sellerProfile.status === 'SUSPENDED' && input.status === 'APPROVED');
-      this.assertFreshSellerTarget(sellerProfile, input);
-
-      if (
-        !isRevisionReview &&
-        !isVisibilityTransition &&
-        (editingRevision !== null ||
-          !this.isAllowedSellerTransition(sellerProfile.status, input.status))
-      ) {
-        this.logger.warn(
-          `Blocked seller status transition target=${sellerProfile.id} from=${sellerProfile.status} to=${input.status}`,
-        );
-        throw new ConflictException('Seller profile transition is not allowed');
-      }
-
-      if (input.status === 'SUSPENDED') {
-        const blockingListing = await tx.listing.findFirst({
-          where: {
-            status: { in: ['SCHEDULED', 'LIVE'] },
-            product: { sellerProfileId: sellerProfile.id },
-          },
-          select: { id: true },
+    let deliveryId: string | undefined;
+    const sellerProfile = await runSerializableTransaction(
+      this.prisma,
+      async (tx) => {
+        const sellerProfile = await tx.sellerProfile.findUnique({
+          where: { id: sellerProfileId },
+          include: { editingRevision: true },
         });
-        if (blockingListing) {
+
+        if (!sellerProfile) {
+          this.logger.warn('Seller moderation target was not found');
+          throw new NotFoundException('Seller profile not found');
+        }
+
+        const editingRevision = sellerProfile.editingRevision;
+        const isRevisionReview = input.target.kind === 'revision';
+        const isVisibilityTransition =
+          (sellerProfile.status === 'APPROVED' &&
+            input.status === 'SUSPENDED') ||
+          (sellerProfile.status === 'SUSPENDED' && input.status === 'APPROVED');
+        this.assertFreshSellerTarget(sellerProfile, input);
+
+        if (
+          !isRevisionReview &&
+          !isVisibilityTransition &&
+          (editingRevision !== null ||
+            !this.isAllowedSellerTransition(sellerProfile.status, input.status))
+        ) {
           this.logger.warn(
-            `Blocked seller status transition target=${sellerProfile.id} from=${sellerProfile.status} to=${input.status} because a scheduled or live listing exists`,
+            `Blocked seller status transition target=${sellerProfile.id} from=${sellerProfile.status} to=${input.status}`,
           );
           throw new ConflictException(
-            'Seller cannot be suspended while a scheduled or live listing exists',
+            'Seller profile transition is not allowed',
           );
         }
-      }
 
-      if (isRevisionReview) {
-        if (!editingRevision) {
-          throw new ConflictException('Moderation target is stale');
+        if (input.status === 'SUSPENDED') {
+          const blockingListing = await tx.listing.findFirst({
+            where: {
+              status: { in: ['SCHEDULED', 'LIVE'] },
+              product: { sellerProfileId: sellerProfile.id },
+            },
+            select: { id: true },
+          });
+          if (blockingListing) {
+            this.logger.warn(
+              `Blocked seller status transition target=${sellerProfile.id} from=${sellerProfile.status} to=${input.status} because a scheduled or live listing exists`,
+            );
+            throw new ConflictException(
+              'Seller cannot be suspended while a scheduled or live listing exists',
+            );
+          }
         }
-        const revisionStatus = input.status as SellerProfileRevisionStatus;
-        assertSellerProfileRevisionTransition(
-          'admin',
-          editingRevision.status,
-          revisionStatus,
-        );
-        const approvedPhoto =
-          input.status === 'APPROVED'
-            ? this.requiredApprovedSellerPhoto({
-                ...editingRevision,
-                profilePhotoMimeType:
-                  editingRevision.profilePhotoMimeType ??
-                  sellerProfile.profilePhotoMimeType,
-                profilePhotoByteLength:
-                  editingRevision.profilePhotoByteLength ??
-                  sellerProfile.profilePhotoByteLength,
-                profilePhotoChecksum:
-                  editingRevision.profilePhotoChecksum ??
-                  sellerProfile.profilePhotoChecksum,
-                profilePhotoObjectKey:
-                  editingRevision.profilePhotoObjectKey ??
-                  sellerProfile.profilePhotoObjectKey,
-                profilePhotoData: sellerProfile.profilePhotoData,
-              })
-            : null;
 
-        if (input.status === 'APPROVED' && this.media?.enabled) {
-          await this.media.enqueuePublication(
-            tx,
-            { profileId: sellerProfileId },
-            editingRevision,
-            sellerProfile.publishedRevisionId,
-            adminUserId,
+        if (isRevisionReview) {
+          if (!editingRevision) {
+            throw new ConflictException('Moderation target is stale');
+          }
+          const revisionStatus = input.status as SellerProfileRevisionStatus;
+          assertSellerProfileRevisionTransition(
+            'admin',
+            editingRevision.status,
+            revisionStatus,
           );
-          return tx.sellerProfile.findUniqueOrThrow({
-            where: { id: sellerProfileId },
-            select: sellerProfileResponseSelect,
-          });
-        }
-        if (this.media?.enabled)
-          await this.media.cancelPublication(tx, {
-            profileId: sellerProfileId,
-          });
-        await tx.sellerProfileRevision.update({
-          where: { id: editingRevision.id },
-          data: { status: revisionStatus, reviewedAt: new Date() },
-        });
+          const approvedPhoto =
+            input.status === 'APPROVED'
+              ? this.requiredApprovedSellerPhoto({
+                  ...editingRevision,
+                  profilePhotoMimeType:
+                    editingRevision.profilePhotoMimeType ??
+                    sellerProfile.profilePhotoMimeType,
+                  profilePhotoByteLength:
+                    editingRevision.profilePhotoByteLength ??
+                    sellerProfile.profilePhotoByteLength,
+                  profilePhotoChecksum:
+                    editingRevision.profilePhotoChecksum ??
+                    sellerProfile.profilePhotoChecksum,
+                  profilePhotoObjectKey:
+                    editingRevision.profilePhotoObjectKey ??
+                    sellerProfile.profilePhotoObjectKey,
+                  profilePhotoData: sellerProfile.profilePhotoData,
+                })
+              : null;
 
-        const updated =
-          input.status === 'APPROVED'
-            ? await tx.sellerProfile.update({
-                where: { id: sellerProfileId },
-                data: {
-                  ...publishedSellerProfileData(editingRevision),
-                  ...approvedPhoto,
-                  status:
-                    sellerProfile.status === 'PENDING_REVIEW'
-                      ? 'APPROVED'
-                      : sellerProfile.status,
-                  publishedRevisionId: editingRevision.id,
-                },
-                select: sellerProfileResponseSelect,
-              })
-            : sellerProfile.status === 'PENDING_REVIEW'
+          if (input.status === 'APPROVED' && this.media?.enabled) {
+            const operation = await this.media.enqueuePublication(
+              tx,
+              { profileId: sellerProfileId },
+              editingRevision,
+              sellerProfile.publishedRevisionId,
+              adminUserId,
+            );
+            deliveryId = operation.id;
+            return tx.sellerProfile.findUniqueOrThrow({
+              where: { id: sellerProfileId },
+              select: sellerProfileResponseSelect,
+            });
+          }
+          if (this.media?.enabled)
+            await this.media.cancelPublication(tx, {
+              profileId: sellerProfileId,
+            });
+          await tx.sellerProfileRevision.update({
+            where: { id: editingRevision.id },
+            data: { status: revisionStatus, reviewedAt: new Date() },
+          });
+
+          const updated =
+            input.status === 'APPROVED'
               ? await tx.sellerProfile.update({
                   where: { id: sellerProfileId },
-                  data: { status: input.status },
+                  data: {
+                    ...publishedSellerProfileData(editingRevision),
+                    ...approvedPhoto,
+                    status:
+                      sellerProfile.status === 'PENDING_REVIEW'
+                        ? 'APPROVED'
+                        : sellerProfile.status,
+                    publishedRevisionId: editingRevision.id,
+                  },
                   select: sellerProfileResponseSelect,
                 })
-              : await tx.sellerProfile.findUniqueOrThrow({
-                  where: { id: sellerProfileId },
-                  select: sellerProfileResponseSelect,
-                });
+              : sellerProfile.status === 'PENDING_REVIEW'
+                ? await tx.sellerProfile.update({
+                    where: { id: sellerProfileId },
+                    data: { status: input.status },
+                    select: sellerProfileResponseSelect,
+                  })
+                : await tx.sellerProfile.findUniqueOrThrow({
+                    where: { id: sellerProfileId },
+                    select: sellerProfileResponseSelect,
+                  });
+
+          await tx.auditEvent.create({
+            data: {
+              actorUserId: adminUserId,
+              targetType: 'SELLER_PROFILE',
+              targetId: sellerProfile.id,
+              oldStatus: editingRevision.status,
+              newStatus: input.status,
+              reason: input.reason ?? null,
+            },
+          });
+
+          return updated;
+        }
+
+        if (this.media?.enabled && input.status === 'SUSPENDED')
+          await this.media.enqueueRevoke(tx, { profileId: sellerProfileId });
+        if (input.status === 'APPROVED') {
+          this.assertSellerApprovalRequirements(sellerProfile);
+          if (this.media?.enabled && sellerProfile.publishedRevisionId) {
+            const revision = await tx.sellerProfileRevision.findUniqueOrThrow({
+              where: { id: sellerProfile.publishedRevisionId },
+            });
+            const operation = await this.media.enqueuePublication(
+              tx,
+              { profileId: sellerProfileId },
+              revision,
+              sellerProfile.publishedRevisionId,
+              adminUserId,
+              true,
+            );
+            deliveryId = operation.id;
+            return tx.sellerProfile.findUniqueOrThrow({
+              where: { id: sellerProfileId },
+              select: sellerProfileResponseSelect,
+            });
+          }
+        }
+
+        const updated = await tx.sellerProfile.update({
+          where: { id: sellerProfileId },
+          data: { status: input.status },
+          select: sellerProfileResponseSelect,
+        });
 
         await tx.auditEvent.create({
           data: {
             actorUserId: adminUserId,
             targetType: 'SELLER_PROFILE',
             targetId: sellerProfile.id,
-            oldStatus: editingRevision.status,
+            oldStatus: sellerProfile.status,
             newStatus: input.status,
             reason: input.reason ?? null,
           },
         });
 
         return updated;
+      },
+    );
+    if (this.media?.enabled) {
+      try {
+        if (deliveryId) await this.media.deliver(deliveryId);
+      } finally {
+        await this.media.deliverOutstanding(
+          { profileId: sellerProfileId },
+          'REVOKE',
+        );
       }
-
-      if (this.media?.enabled && input.status === 'SUSPENDED')
-        await this.media.enqueueRevoke(tx, { profileId: sellerProfileId });
-      if (input.status === 'APPROVED') {
-        this.assertSellerApprovalRequirements(sellerProfile);
-        if (this.media?.enabled && sellerProfile.publishedRevisionId) {
-          const revision = await tx.sellerProfileRevision.findUniqueOrThrow({
-            where: { id: sellerProfile.publishedRevisionId },
-          });
-          await this.media.enqueuePublication(
-            tx,
-            { profileId: sellerProfileId },
-            revision,
-            sellerProfile.publishedRevisionId,
-            adminUserId,
-            true,
-          );
-          return tx.sellerProfile.findUniqueOrThrow({
-            where: { id: sellerProfileId },
-            select: sellerProfileResponseSelect,
-          });
-        }
-      }
-
-      const updated = await tx.sellerProfile.update({
-        where: { id: sellerProfileId },
-        data: { status: input.status },
-        select: sellerProfileResponseSelect,
-      });
-
-      await tx.auditEvent.create({
-        data: {
-          actorUserId: adminUserId,
-          targetType: 'SELLER_PROFILE',
-          targetId: sellerProfile.id,
-          oldStatus: sellerProfile.status,
-          newStatus: input.status,
-          reason: input.reason ?? null,
-        },
-      });
-
-      return updated;
-    });
+      if (deliveryId)
+        return this.prisma.sellerProfile.findUniqueOrThrow({
+          where: { id: sellerProfileId },
+          select: sellerProfileResponseSelect,
+        });
+    }
+    return sellerProfile;
   }
 
   async updateProductStatus(
@@ -431,166 +456,186 @@ export class AdminModerationService {
     productId: string,
     input: AdminProductStatusUpdateRequest,
   ) {
-    return runReadCommittedTransaction(this.prisma, async (tx) => {
-      await lockProductRowForUpdate(tx, productId);
-      const product = await tx.product.findUnique({
-        where: { id: productId },
-        include: {
-          sellerProfile: { select: sellerProfileAuthSelect },
-          images: { select: { id: true } },
-          editingRevision: {
-            include: { images: { select: { imageId: true } } },
+    let deliveryId: string | undefined;
+    const product = await runReadCommittedTransaction(
+      this.prisma,
+      async (tx) => {
+        await lockProductRowForUpdate(tx, productId);
+        const product = await tx.product.findUnique({
+          where: { id: productId },
+          include: {
+            sellerProfile: { select: sellerProfileAuthSelect },
+            images: { select: { id: true } },
+            editingRevision: {
+              include: { images: { select: { imageId: true } } },
+            },
+            listings: {
+              where: { status: { in: ['SCHEDULED', 'LIVE'] } },
+              select: { id: true },
+            },
           },
-          listings: {
-            where: { status: { in: ['SCHEDULED', 'LIVE'] } },
-            select: { id: true },
-          },
-        },
-      });
-
-      if (!product) {
-        this.logger.warn('Product moderation target was not found');
-        throw new NotFoundException('Product not found');
-      }
-
-      const editingRevision = product.editingRevision;
-      const isRevisionReview = input.target.kind === 'revision';
-      const isVisibilityTransition =
-        (product.status === 'APPROVED' && input.status === 'ARCHIVED') ||
-        (product.status === 'ARCHIVED' && input.status === 'APPROVED');
-      if (
-        this.media?.enabled && product.status === 'APPROVED' &&
-        input.status === 'APPROVED' && input.target.kind === 'revision' &&
-        product.publishedRevisionId === input.target.id
-      ) {
-        const delivered = await tx.mediaOperation.findUnique({
-          where: { identity: `publish:${input.target.id}:${new Date(input.target.updatedAt).toISOString()}` },
-          select: { productId: true, state: true },
         });
-        if (delivered?.productId === productId && delivered.state === 'DONE')
-          return product;
-      }
-      this.assertFreshProductTarget(product, input);
 
-      if (!isRevisionReview && !isVisibilityTransition) {
-        this.logger.warn(
-          `Blocked product status transition target=${product.id} from=${product.status} to=${input.status}`,
-        );
-        throw new ConflictException('Product transition is not allowed');
-      }
-
-      if (isRevisionReview) {
-        if (!editingRevision) {
-          throw new ConflictException('Moderation target is stale');
+        if (!product) {
+          this.logger.warn('Product moderation target was not found');
+          throw new NotFoundException('Product not found');
         }
-        assertProductRevisionTransition(
-          'admin',
-          editingRevision.status,
-          input.status,
-        );
 
-        if (input.status === 'APPROVED') {
-          this.assertProductApprovalRequirements({
-            ...editingRevision,
-            images: editingRevision.images.map(({ imageId }) => ({
-              id: imageId,
-            })),
+        const editingRevision = product.editingRevision;
+        const isRevisionReview = input.target.kind === 'revision';
+        const isVisibilityTransition =
+          (product.status === 'APPROVED' && input.status === 'ARCHIVED') ||
+          (product.status === 'ARCHIVED' && input.status === 'APPROVED');
+        if (
+          this.media?.enabled &&
+          product.status === 'APPROVED' &&
+          input.status === 'APPROVED' &&
+          input.target.kind === 'revision' &&
+          product.publishedRevisionId === input.target.id
+        ) {
+          const delivered = await tx.mediaOperation.findUnique({
+            where: {
+              identity: `publish:${input.target.id}:${new Date(input.target.updatedAt).toISOString()}`,
+            },
+            select: { productId: true, state: true },
           });
-          if (product.sellerProfile.status !== 'APPROVED') {
-            this.logger.warn(
-              'Blocked product approval because seller is not approved',
-            );
-            throw new ConflictException('SellerProfile must be approved first');
-          }
+          if (delivered?.productId === productId && delivered.state === 'DONE')
+            return product;
+        }
+        this.assertFreshProductTarget(product, input);
+
+        if (!isRevisionReview && !isVisibilityTransition) {
+          this.logger.warn(
+            `Blocked product status transition target=${product.id} from=${product.status} to=${input.status}`,
+          );
+          throw new ConflictException('Product transition is not allowed');
         }
 
-        if (input.status === 'APPROVED' && this.media?.enabled) {
-          await this.media.enqueuePublication(
-            tx,
-            { productId },
-            editingRevision,
-            product.publishedRevisionId,
-            adminUserId,
+        if (isRevisionReview) {
+          if (!editingRevision) {
+            throw new ConflictException('Moderation target is stale');
+          }
+          assertProductRevisionTransition(
+            'admin',
+            editingRevision.status,
+            input.status,
           );
-          return product;
-        }
-        if (this.media?.enabled)
-          await this.media.cancelPublication(tx, { productId });
-        await tx.productRevision.update({
-          where: { id: editingRevision.id },
-          data: { status: input.status, reviewedAt: new Date() },
-        });
-        const updated =
-          input.status === 'APPROVED'
-            ? await tx.product.update({
-                where: { id: productId },
-                data: {
-                  ...publishedProductData(editingRevision),
-                  status:
-                    product.status === 'ARCHIVED' ? 'ARCHIVED' : 'APPROVED',
-                  publishedRevisionId: editingRevision.id,
-                  publishedAt: product.publishedAt ?? new Date(),
-                },
-              })
-            : product.status === 'PENDING_REVIEW'
+
+          if (input.status === 'APPROVED') {
+            this.assertProductApprovalRequirements({
+              ...editingRevision,
+              images: editingRevision.images.map(({ imageId }) => ({
+                id: imageId,
+              })),
+            });
+            if (product.sellerProfile.status !== 'APPROVED') {
+              this.logger.warn(
+                'Blocked product approval because seller is not approved',
+              );
+              throw new ConflictException(
+                'SellerProfile must be approved first',
+              );
+            }
+          }
+
+          if (input.status === 'APPROVED' && this.media?.enabled) {
+            const operation = await this.media.enqueuePublication(
+              tx,
+              { productId },
+              editingRevision,
+              product.publishedRevisionId,
+              adminUserId,
+            );
+            deliveryId = operation.id;
+            return product;
+          }
+          if (this.media?.enabled)
+            await this.media.cancelPublication(tx, { productId });
+          await tx.productRevision.update({
+            where: { id: editingRevision.id },
+            data: { status: input.status, reviewedAt: new Date() },
+          });
+          const updated =
+            input.status === 'APPROVED'
               ? await tx.product.update({
                   where: { id: productId },
-                  data: { status: input.status },
+                  data: {
+                    ...publishedProductData(editingRevision),
+                    status:
+                      product.status === 'ARCHIVED' ? 'ARCHIVED' : 'APPROVED',
+                    publishedRevisionId: editingRevision.id,
+                    publishedAt: product.publishedAt ?? new Date(),
+                  },
                 })
-              : product;
+              : product.status === 'PENDING_REVIEW'
+                ? await tx.product.update({
+                    where: { id: productId },
+                    data: { status: input.status },
+                  })
+                : product;
+
+          await tx.auditEvent.create({
+            data: {
+              actorUserId: adminUserId,
+              targetType: 'PRODUCT',
+              targetId: product.id,
+              oldStatus: editingRevision.status,
+              newStatus: input.status,
+              reason: input.reason ?? null,
+            },
+          });
+          return updated;
+        }
+
+        if (this.media?.enabled && input.status === 'ARCHIVED')
+          await this.media.enqueueRevoke(tx, { productId });
+        assertProductRevisionTransition('admin', product.status, input.status);
+        if (
+          input.status === 'APPROVED' &&
+          this.media?.enabled &&
+          product.publishedRevisionId
+        ) {
+          const revision = await tx.productRevision.findUniqueOrThrow({
+            where: { id: product.publishedRevisionId },
+          });
+          const operation = await this.media.enqueuePublication(
+            tx,
+            { productId },
+            revision,
+            product.publishedRevisionId,
+            adminUserId,
+            true,
+          );
+          deliveryId = operation.id;
+          return product;
+        }
+        const updated = await tx.product.update({
+          where: { id: productId },
+          data: { status: input.status },
+        });
 
         await tx.auditEvent.create({
           data: {
             actorUserId: adminUserId,
             targetType: 'PRODUCT',
             targetId: product.id,
-            oldStatus: editingRevision.status,
+            oldStatus: product.status,
             newStatus: input.status,
             reason: input.reason ?? null,
           },
         });
+
         return updated;
+      },
+    );
+    if (this.media?.enabled) {
+      try {
+        if (deliveryId) await this.media.deliver(deliveryId);
+      } finally {
+        await this.media.deliverOutstanding({ productId }, 'REVOKE');
       }
-
-      if (this.media?.enabled && input.status === 'ARCHIVED')
-        await this.media.enqueueRevoke(tx, { productId });
-      assertProductRevisionTransition('admin', product.status, input.status);
-      if (
-        input.status === 'APPROVED' &&
-        this.media?.enabled &&
-        product.publishedRevisionId
-      ) {
-        const revision = await tx.productRevision.findUniqueOrThrow({
-          where: { id: product.publishedRevisionId },
-        });
-        await this.media.enqueuePublication(
-          tx,
-          { productId },
-          revision,
-          product.publishedRevisionId,
-          adminUserId,
-          true,
-        );
-        return product;
-      }
-      const updated = await tx.product.update({
-        where: { id: productId },
-        data: { status: input.status },
-      });
-
-      await tx.auditEvent.create({
-        data: {
-          actorUserId: adminUserId,
-          targetType: 'PRODUCT',
-          targetId: product.id,
-          oldStatus: product.status,
-          newStatus: input.status,
-          reason: input.reason ?? null,
-        },
-      });
-
-      return updated;
-    });
+    }
+    return product;
   }
 
   async updateProductStatusAndReadback(

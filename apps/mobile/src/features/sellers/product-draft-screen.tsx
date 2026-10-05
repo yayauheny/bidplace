@@ -7,12 +7,15 @@ import { useNavigation, useRouter } from 'expo-router';
 import { usePreventRemove } from 'expo-router/build/react-navigation/core';
 import { View } from 'react-native';
 
-import type { Product, ProductStatus, SellerProductDetailResponse } from '@bidplace/contracts';
+import type {
+  Product,
+  ProductStatus,
+  SellerProductDetailResponse,
+} from '@bidplace/contracts';
 import { designTokens } from '@bidplace/design-tokens';
 
 import { AppShell, FormPageShell } from '../../components/layout';
 import { MediaDeliveryNotice } from '../../components/shared/MediaDeliveryNotice';
-import { mediaDeliveryPending } from '../../components/shared/media-delivery';
 import { InfrastructurePageStatus } from '../../components/shared/InfrastructurePageStatus';
 import {
   combineInfrastructurePageStatus,
@@ -30,7 +33,11 @@ import {
 import { isNotFoundError } from '../../errors';
 import { presentEnum, productStatusLabels } from '../../lib/presentation';
 import { useApiClient } from '../../providers/api-provider';
-import { canWritePrivateCache, categoryKeys, currentAuthEpoch } from '../../lib/query-cache';
+import {
+  canWritePrivateCache,
+  categoryKeys,
+  currentAuthEpoch,
+} from '../../lib/query-cache';
 import { usePrivateCacheEpoch } from '../../lib/use-private-cache-epoch';
 import { persistedFieldOverrides } from './reconcile-saved-fields';
 import { invalidateOwnerWorks, ownerWorkQueryKeys } from './owner-work-query';
@@ -118,11 +125,19 @@ export function ProductDraftScreen({
   const detailReads = useRef(0);
   const ignoreDetailReadsBefore = useRef(0);
   const holdFloor = useRef<ProductRevisionIdentity | null>(null);
-  const onTrustedDetail = useRef<(revision: TrustedRevision) => void>(() => undefined);
+  const onTrustedDetail = useRef<(revision: TrustedRevision) => void>(
+    () => undefined,
+  );
   const [inputsLocked, setInputsLocked] = useState(false);
   const pendingNavigation = useRef<(() => void) | null>(null);
-  const persistCurrentFormRef = useRef<() => Promise<boolean>>(async () => false);
-  const browserNavigation = useRef<{ id: string; restoring: boolean; allow: boolean } | null>(null);
+  const persistCurrentFormRef = useRef<() => Promise<boolean>>(
+    async () => false,
+  );
+  const browserNavigation = useRef<{
+    id: string;
+    restoring: boolean;
+    allow: boolean;
+  } | null>(null);
   const [pendingNavigationVersion, setPendingNavigationVersion] = useState(0);
   const [imagePendingDelete, setImagePendingDelete] = useState<string | null>(
     null,
@@ -134,8 +149,10 @@ export function ProductDraftScreen({
   const [stepOneAttempted, setStepOneAttempted] = useState(false);
   const [wizardSubmitted, setWizardSubmitted] = useState(false);
   const [moderationHold, setModerationHold] = useState(false);
-  const [submittedRevision, setSubmittedRevision] = useState<ProductRevisionIdentity | null>(null);
-  const [trustedRevision, setTrustedRevision] = useState<TrustedRevision | null>(null);
+  const [submittedRevision, setSubmittedRevision] =
+    useState<ProductRevisionIdentity | null>(null);
+  const [trustedRevision, setTrustedRevision] =
+    useState<TrustedRevision | null>(null);
   onTrustedDetail.current = (revision) => {
     setTrustedRevision((current) => {
       if (
@@ -174,14 +191,15 @@ export function ProductDraftScreen({
         throw new Error('Private cache is closed');
       }
       const committed =
-        current && shouldKeepCachedProductRevision(current, result) ? current : result;
+        current && shouldKeepCachedProductRevision(current, result)
+          ? current
+          : result;
       if (ignoreDetailReadsBefore.current > 0 && committed.editingRevision) {
         onTrustedDetail.current(committed.editingRevision);
       }
       return committed;
     },
     enabled: Boolean(productId),
-    refetchInterval: (query) => mediaDeliveryPending(query.state.data?.publication) ? 5000 : false,
   });
   const existingProduct = productDetail.data?.product;
   const persistedRevisionUpdatedAt =
@@ -251,7 +269,8 @@ export function ProductDraftScreen({
   }, [form.formState.isDirty]);
 
   useEffect(() => {
-    if (form.formState.isDirty || inputsLocked || !pendingNavigation.current) return;
+    if (form.formState.isDirty || inputsLocked || !pendingNavigation.current)
+      return;
     const navigate = pendingNavigation.current;
     pendingNavigation.current = null;
     navigate();
@@ -327,7 +346,13 @@ export function ProductDraftScreen({
 
   const retireBrowserGuard = async () => {
     const guard = browserNavigation.current;
-    if (!guard || guard.allow || typeof window === 'undefined' || window.history.state?.[productDraftHistoryGuardKey] !== guard.id) return;
+    if (
+      !guard ||
+      guard.allow ||
+      typeof window === 'undefined' ||
+      window.history.state?.[productDraftHistoryGuardKey] !== guard.id
+    )
+      return;
     guard.allow = true;
     await new Promise<void>((resolve) => {
       window.addEventListener('popstate', () => resolve(), { once: true });
@@ -352,9 +377,17 @@ export function ProductDraftScreen({
     },
   });
   const submit = useMutation({
-    mutationFn: async ({ id, currentValues, authEpoch: requestEpoch, generation }: ProductSubmitRequest) => {
+    mutationFn: async ({
+      id,
+      currentValues,
+      authEpoch: requestEpoch,
+      generation,
+    }: ProductSubmitRequest) => {
       await api.products.update(id, productDraftToWriteRequest(currentValues));
-      if (generation !== saveGeneration.current || !canWritePrivateCache(queryClient, requestEpoch)) {
+      if (
+        generation !== saveGeneration.current ||
+        !canWritePrivateCache(queryClient, requestEpoch)
+      ) {
         return null;
       }
       return api.products.submit(id);
@@ -447,39 +480,47 @@ export function ProductDraftScreen({
     if (saveGeneration.current === generation) saveInFlight.current = false;
   };
 
-  const persistCurrentForm = useCallback(async (mode: 'ordinary' | 'transition' = 'ordinary') => {
-    if (saveInFlight.current) return false;
-    if (mode === 'transition') {
-      if (!beginLockedTransition()) return false;
-    } else if (transitionLock.current) {
-      return false;
-    }
-    const operation = sessionOperation.current;
-    const generation = saveGeneration.current + 1;
-    saveGeneration.current = generation;
-    saveInFlight.current = true;
-    const snapshot = form.getValues();
-    const authEpochAtSave = currentAuthEpoch(queryClient);
-    const stillOwnsSave = () =>
-      sessionOperation.current === operation && canWritePrivateCache(queryClient, authEpochAtSave);
-    if (!productDraftFormSchema.safeParse(snapshot).success) {
-      await form.trigger();
-      if (!stillOwnsSave()) return false;
-      releaseSave(generation);
-      if (mode === 'transition') endLockedTransition();
-      return false;
-    }
-    try {
-      await save.mutateAsync({ values: snapshot, authEpoch: authEpochAtSave, generation });
-      if (!stillOwnsSave()) return false;
-      return true;
-    } catch {
-      if (stillOwnsSave() && mode === 'transition') endLockedTransition();
-      return false;
-    } finally {
-      if (sessionOperation.current === operation) releaseSave(generation);
-    }
-  }, [form, save]);
+  const persistCurrentForm = useCallback(
+    async (mode: 'ordinary' | 'transition' = 'ordinary') => {
+      if (saveInFlight.current) return false;
+      if (mode === 'transition') {
+        if (!beginLockedTransition()) return false;
+      } else if (transitionLock.current) {
+        return false;
+      }
+      const operation = sessionOperation.current;
+      const generation = saveGeneration.current + 1;
+      saveGeneration.current = generation;
+      saveInFlight.current = true;
+      const snapshot = form.getValues();
+      const authEpochAtSave = currentAuthEpoch(queryClient);
+      const stillOwnsSave = () =>
+        sessionOperation.current === operation &&
+        canWritePrivateCache(queryClient, authEpochAtSave);
+      if (!productDraftFormSchema.safeParse(snapshot).success) {
+        await form.trigger();
+        if (!stillOwnsSave()) return false;
+        releaseSave(generation);
+        if (mode === 'transition') endLockedTransition();
+        return false;
+      }
+      try {
+        await save.mutateAsync({
+          values: snapshot,
+          authEpoch: authEpochAtSave,
+          generation,
+        });
+        if (!stillOwnsSave()) return false;
+        return true;
+      } catch {
+        if (stillOwnsSave() && mode === 'transition') endLockedTransition();
+        return false;
+      } finally {
+        if (sessionOperation.current === operation) releaseSave(generation);
+      }
+    },
+    [form, save],
+  );
   persistCurrentFormRef.current = () => persistCurrentForm('transition');
 
   const navigateAfterPersist = useCallback((navigate: () => void) => {
@@ -505,7 +546,10 @@ export function ProductDraftScreen({
     };
     browserNavigation.current = guard;
     window.history.pushState(
-      { ...(window.history.state ?? {}), [productDraftHistoryGuardKey]: guard.id },
+      {
+        ...(window.history.state ?? {}),
+        [productDraftHistoryGuardKey]: guard.id,
+      },
       '',
       window.location.href,
     );
@@ -514,7 +558,10 @@ export function ProductDraftScreen({
       guard.allow = true;
       const operation = sessionOperation.current;
       void persistCurrentFormRef.current().then((persisted) => {
-        if (sessionOperation.current !== operation || !persisted) { guard.allow = false; return; }
+        if (sessionOperation.current !== operation || !persisted) {
+          guard.allow = false;
+          return;
+        }
         endLockedTransition();
         window.history.go(-2);
       });
@@ -569,7 +616,8 @@ export function ProductDraftScreen({
   useEffect(() => {
     if (!moderationHold || !submittedRevision) return;
     const incoming = productDetail.data?.editingRevision;
-    if (!incoming || !isNewerModerationDecision(submittedRevision, incoming)) return;
+    if (!incoming || !isNewerModerationDecision(submittedRevision, incoming))
+      return;
     holdFloor.current = null;
     setModerationHold(false);
     setSubmittedRevision(null);
@@ -583,7 +631,8 @@ export function ProductDraftScreen({
     if (!canOpenProductWizardStep(nextStep, wizardDraft)) return;
     if (nextStep === wizardStep) return;
     const operation = sessionOperation.current;
-    if (form.formState.isDirty && !(await persistCurrentForm('transition'))) return;
+    if (form.formState.isDirty && !(await persistCurrentForm('transition')))
+      return;
     if (sessionOperation.current !== operation) return;
     router.setParams({ flow: 'creation', step: String(nextStep) });
     endLockedTransition();
@@ -601,7 +650,8 @@ export function ProductDraftScreen({
       return;
     }
     const operation = sessionOperation.current;
-    if (!(await persistCurrentForm(isCreationFlow ? 'transition' : 'ordinary'))) return;
+    if (!(await persistCurrentForm(isCreationFlow ? 'transition' : 'ordinary')))
+      return;
     if (sessionOperation.current !== operation) return;
     if (!isCreationFlow) return;
     const persistedId = persistedProductId.current;
@@ -687,7 +737,8 @@ export function ProductDraftScreen({
       !transitionLock.current &&
       sessionOperation.current === operation &&
       canWritePrivateCache(queryClient, epoch);
-    if (editorStatus === 'APPROVED' && !(await persistCurrentForm('ordinary'))) return;
+    if (editorStatus === 'APPROVED' && !(await persistCurrentForm('ordinary')))
+      return;
     if (!stillOwnsImages()) return;
     setImageSelectionError(null);
     try {
@@ -759,8 +810,11 @@ export function ProductDraftScreen({
 
   const moderationReopened = Boolean(
     submittedRevision &&
-      productDetail.data?.editingRevision &&
-      isNewerModerationDecision(submittedRevision, productDetail.data.editingRevision),
+    productDetail.data?.editingRevision &&
+    isNewerModerationDecision(
+      submittedRevision,
+      productDetail.data.editingRevision,
+    ),
   );
   const editable =
     canOwnerEditProduct(existingProduct?.status, editingRevisionStatus) &&
@@ -775,7 +829,11 @@ export function ProductDraftScreen({
     const operation = sessionOperation.current;
     const epoch = currentAuthEpoch(queryClient);
     if (editorStatus === 'APPROVED' && !(await persistCurrentForm())) return;
-    if (sessionOperation.current !== operation || !canWritePrivateCache(queryClient, epoch)) return;
+    if (
+      sessionOperation.current !== operation ||
+      !canWritePrivateCache(queryClient, epoch)
+    )
+      return;
     const ids = existingProduct.images.map((image) => image.id);
     const index = ids.indexOf(imageId);
     [ids[index], ids[index + direction]] = [ids[index + direction], ids[index]];
@@ -784,250 +842,282 @@ export function ProductDraftScreen({
 
   return (
     <FormProvider {...form}>
-    <ProductDraftWriteGuard guard={transitionLock}>
-    <FormPageShell hideDock>
-      {isCreationFlow ? (
-        <FormSection
-          title={wizardSubmitted ? 'Предмет отправлен' : 'Создание предмета'}
-          description={
-            wizardSubmitted
-              ? 'Черновик отправлен на модерацию. Дальше команда проверит его содержание и изображения.'
-              : 'Заполните предмет по шагам, сохраните промежуточные изменения и проверьте публикацию перед отправкой.'
-          }
-        >
-          <View
-            accessibilityRole="tablist"
-            style={{
-              flexDirection: 'row',
-              flexWrap: 'wrap',
-              gap: designTokens.space.x2,
-            }}
-          >
-            {['О работе', 'Изображения', 'История создания', 'Проверка'].map(
-              (label, index) => {
-                const currentStep = index + 1;
-                return (
-                  <SecondaryButton
-                    key={label}
-                    label={`${currentStep}. ${label}`}
-                    disabled={
-                      wizardSubmitted ||
-                      !canOpenProductWizardStep(currentStep, wizardDraft)
-                    }
-                    onPress={() => void moveToWizardStep(currentStep)}
-                  />
-                );
-              },
-            )}
+      <ProductDraftWriteGuard guard={transitionLock}>
+        <FormPageShell hideDock>
+          {isCreationFlow ? (
+            <FormSection
+              title={
+                wizardSubmitted ? 'Предмет отправлен' : 'Создание предмета'
+              }
+              description={
+                wizardSubmitted
+                  ? 'Черновик отправлен на модерацию. Дальше команда проверит его содержание и изображения.'
+                  : 'Заполните предмет по шагам, сохраните промежуточные изменения и проверьте публикацию перед отправкой.'
+              }
+            >
+              <View
+                accessibilityRole="tablist"
+                style={{
+                  flexDirection: 'row',
+                  flexWrap: 'wrap',
+                  gap: designTokens.space.x2,
+                }}
+              >
+                {[
+                  'О работе',
+                  'Изображения',
+                  'История создания',
+                  'Проверка',
+                ].map((label, index) => {
+                  const currentStep = index + 1;
+                  return (
+                    <SecondaryButton
+                      key={label}
+                      label={`${currentStep}. ${label}`}
+                      disabled={
+                        wizardSubmitted ||
+                        !canOpenProductWizardStep(currentStep, wizardDraft)
+                      }
+                      onPress={() => void moveToWizardStep(currentStep)}
+                    />
+                  );
+                })}
+              </View>
+              {existingProduct ? (
+                <AppText role="metadata" tone="secondary">
+                  Шаг {wizardStep} из 4 · {draftTitle.trim() || 'Без названия'}
+                </AppText>
+              ) : null}
+              <SecondaryButton
+                label={
+                  form.formState.isDirty ? 'Сохранить и закрыть' : 'Закрыть'
+                }
+                loading={save.isPending}
+                disabled={submit.isPending || inputsLocked}
+                onPress={() => void saveAndClose()}
+              />
+            </FormSection>
+          ) : null}
+
+          <View style={{ gap: designTokens.space.x2 }}>
+            <AppText role="screenTitle">
+              {existingProduct ? 'Редактировать предмет' : 'Новый предмет'}
+            </AppText>
+            <AppText role="bodySmall" tone="secondary">
+              Черновик можно сохранить неполным. Для модерации нужны название,
+              категория и хотя бы одно изображение.
+            </AppText>
           </View>
-          {existingProduct ? (
-            <AppText role="metadata" tone="secondary">
-              Шаг {wizardStep} из 4 · {draftTitle.trim() || 'Без названия'}
+
+          <MediaDeliveryNotice delivery={productDetail.data?.publication} />
+          {moderationNotice ? (
+            <FormSection title={moderationNotice.title}>
+              <AppText role="bodySmall" tone="danger">
+                {moderationNotice.body}
+              </AppText>
+            </FormSection>
+          ) : null}
+
+          {existingProduct && !isCreationFlow ? (
+            <FormSection title="Статус предмета">
+              <AppText
+                role="bodySmall"
+                tone={
+                  editorStatus === 'APPROVED'
+                    ? 'success'
+                    : editorStatus === 'CHANGES_REQUESTED' ||
+                        editorStatus === 'REJECTED'
+                      ? 'danger'
+                      : 'secondary'
+                }
+              >
+                {editorStatus
+                  ? presentEnum(
+                      editorStatus,
+                      productStatusLabels,
+                      'Неизвестный статус предмета',
+                    )
+                  : null}
+              </AppText>
+              <SecondaryButton
+                label="Обновить"
+                onPress={() => void productDetail.refetch()}
+              />
+              {editable ? (
+                <PrimaryButton
+                  label={submitLabel}
+                  loading={submit.isPending}
+                  disabled={
+                    existingProduct.images.length < 1 ||
+                    save.isPending ||
+                    inputsLocked
+                  }
+                  onPress={() => void submitCurrentForm()}
+                />
+              ) : null}
+              {submit.isError ? (
+                <AppText role="bodySmall" tone="danger">
+                  Не удалось сохранить и отправить предмет на модерацию.
+                </AppText>
+              ) : null}
+            </FormSection>
+          ) : null}
+
+          {existingProduct && !editable && !isCreationFlow ? (
+            <AppText role="bodySmall" tone="danger">
+              Предмет уже нельзя редактировать или изменять его изображения.
             </AppText>
           ) : null}
-          <SecondaryButton
-            label={form.formState.isDirty ? 'Сохранить и закрыть' : 'Закрыть'}
-            loading={save.isPending}
-            disabled={submit.isPending || inputsLocked}
-            onPress={() => void saveAndClose()}
-          />
-        </FormSection>
-      ) : null}
 
-      <View style={{ gap: designTokens.space.x2 }}>
-        <AppText role="screenTitle">
-          {existingProduct ? 'Редактировать предмет' : 'Новый предмет'}
-        </AppText>
-        <AppText role="bodySmall" tone="secondary">
-          Черновик можно сохранить неполным. Для модерации нужны название,
-          категория и хотя бы одно изображение.
-        </AppText>
-      </View>
-
-      <MediaDeliveryNotice delivery={productDetail.data?.publication} />
-      {moderationNotice ? (
-        <FormSection title={moderationNotice.title}>
-          <AppText role="bodySmall" tone="danger">
-            {moderationNotice.body}
-          </AppText>
-        </FormSection>
-      ) : null}
-
-      {existingProduct && !isCreationFlow ? (
-        <FormSection title="Статус предмета">
-          <AppText
-            role="bodySmall"
-            tone={
-              editorStatus === 'APPROVED'
-                ? 'success'
-                : editorStatus === 'CHANGES_REQUESTED' ||
-                    editorStatus === 'REJECTED'
-                  ? 'danger'
-                  : 'secondary'
-            }
-          >
-            {editorStatus
-              ? presentEnum(
-                  editorStatus,
-                  productStatusLabels,
-                  'Неизвестный статус предмета',
-                )
-              : null}
-          </AppText>
-          <SecondaryButton
-            label="Обновить"
-            onPress={() => void productDetail.refetch()}
-          />
-          {editable ? (
-            <PrimaryButton
-              label={submitLabel}
-              loading={submit.isPending}
-              disabled={existingProduct.images.length < 1 || save.isPending || inputsLocked}
-              onPress={() => void submitCurrentForm()}
+          {!isCreationFlow || wizardStep === productWizardStep.about ? (
+            <ProductDraftAboutStep
+              isCreationFlow={isCreationFlow}
+              wizardStep={wizardStep}
+              editable={editable && !inputsLocked}
+              categories={categories.data.categories}
+              stepOneAttempted={stepOneAttempted}
+              saveIsPending={save.isPending}
+              saveIsError={save.isError}
+              onSavePress={() => void saveAbout()}
+              wizardCanOpenImages={canOpenProductWizardStep(
+                productWizardStep.images,
+                wizardDraft,
+              )}
+              onContinueToImages={() =>
+                void moveToWizardStep(productWizardStep.images)
+              }
             />
           ) : null}
-          {submit.isError ? (
-            <AppText role="bodySmall" tone="danger">
-              Не удалось сохранить и отправить предмет на модерацию.
-            </AppText>
-          ) : null}
-        </FormSection>
-      ) : null}
 
-      {existingProduct && !editable && !isCreationFlow ? (
-        <AppText role="bodySmall" tone="danger">
-          Предмет уже нельзя редактировать или изменять его изображения.
-        </AppText>
-      ) : null}
-
-      {!isCreationFlow || wizardStep === productWizardStep.about ? (
-        <ProductDraftAboutStep
-          isCreationFlow={isCreationFlow}
-          wizardStep={wizardStep}
-          editable={editable && !inputsLocked}
-          categories={categories.data.categories}
-          stepOneAttempted={stepOneAttempted}
-          saveIsPending={save.isPending}
-          saveIsError={save.isError}
-          onSavePress={() => void saveAbout()}
-          wizardCanOpenImages={canOpenProductWizardStep(
-            productWizardStep.images,
-            wizardDraft,
-          )}
-          onContinueToImages={() =>
-            void moveToWizardStep(productWizardStep.images)
-          }
-        />
-      ) : null}
-
-      {existingProduct &&
-      (!isCreationFlow || wizardStep === productWizardStep.images) ? (
-        <ProductDraftImagesStep
-          images={existingProduct.images}
-          productStatus={editorStatus}
-          editable={editable && !inputsLocked}
-          isCreationFlow={isCreationFlow}
-          wizardStep={wizardStep}
-          wizardCanOpenStory={canOpenProductWizardStep(
-            productWizardStep.story,
-            wizardDraft,
-          )}
-          reorderPending={reorderImages.isPending}
-          removePending={removeImage.isPending}
-          uploadPending={upload.isPending}
-          uploadError={upload.isError}
-          imageSelectionError={imageSelectionError}
-          removeOrReorderError={removeImage.isError || reorderImages.isError}
-          onRetryUpload={() => { if (pendingUpload.current && !upload.isPending && !transitionLock.current) upload.mutate(pendingUpload.current.images); }}
-          onChooseImages={() => void chooseImages()}
-          onMoveImage={reorder}
-          onDeleteImage={(imageId) => setImagePendingDelete(imageId)}
-          onBackToAbout={() => void moveToWizardStep(productWizardStep.about)}
-          onContinueToStory={() =>
-            void moveToWizardStep(productWizardStep.story)
-          }
-        />
-      ) : null}
-
-      {isCreationFlow &&
-      wizardStep === productWizardStep.story &&
-      existingProduct ? (
-        <ProductDraftStoryStep
-          editable={editable && !inputsLocked}
-          savePending={save.isPending}
-          saveError={save.isError}
-          onBackToImages={() => void moveToWizardStep(productWizardStep.images)}
-          onSaveAndContinue={() =>
-            void (async () => {
-              if (transitionLock.current) return;
-              const operation = sessionOperation.current;
-              if (form.formState.isDirty && !(await persistCurrentForm('transition'))) {
-                return;
+          {existingProduct &&
+          (!isCreationFlow || wizardStep === productWizardStep.images) ? (
+            <ProductDraftImagesStep
+              images={existingProduct.images}
+              productStatus={editorStatus}
+              editable={editable && !inputsLocked}
+              isCreationFlow={isCreationFlow}
+              wizardStep={wizardStep}
+              wizardCanOpenStory={canOpenProductWizardStep(
+                productWizardStep.story,
+                wizardDraft,
+              )}
+              reorderPending={reorderImages.isPending}
+              removePending={removeImage.isPending}
+              uploadPending={upload.isPending}
+              uploadError={upload.isError}
+              imageSelectionError={imageSelectionError}
+              removeOrReorderError={
+                removeImage.isError || reorderImages.isError
               }
-              if (sessionOperation.current !== operation) return;
-              router.setParams({
-                flow: 'creation',
-                step: String(productWizardStep.review),
-              });
-              endLockedTransition();
-            })()
-          }
-        />
-      ) : null}
-
-      {isCreationFlow &&
-      wizardStep === productWizardStep.review &&
-      existingProduct ? (
-        <ProductDraftReviewStep
-          editable={editable && !inputsLocked}
-          existingProductImagesLength={existingProduct.images.length}
-          submitLabel={submitLabel}
-          wizardSubmitted={wizardSubmitted}
-          submitPending={submit.isPending || save.isPending}
-          submitError={submit.isError}
-          onSubmitPress={() => void submitCurrentForm()}
-          onBackToStory={() => void moveToWizardStep(productWizardStep.story)}
-        />
-      ) : null}
-
-      <AppDialog
-        open={imagePendingDelete !== null}
-        title="Удалить изображение?"
-        description="Изображение будет удалено из предмета. Это действие нельзя отменить."
-        onClose={() => setImagePendingDelete(null)}
-      >
-        <DestructiveButton
-          label="Удалить изображение"
-          loading={removeImage.isPending}
-          onPress={() => {
-            if (imagePendingDelete) {
-              void (async () => {
-                const operation = sessionOperation.current;
-                const epoch = currentAuthEpoch(queryClient);
+              onRetryUpload={() => {
                 if (
-                  editorStatus === 'APPROVED' &&
-                  !(await persistCurrentForm())
-                ) {
-                  return;
+                  pendingUpload.current &&
+                  !upload.isPending &&
+                  !transitionLock.current
+                )
+                  upload.mutate(pendingUpload.current.images);
+              }}
+              onChooseImages={() => void chooseImages()}
+              onMoveImage={reorder}
+              onDeleteImage={(imageId) => setImagePendingDelete(imageId)}
+              onBackToAbout={() =>
+                void moveToWizardStep(productWizardStep.about)
+              }
+              onContinueToStory={() =>
+                void moveToWizardStep(productWizardStep.story)
+              }
+            />
+          ) : null}
+
+          {isCreationFlow &&
+          wizardStep === productWizardStep.story &&
+          existingProduct ? (
+            <ProductDraftStoryStep
+              editable={editable && !inputsLocked}
+              savePending={save.isPending}
+              saveError={save.isError}
+              onBackToImages={() =>
+                void moveToWizardStep(productWizardStep.images)
+              }
+              onSaveAndContinue={() =>
+                void (async () => {
+                  if (transitionLock.current) return;
+                  const operation = sessionOperation.current;
+                  if (
+                    form.formState.isDirty &&
+                    !(await persistCurrentForm('transition'))
+                  ) {
+                    return;
+                  }
+                  if (sessionOperation.current !== operation) return;
+                  router.setParams({
+                    flow: 'creation',
+                    step: String(productWizardStep.review),
+                  });
+                  endLockedTransition();
+                })()
+              }
+            />
+          ) : null}
+
+          {isCreationFlow &&
+          wizardStep === productWizardStep.review &&
+          existingProduct ? (
+            <ProductDraftReviewStep
+              editable={editable && !inputsLocked}
+              existingProductImagesLength={existingProduct.images.length}
+              submitLabel={submitLabel}
+              wizardSubmitted={wizardSubmitted}
+              submitPending={submit.isPending || save.isPending}
+              submitError={submit.isError}
+              onSubmitPress={() => void submitCurrentForm()}
+              onBackToStory={() =>
+                void moveToWizardStep(productWizardStep.story)
+              }
+            />
+          ) : null}
+
+          <AppDialog
+            open={imagePendingDelete !== null}
+            title="Удалить изображение?"
+            description="Изображение будет удалено из предмета. Это действие нельзя отменить."
+            onClose={() => setImagePendingDelete(null)}
+          >
+            <DestructiveButton
+              label="Удалить изображение"
+              loading={removeImage.isPending}
+              onPress={() => {
+                if (imagePendingDelete) {
+                  void (async () => {
+                    const operation = sessionOperation.current;
+                    const epoch = currentAuthEpoch(queryClient);
+                    if (
+                      editorStatus === 'APPROVED' &&
+                      !(await persistCurrentForm())
+                    ) {
+                      return;
+                    }
+                    if (
+                      sessionOperation.current !== operation ||
+                      !canWritePrivateCache(queryClient, epoch)
+                    ) {
+                      return;
+                    }
+                    removeImage.mutate(imagePendingDelete, {
+                      onSuccess: () => setImagePendingDelete(null),
+                    });
+                  })();
                 }
-                if (sessionOperation.current !== operation || !canWritePrivateCache(queryClient, epoch)) {
-                  return;
-                }
-                removeImage.mutate(imagePendingDelete, {
-                  onSuccess: () => setImagePendingDelete(null),
-                });
-              })();
-            }
-          }}
-        />
-        <SecondaryButton
-          label="Отмена"
-          disabled={removeImage.isPending}
-          onPress={() => setImagePendingDelete(null)}
-        />
-      </AppDialog>
-    </FormPageShell>
-    </ProductDraftWriteGuard>
+              }}
+            />
+            <SecondaryButton
+              label="Отмена"
+              disabled={removeImage.isPending}
+              onPress={() => setImagePendingDelete(null)}
+            />
+          </AppDialog>
+        </FormPageShell>
+      </ProductDraftWriteGuard>
     </FormProvider>
   );
 }

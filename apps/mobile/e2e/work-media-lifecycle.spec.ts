@@ -191,13 +191,12 @@ test('Work waits for CDN media, publishes revisions atomically, loads FULL only 
       );
     };
     await fault(true);
-    expect((await approve()).status()).toBe(200);
-    await tick();
+    expect((await approve()).status()).toBe(409);
     await page.goto(`/products/${work.id}`);
     await expect(
-      page.getByText(
-        /Публикация ожидает доставки медиа|Доставка медиа задерживается/,
-      ),
+      page.getByText('Доставка медиа не выполнена. Повторите действие.', {
+        exact: true,
+      }),
     ).toBeVisible();
     expect(
       (
@@ -205,11 +204,7 @@ test('Work waits for CDN media, publishes revisions atomically, loads FULL only 
       ).status(),
     ).toBe(404);
     await fault(false);
-    await prisma.mediaOperation.updateMany({
-      where: { productId: work.id, kind: 'PUBLISH', state: 'FAILED' },
-      data: { nextAttemptAt: new Date(0) },
-    });
-    await tick();
+    expect((await approve()).status()).toBe(200);
     await expect
       .poll(async () =>
         (
@@ -313,8 +308,7 @@ test('Work waits for CDN media, publishes revisions atomically, loads FULL only 
       .click();
     await expect(page.getByText('На модерации', { exact: true })).toBeVisible();
     await fault(true);
-    expect((await approve()).status()).toBe(200);
-    await tick();
+    expect((await approve()).status()).toBe(409);
     expect(
       (
         await (
@@ -323,10 +317,7 @@ test('Work waits for CDN media, publishes revisions atomically, loads FULL only 
       ).work.title,
     ).toBe(old.work.title);
     await fault(false);
-    await prisma.mediaOperation.updateMany({
-      where: { productId: work.id, kind: 'PUBLISH', state: 'FAILED' },
-      data: { nextAttemptAt: new Date(0) },
-    });
+    expect((await approve()).status()).toBe(200);
     await tick();
     await expect
       .poll(
