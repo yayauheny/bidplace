@@ -1,5 +1,28 @@
 # bidplace — текущий статус проекта
 
+## 2026-10-05 — Cloudflare resources started, not deployed
+
+- `Partial`: Cloudflare account `56b0c4b96497366c262447d2a18bf632`. Zone
+  `bid.place` `f10d49913e125d8b0d424018322aeb07` is `pending`. Nameservers are
+  `clay.ns.cloudflare.com` and `sky.ns.cloudflare.com`. Porkbun still lists
+  `maceio`, `curitiba`, `salvador`, and `fortaleza.ns.porkbun.com`. Delegation
+  is not done.
+- `Partial`: four R2 buckets exist in `weur`, private, `r2.dev` disabled:
+  `bidplace-staging-media-private`, `bidplace-staging-media-public`,
+  `bidplace-media-private`, `bidplace-media-public`. Custom media hostnames
+  and the query-string cache rule are not attached while the zone is pending.
+- `Needs verification`: Neon project `bidplace (main)`
+  `calm-rain-59989397`, only branch `production`
+  `br-polished-haze-b2d6rop9`, database `neondb`, 0 public tables. There is
+  no branch named `main`. No migration was applied. The connected Neon tools
+  are read-only, so staging was not created. Compute suspend timeout is 0 and
+  the endpoint is active; that does not fit the $10 ceiling if it stays on.
+- `Needs verification`: Email Sending API returned unauthorized for the
+  connected Cloudflare token. `SMTP_FROM` and service-rules vars stay empty.
+  Wrangler is not logged in. No secrets were read or stored. No deploy.
+- Confirmed public service-rules owner, contact, and text were not found.
+  They were not invented.
+
 ## 2026-10-05 — Revoke deadline withdrawn
 
 - `Accepted MVP limitation` (F01, deadline): a stopped, crashed, or sleeping

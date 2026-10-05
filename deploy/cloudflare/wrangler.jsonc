@@ -106,12 +106,12 @@
         "TEST_EMAIL_BYPASS": "false",
         "ANALYTICS_INGEST_ENABLED": "true",
         "MEDIA_STORAGE_PROVIDER": "s3",
-        "S3_ENDPOINT": "",
+        "S3_ENDPOINT": "https://56b0c4b96497366c262447d2a18bf632.r2.cloudflarestorage.com",
         "S3_REGION": "auto",
         "S3_BUCKET": "bidplace-staging-media-private",
         "S3_PUBLIC_BUCKET": "bidplace-staging-media-public",
         "MEDIA_PUBLIC_BASE_URL": "https://media-staging.bid.place",
-        "CLOUDFLARE_ZONE_ID": ""
+        "CLOUDFLARE_ZONE_ID": "f10d49913e125d8b0d424018322aeb07"
       }
     },
     "production": {
@@ -179,12 +179,12 @@
         "TEST_EMAIL_BYPASS": "false",
         "ANALYTICS_INGEST_ENABLED": "true",
         "MEDIA_STORAGE_PROVIDER": "s3",
-        "S3_ENDPOINT": "",
+        "S3_ENDPOINT": "https://56b0c4b96497366c262447d2a18bf632.r2.cloudflarestorage.com",
         "S3_REGION": "auto",
         "S3_BUCKET": "bidplace-media-private",
         "S3_PUBLIC_BUCKET": "bidplace-media-public",
         "MEDIA_PUBLIC_BASE_URL": "https://media.bid.place",
-        "CLOUDFLARE_ZONE_ID": ""
+        "CLOUDFLARE_ZONE_ID": "f10d49913e125d8b0d424018322aeb07"
       }
     }
   }

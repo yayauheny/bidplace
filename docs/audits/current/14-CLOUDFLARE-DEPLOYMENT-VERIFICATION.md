@@ -277,3 +277,14 @@ pending `REVOKE` после запуска и прекращение SQL-чте�
 Актуальный перечень недостающих настроек — checklist в
 `docs/ops/CLOUDFLARE-DEPLOYMENT.md`. Staging **NOT READY**. Публичный запуск
 не готов. Release branch этой записью не двигался.
+
+## 2026-10-05 — Deployment access check
+
+Проверен account `56b0c4b96497366c262447d2a18bf632` и Neon project
+`calm-rain-59989397`. Зона `bid.place` создана и остаётся `pending`. Четыре
+R2 bucket созданы, `r2.dev` выключен. Custom domains, cache rule, Email
+Sending, secrets, migrations и deploy не выполнены. `neondb` на ветке
+`production` не содержит public tables. Ветки `main` нет, поэтому production
+migration не запускалась. `suspend_timeout_seconds=0` при активном compute не
+укладывается в потолок $10. Wrangler не аутентифицирован. Секреты не читались.
+Staging **NOT READY**. Приложение не запущено.
