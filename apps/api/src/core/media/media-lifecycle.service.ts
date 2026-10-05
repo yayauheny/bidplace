@@ -38,8 +38,8 @@ type Operation = Prisma.MediaOperationGetPayload<{
 @Injectable()
 export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
   readonly enabled: boolean;
-  private timer?: ReturnType<typeof setTimeout>;
-  private orphanTimer?: ReturnType<typeof setTimeout>;
+  private timer: ReturnType<typeof setTimeout> | undefined = undefined;
+  private orphanTimer: ReturnType<typeof setTimeout> | undefined = undefined;
   private stopped = false;
   private readonly logger = new Logger(MediaLifecycleService.name);
   constructor(
