@@ -306,6 +306,13 @@ rule с ограниченными fields; method/host grouping зависит �
 Не ставить browser challenge на XHR API без проверенного клиентского flow.
 [Current rate-rule availability](https://developers.cloudflare.com/waf/rate-limiting-rules/).
 
+Зона `bid.place` сейчас на Free Website, $0. Cloudflare Pro не нужен для этого
+MVP и не заменяет Workers Paid. Workers Paid ($5/месяц) нужен для Container и
+Email Sending; он не оплачивает Neon. Neon остаётся на Free, пока хватает его
+квот: платного перерасхода нет, при исчерпании compute база приостанавливается.
+`suspend_timeout_seconds=0` на текущем endpoint — пауза по умолчанию плана, не
+always-on. Data API не включается. Потолок $10 автоматически не гарантируется.
+
 Worker observability включена, per-request invocation logs выключены. Container
 startup/errors доступны; existing Nest request logs сохранены, поэтому не
 обещается полное устранение request logging. Paid Workers Logs retention сейчас

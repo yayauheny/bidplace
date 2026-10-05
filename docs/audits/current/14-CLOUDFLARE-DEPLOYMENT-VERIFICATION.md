@@ -285,6 +285,9 @@ pending `REVOKE` после запуска и прекращение SQL-чте�
 R2 bucket созданы, `r2.dev` выключен. Custom domains, cache rule, Email
 Sending, secrets, migrations и deploy не выполнены. `neondb` на ветке
 `production` не содержит public tables. Ветки `main` нет, поэтому production
-migration не запускалась. `suspend_timeout_seconds=0` при активном compute не
-укладывается в потолок $10. Wrangler не аутентифицирован. Секреты не читались.
+migration не запускалась. Прежний вывод, что `suspend_timeout_seconds=0`
+выключает автопаузу и даёт около $19/месяц, снят: `0` означает паузу по
+умолчанию плана, `-1` отключает её. Организация на Neon Free (`free_v3`).
+Upgrade Neon не покупался. Data API не включён. Зона остаётся Free Website.
+Cloudflare Pro не покупался. Wrangler не аутентифицирован. Секреты не читались.
 Staging **NOT READY**. Приложение не запущено.

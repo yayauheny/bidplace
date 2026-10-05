@@ -11,12 +11,19 @@
   `bidplace-staging-media-private`, `bidplace-staging-media-public`,
   `bidplace-media-private`, `bidplace-media-public`. Custom media hostnames
   and the query-string cache rule are not attached while the zone is pending.
-- `Needs verification`: Neon project `bidplace (main)`
-  `calm-rain-59989397`, only branch `production`
+- `Confirmed` for the current Neon bill shape: organization
+  `org-flat-night-30430100` is plan `free` / `free_v3`. Project
+  `bidplace (main)` `calm-rain-59989397` has one branch, `production`
   `br-polished-haze-b2d6rop9`, database `neondb`, 0 public tables. There is
-  no branch named `main`. No migration was applied. The connected Neon tools
-  are read-only, so staging was not created. Compute suspend timeout is 0 and
-  the endpoint is active; that does not fit the $10 ceiling if it stays on.
+  no branch named `main`. Endpoint `ep-withered-shadow-b230htte` stores
+  `suspend_timeout_seconds=0`. In the Neon API that value means the plan
+  default, and `-1` would disable scale-to-zero. Free uses a 5-minute
+  default and cannot turn it off. No Neon upgrade was purchased. Data API
+  is absent (`404`) and stays off. No migration was applied. Neon tools
+  remain read-only, so a staging branch was not created.
+- `Needs verification`: the endpoint read itself marks compute active, so
+  this check did not watch an idle suspend. Free has no paid overage; hitting
+  the compute quota suspends the database until the next period.
 - `Needs verification`: Email Sending API returned unauthorized for the
   connected Cloudflare token. `SMTP_FROM` and service-rules vars stay empty.
   Wrangler is not logged in. No secrets were read or stored. No deploy.

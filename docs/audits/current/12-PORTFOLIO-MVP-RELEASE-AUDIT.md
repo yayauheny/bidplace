@@ -940,7 +940,7 @@ Secrets, `.env`, `.cursor/`, and `trace.zip` were not read.
 |---|---|---|---|---|
 | W01 | Зона `bid.place` не делегирована / High | Cloudflare zone `f10d49913e125d8b0d424018322aeb07`, status `pending`. Porkbun NS: `maceio`, `curitiba`, `salvador`, `fortaleza.ns.porkbun.com` | Custom domains, cache rules, Email Sending DNS и Worker routes не станут рабочими | Зона создана. Оператор ставит NS `clay.ns.cloudflare.com` и `sky.ns.cloudflare.com`. Ожидание DNS не считается настройкой |
 | W02 | Neon branch name / High | Project `bidplace (main)` `calm-rain-59989397`. Единственная ветка `production` `br-polished-haze-b2d6rop9`, database `neondb`, 0 public tables. Ветки `main` нет | Нельзя мигрировать production, пока выбор не подтверждён | Миграция и staging branch не создавались. Neon MCP read-only |
-| W03 | Scale-to-zero выключен / High | Endpoint `ep-withered-shadow-b230htte`, `suspend_timeout_seconds=0`, compute `active`, min 0.25 CU, max 2 CU | 0.25 CU без паузы ≈ 180 CU-hours/month. На Launch это около $19 только за один compute, выше потолка $10. Второй compute увеличит сумму. Автоматической остановки расходов нет | Staging compute не создавался. Нужно вернуть suspend 5 минут до следующей базы |
+| W03 | Прежний вывод «автопауза выключена» неверен / исправлено | Endpoint `ep-withered-shadow-b230htte`, `suspend_timeout_seconds=0` | Ошибочные $19/месяц не должны блокировать Free-старт и не требуют upgrade | `0` — пауза по умолчанию плана; `-1` отключает scale-to-zero. Организация `org-flat-night-30430100`: `plan=free`, `subscription_type=free_v3`. На Free пауза 5 минут и её нельзя отключить. Upgrade не покупался. Чтение endpoint само будит compute, поэтому факт засыпания после простоя этим вызовом не наблюдался. На Free нет платного перерасхода: исчерпание квоты приостанавливает базу |
 | W04 | Email Sending token scope / High | `GET /accounts/{id}/email/sending/limits` → 2036 Unauthorized. Wrangler не залогинен | OTP/reset нельзя настроить этим токеном | Secrets не создавались. `SMTP_FROM` пуст |
 | W05 | Service rules не подтверждены / High | `SERVICE_RULES_*` пусты. В канонических материалах нет публичного текста | Production validation не пройдёт с выдуманным текстом | Значения не подставлены. Deploy не запускался |
 
@@ -948,6 +948,9 @@ R2 buckets созданы в `weur` и остаются закрытыми, `r2.
 `bidplace-staging-media-private`, `bidplace-staging-media-public`,
 `bidplace-media-private`, `bidplace-media-public`. `S3_ENDPOINT` и
 `CLOUDFLARE_ZONE_ID` записаны в оба Wrangler environments. Custom media
-hostnames и cache rule ждут активной зоны. Workers Paid не активировался:
-подписку этим токеном прочитать не удалось, а Neon always-on уже не укладывается
-в потолок. Приложение не развёрнуто и не запущено.
+hostnames и cache rule ждут активной зоны. Зона на плане Free Website, $0;
+Cloudflare Pro не покупался. Workers Paid этим токеном не прочитан
+(`GET /accounts/{id}/subscriptions` → 10000) и не покупался. Wrangler не
+залогинен. Data API на ветке `production` отсутствует и не включался.
+Приложение не развёрнуто и не запущено. Потолок $10 автоматически не
+гарантируется.
