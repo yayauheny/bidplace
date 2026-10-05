@@ -8,6 +8,37 @@ Code/test commit: `5e2c927799d3a3242c1a60cdb725e19cf5d7cf41`.
 Runtime safety commit: `161f3d8`; FinOps audit commit: `6a1922a`.
 Следующий commit меняет только этот verification record; production code тот же.
 
+## 2026-10-05 — Upload safety follow-up
+
+Ветка `fix/portfolio-upload-safety` создана от локального deployment HEAD
+`bf6eb9831f6b81cb25971c2c5ec425994b2588dc`. Remote
+`feature/cloudflare-deployment` отсутствует; другая ветка не подставлялась.
+Release `507bb5b422878a38099b70ce7bfd9a59e9c16189` и deployment code
+`5e2c927799d3a3242c1a60cdb725e19cf5d7cf41` не изменялись. Push и deploy нет.
+Cloudflare account и секреты не читались и не менялись.
+
+F13 и F14 закрыты локальным durable fix. F11 и D08 не закрыты: purge по-прежнему
+отправляет exact base URL, а live acceptance base URL, `?media_retry=1` и
+произвольного query после hide/revoke не выполнялась. F01–F03 не менялись.
+Статус пакета остаётся **NOT READY FOR STAGING**.
+
+Node 22.20.0, pnpm 11.7.0. Итоговые команды ниже — exit 0.
+
+| Проверка | Результат |
+|---|---|
+| `pnpm verify` | typecheck 13/13, lint 2/2, config 8, API unit 57 files / 382, contracts 32, api-client 28, database 1, mobile 111 files / 581, ops 31 pass / 0 fail, integration 28 files / 126, build 8/8 |
+| `pnpm cloudflare:check` | Worker typecheck/lint, 26 unit + 7 script tests |
+| `pnpm cloudflare:build:staging` | SPA export verified for `https://staging.bid.place` |
+| `pnpm build:web` | SPA export verified for `https://bid.place` |
+| `pnpm cloudflare:image:verify` | linux/amd64: native modules, migrated disposable DB, HTTP/auth boundary, SIGTERM passed |
+| media Playwright `--workers=1 --retries=0` | 2 passed, Chromium and WebKit. Первый старт остановился до тестов: Prisma заблокировал `migrate reset` для агента. Повтор использовал только fenced local `bidplace_e2e` |
+| `git diff --check` | PASS; no `.pen` changes |
+
+Рекурсивное исключение dotenv, frontend origin assertions, SIGTERM hooks,
+proxy-header sanitization, public JSON cache, private/public R2 и один Container
+этим follow-up не переписывались. Историческая таблица ниже остаётся записью
+deployment pass и не переписывается этими результатами.
+
 ## Критерии и решение
 
 Проверенный SPA export, linux/amd64 Nest image, тонкий Worker, изолированные

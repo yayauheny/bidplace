@@ -70,10 +70,10 @@ CDN rules и производительность не измерены. `Сей
 | F08 | Лишние Sharp encode и повтор обработки replay / Medium, High при abuse | pipeline `:22,25,55`; stage `:102–104`; sellers controller `:69,98` | Да: upload CPU/RAM | Сейчас: одна safety validation + нужные derivatives, idempotency lookup до дорогой обработки. Header-only validation не заменяет проверку декодирования. |
 | F09 | Полный GET для existence/verification / Medium | lifecycle `:558–595`, object store `:90–99` | Да: upload/publish latency | Сейчас после identity tests: HEAD вместо полных verification GET для trusted immutable writes. Само число Class B при HEAD не сокращается. |
 | F10 | Image retry ×4 и разные cache keys / Medium | `media-recovery.ts`, `ResilientRemoteImage.tsx:98` | Да: outage и CDN | Сейчас предложено 1 auto retry + manual; не размножать ключи immutable CDN URL. Параллельные ошибки без jitter дают всплеск. |
-| F11 | Purge base URL не покрывает retry-query variants / High, live rules unknown | public-media-cache `:22–32`, media-recovery query builder | Да: revoke ≤5min | Сейчас проверить live cache key; при стандартном key — убрать cache-bust либо purge все допустимые variants. Custom-key rule на отдельный param может требовать Enterprise; не покупать план вслепую. |
+| F11 | Purge base URL не покрывает retry-query variants / High, live rules unknown | public-media-cache `:22–32`, media-recovery query builder | Да: revoke ≤5min | Не закрыто. Локальный контракт по-прежнему purge exact base URL. Live acceptance base URL, `?media_retry=1` и произвольного query после hide/revoke обязательна до публичного запуска. Cloudflare account и секреты этим пакетом не менялись. |
 | F12 | /ready SQL и eager $connect на cold start / High при частом monitor | health `:37`; PrismaService `:9–11`; ops docs `:97–101` | Да: доступность и сон | Сейчас: readiness для deploy/diagnostics; внешний monitor не должен регулярно будить origin. /health без SQL полезен только на уже работающем процессе. |
-| F13 | Profile image uploads без request rate limit; pre-normalize вне admission / High | sellers controller `:49,79`; portfolio controller `:147` | Да: CPU abuse | Сейчас: existing rate-limit pattern на profile photo и единый admission вокруг decode. Не добавлять Redis. |
-| F14 | Work capacity проверяется после stage; orphan cleanup только при runtime / Medium | images service `:147–172`; lifecycle `:74–91` | Да: rejected uploads тратят Sharp/R2 | Сейчас: cheap precheck до stage + authoritative recheck в transaction; сохранить обработку race/orphans. |
+| F13 | Profile image uploads без request rate limit; pre-normalize вне admission / High | sellers controller create/update; portfolio achievement pre-normalize | Да: CPU abuse | Исправлено локально, durable: общий `RateLimit` 10/min на create и update фото профиля; reentrant admission на decode/normalize. Redis, очередь и новый limiter framework не добавлены. Слот один на операцию и освобождается в `finally`. |
+| F14 | Work capacity проверяется после stage; orphan cleanup только при runtime / Medium | `ImagesService.addMedia`; lifecycle orphan scan | Да: rejected uploads тратят Sharp/R2 | Исправлено локально, durable: count/byte отказ до `stage`/Sharp/R2. Locked recheck и orphan scan сохранены. Replay уже прикреплённых bytes не является новой загрузкой. Чужие bytes и старая revision остаются 409. |
 | F15 | Rate limits per-process + O(N) scan каждого consume / High при abuse | rate-limit service `:17–92`; bootstrap `:11` | Да: auth/upload denial-of-wallet | Сейчас: edge protection и небольшой replica cap; локально не сканировать все buckets на каждом request. Контейнерный restart/scale-out умножает допустимые попытки. |
 | F16 | Нет явного pool cap; новые replicas подключают Neon | PrismaService; Prisma 6.19.3 | Да: connection saturation | Сейчас: pooled Neon endpoint, ограниченный pool/replicas, direct migrations; проверить row locks/transactions. Не читать connection strings в аудите. |
 | F17 | COUNT OVER + OFFSET, произвольные search keys / Medium на росте | products service `:803–827`; sellers `:875–900`; pagination schema | Да: public catalog | Сейчас cache/rate bound; EXPLAIN на realistic fixture перед indices/cursor. Cursor/full-text — post-MVP до появления измеренного bottleneck. |
@@ -86,6 +86,26 @@ CDN rules и производительность не измерены. `Сей
 | F24 | Runtime deployment, cache/sleep/region/probe policies не versioned | отсутствуют Worker/Wrangler/provider deployment configs | Да: цена и cloud correctness | До deploy зафиксировать выбранные настройки, только минимальный provider adapter. Аудит не выбирает platform и не создаёт инфраструктуру. |
 | F25 | STAGING scan без state/createdAt index, retained READY SOURCE и старые revisions | media schema `:633–649`, remove `:907–919` | Storage/scan cost на росте | Post-MVP после F01: измерить EXPLAIN и retained bytes; индексы/retention локально, не универсальный migration/GC framework. |
 | F26 | Unbounded legacy owner list и большие admin aggregates | sellers service `:802–819`, admin analytics `:111+` | Не основной текущий cabinet path | Post-MVP; endpoint существует, но runtime call из текущих screens не найден. Не выдавать dormant путь за активный N+1 каждого public request. |
+
+## 2026-10-05 — F13/F14 upload safety
+
+Сравнение до правки:
+
+| Вариант | F13 | F14 |
+|---|---|---|
+| Durable fix | Существующий `RateLimitGuard` 10/min и один reentrant admission вокруг уже существующего лимита в 2 слота | Дешёвый count/byte precheck до `stage`, повтор в блокирующей транзакции, replay не считается новой загрузкой |
+| Acceptable workaround | Только rate limit, Sharp в контроллере остаётся вне admission | Отклонять полную галерею лишь в транзакции, уже после Sharp/R2 |
+| Hack | Поднять лимит слотов или проглатывать 503 | Считать полный replay успешным, ослабив capacity |
+
+Выбран durable fix. Media execution model, postgres/local storage, MIME/magic, pixel/animation checks, реальное декодирование, byte-identical private SOURCE и stripping metadata у public derivatives не менялись. F01–F03 не менялись.
+
+Evidence: `sellers.controller.ts`, `image-processing-admission.ts`, `media-pipeline.ts`, `image-policy.ts`, `images.service.ts`; `sellers.profile-upload-limit.spec.ts`, `image-processing-admission.spec.ts`, `images.service.spec.ts`, `upload-safety.integration.spec.ts`. Существующие `media-pipeline.spec.ts`, `work-media-http.integration.spec.ts` и `media-lifecycle.integration.spec.ts` остаются зелёными для SOURCE/privacy/metadata.
+
+Проверки на Node 22.20.0 / pnpm 11.7.0, ветка `fix/portfolio-upload-safety` от `bf6eb9831f6b81cb25971c2c5ec425994b2588dc`: `pnpm verify` exit 0 (API unit 382, integration 126, mobile unit 581, ops 31/0, build 8/8); `pnpm cloudflare:check` exit 0; staging и production SPA export exit 0; `pnpm cloudflare:image:verify` exit 0; dedicated media Playwright 2 passed. Push и deploy не выполнялись.
+
+F11 остаётся `Needs verification`. `CloudflarePublicMediaCache.purge` по-прежнему отправляет exact base URL (`public-media-cache.spec.ts`). Локальный hide/revoke в `work-media-http.integration.spec.ts` проверяет purge этих URL, но не live cache key, `?media_retry=1` и произвольный query.
+
+Sync/manual recovery не является утверждённым пересмотром `DEC-097`. Ручное восстановление конфликтует с целью автоматического revoke ≤5 минут после crash/outage: остановленный процесс сам не запускает journal. Q01 ниже остаётся открытым предложением, не решением.
 
 ## Таймеры, polling и retry: полный runtime inventory
 
@@ -757,7 +777,7 @@ CF cheapest без CPU/RSS/network/cold benchmark. Сначала убрать a
 
 | Q | Что решить | Предложение / причина |
 |---|---|---|
-| Q01 | Sync/manual вместо DEC-097 automatic retry, **включая revoke**; гарантия после crash/outage? | Manual проще для MVP, но automatic≤5min без execution trigger не гарантируется. Не просто снять timer. |
+| Q01 | Sync/manual вместо DEC-097 automatic retry, **включая revoke**; гарантия после crash/outage? | Не утверждено и не пересматривает `DEC-097`. Manual recovery конфликтует с автоматическим revoke ≤5 минут после crash/outage: без execution trigger остановленный процесс не отзывает public media. Не просто снять timer. |
 | Q02 | CF Container или Cloud Run; budget и допустимая cold latency? | Два shortlist кандидата; нужен замер и безопасный origin route. |
 | Q03 | Нужна custom product analytics на первом запуске? | Если нет — оба flags false + static rebuild; если да — batch/retention и конкретные product questions. |
 | Q04 | Neon Free или Launch PAYG; compute ceiling, region и history? | Free не выдерживает180CUh/month; Launch cap/sleep избегает quota suspension. History отдельно. |
@@ -767,8 +787,9 @@ CF cheapest без CPU/RSS/network/cold benchmark. Сначала убрать a
 
 Предлагаемые coherent implementation этапы; **не выполняются этим аудитом**:
 
-1. Safety/economics: F11 purge-key proof, F13 upload limit/admission, F15 proxy/
-   origin protection и replica cap, F12 отсутствие origin warmup monitor.
+1. Safety/economics: F11 purge-key proof остаётся live-only. F13/F14 закрыты
+   локальным durable fix в upload safety package. F15 proxy/origin protection и
+   replica cap, F12 отсутствие origin warmup monitor остаются.
 2. Idle fix целиком F01–F03: sync/manual publish/revoke/journal recovery,
    честный outcome/pending/error UI, existing idempotency/media gates.
 3. Reduction: Q03 flags или batching, F05 one user lookup, F06 cache whitelist,

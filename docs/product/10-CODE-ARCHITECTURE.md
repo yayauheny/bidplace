@@ -271,7 +271,13 @@ SellerProfile
   sequential bounded normalize to canonical bytes outside the DB transaction, and
   a short Read Committed transaction that locks the Product row, re-checks owner, editable status, blocking
   Listing and capacity then persists via `ImageStore.put` (`PostgresImageStore` today). Reads use metadata/authz first,
-  then `ImageStore.get`. Per-user upload rate limits apply. See
+  then `ImageStore.get`. Per-user upload rate limits apply to product, creation-step,
+  achievement, and profile-photo uploads. Author, achievement, and work decode share
+  one process-local admission of two operations; nested pipeline validation reuses
+  that slot and releases it on failure. A new Work upload that already exceeds gallery
+  count or total bytes is rejected before Sharp/R2. The locked transaction repeats
+  the capacity check. Replaying bytes already attached to the current revision does
+  not create another image. See
   `13-APPLICATION-SECURITY.md` and `apps/api/src/images/image-policy.ts`.
 - `ImageStore` now selects PostgreSQL only for legacy/backfill compatibility or an
   S3-compatible adapter for configured production storage. New media paths persist

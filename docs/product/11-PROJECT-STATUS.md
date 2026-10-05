@@ -1,5 +1,54 @@
 # bidplace — текущий статус проекта
 
+## 2026-10-05 — Portfolio upload safety
+
+- `Implemented`: profile photo create and update share `images:profile-photo-upload`
+  at 10 requests / 60s through the existing `RateLimitGuard`. Author photo,
+  achievement, and work decode share one process-local admission of two
+  operations. Nested pipeline validation reuses that slot, and `finally` releases
+  it after success and failure. A rate-limited request does not start image
+  processing. Auth, verified email, ownership, MIME/magic, size, pixel, and
+  animation checks, real decode, byte-identical private SOURCE, and metadata
+  stripping of public derivatives stay in place. Postgres and local storage are
+  unchanged.
+- `Implemented`: a new Work upload that would exceed gallery count or total
+  bytes is rejected before media stage, Sharp, and R2. The locked Read Committed
+  transaction still rechecks capacity, so two parallel requests cannot both
+  pass. Replaying an Idempotency-Key whose bytes are already attached to the
+  current revision returns success and does not create another image. Different
+  bytes and an attachment from an earlier revision stay 409.
+- `Needs verification`: F11 live cache. Purge still sends the exact base URL.
+  Acceptance of that URL, `?media_retry=1`, and an arbitrary query after
+  hide/revoke remains mandatory before public launch. This package did not
+  change the Cloudflare account or secrets, and local green does not close F11.
+- `Unchanged`: F01–F03 scheduler, journal execution, automatic retry, and
+  frontend delivery polling. A sync/manual proposal is not a revision of
+  DEC-097. Manual recovery conflicts with automatic revoke within 5 minutes
+  after crash or outage, because a stopped process has no execution trigger.
+- Checks on Node 22.20.0 / pnpm 11.7.0, branch `fix/portfolio-upload-safety`
+  from `bf6eb9831f6b81cb25971c2c5ec425994b2588dc`. Remote
+  `feature/cloudflare-deployment` was absent, so that local HEAD was used
+  without substituting another branch. Release `507bb5b` was not changed.
+  No push or deploy.
+  `pnpm verify` exit 0: typecheck 13/13, lint 2/2, config 8, API unit 57 files /
+  382 tests, contracts 32, api-client 28, database 1, mobile 111 files / 581
+  tests, ops 31 pass / 0 fail, integration 28 files / 126 tests, build 8/8.
+  `pnpm cloudflare:check` exit 0 (26 unit + 7 script tests).
+  `pnpm cloudflare:build:staging` exit 0 for `https://staging.bid.place`.
+  `pnpm build:web` exit 0 for `https://bid.place`.
+  `pnpm cloudflare:image:verify` exit 0: linux/amd64 native modules, migrated
+  disposable database, HTTP/auth boundary, and SIGTERM passed.
+  Dedicated media Playwright, one worker and no retries: 2 passed (Chromium and
+  WebKit). The first start stopped before tests because Prisma blocked
+  `migrate reset` for the agent; the rerun used only the fenced local
+  `bidplace_e2e` database. `git diff --check` PASS; no `.pen` changes. Known
+  Home Opening visual failures stay post-MVP and were not rerun.
+- Evidence: `apps/api/src/images/image-processing-admission.ts`,
+  `sellers.controller.ts`, `images.service.ts`,
+  `upload-safety.integration.spec.ts`. Audit:
+  [FinOps](../audits/current/13-FINOPS-SCALE-TO-ZERO-AUDIT.md),
+  [deployment verification](../audits/current/14-CLOUDFLARE-DEPLOYMENT-VERIFICATION.md).
+
 ## 2026-10-05 — Cloudflare deployment package
 
 - `Implemented` (prepared code): Worker API routing + anonymous public JSON cache,
