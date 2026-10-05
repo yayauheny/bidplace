@@ -1,6 +1,8 @@
 import { BadRequestException } from '@nestjs/common';
 import sharp, { type Metadata } from 'sharp';
 
+import { withImageProcessingAdmission } from './image-processing-admission';
+
 export const productImageUploadLimits = {
   maxFiles: 10,
   maxFileBytes: 5 * 1024 * 1024,
@@ -190,6 +192,14 @@ async function normalizeStaticImage(
 }
 
 export async function validateAndNormalizeProductImageUploads(
+  files: readonly RawImageUpload[],
+): Promise<ValidatedImageUpload[]> {
+  return withImageProcessingAdmission(() =>
+    normalizeProductImageUploads(files),
+  );
+}
+
+async function normalizeProductImageUploads(
   files: readonly RawImageUpload[],
 ): Promise<ValidatedImageUpload[]> {
   const validated: ValidatedImageUpload[] = [];

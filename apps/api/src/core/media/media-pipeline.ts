@@ -1,4 +1,3 @@
-import { ServiceUnavailableException } from '@nestjs/common';
 import type { MediaPurpose } from '@bidplace/database';
 import sharp from 'sharp';
 import {
@@ -6,19 +5,14 @@ import {
   productImagePixelBudgets,
   validateAndNormalizeProductImageUploads,
 } from '../../images/image-policy';
+import { withImageProcessingAdmission } from '../../images/image-processing-admission';
 import { mediaChecksum } from './media-object-store';
 
-let admissions = 0;
 export async function buildMediaPipeline(
   file: RawImageUpload,
   purpose: MediaPurpose,
 ) {
-  if (admissions >= 2)
-    throw new ServiceUnavailableException(
-      'Image processing is busy; retry later',
-    );
-  admissions += 1;
-  try {
+  return withImageProcessingAdmission(async () => {
     const [validated] = await validateAndNormalizeProductImageUploads([file]);
     if (!validated?.width || !validated.height)
       throw new Error('Image dimensions are missing');
@@ -77,7 +71,5 @@ export async function buildMediaPipeline(
       });
     }
     return [...variants, ...derivatives];
-  } finally {
-    admissions -= 1;
-  }
+  });
 }

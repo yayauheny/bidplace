@@ -25,6 +25,7 @@ import {
   OptionalBearerAuthGuard,
   VerifiedEmailGuard,
 } from '../auth';
+import { RateLimit, RateLimitGuard } from '../core/rate-limit';
 import { parseBody } from '../core/validation';
 import {
   getImageCacheControl,
@@ -46,7 +47,13 @@ export class SellersController {
   }
 
   @Post('seller/profile')
-  @UseGuards(BearerAuthGuard, VerifiedEmailGuard)
+  @UseGuards(BearerAuthGuard, VerifiedEmailGuard, RateLimitGuard)
+  @RateLimit({
+    keyPrefix: 'images:profile-photo-upload',
+    limit: 10,
+    windowMs: 60_000,
+    scope: 'user',
+  })
   @UseInterceptors(
     FilesInterceptor('profilePhoto', 1, {
       limits: {
@@ -76,7 +83,13 @@ export class SellersController {
   }
 
   @Patch('seller/profile')
-  @UseGuards(BearerAuthGuard, VerifiedEmailGuard)
+  @UseGuards(BearerAuthGuard, VerifiedEmailGuard, RateLimitGuard)
+  @RateLimit({
+    keyPrefix: 'images:profile-photo-upload',
+    limit: 10,
+    windowMs: 60_000,
+    scope: 'user',
+  })
   @UseInterceptors(
     FilesInterceptor('profilePhoto', 1, {
       limits: {
