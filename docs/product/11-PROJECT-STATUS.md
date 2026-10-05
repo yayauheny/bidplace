@@ -1,5 +1,18 @@
 # bidplace — текущий статус проекта
 
+## 2026-10-05 — Container runtime safety
+
+- `Implemented`: recursive `.dockerignore` excludes nested dotenv and dev-vars
+  files. Filename-only inspection found `packages/database/.env` packaged in an
+  earlier local API image; contents were not read and images were not published.
+  The rebuilt linux/amd64 image rejects dotenv filenames and passes the gate.
+- `Implemented`: `apps/api/src/main.ts` enables Nest shutdown hooks. A disposable
+  PostgreSQL smoke with production security, 0.25 CPU / 1 GiB verifies native
+  Sharp/Argon2/Prisma, migrations, health/readiness/auth HTTP and SIGTERM exit 0.
+  API graph typecheck/lint/test/build passes (14 tasks, 372 API unit tests).
+- `Needs verification`: Cloudflare runtime deployment and live resource/security
+  acceptance. These local container fixes do not alter portfolio/auth/media rules.
+
 > The dated entries below are historical implementation records. The 2026-09-24
 > snapshot describes the base portfolio runtime; later dated entries record
 > subsequent verified changes. Retained

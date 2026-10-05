@@ -14,6 +14,7 @@ async function bootstrap() {
   };
   const app = await NestFactory.create(AppModule.forRoot(serverEnv));
   configureHttpApp(app, runtimeEnv);
+  app.enableShutdownHooks();
 
   await app.listen(runtimeEnv.API_PORT);
 }
