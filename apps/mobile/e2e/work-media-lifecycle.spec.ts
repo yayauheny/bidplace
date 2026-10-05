@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { PrismaClient } from '../../../packages/database/dist/index.js';
 import { authenticatedPage } from './support/auth-session';
+import { fillControl } from './support/fill-control';
 import {
   createBuyerFixture,
   createAdminModerationFixture,
@@ -120,9 +121,10 @@ test('Work waits for CDN media, publishes revisions atomically, loads FULL only 
       .toBe('APPROVED');
     await page.goto('/products/new');
     await page.getByRole('button', { name: 'E2E art', exact: true }).click();
-    await page
-      .getByRole('textbox', { name: 'Название *', exact: true })
-      .fill(`Lifecycle ${suffix}`);
+    await fillControl(
+      page.getByRole('textbox', { name: 'Название *', exact: true }),
+      `Lifecycle ${suffix}`,
+    );
     const createWork = page.waitForResponse(
       (r) =>
         r.url().endsWith('/api/products') && r.request().method() === 'POST',
@@ -273,9 +275,10 @@ test('Work waits for CDN media, publishes revisions atomically, loads FULL only 
       await guest.request.get(`${e2eApiBaseURL}/api/works/${work.publicId}`)
     ).json();
     await page.reload();
-    await page
-      .getByRole('textbox', { name: 'Название *', exact: true })
-      .fill(`Revised ${suffix}`);
+    await fillControl(
+      page.getByRole('textbox', { name: 'Название *', exact: true }),
+      `Revised ${suffix}`,
+    );
     await page
       .getByRole('button', { name: 'Сохранить изменения', exact: true })
       .click();

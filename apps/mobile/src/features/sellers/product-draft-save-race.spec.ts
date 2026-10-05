@@ -24,6 +24,8 @@ const harness = vi.hoisted(() => ({
   submitProduct: vi.fn(),
   addImages: vi.fn(),
   removeImage: vi.fn(),
+  pickImages: vi.fn(),
+  reorderImages: vi.fn(),
 }));
 
 vi.mock('react-native', () => ({
@@ -44,7 +46,7 @@ vi.mock('expo-router/build/react-navigation/core', () => ({
 }));
 
 vi.mock('expo-image-picker', () => ({
-  launchImageLibraryAsync: vi.fn(),
+  launchImageLibraryAsync: harness.pickImages,
 }));
 
 vi.mock('../../providers/api-provider', () => ({
@@ -56,7 +58,7 @@ vi.mock('../../providers/api-provider', () => ({
       update: harness.updateProduct,
       submit: harness.submitProduct,
     },
-    images: { add: harness.addImages, remove: harness.removeImage, reorder: vi.fn() },
+    images: { add: harness.addImages, remove: harness.removeImage, reorder: harness.reorderImages },
   }),
 }));
 
@@ -278,6 +280,9 @@ beforeEach(() => {
   harness.submitProduct.mockReset();
   harness.addImages.mockReset();
   harness.removeImage.mockReset();
+  harness.pickImages.mockReset();
+  harness.pickImages.mockResolvedValue({ canceled: true, assets: [] });
+  harness.reorderImages.mockReset();
   harness.listCategories.mockResolvedValue({
     categories: [{ id: categoryId, slug: 'painting', name: 'Painting' }],
   });
@@ -692,6 +697,77 @@ describe('product draft save reconciliation', () => {
     });
     await flush();
     expect(harness.removeImage).not.toHaveBeenCalled();
+    view.unmount();
+  });
+
+  it('opens the image picker after an in-flight save instead of dropping the action', async () => {
+    const approved = detail('Saved title', 'Oil');
+    approved.product.status = 'APPROVED';
+    approved.editingRevision.status = 'APPROVED';
+    harness.getProduct.mockResolvedValue(approved);
+    let resolveSave: (value: { product: ReturnType<typeof product> }) => void = () => undefined;
+    harness.updateProduct.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveSave = resolve;
+        }),
+    );
+    const view = mount({ productId });
+    await until(view.container, () => findButton(view.container, 'Сохранить изменения') instanceof HTMLButtonElement, 'save');
+    setInput(view.container, 'Название', 'Revised title');
+    click(view.container, 'Сохранить изменения');
+    await flush();
+    click(view.container, 'Добавить изображения');
+    await flush();
+    expect(harness.pickImages).not.toHaveBeenCalled();
+    await act(async () => {
+      resolveSave({
+        product: { ...approved.product, title: 'Revised title' },
+      });
+      await Promise.resolve();
+    });
+    await flush();
+    expect(harness.pickImages).toHaveBeenCalledTimes(1);
+    expect(harness.updateProduct).toHaveBeenCalledTimes(1);
+    view.unmount();
+  });
+
+  it('reorders after an in-flight save instead of dropping the action', async () => {
+    const approved = detail('Saved title', 'Oil');
+    approved.product.status = 'APPROVED';
+    approved.editingRevision.status = 'APPROVED';
+    approved.product.images = [
+      ...approved.product.images,
+      {
+        ...approved.product.images[0],
+        id: '66666666-6666-4666-8666-666666666666',
+        position: 1,
+      },
+    ];
+    harness.getProduct.mockResolvedValue(approved);
+    let resolveSave: (value: { product: ReturnType<typeof product> }) => void = () => undefined;
+    harness.updateProduct.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveSave = resolve;
+        }),
+    );
+    const view = mount({ productId });
+    await until(view.container, () => findButton(view.container, 'Сохранить изменения') instanceof HTMLButtonElement, 'save');
+    setInput(view.container, 'Название', 'Revised title');
+    click(view.container, 'Сохранить изменения');
+    await flush();
+    click(view.container, 'Переместить ниже');
+    await flush();
+    expect(harness.reorderImages).not.toHaveBeenCalled();
+    await act(async () => {
+      resolveSave({
+        product: { ...approved.product, title: 'Revised title' },
+      });
+      await Promise.resolve();
+    });
+    await flush();
+    expect(harness.reorderImages).toHaveBeenCalledTimes(1);
     view.unmount();
   });
 });

@@ -748,8 +748,13 @@ export function ProductDraftScreen({
       !transitionLock.current &&
       sessionOperation.current === operation &&
       canWritePrivateCache(queryClient, epoch);
-    if (editorStatus === 'APPROVED' && !(await persistCurrentForm('ordinary')))
-      return;
+    if (editorStatus === 'APPROVED') {
+      const inFlight = pendingSave.current;
+      const persisted = inFlight
+        ? await inFlight
+        : await persistCurrentForm('ordinary');
+      if (!persisted) return;
+    }
     if (!stillOwnsImages()) return;
     setImageSelectionError(null);
     try {
@@ -839,7 +844,11 @@ export function ProductDraftScreen({
     if (!existingProduct) return;
     const operation = sessionOperation.current;
     const epoch = currentAuthEpoch(queryClient);
-    if (editorStatus === 'APPROVED' && !(await persistCurrentForm())) return;
+    if (editorStatus === 'APPROVED') {
+      const inFlight = pendingSave.current;
+      const persisted = inFlight ? await inFlight : await persistCurrentForm();
+      if (!persisted) return;
+    }
     if (
       sessionOperation.current !== operation ||
       !canWritePrivateCache(queryClient, epoch)
