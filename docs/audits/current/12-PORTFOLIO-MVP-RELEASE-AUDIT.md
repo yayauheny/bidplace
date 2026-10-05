@@ -575,3 +575,62 @@ media baseline. Frozen source manifest rechecked after all three sequential gate
 All requested checks completed; final changes limited to evidence/status docs.
 
 Own `bidplace-release-regression` stopped/removed after all gates. Evidence retained.
+
+## 2026-10-05 — Media execution compatibility with release
+
+Remote `feature/portfolio-mvp-release` fetched. Local and origin release are
+both `507bb5b422878a38099b70ce7bfd9a59e9c16189`. That commit is an ancestor of
+`fix/portfolio-media-execution` `f10021d2fb362ce3f81ffa9c77208a5efc069ea9`.
+No merge was required. The fix branch is not on origin. The working tree was
+clean except untracked `.cursor/`, which was left untouched. The release branch
+was not moved. Push and deploy were not run.
+
+Seventeen commits sit between release and this HEAD: FinOps audit, container
+runtime safety, Cloudflare deployment, upload admission and gallery precheck,
+synchronous publication, recovery after a failed read, and non-blocking startup
+recovery. Code under test is `1d6ab422d3896a1f0a64d9d0d32ea60bd7221c9c`.
+
+Sequential checks on `f10021d`, Node 22.20.0 / pnpm 11.7.0:
+
+| Проверка | Результат |
+|---|---|
+| `pnpm verify` | exit 0: typecheck 13/13, lint 2/2, config 8, API unit 389, contracts 32, api-client 28, database 1, mobile 582, ops 31/0, integration 132, build 8/8 |
+| `pnpm cloudflare:check` | exit 0: 26 unit + 7 script |
+| full Chromium/WebKit `--workers=1 --retries=0` | first run 209 passed / 3 failed, 12.3m, exit 1 |
+| dedicated media `--workers=1 --retries=0` | first run 1 failed / 1 passed, 1.0m, exit 1; identical rerun 2 passed, 1.0m, exit 0 |
+
+The two expected Home Opening failures are unchanged: Chromium
+`0.12231040564373898`, WebKit `0.12205687830687831`, threshold `0.12`.
+They stay post-MVP. Golden, thresholds and timeouts were not changed.
+
+The extra full-suite failure is WebKit
+`author-header-motion.spec.ts` «parks one compact identity after the natural
+handoff». The 1500ms poll for compact avatar `y === 12` timed out. Chromium
+passed the same test in that run at 2.2s. The failure screenshot already shows
+the compact header. An isolated WebKit rerun of that test passed in 18.5s,
+exit 0. The timeout was not raised.
+
+The first media failure is Chromium
+`work-media-lifecycle.spec.ts`. After the confirm click, the delete dialog was
+still open and the counter stayed `2/10 изображений`; the expect for
+`1/10 изображений` timed out at 5s. WebKit passed the same test in that run at
+10.8s. The identical media command then passed 2/2 (Chromium 27.3s, WebKit
+10.6s). The timeout was not raised.
+
+Code is ready to fast-forward onto `feature/portfolio-mvp-release`. Public
+launch is not ready. F01 stays open: a sleeping Container still does not
+guarantee DEC-097 revoke within five minutes. F11/D08 stay open: local tests
+do not accept live CDN purge. Real staging still has to cover Worker deploy,
+R2, CDN purge of the base URL, `?media_retry=1` and an arbitrary query, and a
+process that is actually asleep. DEC-097 is not withdrawn.
+
+Safe transfer, only while origin release is still `507bb5b`:
+
+```
+git switch feature/portfolio-mvp-release
+git merge --ff-only f10021d2fb362ce3f81ffa9c77208a5efc069ea9
+```
+
+A docs-only child of that commit changes no code and can be fast-forwarded
+instead. If origin release moves first, stop and integrate it before
+transferring. Do not force-push or recreate the history.

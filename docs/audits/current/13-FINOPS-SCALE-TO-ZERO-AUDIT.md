@@ -193,6 +193,27 @@ Evidence: `media-lifecycle.service.ts`, `media-lifecycle.recovery.spec.ts`, `med
 
 F01 остаётся открытым: локальные тесты не подтверждают отзыв при спящем Container. F11/D08 остаются `Needs verification`: локальные тесты не подтверждают live CDN/purge. Перед integration regression нужен повтор portfolio browser gate на объединённом дереве без изменения golden. Локальный green не является live acceptance.
 
+## 2026-10-05 — Release compatibility
+
+`origin/feature/portfolio-mvp-release` обновлён и остаётся
+`507bb5b422878a38099b70ce7bfd9a59e9c16189`. Это предок
+`f10021d2fb362ce3f81ffa9c77208a5efc069ea9`, поэтому merge не делался.
+Release branch не двигался. Push и deploy нет.
+
+Повторные проверки того же дерева, Node 22.20.0 / pnpm 11.7.0: `pnpm verify`
+exit 0 (API unit 389, integration 132, mobile 582, ops 31/0, build 8/8);
+`pnpm cloudflare:check` exit 0 (26 unit + 7 script). Первый полный
+Chromium/WebKit: 209 passed / 3 failed, 12.3m. Два отказа — прежние Home
+Opening. Третий — WebKit compact handoff, poll 1500ms на `y === 12`; Chromium
+в том же прогоне прошёл, изолированный повтор WebKit прошёл за 18.5s. Timeout
+не менялся. Первый media gate: Chromium не дождался `1/10 изображений`, диалог
+удаления остался открытым при `2/10`; WebKit прошёл. Идентичный повтор media:
+2 passed, 1.0m.
+
+Код готов к fast-forward в release. Публичный запуск не готов: F01 и F11/D08
+открыты. Реальный staging должен отдельно подтвердить спящий Container и live
+CDN/purge. DEC-097 не отменён.
+
 ## 2026-10-05 — F13/F14 upload safety
 
 Сравнение до правки:

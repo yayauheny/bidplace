@@ -104,6 +104,28 @@ Node 22.20.0, pnpm 11.7.0.
 | media config `--workers=1 --retries=0` | 2 passed, 1.0m, Chromium and WebKit |
 | full Chromium/WebKit `--workers=1 --retries=0` | 210 passed / 2 failed, 0 skipped, 0 retries, 12.0m. Home Opening: Chromium 0.12231040564373898, WebKit 0.12205687830687831, threshold 0.12 |
 
+## 2026-10-05 — Release compatibility follow-up
+
+Проверенное дерево `f10021d2fb362ce3f81ffa9c77208a5efc069ea9`, code
+`1d6ab422d3896a1f0a64d9d0d32ea60bd7221c9c`. Remote release остаётся
+`507bb5b422878a38099b70ce7bfd9a59e9c16189` и является предком. Merge не нужен.
+Release branch не менялся. Push и deploy нет. Секреты не читались.
+
+Код можно перенести в release fast-forward. Публичный запуск по-прежнему
+**NOT READY FOR STAGING**. F01 и F11/D08 локальными тестами не закрываются.
+Реальный staging нужен для Worker deploy, R2, live purge base URL,
+`?media_retry=1` и произвольного query, и для отзыва при реально спящем
+Container.
+
+Node 22.20.0, pnpm 11.7.0. Этот проход не повторял image verify и SPA export.
+
+| Проверка | Результат |
+|---|---|
+| `pnpm verify` | exit 0: typecheck 13/13, lint 2/2, config 8, API unit 389, contracts 32, api-client 28, database 1, mobile 582, ops 31/0, integration 132, build 8/8 |
+| `pnpm cloudflare:check` | exit 0: 26 unit + 7 script |
+| full Chromium/WebKit `--workers=1 --retries=0` | первый прогон 209 passed / 3 failed, 12.3m. Home Opening прежние. Дополнительно WebKit compact handoff, 1500ms; изолированный повтор этого теста прошёл |
+| media config `--workers=1 --retries=0` | первый прогон 1 failed / 1 passed; идентичный повтор 2 passed, 1.0m |
+
 ## Критерии и решение
 
 Проверенный SPA export, linux/amd64 Nest image, тонкий Worker, изолированные
