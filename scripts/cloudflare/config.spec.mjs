@@ -13,16 +13,22 @@ function configured(target) {
   return config;
 }
 
-test('unconfigured cloud values fail closed with names only', () => {
+test('confirmed mail settings stay fail-closed without rules text', () => {
   for (const target of ['staging', 'production']) {
     const config = deploymentConfig(target);
     assert.equal(config.vars.SMTP_HOST, 'smtp.mx.cloudflare.net');
     assert.equal(config.vars.SMTP_PORT, '465');
     assert.equal(config.vars.SMTP_SECURE, 'true');
     assert.equal(config.vars.SMTP_AUTH_MODE, 'login');
-    assert.equal(config.vars.SMTP_FROM, '');
+    assert.equal(config.vars.SMTP_FROM, 'noreply@bid.place');
+    assert.equal(config.vars.SERVICE_RULES_OWNER, 'work.evles@gmail.com');
+    assert.equal(config.vars.SERVICE_RULES_CONTACT, 'work.evles@gmail.com');
+    assert.equal(config.vars.SERVICE_RULES_TEXT, '');
     assert.equal(config.vars.TEST_EMAIL_BYPASS, 'false');
-    assert.throws(() => validateConfig(config), /SMTP_FROM/);
+    assert.throws(() => validateConfig(config), /SERVICE_RULES_TEXT/);
+    const emptyFrom = deploymentConfig(target);
+    emptyFrom.vars = { ...emptyFrom.vars, SMTP_FROM: '' };
+    assert.throws(() => validateConfig(emptyFrom), /SMTP_FROM/);
   }
 });
 test('valid isolated staging and production contracts pass', () => {
