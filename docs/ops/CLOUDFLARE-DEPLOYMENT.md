@@ -54,11 +54,12 @@ server validation. `TELEGRAM_BOT_TOKEN` — secret сохранённого lega
 в cloud Container не передаётся. Они не нужны для этого deployment.
 
 Заполнить **non-secret vars** отдельно в `env.staging.vars` и
-`env.production.vars`: `S3_ENDPOINT`, `CLOUDFLARE_ZONE_ID`, `SMTP_HOST`,
-`SMTP_FROM`, `SERVICE_RULES_OWNER/CONTACT/TEXT`. Bucket names и media domains уже
-раздельные; если изменить их, изменить contract до deploy. Остальные vars:
-NODE_ENV/APP_ENV, API_PORT/API_URL/CORS_ORIGIN/TRUST_PROXY, upload/rate caps,
-SMTP_PORT/SECURE/AUTH_MODE, PASSWORD_RESET_URL_BASE, TEST_EMAIL_BYPASS,
+`env.production.vars`: `S3_ENDPOINT`, `CLOUDFLARE_ZONE_ID`, `SMTP_FROM`,
+`SERVICE_RULES_OWNER/CONTACT/TEXT`. `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE` и
+`SMTP_AUTH_MODE` уже заданы профилем Cloudflare Email Service. Bucket names и
+media domains уже раздельные; если изменить их, изменить contract до deploy.
+Остальные vars: NODE_ENV/APP_ENV, API_PORT/API_URL/CORS_ORIGIN/TRUST_PROXY,
+upload/rate caps, PASSWORD_RESET_URL_BASE, TEST_EMAIL_BYPASS,
 ANALYTICS_INGEST_ENABLED, MEDIA_STORAGE_PROVIDER, S3_REGION/S3_BUCKET/S3_PUBLIC_BUCKET,
 MEDIA_PUBLIC_BASE_URL. Названия/правила публичны и секретами не являются.
 
@@ -69,7 +70,7 @@ MEDIA_PUBLIC_BASE_URL. Названия/правила публичны и се�
 | DATABASE_URL | Neon pooler URL; отдельный для каждого environment |
 | JWT_SECRET | Независимый случайный secret, минимум 32 chars |
 | S3_ACCESS_KEY_ID / S3_SECRET_ACCESS_KEY | R2 Object Read & Write, только два buckets данного environment |
-| SMTP_USERNAME / SMTP_PASSWORD | Выбранный внешний SMTP; profile здесь AUTH_MODE=login |
+| SMTP_USERNAME / SMTP_PASSWORD | Cloudflare Email Service SMTP. Username — литерал `api_token`. Password — отдельный API token с Email Sending: Edit |
 | CLOUDFLARE_CACHE_TOKEN | Zone → Cache Purge только для зоны `bid.place` |
 
 Не использовать Global API Key или account-wide R2 admin token. Purge token
@@ -87,10 +88,98 @@ tokens для диагностики/rotation, но ограничение ко�
 [Required secrets](https://developers.cloudflare.com/workers/wrangler/configuration/#secrets-configuration-property),
 [Container environment](https://developers.cloudflare.com/containers/examples/env-vars-and-secrets/).
 
-Подготовленный вариант: runtime в Cloudflare. GitHub хранит код/Verify CI;
-application credentials в GitHub не дублируются. Если будет выбрано Actions
-deployment — только отдельный least-privilege deploy token и non-secret account ID.
-Этот выбор ещё ожидает ответа основателя; внешняя настройка не выполнена.
+Модель секретов, `DEC-100`:
+
+- Восстанавливаемая копия — зашифрованное хранилище оператора и его резервная
+  копия вне GitHub и вне Cloudflare.
+- GitHub Environments может быть источником значений в момент deployment.
+- Cloudflare хранит runtime-копии, которые нужны Container.
+- GitHub Secrets не резервная копия: сохранённые значения штатно не читаются обратно.
+- Staging и production разделены. Новый CI workflow для этой модели не добавляется.
+- `scripts/cloudflare/deploy.mjs` не читает значения секретов. Если позже
+  появится GitHub Actions deploy, передача не должна оставлять значения в logs,
+  artifacts, image или frontend bundle. `wrangler secret put` вводит значение
+  интерактивно; не передавать secrets через `--var` и не печатать их в команде.
+
+## Cloudflare Email Service
+
+Выбор провайдера — `Confirmed` (`DEC-100`). Настройка аккаунта, DNS, credentials
+и доставка в почтовый ящик — `Needs verification`. Runtime Nodemailer не менялся:
+`buildSmtpTransportOptions` уже собирает host, port 465, `secure: true` и
+`AUTH login`. SDK, Workers email binding и новый mail adapter не добавляются.
+Смена провайдера остаётся заменой конфигурации.
+
+В `env.staging.vars` и `env.production.vars` уже заданы несекретные параметры:
+
+- `SMTP_HOST=smtp.mx.cloudflare.net`
+- `SMTP_PORT=465`
+- `SMTP_SECURE=true` — implicit TLS. Порт 587 и STARTTLS этот endpoint не принимает.
+- `SMTP_AUTH_MODE=login`
+
+`SMTP_FROM` остаётся пустым, пока оператор не укажет адрес. Preflight падает,
+пока он пуст. Не подставлять фиктивный адрес.
+
+Официальные источники:
+[SMTP](https://developers.cloudflare.com/email-service/api/send-emails/smtp/),
+[Send emails](https://developers.cloudflare.com/email-service/get-started/send-emails/),
+[Pricing](https://developers.cloudflare.com/email-service/platform/pricing/).
+
+### Проверка аккаунта
+
+1. В том же Cloudflare account, где будут Workers, открыть Email Service →
+   Email Sending.
+2. Убедиться, что доступна отправка произвольным получателям. Для этого нужен
+   Workers Paid. Email Routing на Workers Free доставляет только на verified
+   destination addresses и не закрывает OTP и reset.
+3. Домен отправителя должен использовать Cloudflare DNS.
+
+### Домен и DNS
+
+1. Email Sending → Onboard Domain. Выбрать домен этого аккаунта.
+2. Подтвердить DNS-записи, которые Cloudflare добавляет сам: MX, SPF и DKIM на
+   поддомене `cf-bounce`, и DMARC TXT на `_dmarc.<домен>`. Не копировать чужие
+   значения и не добавлять отдельный mail A/AAAA для этого SMTP.
+3. Дождаться применения записей. Адрес `SMTP_FROM` должен быть на этом домене.
+   Записать его отдельно в `env.staging.vars` и `env.production.vars`.
+   Адреса окружений могут различаться; host и порт — нет.
+
+### Credentials
+
+1. Создать два API token, каждый только с Email Sending: Edit. Один для staging,
+   один для production. Не использовать Global API Key и не переиспользовать
+   R2 или cache token.
+2. Для каждого environment:
+   `pnpm exec wrangler secret put SMTP_USERNAME --config deploy/cloudflare/wrangler.jsonc --env <staging|production>`
+   и ввести литерал `api_token`.
+3. Тем же способом задать `SMTP_PASSWORD` — сам token. Повторить для второго
+   environment другим token.
+4. Положить восстанавливаемые копии в зашифрованное хранилище оператора и в его
+   резервную копию вне GitHub и Cloudflare. Не рассчитывать прочитать значение
+   обратно из GitHub Secrets или из Cloudflare secret.
+
+### Доставка, не только SMTP acceptance
+
+SMTP `250` и отсутствие ошибки `mail.send` не доказывают, что письмо в ящике.
+Проверить оба окружения на реальном ящике, не на verified destination address,
+потому что такие адреса не расходуют квоту и не проверяют произвольную доставку:
+
+1. Запросить код подтверждения email. В ящике, включая spam, должно быть письмо
+   `bidplace email verification code` с шестизначным кодом. Код должен пройти
+   проверку в приложении.
+2. Запросить сброс пароля. В ящике должно быть письмо `bidplace password reset`
+   со ссылкой на `PASSWORD_RESET_URL_BASE` этого окружения. Ссылка должна
+   открывать сброс и принимать новый пароль.
+3. Отказ на границе API и адрес из suppression list квоту не тратят. Принятое
+   письмо и hard bounce тратят. До этой проверки доставка остаётся
+   `Needs verification`.
+
+### Квота
+
+Workers Paid включает 3 000 исходящих писем на аккаунт за billing month,
+далее $0.35 за 1 000. Это квота писем, не пользователей. Email Service входит
+в расходы Cloudflare внутри общего бюджета `DEC-099`: около $5–7 в месяц,
+потолок $10, вместе с Neon. Квота не останавливает отправку и не останавливает
+расходы. Overage остаётся внутри этого бюджета.
 
 ## Neon и migrations
 

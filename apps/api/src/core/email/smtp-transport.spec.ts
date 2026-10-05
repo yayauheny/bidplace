@@ -41,6 +41,27 @@ describe('smtp transport', () => {
     ).toThrow('SMTP_USERNAME and SMTP_PASSWORD must be configured together');
   });
 
+  it('builds implicit TLS login for Cloudflare Email Service SMTP', () => {
+    expect(
+      buildSmtpTransportOptions({
+        NODE_ENV: 'production',
+        SMTP_HOST: 'smtp.mx.cloudflare.net',
+        SMTP_PORT: 465,
+        SMTP_SECURE: true,
+        SMTP_AUTH_MODE: 'login',
+        SMTP_USERNAME: 'api_token',
+        SMTP_PASSWORD: 'token-placeholder',
+        SMTP_FROM: 'noreply@example.com',
+      } as never),
+    ).toMatchObject({
+      host: 'smtp.mx.cloudflare.net',
+      port: 465,
+      secure: true,
+      requireTLS: false,
+      auth: { user: 'api_token', pass: 'token-placeholder' },
+    });
+  });
+
   it('omits SMTP auth for an unauthenticated relay', () => {
     expect(
       buildSmtpTransportOptions({

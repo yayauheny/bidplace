@@ -2172,3 +2172,57 @@ manual recovery as enough after a dead process, is not accepted.
 definitions stay. Analytics flags stay on. The operating budget for Cloudflare
 and Neon is about $5–7 per month, with a ceiling of $10. That budget does not
 authorize sampling, history deletion or a new analytics service.
+
+## DEC-100 — Cloudflare Email Service SMTP and secret custody
+
+Date: 2026-10-05
+Status: Confirmed
+Source: explicit founder choice of the SMTP provider and the transferable
+secret model.
+Revises the open secrets-location question left by `DEC-098`. Does not revise
+`DEC-097` media, publication, or the five-minute revoke. Email Service is part
+of the Cloudflare spend in `DEC-099`. The included message quota is not an
+automatic stop, and overage stays inside that agreed budget.
+
+### Decision
+
+Outbound mail stays on the existing Nodemailer transport. The provider is
+Cloudflare Email Service over standard SMTP. No Cloudflare mail SDK, Workers
+email binding, or new mail adapter.
+
+Confirmed connection, both staging and production:
+
+- `SMTP_HOST=smtp.mx.cloudflare.net`
+- `SMTP_PORT=465`
+- `SMTP_SECURE=true` (implicit TLS; STARTTLS on 587 is not this provider)
+- `SMTP_AUTH_MODE=login`
+- `SMTP_USERNAME` is the literal string `api_token`
+- `SMTP_PASSWORD` is a separate Cloudflare API token with Email Sending: Edit
+- `SMTP_FROM` is an address on a domain onboarded to Email Sending
+
+Provider replacement remains a configuration change.
+
+Secret custody:
+
+- The recoverable copy is an operator-encrypted store, with a backup that is
+  outside both GitHub and Cloudflare.
+- GitHub Environments may supply values at deployment time.
+- Cloudflare holds the runtime copies the Container needs.
+- GitHub Secrets is not a backup: stored values cannot be read back in normal
+  operation.
+- Staging and production credentials stay separate.
+- No new CI workflow is added for this model. A later Actions deploy must not
+  place secret values in logs, artifacts, the image, or the frontend bundle.
+
+Email Sending on Workers Paid includes 3,000 outbound emails per account per
+billing month, then $0.35 per 1,000. That quota counts emails, not users.
+Email Service is a Cloudflare expense inside the agreed operating budget of
+about $5–7 per month, ceiling $10, together with Neon. Reaching 3,000 emails
+does not stop further sending or spending. Overage remains inside that budget.
+
+### Not confirmed
+
+Account setup, DNS onboarding, credential entry, and delivery of the
+verification code and the password-reset message to a real mailbox are
+`Needs verification`. SMTP acceptance is not mailbox delivery. No token was
+created and no account, DNS, or deploy was changed by this decision.

@@ -88,6 +88,9 @@ Ensure root `.env` includes the production keys the API container validates when
 
 When `SMTP_AUTH_MODE=login`, set `SMTP_USERNAME` and `SMTP_PASSWORD` in `.env`.
 Compose forwards both; empty values normalize to absent for `SMTP_AUTH_MODE=none`.
+Cloudflare Email Service uses a different profile: `smtp.mx.cloudflare.net`,
+port 465, implicit TLS. That contract is in
+[Cloudflare deployment](CLOUDFLARE-DEPLOYMENT.md), not in this local Compose file.
 
 ```bash
 # Build and start API + Postgres

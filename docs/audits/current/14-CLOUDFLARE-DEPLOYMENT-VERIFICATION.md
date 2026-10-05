@@ -167,9 +167,9 @@ Worker — большой ненужный refactor. Изменение media jo
 | D04 | Preview не включает новую container image / High | official Deploy Containers docs | Да | Сейчас: отдельный staging full deploy, отключены production preview/workers.dev. |
 | D05 | Bare proxy headers позволяют обойти per-IP limit / High | Worker → Nest TRUST_PROXY=true | Да | Сейчас: удалить входящие forwarding headers, поставить доверенный CF-Connecting-IP. HTTP cookies/body сохраняются. |
 | D06 | Vary: Origin мешает простому cache allowlist / Medium | Nest CORS response | Да | Сейчас: только same-origin/без Origin public GET; разрешён один Vary: Origin; другие Vary не кэшируются. |
-| D07 | SMTP, rules и cloud IDs отсутствуют / High | production server schema, cloud vars | Да | Manual до staging: fail closed, не фиктивные production значения. |
+| D07 | SMTP, rules и cloud IDs отсутствуют / High | production server schema, cloud vars | Да | Host, port 465 и implicit TLS заданы в Wrangler (`DEC-100`). `SMTP_FROM`, credentials, DNS и доставка в ящик остаются Needs verification. Preflight падает, пока from пуст. |
 | D08 | Live R2 cache keys/purge неизвестны / High | FinOps F11 | Да | Manual cache rule ignore all query только на public media host + revoke variant smoke. Код media не расширяется. |
-| D09 | Runtime secrets location / Medium | последний ответ основателя vs pasted task | Да | Открытый выбор: рекомендуем Cloudflare; GitHub только CI/deploy. Подготовленный contract использует Worker Secrets, внешних writes нет. |
+| D09 | Runtime secrets location / Medium | последний ответ основателя vs pasted task | Да | `DEC-100`: восстанавливаемая копия у оператора вне GitHub и Cloudflare; Cloudflare держит runtime-копии; GitHub Environments может подавать значения, но Secrets не читается обратно. Staging и production разделены. Ввод ещё не выполнен. |
 | D10 | 5s media SQL loop / High при непрерывной работе | FinOps F01 | Да | Сохранено подтверждённое поведение; optimization отдельным решением. Не заявлять, что polling устранён. |
 | D11 | Workers Builds Docker run smoke не подтверждён / Medium | docs подтверждают Dockerfile build, не весь local smoke | Deployment | CI image gate — GitHub Verify; native Builds full deploy после gate. Нельзя считать successful Worker version upload full preview. |
 | D12 | Web bundle 14 MB / Low | staging Expo export | Не блокирует | Post-MVP: измерить transfer/compression; файл ниже Static Assets 25 MiB. Без UX/code-splitting refactor в этой задаче. |
@@ -252,3 +252,14 @@ resource/vars/secrets setup и live smoke; **не production release acceptance*
 [Cloudflare deployment runbook](../../ops/CLOUDFLARE-DEPLOYMENT.md).
 
 Изменений canonical Pen, golden, visual thresholds, auth/media бизнес-правил нет.
+
+## 2026-10-05 — SMTP provider confirmed
+
+`DEC-100` закрывает выбор SMTP и модель хранения секретов. D07 больше не
+означает, что host и порт не выбраны: Wrangler задаёт
+`smtp.mx.cloudflare.net`, `465`, `SMTP_SECURE=true`, `login`. D09 больше не
+открытый выбор места хранения. Настройка Email Sending, DNS, раздельные
+tokens и доставка OTP/reset в ящик остаются `Needs verification`. SMTP
+acceptance эту проверку не закрывает. Токены не создавались, аккаунт, DNS и
+deploy не менялись, значения секретов не читались. Staging по-прежнему
+**NOT READY**. F01 и F11/D08 не закрыты.

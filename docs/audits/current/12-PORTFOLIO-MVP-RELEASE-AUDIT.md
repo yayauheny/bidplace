@@ -832,8 +832,9 @@ current Wrangler contract:
   `bidplace-production`, four R2 buckets, public media hosts, Worker custom
   domains `staging.bid.place` and `bid.place`.
 - Non-secret vars in `env.staging.vars` and `env.production.vars`, including
-  `S3_ENDPOINT`, `CLOUDFLARE_ZONE_ID`, SMTP host/from, and the public rules
-  fields. Deploy preflight fails closed while they are empty.
+  `S3_ENDPOINT`, `CLOUDFLARE_ZONE_ID`, `SMTP_FROM`, and the public rules
+  fields. SMTP host, port 465, and implicit TLS are already in Wrangler.
+  Deploy preflight fails closed while the remaining fields are empty.
 - Runtime secrets entered by the operator, not stored in the repo:
   `DATABASE_URL`, `JWT_SECRET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`,
   `SMTP_USERNAME`, `SMTP_PASSWORD`, `CLOUDFLARE_CACHE_TOKEN`. Separate values
@@ -843,8 +844,8 @@ current Wrangler contract:
   `--confirm-production` after backup.
 - Cache rule on each public media host: ignore the entire query string, do not
   raise browser TTL, do not apply that rule to the API.
-- Founder choice still open for D09: application secrets in Cloudflare, not
-  copied into GitHub. A deploy token is only needed if Actions deploys.
+- Secret custody is `DEC-100`, recorded in the section below. A deploy token
+  is only needed if Actions deploys.
 
 Live acceptance, after that setup and `pnpm cloudflare:deploy:staging`:
 
@@ -863,3 +864,43 @@ container is awake is stale. A successful empty recovery stops the
 five-second timer. The timer remains only while revoke or cleanup work is
 outstanding, or a recovery read failed. The deployment note is corrected in
 the same docs commit.
+
+## 2026-10-05 — Confirmed SMTP and secret custody
+
+`DEC-100` confirms Cloudflare Email Service over the existing Nodemailer SMTP
+transport. Resend and Brevo are out of scope. No SDK, Workers email binding,
+or new adapter. F01, F11, and D08 stay open. No token, DNS change, or deploy.
+
+The transport already accepts the profile: host `smtp.mx.cloudflare.net`, port
+`465`, `secure: true`, `requireTLS: false`, and `AUTH login` with username
+`api_token`. Wrangler staging and production now store those non-secret
+connection vars. `SMTP_FROM` stays empty, so deploy preflight still fails
+closed until the operator sets an address on an onboarded domain.
+`SMTP_USERNAME` and `SMTP_PASSWORD` stay required secrets.
+
+Operator steps live in `docs/ops/CLOUDFLARE-DEPLOYMENT.md`:
+
+1. Confirm Email Sending can send to arbitrary recipients. That requires
+   Workers Paid. Email Routing on Workers Free does not cover OTP or reset.
+2. Onboard the sender domain on Cloudflare DNS and accept the records
+   Cloudflare adds: MX, SPF, and DKIM on `cf-bounce`, plus DMARC on `_dmarc`.
+3. Set a distinct Email Sending: Edit token as `SMTP_PASSWORD` in each
+   environment. Set `SMTP_USERNAME` to the literal `api_token` in each.
+4. Deliver both messages to a real mailbox: `bidplace email verification code`
+   and `bidplace password reset`. SMTP acceptance is not delivery.
+
+Workers Paid includes 3,000 outbound emails per account per billing month,
+then $0.35 per 1,000. The quota counts emails, not users. Email Service is
+part of the Cloudflare spend inside the `DEC-099` budget of about $5–7 per
+month, ceiling $10, together with Neon. The quota does not stop sending or
+spending. Overage stays inside that budget.
+
+Secret custody: the recoverable copy is the operator’s encrypted store, with a
+backup outside GitHub and Cloudflare. GitHub Environments may supply deployment
+values. Cloudflare holds the runtime copies. GitHub Secrets cannot be read back
+and is not the backup. Staging and production stay separate. No new workflow.
+A later Actions deploy must not leave values in logs, artifacts, the image, or
+the frontend bundle.
+
+Status: SMTP choice `Confirmed`. Account setup, DNS, credentials, and mailbox
+delivery `Needs verification`.

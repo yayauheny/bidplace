@@ -1013,3 +1013,17 @@ tests, Prisma, dependencies и Pen нет; application suite повторно н
 Legacy `S3ImageStore` не задаёт собственные `maxAttempts` и deadline; приведённый
 в inventory бюджет двух SDK attempts относится к новому media object store.
 Не переносить этот бюджет на legacy путь без отдельной проверки SDK settings.
+
+## 2026-10-05 — Email Sending quota
+
+`DEC-100`. Workers Paid включает 3 000 исходящих писем на аккаунт за billing
+month, далее $0.35 за 1 000
+([Pricing](https://developers.cloudflare.com/email-service/platform/pricing/)).
+Это квота писем, не пользователей. Принятые письма и hard bounce входят в неё.
+Отказ на границе API и suppression list не входят. Verified destination
+addresses бесплатны и квоту не тратят; они не заменяют проверку OTP и reset.
+
+Email Service входит в расходы Cloudflare внутри общего бюджета `DEC-099`:
+около $5–7 в месяц, потолок $10, вместе с Neon. Квота 3 000 писем не
+останавливает отправку и не останавливает расходы. Overage остаётся внутри
+этого бюджета. Настройка и реальная доставка остаются `Needs verification`.

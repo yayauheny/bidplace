@@ -1,5 +1,29 @@
 # bidplace — текущий статус проекта
 
+## 2026-10-05 — Cloudflare Email Service SMTP
+
+- `Confirmed` (`DEC-100`): исходящая почта остаётся на существующем Nodemailer.
+  Провайдер — Cloudflare Email Service, `smtp.mx.cloudflare.net:465`, implicit
+  TLS, `SMTP_AUTH_MODE=login`, username — литерал `api_token`. Password —
+  отдельный API token с Email Sending: Edit. `SMTP_FROM` — адрес на домене,
+  подключённом к Email Sending. SDK, email binding и новый adapter не добавлены.
+- Контракт: `deploy/cloudflare/wrangler.jsonc` задаёт host, port `465` и
+  `SMTP_SECURE=true` для staging и production. `SMTP_FROM` пуст до ввода
+  оператором. Username и password остаются Worker secrets.
+- Совместимость: `apps/api/src/core/email/smtp-transport.ts` и
+  `smtp-transport.spec.ts`. Runtime не переписывался.
+- `Needs verification`: Email Sending в аккаунте, Workers Paid, DNS домена
+  отправителя, раздельные credentials и реальная доставка OTP и reset в ящик.
+  SMTP acceptance эту доставку не закрывает.
+- Бюджет: Email Service входит в расходы Cloudflare внутри общего бюджета
+  `DEC-099` (около $5–7 в месяц, потолок $10, вместе с Neon). Квота 3 000
+  писем на аккаунт за billing month, далее $0.35 за 1 000, не останавливает
+  отправку и не выносит overage за этот бюджет. Квота считает письма, не
+  пользователей.
+- Секреты: восстанавливаемая копия — зашифрованное хранилище оператора вне
+  GitHub и Cloudflare. Токены не создавались, DNS и deploy не менялись,
+  значения секретов не читались.
+
 ## 2026-10-05 — Portfolio MVP local completion
 
 - `Implemented`: work creation in the media browser test uses `fillControl`,

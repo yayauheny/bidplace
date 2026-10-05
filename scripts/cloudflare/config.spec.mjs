@@ -14,7 +14,16 @@ function configured(target) {
 }
 
 test('unconfigured cloud values fail closed with names only', () => {
-  assert.throws(() => validateConfig(deploymentConfig('staging')), /Configure Wrangler vars:/);
+  for (const target of ['staging', 'production']) {
+    const config = deploymentConfig(target);
+    assert.equal(config.vars.SMTP_HOST, 'smtp.mx.cloudflare.net');
+    assert.equal(config.vars.SMTP_PORT, '465');
+    assert.equal(config.vars.SMTP_SECURE, 'true');
+    assert.equal(config.vars.SMTP_AUTH_MODE, 'login');
+    assert.equal(config.vars.SMTP_FROM, '');
+    assert.equal(config.vars.TEST_EMAIL_BYPASS, 'false');
+    assert.throws(() => validateConfig(config), /SMTP_FROM/);
+  }
 });
 test('valid isolated staging and production contracts pass', () => {
   for (const target of ['staging', 'production']) validateConfig(configured(target));
