@@ -141,6 +141,7 @@ export function ProductDraftScreen({
   const saveGeneration = useRef(0);
   const imageSelection = useRef(0);
   const sessionOperation = useRef(0);
+  const resetSaveMutation = useRef<() => void>(() => undefined);
   const detailReads = useRef(0);
   const ignoreDetailReadsBefore = useRef(0);
   const holdFloor = useRef<ProductRevisionIdentity | null>(null);
@@ -319,6 +320,8 @@ export function ProductDraftScreen({
     ignoreDetailReadsBefore.current = detailReads.current;
     holdFloor.current = null;
     saveInFlight.current = false;
+    resetSaveMutation.current();
+    setFormAlert(null);
     endLockedTransition();
     setModerationHold(false);
     setSubmittedRevision(null);
@@ -396,6 +399,7 @@ export function ProductDraftScreen({
       void invalidateSavedProduct(product.id);
     },
   });
+  resetSaveMutation.current = () => save.reset();
   const submit = useMutation({
     mutationFn: async ({
       id,
@@ -521,7 +525,9 @@ export function ProductDraftScreen({
       const authEpochAtSave = currentAuthEpoch(queryClient);
       const stillOwnsSave = () =>
         sessionOperation.current === operation &&
+        saveGeneration.current === generation &&
         canWritePrivateCache(queryClient, authEpochAtSave);
+      setFormAlert(null);
       void (async () => {
         let persisted = false;
         try {
@@ -540,6 +546,7 @@ export function ProductDraftScreen({
           });
           if (!stillOwnsSave()) return;
           persisted = true;
+          setFormAlert(null);
         } catch (error) {
           if (stillOwnsSave()) {
             const failure = readFormFailure(error, productFieldOrder);
@@ -751,14 +758,18 @@ export function ProductDraftScreen({
       return;
     }
     try {
+      setFormAlert(null);
       await submit.mutateAsync({
         id,
         currentValues: snapshot,
         authEpoch: authEpochAtSubmit,
         generation,
       });
+      if (sessionOperation.current === operation && saveGeneration.current === generation) {
+        setFormAlert(null);
+      }
     } catch (error) {
-      if (sessionOperation.current === operation) {
+      if (sessionOperation.current === operation && saveGeneration.current === generation) {
         const failure = readFormFailure(error, productFieldOrder);
         if (failure.disposition === 'passthrough') {
           setFormAlert(getUserFacingErrorMessage(error, 'Не удалось сохранить и отправить предмет на модерацию.'));

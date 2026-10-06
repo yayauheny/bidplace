@@ -6,6 +6,8 @@ import { createRoot, type Root } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { ApiClientError } from '@bidplace/api-client';
+
 import { flush, inputValue, setInput } from '../../testing/dom';
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
@@ -135,7 +137,7 @@ vi.mock('../../components/ui', () => {
   };
 });
 
-import { authKeys, clearAuthenticatedSession } from '../../lib/query-cache';
+import { advanceAuthEpoch, authKeys, clearAuthenticatedSession } from '../../lib/query-cache';
 import { ownerWorkQueryKeys } from './owner-work-query';
 import { ProductDraftScreen } from './product-draft-screen';
 
@@ -368,6 +370,8 @@ describe('product draft save reconciliation', () => {
       productId,
       expect.objectContaining({ title: 'Kept title' }),
     );
+    expect(view.container.textContent).not.toContain('Не удалось сохранить предмет');
+    expect(view.container.textContent).toContain('1/10 изображений');
     view.unmount();
   });
 
@@ -768,6 +772,86 @@ describe('product draft save reconciliation', () => {
     });
     await flush();
     expect(harness.reorderImages).toHaveBeenCalledTimes(1);
+    view.unmount();
+  });
+
+  it('replaces a stale save error with the next failure and drops it after the session changes', async () => {
+    let rejectSave: (error: unknown) => void = () => undefined;
+    harness.updateProduct
+      .mockRejectedValueOnce(
+        new ApiClientError('Предмет не найден.', { kind: 'not_found', status: 404 }),
+      )
+      .mockRejectedValueOnce(
+        new ApiClientError('Недостаточно прав для сохранения предмета.', {
+          kind: 'forbidden',
+          status: 403,
+        }),
+      )
+      .mockImplementationOnce(
+        () =>
+          new Promise((_resolve, reject) => {
+            rejectSave = reject;
+          }),
+      );
+    const view = mount({ productId });
+    await until(view.container, () => findButton(view.container, 'Сохранить изменения') instanceof HTMLButtonElement, 'save');
+    setInput(view.container, 'Название', 'Kept title');
+    click(view.container, 'Сохранить изменения');
+    await until(view.container, () => view.container.textContent?.includes('Предмет не найден.') === true, 'first error');
+    expect(inputValue(view.container, 'Название')).toBe('Kept title');
+    expect(view.container.textContent).toContain('1/10 изображений');
+    click(view.container, 'Сохранить изменения');
+    await until(
+      view.container,
+      () => view.container.textContent?.includes('Недостаточно прав для сохранения предмета.') === true,
+      'second error',
+    );
+    expect(view.container.textContent).not.toContain('Предмет не найден.');
+    click(view.container, 'Сохранить изменения');
+    await flush();
+    expect(view.container.textContent).not.toContain('Недостаточно прав для сохранения предмета.');
+    await act(async () => {
+      advanceAuthEpoch(view.queryClient);
+    });
+    await flush();
+    await act(async () => {
+      rejectSave(new ApiClientError('Старая ошибка предмета.', { kind: 'not_found', status: 404 }));
+      await Promise.resolve();
+    });
+    await flush();
+    expect(view.container.textContent).not.toContain('Старая ошибка предмета.');
+    expect(view.container.textContent).not.toContain('Недостаточно прав для сохранения предмета.');
+    view.unmount();
+  });
+
+  it('does not let a late successful save clear the next session error', async () => {
+    let resolveSave: (value: { product: ReturnType<typeof product> }) => void = () => undefined;
+    harness.updateProduct.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveSave = resolve;
+        }),
+    );
+    const view = mount({ productId });
+    await until(view.container, () => findButton(view.container, 'Сохранить изменения') instanceof HTMLButtonElement, 'save');
+    click(view.container, 'Сохранить изменения');
+    await flush();
+    await act(async () => {
+      advanceAuthEpoch(view.queryClient);
+    });
+    await flush();
+    harness.updateProduct.mockRejectedValueOnce(
+      new ApiClientError('Новая ошибка предмета.', { kind: 'forbidden', status: 403 }),
+    );
+    await until(view.container, () => findButton(view.container, 'Сохранить изменения') instanceof HTMLButtonElement, 'save again');
+    click(view.container, 'Сохранить изменения');
+    await until(view.container, () => view.container.textContent?.includes('Новая ошибка предмета.') === true, 'new error');
+    await act(async () => {
+      resolveSave({ product: product('Saved title') });
+      await Promise.resolve();
+    });
+    await flush();
+    expect(view.container.textContent).toContain('Новая ошибка предмета.');
     view.unmount();
   });
 });
