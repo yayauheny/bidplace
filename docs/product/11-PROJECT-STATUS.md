@@ -1,5 +1,29 @@
 # bidplace — текущий статус проекта
 
+## 2026-10-06 — Portfolio form fields and validation
+
+- `Partial`: shared `FigmaTextField` matches the 2026-10-06 field export
+  through semantic tokens (`size.input` 51, `size.fieldBorder` 0.5,
+  `typography.field` 14/24, `typography.fieldLabel` / `fieldError` 12).
+  Author, work, auth, and admin forms map `validation_error` `fieldErrors`
+  onto the matching controls. `parseRequest` applies the same details before
+  HTTP. A taken slug returns `{ reason: 'slug_taken' }`; an existing profile
+  returns `{ reason: 'profile_exists' }`. Empty draft nickname stays allowed;
+  invalid grammar does not. Covered by `form-fields.spec.ts`,
+  `figma-text-field-style.spec.ts`, `profile-validation.spec.ts`,
+  `seller-profile-submit.spec.ts`, `packages/api-client/test/sellers.test.ts`,
+  `sellers.service.spec.ts`, and
+  `author-application-contract.integration.spec.ts` on the disposable local
+  database. Local checks: mobile unit 592 passed; integration 134 passed with
+  `--maxWorkers=4` after the unlimited run hit the existing 10s `beforeAll`
+  timeout on a rotating file; `pnpm build` and `pnpm build:web` passed.
+  Chromium/WebKit field checks 12 passed. Full portfolio gate 222 passed / 2
+  failed, only the known Home Opening ratios `0.12231040564373898` and
+  `0.12205687830687831`. Dedicated media gate 2 passed. Production still shows
+  the previous field and the generic save error. The live Worker is still
+  `4b41ca7f-3eb5-4849-83f8-e045bc016cff` from
+  `bbac1fa9578931c3c4b35173bd586bdebb45bfe8`. This checkout is not deployed.
+
 ## 2026-10-06 — First admin is not assigned
 
 - `Needs verification`: `work.evles@gmail.com` is not in production `neondb`.

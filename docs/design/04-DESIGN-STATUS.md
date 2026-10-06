@@ -4,6 +4,25 @@
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
+## 2026-10-06 — Shared portfolio form fields
+
+- `Partial`: one `FigmaTextField` implements the eight states from
+  `design/figma-handoff/fields/2026-10-06-text-fields` (`292:5044`).
+  Height 51, radius 18, border 0.5, input 14/24, label 12, error in normal
+  flow. Existing author, work, auth, and admin forms show client and
+  returned field errors on the matching controls. A filled value is not
+  success. Disabled fields stay blocked. Chromium and WebKit field checks:
+  12 passed. Full portfolio gate: 222 passed / 2 failed, only the known Home
+  Opening visual. This is not on production yet.
+
+## 2026-10-06 — Author nickname field error
+
+- `Partial`: step 1 of the author application shows
+  «Используйте маленькие латинские буквы и цифры. Между ними можно поставить дефис или подчёркивание» on the
+  nickname field when the value is outside the existing slug contract.
+  «Продолжить» stays disabled, and the typed fields and selected photo remain.
+  A corrected nickname saves and opens step 2. This is not on production yet.
+
 ## 2026-10-06 — Shared field focus ring
 
 - `Implemented`: `FigmaTextField` no longer stacks the

@@ -4,6 +4,41 @@
 Проверенная release-ветка: `feature/portfolio-mvp-release`. Media implementation сохранена
 в `feature/portfolio-media-lifecycle`; integration package перенесён fast-forward.
 
+## 2026-10-06 — Shared form fields and validation
+
+Проблема: поля portfolio-форм не совпадали с экспортом «Поля ввода» от 2026-10-06,
+а ошибки запроса показывались общей фразой или английским диагностическим `message`.
+
+Причина: размеры и цвета поля жили отдельно от свежего `292:5044`, а
+`validation_error.details.fieldErrors` не сопоставлялись контролам. Локальный
+`schema.parse` до HTTP не имел того же конверта, что ответ сервера.
+
+Влияние: автор, работа, вход и админские причины не показывали все ошибки полей
+сразу; занятый никнейм нельзя было отличить от уже созданной заявки по ответу.
+
+Исправление: один `FigmaTextField` на семантических field tokens; `parseRequest`
+и `readFormFailure` читают существующий `validationErrorDetailsSchema`;
+конфликт профиля различает `slug_taken` и `profile_exists` по цели Prisma.
+Старый canonical handoff и `design/pen/bidplace-web-v2.pen` не менялись.
+
+Проверка на `fix/portfolio-media-execution`, локальная disposable БД:
+
+| Команда | Результат |
+| --- | --- |
+| `pnpm verify` до integration | typecheck, lint, unit, ops и e2e-fence прошли. Mobile unit: 112 files / 592 tests |
+| `pnpm test:integration` без лимита workers | два прогона упали на существующем hook timeout 10s у разных `beforeAll` (`portfolio-filters`, затем `portfolio-published-revision`). Отдельный прогон `media-lifecycle` дал 2 failures под той же нагрузкой и 15/15 в изоляции |
+| `vitest --config vitest.integration.config.ts --maxWorkers=4` | 28 files / 134 tests passed |
+| `pnpm build` и `pnpm build:web` | exit 0. Expo export для https://bid.place проверен |
+| field-focus + author slug, Chromium/WebKit, workers=1, retries=0 | 12 passed, 49.9s |
+| полный `playwright.config.ts`, workers=1, retries=0 | 222 passed / 2 failed, 14.8m, exit 1 |
+| `playwright.media.config.ts`, workers=1, retries=0 | 2 passed, 1.4m, exit 0 |
+
+Два отказа — прежний Home Opening visual: Chromium `0.12231040564373898`,
+WebKit `0.12205687830687831`, порог `0.12`. Пороги и golden не менялись.
+
+Статус: локальный кандидат. Production Worker остаётся
+`4b41ca7f-3eb5-4849-83f8-e045bc016cff` из `bbac1fa`. Этот checkout не задеплоен.
+
 ## 2026-10-05 — Product correctness follow-up
 
 Работа начата в `feature/portfolio-google-design`, база `00d7ed6`; два fixes
@@ -1207,3 +1242,87 @@ Work creation stays on the smoke author session.
 One unused smoke password-reset token existed at this check, expiring
 `2026-10-06T15:08:47Z`. Requesting the letter does not finish the reset
 scenario. The link was not opened, and the password was not changed.
+
+## 2026-10-06 — Author step 1 nickname
+
+Incident window: 17:14 MSK, `2026-10-06T14:09:00Z`–`2026-10-06T14:19:00Z`.
+The typed nickname was two Cyrillic letters. Worker, Container, and Nest
+logs for that window were not available here: the Cloudflare and Neon log
+tools were not connected, and the shell had no Cloudflare or database
+credential. The 15:17 UTC deploy restarted the container, so earlier
+container output is not assumed to exist. Missing logs do not prove the
+request was absent. No production application row was changed.
+
+Local reproduction uses the real seller client. `createProfile` runs
+`sellerProfileCreateRequestSchema.parse` before `requestJson`. For the
+Cyrillic nickname and for uppercase `BE`, that parse throws `ZodError` on
+`slug` synchronously. `fetch` is not called. A synthetic
+`synthetic-author` value is sent as `POST /api/seller/profile` with the
+photo blob.
+
+Cause: `profileDraftSchema` accepted any nickname string, so step 1
+reached the client parser. The parser rejected the value, and the screen
+showed «Не удалось сохранить профиль». The form values and photo were
+already kept on that failure; the missing piece was a field error that
+stops the save.
+
+Fix: the draft schema now accepts a nickname only when it is empty or
+passes the existing `slugSchema`. The field shows «Никнейм: строчные
+латинские буквы, цифры, дефис или подчёркивание». «Продолжить» stays
+disabled until the nickname matches. No transliteration and no change to
+the slug pattern.
+
+Checks, all exit 0:
+
+- mobile vitest `profile-validation.spec.ts` and
+  `seller-profile-submit.spec.ts`: 55 passed;
+- api-client vitest `test/sellers.test.ts`: 2 passed;
+- mobile `tsc --noEmit` and eslint on the touched mobile files;
+- api-client `tsc --noEmit`;
+- Chromium and WebKit `playwright.field-focus.config.ts`: 12 passed;
+- `pnpm build:web`: verified Expo SPA export for `https://bid.place`.
+
+The change is local. Production still has the generic save error.
+
+## 2026-10-06 — Production smoke with domcontentloaded
+
+The live deployment is still the outline release, not the later local
+export. Last successful Production deploy:
+https://github.com/yayauheny/bidplace/actions/runs/37485616958
+SHA `bbac1fa9578931c3c4b35173bd586bdebb45bfe8`. Worker version
+`4b41ca7f-3eb5-4849-83f8-e045bc016cff`. Both Chromium and WebKit loaded
+`/_expo/static/js/web/entry-28f163b6e1f26a44d32fff58bfda9b37.js`.
+`GET /` returned `cf-cache-status: HIT`. The local Expo export is a
+different bundle and is not what the site is serving.
+
+Navigation used `waitUntil: 'domcontentloaded'` and the same 120s ceiling.
+Chromium reached the document in 1678 ms, WebKit in 1526 ms.
+
+Home showed «Пока здесь тихо» and «Новые работы и авторы появятся после
+публикации.» The loading label was absent. The infrastructure error and
+«Повторить» were absent. `GET /api/portfolio/home` returned 200 with
+`curatorSelection: null`, `newWorks: 0`, `newAuthors: 0`. Chromium took
+793 ms, WebKit 123 ms.
+
+`/login` loaded. A synthetic value was typed into Email and Password and
+read back from the fields. Click left Email focused. Tab left Password
+focused. In both browsers the shell border was `rgb(0, 77, 255)`,
+`outline-style: none`, `outline-width: 0px`.
+
+Anonymous `GET /api/auth/me` returned 401 `unauthorized` once on Home and
+once on `/login`. `POST /api/analytics/events` returned 201 once per
+browser. No request failed, and no response was 5xx. No websocket opened.
+
+After the document event, a 15s network-idle probe finished in 1962 ms
+on Chromium and 1229 ms on WebKit. Nothing was still pending. The requests
+that start after the document and must finish before idle are one home
+read, one session probe, one analytics post, and three font files. Each
+font is requested once, receives 307, and then 200 on the decoded path.
+That is a redirect pair, not a retry loop.
+
+The earlier Chromium navigation to `/?release=bbac1fa` with
+`waitUntil: 'networkidle'` died as `net::ERR_TIMED_OUT` after about 68s.
+That run kept no request log, so the stalled connection has no path. This
+repeat did not reproduce a hung API, a retry loop, or a connection that
+stayed open. The idle wait is delayed only by the finite font, home,
+session, and analytics requests above.
