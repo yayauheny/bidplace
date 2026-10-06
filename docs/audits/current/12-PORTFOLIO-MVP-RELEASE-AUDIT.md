@@ -1092,3 +1092,32 @@ dispatch Actions. The Production deploy workflow was not started. Migration
 and the Worker deploy have not run. Live smoke has not started. The operator
 must run `gh auth login` in a local terminal before the workflow can be
 dispatched with Environment `prod` and `confirm_migration=migrate-production`.
+
+## 2026-10-06 — Production deploy succeeded, smoke waiting on the mailbox
+
+GitHub CLI login was present. No new application commit was required. Release
+`814295a78fc90807450c571f9a8ae8346fc70427` was already
+`origin/feature/portfolio-mvp-release`. The workflow was dispatched with
+Environment `prod` and `confirm_migration=migrate-production`.
+
+Run: https://github.com/yayauheny/bidplace/actions/runs/37470450369
+Conclusion: success. Head SHA matches the release. Migration and deploy steps
+succeeded. Worker version `08ecae5a-8bce-4be4-8c13-5f00dd36eb47`. Custom
+domain `bid.place`. Container application
+`a038d351-fdc6-4976-981a-5d57029a40a8`. Secret values were not printed.
+
+After deploy, public DNS for `bid.place` answers through Cloudflare.
+`https://bid.place` returns the SPA. `/api/health` is 200.
+`/api/health/ready` is 200 with `database: ok`. `GET /api/does-not-exist` is
+a Nest 404. `/api/auth/rules` returns version `MVP_RULES_V1`, owner
+`bidplace`, contact `work.evles@gmail.com`. The rules text was not copied
+here. `media.bid.place` without an object returns 403. Production `neondb`
+has 27 public tables and 22 applied migrations.
+
+Controlled registration of `work.evles+mvp-smoke@gmail.com` reached the empty
+home screen. `/verify-email` shows that the code was sent, and one
+verification row exists. The code and any reset link are not recorded. Inbox
+delivery is not confirmed. Login, logout, reset, author creation, upload,
+moderation, publish, and revoke are not done. Users: 1. Admins: 0. Production
+seed was not run, so moderation has no admin until one verified account is
+promoted.

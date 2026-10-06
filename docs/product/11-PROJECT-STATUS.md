@@ -1,5 +1,25 @@
 # bidplace — текущий статус проекта
 
+## 2026-10-06 — Production deploy is live, smoke is partial
+
+- `Partial`: release `814295a78fc90807450c571f9a8ae8346fc70427` is deployed
+  from `feature/portfolio-mvp-release` by
+  [Production deploy run 37470450369](https://github.com/yayauheny/bidplace/actions/runs/37470450369).
+  Worker `bidplace-production` version `08ecae5a-8bce-4be4-8c13-5f00dd36eb47`,
+  custom domain `bid.place`. Container application
+  `bidplace-production-portfolioapi-production`
+  `a038d351-fdc6-4976-981a-5d57029a40a8`. `migrate deploy` applied 22
+  migrations. Production `neondb` now has 27 public tables. The database was
+  empty before that migration, so no user-data dump was taken.
+- `Partial`: `https://bid.place` returns the SPA. `/api/health` and
+  `/api/health/ready` return 200 with `database: ok`. An unknown API path
+  returns a Nest 404. Public rules are version `MVP_RULES_V1`, owner
+  `bidplace`, contact `work.evles@gmail.com`. The rules text was not copied
+  into the repository. One controlled account was registered and the
+  verification screen reports that the code was sent. Mailbox delivery, code
+  entry, login/logout/reset, and the author/media flow are not finished.
+  There is no admin account, and production seed was not run.
+
 ## 2026-10-06 — Production rules source is GitHub, deploy not started
 
 - `Confirmed` (`DEC-102`): one production contour. Neon project
