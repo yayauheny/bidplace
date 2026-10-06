@@ -98,6 +98,7 @@ describe('seller profile field validation', () => {
       shortDescription: '',
     };
     expect(profileDraftAllowsSave(draft)).toBe(true);
+    expect(profileDraftAllowsSave({ ...draft, discipline: ' ', shortDescription: ' ' })).toBe(true);
     expect(profileDraftAllowsSave({ ...draft, telegramUrl: 'bad handle' })).toBe(false);
     expect(profileDraftAllowsSave({ ...draft, telegramUrl: '@maker_art' })).toBe(true);
     expect(profileDraftAllowsSave({ ...draft, city: '   ' })).toBe(false);

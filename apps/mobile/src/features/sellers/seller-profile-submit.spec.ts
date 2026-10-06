@@ -1821,4 +1821,109 @@ describe('seller profile validation freshness', () => {
     view.unmount();
     editor.unmount();
   });
+
+  async function settleValidation() {
+    await flush();
+    await flush();
+  }
+
+  async function mountAboutStep() {
+    const draft = response('DRAFT', 'DRAFT');
+    draft.sellerProfile.discipline = '';
+    draft.sellerProfile.shortDescription = '';
+    draft.sellerProfile.applicationStage = 'ABOUT';
+    harness.params = { step: '3' };
+    harness.getMyProfile.mockResolvedValue(draft);
+    const view = mount();
+    await until(
+      view.container,
+      () =>
+        view.container.querySelector('[aria-label="Дисциплина"]') instanceof HTMLInputElement &&
+        findButton(view.container, 'Продолжить') instanceof HTMLButtonElement,
+      'about step',
+    );
+    return view;
+  }
+
+  it.each([
+    ['Дисциплина', 'Укажите направление', 'Керамика'],
+    ['Короткое описание', 'Добавьте короткое описание о себе', 'Авторская практика.'],
+  ] as const)(
+    'keeps the %s requirement after whitespace once validation settles',
+    async (label, message, validValue) => {
+      const otherLabel = label === 'Дисциплина' ? 'Короткое описание' : 'Дисциплина';
+      const otherMessage =
+        label === 'Дисциплина'
+          ? 'Добавьте короткое описание о себе'
+          : 'Укажите направление';
+      const view = await mountAboutStep();
+      expect(fieldError(view.container, label)).toBeNull();
+      blurField(view.container, label);
+      expect(fieldError(view.container, label)).toBe(message);
+      setInput(view.container, label, ' ');
+      await settleValidation();
+      expect(inputValue(view.container, label)).toBe(' ');
+      expect(fieldError(view.container, label)).toBe(message);
+      expect(harness.updateProfile).not.toHaveBeenCalled();
+
+      click(view.container, 'Продолжить');
+      await settleValidation();
+      expect(fieldError(view.container, label)).toBe(message);
+      expect(fieldError(view.container, otherLabel)).toBe(otherMessage);
+      setInput(view.container, label, validValue);
+      await settleValidation();
+      expect(fieldError(view.container, label)).toBeNull();
+      expect(fieldError(view.container, otherLabel)).toBe(otherMessage);
+      setInput(view.container, 'Практика', 'Керамика');
+      await settleValidation();
+      expect(fieldError(view.container, otherLabel)).toBe(otherMessage);
+      setInput(view.container, label, '');
+      await settleValidation();
+      expect(fieldError(view.container, label)).toBe(message);
+      expect(harness.updateProfile).not.toHaveBeenCalled();
+      view.unmount();
+    },
+  );
+
+  it('drops step requirements after a session change and still saves an incomplete draft', async () => {
+    const view = await mountAboutStep();
+    blurField(view.container, 'Дисциплина');
+    blurField(view.container, 'Короткое описание');
+    await settleValidation();
+    expect(fieldError(view.container, 'Дисциплина')).toBe('Укажите направление');
+    const next = response('DRAFT', 'DRAFT', '2026-09-30T00:00:00.000Z');
+    next.sellerProfile.discipline = '';
+    next.sellerProfile.shortDescription = '';
+    next.sellerProfile.applicationStage = 'ABOUT';
+    harness.getMyProfile.mockResolvedValue(next);
+    await act(async () => {
+      await clearAuthenticatedSession(view.queryClient);
+      view.queryClient.setQueryData(authKeys.session, { id: 'user-b' });
+      view.queryClient.setQueryData(['seller', 'profile'], next);
+      advanceAuthEpoch(view.queryClient);
+    });
+    await settleValidation();
+    expect(inputValue(view.container, 'Дисциплина')).toBe('');
+    expect(fieldError(view.container, 'Дисциплина')).toBeNull();
+    expect(fieldError(view.container, 'Короткое описание')).toBeNull();
+
+    harness.params = {};
+    harness.getMyProfile.mockResolvedValue(response('APPROVED', 'DRAFT'));
+    const editor = mount();
+    await until(
+      editor.container,
+      () => findButton(editor.container, 'Сохранить') instanceof HTMLButtonElement,
+      'profile save',
+    );
+    setInput(editor.container, 'Дисциплина', ' ');
+    setInput(editor.container, 'Короткое описание', ' ');
+    await settleValidation();
+    click(editor.container, 'Сохранить');
+    await until(editor.container, () => harness.updateProfile.mock.calls.length === 1, 'whitespace draft');
+    expect(harness.updateProfile.mock.calls[0]?.[0]).toEqual(
+      expect.objectContaining({ discipline: undefined, shortDescription: undefined }),
+    );
+    view.unmount();
+    editor.unmount();
+  });
 });

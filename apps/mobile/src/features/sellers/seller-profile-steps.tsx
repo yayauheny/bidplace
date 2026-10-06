@@ -1,4 +1,4 @@
-import { createContext, useContext, useRef, type ReactNode, type RefObject } from 'react';
+import { createContext, useCallback, useContext, useMemo, useState, type ReactNode, type RefObject } from 'react';
 import { useController, useFormContext, useWatch } from 'react-hook-form';
 import { View } from 'react-native';
 
@@ -31,6 +31,57 @@ export const requiredProfileMessages: Partial<Record<keyof ProfileFields, string
 };
 
 const ProfileFieldWriteGuardContext = createContext<RefObject<boolean> | null>(null);
+
+type RevealedRequirements = Partial<Record<keyof ProfileFields, true>>;
+
+type ProfileRequirements = {
+  revealed: RevealedRequirements;
+  reveal: (names: readonly (keyof ProfileFields)[]) => void;
+};
+
+const ProfileRequirementContext = createContext<ProfileRequirements | null>(null);
+
+export type ProfileRequirementControls = {
+  reveal: (names: readonly (keyof ProfileFields)[]) => void;
+};
+
+export function ProfileRequirementScope({
+  epoch,
+  controls,
+  children,
+}: {
+  epoch: number;
+  controls: RefObject<ProfileRequirementControls>;
+  children: ReactNode;
+}) {
+  const [revealed, setRevealed] = useState<RevealedRequirements>({});
+  const [seenEpoch, setSeenEpoch] = useState(epoch);
+  if (seenEpoch !== epoch) {
+    setSeenEpoch(epoch);
+    setRevealed({});
+  }
+  const reveal = useCallback((names: readonly (keyof ProfileFields)[]) => {
+    setRevealed((current) => {
+      let changed = false;
+      const next = { ...current };
+      for (const name of names) {
+        if (next[name]) continue;
+        next[name] = true;
+        changed = true;
+      }
+      return changed ? next : current;
+    });
+  }, []);
+  const visibleRevealed = seenEpoch === epoch ? revealed : {};
+  controls.current = { reveal };
+  const value = useMemo(
+    () => ({ revealed: visibleRevealed, reveal }),
+    [visibleRevealed, reveal],
+  );
+  return (
+    <ProfileRequirementContext.Provider value={value}>{children}</ProfileRequirementContext.Provider>
+  );
+}
 
 export function ProfileFieldWriteGuard({
   guard,
@@ -67,12 +118,18 @@ function ProfileDraftField({
   if (!guard) {
     throw new Error('Profile field write guard is missing');
   }
-  const { control, clearErrors, getFieldState, getValues, setError, setValue } =
-    useFormContext<ProfileFields>();
+  const requirements = useContext(ProfileRequirementContext);
+  if (!requirements) {
+    throw new Error('Profile requirement scope is missing');
+  }
+  const { control, setValue } = useFormContext<ProfileFields>();
   const { field, fieldState } = useController({ control, name });
-  const revealed = useRef(false);
-  const message = fieldState.error?.message;
-  const requiredMessage = required && requiredProfileMessages[name];
+  const requiredMessage = required ? requiredProfileMessages[name] : undefined;
+  const revealed = requirements.revealed[name] === true;
+  const schemaMessage = fieldState.error?.message;
+  const requirementMessage =
+    requiredMessage && revealed && !field.value.trim() ? requiredMessage : undefined;
+  const message = schemaMessage ?? requirementMessage;
   return (
     <TextField
       ref={field.ref}
@@ -80,35 +137,12 @@ function ProfileDraftField({
       value={field.value}
       onBlur={() => {
         field.onBlur();
-        if (requiredMessage && !field.value.trim()) {
-          revealed.current = true;
-          setError(name, { type: 'required', message: requiredMessage });
-        }
+        if (requiredMessage && !field.value.trim()) requirements.reveal([name]);
       }}
       onChangeText={(value) => {
         if (guard.current) return;
-        if (fieldState.error?.type === 'required') revealed.current = true;
-        const restore = (
-          Object.entries(requiredProfileMessages) as Array<[keyof ProfileFields, string]>
-        ).filter(
-          ([fieldName, fieldMessage]) =>
-            fieldName !== name &&
-            Boolean(fieldMessage) &&
-            getFieldState(fieldName).error?.type === 'required' &&
-            !String(getValues(fieldName) ?? '').trim(),
-        );
         setValue(name, value, { shouldDirty: true, shouldTouch: true, shouldValidate: true });
-        if (requiredMessage && value.trim() && getFieldState(name).error?.type === 'required') {
-          clearErrors(name);
-        }
-        for (const [fieldName, fieldMessage] of restore) {
-          if (!String(getValues(fieldName) ?? '').trim()) {
-            setError(fieldName, { type: 'required', message: fieldMessage });
-          }
-        }
-        if (requiredMessage && !value.trim() && revealed.current) {
-          setError(name, { type: 'required', message: requiredMessage });
-        }
+        if (requiredMessage && !value.trim()) requirements.reveal([name]);
       }}
       placeholder={placeholder}
       autoCapitalize={autoCapitalize}

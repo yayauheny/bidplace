@@ -56,7 +56,8 @@ import {
 } from './seller-profile-editable';
 import {
   ProfileFieldWriteGuard,
-  requiredProfileMessages,
+  ProfileRequirementScope,
+  type ProfileRequirementControls,
   SellerProfileCreationStepSelector,
   SellerProfileFormSteps,
   SellerProfileVerificationSection,
@@ -287,6 +288,10 @@ export function SellerProfileScreen() {
     'shortDescription',
   ] as const;
   const [formAlert, setFormAlert] = useState<string | null>(null);
+  const [requirementEpoch, setRequirementEpoch] = useState(0);
+  const requirementControls = useRef<ProfileRequirementControls>({
+    reveal: () => undefined,
+  });
   const reportProfileError = (
     error: unknown,
     surface: string,
@@ -412,6 +417,7 @@ export function SellerProfileScreen() {
     if (!forced && form.formState.isDirty) return;
     forceProfileHydration.current = false;
     form.reset(toFields(profile));
+    setRequirementEpoch((epoch) => epoch + 1);
     hydratedProfileToken.current = token;
     queueProfileDraftValidation();
   }, [
@@ -517,6 +523,7 @@ export function SellerProfileScreen() {
     achievementWriteToken.current = 0;
     setAchievementWriteActive(false);
     setFormAlert(null);
+    setRequirementEpoch((epoch) => epoch + 1);
     photoBlobRef.current = null;
     setPhotoBlob(null);
     setPhotoUri(null);
@@ -534,6 +541,7 @@ export function SellerProfileScreen() {
       persisted,
     );
     form.reset(persisted);
+    setRequirementEpoch((epoch) => epoch + 1);
     for (const field of Object.keys(overrides) as Array<keyof ProfileFields>) {
       const value = overrides[field];
       if (value === undefined) continue;
@@ -944,6 +952,7 @@ export function SellerProfileScreen() {
 
   return (
     <FormProvider {...form}>
+      <ProfileRequirementScope epoch={requirementEpoch} controls={requirementControls}>
       <ProfileFieldWriteGuard guard={transitionLock}>
         <FormPageShell hideDock={isApplicationWizard}>
           <View style={{ gap: designTokens.space.x5 }}>
@@ -1181,21 +1190,13 @@ export function SellerProfileScreen() {
                   achievementWriteActive
                 }
                 onPress={() => {
-                  const missingDiscipline = !discipline.trim();
-                  const missingDescription = !shortDescription.trim();
-                  if (missingDiscipline) {
-                    form.setError('discipline', {
-                      type: 'required',
-                      message: requiredProfileMessages.discipline,
-                    });
+                  const missing: Array<'discipline' | 'shortDescription'> = [];
+                  if (!discipline.trim()) missing.push('discipline');
+                  if (!shortDescription.trim()) missing.push('shortDescription');
+                  if (missing.length > 0) {
+                    requirementControls.current.reveal(missing);
+                    return;
                   }
-                  if (missingDescription) {
-                    form.setError('shortDescription', {
-                      type: 'required',
-                      message: requiredProfileMessages.shortDescription,
-                    });
-                  }
-                  if (missingDiscipline || missingDescription) return;
                   void continueFromStep(3);
                 }}
                 label="Продолжить"
@@ -1318,6 +1319,7 @@ export function SellerProfileScreen() {
           </View>
         </FormPageShell>
       </ProfileFieldWriteGuard>
+      </ProfileRequirementScope>
     </FormProvider>
   );
 }

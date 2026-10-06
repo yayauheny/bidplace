@@ -21,8 +21,10 @@ import { flush } from '../../testing/dom';
 import { profileDraftSchema } from './profile-validation';
 import {
   ProfileFieldWriteGuard,
+  ProfileRequirementScope,
   SellerProfileFormSteps,
   type ProfileFields,
+  type ProfileRequirementControls,
 } from './seller-profile-steps';
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
@@ -77,6 +79,7 @@ vi.mock('../../components/ui', () => ({
 
 function Harness({ guard }: { guard: RefObject<boolean> }) {
   const [step, setStep] = useState<1 | 2>(1);
+  const requirements = useRef<ProfileRequirementControls>({ reveal: () => undefined });
   const form = useForm<ProfileFields>({
     defaultValues: emptyFields,
     resolver: zodResolver(profileDraftSchema),
@@ -89,22 +92,26 @@ function Harness({ guard }: { guard: RefObject<boolean> }) {
   const Provider = FormProvider as ComponentType<
     UseFormReturn<ProfileFields> & { children?: ReactNode }
   >;
-  return createElement(Provider, {
-    ...form,
-    children: createElement(
-      'div',
-      null,
-      createElement('button', { type: 'button', onClick: () => setStep(1) }, 'Шаг 1'),
-      createElement('button', { type: 'button', onClick: () => setStep(2) }, 'Шаг 2'),
-      createElement(ProfileFieldWriteGuard, {
-        guard,
-        children: createElement(SellerProfileFormSteps, {
-          profileStep: step,
-          showAllSteps: false,
-          editable: true,
+  return createElement(ProfileRequirementScope, {
+    epoch: 0,
+    controls: requirements,
+    children: createElement(Provider, {
+      ...form,
+      children: createElement(
+        'div',
+        null,
+        createElement('button', { type: 'button', onClick: () => setStep(1) }, 'Шаг 1'),
+        createElement('button', { type: 'button', onClick: () => setStep(2) }, 'Шаг 2'),
+        createElement(ProfileFieldWriteGuard, {
+          guard,
+          children: createElement(SellerProfileFormSteps, {
+            profileStep: step,
+            showAllSteps: false,
+            editable: true,
+          }),
         }),
-      }),
-    ),
+      ),
+    }),
   });
 }
 
