@@ -1029,10 +1029,45 @@ Staging buckets and DNS were not deleted. No new Neon resource was created.
 or schedule. The default branch remains `main`; it was not changed. The job
 refuses every ref except `feature/portfolio-mvp-release` and does not cancel
 an in-progress run. Migration runs only when the input is exactly
-`migrate-production`, using `DATABASE_URL_UNPOOLED`. Runtime secrets go to the
+`migrate-production`. Runtime secrets go to the
 deploy step through a temporary `0600` JSON file outside the checkout.
 `SMTP_USERNAME` is written as `api_token` by the workflow. Empty
 `SERVICE_RULES_TEXT` stops the job. The rules text is still not approved.
 Secrets were not created or read. Deploy and production migration were not
 run. `pnpm cloudflare:check` passed. The production SPA build verified
 `https://bid.place`. Image verify passed on a disposable local database.
+
+## 2026-10-06 — Environment prod
+
+`DEC-103` points the same workflow at the existing GitHub Environment `prod`.
+The local GitHub CLI has no credentials, so this wave did not list the
+environment through the API. The job name is the founder-supplied `prod`.
+Migration maps `secrets.NEON_DIRECT_URL` to the script's `DATABASE_URL`.
+Runtime continues to use pooled `secrets.DATABASE_URL`.
+`vars.CLOUDFLARE_ACCOUNT_ID` and `vars.SERVICE_RULES_TEXT` are read from
+`prod`. No new environment was created and no secret value was read. Deploy
+and migration were not started.
+
+## 2026-10-06 — First production launch, rules source
+
+The founder set `SERVICE_RULES_OWNER` to `bidplace`,
+`SERVICE_RULES_CONTACT` to `work.evles@gmail.com`, and approved the short
+temporary `SERVICE_RULES_TEXT` already stored in Environment `prod`. That
+text stays in GitHub. Committed production Wrangler fields for owner,
+contact, and text are empty. `scripts/cloudflare/deploy.mjs` writes the three
+variables into a temporary production config only. The earlier W05 note that
+the text was unapproved is superseded for this launch. Staging Wrangler still
+keeps the previous contact email and empty text; it is not the production
+path.
+
+A read-only count on production `neondb` returned 0 public tables. There is
+no user data to dump. The empty branch plus the existing 21600-second history
+window is the recovery point before `migrate deploy`. Endpoint
+`ep-withered-shadow-b230htte` is still the production compute, with a pooled
+hostname present. Secret values were not read.
+
+`pnpm cloudflare:check` passed after the injection (tsc, eslint, vitest 26,
+node tests 12). `pnpm build:web` verified `https://bid.place`.
+`pnpm cloudflare:image:verify` passed on a disposable local database. These
+gates are not a production migration or a live smoke. Push, migration, and
+deploy have not started.

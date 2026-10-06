@@ -29,21 +29,27 @@ Migration — отдельный шаг. В поле `confirm_migration` нуж�
 `migrate-production`, иначе migration пропускается. Неверная фраза останавливает
 job и не печатается. Первый deploy должен включать эту фразу. Script —
 `pnpm cloudflare:migrate production --confirm-production`. В шаг попадает только
-`DATABASE_URL_UNPOOLED`, прямой Neon hostname без `-pooler`. Runtime URL в этот
-шаг не передаётся.
+secret `NEON_DIRECT_URL` под именем `DATABASE_URL`: прямой Neon hostname без
+`-pooler`. Pooled `DATABASE_URL` в этот шаг не передаётся.
 
 Deploy вызывает существующий `scripts/cloudflare/deploy.mjs`. Он снова проходит
 check, production build и image gate уже без runtime credentials, затем
 `wrangler deploy --secrets-file`. JSON создаётся в `RUNNER_TEMP` с правами
 `0600`, лежит вне checkout, не попадает в artifacts или cache и удаляется при
 выходе. `SMTP_USERNAME` workflow записывает как литерал `api_token`; отдельный
-secret для него не нужен. `SERVICE_RULES_TEXT` берётся из Actions Variable.
-Пустое значение останавливает deploy до Wrangler. Текст в репозиторий не
-записывается.
+secret для него не нужен. Job использует существующий GitHub Environment
+`prod`. Новое Environment не создаётся, и secrets не дублируются на уровне
+repository. `SERVICE_RULES_OWNER`, `SERVICE_RULES_CONTACT`,
+`SERVICE_RULES_TEXT` и `CLOUDFLARE_ACCOUNT_ID` читаются из variables этого
+Environment и попадают только в временный production config. В записанном
+production Wrangler эти три поля пустые. Пустое правило останавливает deploy
+до Wrangler. Перед migration CI проверяет наличие secrets и что pooled
+`DATABASE_URL` и direct `NEON_DIRECT_URL` ведут в production `neondb`, не
+печатая значения.
 
-GitHub Secrets — источник значений для этого deploy, не восстановимая копия.
-Оригиналы остаются в зашифрованном хранилище оператора. Секреты не читаются
-обратно из GitHub.
+Environment `prod` — источник значений для этого deploy, не восстановимая
+копия. Оригиналы остаются в зашифрованном хранилище оператора. Секреты не
+читаются обратно из GitHub и повторно не вводятся.
 
 ## Архитектура
 
@@ -380,16 +386,17 @@ removal требует отдельного подтверждённого scope
 
 ## Актуальный operator checklist
 
-Текущий deploy — production workflow выше. Staging branch, staging Worker и
-staging secrets в этот список не входят. Оставшиеся staging buckets и DNS не
-удалять этой волной. Секреты вводятся в GitHub Repository secrets, не в чат и
-не в репозиторий. GitHub не является резервной копией.
+Текущий deploy — production workflow выше, GitHub Environment `prod`.
+Staging branch, staging Worker и staging secrets в этот список не входят.
+Оставшиеся staging buckets и DNS не удалять этой волной. Секреты уже лежат в
+`prod`; переносить их в Repository secrets не нужно. GitHub не является
+резервной копией.
 
-| Что ввести | Куда | Как проверить | Статус |
+| Что проверить | Куда | Как проверить | Статус |
 |---|---|---|---|
-| Workflow на `main` и на `feature/portfolio-mvp-release`, без смены default branch | `.github/workflows/production-deploy.yml` | Actions показывает Production deploy. Run на release branch. Другой ref job отклоняет | Needs verification. Файл подготовлен. Push и run не выполнялись |
-| `SERVICE_RULES_TEXT` | Actions Variable. Пустое значение блокирует deploy | Job останавливается до Wrangler, если variable пустая | Needs verification. Текст не утверждён и в Wrangler не записан |
-| Repository secrets из workflow: deploy token, pooled `DATABASE_URL`, direct `DATABASE_URL_UNPOOLED`, `JWT_SECRET`, два R2 key, `SMTP_PASSWORD`, cache purge token | Settings → Secrets and variables → Actions → Repository secrets. Оригиналы — в зашифрованном хранилище оператора | Имена есть в GitHub. Значения не читать обратно. Tokens разделены по назначению | Needs verification. Секреты ещё не внесены |
+| Workflow на `main` и на `feature/portfolio-mvp-release`, без смены default branch | `.github/workflows/production-deploy.yml`, `environment: prod` | Actions показывает Production deploy. Run на release branch. Другой ref job отклоняет | Needs verification. Файл подготовлен. Push и run не выполнялись |
+| `SERVICE_RULES_OWNER`, `SERVICE_RULES_CONTACT`, `SERVICE_RULES_TEXT`, `CLOUDFLARE_ACCOUNT_ID` | Variables Environment `prod`. Для первого запуска owner `bidplace`, contact `work.evles@gmail.com`, текст правил утверждён временно | Пустые значения останавливают job до Wrangler. Репозиторий не хранит production owner | Operator entered. Значения этой волной не читались |
+| Secrets Environment `prod`: `NEON_DIRECT_URL` для migration, pooled `DATABASE_URL` для runtime, остальные runtime secrets workflow | Settings → Environments → `prod`. Оригиналы — в зашифрованном хранилище оператора | Имена совпадают с workflow. Значения не читать и не вводить повторно | Operator reported entered. Значения этой волной не читались |
 
 Live acceptance после реального production deploy. Локальные тесты её не
 закрывают:

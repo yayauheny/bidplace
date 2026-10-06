@@ -2291,3 +2291,38 @@ deployment. They are not a recoverable backup. The operator keeps the
 originals in an encrypted store. `SERVICE_RULES_TEXT` is an Actions Variable.
 An empty value blocks the deploy. This decision does not approve the rules
 text.
+
+## DEC-103 — Production values stay in GitHub Environment prod
+
+Date: 2026-10-06
+Status: Confirmed
+Source: founder instruction to use the existing GitHub Environment `prod`
+and the names already stored there.
+Revises the `DEC-102` sentence that GitHub Repository secrets supply the
+deployment. Does not revise the single production contour, the manual
+release-branch workflow, or the rule that GitHub is not the recoverable copy.
+
+### Decision
+
+The production workflow job uses `environment: prod`. No second environment
+is created, and the operator does not move or re-enter credentials.
+`NEON_DIRECT_URL` is the direct migration URL and is passed to the existing
+migration script as `DATABASE_URL`. Pooled `DATABASE_URL` stays the runtime
+URL. `CLOUDFLARE_ACCOUNT_ID`, `SERVICE_RULES_OWNER`, `SERVICE_RULES_CONTACT`,
+and `SERVICE_RULES_TEXT` are variables of `prod`. An empty rules value still
+blocks the deploy. This revision does not approve the rules text. Secret
+values were not read.
+
+### Revision
+
+Date: 2026-10-06
+Source: founder approval of the short temporary rules text already stored in
+Environment `prod` for the first launch.
+Revises the sentence above that this decision does not approve the rules
+text. Does not copy that text into the repository and does not replace it
+with a separately reviewed legal agreement.
+
+The first production launch uses owner `bidplace`, contact
+`work.evles@gmail.com`, and the approved temporary text from `prod`. The
+deploy script writes those three values only into a temporary production
+config. The committed production fields stay empty.

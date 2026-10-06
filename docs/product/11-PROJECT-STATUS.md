@@ -1,23 +1,30 @@
 # bidplace — текущий статус проекта
 
-## 2026-10-06 — Production deployment path prepared, not deployed
+## 2026-10-06 — Production rules source is GitHub, deploy not started
 
 - `Confirmed` (`DEC-102`): one production contour. Neon project
-  `calm-rain-59989397` now lists only default branch `production`
-  `br-polished-haze-b2d6rop9`. The founder deleted the staging branch. No
-  replacement branch, database, or role was created. Leftover staging R2
-  buckets and DNS were not deleted.
-- `Partial`: `.github/workflows/production-deploy.yml` is a manual
-  `workflow_dispatch` for `feature/portfolio-mvp-release`. Verify CI builds
-  the production SPA. `scripts/cloudflare/deploy.mjs` accepts
-  `--secrets-file` and keeps the release-branch and clean-checkout gates.
-  Migration stays a separate confirmed step and rejects a pooled hostname.
-  Nothing was pushed, migrated, or deployed. `pnpm cloudflare:check` passed.
-  The production SPA build verified `https://bid.place`. Image verify passed
-  on a disposable local database.
-- `Needs verification`: GitHub Repository secrets are not entered. GitHub is
-  not the recoverable copy. `SERVICE_RULES_TEXT` is still unapproved, so the
-  Actions Variable is empty and the workflow stops before Wrangler.
+  `calm-rain-59989397` lists only default branch `production`
+  `br-polished-haze-b2d6rop9`, database `neondb`. The founder deleted the
+  staging branch. No replacement branch, database, or role was created.
+  Leftover staging R2 buckets and DNS were not deleted.
+- `Confirmed` (`DEC-103`): the production job uses the existing GitHub
+  Environment `prod`. Migration reads `secrets.NEON_DIRECT_URL` as
+  `DATABASE_URL`. Runtime keeps pooled `secrets.DATABASE_URL`.
+  `SERVICE_RULES_OWNER`, `SERVICE_RULES_CONTACT`, `SERVICE_RULES_TEXT`, and
+  `CLOUDFLARE_ACCOUNT_ID` come from that environment's variables into a
+  temporary production config. Committed production Wrangler fields for the
+  three rules are empty. The first-launch owner is `bidplace`; the contact
+  is `work.evles@gmail.com`. The founder approved the short temporary rules
+  text already stored in `prod` for this launch. The text is not copied into
+  the repository. An empty rules variable still stops the deploy. Secret
+  values were not read.
+- `Partial`: the manual workflow, the rules injection, and the pre-migration
+  endpoint check are local. Production `neondb` has 0 public tables, so
+  there is no user data to back up. Endpoint
+  `ep-withered-shadow-b230htte` is the production compute. Nothing has been
+  pushed, migrated, or deployed yet. `pnpm cloudflare:check` passed after
+  the injection. The production SPA build verified `https://bid.place`.
+  Image verify passed on a disposable local database.
 
 ## 2026-10-05 — Cloudflare resources started, not deployed
 
