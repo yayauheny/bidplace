@@ -11,7 +11,9 @@
   Local checks: mobile unit 7 files / 79 tests; api-client sellers 2 passed;
   mobile and api-client typecheck exit 0; mobile eslint on the edited specs
   exit 0; e2e fence exit 0; field-focus Chromium/WebKit 12 passed. The full
-  portfolio gate was not rerun. Production was not updated.
+  portfolio gate was not rerun. Production was not updated. A later check
+  showed the catalog-after-Home note was retained DOM (`opacity: 0`,
+  `aria-hidden`, `inert`), not a visible overlay. No navigation change.
 
 ## 2026-10-07 — Ordinary press has no mint ring, and the form fixes are deployed
 
