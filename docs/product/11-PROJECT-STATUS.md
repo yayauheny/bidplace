@@ -1,5 +1,25 @@
 # bidplace — текущий статус проекта
 
+## 2026-10-07 — Safe request logs, local only
+
+- `Implemented` locally for the Nest request summary and the unexpected-error
+  line. An ordinary request logs one line: server UUID, method, registered
+  route template or `unmatched`, status, `durationMs`, and the existing user
+  id when that id is a UUID. `/health` and `/health/ready`, with or without
+  the `/api` prefix, stay out of that summary even if the URL has a query.
+  The 5xx line keeps `requestId`, status, a known API error code, and an
+  `apps/api` stack frame when one can be selected. It does not record the raw
+  URL, pathname, exception message, original stack, or `String(exception)`.
+  An inbound `X-Request-Id` is ignored; the response still returns the server
+  id. Security and admin `auditEvent` logging is unchanged. Covered by
+  `apps/api/src/core/errors/api-exception.filter.spec.ts` and
+  `apps/api/src/core/request-context/request-logging.interceptor.spec.ts`.
+  Those unit tests: 8 passed. `pnpm --filter @bidplace/api typecheck`, lint,
+  and build exit 0.
+- `Needs verification` for production. This change is not deployed. Workers
+  invocation logs, traces, Logpush, response bodies, keepalive, and an
+  external `/ready` monitor were not enabled.
+
 ## 2026-10-07 — Test maintenance cleanup, no behavior change
 
 - `Partial` for the portfolio MVP, unchanged in product behavior. The

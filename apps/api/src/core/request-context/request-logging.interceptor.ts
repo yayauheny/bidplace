@@ -7,10 +7,19 @@ import {
 } from '@nestjs/common';
 import { type Observable, tap } from 'rxjs';
 
+import {
+  safeDurationMs,
+  safeMethod,
+  safeRequestId,
+  safeRouteTemplate,
+  safeStatus,
+  safeUserId,
+} from './safe-request-log';
+
 type LoggedRequest = {
   method?: string;
   url?: string;
-  route?: { path?: string };
+  route?: { path?: unknown };
   requestId?: string;
   auth?: { sub?: string };
 };
@@ -18,6 +27,23 @@ type LoggedRequest = {
 type LoggedResponse = {
   statusCode?: number;
 };
+
+const HEALTH_PATHS = new Set([
+  '/health',
+  '/health/ready',
+  '/api/health',
+  '/api/health/ready',
+]);
+
+function isHealthRequest(url: string | undefined): boolean {
+  if (!url) {
+    return false;
+  }
+
+  const queryIndex = url.search(/[?#]/);
+  const pathname = queryIndex === -1 ? url : url.slice(0, queryIndex);
+  return HEALTH_PATHS.has(pathname);
+}
 
 @Injectable()
 export class RequestLoggingInterceptor implements NestInterceptor {
@@ -31,9 +57,8 @@ export class RequestLoggingInterceptor implements NestInterceptor {
     const http = context.switchToHttp();
     const request = http.getRequest<LoggedRequest>();
     const response = http.getResponse<LoggedResponse>();
-    const url = request.url ?? '';
 
-    if (url === '/api/health' || url === '/health' || url.endsWith('/health')) {
+    if (isHealthRequest(request.url)) {
       return next.handle();
     }
 
@@ -62,17 +87,17 @@ export class RequestLoggingInterceptor implements NestInterceptor {
     status: number,
     startedAt: number,
   ): void {
-    const userId = request.auth?.sub;
+    const userId = safeUserId(request.auth?.sub);
     this.logger.log(
       [
-        `requestId=${request.requestId ?? 'unknown'}`,
-        `method=${request.method ?? 'UNKNOWN'}`,
-        `route=${request.route?.path ?? request.url ?? 'unknown'}`,
-        `status=${status}`,
-        `durationMs=${Date.now() - startedAt}`,
+        `requestId=${safeRequestId(request.requestId)}`,
+        `method=${safeMethod(request.method)}`,
+        `route=${safeRouteTemplate(request.route?.path)}`,
+        `status=${safeStatus(status)}`,
+        `durationMs=${safeDurationMs(startedAt)}`,
         userId ? `userId=${userId}` : null,
       ]
-        .filter(Boolean)
+        .filter((part): part is string => part !== null)
         .join(' '),
     );
   }

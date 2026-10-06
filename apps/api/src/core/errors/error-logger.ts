@@ -1,9 +1,19 @@
-import { type ApiErrorResponse } from '@bidplace/contracts';
+import { ApiErrorCode, type ApiErrorResponse } from '@bidplace/contracts';
 import { type Logger } from '@nestjs/common';
 
+import {
+  safeFailureLocation,
+  safeRequestId,
+  safeStatus,
+} from '../request-context/safe-request-log';
+
+const SAFE_ERROR_CODES = new Set<string>(Object.values(ApiErrorCode));
+
+function safeErrorCode(code: string): string {
+  return SAFE_ERROR_CODES.has(code) ? code : 'unknown';
+}
+
 type HttpRequestLike = {
-  method?: string;
-  url?: string;
   requestId?: string;
 };
 
@@ -13,21 +23,15 @@ export function logUnexpectedError(
   request: HttpRequestLike,
   body: ApiErrorResponse,
 ): void {
-  const requestLabel = [request.method, request.url].filter(Boolean).join(' ');
-  const requestIdLabel = request.requestId
-    ? ` requestId=${request.requestId}`
-    : '';
-  const context = requestLabel
-    ? `[${requestLabel}]${requestIdLabel}`
-    : `[unknown request]${requestIdLabel}`;
+  const location = safeFailureLocation(exception);
+  const line = [
+    `requestId=${safeRequestId(request.requestId)}`,
+    `status=${safeStatus(body.status)}`,
+    `code=${safeErrorCode(body.code)}`,
+    location ? `at=${location}` : null,
+  ]
+    .filter((part): part is string => part !== null)
+    .join(' ');
 
-  if (exception instanceof Error) {
-    logger.error(
-      `${context} ${body.code}: ${exception.message}`,
-      exception.stack,
-    );
-    return;
-  }
-
-  logger.error(`${context} ${body.code}: ${String(exception)}`);
+  logger.error(line);
 }

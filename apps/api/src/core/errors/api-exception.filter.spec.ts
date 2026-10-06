@@ -88,13 +88,14 @@ describe('ApiExceptionFilter', () => {
     const loggerError = vi
       .spyOn((filter as unknown as { logger: { error: () => void } }).logger, 'error')
       .mockImplementation(() => undefined);
+    const requestId = '6c456e1f-37b0-4733-a939-b5fa1a1e565d';
 
     filter.catch(
       new Error('relation "bids" does not exist'),
       createHost(captured, {
         method: 'POST',
         url: '/api/listings/x/bids',
-        requestId: 'req-123',
+        requestId,
       }) as never,
     );
 
@@ -103,14 +104,78 @@ describe('ApiExceptionFilter', () => {
       status: 500,
       code: ApiErrorCode.INTERNAL_ERROR,
       message: 'Internal server error',
-      requestId: 'req-123',
+      requestId,
     });
-    expect(captured.headers?.['X-Request-Id']).toBe('req-123');
+    expect(captured.headers?.['X-Request-Id']).toBe(requestId);
     expect(JSON.stringify(captured.body)).not.toContain('relation');
-    expect(loggerError).toHaveBeenCalledWith(
-      expect.stringContaining('requestId=req-123'),
-      expect.any(String),
+    expect(loggerError).toHaveBeenCalledOnce();
+    const line = String(loggerError.mock.calls[0]?.[0]);
+    expect(loggerError.mock.calls[0]).toHaveLength(1);
+    expect(line).toContain(`requestId=${requestId}`);
+    expect(line).toContain('status=500');
+    expect(line).toContain(`code=${ApiErrorCode.INTERNAL_ERROR}`);
+    expect(line).not.toContain('relation');
+    expect(line).not.toContain('/api/listings');
+    expect(line).not.toContain('/Users/');
+    loggerError.mockRestore();
+  });
+
+  it('keeps a safe 5xx location and drops request secrets', () => {
+    const filter = new ApiExceptionFilter();
+    const captured: {
+      statusCode?: number;
+      body?: unknown;
+      headers?: Record<string, string>;
+    } = {};
+    const loggerError = vi
+      .spyOn((filter as unknown as { logger: { error: () => void } }).logger, 'error')
+      .mockImplementation(() => undefined);
+    const pathMarker = 'path-secret-marker';
+    const queryMarker = 'query-secret-marker';
+    const exceptionMarker = 'exception-secret-marker';
+    const requestIdMarker = 'header-secret-marker';
+    const error = new Error(exceptionMarker);
+    error.stack = [
+      `Error: ${exceptionMarker}`,
+      `    at leak (/tmp/${pathMarker}.ts:1:1)`,
+      '    at WorkService.create (/Users/dev/bidplace/apps/api/src/products/products.service.ts:42:5)',
+    ].join('\n');
+
+    filter.catch(
+      error,
+      createHost(captured, {
+        method: 'POST',
+        url: `/api/${pathMarker}?token=${queryMarker}`,
+        requestId: requestIdMarker,
+      }) as never,
     );
+
+    const line = String(loggerError.mock.calls[0]?.[0]);
+    expect(line).toContain('requestId=unknown');
+    expect(line).toContain('status=500');
+    expect(line).toContain(`code=${ApiErrorCode.INTERNAL_ERROR}`);
+    expect(line).toContain('at=apps/api/src/products/products.service.ts:42');
+    expect(line).not.toContain(pathMarker);
+    expect(line).not.toContain(queryMarker);
+    expect(line).not.toContain(exceptionMarker);
+    expect(line).not.toContain(requestIdMarker);
+    expect(line).not.toContain('/Users/');
+    expect(JSON.stringify(captured.body)).not.toContain(exceptionMarker);
+    expect(captured.headers?.['X-Request-Id']).toBe(requestIdMarker);
+
+    captured.body = undefined;
+    filter.catch(
+      exceptionMarker,
+      createHost(captured, {
+        url: `/api/${pathMarker}`,
+        requestId: requestIdMarker,
+      }) as never,
+    );
+    const stringLine = String(loggerError.mock.calls[1]?.[0]);
+    expect(stringLine).toContain('status=500');
+    expect(stringLine).toContain(`code=${ApiErrorCode.INTERNAL_ERROR}`);
+    expect(stringLine).not.toContain(exceptionMarker);
+    expect(stringLine).not.toContain(pathMarker);
     loggerError.mockRestore();
   });
 

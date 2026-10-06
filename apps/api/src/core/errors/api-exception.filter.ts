@@ -13,8 +13,6 @@ import {
 } from './error-response-mapper';
 
 type HttpRequestLike = {
-  method?: string;
-  url?: string;
   requestId?: string;
 };
 
