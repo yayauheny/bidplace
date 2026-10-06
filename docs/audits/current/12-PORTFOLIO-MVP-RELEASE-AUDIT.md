@@ -1115,9 +1115,12 @@ here. `media.bid.place` without an object returns 403. Production `neondb`
 has 27 public tables and 22 applied migrations.
 
 Controlled registration of `work.evles+mvp-smoke@gmail.com` reached the empty
-home screen. `/verify-email` shows that the code was sent, and one
-verification row exists. The code and any reset link are not recorded. Inbox
-delivery is not confirmed. Login, logout, reset, author creation, upload,
-moderation, publish, and revoke are not done. Users: 1. Admins: 0. Production
-seed was not run, so moderation has no admin until one verified account is
-promoted.
+home screen. The first verification code expired. The operator then completed
+verification. `/api/auth/me` shows the email verified. Logout returns the
+session to 401, and login with the same account succeeds. Password reset
+request returns 201. The reset link was not opened and is not recorded.
+
+Author profile `mvp-smoke` was created and submitted. Seller status is
+`PENDING_REVIEW`. Work creation is blocked until that profile is approved.
+Users: 1. Admins: 0. Production seed was not run. Upload, moderation,
+publish, and revoke are not done.

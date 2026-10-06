@@ -16,9 +16,13 @@
   returns a Nest 404. Public rules are version `MVP_RULES_V1`, owner
   `bidplace`, contact `work.evles@gmail.com`. The rules text was not copied
   into the repository. One controlled account was registered and the
-  verification screen reports that the code was sent. Mailbox delivery, code
-  entry, login/logout/reset, and the author/media flow are not finished.
-  There is no admin account, and production seed was not run.
+  verification screen reports that the code was sent. The operator confirmed
+  the mailbox code after the first code expired. Email is verified. Logout
+  invalidates the session, and login with the same account works again.
+  Password reset request returns 201. The reset link was not opened. Author
+  `mvp-smoke` is `PENDING_REVIEW`. Work upload, moderation, publish, and
+  revoke are not finished. There is no admin account, and production seed
+  was not run.
 
 ## 2026-10-06 — Production rules source is GitHub, deploy not started
 
