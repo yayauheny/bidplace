@@ -1017,3 +1017,22 @@ migrations, HTTP/auth boundary, and SIGTERM. That local migrate is not the
 Neon migrate. `pnpm cloudflare:deploy:staging` was not run: `validateConfig`
 still rejects empty `SERVICE_RULES_TEXT`, and the copied owner role is not an
 isolated staging credential.
+
+## 2026-10-06 — Production-only deployment path
+
+The founder deleted the Neon staging branch. A read-only branch list now
+shows only `production` `br-polished-haze-b2d6rop9` in project
+`calm-rain-59989397`. `DEC-102` records the single production contour.
+Staging buckets and DNS were not deleted. No new Neon resource was created.
+
+`.github/workflows/production-deploy.yml` is manual. It is not on a push, PR,
+or schedule. The default branch remains `main`; it was not changed. The job
+refuses every ref except `feature/portfolio-mvp-release` and does not cancel
+an in-progress run. Migration runs only when the input is exactly
+`migrate-production`, using `DATABASE_URL_UNPOOLED`. Runtime secrets go to the
+deploy step through a temporary `0600` JSON file outside the checkout.
+`SMTP_USERNAME` is written as `api_token` by the workflow. Empty
+`SERVICE_RULES_TEXT` stops the job. The rules text is still not approved.
+Secrets were not created or read. Deploy and production migration were not
+run. `pnpm cloudflare:check` passed. The production SPA build verified
+`https://bid.place`. Image verify passed on a disposable local database.

@@ -2259,3 +2259,35 @@ does not set a five-minute CDN deadline, so the RFC is unchanged.
 The missing deadline while the process is stopped is an accepted MVP
 limitation. Retry and recovery remain required. Their live check is still
 `Needs verification`. Local tests do not close CDN purge (`F11`/`D08`).
+
+## DEC-102 — One production deployment contour
+
+Date: 2026-10-06
+Status: Confirmed
+Source: founder decision to use one production environment, delete the Neon
+staging branch, and enter deployment values through GitHub Repository secrets
+and Actions Variables.
+Revises the `DEC-100` statements that no new CI workflow is added, that GitHub
+Environments supply deployment values, and that staging and production
+credentials stay separate. Does not revise the SMTP provider, the literal
+`api_token` username, secret custody outside GitHub, or the budget in
+`DEC-099`.
+
+### Decision
+
+The first portfolio MVP deployment has one contour: Cloudflare Worker
+`bidplace-production` on `https://bid.place`, Neon project
+`calm-rain-59989397`, existing default branch `production`
+`br-polished-haze-b2d6rop9`, database `neondb`. The founder deleted the Neon
+staging branch. No replacement staging project, branch, database, or role is
+created. Leftover staging buckets and DNS stay in place and are not part of
+the deployment.
+
+Deployment is a manual `workflow_dispatch` on
+`feature/portfolio-mvp-release`. It does not run on push, pull request, or a
+schedule. Checks, the production build, an explicitly confirmed direct-URL
+migration, and the deploy use one SHA. GitHub Repository secrets supply the
+deployment. They are not a recoverable backup. The operator keeps the
+originals in an encrypted store. `SERVICE_RULES_TEXT` is an Actions Variable.
+An empty value blocks the deploy. This decision does not approve the rules
+text.

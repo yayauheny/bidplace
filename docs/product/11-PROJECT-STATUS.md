@@ -1,5 +1,24 @@
 # bidplace — текущий статус проекта
 
+## 2026-10-06 — Production deployment path prepared, not deployed
+
+- `Confirmed` (`DEC-102`): one production contour. Neon project
+  `calm-rain-59989397` now lists only default branch `production`
+  `br-polished-haze-b2d6rop9`. The founder deleted the staging branch. No
+  replacement branch, database, or role was created. Leftover staging R2
+  buckets and DNS were not deleted.
+- `Partial`: `.github/workflows/production-deploy.yml` is a manual
+  `workflow_dispatch` for `feature/portfolio-mvp-release`. Verify CI builds
+  the production SPA. `scripts/cloudflare/deploy.mjs` accepts
+  `--secrets-file` and keeps the release-branch and clean-checkout gates.
+  Migration stays a separate confirmed step and rejects a pooled hostname.
+  Nothing was pushed, migrated, or deployed. `pnpm cloudflare:check` passed.
+  The production SPA build verified `https://bid.place`. Image verify passed
+  on a disposable local database.
+- `Needs verification`: GitHub Repository secrets are not entered. GitHub is
+  not the recoverable copy. `SERVICE_RULES_TEXT` is still unapproved, so the
+  Actions Variable is empty and the workflow stops before Wrangler.
+
 ## 2026-10-05 — Cloudflare resources started, not deployed
 
 - `Partial`: Cloudflare account `56b0c4b96497366c262447d2a18bf632`. Zone

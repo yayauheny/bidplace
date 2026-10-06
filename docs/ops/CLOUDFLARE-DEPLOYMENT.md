@@ -1,8 +1,49 @@
 # Bidplace: Cloudflare deployment
 
-Дата проверки документации: 2026-10-05. Код — в `feature/cloudflare-deployment`,
-base release `507bb5b`. Реального deployment пока нет. Результаты и blockers:
+Дата проверки документации: 2026-10-06. Реального deployment пока нет.
+Текущий путь — один production contour, `DEC-102`. Более ранние staging-шаги
+ниже сохраняют историю и не являются обязательным deployment. Результаты:
 [deployment verification](../audits/current/14-CLOUDFLARE-DEPLOYMENT-VERIFICATION.md).
+
+## Текущий production path
+
+Один контур: Worker `bidplace-production`, сайт `https://bid.place`, Neon
+project `calm-rain-59989397`, default branch `production`
+`br-polished-haze-b2d6rop9`, database `neondb`. Public media
+`https://media.bid.place`. Staging Neon branch удалена основателем. Оставшиеся
+staging buckets и DNS этой волной не удаляются и в deploy не входят.
+
+Ручной запуск — `.github/workflows/production-deploy.yml`, только
+`workflow_dispatch`. Push, PR и расписание deploy не запускают. GitHub
+показывает кнопку Run workflow после того, как этот файл есть на default
+branch `main`. Default branch не менять. Запускать workflow нужно с branch
+`feature/portfolio-mvp-release`: Actions → Production deploy → Run workflow →
+этот branch. Job отклоняет любой другой ref. Checkout, checks, production SPA
+build, image gate, необязательная migration и deploy относятся к одному
+`github.sha`.
+
+Параллельный production deploy не стартует, пока предыдущий не закончился.
+Уже идущая migration не отменяется.
+
+Migration — отдельный шаг. В поле `confirm_migration` нужно ввести ровно
+`migrate-production`, иначе migration пропускается. Неверная фраза останавливает
+job и не печатается. Первый deploy должен включать эту фразу. Script —
+`pnpm cloudflare:migrate production --confirm-production`. В шаг попадает только
+`DATABASE_URL_UNPOOLED`, прямой Neon hostname без `-pooler`. Runtime URL в этот
+шаг не передаётся.
+
+Deploy вызывает существующий `scripts/cloudflare/deploy.mjs`. Он снова проходит
+check, production build и image gate уже без runtime credentials, затем
+`wrangler deploy --secrets-file`. JSON создаётся в `RUNNER_TEMP` с правами
+`0600`, лежит вне checkout, не попадает в artifacts или cache и удаляется при
+выходе. `SMTP_USERNAME` workflow записывает как литерал `api_token`; отдельный
+secret для него не нужен. `SERVICE_RULES_TEXT` берётся из Actions Variable.
+Пустое значение останавливает deploy до Wrangler. Текст в репозиторий не
+записывается.
+
+GitHub Secrets — источник значений для этого deploy, не восстановимая копия.
+Оригиналы остаются в зашифрованном хранилище оператора. Секреты не читаются
+обратно из GitHub.
 
 ## Архитектура
 
@@ -339,22 +380,19 @@ removal требует отдельного подтверждённого scope
 
 ## Актуальный operator checklist
 
-Этот список — единственный текущий перечень недостающих настроек. Более ранние
-handoff-абзацы сохраняют историю проверок. `DEC-101` снимает требование
-самостоятельно проснуться ради пятиминутного срока. Значения секретов сюда не
-входят. Этот пакет их не создавал и не читал.
+Текущий deploy — production workflow выше. Staging branch, staging Worker и
+staging secrets в этот список не входят. Оставшиеся staging buckets и DNS не
+удалять этой волной. Секреты вводятся в GitHub Repository secrets, не в чат и
+не в репозиторий. GitHub не является резервной копией.
 
 | Что ввести | Куда | Как проверить | Статус |
 |---|---|---|---|
-| Workers `bidplace-staging` и `bidplace-production`, custom domains `staging.bid.place` и `bid.place`; `workers.dev` и preview URLs выключены | Cloudflare account `56b0c4b96497366c262447d2a18bf632`. Имена и routes уже в `deploy/cloudflare/wrangler.jsonc` | В dashboard оба Worker существуют, hostname открывает свой Worker | Needs verification. Зона `bid.place` Active. Workers не развёрнуты. Корень `bid.place` не привязывать без отдельного разрешения |
-| Отдельный Neon staging branch/database и роль без доступа к production. Runtime URL — TLS pooler | Neon CLI 8.0.10. Staging `br-summer-wind-b2gz0gcm`, endpoint `ep-twilight-recipe-b2ials8i`, parent `br-polished-haze-b2d6rop9`. Autopause `0` | Сейчас на обеих ветках только скопированный `neondb_owner`. Отдельная роль ещё не создана, поэтому доступ к production не опровергнут | Partial. Ветка есть. Изоляция credentials нет |
-| Четыре R2 bucket из контракта, public hosts `media-staging.bid.place` и `media.bid.place`, cache rule ignore entire query string на каждом media host. Browser TTL не повышать. Правило не применять к API | R2 location `weur`. Cache ruleset `85b85dfb40204a2d9d978a03b4dab4b0` | `r2.dev` выключен. Оба media host: ownership и SSL active. Query string exclude all, TTL respect origin, API host не в expression | Partial. CDN подключён. Live purge ещё не проверен |
-| Email Sending на Workers Paid, onboard домена отправителя, DNS которые добавляет Cloudflare: MX, SPF и DKIM на `cf-bounce`, DMARC на `_dmarc`. Адрес `SMTP_FROM` на этом домене | `SMTP_FROM=noreply@bid.place`. Домен enabled, selector `cf-bounce`. Implicit TLS отвечает `220`/`221` | Preflight больше не останавливается на пустом `SMTP_FROM`. Доставка в ящик не проверена: SMTP token не вводился | Partial. Транспорт доступен. Доставка нет |
-| Runtime secrets по именам: `DATABASE_URL`, `JWT_SECRET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `SMTP_USERNAME` (литерал `api_token`), `SMTP_PASSWORD` (отдельный Email Sending: Edit token), `CLOUDFLARE_CACHE_TOKEN` | `pnpm exec wrangler secret put <NAME> --config deploy/cloudflare/wrangler.jsonc --env <staging\|production>`. Восстанавливаемая копия — зашифрованное хранилище оператора вне GitHub и Cloudflare | Wrangler показывает наличие имён. Значения не печатать. Staging и production различаются | Needs verification |
-| Публичные vars: подтверждённые `SMTP_FROM`, `SERVICE_RULES_OWNER`, `SERVICE_RULES_CONTACT`. `SERVICE_RULES_TEXT` пуст, пока черновик не утверждён | `env.staging.vars` и `env.production.vars` | `validateConfig` падает на пустом `SERVICE_RULES_TEXT`. Отдельная fixture с пустым `SMTP_FROM` тоже падает | Partial. Owner, contact и from записаны. Текст правил нет |
+| Workflow на `main` и на `feature/portfolio-mvp-release`, без смены default branch | `.github/workflows/production-deploy.yml` | Actions показывает Production deploy. Run на release branch. Другой ref job отклоняет | Needs verification. Файл подготовлен. Push и run не выполнялись |
+| `SERVICE_RULES_TEXT` | Actions Variable. Пустое значение блокирует deploy | Job останавливается до Wrangler, если variable пустая | Needs verification. Текст не утверждён и в Wrangler не записан |
+| Repository secrets из workflow: deploy token, pooled `DATABASE_URL`, direct `DATABASE_URL_UNPOOLED`, `JWT_SECRET`, два R2 key, `SMTP_PASSWORD`, cache purge token | Settings → Secrets and variables → Actions → Repository secrets. Оригиналы — в зашифрованном хранилище оператора | Имена есть в GitHub. Значения не читать обратно. Tokens разделены по назначению | Needs verification. Секреты ещё не внесены |
 
-Live acceptance после этих настроек и будущего staging deploy. Локальные тесты
-её не закрывают:
+Live acceptance после реального production deploy. Локальные тесты её не
+закрывают:
 
 - реальная доставка OTP и reset и полный auth flow: регистрация, код из ящика,
   verified login, forgot/reset по ссылке окружения, logout делает старую сессию
