@@ -13,6 +13,7 @@ import {
 } from '@bidplace/contracts';
 import type { ApiClient } from '@bidplace/api-client';
 import { ApiClientError } from '@bidplace/api-client';
+import { readFormFailure } from '../../errors';
 import { Link, type Href, useRouter } from 'expo-router';
 import { View } from 'react-native';
 
@@ -168,6 +169,7 @@ export function AdminModerationScreen() {
   });
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
   const [moderationReason, setModerationReason] = useState('');
+  const [reasonError, setReasonError] = useState<string | null>(null);
   const [productAction, setProductAction] =
     useState<ProductModerationAction | null>(null);
   const refresh = () => {
@@ -194,7 +196,10 @@ export function AdminModerationScreen() {
       if (error instanceof ApiClientError && error.kind === 'conflict') {
         setConfirmation(null);
         refresh();
+        return;
       }
+      const failure = readFormFailure(error, ['reason']);
+      if (failure.fields.reason) setReasonError(failure.fields.reason);
     },
   });
   const openConfirmation = (next: Confirmation) => {
@@ -202,6 +207,7 @@ export function AdminModerationScreen() {
     productStatus.reset();
     setProductAction(null);
     setModerationReason('');
+    setReasonError(null);
     setConfirmation(next);
   };
   const mutateProductStatus = (input: {
@@ -234,7 +240,10 @@ export function AdminModerationScreen() {
       if (error instanceof ApiClientError && error.kind === 'conflict') {
         setConfirmation(null);
         refresh();
+        return;
       }
+      const failure = readFormFailure(error, ['reason']);
+      if (failure.fields.reason) setReasonError(failure.fields.reason);
     },
   });
   const confirming = sellerStatus.isPending || productStatus.isPending;
@@ -851,13 +860,17 @@ export function AdminModerationScreen() {
               label="Причина"
               autoFocus
               value={moderationReason}
-              onChangeText={setModerationReason}
+              onChangeText={(value) => {
+                setReasonError(null);
+                setModerationReason(value);
+              }}
               required
               multiline
               placeholder="Укажите причину действия"
-              error={
-                !moderationReason.trim() ? 'Причина обязательна' : undefined
-              }
+              onBlur={() => {
+                if (!moderationReason.trim()) setReasonError('Укажите причину');
+              }}
+              error={reasonError ?? undefined}
             />
           ) : null}
           <DestructiveButton

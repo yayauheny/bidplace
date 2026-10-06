@@ -9,7 +9,13 @@ import { FigmaButton } from '../../components/figma/FigmaButton';
 import { MotionPressable } from '../../components/ui/MotionPressable';
 import { useAnalytics } from '../../providers/analytics-provider';
 import { useAuth } from '../../providers/auth-provider';
-import { getUserFacingErrorMessage } from '../../errors';
+import { ApiClientError } from '@bidplace/api-client';
+
+import {
+  applyFormFailure,
+  getUserFacingErrorMessage,
+  readFormFailure,
+} from '../../errors';
 import {
   loginFormSchema,
   registerFormSchema,
@@ -42,7 +48,17 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
     try {
       await auth.login(values);
     } catch (error) {
-      setSubmitError(getUserFacingErrorMessage(error, 'Не удалось войти'));
+      if (error instanceof ApiClientError && error.kind === 'unauthorized') {
+        setSubmitError('Неверный email или пароль.');
+        return;
+      }
+      const failure = readFormFailure(error, ['email', 'password']);
+      if (failure.disposition === 'passthrough') {
+        setSubmitError(getUserFacingErrorMessage(error, 'Не удалось войти'));
+        return;
+      }
+      applyFormFailure(form, failure, ['email', 'password']);
+      setSubmitError(failure.formMessage);
     }
   });
   if (!auth.ready)
@@ -68,7 +84,7 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
           control={form.control}
           name="email"
           render={({ field }) => (
-            <TextField
+            <TextField ref={field.ref}
               label="Email"
               value={field.value ?? ''}
               onChangeText={field.onChange}
@@ -85,7 +101,7 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
             control={form.control}
             name="password"
             render={({ field }) => (
-              <TextField
+              <TextField ref={field.ref}
                 label="Пароль"
                 value={field.value}
                 onChangeText={field.onChange}
@@ -181,9 +197,13 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
       const response = await auth.register(values);
       analytics.identify(response.user.id, { claimAcquisition: true });
     } catch (error) {
-      setSubmitError(
-        getUserFacingErrorMessage(error, 'Не удалось зарегистрироваться'),
-      );
+      const failure = readFormFailure(error, ['email', 'password', 'displayName', 'phone']);
+      if (failure.disposition === 'passthrough') {
+        setSubmitError(getUserFacingErrorMessage(error, 'Не удалось зарегистрироваться'));
+        return;
+      }
+      applyFormFailure(form, failure, ['email', 'password', 'displayName', 'phone']);
+      setSubmitError(failure.formMessage);
     }
   });
   if (!auth.ready)
@@ -209,7 +229,7 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
           control={form.control}
           name="displayName"
           render={({ field }) => (
-            <TextField
+            <TextField ref={field.ref}
               label="Имя"
               value={field.value}
               onChangeText={field.onChange}
@@ -224,7 +244,7 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
           control={form.control}
           name="email"
           render={({ field }) => (
-            <TextField
+            <TextField ref={field.ref}
               label="Email"
               value={field.value}
               onChangeText={field.onChange}
@@ -240,7 +260,7 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
           control={form.control}
           name="phone"
           render={({ field }) => (
-            <TextField
+            <TextField ref={field.ref}
               label="Телефон"
               value={field.value ?? ''}
               onChangeText={field.onChange}
@@ -258,7 +278,7 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
           control={form.control}
           name="password"
           render={({ field }) => (
-            <TextField
+            <TextField ref={field.ref}
               label="Пароль"
               value={field.value}
               onChangeText={field.onChange}

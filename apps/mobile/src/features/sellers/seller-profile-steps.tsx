@@ -21,6 +21,13 @@ export type ProfileFields = {
   shortDescription: string;
 };
 
+const requiredProfileMessages: Partial<Record<keyof ProfileFields, string>> = {
+  slug: 'Введите никнейм',
+  fullName: 'Введите имя или название',
+  country: 'Укажите страну',
+  city: 'Укажите город',
+};
+
 const ProfileFieldWriteGuardContext = createContext<RefObject<boolean> | null>(null);
 
 export function ProfileFieldWriteGuard({
@@ -58,13 +65,21 @@ function ProfileDraftField({
   if (!guard) {
     throw new Error('Profile field write guard is missing');
   }
-  const { control, setValue } = useFormContext<ProfileFields>();
+  const { control, setError, setValue } = useFormContext<ProfileFields>();
   const { field, fieldState } = useController({ control, name });
   const message = fieldState.error?.message;
+  const requiredMessage = required && requiredProfileMessages[name];
   return (
     <TextField
+      ref={field.ref}
       label={label}
       value={field.value}
+      onBlur={() => {
+        field.onBlur();
+        if (requiredMessage && !field.value.trim()) {
+          setError(name, { type: 'required', message: requiredMessage });
+        }
+      }}
       onChangeText={(value) => {
         if (guard.current) return;
         setValue(name, value, { shouldDirty: true, shouldTouch: true, shouldValidate: true });

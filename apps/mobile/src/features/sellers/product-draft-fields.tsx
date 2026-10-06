@@ -45,13 +45,15 @@ export function ProductDraftTextField({
   required?: boolean;
   multiline?: boolean;
   keyboardType?: 'number-pad';
-  error?: string;
+  error?: string | null;
 }) {
   const guard = useProductDraftWriteGuard();
   const { control, setValue } = useFormContext<ProductDraftFormValues>();
-  const { field } = useController({ control, name });
+  const { field, fieldState } = useController({ control, name });
+  const fieldError = typeof fieldState.error?.message === 'string' ? fieldState.error.message : undefined;
   return (
     <TextField
+      ref={field.ref}
       label={label}
       value={field.value}
       onChangeText={(value) => {
@@ -63,7 +65,7 @@ export function ProductDraftTextField({
       required={required}
       multiline={multiline}
       keyboardType={keyboardType}
-      error={error}
+      error={error === null ? undefined : (error ?? fieldError)}
     />
   );
 }

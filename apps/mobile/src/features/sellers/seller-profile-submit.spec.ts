@@ -6,6 +6,8 @@ import { createRoot, type Root } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { ApiClientError } from '@bidplace/api-client';
+
 import { flush, inputValue, setInput } from '../../testing/dom';
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
@@ -144,18 +146,25 @@ vi.mock('../../components/ui', () => {
       value,
       editable = true,
       onChangeText,
+      error,
     }: {
       label: string;
       value?: string;
       editable?: boolean;
       onChangeText?: (value: string) => void;
+      error?: string;
     }) =>
-      createElement('input', {
-        'aria-label': label,
-        value: value ?? '',
-        disabled: editable === false,
-        onChange: (event: { target: { value: string } }) => onChangeText?.(event.target.value),
-      }),
+      createElement(
+        'span',
+        null,
+        createElement('input', {
+          'aria-label': label,
+          value: value ?? '',
+          disabled: editable === false,
+          onChange: (event: { target: { value: string } }) => onChangeText?.(event.target.value),
+        }),
+        error ? createElement('span', null, error) : null,
+      ),
   };
 });
 
@@ -1613,6 +1622,75 @@ describe('seller profile validation freshness', () => {
       }),
     );
     expect(harness.push).toHaveBeenCalledWith('/profile?step=3');
+    view.unmount();
+  });
+
+  it('keeps the first-step photo and fields when the nickname is outside the slug contract', async () => {
+    const photo = new Blob(['portrait'], { type: 'image/png' });
+    harness.params = { step: '1' };
+    harness.getMyProfile.mockRejectedValue(
+      new ApiClientError('missing', { kind: 'not_found', status: 404 }),
+    );
+    harness.createProfile.mockResolvedValue(response('DRAFT', 'DRAFT'));
+    harness.launchImageLibraryAsync.mockResolvedValue({
+      canceled: false,
+      assets: [{ uri: 'blob:portrait' }],
+    });
+    vi.stubGlobal('fetch', vi.fn(async () => ({ blob: async () => photo })));
+    const view = mount();
+    await until(
+      view.container,
+      () => view.container.querySelector('[aria-label="Никнейм"]') instanceof HTMLInputElement,
+      'nickname',
+    );
+    setInput(view.container, 'Никнейм', 'БЕ');
+    setInput(view.container, 'Имя или название', 'Synthetic Author');
+    setInput(view.container, 'Страна', 'BY');
+    setInput(view.container, 'Город', 'Minsk');
+    click(view.container, 'Добавить фото');
+    await until(
+      view.container,
+      () => findButton(view.container, 'Изменить фото') instanceof HTMLButtonElement,
+      'photo kept',
+    );
+    await until(
+      view.container,
+      () =>
+        view.container.textContent?.includes(
+          'Используйте маленькие латинские буквы и цифры. Между ними можно поставить дефис или подчёркивание.',
+        ) === true,
+      'nickname error',
+    );
+    expect(buttonDisabled(view.container, 'Продолжить')).toBe(true);
+    click(view.container, 'Продолжить');
+    await flush();
+    expect(harness.createProfile).not.toHaveBeenCalled();
+    expect(view.container.textContent).not.toContain('Не удалось сохранить профиль');
+    expect(inputValue(view.container, 'Никнейм')).toBe('БЕ');
+    expect(inputValue(view.container, 'Имя или название')).toBe('Synthetic Author');
+    expect(inputValue(view.container, 'Страна')).toBe('BY');
+    expect(inputValue(view.container, 'Город')).toBe('Minsk');
+    setInput(view.container, 'Никнейм', 'synthetic-author');
+    await until(
+      view.container,
+      () =>
+        !buttonDisabled(view.container, 'Продолжить') &&
+        view.container.textContent?.includes(
+          'Используйте маленькие латинские буквы и цифры. Между ними можно поставить дефис или подчёркивание.',
+        ) !== true,
+      'continue after correction',
+    );
+    click(view.container, 'Продолжить');
+    await until(view.container, () => harness.createProfile.mock.calls.length === 1, 'create');
+    expect(harness.createProfile.mock.calls[0]?.[0]).toEqual({
+      slug: 'synthetic-author',
+      fullName: 'Synthetic Author',
+      country: 'BY',
+      city: 'Minsk',
+    });
+    expect(harness.createProfile.mock.calls[0]?.[1]).toBe(photo);
+    expect(harness.push).toHaveBeenCalledWith('/profile?step=2');
+    vi.unstubAllGlobals();
     view.unmount();
   });
 });

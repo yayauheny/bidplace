@@ -7,7 +7,12 @@ import { designTokens } from '@bidplace/design-tokens';
 import { ApiErrorCode } from '@bidplace/contracts';
 
 import { AppText, PrimaryButton, TextButton, TextField } from '../../components/ui';
-import { getErrorCode, getUserFacingErrorMessage } from '../../errors';
+import {
+  applyFormFailure,
+  getErrorCode,
+  getUserFacingErrorMessage,
+  readFormFailure,
+} from '../../errors';
 import { useApiClient } from '../../providers/api-provider';
 import { AuthCard } from './auth-card';
 import { resetPasswordFormSchema, type ResetPasswordFormValues } from './schemas';
@@ -51,9 +56,13 @@ export function ResetPasswordForm({ token }: { token: string | null }) {
         return;
       }
 
-      setSubmitError(
-        getUserFacingErrorMessage(error, 'Не удалось обновить пароль'),
-      );
+      const failure = readFormFailure(error, ['password']);
+      if (failure.disposition === 'passthrough') {
+        setSubmitError(getUserFacingErrorMessage(error, 'Не удалось обновить пароль'));
+        return;
+      }
+      applyFormFailure(form, failure, ['password', 'confirmPassword']);
+      setSubmitError(failure.formMessage);
     }
   });
 
@@ -82,7 +91,7 @@ export function ResetPasswordForm({ token }: { token: string | null }) {
           control={form.control}
           name="password"
           render={({ field }) => (
-            <TextField
+            <TextField ref={field.ref}
               label="Новый пароль"
               value={field.value}
               onChangeText={field.onChange}
@@ -98,7 +107,7 @@ export function ResetPasswordForm({ token }: { token: string | null }) {
           control={form.control}
           name="confirmPassword"
           render={({ field }) => (
-            <TextField
+            <TextField ref={field.ref}
               label="Подтверждение пароля"
               value={field.value}
               onChangeText={field.onChange}

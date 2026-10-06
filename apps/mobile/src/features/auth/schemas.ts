@@ -1,3 +1,4 @@
+import { passwordSchema } from '@bidplace/contracts';
 import { z } from 'zod';
 
 const emailField = z
@@ -14,7 +15,7 @@ export const loginFormSchema = z
 export const registerFormSchema = z
   .object({
     email: emailField,
-    password: z.string({ required_error: 'Введите пароль' }).min(8, 'Пароль должен содержать не менее 8 символов'),
+    password: passwordSchema,
     phone: z.string().trim().transform((value) => value || null).nullable().optional(),
     displayName: z.string({ required_error: 'Введите имя' }).trim().min(1, 'Введите имя'),
   })
@@ -31,9 +32,7 @@ export const forgotPasswordFormSchema = z
 
 export const resetPasswordFormSchema = z
   .object({
-    password: z
-      .string({ required_error: 'Введите пароль' })
-      .min(8, 'Пароль должен содержать не менее 8 символов'),
+    password: passwordSchema,
     confirmPassword: z
       .string({ required_error: 'Подтвердите пароль' })
       .min(1, 'Подтвердите пароль'),

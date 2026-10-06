@@ -99,6 +99,7 @@ export type ProductDraftImagesStepProps = {
   removePending: boolean;
   uploadPending: boolean;
   uploadError: boolean;
+  uploadMessage?: string | null;
   imageSelectionError: string | null;
   removeOrReorderError: boolean;
 
@@ -122,6 +123,7 @@ export function ProductDraftImagesStep({
   removePending,
   uploadPending,
   uploadError,
+  uploadMessage,
   imageSelectionError,
   removeOrReorderError,
   onChooseImages,
@@ -165,9 +167,9 @@ export function ProductDraftImagesStep({
             onPress={() => onChooseImages()}
           />
         ) : null}
-        {uploadError ? (
-          <AppText role="bodySmall" tone="danger">
-            Не удалось загрузить изображения.
+        {uploadError || uploadMessage ? (
+          <AppText role="bodySmall" tone="danger" accessibilityLiveRegion="polite">
+            {uploadMessage ?? 'Не удалось загрузить изображения.'}
           </AppText>
         ) : null}
         {uploadError && onRetryUpload ? <SecondaryButton label="Повторить загрузку" disabled={uploadPending || !editable} onPress={onRetryUpload} /> : null}

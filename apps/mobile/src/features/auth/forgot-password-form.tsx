@@ -6,7 +6,11 @@ import { View } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
 
 import { AppText, PrimaryButton, TextButton, TextField } from '../../components/ui';
-import { getUserFacingErrorMessage } from '../../errors';
+import {
+  applyFormFailure,
+  getUserFacingErrorMessage,
+  readFormFailure,
+} from '../../errors';
 import { useApiClient } from '../../providers/api-provider';
 import type { SafeRedirect } from './auth-redirect';
 import { AuthCard } from './auth-card';
@@ -37,9 +41,13 @@ export function ForgotPasswordForm({ redirectTo = '/' }: ForgotPasswordFormProps
       await api.auth.forgotPassword(values);
       setSubmitted(true);
     } catch (error) {
-      setSubmitError(
-        getUserFacingErrorMessage(error, 'Не удалось отправить запрос'),
-      );
+      const failure = readFormFailure(error, ['email']);
+      if (failure.disposition === 'passthrough') {
+        setSubmitError(getUserFacingErrorMessage(error, 'Не удалось отправить запрос'));
+        return;
+      }
+      applyFormFailure(form, failure, ['email']);
+      setSubmitError(failure.formMessage);
     }
   });
 
@@ -68,7 +76,7 @@ export function ForgotPasswordForm({ redirectTo = '/' }: ForgotPasswordFormProps
           control={form.control}
           name="email"
           render={({ field }) => (
-            <TextField
+            <TextField ref={field.ref}
               label="Email"
               value={field.value ?? ''}
               onChangeText={field.onChange}

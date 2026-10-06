@@ -26,6 +26,7 @@ export type ProductDraftAboutStepProps = {
   stepOneAttempted: boolean;
   saveIsPending: boolean;
   saveIsError: boolean;
+  saveMessage?: string | null;
   onSavePress: () => void;
   wizardCanOpenImages: boolean;
   onContinueToImages: () => void;
@@ -39,6 +40,7 @@ export function ProductDraftAboutStep({
   stepOneAttempted,
   saveIsPending,
   saveIsError,
+  saveMessage,
   onSavePress,
   wizardCanOpenImages,
   onContinueToImages,
@@ -91,7 +93,7 @@ export function ProductDraftAboutStep({
               placeholder="Необязательно"
               keyboardType="number-pad"
               editable={editable}
-              error={stepOneAttempted ? yearError : undefined}
+              error={stepOneAttempted ? yearError : null}
             />
           </FormSection>
         }
@@ -173,9 +175,9 @@ export function ProductDraftAboutStep({
         />
       ) : null}
 
-      {saveIsError && (!isCreationFlow || wizardStep === productWizardStep.about) ? (
-        <AppText role="bodySmall" tone="danger">
-          Не удалось сохранить предмет.
+      {(saveMessage || saveIsError) && (!isCreationFlow || wizardStep === productWizardStep.about) ? (
+        <AppText role="bodySmall" tone="danger" accessibilityLiveRegion="polite">
+          {saveMessage ?? 'Не удалось сохранить предмет.'}
         </AppText>
       ) : null}
     </>

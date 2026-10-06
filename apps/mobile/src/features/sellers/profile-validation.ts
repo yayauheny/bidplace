@@ -1,4 +1,9 @@
-import { sellerPublicEmailSchema, sellerPublicUrlSchema } from '@bidplace/contracts';
+import {
+  sellerPublicEmailSchema,
+  sellerPublicUrlSchema,
+  slugGrammarMessage,
+  slugSchema,
+} from '@bidplace/contracts';
 import { z } from 'zod';
 
 import { normalizeInstagram, normalizeTelegram } from './contact-normalization';
@@ -45,9 +50,14 @@ function acceptsOptionalPublicEmail(value: string) {
   return sellerPublicEmailSchema.safeParse(value).success;
 }
 
+function acceptsProfileSlug(value: string) {
+  if (!value.trim()) return true;
+  return slugSchema.safeParse(value).success;
+}
+
 export const profileDraftSchema = z
   .object({
-    slug: z.string(),
+    slug: z.string().refine(acceptsProfileSlug, slugGrammarMessage),
     fullName: z.string(),
     discipline: z.string(),
     country: z.string(),

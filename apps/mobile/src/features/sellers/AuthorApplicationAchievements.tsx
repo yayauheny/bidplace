@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 import { View } from 'react-native';
 
+import { achievementOccurredDateSchema } from '@bidplace/contracts';
 import { designTokens } from '@bidplace/design-tokens';
 
 import { InfrastructureErrorState } from '../../components/shared/InfrastructureErrorState';
@@ -13,6 +14,7 @@ import {
   SecondaryButton,
   TextField,
 } from '../../components/ui';
+import { getUserFacingErrorMessage, readFormFailure } from '../../errors';
 import { getApiAssetUrl } from '../../lib/environment';
 import { canWritePrivateCache, currentAuthEpoch, refreshPrivateQuery } from '../../lib/query-cache';
 import { usePrivateCacheEpoch } from '../../lib/use-private-cache-epoch';
@@ -75,6 +77,8 @@ export function AuthorApplicationAchievements({
   const [imageLabel, setImageLabel] = useState<string | null>(null);
   const [writeActive, setWriteActive] = useState(false);
   const [pickerError, setPickerError] = useState<string | null>(null);
+  const [dateError, setDateError] = useState<string | null>(null);
+  const [bodyError, setBodyError] = useState<string | null>(null);
 
   const application = useQuery({
     queryKey: ['seller', 'application'],
@@ -177,17 +181,31 @@ export function AuthorApplicationAchievements({
   };
 
   const saveAchievement = () => {
+    const occurredDate = {
+      year: Number(year),
+      month: Number(month),
+      day: day.trim() ? Number(day) : null,
+    };
+    const parsedDate = achievementOccurredDateSchema.safeParse(occurredDate);
+    const bodyText = body.trim();
+    const nextBodyError = !bodyText
+      ? 'Введите описание достижения'
+      : bodyText.length > 4_000
+        ? 'Введите описание короче 4000 символов'
+        : null;
+    const nextDateError = parsedDate.success
+      ? null
+      : parsedDate.error.issues[0]?.message ?? 'Укажите существующую дату';
+    setBodyError(nextBodyError);
+    setDateError(nextDateError);
+    if (nextBodyError || nextDateError) return;
     const token = beginWrite();
     if (token === null) return;
     const draft: AchievementDraft = {
       token,
       epoch: currentAuthEpoch(queryClient),
-      body: body.trim(),
-      occurredDate: {
-        year: Number(year),
-        month: Number(month),
-        day: day.trim() ? Number(day) : null,
-      },
+      body: bodyText,
+      occurredDate,
     };
     if (imageBlob) draft.image = imageBlob;
     addAchievement.mutate(draft);
@@ -241,8 +259,19 @@ export function AuthorApplicationAchievements({
   const achievements = application.data?.achievements ?? [];
   const updateDraft = (apply: (value: string) => void) => (value: string) => {
     if (writeToken.current !== 0) return;
+    setDateError(null);
     apply(value);
   };
+  const savedAchievementError = addAchievement.error
+    ? readFormFailure(addAchievement.error, ['body', 'occurredDate'])
+    : null;
+  const savedBodyError = savedAchievementError?.fields.body;
+  const savedDateError = savedAchievementError?.fields.occurredDate;
+  const savedFormError = savedAchievementError && savedAchievementError.disposition !== 'passthrough'
+    ? savedAchievementError.formMessage
+    : addAchievement.isError
+      ? getUserFacingErrorMessage(addAchievement.error, 'Не удалось обновить достижение')
+      : null;
 
   return (
     <FormSection
@@ -298,16 +327,20 @@ export function AuthorApplicationAchievements({
       ))}
       {editable ? (
         <>
-          <TextField label="Год" value={year} onChangeText={updateDraft(setYear)} placeholder="2025" editable={!writeActive} />
+          <TextField label="Год" value={year} onChangeText={updateDraft(setYear)} placeholder="2025" editable={!writeActive} error={dateError ?? savedDateError} />
           <TextField label="Месяц" value={month} onChangeText={updateDraft(setMonth)} placeholder="3" editable={!writeActive} />
           <TextField label="День (необязательно)" value={day} onChangeText={updateDraft(setDay)} placeholder="17" editable={!writeActive} />
           <TextField
             label="Описание достижения"
             value={body}
-            onChangeText={updateDraft(setBody)}
+            onChangeText={(value) => {
+              setBodyError(null);
+              updateDraft(setBody)(value);
+            }}
             placeholder="Выставка, публикация или награда"
             multiline
             editable={!writeActive}
+            error={bodyError ?? savedBodyError}
           />
           <SecondaryButton
             label={
@@ -333,9 +366,9 @@ export function AuthorApplicationAchievements({
           {pickerError}
         </AppText>
       ) : null}
-      {addAchievement.isError || deleteAchievement.isError ? (
-        <AppText role="bodySmall" tone="danger">
-          Не удалось обновить достижение
+      {savedFormError || deleteAchievement.isError ? (
+        <AppText role="bodySmall" tone="danger" accessibilityLiveRegion="polite">
+          {savedFormError ?? 'Не удалось обновить достижение'}
         </AppText>
       ) : null}
     </FormSection>

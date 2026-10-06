@@ -5,7 +5,7 @@ const webBaseURL = `http://127.0.0.1:${webPort}`;
 
 export default defineConfig({
   testDir: './e2e',
-  testMatch: 'figma-text-field-focus.spec.ts',
+  testMatch: ['figma-text-field-focus.spec.ts', 'author-application-slug.spec.ts'],
   timeout: 60_000,
   workers: 1,
   projects: [

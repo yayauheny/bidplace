@@ -27,7 +27,12 @@ import {
   ResilientRemoteImage,
   SecondaryButton,
 } from '../../components/ui';
-import { logInfrastructureError } from '../../errors';
+import {
+  applyFormFailure,
+  getUserFacingErrorMessage,
+  logInfrastructureError,
+  readFormFailure,
+} from '../../errors';
 import { getApiAssetUrl } from '../../lib/environment';
 import {
   canWritePrivateCache,
@@ -267,6 +272,34 @@ export function SellerProfileScreen() {
     mode: 'onChange',
     shouldUnregister: false,
   });
+  const profileFieldOrder = [
+    'slug',
+    'fullName',
+    'country',
+    'city',
+    'telegramUrl',
+    'instagramUrl',
+    'websiteUrl',
+    'publicEmail',
+    'discipline',
+    'practice',
+    'shortDescription',
+  ] as const;
+  const [formAlert, setFormAlert] = useState<string | null>(null);
+  const reportProfileError = (
+    error: unknown,
+    surface: string,
+    fallback = 'Не удалось сохранить профиль',
+  ) => {
+    logInfrastructureError(error, surface);
+    const failure = readFormFailure(error, profileFieldOrder);
+    if (failure.disposition === 'passthrough') {
+      setFormAlert(getUserFacingErrorMessage(error, fallback));
+      return;
+    }
+    applyFormFailure(form, failure, profileFieldOrder);
+    setFormAlert(failure.formMessage);
+  };
   const [slug, fullName, country, city, discipline, shortDescription] =
     useWatch({
       control: form.control,
@@ -365,7 +398,6 @@ export function SellerProfileScreen() {
     if (!profile) {
       if (missingProfile && !validatedEmptyProfile.current) {
         validatedEmptyProfile.current = true;
-        queueProfileDraftValidation();
       }
       return;
     }
@@ -619,7 +651,13 @@ export function SellerProfileScreen() {
       sessionOperation.current === operation &&
       canWritePrivateCache(queryClient, submitEpoch);
     try {
-      const saved = await save('revision-submit');
+      let saved;
+      try {
+        saved = await save('revision-submit');
+      } catch (error) {
+        reportProfileError(error, 'seller-profile-save');
+        return;
+      }
       if (!saved || !stillOwnsSubmit()) return;
       const submitted = await submitMutation.mutateAsync();
       if (!stillOwnsSubmit()) return;
@@ -644,7 +682,7 @@ export function SellerProfileScreen() {
       );
       await queryClient.refetchQueries({ queryKey: sellerProfileQueryKey });
     } catch (error) {
-      logInfrastructureError(error, 'seller-profile-submit');
+      reportProfileError(error, 'seller-profile-submit', 'Не удалось отправить заявку');
     } finally {
       if (sessionOperation.current === operation) {
         revisionSubmitInFlight.current = false;
@@ -669,7 +707,7 @@ export function SellerProfileScreen() {
       }
       router.push(`/profile?step=${visibleStep + 1}`);
     } catch (error) {
-      logInfrastructureError(error, 'seller-profile-step');
+      reportProfileError(error, 'seller-profile-step');
     } finally {
       if (sessionOperation.current === operation) endLockedTransition();
     }
@@ -753,7 +791,7 @@ export function SellerProfileScreen() {
         }
       } catch (error) {
         if (sessionOperation.current === operation) leaving.current = false;
-        logInfrastructureError(error, 'seller-profile-exit');
+        reportProfileError(error, 'seller-profile-exit');
         return;
       }
     }
@@ -799,7 +837,7 @@ export function SellerProfileScreen() {
         )
           return;
       } catch (error) {
-        logInfrastructureError(error, 'seller-profile-step');
+        reportProfileError(error, 'seller-profile-step');
         return;
       }
       if (sessionOperation.current !== operation) return;
@@ -1090,7 +1128,7 @@ export function SellerProfileScreen() {
                         return;
                       router.push('/profile?step=2');
                     } catch (error) {
-                      logInfrastructureError(error, 'seller-profile-step');
+                      reportProfileError(error, 'seller-profile-step');
                     } finally {
                       if (sessionOperation.current === operation)
                         endLockedTransition();
@@ -1145,7 +1183,7 @@ export function SellerProfileScreen() {
                   }
                   onPress={() =>
                     void save().catch((error) =>
-                      logInfrastructureError(error, 'seller-profile-save'),
+                      reportProfileError(error, 'seller-profile-save'),
                     )
                   }
                   label="Сохранить черновик"
@@ -1182,7 +1220,7 @@ export function SellerProfileScreen() {
                 }
                 onPress={() =>
                   void save().catch((error) =>
-                    logInfrastructureError(error, 'seller-profile-save'),
+                    reportProfileError(error, 'seller-profile-save'),
                   )
                 }
                 label="Сохранить"
@@ -1215,15 +1253,9 @@ export function SellerProfileScreen() {
                 />
               </Link>
             ) : null}
-            {saveMutation.isError ? (
-              <AppText role="bodySmall" tone="danger">
-                Не удалось сохранить профиль
-              </AppText>
-            ) : null}
-            {submitMutation.isError ? (
-              <AppText role="bodySmall" tone="danger">
-                Не удалось отправить заявку: заполните обязательные поля и
-                попробуйте снова.
+            {formAlert ? (
+              <AppText role="bodySmall" tone="danger" accessibilityLiveRegion="polite">
+                {formAlert}
               </AppText>
             ) : null}
             <AppDialog

@@ -30,7 +30,13 @@ import {
   PrimaryButton,
   SecondaryButton,
 } from '../../components/ui';
-import { isNotFoundError } from '../../errors';
+import {
+  applyFormFailure,
+  focusFirstFormError,
+  getUserFacingErrorMessage,
+  isNotFoundError,
+  readFormFailure,
+} from '../../errors';
 import { presentEnum, productStatusLabels } from '../../lib/presentation';
 import { useApiClient } from '../../providers/api-provider';
 import {
@@ -113,6 +119,17 @@ export function ProductDraftScreen({
     mode: 'onChange',
     shouldUnregister: false,
   });
+  const [formAlert, setFormAlert] = useState<string | null>(null);
+  const productFieldOrder = [
+    'categoryId',
+    'title',
+    'technique',
+    'materials',
+    'dimensions',
+    'year',
+    'uniqueness',
+    'story',
+  ] as const;
   const draftTitle = useWatch({ control: form.control, name: 'title' });
   const hydratedProductId = useRef<string | null>(null);
   const hydratedUpdatedAt = useRef<string | null>(null);
@@ -510,7 +527,10 @@ export function ProductDraftScreen({
         try {
           if (!productDraftFormSchema.safeParse(snapshot).success) {
             await form.trigger();
-            if (stillOwnsSave() && mode === 'transition') endLockedTransition();
+            if (stillOwnsSave()) {
+              focusFirstFormError(form, productFieldOrder);
+              if (mode === 'transition') endLockedTransition();
+            }
             return;
           }
           await save.mutateAsync({
@@ -520,8 +540,17 @@ export function ProductDraftScreen({
           });
           if (!stillOwnsSave()) return;
           persisted = true;
-        } catch {
-          if (stillOwnsSave() && mode === 'transition') endLockedTransition();
+        } catch (error) {
+          if (stillOwnsSave()) {
+            const failure = readFormFailure(error, productFieldOrder);
+            if (failure.disposition === 'passthrough') {
+              setFormAlert(getUserFacingErrorMessage(error, 'Не удалось сохранить предмет'));
+            } else {
+              applyFormFailure(form, failure, productFieldOrder);
+              setFormAlert(failure.formMessage);
+            }
+            if (mode === 'transition') endLockedTransition();
+          }
         } finally {
           if (sessionOperation.current === operation) releaseSave(generation);
           if (pendingSave.current === pending) pendingSave.current = null;
@@ -716,6 +745,7 @@ export function ProductDraftScreen({
     if (!productDraftFormSchema.safeParse(snapshot).success) {
       await form.trigger();
       if (sessionOperation.current !== operation) return;
+      focusFirstFormError(form, productFieldOrder);
       releaseSave(generation);
       endLockedTransition();
       return;
@@ -727,8 +757,16 @@ export function ProductDraftScreen({
         authEpoch: authEpochAtSubmit,
         generation,
       });
-    } catch {
-      // submit.isError keeps the author on this form.
+    } catch (error) {
+      if (sessionOperation.current === operation) {
+        const failure = readFormFailure(error, productFieldOrder);
+        if (failure.disposition === 'passthrough') {
+          setFormAlert(getUserFacingErrorMessage(error, 'Не удалось сохранить и отправить предмет на модерацию.'));
+        } else {
+          applyFormFailure(form, failure, productFieldOrder);
+          setFormAlert(failure.formMessage);
+        }
+      }
     } finally {
       if (sessionOperation.current === operation) {
         releaseSave(generation);
@@ -997,7 +1035,8 @@ export function ProductDraftScreen({
               categories={categories.data.categories}
               stepOneAttempted={stepOneAttempted}
               saveIsPending={save.isPending}
-              saveIsError={save.isError}
+              saveIsError={save.isError && !formAlert}
+              saveMessage={formAlert}
               onSavePress={() => void saveAbout()}
               wizardCanOpenImages={canOpenProductWizardStep(
                 productWizardStep.images,
@@ -1025,6 +1064,12 @@ export function ProductDraftScreen({
               removePending={removeImage.isPending}
               uploadPending={upload.isPending}
               uploadError={upload.isError}
+              uploadMessage={
+                upload.error
+                  ? readFormFailure(upload.error, []).formMessage ??
+                    getUserFacingErrorMessage(upload.error, 'Не удалось загрузить изображения.')
+                  : null
+              }
               imageSelectionError={imageSelectionError}
               removeOrReorderError={
                 removeImage.isError || reorderImages.isError

@@ -4,7 +4,9 @@ import { View } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
 
 import { AppText, PrimaryButton, SecondaryButton, TextField } from '../../components/ui';
-import { getErrorStatus, getUserFacingErrorMessage } from '../../errors';
+import { ApiClientError } from '@bidplace/api-client';
+
+import { getErrorStatus, getUserFacingErrorMessage, readFormFailure } from '../../errors';
 import { useApiClient } from '../../providers/api-provider';
 import { useAuth } from '../../providers/auth-provider';
 import { type SafeRedirect } from './auth-redirect';
@@ -33,6 +35,7 @@ export function VerifyEmailForm({ redirectTo, autoRequest }: VerifyEmailFormProp
   const [verifying, setVerifying] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [codeError, setCodeError] = useState<string | null>(null);
   const logoutBusy = logoutStarted.current || accountLogout.busy;
 
   const requestCode = async () => {
@@ -65,12 +68,14 @@ export function VerifyEmailForm({ redirectTo, autoRequest }: VerifyEmailFormProp
   const verify = async () => {
     if (logoutStarted.current || accountLogout.busy || verificationLock.current) return;
     if (!/^\d{6}$/.test(code)) {
-      setError('Введите шестизначный код.');
+      setCodeError('Введите шестизначный код.');
+      setError(null);
       return;
     }
     verificationLock.current = true;
     setVerifying(true);
     setError(null);
+    setCodeError(null);
     try {
       const result = await verifyEmailAndRefresh({
         code,
@@ -86,7 +91,22 @@ export function VerifyEmailForm({ redirectTo, autoRequest }: VerifyEmailFormProp
       }
       router.replace(destination as Href);
     } catch (verifyError) {
-      setError(getUserFacingErrorMessage(verifyError, 'Не удалось подтвердить email.'));
+      const failure = readFormFailure(verifyError, ['code']);
+      if (failure.fields.code) {
+        setCodeError(failure.fields.code);
+        setError(failure.formMessage);
+      } else if (failure.disposition === 'form') {
+        setError(failure.formMessage);
+      } else if (
+        verifyError instanceof ApiClientError &&
+        (verifyError.kind === 'forbidden' ||
+          verifyError.kind === 'bad_request' ||
+          verifyError.kind === 'unauthorized')
+      ) {
+        setError('Не удалось подтвердить код. Запросите новый и попробуйте ещё раз.');
+      } else {
+        setError(getUserFacingErrorMessage(verifyError, 'Не удалось подтвердить email.'));
+      }
     } finally {
       verificationLock.current = false;
       setVerifying(false);
@@ -108,13 +128,21 @@ export function VerifyEmailForm({ redirectTo, autoRequest }: VerifyEmailFormProp
         <TextField
           label="Код из письма"
           value={code}
-          onChangeText={(value) => setCode(normalizeEmailVerificationCode(value))}
+          onChangeText={(value) => {
+            setCodeError(null);
+            setCode(normalizeEmailVerificationCode(value));
+          }}
           keyboardType="number-pad"
           autoComplete="one-time-code"
           maxLength={6}
           placeholder="123456"
-          error={error ?? undefined}
+          error={codeError ?? undefined}
         />
+        {error ? (
+          <AppText role="bodySmall" tone="danger" accessibilityLiveRegion="polite">
+            {error}
+          </AppText>
+        ) : null}
         {notice ? <AppText role="bodySmall" tone="secondary">{notice}</AppText> : null}
         <PrimaryButton label="Подтвердить" width="full" loading={verifying} disabled={requesting || verifying || logoutBusy} onPress={() => void verify()} />
         <SecondaryButton label={requesting ? 'Отправляем код…' : 'Отправить код'} width="full" disabled={verifying || requesting || logoutBusy} onPress={() => void requestCode()} />
