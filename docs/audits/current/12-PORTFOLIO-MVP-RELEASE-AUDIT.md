@@ -4,6 +4,35 @@
 Проверенная release-ветка: `feature/portfolio-mvp-release`. Media implementation сохранена
 в `feature/portfolio-media-lifecycle`; integration package перенесён fast-forward.
 
+## 2026-10-06 — Step 3 requiredness survives async validation
+
+База: `0b0c24f61a766b9027ea5ce043a975d2bb0b00cb` на `fix/portfolio-media-execution`.
+
+Запись ниже о полном закрытии P2 обязательных полей шага 3 была преждевременной.
+Blur показывал «Укажите направление», но один пробел запускал `setValue` с
+`shouldValidate`, затем ручной `setError`. Асинхронный `profileDraftSchema`
+завершался позже и стирал эту ошибку, потому что неполный черновик допустим.
+Регрессия смотрела состояние до завершения resolver.
+
+Показ обязательности теперь выводится из флага «поле уже показали» и текущего
+значения без крайних пробелов. Сообщение схемы или сервера остаётся важнее.
+`profileDraftSchema` не ужесточался. Таймеры и повторный `setError` не
+добавлялись. Сброс формы и смена сессии увеличивают эпоху и очищают показ.
+Размеры, цвета и состояния `FigmaTextField` не менялись. Канонический handoff
+и `design/pen/bidplace-web-v2.pen` не менялись.
+
+| Команда | Результат |
+| --- | --- |
+| `profile-validation.spec.ts`, `seller-profile-submit.spec.ts`, `seller-profile-fields.spec.ts` | 3 files / 62 tests, exit 0. До исправления два кейса «пробел после blur» падали: ошибка становилась пустой после завершения resolver |
+| `pnpm verify` | exit 0. Первый прогон остановился на двух тестах harness без scope показа; после обёртки scope тот же `pnpm verify` завершился с exit 0. `maxWorkers: 4` в `apps/api/vitest.integration.config.ts` не менялся. Локальный PostgreSQL был доступен |
+| `pnpm build:web` | exit 0. Expo export для https://bid.place проверен |
+| field-focus + author slug, Chromium/WebKit, `--workers=1 --retries=0` | 12 passed, 45.0s, exit 0 |
+
+Полный portfolio gate и media gate в этой задаче не повторялись. Их прежние
+результаты в секции ниже остаются. Два Home Opening visual failure остаются
+согласованным post-MVP debt. Push, перенос в release и deploy не выполнялись.
+Production Worker остаётся `4b41ca7f-3eb5-4849-83f8-e045bc016cff` из `bbac1fa`.
+
 ## 2026-10-06 — Corrective wave for three review findings
 
 База: `9226a2379e1eb4d3932c3d1def7f2e7d85556521` на `fix/portfolio-media-execution`.

@@ -4,6 +4,16 @@
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
+## 2026-10-06 — Step 3 required copy after whitespace
+
+- `Partial`: the previous note that step 3 shows «Укажите направление» and
+  «Добавьте короткое описание о себе» after blur or Continue was premature for
+  whitespace. A space no longer hides that copy after async validation.
+  Deleting the text brings it back. A valid value clears only that field.
+  Reset and a session change do not carry the shown copy into the next form.
+  `FigmaTextField` sizes, colors, and states are unchanged. Chromium and WebKit
+  field checks: 12 passed, 45.0s. This is not on production yet.
+
 ## 2026-10-06 — Form error placement
 
 - `Partial`: accepted product and profile saves clear the previous save message.

@@ -1,5 +1,22 @@
 # bidplace — текущий статус проекта
 
+## 2026-10-06 — Step 3 requiredness after async validation
+
+- `Partial`: the earlier note that empty direction and short description keep
+  «Укажите направление» and «Добавьте короткое описание о себе» after blur or
+  Continue was premature. A space, or deleting the text, cleared the message
+  once the async draft resolver finished, because that resolver accepts an
+  incomplete draft. The visible required message is now derived from a reveal
+  flag and the current trimmed value. A schema or server message still wins.
+  Untouched fields stay quiet. Reset and a session change clear the reveal.
+  Whitespace discipline and short description still save. Covered by
+  `seller-profile-submit.spec.ts` and `profile-validation.spec.ts`.
+  `pnpm verify` exit 0 with the existing integration `maxWorkers: 4`.
+  `pnpm build:web` exit 0. Chromium/WebKit field and author checks: 12 passed
+  in 45.0s. Production was not updated. The live Worker is still
+  `4b41ca7f-3eb5-4849-83f8-e045bc016cff` from
+  `bbac1fa9578931c3c4b35173bd586bdebb45bfe8`.
+
 ## 2026-10-06 — Portfolio form error lifecycle
 
 - `Partial`: a failed product or profile save no longer keeps its message after
