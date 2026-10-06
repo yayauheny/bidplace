@@ -32,6 +32,7 @@ import {
   type ReadCallOptions,
   type RequestContext,
 } from './request';
+import { parseRequest } from './errors/parse-request';
 
 function moderationListQuery(query: AdminModerationListQueryInput) {
   const parsed = adminModerationListQuerySchema.parse(query);
@@ -115,7 +116,7 @@ export function createAdminClient(context: RequestContext) {
         adminSellerStatusResponseSchema,
         {
           method: 'PATCH',
-          body: adminSellerStatusUpdateRequestSchema.parse(input),
+          body: parseRequest(adminSellerStatusUpdateRequestSchema, input),
         },
       );
     },
@@ -126,12 +127,12 @@ export function createAdminClient(context: RequestContext) {
         productResponseSchema,
         {
           method: 'PATCH',
-          body: adminProductStatusUpdateRequestSchema.parse(input),
+          body: parseRequest(adminProductStatusUpdateRequestSchema, input),
         },
       );
     },
     lookupUsers(query: AdminUsersLookupQuery) {
-      const parsed = adminUsersLookupQuerySchema.parse(query);
+      const parsed = parseRequest(adminUsersLookupQuerySchema, query);
 
       return requestJson(
         context,
@@ -147,7 +148,7 @@ export function createAdminClient(context: RequestContext) {
         adminUserStatusResponseSchema,
         {
           method: 'PATCH',
-          body: adminUserStatusUpdateRequestSchema.parse(input),
+          body: parseRequest(adminUserStatusUpdateRequestSchema, input),
         },
       );
     },
@@ -158,7 +159,7 @@ export function createAdminClient(context: RequestContext) {
         adminUserStatusResponseSchema,
         {
           method: 'POST',
-          body: adminUserRevokeSessionsRequestSchema.parse(input),
+          body: parseRequest(adminUserRevokeSessionsRequestSchema, input),
         },
       );
     },

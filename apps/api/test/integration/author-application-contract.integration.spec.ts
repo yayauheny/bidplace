@@ -333,4 +333,135 @@ describe('author application HTTP contract', () => {
     expect(publicBody.author.fullName).toBe('Published Author');
     expect(publicBody.author.city).toBe('Minsk');
   });
+
+  it('returns every invalid application field and keeps profile conflicts distinct', async () => {
+    const fixture = await createPermissionFixture(prisma);
+    await prisma.user.update({
+      where: { id: fixture.buyer.id },
+      data: { emailVerifiedAt: new Date() },
+    });
+    const applicant = new HttpTestClient(http.baseUrl, 'http://localhost:8081');
+    await login(applicant, fixture.buyer.email, fixture.buyer.password);
+    const slug = `taken-${Date.now().toString(36)}`;
+
+    const invalid = await applicant.post(
+      '/seller/profile',
+      applicationForm({
+        slug: 'БЕ',
+        publicEmail: 'not-an-email',
+        websiteUrl: 'http://example.com',
+      }),
+    );
+    expect(invalid.status).toBe(400);
+    const invalidBody = (await invalid.json()) as {
+      code: string;
+      message: string;
+      requestId: string;
+      details: { fieldErrors: Record<string, string[]> };
+    };
+    expect(invalidBody.code).toBe('validation_error');
+    expect(invalidBody.message).toBe('Request validation failed');
+    expect(invalidBody.requestId).toEqual(expect.any(String));
+    expect(invalidBody.details.fieldErrors.slug?.[0]).toContain('маленькие латинские');
+    expect(invalidBody.details.fieldErrors.publicEmail).toEqual(['Введите корректный email']);
+    expect(invalidBody.details.fieldErrors.websiteUrl?.[0]).toContain('https://');
+    expect(JSON.stringify(invalidBody)).not.toContain('password123');
+
+    const partial = await applicant.post(
+      '/seller/profile',
+      applicationForm({
+        slug,
+        shortDescription: null,
+        discipline: null,
+      }),
+    );
+    expect(partial.status).toBe(201);
+
+    const again = await applicant.post('/seller/profile', applicationForm({ slug: `${slug}-2` }));
+    expect(again.status).toBe(409);
+    expect(await again.json()).toMatchObject({
+      code: 'conflict',
+      details: { reason: 'profile_exists' },
+    });
+
+    const other = await prisma.user.create({
+      data: {
+        email: `slug-taken-${Date.now()}@wave3.test`,
+        passwordHash: fixturePasswordHash,
+        displayName: 'Second author',
+        emailVerifiedAt: new Date(),
+      },
+      select: { email: true },
+    });
+    const second = new HttpTestClient(http.baseUrl, 'http://localhost:8081');
+    await login(second, other.email, 'password123');
+    const taken = await second.post('/seller/profile', applicationForm({ slug }));
+    expect(taken.status).toBe(409);
+    expect(await taken.json()).toMatchObject({
+      code: 'conflict',
+      details: { reason: 'slug_taken' },
+    });
+  });
+
+  it('rejects a product year, an achievement date, a short password, and an empty moderation reason', async () => {
+    const fixture = await createPermissionFixture(prisma);
+    const author = new HttpTestClient(http.baseUrl, 'http://localhost:8081');
+    const admin = await createAdminClient();
+    await login(author, fixture.sellers.approved.email, fixture.sellers.approved.password);
+
+    const year = await author.post('/products', {
+      title: 'Year check',
+      categoryId: fixture.categoryId,
+      year: 10000,
+    });
+    expect(year.status).toBe(400);
+    expect(((await year.json()) as { details: { fieldErrors: { year?: string[] } } }).details.fieldErrors.year).toEqual([
+      'Введите год числом от 0 до 9999',
+    ]);
+
+    const draft = await author.post('/products', {
+      title: 'Partial draft',
+      categoryId: fixture.categoryId,
+    });
+    expect(draft.status).toBe(201);
+
+    const achievement = await author.post('/author/application/achievements', (() => {
+      const form = new FormData();
+      form.set('body', 'Synthetic achievement');
+      form.set('occurredDate', JSON.stringify({ year: 2024, month: 2, day: 31 }));
+      return form;
+    })());
+    expect(achievement.status).toBe(400);
+    expect(
+      ((await achievement.json()) as { details: { fieldErrors: { occurredDate?: string[] } } }).details
+        .fieldErrors.occurredDate,
+    ).toEqual(['Укажите существующую дату']);
+
+    const password = 'short';
+    const registered = await new HttpTestClient(http.baseUrl, 'http://localhost:8081').post('/auth/register', {
+      email: `short-password-${Date.now()}@wave3.test`,
+      password,
+      displayName: 'Synthetic',
+    });
+    expect(registered.status).toBe(400);
+    const registeredBody = await registered.json();
+    expect(registeredBody).toMatchObject({
+      details: { fieldErrors: { password: ['Используйте пароль от 8 символов'] } },
+    });
+    expect(JSON.stringify(registeredBody)).not.toContain(password);
+
+    const reason = await admin.patch(
+      `/admin/seller-profiles/${fixture.sellers.pending.profileId}/status`,
+      await sellerModerationRequest(prisma, fixture.sellers.pending.profileId, 'REJECTED'),
+    );
+    expect(reason.status).toBe(400);
+    expect(((await reason.json()) as { details: { fieldErrors: { reason?: string[] } } }).details.fieldErrors.reason).toEqual([
+      'Укажите причину',
+    ]);
+    const unchanged = await prisma.sellerProfile.findUniqueOrThrow({
+      where: { id: fixture.sellers.pending.profileId },
+      select: { status: true },
+    });
+    expect(unchanged.status).toBe('PENDING_REVIEW');
+  });
 });

@@ -14,6 +14,7 @@ import {
   httpsUrlSchema,
   isoDateTimeSchema,
   slugSchema,
+  slugTextSchema,
   uuidSchema,
 } from './primitives';
 
@@ -45,9 +46,20 @@ export const sellerPublicUrlSchema = httpsUrlSchema;
 export const sellerPublicEmailSchema = z
   .string()
   .trim()
-  .email()
+  .email('Введите корректный email')
   .max(254)
   .transform((value) => value.toLowerCase());
+
+export const sellerProfileConflictDetailsSchema = z
+  .object({
+    reason: z.enum(['profile_exists', 'slug_taken']),
+  })
+  .strict();
+
+const nicknameSlugSchema = slugTextSchema('Введите никнейм');
+const authorNameSchema = z.string().trim().min(1, 'Введите имя или название');
+const authorCountrySchema = z.string().trim().min(1, 'Укажите страну');
+const authorCitySchema = z.string().trim().min(1, 'Укажите город');
 
 export const sellerProfileSchema = z
   .object({
@@ -126,10 +138,10 @@ export const publicSellerProfileSchema = sellerProfileSchema
 
 export const sellerProfileCreateRequestSchema = z
   .object({
-    slug: slugSchema,
-    fullName: z.string().trim().min(1),
-    country: z.string().trim().min(1),
-    city: z.string().trim().min(1),
+    slug: nicknameSlugSchema,
+    fullName: authorNameSchema,
+    country: authorCountrySchema,
+    city: authorCitySchema,
     discipline: sellerDisciplineSchema.optional(),
     practice: z.string().trim().min(1).nullable().optional(),
     biography: z.string().trim().min(1).nullable().optional(),
@@ -144,12 +156,12 @@ export const sellerProfileCreateRequestSchema = z
 
 export const sellerProfileUpdateRequestSchema = z
   .object({
-    slug: slugSchema.optional(),
+    slug: nicknameSlugSchema.optional(),
     sellerType: sellerTypeSchema.optional(),
     discipline: sellerDisciplineSchema.optional(),
-    fullName: z.string().trim().min(1).optional(),
-    country: z.string().trim().min(1).optional(),
-    city: z.string().trim().min(1).nullable().optional(),
+    fullName: authorNameSchema.optional(),
+    country: authorCountrySchema.optional(),
+    city: authorCitySchema.nullable().optional(),
     practice: z.string().trim().min(1).nullable().optional(),
     biography: z.string().trim().min(1).nullable().optional(),
     socialLink: sellerPublicUrlSchema.nullable().optional(),

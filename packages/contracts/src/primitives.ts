@@ -8,11 +8,17 @@ function hasMoneyPrecision(value: number): boolean {
 
 export const uuidSchema = z.string().uuid();
 export const isoDateTimeSchema = z.string().datetime();
-export const slugSchema = z
-  .string()
-  .trim()
-  .min(1)
-  .regex(/^[a-z0-9]+(?:[-_][a-z0-9]+)*$/);
+
+export const slugGrammarMessage =
+  'Используйте маленькие латинские буквы и цифры. Между ними можно поставить дефис или подчёркивание.';
+
+const slugPattern = /^[a-z0-9]+(?:[-_][a-z0-9]+)*$/;
+
+export function slugTextSchema(requiredMessage: string) {
+  return z.string().trim().min(1, requiredMessage).regex(slugPattern, slugGrammarMessage);
+}
+
+export const slugSchema = slugTextSchema(slugGrammarMessage);
 export const currencyCodeSchema = z
   .string()
   .trim()
@@ -38,14 +44,14 @@ export const httpsUrlSchema = z
         return false;
       }
     },
-    { message: 'URL must use https://' },
+    { message: 'Введите HTTPS-ссылку, начиная с https://' },
   );
 
 export const achievementOccurredDateSchema = z
   .object({
-    year: z.number().int().min(1).max(9_999),
-    month: z.number().int().min(1).max(12),
-    day: z.number().int().min(1).max(31).nullable(),
+    year: z.number().int().min(1, 'Укажите существующую дату').max(9_999, 'Укажите существующую дату'),
+    month: z.number().int().min(1, 'Укажите существующую дату').max(12, 'Укажите существующую дату'),
+    day: z.number().int().min(1, 'Укажите существующую дату').max(31, 'Укажите существующую дату').nullable(),
   })
   .strict()
   .superRefine((value, context) => {
@@ -54,7 +60,7 @@ export const achievementOccurredDateSchema = z
       context.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['day'],
-        message: 'Invalid achievement date',
+        message: 'Укажите существующую дату',
       });
     }
   });

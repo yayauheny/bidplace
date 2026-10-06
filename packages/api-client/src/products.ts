@@ -8,6 +8,7 @@ import {
   type ProductWriteRequest,
 } from '@bidplace/contracts';
 
+import { parseRequest } from './errors/parse-request';
 import { requestJson, type RequestContext } from './request';
 
 export function createProductsClient(context: RequestContext) {
@@ -15,7 +16,7 @@ export function createProductsClient(context: RequestContext) {
     create(input: ProductWriteRequest) {
       return requestJson(context, '/api/products', productResponseSchema, {
         method: 'POST',
-        body: productWriteRequestSchema.parse(input),
+        body: parseRequest(productWriteRequestSchema, input),
       });
     },
     submit(id: string) {
@@ -35,7 +36,7 @@ export function createProductsClient(context: RequestContext) {
         productResponseSchema,
         {
           method: 'PATCH',
-          body: productWriteRequestSchema.parse(input),
+          body: parseRequest(productWriteRequestSchema, input),
         },
       );
     },

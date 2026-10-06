@@ -68,7 +68,7 @@ export const adminSellerStatusUpdateRequestSchema = z
       adminSellerParentTargetSchema,
     ]),
     status: sellerModerationStatusSchema,
-    reason: z.string().trim().min(1).optional(),
+    reason: z.string().trim().min(1, 'Укажите причину').optional(),
   })
   .strict()
   .superRefine((value, context) => {
@@ -89,7 +89,7 @@ export const adminSellerStatusUpdateRequestSchema = z
       context.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['reason'],
-        message: 'reason is required for this seller status',
+        message: 'Укажите причину',
       });
     }
   });
@@ -101,7 +101,7 @@ export const adminProductStatusUpdateRequestSchema = z
       adminProductParentTargetSchema,
     ]),
     status: productModerationStatusSchema,
-    reason: z.string().trim().min(1).optional(),
+    reason: z.string().trim().min(1, 'Укажите причину').optional(),
   })
   .strict()
   .superRefine((value, context) => {
@@ -122,7 +122,7 @@ export const adminProductStatusUpdateRequestSchema = z
       context.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['reason'],
-        message: 'reason is required for this product status',
+        message: 'Укажите причину',
       });
     }
   });
@@ -131,7 +131,7 @@ export const adminUsersLookupQuerySchema = z
   .object({
     email: z
       .string()
-      .email()
+      .email('Введите корректный email')
       .transform((value) => value.trim().toLowerCase()),
   })
   .strict();
@@ -158,13 +158,13 @@ const adminUserIncidentStatusSchema = userStatusSchema.extract([
 export const adminUserStatusUpdateRequestSchema = z
   .object({
     status: adminUserIncidentStatusSchema,
-    reason: z.string().trim().min(1),
+    reason: z.string().trim().min(1, 'Укажите причину'),
   })
   .strict();
 
 export const adminUserRevokeSessionsRequestSchema = z
   .object({
-    reason: z.string().trim().min(1),
+    reason: z.string().trim().min(1, 'Укажите причину'),
   })
   .strict();
 

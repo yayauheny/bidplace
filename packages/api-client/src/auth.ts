@@ -14,6 +14,7 @@ import {
 } from '@bidplace/contracts';
 import { z } from 'zod';
 
+import { parseRequest } from './errors/parse-request';
 import { requestJson, type RequestContext } from './request';
 
 const logoutResponseSchema = z.object({
@@ -26,13 +27,13 @@ export function createAuthClient(context: RequestContext) {
     register(input: RegisterRequest) {
       return requestJson(context, '/api/auth/register', authResponseSchema, {
         method: 'POST',
-        body: registerRequestSchema.parse(input),
+        body: parseRequest(registerRequestSchema, input),
       });
     },
     login(input: LoginRequest) {
       return requestJson(context, '/api/auth/login', authResponseSchema, {
         method: 'POST',
-        body: loginRequestSchema.parse(input),
+        body: parseRequest(loginRequestSchema, input),
       });
     },
     me() {
@@ -69,7 +70,7 @@ export function createAuthClient(context: RequestContext) {
     verifyEmailVerification(input: { code: string }) {
       return requestJson(context, '/api/auth/email/verify', okResponseSchema, {
         method: 'POST',
-        body: emailOtpVerifyRequestSchema.parse(input),
+        body: parseRequest(emailOtpVerifyRequestSchema, input),
       });
     },
     forgotPassword(input: { email: string }) {
@@ -79,7 +80,7 @@ export function createAuthClient(context: RequestContext) {
         okResponseSchema,
         {
           method: 'POST',
-          body: forgotPasswordRequestSchema.parse(input),
+          body: parseRequest(forgotPasswordRequestSchema, input),
         },
       );
     },
@@ -90,7 +91,7 @@ export function createAuthClient(context: RequestContext) {
         okResponseSchema,
         {
           method: 'POST',
-          body: resetPasswordRequestSchema.parse(input),
+          body: parseRequest(resetPasswordRequestSchema, input),
         },
       );
     },

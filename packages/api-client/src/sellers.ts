@@ -8,6 +8,7 @@ import {
   type SellerProfileUpdateRequest,
 } from '@bidplace/contracts';
 
+import { parseRequest } from './errors/parse-request';
 import { requestJson, type RequestContext } from './request';
 
 export function createSellersClient(context: RequestContext) {
@@ -41,7 +42,7 @@ export function createSellersClient(context: RequestContext) {
         {
           method: 'POST',
           body: {
-            ...sellerProfileCreateRequestSchema.parse(input),
+            ...parseRequest(sellerProfileCreateRequestSchema, input),
             profilePhoto,
           },
           asFormData: true,
@@ -56,7 +57,7 @@ export function createSellersClient(context: RequestContext) {
         {
           method: 'PATCH',
           body: {
-            ...sellerProfileUpdateRequestSchema.parse(input),
+            ...parseRequest(sellerProfileUpdateRequestSchema, input),
             profilePhoto,
           },
           asFormData: true,

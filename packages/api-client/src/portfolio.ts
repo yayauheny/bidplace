@@ -27,6 +27,7 @@ import {
   type ReadCallOptions,
   type RequestContext,
 } from './request';
+import { parseRequest } from './errors/parse-request';
 
 export function createPortfolioClient(context: RequestContext) {
   return {
@@ -126,7 +127,7 @@ export function createPortfolioClient(context: RequestContext) {
         {
           method: 'POST',
           body: {
-            ...portfolioAchievementWriteRequestSchema.parse(input),
+            ...parseRequest(portfolioAchievementWriteRequestSchema, input),
             image,
           },
           asFormData: true,

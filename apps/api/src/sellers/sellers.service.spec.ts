@@ -181,6 +181,47 @@ describe('SellersService', () => {
     ).rejects.toThrow('Seller profile already exists or slug is already taken');
   });
 
+  it('reports an existing profile and a taken slug as different conflicts', async () => {
+    const input = {
+      slug: 'taken-slug',
+      fullName: 'Seller',
+      country: 'BY',
+      city: 'Minsk',
+    };
+    const photo = { buffer: Buffer.from([1]), mimeType: 'image/png' as const };
+    const existing = new SellersService(
+      {
+        sellerProfile: { findUnique: vi.fn().mockResolvedValue({ id: 'profile' }) },
+      } as never,
+      imageStore as never,
+    );
+    await expect(existing.create('user-id', input, photo)).rejects.toMatchObject({
+      response: {
+        message: 'Seller profile already exists',
+        details: { reason: 'profile_exists' },
+      },
+    });
+
+    const tx = {
+      sellerProfile: {
+        create: vi.fn().mockRejectedValue({ code: 'P2002', meta: { target: ['slug'] } }),
+      },
+    };
+    const taken = new SellersService(
+      {
+        sellerProfile: { findUnique: vi.fn().mockResolvedValue(null) },
+        $transaction: vi.fn(async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx)),
+      } as never,
+      imageStore as never,
+    );
+    await expect(taken.create('user-id', input, photo)).rejects.toMatchObject({
+      response: {
+        message: 'Seller profile slug is already taken',
+        details: { reason: 'slug_taken' },
+      },
+    });
+  });
+
   it('persists seller photo metadata and bytes in one transaction', async () => {
     const now = new Date('2026-07-24T00:00:00.000Z');
     const order: string[] = [];

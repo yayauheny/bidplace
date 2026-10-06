@@ -1,5 +1,6 @@
 import { MediaLifecycleService } from '../core/media/media-lifecycle.service';
 import {
+  ApiErrorCode,
   sellerProductDetailResponseSchema,
   sellerProductListResponseSchema,
   type PortfolioAuthorsQuery,
@@ -21,6 +22,7 @@ import { createHash } from 'node:crypto';
 
 import {
   isPrismaUniqueConstraintError,
+  prismaUniqueTargets,
   PrismaService,
   runReadCommittedTransaction,
 } from '../core/database';
@@ -107,6 +109,33 @@ function publicProfileRevisionData(input: SellerProfileUpdateRequest) {
       ? { shortDescription: input.shortDescription }
       : {}),
   };
+}
+
+function uniqueTargetNames(error: unknown): string[] {
+  return prismaUniqueTargets(error);
+}
+
+function throwSellerProfileUniqueConflict(error: unknown, unknownMessage: string): never {
+  const targets = uniqueTargetNames(error);
+  const slugTaken = targets.some((target) => /(^|_)slug($|_)/.test(target));
+  const profileExists = targets.some(
+    (target) => target === 'userId' || target.includes('user_id'),
+  );
+  if (slugTaken && !profileExists) {
+    throw new ConflictException({
+      code: ApiErrorCode.CONFLICT,
+      message: 'Seller profile slug is already taken',
+      details: { reason: 'slug_taken' },
+    });
+  }
+  if (profileExists && !slugTaken) {
+    throw new ConflictException({
+      code: ApiErrorCode.CONFLICT,
+      message: 'Seller profile already exists',
+      details: { reason: 'profile_exists' },
+    });
+  }
+  throw new ConflictException(unknownMessage);
 }
 
 @Injectable()
@@ -217,7 +246,11 @@ export class SellersService {
     });
 
     if (existing) {
-      throw new ConflictException('Seller profile already exists');
+      throw new ConflictException({
+        code: ApiErrorCode.CONFLICT,
+        message: 'Seller profile already exists',
+        details: { reason: 'profile_exists' },
+      });
     }
 
     const prepared = await this.preparePhoto(
@@ -328,7 +361,8 @@ export class SellersService {
       return toSellerProfileResponse(sellerProfile);
     } catch (error: unknown) {
       if (isPrismaUniqueConstraintError(error)) {
-        throw new ConflictException(
+        throwSellerProfileUniqueConflict(
+          error,
           'Seller profile already exists or slug is already taken',
         );
       }
@@ -485,7 +519,10 @@ export class SellersService {
         }
 
         if (error.code === 'P2002') {
-          throw new ConflictException('Seller profile slug is already taken');
+          throwSellerProfileUniqueConflict(
+            error,
+            'Seller profile could not be saved',
+          );
         }
       }
 

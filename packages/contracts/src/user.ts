@@ -19,21 +19,23 @@ export const userSchema = z
   })
   .strict();
 
-export const passwordSchema = z.string().min(8);
+export const emailAddressSchema = z.string().email('Введите корректный email');
+
+export const passwordSchema = z.string().min(8, 'Используйте пароль от 8 символов');
 
 export const registerRequestSchema = z
   .object({
-    email: z.string().email(),
+    email: emailAddressSchema,
     password: passwordSchema,
     phone: z.string().trim().min(1).nullable().optional(),
-    displayName: z.string().trim().min(1),
+    displayName: z.string().trim().min(1, 'Введите имя'),
   })
   .strict();
 
 export const loginRequestSchema = z
   .object({
-    email: z.string().email(),
-    password: z.string().min(1),
+    email: emailAddressSchema,
+    password: z.string().min(1, 'Введите пароль'),
   })
   .strict();
 

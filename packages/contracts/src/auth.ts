@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { userRoleSchema } from './enums';
 import { uuidSchema } from './primitives';
-import { passwordSchema, userSchema } from './user';
+import { emailAddressSchema, passwordSchema, userSchema } from './user';
 
 export const authResponseSchema = z
   .object({
@@ -25,12 +25,12 @@ export type AuthResponse = z.infer<typeof authResponseSchema>;
 export type AuthTokenPayload = z.infer<typeof authTokenPayloadSchema>;
 
 export const emailOtpVerifyRequestSchema = z
-  .object({ code: z.string().regex(/^\d{6}$/) })
+  .object({ code: z.string().regex(/^\d{6}$/, 'Введите шестизначный код') })
   .strict();
 
 export const forgotPasswordRequestSchema = z
   .object({
-    email: z.string().email().transform((value) => value.trim().toLowerCase()),
+    email: emailAddressSchema.transform((value) => value.trim().toLowerCase()),
   })
   .strict();
 

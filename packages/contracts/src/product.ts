@@ -111,7 +111,13 @@ export const productWriteRequestSchema = z
     materials: z.string().trim().min(1).nullable().optional(),
     dimensions: z.string().trim().min(1).nullable().optional(),
     weight: z.string().trim().min(1).nullable().optional(),
-    year: z.number().int().min(0).max(9999).nullable().optional(),
+    year: z
+      .number()
+      .int()
+      .min(0, 'Введите год числом от 0 до 9999')
+      .max(9999, 'Введите год числом от 0 до 9999')
+      .nullable()
+      .optional(),
     condition: z.string().trim().min(1).nullable().optional(),
     uniqueness: z.string().trim().min(1).nullable().optional(),
     provenance: z.string().trim().min(1).nullable().optional(),

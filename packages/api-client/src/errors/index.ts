@@ -8,6 +8,7 @@ export {
   parseApiError,
   throwApiClientResponseError,
 } from './parse';
+export { parseRequest, validationDetailsFromZod } from './parse-request';
 
 export function getApiErrorCode(error: unknown) {
   return error instanceof ApiClientError ? error.code : null;

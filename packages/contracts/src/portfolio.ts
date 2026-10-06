@@ -263,7 +263,7 @@ const portfolioAchievementOccurredDateWriteSchema = z.preprocess((value) => {
 export const portfolioAchievementWriteRequestSchema = z
   .object({
     occurredDate: portfolioAchievementOccurredDateWriteSchema,
-    body: publicText.max(4_000),
+    body: publicText.max(4_000, 'Введите описание короче 4000 символов'),
   })
   .strict();
 
