@@ -44,12 +44,14 @@ test('production deploy rejects a non-release branch without printing credential
 
 test('gate environment removes runtime and deploy credentials', () => {
   const env = gateEnvironment({
-    PATH: '/usr/bin', DATABASE_URL: canary, DATABASE_URL_UNPOOLED: canary,
-    CLOUDFLARE_API_TOKEN: canary, SERVICE_RULES_TEXT: 'approved rules', SMTP_PASSWORD: canary,
+    PATH: '/usr/bin', DATABASE_URL: canary, DATABASE_URL_UNPOOLED: canary, NEON_DIRECT_URL: canary,
+    CLOUDFLARE_API_TOKEN: canary, SERVICE_RULES_OWNER: 'bidplace',
+    SERVICE_RULES_CONTACT: 'work.evles@gmail.com', SERVICE_RULES_TEXT: 'approved rules',
+    SMTP_PASSWORD: canary,
   });
   assert.equal(env.PATH, '/usr/bin');
   assert.equal(env.CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV, 'false');
-  for (const name of [...requiredSecrets, 'DATABASE_URL_UNPOOLED', 'CLOUDFLARE_API_TOKEN', 'SERVICE_RULES_TEXT']) {
+  for (const name of [...requiredSecrets, 'DATABASE_URL_UNPOOLED', 'NEON_DIRECT_URL', 'CLOUDFLARE_API_TOKEN', 'SERVICE_RULES_OWNER', 'SERVICE_RULES_CONTACT', 'SERVICE_RULES_TEXT']) {
     assert.equal(env[name], undefined);
   }
 });
@@ -64,6 +66,7 @@ test('secrets file accepts the runtime contract and rejects unsafe files without
     [secrets({ SMTP_USERNAME: 'other-user' }), /api_token/],
     [secrets({ JWT_SECRET: canary }), /JWT_SECRET must be at least/],
     [{ ...secrets(), DATABASE_URL_UNPOOLED: canary }, /runtime contract/],
+    [{ ...secrets(), NEON_DIRECT_URL: canary }, /runtime contract/],
   ];
   for (const [payload, pattern] of cases) {
     const fixture = writeSecrets(payload);
@@ -97,17 +100,27 @@ test('secrets file accepts the runtime contract and rejects unsafe files without
   } finally { rmSync(broken.folder, { recursive: true, force: true }); }
 });
 
-test('production config receives rules text outside the checkout', () => {
-  const created = writeProductionConfig('  Approved portfolio rules.  ');
+test('production config receives service rules from the caller and keeps the checkout empty', () => {
+  const created = writeProductionConfig({
+    owner: ' bidplace ',
+    contact: ' work.evles@gmail.com ',
+    text: '  Approved portfolio rules.  ',
+  });
   try {
     const written = JSON.parse(readFileSync(created.file, 'utf8'));
+    assert.equal(written.env.production.vars.SERVICE_RULES_OWNER, 'bidplace');
+    assert.equal(written.env.production.vars.SERVICE_RULES_CONTACT, 'work.evles@gmail.com');
     assert.equal(written.env.production.vars.SERVICE_RULES_TEXT, 'Approved portfolio rules.');
     assert.equal(written.main, resolve(root, 'deploy/cloudflare/src/index.ts'));
     assert.equal(created.file.startsWith(`${root}/`), false);
     const committed = JSON.parse(readFileSync(resolve(root, 'deploy/cloudflare/wrangler.jsonc'), 'utf8'));
+    assert.equal(committed.env.production.vars.SERVICE_RULES_OWNER, '');
+    assert.equal(committed.env.production.vars.SERVICE_RULES_CONTACT, '');
     assert.equal(committed.env.production.vars.SERVICE_RULES_TEXT, '');
   } finally {
     rmSync(created.directory, { recursive: true, force: true });
   }
-  assert.throws(() => writeProductionConfig('   '), /SERVICE_RULES_TEXT is required/);
+  assert.throws(() => writeProductionConfig({ owner: '', contact: 'ops@example.invalid', text: 'rules' }), /SERVICE_RULES_OWNER is required/);
+  assert.throws(() => writeProductionConfig({ owner: 'bidplace', contact: ' ', text: 'rules' }), /SERVICE_RULES_CONTACT is required/);
+  assert.throws(() => writeProductionConfig({ owner: 'bidplace', contact: 'ops@example.invalid', text: '   ' }), /SERVICE_RULES_TEXT is required/);
 });

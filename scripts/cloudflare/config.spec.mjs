@@ -13,7 +13,7 @@ function configured(target) {
   return config;
 }
 
-test('confirmed mail settings stay fail-closed without rules text', () => {
+test('confirmed mail settings stay fail-closed without GitHub service rules', () => {
   for (const target of ['staging', 'production']) {
     const config = deploymentConfig(target);
     assert.equal(config.vars.SMTP_HOST, 'smtp.mx.cloudflare.net');
@@ -21,15 +21,21 @@ test('confirmed mail settings stay fail-closed without rules text', () => {
     assert.equal(config.vars.SMTP_SECURE, 'true');
     assert.equal(config.vars.SMTP_AUTH_MODE, 'login');
     assert.equal(config.vars.SMTP_FROM, 'noreply@bid.place');
-    assert.equal(config.vars.SERVICE_RULES_OWNER, 'work.evles@gmail.com');
-    assert.equal(config.vars.SERVICE_RULES_CONTACT, 'work.evles@gmail.com');
-    assert.equal(config.vars.SERVICE_RULES_TEXT, '');
     assert.equal(config.vars.TEST_EMAIL_BYPASS, 'false');
-    assert.throws(() => validateConfig(config), /SERVICE_RULES_TEXT/);
     const emptyFrom = deploymentConfig(target);
     emptyFrom.vars = { ...emptyFrom.vars, SMTP_FROM: '' };
     assert.throws(() => validateConfig(emptyFrom), /SMTP_FROM/);
   }
+  const staging = deploymentConfig('staging');
+  assert.equal(staging.vars.SERVICE_RULES_OWNER, 'work.evles@gmail.com');
+  assert.equal(staging.vars.SERVICE_RULES_CONTACT, 'work.evles@gmail.com');
+  assert.equal(staging.vars.SERVICE_RULES_TEXT, '');
+  assert.throws(() => validateConfig(staging), /SERVICE_RULES_TEXT/);
+  const production = deploymentConfig('production');
+  assert.equal(production.vars.SERVICE_RULES_OWNER, '');
+  assert.equal(production.vars.SERVICE_RULES_CONTACT, '');
+  assert.equal(production.vars.SERVICE_RULES_TEXT, '');
+  assert.throws(() => validateConfig(production), /SERVICE_RULES_OWNER/);
 });
 test('valid isolated staging and production contracts pass', () => {
   for (const target of ['staging', 'production']) validateConfig(configured(target));

@@ -8,7 +8,15 @@ import { configPath, deploymentConfig, root, validateConfig } from './config.mjs
 
 const RELEASE_BRANCH = 'feature/portfolio-mvp-release';
 const PRODUCTION_JWT_SECRET_MIN_LENGTH = 32;
-const GATE_ONLY_ENV = [...requiredSecrets, 'DATABASE_URL_UNPOOLED', 'CLOUDFLARE_API_TOKEN', 'SERVICE_RULES_TEXT'];
+const GATE_ONLY_ENV = [
+  ...requiredSecrets,
+  'DATABASE_URL_UNPOOLED',
+  'NEON_DIRECT_URL',
+  'CLOUDFLARE_API_TOKEN',
+  'SERVICE_RULES_OWNER',
+  'SERVICE_RULES_CONTACT',
+  'SERVICE_RULES_TEXT',
+];
 
 export function assertReleaseBranch(branch) {
   if (branch !== RELEASE_BRANCH) throw new Error('Production deploy requires the release branch');
@@ -17,6 +25,11 @@ export function assertReleaseBranch(branch) {
 export function assertRulesText(text) {
   if (typeof text !== 'string' || !text.trim()) throw new Error('SERVICE_RULES_TEXT is required');
   return text.trim();
+}
+
+export function assertRuleValue(name, value) {
+  if (typeof value !== 'string' || !value.trim()) throw new Error(`${name} is required`);
+  return value.trim();
 }
 
 export function gateEnvironment(env) {
@@ -67,9 +80,13 @@ export function assertSecretsFile(file, checkoutRoot) {
   }
 }
 
-export function writeProductionConfig(rulesText) {
-  const text = assertRulesText(rulesText);
+export function writeProductionConfig(rules) {
+  const owner = assertRuleValue('SERVICE_RULES_OWNER', rules?.owner);
+  const contact = assertRuleValue('SERVICE_RULES_CONTACT', rules?.contact);
+  const text = assertRulesText(rules?.text);
   const full = JSON.parse(readFileSync(configPath, 'utf8'));
+  full.env.production.vars.SERVICE_RULES_OWNER = owner;
+  full.env.production.vars.SERVICE_RULES_CONTACT = contact;
   full.env.production.vars.SERVICE_RULES_TEXT = text;
   validateConfig(full.env.production);
   const base = dirname(configPath);
@@ -111,11 +128,18 @@ function main() {
     if (status.trim()) throw new Error('Production deploy requires a clean release checkout');
     const secretsFile = argumentValue(args, '--secrets-file');
     if (!secretsFile) throw new Error('Production deploy requires --secrets-file');
-    assertRulesText(process.env.SERVICE_RULES_TEXT);
+    const rules = {
+      owner: process.env.SERVICE_RULES_OWNER,
+      contact: process.env.SERVICE_RULES_CONTACT,
+      text: process.env.SERVICE_RULES_TEXT,
+    };
+    assertRuleValue('SERVICE_RULES_OWNER', rules.owner);
+    assertRuleValue('SERVICE_RULES_CONTACT', rules.contact);
+    assertRulesText(rules.text);
     assertSecretsFile(secretsFile, root);
     if (!process.env.CLOUDFLARE_API_TOKEN?.trim()) throw new Error('CLOUDFLARE_API_TOKEN is required');
     const gates = gateEnvironment(process.env);
-    const { directory, file } = writeProductionConfig(process.env.SERVICE_RULES_TEXT);
+    const { directory, file } = writeProductionConfig(rules);
     try {
       execFileSync('pnpm', ['cloudflare:check'], { cwd: root, stdio: 'inherit', env: gates });
       execFileSync('node', ['scripts/cloudflare/build-web.mjs', target], { cwd: root, stdio: 'inherit', env: gates });
