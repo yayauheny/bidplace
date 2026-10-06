@@ -1,5 +1,5 @@
+import { forwardRef, useId, useState, type ComponentRef, type Ref } from 'react';
 import { Platform, Text, TextInput, View, type TextInputProps } from 'react-native';
-import { useState } from 'react';
 
 import { figmaTokens } from '@bidplace/design-tokens';
 
@@ -21,7 +21,17 @@ type FigmaTextFieldProps = Omit<TextInputProps, 'editable'> & {
   icon?: FigmaIconName;
 };
 
-export function FigmaTextField({
+type FieldInputProps = TextInputProps & {
+  dataSet?: Record<string, string>;
+  ref?: Ref<ComponentRef<typeof TextInput>>;
+};
+
+/** react-native-web sets data-* from dataSet. The React Native TextInput types omit that prop. */
+function FieldInput(props: FieldInputProps) {
+  return <TextInput {...(props as TextInputProps)} />;
+}
+
+export const FigmaTextField = forwardRef<TextInput, FigmaTextFieldProps>(function FigmaTextField({
   label,
   error,
   success = false,
@@ -36,7 +46,8 @@ export function FigmaTextField({
   onBlur,
   style: inputStyle,
   ...props
-}: FigmaTextFieldProps) {
+}, ref) {
+  const errorId = useId();
   const [focused, setFocused] = useState(false);
   const [hovered, setHovered] = useState(false);
   const [uncontrolledFilled, setUncontrolledFilled] = useState(
@@ -60,20 +71,24 @@ export function FigmaTextField({
       <View style={figmaFieldStyle(status, multiline)}>
         {icon ? (
           <View style={{ padding: figmaTokens.space.iconPad }}>
-            <FigmaIcon name={icon} color={valueColor} />
+            <FigmaIcon name={icon} color={figmaTokens.color.fieldValue} />
           </View>
         ) : null}
-        <TextInput
+        <FieldInput
           {...props}
+          ref={ref}
           value={value}
           defaultValue={defaultValue}
           editable={!disabled}
           accessibilityLabel={label}
           accessibilityHint={error ? `Ошибка: ${error}` : props.accessibilityHint}
           accessibilityState={{ disabled }}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? errorId : undefined}
           placeholder={showLabel ? undefined : (placeholder ?? label)}
           placeholderTextColor={figmaTokens.color.muted}
           multiline={multiline}
+          dataSet={Platform.OS === 'web' ? { figmaField: 'true' } : undefined}
           onChangeText={(nextValue) => {
             if (value === undefined) {
               setUncontrolledFilled(nextValue.length > 0);
@@ -91,6 +106,7 @@ export function FigmaTextField({
           style={[
             {
               flex: 1,
+              minWidth: 0,
               color: valueColor,
               padding: 0,
               textAlignVertical: multiline ? 'top' : 'center',
@@ -105,15 +121,15 @@ export function FigmaTextField({
             pointerEvents="none"
             style={{
               position: 'absolute',
-              left: 15,
-              top: -10,
+              left: figmaTokens.space.fieldLabelX,
+              top: figmaTokens.space.fieldLabelY,
               paddingHorizontal: 4,
               backgroundColor: figmaTokens.color.canvas,
             }}
           >
             <Text
               style={{
-                color: figmaTokens.color.ink,
+                color: figmaTokens.color.fieldLabel,
                 ...figmaTokens.typography.fieldLabel,
               }}
             >
@@ -124,10 +140,12 @@ export function FigmaTextField({
       </View>
       {error ? (
         <Text
+          nativeID={errorId}
           accessibilityLiveRegion="polite"
           style={{
             marginTop: figmaTokens.space.fieldErrorGap,
-            marginLeft: 13,
+            marginLeft: figmaTokens.space.fieldErrorX,
+            marginRight: figmaTokens.space.fieldX,
             color: figmaTokens.color.error,
             ...figmaTokens.typography.fieldError,
           }}
@@ -150,4 +168,4 @@ export function FigmaTextField({
       {field}
     </View>
   );
-}
+});

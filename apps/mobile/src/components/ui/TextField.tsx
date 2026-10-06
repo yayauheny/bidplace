@@ -1,5 +1,5 @@
-import type { TextInputProps } from 'react-native';
-import { View } from 'react-native';
+import { forwardRef } from 'react';
+import { View, type TextInput, type TextInputProps } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
@@ -13,14 +13,14 @@ export type TextFieldProps = TextInputProps & {
   required?: boolean;
 };
 
-export function TextField({
+export const TextField = forwardRef<TextInput, TextFieldProps>(function TextField({
   label,
   hint,
   error,
   required,
   editable = true,
   ...props
-}: TextFieldProps) {
+}, ref) {
   return (
     <View style={{ gap: designTokens.space.x2, width: '100%' }}>
       {hint ? (
@@ -30,10 +30,11 @@ export function TextField({
       ) : null}
       <FigmaTextField
         {...props}
+        ref={ref}
         label={required ? `${label} *` : label}
         error={error}
         disabled={editable === false}
       />
     </View>
   );
-}
+});

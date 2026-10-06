@@ -47,7 +47,7 @@ export function figmaFieldStyle(
     paddingHorizontal: figmaTokens.space.fieldX,
     paddingVertical: figmaTokens.space.fieldY,
     borderRadius: figmaTokens.radius.field,
-    borderWidth: 1,
+    borderWidth: figmaTokens.size.fieldBorder,
     borderColor: fieldBorder(status),
     backgroundColor: fieldFill(status),
     flexDirection: 'row' as const,
@@ -66,7 +66,7 @@ export function figmaFieldValueColor(status: FigmaFieldStatus) {
   if (status === 'empty' || status === 'hoverEmpty') {
     return figmaTokens.color.muted;
   }
-  return figmaTokens.color.ink;
+  return figmaTokens.color.fieldValue;
 }
 
 function fieldBorder(status: FigmaFieldStatus) {

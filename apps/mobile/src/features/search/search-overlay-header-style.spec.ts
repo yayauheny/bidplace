@@ -16,7 +16,7 @@ describe('search overlay header style', () => {
       gap: figmaTokens.space.x3,
     });
     expect(searchOverlayFieldChromeStyle()).toMatchObject({
-      height: figmaTokens.size.input,
+      height: 52,
       padding: figmaTokens.space.x2,
       gap: figmaTokens.space.x2,
       backgroundColor: figmaTokens.color.canvas,
@@ -29,8 +29,8 @@ describe('search overlay header style', () => {
       height: figmaTokens.size.control,
     });
     expect(searchOverlayCloseStyle()).toMatchObject({
-      width: figmaTokens.size.input,
-      height: figmaTokens.size.input,
+      width: 52,
+      height: 52,
       backgroundColor: figmaTokens.color.canvas,
       borderWidth: 0.5,
       borderColor: figmaTokens.color.border,

@@ -1,5 +1,8 @@
 import { figmaTokens } from '@bidplace/design-tokens';
 
+/** Stadium search control. It is not the form field, so it keeps its own size and type. */
+const searchControlSize = 52;
+
 export function searchOverlayFieldRowStyle() {
   return {
     width: '100%' as const,
@@ -13,7 +16,7 @@ export function searchOverlayFieldChromeStyle() {
   return {
     flex: 1,
     minWidth: 0,
-    height: figmaTokens.size.input,
+    height: searchControlSize,
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
     gap: figmaTokens.space.x2,
@@ -45,6 +48,7 @@ export function searchOverlayFieldInputStyle() {
     color: figmaTokens.color.ink,
     backgroundColor: 'transparent',
     ...figmaTokens.typography.field,
+    fontSize: 16,
     lineHeight: 19,
     letterSpacing: -0.16,
   };
@@ -52,8 +56,8 @@ export function searchOverlayFieldInputStyle() {
 
 export function searchOverlayCloseStyle() {
   return {
-    width: figmaTokens.size.input,
-    height: figmaTokens.size.input,
+    width: searchControlSize,
+    height: searchControlSize,
     borderRadius: figmaTokens.radius.dock,
     backgroundColor: figmaTokens.color.canvas,
     borderWidth: 0.5,

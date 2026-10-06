@@ -26,6 +26,11 @@ textarea:focus-visible,
   outline-offset: 2px;
 }
 
+[data-figma-field='true']:focus,
+[data-figma-field='true']:focus-visible {
+  outline: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

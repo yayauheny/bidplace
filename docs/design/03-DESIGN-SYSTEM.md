@@ -428,14 +428,45 @@ shell, not the anonymous wrapper. Catalog `/authors` radius stays 28. No
 work price/timer/status. The 366 wrapper does not clip (`clipsContent: false`);
 page width stays 390.
 
-## 6.2 Field focus
+## 6.2 Shared text field
 
-`FigmaTextField` draws focus, error, and disabled with the shell border.
-On web, the control inside that shell suppresses the browser outline so the
+Source: founder export `design/figma-handoff/fields/2026-10-06-text-fields`
+(root `292:5044`, captured 2026-10-06). The board is 789×552. The reference
+field width is 366 px and is not a fixed screen width. One `FigmaTextField`
+and `FigmaFieldStatus` draw all eight states. `size.input` is 51, radius 18,
+inside border `size.fieldBorder` 0.5, padding 12×13, gap 4. Input is
+`typography.field` Inter 400 14/24. Entered text is `color.fieldValue`
+`#121212`. Placeholder and the empty border use `color.muted` `#8A8A8A`.
+`color.ink` stays `#2A2A2A` and is the filled border. The stadium search
+control keeps its own 52 px height and 16/19 type.
+
+| State | Node | Border | Fill |
+| --- | --- | --- | --- |
+| empty | `292:5043` | `#8A8A8A` | `#FFFFFF` |
+| hoverEmpty | `292:5041` | `fieldHoverBorder` `#535353` | `fieldHoverFill` `#FCFCFC` |
+| filled | `292:5038` | `ink` `#2A2A2A` | `#FFFFFF` |
+| hoverFilled | `292:5039` | `solidHover` `#000000` | `#FCFCFC` |
+| focus | `292:5037` | `focus` `#004DFF` | `#FFFFFF` |
+| error | `292:5040` | `error` `#FF0000` | `#FFFFFF` |
+| success | `292:5036` | `success` `#039600` | `#FFFFFF` |
+| disabled | `292:5042` | `#8A8A8A` | `mutedFill` `#F3F3F3` |
+
+The floating label is `typography.fieldLabel` Inter 400 12, `color.fieldLabel`
+`#999999`. Its wrapper is `fieldLabelX` 15 and `fieldLabelY` −8, with 4 px
+horizontal padding and a canvas backing. It is absent for empty and disabled.
+The captured label box height is not a line-height. Error text is
+`typography.fieldError` Inter 400 12, `color.error`, in normal flow:
+`fieldErrorGap` 4 below the shell and `fieldErrorX` 13 from the left. The
+captured 15 px text box is not a line-height. An error keeps the gray label
+and the ordinary value color. Focus on an error field stays red. Success is
+not implied by a filled value. Disabled still blocks input. An icon is drawn
+only when the field is given one: 22×22 wrapper, 2 px padding, vector
+`#121212`.
+
+On web, `[data-figma-field='true']` suppresses the browser outline so the
 shell stays the only ring. `apps/mobile/global.css` still draws
 `input:focus-visible`, `textarea:focus-visible`, and
 `[role='textbox']:focus-visible` for controls outside that component.
-Click and Tab still move focus and change the shell border.
 
 ## 7. Old system boundary
 
