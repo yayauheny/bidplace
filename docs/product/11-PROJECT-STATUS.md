@@ -18,13 +18,18 @@
   text already stored in `prod` for this launch. The text is not copied into
   the repository. An empty rules variable still stops the deploy. Secret
   values were not read.
-- `Partial`: the manual workflow, the rules injection, and the pre-migration
-  endpoint check are local. Production `neondb` has 0 public tables, so
-  there is no user data to back up. Endpoint
-  `ep-withered-shadow-b230htte` is the production compute. Nothing has been
-  pushed, migrated, or deployed yet. `pnpm cloudflare:check` passed after
-  the injection. The production SPA build verified `https://bid.place`.
-  Image verify passed on a disposable local database.
+- `Partial`: the rules package
+  `0b4987f8c0f0271bba11633006cc6607c1524708` is on
+  `origin/feature/portfolio-mvp-release` by fast-forward, with this status
+  note committed after it. `origin/main` is
+  `5a052ad18bc06f4ed856870a9450dcb4408d4679` and contains only the same
+  production workflow file; the default branch was not changed. Production
+  `neondb` has 0 public tables, so there is no user data to back up.
+  Endpoint `ep-withered-shadow-b230htte` is the production compute.
+  `pnpm cloudflare:check`, the production SPA build for `https://bid.place`,
+  and image verify on a disposable local database passed. The GitHub CLI is
+  not authenticated, so the production workflow has not been dispatched.
+  Migration and deploy have not run.
 
 ## 2026-10-05 — Cloudflare resources started, not deployed
 

@@ -1069,5 +1069,26 @@ hostname present. Secret values were not read.
 `pnpm cloudflare:check` passed after the injection (tsc, eslint, vitest 26,
 node tests 12). `pnpm build:web` verified `https://bid.place`.
 `pnpm cloudflare:image:verify` passed on a disposable local database. These
-gates are not a production migration or a live smoke. Push, migration, and
-deploy have not started.
+gates are not a production migration or a live smoke.
+
+## 2026-10-06 — Release pushed, deploy blocked on GitHub auth
+
+The rules package `0b4987f8c0f0271bba11633006cc6607c1524708` was
+fast-forwarded onto `feature/portfolio-mvp-release` from
+`507bb5b422878a38099b70ce7bfd9a59e9c16189` and pushed without force. This
+note is the following docs commit on that branch.
+`origin/main` received only `.github/workflows/production-deploy.yml` as
+`5a052ad18bc06f4ed856870a9450dcb4408d4679`, parent
+`08b916eb7774ea1d98657202f923b98f91b6d344`. The default branch setting was
+not changed. The workflow file on `main` matches the release copy. Two local
+`main` commits that are not on the remote were left unpushed.
+
+Production `neondb` still has 0 public tables. No dump was taken. No Neon
+branch, reset, `db push`, or seed was run.
+
+`gh auth status` reports no GitHub host login. `GH_TOKEN` is unset, and no
+local GitHub CLI credential is stored. Git push used SSH, which cannot
+dispatch Actions. The Production deploy workflow was not started. Migration
+and the Worker deploy have not run. Live smoke has not started. The operator
+must run `gh auth login` in a local terminal before the workflow can be
+dispatched with Environment `prod` and `confirm_migration=migrate-production`.
