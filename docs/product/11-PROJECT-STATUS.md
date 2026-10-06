@@ -1,14 +1,31 @@
 # bidplace — текущий статус проекта
 
-## 2026-10-06 — Shared field focus ring is local, not deployed
+## 2026-10-06 — First admin is not assigned
 
-- `Implemented` locally: `FigmaTextField` suppresses only its own web outline.
-  The shell border remains the focus, error, and disabled indicator. Global
-  focus outlines stay in `apps/mobile/global.css`. Auth logic is unchanged.
-  Chromium and WebKit passed 10 checks, including click, Tab, a synthetic
-  verification value, validation error, and locked single-line and multiline
-  fields. Production Worker `08ecae5a-8bce-4be4-8c13-5f00dd36eb47` does not
-  include this change.
+- `Needs verification`: `work.evles@gmail.com` is not in production `neondb`.
+  The smoke account stays `user`, `active`, email verified, seller
+  `mvp-smoke` `PENDING_REVIEW`. A second account,
+  `starosvetskayavarvara@gmail.com`, is also `user` and email verified.
+  Admins: 0. No seed, password change, email confirmation, or role update
+  was run. The first admin update is prepared only for
+  `work.evles@gmail.com` after that account exists, the email is verified
+  through the product, and the operator confirms the update.
+
+## 2026-10-06 — Field focus is deployed, empty Home stays the quiet state
+
+- `Implemented`: release `bbac1fa9578931c3c4b35173bd586bdebb45bfe8` is
+  deployed from `feature/portfolio-mvp-release` by
+  [Production deploy run 37485616958](https://github.com/yayauheny/bidplace/actions/runs/37485616958).
+  Worker version `4b41ca7f-3eb5-4849-83f8-e045bc016cff`. No migration ran.
+  `FigmaTextField` suppresses only its own web outline. Live Chromium and
+  WebKit on `/login` show one shell border `rgb(0, 77, 255)` for click and
+  Tab, with `outline-style: none`.
+- `Implemented` for the empty public Home: `/api/portfolio/home` returns
+  200 `curatorSelection: null`, `newWorks: []`, `newAuthors: []`. The page
+  shows «Пока здесь тихо». The same response held on the first open, a
+  reload, and the first open after the Container sleep window. No catalog
+  rows were added. Anonymous `GET /api/auth/me` remains 401 and does not
+  replace the Home screen.
 
 ## 2026-10-06 — Production deploy is live, smoke is partial
 

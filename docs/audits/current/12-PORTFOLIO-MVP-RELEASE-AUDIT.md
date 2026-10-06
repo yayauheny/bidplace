@@ -1143,6 +1143,67 @@ Disabled still uses the muted shell. Auth logic and tokens did not change.
 Verification used synthetic input `123` and a mocked pending author profile.
 No mailbox code or confirmation screenshot was added. Chromium and WebKit,
 `apps/mobile/playwright.field-focus.config.ts`: 10 passed. That run starts
-only the web app and does not reset a database. The live Worker remains
-`08ecae5a-8bce-4be4-8c13-5f00dd36eb47` from `814295a`; this fix is not
-deployed.
+only the web app and does not reset a database.
+
+## 2026-10-06 — Empty Home requests, then the outline deploy
+
+Anonymous production Home was opened before this deploy. `/api/portfolio/home`
+returned 200 with `curatorSelection: null`, `newWorks: []`, and
+`newAuthors: []`. The screen showed «Пока здесь тихо», not an infrastructure
+error. The same page returned on reload. After the Container had been idle
+long enough to sleep, the first Home request still returned that 200 payload
+in 2549 ms, and the reload returned it in 58 ms. No works or authors were
+inserted. The only non-200 request on that screen is anonymous
+`GET /api/auth/me`, 401 `Invalid bearer token`, which is the session probe
+when no cookie is present. It does not replace Home. Auth behavior was not
+changed.
+
+The outline fix was then fast-forwarded to `feature/portfolio-mvp-release`
+as `bbac1fa9578931c3c4b35173bd586bdebb45bfe8` and deployed without a
+migration.
+
+Run: https://github.com/yayauheny/bidplace/actions/runs/37485616958
+Conclusion: success. Worker version `4b41ca7f-3eb5-4849-83f8-e045bc016cff`.
+Custom domain `bid.place`. The previous version was
+`08ecae5a-8bce-4be4-8c13-5f00dd36eb47`.
+
+After deploy, Chromium and WebKit loaded
+`/_expo/static/js/web/entry-28f163b6e1f26a44d32fff58bfda9b37.js`. Home again
+showed the quiet empty state from the same 200 payload. On `/login`, click
+and Tab focused Email and Password with `outline-style: none`,
+`outline-width: 0px`, and shell border `rgb(0, 77, 255)`. No second ring.
+
+## 2026-10-06 — First admin check, role unchanged
+
+The smoke account stays a normal user. Production read:
+
+- `work.evles+mvp-smoke@gmail.com`: exists, `active`, `user`, email
+  verified, seller `mvp-smoke` `PENDING_REVIEW`.
+- `work.evles@gmail.com`: no account.
+- `starosvetskayavarvara@gmail.com`: exists, `active`, `user`, email
+  verified. Not an admin target.
+- Accounts: 2. Admins: 0.
+
+No seed, password change, database email confirmation, or role update ran.
+The only prepared change, still not executed, is one update after the
+operator registers `work.evles@gmail.com`, confirms that email in the
+product, and explicitly confirms the role change:
+
+```sql
+UPDATE users
+SET role = 'admin', updated_at = now()
+WHERE lower(email) = 'work.evles@gmail.com'
+  AND role = 'user'
+  AND status = 'active'
+  AND email_verified_at IS NOT NULL
+  AND (SELECT count(*) FROM users WHERE role = 'admin') = 0
+RETURNING email, role, status;
+```
+
+Zero returned rows means stop. The bearer guard reads `role` from the
+database, so a later admin session can moderate without a password change.
+Work creation stays on the smoke author session.
+
+One unused smoke password-reset token existed at this check, expiring
+`2026-10-06T15:08:47Z`. Requesting the letter does not finish the reset
+scenario. The link was not opened, and the password was not changed.

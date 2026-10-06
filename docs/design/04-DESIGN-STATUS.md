@@ -6,7 +6,7 @@
 
 ## 2026-10-06 — Shared field focus ring
 
-- `Implemented` (local, not deployed): `FigmaTextField` no longer stacks the
+- `Implemented`: `FigmaTextField` no longer stacks the
   browser outline on its own shell border. Click and Tab still show the outer
   focus border. Error stays red, disabled stays muted, and the global
   `input:focus-visible` rule remains for other controls.
@@ -14,7 +14,9 @@
   Covered login fields, a synthetic three-digit verification value, a login
   validation error, and a pending author profile's locked nickname and
   multiline description. No production confirmation code was stored.
-- Full visual acceptance and the live production Worker are unchanged.
+- Live Chromium and WebKit on `https://bid.place/login` show one shell
+  border for click and Tab. Worker version
+  `4b41ca7f-3eb5-4849-83f8-e045bc016cff`. Full visual acceptance is unchanged.
 
 ## 2026-10-04 — Work delivery states and FULL viewer
 
