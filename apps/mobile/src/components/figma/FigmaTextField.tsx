@@ -6,6 +6,7 @@ import { figmaTokens } from '@bidplace/design-tokens';
 import { FigmaIcon } from './FigmaIcon';
 import { type FigmaIconName } from './figma-icon-names';
 import {
+  figmaFieldNativeOutlineStyle,
   figmaFieldShowsFloatingLabel,
   figmaFieldStatus,
   figmaFieldStyle,
@@ -94,6 +95,7 @@ export function FigmaTextField({
               padding: 0,
               textAlignVertical: multiline ? 'top' : 'center',
               ...figmaTokens.typography.field,
+              ...(Platform.OS === 'web' ? (figmaFieldNativeOutlineStyle as object) : null),
             },
             inputStyle,
           ]}

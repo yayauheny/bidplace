@@ -428,6 +428,15 @@ shell, not the anonymous wrapper. Catalog `/authors` radius stays 28. No
 work price/timer/status. The 366 wrapper does not clip (`clipsContent: false`);
 page width stays 390.
 
+## 6.2 Field focus
+
+`FigmaTextField` draws focus, error, and disabled with the shell border.
+On web, the control inside that shell suppresses the browser outline so the
+shell stays the only ring. `apps/mobile/global.css` still draws
+`input:focus-visible`, `textarea:focus-visible`, and
+`[role='textbox']:focus-visible` for controls outside that component.
+Click and Tab still move focus and change the shell border.
+
 ## 7. Old system boundary
 
 `docs/modern-ui` and its design language are retired. Runtime public screens

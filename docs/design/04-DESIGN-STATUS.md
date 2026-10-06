@@ -1,8 +1,20 @@
 # bidplace — статус дизайна и UI-реализации
 
-Последнее обновление: 2026-10-04
+Последнее обновление: 2026-10-06
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
+
+## 2026-10-06 — Shared field focus ring
+
+- `Implemented` (local, not deployed): `FigmaTextField` no longer stacks the
+  browser outline on its own shell border. Click and Tab still show the outer
+  focus border. Error stays red, disabled stays muted, and the global
+  `input:focus-visible` rule remains for other controls.
+- Chromium and WebKit: 10 passed in `playwright.field-focus.config.ts`.
+  Covered login fields, a synthetic three-digit verification value, a login
+  validation error, and a pending author profile's locked nickname and
+  multiline description. No production confirmation code was stored.
+- Full visual acceptance and the live production Worker are unchanged.
 
 ## 2026-10-04 — Work delivery states and FULL viewer
 

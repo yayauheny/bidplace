@@ -1124,3 +1124,25 @@ Author profile `mvp-smoke` was created and submitted. Seller status is
 `PENDING_REVIEW`. Work creation is blocked until that profile is approved.
 Users: 1. Admins: 0. Production seed was not run. Upload, moderation,
 publish, and revoke are not done.
+
+## 2026-10-06 — Double field outline on verification
+
+Production `/verify-email` showed two blue rings on the code field. The outer
+ring is the `FigmaTextField` shell (`figmaTokens.color.focus`, `#004DFF`).
+The inner ring is `apps/mobile/global.css`: `input:focus-visible`,
+`textarea:focus-visible`, and `[role='textbox']:focus-visible` use
+`outline: var(--bidplace-focus) solid 2px` with a 2px offset. The same pair
+appears on other shared fields, including a focused error field, because the
+shell turns red while the browser outline stays blue.
+
+The global rule was left in place. `FigmaTextField` now sets `outlineStyle:
+none` and `outlineWidth: 0` only on its own web control. Click and Tab still
+set focus, and the shell border stays visible. Error still wins over focus.
+Disabled still uses the muted shell. Auth logic and tokens did not change.
+
+Verification used synthetic input `123` and a mocked pending author profile.
+No mailbox code or confirmation screenshot was added. Chromium and WebKit,
+`apps/mobile/playwright.field-focus.config.ts`: 10 passed. That run starts
+only the web app and does not reset a database. The live Worker remains
+`08ecae5a-8bce-4be4-8c13-5f00dd36eb47` from `814295a`; this fix is not
+deployed.

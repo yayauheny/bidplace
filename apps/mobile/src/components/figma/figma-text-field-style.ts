@@ -56,6 +56,12 @@ export function figmaFieldStyle(
   };
 }
 
+/** The field shell draws focus, error, and disabled borders. The native control must not add a second ring. */
+export const figmaFieldNativeOutlineStyle = {
+  outlineStyle: 'none' as const,
+  outlineWidth: 0,
+};
+
 export function figmaFieldValueColor(status: FigmaFieldStatus) {
   if (status === 'empty' || status === 'hoverEmpty') {
     return figmaTokens.color.muted;

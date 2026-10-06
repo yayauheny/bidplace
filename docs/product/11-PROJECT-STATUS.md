@@ -1,5 +1,15 @@
 # bidplace — текущий статус проекта
 
+## 2026-10-06 — Shared field focus ring is local, not deployed
+
+- `Implemented` locally: `FigmaTextField` suppresses only its own web outline.
+  The shell border remains the focus, error, and disabled indicator. Global
+  focus outlines stay in `apps/mobile/global.css`. Auth logic is unchanged.
+  Chromium and WebKit passed 10 checks, including click, Tab, a synthetic
+  verification value, validation error, and locked single-line and multiline
+  fields. Production Worker `08ecae5a-8bce-4be4-8c13-5f00dd36eb47` does not
+  include this change.
+
 ## 2026-10-06 — Production deploy is live, smoke is partial
 
 - `Partial`: release `814295a78fc90807450c571f9a8ae8346fc70427` is deployed

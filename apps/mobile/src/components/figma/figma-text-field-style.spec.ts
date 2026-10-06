@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { figmaTokens } from '@bidplace/design-tokens';
 
 import {
+  figmaFieldNativeOutlineStyle,
   figmaFieldShowsFloatingLabel,
   figmaFieldStatus,
   figmaFieldStyle,
@@ -48,6 +49,26 @@ describe('Figma text field states', () => {
     expect(status).toBe('focus');
     expect(figmaFieldShowsFloatingLabel(status)).toBe(true);
     expect(figmaFieldStyle(status).borderColor).toBe(figmaTokens.color.focus);
+  });
+
+  it('keeps the shell border as the only focus ring', () => {
+    expect(figmaFieldNativeOutlineStyle).toEqual({
+      outlineStyle: 'none',
+      outlineWidth: 0,
+    });
+    expect(
+      figmaFieldStyle(
+        figmaFieldStatus({
+          disabled: false,
+          error: true,
+          success: false,
+          focused: true,
+          hovered: false,
+          filled: true,
+        }),
+      ).borderColor,
+    ).toBe(figmaTokens.color.error);
+    expect(figmaFieldStyle('disabled').borderColor).toBe(figmaTokens.color.muted);
   });
 
   it('keeps error above success and shows helper-ready status', () => {
