@@ -209,7 +209,14 @@ describe('PasswordResetService', () => {
   });
 
   it('deletes the token but still completes when mail delivery fails', async () => {
-    vi.mocked(mail.send).mockRejectedValueOnce(new Error('smtp down'));
+    const marker = 'smtp-secret-marker';
+    const failure = new Error(`delivery ${marker}`);
+    failure.stack = [
+      failure.toString(),
+      `    at SMTPConnection.send (/tmp/${marker}.js:4:2)`,
+      '    at MailTransport.send (/app/dist/core/mail/smtp-transport.js:40:8)',
+    ].join('\n');
+    vi.mocked(mail.send).mockRejectedValueOnce(failure);
 
     const tx = {
       passwordResetToken: {
@@ -234,13 +241,26 @@ describe('PasswordResetService', () => {
       ),
     };
 
-    await expect(
-      createService(prisma).requestReset('user@example.com'),
-    ).resolves.toBeUndefined();
+    const service = createService(prisma);
+    const loggerError = vi
+      .spyOn(
+        (service as unknown as { logger: { error: (...args: unknown[]) => void } })
+          .logger,
+        'error',
+      )
+      .mockImplementation(() => undefined);
+
+    await expect(service.requestReset('user@example.com')).resolves.toBeUndefined();
 
     expect(prisma.passwordResetToken.delete).toHaveBeenCalledWith({
       where: { id: 'token-1' },
     });
+    expect(loggerError).toHaveBeenCalledOnce();
+    const logged = JSON.stringify(loggerError.mock.calls);
+    expect(logged).toContain('Password reset email delivery failed; token removed');
+    expect(logged).toContain('at=dist/core/mail/smtp-transport.js:40');
+    expect(logged).not.toContain(marker);
+    loggerError.mockRestore();
   });
 
   it('rejects expired tokens with PASSWORD_RESET_INVALID', async () => {

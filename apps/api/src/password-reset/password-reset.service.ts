@@ -12,6 +12,7 @@ import { PrismaService } from '../core/database';
 import { AppException } from '../core/errors';
 import { MailTransport } from '../core/mail';
 import { RateLimitService } from '../core/rate-limit';
+import { safeFailureLocation } from '../core/request-context/safe-request-log';
 import { buildPasswordResetLink } from './password-reset-link';
 
 const TOKEN_TTL_MS = 60 * 60 * 1000;
@@ -122,9 +123,11 @@ export class PasswordResetService {
       });
     } catch (error) {
       await this.prisma.passwordResetToken.delete({ where: { id: record.id } });
+      const location = safeFailureLocation(error);
       this.logger.error(
-        'Password reset email delivery failed; token removed',
-        error instanceof Error ? error.stack : undefined,
+        location
+          ? `Password reset email delivery failed; token removed at=${location}`
+          : 'Password reset email delivery failed; token removed',
       );
     }
   }

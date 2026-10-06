@@ -1,5 +1,15 @@
 # bidplace — текущий статус проекта
 
+## 2026-10-07 — Password-reset mail failure log
+
+- `Implemented` locally: a failed password-reset delivery still deletes the
+  new token and completes the request. The log keeps
+  `Password reset email delivery failed; token removed` and may add a short
+  `safeFailureLocation`. The SMTP message and raw stack are not logged.
+  Covered by `password-reset.service.spec.ts`. Other runtime `logger.error`
+  calls already use a fixed line or the sanitized 5xx logger.
+- `Needs verification` for production. This commit is not deployed.
+
 ## 2026-10-07 — Failure location ignores message text
 
 - `Implemented` locally for the 5xx failure site. `safeFailureLocation` drops
