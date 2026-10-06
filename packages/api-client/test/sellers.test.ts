@@ -24,22 +24,27 @@ describe('seller profile create', () => {
     expect(() =>
       client(fetchImpl).createProfile({ ...profile, slug: 'БЕ' }, photo),
     ).toThrow(ApiClientError);
-    try {
-      client(fetchImpl).createProfile(
-        { ...profile, slug: 'BE', publicEmail: 'not-an-email' },
-        photo,
-      );
-    } catch (error) {
-      expect(error).toBeInstanceOf(ApiClientError);
-      expect((error as ApiClientError).details).toMatchObject({
-        fieldErrors: {
-          slug: [
-            'Используйте маленькие латинские буквы и цифры. Между ними можно поставить дефис или подчёркивание.',
-          ],
-          publicEmail: ['Введите корректный email'],
-        },
-      });
-    }
+    let rejected: unknown;
+    expect(() => {
+      try {
+        client(fetchImpl).createProfile(
+          { ...profile, slug: 'BE', publicEmail: 'not-an-email' },
+          photo,
+        );
+      } catch (error) {
+        rejected = error;
+        throw error;
+      }
+    }).toThrow(ApiClientError);
+    expect(rejected).toBeInstanceOf(ApiClientError);
+    expect((rejected as ApiClientError).details).toMatchObject({
+      fieldErrors: {
+        slug: [
+          'Используйте маленькие латинские буквы и цифры. Между ними можно поставить дефис или подчёркивание.',
+        ],
+        publicEmail: ['Введите корректный email'],
+      },
+    });
     expect(fetchImpl).not.toHaveBeenCalled();
   });
 

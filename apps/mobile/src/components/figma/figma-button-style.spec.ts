@@ -29,9 +29,6 @@ describe('Figma button styles', () => {
       backgroundColor: 'transparent',
       borderRadius: 80,
     });
-    expect(figmaButtonStyle('outline', 'pressed')).not.toHaveProperty(
-      'boxShadow',
-    );
     expect(figmaButtonStyle('solid', 'pressed').backgroundColor).toBe(
       figmaTokens.color.solidHover,
     );
@@ -61,9 +58,6 @@ describe('Figma button styles', () => {
       margin: 1,
       borderWidth: 0,
     });
-    expect(figmaButtonStyle('ghost', 'pressed')).not.toHaveProperty(
-      'boxShadow',
-    );
   });
 
   it('dims disabled variants instead of inventing a second control size', () => {
@@ -121,9 +115,6 @@ describe('Figma button styles', () => {
     expect(figmaButtonStyle('danger', 'pressed')).toMatchObject({
       backgroundColor: figmaTokens.color.dangerHover,
     });
-    expect(figmaButtonStyle('danger', 'pressed')).not.toHaveProperty(
-      'boxShadow',
-    );
     expect(figmaButtonStyle('danger', 'disabled')).toMatchObject({
       backgroundColor: figmaTokens.color.danger,
       opacity: 0.5,

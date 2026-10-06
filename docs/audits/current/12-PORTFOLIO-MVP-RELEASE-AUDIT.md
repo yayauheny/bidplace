@@ -4,6 +4,49 @@
 Проверенная release-ветка: `feature/portfolio-mvp-release`. Media implementation сохранена
 в `feature/portfolio-media-lifecycle`; integration package перенесён fast-forward.
 
+## 2026-10-07 — Limited test cleanup
+
+База: `0e3ecd5a37ff3c1fb2d241e91e9375b1fb8ec8b5`. Продуктовый код, дизайн,
+golden, thresholds и timeouts не менялись. Push и deploy не выполнялись.
+
+Удалён `apps/mobile/e2e/press-feedback.spec.ts`. Он проверял отсутствие мятного
+кольца покадровым обходом всего DOM и отдельным touch-диспетчером. Отдельной
+ветки с кольцом в стилях больше нет: pressed fill, inset и opacity остаются в
+`figma-button-style.spec.ts` и `figma-choice-chip-style.spec.ts`, плюс одна
+проверка, что pressed solid и pressed chip не задают `boxShadow`. Повторы того
+же отсутствия на outline, ghost и danger удалены. Повтор selected idle внутри
+pressed-теста chip удалён: его уже покрывает тест выбранного chip. Disabled и
+клавиатурный focus полей сохранены.
+
+`packages/api-client/test/sellers.test.ts`: второй невалидный nickname теперь
+обязан выбросить `ApiClientError`, а `fieldErrors` проверяются после этого.
+Раньше проверки жили только в `catch`, и отсутствие исключения тест не ломало.
+
+В `profile-validation.spec.ts` сообщение невалидного nickname проверяется
+всегда, а не внутри `if (!parsed.success)`. Повторный разбор `БЕ` и
+`parse('my-store').slug === 'my-store'` удалены: первое уже входит в набор
+отказов, второе повторяло успешный разбор. Сохранение введённого nickname
+остаётся в `seller-profile-submit.spec.ts` и `e2e/author-application-slug.spec.ts`.
+
+Сохранены регрессии сохранения, upload/delete/reorder, двойного действия,
+сессий, ошибок полей, auth, публикации и revoke. Тесты с motion в названии не
+удалялись. Home Opening specs не трогались.
+
+| Команда | Результат |
+| --- | --- |
+| mobile vitest: button, chip, text field, form-fields, profile-validation, seller-profile-fields, seller-profile-submit | 7 files / 79 tests, exit 0 |
+| api-client `test/sellers.test.ts` | 2 passed, exit 0 |
+| `pnpm --filter @bidplace/mobile typecheck`, `pnpm --filter @bidplace/api-client typecheck` | exit 0 |
+| eslint на изменённых mobile specs | exit 0. У `@bidplace/api-client` нет eslint-конфига |
+| `pnpm --filter @bidplace/mobile test:e2e-fence` | exit 0 |
+| `playwright.field-focus.config.ts`, `--workers=1 --retries=0` | 12 passed, 32.1s, exit 0 |
+
+Полный portfolio gate не запускался. Разовая проверка на `https://bid.place`:
+Home → «Все работы» → поиск → вкладка «Авторы» → закрытие поиска → dock
+«Главная». Каталог открылся, поиск и вкладка переключились, URL вернулся на
+`/`. После dock «Главная» текст каталога оставался видимым вместе с пустым
+Home. Навигационный код в этой задаче не менялся.
+
 ## 2026-10-07 — Press feedback and form fixes on production
 
 Кандидат `fix/portfolio-media-execution` включал проверенные исправления форм

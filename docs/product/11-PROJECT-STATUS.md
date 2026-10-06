@@ -1,5 +1,18 @@
 # bidplace — текущий статус проекта
 
+## 2026-10-07 — Test maintenance cleanup, no behavior change
+
+- `Partial` for the portfolio MVP, unchanged in product behavior. The
+  frame-scanning press e2e is gone. Pressed button and chip styles still
+  cover fill, inset, disabled opacity, the selected chip, and one check that
+  the shared pressed style omits `boxShadow`. The seller client test now
+  requires the second invalid profile call to throw `fieldErrors`. Save,
+  media, session, field-error, auth, publish, and revoke regressions stay.
+  Local checks: mobile unit 7 files / 79 tests; api-client sellers 2 passed;
+  mobile and api-client typecheck exit 0; mobile eslint on the edited specs
+  exit 0; e2e fence exit 0; field-focus Chromium/WebKit 12 passed. The full
+  portfolio gate was not rerun. Production was not updated.
+
 ## 2026-10-07 — Ordinary press has no mint ring, and the form fixes are deployed
 
 - `Implemented` for the press change: pressed `FigmaButton` and
@@ -8,7 +21,10 @@
   the blue `#2457e6` outline. Field success `#039600` stays. Dock was already
   `boxShadow: none` and was not the flash. `DEC-104`. Figma and the protected
   `.pen` file were not rewritten. Covered by `figma-button-style.spec.ts`,
-  `figma-choice-chip-style.spec.ts`, and `e2e/press-feedback.spec.ts`.
+  `figma-choice-chip-style.spec.ts`. The frame-scanning
+  `e2e/press-feedback.spec.ts` was removed after this deploy; pressed fill,
+  inset, disabled opacity, selected chips, and one shared absence of
+  `boxShadow` remain in those style specs.
 - `Partial` for the portfolio MVP: release
   `0085353954cfc3c6b1b5f29682260fbee0dc5060` is on production from
   `feature/portfolio-mvp-release` by

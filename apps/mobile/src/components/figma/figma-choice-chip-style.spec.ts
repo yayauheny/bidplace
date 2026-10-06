@@ -41,9 +41,6 @@ describe('Figma choice chip styles', () => {
     expect(figmaChoiceChipStyle(true, 'pressed').backgroundColor).toBe(
       figmaTokens.color.solidHover,
     );
-    expect(figmaChoiceChipStyle(true, 'idle').backgroundColor).toBe(
-      figmaTokens.color.solid,
-    );
     expect(figmaChoiceChipStyle(false, 'disabled').opacity).toBe(
       figmaTokens.opacity.disabled,
     );
