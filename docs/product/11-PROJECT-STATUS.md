@@ -1,5 +1,23 @@
 # bidplace — текущий статус проекта
 
+## 2026-10-07 — Failure location ignores message text
+
+- `Implemented` locally for the 5xx failure site. `safeFailureLocation` drops
+  the whole `Error.toString()` header, including a multiline message, before
+  it reads stack frames. A line inside that message is not a location.
+  A container frame `/app/dist/<path>.js:line:col` from `node dist/main.js`
+  is stored as `dist/<path>.js:line`. Source frames stay
+  `apps/api/src/<path>.ts:line`. Absolute paths and other files are omitted.
+  Covered by two cases in `api-exception.filter.spec.ts`. Those filter tests
+  and the request-log interceptor tests: 10 passed. API typecheck, lint, and
+  build exit 0. The built `safe-request-log.js` returns
+  `dist/products/products.service.js:88` for an `/app/dist` frame and `null`
+  for the message frame, without starting the API or connecting to Neon.
+- `Needs verification` for production. This commit is not deployed. Workers
+  invocation logs, traces, Logpush, response bodies, keepalive, and an
+  external `/ready` monitor stay off. The server request id, request summary,
+  5xx codes, health skip, and security/admin audit are unchanged.
+
 ## 2026-10-07 — Safe request logs, local only
 
 - `Implemented` locally for the Nest request summary and the unexpected-error

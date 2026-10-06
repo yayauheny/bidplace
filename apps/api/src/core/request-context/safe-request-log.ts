@@ -2,8 +2,10 @@ const SERVER_ID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const ROUTE_TEMPLATE = /^\/[A-Za-z0-9/_:.-]{0,180}$/;
 const HTTP_METHOD = /^(GET|HEAD|POST|PUT|PATCH|DELETE|OPTIONS)$/;
-const FAILURE_FRAME =
-  /\/(apps\/api\/src\/[A-Za-z0-9._/-]+\.ts):(\d+):\d+/;
+const FRAME_SITE = /([^()\s]+):(\d+):\d+\)?$/;
+const APP_DIST = /^\/app\/(dist\/[A-Za-z0-9._/-]+\.js)$/;
+const PACKAGE_DIST = /\/apps\/api\/(dist\/[A-Za-z0-9._/-]+\.js)$/;
+const PACKAGE_SOURCE = /\/(apps\/api\/src\/[A-Za-z0-9._/-]+\.ts)$/;
 
 export const UNMATCHED_ROUTE = 'unmatched';
 
@@ -49,24 +51,75 @@ export function safeDurationMs(startedAt: number): string {
     : '0';
 }
 
-export function safeFailureLocation(exception: unknown): string | null {
-  if (!(exception instanceof Error) || typeof exception.stack !== 'string') {
+function errorHeader(exception: Error): string | null {
+  if (typeof exception.name !== 'string' || typeof exception.message !== 'string') {
     return null;
   }
 
-  for (const line of exception.stack.split('\n')) {
-    if (!/^\s+at\s/.test(line) || line.length > 300) {
-      continue;
-    }
+  try {
+    const header: unknown = exception.toString();
+    return typeof header === 'string' && header.length > 0 ? header : null;
+  } catch {
+    return null;
+  }
+}
 
-    const match = line.match(FAILURE_FRAME);
-    const file = match?.[1];
-    const lineNumber = match?.[2];
-    if (!file || !lineNumber || file.includes('..')) {
-      continue;
-    }
+function framesAfterHeader(exception: Error): string[] | null {
+  const { stack } = exception;
+  const header = errorHeader(exception);
+  if (typeof stack !== 'string' || header === null || !stack.startsWith(header)) {
+    return null;
+  }
 
-    return `${file}:${lineNumber}`;
+  const frames = stack.slice(header.length);
+  if (frames.length > 0 && !frames.startsWith('\n')) {
+    return null;
+  }
+
+  return frames.split('\n');
+}
+
+function shortFrame(line: string): string | null {
+  if (!/^\s+at\s/.test(line) || line.length > 300) {
+    return null;
+  }
+
+  const site = line.match(FRAME_SITE);
+  const rawFile = site?.[1];
+  const lineNumber = site?.[2];
+  if (!rawFile || !lineNumber || rawFile.includes('..')) {
+    return null;
+  }
+
+  const file = rawFile.startsWith('file://')
+    ? rawFile.slice('file://'.length)
+    : rawFile;
+  if (file.includes('..')) {
+    return null;
+  }
+
+  const relative =
+    file.match(APP_DIST)?.[1] ??
+    file.match(PACKAGE_DIST)?.[1] ??
+    file.match(PACKAGE_SOURCE)?.[1];
+  return relative ? `${relative}:${lineNumber}` : null;
+}
+
+export function safeFailureLocation(exception: unknown): string | null {
+  if (!(exception instanceof Error)) {
+    return null;
+  }
+
+  const frames = framesAfterHeader(exception);
+  if (frames === null) {
+    return null;
+  }
+
+  for (const line of frames) {
+    const location = shortFrame(line);
+    if (location) {
+      return location;
+    }
   }
 
   return null;
