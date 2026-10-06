@@ -56,6 +56,7 @@ import {
 } from './seller-profile-editable';
 import {
   ProfileFieldWriteGuard,
+  requiredProfileMessages,
   SellerProfileCreationStepSelector,
   SellerProfileFormSteps,
   SellerProfileVerificationSection,
@@ -290,7 +291,9 @@ export function SellerProfileScreen() {
     error: unknown,
     surface: string,
     fallback = 'Не удалось сохранить профиль',
+    operation = sessionOperation.current,
   ) => {
+    if (sessionOperation.current !== operation) return;
     logInfrastructureError(error, surface);
     const failure = readFormFailure(error, profileFieldOrder);
     if (failure.disposition === 'passthrough') {
@@ -329,6 +332,7 @@ export function SellerProfileScreen() {
   const transitionLock = useRef(false);
   const photoSelection = useRef(0);
   const sessionOperation = useRef(0);
+  const resetSaveMutation = useRef<() => void>(() => undefined);
   const mountedRef = useRef(true);
   const photoBlobRef = useRef<Blob | null>(null);
   const hydratedProfileToken = useRef<string | null>(null);
@@ -503,6 +507,7 @@ export function SellerProfileScreen() {
     sessionOperation.current += 1;
     photoSelection.current += 1;
     saveInFlight.current = false;
+    resetSaveMutation.current();
     revisionSubmitInFlight.current = false;
     leaving.current = false;
     logoutStarted.current = false;
@@ -511,6 +516,7 @@ export function SellerProfileScreen() {
     parentOperationId.current += 1;
     achievementWriteToken.current = 0;
     setAchievementWriteActive(false);
+    setFormAlert(null);
     photoBlobRef.current = null;
     setPhotoBlob(null);
     setPhotoUri(null);
@@ -595,6 +601,7 @@ export function SellerProfileScreen() {
   const submitMutation = useMutation({
     mutationFn: () => api.portfolio.submitAuthorApplication(),
   });
+  resetSaveMutation.current = () => saveMutation.reset();
 
   const save = async (source?: 'revision-submit' | 'transition') => {
     if (achievementWriteBlocksParent()) return null;
@@ -613,6 +620,7 @@ export function SellerProfileScreen() {
     };
     const operation = sessionOperation.current;
     saveInFlight.current = true;
+    setFormAlert(null);
     try {
       const saved = await saveMutation.mutateAsync(variables);
       if (
@@ -620,10 +628,16 @@ export function SellerProfileScreen() {
         !canWritePrivateCache(queryClient, variables.authEpoch)
       )
         return null;
+      setFormAlert(null);
       return saved;
     } catch (error) {
-      if (source === 'transition' && sessionOperation.current === operation)
-        endLockedTransition();
+      if (
+        sessionOperation.current !== operation ||
+        !canWritePrivateCache(queryClient, variables.authEpoch)
+      ) {
+        return null;
+      }
+      if (source === 'transition') endLockedTransition();
       throw error;
     } finally {
       if (sessionOperation.current === operation) saveInFlight.current = false;
@@ -655,7 +669,7 @@ export function SellerProfileScreen() {
       try {
         saved = await save('revision-submit');
       } catch (error) {
-        reportProfileError(error, 'seller-profile-save');
+        reportProfileError(error, 'seller-profile-save', undefined, operation);
         return;
       }
       if (!saved || !stillOwnsSubmit()) return;
@@ -682,7 +696,12 @@ export function SellerProfileScreen() {
       );
       await queryClient.refetchQueries({ queryKey: sellerProfileQueryKey });
     } catch (error) {
-      reportProfileError(error, 'seller-profile-submit', 'Не удалось отправить заявку');
+      reportProfileError(
+        error,
+        'seller-profile-submit',
+        'Не удалось отправить заявку',
+        operation,
+      );
     } finally {
       if (sessionOperation.current === operation) {
         revisionSubmitInFlight.current = false;
@@ -707,7 +726,7 @@ export function SellerProfileScreen() {
       }
       router.push(`/profile?step=${visibleStep + 1}`);
     } catch (error) {
-      reportProfileError(error, 'seller-profile-step');
+      reportProfileError(error, 'seller-profile-step', undefined, operation);
     } finally {
       if (sessionOperation.current === operation) endLockedTransition();
     }
@@ -744,9 +763,6 @@ export function SellerProfileScreen() {
     country.trim() &&
     city.trim() &&
     (profile || photoBlob),
-  );
-  const hasRequiredAbout = Boolean(
-    discipline.trim() && shortDescription.trim(),
   );
   const draftAllowsSave = profileDraftAllowsSave(form.getValues());
   const canSave = editable && draftAllowsSave;
@@ -791,7 +807,7 @@ export function SellerProfileScreen() {
         }
       } catch (error) {
         if (sessionOperation.current === operation) leaving.current = false;
-        reportProfileError(error, 'seller-profile-exit');
+        reportProfileError(error, 'seller-profile-exit', undefined, operation);
         return;
       }
     }
@@ -837,7 +853,7 @@ export function SellerProfileScreen() {
         )
           return;
       } catch (error) {
-        reportProfileError(error, 'seller-profile-step');
+        reportProfileError(error, 'seller-profile-step', undefined, operation);
         return;
       }
       if (sessionOperation.current !== operation) return;
@@ -1128,7 +1144,7 @@ export function SellerProfileScreen() {
                         return;
                       router.push('/profile?step=2');
                     } catch (error) {
-                      reportProfileError(error, 'seller-profile-step');
+                      reportProfileError(error, 'seller-profile-step', undefined, operation);
                     } finally {
                       if (sessionOperation.current === operation)
                         endLockedTransition();
@@ -1159,13 +1175,29 @@ export function SellerProfileScreen() {
                 loading={saveMutation.isPending || advanceMutation.isPending}
                 disabled={
                   !canSave ||
-                  !hasRequiredAbout ||
                   accountLogout.busy ||
                   revisionSubmitActive ||
                   inputsLocked ||
                   achievementWriteActive
                 }
-                onPress={() => void continueFromStep(3)}
+                onPress={() => {
+                  const missingDiscipline = !discipline.trim();
+                  const missingDescription = !shortDescription.trim();
+                  if (missingDiscipline) {
+                    form.setError('discipline', {
+                      type: 'required',
+                      message: requiredProfileMessages.discipline,
+                    });
+                  }
+                  if (missingDescription) {
+                    form.setError('shortDescription', {
+                      type: 'required',
+                      message: requiredProfileMessages.shortDescription,
+                    });
+                  }
+                  if (missingDiscipline || missingDescription) return;
+                  void continueFromStep(3);
+                }}
                 label="Продолжить"
                 width="block"
               />
@@ -1181,11 +1213,12 @@ export function SellerProfileScreen() {
                     inputsLocked ||
                     achievementWriteActive
                   }
-                  onPress={() =>
+                  onPress={() => {
+                    const operation = sessionOperation.current;
                     void save().catch((error) =>
-                      reportProfileError(error, 'seller-profile-save'),
-                    )
-                  }
+                      reportProfileError(error, 'seller-profile-save', undefined, operation),
+                    );
+                  }}
                   label="Сохранить черновик"
                   width="block"
                 />
@@ -1218,11 +1251,12 @@ export function SellerProfileScreen() {
                   inputsLocked ||
                   achievementWriteActive
                 }
-                onPress={() =>
+                onPress={() => {
+                  const operation = sessionOperation.current;
                   void save().catch((error) =>
-                    reportProfileError(error, 'seller-profile-save'),
-                  )
-                }
+                    reportProfileError(error, 'seller-profile-save', undefined, operation),
+                  );
+                }}
                 label="Сохранить"
                 width="block"
               />

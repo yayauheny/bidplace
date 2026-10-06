@@ -146,12 +146,14 @@ vi.mock('../../components/ui', () => {
       value,
       editable = true,
       onChangeText,
+      onBlur,
       error,
     }: {
       label: string;
       value?: string;
       editable?: boolean;
       onChangeText?: (value: string) => void;
+      onBlur?: () => void;
       error?: string;
     }) =>
       createElement(
@@ -162,8 +164,9 @@ vi.mock('../../components/ui', () => {
           value: value ?? '',
           disabled: editable === false,
           onChange: (event: { target: { value: string } }) => onChangeText?.(event.target.value),
+          onBlur: () => onBlur?.(),
         }),
-        error ? createElement('span', null, error) : null,
+        error ? createElement('span', { 'data-error-for': label }, error) : null,
       ),
   };
 });
@@ -292,6 +295,22 @@ function savedProfile(overrides: { city?: string; fullName?: string; discipline?
     },
     editingRevision: revision('DRAFT'),
   };
+}
+
+function blurField(container: ParentNode, label: string) {
+  const input = container.querySelector(`[aria-label="${label}"]`);
+  if (!(input instanceof HTMLInputElement)) throw new Error(`Missing field ${label}`);
+  act(() => {
+    input.dispatchEvent(new FocusEvent('focusout', { bubbles: true }));
+  });
+}
+
+function fieldError(container: ParentNode, label: string) {
+  return (
+    [...container.querySelectorAll('[data-error-for]')].find(
+      (node) => node.getAttribute('data-error-for') === label,
+    )?.textContent ?? null
+  );
 }
 
 function buttonDisabled(container: ParentNode, label: string) {
@@ -431,6 +450,7 @@ describe('seller profile revision submit', () => {
     await until(view.container, () => harness.submitAuthorApplication.mock.calls.length === 1, 'retry submit');
     expect(harness.updateProfile).toHaveBeenCalledTimes(2);
     await flush();
+    expect(view.container.textContent).not.toContain('Не удалось сохранить профиль');
     process.off('unhandledRejection', onUnhandled);
     expect(rejections).toEqual([]);
     view.unmount();
@@ -603,6 +623,7 @@ describe('seller profile revision submit', () => {
     await until(view.container, () => harness.submitAuthorApplication.mock.calls.length === 2, 'submit retry');
     expect(harness.updateProfile).toHaveBeenCalledTimes(2);
     await flush();
+    expect(view.container.textContent).not.toContain('Не удалось отправить заявку');
     process.off('unhandledRejection', onUnhandled);
     expect(rejections).toEqual([]);
     view.unmount();
@@ -1692,5 +1713,112 @@ describe('seller profile validation freshness', () => {
     expect(harness.push).toHaveBeenCalledWith('/profile?step=2');
     vi.unstubAllGlobals();
     view.unmount();
+  });
+
+  it('clears a profile save error after the next accepted attempt and ignores a late response', async () => {
+    let rejectSave: (error: unknown) => void = () => undefined;
+    harness.getMyProfile.mockResolvedValue(response('APPROVED', 'DRAFT'));
+    harness.updateProfile
+      .mockRejectedValueOnce(
+        new ApiClientError('Профиль не найден.', { kind: 'not_found', status: 404 }),
+      )
+      .mockRejectedValueOnce(
+        new ApiClientError('Недостаточно прав для сохранения профиля.', {
+          kind: 'forbidden',
+          status: 403,
+        }),
+      )
+      .mockImplementationOnce(
+        () =>
+          new Promise((_resolve, reject) => {
+            rejectSave = reject;
+          }),
+      );
+    const view = mount();
+    await until(view.container, () => findButton(view.container, 'Сохранить') instanceof HTMLButtonElement, 'save');
+    expect(findButton(view.container, 'Изменить фото')).toBeInstanceOf(HTMLButtonElement);
+    click(view.container, 'Сохранить');
+    await until(view.container, () => view.container.textContent?.includes('Профиль не найден.') === true, 'first error');
+    expect(inputValue(view.container, 'Город')).toBe('Minsk');
+    expect(findButton(view.container, 'Изменить фото')).toBeInstanceOf(HTMLButtonElement);
+    click(view.container, 'Сохранить');
+    await until(
+      view.container,
+      () => view.container.textContent?.includes('Недостаточно прав для сохранения профиля.') === true,
+      'second error',
+    );
+    expect(view.container.textContent).not.toContain('Профиль не найден.');
+    click(view.container, 'Сохранить');
+    await flush();
+    expect(view.container.textContent).not.toContain('Недостаточно прав для сохранения профиля.');
+    await act(async () => {
+      advanceAuthEpoch(view.queryClient);
+    });
+    await flush();
+    await act(async () => {
+      rejectSave(new ApiClientError('Старая ошибка профиля.', { kind: 'not_found', status: 404 }));
+      await Promise.resolve();
+    });
+    await flush();
+    expect(view.container.textContent).not.toContain('Старая ошибка профиля.');
+    view.unmount();
+  });
+
+  it('shows about-step requirements only after blur or continue, without blocking an incomplete draft save', async () => {
+    const draft = response('DRAFT', 'DRAFT');
+    draft.sellerProfile.discipline = '';
+    draft.sellerProfile.shortDescription = '';
+    draft.sellerProfile.applicationStage = 'ABOUT';
+    harness.params = { step: '3' };
+    harness.getMyProfile.mockResolvedValue(draft);
+    const view = mount();
+    await until(
+      view.container,
+      () =>
+        view.container.querySelector('[aria-label="Дисциплина"]') instanceof HTMLInputElement &&
+        findButton(view.container, 'Продолжить') instanceof HTMLButtonElement,
+      'about step',
+    );
+    expect(inputValue(view.container, 'Дисциплина')).toBe('');
+    expect(view.container.textContent).not.toContain('Укажите направление');
+    expect(view.container.textContent).not.toContain('Добавьте короткое описание о себе');
+    blurField(view.container, 'Дисциплина');
+    expect(fieldError(view.container, 'Дисциплина')).toBe('Укажите направление');
+    expect(view.container.textContent).not.toContain('Добавьте короткое описание о себе');
+    blurField(view.container, 'Короткое описание');
+    expect(fieldError(view.container, 'Короткое описание')).toBe('Добавьте короткое описание о себе');
+    setInput(view.container, 'Дисциплина', 'Керамика');
+    expect(fieldError(view.container, 'Дисциплина')).toBeNull();
+    expect(fieldError(view.container, 'Короткое описание')).toBe('Добавьте короткое описание о себе');
+    setInput(view.container, 'Дисциплина', '');
+    click(view.container, 'Продолжить');
+    expect(fieldError(view.container, 'Дисциплина')).toBe('Укажите направление');
+    expect(fieldError(view.container, 'Короткое описание')).toBe('Добавьте короткое описание о себе');
+    expect(harness.updateProfile).not.toHaveBeenCalled();
+    setInput(view.container, 'Дисциплина', 'Керамика');
+    setInput(view.container, 'Короткое описание', 'Авторская практика.');
+    expect(fieldError(view.container, 'Дисциплина')).toBeNull();
+    expect(fieldError(view.container, 'Короткое описание')).toBeNull();
+    harness.updateProfile.mockResolvedValue(response('DRAFT', 'DRAFT'));
+    click(view.container, 'Продолжить');
+    await until(view.container, () => harness.updateProfile.mock.calls.length === 1, 'about save');
+    expect(harness.push).toHaveBeenCalledWith('/profile?step=4');
+
+    harness.params = {};
+    harness.getMyProfile.mockResolvedValue(response('APPROVED', 'DRAFT'));
+    const editor = mount();
+    await until(editor.container, () => findButton(editor.container, 'Сохранить') instanceof HTMLButtonElement, 'profile save');
+    setInput(editor.container, 'Дисциплина', '');
+    setInput(editor.container, 'Короткое описание', '');
+    blurField(editor.container, 'Дисциплина');
+    blurField(editor.container, 'Короткое описание');
+    expect(fieldError(editor.container, 'Дисциплина')).toBe('Укажите направление');
+    click(editor.container, 'Сохранить');
+    await until(editor.container, () => harness.updateProfile.mock.calls.length === 2, 'incomplete draft');
+    expect(harness.updateProfile.mock.calls[1]?.[0]).toEqual(
+      expect.objectContaining({ discipline: undefined, shortDescription: undefined }),
+    );
+    view.unmount();
+    editor.unmount();
   });
 });

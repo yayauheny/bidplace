@@ -1,4 +1,4 @@
-import { createContext, useContext, type ReactNode, type RefObject } from 'react';
+import { createContext, useContext, useRef, type ReactNode, type RefObject } from 'react';
 import { useController, useFormContext, useWatch } from 'react-hook-form';
 import { View } from 'react-native';
 
@@ -21,11 +21,13 @@ export type ProfileFields = {
   shortDescription: string;
 };
 
-const requiredProfileMessages: Partial<Record<keyof ProfileFields, string>> = {
+export const requiredProfileMessages: Partial<Record<keyof ProfileFields, string>> = {
   slug: 'Введите никнейм',
   fullName: 'Введите имя или название',
   country: 'Укажите страну',
   city: 'Укажите город',
+  discipline: 'Укажите направление',
+  shortDescription: 'Добавьте короткое описание о себе',
 };
 
 const ProfileFieldWriteGuardContext = createContext<RefObject<boolean> | null>(null);
@@ -65,8 +67,10 @@ function ProfileDraftField({
   if (!guard) {
     throw new Error('Profile field write guard is missing');
   }
-  const { control, setError, setValue } = useFormContext<ProfileFields>();
+  const { control, clearErrors, getFieldState, getValues, setError, setValue } =
+    useFormContext<ProfileFields>();
   const { field, fieldState } = useController({ control, name });
+  const revealed = useRef(false);
   const message = fieldState.error?.message;
   const requiredMessage = required && requiredProfileMessages[name];
   return (
@@ -77,12 +81,34 @@ function ProfileDraftField({
       onBlur={() => {
         field.onBlur();
         if (requiredMessage && !field.value.trim()) {
+          revealed.current = true;
           setError(name, { type: 'required', message: requiredMessage });
         }
       }}
       onChangeText={(value) => {
         if (guard.current) return;
+        if (fieldState.error?.type === 'required') revealed.current = true;
+        const restore = (
+          Object.entries(requiredProfileMessages) as Array<[keyof ProfileFields, string]>
+        ).filter(
+          ([fieldName, fieldMessage]) =>
+            fieldName !== name &&
+            Boolean(fieldMessage) &&
+            getFieldState(fieldName).error?.type === 'required' &&
+            !String(getValues(fieldName) ?? '').trim(),
+        );
         setValue(name, value, { shouldDirty: true, shouldTouch: true, shouldValidate: true });
+        if (requiredMessage && value.trim() && getFieldState(name).error?.type === 'required') {
+          clearErrors(name);
+        }
+        for (const [fieldName, fieldMessage] of restore) {
+          if (!String(getValues(fieldName) ?? '').trim()) {
+            setError(fieldName, { type: 'required', message: fieldMessage });
+          }
+        }
+        if (requiredMessage && !value.trim() && revealed.current) {
+          setError(name, { type: 'required', message: requiredMessage });
+        }
       }}
       placeholder={placeholder}
       autoCapitalize={autoCapitalize}
