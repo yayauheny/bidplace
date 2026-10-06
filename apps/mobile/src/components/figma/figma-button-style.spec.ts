@@ -24,12 +24,20 @@ describe('Figma button styles', () => {
     expect(figmaButtonLabelColor('solid')).toBe(figmaTokens.color.white);
   });
 
-  it('applies the mint press ring without changing the pill radius', () => {
+  it('darkens a pressed pill without a decorative ring', () => {
     expect(figmaButtonStyle('outline', 'pressed')).toMatchObject({
       backgroundColor: 'transparent',
-      boxShadow: `0px 0px 0px 2px ${figmaTokens.color.pressRing}`,
       borderRadius: 80,
     });
+    expect(figmaButtonStyle('outline', 'pressed')).not.toHaveProperty(
+      'boxShadow',
+    );
+    expect(figmaButtonStyle('solid', 'pressed').backgroundColor).toBe(
+      figmaTokens.color.solidHover,
+    );
+    expect(figmaButtonStyle('solid', 'pressed')).not.toHaveProperty(
+      'boxShadow',
+    );
     expect(figmaButtonSurfaceFill('outline', 'pressed')).toBe(
       figmaTokens.color.ghostHover,
     );
@@ -52,8 +60,10 @@ describe('Figma button styles', () => {
       minHeight: 42,
       margin: 1,
       borderWidth: 0,
-      boxShadow: `0px 0px 0px 2px ${figmaTokens.color.pressRing}`,
     });
+    expect(figmaButtonStyle('ghost', 'pressed')).not.toHaveProperty(
+      'boxShadow',
+    );
   });
 
   it('dims disabled variants instead of inventing a second control size', () => {
@@ -110,8 +120,10 @@ describe('Figma button styles', () => {
     );
     expect(figmaButtonStyle('danger', 'pressed')).toMatchObject({
       backgroundColor: figmaTokens.color.dangerHover,
-      boxShadow: `0px 0px 0px 2px ${figmaTokens.color.pressRing}`,
     });
+    expect(figmaButtonStyle('danger', 'pressed')).not.toHaveProperty(
+      'boxShadow',
+    );
     expect(figmaButtonStyle('danger', 'disabled')).toMatchObject({
       backgroundColor: figmaTokens.color.danger,
       opacity: 0.5,

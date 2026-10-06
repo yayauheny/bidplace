@@ -24,7 +24,6 @@ export function figmaButtonStyle(
   const hovered = interaction === 'hover';
   const pressed = interaction === 'pressed';
   const fill = buttonFill(variant, hovered || pressed);
-  const showRing = pressed;
   const insetPressedSurface =
     pressed && (variant === 'ghost' || variant === 'muted');
   const compact = size === 'compact';
@@ -57,9 +56,6 @@ export function figmaButtonStyle(
             : figmaTokens.color.solidDisabled
           : fill,
     opacity: disabled ? 0.5 : 1,
-    boxShadow: showRing
-      ? `0px 0px 0px 2px ${figmaTokens.color.pressRing}`
-      : undefined,
     justifyContent: 'center' as const,
     alignItems: 'center' as const,
   };

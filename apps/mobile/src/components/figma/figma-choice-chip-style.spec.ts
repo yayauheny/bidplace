@@ -33,8 +33,17 @@ describe('Figma choice chip styles', () => {
   it('exposes pressed and disabled feedback without changing geometry', () => {
     expect(figmaChoiceChipStyle(false, 'pressed')).toMatchObject({
       minHeight: figmaTokens.size.choiceChip,
-      boxShadow: `0px 0px 0px 2px ${figmaTokens.color.pressRing}`,
+      backgroundColor: figmaTokens.color.mutedHover,
     });
+    expect(figmaChoiceChipStyle(false, 'pressed')).not.toHaveProperty(
+      'boxShadow',
+    );
+    expect(figmaChoiceChipStyle(true, 'pressed').backgroundColor).toBe(
+      figmaTokens.color.solidHover,
+    );
+    expect(figmaChoiceChipStyle(true, 'idle').backgroundColor).toBe(
+      figmaTokens.color.solid,
+    );
     expect(figmaChoiceChipStyle(false, 'disabled').opacity).toBe(
       figmaTokens.opacity.disabled,
     );

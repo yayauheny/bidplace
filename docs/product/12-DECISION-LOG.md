@@ -1,6 +1,6 @@
 # bidplace — журнал решений
 
-Последнее обновление: 2026-09-17
+Последнее обновление: 2026-10-07
 
 Записи не удаляются. При пересмотре создаётся новая запись со ссылкой на старую.
 
@@ -2326,3 +2326,26 @@ The first production launch uses owner `bidplace`, contact
 `work.evles@gmail.com`, and the approved temporary text from `prod`. The
 deploy script writes those three values only into a temporary production
 config. The committed production fields stay empty.
+
+## DEC-104 — No mint ring on ordinary press
+
+Date: 2026-10-07
+Status: Confirmed
+Source: founder decision that a green flash or outline on an ordinary press,
+tab change, or navigation harms the design and must be removed.
+
+### Decision
+
+Pressed `FigmaButton` and `FigmaChoiceChip` controls do not draw
+`rgba(0, 235, 151, 0.25)`. Pressed feedback stays the existing fill, inset,
+or opacity change. A selected chip keeps its charcoal fill. Keyboard focus
+keeps the existing blue outline. Field success `#039600` and real success
+messages stay. The captured Figma field board and the protected `.pen` file
+are not rewritten.
+
+### Alternatives
+
+- Drawing the ring again after a delay. That only hides the flash.
+- Replacing the mint ring with another colored ring. The founder did not ask
+  for a new color effect.
+- A route-local stylesheet. The ring is shared by buttons and choice chips.

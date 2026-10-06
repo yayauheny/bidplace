@@ -467,6 +467,15 @@ On web, `[data-figma-field='true']` suppresses the browser outline so the
 shell stays the only ring. `apps/mobile/global.css` still draws
 `input:focus-visible`, `textarea:focus-visible`, and
 `[role='textbox']:focus-visible` for controls outside that component.
+The field success border stays `color.success` `#039600`.
+
+## 6.3 Press feedback
+
+`DEC-104`. A pressed `FigmaButton` or `FigmaChoiceChip` keeps its existing
+fill, inset, or opacity change. It does not draw a mint ring. Selected chips
+stay on the charcoal fill after release. Keyboard focus stays the blue
+`focus-visible` outline in `global.css`. Dock items already have no shadow.
+This does not change control size, type, or the field success state.
 
 ## 7. Old system boundary
 

@@ -61,7 +61,6 @@ export const designTokens = {
     quietBorderEnd: '#999999',
     textSubtle: '#6F6F6F',
     fieldHoverFill: '#FCFCFC',
-    pressRing: 'rgba(0, 235, 151, 0.25)',
     saleLive: '#E9401A',
     saleAnnounce: '#51E91A',
     white: '#FFFFFF',

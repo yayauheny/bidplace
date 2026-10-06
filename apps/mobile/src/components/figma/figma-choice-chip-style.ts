@@ -28,10 +28,6 @@ export function figmaChoiceChipStyle(
       : active
         ? figmaTokens.color.mutedHover
         : figmaTokens.color.mutedFill,
-    boxShadow:
-      interaction === 'pressed'
-        ? `0px 0px 0px 2px ${figmaTokens.color.pressRing}`
-        : undefined,
     opacity: interaction === 'disabled' ? figmaTokens.opacity.disabled : 1,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
