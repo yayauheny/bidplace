@@ -1,6 +1,7 @@
 {
   "$schema": "../../node_modules/wrangler/config-schema.json",
   "name": "bidplace-unconfigured",
+  "account_id": "56b0c4b96497366c262447d2a18bf632",
   "main": "src/index.ts",
   "compatibility_date": "2026-10-05",
   "workers_dev": false,

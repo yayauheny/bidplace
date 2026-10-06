@@ -65,8 +65,8 @@ jobs:
       - name: Verify Cloudflare routing and configuration
         run: pnpm cloudflare:check
 
-      - name: Build staging static assets
-        run: pnpm cloudflare:build:staging
+      - name: Build production static assets
+        run: pnpm build:web
 
       - name: Verify production-like amd64 container
         run: pnpm cloudflare:image:verify

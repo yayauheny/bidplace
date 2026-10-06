@@ -17,6 +17,9 @@ if (!['postgres:', 'postgresql:'].includes(database.protocol) ||
     !database.hostname.endsWith('.neon.tech') || database.searchParams.get('sslmode') !== 'require') {
   throw new Error('Migration requires a Neon endpoint with sslmode=require');
 }
+if (database.hostname.split('.')[0].endsWith('-pooler')) {
+  throw new Error('Migration requires the direct Neon hostname');
+}
 const temporary = mkdtempSync(join(tmpdir(), 'bidplace-neon-migrate-'));
 try {
   cpSync(join(root, 'packages/database/prisma/schema.prisma'), join(temporary, 'schema.prisma'));
