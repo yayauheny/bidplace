@@ -1,5 +1,28 @@
 # bidplace — текущий статус проекта
 
+## 2026-10-07 — Ordinary press has no mint ring, and the form fixes are deployed
+
+- `Implemented` for the press change: pressed `FigmaButton` and
+  `FigmaChoiceChip` no longer draw `rgba(0, 235, 151, 0.25)`. Pressed fill,
+  inset, and opacity stay. Selected chips stay charcoal. Keyboard focus stays
+  the blue `#2457e6` outline. Field success `#039600` stays. Dock was already
+  `boxShadow: none` and was not the flash. `DEC-104`. Figma and the protected
+  `.pen` file were not rewritten. Covered by `figma-button-style.spec.ts`,
+  `figma-choice-chip-style.spec.ts`, and `e2e/press-feedback.spec.ts`.
+- `Partial` for the portfolio MVP: release
+  `0085353954cfc3c6b1b5f29682260fbee0dc5060` is on production from
+  `feature/portfolio-mvp-release` by
+  [Production deploy run 37541612877](https://github.com/yayauheny/bidplace/actions/runs/37541612877).
+  Worker `8b9c125e-11f4-4db3-b185-629e563c4a2b`. The site serves
+  `/_expo/static/js/web/entry-0c3534c00f9410858393160c2cc504e6.js`. No new
+  migration ran. Health ready is ok, and empty Home stays «Пока здесь тихо».
+  Login shows one shell and «Введите корректный email». The smoke author
+  profile is still pending review and readonly, so its required-field messages
+  were not exercised live. Moderation, publication, viewer, republish,
+  hide/revoke, and a full reset still have no new live evidence. The full
+  portfolio gate remains 228 passed / 2 failed, only the known Home Opening
+  ratios. That gate is not green.
+
 ## 2026-10-06 — Step 3 requiredness after async validation
 
 - `Partial`: the earlier note that empty direction and short description keep

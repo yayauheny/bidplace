@@ -4,6 +4,81 @@
 Проверенная release-ветка: `feature/portfolio-mvp-release`. Media implementation сохранена
 в `feature/portfolio-media-lifecycle`; integration package перенесён fast-forward.
 
+## 2026-10-07 — Press feedback and form fixes on production
+
+Кандидат `fix/portfolio-media-execution` включал проверенные исправления форм
+из `05a485126c8ec5b8894c1370c09bb9305302c74e` и снятие мятного pressed ring.
+`feature/portfolio-mvp-release` на `41c43e293cf6b57b6f7edcb7d88415cbe513b974`
+и `origin/feature/portfolio-mvp-release` на `216e9107957070a8b6e0fbc419a168bef4fd471c`
+были предками кандидата. Отдельного ref `origin/release` нет. Уникальных
+коммитов release вне кандидата не было. Перенос: `git merge --ff-only`.
+Force-push не использовался. Push: `216e910..0085353`.
+
+Причина зелёной вспышки: pressed `FigmaButton` и `FigmaChoiceChip` рисовали
+`box-shadow: rgba(0, 235, 151, 0.25) 0 0 0 2px` из token `pressRing`. Dock уже
+задавал `boxShadow: none` и вспышку не давал. Удержание «Повторить», «Войти»,
+«Регистрация» и вкладки «Авторы» показывало это кольцо на несколько кадров.
+`DEC-104` убирает token и pressed ring. Fill, inset и opacity нажатия остаются.
+Выбранный chip остаётся charcoal. Клавиатурный focus остаётся синим
+`#2457e6`. Success полей `#039600` не менялся. Figma и
+`design/pen/bidplace-web-v2.pen` не переписывались.
+
+Новых миграций относительно `216e910` нет. `confirm_migration` оставлен пустым.
+Production database не мигрировалась. Новые buckets, Neon branches, compute,
+подписки, Neon Auth, Data API, cron и очереди не создавались.
+
+| Команда | Результат |
+| --- | --- |
+| `figma-button-style`, `figma-choice-chip-style`, `figma-text-field-style`, `profile-validation`, `seller-profile-submit`, `seller-profile-fields` | 6 files / 76 tests, exit 0 |
+| `pnpm verify` | первый прогон остановился на типе аргумента WebKit touch в `press-feedback.spec.ts`; после правки типа exit 0 |
+| `pnpm cloudflare:check`, `pnpm build:web`, `pnpm cloudflare:image:verify` | exit 0. Image verify применил уже существующие 22 миграции к локальной `bidplace_cloudflare_smoke`, не к production |
+| полный `playwright.config.ts`, `--workers=1 --retries=0`, fenced `bidplace_e2e` | 228 passed / 2 failed, 14.4m, exit 1 |
+| `playwright.media.config.ts`, `--workers=1 --retries=0` | 2 passed, 1.2m, exit 0 |
+
+Полный gate не зелёный. Два отказа — прежний Home Opening visual: Chromium
+`0.12231040564373898`, WebKit `0.12205687830687831`, порог `0.12`. Пороги,
+golden, timeouts и assertions не менялись. Новых отказов не было. Press checks
+вошли в этот gate.
+
+До deploy живой сайт отдавал
+`/_expo/static/js/web/entry-28f163b6e1f26a44d32fff58bfda9b37.js`. Health ready
+был 200, Home API 200 с пустым каталогом. Откат без отката БД, если бы
+потребовался: Worker `4b41ca7f-3eb5-4849-83f8-e045bc016cff`, SHA
+`bbac1fa9578931c3c4b35173bd586bdebb45bfe8`.
+
+Run: https://github.com/yayauheny/bidplace/actions/runs/37541612877
+Ref: `feature/portfolio-mvp-release`. SHA
+`0085353954cfc3c6b1b5f29682260fbee0dc5060`. Conclusion: success, 5m35s.
+Шаг миграции пропущен. Worker version
+`8b9c125e-11f4-4db3-b185-629e563c4a2b`.
+
+После deploy `https://bid.place/` отдаёт
+`/_expo/static/js/web/entry-0c3534c00f9410858393160c2cc504e6.js`.
+`/api/health/ready` 200 `status=ok`, `database=ok`.
+`/api/portfolio/home` 200: `curatorSelection: null`, `newWorks: 0`,
+`newAuthors: 0`. Home показывает «Пока здесь тихо», не ошибку соединения.
+В развёрнутом bundle нет `rgba(0, 235, 151` и `pressRing`; `#039600` остаётся.
+
+Chromium и WebKit, viewport 390. Удержание dock «Главная» до opacity `0.82` и
+`box-shadow: none`, «Войти» и «Регистрация» до `0.9`, вкладки «Авторы» до
+`0.92`. Кадры во время удержания и после отпускания не содержали `235, 151`.
+Отпускание «Главная» открывает `/`, «Регистрация» открывает `/register`,
+«Авторы» получает `aria-selected=true`. Keyboard Space на «Регистрация»:
+outline `solid 2px rgb(36, 87, 230)`, без мятного кольца, затем `/register`.
+Новых 5xx и page errors на этом прогоне нет.
+
+`/login`: клик по Email даёт один shell `rgb(0, 77, 255)`, `outline-style: none`,
+`outline-width: 0px`. Значение `not-an-email` и «Войти» показывают
+«Введите корректный email». Аккаунт не создавался.
+
+Существующая smoke-сессия открыла `/profile`. Форма только для чтения:
+«Заявка на проверке. Редактирование откроется, если модератор запросит правки.»
+Focus никнейма: outline none, shell `rgb(138, 138, 138)`, мятного кольца нет.
+Поля не менялись, сохранение не нажималось. Сообщения обязательных полей
+редактируемой авторской формы на production этим проходом не вызывались.
+Модерация, публикация, viewer, republish, hide/revoke и полный reset живым
+evidence не подтверждены. Откат не потребовался.
+
 ## 2026-10-06 — Step 3 requiredness survives async validation
 
 База: `0b0c24f61a766b9027ea5ce043a975d2bb0b00cb` на `fix/portfolio-media-execution`.

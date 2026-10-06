@@ -1,8 +1,24 @@
 # bidplace — статус дизайна и UI-реализации
 
-Последнее обновление: 2026-10-06
+Последнее обновление: 2026-10-07
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
+
+## 2026-10-07 — Ordinary press drops the mint ring
+
+- `Implemented`: pressed buttons and choice chips keep their existing fill,
+  inset, or opacity and do not draw a mint ring (`DEC-104`, design system
+  §6.3). Selected chips stay charcoal. Keyboard focus stays the blue outline.
+  Field success green is unchanged. Sizes, type, and routes are unchanged.
+  The captured Figma board and `design/pen/bidplace-web-v2.pen` were not
+  rewritten.
+- Live Chromium and WebKit on `https://bid.place` held dock, login, register,
+  and the Authors tab with no `rgba(0, 235, 151)` during the hold or after
+  release. Worker `8b9c125e-11f4-4db3-b185-629e563c4a2b`. The earlier form
+  field work from this release is in that same bundle. The smoke author
+  profile remains readonly while it is pending review, so an editable author
+  draft was not checked live. Full visual acceptance is unchanged: Home
+  Opening still misses the 0.12 threshold.
 
 ## 2026-10-06 — Step 3 required copy after whitespace
 
