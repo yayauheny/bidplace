@@ -4,6 +4,16 @@
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
+## 2026-10-06 — Form error placement
+
+- `Partial`: accepted product and profile saves clear the previous save message.
+  Step 3 shows «Укажите направление» and «Добавьте короткое описание о себе»
+  beside those fields after blur or Continue. Achievement date errors sit on
+  year, month, or day; a server date-group error sits under the date controls.
+  `FigmaTextField` sizes, colors, and states are unchanged. Chromium and WebKit
+  field checks: 12 passed. Full portfolio gate: 222 passed / 2 failed, only the
+  known Home Opening visual. This is not on production yet.
+
 ## 2026-10-06 — Shared portfolio form fields
 
 - `Partial`: one `FigmaTextField` implements the eight states from

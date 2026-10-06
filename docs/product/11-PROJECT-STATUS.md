@@ -1,5 +1,26 @@
 # bidplace — текущий статус проекта
 
+## 2026-10-06 — Portfolio form error lifecycle
+
+- `Partial`: a failed product or profile save no longer keeps its message after
+  the next accepted attempt succeeds. A later failure replaces it. A response
+  from the previous session does not publish or clear the new session's message.
+  Empty author direction and short description show «Укажите направление» and
+  «Добавьте короткое описание о себе» after blur or Continue; an untouched step
+  stays quiet, and an allowed incomplete draft still saves. Achievement year,
+  month, and day show their own Russian messages. A server `occurredDate` error
+  without a precise path stays on the date group. Covered by
+  `product-draft-save-race.spec.ts`, `seller-profile-submit.spec.ts`,
+  `achievement-date.spec.ts`, and `author-application-achievements.spec.ts`.
+  `pnpm verify` exit 0: mobile unit 112 files / 602 tests; integration 28 files /
+  134 tests with `maxWorkers: 4` in `apps/api/vitest.integration.config.ts`.
+  `pnpm build:web` exit 0. Chromium/WebKit field checks 12 passed. Full portfolio
+  gate 222 passed / 2 failed, only the known Home Opening ratios
+  `0.12231040564373898` and `0.12205687830687831`. Dedicated media gate 2 passed.
+  Production was not updated. The live Worker is still
+  `4b41ca7f-3eb5-4849-83f8-e045bc016cff` from
+  `bbac1fa9578931c3c4b35173bd586bdebb45bfe8`.
+
 ## 2026-10-06 — Portfolio form fields and validation
 
 - `Partial`: shared `FigmaTextField` matches the 2026-10-06 field export

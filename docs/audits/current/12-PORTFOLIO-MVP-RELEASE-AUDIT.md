@@ -4,6 +4,37 @@
 Проверенная release-ветка: `feature/portfolio-mvp-release`. Media implementation сохранена
 в `feature/portfolio-media-lifecycle`; integration package перенесён fast-forward.
 
+## 2026-10-06 — Corrective wave for three review findings
+
+База: `9226a2379e1eb4d3932c3d1def7f2e7d85556521` на `fix/portfolio-media-execution`.
+
+Три P2 закрыты локально. Размеры, цвета и состояния `FigmaTextField` не менялись.
+Канонический handoff и `design/pen/bidplace-web-v2.pen` не менялись. Два Home Opening
+visual failure остаются согласованным post-MVP debt.
+
+| P2 | Результат |
+| --- | --- |
+| Устаревшая ошибка сохранения | Принятый повторный запрос и подтверждённый успех снимают сообщение своей попытки. Смена сессии снимает прежние сообщения. Поздний ответ старого запроса не публикует его и не стирает ошибку новой сессии. Значения и фото после отказа остаются. |
+| Обязательные поля шага 3 | Пустые направление и короткое описание показывают «Укажите направление» и «Добавьте короткое описание о себе» после blur или «Продолжить». Нетронутая форма молчит. Неполный draft по-прежнему сохраняется. |
+| Ошибки даты достижения | Год, месяц и день получают свои русские сообщения по `issue.path`. Диагностический текст Zod пользователю не показывается. Серверный `occurredDate` без точного пути остаётся ошибкой группы даты. |
+
+Причина падения обычного integration: каждый файл в `beforeAll` вызывает `prisma migrate deploy` в одну локальную БД `bidplace_integration`. Advisory lock миграции принадлежит базе, не схеме, поэтому неограниченный параллелизм удерживает поздние `beforeAll` дольше существующего лимита 10s. Файл отказа менялся между прогонами. Ограничение `maxWorkers: 4` стоит в `apps/api/vitest.integration.config.ts` и применяется обычным `pnpm verify`. Timeouts, retries, пропуски и assertions не менялись.
+
+| Команда | Результат |
+| --- | --- |
+| `pnpm verify` | exit 0. Mobile unit: 112 files / 602 tests. Integration через стандартный config: 28 files / 134 tests, 27.6s |
+| `pnpm build:web` | exit 0. Expo export для https://bid.place проверен |
+| field-focus + author slug, Chromium/WebKit, `--workers=1 --retries=0` | 12 passed, 42.0s, exit 0 |
+| полный `playwright.config.ts`, `--workers=1 --retries=0` | 222 passed / 2 failed, 13.6m, exit 1 |
+| `playwright.media.config.ts`, `--workers=1 --retries=0` | 2 passed, 57.3s, exit 0 |
+
+Два отказа — прежний Home Opening visual: Chromium `0.12231040564373898`,
+WebKit `0.12205687830687831`, порог `0.12`. Пороги, golden и timeouts не менялись.
+
+Статус: локальный кандидат готов к release review. Push, перенос в release и deploy
+не выполнялись. Production Worker остаётся `4b41ca7f-3eb5-4849-83f8-e045bc016cff`
+из `bbac1fa`. Этот checkout не задеплоен.
+
 ## 2026-10-06 — Shared form fields and validation
 
 Проблема: поля portfolio-форм не совпадали с экспортом «Поля ввода» от 2026-10-06,
