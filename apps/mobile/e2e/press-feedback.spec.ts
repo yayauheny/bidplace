@@ -208,7 +208,8 @@ async function hold(page: Page, locator: Locator, pointer: 'mouse' | 'touch') {
   };
 }
 
-function dispatchTouch(element: Element, type: 'touchstart' | 'touchend') {
+function dispatchTouch(element: Element, type: string) {
+  if (type !== 'touchstart' && type !== 'touchend') return;
   const rect = element.getBoundingClientRect();
   const clientX = rect.left + rect.width / 2;
   const clientY = rect.top + rect.height / 2;
