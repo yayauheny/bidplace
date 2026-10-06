@@ -47,11 +47,39 @@ export const httpsUrlSchema = z
     { message: 'Введите HTTPS-ссылку, начиная с https://' },
   );
 
+const achievementYearSchema = z
+  .number({
+    invalid_type_error: 'Укажите год числом',
+    required_error: 'Укажите год числом',
+  })
+  .int('Укажите год целым числом')
+  .min(1, 'Укажите год от 1 до 9999')
+  .max(9_999, 'Укажите год от 1 до 9999');
+
+const achievementMonthSchema = z
+  .number({
+    invalid_type_error: 'Укажите месяц числом',
+    required_error: 'Укажите месяц числом',
+  })
+  .int('Укажите месяц целым числом')
+  .min(1, 'Укажите месяц от 1 до 12')
+  .max(12, 'Укажите месяц от 1 до 12');
+
+const achievementDaySchema = z
+  .number({
+    invalid_type_error: 'Укажите день числом',
+    required_error: 'Укажите день числом',
+  })
+  .int('Укажите день целым числом')
+  .min(1, 'Укажите день от 1 до 31')
+  .max(31, 'Укажите день от 1 до 31')
+  .nullable();
+
 export const achievementOccurredDateSchema = z
   .object({
-    year: z.number().int().min(1, 'Укажите существующую дату').max(9_999, 'Укажите существующую дату'),
-    month: z.number().int().min(1, 'Укажите существующую дату').max(12, 'Укажите существующую дату'),
-    day: z.number().int().min(1, 'Укажите существующую дату').max(31, 'Укажите существующую дату').nullable(),
+    year: achievementYearSchema,
+    month: achievementMonthSchema,
+    day: achievementDaySchema,
   })
   .strict()
   .superRefine((value, context) => {

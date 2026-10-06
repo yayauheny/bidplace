@@ -6,6 +6,8 @@ import { createRoot, type Root } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { ApiClientError } from '@bidplace/api-client';
+
 import { flush, inputValue } from '../../testing/dom';
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
@@ -153,22 +155,29 @@ vi.mock('../../components/ui', () => {
       label,
       value,
       editable = true,
+      error,
       onChangeText,
     }: {
       label: string;
       value?: string;
       editable?: boolean;
+      error?: string;
       onChangeText?: (value: string) => void;
     }) =>
-      createElement('input', {
-        'aria-label': label,
-        value: value ?? '',
-        disabled: editable === false,
-        onChange: (event: { target: { value: string } }) => {
-          if (editable === false) return;
-          onChangeText?.(event.target.value);
-        },
-      }),
+      createElement(
+        'span',
+        null,
+        createElement('input', {
+          'aria-label': label,
+          value: value ?? '',
+          disabled: editable === false,
+          onChange: (event: { target: { value: string } }) => {
+            if (editable === false) return;
+            onChangeText?.(event.target.value);
+          },
+        }),
+        error ? createElement('span', { 'data-error-for': label }, error) : null,
+      ),
   };
 });
 
@@ -323,6 +332,14 @@ async function openEditor(view: ReturnType<typeof mount>) {
     view.container,
     () => findButton(view.container, 'Сохранить достижение') instanceof HTMLButtonElement,
     'achievement editor',
+  );
+}
+
+function fieldError(container: ParentNode, label: string) {
+  return (
+    [...container.querySelectorAll('[data-error-for]')].find(
+      (node) => node.getAttribute('data-error-for') === label,
+    )?.textContent ?? null
   );
 }
 
@@ -1301,6 +1318,104 @@ describe('Author application achievement lifecycle', () => {
     expect(view.container.textContent).toContain('Фото: new.png');
     expect(harness.updateProfile).not.toHaveBeenCalled();
     expect(harness.submitAuthorApplication).not.toHaveBeenCalled();
+    view.unmount();
+  });
+
+  it('shows date-part errors without sending an invalid achievement', async () => {
+    const view = mount();
+    await openEditor(view);
+    setInput(view.container, 'Год', 'текст');
+    setInput(view.container, 'Месяц', '3');
+    setInput(view.container, 'Описание достижения', 'Выставка');
+    click(view.container, 'Сохранить достижение');
+    expect(fieldError(view.container, 'Год')).toBe('Укажите год числом');
+    expect(harness.addAuthorAchievement).not.toHaveBeenCalled();
+
+    setInput(view.container, 'Год', '2024.5');
+    expect(fieldError(view.container, 'Год')).toBeNull();
+    click(view.container, 'Сохранить достижение');
+    expect(fieldError(view.container, 'Год')).toBe('Укажите год целым числом');
+    expect(harness.addAuthorAchievement).not.toHaveBeenCalled();
+
+    setInput(view.container, 'Год', '2024');
+    setInput(view.container, 'Месяц', '13');
+    click(view.container, 'Сохранить достижение');
+    expect(fieldError(view.container, 'Месяц')).toBe('Укажите месяц от 1 до 12');
+    expect(fieldError(view.container, 'Год')).toBeNull();
+
+    setInput(view.container, 'Месяц', '2');
+    setInput(view.container, 'День (необязательно)', '29');
+    setInput(view.container, 'Год', '2023');
+    click(view.container, 'Сохранить достижение');
+    expect(fieldError(view.container, 'День (необязательно)')).toBe('Укажите существующую дату');
+    expect(harness.addAuthorAchievement).not.toHaveBeenCalled();
+
+    setInput(view.container, 'Год', '2024');
+    harness.addAuthorAchievement.mockResolvedValue({ achievement: { id: 'leap', body: 'Выставка' } });
+    click(view.container, 'Сохранить достижение');
+    await until(view.container, () => harness.addAuthorAchievement.mock.calls.length === 1, 'leap day');
+    expect(harness.addAuthorAchievement.mock.calls[0]?.[0]).toMatchObject({
+      occurredDate: { year: 2024, month: 2, day: 29 },
+    });
+
+    setInput(view.container, 'Год', '2025');
+    setInput(view.container, 'Месяц', '3');
+    setInput(view.container, 'День (необязательно)', '');
+    setInput(view.container, 'Описание достижения', 'Публикация');
+    click(view.container, 'Сохранить достижение');
+    await until(view.container, () => harness.addAuthorAchievement.mock.calls.length === 2, 'empty day');
+    expect(harness.addAuthorAchievement.mock.calls[1]?.[0]).toMatchObject({
+      occurredDate: { year: 2025, month: 3, day: null },
+    });
+    await until(
+      view.container,
+      () => {
+        const input = view.container.querySelector('[aria-label="Год"]');
+        return input instanceof HTMLInputElement && !input.disabled;
+      },
+      'date editor unlocked',
+    );
+
+    setInput(view.container, 'Описание достижения', 'Выставка');
+    setInput(view.container, 'Год', '1.5');
+    setInput(view.container, 'Месяц', '0');
+    setInput(view.container, 'День (необязательно)', '32');
+    click(view.container, 'Сохранить достижение');
+    expect(fieldError(view.container, 'Год')).toBe('Укажите год целым числом');
+    expect(fieldError(view.container, 'Месяц')).toBe('Укажите месяц от 1 до 12');
+    expect(fieldError(view.container, 'День (необязательно)')).toBe('Укажите день от 1 до 31');
+    expect(harness.addAuthorAchievement).toHaveBeenCalledTimes(2);
+
+    setInput(view.container, 'Год', '2025');
+    expect(fieldError(view.container, 'Год')).toBeNull();
+    expect(fieldError(view.container, 'Месяц')).toBe('Укажите месяц от 1 до 12');
+    view.unmount();
+  });
+
+  it('shows a server occurredDate error as a date-group message', async () => {
+    harness.addAuthorAchievement.mockRejectedValue(
+      new ApiClientError('Expected number, received nan', {
+        kind: 'validation',
+        status: 400,
+        code: 'validation_error',
+        details: {
+          formErrors: [],
+          fieldErrors: { occurredDate: ['Expected number, received nan'] },
+        },
+      }),
+    );
+    const view = mount();
+    await openEditor(view);
+    fillAchievement(view.container, 'Выставка');
+    click(view.container, 'Сохранить достижение');
+    await until(
+      view.container,
+      () => view.container.textContent?.includes('Укажите существующую дату') === true,
+      'server date',
+    );
+    expect(fieldError(view.container, 'Год')).toBeNull();
+    expect(fieldError(view.container, 'Месяц')).toBeNull();
+    expect(fieldError(view.container, 'День (необязательно)')).toBeNull();
     view.unmount();
   });
 });

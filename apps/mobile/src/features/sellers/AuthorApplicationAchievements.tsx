@@ -3,7 +3,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 import { View } from 'react-native';
 
-import { achievementOccurredDateSchema } from '@bidplace/contracts';
 import { designTokens } from '@bidplace/design-tokens';
 
 import { InfrastructureErrorState } from '../../components/shared/InfrastructureErrorState';
@@ -19,7 +18,11 @@ import { getApiAssetUrl } from '../../lib/environment';
 import { canWritePrivateCache, currentAuthEpoch, refreshPrivateQuery } from '../../lib/query-cache';
 import { usePrivateCacheEpoch } from '../../lib/use-private-cache-epoch';
 import { useApiClient } from '../../providers/api-provider';
-import { formatAchievementDate } from './achievement-date';
+import {
+  achievementDateFieldErrors,
+  formatAchievementDate,
+  presentAchievementDateGroup,
+} from './achievement-date';
 
 let childWriteSequence = 0;
 
@@ -77,7 +80,10 @@ export function AuthorApplicationAchievements({
   const [imageLabel, setImageLabel] = useState<string | null>(null);
   const [writeActive, setWriteActive] = useState(false);
   const [pickerError, setPickerError] = useState<string | null>(null);
-  const [dateError, setDateError] = useState<string | null>(null);
+  const [yearError, setYearError] = useState<string | null>(null);
+  const [monthError, setMonthError] = useState<string | null>(null);
+  const [dayError, setDayError] = useState<string | null>(null);
+  const [dateGroupError, setDateGroupError] = useState<string | null>(null);
   const [bodyError, setBodyError] = useState<string | null>(null);
 
   const application = useQuery({
@@ -120,6 +126,11 @@ export function AuthorApplicationAchievements({
         setImageBlob(null);
         setImageLabel(null);
         setPickerError(null);
+        setYearError(null);
+        setMonthError(null);
+        setDayError(null);
+        setDateGroupError(null);
+        setBodyError(null);
       }
       await refreshPrivateQuery(queryClient, ['seller', 'application'], variables.epoch);
       if (!canWritePrivateCache(queryClient, variables.epoch)) return;
@@ -166,6 +177,11 @@ export function AuthorApplicationAchievements({
     setImageBlob(null);
     setImageLabel(null);
     setPickerError(null);
+    setYearError(null);
+    setMonthError(null);
+    setDayError(null);
+    setDateGroupError(null);
+    setBodyError(null);
     addAchievement.reset();
     deleteAchievement.reset();
   }, [addAchievement, authEpoch, deleteAchievement]);
@@ -181,24 +197,24 @@ export function AuthorApplicationAchievements({
   };
 
   const saveAchievement = () => {
+    const dateErrors = achievementDateFieldErrors({ year, month, day });
     const occurredDate = {
       year: Number(year),
       month: Number(month),
       day: day.trim() ? Number(day) : null,
     };
-    const parsedDate = achievementOccurredDateSchema.safeParse(occurredDate);
     const bodyText = body.trim();
     const nextBodyError = !bodyText
       ? 'Введите описание достижения'
       : bodyText.length > 4_000
         ? 'Введите описание короче 4000 символов'
         : null;
-    const nextDateError = parsedDate.success
-      ? null
-      : parsedDate.error.issues[0]?.message ?? 'Укажите существующую дату';
     setBodyError(nextBodyError);
-    setDateError(nextDateError);
-    if (nextBodyError || nextDateError) return;
+    setYearError(dateErrors?.year ?? null);
+    setMonthError(dateErrors?.month ?? null);
+    setDayError(dateErrors?.day ?? null);
+    setDateGroupError(null);
+    if (nextBodyError || dateErrors) return;
     const token = beginWrite();
     if (token === null) return;
     const draft: AchievementDraft = {
@@ -257,16 +273,25 @@ export function AuthorApplicationAchievements({
   };
 
   const achievements = application.data?.achievements ?? [];
-  const updateDraft = (apply: (value: string) => void) => (value: string) => {
-    if (writeToken.current !== 0) return;
-    setDateError(null);
-    apply(value);
-  };
+  const updateDraft =
+    (
+      apply: (value: string) => void,
+      clear: () => void,
+    ) =>
+    (value: string) => {
+      if (writeToken.current !== 0) return;
+      clear();
+      setDateGroupError(null);
+      addAchievement.reset();
+      apply(value);
+    };
   const savedAchievementError = addAchievement.error
     ? readFormFailure(addAchievement.error, ['body', 'occurredDate'])
     : null;
   const savedBodyError = savedAchievementError?.fields.body;
-  const savedDateError = savedAchievementError?.fields.occurredDate;
+  const savedDateError = savedAchievementError?.fields.occurredDate
+    ? presentAchievementDateGroup(savedAchievementError.fields.occurredDate)
+    : null;
   const savedFormError = savedAchievementError && savedAchievementError.disposition !== 'passthrough'
     ? savedAchievementError.formMessage
     : addAchievement.isError
@@ -327,15 +352,21 @@ export function AuthorApplicationAchievements({
       ))}
       {editable ? (
         <>
-          <TextField label="Год" value={year} onChangeText={updateDraft(setYear)} placeholder="2025" editable={!writeActive} error={dateError ?? savedDateError} />
-          <TextField label="Месяц" value={month} onChangeText={updateDraft(setMonth)} placeholder="3" editable={!writeActive} />
-          <TextField label="День (необязательно)" value={day} onChangeText={updateDraft(setDay)} placeholder="17" editable={!writeActive} />
+          <TextField label="Год" value={year} onChangeText={updateDraft(setYear, () => setYearError(null))} placeholder="2025" editable={!writeActive} error={yearError ?? undefined} />
+          <TextField label="Месяц" value={month} onChangeText={updateDraft(setMonth, () => setMonthError(null))} placeholder="3" editable={!writeActive} error={monthError ?? undefined} />
+          <TextField label="День (необязательно)" value={day} onChangeText={updateDraft(setDay, () => setDayError(null))} placeholder="17" editable={!writeActive} error={dayError ?? undefined} />
+          {dateGroupError || savedDateError ? (
+            <AppText role="bodySmall" tone="danger">
+              {dateGroupError ?? savedDateError}
+            </AppText>
+          ) : null}
           <TextField
             label="Описание достижения"
             value={body}
             onChangeText={(value) => {
+              if (writeToken.current !== 0) return;
               setBodyError(null);
-              updateDraft(setBody)(value);
+              setBody(value);
             }}
             placeholder="Выставка, публикация или награда"
             multiline
