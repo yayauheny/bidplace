@@ -3,6 +3,8 @@ import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
 
+test.use({ trace: 'off', screenshot: 'off' });
+
 import { e2eApiBaseURL } from './support/e2e-env';
 import { createBuyerFixture } from './support/e2e-fixtures';
 
@@ -58,7 +60,7 @@ async function loginForm(
   password: string,
   status: number,
 ) {
-  await page.getByRole('textbox', { name: 'Email', exact: true }).fill(email);
+  await page.getByRole('textbox', { name: 'Электронная почта', exact: true }).fill(email);
   await page.getByLabel('Пароль', { exact: true }).fill(password);
   const response = page.waitForResponse(
     (item) =>
@@ -76,16 +78,19 @@ test('registration form creates a session and email verification unlocks the aut
   const email = `registration-${randomUUID()}@bidplace.test`;
   await page.goto('/register?redirectTo=/profile');
   await page.getByLabel('Имя', { exact: true }).fill('Новый автор');
-  await page.getByRole('textbox', { name: 'Email', exact: true }).fill(email);
+  await page.getByRole('textbox', { name: 'Электронная почта', exact: true }).fill(email);
   await page
-    .getByLabel('Пароль', { exact: true })
+    .getByLabel('Введите пароль', { exact: true })
+    .fill('registration-password-123');
+  await page
+    .getByLabel('Подтвердите пароль', { exact: true })
     .fill('registration-password-123');
   const registration = page.waitForResponse(
     (item) =>
       item.url() === `${e2eApiBaseURL}/api/auth/register` &&
       item.request().method() === 'POST',
   );
-  await page.getByRole('button', { name: 'Создать аккаунт' }).click();
+  await page.getByRole('button', { name: 'Продолжить' }).click();
   expect((await registration).status()).toBe(201);
   await expect(page).toHaveURL(/\/verify-email\?/);
   await expect(page.getByText('Код отправлен на вашу почту.')).toBeVisible();
@@ -94,13 +99,13 @@ test('registration form creates a session and email verification unlocks the aut
   expect(unverified.status()).toBe(200);
   expect((await unverified.json()).user.emailVerifiedAt).toBeNull();
   await page.getByLabel('Код из письма').fill('123');
-  await page.getByRole('button', { name: 'Подтвердить', exact: true }).click();
+  await page.getByRole('button', { name: 'Продолжить', exact: true }).click();
   await expect(page.getByText('Введите шестизначный код.')).toBeVisible();
 
   await page
     .getByLabel('Код из письма')
     .fill(await localTestMailValue(email, 'code'));
-  await page.getByRole('button', { name: 'Подтвердить', exact: true }).click();
+  await page.getByRole('button', { name: 'Продолжить', exact: true }).click();
   await expect(page).toHaveURL(/\/profile(?:\?|$)/);
   const verified = await context.request.get(`${e2eApiBaseURL}/api/auth/me`);
   expect(verified.status()).toBe(200);
@@ -139,11 +144,11 @@ test('login survives reload and password recovery rejects the old password and a
   await page.goto('/login');
   await page.getByRole('link', { name: 'Забыли пароль?' }).click();
   await page
-    .getByRole('textbox', { name: 'Email', exact: true })
+    .getByRole('textbox', { name: 'Электронная почта', exact: true })
     .fill(buyer.email);
   await page.getByRole('button', { name: 'Отправить ссылку' }).click();
   await expect(
-    page.getByText('Проверьте почту', { exact: true }),
+    page.getByText('мы отправили ссылку для создания нового пароля'),
   ).toBeVisible();
   const token = await localTestMailValue(buyer.email, 'token');
   const resetPath = `/reset-password?token=${encodeURIComponent(token)}`;

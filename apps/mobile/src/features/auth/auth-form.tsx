@@ -7,6 +7,9 @@ import { designTokens } from '@bidplace/design-tokens';
 import { AppText, PrimaryButton, TextField } from '../../components/ui';
 import { FigmaButton } from '../../components/figma/FigmaButton';
 import { MotionPressable } from '../../components/ui/MotionPressable';
+import { AuthPasswordField } from './auth-password-field';
+import { registerSubmission } from './auth-dismissal';
+import { useAuthSheetGuard } from './auth-sheet-context';
 import { useAnalytics } from '../../providers/analytics-provider';
 import { useAuth } from '../../providers/auth-provider';
 import { ApiClientError } from '@bidplace/api-client';
@@ -23,15 +26,21 @@ import {
   type RegisterFormValues,
 } from './schemas';
 import type { SafeRedirect } from './auth-redirect';
-import { AuthCard } from './auth-card';
 type AuthFormProps = { redirectTo?: SafeRedirect };
 export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
   const auth = useAuth();
   const router = useRouter();
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [providerNotice, setProviderNotice] = useState<string | null>(null);
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginFormSchema),
     defaultValues: { email: '', password: '' },
+  });
+  const emailValue = form.watch('email');
+  const passwordValue = form.watch('password');
+  useAuthSheetGuard({
+    dirty: Boolean(emailValue || passwordValue),
+    busy: form.formState.isSubmitting,
   });
   useEffect(() => {
     if (form.formState.isSubmitSuccessful && auth.isAuthenticated) {
@@ -69,46 +78,45 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
     );
   if (auth.isAuthenticated)
     return (
-      <AuthCard title="Вы уже вошли" description="Перейдите к следующему шагу.">
+      <View style={{ gap: designTokens.auth.formGap }}>
+        <AppText role="bodySmall">Перейдите к следующему шагу.</AppText>
         <PrimaryButton
           label="Перейти дальше"
+          size="auth"
           width="full"
           onPress={() => router.replace(redirectTo as Href)}
         />
-      </AuthCard>
+      </View>
     );
   return (
-    <AuthCard title="Вход на Bidplace">
-      <View style={{ gap: designTokens.space.identityGap }}>
+      <View style={{ gap: designTokens.auth.loginFormGap }}>
         <Controller
           control={form.control}
           name="email"
           render={({ field }) => (
             <TextField ref={field.ref}
-              label="Email"
+              label="Электронная почта"
               value={field.value ?? ''}
               onChangeText={field.onChange}
               onBlur={field.onBlur}
-              placeholder="name@example.com"
+              placeholder="Электронная почта"
               autoComplete="email"
               keyboardType="email-address"
               error={form.formState.errors.email?.message}
             />
           )}
         />
-        <View style={{ gap: designTokens.space.authorIdentityGap }}>
+        <View style={{ gap: designTokens.space.x2 }}>
           <Controller
             control={form.control}
             name="password"
             render={({ field }) => (
-              <TextField ref={field.ref}
+              <AuthPasswordField
                 label="Пароль"
                 value={field.value}
                 onChangeText={field.onChange}
                 onBlur={field.onBlur}
-                placeholder="••••••••"
                 autoComplete="current-password"
-                secureTextEntry
                 error={form.formState.errors.password?.message}
               />
             )}
@@ -124,8 +132,11 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
               accessibilityRole="link"
               accessibilityLabel="Забыли пароль?"
               onPress={() => undefined}
+              style={{ alignSelf: 'flex-end' }}
             >
-              <AppText role="fieldError">Забыли пароль?</AppText>
+              <AppText role="fieldError" style={{ color: designTokens.color.textSubdued, fontSize: 12 }}>
+                Забыли пароль?
+              </AppText>
             </MotionPressable>
           </Link>
         </View>
@@ -138,8 +149,14 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
             {submitError}
           </AppText>
         ) : null}
+        {providerNotice ? (
+          <AppText role="bodySmall" accessibilityLiveRegion="polite">
+            {providerNotice}
+          </AppText>
+        ) : null}
         <PrimaryButton
           label="Войти"
+          size="auth"
           width="full"
           loading={form.formState.isSubmitting}
           onPress={submit}
@@ -153,13 +170,33 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
         >
           <FigmaButton
             label="Регистрация"
-            variant="outline"
+            variant="authQuiet"
+            size="auth"
             width="full"
             onPress={() => undefined}
           />
         </Link>
+        <AppText role="bodySmall" style={{ textAlign: 'center', color: designTokens.color.textSubdued }}>
+          или
+        </AppText>
+        <FigmaButton
+          label="Войти с Telegram"
+          variant="authProvider"
+          size="auth"
+          width="full"
+          onPress={() => setProviderNotice('Вход через Telegram пока недоступен')}
+        />
+        <FigmaButton
+          label="Войти с Google"
+          variant="authProvider"
+          size="auth"
+          width="full"
+          onPress={() => setProviderNotice('Вход через Google пока недоступен')}
+        />
+        <AppText role="bodySmall" style={{ color: designTokens.color.textSubdued }}>
+          Продолжая, вы принимаете политику конфиденциальности и правила сервиса
+        </AppText>
       </View>
-    </AuthCard>
   );
 }
 export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
@@ -170,7 +207,12 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
   const trackedRegistrationStart = useRef(false);
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerFormSchema),
-    defaultValues: { email: '', password: '', phone: '', displayName: '' },
+    defaultValues: { email: '', password: '', confirmPassword: '', phone: '', displayName: '' },
+  });
+  const watched = form.watch();
+  useAuthSheetGuard({
+    dirty: Boolean(watched.displayName || watched.email || watched.password || watched.confirmPassword),
+    busy: form.formState.isSubmitting,
   });
   useEffect(() => {
     if (form.formState.isSubmitSuccessful && auth.isAuthenticated) {
@@ -194,7 +236,7 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
   const submit = form.handleSubmit(async (values) => {
     setSubmitError(null);
     try {
-      const response = await auth.register(values);
+      const response = await auth.register(registerSubmission(values));
       analytics.identify(response.user.id, { claimAcquisition: true });
     } catch (error) {
       const failure = readFormFailure(error, ['email', 'password', 'displayName', 'phone']);
@@ -214,17 +256,18 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
     );
   if (auth.isAuthenticated)
     return (
-      <AuthCard title="Вы уже вошли" description="Перейдите к следующему шагу.">
+      <View style={{ gap: designTokens.auth.formGap }}>
+        <AppText role="bodySmall">Перейдите к следующему шагу.</AppText>
         <PrimaryButton
           label="Перейти дальше"
+          size="auth"
           width="full"
           onPress={() => router.replace(redirectTo as Href)}
         />
-      </AuthCard>
+      </View>
     );
   return (
-    <AuthCard title="Регистрация">
-      <View style={{ gap: designTokens.space.x3 }}>
+      <View style={{ gap: designTokens.auth.formGap }}>
         <Controller
           control={form.control}
           name="displayName"
@@ -234,7 +277,7 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
               value={field.value}
               onChangeText={field.onChange}
               onBlur={field.onBlur}
-              placeholder="Иван Иванов"
+              placeholder="Имя"
               autoComplete="name"
               error={form.formState.errors.displayName?.message}
             />
@@ -245,11 +288,11 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
           name="email"
           render={({ field }) => (
             <TextField ref={field.ref}
-              label="Email"
+              label="Электронная почта"
               value={field.value}
               onChangeText={field.onChange}
               onBlur={field.onBlur}
-              placeholder="name@example.com"
+              placeholder="example@gmail.com"
               autoComplete="email"
               keyboardType="email-address"
               error={form.formState.errors.email?.message}
@@ -258,35 +301,31 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
         />
         <Controller
           control={form.control}
-          name="phone"
+          name="password"
           render={({ field }) => (
-            <TextField ref={field.ref}
-              label="Телефон"
-              value={field.value ?? ''}
+            <AuthPasswordField
+              label="Введите пароль"
+              value={field.value}
               onChangeText={field.onChange}
               onBlur={field.onBlur}
-              placeholder="+375..."
-              autoComplete="tel"
-              keyboardType="phone-pad"
-              error={
-                form.formState.errors.phone ? 'Введите телефон' : undefined
-              }
+              autoComplete="new-password"
+              metrics="authPassword"
+              error={form.formState.errors.password?.message}
             />
           )}
         />
         <Controller
           control={form.control}
-          name="password"
+          name="confirmPassword"
           render={({ field }) => (
-            <TextField ref={field.ref}
-              label="Пароль"
+            <AuthPasswordField
+              label="Подтвердите пароль"
               value={field.value}
               onChangeText={field.onChange}
               onBlur={field.onBlur}
-              placeholder="••••••••"
               autoComplete="new-password"
-              secureTextEntry
-              error={form.formState.errors.password?.message}
+              metrics="authPassword"
+              error={form.formState.errors.confirmPassword?.message}
             />
           )}
         />
@@ -300,11 +339,15 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
           </AppText>
         ) : null}
         <PrimaryButton
-          label="Создать аккаунт"
+          label="Продолжить"
+          size="auth"
           width="full"
           loading={form.formState.isSubmitting}
           onPress={submit}
         />
+        <AppText role="bodySmall" style={{ color: designTokens.color.textSubdued }}>
+          Я соглашаюсь с политикой конфиденциальности и правилами сервиса
+        </AppText>
         <Link
           href={{
             pathname: '/login',
@@ -314,12 +357,12 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
         >
           <FigmaButton
             label="Войти"
-            variant="outline"
+            variant="authQuiet"
+            size="auth"
             width="full"
             onPress={() => undefined}
           />
         </Link>
       </View>
-    </AuthCard>
   );
 }

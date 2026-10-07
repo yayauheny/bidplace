@@ -6,7 +6,8 @@ import { View } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
 import { ApiErrorCode } from '@bidplace/contracts';
 
-import { AppText, PrimaryButton, TextButton, TextField } from '../../components/ui';
+import { AppText, PrimaryButton } from '../../components/ui';
+import { FigmaButton } from '../../components/figma/FigmaButton';
 import {
   applyFormFailure,
   getErrorCode,
@@ -14,7 +15,8 @@ import {
   readFormFailure,
 } from '../../errors';
 import { useApiClient } from '../../providers/api-provider';
-import { AuthCard } from './auth-card';
+import { AuthPasswordField } from './auth-password-field';
+import { useAuthSheetGuard } from './auth-sheet-context';
 import { resetPasswordFormSchema, type ResetPasswordFormValues } from './schemas';
 import { RESET_PASSWORD_SUCCESS_DESCRIPTION } from '../../lib/portfolio-copy';
 
@@ -27,17 +29,22 @@ export function ResetPasswordForm({ token }: { token: string | null }) {
     resolver: zodResolver(resetPasswordFormSchema),
     defaultValues: { password: '', confirmPassword: '' },
   });
+  const watched = form.watch();
+  useAuthSheetGuard({
+    dirty: Boolean(watched.password || watched.confirmPassword) && !submitted,
+    busy: form.formState.isSubmitting,
+  });
 
   if (!token?.trim()) {
     return (
-      <AuthCard
-        title="Ссылка недействительна"
-        description="Откройте ссылку из письма или запросите восстановление пароля заново."
-      >
+      <View style={{ gap: designTokens.auth.formGap }}>
+        <AppText role="bodySmall">
+          Откройте ссылку из письма или запросите восстановление пароля заново.
+        </AppText>
         <Link href="/forgot-password" asChild>
-          <TextButton label="Запросить новую ссылку" onPress={() => undefined} />
+          <FigmaButton label="Запросить новую ссылку" variant="authQuiet" size="auth" width="full" onPress={() => undefined} />
         </Link>
-      </AuthCard>
+      </View>
     );
   }
 
@@ -68,37 +75,33 @@ export function ResetPasswordForm({ token }: { token: string | null }) {
 
   if (submitted) {
     return (
-      <AuthCard
-        title="Пароль обновлён"
-        description={RESET_PASSWORD_SUCCESS_DESCRIPTION}
-      >
+      <View style={{ gap: designTokens.auth.formGap }}>
+        <AppText role="sectionTitle">Пароль обновлён</AppText>
+        <AppText role="bodySmall">{RESET_PASSWORD_SUCCESS_DESCRIPTION}</AppText>
         <PrimaryButton
           label="Перейти ко входу"
+          size="auth"
           width="full"
           onPress={() => router.replace('/login')}
         />
-      </AuthCard>
+      </View>
     );
   }
 
   return (
-    <AuthCard
-      title="Новый пароль"
-      description="Придумайте новый пароль для входа в аккаунт."
-    >
-      <View style={{ gap: designTokens.space.x3 }}>
+      <View style={{ gap: designTokens.auth.formGap }}>
+        <AppText role="bodySmall">Придумайте новый пароль для входа в аккаунт.</AppText>
         <Controller
           control={form.control}
           name="password"
           render={({ field }) => (
-            <TextField ref={field.ref}
+            <AuthPasswordField
               label="Новый пароль"
               value={field.value}
               onChangeText={field.onChange}
               onBlur={field.onBlur}
-              placeholder="••••••••"
               autoComplete="new-password"
-              secureTextEntry
+              metrics="authPassword"
               error={form.formState.errors.password?.message}
             />
           )}
@@ -107,14 +110,13 @@ export function ResetPasswordForm({ token }: { token: string | null }) {
           control={form.control}
           name="confirmPassword"
           render={({ field }) => (
-            <TextField ref={field.ref}
+            <AuthPasswordField
               label="Подтверждение пароля"
               value={field.value}
               onChangeText={field.onChange}
               onBlur={field.onBlur}
-              placeholder="••••••••"
               autoComplete="new-password"
-              secureTextEntry
+              metrics="authPassword"
               error={form.formState.errors.confirmPassword?.message}
             />
           )}
@@ -126,14 +128,14 @@ export function ResetPasswordForm({ token }: { token: string | null }) {
         ) : null}
         <PrimaryButton
           label="Сохранить пароль"
+          size="auth"
           width="full"
           loading={form.formState.isSubmitting}
           onPress={submit}
         />
         <Link href="/forgot-password" asChild>
-          <TextButton label="Запросить новую ссылку" onPress={() => undefined} />
+          <FigmaButton label="Запросить новую ссылку" variant="authQuiet" size="auth" width="full" onPress={() => undefined} />
         </Link>
       </View>
-    </AuthCard>
   );
 }

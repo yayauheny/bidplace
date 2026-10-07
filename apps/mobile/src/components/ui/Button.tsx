@@ -5,7 +5,7 @@ import { type FigmaIconName } from '../figma/figma-icon-names';
 
 type ButtonProps = {
   label: string;
-  size?: 'regular' | 'large';
+  size?: 'regular' | 'large' | 'auth' | 'authResend';
   onPress: () => void;
   disabled?: boolean;
   loading?: boolean;

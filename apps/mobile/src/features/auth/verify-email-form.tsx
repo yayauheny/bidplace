@@ -3,7 +3,7 @@ import { useRouter, type Href } from 'expo-router';
 import { View } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
 
-import { AppText, PrimaryButton, SecondaryButton, TextField } from '../../components/ui';
+import { AppText, PrimaryButton, SecondaryButton } from '../../components/ui';
 import { ApiClientError } from '@bidplace/api-client';
 
 import { getErrorStatus, getUserFacingErrorMessage, readFormFailure } from '../../errors';
@@ -12,10 +12,11 @@ import { useAuth } from '../../providers/auth-provider';
 import { type SafeRedirect } from './auth-redirect';
 import { useAccountLogout } from './account-logout';
 import { AccountLogoutButton } from './AccountLogoutButton';
-import { AuthCard } from './auth-card';
+import { AuthCodeField } from './auth-code-field';
+import { useAuthSheetGuard } from './auth-sheet-context';
+import { confirmedResendDeadline, resendRemainingSeconds } from './resend-deadline';
 import {
   emailVerificationRequestErrorMessage,
-  normalizeEmailVerificationCode,
   verificationDestination,
   verifyEmailAndRefresh,
 } from './author-email-verification';
@@ -36,7 +37,14 @@ export function VerifyEmailForm({ redirectTo, autoRequest }: VerifyEmailFormProp
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [codeError, setCodeError] = useState<string | null>(null);
+  const [resendDeadline, setResendDeadline] = useState<number | null>(null);
+  const [now, setNow] = useState(() => Date.now());
   const logoutBusy = logoutStarted.current || accountLogout.busy;
+  const remaining = resendRemainingSeconds(resendDeadline, now);
+  useAuthSheetGuard({
+    dirty: true,
+    busy: requesting || verifying || logoutBusy,
+  });
 
   const requestCode = async () => {
     if (logoutStarted.current || accountLogout.busy || verificationLock.current) return;
@@ -46,6 +54,7 @@ export function VerifyEmailForm({ redirectTo, autoRequest }: VerifyEmailFormProp
     try {
       await api.auth.requestEmailVerification();
       setNotice('Код отправлен на вашу почту.');
+      setResendDeadline(confirmedResendDeadline(Date.now()));
     } catch (requestError) {
       setError(
         emailVerificationRequestErrorMessage(
@@ -58,6 +67,21 @@ export function VerifyEmailForm({ redirectTo, autoRequest }: VerifyEmailFormProp
       setRequesting(false);
     }
   };
+
+  useEffect(() => {
+    if (resendDeadline === null) return;
+    const timer = setInterval(() => setNow(Date.now()), 250);
+    const onVisible = () => setNow(Date.now());
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', onVisible);
+    }
+    return () => {
+      clearInterval(timer);
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', onVisible);
+      }
+    };
+  }, [resendDeadline]);
 
   useEffect(() => {
     if (!autoRequest || autoRequested.current || auth.user?.emailVerifiedAt) return;
@@ -119,23 +143,25 @@ export function VerifyEmailForm({ redirectTo, autoRequest }: VerifyEmailFormProp
     void accountLogout.logout();
   };
 
+  const resendLabel = requesting
+    ? 'Отправляем код…'
+    : remaining > 0
+      ? `Отправить повторно через ${remaining} сек`
+      : notice
+        ? 'Отправить повторно'
+        : 'Отправить код';
+
   return (
-    <AuthCard
-      title="Подтвердите email"
-      description={`Подтвердите ${auth.user?.email ?? 'ваш email'}, чтобы создавать и редактировать профиль автора.`}
-    >
-      <View style={{ gap: designTokens.space.x3 }}>
-        <TextField
-          label="Код из письма"
+      <View style={{ gap: designTokens.auth.formGap }}>
+        <AppText role="bodySmall" style={{ color: designTokens.color.fieldValue }}>
+          {`На ваш почтовый адрес пришел код ${auth.user?.email ?? ''}. Подтверждение нужно, чтобы создавать и редактировать профиль автора.`}
+        </AppText>
+        <AuthCodeField
           value={code}
           onChangeText={(value) => {
             setCodeError(null);
-            setCode(normalizeEmailVerificationCode(value));
+            setCode(value);
           }}
-          keyboardType="number-pad"
-          autoComplete="one-time-code"
-          maxLength={6}
-          placeholder="123456"
           error={codeError ?? undefined}
         />
         {error ? (
@@ -144,10 +170,9 @@ export function VerifyEmailForm({ redirectTo, autoRequest }: VerifyEmailFormProp
           </AppText>
         ) : null}
         {notice ? <AppText role="bodySmall" tone="secondary">{notice}</AppText> : null}
-        <PrimaryButton label="Подтвердить" width="full" loading={verifying} disabled={requesting || verifying || logoutBusy} onPress={() => void verify()} />
-        <SecondaryButton label={requesting ? 'Отправляем код…' : 'Отправить код'} width="full" disabled={verifying || requesting || logoutBusy} onPress={() => void requestCode()} />
+        <PrimaryButton label="Продолжить" size="auth" width="full" loading={verifying} disabled={requesting || verifying || logoutBusy} onPress={() => void verify()} />
+        <SecondaryButton label={resendLabel} size="authResend" width="full" disabled={verifying || requesting || logoutBusy || remaining > 0} onPress={() => void requestCode()} />
         <AccountLogoutButton pending={requesting || verifying || logoutBusy} onPress={beginLogout} />
       </View>
-    </AuthCard>
   );
 }

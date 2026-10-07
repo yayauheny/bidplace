@@ -1,4 +1,4 @@
-import { forwardRef, useId, useState, type ComponentRef, type Ref } from 'react';
+import { forwardRef, useId, useState, type ComponentRef, type ReactNode, type Ref } from 'react';
 import { Platform, Text, TextInput, View, type TextInputProps } from 'react-native';
 
 import { figmaTokens } from '@bidplace/design-tokens';
@@ -19,6 +19,8 @@ type FigmaTextFieldProps = Omit<TextInputProps, 'editable'> & {
   success?: boolean;
   disabled?: boolean;
   icon?: FigmaIconName;
+  metrics?: 'default' | 'authPassword';
+  trailing?: ReactNode;
 };
 
 type FieldInputProps = TextInputProps & {
@@ -37,6 +39,8 @@ export const FigmaTextField = forwardRef<TextInput, FigmaTextFieldProps>(functio
   success = false,
   disabled = false,
   icon,
+  metrics = 'default',
+  trailing,
   value,
   defaultValue,
   placeholder,
@@ -68,7 +72,7 @@ export const FigmaTextField = forwardRef<TextInput, FigmaTextFieldProps>(functio
 
   const field = (
     <View style={{ width: '100%' }}>
-      <View style={figmaFieldStyle(status, multiline)}>
+      <View style={figmaFieldStyle(status, multiline, metrics)}>
         {icon ? (
           <View style={{ padding: figmaTokens.space.iconPad }}>
             <FigmaIcon name={icon} color={figmaTokens.color.fieldValue} />
@@ -110,12 +114,15 @@ export const FigmaTextField = forwardRef<TextInput, FigmaTextFieldProps>(functio
               color: valueColor,
               padding: 0,
               textAlignVertical: multiline ? 'top' : 'center',
-              ...figmaTokens.typography.field,
+              ...(metrics === 'authPassword'
+                ? figmaTokens.typography.authPassword
+                : figmaTokens.typography.field),
               ...(Platform.OS === 'web' ? (figmaFieldNativeOutlineStyle as object) : null),
             },
             inputStyle,
           ]}
         />
+        {trailing}
         {showLabel ? (
           <View
             pointerEvents="none"

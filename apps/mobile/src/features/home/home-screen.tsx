@@ -5,7 +5,7 @@ import { ScrollView, View } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
 
 import { BrandLogo } from '../../components/layout/BrandLogo';
-import { AppShell } from '../../components/layout';
+import { AppShell } from '../../components/layout/AppShell';
 import { InfrastructurePageStatus } from '../../components/shared/InfrastructurePageStatus';
 import { infrastructurePageFetchStatus } from '../../components/shared/infrastructure-page-status';
 import { PageState, PrimaryButton } from '../../components/ui';

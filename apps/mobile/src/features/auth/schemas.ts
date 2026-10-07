@@ -16,10 +16,15 @@ export const registerFormSchema = z
   .object({
     email: emailField,
     password: passwordSchema,
+    confirmPassword: z.string({ required_error: 'Подтвердите пароль' }).min(1, 'Подтвердите пароль'),
     phone: z.string().trim().transform((value) => value || null).nullable().optional(),
     displayName: z.string({ required_error: 'Введите имя' }).trim().min(1, 'Введите имя'),
   })
-  .strict();
+  .strict()
+  .refine((values) => values.password === values.confirmPassword, {
+    message: 'Пароли не совпадают',
+    path: ['confirmPassword'],
+  });
 
 export type LoginFormValues = z.infer<typeof loginFormSchema>;
 export type RegisterFormValues = z.infer<typeof registerFormSchema>;

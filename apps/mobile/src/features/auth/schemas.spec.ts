@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { registerRequestSchema } from '@bidplace/contracts';
 
+import { registerSubmission } from './auth-dismissal';
 import { loginFormSchema, registerFormSchema, resetPasswordFormSchema } from './schemas';
 
 describe('login form validation', () => {
@@ -35,12 +36,24 @@ describe('registration form validation', () => {
     const registration = registerFormSchema.parse({
       email: 'author@example.com',
       password: 'password123',
+      confirmPassword: 'password123',
       displayName: 'Автор',
       phone,
     });
 
     expect(registration.phone).toBe(expected);
-    expect(registerRequestSchema.safeParse(registration).success).toBe(true);
+    expect(registerRequestSchema.safeParse(registerSubmission(registration)).success).toBe(true);
+    expect(registerSubmission(registration)).not.toHaveProperty('confirmPassword');
+  });
+
+  it('keeps a repeated password in the form and out of the request', () => {
+    const mismatch = registerFormSchema.safeParse({
+      email: 'author@example.com',
+      password: 'password123',
+      confirmPassword: 'password1234',
+      displayName: 'Автор',
+    });
+    expect(mismatch.success).toBe(false);
   });
 });
 

@@ -20,6 +20,21 @@ const harness = vi.hoisted(() => ({
 vi.mock('react-native', () => ({
   Platform: { OS: 'web' },
   View: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
+  Text: ({ children }: { children?: ReactNode }) => createElement('span', null, children),
+  TextInput: ({
+    accessibilityLabel,
+    value,
+    onChangeText,
+  }: {
+    accessibilityLabel?: string;
+    value?: string;
+    onChangeText?: (value: string) => void;
+  }) =>
+    createElement('input', {
+      'aria-label': accessibilityLabel,
+      value: value ?? '',
+      onChange: (event: { target: { value: string } }) => onChangeText?.(event.target.value),
+    }),
 }));
 
 vi.mock('expo-router', () => ({
@@ -162,7 +177,7 @@ describe('verify email logout boundary', () => {
     harness.verifyEmailVerification.mockImplementation(() => new Promise(() => undefined));
     const view = mount();
     setCode(view.container, '123456');
-    click(view.container, 'Подтвердить');
+    click(view.container, 'Продолжить');
     await flush();
     expect(button(view.container, 'Выйти').disabled).toBe(true);
     click(view.container, 'Выйти');
@@ -175,7 +190,7 @@ describe('verify email logout boundary', () => {
     const view = mount();
     click(view.container, 'Выйти');
     await flush();
-    expect(button(view.container, 'Подтвердить').disabled).toBe(true);
+    expect(button(view.container, 'Продолжить').disabled).toBe(true);
     expect(button(view.container, 'Отправить код').disabled).toBe(true);
     view.unmount();
   });
@@ -187,7 +202,7 @@ describe('verify email logout boundary', () => {
     const view = mount();
     setCode(view.container, '123456');
     click(view.container, 'Выйти');
-    click(view.container, 'Подтвердить');
+    click(view.container, 'Продолжить');
     click(view.container, 'Отправить код');
     await flush();
     expect(harness.logout).toHaveBeenCalledTimes(1);

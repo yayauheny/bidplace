@@ -131,7 +131,7 @@ async function fieldChrome(field: Locator) {
 test('global input focus ring stays available outside FigmaTextField', async ({ page }) => {
   await mockApi(page, { 'GET /api/auth/me': anonymous });
   await page.goto('/login');
-  await expect(page.getByRole('textbox', { name: 'Email', exact: true })).toBeVisible();
+  await expect(page.getByRole('textbox', { name: 'Электронная почта', exact: true })).toBeVisible();
   await page.evaluate(() => {
     const probe = document.createElement('input');
     probe.setAttribute('aria-label', 'Глобальный контур');
@@ -148,7 +148,7 @@ test('global input focus ring stays available outside FigmaTextField', async ({ 
 test('field focus stays on the shell for click and tab', async ({ page }) => {
   await mockApi(page, { 'GET /api/auth/me': anonymous });
   await page.goto('/login');
-  const email = page.getByRole('textbox', { name: 'Email', exact: true });
+  const email = page.getByRole('textbox', { name: 'Электронная почта', exact: true });
   await email.click();
   await expect(email).toBeFocused();
   await expect.poll(async () => (await fieldChrome(email)).outlineStyle).toBe('none');
@@ -161,8 +161,7 @@ test('field focus stays on the shell for click and tab', async ({ page }) => {
   await expect.poll(async () => (await fieldChrome(password)).outlineStyle).toBe('none');
   await expect.poll(async () => (await fieldChrome(password)).borderColor).toBe(focusBorder);
 
-  await page.getByRole('link', { name: 'bidplace — на главную' }).focus();
-  await page.keyboard.press('Tab');
+  await page.keyboard.press('Shift+Tab');
   await expect(email).toBeFocused();
   await expect.poll(async () => (await fieldChrome(email)).borderColor).toBe(focusBorder);
   await expect.poll(async () => (await fieldChrome(email)).outlineStyle).toBe('none');
@@ -177,18 +176,22 @@ test('verification field keeps the error shell without a native ring', async ({ 
   await expect(code).toBeVisible();
   await code.click();
   await code.fill('123');
-  await page.getByRole('button', { name: 'Подтвердить', exact: true }).click();
+  await page.getByRole('button', { name: 'Продолжить', exact: true }).click();
   await expect(page.getByText('Введите шестизначный код.')).toBeVisible();
   await code.click();
   await expect(code).toBeFocused();
   await expect.poll(async () => (await fieldChrome(code)).outlineStyle).toBe('none');
-  await expect.poll(async () => (await fieldChrome(code)).borderColor).toBe(errorBorder);
+  const cellBorder = await page.locator('[data-auth-code-cell]').first().evaluate((node) => {
+    const match = getComputedStyle(node).borderTopColor.replaceAll(' ', '').match(/^rgba?\((\d+),(\d+),(\d+)/);
+    return match ? `rgb(${match[1]}, ${match[2]}, ${match[3]})` : getComputedStyle(node).borderTopColor;
+  });
+  expect(cellBorder).toBe(errorBorder);
 });
 
 test('login validation error keeps a single shell border', async ({ page }) => {
   await mockApi(page, { 'GET /api/auth/me': anonymous });
   await page.goto('/login');
-  const email = page.getByRole('textbox', { name: 'Email', exact: true });
+  const email = page.getByRole('textbox', { name: 'Электронная почта', exact: true });
   await email.fill('not-an-email');
   await page.getByRole('button', { name: 'Войти', exact: true }).click();
   await expect(page.getByText('Введите корректный email')).toBeVisible();

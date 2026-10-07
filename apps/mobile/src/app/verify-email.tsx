@@ -16,7 +16,15 @@ function VerifyEmailScreen() {
   }
 
   return (
-    <AuthViewport>
+    <AuthViewport
+      title="Подтвердите email"
+      tone="section"
+      redirectTo="/"
+      exit={{
+        title: 'Выйти из подтверждения',
+        description: 'Подтверждение можно пройти позже. Аккаунт сохранится.',
+      }}
+    >
       <VerifyEmailForm redirectTo={safeRedirect} autoRequest={safeRedirect !== '/'} />
     </AuthViewport>
   );

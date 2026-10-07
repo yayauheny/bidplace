@@ -14,6 +14,19 @@ import {
 } from './figma-button-style';
 
 describe('Figma button styles', () => {
+  it('uses the auth sheet primary and provider measurements', () => {
+    expect(figmaButtonStyle('authPrimary', 'idle', 'auth')).toMatchObject({
+      minHeight: figmaTokens.auth.actionHeight,
+      backgroundColor: figmaTokens.color.fieldValue,
+      borderWidth: 0.5,
+    });
+    expect(figmaButtonGradientColors('authProvider')).toEqual([
+      figmaTokens.auth.providerBorderStart,
+      figmaTokens.auth.providerBorderEnd,
+    ]);
+    expect(figmaButtonLabelColor('authProvider')).toBe(figmaTokens.color.textSubdued);
+  });
+
   it('uses the solid charcoal pill for the primary idle state', () => {
     expect(figmaButtonStyle('solid', 'idle')).toMatchObject({
       backgroundColor: figmaTokens.color.solid,

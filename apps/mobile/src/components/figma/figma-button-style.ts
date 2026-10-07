@@ -7,9 +7,12 @@ export const figmaButtonVariants = [
   'ghost',
   'muted',
   'danger',
+  'authPrimary',
+  'authQuiet',
+  'authProvider',
 ] as const;
 
-export const figmaButtonSizes = ['regular', 'large', 'compact'] as const;
+export const figmaButtonSizes = ['regular', 'large', 'compact', 'auth', 'authResend'] as const;
 
 export type FigmaButtonVariant = (typeof figmaButtonVariants)[number];
 export type FigmaButtonSize = (typeof figmaButtonSizes)[number];
@@ -27,15 +30,22 @@ export function figmaButtonStyle(
   const insetPressedSurface =
     pressed && (variant === 'ghost' || variant === 'muted');
   const compact = size === 'compact';
+  const authHeight =
+    size === 'auth'
+      ? figmaTokens.auth.actionHeight
+      : size === 'authResend'
+        ? figmaTokens.auth.resendHeight
+        : null;
 
   return {
     ...(compact
       ? {}
       : {
           minHeight:
-            (size === 'large'
-              ? figmaTokens.size.buttonLarge
-              : figmaTokens.size.button) - (insetPressedSurface ? 2 : 0),
+            (authHeight ??
+              (size === 'large'
+                ? figmaTokens.size.buttonLarge
+                : figmaTokens.size.button)) - (insetPressedSurface ? 2 : 0),
         }),
     margin: insetPressedSurface ? 1 : 0,
     paddingHorizontal: compact
@@ -45,7 +55,7 @@ export function figmaButtonStyle(
       ? figmaTokens.space.quietButtonY
       : figmaTokens.space.buttonY,
     borderRadius: figmaButtonRadius(size),
-    borderWidth: compact || insetPressedSurface ? 0 : 1,
+    borderWidth: compact || insetPressedSurface ? 0 : authHeight ? 0.5 : 1,
     borderColor: buttonBorder(variant),
     backgroundColor:
       variant === 'outline'
@@ -82,12 +92,12 @@ export function figmaButtonSurfaceFill(
 }
 
 export function figmaButtonUsesGradientBorder(variant: FigmaButtonVariant) {
-  return variant === 'outline' || variant === 'quiet';
+  return variant === 'outline' || variant === 'quiet' || variant === 'authProvider';
 }
 
 export function figmaButtonGradientPlacement(variant: FigmaButtonVariant) {
   if (variant === 'quiet') return 'outside' as const;
-  if (variant === 'outline') return 'inset' as const;
+  if (variant === 'outline' || variant === 'authProvider') return 'inset' as const;
   return 'none' as const;
 }
 
@@ -98,6 +108,12 @@ export function figmaButtonUsesOutsidePaintWrapper(
 }
 
 export function figmaButtonGradientColors(variant: FigmaButtonVariant) {
+  if (variant === 'authProvider') {
+    return [
+      figmaTokens.auth.providerBorderStart,
+      figmaTokens.auth.providerBorderEnd,
+    ] as const;
+  }
   if (variant === 'quiet') {
     return [
       figmaTokens.color.quietBorderStart,
@@ -112,7 +128,10 @@ export function figmaButtonGradientOpacity(variant: FigmaButtonVariant) {
 }
 
 export function figmaButtonLabelColor(variant: FigmaButtonVariant) {
-  return variant === 'solid' || variant === 'danger'
+  if (variant === 'authQuiet' || variant === 'authProvider') {
+    return figmaTokens.color.textSubdued;
+  }
+  return variant === 'solid' || variant === 'danger' || variant === 'authPrimary'
     ? figmaTokens.color.white
     : figmaTokens.color.ink;
 }
@@ -132,6 +151,11 @@ function buttonFill(variant: FigmaButtonVariant, active: boolean) {
       return active
         ? figmaTokens.color.mutedHover
         : figmaTokens.color.mutedFill;
+    case 'authPrimary':
+      return active ? figmaTokens.color.solidHover : figmaTokens.color.fieldValue;
+    case 'authQuiet':
+    case 'authProvider':
+      return active ? figmaTokens.color.ghostHover : figmaTokens.color.canvas;
   }
 }
 
@@ -147,5 +171,11 @@ function buttonBorder(variant: FigmaButtonVariant) {
     case 'ghost':
     case 'muted':
       return figmaTokens.color.canvas;
+    case 'authPrimary':
+      return figmaTokens.color.fieldValue;
+    case 'authQuiet':
+      return figmaTokens.color.canvas;
+    case 'authProvider':
+      return 'transparent';
   }
 }

@@ -140,7 +140,14 @@ export function FigmaButton({
               {iconPosition === 'left' ? iconElement : null}
               <AppText
                 role={compact ? 'buttonCompact' : 'button'}
-                style={{ color: textColor }}
+                style={{
+                  color: textColor,
+                  ...(size === 'auth' || size === 'authResend'
+                    ? variant === 'authPrimary'
+                      ? figmaTokens.typography.authButton
+                      : figmaTokens.typography.authButtonStrong
+                    : null),
+                }}
               >
                 {label}
               </AppText>

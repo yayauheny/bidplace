@@ -1,4 +1,4 @@
-import { forwardRef } from 'react';
+import { forwardRef, type ReactNode } from 'react';
 import { View, type TextInput, type TextInputProps } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
@@ -11,6 +11,8 @@ export type TextFieldProps = TextInputProps & {
   hint?: string;
   error?: string;
   required?: boolean;
+  metrics?: 'default' | 'authPassword';
+  trailing?: ReactNode;
 };
 
 export const TextField = forwardRef<TextInput, TextFieldProps>(function TextField({
@@ -18,6 +20,8 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
   hint,
   error,
   required,
+  metrics,
+  trailing,
   editable = true,
   ...props
 }, ref) {
@@ -33,6 +37,8 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
         ref={ref}
         label={required ? `${label} *` : label}
         error={error}
+        metrics={metrics}
+        trailing={trailing}
         disabled={editable === false}
       />
     </View>
