@@ -4,6 +4,17 @@
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
+## 2026-10-08 — Auth history stores one position number per entry
+
+- `Partial`: Back, Forward, and reload still resolve the auth entry from the
+  integer stored on that history entry. Continue keeps the login URL, route,
+  and typed value. Interrupt opens the entry the traversal reached. A copied
+  work-draft history state keeps the Expo id and guard key, and does not
+  accumulate an entry list. Chromium and WebKit `auth-layout` and
+  `auth-lifecycle` passed (14) on disposable `bidplace_e2e`. Google, mixed
+  text, consent, and derived recovery remain open. This is not a 1:1 match.
+  Production was not updated.
+
 ## 2026-10-08 — Auth Back after reload stays on the login entry
 
 - `Partial`: Home → Login → reload → a filled Back still asks on the login

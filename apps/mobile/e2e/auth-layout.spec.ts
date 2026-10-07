@@ -43,6 +43,90 @@ test('browser back keeps a filled login without the Navigation API', async ({ pa
   await expectAuthBrowserHistory(page, false);
 });
 
+test('history position stays one number per entry', async ({ page }) => {
+  await page.goto('/');
+  const pushed = await page.evaluate(() => {
+    const href = window.location.href;
+    const state = window.history.state as { id?: string; index?: number } | null;
+    const id = state?.id;
+    const start = state?.index ?? 0;
+    const copied = Array.from({ length: 81 }, (_, step) => `entry-${step}`);
+    for (let step = 0; step < 80; step += 1) {
+      window.history.pushState(
+        {
+          ...(window.history.state ?? {}),
+          id,
+          entries: copied.slice(0, step + 1),
+          __bidplaceProductDraftGuard: `g${step}`,
+        },
+        '',
+        href,
+      );
+    }
+    const stored = window.history.state as Record<string, unknown> | null;
+    return {
+      id,
+      start,
+      length: window.history.length,
+      index: stored?.index,
+      guard: stored?.__bidplaceProductDraftGuard,
+      storedId: stored?.id,
+      hasEntries: stored != null && 'entries' in stored,
+    };
+  });
+  expect(pushed.hasEntries).toBe(false);
+  expect(pushed.storedId).toBe(pushed.id);
+  expect(pushed.guard).toBe('g79');
+  expect(pushed.index).toBe(pushed.start + 80);
+  if (page.context().browser()?.browserType().name() === 'chromium') {
+    expect(pushed.length).toBe(50);
+    expect(Number(pushed.index)).toBeGreaterThan(pushed.length);
+  }
+
+  await historyStep(page, -1);
+  await expect.poll(() => page.evaluate(() => window.history.state?.index)).toBe(Number(pushed.index) - 1);
+  await expect.poll(() => page.evaluate(() => 'entries' in (window.history.state ?? {}))).toBe(false);
+
+  const branched = await page.evaluate((id) => {
+    window.history.pushState(
+      {
+        ...(window.history.state ?? {}),
+        id,
+        entries: Array.from({ length: 90 }, (_, step) => `entry-${step}`),
+        __bidplaceProductDraftGuard: 'branch',
+      },
+      '',
+      window.location.href,
+    );
+    const stored = window.history.state as Record<string, unknown> | null;
+    return {
+      index: stored?.index,
+      guard: stored?.__bidplaceProductDraftGuard,
+      storedId: stored?.id,
+      hasEntries: stored != null && 'entries' in stored,
+    };
+  }, pushed.id);
+  expect(branched.hasEntries).toBe(false);
+  expect(branched.storedId).toBe(pushed.id);
+  expect(branched.guard).toBe('branch');
+  expect(branched.index).toBe(pushed.index);
+
+  const replaced = await page.evaluate((id) => {
+    window.history.replaceState({ id, entries: ['a', 'b', 'c'] }, '', window.location.href);
+    const stored = window.history.state as Record<string, unknown> | null;
+    return {
+      index: stored?.index,
+      guard: stored?.__bidplaceProductDraftGuard,
+      storedId: stored?.id,
+      hasEntries: stored != null && 'entries' in stored,
+    };
+  }, pushed.id);
+  expect(replaced.hasEntries).toBe(false);
+  expect(replaced.storedId).toBe(pushed.id);
+  expect(replaced.guard).toBe('branch');
+  expect(replaced.index).toBe(branched.index);
+});
+
 async function expectAuthBrowserHistory(page: Page, navigationApi: boolean) {
   await page.setViewportSize({ width: 390, height: 874 });
   await page.goto('/');

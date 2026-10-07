@@ -12,8 +12,8 @@ export type AuthHistoryLive = {
 
 let liveAuthHistory: AuthHistoryLive | null = null;
 let listening = false;
-let entries: string[] = [];
-let index = 0;
+let currentId: string | null = null;
+let currentIndex: number | null = null;
 let activeRestoreId: string | null = null;
 let nativePush: History['pushState'] | null = null;
 let nativeReplace: History['replaceState'] | null = null;
@@ -40,83 +40,69 @@ function dismissalFor(path: string) {
   };
 }
 
-function historyId(): string | null {
-  return readId(window.history.state);
-}
-
 function readId(data: unknown): string | null {
   if (!data || typeof data !== 'object' || !('id' in data)) return null;
   const id = (data as { id?: unknown }).id;
   return typeof id === 'string' && id.length > 0 ? id : null;
 }
 
-function savedEntries(data: unknown): string[] | null {
-  if (!data || typeof data !== 'object' || !('entries' in data)) return null;
-  const saved = (data as { entries?: unknown }).entries;
-  if (!Array.isArray(saved) || saved.length === 0) return null;
-  if (!saved.every((item) => typeof item === 'string' && item.length > 0)) return null;
-  return saved;
+function historyId(): string | null {
+  return readId(window.history.state);
 }
 
-function restoreEntries() {
-  const saved = savedEntries(window.history.state);
-  const id = historyId();
-  if (!saved || !id) return;
-  const at = saved.lastIndexOf(id);
-  if (at < 0) return;
-  const savedIndex = (window.history.state as { index?: unknown }).index;
-  entries = saved.slice();
-  index = typeof savedIndex === 'number' && saved[savedIndex] === id ? savedIndex : at;
+function positionFrom(data: unknown): number | null {
+  if (!data || typeof data !== 'object' || !('index' in data)) return null;
+  const index = (data as { index?: unknown }).index;
+  return typeof index === 'number' && Number.isSafeInteger(index) && index >= 0 ? index : null;
 }
 
-function rememberCurrent() {
-  const id = historyId();
-  if (!id) return;
-  if (entries.length === 0) {
-    entries = [id];
-    index = 0;
-    return;
-  }
-  entries[index] = id;
+function withoutHistoryList(data: unknown): Record<string, unknown> {
+  if (!data || typeof data !== 'object') return {};
+  const next = { ...(data as Record<string, unknown>) };
+  delete next.entries;
+  return next;
 }
 
-function writePosition(url?: string | URL | null) {
+function remember(id: string | null, index: number | null) {
+  currentId = id;
+  currentIndex = index;
+}
+
+function locationHref() {
+  return `${window.location.pathname}${window.location.search}${window.location.hash}`;
+}
+
+function stampCurrent(index: number) {
   if (!nativeReplace) return;
-  const id = historyId();
-  if (!id) return;
   const current = window.history.state;
-  const base = current && typeof current === 'object' ? current : {};
+  const id = readId(current);
   nativeReplace(
-    { ...base, id, entries: entries.slice(), index },
+    { ...withoutHistoryList(current), ...(id ? { id } : {}), index },
     '',
-    url === undefined ? `${window.location.pathname}${window.location.search}${window.location.hash}` : url,
+    locationHref(),
   );
+  remember(id, index);
 }
 
 function onPopState(event: PopStateEvent) {
   const landedId = historyId();
+  const landedIndex = positionFrom(window.history.state);
   if (activeRestoreId) {
     const expectedId = activeRestoreId;
     activeRestoreId = null;
     if (landedId === expectedId) {
-      const restored = landedId ? entries.lastIndexOf(landedId) : -1;
-      if (restored >= 0) index = restored;
-      writePosition();
+      remember(landedId, landedIndex ?? currentIndex);
       event.stopImmediatePropagation();
       return;
     }
   }
-  const from = index;
-  const to = landedId ? entries.lastIndexOf(landedId) : -1;
-  const restoreId = entries[from];
-  const delta = to >= 0 && restoreId ? from - to : 0;
-  const path = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+  const from = currentIndex;
+  const restoreId = currentId;
+  const delta = from !== null && landedIndex !== null && restoreId ? from - landedIndex : 0;
+  const path = locationHref();
   const result = dismissalFor(path);
   if (!result || result.decision === 'allow' || delta === 0 || !restoreId) {
-    if (to >= 0) {
-      index = to;
-      writePosition();
-    }
+    remember(landedId ?? currentId, landedIndex);
     return;
   }
   result.live.rememberLeave(path);
@@ -129,56 +115,40 @@ function onPopState(event: PopStateEvent) {
 export function ensureAuthBrowserHistory() {
   if (listening || typeof window === 'undefined') return;
   listening = true;
-  restoreEntries();
+  remember(historyId(), positionFrom(window.history.state));
   nativePush = window.history.pushState.bind(window.history);
   nativeReplace = window.history.replaceState.bind(window.history);
   window.history.pushState = (data, unused, url) => {
-    rememberCurrent();
-    const id = readId(data);
-    if (id) {
-      entries = entries.slice(0, index + 1);
-      entries.push(id);
-      index = entries.length - 1;
+    let index = positionFrom(window.history.state) ?? currentIndex;
+    if (index === null) {
+      stampCurrent(0);
+      index = 0;
     }
+    const next = index + 1;
+    const id = readId(data);
     nativePush?.(
-      data && typeof data === 'object' ? { ...data, entries: entries.slice(), index } : data,
+      { ...withoutHistoryList(data), ...(id ? { id } : {}), index: next },
       unused,
       url,
     );
-    if (id) return;
-    const pushed = historyId();
-    if (!pushed) return;
-    entries = entries.slice(0, index + 1);
-    entries.push(pushed);
-    index = entries.length - 1;
-    writePosition(url);
+    remember(historyId(), next);
   };
   window.history.replaceState = (data, unused, url) => {
-    if (entries.length === 0) restoreEntries();
-    const id = readId(data) ?? historyId();
-    if (id) {
-      if (entries.length === 0) {
-        entries = [id];
-        index = 0;
-      } else {
-        entries[index] = id;
-      }
-    }
     const current = window.history.state;
-    const base = current && typeof current === 'object' ? current : {};
+    const index = positionFrom(current) ?? currentIndex ?? 0;
+    const id = readId(data) ?? readId(current);
     nativeReplace?.(
       {
-        ...base,
-        ...(data && typeof data === 'object' ? data : {}),
+        ...withoutHistoryList(current),
+        ...withoutHistoryList(data),
         ...(id ? { id } : {}),
-        entries: entries.slice(),
         index,
       },
       unused,
       url,
     );
+    remember(id, index);
   };
-  rememberCurrent();
   window.addEventListener('popstate', onPopState, true);
 }
 

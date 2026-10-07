@@ -1,5 +1,23 @@
 # bidplace — текущий статус проекта
 
+## 2026-10-08 — Auth history position is one number per entry
+
+- `Partial` for the portfolio auth presentation. Each history entry stores its
+  own integer `index` beside Expo's id. Push writes the next integer and drops
+  a copied `entries` list; replace keeps the same index, the Expo id, and
+  foreign fields such as the work-draft guard key. Back, Forward, reload,
+  branching, a busy request, and one successful replace use the difference of
+  those two numbers. After 80 pushed entries Chromium keeps `history.length`
+  at 50, and the current state has no growing list. This is not a 1:1 Figma
+  match. Production remains `541d763547f7b021895daa3d533c3196c37a4e67`. No
+  push or deploy.
+- Local checks on Node 22.20.0 against disposable `bidplace_e2e` at
+  `127.0.0.1:5432`: mobile typecheck, lint of the touched auth files,
+  `auth-dismissal` plus the product-draft guard specs (27), `build:web`, and
+  `e2e/auth-layout.spec.ts` plus `e2e/auth-lifecycle.spec.ts` — 14 passed on
+  Chromium and WebKit. The shared login scenario is unchanged. The new check
+  pushes 80 copied states, then Back and a branch.
+
 ## 2026-10-08 — Auth history position survives reload
 
 - `Partial` for the portfolio auth presentation. The same `entries` list is
