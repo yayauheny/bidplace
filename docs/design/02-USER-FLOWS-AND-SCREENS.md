@@ -1,6 +1,6 @@
 # bidplace — пользовательские потоки и экраны First MVP
 
-Последнее обновление: 2026-10-07
+Последнее обновление: 2026-10-08
 Статус: Confirmed product/UI scope for mobile-web 390 Figma cutover
 Product contract: [`../product/05-MVP-RFC.md`](../product/05-MVP-RFC.md)
 
@@ -26,8 +26,9 @@ that sign-in is unavailable. A successful login, registration or confirmation
 continues once and does not ask to leave. An empty form leaves with one Back.
 Back from one auth step to another does not ask, even when that step has
 input. A user close, Escape, backdrop, or Back that leaves auth asks first
-when the form has input. Continue keeps the values and focus; Interrupt
-leaves. A finished or closed sheet is not left as a history entry. Leaving
+when the form has input. A multi-step Back or a Forward that leaves auth
+returns the address to the auth entry until the user confirms. Continue keeps
+the values and focus; Interrupt opens the entry that traversal reached. A finished or closed sheet is not left as a history entry. Leaving
 does not cancel an in-flight request, delete an account or log out. Verification can be finished later, and the screen does
 not say a code arrived before the send is accepted. Recovery and wide layouts
 are derived from the phone sheet. Details:

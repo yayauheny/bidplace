@@ -75,6 +75,57 @@ test('browser back keeps a filled login until the user decides', async ({ page }
   await expect(page).toHaveURL(/\/login$/);
   await expect(loginTitle).toBeVisible();
   await expect(page.getByLabel('Имя')).toHaveCount(0);
+
+  await page.goto('/');
+  const catalog = page.getByRole('button', { name: 'Смотреть все' }).first();
+  await catalog.scrollIntoViewIfNeeded();
+  await catalog.click();
+  await expect(page).toHaveURL(/\/works$/);
+  await page.getByRole('link', { name: 'Профиль', exact: true }).click();
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(loginTitle).toBeVisible();
+  await email.fill('b');
+  await historyStep(page, -2);
+  await expect(page.getByText('Прервать вход', { exact: true })).toBeVisible();
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(loginTitle).toBeVisible();
+  await expect(email).toHaveValue('b');
+  await page.getByRole('button', { name: 'Продолжить', exact: true }).click();
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(email).toHaveValue('b');
+  await expect(email).toBeFocused();
+  await historyStep(page, -2);
+  await page.getByRole('button', { name: 'Прервать', exact: true }).click();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(loginTitle).toHaveCount(0);
+
+  await page.goto('/');
+  await page.getByRole('link', { name: 'Профиль', exact: true }).click();
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(loginTitle).toBeVisible();
+  await pushWorksFromBackground(page);
+  await expect(page).toHaveURL(/\/works$/);
+  await expect(page.getByText('Каталог работ на Bidplace', { exact: true })).toBeVisible();
+  await expect(loginTitle).not.toBeVisible();
+  await historyStep(page, -1);
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(page.getByText('Прервать вход', { exact: true })).toHaveCount(0);
+  await expect(loginTitle).toBeVisible();
+  await email.fill('c');
+  await historyStep(page, 1);
+  await expect(page.getByText('Прервать вход', { exact: true })).toBeVisible();
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(loginTitle).toBeVisible();
+  await expect(email).toHaveValue('c');
+  await page.getByRole('button', { name: 'Продолжить', exact: true }).click();
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(email).toHaveValue('c');
+  await expect(email).toBeFocused();
+  await historyStep(page, 1);
+  await page.getByRole('button', { name: 'Прервать', exact: true }).click();
+  await expect(page).toHaveURL(/\/works$/);
+  await expect(loginTitle).not.toBeVisible();
+  await expect(page.getByText('Каталог работ на Bidplace', { exact: true })).toBeVisible();
 });
 
 test('auth composition is stacked in the S4 phone column', async ({ page }) => {
@@ -100,10 +151,24 @@ test('auth composition is stacked in the S4 phone column', async ({ page }) => {
   });
 });
 
-async function historyStep(page: Page, delta: -1 | 1) {
+async function historyStep(page: Page, delta: number) {
   await page.evaluate((step) => {
     window.history.go(step);
   }, delta);
+}
+
+async function pushWorksFromBackground(page: Page) {
+  await expect.poll(async () =>
+    page.evaluate(() => {
+      const buttons = [...document.querySelectorAll('[role="button"]')];
+      const works =
+        buttons.find((element) => element.getAttribute('aria-label') === 'Смотреть все') ??
+        buttons.find((element) => element.getAttribute('aria-label') === 'Все работы');
+      if (!works) return false;
+      works.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      return true;
+    }),
+  ).toBe(true);
 }
 
 async function expectS4Register(page: Page) {

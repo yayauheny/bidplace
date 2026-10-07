@@ -1,8 +1,18 @@
 # bidplace — статус дизайна и UI-реализации
 
-Последнее обновление: 2026-10-07
+Последнее обновление: 2026-10-08
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
+
+## 2026-10-08 — Auth Back and Forward restore the auth entry
+
+- `Partial`: a multi-step Back or a Forward that leaves a filled auth form
+  returns the address to that form until the user decides. Continue keeps the
+  value and focus. Interrupt opens the history entry that traversal reached.
+  An empty form still leaves with one Back, and a move between auth steps does
+  not ask. Chromium and WebKit `auth-layout` and `auth-lifecycle` passed (10)
+  on disposable `bidplace_e2e`. Google, mixed text, consent, and derived
+  recovery remain open. This is not a 1:1 match. Production was not updated.
 
 ## 2026-10-07 — Auth Back uses the Expo history entry
 

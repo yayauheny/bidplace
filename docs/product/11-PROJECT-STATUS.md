@@ -1,5 +1,23 @@
 # bidplace — текущий статус проекта
 
+## 2026-10-08 — Auth history restores the entry that was left
+
+- `Partial` for the portfolio auth presentation. A browser traversal that
+  leaves a dirty or busy auth form returns to the Expo entry that was current
+  when the traversal started. The step is the Navigation API index delta, so a
+  two-step Back and a Forward both return to that entry. The following
+  `popstate` is stopped only when its `history.state.id` is that entry. An
+  empty form still leaves with one Back. Auth steps do not ask. A filled form
+  asks, Continue keeps the value and focus, and Interrupt opens the entry the
+  traversal reached. A request in progress still keeps the sheet. One
+  successful replace does not reopen a finished sheet. This is not a 1:1
+  Figma match. Production remains
+  `541d763547f7b021895daa3d533c3196c37a4e67`. No push or deploy.
+- Local checks on Node 22.20.0 against disposable `bidplace_e2e` at
+  `127.0.0.1:5432`: mobile typecheck, lint of the touched auth files,
+  `auth-dismissal` unit tests (7), and `e2e/auth-layout.spec.ts` plus
+  `e2e/auth-lifecycle.spec.ts` — 10 passed on Chromium and WebKit.
+
 ## 2026-10-07 — Auth browser history follows Expo entries
 
 - `Partial` for the portfolio auth presentation. Browser history no longer
