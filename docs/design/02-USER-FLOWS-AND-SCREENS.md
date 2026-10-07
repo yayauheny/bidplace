@@ -1,6 +1,6 @@
 # bidplace — пользовательские потоки и экраны First MVP
 
-Последнее обновление: 2026-09-22
+Последнее обновление: 2026-10-07
 Статус: Confirmed product/UI scope for mobile-web 390 Figma cutover
 Product contract: [`../product/05-MVP-RFC.md`](../product/05-MVP-RFC.md)
 
@@ -14,6 +14,19 @@ assets и measurements берутся только из versioned inspect/handof
 Текущий production visual source на mobile-web 390 — Figma (`DEC-085`). Защищённый
 `.pen` не редактируется и не удаляется. Product owner documents и server
 contracts по-прежнему определяют routes, data, permissions и auction behavior.
+
+### Planned auth presentation — 2026-10-07
+
+`DEC-105` approves the supplied sheet design for the next auth UI wave. Its
+source/contract adaptations and dismissal states are owned by
+[`auth HANDOFF.md`](../../design/figma-handoff/auth/2026-10-07-auth-dialogs/HANDOFF.md).
+Standard email/password login, email verification, safe internal redirect and
+the working single-use-link forgot/reset flow stay. Account registration uses
+«Имя»/`displayName`; author nickname stays in the author profile. Google and
+Telegram may appear only as honest unavailable placeholders; OAuth/passwordless
+flows stay excluded. The shared confirmation changes presentation/copy, not
+account deletion, logout, server cancellation or author save-and-exit semantics.
+This is a prepared handoff, not an implemented route or flow change.
 
 ## 2. Основной flow
 

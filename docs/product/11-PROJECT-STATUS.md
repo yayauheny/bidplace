@@ -1,5 +1,22 @@
 # bidplace — текущий статус проекта
 
+## 2026-10-07 — Auth design handoff prepared, no runtime change
+
+- `Implemented` for the six versioned source imports and execution handoff only:
+  [`design/figma-handoff/auth/2026-10-07-auth-dialogs`](../../design/figma-handoff/auth/2026-10-07-auth-dialogs/README.md).
+  Source roots/surfaces map to existing auth forms and shared primitives;
+  imported bytes/checksums and source differences are recorded. Runtime UI,
+  tokens, APIs, migrations and production data were not changed.
+- `Not implemented` for the new auth presentation. `DEC-105` keeps standard
+  email/password, account `displayName`, email verification and the existing
+  single-use-link recovery. OAuth/passwordless remain deferred; provider rows
+  are placeholders. Auth source measurements are scoped to this next wave.
+- `Needs verification` for the export's incomplete styles/assets, missing exact
+  recovery/desktop states and legal-link/consent wiring. The handoff does not
+  close auth live acceptance or full MVP readiness. Production remains runtime
+  `541d763547f7b021895daa3d533c3196c37a4e67`, Worker
+  `3afe08d5-b204-495c-8dcc-91d43e6af92b`. No push/deploy in this task.
+
 ## 2026-10-07 — Safe request logs are on production
 
 - `Partial` for the portfolio MVP. Production code is

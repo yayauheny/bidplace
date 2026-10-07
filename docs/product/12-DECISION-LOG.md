@@ -2349,3 +2349,38 @@ are not rewritten.
 - Replacing the mint ring with another colored ring. The founder did not ask
   for a new color effect.
 - A route-local stylesheet. The ring is shared by buttons and choice chips.
+
+## DEC-105 — Auth sheets follow the supplied versioned capture
+
+Date: 2026-10-07
+Status: Confirmed
+Source: founder-provided six Figma captures; explicit instruction to prepare
+the design handoff/import first, preserve standard login and existing recovery,
+keep account «Имя», and show Google/Telegram as placeholders.
+
+### Decision
+
+The next auth UI wave uses the scoped
+[`2026-10-07-auth-dialogs`](../../design/figma-handoff/auth/2026-10-07-auth-dialogs/README.md)
+capture set for login/registration sheets, verification and shared exit-confirm
+presentation. The imported source library and protected Pen stay unchanged.
+Exact style differences, missing assets/ranges and derived states are recorded
+in that package, not silently filled from another design version.
+
+Email/password remains the login method. The code design is adapted to existing
+email verification. Registration's first field is «Имя»/`displayName`, not an
+account nickname or reserved author slug. Google/Telegram are honest unavailable
+UI placeholders, without OAuth. Recovery retains the working single-use link
+and neutral response, with the entered email masked in result presentation.
+Exit-confirm copy reflects the actual pending/saved state; closing does not
+delete an account or cancel committed server work.
+
+### Superseded suggestions and limits
+
+- The generated-password-by-email suggestion and the interim recovery-button
+  placeholder suggestion are superseded by the founder's final instruction to
+  keep the current recovery logic and update its design only.
+- The imported passwordless-login/OAuth-email captures are references, not
+  activation decisions. First MVP auth behavior from RFC §12 stays.
+- Preparation imports sources/docs only. Runtime implementation, exact missing
+  states/assets and production acceptance are not declared complete.

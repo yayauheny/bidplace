@@ -1,0 +1,5259 @@
+{
+  "schemaVersion": 1,
+  "purpose": "source node to proposed code role; not implemented tokens",
+  "captures": [
+    {
+      "id": "login-password",
+      "rootNodeId": "526:14674",
+      "surfaceNodeId": "526:14885",
+      "nodes": [
+        {
+          "role": "surface",
+          "nodeId": "526:14885",
+          "name": "Frame 138",
+          "type": "FRAME",
+          "layout": {
+            "width": 390,
+            "height": 545,
+            "y": 329,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                1,
+                329
+              ]
+            ],
+            "renderBounds": {
+              "x": 0,
+              "y": 0,
+              "width": 390,
+              "height": 545
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "inherit",
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "min"
+            },
+            "mode": "vertical",
+            "gap": 14,
+            "strokesIncludedInLayout": true,
+            "padding": {
+              "top": 8,
+              "right": 20,
+              "bottom": 20,
+              "left": 20
+            },
+            "primaryAxisAlign": "min",
+            "counterAxisAlign": "center",
+            "sizing": {
+              "horizontal": "fixed",
+              "vertical": "hug"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through",
+            "fills": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#FFFFFF",
+                "variable": "White"
+              }
+            ],
+            "backgroundColor": "#FFFFFF",
+            "variables": {
+              "backgroundColor": "White"
+            },
+            "cornerRadii": {
+              "topLeft": 32,
+              "topRight": 32,
+              "bottomRight": 0,
+              "bottomLeft": 0
+            }
+          }
+        },
+        {
+          "role": "overlay",
+          "nodeId": "526:14884",
+          "name": "Frame 140",
+          "type": "FRAME",
+          "layout": {
+            "width": 390,
+            "height": 874,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                1,
+                0
+              ]
+            ],
+            "renderBounds": {
+              "x": 0,
+              "y": 0,
+              "width": 390,
+              "height": 874
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "inherit",
+            "constraints": {
+              "horizontal": "center",
+              "vertical": "center"
+            },
+            "mode": "horizontal",
+            "gap": 10,
+            "strokesIncludedInLayout": true,
+            "primaryAxisAlign": "center",
+            "counterAxisAlign": "max",
+            "sizing": {
+              "horizontal": "hug",
+              "vertical": "fixed"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through",
+            "fills": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "opacity": 0.5,
+                "color": "#2A2A2A",
+                "variable": "Overlay"
+              }
+            ],
+            "backgroundColor": "#2A2A2A",
+            "backgroundOpacity": 0.5,
+            "variables": {
+              "backgroundColor": "Overlay"
+            }
+          }
+        },
+        {
+          "role": "header",
+          "nodeId": "4425:2932",
+          "name": "Frame 203",
+          "type": "FRAME",
+          "layout": {
+            "width": 350,
+            "height": 46,
+            "x": 20,
+            "y": 8,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                20
+              ],
+              [
+                0,
+                1,
+                8
+              ]
+            ],
+            "renderBounds": {
+              "x": 0,
+              "y": 0,
+              "width": 350,
+              "height": 46
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "stretch",
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "min"
+            },
+            "mode": "vertical",
+            "gap": 6,
+            "strokesIncludedInLayout": true,
+            "primaryAxisAlign": "min",
+            "counterAxisAlign": "min",
+            "sizing": {
+              "horizontal": "fill",
+              "vertical": "hug"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through"
+          }
+        },
+        {
+          "role": "handle",
+          "nodeId": "4425:2934",
+          "name": "Rectangle 13",
+          "type": "RECTANGLE",
+          "layout": {
+            "width": 36,
+            "height": 4,
+            "x": 157,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                157
+              ],
+              [
+                0,
+                1,
+                0
+              ]
+            ],
+            "renderBounds": {
+              "x": 0,
+              "y": 0,
+              "width": 36,
+              "height": 4
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "inherit",
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "min"
+            },
+            "mode": "none",
+            "sizing": {
+              "horizontal": "fixed",
+              "vertical": "fixed"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through",
+            "fills": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#EFEFEF",
+                "variable": "Gray 4"
+              }
+            ],
+            "backgroundColor": "#EFEFEF",
+            "variables": {
+              "backgroundColor": "Gray 4"
+            },
+            "borderRadius": 10
+          }
+        },
+        {
+          "role": "title",
+          "nodeId": "4425:2937",
+          "name": "Вход на Bidplace",
+          "type": "TEXT",
+          "layout": {
+            "width": 350,
+            "height": 26,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                1,
+                0
+              ]
+            ],
+            "renderBounds": {
+              "x": 1.29,
+              "y": 6.28,
+              "width": 144.64,
+              "height": 17.41
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "inherit",
+            "layoutGrow": 1,
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "min"
+            },
+            "mode": "none",
+            "sizing": {
+              "horizontal": "fill",
+              "vertical": "hug"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through",
+            "fills": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#121212",
+                "variable": "Black"
+              }
+            ],
+            "color": "#121212",
+            "variables": {
+              "color": "Black"
+            },
+            "fontFamily": "Inter",
+            "fontStyleName": "Semi Bold",
+            "fontSize": 18,
+            "fontWeight": 600,
+            "lineHeight": 26,
+            "letterSpacing": -1,
+            "letterSpacingUnit": "percent",
+            "textAlignVertical": "top",
+            "textAutoResize": "height",
+            "textTruncation": "disabled",
+            "leadingTrim": "none"
+          },
+          "text": "Вход на Bidplace"
+        },
+        {
+          "role": "email",
+          "nodeId": "526:14892",
+          "name": "Поля ввода",
+          "type": "INSTANCE",
+          "layout": {
+            "width": 350,
+            "height": 51,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                1,
+                0
+              ]
+            ],
+            "renderBounds": {
+              "x": 0,
+              "y": 0,
+              "width": 350,
+              "height": 51
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "stretch",
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "min"
+            },
+            "mode": "horizontal",
+            "gap": 4,
+            "strokesIncludedInLayout": true,
+            "padding": {
+              "top": 13,
+              "right": 12,
+              "bottom": 13,
+              "left": 12
+            },
+            "primaryAxisAlign": "min",
+            "counterAxisAlign": "min",
+            "sizing": {
+              "horizontal": "fill",
+              "vertical": "hug"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through",
+            "fills": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#FFFFFF"
+              }
+            ],
+            "backgroundColor": "#FFFFFF",
+            "borderRadius": 18,
+            "strokes": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#8A8A8A"
+              }
+            ],
+            "borderColor": "#8A8A8A",
+            "borderWidth": 0.5,
+            "strokeAlign": "inside",
+            "strokeCap": "none",
+            "strokeJoin": "miter",
+            "strokeMiterLimit": 4,
+            "strokeDashPattern": [],
+            "strokeWeights": {
+              "top": 0.5,
+              "right": 0.5,
+              "bottom": 0.5,
+              "left": 0.5
+            }
+          },
+          "componentProperties": {
+            "Property 1": "Обычный"
+          }
+        },
+        {
+          "role": "password",
+          "nodeId": "526:14894",
+          "name": "Поля ввода",
+          "type": "INSTANCE",
+          "layout": {
+            "width": 350,
+            "height": 51,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                1,
+                0
+              ]
+            ],
+            "renderBounds": {
+              "x": 0,
+              "y": 0,
+              "width": 350,
+              "height": 51
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "stretch",
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "min"
+            },
+            "mode": "horizontal",
+            "gap": 4,
+            "strokesIncludedInLayout": true,
+            "padding": {
+              "top": 13,
+              "right": 12,
+              "bottom": 13,
+              "left": 12
+            },
+            "primaryAxisAlign": "min",
+            "counterAxisAlign": "min",
+            "sizing": {
+              "horizontal": "fill",
+              "vertical": "hug"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through",
+            "fills": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#FFFFFF"
+              }
+            ],
+            "backgroundColor": "#FFFFFF",
+            "borderRadius": 18,
+            "strokes": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#8A8A8A"
+              }
+            ],
+            "borderColor": "#8A8A8A",
+            "borderWidth": 0.5,
+            "strokeAlign": "inside",
+            "strokeCap": "none",
+            "strokeJoin": "miter",
+            "strokeMiterLimit": 4,
+            "strokeDashPattern": [],
+            "strokeWeights": {
+              "top": 0.5,
+              "right": 0.5,
+              "bottom": 0.5,
+              "left": 0.5
+            }
+          },
+          "componentProperties": {
+            "Property 1": "Обычный"
+          }
+        },
+        {
+          "role": "forgotPassword",
+          "nodeId": "526:14895",
+          "name": "Забыли пароль?",
+          "type": "TEXT",
+          "layout": {
+            "width": 350,
+            "height": 15,
+            "y": 57,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                1,
+                57
+              ]
+            ],
+            "renderBounds": {
+              "x": 254.77,
+              "y": 3,
+              "width": 94.64,
+              "height": 11.45
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "stretch",
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "min"
+            },
+            "mode": "none",
+            "sizing": {
+              "horizontal": "fill",
+              "vertical": "hug"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through",
+            "fills": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#565656",
+                "variable": "Gray 1"
+              }
+            ],
+            "color": "#565656",
+            "variables": {
+              "color": "Gray 1"
+            },
+            "fontFamily": "Inter",
+            "fontStyleName": "Regular",
+            "fontSize": 12,
+            "fontWeight": 400,
+            "textAlign": "right",
+            "textAlignVertical": "top",
+            "textAutoResize": "height",
+            "textTruncation": "disabled",
+            "leadingTrim": "none"
+          },
+          "text": "Забыли пароль?"
+        },
+        {
+          "role": "submit",
+          "nodeId": "4425:3033",
+          "name": "Кнопки",
+          "type": "INSTANCE",
+          "layout": {
+            "width": 350,
+            "height": 51,
+            "y": 143,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                1,
+                143
+              ]
+            ],
+            "renderBounds": {
+              "x": 0,
+              "y": 0,
+              "width": 350,
+              "height": 51
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "stretch",
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "min"
+            },
+            "mode": "horizontal",
+            "gap": 2,
+            "strokesIncludedInLayout": true,
+            "padding": {
+              "top": 12,
+              "right": 16,
+              "bottom": 12,
+              "left": 16
+            },
+            "primaryAxisAlign": "center",
+            "counterAxisAlign": "center",
+            "sizing": {
+              "horizontal": "fill",
+              "vertical": "hug"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through",
+            "fills": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#121212",
+                "variable": "Black"
+              }
+            ],
+            "backgroundColor": "#121212",
+            "variables": {
+              "backgroundColor": "Black",
+              "borderColor": "Black"
+            },
+            "borderRadius": 80,
+            "strokes": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#121212",
+                "variable": "Black"
+              }
+            ],
+            "borderColor": "#121212",
+            "borderWidth": 0.5,
+            "strokeAlign": "inside",
+            "strokeCap": "none",
+            "strokeJoin": "miter",
+            "strokeMiterLimit": 4,
+            "strokeDashPattern": [],
+            "strokeWeights": {
+              "top": 0.5,
+              "right": 0.5,
+              "bottom": 0.5,
+              "left": 0.5
+            }
+          },
+          "componentProperties": {
+            "Иконка правая": "false",
+            "Icon": "297:5596",
+            "Иконка левая": "false",
+            "Обычная": "Черная"
+          }
+        },
+        {
+          "role": "registration",
+          "nodeId": "526:14897",
+          "name": "Кнопки",
+          "type": "INSTANCE",
+          "layout": {
+            "width": 350,
+            "height": 51,
+            "y": 204,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                1,
+                204
+              ]
+            ],
+            "renderBounds": {
+              "x": 0,
+              "y": 0,
+              "width": 350,
+              "height": 51
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "stretch",
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "min"
+            },
+            "mode": "horizontal",
+            "gap": 2,
+            "strokesIncludedInLayout": true,
+            "padding": {
+              "top": 12,
+              "right": 16,
+              "bottom": 12,
+              "left": 16
+            },
+            "primaryAxisAlign": "center",
+            "counterAxisAlign": "center",
+            "sizing": {
+              "horizontal": "fill",
+              "vertical": "hug"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through",
+            "fills": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#FFFFFF"
+              }
+            ],
+            "backgroundColor": "#FFFFFF",
+            "borderRadius": 80,
+            "strokes": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#FFFFFF"
+              }
+            ],
+            "borderColor": "#FFFFFF",
+            "borderWidth": 0.5,
+            "strokeAlign": "inside",
+            "strokeCap": "none",
+            "strokeJoin": "miter",
+            "strokeMiterLimit": 4,
+            "strokeDashPattern": [],
+            "strokeWeights": {
+              "top": 0.5,
+              "right": 0.5,
+              "bottom": 0.5,
+              "left": 0.5
+            }
+          },
+          "componentProperties": {
+            "Icon": "297:5597",
+            "Иконка правая": "false",
+            "Иконка левая": "false",
+            "Обычная": "Без обводки"
+          }
+        },
+        {
+          "role": "separator",
+          "nodeId": "526:14898",
+          "name": "или",
+          "type": "TEXT",
+          "layout": {
+            "width": 350,
+            "height": 18,
+            "x": 20,
+            "y": 337,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                20
+              ],
+              [
+                0,
+                1,
+                337
+              ]
+            ],
+            "renderBounds": {
+              "x": 163.08,
+              "y": 5.82,
+              "width": 23.85,
+              "height": 8.18
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "stretch",
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "min"
+            },
+            "mode": "none",
+            "sizing": {
+              "horizontal": "fill",
+              "vertical": "hug"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through",
+            "fills": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#565656",
+                "variable": "Gray 1"
+              }
+            ],
+            "color": "#565656",
+            "variables": {
+              "color": "Gray 1"
+            },
+            "fontFamily": "Inter",
+            "fontStyleName": "Regular",
+            "fontSize": 15,
+            "fontWeight": 400,
+            "letterSpacing": -2,
+            "letterSpacingUnit": "percent",
+            "textAlign": "center",
+            "textAlignVertical": "top",
+            "textAutoResize": "height",
+            "textTruncation": "disabled",
+            "leadingTrim": "none"
+          },
+          "text": "или"
+        },
+        {
+          "role": "telegram",
+          "nodeId": "526:14900",
+          "name": "Кнопки",
+          "type": "INSTANCE",
+          "layout": {
+            "width": 350,
+            "height": 51,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                1,
+                0
+              ]
+            ],
+            "renderBounds": {
+              "x": 0,
+              "y": 0,
+              "width": 350,
+              "height": 51
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "stretch",
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "min"
+            },
+            "mode": "horizontal",
+            "gap": 2,
+            "strokesIncludedInLayout": true,
+            "padding": {
+              "top": 12,
+              "right": 16,
+              "bottom": 12,
+              "left": 16
+            },
+            "primaryAxisAlign": "center",
+            "counterAxisAlign": "center",
+            "sizing": {
+              "horizontal": "fill",
+              "vertical": "hug"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through",
+            "fills": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#FFFFFF"
+              }
+            ],
+            "backgroundColor": "#FFFFFF",
+            "strokeStyleName": "White border block",
+            "borderRadius": 80,
+            "strokes": [
+              {
+                "type": "gradient",
+                "sourceType": "GRADIENT_LINEAR",
+                "gradientType": "linear",
+                "css": "linear-gradient(#D1D1D1 0%, #EBEBEB 100%)",
+                "gradientStops": [
+                  {
+                    "color": "#D1D1D1",
+                    "position": 0
+                  },
+                  {
+                    "color": "#EBEBEB",
+                    "position": 1
+                  }
+                ],
+                "transform": [
+                  [
+                    0.89,
+                    0.11,
+                    0
+                  ],
+                  [
+                    -0.11,
+                    0.11,
+                    0.5
+                  ]
+                ]
+              }
+            ]
+          },
+          "componentProperties": {
+            "Icon": "521:10335",
+            "Иконка правая": "false",
+            "Иконка левая": "true",
+            "Обычная": "Обводка"
+          }
+        },
+        {
+          "role": "google",
+          "nodeId": "526:14901",
+          "name": "Кнопки",
+          "type": "INSTANCE",
+          "layout": {
+            "width": 350,
+            "height": 51,
+            "y": 61,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                1,
+                61
+              ]
+            ],
+            "renderBounds": {
+              "x": 0,
+              "y": 0,
+              "width": 350,
+              "height": 51
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "stretch",
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "min"
+            },
+            "mode": "horizontal",
+            "gap": 2,
+            "strokesIncludedInLayout": true,
+            "padding": {
+              "top": 12,
+              "right": 16,
+              "bottom": 12,
+              "left": 16
+            },
+            "primaryAxisAlign": "center",
+            "counterAxisAlign": "center",
+            "sizing": {
+              "horizontal": "fill",
+              "vertical": "hug"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through",
+            "fills": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#FFFFFF"
+              }
+            ],
+            "backgroundColor": "#FFFFFF",
+            "strokeStyleName": "White border block",
+            "borderRadius": 80,
+            "strokes": [
+              {
+                "type": "gradient",
+                "sourceType": "GRADIENT_LINEAR",
+                "gradientType": "linear",
+                "css": "linear-gradient(#D1D1D1 0%, #EBEBEB 100%)",
+                "gradientStops": [
+                  {
+                    "color": "#D1D1D1",
+                    "position": 0
+                  },
+                  {
+                    "color": "#EBEBEB",
+                    "position": 1
+                  }
+                ],
+                "transform": [
+                  [
+                    0.89,
+                    0.11,
+                    0
+                  ],
+                  [
+                    -0.11,
+                    0.11,
+                    0.5
+                  ]
+                ]
+              }
+            ]
+          },
+          "componentProperties": {
+            "Icon": "521:10365",
+            "Иконка правая": "false",
+            "Иконка левая": "true",
+            "Обычная": "Обводка"
+          }
+        },
+        {
+          "role": "legalText",
+          "nodeId": "526:14902",
+          "name": "Продолжая, вы принимаете политику конфиденциальности и правила сервиса",
+          "type": "TEXT",
+          "layout": {
+            "width": 350,
+            "height": 30,
+            "x": 20,
+            "y": 495,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                20
+              ],
+              [
+                0,
+                1,
+                495
+              ]
+            ],
+            "renderBounds": {
+              "x": 55.38,
+              "y": 3.27,
+              "width": 239.25,
+              "height": 26.18
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "stretch",
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "min"
+            },
+            "mode": "none",
+            "sizing": {
+              "horizontal": "fill",
+              "vertical": "hug"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through",
+            "variables": {
+              "color": "Gray 1"
+            },
+            "fontFamily": "Inter",
+            "fontStyleName": "Regular",
+            "fontSize": 12,
+            "fontWeight": 400,
+            "textAlign": "center",
+            "textAlignVertical": "top",
+            "textAutoResize": "height",
+            "textTruncation": "disabled",
+            "leadingTrim": "none"
+          },
+          "text": "Продолжая, вы принимаете политику конфиденциальности и правила сервиса",
+          "fidelityWarnings": [
+            {
+              "code": "unresolved-mixed-text-style",
+              "severity": "warning",
+              "message": "Text node reports mixed style values, but styled text ranges were not available."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "verify-email",
+      "rootNodeId": "526:14903",
+      "surfaceNodeId": "526:15114",
+      "nodes": [
+        {
+          "role": "surface",
+          "nodeId": "526:15114",
+          "name": "Frame 139",
+          "type": "FRAME",
+          "layout": {
+            "width": 390,
+            "height": 319,
+            "y": 555,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                1,
+                555
+              ]
+            ],
+            "renderBounds": {
+              "x": 0,
+              "y": 0,
+              "width": 390,
+              "height": 319
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "inherit",
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "min"
+            },
+            "mode": "vertical",
+            "gap": 16,
+            "strokesIncludedInLayout": true,
+            "padding": {
+              "top": 8,
+              "right": 20,
+              "bottom": 20,
+              "left": 20
+            },
+            "primaryAxisAlign": "min",
+            "counterAxisAlign": "center",
+            "sizing": {
+              "horizontal": "fixed",
+              "vertical": "hug"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through",
+            "fills": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#FFFFFF",
+                "variable": "White"
+              }
+            ],
+            "backgroundColor": "#FFFFFF",
+            "variables": {
+              "backgroundColor": "White"
+            },
+            "cornerRadii": {
+              "topLeft": 32,
+              "topRight": 32,
+              "bottomRight": 0,
+              "bottomLeft": 0
+            }
+          }
+        },
+        {
+          "role": "overlay",
+          "nodeId": "526:15113",
+          "name": "Frame 140",
+          "type": "FRAME",
+          "layout": {
+            "width": 390,
+            "height": 874,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                1,
+                0
+              ]
+            ],
+            "renderBounds": {
+              "x": 0,
+              "y": 0,
+              "width": 390,
+              "height": 874
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "inherit",
+            "constraints": {
+              "horizontal": "center",
+              "vertical": "center"
+            },
+            "mode": "horizontal",
+            "gap": 10,
+            "strokesIncludedInLayout": true,
+            "primaryAxisAlign": "center",
+            "counterAxisAlign": "max",
+            "sizing": {
+              "horizontal": "hug",
+              "vertical": "fixed"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through",
+            "fills": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "opacity": 0.5,
+                "color": "#2A2A2A",
+                "variable": "Overlay"
+              }
+            ],
+            "backgroundColor": "#2A2A2A",
+            "backgroundOpacity": 0.5,
+            "variables": {
+              "backgroundColor": "Overlay"
+            }
+          }
+        },
+        {
+          "role": "header",
+          "nodeId": "4425:3052",
+          "name": "Frame 205",
+          "type": "FRAME",
+          "layout": {
+            "width": 350,
+            "height": 46,
+            "x": 20,
+            "y": 8,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                20
+              ],
+              [
+                0,
+                1,
+                8
+              ]
+            ],
+            "renderBounds": {
+              "x": 0,
+              "y": 0,
+              "width": 350,
+              "height": 46
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "stretch",
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "min"
+            },
+            "mode": "vertical",
+            "gap": 6,
+            "strokesIncludedInLayout": true,
+            "primaryAxisAlign": "min",
+            "counterAxisAlign": "min",
+            "sizing": {
+              "horizontal": "fill",
+              "vertical": "hug"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through"
+          }
+        },
+        {
+          "role": "title",
+          "nodeId": "4425:3058",
+          "name": "Регистрация",
+          "type": "TEXT",
+          "layout": {
+            "width": 316,
+            "height": 22,
+            "x": 34,
+            "y": 2,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                34
+              ],
+              [
+                0,
+                1,
+                2
+              ]
+            ],
+            "renderBounds": {
+              "x": 1.29,
+              "y": 4.91,
+              "width": 111.75,
+              "height": 16.77
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "inherit",
+            "layoutGrow": 1,
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "min"
+            },
+            "mode": "none",
+            "sizing": {
+              "horizontal": "fill",
+              "vertical": "hug"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through",
+            "fills": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#121212",
+                "variable": "Black"
+              }
+            ],
+            "color": "#121212",
+            "variables": {
+              "color": "Black"
+            },
+            "fontFamily": "Inter",
+            "fontStyleName": "Semi Bold",
+            "fontSize": 18,
+            "fontWeight": 600,
+            "letterSpacing": -1,
+            "letterSpacingUnit": "percent",
+            "textAlignVertical": "top",
+            "textAutoResize": "height",
+            "textTruncation": "disabled",
+            "leadingTrim": "none"
+          },
+          "text": "Регистрация"
+        },
+        {
+          "role": "description",
+          "nodeId": "558:16958",
+          "name": "На ваш почтовый адрес пришел код example@gmail.com",
+          "type": "TEXT",
+          "layout": {
+            "width": 350,
+            "height": 44,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                1,
+                0
+              ]
+            ],
+            "renderBounds": {
+              "x": 1.23,
+              "y": 5.36,
+              "width": 241.77,
+              "height": 37.09
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "stretch",
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "min"
+            },
+            "mode": "none",
+            "sizing": {
+              "horizontal": "fill",
+              "vertical": "hug"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through",
+            "fills": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#121212",
+                "variable": "Black"
+              }
+            ],
+            "color": "#121212",
+            "variables": {
+              "color": "Black"
+            },
+            "fontSize": 16,
+            "lineHeight": 22,
+            "letterSpacing": -2,
+            "letterSpacingUnit": "percent",
+            "textAlignVertical": "top",
+            "textAutoResize": "height",
+            "textTruncation": "disabled",
+            "leadingTrim": "none"
+          },
+          "text": "На ваш почтовый адрес пришел код example@gmail.com  ",
+          "fidelityWarnings": [
+            {
+              "code": "unresolved-mixed-text-style",
+              "severity": "warning",
+              "message": "Text node reports mixed style values, but styled text ranges were not available."
+            }
+          ]
+        },
+        {
+          "role": "codeGroup",
+          "nodeId": "558:16980",
+          "name": "Frame 197",
+          "type": "FRAME",
+          "layout": {
+            "width": 350,
+            "height": 51,
+            "y": 56,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                1,
+                56
+              ]
+            ],
+            "renderBounds": {
+              "x": 0,
+              "y": 0,
+              "width": 350,
+              "height": 51
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "stretch",
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "min"
+            },
+            "mode": "horizontal",
+            "gap": 12,
+            "strokesIncludedInLayout": true,
+            "primaryAxisAlign": "min",
+            "counterAxisAlign": "min",
+            "sizing": {
+              "horizontal": "fill",
+              "vertical": "hug"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through"
+          }
+        },
+        {
+          "role": "codeCell1",
+          "nodeId": "526:15123",
+          "name": "Поля ввода",
+          "type": "INSTANCE",
+          "layout": {
+            "width": 48.33,
+            "height": 51,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                1,
+                0
+              ]
+            ],
+            "renderBounds": {
+              "x": 0,
+              "y": 0,
+              "width": 48.33,
+              "height": 51
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "inherit",
+            "layoutGrow": 1,
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "min"
+            },
+            "mode": "horizontal",
+            "gap": 4,
+            "strokesIncludedInLayout": true,
+            "padding": {
+              "top": 13,
+              "right": 12,
+              "bottom": 13,
+              "left": 12
+            },
+            "primaryAxisAlign": "min",
+            "counterAxisAlign": "min",
+            "sizing": {
+              "horizontal": "fill",
+              "vertical": "hug"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through",
+            "fills": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#FFFFFF"
+              }
+            ],
+            "backgroundColor": "#FFFFFF",
+            "borderRadius": 12,
+            "strokes": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#8A8A8A"
+              }
+            ],
+            "borderColor": "#8A8A8A",
+            "borderWidth": 0.5,
+            "strokeAlign": "inside",
+            "strokeCap": "none",
+            "strokeJoin": "miter",
+            "strokeMiterLimit": 4,
+            "strokeDashPattern": [],
+            "strokeWeights": {
+              "top": 0.5,
+              "right": 0.5,
+              "bottom": 0.5,
+              "left": 0.5
+            }
+          },
+          "componentProperties": {
+            "Property 1": "Обычный"
+          }
+        },
+        {
+          "role": "codeCell2",
+          "nodeId": "558:16960",
+          "name": "Поля ввода",
+          "type": "INSTANCE",
+          "layout": {
+            "width": 48.33,
+            "height": 51,
+            "x": 60.33,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                60.33
+              ],
+              [
+                0,
+                1,
+                0
+              ]
+            ],
+            "renderBounds": {
+              "x": 0,
+              "y": 0,
+              "width": 48.33,
+              "height": 51
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "inherit",
+            "layoutGrow": 1,
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "min"
+            },
+            "mode": "horizontal",
+            "gap": 4,
+            "strokesIncludedInLayout": true,
+            "padding": {
+              "top": 13,
+              "right": 12,
+              "bottom": 13,
+              "left": 12
+            },
+            "primaryAxisAlign": "min",
+            "counterAxisAlign": "min",
+            "sizing": {
+              "horizontal": "fill",
+              "vertical": "hug"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through",
+            "fills": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#FFFFFF"
+              }
+            ],
+            "backgroundColor": "#FFFFFF",
+            "borderRadius": 12,
+            "strokes": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#8A8A8A"
+              }
+            ],
+            "borderColor": "#8A8A8A",
+            "borderWidth": 0.5,
+            "strokeAlign": "inside",
+            "strokeCap": "none",
+            "strokeJoin": "miter",
+            "strokeMiterLimit": 4,
+            "strokeDashPattern": [],
+            "strokeWeights": {
+              "top": 0.5,
+              "right": 0.5,
+              "bottom": 0.5,
+              "left": 0.5
+            }
+          },
+          "componentProperties": {
+            "Property 1": "Обычный"
+          }
+        },
+        {
+          "role": "codeCell3",
+          "nodeId": "558:16981",
+          "name": "Поля ввода",
+          "type": "INSTANCE",
+          "layout": {
+            "width": 48.33,
+            "height": 51,
+            "x": 120.67,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                120.67
+              ],
+              [
+                0,
+                1,
+                0
+              ]
+            ],
+            "renderBounds": {
+              "x": 0,
+              "y": 0,
+              "width": 48.33,
+              "height": 51
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "inherit",
+            "layoutGrow": 1,
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "min"
+            },
+            "mode": "horizontal",
+            "gap": 4,
+            "strokesIncludedInLayout": true,
+            "padding": {
+              "top": 13,
+              "right": 12,
+              "bottom": 13,
+              "left": 12
+            },
+            "primaryAxisAlign": "min",
+            "counterAxisAlign": "min",
+            "sizing": {
+              "horizontal": "fill",
+              "vertical": "hug"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through",
+            "fills": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#FFFFFF"
+              }
+            ],
+            "backgroundColor": "#FFFFFF",
+            "borderRadius": 12,
+            "strokes": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#8A8A8A"
+              }
+            ],
+            "borderColor": "#8A8A8A",
+            "borderWidth": 0.5,
+            "strokeAlign": "inside",
+            "strokeCap": "none",
+            "strokeJoin": "miter",
+            "strokeMiterLimit": 4,
+            "strokeDashPattern": [],
+            "strokeWeights": {
+              "top": 0.5,
+              "right": 0.5,
+              "bottom": 0.5,
+              "left": 0.5
+            }
+          },
+          "componentProperties": {
+            "Property 1": "Обычный"
+          }
+        },
+        {
+          "role": "codeCell4",
+          "nodeId": "558:16985",
+          "name": "Поля ввода",
+          "type": "INSTANCE",
+          "layout": {
+            "width": 48.33,
+            "height": 51,
+            "x": 181,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                181
+              ],
+              [
+                0,
+                1,
+                0
+              ]
+            ],
+            "renderBounds": {
+              "x": 0,
+              "y": 0,
+              "width": 48.33,
+              "height": 51
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "inherit",
+            "layoutGrow": 1,
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "min"
+            },
+            "mode": "horizontal",
+            "gap": 4,
+            "strokesIncludedInLayout": true,
+            "padding": {
+              "top": 13,
+              "right": 12,
+              "bottom": 13,
+              "left": 12
+            },
+            "primaryAxisAlign": "min",
+            "counterAxisAlign": "min",
+            "sizing": {
+              "horizontal": "fill",
+              "vertical": "hug"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through",
+            "fills": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#FFFFFF"
+              }
+            ],
+            "backgroundColor": "#FFFFFF",
+            "borderRadius": 12,
+            "strokes": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#8A8A8A"
+              }
+            ],
+            "borderColor": "#8A8A8A",
+            "borderWidth": 0.5,
+            "strokeAlign": "inside",
+            "strokeCap": "none",
+            "strokeJoin": "miter",
+            "strokeMiterLimit": 4,
+            "strokeDashPattern": [],
+            "strokeWeights": {
+              "top": 0.5,
+              "right": 0.5,
+              "bottom": 0.5,
+              "left": 0.5
+            }
+          },
+          "componentProperties": {
+            "Property 1": "Обычный"
+          }
+        },
+        {
+          "role": "codeCell5",
+          "nodeId": "558:16989",
+          "name": "Поля ввода",
+          "type": "INSTANCE",
+          "layout": {
+            "width": 48.33,
+            "height": 51,
+            "x": 241.33,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                241.33
+              ],
+              [
+                0,
+                1,
+                0
+              ]
+            ],
+            "renderBounds": {
+              "x": 0,
+              "y": 0,
+              "width": 48.33,
+              "height": 51
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "inherit",
+            "layoutGrow": 1,
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "min"
+            },
+            "mode": "horizontal",
+            "gap": 4,
+            "strokesIncludedInLayout": true,
+            "padding": {
+              "top": 13,
+              "right": 12,
+              "bottom": 13,
+              "left": 12
+            },
+            "primaryAxisAlign": "min",
+            "counterAxisAlign": "min",
+            "sizing": {
+              "horizontal": "fill",
+              "vertical": "hug"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through",
+            "fills": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#FFFFFF"
+              }
+            ],
+            "backgroundColor": "#FFFFFF",
+            "borderRadius": 12,
+            "strokes": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#8A8A8A"
+              }
+            ],
+            "borderColor": "#8A8A8A",
+            "borderWidth": 0.5,
+            "strokeAlign": "inside",
+            "strokeCap": "none",
+            "strokeJoin": "miter",
+            "strokeMiterLimit": 4,
+            "strokeDashPattern": [],
+            "strokeWeights": {
+              "top": 0.5,
+              "right": 0.5,
+              "bottom": 0.5,
+              "left": 0.5
+            }
+          },
+          "componentProperties": {
+            "Property 1": "Обычный"
+          }
+        },
+        {
+          "role": "codeCell6",
+          "nodeId": "558:16993",
+          "name": "Поля ввода",
+          "type": "INSTANCE",
+          "layout": {
+            "width": 48.33,
+            "height": 51,
+            "x": 301.67,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                301.67
+              ],
+              [
+                0,
+                1,
+                0
+              ]
+            ],
+            "renderBounds": {
+              "x": 0,
+              "y": 0,
+              "width": 48.33,
+              "height": 51
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "inherit",
+            "layoutGrow": 1,
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "min"
+            },
+            "mode": "horizontal",
+            "gap": 4,
+            "strokesIncludedInLayout": true,
+            "padding": {
+              "top": 13,
+              "right": 12,
+              "bottom": 13,
+              "left": 12
+            },
+            "primaryAxisAlign": "min",
+            "counterAxisAlign": "min",
+            "sizing": {
+              "horizontal": "fill",
+              "vertical": "hug"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through",
+            "fills": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#FFFFFF"
+              }
+            ],
+            "backgroundColor": "#FFFFFF",
+            "borderRadius": 12,
+            "strokes": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#8A8A8A"
+              }
+            ],
+            "borderColor": "#8A8A8A",
+            "borderWidth": 0.5,
+            "strokeAlign": "inside",
+            "strokeCap": "none",
+            "strokeJoin": "miter",
+            "strokeMiterLimit": 4,
+            "strokeDashPattern": [],
+            "strokeWeights": {
+              "top": 0.5,
+              "right": 0.5,
+              "bottom": 0.5,
+              "left": 0.5
+            }
+          },
+          "componentProperties": {
+            "Property 1": "Обычный"
+          }
+        },
+        {
+          "role": "submit",
+          "nodeId": "4425:3117",
+          "name": "Кнопки",
+          "type": "INSTANCE",
+          "layout": {
+            "width": 350,
+            "height": 51,
+            "y": 119,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                1,
+                119
+              ]
+            ],
+            "renderBounds": {
+              "x": 0,
+              "y": 0,
+              "width": 350,
+              "height": 51
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "stretch",
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "min"
+            },
+            "mode": "horizontal",
+            "gap": 2,
+            "strokesIncludedInLayout": true,
+            "padding": {
+              "top": 12,
+              "right": 16,
+              "bottom": 12,
+              "left": 16
+            },
+            "primaryAxisAlign": "center",
+            "counterAxisAlign": "center",
+            "sizing": {
+              "horizontal": "fill",
+              "vertical": "hug"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through",
+            "fills": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#121212",
+                "variable": "Black"
+              }
+            ],
+            "backgroundColor": "#121212",
+            "variables": {
+              "backgroundColor": "Black",
+              "borderColor": "Black"
+            },
+            "borderRadius": 80,
+            "strokes": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#121212",
+                "variable": "Black"
+              }
+            ],
+            "borderColor": "#121212",
+            "borderWidth": 0.5,
+            "strokeAlign": "inside",
+            "strokeCap": "none",
+            "strokeJoin": "miter",
+            "strokeMiterLimit": 4,
+            "strokeDashPattern": [],
+            "strokeWeights": {
+              "top": 0.5,
+              "right": 0.5,
+              "bottom": 0.5,
+              "left": 0.5
+            }
+          },
+          "componentProperties": {
+            "Иконка правая": "false",
+            "Icon": "297:5596",
+            "Иконка левая": "false",
+            "Обычная": "Черная"
+          }
+        },
+        {
+          "role": "resend",
+          "nodeId": "526:15125",
+          "name": "Кнопки",
+          "type": "INSTANCE",
+          "layout": {
+            "width": 350,
+            "height": 47,
+            "y": 182,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                1,
+                182
+              ]
+            ],
+            "renderBounds": {
+              "x": 0,
+              "y": 0,
+              "width": 350,
+              "height": 47
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "stretch",
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "min"
+            },
+            "mode": "horizontal",
+            "gap": 2,
+            "strokesIncludedInLayout": true,
+            "padding": {
+              "top": 10,
+              "right": 16,
+              "bottom": 10,
+              "left": 16
+            },
+            "primaryAxisAlign": "center",
+            "counterAxisAlign": "center",
+            "sizing": {
+              "horizontal": "fill",
+              "vertical": "hug"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through",
+            "fills": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#FFFFFF"
+              }
+            ],
+            "backgroundColor": "#FFFFFF",
+            "borderRadius": 80,
+            "strokes": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#FFFFFF"
+              }
+            ],
+            "borderColor": "#FFFFFF",
+            "borderWidth": 0.5,
+            "strokeAlign": "inside",
+            "strokeCap": "none",
+            "strokeJoin": "miter",
+            "strokeMiterLimit": 4,
+            "strokeDashPattern": [],
+            "strokeWeights": {
+              "top": 0.5,
+              "right": 0.5,
+              "bottom": 0.5,
+              "left": 0.5
+            }
+          },
+          "componentProperties": {
+            "Icon": "297:5597",
+            "Иконка правая": "false",
+            "Иконка левая": "false",
+            "Обычная": "Без обводки"
+          }
+        }
+      ]
+    },
+    {
+      "id": "login-email-code-reference",
+      "rootNodeId": "527:16675",
+      "surfaceNodeId": "527:16886",
+      "nodes": [
+        {
+          "role": "surface",
+          "nodeId": "527:16886",
+          "name": "Frame 138",
+          "type": "FRAME",
+          "layout": {
+            "width": 390,
+            "height": 410,
+            "y": 464,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                1,
+                464
+              ]
+            ],
+            "renderBounds": {
+              "x": 0,
+              "y": 0,
+              "width": 390,
+              "height": 410
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "inherit",
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "min"
+            },
+            "mode": "vertical",
+            "gap": 16,
+            "strokesIncludedInLayout": true,
+            "padding": {
+              "top": 8,
+              "right": 20,
+              "bottom": 20,
+              "left": 20
+            },
+            "primaryAxisAlign": "min",
+            "counterAxisAlign": "center",
+            "sizing": {
+              "horizontal": "fixed",
+              "vertical": "hug"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through",
+            "fills": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#FFFFFF",
+                "variable": "White"
+              }
+            ],
+            "backgroundColor": "#FFFFFF",
+            "variables": {
+              "backgroundColor": "White"
+            },
+            "cornerRadii": {
+              "topLeft": 32,
+              "topRight": 32,
+              "bottomRight": 0,
+              "bottomLeft": 0
+            }
+          }
+        },
+        {
+          "role": "overlay",
+          "nodeId": "527:16885",
+          "name": "Frame 140",
+          "type": "FRAME",
+          "layout": {
+            "width": 390,
+            "height": 874,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                1,
+                0
+              ]
+            ],
+            "renderBounds": {
+              "x": 0,
+              "y": 0,
+              "width": 390,
+              "height": 874
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "inherit",
+            "constraints": {
+              "horizontal": "center",
+              "vertical": "center"
+            },
+            "mode": "horizontal",
+            "gap": 10,
+            "strokesIncludedInLayout": true,
+            "primaryAxisAlign": "center",
+            "counterAxisAlign": "max",
+            "sizing": {
+              "horizontal": "hug",
+              "vertical": "fixed"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through",
+            "fills": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "opacity": 0.5,
+                "color": "#2A2A2A",
+                "variable": "Overlay"
+              }
+            ],
+            "backgroundColor": "#2A2A2A",
+            "backgroundOpacity": 0.5,
+            "variables": {
+              "backgroundColor": "Overlay"
+            }
+          }
+        },
+        {
+          "role": "header",
+          "nodeId": "4425:3045",
+          "name": "Frame 203",
+          "type": "FRAME",
+          "layout": {
+            "width": 350,
+            "height": 46,
+            "x": 20,
+            "y": 8,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                20
+              ],
+              [
+                0,
+                1,
+                8
+              ]
+            ],
+            "renderBounds": {
+              "x": 0,
+              "y": 0,
+              "width": 350,
+              "height": 46
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "stretch",
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "min"
+            },
+            "mode": "vertical",
+            "gap": 6,
+            "strokesIncludedInLayout": true,
+            "primaryAxisAlign": "min",
+            "counterAxisAlign": "min",
+            "sizing": {
+              "horizontal": "fill",
+              "vertical": "hug"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through"
+          }
+        },
+        {
+          "role": "title",
+          "nodeId": "4425:3050",
+          "name": "Вход на Bidplace",
+          "type": "TEXT",
+          "layout": {
+            "width": 350,
+            "height": 26,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                1,
+                0
+              ]
+            ],
+            "renderBounds": {
+              "x": 1.29,
+              "y": 6.28,
+              "width": 144.64,
+              "height": 17.41
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "inherit",
+            "layoutGrow": 1,
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "min"
+            },
+            "mode": "none",
+            "sizing": {
+              "horizontal": "fill",
+              "vertical": "hug"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through",
+            "fills": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#121212",
+                "variable": "Black"
+              }
+            ],
+            "color": "#121212",
+            "variables": {
+              "color": "Black"
+            },
+            "fontFamily": "Inter",
+            "fontStyleName": "Semi Bold",
+            "fontSize": 18,
+            "fontWeight": 600,
+            "lineHeight": 26,
+            "letterSpacing": -1,
+            "letterSpacingUnit": "percent",
+            "textAlignVertical": "top",
+            "textAutoResize": "height",
+            "textTruncation": "disabled",
+            "leadingTrim": "none"
+          },
+          "text": "Вход на Bidplace"
+        },
+        {
+          "role": "email",
+          "nodeId": "527:16893",
+          "name": "Поля ввода",
+          "type": "INSTANCE",
+          "layout": {
+            "width": 350,
+            "height": 51,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                1,
+                0
+              ]
+            ],
+            "renderBounds": {
+              "x": 0,
+              "y": 0,
+              "width": 350,
+              "height": 51
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "stretch",
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "min"
+            },
+            "mode": "horizontal",
+            "gap": 4,
+            "strokesIncludedInLayout": true,
+            "padding": {
+              "top": 13,
+              "right": 12,
+              "bottom": 13,
+              "left": 12
+            },
+            "primaryAxisAlign": "min",
+            "counterAxisAlign": "min",
+            "sizing": {
+              "horizontal": "fill",
+              "vertical": "hug"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through",
+            "fills": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#FFFFFF"
+              }
+            ],
+            "backgroundColor": "#FFFFFF",
+            "borderRadius": 18,
+            "strokes": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#8A8A8A"
+              }
+            ],
+            "borderColor": "#8A8A8A",
+            "borderWidth": 0.5,
+            "strokeAlign": "inside",
+            "strokeCap": "none",
+            "strokeJoin": "miter",
+            "strokeMiterLimit": 4,
+            "strokeDashPattern": [],
+            "strokeWeights": {
+              "top": 0.5,
+              "right": 0.5,
+              "bottom": 0.5,
+              "left": 0.5
+            }
+          },
+          "componentProperties": {
+            "Property 1": "Обычный"
+          }
+        },
+        {
+          "role": "submit",
+          "nodeId": "4425:3097",
+          "name": "Кнопки",
+          "type": "INSTANCE",
+          "layout": {
+            "width": 350,
+            "height": 51,
+            "y": 61,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                1,
+                61
+              ]
+            ],
+            "renderBounds": {
+              "x": 0,
+              "y": 0,
+              "width": 350,
+              "height": 51
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "stretch",
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "min"
+            },
+            "mode": "horizontal",
+            "gap": 2,
+            "strokesIncludedInLayout": true,
+            "padding": {
+              "top": 12,
+              "right": 16,
+              "bottom": 12,
+              "left": 16
+            },
+            "primaryAxisAlign": "center",
+            "counterAxisAlign": "center",
+            "sizing": {
+              "horizontal": "fill",
+              "vertical": "hug"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through",
+            "fills": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#121212",
+                "variable": "Black"
+              }
+            ],
+            "backgroundColor": "#121212",
+            "variables": {
+              "backgroundColor": "Black",
+              "borderColor": "Black"
+            },
+            "borderRadius": 80,
+            "strokes": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#121212",
+                "variable": "Black"
+              }
+            ],
+            "borderColor": "#121212",
+            "borderWidth": 0.5,
+            "strokeAlign": "inside",
+            "strokeCap": "none",
+            "strokeJoin": "miter",
+            "strokeMiterLimit": 4,
+            "strokeDashPattern": [],
+            "strokeWeights": {
+              "top": 0.5,
+              "right": 0.5,
+              "bottom": 0.5,
+              "left": 0.5
+            }
+          },
+          "componentProperties": {
+            "Иконка правая": "false",
+            "Icon": "297:5596",
+            "Иконка левая": "false",
+            "Обычная": "Черная"
+          }
+        },
+        {
+          "role": "telegram",
+          "nodeId": "4425:3102",
+          "name": "Кнопки",
+          "type": "INSTANCE",
+          "layout": {
+            "width": 350,
+            "height": 51,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                1,
+                0
+              ]
+            ],
+            "renderBounds": {
+              "x": 0,
+              "y": 0,
+              "width": 350,
+              "height": 51
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "stretch",
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "min"
+            },
+            "mode": "horizontal",
+            "gap": 2,
+            "strokesIncludedInLayout": true,
+            "padding": {
+              "top": 12,
+              "right": 16,
+              "bottom": 12,
+              "left": 16
+            },
+            "primaryAxisAlign": "center",
+            "counterAxisAlign": "center",
+            "sizing": {
+              "horizontal": "fill",
+              "vertical": "hug"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through",
+            "fills": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#FFFFFF"
+              }
+            ],
+            "backgroundColor": "#FFFFFF",
+            "strokeStyleName": "White border block",
+            "borderRadius": 80,
+            "strokes": [
+              {
+                "type": "gradient",
+                "sourceType": "GRADIENT_LINEAR",
+                "gradientType": "linear",
+                "css": "linear-gradient(#D1D1D1 0%, #EBEBEB 100%)",
+                "gradientStops": [
+                  {
+                    "color": "#D1D1D1",
+                    "position": 0
+                  },
+                  {
+                    "color": "#EBEBEB",
+                    "position": 1
+                  }
+                ],
+                "transform": [
+                  [
+                    0.89,
+                    0.11,
+                    0
+                  ],
+                  [
+                    -0.11,
+                    0.11,
+                    0.5
+                  ]
+                ]
+              }
+            ]
+          },
+          "componentProperties": {
+            "Icon": "521:10335",
+            "Иконка правая": "false",
+            "Иконка левая": "true",
+            "Обычная": "Обводка"
+          }
+        },
+        {
+          "role": "google",
+          "nodeId": "4425:3103",
+          "name": "Кнопки",
+          "type": "INSTANCE",
+          "layout": {
+            "width": 350,
+            "height": 51,
+            "y": 61,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                1,
+                61
+              ]
+            ],
+            "renderBounds": {
+              "x": 0,
+              "y": 0,
+              "width": 350,
+              "height": 51
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "stretch",
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "min"
+            },
+            "mode": "horizontal",
+            "gap": 2,
+            "strokesIncludedInLayout": true,
+            "padding": {
+              "top": 12,
+              "right": 16,
+              "bottom": 12,
+              "left": 16
+            },
+            "primaryAxisAlign": "center",
+            "counterAxisAlign": "center",
+            "sizing": {
+              "horizontal": "fill",
+              "vertical": "hug"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through",
+            "fills": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#FFFFFF"
+              }
+            ],
+            "backgroundColor": "#FFFFFF",
+            "strokeStyleName": "White border block",
+            "borderRadius": 80,
+            "strokes": [
+              {
+                "type": "gradient",
+                "sourceType": "GRADIENT_LINEAR",
+                "gradientType": "linear",
+                "css": "linear-gradient(#D1D1D1 0%, #EBEBEB 100%)",
+                "gradientStops": [
+                  {
+                    "color": "#D1D1D1",
+                    "position": 0
+                  },
+                  {
+                    "color": "#EBEBEB",
+                    "position": 1
+                  }
+                ],
+                "transform": [
+                  [
+                    0.89,
+                    0.11,
+                    0
+                  ],
+                  [
+                    -0.11,
+                    0.11,
+                    0.5
+                  ]
+                ]
+              }
+            ]
+          },
+          "componentProperties": {
+            "Icon": "521:10365",
+            "Иконка правая": "false",
+            "Иконка левая": "true",
+            "Обычная": "Обводка"
+          }
+        }
+      ]
+    },
+    {
+      "id": "oauth-add-email-reference",
+      "rootNodeId": "526:15126",
+      "surfaceNodeId": "526:15337",
+      "nodes": [
+        {
+          "role": "surface",
+          "nodeId": "526:15337",
+          "name": "Frame 139",
+          "type": "FRAME",
+          "layout": {
+            "width": 390,
+            "height": 204,
+            "y": 670,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                1,
+                670
+              ]
+            ],
+            "renderBounds": {
+              "x": 0,
+              "y": 0,
+              "width": 390,
+              "height": 204
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "inherit",
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "min"
+            },
+            "mode": "vertical",
+            "gap": 16,
+            "strokesIncludedInLayout": true,
+            "padding": {
+              "top": 8,
+              "right": 20,
+              "bottom": 20,
+              "left": 20
+            },
+            "primaryAxisAlign": "min",
+            "counterAxisAlign": "center",
+            "sizing": {
+              "horizontal": "fixed",
+              "vertical": "hug"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through",
+            "fills": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#FFFFFF",
+                "variable": "White"
+              }
+            ],
+            "backgroundColor": "#FFFFFF",
+            "variables": {
+              "backgroundColor": "White"
+            },
+            "cornerRadii": {
+              "topLeft": 32,
+              "topRight": 32,
+              "bottomRight": 0,
+              "bottomLeft": 0
+            }
+          }
+        },
+        {
+          "role": "overlay",
+          "nodeId": "526:15336",
+          "name": "Frame 140",
+          "type": "FRAME",
+          "layout": {
+            "width": 390,
+            "height": 874,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                1,
+                0
+              ]
+            ],
+            "renderBounds": {
+              "x": 0,
+              "y": 0,
+              "width": 390,
+              "height": 874
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "inherit",
+            "constraints": {
+              "horizontal": "center",
+              "vertical": "center"
+            },
+            "mode": "horizontal",
+            "gap": 10,
+            "strokesIncludedInLayout": true,
+            "primaryAxisAlign": "center",
+            "counterAxisAlign": "max",
+            "sizing": {
+              "horizontal": "hug",
+              "vertical": "fixed"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through",
+            "fills": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "opacity": 0.5,
+                "color": "#2A2A2A",
+                "variable": "Overlay"
+              }
+            ],
+            "backgroundColor": "#2A2A2A",
+            "backgroundOpacity": 0.5,
+            "variables": {
+              "backgroundColor": "Overlay"
+            }
+          }
+        },
+        {
+          "role": "header",
+          "nodeId": "4425:3038",
+          "name": "Frame 203",
+          "type": "FRAME",
+          "layout": {
+            "width": 350,
+            "height": 46,
+            "x": 20,
+            "y": 8,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                20
+              ],
+              [
+                0,
+                1,
+                8
+              ]
+            ],
+            "renderBounds": {
+              "x": 0,
+              "y": 0,
+              "width": 350,
+              "height": 46
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "stretch",
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "min"
+            },
+            "mode": "vertical",
+            "gap": 6,
+            "strokesIncludedInLayout": true,
+            "primaryAxisAlign": "min",
+            "counterAxisAlign": "min",
+            "sizing": {
+              "horizontal": "fill",
+              "vertical": "hug"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through"
+          }
+        },
+        {
+          "role": "title",
+          "nodeId": "4425:3043",
+          "name": "Добавьте почту",
+          "type": "TEXT",
+          "layout": {
+            "width": 350,
+            "height": 26,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                1,
+                0
+              ]
+            ],
+            "renderBounds": {
+              "x": 0.44,
+              "y": 6.55,
+              "width": 139.1,
+              "height": 17.13
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "inherit",
+            "layoutGrow": 1,
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "min"
+            },
+            "mode": "none",
+            "sizing": {
+              "horizontal": "fill",
+              "vertical": "hug"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through",
+            "fills": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#121212",
+                "variable": "Black"
+              }
+            ],
+            "color": "#121212",
+            "variables": {
+              "color": "Black"
+            },
+            "fontFamily": "Inter",
+            "fontStyleName": "Semi Bold",
+            "fontSize": 18,
+            "fontWeight": 600,
+            "lineHeight": 26,
+            "letterSpacing": -1,
+            "letterSpacingUnit": "percent",
+            "textAlignVertical": "top",
+            "textAutoResize": "height",
+            "textTruncation": "disabled",
+            "leadingTrim": "none"
+          },
+          "text": "Добавьте почту"
+        },
+        {
+          "role": "email",
+          "nodeId": "526:15344",
+          "name": "Поля ввода",
+          "type": "INSTANCE",
+          "layout": {
+            "width": 350,
+            "height": 51,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                1,
+                0
+              ]
+            ],
+            "renderBounds": {
+              "x": 0,
+              "y": 0,
+              "width": 350,
+              "height": 51
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "stretch",
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "min"
+            },
+            "mode": "horizontal",
+            "gap": 4,
+            "strokesIncludedInLayout": true,
+            "padding": {
+              "top": 13,
+              "right": 12,
+              "bottom": 13,
+              "left": 12
+            },
+            "primaryAxisAlign": "min",
+            "counterAxisAlign": "min",
+            "sizing": {
+              "horizontal": "fill",
+              "vertical": "hug"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through",
+            "fills": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#FFFFFF"
+              }
+            ],
+            "backgroundColor": "#FFFFFF",
+            "borderRadius": 18,
+            "strokes": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#8A8A8A"
+              }
+            ],
+            "borderColor": "#8A8A8A",
+            "borderWidth": 0.5,
+            "strokeAlign": "inside",
+            "strokeCap": "none",
+            "strokeJoin": "miter",
+            "strokeMiterLimit": 4,
+            "strokeDashPattern": [],
+            "strokeWeights": {
+              "top": 0.5,
+              "right": 0.5,
+              "bottom": 0.5,
+              "left": 0.5
+            }
+          },
+          "componentProperties": {
+            "Property 1": "Обычный"
+          }
+        },
+        {
+          "role": "submit",
+          "nodeId": "4425:3062",
+          "name": "Кнопки",
+          "type": "INSTANCE",
+          "layout": {
+            "width": 350,
+            "height": 51,
+            "y": 63,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                1,
+                63
+              ]
+            ],
+            "renderBounds": {
+              "x": 0,
+              "y": 0,
+              "width": 350,
+              "height": 51
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "stretch",
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "min"
+            },
+            "mode": "horizontal",
+            "gap": 2,
+            "strokesIncludedInLayout": true,
+            "padding": {
+              "top": 12,
+              "right": 16,
+              "bottom": 12,
+              "left": 16
+            },
+            "primaryAxisAlign": "center",
+            "counterAxisAlign": "center",
+            "sizing": {
+              "horizontal": "fill",
+              "vertical": "hug"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through",
+            "fills": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#121212",
+                "variable": "Black"
+              }
+            ],
+            "backgroundColor": "#121212",
+            "variables": {
+              "backgroundColor": "Black",
+              "borderColor": "Black"
+            },
+            "borderRadius": 80,
+            "strokes": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#121212",
+                "variable": "Black"
+              }
+            ],
+            "borderColor": "#121212",
+            "borderWidth": 0.5,
+            "strokeAlign": "inside",
+            "strokeCap": "none",
+            "strokeJoin": "miter",
+            "strokeMiterLimit": 4,
+            "strokeDashPattern": [],
+            "strokeWeights": {
+              "top": 0.5,
+              "right": 0.5,
+              "bottom": 0.5,
+              "left": 0.5
+            }
+          },
+          "componentProperties": {
+            "Иконка правая": "false",
+            "Icon": "297:5596",
+            "Иконка левая": "false",
+            "Обычная": "Черная"
+          }
+        }
+      ]
+    },
+    {
+      "id": "register-password",
+      "rootNodeId": "526:15346",
+      "surfaceNodeId": "526:15557",
+      "nodes": [
+        {
+          "role": "surface",
+          "nodeId": "526:15557",
+          "name": "Frame 139",
+          "type": "FRAME",
+          "layout": {
+            "width": 390,
+            "height": 443,
+            "y": 431,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                1,
+                431
+              ]
+            ],
+            "renderBounds": {
+              "x": 0,
+              "y": 0,
+              "width": 390,
+              "height": 443
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "inherit",
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "min"
+            },
+            "mode": "vertical",
+            "gap": 16,
+            "strokesIncludedInLayout": true,
+            "padding": {
+              "top": 8,
+              "right": 20,
+              "bottom": 20,
+              "left": 20
+            },
+            "primaryAxisAlign": "min",
+            "counterAxisAlign": "center",
+            "sizing": {
+              "horizontal": "fixed",
+              "vertical": "hug"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through",
+            "fills": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#FFFFFF",
+                "variable": "White"
+              }
+            ],
+            "backgroundColor": "#FFFFFF",
+            "variables": {
+              "backgroundColor": "White"
+            },
+            "cornerRadii": {
+              "topLeft": 32,
+              "topRight": 32,
+              "bottomRight": 0,
+              "bottomLeft": 0
+            }
+          }
+        },
+        {
+          "role": "overlay",
+          "nodeId": "526:15556",
+          "name": "Frame 140",
+          "type": "FRAME",
+          "layout": {
+            "width": 390,
+            "height": 874,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                1,
+                0
+              ]
+            ],
+            "renderBounds": {
+              "x": 0,
+              "y": 0,
+              "width": 390,
+              "height": 874
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "inherit",
+            "constraints": {
+              "horizontal": "center",
+              "vertical": "center"
+            },
+            "mode": "horizontal",
+            "gap": 10,
+            "strokesIncludedInLayout": true,
+            "primaryAxisAlign": "center",
+            "counterAxisAlign": "max",
+            "sizing": {
+              "horizontal": "hug",
+              "vertical": "fixed"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through",
+            "fills": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "opacity": 0.5,
+                "color": "#2A2A2A",
+                "variable": "Overlay"
+              }
+            ],
+            "backgroundColor": "#2A2A2A",
+            "backgroundOpacity": 0.5,
+            "variables": {
+              "backgroundColor": "Overlay"
+            }
+          }
+        },
+        {
+          "role": "header",
+          "nodeId": "4425:3014",
+          "name": "Frame 205",
+          "type": "FRAME",
+          "layout": {
+            "width": 350,
+            "height": 46,
+            "x": 20,
+            "y": 8,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                20
+              ],
+              [
+                0,
+                1,
+                8
+              ]
+            ],
+            "renderBounds": {
+              "x": 0,
+              "y": 0,
+              "width": 350,
+              "height": 46
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "stretch",
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "min"
+            },
+            "mode": "vertical",
+            "gap": 6,
+            "strokesIncludedInLayout": true,
+            "primaryAxisAlign": "min",
+            "counterAxisAlign": "min",
+            "sizing": {
+              "horizontal": "fill",
+              "vertical": "hug"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through"
+          }
+        },
+        {
+          "role": "title",
+          "nodeId": "4425:3020",
+          "name": "Регистрация",
+          "type": "TEXT",
+          "layout": {
+            "width": 316,
+            "height": 22,
+            "x": 34,
+            "y": 2,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                34
+              ],
+              [
+                0,
+                1,
+                2
+              ]
+            ],
+            "renderBounds": {
+              "x": 1.29,
+              "y": 4.91,
+              "width": 111.75,
+              "height": 16.77
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "inherit",
+            "layoutGrow": 1,
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "min"
+            },
+            "mode": "none",
+            "sizing": {
+              "horizontal": "fill",
+              "vertical": "hug"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through",
+            "fills": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#121212",
+                "variable": "Black"
+              }
+            ],
+            "color": "#121212",
+            "variables": {
+              "color": "Black"
+            },
+            "fontFamily": "Inter",
+            "fontStyleName": "Semi Bold",
+            "fontSize": 18,
+            "fontWeight": 600,
+            "letterSpacing": -1,
+            "letterSpacingUnit": "percent",
+            "textAlignVertical": "top",
+            "textAutoResize": "height",
+            "textTruncation": "disabled",
+            "leadingTrim": "none"
+          },
+          "text": "Регистрация"
+        },
+        {
+          "role": "accountName",
+          "nodeId": "3467:15524",
+          "name": "Поля ввода",
+          "type": "INSTANCE",
+          "layout": {
+            "width": 350,
+            "height": 51,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                1,
+                0
+              ]
+            ],
+            "renderBounds": {
+              "x": 0,
+              "y": 0,
+              "width": 350,
+              "height": 51
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "stretch",
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "min"
+            },
+            "mode": "horizontal",
+            "gap": 4,
+            "strokesIncludedInLayout": true,
+            "padding": {
+              "top": 13,
+              "right": 12,
+              "bottom": 13,
+              "left": 12
+            },
+            "primaryAxisAlign": "min",
+            "counterAxisAlign": "min",
+            "sizing": {
+              "horizontal": "fill",
+              "vertical": "hug"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through",
+            "fills": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#FFFFFF"
+              }
+            ],
+            "backgroundColor": "#FFFFFF",
+            "borderRadius": 18,
+            "strokes": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#8A8A8A"
+              }
+            ],
+            "borderColor": "#8A8A8A",
+            "borderWidth": 0.5,
+            "strokeAlign": "inside",
+            "strokeCap": "none",
+            "strokeJoin": "miter",
+            "strokeMiterLimit": 4,
+            "strokeDashPattern": [],
+            "strokeWeights": {
+              "top": 0.5,
+              "right": 0.5,
+              "bottom": 0.5,
+              "left": 0.5
+            }
+          },
+          "componentProperties": {
+            "Property 1": "Обычный"
+          }
+        },
+        {
+          "role": "email",
+          "nodeId": "526:15566",
+          "name": "Поля ввода",
+          "type": "INSTANCE",
+          "layout": {
+            "width": 350,
+            "height": 51,
+            "y": 63,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                1,
+                63
+              ]
+            ],
+            "renderBounds": {
+              "x": 0,
+              "y": 0,
+              "width": 350,
+              "height": 51
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "stretch",
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "min"
+            },
+            "mode": "horizontal",
+            "gap": 4,
+            "strokesIncludedInLayout": true,
+            "padding": {
+              "top": 13,
+              "right": 12,
+              "bottom": 13,
+              "left": 12
+            },
+            "primaryAxisAlign": "min",
+            "counterAxisAlign": "min",
+            "sizing": {
+              "horizontal": "fill",
+              "vertical": "hug"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through",
+            "fills": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#FFFFFF"
+              }
+            ],
+            "backgroundColor": "#FFFFFF",
+            "borderRadius": 18,
+            "strokes": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#8A8A8A"
+              }
+            ],
+            "borderColor": "#8A8A8A",
+            "borderWidth": 0.5,
+            "strokeAlign": "inside",
+            "strokeCap": "none",
+            "strokeJoin": "miter",
+            "strokeMiterLimit": 4,
+            "strokeDashPattern": [],
+            "strokeWeights": {
+              "top": 0.5,
+              "right": 0.5,
+              "bottom": 0.5,
+              "left": 0.5
+            }
+          },
+          "componentProperties": {
+            "Property 1": "Обычный"
+          }
+        },
+        {
+          "role": "password",
+          "nodeId": "526:15567",
+          "name": "Поля ввода",
+          "type": "FRAME",
+          "layout": {
+            "width": 350,
+            "height": 54,
+            "y": 126,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                1,
+                126
+              ]
+            ],
+            "renderBounds": {
+              "x": 0,
+              "y": 0,
+              "width": 350,
+              "height": 54
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "stretch",
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "min"
+            },
+            "mode": "horizontal",
+            "gap": 4,
+            "strokesIncludedInLayout": true,
+            "padding": {
+              "top": 13,
+              "right": 12,
+              "bottom": 13,
+              "left": 12
+            },
+            "primaryAxisAlign": "min",
+            "counterAxisAlign": "center",
+            "sizing": {
+              "horizontal": "fill",
+              "vertical": "hug"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through",
+            "fills": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#FFFFFF",
+                "variable": "White"
+              }
+            ],
+            "backgroundColor": "#FFFFFF",
+            "variables": {
+              "backgroundColor": "White"
+            },
+            "borderRadius": 18,
+            "strokes": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#8A8A8A"
+              }
+            ],
+            "borderColor": "#8A8A8A",
+            "borderWidth": 1,
+            "strokeAlign": "inside",
+            "strokeCap": "none",
+            "strokeJoin": "miter",
+            "strokeMiterLimit": 4,
+            "strokeDashPattern": [],
+            "strokeWeights": {
+              "top": 1,
+              "right": 1,
+              "bottom": 1,
+              "left": 1
+            }
+          }
+        },
+        {
+          "role": "passwordText",
+          "nodeId": "526:15568",
+          "name": "Введите пароль",
+          "type": "TEXT",
+          "layout": {
+            "width": 294,
+            "height": 26,
+            "x": 13,
+            "y": 14,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                13
+              ],
+              [
+                0,
+                1,
+                14
+              ]
+            ],
+            "renderBounds": {
+              "x": 1.41,
+              "y": 7.36,
+              "width": 121.07,
+              "height": 14.91
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "inherit",
+            "layoutGrow": 1,
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "min"
+            },
+            "mode": "none",
+            "sizing": {
+              "horizontal": "fill",
+              "vertical": "hug"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through",
+            "fills": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#8A8A8A"
+              }
+            ],
+            "color": "#8A8A8A",
+            "fontFamily": "Inter",
+            "fontStyleName": "Regular",
+            "fontSize": 16,
+            "fontWeight": 400,
+            "lineHeight": 26,
+            "letterSpacing": -1,
+            "letterSpacingUnit": "percent",
+            "textAlignVertical": "top",
+            "textAutoResize": "height",
+            "textTruncation": "disabled",
+            "leadingTrim": "none"
+          },
+          "text": "Введите пароль"
+        },
+        {
+          "role": "passwordVisibility",
+          "nodeId": "526:15570",
+          "name": "Иконки кнопок",
+          "type": "INSTANCE",
+          "layout": {
+            "width": 18,
+            "height": 18,
+            "x": 4,
+            "y": 4,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                4
+              ],
+              [
+                0,
+                1,
+                4
+              ]
+            ],
+            "renderBounds": {
+              "x": 0,
+              "y": 0,
+              "width": 18,
+              "height": 18
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "inherit",
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "min"
+            },
+            "targetAspectRatio": {
+              "x": 18,
+              "y": 18
+            },
+            "mode": "none",
+            "sizing": {
+              "horizontal": "fixed",
+              "vertical": "fixed"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through"
+          },
+          "componentProperties": {
+            "Icon": "eye-off"
+          }
+        },
+        {
+          "role": "confirmPassword",
+          "nodeId": "526:15571",
+          "name": "Поля ввода",
+          "type": "FRAME",
+          "layout": {
+            "width": 350,
+            "height": 54,
+            "y": 192,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                1,
+                192
+              ]
+            ],
+            "renderBounds": {
+              "x": 0,
+              "y": 0,
+              "width": 350,
+              "height": 54
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "stretch",
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "min"
+            },
+            "mode": "horizontal",
+            "gap": 4,
+            "strokesIncludedInLayout": true,
+            "padding": {
+              "top": 13,
+              "right": 12,
+              "bottom": 13,
+              "left": 12
+            },
+            "primaryAxisAlign": "min",
+            "counterAxisAlign": "center",
+            "sizing": {
+              "horizontal": "fill",
+              "vertical": "hug"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through",
+            "fills": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#FFFFFF",
+                "variable": "White"
+              }
+            ],
+            "backgroundColor": "#FFFFFF",
+            "variables": {
+              "backgroundColor": "White"
+            },
+            "borderRadius": 18,
+            "strokes": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#8A8A8A"
+              }
+            ],
+            "borderColor": "#8A8A8A",
+            "borderWidth": 1,
+            "strokeAlign": "inside",
+            "strokeCap": "none",
+            "strokeJoin": "miter",
+            "strokeMiterLimit": 4,
+            "strokeDashPattern": [],
+            "strokeWeights": {
+              "top": 1,
+              "right": 1,
+              "bottom": 1,
+              "left": 1
+            }
+          }
+        },
+        {
+          "role": "confirmPasswordText",
+          "nodeId": "526:15572",
+          "name": "Подтвердите пароль",
+          "type": "TEXT",
+          "layout": {
+            "width": 294,
+            "height": 26,
+            "x": 13,
+            "y": 14,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                13
+              ],
+              [
+                0,
+                1,
+                14
+              ]
+            ],
+            "renderBounds": {
+              "x": 1.43,
+              "y": 7.36,
+              "width": 159.38,
+              "height": 14.91
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "inherit",
+            "layoutGrow": 1,
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "min"
+            },
+            "mode": "none",
+            "sizing": {
+              "horizontal": "fill",
+              "vertical": "hug"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through",
+            "fills": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#8A8A8A"
+              }
+            ],
+            "color": "#8A8A8A",
+            "fontFamily": "Inter",
+            "fontStyleName": "Regular",
+            "fontSize": 16,
+            "fontWeight": 400,
+            "lineHeight": 26,
+            "letterSpacing": -1,
+            "letterSpacingUnit": "percent",
+            "textAlignVertical": "top",
+            "textAutoResize": "height",
+            "textTruncation": "disabled",
+            "leadingTrim": "none"
+          },
+          "text": "Подтвердите пароль"
+        },
+        {
+          "role": "confirmPasswordVisibility",
+          "nodeId": "526:15574",
+          "name": "Иконки кнопок",
+          "type": "INSTANCE",
+          "layout": {
+            "width": 18,
+            "height": 18,
+            "x": 4,
+            "y": 4,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                4
+              ],
+              [
+                0,
+                1,
+                4
+              ]
+            ],
+            "renderBounds": {
+              "x": 0,
+              "y": 0,
+              "width": 18,
+              "height": 18
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "inherit",
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "min"
+            },
+            "targetAspectRatio": {
+              "x": 18,
+              "y": 18
+            },
+            "mode": "none",
+            "sizing": {
+              "horizontal": "fixed",
+              "vertical": "fixed"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through"
+          },
+          "componentProperties": {
+            "Icon": "view"
+          }
+        },
+        {
+          "role": "submit",
+          "nodeId": "4425:3028",
+          "name": "Кнопки",
+          "type": "INSTANCE",
+          "layout": {
+            "width": 350,
+            "height": 51,
+            "y": 258,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                1,
+                258
+              ]
+            ],
+            "renderBounds": {
+              "x": 0,
+              "y": 0,
+              "width": 350,
+              "height": 51
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "stretch",
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "min"
+            },
+            "mode": "horizontal",
+            "gap": 2,
+            "strokesIncludedInLayout": true,
+            "padding": {
+              "top": 12,
+              "right": 16,
+              "bottom": 12,
+              "left": 16
+            },
+            "primaryAxisAlign": "center",
+            "counterAxisAlign": "center",
+            "sizing": {
+              "horizontal": "fill",
+              "vertical": "hug"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through",
+            "fills": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#121212",
+                "variable": "Black"
+              }
+            ],
+            "backgroundColor": "#121212",
+            "variables": {
+              "backgroundColor": "Black",
+              "borderColor": "Black"
+            },
+            "borderRadius": 80,
+            "strokes": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#121212",
+                "variable": "Black"
+              }
+            ],
+            "borderColor": "#121212",
+            "borderWidth": 0.5,
+            "strokeAlign": "inside",
+            "strokeCap": "none",
+            "strokeJoin": "miter",
+            "strokeMiterLimit": 4,
+            "strokeDashPattern": [],
+            "strokeWeights": {
+              "top": 0.5,
+              "right": 0.5,
+              "bottom": 0.5,
+              "left": 0.5
+            }
+          },
+          "componentProperties": {
+            "Иконка правая": "false",
+            "Icon": "297:5596",
+            "Иконка левая": "false",
+            "Обычная": "Черная"
+          }
+        },
+        {
+          "role": "consentGroup",
+          "nodeId": "526:15576",
+          "name": "Frame 88",
+          "type": "FRAME",
+          "layout": {
+            "width": 350,
+            "height": 32,
+            "y": 321,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                1,
+                321
+              ]
+            ],
+            "renderBounds": {
+              "x": 0,
+              "y": 0,
+              "width": 350,
+              "height": 32
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "stretch",
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "min"
+            },
+            "mode": "horizontal",
+            "gap": 6,
+            "strokesIncludedInLayout": true,
+            "primaryAxisAlign": "min",
+            "counterAxisAlign": "min",
+            "sizing": {
+              "horizontal": "fill",
+              "vertical": "hug"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through"
+          }
+        },
+        {
+          "role": "consentControl",
+          "nodeId": "526:15577",
+          "name": "Frame 82",
+          "type": "FRAME",
+          "layout": {
+            "width": 20,
+            "height": 20,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                1,
+                0
+              ]
+            ],
+            "renderBounds": {
+              "x": 0,
+              "y": 0,
+              "width": 20,
+              "height": 20
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "inherit",
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "min"
+            },
+            "mode": "horizontal",
+            "gap": 10,
+            "strokesIncludedInLayout": true,
+            "padding": {
+              "top": 2,
+              "right": 2,
+              "bottom": 2,
+              "left": 2
+            },
+            "primaryAxisAlign": "center",
+            "counterAxisAlign": "center",
+            "sizing": {
+              "horizontal": "fixed",
+              "vertical": "fixed"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through",
+            "fills": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#121212",
+                "variable": "Black"
+              }
+            ],
+            "backgroundColor": "#121212",
+            "variables": {
+              "backgroundColor": "Black",
+              "borderColor": "Black"
+            },
+            "borderRadius": 20,
+            "strokes": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#121212",
+                "variable": "Black"
+              }
+            ],
+            "borderColor": "#121212",
+            "borderWidth": 1,
+            "strokeAlign": "inside",
+            "strokeCap": "none",
+            "strokeJoin": "miter",
+            "strokeMiterLimit": 4,
+            "strokeDashPattern": [],
+            "strokeWeights": {
+              "top": 1,
+              "right": 1,
+              "bottom": 1,
+              "left": 1
+            }
+          }
+        },
+        {
+          "role": "consentText",
+          "nodeId": "526:15580",
+          "name": "Я соглашаюсь с политикой конфиденциальности и правилами сервиса",
+          "type": "TEXT",
+          "layout": {
+            "width": 324,
+            "height": 32,
+            "x": 26,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                26
+              ],
+              [
+                0,
+                1,
+                0
+              ]
+            ],
+            "renderBounds": {
+              "x": 0.79,
+              "y": 3.55,
+              "width": 276.9,
+              "height": 28.11
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "inherit",
+            "layoutGrow": 1,
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "min"
+            },
+            "mode": "none",
+            "sizing": {
+              "horizontal": "fill",
+              "vertical": "hug"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through",
+            "variables": {
+              "color": "Gray 1"
+            },
+            "fontFamily": "Inter",
+            "fontStyleName": "Regular",
+            "fontSize": 13,
+            "fontWeight": 400,
+            "textAlignVertical": "top",
+            "textAutoResize": "height",
+            "textTruncation": "disabled",
+            "leadingTrim": "none"
+          },
+          "text": "Я соглашаюсь с политикой конфиденциальности и правилами сервиса",
+          "fidelityWarnings": [
+            {
+              "code": "unresolved-mixed-text-style",
+              "severity": "warning",
+              "message": "Text node reports mixed style values, but styled text ranges were not available."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "confirm-exit",
+      "rootNodeId": "746:23037",
+      "surfaceNodeId": "746:23093",
+      "nodes": [
+        {
+          "role": "surface",
+          "nodeId": "746:23093",
+          "name": "Frame 138",
+          "type": "FRAME",
+          "layout": {
+            "width": 366,
+            "height": 200,
+            "x": 12,
+            "y": 335,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                12
+              ],
+              [
+                0,
+                1,
+                335
+              ]
+            ],
+            "renderBounds": {
+              "x": 0,
+              "y": 0,
+              "width": 366,
+              "height": 200
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "inherit",
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "min"
+            },
+            "mode": "vertical",
+            "gap": 22,
+            "strokesIncludedInLayout": true,
+            "padding": {
+              "top": 24,
+              "right": 20,
+              "bottom": 20,
+              "left": 20
+            },
+            "primaryAxisAlign": "min",
+            "counterAxisAlign": "center",
+            "sizing": {
+              "horizontal": "fixed",
+              "vertical": "hug"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through",
+            "fills": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#FFFFFF",
+                "variable": "White"
+              }
+            ],
+            "backgroundColor": "#FFFFFF",
+            "variables": {
+              "backgroundColor": "White"
+            },
+            "borderRadius": 28
+          }
+        },
+        {
+          "role": "overlay",
+          "nodeId": "746:23092",
+          "name": "Frame 223",
+          "type": "FRAME",
+          "layout": {
+            "width": 390,
+            "height": 874,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                1,
+                0
+              ]
+            ],
+            "renderBounds": {
+              "x": 0,
+              "y": 0,
+              "width": 390,
+              "height": 874
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "inherit",
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "center"
+            },
+            "mode": "vertical",
+            "gap": 10,
+            "strokesIncludedInLayout": true,
+            "padding": {
+              "top": 335,
+              "right": 12,
+              "bottom": 338,
+              "left": 12
+            },
+            "primaryAxisAlign": "min",
+            "counterAxisAlign": "min",
+            "sizing": {
+              "horizontal": "fixed",
+              "vertical": "fixed"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through",
+            "fills": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "opacity": 0.5,
+                "color": "#2A2A2A",
+                "variable": "Overlay"
+              }
+            ],
+            "backgroundColor": "#2A2A2A",
+            "backgroundOpacity": 0.5,
+            "variables": {
+              "backgroundColor": "Overlay"
+            }
+          }
+        },
+        {
+          "role": "content",
+          "nodeId": "746:23093",
+          "name": "Frame 138",
+          "type": "FRAME",
+          "layout": {
+            "width": 366,
+            "height": 200,
+            "x": 12,
+            "y": 335,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                12
+              ],
+              [
+                0,
+                1,
+                335
+              ]
+            ],
+            "renderBounds": {
+              "x": 0,
+              "y": 0,
+              "width": 366,
+              "height": 200
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "inherit",
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "min"
+            },
+            "mode": "vertical",
+            "gap": 22,
+            "strokesIncludedInLayout": true,
+            "padding": {
+              "top": 24,
+              "right": 20,
+              "bottom": 20,
+              "left": 20
+            },
+            "primaryAxisAlign": "min",
+            "counterAxisAlign": "center",
+            "sizing": {
+              "horizontal": "fixed",
+              "vertical": "hug"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through",
+            "fills": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#FFFFFF",
+                "variable": "White"
+              }
+            ],
+            "backgroundColor": "#FFFFFF",
+            "variables": {
+              "backgroundColor": "White"
+            },
+            "borderRadius": 28
+          }
+        },
+        {
+          "role": "textGroup",
+          "nodeId": "746:23094",
+          "name": "Frame 222",
+          "type": "FRAME",
+          "layout": {
+            "width": 326,
+            "height": 79,
+            "x": 20,
+            "y": 24,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                20
+              ],
+              [
+                0,
+                1,
+                24
+              ]
+            ],
+            "renderBounds": {
+              "x": 0,
+              "y": 0,
+              "width": 326,
+              "height": 79
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "stretch",
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "min"
+            },
+            "mode": "vertical",
+            "gap": 12,
+            "strokesIncludedInLayout": true,
+            "primaryAxisAlign": "min",
+            "counterAxisAlign": "min",
+            "sizing": {
+              "horizontal": "fill",
+              "vertical": "hug"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through"
+          }
+        },
+        {
+          "role": "title",
+          "nodeId": "746:23095",
+          "name": "Прервать регистрацию",
+          "type": "TEXT",
+          "layout": {
+            "width": 326,
+            "height": 27,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                1,
+                0
+              ]
+            ],
+            "renderBounds": {
+              "x": 39.62,
+              "y": 6,
+              "width": 247.59,
+              "height": 20.5
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "stretch",
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "min"
+            },
+            "mode": "none",
+            "sizing": {
+              "horizontal": "fill",
+              "vertical": "hug"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through",
+            "fills": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#121212",
+                "variable": "Black"
+              }
+            ],
+            "color": "#121212",
+            "variables": {
+              "color": "Black"
+            },
+            "fontFamily": "Inter",
+            "fontStyleName": "Semi Bold",
+            "fontSize": 22,
+            "fontWeight": 600,
+            "letterSpacing": -2,
+            "letterSpacingUnit": "percent",
+            "textAlign": "center",
+            "textAlignVertical": "top",
+            "textAutoResize": "height",
+            "textTruncation": "disabled",
+            "leadingTrim": "none"
+          },
+          "text": "Прервать регистрацию"
+        },
+        {
+          "role": "description",
+          "nodeId": "746:23096",
+          "name": "Если вы выйдете из регистрации профиля автора, не сможете продавать свои работы",
+          "type": "TEXT",
+          "layout": {
+            "width": 326,
+            "height": 40,
+            "y": 39,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                1,
+                39
+              ]
+            ],
+            "renderBounds": {
+              "x": 7.23,
+              "y": 4.09,
+              "width": 311.15,
+              "height": 33.98
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "stretch",
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "min"
+            },
+            "mode": "none",
+            "sizing": {
+              "horizontal": "fill",
+              "vertical": "hug"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through",
+            "fills": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#121212",
+                "variable": "Black"
+              }
+            ],
+            "color": "#121212",
+            "variables": {
+              "color": "Black"
+            },
+            "fontFamily": "Inter",
+            "fontStyleName": "Regular",
+            "fontSize": 15,
+            "fontWeight": 400,
+            "lineHeight": 20,
+            "letterSpacing": -2,
+            "letterSpacingUnit": "percent",
+            "textAlign": "center",
+            "textAlignVertical": "top",
+            "textAutoResize": "height",
+            "textTruncation": "disabled",
+            "leadingTrim": "none"
+          },
+          "text": "Если вы выйдете из регистрации профиля автора, не сможете продавать свои работы"
+        },
+        {
+          "role": "actions",
+          "nodeId": "746:23097",
+          "name": "Frame 168",
+          "type": "FRAME",
+          "layout": {
+            "width": 326,
+            "height": 55,
+            "x": 20,
+            "y": 125,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                20
+              ],
+              [
+                0,
+                1,
+                125
+              ]
+            ],
+            "renderBounds": {
+              "x": 0,
+              "y": 0,
+              "width": 326,
+              "height": 55
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "stretch",
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "min"
+            },
+            "mode": "horizontal",
+            "gap": 8,
+            "strokesIncludedInLayout": true,
+            "primaryAxisAlign": "min",
+            "counterAxisAlign": "min",
+            "sizing": {
+              "horizontal": "fill",
+              "vertical": "hug"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through"
+          }
+        },
+        {
+          "role": "leave",
+          "nodeId": "746:23098",
+          "name": "Кнопки",
+          "type": "INSTANCE",
+          "layout": {
+            "width": 159,
+            "height": 55,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                1,
+                0
+              ]
+            ],
+            "renderBounds": {
+              "x": 0,
+              "y": 0,
+              "width": 159,
+              "height": 55
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "inherit",
+            "layoutGrow": 1,
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "min"
+            },
+            "mode": "horizontal",
+            "gap": 2,
+            "strokesIncludedInLayout": true,
+            "padding": {
+              "top": 14,
+              "right": 16,
+              "bottom": 14,
+              "left": 16
+            },
+            "primaryAxisAlign": "center",
+            "counterAxisAlign": "center",
+            "sizing": {
+              "horizontal": "fill",
+              "vertical": "hug"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through",
+            "fills": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#F3F3F3"
+              }
+            ],
+            "backgroundColor": "#F3F3F3",
+            "borderRadius": 80,
+            "strokes": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#FFFFFF"
+              }
+            ],
+            "borderColor": "#FFFFFF",
+            "borderWidth": 0.5,
+            "strokeAlign": "inside",
+            "strokeCap": "none",
+            "strokeJoin": "miter",
+            "strokeMiterLimit": 4,
+            "strokeDashPattern": [],
+            "strokeWeights": {
+              "top": 0.5,
+              "right": 0.5,
+              "bottom": 0.5,
+              "left": 0.5
+            }
+          },
+          "componentProperties": {
+            "Icon": "439:5332",
+            "Иконка правая": "false",
+            "Иконка левая": "false",
+            "Обычная": "Серая"
+          }
+        },
+        {
+          "role": "continue",
+          "nodeId": "746:23099",
+          "name": "Кнопки",
+          "type": "INSTANCE",
+          "layout": {
+            "width": 159,
+            "height": 55,
+            "x": 167,
+            "relativeTransform": [
+              [
+                1,
+                0,
+                167
+              ],
+              [
+                0,
+                1,
+                0
+              ]
+            ],
+            "renderBounds": {
+              "x": 0,
+              "y": 0,
+              "width": 159,
+              "height": 55
+            },
+            "gridRowAnchorIndex": -1,
+            "gridColumnAnchorIndex": -1,
+            "gridRowSpan": 1,
+            "gridColumnSpan": 1,
+            "gridChildHorizontalAlign": "auto",
+            "gridChildVerticalAlign": "auto",
+            "layoutAlign": "inherit",
+            "layoutGrow": 1,
+            "constraints": {
+              "horizontal": "min",
+              "vertical": "min"
+            },
+            "mode": "horizontal",
+            "gap": 2,
+            "strokesIncludedInLayout": true,
+            "padding": {
+              "top": 14,
+              "right": 16,
+              "bottom": 14,
+              "left": 16
+            },
+            "primaryAxisAlign": "center",
+            "counterAxisAlign": "center",
+            "sizing": {
+              "horizontal": "fill",
+              "vertical": "hug"
+            }
+          },
+          "style": {
+            "blendMode": "pass_through",
+            "fills": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#121212",
+                "variable": "Black"
+              }
+            ],
+            "backgroundColor": "#121212",
+            "variables": {
+              "backgroundColor": "Black",
+              "borderColor": "Black"
+            },
+            "borderRadius": 80,
+            "strokes": [
+              {
+                "type": "solid",
+                "sourceType": "SOLID",
+                "color": "#121212",
+                "variable": "Black"
+              }
+            ],
+            "borderColor": "#121212",
+            "borderWidth": 0.5,
+            "strokeAlign": "inside",
+            "strokeCap": "none",
+            "strokeJoin": "miter",
+            "strokeMiterLimit": 4,
+            "strokeDashPattern": [],
+            "strokeWeights": {
+              "top": 0.5,
+              "right": 0.5,
+              "bottom": 0.5,
+              "left": 0.5
+            }
+          },
+          "componentProperties": {
+            "Иконка правая": "false",
+            "Icon": "439:5314",
+            "Иконка левая": "false",
+            "Обычная": "Черная"
+          }
+        }
+      ]
+    }
+  ]
+}

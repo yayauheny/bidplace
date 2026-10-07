@@ -1,6 +1,6 @@
 # bidplace — индекс дизайн-документации
 
-Последнее обновление: 2026-09-14
+Последнее обновление: 2026-10-07
 
 Статус: **Confirmed documentation baseline**
 
@@ -34,6 +34,20 @@ portfolio target эту роль после versioned handoff выполняет
 визуальный источник не создаёт routes, API, поля, permissions или product rules.
 Foundation/Gamma/Avant Arte не переопределяют Pen и не переносят в bidplace
 wallet/NFT/crypto semantics; их разрешённая роль закреплена в `DEC-064`.
+
+### Scoped auth source — 2026-10-07
+
+Для следующей auth UI-волны актуален founder-provided пакет
+[`auth/2026-10-07-auth-dialogs`](../../design/figma-handoff/auth/2026-10-07-auth-dialogs/README.md)
+(`DEC-105`). Он переопределяет только перечисленные там auth/exit nodes из
+`portfolio-phone-v1`, включая радиус шторок `32` вместо `20`. Исходная
+библиотека остаётся read-only, остальные её экраны не переопределяются.
+Общие состояния полей принадлежат
+[`fields/2026-10-06-text-fields`](../../design/figma-handoff/fields/2026-10-06-text-fields/README.md).
+Node map, style measurements, source discrepancies и execution handoff находятся
+в новом пакете. Статус — импорт/план, не runtime parity. Эти архивы имеют приоритет
+в своей зафиксированной волне; отличающиеся live Inspect значения не смешиваются
+с ними. Missing ranges/assets и производные recovery/desktop states явно отмечены.
 
 ## Неприкосновенность Pen
 

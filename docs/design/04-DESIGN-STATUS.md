@@ -4,6 +4,24 @@
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
+## 2026-10-07 — Auth source package imported; runtime unchanged
+
+- `Implemented` for the versioned import only: six founder captures in
+  [`auth/2026-10-07-auth-dialogs`](../../design/figma-handoff/auth/2026-10-07-auth-dialogs/README.md),
+  exact original node/reference/asset bytes, per-package provenance/checksums,
+  source-to-role map, style measurements and immutable-library comparison.
+  Archive names are disambiguated: standard login and excluded code-login are
+  separate captures. Common field state source stays the 2026-10-06 package.
+- `Not implemented` for the planned auth sheets, six-cell verification layout,
+  countdown, provider placeholders, masked recovery result and shared exit
+  presentation (`DEC-105`). Current auth/reset APIs and product code are unchanged.
+- `Needs verification` for incomplete mixed text/Google asset, exact missing
+  interaction states and legal-link/acceptance mapping. Recovery/reset and wider
+  compositions have no exact new capture; they are derived states. Current live
+  Google button differs from the pinned archive; those versions must not mix.
+  Pen, Figma library and existing field source were not rewritten. Import checks
+  and limitations: [VALIDATION.md](../../design/figma-handoff/auth/2026-10-07-auth-dialogs/VALIDATION.md).
+
 ## 2026-10-07 — Ordinary press drops the mint ring
 
 - `Implemented`: pressed buttons and choice chips keep their existing fill,

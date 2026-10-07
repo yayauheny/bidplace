@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "archiveName": "Стать_автором_заполнение_профиля_прервать регистрацию.figmacapture.zip",
+  "archiveSha256": "66f683dce4df9f1eee3621d33f2823169a273a4630a75ae595c08f819a3c8aad",
+  "capturedAt": "2026-10-07T07:09:59.086Z",
+  "rootId": "746:23037",
+  "surfaceId": "746:23093",
+  "canonicalParent": "screens/apply/apply__identity-abort__390x874__node-746-23037",
+  "canonicalRootNodeFound": true,
+  "fileKeyInArchive": null,
+  "imported": [
+    {
+      "path": "manifest.json",
+      "sha256": "80d31560a70a22df2d6585904a2b7919aa88e83c4691e90574ebc201aa4cd65a",
+      "size": 3800
+    },
+    {
+      "path": "design/nodes.json",
+      "sha256": "46cd10e6142409c7a1edd354387e8d03f298c2d0416a7e05ed7588c1d1d56817",
+      "size": 265464
+    },
+    {
+      "path": "fallbacks/001-746_23037.png",
+      "sha256": "a386923e92907c31330268ee91c53768f634e99ca64d3b65be0dbacc3311e2ab",
+      "size": 31757
+    },
+    {
+      "path": "fidelity/coverage.json",
+      "sha256": "2014e0d15673700e1ae0cf74b4b4c8e52245112787994e1443e503b4f185c468",
+      "size": 534
+    },
+    {
+      "path": "mcp/figma-locator.json",
+      "sha256": "ed4174e4a15fdc49263a1ef01bf9983109a1f7ae21f4fc38a94e239f497e8856",
+      "size": 49769
+    },
+    {
+      "path": "references/001-746_23037.png",
+      "sha256": "a386923e92907c31330268ee91c53768f634e99ca64d3b65be0dbacc3311e2ab",
+      "size": 31757
+    }
+  ],
+  "intentionallyOmitted": [
+    {
+      "path": "fallbacks/001-746_23037.svg",
+      "reason": "flattened entire-screen SVG duplicates the reference and embeds sample background; not runtime component assets",
+      "size": 229824
+    },
+    {
+      "path": "prompt.md",
+      "reason": "generated prompt is not instructions",
+      "size": 104849
+    }
+  ],
+  "sourceManifestUnchanged": true
+}

@@ -1,10 +1,22 @@
 # bidplace — дизайн-система Pen v2
 
-Последнее обновление: 2026-09-18
+Последнее обновление: 2026-10-07
 
 Статус: **Figma mobile-web 390 tokens and primitives are the production visual layer; Pen measurements remain historical**
 
 ## 1. Архитектура источников
+
+### Planned auth presentation — 2026-10-07
+
+`DEC-105` pins the next auth presentation to
+[`2026-10-07-auth-dialogs`](../../design/figma-handoff/auth/2026-10-07-auth-dialogs/README.md).
+Its [style map](../../design/figma-handoff/auth/2026-10-07-auth-dialogs/STYLES.md)
+owns measured sheet, OTP-cell, password-field, provider-row and exit-panel
+geometry. These are not installed runtime tokens yet. Keep one shared semantic
+token/component layer and common field states; do not change ShareSheet or all
+field/button consumers to match auth-specific variants. Source gaps and live
+Inspect disagreements stay explicit. The implementation status is
+`Not implemented`; no product component or stylesheet changed in this import.
 
 ```text
 protected Pen masters

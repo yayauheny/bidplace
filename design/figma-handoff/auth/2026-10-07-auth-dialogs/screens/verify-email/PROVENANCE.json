@@ -1,0 +1,101 @@
+{
+  "schemaVersion": 1,
+  "archiveName": "Подтвердить_код.figmacapture.zip",
+  "archiveSha256": "9a96c40edd728bcc6363481998fdd2a5378b0066cd15970132e8987bcd4f9997",
+  "capturedAt": "2026-10-07T07:05:06.688Z",
+  "rootId": "526:14903",
+  "surfaceId": "526:15114",
+  "canonicalParent": "screens/auth/auth__email-code__1123x1185__node-527-16955",
+  "canonicalRootNodeFound": true,
+  "fileKeyInArchive": null,
+  "imported": [
+    {
+      "path": "manifest.json",
+      "sha256": "a746e4fd0e227b047f4d8df174107b57dc4f50e006bd241b039cf395396bce3f",
+      "size": 6854
+    },
+    {
+      "path": "assets/001-526_14908.png",
+      "sha256": "f4bfc50376bceedb0438d206ed45bd53cf7e1d63a7af2b0c3dfda58d7f458b48",
+      "size": 149
+    },
+    {
+      "path": "assets/002-526_14917.png",
+      "sha256": "f4bfc50376bceedb0438d206ed45bd53cf7e1d63a7af2b0c3dfda58d7f458b48",
+      "size": 149
+    },
+    {
+      "path": "assets/003-526_14931.png",
+      "sha256": "f4bfc50376bceedb0438d206ed45bd53cf7e1d63a7af2b0c3dfda58d7f458b48",
+      "size": 149
+    },
+    {
+      "path": "assets/004-526_14944.png",
+      "sha256": "f4bfc50376bceedb0438d206ed45bd53cf7e1d63a7af2b0c3dfda58d7f458b48",
+      "size": 149
+    },
+    {
+      "path": "assets/005-526_14959.png",
+      "sha256": "8843d25b445fac6b7354fda3cd53cbd8fcbca1d6aff40358942472ec312402a9",
+      "size": 149
+    },
+    {
+      "path": "assets/006-526_14975.png",
+      "sha256": "2ebb49996a2f8457bffb4a38c08bbb47b26ad4bc7b5c8dbad3c23354bb8c64db",
+      "size": 6399373
+    },
+    {
+      "path": "assets/007-526_15019.png",
+      "sha256": "f4bfc50376bceedb0438d206ed45bd53cf7e1d63a7af2b0c3dfda58d7f458b48",
+      "size": 149
+    },
+    {
+      "path": "assets/008-526_15028.png",
+      "sha256": "f4bfc50376bceedb0438d206ed45bd53cf7e1d63a7af2b0c3dfda58d7f458b48",
+      "size": 149
+    },
+    {
+      "path": "assets/009-526_15097.png",
+      "sha256": "dab85d21768a2d900d15be8c88f07fd96e269c2ffff3e1f54fa3912466d2278d",
+      "size": 4645
+    },
+    {
+      "path": "design/nodes.json",
+      "sha256": "f4d9d74548a48112f78bf714d7b0dc545d2901da52c6708996fabc9265715abf",
+      "size": 730682
+    },
+    {
+      "path": "fallbacks/001-526_14903.png",
+      "sha256": "3cc7928be488869d7b3dc01f4d64b953bc090a3eb49f10f860452f339108db7c",
+      "size": 325605
+    },
+    {
+      "path": "fidelity/coverage.json",
+      "sha256": "76a49facbcd6c24b5bf70fc539fac83885962d3ff8acae0f1a0ccee55f8e1e25",
+      "size": 534
+    },
+    {
+      "path": "mcp/figma-locator.json",
+      "sha256": "af033668a9a4dfac4c8ff41933b4c84f7fc27220513e44effd388e40896f6bff",
+      "size": 155847
+    },
+    {
+      "path": "references/001-526_14903.png",
+      "sha256": "3cc7928be488869d7b3dc01f4d64b953bc090a3eb49f10f860452f339108db7c",
+      "size": 325605
+    }
+  ],
+  "intentionallyOmitted": [
+    {
+      "path": "fallbacks/001-526_14903.svg",
+      "reason": "flattened entire-screen SVG duplicates the reference and embeds sample background; not runtime component assets",
+      "size": 15461122
+    },
+    {
+      "path": "prompt.md",
+      "reason": "generated prompt is not instructions",
+      "size": 402812
+    }
+  ],
+  "sourceManifestUnchanged": true
+}
