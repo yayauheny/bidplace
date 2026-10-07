@@ -1,21 +1,25 @@
 # bidplace — текущий статус проекта
 
-## 2026-10-07 — Auth design handoff prepared, no runtime change
+## 2026-10-07 — Auth forms use the supplied sheet locally
 
-- `Implemented` for the six versioned source imports and execution handoff only:
-  [`design/figma-handoff/auth/2026-10-07-auth-dialogs`](../../design/figma-handoff/auth/2026-10-07-auth-dialogs/README.md).
-  Source roots/surfaces map to existing auth forms and shared primitives;
-  imported bytes/checksums and source differences are recorded. Runtime UI,
-  tokens, APIs, migrations and production data were not changed.
-- `Not implemented` for the new auth presentation. `DEC-105` keeps standard
-  email/password, account `displayName`, email verification and the existing
-  single-use-link recovery. OAuth/passwordless remain deferred; provider rows
-  are placeholders. Auth source measurements are scoped to this next wave.
-- `Needs verification` for the export's incomplete styles/assets, missing exact
-  recovery/desktop states and legal-link/consent wiring. The handoff does not
-  close auth live acceptance or full MVP readiness. Production remains runtime
-  `541d763547f7b021895daa3d533c3196c37a4e67`, Worker
-  `3afe08d5-b204-495c-8dcc-91d43e6af92b`. No push/deploy in this task.
+- `Partial` for the portfolio auth presentation. `/login` and `/register` share
+  a bottom sheet over public Home. Verification is the existing six-digit email
+  code, with a 60s countdown only after a confirmed send. Forgot/reset still
+  use the single-use link; the result masks the address the user typed. Exit
+  confirmation does not cancel a request, delete an account or log out.
+  Google/Telegram show an unavailable message. Registration still sends
+  `displayName` and omits the repeated password. Covered by
+  `auth-dismissal.spec.ts`, `schemas.spec.ts` and `verify-email-logout.spec.ts`.
+- `Needs verification` for the Chromium/WebKit auth suite. Its prepare step
+  resets only the local disposable `bidplace_e2e` database, and that reset was
+  not run. A local 390×874 pass showed sheet radius `32`, a 350×51 login
+  button, a centered 390-wide sheet, field errors, and the exit panel.
+  Registration scrolls. A complete Google asset, mixed legal styles and
+  consent remain open. There is no public rules route in the mobile app, so
+  the consent sentence is not a link and is not sent to `acceptRules`.
+  Recovery and wide screens are derived. This check does not accept the
+  portfolio MVP. Production remains
+  `541d763547f7b021895daa3d533c3196c37a4e67`. No push or deploy.
 
 ## 2026-10-07 — Safe request logs are on production
 

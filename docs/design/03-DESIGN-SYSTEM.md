@@ -6,17 +6,15 @@
 
 ## 1. Архитектура источников
 
-### Planned auth presentation — 2026-10-07
+### Auth sheet presentation — 2026-10-07
 
-`DEC-105` pins the next auth presentation to
+`DEC-105` uses
 [`2026-10-07-auth-dialogs`](../../design/figma-handoff/auth/2026-10-07-auth-dialogs/README.md).
-Its [style map](../../design/figma-handoff/auth/2026-10-07-auth-dialogs/STYLES.md)
-owns measured sheet, OTP-cell, password-field, provider-row and exit-panel
-geometry. These are not installed runtime tokens yet. Keep one shared semantic
-token/component layer and common field states; do not change ShareSheet or all
-field/button consumers to match auth-specific variants. Source gaps and live
-Inspect disagreements stay explicit. The implementation status is
-`Not implemented`; no product component or stylesheet changed in this import.
+Measured sheet, OTP, password, provider and exit values live in `designTokens.auth`
+and the `authPrimary` / `authQuiet` / `authProvider` button sizes. Common field
+states stay shared. ShareSheet and unrelated buttons are unchanged. Mixed legal
+text, the Google glyph and recovery/desktop frames are still unresolved; those
+screens are derived, not 1:1.
 
 ```text
 protected Pen masters

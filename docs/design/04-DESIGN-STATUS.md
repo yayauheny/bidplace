@@ -4,23 +4,19 @@
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
-## 2026-10-07 — Auth source package imported; runtime unchanged
+## 2026-10-07 — Auth sheets use the supplied phone composition
 
-- `Implemented` for the versioned import only: six founder captures in
-  [`auth/2026-10-07-auth-dialogs`](../../design/figma-handoff/auth/2026-10-07-auth-dialogs/README.md),
-  exact original node/reference/asset bytes, per-package provenance/checksums,
-  source-to-role map, style measurements and immutable-library comparison.
-  Archive names are disambiguated: standard login and excluded code-login are
-  separate captures. Common field state source stays the 2026-10-06 package.
-- `Not implemented` for the planned auth sheets, six-cell verification layout,
-  countdown, provider placeholders, masked recovery result and shared exit
-  presentation (`DEC-105`). Current auth/reset APIs and product code are unchanged.
-- `Needs verification` for incomplete mixed text/Google asset, exact missing
-  interaction states and legal-link/acceptance mapping. Recovery/reset and wider
-  compositions have no exact new capture; they are derived states. Current live
-  Google button differs from the pinned archive; those versions must not mix.
-  Pen, Figma library and existing field source were not rewritten. Import checks
-  and limitations: [VALIDATION.md](../../design/figma-handoff/auth/2026-10-07-auth-dialogs/VALIDATION.md).
+- `Partial`: login and registration share one bottom sheet. Email verification
+  uses six visual cells and one code value. Forgot/reset keep the link flow
+  inside the same shell and are labeled derived. Exit confirmation is shared.
+  Google and Telegram only report that they are unavailable. Account name stays
+  «Имя». Source map: [`NODE-MAP.json`](../../design/figma-handoff/auth/2026-10-07-auth-dialogs/NODE-MAP.json).
+- `Needs verification` for the Google glyph, mixed legal ranges and consent
+  persistence. Mobile has no public privacy/rules routes, and registration does
+  not call `acceptRules`. The painted checkbox is not a stored acceptance.
+  Recovery, keyboard and wide layouts have no exact capture. A local 390×874
+  check matched the sheet radius and login button size; the full auth browser
+  suite did not start. Production was not updated.
 
 ## 2026-10-07 — Ordinary press drops the mint ring
 

@@ -15,18 +15,17 @@ assets и measurements берутся только из versioned inspect/handof
 `.pen` не редактируется и не удаляется. Product owner documents и server
 contracts по-прежнему определяют routes, data, permissions и auction behavior.
 
-### Planned auth presentation — 2026-10-07
+### Auth sheet presentation — 2026-10-07
 
-`DEC-105` approves the supplied sheet design for the next auth UI wave. Its
-source/contract adaptations and dismissal states are owned by
+Login, registration, email verification and the existing link recovery flow
+open as a bottom sheet over the public Home page. Deep links stay
+`/login`, `/register`, `/verify-email`, `/forgot-password` and `/reset-password`.
+Registration keeps «Имя»/`displayName` and a UI-only password repeat. Google
+and Telegram report that sign-in is unavailable. Closing a dirty sheet asks
+first; leaving does not cancel an in-flight request, delete an account or log
+out. Verification can be finished later. Recovery and wide layouts are derived
+from the phone sheet. Details:
 [`auth HANDOFF.md`](../../design/figma-handoff/auth/2026-10-07-auth-dialogs/HANDOFF.md).
-Standard email/password login, email verification, safe internal redirect and
-the working single-use-link forgot/reset flow stay. Account registration uses
-«Имя»/`displayName`; author nickname stays in the author profile. Google and
-Telegram may appear only as honest unavailable placeholders; OAuth/passwordless
-flows stay excluded. The shared confirmation changes presentation/copy, not
-account deletion, logout, server cancellation or author save-and-exit semantics.
-This is a prepared handoff, not an implemented route or flow change.
 
 ## 2. Основной flow
 
