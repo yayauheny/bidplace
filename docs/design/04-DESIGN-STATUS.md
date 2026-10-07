@@ -4,6 +4,17 @@
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
+## 2026-10-08 — Auth Back after reload stays on the login entry
+
+- `Partial`: Home → Login → reload → a filled Back still asks on the login
+  address. Continue keeps that URL, the login form, and the typed value.
+  Interrupt opens the history entry the user actually reached. The same
+  browser scenario covers one Back, several steps, and Forward, with and
+  without the Navigation API. Chromium and WebKit `auth-layout` and
+  `auth-lifecycle` passed (12) on disposable `bidplace_e2e`. Google, mixed
+  text, consent, and derived recovery remain open. This is not a 1:1 match.
+  Production was not updated.
+
 ## 2026-10-08 — Auth history guard does not depend on the Navigation API
 
 - `Partial`: Back by one entry, Back by several entries, and Forward restore

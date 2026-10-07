@@ -1,5 +1,22 @@
 # bidplace — текущий статус проекта
 
+## 2026-10-08 — Auth history position survives reload
+
+- `Partial` for the portfolio auth presentation. The same `entries` list is
+  stored beside Expo's history id and read back before Expo's startup
+  `replaceState`. After Home → Login → reload, Back still returns to that
+  login entry. Continue keeps the URL, the login route, and the typed value.
+  Interrupt opens the entry the traversal reached. One Back, several steps,
+  Forward, auth-to-auth, an in-flight request, and one successful replace keep
+  the previous contract, with and without the Navigation API. This is not a
+  1:1 Figma match. Production remains
+  `541d763547f7b021895daa3d533c3196c37a4e67`. No push or deploy.
+- Local checks on Node 22.20.0 against disposable `bidplace_e2e` at
+  `127.0.0.1:5432`: mobile typecheck, lint of the touched auth files,
+  `auth-dismissal` unit tests (7), `build:web`, and `e2e/auth-layout.spec.ts`
+  plus `e2e/auth-lifecycle.spec.ts` — 12 passed on Chromium and WebKit. The
+  shared browser scenario now reloads a filled login before Back.
+
 ## 2026-10-08 — Auth history stays armed without the Navigation API
 
 - `Partial` for the portfolio auth presentation. The history guard follows the

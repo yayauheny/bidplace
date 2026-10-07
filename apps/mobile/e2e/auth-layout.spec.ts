@@ -79,6 +79,29 @@ async function expectAuthBrowserHistory(page: Page, navigationApi: boolean) {
   await historyStep(page, 1);
   await expect(loginTitle).toHaveCount(0);
 
+  await page.goto('/');
+  await page.getByRole('link', { name: 'Профиль', exact: true }).click();
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(loginTitle).toBeVisible();
+  await page.reload();
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(loginTitle).toBeVisible();
+  await email.fill('r');
+  await historyStep(page, -1);
+  await expect(page.getByText('Прервать вход', { exact: true })).toBeVisible();
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(loginTitle).toBeVisible();
+  await expect(email).toHaveValue('r');
+  await page.getByRole('button', { name: 'Продолжить', exact: true }).click();
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(loginTitle).toBeVisible();
+  await expect(email).toHaveValue('r');
+  await expect(email).toBeFocused();
+  await historyStep(page, -1);
+  await page.getByRole('button', { name: 'Прервать', exact: true }).click();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(loginTitle).toHaveCount(0);
+
   await page.goto('/login');
   await expect(loginTitle).toBeVisible();
   await page.getByRole('button', { name: 'Регистрация', exact: true }).click();
