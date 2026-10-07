@@ -1,5 +1,36 @@
 # bidplace — текущий статус проекта
 
+## 2026-10-07 — Safe request logs are on production
+
+- `Partial` for the portfolio MVP. Production code is
+  `541d763547f7b021895daa3d533c3196c37a4e67` on
+  `feature/portfolio-mvp-release`, deployed by
+  [Production deploy run 37584564977](https://github.com/yayauheny/bidplace/actions/runs/37584564977).
+  Worker version `3afe08d5-b204-495c-8dcc-91d43e6af92b`. The migration step was
+  skipped. The SPA bundle is unchanged:
+  `/_expo/static/js/web/entry-0c3534c00f9410858393160c2cc504e6.js`. This
+  documentation commit is later than the deployed SHA and was not deployed.
+  The previous production code remains
+  `0085353954cfc3c6b1b5f29682260fbee0dc5060`, Worker
+  `8b9c125e-11f4-4db3-b185-629e563c4a2b`.
+- Live smoke: `https://bid.place/` opened with Home current and «Пока здесь
+  тихо». Catalog opened at `/works` with filters and «Пока нет работ».
+  `/login` opened with «Вход на Bidplace». `GET /api/portfolio/home` returned
+  200. `GET /api/health` and `GET /api/health/ready` each returned 200 once.
+  A public home GET sent with a synthetic `X-Request-Id` and query marker
+  returned a new server UUID in the response header. The cacheable
+  unauthenticated home response still omits that header.
+- `Needs verification` for the Nest summary of that request. Live Worker
+  settings keep `invocation_logs: false` and `traces.enabled: false`. The
+  observability query and the Logpush list returned 403, so they were not
+  read. A worker tail of the probe matched script version
+  `3afe08d5-b204-495c-8dcc-91d43e6af92b`, outcome ok, and status 200, with an
+  empty `logs` array. That event did not include the Nest line: the same
+  server UUID, route template, status, and `durationMs`. Historical logs were
+  not inspected. This check does not close full MVP acceptance. No new
+  services, Logpush jobs, keepalive, probes, environments, budget changes,
+  accounts, roles, SMTP credentials, or user data.
+
 ## 2026-10-07 — Ordinary warn logs no longer copy failures
 
 - `Implemented` locally for the remaining ordinary diagnostics. A failed
@@ -10,8 +41,8 @@
   or object key. Covered by `sellers.service.spec.ts` and
   `analytics.service.spec.ts`. Admin moderation warnings keep their server
   ids. Security `auditEvent` records are unchanged.
-- `Needs verification` for production. This commit is not deployed. Historical
-  logs were not inspected.
+- Deployed later as `541d763547f7b021895daa3d533c3196c37a4e67`. The Nest
+  summary line stays `Needs verification`. Historical logs were not inspected.
 
 ## 2026-10-07 — Password-reset mail failure log
 
@@ -21,7 +52,8 @@
   `safeFailureLocation`. The SMTP message and raw stack are not logged.
   Covered by `password-reset.service.spec.ts`. Other runtime `logger.error`
   calls already use a fixed line or the sanitized 5xx logger.
-- `Needs verification` for production. This commit is not deployed.
+- Deployed later as `541d763547f7b021895daa3d533c3196c37a4e67`. The Nest
+  summary line stays `Needs verification`.
 
 ## 2026-10-07 — Failure location ignores message text
 
@@ -36,10 +68,10 @@
   build exit 0. The built `safe-request-log.js` returns
   `dist/products/products.service.js:88` for an `/app/dist` frame and `null`
   for the message frame, without starting the API or connecting to Neon.
-- `Needs verification` for production. This commit is not deployed. Workers
-  invocation logs, traces, Logpush, response bodies, keepalive, and an
-  external `/ready` monitor stay off. The server request id, request summary,
-  5xx codes, health skip, and security/admin audit are unchanged.
+- Deployed later as `541d763547f7b021895daa3d533c3196c37a4e67`. Workers
+  invocation logs and traces stay off. The Nest summary line stays
+  `Needs verification`. The server request id, request summary, 5xx codes,
+  health skip, and security/admin audit are unchanged.
 
 ## 2026-10-07 — Safe request logs, local only
 
@@ -57,9 +89,10 @@
   `apps/api/src/core/request-context/request-logging.interceptor.spec.ts`.
   Those unit tests: 8 passed. `pnpm --filter @bidplace/api typecheck`, lint,
   and build exit 0.
-- `Needs verification` for production. This change is not deployed. Workers
-  invocation logs, traces, Logpush, response bodies, keepalive, and an
-  external `/ready` monitor were not enabled.
+- Deployed later as `541d763547f7b021895daa3d533c3196c37a4e67`. Workers
+  invocation logs and traces stay off. The Nest summary line stays
+  `Needs verification`. Response bodies, keepalive, and an external `/ready`
+  monitor were not enabled.
 
 ## 2026-10-07 — Test maintenance cleanup, no behavior change
 
