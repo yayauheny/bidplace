@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { figmaTokens } from '@bidplace/design-tokens';
 
 import {
+  figmaAuthActionVariant,
   figmaButtonGradientColors,
   figmaButtonGradientOpacity,
   figmaButtonGradientPlacement,
@@ -25,6 +26,14 @@ describe('Figma button styles', () => {
       figmaTokens.auth.providerBorderEnd,
     ]);
     expect(figmaButtonLabelColor('authProvider')).toBe(figmaTokens.color.textSubdued);
+    expect(figmaAuthActionVariant('auth', 'primary')).toBe('authPrimary');
+    expect(figmaAuthActionVariant('authResend', 'secondary')).toBe('authQuiet');
+    expect(figmaButtonStyle('authQuiet', 'idle', 'authResend')).toMatchObject({
+      minHeight: figmaTokens.auth.resendHeight,
+      backgroundColor: figmaTokens.color.canvas,
+      borderColor: figmaTokens.color.canvas,
+    });
+    expect(figmaButtonLabelColor('authQuiet')).toBe(figmaTokens.color.textSubdued);
   });
 
   it('uses the solid charcoal pill for the primary idle state', () => {

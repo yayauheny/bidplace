@@ -13,7 +13,8 @@ import { type SafeRedirect } from './auth-redirect';
 import { useAccountLogout } from './account-logout';
 import { AccountLogoutButton } from './AccountLogoutButton';
 import { AuthCodeField } from './auth-code-field';
-import { useAuthSheetGuard } from './auth-sheet-context';
+import { useAuthSheetComplete, useAuthSheetGuard } from './auth-sheet-context';
+import { verificationStatusCopy } from './verify-email-copy';
 import { confirmedResendDeadline, resendRemainingSeconds } from './resend-deadline';
 import {
   emailVerificationRequestErrorMessage,
@@ -39,6 +40,7 @@ export function VerifyEmailForm({ redirectTo, autoRequest }: VerifyEmailFormProp
   const [codeError, setCodeError] = useState<string | null>(null);
   const [resendDeadline, setResendDeadline] = useState<number | null>(null);
   const [now, setNow] = useState(() => Date.now());
+  const complete = useAuthSheetComplete();
   const logoutBusy = logoutStarted.current || accountLogout.busy;
   const remaining = resendRemainingSeconds(resendDeadline, now);
   useAuthSheetGuard({
@@ -113,7 +115,8 @@ export function VerifyEmailForm({ redirectTo, autoRequest }: VerifyEmailFormProp
         setError('Не удалось обновить статус подтверждения. Попробуйте ещё раз.');
         return;
       }
-      router.replace(destination as Href);
+      if (complete) complete(destination);
+      else router.replace(destination as Href);
     } catch (verifyError) {
       const failure = readFormFailure(verifyError, ['code']);
       if (failure.fields.code) {
@@ -154,7 +157,10 @@ export function VerifyEmailForm({ redirectTo, autoRequest }: VerifyEmailFormProp
   return (
       <View style={{ gap: designTokens.auth.formGap }}>
         <AppText role="bodySmall" style={{ color: designTokens.color.fieldValue }}>
-          {`На ваш почтовый адрес пришел код ${auth.user?.email ?? ''}. Подтверждение нужно, чтобы создавать и редактировать профиль автора.`}
+          {verificationStatusCopy({
+            email: auth.user?.email,
+            sendAccepted: notice !== null,
+          })}
         </AppText>
         <AuthCodeField
           value={code}

@@ -24,6 +24,7 @@ export function AuthExitConfirm({
   onContinue: () => void;
 }) {
   const { width } = useWindowDimensions();
+  const gutter = designTokens.layout.mobileGutter;
   if (!open) return null;
 
   return (
@@ -35,7 +36,7 @@ export function AuthExitConfirm({
             inset: 0,
             alignItems: 'center',
             justifyContent: 'center',
-            paddingHorizontal: designTokens.space.x5,
+            paddingHorizontal: gutter,
             zIndex: designTokens.layer.modal + 1,
             pointerEvents: 'box-none',
           }}
@@ -44,7 +45,7 @@ export function AuthExitConfirm({
             nativeID="auth-exit-confirm"
             style={{
               width: '100%',
-              maxWidth: Math.min(designTokens.layout.dialogMaxWidth, width - designTokens.space.x5 * 2),
+              maxWidth: Math.min(designTokens.layout.dialogMaxWidth, width - gutter * 2),
               borderRadius: designTokens.auth.exitRadius,
               backgroundColor: designTokens.color.dialogSurface,
               paddingTop: designTokens.auth.exitPaddingTop,

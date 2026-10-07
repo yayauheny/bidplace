@@ -1,6 +1,7 @@
 import { View, type ViewStyle } from 'react-native';
 
 import { FigmaButton } from '../figma/FigmaButton';
+import { figmaAuthActionVariant } from '../figma/figma-button-style';
 import { type FigmaIconName } from '../figma/figma-icon-names';
 
 type ButtonProps = {
@@ -37,7 +38,7 @@ export function PrimaryButton({
       <FigmaButton
         {...props}
         size={compact ? 'compact' : size}
-        variant="solid"
+        variant={figmaAuthActionVariant(size, 'primary')}
         width={resolvedWidth}
       />
     </View>
@@ -61,7 +62,7 @@ export function SecondaryButton({
       <FigmaButton
         {...props}
         size={compact ? 'compact' : size}
-        variant="outline"
+        variant={figmaAuthActionVariant(size, 'secondary')}
         width={resolvedWidth}
       />
     </View>

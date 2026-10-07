@@ -32,11 +32,38 @@ export function authNavigationDismissal(input: {
   dirty: boolean;
   busy: boolean;
   targetRoute: string | undefined;
+  released?: boolean;
 }): AuthDismissal {
+  if (input.released) return 'allow';
   if (input.targetRoute && AUTH_ROUTES.has(input.targetRoute)) return 'allow';
   if (input.busy) return 'keep';
   if (!input.dirty) return 'allow';
   return 'confirm';
+}
+
+export const AUTH_HISTORY_GUARD_KEY = 'bidplaceAuthSheetGuard';
+export const AUTH_BROWSER_BACK_STEPS = -2;
+
+export function authHistoryGuardState(state: unknown, id: string) {
+  const base = state && typeof state === 'object' ? state : {};
+  return { ...base, [AUTH_HISTORY_GUARD_KEY]: id };
+}
+
+export function isAuthHistoryGuard(state: unknown, id: string) {
+  return Boolean(
+    state &&
+      typeof state === 'object' &&
+      (state as Record<string, unknown>)[AUTH_HISTORY_GUARD_KEY] === id,
+  );
+}
+
+export function authLeaveCommit(input: {
+  hasNavigationAction: boolean;
+  browserBack: boolean;
+}): 'dispatch' | 'history' | 'replace' {
+  if (input.hasNavigationAction) return 'dispatch';
+  if (input.browserBack) return 'history';
+  return 'replace';
 }
 
 export function authLeaveDestination(redirectTo: SafeRedirect): SafeRedirect {

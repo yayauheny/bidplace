@@ -21,6 +21,35 @@ test('dirty login asks before closing and providers stay unavailable', async ({ 
   await expect(page.getByText('Вход через Google пока недоступен')).toBeVisible();
   await page.getByRole('button', { name: 'Войти с Telegram', exact: true }).click();
   await expect(page.getByText('Вход через Telegram пока недоступен')).toBeVisible();
+  const panel = page.locator('#auth-exit-confirm');
+  await page.getByRole('button', { name: 'Закрыть', exact: true }).click();
+  await expect(panel).toBeVisible();
+  const panelBox = await panel.boundingBox();
+  expect(panelBox).not.toBeNull();
+  expect(panelBox!.width).toBeCloseTo(366, 0);
+});
+
+test('browser back keeps a filled login until the user decides', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 874 });
+  await page.goto('/');
+  await page.goto('/login');
+  const email = page.getByLabel('Электронная почта');
+  await email.fill('a');
+  await page.goBack();
+  await expect(page.getByText('Прервать вход', { exact: true })).toBeVisible();
+  await expect(email).toHaveValue('a');
+  await page.getByRole('button', { name: 'Продолжить', exact: true }).click();
+  await expect(email).toHaveValue('a');
+  await expect(email).toBeFocused();
+  await page.goBack();
+  await page.getByRole('button', { name: 'Прервать', exact: true }).click();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.locator('#auth-sheet')).toHaveCount(0);
+
+  await page.goto('/login');
+  await page.getByRole('button', { name: 'Регистрация', exact: true }).click();
+  await expect(page).toHaveURL(/\/register/);
+  await expect(page.locator('#auth-sheet')).toHaveCount(1);
 });
 
 test('auth composition is stacked in the S4 phone column', async ({ page }) => {

@@ -1,4 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
+import type { ReactNode } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { figmaTokens } from '@bidplace/design-tokens';
@@ -29,6 +30,7 @@ export function FigmaButton({
   disabled = false,
   loading = false,
   icon,
+  iconNode,
   iconPosition = 'left',
   accessibilityHint,
   width = 'content',
@@ -40,6 +42,7 @@ export function FigmaButton({
   disabled?: boolean;
   loading?: boolean;
   icon?: FigmaIconName;
+  iconNode?: ReactNode;
   iconPosition?: 'left' | 'right';
   accessibilityHint?: string;
   width?: 'content' | 'full';
@@ -129,7 +132,7 @@ export function FigmaButton({
                 flexDirection: 'row',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: icon
+                gap: iconNode ? 2 : icon
                   ? compact
                     ? figmaTokens.space.quietButtonGap
                     : figmaTokens.space.x2
@@ -137,7 +140,7 @@ export function FigmaButton({
                 opacity: loading ? 0 : 1,
               }}
             >
-              {iconPosition === 'left' ? iconElement : null}
+              {iconNode ?? (iconPosition === 'left' ? iconElement : null)}
               <AppText
                 role={compact ? 'buttonCompact' : 'button'}
                 style={{

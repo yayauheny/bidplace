@@ -127,6 +127,15 @@ export function figmaButtonGradientOpacity(variant: FigmaButtonVariant) {
   return variant === 'quiet' ? figmaTokens.opacity.quietBorder : 1;
 }
 
+export function figmaAuthActionVariant(
+  size: FigmaButtonSize | undefined,
+  role: 'primary' | 'secondary',
+): FigmaButtonVariant {
+  if (role === 'primary' && size === 'auth') return 'authPrimary';
+  if (role === 'secondary' && size === 'authResend') return 'authQuiet';
+  return role === 'primary' ? 'solid' : 'outline';
+}
+
 export function figmaButtonLabelColor(variant: FigmaButtonVariant) {
   if (variant === 'authQuiet' || variant === 'authProvider') {
     return figmaTokens.color.textSubdued;

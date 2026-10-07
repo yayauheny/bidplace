@@ -9,7 +9,8 @@ import { FigmaButton } from '../../components/figma/FigmaButton';
 import { MotionPressable } from '../../components/ui/MotionPressable';
 import { AuthPasswordField } from './auth-password-field';
 import { registerSubmission } from './auth-dismissal';
-import { useAuthSheetGuard } from './auth-sheet-context';
+import { useAuthSheetComplete, useAuthSheetGuard } from './auth-sheet-context';
+import { AuthTelegramIcon } from './auth-telegram-icon';
 import { useAnalytics } from '../../providers/analytics-provider';
 import { useAuth } from '../../providers/auth-provider';
 import { ApiClientError } from '@bidplace/api-client';
@@ -38,16 +39,19 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
   });
   const emailValue = form.watch('email');
   const passwordValue = form.watch('password');
+  const complete = useAuthSheetComplete();
   useAuthSheetGuard({
     dirty: Boolean(emailValue || passwordValue),
     busy: form.formState.isSubmitting,
   });
   useEffect(() => {
     if (form.formState.isSubmitSuccessful && auth.isAuthenticated) {
-      router.replace(redirectTo as Href);
+      if (complete) complete(redirectTo);
+      else router.replace(redirectTo as Href);
     }
   }, [
     auth.isAuthenticated,
+    complete,
     form.formState.isSubmitSuccessful,
     redirectTo,
     router,
@@ -84,7 +88,10 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
           label="Перейти дальше"
           size="auth"
           width="full"
-          onPress={() => router.replace(redirectTo as Href)}
+          onPress={() => {
+            if (complete) complete(redirectTo);
+            else router.replace(redirectTo as Href);
+          }}
         />
       </View>
     );
@@ -181,6 +188,7 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
         </AppText>
         <FigmaButton
           label="Войти с Telegram"
+          iconNode={<AuthTelegramIcon />}
           variant="authProvider"
           size="auth"
           width="full"
@@ -210,16 +218,19 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
     defaultValues: { email: '', password: '', confirmPassword: '', phone: '', displayName: '' },
   });
   const watched = form.watch();
+  const complete = useAuthSheetComplete();
   useAuthSheetGuard({
     dirty: Boolean(watched.displayName || watched.email || watched.password || watched.confirmPassword),
     busy: form.formState.isSubmitting,
   });
   useEffect(() => {
     if (form.formState.isSubmitSuccessful && auth.isAuthenticated) {
-      router.replace(redirectTo as Href);
+      if (complete) complete(redirectTo);
+      else router.replace(redirectTo as Href);
     }
   }, [
     auth.isAuthenticated,
+    complete,
     form.formState.isSubmitSuccessful,
     redirectTo,
     router,
@@ -262,7 +273,10 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
           label="Перейти дальше"
           size="auth"
           width="full"
-          onPress={() => router.replace(redirectTo as Href)}
+          onPress={() => {
+            if (complete) complete(redirectTo);
+            else router.replace(redirectTo as Href);
+          }}
         />
       </View>
     );

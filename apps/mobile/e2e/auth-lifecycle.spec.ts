@@ -154,16 +154,16 @@ test('login survives reload and password recovery rejects the old password and a
   const resetPath = `/reset-password?token=${encodeURIComponent(token)}`;
   const password = 'recovered-password-123';
   await page.goto(resetPath);
-  await page.getByLabel('Новый пароль', { exact: true }).fill(password);
-  await page.getByLabel('Подтверждение пароля', { exact: true }).fill(password);
+  await page.getByRole('textbox', { name: 'Новый пароль', exact: true }).fill(password);
+  await page.getByRole('textbox', { name: 'Подтверждение пароля', exact: true }).fill(password);
   await page.getByRole('button', { name: 'Сохранить пароль' }).click();
   await expect(
     page.getByText('Пароль обновлён', { exact: true }),
   ).toBeVisible();
 
   await page.goto(resetPath);
-  await page.getByLabel('Новый пароль', { exact: true }).fill(password);
-  await page.getByLabel('Подтверждение пароля', { exact: true }).fill(password);
+  await page.getByRole('textbox', { name: 'Новый пароль', exact: true }).fill(password);
+  await page.getByRole('textbox', { name: 'Подтверждение пароля', exact: true }).fill(password);
   await page.getByRole('button', { name: 'Сохранить пароль' }).click();
   await expect(
     page.getByText('Ссылка недействительна или устарела. Запросите новую.'),

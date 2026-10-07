@@ -1,25 +1,41 @@
-import { createContext, useContext, useEffect, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, type ReactNode } from 'react';
+
+import type { SafeRedirect } from './auth-redirect';
 
 export type AuthSheetGuard = { dirty: boolean; busy: boolean };
 
-const AuthSheetGuardContext = createContext<((guard: AuthSheetGuard) => void) | null>(null);
+type AuthSheetContextValue = {
+  onGuard: (guard: AuthSheetGuard) => void;
+  complete: (destination: SafeRedirect) => void;
+};
+
+const AuthSheetGuardContext = createContext<AuthSheetContextValue | null>(null);
 
 export function AuthSheetGuardProvider({
   children,
-  onChange,
+  onGuard,
+  complete,
 }: {
   children: ReactNode;
-  onChange: (guard: AuthSheetGuard) => void;
+  onGuard: (guard: AuthSheetGuard) => void;
+  complete: (destination: SafeRedirect) => void;
 }) {
+  const value = useMemo(() => ({ onGuard, complete }), [complete, onGuard]);
   return (
-    <AuthSheetGuardContext.Provider value={onChange}>{children}</AuthSheetGuardContext.Provider>
+    <AuthSheetGuardContext.Provider value={value}>
+      {children}
+    </AuthSheetGuardContext.Provider>
   );
 }
 
 export function useAuthSheetGuard(guard: AuthSheetGuard) {
-  const onChange = useContext(AuthSheetGuardContext);
+  const sheet = useContext(AuthSheetGuardContext);
   useEffect(() => {
-    onChange?.(guard);
-    return () => onChange?.({ dirty: false, busy: false });
-  }, [guard.busy, guard.dirty, onChange]);
+    sheet?.onGuard(guard);
+    return () => sheet?.onGuard({ dirty: false, busy: false });
+  }, [guard.busy, guard.dirty, sheet]);
+}
+
+export function useAuthSheetComplete() {
+  return useContext(AuthSheetGuardContext)?.complete ?? null;
 }

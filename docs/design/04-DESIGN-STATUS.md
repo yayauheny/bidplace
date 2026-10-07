@@ -4,6 +4,23 @@
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
+## 2026-10-07 — Auth sheet lifecycle matches the measured actions
+
+- `Partial`: one focused auth route paints the sheet. A successful login,
+  registration or email confirmation continues once and does not open the leave
+  warning. User close, Escape, backdrop and browser Back do. Continue keeps the
+  filled value and focus; Interrupt leaves. Primary actions use `authPrimary`
+  (`#121212`, Inter 500, height 51). Resend uses `authQuiet` (height 47,
+  `#565656`). At 390 px the exit panel is 366 wide with 12 px outer gutters.
+  Verification copy does not say the code arrived before an accepted send.
+  Telegram uses the measured path. Source map:
+  [`NODE-MAP.json`](../../design/figma-handoff/auth/2026-10-07-auth-dialogs/NODE-MAP.json).
+- Chromium and WebKit `auth-layout` and `auth-lifecycle` passed (10). A short
+  local pass checked 390 px, a wide viewport and 200% zoom. Still open: Google
+  vector `I526:14901;298:6024;521:10381` has no fills; mixed ranges `558:16958`,
+  `526:14902` and `526:15580`; no public rules route and no `acceptRules`
+  consent. Recovery and wide layouts remain derived. Production was not updated.
+
 ## 2026-10-07 — Auth sheets use the supplied phone composition
 
 - `Partial`: login and registration share one bottom sheet. Email verification
@@ -11,12 +28,11 @@
   inside the same shell and are labeled derived. Exit confirmation is shared.
   Google and Telegram only report that they are unavailable. Account name stays
   «Имя». Source map: [`NODE-MAP.json`](../../design/figma-handoff/auth/2026-10-07-auth-dialogs/NODE-MAP.json).
-- `Needs verification` for the Google glyph, mixed legal ranges and consent
-  persistence. Mobile has no public privacy/rules routes, and registration does
-  not call `acceptRules`. The painted checkbox is not a stored acceptance.
-  Recovery, keyboard and wide layouts have no exact capture. A local 390×874
-  check matched the sheet radius and login button size; the full auth browser
-  suite did not start. Production was not updated.
+- The browser-suite and button-size notes in the first paragraph of that day
+  are superseded by the entry above. Google glyph, mixed legal ranges and
+  consent persistence stay open. Mobile has no public privacy/rules routes, and
+  registration does not call `acceptRules`. The painted checkbox is not a stored
+  acceptance. Recovery, keyboard and wide layouts have no exact capture.
 
 ## 2026-10-07 — Ordinary press drops the mint ring
 

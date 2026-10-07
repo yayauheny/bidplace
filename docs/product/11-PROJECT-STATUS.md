@@ -1,5 +1,36 @@
 # bidplace — текущий статус проекта
 
+## 2026-10-07 — Auth sheet completion, Back and one visible sheet
+
+- `Partial` for the portfolio auth presentation. Successful login, registration
+  and email confirmation each continue once through the sheet completion path.
+  The leave warning appears only for a user close, backdrop, Escape or browser
+  Back. A filled form stays until Continue or Interrupt; Continue restores the
+  value and focus, and Interrupt follows the confirmed leave. A pending request
+  still keeps the sheet and is not cancelled. Only the focused auth route
+  paints the sheet. Primary actions use `authPrimary` (`#121212`, Inter 500).
+  Resend is the `authQuiet` text action. The exit panel at 390 px is 366 wide
+  with 12 px outer gutters. Before a send is accepted, and when sending is
+  refused, verification says the code has not been sent. An accepted
+  `requestEmailVerification` starts the existing 60s countdown and says the
+  send was accepted, not that the letter arrived. Forgot/reset stay the
+  single-use link. Google remains without a glyph. Telegram uses the measured
+  13.88×11.5 path. Registration still sends `displayName`.
+- Local checks: mobile typecheck, lint of the touched auth files, 35 unit
+  tests, `build:web`, and `e2e/auth-layout.spec.ts` plus
+  `e2e/auth-lifecycle.spec.ts` — 10 passed on Chromium and WebKit against
+  disposable `bidplace_e2e` on `127.0.0.1:5432`. The earlier registration stop
+  after HTTP 201 was the leave guard swallowing `router.replace`. The login
+  failure after reload was a separate locator: the reset dialog and the
+  password field share the name «Новый пароль». WebKit Back needed the history
+  sentinel before Expo handled `popstate`.
+- Still open, so this is not a 1:1 match: Google vector
+  `I526:14901;298:6024;521:10381` has paths and no fills; mixed text ranges
+  `558:16958`, `526:14902` and `526:15580` are unresolved; there is no public
+  rules route and consent is not sent to `acceptRules`. Recovery and wide
+  layouts stay derived. Production remains
+  `541d763547f7b021895daa3d533c3196c37a4e67`. No push or deploy.
+
 ## 2026-10-07 — Auth forms use the supplied sheet locally
 
 - `Partial` for the portfolio auth presentation. `/login` and `/register` share
@@ -10,15 +41,12 @@
   Google/Telegram show an unavailable message. Registration still sends
   `displayName` and omits the repeated password. Covered by
   `auth-dismissal.spec.ts`, `schemas.spec.ts` and `verify-email-logout.spec.ts`.
-- `Needs verification` for the Chromium/WebKit auth suite. Its prepare step
-  resets only the local disposable `bidplace_e2e` database, and that reset was
-  not run. A local 390×874 pass showed sheet radius `32`, a 350×51 login
-  button, a centered 390-wide sheet, field errors, and the exit panel.
-  Registration scrolls. A complete Google asset, mixed legal styles and
-  consent remain open. There is no public rules route in the mobile app, so
-  the consent sentence is not a link and is not sent to `acceptRules`.
-  Recovery and wide screens are derived. This check does not accept the
-  portfolio MVP. Production remains
+- Superseded for the browser suite and the 350 px button measurement by the
+  entry above. That pass had not run the disposable-database suite. A complete
+  Google asset, mixed legal styles and consent remain open. There is no public
+  rules route in the mobile app, so the consent sentence is not a link and is
+  not sent to `acceptRules`. Recovery and wide screens are derived. This check
+  does not accept the portfolio MVP. Production remains
   `541d763547f7b021895daa3d533c3196c37a4e67`. No push or deploy.
 
 ## 2026-10-07 — Safe request logs are on production

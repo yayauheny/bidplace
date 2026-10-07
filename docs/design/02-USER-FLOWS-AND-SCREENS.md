@@ -20,11 +20,15 @@ contracts по-прежнему определяют routes, data, permissions �
 Login, registration, email verification and the existing link recovery flow
 open as a bottom sheet over the public Home page. Deep links stay
 `/login`, `/register`, `/verify-email`, `/forgot-password` and `/reset-password`.
-Registration keeps «Имя»/`displayName` and a UI-only password repeat. Google
-and Telegram report that sign-in is unavailable. Closing a dirty sheet asks
-first; leaving does not cancel an in-flight request, delete an account or log
-out. Verification can be finished later. Recovery and wide layouts are derived
-from the phone sheet. Details:
+Only the focused auth route paints that sheet. Registration keeps
+«Имя»/`displayName` and a UI-only password repeat. Google and Telegram report
+that sign-in is unavailable. A successful login, registration or confirmation
+continues once and does not ask to leave. A user close, Escape, backdrop or
+browser Back from a filled form asks first. Continue keeps the values and
+focus; Interrupt leaves. Leaving does not cancel an in-flight request, delete
+an account or log out. Verification can be finished later, and the screen does
+not say a code arrived before the send is accepted. Recovery and wide layouts
+are derived from the phone sheet. Details:
 [`auth HANDOFF.md`](../../design/figma-handoff/auth/2026-10-07-auth-dialogs/HANDOFF.md).
 
 ## 2. Основной flow

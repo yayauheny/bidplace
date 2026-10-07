@@ -1,11 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  AUTH_BROWSER_BACK_STEPS,
+  authHistoryGuardState,
+  authLeaveCommit,
   authLeaveDestination,
   authNavigationDismissal,
   authNavigationTarget,
+  isAuthHistoryGuard,
   registerSubmission,
 } from './auth-dismissal';
+import { verificationStatusCopy } from './verify-email-copy';
 import { maskEmail } from './mask-email';
 import { confirmedResendDeadline, resendRemainingSeconds } from './resend-deadline';
 
@@ -26,7 +31,23 @@ describe('auth sheet dismissal', () => {
       busy: false,
       targetRoute: undefined,
     })).toBe('confirm');
+    expect(authNavigationDismissal({
+      dirty: true,
+      busy: true,
+      targetRoute: undefined,
+      released: true,
+    })).toBe('allow');
     expect(authNavigationTarget({ payload: { name: '(auth)', params: { screen: 'login' } } })).toBe('login');
+  });
+
+  it('leaves through one confirmed destination', () => {
+    expect(authLeaveCommit({ hasNavigationAction: true, browserBack: true })).toBe('dispatch');
+    expect(authLeaveCommit({ hasNavigationAction: false, browserBack: true })).toBe('history');
+    expect(authLeaveCommit({ hasNavigationAction: false, browserBack: false })).toBe('replace');
+    expect(AUTH_BROWSER_BACK_STEPS).toBe(-2);
+    const state = authHistoryGuardState({ id: 'login' }, 'sheet');
+    expect(isAuthHistoryGuard(state, 'sheet')).toBe(true);
+    expect(isAuthHistoryGuard({ id: 'login' }, 'sheet')).toBe(false);
   });
 
   it('returns only a public page when the saved destination is protected', () => {
@@ -50,6 +71,23 @@ describe('verification resend deadline', () => {
     expect(resendRemainingSeconds(deadline, now)).toBe(60);
     expect(resendRemainingSeconds(deadline, now + 60_000)).toBe(0);
     expect(resendRemainingSeconds(null, now)).toBe(0);
+  });
+});
+
+describe('verification status copy', () => {
+  it('does not claim the code arrived before a send is accepted', () => {
+    expect(verificationStatusCopy({
+      email: 'author@example.com',
+      sendAccepted: false,
+    })).not.toContain('пришел');
+    expect(verificationStatusCopy({
+      email: 'author@example.com',
+      sendAccepted: true,
+    })).toContain('принята');
+    expect(verificationStatusCopy({
+      email: 'author@example.com',
+      sendAccepted: true,
+    })).not.toContain('пришел');
   });
 });
 

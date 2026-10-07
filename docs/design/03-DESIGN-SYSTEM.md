@@ -11,10 +11,12 @@
 `DEC-105` uses
 [`2026-10-07-auth-dialogs`](../../design/figma-handoff/auth/2026-10-07-auth-dialogs/README.md).
 Measured sheet, OTP, password, provider and exit values live in `designTokens.auth`
-and the `authPrimary` / `authQuiet` / `authProvider` button sizes. Common field
-states stay shared. ShareSheet and unrelated buttons are unchanged. Mixed legal
-text, the Google glyph and recovery/desktop frames are still unresolved; those
-screens are derived, not 1:1.
+and the `authPrimary` / `authQuiet` / `authProvider` button sizes. Auth primary
+actions use `authPrimary` (`#121212`, Inter 500). The resend action uses
+`authQuiet`. The exit panel uses the 12 px mobile gutter, so it is 366 wide at
+390 px. Common field states stay shared. ShareSheet and unrelated buttons are
+unchanged. Mixed legal text, the Google glyph and recovery/desktop frames are
+still unresolved; those screens are derived, not 1:1.
 
 ```text
 protected Pen masters
