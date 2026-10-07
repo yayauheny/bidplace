@@ -1,5 +1,23 @@
 # bidplace — текущий статус проекта
 
+## 2026-10-08 — Auth history stays armed without the Navigation API
+
+- `Partial` for the portfolio auth presentation. The history guard follows the
+  ids Expo already stores in `history.state`. A dirty or busy leave returns to
+  that entry by the real index delta, including one Back, several steps, and
+  Forward, whether or not `window.navigation` exists. Only the `popstate`
+  whose id is that entry is stopped. An empty form still leaves with one Back.
+  Auth steps do not ask. Continue keeps the value and focus. Interrupt opens
+  the entry the traversal reached. A request in progress still keeps the sheet.
+  One successful replace does not reopen a finished sheet. This is not a 1:1
+  Figma match. Production remains
+  `541d763547f7b021895daa3d533c3196c37a4e67`. No push or deploy.
+- Local checks on Node 22.20.0 against disposable `bidplace_e2e` at
+  `127.0.0.1:5432`: mobile typecheck, lint of the touched auth files,
+  `auth-dismissal` unit tests (7), `build:web`, and `e2e/auth-layout.spec.ts`
+  plus `e2e/auth-lifecycle.spec.ts` — 12 passed on Chromium and WebKit,
+  including the same browser history scenario with the Navigation API removed.
+
 ## 2026-10-08 — Auth history restores the entry that was left
 
 - `Partial` for the portfolio auth presentation. A browser traversal that

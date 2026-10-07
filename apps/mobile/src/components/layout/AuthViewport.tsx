@@ -11,7 +11,6 @@ import { HomeScreen } from '../../features/home/home-screen';
 import {
   clearAuthHistory,
   publishAuthHistory,
-  settleAuthHistory,
 } from '../../features/auth/auth-browser-history';
 import {
   authBrowserLeaveTarget,
@@ -125,7 +124,6 @@ export function AuthViewport({
     const left = browserLeavePath.current;
     pendingAction.current = null;
     browserLeavePath.current = null;
-    settleAuthHistory();
     releasedRef.current = true;
     setReleased(true);
     setConfirm(false);
@@ -201,7 +199,6 @@ export function AuthViewport({
   const continueForm = () => {
     pendingAction.current = null;
     browserLeavePath.current = null;
-    settleAuthHistory();
     setConfirm(false);
     const element = returnFocus.current;
     if (Platform.OS === 'web') {

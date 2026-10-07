@@ -30,8 +30,23 @@ test('dirty login asks before closing and providers stay unavailable', async ({ 
 });
 
 test('browser back keeps a filled login until the user decides', async ({ page }) => {
+  await expectAuthBrowserHistory(page, true);
+});
+
+test('browser back keeps a filled login without the Navigation API', async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(window, 'navigation', {
+      configurable: true,
+      get: () => undefined,
+    });
+  });
+  await expectAuthBrowserHistory(page, false);
+});
+
+async function expectAuthBrowserHistory(page: Page, navigationApi: boolean) {
   await page.setViewportSize({ width: 390, height: 874 });
   await page.goto('/');
+  expect(await page.evaluate(() => window.navigation != null)).toBe(navigationApi);
   await page.getByRole('link', { name: 'Профиль', exact: true }).click();
   await expect(page).toHaveURL(/\/login$/);
   const loginTitle = page.getByText('Вход на Bidplace', { exact: true });
@@ -126,7 +141,7 @@ test('browser back keeps a filled login until the user decides', async ({ page }
   await expect(page).toHaveURL(/\/works$/);
   await expect(loginTitle).not.toBeVisible();
   await expect(page.getByText('Каталог работ на Bidplace', { exact: true })).toBeVisible();
-});
+}
 
 test('auth composition is stacked in the S4 phone column', async ({ page }) => {
   await mkdir(artifactDir, { recursive: true });

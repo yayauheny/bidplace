@@ -10,24 +10,10 @@ export type AuthHistoryLive = {
   rememberLeave: (path: string) => void;
 };
 
-type HistoryTraverse = {
-  restoreId: string;
-  delta: number;
-};
-
-type NavigationDestination = { index?: number; url?: string };
-
-type AppNavigation = {
-  currentEntry?: { index?: number };
-  addEventListener: (
-    type: 'navigate',
-    listener: (event: Event) => void,
-  ) => void;
-};
-
 let liveAuthHistory: AuthHistoryLive | null = null;
 let listening = false;
-let pendingTraverse: HistoryTraverse | null = null;
+let entries: string[] = [];
+let index = 0;
 let activeRestoreId: string | null = null;
 
 export function publishAuthHistory(next: AuthHistoryLive | null) {
@@ -36,10 +22,6 @@ export function publishAuthHistory(next: AuthHistoryLive | null) {
 
 export function clearAuthHistory(id: string) {
   if (liveAuthHistory?.id === id) liveAuthHistory = null;
-}
-
-export function settleAuthHistory() {
-  pendingTraverse = null;
 }
 
 function dismissalFor(path: string) {
@@ -61,32 +43,15 @@ function historyId(): string | null {
   return typeof id === 'string' && id.length > 0 ? id : null;
 }
 
-function locationPath(url: string | undefined): string {
-  if (!url) {
-    return `${window.location.pathname}${window.location.search}${window.location.hash}`;
+function rememberCurrent() {
+  const id = historyId();
+  if (!id) return;
+  if (entries.length === 0) {
+    entries = [id];
+    index = 0;
+    return;
   }
-  const parsed = new URL(url, window.location.origin);
-  return `${parsed.pathname}${parsed.search}${parsed.hash}`;
-}
-
-function onNavigate(event: Event) {
-  if (activeRestoreId) return;
-  const traverse = event as Event & {
-    navigationType?: string;
-    destination?: NavigationDestination;
-  };
-  pendingTraverse = null;
-  if (traverse.navigationType !== 'traverse') return;
-  const navigation = (window as Window & { navigation?: AppNavigation }).navigation;
-  const fromIndex = navigation?.currentEntry?.index;
-  const toIndex = traverse.destination?.index;
-  if (typeof fromIndex !== 'number' || typeof toIndex !== 'number') return;
-  const delta = fromIndex - toIndex;
-  const restoreId = historyId();
-  if (delta === 0 || !restoreId) return;
-  const result = dismissalFor(locationPath(traverse.destination?.url));
-  if (!result || result.decision === 'allow') return;
-  pendingTraverse = { restoreId, delta };
+  entries[index] = id;
 }
 
 function onPopState(event: PopStateEvent) {
@@ -95,29 +60,55 @@ function onPopState(event: PopStateEvent) {
     const expectedId = activeRestoreId;
     activeRestoreId = null;
     if (landedId === expectedId) {
+      const restored = landedId ? entries.indexOf(landedId) : -1;
+      if (restored >= 0) index = restored;
       event.stopImmediatePropagation();
       return;
     }
   }
-  const traverse = pendingTraverse;
-  pendingTraverse = null;
-  if (!traverse) return;
+  const from = index;
+  const to = landedId ? entries.indexOf(landedId) : -1;
+  const restoreId = entries[from];
+  const delta = to >= 0 && restoreId ? from - to : 0;
   const path = `${window.location.pathname}${window.location.search}${window.location.hash}`;
   const result = dismissalFor(path);
-  if (!result || result.decision === 'allow') return;
+  if (!result || result.decision === 'allow' || delta === 0 || !restoreId) {
+    if (to >= 0) index = to;
+    return;
+  }
   result.live.rememberLeave(path);
   event.stopImmediatePropagation();
-  activeRestoreId = traverse.restoreId;
-  window.history.go(traverse.delta);
+  activeRestoreId = restoreId;
+  window.history.go(delta);
   if (result.decision === 'confirm') result.live.confirm();
 }
 
 export function ensureAuthBrowserHistory() {
   if (listening || typeof window === 'undefined') return;
-  const navigation = (window as Window & { navigation?: AppNavigation }).navigation;
-  if (!navigation) return;
   listening = true;
-  navigation.addEventListener('navigate', onNavigate);
+  const pushState = window.history.pushState.bind(window.history);
+  const replaceState = window.history.replaceState.bind(window.history);
+  window.history.pushState = (data, unused, url) => {
+    rememberCurrent();
+    pushState(data, unused, url);
+    const id = historyId();
+    if (!id) return;
+    entries = entries.slice(0, index + 1);
+    entries.push(id);
+    index = entries.length - 1;
+  };
+  window.history.replaceState = (data, unused, url) => {
+    replaceState(data, unused, url);
+    const id = historyId();
+    if (!id) return;
+    if (entries.length === 0) {
+      entries = [id];
+      index = 0;
+      return;
+    }
+    entries[index] = id;
+  };
+  rememberCurrent();
   window.addEventListener('popstate', onPopState, true);
 }
 
