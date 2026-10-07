@@ -7,6 +7,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 
 import { SERVER_ENV, type ServerEnv } from '../core/config';
 import { PrismaService } from '../core/database';
+import { safeFailureLocation } from '../core/request-context/safe-request-log';
 import { Clock } from '../core/time';
 
 @Injectable()
@@ -103,10 +104,11 @@ export class AnalyticsService {
           },
         });
       } catch (error) {
+        const location = safeFailureLocation(error);
         this.logger.warn(
-          `Failed to create acquisition attribution for ${input.anonymousId}: ${
-            error instanceof Error ? error.message : String(error)
-          }`,
+          location
+            ? `Failed to create acquisition attribution at=${location}`
+            : 'Failed to create acquisition attribution',
         );
       }
       return;
@@ -138,10 +140,11 @@ export class AnalyticsService {
         },
       });
     } catch (error) {
+      const location = safeFailureLocation(error);
       this.logger.warn(
-        `Failed to claim acquisition attribution for ${input.anonymousId}: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
+        location
+          ? `Failed to claim acquisition attribution at=${location}`
+          : 'Failed to claim acquisition attribution',
       );
     }
   }

@@ -972,4 +972,72 @@ describe('SellersService', () => {
       expect(sql).not.toContain('unnest');
     }
   });
+
+  it('keeps the achievement deletion when image removal fails', async () => {
+    const marker = 'object-secret-marker';
+    const objectKey = `seller-achievement:${marker}`;
+    const failure = new Error(`delete ${marker}`);
+    failure.stack = [
+      failure.toString(),
+      `    at ImageStore.delete (/tmp/${marker}.js:2:2)`,
+      '    at ImageStore.delete (/app/dist/core/image-store/image-store.js:18:4)',
+    ].join('\n');
+    const remove = vi.fn().mockRejectedValue(failure);
+    const tx = {
+      $queryRaw: vi
+        .fn()
+        .mockResolvedValueOnce([{ id: 'profile-id' }])
+        .mockResolvedValueOnce([{ id: 'revision-id' }]),
+      sellerProfile: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'profile-id',
+          status: 'DRAFT',
+          editingRevision: { id: 'revision-id', status: 'DRAFT' },
+        }),
+      },
+      sellerProfileRevisionAchievement: {
+        findFirst: vi
+          .fn()
+          .mockResolvedValueOnce({ id: 'achievement-id' })
+          .mockResolvedValueOnce({
+            id: 'achievement-id',
+            objectKey,
+            mediaAssetId: null,
+          }),
+        delete: vi.fn().mockResolvedValue({}),
+        count: vi.fn().mockResolvedValue(0),
+        findMany: vi.fn().mockResolvedValue([]),
+        update: vi.fn(),
+      },
+    };
+    const service = new SellersService(
+      {
+        $transaction: vi.fn(
+          async (callback: (client: typeof tx) => Promise<unknown>) =>
+            callback(tx),
+        ),
+      } as never,
+      { ...imageStore, delete: remove } as never,
+    );
+    const loggerWarn = vi
+      .spyOn(
+        (service as unknown as { logger: { warn: (...args: unknown[]) => void } })
+          .logger,
+        'warn',
+      )
+      .mockImplementation(() => undefined);
+
+    await expect(
+      service.deleteAchievement('user-id', 'achievement-id'),
+    ).resolves.toEqual({ ok: true });
+
+    expect(remove).toHaveBeenCalledWith(objectKey);
+    expect(loggerWarn).toHaveBeenCalledOnce();
+    expect(loggerWarn.mock.calls[0]).toHaveLength(1);
+    const logged = JSON.stringify(loggerWarn.mock.calls);
+    expect(logged).toContain('Failed to delete unreferenced achievement image');
+    expect(logged).toContain('at=dist/core/image-store/image-store.js:18');
+    expect(logged).not.toContain(marker);
+    loggerWarn.mockRestore();
+  });
 });

@@ -300,4 +300,109 @@ describe('AnalyticsService', () => {
 
     expect(prisma.acquisitionAttribution.update).not.toHaveBeenCalled();
   });
+
+  it('keeps accepted events when attribution create fails', async () => {
+    const marker = 'attr-secret-marker';
+    const failure = new Error(`create ${marker} ${anonymousId}`);
+    failure.stack = [
+      failure.toString(),
+      `    at prisma.create (/tmp/${marker}.js:3:1)`,
+      '    at AnalyticsService.ingest (/app/dist/analytics/analytics.service.js:90:6)',
+    ].join('\n');
+    const prisma = {
+      acquisitionAttribution: {
+        findUnique: vi.fn().mockResolvedValue(null),
+        create: vi.fn().mockRejectedValue(failure),
+        findFirst: vi.fn(),
+        update: vi.fn(),
+      },
+      analyticsEvent: {
+        createMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
+    };
+    const service = createService(prisma, {
+      NODE_ENV: 'development',
+      ANALYTICS_INGEST_ENABLED: 'true',
+    });
+    const loggerWarn = vi
+      .spyOn(
+        (service as unknown as { logger: { warn: (...args: unknown[]) => void } })
+          .logger,
+        'warn',
+      )
+      .mockImplementation(() => undefined);
+
+    await expect(
+      service.ingest({
+        anonymousId,
+        environment: 'local',
+        attribution: { source: marker },
+        events: [{ name: 'listing_viewed', properties: { productPublicId: 'P1' } }],
+      }),
+    ).resolves.toEqual({ accepted: 1 });
+
+    expect(prisma.analyticsEvent.createMany).toHaveBeenCalledOnce();
+    expect(loggerWarn).toHaveBeenCalledOnce();
+    expect(loggerWarn.mock.calls[0]).toHaveLength(1);
+    const logged = JSON.stringify(loggerWarn.mock.calls);
+    expect(logged).toContain('Failed to create acquisition attribution');
+    expect(logged).toContain('at=dist/analytics/analytics.service.js:90');
+    expect(logged).not.toContain(marker);
+    expect(logged).not.toContain(anonymousId);
+    loggerWarn.mockRestore();
+  });
+
+  it('keeps accepted events when attribution claim fails', async () => {
+    const marker = 'claim-secret-marker';
+    const failure = new Error(`claim ${marker}`);
+    failure.stack = `${failure.toString()}\n    at prisma.update (/tmp/${marker}.js:1:1)`;
+    const prisma = {
+      acquisitionAttribution: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'attr-id',
+          anonymousId,
+          userId: null,
+        }),
+        create: vi.fn(),
+        findFirst: vi.fn().mockResolvedValue(null),
+        update: vi.fn().mockRejectedValue(failure),
+      },
+      analyticsEvent: {
+        createMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
+    };
+    const service = createService(prisma, {
+      NODE_ENV: 'development',
+      ANALYTICS_INGEST_ENABLED: 'true',
+    });
+    const loggerWarn = vi
+      .spyOn(
+        (service as unknown as { logger: { warn: (...args: unknown[]) => void } })
+          .logger,
+        'warn',
+      )
+      .mockImplementation(() => undefined);
+
+    await expect(
+      service.ingest(
+        {
+          anonymousId,
+          environment: 'local',
+          claimAcquisition: true,
+          events: [{ name: 'registration_started', properties: {} }],
+        },
+        userId,
+      ),
+    ).resolves.toEqual({ accepted: 1 });
+
+    expect(prisma.acquisitionAttribution.update).toHaveBeenCalledOnce();
+    expect(prisma.analyticsEvent.createMany).toHaveBeenCalledOnce();
+    expect(loggerWarn).toHaveBeenCalledOnce();
+    expect(loggerWarn.mock.calls[0]).toHaveLength(1);
+    const logged = JSON.stringify(loggerWarn.mock.calls);
+    expect(logged).toContain('Failed to claim acquisition attribution');
+    expect(logged).not.toContain(marker);
+    expect(logged).not.toContain(anonymousId);
+    loggerWarn.mockRestore();
+  });
 });

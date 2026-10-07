@@ -1,5 +1,18 @@
 # bidplace — текущий статус проекта
 
+## 2026-10-07 — Ordinary warn logs no longer copy failures
+
+- `Implemented` locally for the remaining ordinary diagnostics. A failed
+  achievement-image delete still returns `{ ok: true }` and logs a fixed
+  warning, optionally with `safeFailureLocation`. Attribution create and
+  claim failures still let the analytics event through and log a fixed
+  warning. Those lines do not include the exception, stack, `anonymousId`,
+  or object key. Covered by `sellers.service.spec.ts` and
+  `analytics.service.spec.ts`. Admin moderation warnings keep their server
+  ids. Security `auditEvent` records are unchanged.
+- `Needs verification` for production. This commit is not deployed. Historical
+  logs were not inspected.
+
 ## 2026-10-07 — Password-reset mail failure log
 
 - `Implemented` locally: a failed password-reset delivery still deletes the

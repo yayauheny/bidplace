@@ -27,6 +27,7 @@ import {
   runReadCommittedTransaction,
 } from '../core/database';
 import { emptyImageBytes, ImageStore, imageKey } from '../core/image-store';
+import { safeFailureLocation } from '../core/request-context/safe-request-log';
 import { type ValidatedImageUpload } from '../images/image-policy';
 import {
   productRevisionOwnerSelect,
@@ -746,9 +747,11 @@ export class SellersService {
       try {
         await this.imageStore.delete(objectKeyToDelete);
       } catch (error) {
+        const location = safeFailureLocation(error);
         this.logger.warn(
-          `Failed to delete unreferenced achievement image ${objectKeyToDelete}`,
-          error instanceof Error ? error.stack : undefined,
+          location
+            ? `Failed to delete unreferenced achievement image at=${location}`
+            : 'Failed to delete unreferenced achievement image',
         );
       }
     }
