@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, type ReactNode } from 'react';
+import { createContext, useContext, useLayoutEffect, useMemo, type ReactNode } from 'react';
 
 import type { SafeRedirect } from './auth-redirect';
 
@@ -30,10 +30,12 @@ export function AuthSheetGuardProvider({
 
 export function useAuthSheetGuard(guard: AuthSheetGuard) {
   const sheet = useContext(AuthSheetGuardContext);
-  useEffect(() => {
+  useLayoutEffect(() => {
     sheet?.onGuard(guard);
-    return () => sheet?.onGuard({ dirty: false, busy: false });
   }, [guard.busy, guard.dirty, sheet]);
+  useLayoutEffect(() => {
+    return () => sheet?.onGuard({ dirty: false, busy: false });
+  }, [sheet]);
 }
 
 export function useAuthSheetComplete() {

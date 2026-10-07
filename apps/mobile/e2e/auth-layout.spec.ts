@@ -32,24 +32,49 @@ test('dirty login asks before closing and providers stay unavailable', async ({ 
 test('browser back keeps a filled login until the user decides', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 874 });
   await page.goto('/');
-  await page.goto('/login');
+  await page.getByRole('link', { name: 'Профиль', exact: true }).click();
+  await expect(page).toHaveURL(/\/login$/);
+  const loginTitle = page.getByText('Вход на Bidplace', { exact: true });
+  await expect(loginTitle).toBeVisible();
   const email = page.getByLabel('Электронная почта');
   await email.fill('a');
-  await page.goBack();
+  await email.fill('');
+  await historyStep(page, -1);
+  await expect(page.getByText('Прервать вход', { exact: true })).toHaveCount(0);
+  await expect(page).toHaveURL(/\/$/);
+  await expect(loginTitle).toHaveCount(0);
+
+  await page.getByRole('link', { name: 'Профиль', exact: true }).click();
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(loginTitle).toBeVisible();
+  await email.fill('a');
+  await historyStep(page, -1);
   await expect(page.getByText('Прервать вход', { exact: true })).toBeVisible();
+  await expect(page).toHaveURL(/\/login$/);
   await expect(email).toHaveValue('a');
   await page.getByRole('button', { name: 'Продолжить', exact: true }).click();
   await expect(email).toHaveValue('a');
   await expect(email).toBeFocused();
-  await page.goBack();
+  await historyStep(page, -1);
   await page.getByRole('button', { name: 'Прервать', exact: true }).click();
   await expect(page).toHaveURL(/\/$/);
-  await expect(page.locator('#auth-sheet')).toHaveCount(0);
+  await expect(loginTitle).toHaveCount(0);
+  await historyStep(page, -1);
+  await expect(loginTitle).toHaveCount(0);
+  await historyStep(page, 1);
+  await expect(loginTitle).toHaveCount(0);
 
   await page.goto('/login');
+  await expect(loginTitle).toBeVisible();
   await page.getByRole('button', { name: 'Регистрация', exact: true }).click();
-  await expect(page).toHaveURL(/\/register/);
-  await expect(page.locator('#auth-sheet')).toHaveCount(1);
+  await expect(page).toHaveURL(/\/register$/);
+  await expect(page.getByLabel('Имя')).toBeVisible();
+  await page.getByLabel('Имя').fill('Автор');
+  await historyStep(page, -1);
+  await expect(page.getByText('Прервать регистрацию', { exact: true })).toHaveCount(0);
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(loginTitle).toBeVisible();
+  await expect(page.getByLabel('Имя')).toHaveCount(0);
 });
 
 test('auth composition is stacked in the S4 phone column', async ({ page }) => {
@@ -74,6 +99,12 @@ test('auth composition is stacked in the S4 phone column', async ({ page }) => {
     path: resolve(artifactDir, `${engine(page)}-register-390.png`),
   });
 });
+
+async function historyStep(page: Page, delta: -1 | 1) {
+  await page.evaluate((step) => {
+    window.history.go(step);
+  }, delta);
+}
 
 async function expectS4Register(page: Page) {
   await expect(page.getByText(removedIntro, { exact: true })).toHaveCount(0);

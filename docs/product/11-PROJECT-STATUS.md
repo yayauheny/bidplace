@@ -1,5 +1,23 @@
 # bidplace — текущий статус проекта
 
+## 2026-10-07 — Auth browser history follows Expo entries
+
+- `Partial` for the portfolio auth presentation. Browser history no longer
+  keeps a sentinel that copies the Expo history id. The auth listener is
+  installed before Expo Router's history listener. A dirty or busy leave stops
+  that one `popstate` and returns to the same Expo entry. An empty login leaves
+  with one Back. A filled form asks only when Back leaves auth. Back from
+  registration to login does not ask. Continue keeps the value and focus.
+  A successful login and a closed sheet are not opened again from a leftover
+  entry. A request in progress still keeps the sheet. The earlier measured
+  actions and the open Google, mixed-text, and consent gaps are unchanged.
+  This is not a 1:1 Figma match. Production remains
+  `541d763547f7b021895daa3d533c3196c37a4e67`. No push or deploy.
+- Local checks on Node 22.20.0 against disposable `bidplace_e2e` at
+  `127.0.0.1:5432`: mobile typecheck, lint of the touched auth files,
+  `auth-dismissal` unit tests, `build:web`, and `e2e/auth-layout.spec.ts` plus
+  `e2e/auth-lifecycle.spec.ts` — 10 passed on Chromium and WebKit.
+
 ## 2026-10-07 — Auth sheet completion, Back and one visible sheet
 
 - `Partial` for the portfolio auth presentation. Successful login, registration

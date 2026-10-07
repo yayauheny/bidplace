@@ -126,10 +126,16 @@ test('login survives reload and password recovery rejects the old password and a
   context,
 }) => {
   const { buyer } = await createBuyerFixture();
+  await page.goto('/');
   await page.goto('/login?redirectTo=/profile');
   await loginForm(page, buyer.email, 'wrong-password-123', 401);
   await expect(page).toHaveURL(/\/login\?/);
   await loginForm(page, buyer.email, buyer.password, 201);
+  await expect(page).toHaveURL(/\/profile(?:\?|$)/);
+  await page.goBack();
+  await expect(page.getByText('Вход на Bidplace', { exact: true })).toHaveCount(0);
+  await expect(page).not.toHaveURL(/\/login/);
+  await page.goForward();
   await expect(page).toHaveURL(/\/profile(?:\?|$)/);
   await page.reload();
   await expect(

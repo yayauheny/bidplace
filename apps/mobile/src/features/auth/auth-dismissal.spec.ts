@@ -1,13 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  AUTH_BROWSER_BACK_STEPS,
-  authHistoryGuardState,
+  authBrowserLeaveTarget,
   authLeaveCommit,
   authLeaveDestination,
   authNavigationDismissal,
   authNavigationTarget,
-  isAuthHistoryGuard,
+  authRouteFromLocation,
   registerSubmission,
 } from './auth-dismissal';
 import { verificationStatusCopy } from './verify-email-copy';
@@ -40,14 +39,36 @@ describe('auth sheet dismissal', () => {
     expect(authNavigationTarget({ payload: { name: '(auth)', params: { screen: 'login' } } })).toBe('login');
   });
 
-  it('leaves through one confirmed destination', () => {
-    expect(authLeaveCommit({ hasNavigationAction: true, browserBack: true })).toBe('dispatch');
-    expect(authLeaveCommit({ hasNavigationAction: false, browserBack: true })).toBe('history');
-    expect(authLeaveCommit({ hasNavigationAction: false, browserBack: false })).toBe('replace');
-    expect(AUTH_BROWSER_BACK_STEPS).toBe(-2);
-    const state = authHistoryGuardState({ id: 'login' }, 'sheet');
-    expect(isAuthHistoryGuard(state, 'sheet')).toBe(true);
-    expect(isAuthHistoryGuard({ id: 'login' }, 'sheet')).toBe(false);
+  it('treats browser back to another auth step as movement and a reset away as an exit', () => {
+    expect(authRouteFromLocation('/register?redirectTo=/profile')).toBe('register');
+    expect(authRouteFromLocation('/')).toBeUndefined();
+    expect(authNavigationTarget({
+      type: 'RESET',
+      payload: {
+        index: 1,
+        routes: [
+          { name: 'index' },
+          { name: '(auth)', state: { index: 0, routes: [{ name: 'login', path: '/login' }] } },
+        ],
+      },
+    })).toBe('login');
+    expect(authNavigationDismissal({
+      dirty: true,
+      busy: false,
+      targetRoute: authNavigationTarget({
+        type: 'RESET',
+        payload: { index: 0, routes: [{ name: 'index', path: '/' }] },
+      }),
+    })).toBe('confirm');
+    expect(authNavigationDismissal({
+      dirty: true,
+      busy: true,
+      targetRoute: 'register',
+    })).toBe('allow');
+    expect(authLeaveCommit({ hasNavigationAction: true })).toBe('dispatch');
+    expect(authLeaveCommit({ hasNavigationAction: false })).toBe('replace');
+    expect(authBrowserLeaveTarget('/works/public-work')).toBe('/works/public-work');
+    expect(authBrowserLeaveTarget('/login')).toBe('/');
   });
 
   it('returns only a public page when the saved destination is protected', () => {

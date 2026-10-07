@@ -23,10 +23,12 @@ open as a bottom sheet over the public Home page. Deep links stay
 Only the focused auth route paints that sheet. Registration keeps
 «Имя»/`displayName` and a UI-only password repeat. Google and Telegram report
 that sign-in is unavailable. A successful login, registration or confirmation
-continues once and does not ask to leave. A user close, Escape, backdrop or
-browser Back from a filled form asks first. Continue keeps the values and
-focus; Interrupt leaves. Leaving does not cancel an in-flight request, delete
-an account or log out. Verification can be finished later, and the screen does
+continues once and does not ask to leave. An empty form leaves with one Back.
+Back from one auth step to another does not ask, even when that step has
+input. A user close, Escape, backdrop, or Back that leaves auth asks first
+when the form has input. Continue keeps the values and focus; Interrupt
+leaves. A finished or closed sheet is not left as a history entry. Leaving
+does not cancel an in-flight request, delete an account or log out. Verification can be finished later, and the screen does
 not say a code arrived before the send is accepted. Recovery and wide layouts
 are derived from the phone sheet. Details:
 [`auth HANDOFF.md`](../../design/figma-handoff/auth/2026-10-07-auth-dialogs/HANDOFF.md).

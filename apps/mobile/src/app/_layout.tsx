@@ -9,9 +9,12 @@ import { StatusBar } from 'expo-status-bar';
 import { View } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
 
+import { ensureAuthBrowserHistory } from '../features/auth/auth-browser-history';
 import { SearchOverlayHost } from '../features/search/search-overlay-host';
 import { AppProviders } from '../providers/app-providers';
 import '../../global.css';
+
+ensureAuthBrowserHistory();
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({

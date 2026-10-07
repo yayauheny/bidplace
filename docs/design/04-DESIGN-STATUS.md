@@ -4,6 +4,16 @@
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
+## 2026-10-07 — Auth Back uses the Expo history entry
+
+- `Partial`: an empty auth form leaves with one browser Back. A filled form
+  asks only when that Back leaves auth. Registration back to login does not
+  ask. Continue keeps the typed value and focus. Successful login and a closed
+  sheet do not return from a leftover history entry. Chromium and WebKit
+  `auth-layout` and `auth-lifecycle` passed (10) on disposable `bidplace_e2e`.
+  Google, mixed text, consent, and derived recovery remain open. This is not a
+  1:1 match. Production was not updated.
+
 ## 2026-10-07 — Auth sheet lifecycle matches the measured actions
 
 - `Partial`: one focused auth route paints the sheet. A successful login,

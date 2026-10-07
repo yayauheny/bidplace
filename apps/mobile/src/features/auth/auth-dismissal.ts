@@ -1,4 +1,4 @@
-import type { SafeRedirect } from './auth-redirect';
+import { getSafeRedirect, type SafeRedirect } from './auth-redirect';
 
 const AUTH_ROUTES = new Set([
   'login',
@@ -12,18 +12,55 @@ const PUBLIC_PREFIXES = ['/works', '/authors', '/search', '/product'];
 
 export type AuthDismissal = 'allow' | 'confirm' | 'keep';
 
+type RouteNode = {
+  name?: string;
+  path?: string;
+  params?: { screen?: string };
+  state?: NavigationNode;
+};
+
+type NavigationNode = {
+  index?: number;
+  routes?: RouteNode[];
+};
+
 type NavigationAction = {
   type?: string;
   payload?: {
     name?: string;
     params?: { screen?: string };
+    index?: number;
+    routes?: RouteNode[];
   };
 };
 
+export function authRouteFromLocation(path: string) {
+  const pathname = (path.split(/[?#]/)[0] || '/').replace(/\/+$/, '') || '/';
+  const name = pathname.slice(1);
+  return AUTH_ROUTES.has(name) ? name : undefined;
+}
+
+function focusedRouteName(state: NavigationNode | undefined): string | undefined {
+  if (!state || !Array.isArray(state.routes) || typeof state.index !== 'number') return undefined;
+  const route = state.routes[state.index];
+  if (!route) return undefined;
+  const nested = focusedRouteName(route.state);
+  if (nested) return nested;
+  if (typeof route.path === 'string') {
+    const fromPath = authRouteFromLocation(route.path.startsWith('/') ? route.path : `/${route.path}`);
+    if (fromPath) return fromPath;
+  }
+  if (typeof route.params?.screen === 'string') return route.params.screen;
+  if (typeof route.name === 'string' && !route.name.startsWith('(')) return route.name;
+  return undefined;
+}
+
 export function authNavigationTarget(action: NavigationAction | undefined) {
-  const screen = action?.payload?.params?.screen;
+  const payload = action?.payload;
+  if (payload && Array.isArray(payload.routes)) return focusedRouteName(payload);
+  const screen = payload?.params?.screen;
   if (typeof screen === 'string') return screen;
-  const name = action?.payload?.name;
+  const name = payload?.name;
   if (typeof name === 'string' && !name.startsWith('(')) return name;
   return undefined;
 }
@@ -41,29 +78,14 @@ export function authNavigationDismissal(input: {
   return 'confirm';
 }
 
-export const AUTH_HISTORY_GUARD_KEY = 'bidplaceAuthSheetGuard';
-export const AUTH_BROWSER_BACK_STEPS = -2;
-
-export function authHistoryGuardState(state: unknown, id: string) {
-  const base = state && typeof state === 'object' ? state : {};
-  return { ...base, [AUTH_HISTORY_GUARD_KEY]: id };
-}
-
-export function isAuthHistoryGuard(state: unknown, id: string) {
-  return Boolean(
-    state &&
-      typeof state === 'object' &&
-      (state as Record<string, unknown>)[AUTH_HISTORY_GUARD_KEY] === id,
-  );
-}
-
 export function authLeaveCommit(input: {
   hasNavigationAction: boolean;
-  browserBack: boolean;
-}): 'dispatch' | 'history' | 'replace' {
-  if (input.hasNavigationAction) return 'dispatch';
-  if (input.browserBack) return 'history';
-  return 'replace';
+}): 'dispatch' | 'replace' {
+  return input.hasNavigationAction ? 'dispatch' : 'replace';
+}
+
+export function authBrowserLeaveTarget(path: string): SafeRedirect {
+  return getSafeRedirect(path);
 }
 
 export function authLeaveDestination(redirectTo: SafeRedirect): SafeRedirect {

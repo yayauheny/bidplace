@@ -1,7 +1,7 @@
 import * as Dialog from '@rn-primitives/dialog';
 import { useIsFocused, useNavigation, useRouter, type Href } from 'expo-router';
 import { usePreventRemove } from 'expo-router/build/react-navigation/core';
-import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Platform, ScrollView, useWindowDimensions, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
@@ -9,13 +9,16 @@ import { designTokens } from '@bidplace/design-tokens';
 
 import { HomeScreen } from '../../features/home/home-screen';
 import {
-  AUTH_BROWSER_BACK_STEPS,
-  authHistoryGuardState,
+  clearAuthHistory,
+  publishAuthHistory,
+  settleAuthHistory,
+} from '../../features/auth/auth-browser-history';
+import {
+  authBrowserLeaveTarget,
   authLeaveCommit,
   authLeaveDestination,
   authNavigationDismissal,
   authNavigationTarget,
-  isAuthHistoryGuard,
 } from '../../features/auth/auth-dismissal';
 import { AuthExitConfirm, type AuthExitCopy } from '../../features/auth/auth-exit-confirm';
 import {
@@ -56,16 +59,15 @@ export function AuthViewport({
   const router = useRouter();
   const navigation = useNavigation();
   const focused = useIsFocused();
-  const historyGuardId = useId();
+  const historyId = useId();
   const { height, width } = useWindowDimensions();
   const [guard, setGuard] = useState<AuthSheetGuard>({ dirty: false, busy: false });
   const [confirm, setConfirm] = useState(false);
   const [released, setReleased] = useState(false);
   const pendingAction = useRef<NavigationAction | null>(null);
+  const browserLeavePath = useRef<string | null>(null);
   const returnFocus = useRef<HTMLElement | null>(null);
   const releasedRef = useRef(false);
-  const browserBackRef = useRef(false);
-  const sentinelRef = useRef(false);
   const completionRef = useRef<SafeRedirect | null>(null);
   const focusedRef = useRef(focused);
   const guardRef = useRef(guard);
@@ -79,21 +81,39 @@ export function AuthViewport({
   }, []);
   const destination = authLeaveDestination(redirectTo);
 
-  const rememberFocus = useCallback(() => {
-    if (typeof document === 'undefined') return;
-    const active = document.activeElement;
-    if (active instanceof HTMLElement) returnFocus.current = active;
-  }, []);
-
   const openConfirm = useCallback(() => {
-    rememberFocus();
+    if (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
+      if (document.activeElement.closest('#auth-sheet')) {
+        returnFocus.current = document.activeElement;
+      }
+    }
     setConfirm(true);
-  }, [rememberFocus]);
+  }, []);
+  if (Platform.OS === 'web') {
+    if (focused) {
+      publishAuthHistory({
+        id: historyId,
+        dirty: guard.dirty,
+        busy: guard.busy,
+        released: () => releasedRef.current,
+        completed: () => completionRef.current !== null,
+        confirm: openConfirm,
+        rememberLeave: (path) => {
+          browserLeavePath.current = path;
+          pendingAction.current = null;
+        },
+      });
+    } else {
+      clearAuthHistory(historyId);
+    }
+  }
 
   const complete = useCallback((next: SafeRedirect) => {
     if (!focusedRef.current || completionRef.current || releasedRef.current) return;
     completionRef.current = next;
     releasedRef.current = true;
+    browserLeavePath.current = null;
+    pendingAction.current = null;
     setReleased(true);
     setConfirm(false);
     router.replace(next as Href);
@@ -102,25 +122,19 @@ export function AuthViewport({
   const commitLeave = useCallback(() => {
     if (releasedRef.current) return;
     const action = pendingAction.current;
+    const left = browserLeavePath.current;
     pendingAction.current = null;
-    const browserBack = browserBackRef.current;
-    browserBackRef.current = false;
+    browserLeavePath.current = null;
+    settleAuthHistory();
     releasedRef.current = true;
     setReleased(true);
     setConfirm(false);
-    const commit = authLeaveCommit({
-      hasNavigationAction: action !== null,
-      browserBack,
-    });
+    const commit = authLeaveCommit({ hasNavigationAction: action !== null });
     if (commit === 'dispatch' && action) {
       navigation.dispatch(action as never);
       return;
     }
-    if (commit === 'history' && typeof window !== 'undefined') {
-      window.history.go(AUTH_BROWSER_BACK_STEPS);
-      return;
-    }
-    router.replace(destination as Href);
+    router.replace((left ? authBrowserLeaveTarget(left) : destination) as Href);
   }, [destination, navigation, router]);
 
   const requestDismiss = useCallback(() => {
@@ -131,7 +145,7 @@ export function AuthViewport({
       targetRoute: undefined,
       released: false,
     });
-    browserBackRef.current = false;
+    browserLeavePath.current = null;
     pendingAction.current = null;
     if (decision === 'keep') return;
     if (decision === 'allow') {
@@ -163,35 +177,15 @@ export function AuthViewport({
     }
     if (decision === 'keep') return;
     pendingAction.current = action;
-    browserBackRef.current = false;
+    browserLeavePath.current = null;
     openConfirm();
   });
 
-  useLayoutEffect(() => {
-    if (Platform.OS !== 'web' || typeof window === 'undefined' || !focused) return;
-    if (releasedRef.current) return;
-    if (!guard.dirty && !guard.busy) return;
-    if (!sentinelRef.current) {
-      window.history.pushState(
-        authHistoryGuardState(window.history.state, historyGuardId),
-        '',
-        window.location.href,
-      );
-      sentinelRef.current = true;
-    }
-    const onPopState = (event: PopStateEvent) => {
-      if (releasedRef.current || completionRef.current) return;
-      if (isAuthHistoryGuard(event.state, historyGuardId)) return;
-      event.stopImmediatePropagation();
-      browserBackRef.current = true;
-      pendingAction.current = null;
-      window.history.go(1);
-      if (guardRef.current.busy) return;
-      openConfirm();
+  useEffect(() => {
+    return () => {
+      clearAuthHistory(historyId);
     };
-    window.addEventListener('popstate', onPopState, true);
-    return () => window.removeEventListener('popstate', onPopState, true);
-  }, [focused, guard.busy, guard.dirty, historyGuardId, openConfirm]);
+  }, [historyId]);
 
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof document === 'undefined' || !focused) return;
@@ -206,7 +200,8 @@ export function AuthViewport({
 
   const continueForm = () => {
     pendingAction.current = null;
-    browserBackRef.current = false;
+    browserLeavePath.current = null;
+    settleAuthHistory();
     setConfirm(false);
     const element = returnFocus.current;
     if (Platform.OS === 'web') {
