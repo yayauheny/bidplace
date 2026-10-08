@@ -1,5 +1,28 @@
 # bidplace — текущий статус проекта
 
+## 2026-10-08 — Late registration does not replace a newer session
+
+- `Partial`. `AuthProvider.register` installs its session only when the epoch
+  captured at the start of that call still owns the client. While the request
+  is in flight, an external session is not suppressed. The late response does
+  not replace that session, call `acceptRules`, or navigate. The request is
+  not cancelled and the created account is not deleted. A thrown `register`
+  clears the same in-flight claim. One successful `register` and a later
+  `acceptRules` retry for that same account remain.
+- Covered by `registration-consent.spec.ts` together with the real
+  `AuthProvider.register`: start `register`, install session B, then deliver
+  register A. Session stays B, acceptance and navigation do not run, and a
+  second submit does not register again. The earlier same-account retry,
+  blur, and A-after-accept cases still pass (18 tests in the auth/session
+  files). Mobile `tsc --noEmit` and eslint on the changed files passed.
+  This is not 1:1.
+- Still open: no approved privacy-policy source, so the policy words are not
+  links. Google vector `I526:14901;298:6024;521:10381` and its parent frame
+  `google` have no fills. Mixed ranges `4547:23406`, `4547:25029`,
+  `526:14902`, `526:15580` and `558:16958` have no styled ranges. Checkbox
+  frames `4547:23400` and `4547:23403` have no stroke weight. Production
+  remains `541d763547f7b021895daa3d533c3196c37a4e67`.
+
 ## 2026-10-08 — Registration consent stays with the account that was created
 
 - `Partial`. The account created by the current registration attempt is the

@@ -16,7 +16,7 @@ import { useAuthSheetComplete, useAuthSheetGuard } from './auth-sheet-context';
 import { AuthTelegramIcon } from './auth-telegram-icon';
 import { useAnalytics } from '../../providers/analytics-provider';
 import { useApiClient } from '../../providers/api-provider';
-import { useAuth } from '../../providers/auth-provider';
+import { registerSessionChangeIsOwn, useAuth } from '../../providers/auth-provider';
 import { useSlugAvailability } from './use-slug-availability';
 import { ApiClientError } from '@bidplace/api-client';
 
@@ -259,8 +259,6 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
   const mounted = useRef(true);
   const completed = useRef(false);
   const createdAccountId = useRef<string | null>(null);
-  const ownEpochs = useRef(new Set<number>());
-  const expectingOwnSession = useRef(false);
   const focused = useIsFocused();
   const navigation = useNavigation();
   const focusedRef = useRef(focused);
@@ -352,7 +350,7 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
   useEffect(() => {
     if (seenAuthEpoch.current === authEpoch) return;
     seenAuthEpoch.current = authEpoch;
-    if (expectingOwnSession.current || ownEpochs.current.has(authEpoch)) return;
+    if (registerSessionChangeIsOwn(queryClient, authEpoch)) return;
     sessionOperation.current += 1;
     rulesVersion.current = null;
     if (!mounted.current) return;
@@ -439,20 +437,19 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
     let consentEpoch = epoch;
     try {
       if (!createdAccountId.current) {
-        expectingOwnSession.current = true;
         const response = await auth.register(registerSubmission(values));
-        const epochAfter = currentAuthEpoch(queryClient);
-        ownEpochs.current.add(epochAfter);
-        expectingOwnSession.current = false;
+        const sessionId = sessionUser()?.id ?? null;
         createdAccountId.current = response.user.id;
-        consentEpoch = epochAfter;
-        if (
-          !routeOwns(operation) ||
-          (sessionUser()?.id ?? null) !== response.user.id
-        ) {
+        const installedHere = sessionId === response.user.id;
+        if (!installedHere || !routeOwns(operation)) {
           clearShownRules();
+          if (mounted.current && !installedHere) {
+            form.setValue('rulesAccepted', false);
+            setSubmitError('Сессия изменилась. Согласие не перенесено.');
+          }
           return;
         }
+        consentEpoch = currentAuthEpoch(queryClient);
         analytics.identify(response.user.id, { claimAcquisition: true });
       }
       if (!consentOwns(operation, consentEpoch) || rulesVersion.current !== version) return;

@@ -26,7 +26,11 @@ wordmark uses the source bottom inset. The email checkbox is one control.
 Registration continues once, only after `acceptRules` confirms the version
 shown to the account this attempt created. A failed acceptance stays on the
 form and the retry calls only `acceptRules` for that account. A different
-session does not inherit the version or the acceptance. The published rules
+session does not inherit the version or the acceptance. A session that
+arrives while `register` is still waiting stays in place: the late response
+does not replace it, accept rules, or continue that attempt. A failed
+`register` drops that in-flight claim. The request is not cancelled and the
+created account is not deleted. The published rules
 text can be read before acceptance; a failed load can be retried. The
 privacy-policy words are not links. The confirmation body has no extra logout button;
 account logout stays on the profile, cabinet and moderation screens.
@@ -52,10 +56,10 @@ returns the address to the auth entry until the user confirms. Continue keeps
 the values and focus; Interrupt opens the entry that traversal reached. A
 finished or closed sheet is not left as a history entry. Leaving does not
 cancel an in-flight request, delete an account, or log out. A session change
-during registration does not let the old attempt write consent or show its
-error. Verification can
-be finished later, and the screen does not say a code arrived before the send
-is accepted. Recovery and wide layouts are derived from the phone sheet.
+during registration, including while `register` is still waiting, does not
+let the old attempt replace the newer session, write consent, or continue.
+Verification can be finished later, and the screen does not say a code arrived
+before the send is accepted. Recovery and wide layouts are derived from the phone sheet.
 Details:
 [`current auth HANDOFF.md`](../../design/figma-handoff/auth/2026-10-08-auth-fullscreen/HANDOFF.md).
 

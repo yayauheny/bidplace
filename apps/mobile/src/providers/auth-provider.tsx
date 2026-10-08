@@ -12,7 +12,7 @@ import type {
   RegisterRequest,
   User,
 } from '@bidplace/contracts';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 
 import { shouldClearSessionForError } from '../errors';
 import { useApiClient } from './api-provider';
@@ -20,6 +20,7 @@ import {
   authKeys,
   clearAuthenticatedSession,
   currentAuthEpoch,
+  readAuthEpoch,
   replaceAuthenticatedSession,
 } from '../lib/query-cache';
 
@@ -41,6 +42,26 @@ type AuthContextValue = {
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
+
+type RegisterInstall = { startEpoch: number };
+
+const activeRegisterInstall = new WeakMap<QueryClient, RegisterInstall>();
+const registerInstalledEpochs = new WeakMap<QueryClient, Set<number>>();
+
+export function registerSessionChangeIsOwn(
+  queryClient: QueryClient,
+  epoch: number,
+): boolean {
+  if (registerInstalledEpochs.get(queryClient)?.has(epoch)) return true;
+  const active = activeRegisterInstall.get(queryClient);
+  if (!active) return false;
+  const state = readAuthEpoch(queryClient);
+  const retirement = active.startEpoch + 1;
+  const finished = active.startEpoch + 2;
+  if (epoch === retirement && state.id === retirement && !state.writesOpen) return true;
+  if (epoch === finished && state.id === finished && state.writesOpen) return true;
+  return epoch === retirement && state.id === finished && state.writesOpen;
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const api = useApiClient();
@@ -85,8 +106,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return response;
       },
       register: async (input: RegisterRequest) => {
+        const startEpoch = currentAuthEpoch(queryClient);
         const response = await api.auth.register(input);
-        await setAuthenticatedSession(response.user);
+        if (currentAuthEpoch(queryClient) !== startEpoch) return response;
+        activeRegisterInstall.set(queryClient, { startEpoch });
+        try {
+          await setAuthenticatedSession(response.user);
+          const installed =
+            queryClient.getQueryData<User | null>(authKeys.session) ?? null;
+          const done = currentAuthEpoch(queryClient);
+          if (installed?.id === response.user.id && done === startEpoch + 2) {
+            const epochs = registerInstalledEpochs.get(queryClient) ?? new Set<number>();
+            epochs.add(startEpoch + 1);
+            epochs.add(done);
+            registerInstalledEpochs.set(queryClient, epochs);
+          }
+        } finally {
+          activeRegisterInstall.delete(queryClient);
+        }
         return response;
       },
       logout: async () => {

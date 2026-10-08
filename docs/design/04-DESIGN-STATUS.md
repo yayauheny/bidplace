@@ -4,6 +4,15 @@
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
+## 2026-10-08 — Registration wait does not adopt a newer session
+
+- `Partial`. No geometry change. A session installed while `register` is
+  waiting stays on screen; the late account does not replace it or continue
+  that attempt. The 390×874 placement, short-screen band, and open export
+  gaps are unchanged: Google vector `I526:14901;298:6024;521:10381` has no
+  fills, mixed ranges have no styled runs, checkbox stroke weight is absent,
+  and the policy words are not links. This is not 1:1.
+
 ## 2026-10-08 — Auth consent owner and short-screen brand band
 
 - `Partial`. The 390×874 email title remains y320.5. On 240×437 the mark no

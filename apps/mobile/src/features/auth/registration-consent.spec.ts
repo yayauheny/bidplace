@@ -16,6 +16,8 @@ const harness = vi.hoisted(() => ({
   focused: true,
   failRulesOnce: false,
   blurDuringRegister: false,
+  holdRegister: false,
+  releaseRegister: null as null | (() => void),
   emitBlur: () => undefined as void,
   rulesReads: 0,
   registers: 0,
@@ -85,34 +87,31 @@ vi.mock('../../providers/analytics-provider', () => ({
   }),
 }));
 
-vi.mock('../../providers/auth-provider', () => ({
-  useAuth: () => ({
-    ready: true,
-    isAuthenticated: false,
-    user: null,
-    register: async (input: { email: string; slug: string }) => {
-      const user = account('user-a', input.email, input.slug);
-      await replaceAuthenticatedSession(client(), user);
-      harness.registers += 1;
-      if (harness.blurDuringRegister) {
-        harness.focused = false;
-        harness.emitBlur();
-      }
-      return { user };
-    },
-    refreshSession: async () => {
-      const current = client().getQueryData<User | null>(authKeys.session);
-      if (!current || current.id !== 'user-a') return current ?? null;
-      const next = { ...current, acceptedRulesVersion: 'MVP_RULES_V1' };
-      client().setQueryData(authKeys.session, next);
-      return next;
-    },
-  }),
-}));
-
 vi.mock('../../providers/api-provider', () => ({
   useApiClient: () => ({
     auth: {
+      me: async () => {
+        const current = client().getQueryData<User | null>(authKeys.session);
+        if (!current) throw new Error('anonymous');
+        if (current.id === 'user-a' && harness.accepts.length > 1) {
+          return { user: { ...current, acceptedRulesVersion: 'MVP_RULES_V1' } };
+        }
+        return { user: current };
+      },
+      register: (input: { email: string; slug: string }) => {
+        harness.registers += 1;
+        const user = account('user-a', input.email, input.slug);
+        if (harness.blurDuringRegister) {
+          harness.focused = false;
+          harness.emitBlur();
+        }
+        if (harness.holdRegister) {
+          return new Promise((resolve) => {
+            harness.releaseRegister = () => resolve({ user });
+          });
+        }
+        return Promise.resolve({ user });
+      },
       getRules: async () => {
         harness.rulesReads += 1;
         if (harness.failRulesOnce && harness.rulesReads === 1) {
@@ -203,6 +202,7 @@ vi.mock('../../components/ui', () => ({
     }),
 }));
 
+import { AuthProvider } from '../../providers/auth-provider';
 import { RegisterForm } from './auth-form';
 
 function client() {
@@ -228,7 +228,7 @@ function account(id: string, email: string, slug: string): User {
 }
 
 function Host() {
-  return createElement(RegisterForm, { redirectTo: '/profile' });
+  return createElement(AuthProvider, null, createElement(RegisterForm, { redirectTo: '/profile' }));
 }
 
 function mount() {
@@ -290,6 +290,7 @@ async function until(container: ParentNode, marker: string) {
 }
 
 async function reachPassword(container: HTMLElement) {
+  await until(container, 'Введите вашу почту');
   fill(container, 'Электронная почта', 'a@example.com');
   clickConsent(container);
   await until(container, 'Правила сервиса');
@@ -307,6 +308,8 @@ afterEach(() => {
   harness.focused = true;
   harness.failRulesOnce = false;
   harness.blurDuringRegister = false;
+  harness.holdRegister = false;
+  harness.releaseRegister = null;
   harness.rulesReads = 0;
   harness.registers = 0;
   harness.accepts = [];
@@ -319,6 +322,7 @@ describe('registration consent attempt', () => {
   it('reloads rules without toggling the checkbox', async () => {
     harness.failRulesOnce = true;
     const view = mount();
+    await until(view.container, 'Введите вашу почту');
     fill(view.container, 'Электронная почта', 'a@example.com');
     clickConsent(view.container);
     await until(view.container, 'Не удалось получить правила.');
@@ -369,14 +373,46 @@ describe('registration consent attempt', () => {
     view.unmount();
   });
 
+  it('does not apply a late registration over a newer session', async () => {
+    harness.holdRegister = true;
+    const view = mount();
+    await reachPassword(view.container);
+    clickButton(view.container, 'Дальше');
+    for (let attempt = 0; attempt < 20 && harness.registers === 0; attempt += 1) {
+      await flush();
+    }
+    expect(harness.registers).toBe(1);
+    await act(async () => {
+      await replaceAuthenticatedSession(view.client, account('user-b', 'b@example.com', 'author-b'));
+    });
+    await flush();
+    await act(async () => {
+      harness.releaseRegister?.();
+    });
+    await flush();
+    await flush();
+    expect(view.client.getQueryData<User | null>(authKeys.session)?.id).toBe('user-b');
+    expect(harness.accepts).toHaveLength(0);
+    expect(harness.replace).not.toHaveBeenCalled();
+    expect(harness.registers).toBe(1);
+    expect(view.container.textContent).toContain('Сессия изменилась. Согласие не перенесено.');
+    clickButton(view.container, 'Дальше');
+    await flush();
+    expect(harness.registers).toBe(1);
+    expect(harness.accepts).toHaveLength(0);
+    expect(harness.replace).not.toHaveBeenCalled();
+    view.unmount();
+  });
+
   it('navigates once when the same account retries acceptance', async () => {
     const view = mount();
     await reachPassword(view.container);
     clickButton(view.container, 'Дальше');
     await until(view.container, 'Не удалось сохранить согласие. Повторите принятие правил.');
     clickButton(view.container, 'Дальше');
-    await flush();
-    await flush();
+    for (let attempt = 0; attempt < 20 && harness.replace.mock.calls.length === 0; attempt += 1) {
+      await flush();
+    }
     expect(harness.registers).toBe(1);
     expect(harness.accepts.map((item) => item.userId)).toEqual(['user-a', 'user-a']);
     expect(harness.replace).toHaveBeenCalledTimes(1);

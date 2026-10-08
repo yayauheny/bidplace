@@ -60,6 +60,14 @@ export function currentAuthEpoch(queryClient: QueryClient): number {
   return authEpochState(queryClient).id;
 }
 
+export function readAuthEpoch(queryClient: QueryClient): {
+  id: number;
+  writesOpen: boolean;
+} {
+  const state = authEpochState(queryClient);
+  return { id: state.id, writesOpen: state.writesOpen };
+}
+
 export function advanceAuthEpoch(queryClient: QueryClient): number {
   const next = currentAuthEpoch(queryClient) + 1;
   authEpochs.set(queryClient, { id: next, writesOpen: true });
