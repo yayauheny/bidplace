@@ -1,5 +1,44 @@
 # bidplace — текущий статус проекта
 
+## 2026-10-08 — Slug cutover cannot block old writes yet
+
+- `Partial`. Required order for `20261008040000_add_user_slug`:
+  1. Before the migration, exclude writes from the old API.
+  2. Wait until every write that the old API already accepted has finished.
+  3. Apply the migration.
+  4. Start the new version, check nickname equality, and only then open access.
+  Design gaps stay `Partial`: consent text, mixed-text ranges, the Google
+  glyph, a public policy page, `acceptRules`, nickname change, and dropping
+  `seller_profiles.slug`. Production remains
+  `541d763547f7b021895daa3d533c3196c37a4e67`. No push or deploy.
+- `Blocker`: the production Worker cannot exclude those writes. `routeRequest`
+  in `deploy/cloudflare/src/router.ts` sends every `/api` and `/api/*` method
+  to the one `PortfolioApi` container, `API.getByName('portfolio-api')`.
+  There is no method filter, maintenance binding, or probe that rejects a
+  mutation before that fetch. `sleepAfter = '10m'` only sleeps an idle
+  container; the next request starts the same image. `max_instances: 1`
+  still performs the write. `scripts/cloudflare` has no command that disables
+  writes and shows they stay disabled. `.github/workflows/production-deploy.yml`
+  migrates, when `migrate-production` is confirmed, and then deploy publishes
+  `bid.place`. That job is not this order. Stopping a process is not a
+  substitute.
+- `Blocker`: nothing reports that an already accepted write has finished.
+  `PortfolioApi` does not implement `onStop`. The Worker does not count
+  in-flight requests. Worker `observability.logs.invocation_logs` is false,
+  and the container block only enables observability. Idle sleep is not that
+  wait.
+- Nickname check for step 4, once access is still closed: copy any null
+  `users.slug` from `seller_profiles.slug`, then require every pair of
+  strings to be equal. If any pair differs, do not open `bid.place`.
+  Dropping `seller_profiles.slug` stays a later migration, after that check
+  and after no live query reads the profile column.
+- Gate on `2faf15edf8851cc69eca0af5ae8473c941d7ff32`, Node 22.20.0, before
+  this documentation update. `pnpm build:web` exported
+  `entry-13eae3b238c3f20d386a48ef61b493df.js` and verified the SPA for
+  `https://bid.place`. One Playwright run of `auth-layout` and
+  `auth-lifecycle`, Chromium and WebKit, `--workers=1 --retries=0`: 16
+  passed in 2.1m. No second run. No production migration.
+
 ## 2026-10-08 — Claim, verification, owner slug, and fullscreen frame
 
 - `Partial`. A nickname claim checks the existing `authEpoch` and

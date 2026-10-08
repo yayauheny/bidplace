@@ -239,7 +239,24 @@ Workers Paid включает 3 000 исходящих писем на акка�
 
 Перед каждым deployment — backup и просмотр новых migrations, затем оператор
 на trusted machine запускает `pnpm cloudflare:migrate staging` (production: `pnpm cloudflare:migrate production --confirm-production`) с отдельно безопасно
-переданным `DATABASE_URL` migration role. Script не загружает repository dotenv;
+переданным `DATABASE_URL` migration role. Для `20261008040000_add_user_slug`
+этот порядок недостаточен. Нужная последовательность: до миграции исключить
+записи старой версии API, дождаться завершения уже принятых записывающих
+запросов, применить миграцию, запустить новую версию, проверить соответствие
+никнеймов и только затем открыть доступ. Такого исключения записей сейчас нет.
+`routeRequest` отправляет любой метод `/api` и `/api/*` в единственный
+контейнер `PortfolioApi`. Отдельного фильтра методов, maintenance binding и
+команды, которая отклоняет запись и позволяет это проверить повторным
+запросом, в Worker нет. `sleepAfter` в 10 минут усыпляет простаивающий
+контейнер и не запрещает запись: следующий запрос поднимает тот же образ.
+`max_instances: 1` запись не отклоняет. Сигнала, что уже принятый запрос
+закончился, тоже нет: `onStop` не задан, Worker не считает активные запросы,
+а `observability.logs.invocation_logs` выключены. Контейнер только включает
+observability и не добавляет ожидание записи. Текущий production workflow
+мигрирует и затем публикует `bid.place` одним job. Пока этих двух механизмов
+нет, эту миграцию им не выполнять.
+
+Script не загружает repository dotenv;
 schema/migrations копируются во временный каталог. Не брать runtime Worker
 credentials в build. Database migrations не часть container CMD/deploy script.
 Neon поддерживает migrations через pooler, но отдельная direct connection/role
