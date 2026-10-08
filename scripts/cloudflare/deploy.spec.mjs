@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import test from 'node:test';
 import { workerSecrets } from '../../deploy/cloudflare/src/environment.ts';
+import { containerReleaseReady } from '../../deploy/cloudflare/src/release-gate.ts';
 import { root } from './config.mjs';
 import { assertProductionReleaseMode, assertSecretsFile, gateEnvironment, productionWranglerArgs, writeProductionConfig } from './deploy.mjs';
 
@@ -102,6 +103,31 @@ test('secrets file accepts the runtime contract and rejects unsafe files without
   } finally { rmSync(broken.folder, { recursive: true, force: true }); }
 });
 
+test('opening requires the published container image, not a Worker var', () => {
+  const versionId = '4b41ca7f-3eb5-4849-83f8-e045bc016cff';
+  const ready = {
+    publicApiStatus: 503,
+    deployment: { created_on: '2026-10-08T10:00:00.000Z', versions: [{ version_id: versionId, percentage: 100 }] },
+    images: [{ name: 'bidplace-production-portfolioapi-production', tags: ['4b41ca7f'] }],
+    listed: { name: 'bidplace-production-portfolioapi-production', state: 'ready' },
+    info: {
+      name: 'bidplace-production-portfolioapi-production',
+      updated_at: '2026-10-08T10:01:00.000Z',
+      configuration: { image: 'registry.example/account/bidplace-production-portfolioapi-production@sha256:abc' },
+    },
+  };
+  assert.equal(containerReleaseReady(ready), true);
+  assert.equal(containerReleaseReady({ ...ready, listed: { ...ready.listed, state: 'active' } }), true);
+  assert.equal(containerReleaseReady({ ...ready, images: [{ name: ready.images[0].name, tags: ['08ecae5a'] }] }), false);
+  assert.equal(containerReleaseReady({
+    ...ready,
+    info: { ...ready.info, updated_at: '2026-10-08T09:59:00.000Z' },
+  }), false);
+  assert.equal(containerReleaseReady({ ...ready, info: { ...ready.info, active_rollout_id: 'rollout' } }), false);
+  assert.equal(containerReleaseReady({ ...ready, listed: { ...ready.listed, state: 'provisioning' } }), false);
+  assert.equal(containerReleaseReady({ ...ready, publicApiStatus: 200 }), false);
+});
+
 test('release commands keep the previous API image until the closed image deploy', () => {
   const sha = 'a'.repeat(40);
   const kept = productionWranglerArgs({
@@ -113,14 +139,14 @@ test('release commands keep the previous API image until the closed image deploy
   assert.equal(kept.args[kept.args.indexOf('--containers-rollout') + 1], 'none');
   assert.ok(kept.args.includes('--keep-vars'));
   assert.ok(kept.args.includes('RELEASE_HOLD:closed'));
-  assert.ok(kept.args.includes('RELEASE_IMAGE:previous'));
+  assert.equal(kept.args.some((arg) => arg.startsWith('RELEASE_IMAGE:')), false);
   const image = productionWranglerArgs({
     configFile: '/tmp/wrangler.json', secretsFile: '/tmp/secrets.json',
     release: 'closed', keepContainer: false, keepHold: false, releaseId: sha,
   });
   assert.equal(image.skipImage, false);
   assert.equal(image.args.includes('--containers-rollout'), false);
-  assert.ok(image.args.includes('RELEASE_IMAGE:current'));
+  assert.equal(image.args.some((arg) => arg.startsWith('RELEASE_IMAGE:')), false);
   const open = productionWranglerArgs({
     configFile: '/tmp/wrangler.json', secretsFile: '/tmp/secrets.json',
     release: 'open', keepContainer: false, keepHold: false,

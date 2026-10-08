@@ -269,7 +269,9 @@ Workers Paid включает 3 000 исходящих писем на акка�
    возврат `stop()` недостаточен. Повторять `GET https://bid.place/_release/state`
    с тем же заголовком, пока HTTP 200 и `status` равен `stopped` или
    `stopped_with_code`. HTTP 409 означает, что контейнер ещё не завершился.
-   HTTP 404 означает, что секрет не принят. Тело ответа и секрет не печатать.
+   HTTP 404 означает, что секрет не принят. Эти адреса входят в
+   `assets.run_worker_first`, поэтому SPA fallback их не перехватывает.
+   Тело ответа и секрет не печатать.
 4. Отдельный запуск workflow: `confirm_migration=migrate-production`,
    `release_hold=closed`, `keep_container=false`. Job сначала требует живой
    `GET /_release/state` с HTTP 200 и конечным статусом. Затем
@@ -279,12 +281,22 @@ Workers Paid включает 3 000 исходящих писем на акка�
    незавершённая транзакция ещё видна как `idle in transaction` и миграцию
    останавливает. Транзакция, успевшая закоммититься во время SIGTERM, видна
    копированию slug. После копирования прежний процесс дописать строку не может.
-   Затем deploy публикует новый образ с `RELEASE_HOLD=closed`,
-   `RELEASE_IMAGE=current` и `RELEASE_ID` этого коммита. Доступ остаётся закрыт.
+   Затем deploy публикует новый образ с `RELEASE_HOLD=closed` и `RELEASE_ID`
+   этого коммита. Доступ остаётся закрыт. Установленный Wrangler 4.147.0 сначала
+   загружает Worker, и только потом отправляет образ контейнера и запускает его
+   rollout. Если публикация контейнера срывается, команда завершается ошибкой,
+   но новая версия Worker уже может быть живой. `RELEASE_ID` и любая переменная
+   образа этого не доказывают.
 5. Проверить никнеймы отдельным запуском: `release_hold=open`,
-   `keep_container=false`, `confirm_migration` пустой. Скрипт сверяет
-   `RELEASE_IMAGE=current` и `RELEASE_ID` с этим коммитом, затем на прямом Neon
-   URL требует записанную миграцию `20261008040000_add_user_slug` и ноль строк,
+   `keep_container=false`, `confirm_migration` пустой. Перед открытием скрипт
+   требует, чтобы `https://bid.place/api` всё ещё отвечал 503 `no-store`, а
+   `RELEASE_ID` совпадал с этим коммитом. Затем читает `wrangler deployments status`,
+   `wrangler containers images list`, `wrangler containers list` и
+   `wrangler containers info` для `bidplace-production-portfolioapi-production`.
+   Открытие разрешено только когда в реестре есть тег этого Worker version,
+   приложение контейнера изменено не раньше этого deployment, rollout не активен,
+   состояние `ready` или `active`, а публичный API ещё закрыт. На прямом Neon
+   URL нужна записанная миграция `20261008040000_add_user_slug` и ноль строк,
    где `users.slug` отличается от `seller_profiles.slug`. Только после этого
    Worker получает `RELEASE_HOLD=open` без замены образа. Ошибка любого шага не
    заменяет текущий Worker, поэтому закрытая блокировка сохраняется.

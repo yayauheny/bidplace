@@ -1,5 +1,20 @@
 # bidplace — текущий статус проекта
 
+## 2026-10-08 — Release routes and container image proof
+
+- `Partial`. `/_release/stop` and `/_release/state` are in
+  `assets.run_worker_first`, so the SPA fallback does not answer them.
+  Opening no longer treats `RELEASE_IMAGE` or `RELEASE_ID` as proof that the
+  new container image is installed. Wrangler 4.147.0 uploads the Worker
+  before it pushes and rolls out the container. Opening reads the live
+  deployment, registry tag, container application, and requires `/api` to
+  still return 503. This gate is not deployed. Production remains
+  `541d763547f7b021895daa3d533c3196c37a4e67`. Design gaps stay `Partial`.
+- Local check: `pnpm cloudflare:check` on Node 22.20.0. Typecheck and lint
+  passed. Vitest: 29 passed. `scripts/cloudflare` node tests: 16 passed,
+  including the Miniflare asset router. The registration browser gate was
+  not repeated.
+
 ## 2026-10-08 — Local slug release gate
 
 - `Partial`. The local release gate can keep `/api` closed, stop the current
@@ -31,9 +46,9 @@
   The preparatory image deploy uses Wrangler `--containers-rollout none` and
   skips the API image build, so the previous production image stays in place.
 - Nickname equality and the migration row are checked on the direct Neon URL
-  before `RELEASE_HOLD` can become `open`. Opening also requires
-  `RELEASE_IMAGE=current` and `RELEASE_ID` equal to that commit. The exact
-  operator steps are in `docs/ops/CLOUDFLARE-DEPLOYMENT.md`.
+  before `RELEASE_HOLD` can become `open`. `RELEASE_ID` identifies the commit.
+  It does not prove that the container image for that Worker version was
+  published. The exact operator steps are in `docs/ops/CLOUDFLARE-DEPLOYMENT.md`.
 - Local check: `pnpm cloudflare:check` on Node 22.20.0. Worker typecheck and
   lint passed. Vitest: 29 passed. `scripts/cloudflare` node tests: 14 passed.
   The registration browser gate was not repeated.

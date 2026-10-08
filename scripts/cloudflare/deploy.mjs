@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { workerSecrets } from '../../deploy/cloudflare/src/environment.ts';
-import { databaseGuardFailure, nicknameGateSql } from '../../deploy/cloudflare/src/release-gate.ts';
+import { containerReleaseReady, databaseGuardFailure, nicknameGateSql } from '../../deploy/cloudflare/src/release-gate.ts';
 import { configPath, deploymentConfig, root, validateConfig } from './config.mjs';
 
 const RELEASE_BRANCH = 'feature/portfolio-mvp-release';
@@ -126,7 +126,7 @@ export function productionWranglerArgs({ configFile, secretsFile, release, keepC
   const preserveImage = keepContainer || release === 'open';
   const args = ['deploy', '--config', configFile, '--env', 'production', '--secrets-file', secretsFile, '--keep-vars'];
   if (release) args.push('--var', `RELEASE_HOLD:${release}`);
-  if (release === 'closed' && releaseId) args.push('--var', `RELEASE_ID:${releaseId}`, '--var', `RELEASE_IMAGE:${keepContainer ? 'previous' : 'current'}`);
+  if (release === 'closed' && releaseId) args.push('--var', `RELEASE_ID:${releaseId}`);
   if (preserveImage) args.push('--containers-rollout', 'none');
   return { args, skipImage: preserveImage };
 }
@@ -162,24 +162,53 @@ export function runDirectSql(sql, databaseUrl) {
   }
 }
 
-function assertClosedRelease(releaseId) {
+function wranglerJson(configFile, args) {
+  const result = spawnSync('pnpm', ['exec', 'wrangler', ...args, '--config', configFile, '--env', 'production', '--json'], {
+    cwd: root,
+    encoding: 'utf8',
+    env: { ...process.env, CI: '1' },
+  });
+  if (result.status !== 0) throw new Error('Opening access refused: container publication could not be read');
+  const start = result.stdout.indexOf(result.stdout.trimStart().startsWith('[') ? '[' : '{');
+  try {
+    return JSON.parse(start === -1 ? '' : result.stdout.slice(start));
+  } catch {
+    throw new Error('Opening access refused: container publication could not be read');
+  }
+}
+
+function assertClosedRelease(releaseId, configFile) {
   const control = process.env.RELEASE_CONTROL ?? '';
   if (control.length < 32) throw new Error('Opening access requires RELEASE_CONTROL; value is not logged');
   const result = spawnSync(process.execPath, ['--input-type=module', '-e', `
-    const response = await fetch('https://bid.place/_release/state', {
-      headers: { Authorization: 'Bearer ' + process.env.RELEASE_CONTROL },
-    });
+    const headers = { Authorization: 'Bearer ' + process.env.RELEASE_CONTROL };
+    const api = await fetch('https://bid.place/api');
+    const stateResponse = await fetch('https://bid.place/_release/state', { headers });
     let state = {};
-    try { state = await response.json(); } catch { state = {}; }
-    if (response.status !== 200 || state.releaseImage !== 'current' || state.releaseId !== process.env.EXPECTED_RELEASE_ID) {
+    try { state = await stateResponse.json(); } catch { state = {}; }
+    if (api.status !== 503 || api.headers.get('cache-control') !== 'no-store' ||
+        stateResponse.status !== 200 || state.releaseId !== process.env.EXPECTED_RELEASE_ID) {
       process.exit(2);
     }
+    process.stdout.write(String(api.status));
   `], {
     env: { PATH: process.env.PATH, RELEASE_CONTROL: control, EXPECTED_RELEASE_ID: releaseId },
     encoding: 'utf8',
   });
   if (result.status !== 0) {
     throw new Error('Opening access refused: the closed release does not match this commit');
+  }
+  const deployment = wranglerJson(configFile, ['deployments', 'status']);
+  const listed = wranglerJson(configFile, ['containers', 'list']);
+  const application = listed.find((item) => item.name === 'bidplace-production-portfolioapi-production');
+  if (!application?.id) throw new Error('Opening access refused: the published container image is not ready');
+  const info = wranglerJson(configFile, ['containers', 'info', application.id]);
+  const images = wranglerJson(configFile, ['containers', 'images', 'list']);
+  if (!containerReleaseReady({
+    publicApiStatus: Number(result.stdout),
+    deployment, images, listed: application, info,
+  })) {
+    throw new Error('Opening access refused: the published container image is not ready');
   }
 }
 
@@ -229,7 +258,7 @@ function main() {
     try {
       if (release === 'open') {
         if (!process.env.NEON_DIRECT_URL?.trim()) throw new Error('Opening access requires NEON_DIRECT_URL; value is not logged');
-        assertClosedRelease(releaseId);
+        assertClosedRelease(releaseId, file);
         runDirectSql(nicknameGateSql, process.env.NEON_DIRECT_URL);
       }
       execFileSync('pnpm', ['cloudflare:check'], { cwd: root, stdio: 'inherit', env: gates });

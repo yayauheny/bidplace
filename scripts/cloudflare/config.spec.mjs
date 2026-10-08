@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
+import { mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import test from 'node:test';
-import { deploymentConfig, validateConfig } from './config.mjs';
+import { configPath, deploymentConfig, validateConfig } from './config.mjs';
 
 function configured(target) {
   const config = deploymentConfig(target);
@@ -60,6 +64,56 @@ test('origin mismatch and missing runtime secrets are rejected', () => {
   const secrets = configured('staging');
   secrets.secrets.required.pop();
   assert.throws(() => validateConfig(secrets), /required secrets differ/);
+});
+
+test('release routes reach the worker before the SPA fallback', async () => {
+  const full = JSON.parse(readFileSync(configPath, 'utf8'));
+  assert.equal(full.env.production.assets, undefined);
+  assert.equal(full.assets.not_found_handling, 'single-page-application');
+  assert.deepEqual(full.assets.run_worker_first.filter((rule) => rule.startsWith('/_release/')), [
+    '/_release/stop', '/_release/state',
+  ]);
+  const wranglerPackage = realpathSync(new URL('../../node_modules/wrangler/package.json', import.meta.url));
+  const { Miniflare } = createRequire(wranglerPackage)('miniflare');
+  const directory = mkdtempSync(join(tmpdir(), 'bidplace-assets-'));
+  writeFileSync(join(directory, 'index.html'), 'SPA');
+  const worker = new Miniflare({
+    workers: [{
+      config: {
+        name: 'bidplace-production',
+        compatibilityDate: '2026-10-05',
+        manifest: {
+          mainModule: 'index.js',
+          modules: {
+            'index.js': {
+              type: 'esm',
+              contents: 'export default { fetch() { return new Response("WORKER"); } }',
+            },
+          },
+        },
+        assets: {
+          directory,
+          hasUserWorker: true,
+          notFoundHandling: 'single-page-application',
+          runWorkerFirst: full.assets.run_worker_first,
+        },
+      },
+    }],
+  });
+  try {
+    for (const path of ['/_release/stop', '/_release/state']) {
+      for (const method of ['GET', 'POST']) {
+        const response = await worker.dispatchFetch(`https://bid.place${path}`, { method });
+        assert.equal(response.status, 200);
+        assert.equal(await response.text(), 'WORKER');
+      }
+    }
+    const spa = await worker.dispatchFetch('https://bid.place/login');
+    assert.equal(await spa.text(), 'SPA');
+  } finally {
+    await worker.dispose();
+    rmSync(directory, { recursive: true, force: true });
+  }
 });
 
 test('secrets in vars and public bypass URLs fail the preflight', () => {

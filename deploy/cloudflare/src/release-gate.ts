@@ -55,6 +55,43 @@ BEGIN
 END $$;
 `;
 
+export const productionContainerName = 'bidplace-production-portfolioapi-production';
+
+export function workerVersionImageTag(versionId: string): string | null {
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(versionId)) return null;
+  return versionId.split('-')[0].toLowerCase();
+}
+
+export function containerReleaseReady(input: {
+  publicApiStatus: number;
+  deployment: { created_on?: string; versions?: { version_id?: string; percentage?: number }[] } | null;
+  images: { name?: string; tags?: string[] }[];
+  listed: { name?: string; state?: string } | null;
+  info: {
+    name?: string;
+    updated_at?: string;
+    active_rollout_id?: string | null;
+    configuration?: { image?: string };
+  } | null;
+}): boolean {
+  if (input.publicApiStatus !== 503) return false;
+  const versions = input.deployment?.versions ?? [];
+  const version = versions.length === 1 ? versions[0] : undefined;
+  const tag = version?.percentage === 100 && version.version_id
+    ? workerVersionImageTag(version.version_id) : null;
+  if (!tag) return false;
+  const created = Date.parse(input.deployment?.created_on ?? '');
+  const updated = Date.parse(input.info?.updated_at ?? '');
+  if (!Number.isFinite(created) || !Number.isFinite(updated) || updated < created) return false;
+  if (input.info?.active_rollout_id) return false;
+  if (input.info?.name !== productionContainerName || input.listed?.name !== productionContainerName) return false;
+  if (input.listed?.state !== 'ready' && input.listed?.state !== 'active') return false;
+  const image = input.info?.configuration?.image ?? '';
+  if (!image.toLowerCase().includes(productionContainerName)) return false;
+  return input.images.some((repository) => repository.name === productionContainerName
+    && repository.tags?.some((item) => item.toLowerCase() === tag));
+}
+
 export function databaseGuardFailure(output: string): 'sessions' | 'nicknames' | 'migration' | 'failed' {
   if (output.includes('blocking_database_sessions')) return 'sessions';
   if (output.includes('nickname_mismatch')) return 'nicknames';
