@@ -226,7 +226,7 @@ export function AuthViewport({
 
   return (
     <View style={{ flex: 1, backgroundColor: designTokens.color.canvas }}>
-      {focused ? (
+      {focused && !screen ? (
         <View
           pointerEvents="none"
           accessibilityElementsHidden

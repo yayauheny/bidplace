@@ -1,5 +1,35 @@
 # bidplace — текущий статус проекта
 
+## 2026-10-08 — Claim, verification, owner slug, and fullscreen frame
+
+- `Partial`. A nickname claim checks the existing `authEpoch` and
+  `sessionOperation` before `createProfile` and before any form, cache, or
+  lock change. A stored slug is a normal result, not an exception class.
+  New registration opens `/verify-email` even without `redirectTo`, keeps
+  that safe destination, and still uses one `register` plus the existing OTP
+  request and cooldown. The owner profile response uses `users.slug`;
+  `editingRevision.slug` stays a snapshot and old revision rows are not
+  rewritten. Fullscreen registration and verification do not mount Home or
+  the dock. Consent text, mixed-text ranges, the Google glyph, a public
+  policy page, `acceptRules`, nickname change, and dropping
+  `seller_profiles.slug` stay open. This is not a 1:1 match. Production
+  remains `541d763547f7b021895daa3d533c3196c37a4e67`. No push or deploy.
+- Future release order for `20261008040000_add_user_slug`: apply that
+  migration first. Then stop every process of the previous API — the build
+  that still writes `seller_profiles.slug` — and confirm none are accepting
+  traffic. Only after that start this build. A rolling overlap is the window
+  where the old process can insert or change a profile slug after the copy.
+  Drop `seller_profiles.slug` later only after every still-null `users.slug`
+  has been copied from the profile column, every pair of strings is equal,
+  and no live query reads the profile column. If any pair differs, stop.
+- Local checks on Node 22.20.0: API and mobile typecheck passed. Lint of the
+  touched files passed.   `seller-profile.mapper.spec` (3), `sellers.service.spec` (20), and
+  `seller-profile-submit.spec` (48) passed. Chromium and WebKit
+  `auth-layout` and `auth-lifecycle` passed, including registration without
+  `redirectTo` and the fullscreen column without Home. One WebKit history
+  run failed while the previous layout test was still timing out; the same
+  history test passed on the next run. No production migration.
+
 ## 2026-10-08 — One account slug and fullscreen registration
 
 - `Implemented` for the nickname and registration path in this wave. `users.slug`

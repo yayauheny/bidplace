@@ -21,6 +21,7 @@ const harness = vi.hoisted(() => ({
   getMyProfile: vi.fn(),
   updateProfile: vi.fn(),
   createProfile: vi.fn(),
+  claimSlug: vi.fn(),
   getAuthorApplicationPhoto: vi.fn(),
   submitAuthorApplication: vi.fn(),
   launchImageLibraryAsync: vi.fn(),
@@ -61,6 +62,9 @@ vi.mock('../../providers/auth-provider', () => ({
 
 vi.mock('../../providers/api-provider', () => ({
   useApiClient: () => ({
+    auth: {
+      claimSlug: harness.claimSlug,
+    },
     sellers: {
       getMyProfile: harness.getMyProfile,
       updateProfile: harness.updateProfile,
@@ -328,6 +332,7 @@ beforeEach(() => {
   harness.getMyProfile.mockReset();
   harness.updateProfile.mockReset();
   harness.createProfile.mockReset();
+  harness.claimSlug.mockReset();
   harness.getAuthorApplicationPhoto.mockReset();
   harness.submitAuthorApplication.mockReset();
   harness.launchImageLibraryAsync.mockReset();
@@ -1652,6 +1657,7 @@ describe('seller profile validation freshness', () => {
     harness.getMyProfile.mockRejectedValue(
       new ApiClientError('missing', { kind: 'not_found', status: 404 }),
     );
+    harness.claimSlug.mockResolvedValue({ slug: 'synthetic-author' });
     harness.createProfile.mockResolvedValue(response('DRAFT', 'DRAFT'));
     harness.launchImageLibraryAsync.mockResolvedValue({
       canceled: false,
@@ -1703,14 +1709,79 @@ describe('seller profile validation freshness', () => {
     );
     click(view.container, 'Продолжить');
     await until(view.container, () => harness.createProfile.mock.calls.length === 1, 'create');
+    expect(harness.claimSlug).toHaveBeenCalledWith({ slug: 'synthetic-author' });
     expect(harness.createProfile.mock.calls[0]?.[0]).toEqual({
-      slug: 'synthetic-author',
       fullName: 'Synthetic Author',
       country: 'BY',
       city: 'Minsk',
     });
     expect(harness.createProfile.mock.calls[0]?.[1]).toBe(photo);
     expect(harness.push).toHaveBeenCalledWith('/profile?step=2');
+    vi.unstubAllGlobals();
+    view.unmount();
+  });
+
+  it('ignores a late nickname claim after the session changes', async () => {
+    let resolveClaim: (value: { slug: string }) => void = () => undefined;
+    const photo = new Blob(['portrait'], { type: 'image/png' });
+    harness.params = { step: '1' };
+    harness.getMyProfile.mockRejectedValue(
+      new ApiClientError('missing', { kind: 'not_found', status: 404 }),
+    );
+    harness.claimSlug.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveClaim = resolve;
+        }),
+    );
+    harness.createProfile.mockResolvedValue(response('DRAFT', 'DRAFT'));
+    harness.launchImageLibraryAsync.mockResolvedValue({
+      canceled: false,
+      assets: [{ uri: 'blob:portrait' }],
+    });
+    vi.stubGlobal('fetch', vi.fn(async () => ({ blob: async () => photo })));
+    const view = mount('user-a');
+    await until(
+      view.container,
+      () => view.container.querySelector('[aria-label="Никнейм"]') instanceof HTMLInputElement,
+      'nickname',
+    );
+    setInput(view.container, 'Никнейм', 'synthetic-author');
+    setInput(view.container, 'Имя или название', 'Synthetic Author');
+    setInput(view.container, 'Страна', 'BY');
+    setInput(view.container, 'Город', 'Minsk');
+    click(view.container, 'Добавить фото');
+    await until(
+      view.container,
+      () =>
+        findButton(view.container, 'Продолжить') instanceof HTMLButtonElement &&
+        !buttonDisabled(view.container, 'Продолжить'),
+      'continue',
+    );
+    click(view.container, 'Продолжить');
+    await until(view.container, () => harness.claimSlug.mock.calls.length === 1, 'claim');
+    const profileB = response('APPROVED', 'DRAFT', '2026-09-30T00:00:00.000Z');
+    profileB.sellerProfile = {
+      ...profileB.sellerProfile,
+      slug: 'other-author',
+      city: 'Hrodna',
+    };
+    harness.getMyProfile.mockResolvedValue(profileB);
+    await act(async () => {
+      await clearAuthenticatedSession(view.queryClient);
+      view.queryClient.setQueryData(authKeys.session, { id: 'user-b' });
+      view.queryClient.setQueryData(['seller', 'profile'], profileB);
+    });
+    await flush();
+    await act(async () => {
+      resolveClaim({ slug: 'kept-name' });
+      await Promise.resolve();
+    });
+    await flush();
+    expect(harness.createProfile).not.toHaveBeenCalled();
+    expect(view.queryClient.getQueryData(['seller', 'profile'])).toEqual(profileB);
+    expect(view.container.textContent).not.toContain('kept-name');
+    expect(inputValue(view.container, 'Город')).toBe('Hrodna');
     vi.unstubAllGlobals();
     view.unmount();
   });

@@ -53,6 +53,7 @@ describe('toSellerProfileResponse', () => {
       id: '0a0d82a1-0317-49eb-904f-a8bc87d311a5',
       userId: '1e14b6f1-e63b-4f6b-8131-a01f6ab4dc61',
       slug: 'live-slug',
+      user: { slug: 'canonical-author' },
       fullName: 'Live name',
       sellerType: 'creator',
       discipline: 'Керамика',
@@ -94,14 +95,16 @@ describe('toSellerProfileResponse', () => {
     } as never);
 
     expect(response.sellerProfile.status).toBe('APPROVED');
+    expect(response.sellerProfile.slug).toBe('canonical-author');
     expect(response.sellerProfile.fullName).toBe('Draft name');
     expect(response.sellerProfile.city).toBe('Grodno');
     expect(response.sellerProfile.practice).toBeNull();
     expect(response.sellerProfile.telegramUrl).toBeNull();
     expect(response.sellerProfile.publicEmail).toBeNull();
     expect(response.sellerProfile.profilePhotoUrl).toBe(
-      '/api/sellers/live-slug/photo',
+      '/api/sellers/canonical-author/photo',
     );
+    expect(response.editingRevision).not.toHaveProperty('slug');
     expect(response.editingRevision).toEqual({
       id: '2a0d82a1-0317-49eb-904f-a8bc87d311a5',
       version: 2,

@@ -81,6 +81,7 @@ export const sellerProfileResponseSelect = {
 
 export const sellerProfileOwnerSelect = {
   ...sellerProfileResponseSelect,
+  user: { select: { slug: true } },
   editingRevision: {
     select: {
       id: true,
@@ -231,6 +232,7 @@ export function toSellerProfileResponse(
     profilePhotoData: _profilePhotoData,
     editingRevision,
     mediaOperations,
+    user,
     ...sellerProfileResponse
   } = sellerProfile as SellerProfileResponseRecord & {
     profilePhotoMimeType?: string | null;
@@ -238,7 +240,9 @@ export function toSellerProfileResponse(
     profilePhotoChecksum?: string | null;
     profilePhotoData?: Uint8Array | null;
     editingRevision?: SellerProfileOwnerRecord['editingRevision'] | null;
+    user?: { slug: string | null } | null;
   };
+  const accountSlug = user?.slug ?? sellerProfileResponse.slug;
   void _profilePhotoMimeType;
   void _profilePhotoByteLength;
   void _profilePhotoChecksum;
@@ -246,7 +250,6 @@ export function toSellerProfileResponse(
 
   const publicFields = editingRevision
     ? {
-        slug: editingRevision.slug,
         discipline: editingRevision.discipline,
         fullName: editingRevision.fullName,
         country: editingRevision.country,
@@ -267,6 +270,7 @@ export function toSellerProfileResponse(
     sellerProfile: {
       ...sellerProfileResponse,
       ...publicFields,
+      slug: accountSlug,
       applicationStage: sellerProfileResponse.applicationStage ?? null,
       city:
         (revisionOwnsFields
@@ -294,7 +298,7 @@ export function toSellerProfileResponse(
       publicEmail: revisionOwnsFields
         ? (publicFields.publicEmail ?? null)
         : (sellerProfileResponse.publicEmail ?? null),
-      profilePhotoUrl: sellerProfilePhotoUrl(sellerProfile.slug),
+      profilePhotoUrl: sellerProfilePhotoUrl(accountSlug),
       createdAt: sellerProfile.createdAt.toISOString(),
       updatedAt: sellerProfile.updatedAt.toISOString(),
     },

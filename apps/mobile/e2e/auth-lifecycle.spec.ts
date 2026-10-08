@@ -124,6 +124,42 @@ test('registration form creates a session and email verification unlocks the aut
   ).toBe(401);
 });
 
+test('registration without redirectTo still confirms email and returns home', async ({
+  page,
+  context,
+}) => {
+  const id = randomUUID().slice(0, 8);
+  const email = `registration-home-${id}@bidplace.test`;
+  await page.goto('/register');
+  await page.getByRole('textbox', { name: 'Электронная почта', exact: true }).fill(email);
+  await page.getByRole('button', { name: 'Дальше', exact: true }).click();
+  await page.getByLabel('Никнейм', { exact: true }).fill(`home-${id}`);
+  await page.getByRole('button', { name: 'Дальше', exact: true }).click();
+  await page
+    .getByLabel('Введите пароль', { exact: true })
+    .fill('registration-password-123');
+  await page
+    .getByLabel('Подтвердите пароль', { exact: true })
+    .fill('registration-password-123');
+  const registration = page.waitForResponse(
+    (item) =>
+      item.url() === `${e2eApiBaseURL}/api/auth/register` &&
+      item.request().method() === 'POST',
+  );
+  await page.getByRole('button', { name: 'Дальше', exact: true }).click();
+  expect((await registration).status()).toBe(201);
+  await expect(page).toHaveURL(/\/verify-email\?redirectTo=%2F$/);
+  await expect(page.getByText('Код отправлен на вашу почту.')).toBeVisible();
+  await page
+    .getByLabel('Код из письма')
+    .fill(await localTestMailValue(email, 'code'));
+  await page.getByRole('button', { name: 'Завершить', exact: true }).click();
+  await expect(page).toHaveURL(/\/$/);
+  const verified = await context.request.get(`${e2eApiBaseURL}/api/auth/me`);
+  expect(verified.status()).toBe(200);
+  expect((await verified.json()).user.emailVerifiedAt).not.toBeNull();
+});
+
 test('login survives reload and password recovery rejects the old password and a reused reset link', async ({
   page,
   context,

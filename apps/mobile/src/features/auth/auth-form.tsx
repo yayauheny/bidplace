@@ -239,8 +239,11 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
   const watched = form.watch();
   const complete = useAuthSheetComplete();
   const continueRegistration = () => {
-    if (complete) complete(redirectTo);
-    else router.replace(redirectTo as Href);
+    const next = auth.user?.emailVerifiedAt
+      ? redirectTo
+      : (`/verify-email?redirectTo=${encodeURIComponent(redirectTo)}` as SafeRedirect);
+    if (complete) complete(next);
+    else router.replace(next as Href);
   };
   useAuthSheetGuard({
     dirty: Boolean(watched.slug || watched.email || watched.password || watched.confirmPassword),

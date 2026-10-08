@@ -91,9 +91,11 @@ pathname and query as `redirectTo`; successful authentication returns to that
 route. External targets and auth routes are never restored.
 
 An authenticated unverified user who opens an Author route is sent to
-`/verify-email` with the same validated internal destination. Confirmation
-returns to that route; public browsing and ordinary authenticated Home access
-do not require email verification.
+`/verify-email` with the same validated internal destination. A new
+registration opens that confirmation even when `/register` has no
+`redirectTo`; the safe destination stays in the query and is `/` when none
+was given. Confirmation returns to that route. Public browsing and an
+already authenticated Home visit do not require email verification.
 
 Phone chrome is one 232×64 four-item glass dock: Home, Search, Add, Profile
 (`DEC-088`). Search lives inside the capsule. Cart and the unused split-search

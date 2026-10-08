@@ -220,12 +220,6 @@ function profileFieldsToUpdate(fields: ProfileFields) {
   };
 }
 
-class StoredAccountSlug extends Error {
-  constructor(readonly slug: string) {
-    super('Stored account slug');
-  }
-}
-
 function profileFieldsToCreate(fields: ProfileFields) {
   return {
     fullName: fields.fullName,
@@ -238,7 +232,12 @@ type ProfileSaveVariables = {
   fields: ProfileFields;
   photo: Blob | null;
   authEpoch: number;
+  operation: number;
 };
+
+type ProfileSaveResult =
+  | { outcome: 'saved'; profile: SellerProfileResponse }
+  | { outcome: 'stored-slug'; slug: string };
 
 function useProfileData() {
   const api = useApiClient();
@@ -564,29 +563,46 @@ export function SellerProfileScreen() {
     }
     queueProfileDraftValidation();
   };
+  const saveStillOwns = (operation: number, authEpoch: number) =>
+    sessionOperation.current === operation &&
+    canWritePrivateCache(queryClient, authEpoch);
   const saveMutation = useMutation({
-    mutationFn: async (variables: ProfileSaveVariables) => {
+    mutationFn: async (variables: ProfileSaveVariables): Promise<ProfileSaveResult> => {
       const current = queryClient.getQueryData<SellerProfileResponse>(
         sellerProfileQueryKey,
       );
-      if (current?.sellerProfile)
-        return api.sellers.updateProfile(
-          profileFieldsToUpdate(variables.fields),
-          variables.photo ?? undefined,
-        );
+      if (current?.sellerProfile) {
+        return {
+          outcome: 'saved',
+          profile: await api.sellers.updateProfile(
+            profileFieldsToUpdate(variables.fields),
+            variables.photo ?? undefined,
+          ),
+        };
+      }
       if (!variables.photo) throw new Error('Profile photo is required');
       if (!auth.user?.slug) {
         const requested = variables.fields.slug.trim();
         const claimed = await api.auth.claimSlug({ slug: requested });
-        if (claimed.slug !== requested) throw new StoredAccountSlug(claimed.slug);
+        if (!saveStillOwns(variables.operation, variables.authEpoch)) {
+          throw new Error('Session changed');
+        }
+        if (claimed.slug !== requested) {
+          return { outcome: 'stored-slug', slug: claimed.slug };
+        }
       }
-      return api.sellers.createProfile(
-        profileFieldsToCreate(variables.fields),
-        variables.photo,
-      );
+      return {
+        outcome: 'saved',
+        profile: await api.sellers.createProfile(
+          profileFieldsToCreate(variables.fields),
+          variables.photo,
+        ),
+      };
     },
-    onSuccess: (saved, variables) => {
-      if (!canWritePrivateCache(queryClient, variables.authEpoch)) return;
+    onSuccess: (result, variables) => {
+      if (result.outcome !== 'saved') return;
+      if (!saveStillOwns(variables.operation, variables.authEpoch)) return;
+      const saved = result.profile;
       rememberSavedProfile(saved, variables.fields);
       if (photoBlobRef.current === variables.photo) {
         photoBlobRef.current = null;
@@ -637,35 +653,27 @@ export function SellerProfileScreen() {
     if (!profileDraftAllowsSave(fields)) return null;
     if (source === 'transition' && !beginLockedTransition()) return null;
     bumpParentOperation();
+    const operation = sessionOperation.current;
     const variables: ProfileSaveVariables = {
       fields,
       photo: photoBlobRef.current,
       authEpoch: currentAuthEpoch(queryClient),
+      operation,
     };
-    const operation = sessionOperation.current;
     saveInFlight.current = true;
     setFormAlert(null);
     try {
       const saved = await saveMutation.mutateAsync(variables);
-      if (
-        sessionOperation.current !== operation ||
-        !canWritePrivateCache(queryClient, variables.authEpoch)
-      )
-        return null;
-      setFormAlert(null);
-      return saved;
-    } catch (error) {
-      if (error instanceof StoredAccountSlug) {
-        form.setValue('slug', error.slug, { shouldDirty: false, shouldValidate: true });
+      if (!saveStillOwns(operation, variables.authEpoch)) return null;
+      if (saved.outcome === 'stored-slug') {
+        form.setValue('slug', saved.slug, { shouldDirty: false, shouldValidate: true });
         if (source === 'transition') endLockedTransition();
         return null;
       }
-      if (
-        sessionOperation.current !== operation ||
-        !canWritePrivateCache(queryClient, variables.authEpoch)
-      ) {
-        return null;
-      }
+      setFormAlert(null);
+      return saved.profile;
+    } catch (error) {
+      if (!saveStillOwns(operation, variables.authEpoch)) return null;
       if (source === 'transition') endLockedTransition();
       throw error;
     } finally {

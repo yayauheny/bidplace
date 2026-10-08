@@ -304,6 +304,7 @@ async function expectS4Register(page: Page) {
   await submit.scrollIntoViewIfNeeded();
   await expect(submit).toBeVisible();
   await expect(page.getByText('Я соглашаюсь с политикой конфиденциальности и правилами сервиса')).toBeVisible();
+  await expect(page.getByRole('navigation', { name: 'Основная навигация' })).toHaveCount(0);
 
   const titleBox = await title.boundingBox();
   const emailBox = await page.getByLabel('Электронная почта').boundingBox();
@@ -313,9 +314,12 @@ async function expectS4Register(page: Page) {
 }
 
 async function expectCenteredPhoneColumn(page: Page) {
-  const shell = await page.getByTestId('app-shell-content').boundingBox();
-  expect(shell).not.toBeNull();
-  expect(shell!.width).toBeCloseTo(390, 1);
+  const frame = await page.getByRole('dialog').boundingBox();
+  const viewport = page.viewportSize();
+  expect(frame).not.toBeNull();
+  expect(viewport).not.toBeNull();
+  expect(frame!.width).toBeCloseTo(390, 1);
+  expect(frame!.x).toBeCloseTo((viewport!.width - frame!.width) / 2, 0);
 }
 
 function engine(page: Page) {

@@ -4,6 +4,15 @@
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
+## 2026-10-08 — Fullscreen registration hides Home and the dock
+
+- `Partial`: `/register` and `/verify-email` use the existing screen
+  presentation and do not mount Home, so the dock is not painted behind the
+  frame. Login stays a sheet with Home behind the dimmer. Consent is still
+  plain text. Gradient stroke, tracking, mixed-text ranges, the Google
+  glyph, a public policy page, and `acceptRules` remain open. This is not a
+  1:1 match. Production was not updated.
+
 ## 2026-10-08 — Fullscreen registration uses the account slug
 
 - `Partial`: `/register` is one form with email `4547:23379`, nickname
@@ -12,10 +21,9 @@
   placeholder match those frames. Consent is plain text, not the selected
   checkbox drawn in the capture. An account with no slug uses the same
   nickname field once before the author profile; a set slug is not edited.
-  The home dock still shows behind the full-screen frame. Gradient stroke,
-  tracking, mixed-text ranges, the Google glyph, a public policy page, and
-  `acceptRules` remain open. This is not a 1:1 match. Production was not
-  updated.
+  Gradient stroke, tracking, mixed-text ranges, the Google glyph, a public
+  policy page, and `acceptRules` remain open. This is not a 1:1 match.
+  Production was not updated.
 
 ## 2026-10-08 — Missing account slug is chosen before the author application
 
