@@ -419,7 +419,7 @@ export function AdminAnalyticsScreen() {
         title="Recent users"
         items={data.recent.users.map((user) => ({
           id: user.id,
-          label: user.displayName,
+          label: user.displayName ?? user.id,
           meta: user.createdAt,
         }))}
       />

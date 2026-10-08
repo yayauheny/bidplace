@@ -118,12 +118,12 @@ describe('registration request', () => {
       email: 'author@example.com',
       password: 'password123',
       confirmPassword: 'password123',
-      displayName: 'Автор',
+      slug: 'author',
       phone: null,
     })).toEqual({
       email: 'author@example.com',
       password: 'password123',
-      displayName: 'Автор',
+      slug: 'author',
       phone: null,
     });
   });

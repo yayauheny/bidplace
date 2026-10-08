@@ -140,7 +140,7 @@ export const adminUserSchema = z
   .object({
     id: uuidSchema,
     email: z.string().email(),
-    displayName: z.string().min(1),
+    displayName: z.string().min(1).nullable(),
     role: userRoleSchema,
     status: userStatusSchema,
   })

@@ -1,10 +1,13 @@
 # Auth dialogs — 2026-10-07
 
-Status: **imported and mapped; runtime implementation not started**.
+Status: **login, recovery, and exit source**. Registration moved to the
+full-screen sequence in the `DEC-105` revision. Captures are unchanged.
 
-This is the founder-provided, versioned visual source for this auth wave. It
-overrides only the six mapped captures from `portfolio-phone-v1` at `d9fb5c2`.
-That read-only library and all other screen/component sources stay unchanged.
+This bundle remains the versioned source for the login sheet, the recovery
+shell, and exit confirmation. It overrides those mapped captures from
+`portfolio-phone-v1` at `d9fb5c2`. The registration sheet `526:15557` is not
+the registration source. That read-only library and all other screen and
+component sources stay unchanged.
 The 2026-10-06 [field state board](../../fields/2026-10-06-text-fields/README.md)
 still owns common input states; this bundle records auth-specific geometry.
 
@@ -25,10 +28,10 @@ still owns common input states; this bundle records auth-specific geometry.
 | Package                                                                    | Capture root | Relevant surface | Use in this wave                                               |
 | -------------------------------------------------------------------------- | ------------ | ---------------- | -------------------------------------------------------------- |
 | [login-password](screens/login-password/README.md)                         | `526:14674`  | `526:14885`      | Email/password login, provider placeholders, recovery link     |
-| [verify-email](screens/verify-email/README.md)                             | `526:14903`  | `526:15114`      | Email verification only; adapt heading/copy                    |
+| [verify-email](screens/verify-email/README.md)                             | `526:14903`  | `526:15114`      | Superseded for confirmation by full-screen `4547:25026`        |
 | [login-email-code-reference](screens/login-email-code-reference/README.md) | `527:16675`  | `527:16886`      | Reference only; passwordless login excluded                    |
 | [oauth-add-email-reference](screens/oauth-add-email-reference/README.md)   | `526:15126`  | `526:15337`      | Reference only; OAuth email collection excluded                |
-| [register-password](screens/register-password/README.md)                   | `526:15346`  | `526:15557`      | Password registration; preserve account `displayName` as «Имя» |
+| [register-password](screens/register-password/README.md)                   | `526:15346`  | `526:15557`      | Superseded for registration by full-screen `4547:23379` → `4547:24138` → `4547:24428` |
 | [confirm-exit](screens/confirm-exit/README.md)                             | `746:23037`  | `746:23093`      | Reusable exit confirmation; adapt text to actual action        |
 
 Archive names are not flow contracts: the first “create account” archive shows

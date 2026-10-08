@@ -108,6 +108,7 @@ function Harness({ guard }: { guard: RefObject<boolean> }) {
             profileStep: step,
             showAllSteps: false,
             editable: true,
+            slugEditable: true,
           }),
         }),
       ),

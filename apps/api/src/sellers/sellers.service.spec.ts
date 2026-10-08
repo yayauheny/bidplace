@@ -143,8 +143,34 @@ describe('SellersService', () => {
     });
   });
 
+  it('does not create a profile when the account has no slug', async () => {
+    const tx = {
+      user: { findUnique: vi.fn().mockResolvedValue({ slug: null }) },
+      sellerProfile: { create: vi.fn() },
+    };
+    const prisma = {
+      sellerProfile: { findUnique: vi.fn().mockResolvedValue(null) },
+      $transaction: vi.fn(async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx)),
+    };
+    const service = new SellersService(prisma as never, imageStore as never);
+
+    await expect(
+      service.create(
+        'user-id',
+        {
+          fullName: 'Seller',
+          country: 'BY',
+          city: 'Minsk',
+        },
+        { buffer: Buffer.from([1]), mimeType: 'image/png' },
+      ),
+    ).rejects.toThrow('Account nickname is required before an author profile');
+    expect(tx.sellerProfile.create).not.toHaveBeenCalled();
+  });
+
   it('maps a concurrent duplicate SellerProfile or slug to a conflict', async () => {
     const tx = {
+      user: { findUnique: vi.fn().mockResolvedValue({ slug: 'taken-slug' }) },
       sellerProfile: {
         create: vi.fn().mockRejectedValue({ code: 'P2002' }),
       },
@@ -164,7 +190,6 @@ describe('SellersService', () => {
       service.create(
         'user-id',
         {
-          slug: 'taken-slug',
           sellerType: 'creator',
           discipline: 'Керамика',
           fullName: 'Seller',
@@ -203,6 +228,7 @@ describe('SellersService', () => {
     });
 
     const tx = {
+      user: { findUnique: vi.fn().mockResolvedValue({ slug: 'taken-slug' }) },
       sellerProfile: {
         create: vi.fn().mockRejectedValue({ code: 'P2002', meta: { target: ['slug'] } }),
       },
@@ -243,6 +269,7 @@ describe('SellersService', () => {
       updatedAt: now,
     };
     const tx = {
+      user: { findUnique: vi.fn().mockResolvedValue({ slug: 'seller-slug' }) },
       sellerProfile: {
         create: vi.fn().mockImplementation(async () => {
           order.push('create');
@@ -304,7 +331,6 @@ describe('SellersService', () => {
     await service.create(
       'user-id',
       {
-        slug: 'seller-slug',
         discipline: 'Керамика',
         fullName: 'Seller',
         country: 'BY',
@@ -321,6 +347,7 @@ describe('SellersService', () => {
       data: expect.objectContaining({
         sellerProfileId: 'a0d82a10-3170-49eb-904f-a8bc87d311a5',
         status: 'DRAFT',
+        slug: 'seller-slug',
       }),
     });
     expect(put).toHaveBeenCalledWith(
@@ -336,6 +363,7 @@ describe('SellersService', () => {
   it('fails seller create when image put rejects inside the transaction', async () => {
     const now = new Date('2026-07-24T00:00:00.000Z');
     const tx = {
+      user: { findUnique: vi.fn().mockResolvedValue({ slug: 'seller-slug' }) },
       sellerProfile: {
         create: vi.fn().mockResolvedValue({
           id: 'a0d82a10-3170-49eb-904f-a8bc87d311a5',
@@ -375,7 +403,6 @@ describe('SellersService', () => {
       service.create(
         'user-id',
         {
-          slug: 'seller-slug',
           sellerType: 'creator',
           discipline: 'Керамика',
           fullName: 'Seller',
@@ -476,6 +503,7 @@ describe('SellersService', () => {
     };
     const tx = {
       $queryRaw: vi.fn().mockResolvedValue([{ id: 'seller-profile-id' }]),
+      user: { findUnique: vi.fn().mockResolvedValue({ slug: 'account-slug' }) },
       sellerProfile: {
         findUnique: vi.fn().mockResolvedValue({
           id: 'seller-profile-id',
@@ -683,6 +711,14 @@ describe('SellersService', () => {
     expect(result?.sellerProfile.slug).toBe('seller-slug');
     expect(prisma.sellerProfile.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
+        where: {
+          status: 'APPROVED',
+          user: { status: 'active' },
+          OR: [
+            { user: { slug: 'seller-slug' } },
+            { slug: 'seller-slug', user: { slug: null } },
+          ],
+        },
         select: publicSellerProfileSelect,
       }),
     );

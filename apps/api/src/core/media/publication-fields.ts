@@ -35,7 +35,6 @@ export function publishedProductData(revision: {
 }
 
 export function publishedSellerProfileData(revision: {
-  slug: string;
   discipline: string | null;
   fullName: string;
   country: string;
@@ -50,7 +49,6 @@ export function publishedSellerProfileData(revision: {
   shortDescription: string | null;
 }) {
   return {
-    slug: revision.slug,
     discipline: revision.discipline,
     fullName: revision.fullName,
     country: revision.country,

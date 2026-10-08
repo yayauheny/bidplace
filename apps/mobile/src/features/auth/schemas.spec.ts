@@ -37,7 +37,7 @@ describe('registration form validation', () => {
       email: 'author@example.com',
       password: 'password123',
       confirmPassword: 'password123',
-      displayName: 'Автор',
+      slug: 'author',
       phone,
     });
 
@@ -51,7 +51,7 @@ describe('registration form validation', () => {
       email: 'author@example.com',
       password: 'password123',
       confirmPassword: 'password1234',
-      displayName: 'Автор',
+      slug: 'author',
     });
     expect(mismatch.success).toBe(false);
   });

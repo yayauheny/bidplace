@@ -6,6 +6,15 @@ Production runtime at preparation: `541d763547f7b021895daa3d533c3196c37a4e67`,
 Worker `3afe08d5-b204-495c-8dcc-91d43e6af92b`. No runtime UI changes were made
 while preparing this handoff. Revalidate the checkout before execution.
 
+## Revision — 2026-10-08
+
+The `DEC-105` revision replaces the registration parts of this handoff.
+Login `526:14885`, recovery, and exit confirmation `746:23093` stay here.
+Registration is full-screen email `4547:23379`, nickname `4547:24138`,
+password `4547:24428`, then confirmation `4547:25026`. Do not implement
+`526:15557`. The copyable prompt at the bottom of this file is the one to
+execute. The older prompt's registration sentences are history.
+
 ## Objective and success criteria
 
 Replace full-page auth presentation with the supplied phone-sheet composition,
@@ -25,8 +34,8 @@ not evidence of implemented UI or complete 1:1 parity.
 - Use supplied bottom-sheet auth designs; keep standard email/password login.
 - Code screen design is for existing email verification, not passwordless login.
 - Google/Telegram are placeholders; no OAuth adapters, credentials or endpoints.
-- Registration keeps **«Имя» → `displayName`**. Author nickname/slug remains in
-  the author application. Do not invent an account nickname or uniqueness rule.
+- Registration nickname and full-screen steps are superseded by the
+  `DEC-105` revision. This bundle no longer owns that field.
 - Keep existing forgot/reset link logic. The earlier generated-password idea
   and subsequent recovery-placeholder suggestion were superseded by the
   founder's latest instruction: preserve the working flow, update its design.
@@ -186,6 +195,83 @@ e2e/auth-lifecycle.spec.ts --workers=1 --retries=0`.
   are not required by this wave. Known Home Opening visual debt stays explicit.
 
 ## Copyable instruction for the execution window
+
+Execute the revision prompt in the next section. The historical prompt after
+it keeps the earlier sheet wave for the record. Its registration sentences
+are not instructions.
+
+## Revision prompt — 2026-10-08
+
+```text
+Работай в /Users/yayauheny/projects/bidplace от текущего checkout после
+пересмотра DEC-105. Без push, deploy и без миграций в Neon, пока локальная
+миграция не проверена на bidplace_e2e. Исходные captures не менять.
+
+Регистрация: одна форма, один вызов register.
+Шаги и узлы: почта 4547:23379, никнейм 4547:24138, пароль 4547:24428,
+затем существующее подтверждение email 4547:25026.
+Вход остаётся шторкой 526:14885, email/password.
+Восстановление — одноразовая ссылка. Историю и подтверждение выхода не менять.
+Шторку регистрации 526:15557 не реализовывать.
+
+Модель, один slug, без User.username и без второго редактора:
+- Канонический никнейм — users.slug, nullable, unique, VarChar(120),
+  нынешняя грамматика slug. Это не переименование displayName.
+- Новая регистрация шлёт slug и не шлёт displayName.
+- displayName становится nullable. Старые значения displayName не трогать.
+  Не копировать email или displayName в slug.
+- Миграция копирует seller_profiles.slug на users.slug той же строкой.
+  Строку не менять: /authors/:slug и /api/sellers/:slug/photo остаются.
+  Пользователь без профиля получает null.
+- После проверки равенства публичные чтения идут из users.slug.
+  Пока колонка профиля существует, её не редактирует форма. Создание
+  профиля копирует уже записанный users.slug. Затем колонка удаляется.
+- Заявка автора не принимает slug. Профиль создаётся из уже заданного
+  users.slug и остаётся DRAFT. fullName по-прежнему имя.
+- Старый аккаунт с пустым slug выбирает его до создания заявки. То же поле
+  и nicknameSlugSchema, что у регистрации. Один условный update текущей
+  строки users, только пока slug пуст. register не вызывать, пользователя
+  не создавать, email и displayName не копировать. Конфликт уникальности —
+  slug_taken. Если slug уже задан, запрос ничего не пишет. Смену никнейма
+  в этой волне не делать.
+- Новая ревизия один раз копирует users.slug в свой снимок. Старые
+  revision.slug не переписывать. publishedSellerProfileData больше не
+  возвращает slug. Одобрение ревизии в admin-moderation и
+  switchPublication в media не пишут users.slug и не меняют публичный адрес,
+  даже если снимок старой ревизии отличается.
+- Наличие users.slug не публикует автора. Каталог и фото по-прежнему
+  требуют seller_profiles.status APPROVED и users.status active.
+  /authors/:slug и /api/sellers/:slug/photo сохраняют эти пути.
+- Повтор пароля остаётся клиентским и в запрос не входит.
+- Чтение доступности не создаёт и не блокирует строку.
+  Конфликт register — unique users.slug, reason slug_taken.
+  Проверку существования email не добавлять.
+- Если письмо после создания аккаунта не ушло, register повторно не вызывать.
+  OTP и серверный cooldown 60 секунд оставить.
+
+Согласие: не рисовать выбранный чекбокс из 4547:23401. Стили диапазонов,
+страница политики и вызов acceptRules — три разных пробела. Страницу и
+acceptRules не выдумывать, пока нет источника страницы или отдельного
+решения владельца. Google-вектор без заливок не заменять угаданным глифом.
+
+Граф: prisma users.slug и снятие seller_profiles.slug → contracts register
+и схемы заявки без slug → AuthService.register и одно присвоение пустого
+slug → SellersService.create копирует его в новую ревизию →
+publishedSellerProfileData без slug → публичные чтения из users.slug с
+прежним фильтром APPROVED и active → api-client → RegisterForm и то же
+поле перед заявкой автора. Заявка показывает slug и редактирует fullName.
+Отдельной синхронизации полей нет.
+Проверки только расширяют существующие спеки, новый набор не заводить:
+auth.service.spec.ts — пустой slug задаётся один раз и повтор ничего не
+пишет; admin-moderation.service.spec.ts — одобрение ревизии не кладёт slug
+в update профиля и не трогает user; media-lifecycle.integration.spec.ts —
+публикация или восстановление ревизии с другим снимком оставляет users.slug;
+sellers.service.spec.ts — create без slug пользователя не создаёт профиль,
+а публичная выборка не отдаёт автора только из-за slug.
+Обнови статус после реализации. Локальный коммит без push.
+```
+
+## Historical execution prompt
 
 ```text
 Работай в /Users/yayauheny/projects/bidplace. Сначала перечитай AGENTS.md,

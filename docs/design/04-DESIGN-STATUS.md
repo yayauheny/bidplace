@@ -4,6 +4,45 @@
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
+## 2026-10-08 — Fullscreen registration uses the account slug
+
+- `Partial`: `/register` is one form with email `4547:23379`, nickname
+  `4547:24138`, password `4547:24428`, then confirmation `4547:25026`.
+  The visible copy, 350×51 primary button, 20/22 heading, and email
+  placeholder match those frames. Consent is plain text, not the selected
+  checkbox drawn in the capture. An account with no slug uses the same
+  nickname field once before the author profile; a set slug is not edited.
+  The home dock still shows behind the full-screen frame. Gradient stroke,
+  tracking, mixed-text ranges, the Google glyph, a public policy page, and
+  `acceptRules` remain open. This is not a 1:1 match. Production was not
+  updated.
+
+## 2026-10-08 — Missing account slug is chosen before the author application
+
+- `Partial`: an existing account with no slug uses the registration nickname
+  field before the author profile is created. The author form does not edit
+  a second slug, and this wave does not add a nickname change. No new capture
+  exists for that step. Runtime still edits `SellerProfile.slug` on the
+  author form. This is not a 1:1 match. Production was not updated.
+
+## 2026-10-08 — One account slug for registration and the author address
+
+- `Partial`: the nickname at `4547:24138` and the public `/authors/:slug`
+  address are the same `User.slug`. The author profile no longer has its own
+  editable slug. Existing addresses stay the same string. Runtime has not
+  moved the column. This is not a 1:1 match. Production was not updated.
+
+## 2026-10-08 — Registration source is the full-screen sequence
+
+- `Partial`: source priority now follows the `DEC-105` revision. Registration
+  will use email `4547:23379`, nickname `4547:24138`, password `4547:24428`,
+  and confirmation `4547:25026`. The dialog registration sheet `526:15557` is
+  not that source. Login, recovery, and exit stay in the dialog bundle. Runtime
+  still shows one registration sheet and sends `displayName`. The nickname
+  capture is no longer excluded. Google, mixed text ranges, the missing policy
+  page, and `acceptRules` stay separate open gaps. This is not a 1:1 match.
+  Production was not updated.
+
 ## 2026-10-08 — Auth history stores one position number per entry
 
 - `Partial`: Back, Forward, and reload still resolve the auth entry from the

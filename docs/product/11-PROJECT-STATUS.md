@@ -1,5 +1,64 @@
 # bidplace — текущий статус проекта
 
+## 2026-10-08 — One account slug and fullscreen registration
+
+- `Implemented` for the nickname and registration path in this wave. `users.slug`
+  is the only canonical nickname. Migration `20261008040000_add_user_slug`
+  makes `display_name` nullable, copies each existing `seller_profiles.slug`
+  onto `users.slug` without changing the string, keeps `display_name` and
+  revision rows, and leaves `seller_profiles.slug` in place. `POST /api/auth/register`
+  requires `slug` and stores `displayName` as null. `POST /api/auth/slug`
+  writes the session user's slug once; a repeat or lost race returns the stored
+  slug. Author create copies that stored slug and does not accept another.
+  Approval and media publication do not write `users.slug` or the profile slug
+  from a revision snapshot. A public author still requires `APPROVED` and
+  `active`. Nickname change is not in this wave. `seller_profiles.slug` can be
+  dropped only after this application is the only writer, the two strings
+  match, and no live query reads the profile column. Production remains
+  `541d763547f7b021895daa3d533c3196c37a4e67`. No push or deploy.
+- Local checks on Node 22.20.0: the migration was applied only to disposable
+  `bidplace_e2e` at `127.0.0.1:5432`. Six existing addresses copied unchanged,
+  display names stayed, revision slugs stayed, and `seller_profiles.slug`
+  remained. Contracts, api-client, database, API, and mobile typecheck passed.
+  API and mobile lint passed. Affected unit and integration tests passed,
+  including auth, seller create, moderation, media publication, and the
+  author HTTP contract. `build:web` exported
+  `entry-386fc44e159daf26df6ad91f3b944d27.js`. Chromium and WebKit
+  `auth-layout` and `auth-lifecycle` passed (14).
+
+## 2026-10-08 — Slug claim and revision snapshots stay on one nickname
+
+- `Partial` for portfolio auth. The confirmed `User.slug` plan now includes
+  two cases and no nickname change. A signed-in user with no slug chooses it
+  once, with the registration nickname field, before creating an author
+  profile. Publishing or restoring an old revision does not write `User.slug`.
+  `publishedSellerProfileData` still returns `revision.slug`, and both admin
+  approval and media publication still copy it onto the live profile. A slug
+  alone does not make a public author: catalog and photo stay behind an
+  approved profile and an active user. Runtime is unchanged. Production
+  remains `541d763547f7b021895daa3d533c3196c37a4e67`. No push or deploy.
+
+## 2026-10-08 — Account slug replaces a second nickname
+
+- `Partial` for portfolio auth. The later `DEC-105` revision makes `User.slug`
+  the only nickname. `SellerProfile.slug` is copied onto that column without
+  changing the string, then removed as an editor. `User.username` is not
+  added. Runtime still stores the public address on `seller_profiles.slug`
+  and `register` still requires `displayName`. No migration ran. Production
+  remains `541d763547f7b021895daa3d533c3196c37a4e67`. No push or deploy.
+
+## 2026-10-08 — Registration nickname is decided, not built
+
+- `Partial` for portfolio auth. The `DEC-105` revision records the registration
+  sequence email `4547:23379`, nickname `4547:24138`, password `4547:24428`,
+  and confirmation `4547:25026`. `User.username` is not in the schema.
+  `register` still requires `displayName`. No migration ran. Login, recovery,
+  exit confirmation, and the history owner are unchanged. Production remains
+  `541d763547f7b021895daa3d533c3196c37a4e67`. No push or deploy.
+- The public author address remains `SellerProfile.slug`. Consent is still not
+  `acceptRules`: mixed text ranges, a public policy page, and persistence are
+  separate gaps. The selected checkbox in the capture is not saved consent.
+
 ## 2026-10-08 — Auth history position is one number per entry
 
 - `Partial` for the portfolio auth presentation. Each history entry stores its

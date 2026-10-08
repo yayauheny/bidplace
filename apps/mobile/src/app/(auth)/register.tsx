@@ -11,6 +11,7 @@ export default function RegisterScreen() {
     <AuthViewport
       title="Регистрация"
       tone="section"
+      presentation="screen"
       redirectTo={safeRedirect}
       exit={{
         title: 'Прервать регистрацию',

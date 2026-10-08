@@ -43,7 +43,6 @@ afterAll(async () => {
 
 function applicationForm(): FormData {
   const form = new FormData();
-  form.set('slug', '  wave3-applicant  ');
   form.set('discipline', 'Керамика');
   form.set('fullName', '  Applicant Creator  ');
   form.set('country', ' BY ');
@@ -93,7 +92,12 @@ async function login(
 
 async function createApplication(
   client: HttpTestClient,
+  userId: string,
 ): Promise<{ id: string; userId: string }> {
+  await prisma.user.update({
+    where: { id: userId },
+    data: { slug: 'wave3-applicant' },
+  });
   const response = await client.post('/seller/profile', applicationForm());
   expect(response.status).toBe(201);
   const body = (await response.json()) as {
@@ -141,7 +145,7 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
   it('rejects approval of a submitted revision without discipline and preserves its unpublished state', async () => {
     const fixture = await createPermissionFixture(prisma);
     const { adminClient, applicantClient } = await adminAndApplicant(fixture);
-    const profile = await createApplication(applicantClient);
+    const profile = await createApplication(applicantClient, fixture.buyer.id);
     expect((await applicantClient.post('/author/application/submit')).status).toBe(201);
     const before = await prisma.sellerProfile.findUniqueOrThrow({
       where: { id: profile.id },
@@ -175,7 +179,7 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
     );
     await login(applicant, fixture.buyer);
 
-    const profile = await createApplication(applicant);
+    const profile = await createApplication(applicant, fixture.buyer.id);
     const persisted = await prisma.sellerProfile.findUniqueOrThrow({
       where: { id: profile.id },
     });
@@ -199,7 +203,7 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
     const fixture = await createPermissionFixture(prisma);
     const { admin, adminClient, applicantClient } =
       await adminAndApplicant(fixture);
-    const profile = await createApplication(applicantClient);
+    const profile = await createApplication(applicantClient, fixture.buyer.id);
     expect(
       (await applicantClient.post('/author/application/submit')).status,
     ).toBe(201);

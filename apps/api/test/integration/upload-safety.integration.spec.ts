@@ -97,6 +97,7 @@ async function user(suffix: string, role: 'user' | 'admin' = 'user') {
       email: `${suffix}@upload-safety.test`,
       passwordHash: fixturePasswordHash,
       displayName: suffix,
+      slug: suffix,
       role,
       emailVerifiedAt: new Date(),
     },
@@ -119,7 +120,10 @@ async function user(suffix: string, role: 'user' | 'admin' = 'user') {
 
 function profilePhoto(bytes: Buffer, fields: Record<string, string> = {}) {
   const form = new FormData();
-  for (const [key, value] of Object.entries(fields)) form.set(key, value);
+  for (const [key, value] of Object.entries(fields)) {
+    if (key === 'slug') continue;
+    form.set(key, value);
+  }
   form.set(
     'profilePhoto',
     new Blob([new Uint8Array(bytes)], { type: 'image/png' }),

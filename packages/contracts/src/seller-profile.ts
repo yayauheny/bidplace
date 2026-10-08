@@ -14,7 +14,6 @@ import {
   httpsUrlSchema,
   isoDateTimeSchema,
   slugSchema,
-  slugTextSchema,
   uuidSchema,
 } from './primitives';
 
@@ -56,7 +55,6 @@ export const sellerProfileConflictDetailsSchema = z
   })
   .strict();
 
-const nicknameSlugSchema = slugTextSchema('Введите никнейм');
 const authorNameSchema = z.string().trim().min(1, 'Введите имя или название');
 const authorCountrySchema = z.string().trim().min(1, 'Укажите страну');
 const authorCitySchema = z.string().trim().min(1, 'Укажите город');
@@ -138,7 +136,6 @@ export const publicSellerProfileSchema = sellerProfileSchema
 
 export const sellerProfileCreateRequestSchema = z
   .object({
-    slug: nicknameSlugSchema,
     fullName: authorNameSchema,
     country: authorCountrySchema,
     city: authorCitySchema,
@@ -156,7 +153,6 @@ export const sellerProfileCreateRequestSchema = z
 
 export const sellerProfileUpdateRequestSchema = z
   .object({
-    slug: nicknameSlugSchema.optional(),
     sellerType: sellerTypeSchema.optional(),
     discipline: sellerDisciplineSchema.optional(),
     fullName: authorNameSchema.optional(),

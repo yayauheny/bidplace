@@ -22,6 +22,7 @@ const harness = vi.hoisted(() => ({
 vi.mock('react-native', () => ({
   Platform: { OS: 'web' },
   View: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
+  TextInput: () => createElement('input'),
   Image: () => null,
   ScrollView: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
 }));
@@ -208,7 +209,7 @@ describe('account logout reachability', () => {
     const view = mount(
       createElement(VerifyEmailForm, { redirectTo: '/profile', autoRequest: false }),
     );
-    await until(view.container, 'Подтвердите email');
+    await until(view.container, 'Проверьте код на почте');
     expect([...view.container.querySelectorAll('button')].some((button) => button.textContent === 'Выйти')).toBe(true);
     view.unmount();
   });

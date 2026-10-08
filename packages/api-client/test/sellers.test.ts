@@ -6,7 +6,6 @@ import { createSellersClient } from '../src/sellers';
 
 const photo = new Blob(['portrait'], { type: 'image/png' });
 const profile = {
-  slug: 'synthetic-author',
   fullName: 'Synthetic Author',
   country: 'BY',
   city: 'Minsk',
@@ -19,16 +18,16 @@ function client(fetchImpl: typeof fetch) {
 }
 
 describe('seller profile create', () => {
-  it('rejects a nickname outside the slug contract before any request', async () => {
+  it('rejects an independent slug and an invalid public email before any request', async () => {
     const fetchImpl = vi.fn<typeof fetch>();
     expect(() =>
-      client(fetchImpl).createProfile({ ...profile, slug: 'БЕ' }, photo),
+      client(fetchImpl).createProfile({ ...profile, slug: 'synthetic-author' } as never, photo),
     ).toThrow(ApiClientError);
     let rejected: unknown;
     expect(() => {
       try {
         client(fetchImpl).createProfile(
-          { ...profile, slug: 'BE', publicEmail: 'not-an-email' },
+          { ...profile, publicEmail: 'not-an-email' },
           photo,
         );
       } catch (error) {
@@ -39,16 +38,13 @@ describe('seller profile create', () => {
     expect(rejected).toBeInstanceOf(ApiClientError);
     expect((rejected as ApiClientError).details).toMatchObject({
       fieldErrors: {
-        slug: [
-          'Используйте маленькие латинские буквы и цифры. Между ними можно поставить дефис или подчёркивание.',
-        ],
         publicEmail: ['Введите корректный email'],
       },
     });
     expect(fetchImpl).not.toHaveBeenCalled();
   });
 
-  it('sends a contract-valid nickname', async () => {
+  it('sends the author profile without an independent slug', async () => {
     const fetchImpl = vi.fn<typeof fetch>(async () =>
       Response.json({
         sellerProfile: {
@@ -92,7 +88,7 @@ describe('seller profile create', () => {
     expect(init?.method).toBe('POST');
     expect(init?.body).toBeInstanceOf(FormData);
     const body = init?.body as FormData;
-    expect(body.get('slug')).toBe('synthetic-author');
+    expect(body.get('slug')).toBeNull();
     expect(body.get('fullName')).toBe('Synthetic Author');
     expect(body.get('profilePhoto')).toBeInstanceOf(Blob);
     expect(created.sellerProfile.slug).toBe('synthetic-author');

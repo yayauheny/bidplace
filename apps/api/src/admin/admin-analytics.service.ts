@@ -333,12 +333,12 @@ export class AdminAnalyticsService {
           where: { createdAt: periodFilter },
           orderBy: { createdAt: 'desc' },
           take: 50,
-          select: { id: true, displayName: true, createdAt: true },
+          select: { id: true, displayName: true, slug: true, createdAt: true },
         });
 
         return rows.map((row) => ({
           id: row.id,
-          label: row.displayName,
+          label: row.displayName ?? row.slug ?? row.id,
           meta: row.createdAt.toISOString(),
         }));
       }

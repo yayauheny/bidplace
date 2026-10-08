@@ -40,12 +40,17 @@ export function figmaFieldShowsFloatingLabel(status: FigmaFieldStatus) {
 export function figmaFieldStyle(
   status: FigmaFieldStatus,
   multiline = false,
-  metrics: 'default' | 'authPassword' = 'default',
+  metrics: 'default' | 'authPassword' | 'authScreenPassword' = 'default',
 ) {
-  const password = metrics === 'authPassword';
+  const password = metrics === 'authPassword' || metrics === 'authScreenPassword';
   return {
     width: '100%' as const,
-    minHeight: password ? figmaTokens.auth.passwordHeight : figmaTokens.size.input,
+    minHeight:
+      metrics === 'authScreenPassword'
+        ? figmaTokens.auth.screenPasswordHeight
+        : password
+          ? figmaTokens.auth.passwordHeight
+          : figmaTokens.size.input,
     paddingHorizontal: figmaTokens.space.fieldX,
     paddingVertical: figmaTokens.space.fieldY,
     borderRadius: figmaTokens.radius.field,

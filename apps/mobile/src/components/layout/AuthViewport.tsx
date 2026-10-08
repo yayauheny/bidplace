@@ -47,12 +47,14 @@ export function AuthViewport({
   children,
   redirectTo = '/',
   tone = 'login',
+  presentation = 'sheet',
   exit,
 }: {
   title: string;
   children: ReactNode;
   redirectTo?: SafeRedirect;
   tone?: 'login' | 'section';
+  presentation?: 'sheet' | 'screen';
   exit: AuthExitCopy;
 }) {
   const router = useRouter();
@@ -209,7 +211,12 @@ export function AuthViewport({
   };
 
   const entering = useMemo(() => sheetEnter(() => undefined), []);
-  const contentGap = tone === 'login' ? designTokens.auth.loginGap : designTokens.auth.sectionGap;
+  const screen = presentation === 'screen';
+  const contentGap = screen
+    ? designTokens.auth.screenGap
+    : tone === 'login'
+      ? designTokens.auth.loginGap
+      : designTokens.auth.sectionGap;
   const formGap = tone === 'login' ? designTokens.auth.loginFormGap : designTokens.auth.formGap;
   const frameStyle = appDialogHostStyle({
     presentation: 'sheet',
@@ -250,15 +257,17 @@ export function AuthViewport({
               }
               {...(Platform.OS === 'web' && !focused ? { inert: true } : {})}
             >
-              <Animated.View entering={sheetBackdropEnter} exiting={sheetBackdropExit}>
-                <AppDialogOverlay
-                  style={{
-                    inset: 0,
-                    backgroundColor: designTokens.color.modalDimmer,
-                    zIndex: designTokens.layer.modal,
-                  }}
-                />
-              </Animated.View>
+              {screen ? null : (
+                <Animated.View entering={sheetBackdropEnter} exiting={sheetBackdropExit}>
+                  <AppDialogOverlay
+                    style={{
+                      inset: 0,
+                      backgroundColor: designTokens.color.modalDimmer,
+                      zIndex: designTokens.layer.modal,
+                    }}
+                  />
+                </Animated.View>
+              )}
               <AppDialogFrame style={frameStyle}>
                 <Animated.View entering={entering} exiting={sheetExit} style={{ width: '100%' }}>
                   <Dialog.Content
@@ -268,57 +277,67 @@ export function AuthViewport({
                     style={{
                       width: '100%',
                       maxWidth: designTokens.layout.phoneWidth,
-                      maxHeight: Math.max(height - designTokens.space.x6, designTokens.size.input * 4),
+                      maxHeight: screen ? height : Math.max(height - designTokens.space.x6, designTokens.size.input * 4),
+                      minHeight: screen ? height : undefined,
                       overflow: 'hidden',
-                      borderTopLeftRadius: designTokens.auth.sheetRadius,
-                      borderTopRightRadius: designTokens.auth.sheetRadius,
+                      borderTopLeftRadius: screen ? 0 : designTokens.auth.sheetRadius,
+                      borderTopRightRadius: screen ? 0 : designTokens.auth.sheetRadius,
                       borderBottomLeftRadius: 0,
                       borderBottomRightRadius: 0,
-                      backgroundColor: designTokens.color.dialogSurface,
-                      paddingTop: designTokens.auth.paddingTop,
-                      paddingHorizontal: designTokens.auth.paddingX,
-                      paddingBottom: designTokens.auth.paddingBottom,
+                      backgroundColor: designTokens.color.canvas,
+                      paddingTop: screen ? designTokens.auth.screenPaddingTop : designTokens.auth.paddingTop,
+                      paddingHorizontal: screen ? designTokens.auth.screenPaddingX : designTokens.auth.paddingX,
+                      paddingBottom: screen ? designTokens.auth.screenPaddingBottom : designTokens.auth.paddingBottom,
                       zIndex: designTokens.layer.modal,
+                      justifyContent: screen ? 'center' : undefined,
                     }}
                   >
                     <ScrollView
                       keyboardShouldPersistTaps="handled"
                       keyboardDismissMode="on-drag"
                       showsVerticalScrollIndicator={false}
-                      style={{ maxHeight: Math.max(height - designTokens.space.x6 - designTokens.auth.paddingTop - designTokens.auth.paddingBottom, designTokens.size.input * 4) }}
-                      contentContainerStyle={{ gap: contentGap }}
+                      style={screen ? undefined : { maxHeight: Math.max(height - designTokens.space.x6 - designTokens.auth.paddingTop - designTokens.auth.paddingBottom, designTokens.size.input * 4) }}
+                      contentContainerStyle={{ gap: contentGap, justifyContent: screen ? 'center' : undefined, flexGrow: screen ? 1 : undefined }}
                     >
-                      <View style={{ minHeight: designTokens.auth.headerHeight, gap: designTokens.auth.titleGap }}>
-                        <View style={{ height: designTokens.auth.handleSlot, alignItems: 'center', justifyContent: 'center' }}>
-                          <View
-                            accessibilityElementsHidden
-                            importantForAccessibility="no"
-                            style={{
-                              width: designTokens.auth.handleWidth,
-                              height: designTokens.auth.handleHeight,
-                              borderRadius: designTokens.radius.pill,
-                              backgroundColor: designTokens.color.quietFill,
-                            }}
-                          />
+                      {screen ? (
+                        <Dialog.Title asChild>
+                          <AppText role="sectionTitle" style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden' }}>
+                            {title}
+                          </AppText>
+                        </Dialog.Title>
+                      ) : (
+                        <View style={{ minHeight: designTokens.auth.headerHeight, gap: designTokens.auth.titleGap }}>
+                          <View style={{ height: designTokens.auth.handleSlot, alignItems: 'center', justifyContent: 'center' }}>
+                            <View
+                              accessibilityElementsHidden
+                              importantForAccessibility="no"
+                              style={{
+                                width: designTokens.auth.handleWidth,
+                                height: designTokens.auth.handleHeight,
+                                borderRadius: designTokens.radius.pill,
+                                backgroundColor: designTokens.color.quietFill,
+                              }}
+                            />
+                          </View>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: designTokens.space.x2 }}>
+                            <Dialog.Title asChild>
+                              <AppText role="sectionTitle" style={{ flex: 1, color: designTokens.color.fieldValue, ...designTokens.typography.authSheetTitle }}>
+                                {title}
+                              </AppText>
+                            </Dialog.Title>
+                            <MotionPressable
+                              accessibilityRole="button"
+                              accessibilityLabel="Закрыть"
+                              onPress={requestDismiss}
+                              preset="icon"
+                              style={{ width: 32, height: 32, alignItems: 'center', justifyContent: 'center' }}
+                            >
+                              <AppIcon name="x" size={22} />
+                            </MotionPressable>
+                          </View>
                         </View>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: designTokens.space.x2 }}>
-                          <Dialog.Title asChild>
-                            <AppText role="sectionTitle" style={{ flex: 1, color: designTokens.color.fieldValue, ...designTokens.typography.authSheetTitle }}>
-                              {title}
-                            </AppText>
-                          </Dialog.Title>
-                          <MotionPressable
-                            accessibilityRole="button"
-                            accessibilityLabel="Закрыть"
-                            onPress={requestDismiss}
-                            preset="icon"
-                            style={{ width: 32, height: 32, alignItems: 'center', justifyContent: 'center' }}
-                          >
-                            <AppIcon name="x" size={22} />
-                          </MotionPressable>
-                        </View>
-                      </View>
-                      <View style={{ gap: formGap }}>{children}</View>
+                      )}
+                      <View style={{ gap: screen ? designTokens.auth.screenGap : formGap, width: '100%', maxWidth: 350, alignSelf: 'center' }}>{children}</View>
                     </ScrollView>
                   </Dialog.Content>
                 </Animated.View>

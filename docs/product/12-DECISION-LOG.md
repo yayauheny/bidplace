@@ -2384,3 +2384,129 @@ delete an account or cancel committed server work.
   activation decisions. First MVP auth behavior from RFC §12 stays.
 - Preparation imports sources/docs only. Runtime implementation, exact missing
   states/assets and production acceptance are not declared complete.
+
+### Revision
+
+Date: 2026-10-08
+Source: owner instruction. Registration collects a nickname. The name is entered
+later in the author profile. One `User` can also become an author. Settings do
+not grow a second account or a second profile.
+Revises the decision above that registration uses the dialog capture and that
+its first field is «Имя»/`displayName`. Does not revise the login sheet,
+single-use recovery link, exit confirmation, history owner, Google/Telegram
+placeholders, or the exclusion of passwordless login and OAuth.
+
+Registration presentation is the full-screen sequence
+[`2026-10-07-auth-fullscreen`](../../design/figma-handoff/auth/2026-10-07-auth-fullscreen/README.md):
+email `4547:23379`, nickname `4547:24138`, password `4547:24428`, then email
+confirmation `4547:25026`. Login stays the dialog sheet `526:14885`. Recovery
+and exit confirmation stay the dialog handoff. Step values live in one
+registration form. `register` runs once. A later mail failure does not create
+another account. Password confirmation stays on the client. The current OTP
+request and its server cooldown stay.
+
+`User.username` is a new nullable unique account nickname. It reuses the
+existing slug grammar, maximum 120 characters, and is not a rename of
+`displayName`. New registration sends `username` and does not send
+`displayName`. `displayName` becomes nullable for accounts that have not
+entered a name. Existing rows keep their `displayName` and receive no
+generated username. Email and `displayName` are not copied into `username`.
+
+`SellerProfile.slug` remains the only public author address (`/authors/:slug`
+and the public `@slug` in RFC §§7–8). Registration does not write a seller
+profile, does not change existing slugs, and does not add `/authors/:username`.
+A new author form may prefill an empty slug from `username`. Saving a slug,
+including a later edit, is still the author revision. Changing `username` does
+not rewrite a saved slug. That split is the existing public URL, not a second
+account and not a second public nickname. Author `fullName` remains the name
+entered in the author profile.
+
+A read of nickname availability does not insert or lock a row. The unique
+constraint on `users.username` at `register` is the conflict. No email
+existence check is added. Captures in both auth packages stay unmodified.
+
+### Revision
+
+Date: 2026-10-08
+Source: owner instruction that the account has one canonical nickname.
+Revises the revision above where it adds `User.username` beside
+`SellerProfile.slug`, prefills one from the other, and lets them diverge.
+Does not revise the full-screen registration order, login sheet, recovery,
+exit confirmation, or history owner.
+
+The nickname is `User.slug`: nullable, unique, `VarChar(120)`, using the
+existing slug grammar. It is not a second column named `username`, and it is
+not a rename of `displayName`. New registration sends `slug` and does not send
+`displayName`. `displayName` stays the later name column and becomes nullable.
+Existing `displayName` values stay. Nothing is copied from email or
+`displayName` into `slug`.
+
+`SellerProfile.slug` stops being an editable nickname. The author profile
+reads the account slug and still edits `fullName`. Create and update requests
+drop `slug`. A profile row is created only for a user who already has
+`User.slug`. Public paths stay `/authors/:slug` and
+`/api/sellers/:slug/photo`. `Category.slug` is unrelated.
+
+Migration, without renaming any current address:
+
+1. Add nullable unique `users.slug`.
+2. Copy `seller_profiles.slug` onto that user's `users.slug`. Profile
+   `user_id` and `slug` are already unique, so the copy cannot collide and
+   must not change the string. Users without a profile stay `null`.
+3. Check that every profile slug equals its user's slug before any new write.
+4. Switch public reads to `users.slug`. While `seller_profiles.slug` still
+   exists, the only write to it is the same transaction that writes
+   `users.slug`. The author form does not send it.
+5. New revisions copy `User.slug` into `seller_profile_revisions.slug`. Old
+   revision rows stay as history and are not rewritten.
+6. Drop `seller_profiles.slug` after every live read uses `users.slug`.
+
+Availability is a read of `users.slug` and does not reserve it. The register
+conflict is the unique constraint, reported as `slug_taken`. No email
+existence check is added. This revision is not implemented. No migration has
+run.
+
+### Revision
+
+Date: 2026-10-08
+Source: owner instruction before implementation. Confirms one `User.slug`.
+Adds the account that has no slug yet, and the rule for old revision
+snapshots. Does not add a nickname change, a second nickname, or a field
+sync.
+
+A signed-in user with `users.slug` null chooses the nickname before
+`SellersService.create`. The choice reuses the registration nickname field
+and `nicknameSlugSchema` (`slugTextSchema`, message «Введите никнейм»). It
+does not call `register`, does not insert a user, and does not copy email or
+`displayName`. The write is one conditional update of that user's row, and
+only while `slug` is null. A unique conflict is `slug_taken`. If the row
+already has a slug, the request writes nothing. This wave has no later edit
+of a slug that is already set.
+
+`SellersService.create` requires an existing `User.slug` and refuses the
+request when it is null. The create body does not contain `slug`. The new
+profile stays `DRAFT`. The new revision copies `User.slug` into
+`seller_profile_revisions.slug` once, inside that create transaction. While
+`seller_profiles.slug` still exists, that same create copies the stored
+account slug into the column. It does not accept another value. The claim
+request does not create a profile.
+
+`publishedSellerProfileData` currently returns `slug: revision.slug`.
+`AdminModerationService` spreads that object onto `sellerProfile.update`
+when a revision is approved, and `MediaLifecycleService.switchPublication`
+spreads it when a revision is published or restored. Both stop receiving
+`slug` from that helper. Neither path updates `users`. Old
+`seller_profile_revisions.slug` values stay snapshots and are not rewritten.
+A snapshot that differs from the account slug does not become the current
+nickname or the public address.
+
+Public visibility stays the current gates. `publicAuthorCte` and
+`getApprovedPublicAuthor` require `seller_profiles.status = APPROVED` and
+`users.status = active`. `getPhoto` is public only for that same pair.
+`/authors/:slug` and `/api/sellers/:slug/photo` keep those strings.
+`User.slug` alone does not publish an author. Catalog search reads the
+account slug through the same approved, active profile filter.
+
+No sync job, trigger, or second writer keeps the revision snapshot equal to
+`User.slug` after insert. This addition is not implemented. No migration has
+run.

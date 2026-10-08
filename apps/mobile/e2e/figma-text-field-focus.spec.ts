@@ -18,6 +18,7 @@ function user(emailVerifiedAt: string | null) {
     phoneVerifiedAt: null,
     acceptedRulesVersion: null,
     displayName: 'Field Focus',
+    slug: null,
     role: 'user',
     status: 'active',
     createdAt: now,

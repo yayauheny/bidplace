@@ -1,6 +1,6 @@
 # create-password — full-screen capture
 
-Status: imported visual proposal; behavior and source precedence await founder confirmation.
+Status: registration password step after the `DEC-105` revision. Capture files are unchanged.
 
 Source archive: `Создать_с_паролем_пароль_фуллскрин.figmacapture.zip`; captured `2026-10-07T18:22:05.929Z`.
 Capture root `4547:24217`, overlay `4547:24427`, white auth surface `4547:24428`.

@@ -155,8 +155,11 @@ export function VerifyEmailForm({ redirectTo, autoRequest }: VerifyEmailFormProp
         : 'Отправить код';
 
   return (
-      <View style={{ gap: designTokens.auth.formGap }}>
-        <AppText role="bodySmall" style={{ color: designTokens.color.fieldValue }}>
+      <View style={{ gap: designTokens.auth.screenGap }}>
+        <AppText role="sectionTitle" style={{ textAlign: 'center', color: designTokens.color.fieldValue, fontSize: 20, lineHeight: 22, fontWeight: '600' }}>
+          Проверьте код на почте
+        </AppText>
+        <AppText role="bodySmall" style={{ textAlign: 'center', color: designTokens.color.textSubdued }}>
           {verificationStatusCopy({
             email: auth.user?.email,
             sendAccepted: notice !== null,
@@ -176,7 +179,7 @@ export function VerifyEmailForm({ redirectTo, autoRequest }: VerifyEmailFormProp
           </AppText>
         ) : null}
         {notice ? <AppText role="bodySmall" tone="secondary">{notice}</AppText> : null}
-        <PrimaryButton label="Продолжить" size="auth" width="full" loading={verifying} disabled={requesting || verifying || logoutBusy} onPress={() => void verify()} />
+        <PrimaryButton label="Завершить" size="auth" width="full" loading={verifying} disabled={requesting || verifying || logoutBusy} onPress={() => void verify()} />
         <SecondaryButton label={resendLabel} size="authResend" width="full" disabled={verifying || requesting || logoutBusy || remaining > 0} onPress={() => void requestCode()} />
         <AccountLogoutButton pending={requesting || verifying || logoutBusy} onPress={beginLogout} />
       </View>

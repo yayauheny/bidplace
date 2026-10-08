@@ -1,6 +1,8 @@
 import {
   acceptRulesRequestSchema,
   acceptRulesResponseSchema,
+  claimSlugRequestSchema,
+  claimSlugResponseSchema,
   authResponseSchema,
   emailOtpVerifyRequestSchema,
   forgotPasswordRequestSchema,
@@ -38,6 +40,12 @@ export function createAuthClient(context: RequestContext) {
     },
     me() {
       return requestJson(context, '/api/auth/me', meResponseSchema);
+    },
+    claimSlug(input: { slug: string }) {
+      return requestJson(context, '/api/auth/slug', claimSlugResponseSchema, {
+        method: 'POST',
+        body: parseRequest(claimSlugRequestSchema, input),
+      });
     },
     getRules() {
       return requestJson(

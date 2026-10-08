@@ -15,23 +15,30 @@ assets и measurements берутся только из versioned inspect/handof
 `.pen` не редактируется и не удаляется. Product owner documents и server
 contracts по-прежнему определяют routes, data, permissions и auction behavior.
 
-### Auth sheet presentation — 2026-10-07
+### Auth presentation — 2026-10-08
 
-Login, registration, email verification and the existing link recovery flow
-open as a bottom sheet over the public Home page. Deep links stay
-`/login`, `/register`, `/verify-email`, `/forgot-password` and `/reset-password`.
-Only the focused auth route paints that sheet. Registration keeps
-«Имя»/`displayName` and a UI-only password repeat. Google and Telegram report
-that sign-in is unavailable. A successful login, registration or confirmation
-continues once and does not ask to leave. An empty form leaves with one Back.
-Back from one auth step to another does not ask, even when that step has
-input. A user close, Escape, backdrop, or Back that leaves auth asks first
-when the form has input. A multi-step Back or a Forward that leaves auth
+Login stays a bottom sheet. Registration is the full-screen sequence email,
+nickname, password, then email confirmation (`DEC-105` revision). Deep links
+stay `/login`, `/register`, `/verify-email`, `/forgot-password`, and
+`/reset-password`. The nickname is `User.slug`, including the public author
+address. The author profile does not edit a second slug. An existing account
+with no slug chooses that nickname, with the registration field, before the
+author profile is created. A slug that is already set is not edited in this
+wave. The name is entered later as `fullName`. Having a slug does not by
+itself publish the author. Password repeat stays on the client. The
+account is created once. Recovery stays the single-use link. Google and
+Telegram report that sign-in is unavailable. A successful login, registration,
+or confirmation continues once and does not ask to leave. An empty form leaves
+with one Back. Back from one auth step to another does not ask, even when that
+step has input. A user close, Escape, backdrop, or Back that leaves auth asks
+first when the form has input. A multi-step Back or a Forward that leaves auth
 returns the address to the auth entry until the user confirms. Continue keeps
-the values and focus; Interrupt opens the entry that traversal reached. A finished or closed sheet is not left as a history entry. Leaving
-does not cancel an in-flight request, delete an account or log out. Verification can be finished later, and the screen does
-not say a code arrived before the send is accepted. Recovery and wide layouts
-are derived from the phone sheet. Details:
+the values and focus; Interrupt opens the entry that traversal reached. A
+finished or closed sheet is not left as a history entry. Leaving does not
+cancel an in-flight request, delete an account, or log out. Verification can
+be finished later, and the screen does not say a code arrived before the send
+is accepted. Recovery and wide layouts are derived from the phone sheet.
+Details:
 [`auth HANDOFF.md`](../../design/figma-handoff/auth/2026-10-07-auth-dialogs/HANDOFF.md).
 
 ## 2. Основной flow

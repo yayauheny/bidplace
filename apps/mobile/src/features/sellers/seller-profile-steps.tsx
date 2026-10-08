@@ -167,14 +167,16 @@ export function SellerProfileFormSteps({
   profileStep,
   showAllSteps,
   editable,
+  slugEditable,
 }: {
   profileStep: number;
   showAllSteps: boolean;
   editable: boolean;
+  slugEditable: boolean;
 }) {
   return <>
     {(showAllSteps || profileStep === 1) && <FormSection title="Основная информация" description="Эти данные увидят посетители после одобрения заявки.">
-      <ProfileDraftField name="slug" label="Никнейм" placeholder="my-store" autoCapitalize="none" editable={editable} required />
+      <ProfileDraftField name="slug" label="Никнейм" placeholder="Никнейм" autoCapitalize="none" editable={slugEditable} required />
       <ProfileDraftField name="fullName" label="Имя или название" placeholder="Иван Иванов" editable={editable} required />
       <ProfileDraftField name="country" label="Страна" placeholder="BY" autoCapitalize="characters" editable={editable} required />
       <ProfileDraftField name="city" label="Город" placeholder="Минск" editable={editable} required />

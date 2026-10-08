@@ -78,6 +78,7 @@ async function user(role: 'user' | 'admin', suffix: string) {
       email: `${suffix}@work.test`,
       passwordHash: fixturePasswordHash,
       displayName: suffix,
+      slug: suffix,
       role,
       emailVerifiedAt: new Date(),
     },
@@ -134,7 +135,6 @@ describe('Work media lifecycle over authenticated HTTP and PostgreSQL', () => {
       .toBuffer();
     const photo = new FormData();
     for (const [key, value] of Object.entries({
-      slug: 'http-media-author',
       fullName: 'HTTP author',
       country: 'BY',
       city: 'Minsk',

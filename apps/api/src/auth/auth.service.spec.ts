@@ -6,7 +6,6 @@ import { authCredentialsSelect, authUserContractSelect } from './auth.mapper';
 import { AuthService } from './auth.service';
 import { AuthTokenService } from './auth-token.service';
 import { PasswordHasherService } from './password-hasher.service';
-import { type AuthRepository } from './auth.service';
 
 type PrismaUser = {
   id: string;
@@ -16,7 +15,8 @@ type PrismaUser = {
   emailVerifiedAt: Date | null;
   phoneVerifiedAt: Date | null;
   acceptedRulesVersion?: string | null;
-  displayName: string;
+  displayName: string | null;
+  slug: string | null;
   role: 'admin' | 'user';
   status: 'active' | 'banned';
   sessionVersion: number;
@@ -34,6 +34,7 @@ function createPrismaUser(overrides: Partial<PrismaUser> = {}): PrismaUser {
     phoneVerifiedAt: null,
     acceptedRulesVersion: null,
     displayName: 'Demo Seller',
+    slug: null,
     role: 'user',
     status: 'active',
     sessionVersion: 0,
@@ -54,8 +55,9 @@ describe('AuthService', () => {
       create: vi.fn(),
       findUnique: vi.fn(),
       update: vi.fn(),
+      updateMany: vi.fn(),
     },
-  } satisfies AuthRepository;
+  };
 
   const passwordHasher = {
     hash: vi.fn(),
@@ -93,14 +95,15 @@ describe('AuthService', () => {
       email: 'New-Seller@Example.com',
       password: 'super-secret',
       phone: '+15555550123',
-      displayName: 'Demo Seller',
+      slug: 'demo-seller',
     });
 
     expect(prisma.user.create).toHaveBeenCalledWith({
       data: {
         email: 'new-seller@example.com',
         phone: '+15555550123',
-        displayName: 'Demo Seller',
+        slug: 'demo-seller',
+        displayName: null,
         passwordHash: 'hashed-value',
         status: 'active',
         sessionVersion: 0,
@@ -125,6 +128,7 @@ describe('AuthService', () => {
         phoneVerifiedAt: null,
         acceptedRulesVersion: null,
         displayName: 'Demo Seller',
+        slug: null,
         role: 'user',
         status: 'active',
         createdAt: '2026-07-13T12:00:00.000Z',
@@ -141,7 +145,7 @@ describe('AuthService', () => {
         email: 'seller@example.com',
         password: 'super-secret',
         phone: '+15555550123',
-        displayName: 'Demo Seller',
+        slug: 'demo-seller',
       }),
     ).rejects.toBeInstanceOf(ConflictException);
   });
@@ -192,6 +196,7 @@ describe('AuthService', () => {
         phoneVerifiedAt: null,
         acceptedRulesVersion: null,
         displayName: 'Demo Seller',
+        slug: null,
         role: 'user',
         status: 'active',
         createdAt: '2026-07-13T12:00:00.000Z',
@@ -215,6 +220,7 @@ describe('AuthService', () => {
       phoneVerifiedAt: null,
       acceptedRulesVersion: null,
       displayName: 'Demo Seller',
+      slug: null,
       role: 'user',
       status: 'active',
       createdAt: '2026-07-13T12:00:00.000Z',
@@ -225,6 +231,19 @@ describe('AuthService', () => {
         id: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
       },
       select: authUserContractSelect,
+    });
+  });
+
+  it('returns the stored slug when a second claim loses the race', async () => {
+    prisma.user.updateMany.mockResolvedValue({ count: 0 });
+    prisma.user.findUnique.mockResolvedValue({ slug: 'kept-name' });
+
+    await expect(
+      service.claimSlug('2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1', 'other-name'),
+    ).resolves.toEqual({ slug: 'kept-name' });
+    expect(prisma.user.updateMany).toHaveBeenCalledWith({
+      where: { id: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1', slug: null },
+      data: { slug: 'other-name' },
     });
   });
 

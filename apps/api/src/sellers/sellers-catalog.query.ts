@@ -24,7 +24,7 @@ export function publicAuthorCte(
     const pattern = `%${escapeLikePattern(query.q)}%`;
     filters.push(Prisma.sql`(
       author."full_name" ILIKE ${pattern} ESCAPE '\\'
-      OR author."slug" ILIKE ${pattern} ESCAPE '\\'
+      OR COALESCE(author_user."slug", author."slug") ILIKE ${pattern} ESCAPE '\\'
       OR author."short_description" ILIKE ${pattern} ESCAPE '\\'
     )`);
   }

@@ -60,6 +60,7 @@ const harness = vi.hoisted(() => {
     phoneVerifiedAt: null,
     acceptedRulesVersion: null,
     displayName: 'Maker 1',
+    slug: null,
     role: 'user' as const,
     status: 'active' as const,
     createdAt: '2026-04-01T00:00:00.000Z',

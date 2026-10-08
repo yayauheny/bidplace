@@ -43,9 +43,8 @@ function checksum(bytes: Buffer) {
   return createHash('sha256').update(bytes).digest('hex');
 }
 
-function applicationForm(slug: string, fullName: string) {
+function applicationForm(fullName: string) {
   const form = new FormData();
-  form.set('slug', slug);
   form.set('discipline', 'Керамика');
   form.set('fullName', fullName);
   form.set('country', 'BY');
@@ -63,6 +62,16 @@ function imageForm(bytes: Buffer = publishedPhoto) {
   const form = new FormData();
   form.append('images', new Blob([bytes], { type: 'image/png' }), 'photo.png');
   return form;
+}
+
+async function postApplication(
+  ownerClient: HttpTestClient,
+  userId: string,
+  slug: string,
+  fullName: string,
+) {
+  await prisma.user.update({ where: { id: userId }, data: { slug } });
+  return ownerClient.post('/seller/profile', applicationForm(fullName));
 }
 
 async function login(
@@ -163,10 +172,7 @@ describe('moderation revision projection', () => {
     const slug = `author-${randomUUID().slice(0, 8)}`;
     expect(
       (
-        await ownerClient.post(
-          '/seller/profile',
-          applicationForm(slug, 'Published author'),
-        )
+        await postApplication(ownerClient, owner.id, slug, 'Published author')
       ).status,
     ).toBe(201);
     expect((await ownerClient.post('/author/application/submit')).status).toBe(201);
@@ -237,10 +243,7 @@ describe('moderation revision projection', () => {
     const slug = `author-${randomUUID().slice(0, 8)}`;
     expect(
       (
-        await ownerClient.post(
-          '/seller/profile',
-          applicationForm(slug, 'Published author'),
-        )
+        await postApplication(ownerClient, owner.id, slug, 'Published author')
       ).status,
     ).toBe(201);
     expect((await ownerClient.post('/author/application/submit')).status).toBe(201);
@@ -335,10 +338,7 @@ describe('moderation revision projection', () => {
     const slug = `author-${randomUUID().slice(0, 8)}`;
     expect(
       (
-        await ownerClient.post(
-          '/seller/profile',
-          applicationForm(slug, 'Published author'),
-        )
+        await postApplication(ownerClient, owner.id, slug, 'Published author')
       ).status,
     ).toBe(201);
     expect((await ownerClient.post('/author/application/submit')).status).toBe(201);
@@ -476,10 +476,7 @@ describe('moderation revision projection', () => {
     const slug = `revision-${randomUUID().slice(0, 8)}`;
     expect(
       (
-        await revisionClient.post(
-          '/seller/profile',
-          applicationForm(slug, 'Revision author'),
-        )
+        await postApplication(revisionClient, revisionOwner.id, slug, 'Revision author')
       ).status,
     ).toBe(201);
     expect((await revisionClient.post('/author/application/submit')).status).toBe(
@@ -523,10 +520,7 @@ describe('moderation revision projection', () => {
     const slug = `photo-${randomUUID().slice(0, 8)}`;
     expect(
       (
-        await ownerClient.post(
-          '/seller/profile',
-          applicationForm(slug, 'Photo author'),
-        )
+        await postApplication(ownerClient, owner.id, slug, 'Photo author')
       ).status,
     ).toBe(201);
     expect((await ownerClient.post('/author/application/submit')).status).toBe(201);
@@ -701,10 +695,7 @@ describe('moderation revision projection', () => {
     const slug = `work-${randomUUID().slice(0, 8)}`;
     expect(
       (
-        await ownerClient.post(
-          '/seller/profile',
-          applicationForm(slug, 'Work author'),
-        )
+        await postApplication(ownerClient, owner.id, slug, 'Work author')
       ).status,
     ).toBe(201);
     expect((await ownerClient.post('/author/application/submit')).status).toBe(201);

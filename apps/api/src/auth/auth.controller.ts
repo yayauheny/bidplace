@@ -5,6 +5,8 @@ import {
   authResponseSchema,
   loginRequestSchema,
   meResponseSchema,
+  claimSlugRequestSchema,
+  claimSlugResponseSchema,
   registerRequestSchema,
   serviceRulesResponseSchema,
 } from '@bidplace/contracts';
@@ -114,6 +116,28 @@ export class AuthController {
     return authResponseSchema.parse({
       user: session.user,
     });
+  }
+
+  @UseGuards(BearerAuthGuard, RateLimitGuard)
+  @RateLimit({
+    keyPrefix: 'auth:slug',
+    limit: 10,
+    windowMs: 60_000,
+    scope: 'ip',
+  })
+  @Post('slug')
+  async claimSlug(
+    @Body() body: unknown,
+    @CurrentUser() auth?: AuthTokenPayload,
+  ) {
+    if (!auth) {
+      throw new UnauthorizedException('Missing authenticated user');
+    }
+
+    const input = parseBody(claimSlugRequestSchema, body);
+    return claimSlugResponseSchema.parse(
+      await this.authService.claimSlug(auth.sub, input.slug),
+    );
   }
 
   @UseGuards(BearerAuthGuard)

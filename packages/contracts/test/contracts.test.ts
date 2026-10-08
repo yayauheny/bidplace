@@ -60,6 +60,7 @@ describe('shared contracts', () => {
       phoneVerifiedAt: null,
       acceptedRulesVersion: 'MVP_RULES_V1',
       displayName: 'Seller',
+      slug: null,
       role: 'user',
       status: 'active',
       createdAt: '2026-09-23T00:00:00.000Z',
@@ -308,7 +309,7 @@ describe('shared contracts', () => {
   it('normalizes public email and rejects impossible achievement calendar dates', () => {
     expect(
       sellerProfileCreateRequestSchema.parse({
-        slug: 'author', fullName: 'Author', country: 'Belarus', city: 'Minsk',
+        fullName: 'Author', country: 'Belarus', city: 'Minsk',
         publicEmail: ' AUTHOR@EXAMPLE.COM ',
       }).publicEmail,
     ).toBe('author@example.com');
@@ -365,7 +366,6 @@ describe('shared contracts', () => {
   });
   it('keeps discipline validation aligned with the VARCHAR(160) column', () => {
     const base = {
-      slug: 'creator',
       discipline: 'Керамика',
       fullName: 'Creator',
       country: 'BY',
@@ -417,7 +417,6 @@ describe('shared contracts', () => {
     ['ftp://example.com/file', false],
   ])('accepts only HTTPS public seller URLs: %s', (socialLink, expected) => {
     const parsed = sellerProfileCreateRequestSchema.safeParse({
-      slug: 'creator',
       discipline: 'Керамика',
       fullName: 'Creator',
       country: 'BY',
@@ -430,7 +429,6 @@ describe('shared contracts', () => {
 
   it('accepts each structured public link independently and rejects empty strings', () => {
     const base = {
-      slug: 'creator',
       discipline: 'Керамика',
       fullName: 'Creator',
       country: 'BY',
@@ -467,7 +465,6 @@ describe('shared contracts', () => {
   it('rejects future-commerce handoff fields in author creation', () => {
     expect(
       sellerProfileCreateRequestSchema.safeParse({
-        slug: 'creator',
         discipline: 'Керамика',
         fullName: 'Creator',
         country: 'BY',

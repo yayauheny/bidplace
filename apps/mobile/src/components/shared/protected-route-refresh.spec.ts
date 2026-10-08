@@ -29,6 +29,7 @@ const user = {
   phoneVerifiedAt: null,
   acceptedRulesVersion: null,
   displayName: 'Author A',
+  slug: null,
   role: 'user' as const,
   status: 'active' as const,
   createdAt: '2026-09-27T00:00:00.000Z',

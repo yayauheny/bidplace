@@ -75,10 +75,13 @@ test('registration form creates a session and email verification unlocks the aut
   page,
   context,
 }) => {
-  const email = `registration-${randomUUID()}@bidplace.test`;
+  const id = randomUUID().slice(0, 8);
+  const email = `registration-${id}@bidplace.test`;
   await page.goto('/register?redirectTo=/profile');
-  await page.getByLabel('Имя', { exact: true }).fill('Новый автор');
   await page.getByRole('textbox', { name: 'Электронная почта', exact: true }).fill(email);
+  await page.getByRole('button', { name: 'Дальше', exact: true }).click();
+  await page.getByLabel('Никнейм', { exact: true }).fill(`author-${id}`);
+  await page.getByRole('button', { name: 'Дальше', exact: true }).click();
   await page
     .getByLabel('Введите пароль', { exact: true })
     .fill('registration-password-123');
@@ -90,7 +93,7 @@ test('registration form creates a session and email verification unlocks the aut
       item.url() === `${e2eApiBaseURL}/api/auth/register` &&
       item.request().method() === 'POST',
   );
-  await page.getByRole('button', { name: 'Продолжить' }).click();
+  await page.getByRole('button', { name: 'Дальше', exact: true }).click();
   expect((await registration).status()).toBe(201);
   await expect(page).toHaveURL(/\/verify-email\?/);
   await expect(page.getByText('Код отправлен на вашу почту.')).toBeVisible();
@@ -99,13 +102,13 @@ test('registration form creates a session and email verification unlocks the aut
   expect(unverified.status()).toBe(200);
   expect((await unverified.json()).user.emailVerifiedAt).toBeNull();
   await page.getByLabel('Код из письма').fill('123');
-  await page.getByRole('button', { name: 'Продолжить', exact: true }).click();
+  await page.getByRole('button', { name: 'Завершить', exact: true }).click();
   await expect(page.getByText('Введите шестизначный код.')).toBeVisible();
 
   await page
     .getByLabel('Код из письма')
     .fill(await localTestMailValue(email, 'code'));
-  await page.getByRole('button', { name: 'Продолжить', exact: true }).click();
+  await page.getByRole('button', { name: 'Завершить', exact: true }).click();
   await expect(page).toHaveURL(/\/profile(?:\?|$)/);
   const verified = await context.request.get(`${e2eApiBaseURL}/api/auth/me`);
   expect(verified.status()).toBe(200);

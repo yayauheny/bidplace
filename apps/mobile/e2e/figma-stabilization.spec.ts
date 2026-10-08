@@ -186,7 +186,7 @@ test('auth forms fit 390 without overflow', async ({ page }) => {
   await expect(page.getByText('Вход на Bidplace')).toBeVisible();
   await expectNoHorizontalOverflow(page);
   await page.goto('/register');
-  await expect(page.getByText('Регистрация', { exact: true }).first()).toBeVisible();
+  await expect(page.getByText('Введите вашу почту', { exact: true })).toBeVisible();
   await expectNoHorizontalOverflow(page);
   await page.goto('/forgot-password');
   await expect(page.getByText('Восстановление пароля')).toBeVisible();

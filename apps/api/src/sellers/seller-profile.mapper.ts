@@ -10,6 +10,7 @@ import { type Prisma } from '@bidplace/database';
 export const publicSellerProfileSelect = {
   id: true,
   slug: true,
+  user: { select: { slug: true } },
   sellerType: true,
   discipline: true,
   fullName: true,
@@ -189,9 +190,10 @@ export function toPublicSellerProfile(
   if (!sellerProfile.discipline || !sellerProfile.shortDescription) {
     throw new Error('Published SellerProfile is missing required fields');
   }
+  const slug = sellerProfile.user?.slug ?? sellerProfile.slug;
   return {
     id: sellerProfile.id,
-    slug: sellerProfile.slug,
+    slug,
     sellerType: sellerProfile.sellerType,
     discipline: sellerProfile.discipline,
     fullName: sellerProfile.fullName,
@@ -199,7 +201,7 @@ export function toPublicSellerProfile(
       publicVariant(
         sellerProfile.publishedRevision?.profilePhotoAsset,
         'PREVIEW',
-      )?.url ?? sellerProfilePhotoUrl(sellerProfile.slug),
+      )?.url ?? sellerProfilePhotoUrl(slug),
     country: sellerProfile.country,
     city: sellerProfile.city?.trim() || null,
     practice: sellerProfile.practice ?? null,

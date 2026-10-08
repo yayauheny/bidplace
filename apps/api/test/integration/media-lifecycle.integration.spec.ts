@@ -1141,4 +1141,30 @@ describe('scheduled media recovery on PostgreSQL', () => {
     ).not.toBe('DELETED');
     restarted.media.onModuleDestroy();
   });
+
+  it('keeps the account slug when an older profile revision is published', async () => {
+    const s = setup();
+    const fixture = await author(s.media);
+    await prisma.user.update({
+      where: { id: fixture.user.id },
+      data: { slug: 'canonical-author' },
+    });
+    const revision = await prisma.sellerProfileRevision.update({
+      where: { id: fixture.profile.revision.id },
+      data: { slug: 'old-snapshot' },
+    });
+    const operation = await approve(
+      s.media,
+      { ...fixture.profile, revision },
+      fixture.user.id,
+    );
+    await s.media.run(operation.id);
+    const user = await prisma.user.findUniqueOrThrow({ where: { id: fixture.user.id } });
+    const profile = await prisma.sellerProfile.findUniqueOrThrow({
+      where: { id: fixture.profile.id },
+    });
+    expect(user.slug).toBe('canonical-author');
+    expect(profile.slug).toBe(fixture.profile.slug);
+    s.media.onModuleDestroy();
+  });
 });

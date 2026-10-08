@@ -19,7 +19,7 @@ type FigmaTextFieldProps = Omit<TextInputProps, 'editable'> & {
   success?: boolean;
   disabled?: boolean;
   icon?: FigmaIconName;
-  metrics?: 'default' | 'authPassword';
+  metrics?: 'default' | 'authPassword' | 'authScreenPassword';
   trailing?: ReactNode;
 };
 

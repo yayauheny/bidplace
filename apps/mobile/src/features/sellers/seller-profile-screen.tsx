@@ -44,6 +44,7 @@ import { presentEnum, sellerStatusLabels } from '../../lib/presentation';
 import { AccountLogoutButton } from '../auth/AccountLogoutButton';
 import { useAccountLogout } from '../auth/account-logout';
 import { useApiClient } from '../../providers/api-provider';
+import { useAuth } from '../../providers/auth-provider';
 import { AuthorApplicationAchievements } from './AuthorApplicationAchievements';
 import {
   profileDraftAllowsSave,
@@ -205,7 +206,6 @@ function toFields(profile: {
 
 function profileFieldsToUpdate(fields: ProfileFields) {
   return {
-    slug: fields.slug,
     fullName: fields.fullName,
     discipline: fields.discipline.trim() || undefined,
     country: fields.country,
@@ -220,9 +220,14 @@ function profileFieldsToUpdate(fields: ProfileFields) {
   };
 }
 
+class StoredAccountSlug extends Error {
+  constructor(readonly slug: string) {
+    super('Stored account slug');
+  }
+}
+
 function profileFieldsToCreate(fields: ProfileFields) {
   return {
-    slug: fields.slug,
     fullName: fields.fullName,
     country: fields.country,
     city: fields.city.trim(),
@@ -259,6 +264,7 @@ function useProfileData() {
 
 export function SellerProfileScreen() {
   const api = useApiClient();
+  const auth = useAuth();
   const queryClient = useQueryClient();
   const router = useRouter();
   const { intro, step } = useLocalSearchParams<{
@@ -401,6 +407,11 @@ export function SellerProfileScreen() {
     parentOperationId.current += 1;
   }
   fieldsEditableSeen.current = fieldsEditable;
+
+  useEffect(() => {
+    if (profile || !auth.user?.slug || form.getValues('slug')) return;
+    form.setValue('slug', auth.user.slug, { shouldValidate: true });
+  }, [auth.user?.slug, form, profile]);
 
   useEffect(() => {
     if (query.isLoading) return;
@@ -564,6 +575,11 @@ export function SellerProfileScreen() {
           variables.photo ?? undefined,
         );
       if (!variables.photo) throw new Error('Profile photo is required');
+      if (!auth.user?.slug) {
+        const requested = variables.fields.slug.trim();
+        const claimed = await api.auth.claimSlug({ slug: requested });
+        if (claimed.slug !== requested) throw new StoredAccountSlug(claimed.slug);
+      }
       return api.sellers.createProfile(
         profileFieldsToCreate(variables.fields),
         variables.photo,
@@ -639,6 +655,11 @@ export function SellerProfileScreen() {
       setFormAlert(null);
       return saved;
     } catch (error) {
+      if (error instanceof StoredAccountSlug) {
+        form.setValue('slug', error.slug, { shouldDirty: false, shouldValidate: true });
+        if (source === 'transition') endLockedTransition();
+        return null;
+      }
       if (
         sessionOperation.current !== operation ||
         !canWritePrivateCache(queryClient, variables.authEpoch)
@@ -1092,6 +1113,7 @@ export function SellerProfileScreen() {
                   profileStep={profileStep}
                   showAllSteps={!isApplicationWizard}
                   editable={fieldsEditable}
+                  slugEditable={fieldsEditable && !profile && !auth.user?.slug}
                 />
               </FormPageColumns>
             ) : (
@@ -1099,6 +1121,7 @@ export function SellerProfileScreen() {
                 profileStep={profileStep}
                 showAllSteps={false}
                 editable={fieldsEditable}
+                slugEditable={fieldsEditable && !profile && !auth.user?.slug}
               />
             )}
             {isApplicationWizard && profileStep === 4 ? (

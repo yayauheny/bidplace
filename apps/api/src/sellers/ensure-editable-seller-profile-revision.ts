@@ -62,12 +62,16 @@ export async function ensureEditableEditingRevision(
   }
 
   const published = profile.publishedRevision;
+  const account = await tx.user.findUnique({
+    where: { id: userId },
+    select: { slug: true },
+  });
   const draft = await tx.sellerProfileRevision.create({
     data: {
       sellerProfileId: profile.id,
       version: published.version + 1,
       status: 'DRAFT',
-      slug: published.slug,
+      slug: account?.slug ?? published.slug,
       discipline: published.discipline,
       fullName: published.fullName,
       country: published.country,

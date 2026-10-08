@@ -1,5 +1,6 @@
 import {
   type AcceptRulesRequest,
+  ApiErrorCode,
   type AuthResponse,
   type LoginRequest,
   type RegisterRequest,
@@ -25,7 +26,11 @@ import {
 } from './auth.mapper';
 import { PasswordHasherService } from './password-hasher.service';
 import { SERVER_ENV, type ServerEnv } from '../core/config';
-import { PrismaService, isPrismaUniqueConstraintError } from '../core/database';
+import {
+  PrismaService,
+  isPrismaUniqueConstraintError,
+  prismaUniqueTargets,
+} from '../core/database';
 import { resolveServiceRules } from '../core/rules';
 
 function normalizeEmail(email: string): string {
@@ -79,7 +84,8 @@ export class AuthService {
         data: {
           email,
           phone,
-          displayName: input.displayName,
+          slug: input.slug,
+          displayName: null,
           passwordHash,
           status: 'active',
           sessionVersion: 0,
@@ -92,11 +98,46 @@ export class AuthService {
       return this.createAuthResponse(user);
     } catch (error: unknown) {
       if (isPrismaUniqueConstraintError(error)) {
+        const slugTaken = prismaUniqueTargets(error).some((target) =>
+          /(^|_)slug($|_)/.test(target),
+        );
+        if (slugTaken) {
+          throw new ConflictException({
+            code: ApiErrorCode.CONFLICT,
+            message: 'Nickname is already taken',
+            details: { reason: 'slug_taken' },
+          });
+        }
         throw new ConflictException('Email or phone already in use');
       }
 
       throw error;
     }
+  }
+
+  async claimSlug(userId: string, slug: string): Promise<{ slug: string }> {
+    try {
+      const updated = await this.prisma.user.updateMany({
+        where: { id: userId, slug: null },
+        data: { slug },
+      });
+      if (updated.count === 1) return { slug };
+    } catch (error: unknown) {
+      if (!isPrismaUniqueConstraintError(error)) throw error;
+      const current = await this.storedSlug(userId);
+      if (current) return { slug: current };
+      throw new ConflictException({
+        code: ApiErrorCode.CONFLICT,
+        message: 'Nickname is already taken',
+        details: { reason: 'slug_taken' },
+      });
+    }
+
+    const current = await this.storedSlug(userId);
+    if (!current) {
+      throw new UnauthorizedException('User not found');
+    }
+    return { slug: current };
   }
 
   async login(input: LoginRequest): Promise<AuthSessionResult> {
@@ -186,6 +227,15 @@ export class AuthService {
         },
       },
     });
+  }
+
+  private async storedSlug(userId: string): Promise<string | null> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { slug: true },
+    });
+    if (!user) throw new UnauthorizedException('User not found');
+    return user.slug;
   }
 
   private createAuthResponse(user: AuthCredentialsRecord): AuthSessionResult {

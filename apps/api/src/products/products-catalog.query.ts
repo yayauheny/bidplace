@@ -42,7 +42,9 @@ export function portfolioCatalogCte(query: PortfolioWorksQuery): Prisma.Sql {
   }
 
   if (query.author) {
-    filters.push(Prisma.sql`sp."slug" = ${query.author}`);
+    filters.push(
+      Prisma.sql`COALESCE(author_user."slug", sp."slug") = ${query.author}`,
+    );
   }
 
   for (const material of query.materials ?? []) {

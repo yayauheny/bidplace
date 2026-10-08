@@ -88,7 +88,6 @@ function assertProfileRevisionReadyToSubmit(revision: {
 
 function publicProfileRevisionData(input: SellerProfileUpdateRequest) {
   return {
-    ...(input.slug !== undefined ? { slug: input.slug } : {}),
     ...(input.discipline !== undefined ? { discipline: input.discipline } : {}),
     ...(input.fullName !== undefined ? { fullName: input.fullName } : {}),
     ...(input.country !== undefined ? { country: input.country } : {}),
@@ -263,10 +262,20 @@ export class SellersService {
 
     try {
       const sellerProfile = await this.prisma.$transaction(async (tx) => {
+        const account = await tx.user.findUnique({
+          where: { id: userId },
+          select: { slug: true },
+        });
+        if (!account?.slug) {
+          throw new ConflictException(
+            'Account nickname is required before an author profile',
+          );
+        }
+        const slug = account.slug;
         const created = await tx.sellerProfile.create({
           data: {
             userId,
-            slug: input.slug,
+            slug,
             sellerType: 'creator',
             discipline: input.discipline ?? null,
             fullName: input.fullName,
@@ -322,7 +331,7 @@ export class SellersService {
             sellerProfileId: created.id,
             version: 1,
             status: 'DRAFT',
-            slug: input.slug,
+            slug,
             discipline: input.discipline ?? null,
             fullName: input.fullName,
             country: input.country,
@@ -1005,9 +1014,9 @@ export class SellersService {
   ) {
     const sellerProfile = await this.prisma.sellerProfile.findFirst({
       where: {
-        slug,
         status: 'APPROVED',
         user: { status: 'active' },
+        OR: [{ user: { slug } }, { slug, user: { slug: null } }],
         ...(options.requireCity ? { city: publicAuthorCityWhere } : {}),
       },
       select: publicSellerProfileSelect,
@@ -1025,7 +1034,9 @@ export class SellersService {
 
   async getPhoto(slug: string, userId?: string, role?: string) {
     const sellerProfile = await this.prisma.sellerProfile.findFirst({
-      where: { slug },
+      where: {
+        OR: [{ user: { slug } }, { slug, user: { slug: null } }],
+      },
       select: sellerProfilePhotoSelect,
     });
 

@@ -468,6 +468,7 @@ describe('AdminModerationService', () => {
       }),
       select: sellerProfileResponseSelect,
     });
+    expect(tx.sellerProfile.update.mock.calls[0]?.[0].data).not.toHaveProperty('slug');
   });
 
   it.each(

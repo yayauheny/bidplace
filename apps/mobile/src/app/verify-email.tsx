@@ -17,8 +17,9 @@ function VerifyEmailScreen() {
 
   return (
     <AuthViewport
-      title="Подтвердите email"
+      title="Проверьте код на почте"
       tone="section"
+      presentation="screen"
       redirectTo="/"
       exit={{
         title: 'Выйти из подтверждения',

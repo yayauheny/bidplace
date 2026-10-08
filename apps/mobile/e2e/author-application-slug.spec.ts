@@ -67,6 +67,7 @@ async function mockApi(page: Page) {
             phoneVerifiedAt: null,
             acceptedRulesVersion: null,
             displayName: 'Synthetic Author',
+            slug: null,
             role: 'user',
             status: 'active',
             createdAt: now,
@@ -81,6 +82,14 @@ async function mockApi(page: Page) {
         status: 404,
         contentType: 'application/json',
         body: JSON.stringify({ code: 'not_found', message: 'Not found' }),
+      });
+      return;
+    }
+    if (key === 'POST /api/auth/slug') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ slug: 'synthetic-author' }),
       });
       return;
     }
@@ -144,8 +153,7 @@ test('an invalid nickname stays on step 1 until it matches the slug contract', a
   await expect(page.getByText('Шаг 2 из 4')).toBeVisible();
   await expect(page.getByText('Контакты', { exact: true })).toBeVisible();
   expect(posts).toHaveLength(1);
-  expect(posts[0]).toContain('name="slug"');
-  expect(posts[0]).toContain('synthetic-author');
+  expect(posts[0]).not.toContain('name="slug"');
   expect(posts[0]).toContain('Synthetic Author');
   expect(posts[0]).toContain('name="profilePhoto"');
 });

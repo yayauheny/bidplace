@@ -1,7 +1,9 @@
 import { useState } from 'react';
-import { Platform, Text, TextInput, View } from 'react-native';
+import { Platform, TextInput, View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
+
+import { AppText } from '../../components/ui';
 
 import { figmaFieldNativeOutlineStyle } from '../../components/figma/figma-text-field-style';
 import { normalizeEmailVerificationCode } from './author-email-verification';
@@ -29,7 +31,7 @@ export function AuthCodeField({
       <View style={{ position: 'relative', minHeight: designTokens.size.input }}>
         <View
           pointerEvents="none"
-          style={{ flexDirection: 'row', gap: designTokens.auth.codeGap }}
+          style={{ flexDirection: 'row', gap: designTokens.auth.codeGap, width: '100%' }}
         >
           {CELLS.map((index) => (
               <View
@@ -39,7 +41,7 @@ export function AuthCodeField({
                 {...(Platform.OS === 'web' ? { dataSet: { authCodeCell: 'true' } } : {})}
                 style={{
                 flex: 1,
-                height: designTokens.size.input,
+                height: designTokens.auth.codeCellHeight,
                 borderRadius: designTokens.auth.codeRadius,
                 borderWidth: designTokens.size.fieldBorder,
                 borderColor,
@@ -48,14 +50,15 @@ export function AuthCodeField({
                 justifyContent: 'center',
               }}
             >
-              <Text
+              <AppText
                 style={{
                   color: designTokens.color.fieldValue,
-                  ...designTokens.typography.authSheetTitle,
+                  fontSize: 24,
+                  lineHeight: 34,
                 }}
               >
                 {value[index] ?? ''}
-              </Text>
+              </AppText>
             </View>
           ))}
         </View>
@@ -84,15 +87,14 @@ export function AuthCodeField({
         />
       </View>
       {error ? (
-        <Text
+        <AppText
           accessibilityLiveRegion="polite"
-          style={{
-            color: designTokens.color.error,
-            ...designTokens.typography.fieldError,
-          }}
+          tone="danger"
+          role="fieldError"
+          style={designTokens.typography.fieldError}
         >
           {error}
-        </Text>
+        </AppText>
       ) : null}
     </View>
   );

@@ -1,6 +1,6 @@
 # verify-email — full-screen capture
 
-Status: imported visual proposal; behavior and source precedence await founder confirmation.
+Status: registration email confirmation after the `DEC-105` revision. Capture files are unchanged.
 
 Source archive: `Создать_с_паролем_фуллскрин_кодпочты.figmacapture.zip`; captured `2026-10-07T18:25:33.724Z`.
 Capture root `4547:24815`, overlay `4547:25025`, white auth surface `4547:25026`.

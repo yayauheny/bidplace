@@ -244,7 +244,7 @@ export const adminAnalyticsOverviewSchema = z
           z
             .object({
               id: uuidSchema,
-              displayName: z.string(),
+              displayName: z.string().nullable(),
               createdAt: isoDateTimeSchema,
             })
             .strict(),

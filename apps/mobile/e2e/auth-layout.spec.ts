@@ -190,13 +190,13 @@ async function expectAuthBrowserHistory(page: Page, navigationApi: boolean) {
   await expect(loginTitle).toBeVisible();
   await page.getByRole('button', { name: 'Регистрация', exact: true }).click();
   await expect(page).toHaveURL(/\/register$/);
-  await expect(page.getByLabel('Имя')).toBeVisible();
-  await page.getByLabel('Имя').fill('Автор');
+  await expect(page.getByText('Введите вашу почту', { exact: true })).toBeVisible();
+  await page.getByPlaceholder('example@gmail.com').fill('author@example.com');
   await historyStep(page, -1);
   await expect(page.getByText('Прервать регистрацию', { exact: true })).toHaveCount(0);
   await expect(page).toHaveURL(/\/login$/);
   await expect(loginTitle).toBeVisible();
-  await expect(page.getByLabel('Имя')).toHaveCount(0);
+  await expect(page.getByText('Введите вашу почту', { exact: true })).toHaveCount(0);
 
   await page.goto('/');
   const catalog = page.getByRole('button', { name: 'Смотреть все' }).first();
@@ -295,23 +295,21 @@ async function pushWorksFromBackground(page: Page) {
 
 async function expectS4Register(page: Page) {
   await expect(page.getByText(removedIntro, { exact: true })).toHaveCount(0);
-  const title = page.getByText('Регистрация', { exact: true }).first();
+  const title = page.getByText('Введите вашу почту', { exact: true });
   await expect(title).toBeVisible();
-  await expect(page.getByLabel('Имя')).toBeVisible();
   await expect(page.getByLabel('Электронная почта')).toBeVisible();
-  await expect(page.getByLabel('Введите пароль')).toBeVisible();
-  await expect(page.getByLabel('Подтвердите пароль')).toBeVisible();
-  const submit = page.getByRole('button', { name: 'Продолжить' });
+  await expect(page.getByLabel('Никнейм')).toHaveCount(0);
+  await expect(page.getByLabel('Введите пароль')).toHaveCount(0);
+  const submit = page.getByRole('button', { name: 'Дальше' });
   await submit.scrollIntoViewIfNeeded();
   await expect(submit).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Войти' })).toBeVisible();
   await expect(page.getByText('Я соглашаюсь с политикой конфиденциальности и правилами сервиса')).toBeVisible();
 
   const titleBox = await title.boundingBox();
-  const nameBox = await page.getByLabel('Имя').boundingBox();
+  const emailBox = await page.getByLabel('Электронная почта').boundingBox();
   expect(titleBox).not.toBeNull();
-  expect(nameBox).not.toBeNull();
-  expect(titleBox!.y).toBeLessThan(nameBox!.y);
+  expect(emailBox).not.toBeNull();
+  expect(titleBox!.y).toBeLessThan(emailBox!.y);
 }
 
 async function expectCenteredPhoneColumn(page: Page) {

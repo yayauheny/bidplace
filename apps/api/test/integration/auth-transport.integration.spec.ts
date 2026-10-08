@@ -131,7 +131,7 @@ describe('auth HTTP transport', () => {
     const registration = await client.post('/auth/register', {
       email: 'New.User@Wave3.Test',
       phone: '  +375291234567  ',
-      displayName: '  New Wave 3 User  ',
+      slug: 'new-wave-3-user',
       password: 'password123',
     });
     expect(registration.status).toBe(201);
@@ -139,13 +139,14 @@ describe('auth HTTP transport', () => {
 
     const registered = await prisma.user.findUniqueOrThrow({
       where: { email: 'new.user@wave3.test' },
-      select: { id: true, email: true, phone: true, displayName: true },
+      select: { id: true, email: true, phone: true, displayName: true, slug: true },
     });
     expect(registered).toEqual({
       id: expect.any(String),
       email: 'new.user@wave3.test',
       phone: '+375291234567',
-      displayName: 'New Wave 3 User',
+      displayName: null,
+      slug: 'new-wave-3-user',
     });
 
     const me = await client.get('/auth/me');
@@ -163,7 +164,7 @@ describe('auth HTTP transport', () => {
     const duplicate = await duplicateClient.post('/auth/register', {
       email: 'NEW.USER@WAVE3.TEST',
       phone: '+375291234567',
-      displayName: 'Another User',
+      slug: 'another-user',
       password: 'password123',
     });
     expect(duplicate.status).toBe(409);

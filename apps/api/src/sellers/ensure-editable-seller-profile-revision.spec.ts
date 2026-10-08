@@ -81,6 +81,7 @@ describe('ensureEditableEditingRevision', () => {
   it('forks an approved published revision and maps each created draft achievement id', async () => {
     const tx = {
       $queryRaw: vi.fn().mockResolvedValue([{ id: 'seller-profile-id' }]),
+      user: { findUnique: vi.fn().mockResolvedValue({ slug: 'account-slug' }) },
       sellerProfile: {
         findUnique: vi.fn().mockResolvedValue({
           id: 'seller-profile-id',
@@ -113,6 +114,7 @@ describe('ensureEditableEditingRevision', () => {
       data: expect.objectContaining({
         sellerProfileId: 'seller-profile-id',
         status: 'DRAFT',
+        slug: 'account-slug',
         profilePhotoObjectKey: 'seller-photo:seller-profile-id',
       }),
     });

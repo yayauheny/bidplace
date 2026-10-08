@@ -17,6 +17,7 @@ describe('auth client', () => {
               phoneVerifiedAt: null,
               acceptedRulesVersion: 'MVP_RULES_V1',
               displayName: 'Seller',
+              slug: null,
               role: 'user',
               status: 'active',
               createdAt: '2026-09-23T00:00:00.000Z',

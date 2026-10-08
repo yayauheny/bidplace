@@ -11,7 +11,7 @@ export type TextFieldProps = TextInputProps & {
   hint?: string;
   error?: string;
   required?: boolean;
-  metrics?: 'default' | 'authPassword';
+  metrics?: 'default' | 'authPassword' | 'authScreenPassword';
   trailing?: ReactNode;
 };
 

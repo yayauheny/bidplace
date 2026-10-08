@@ -1,7 +1,12 @@
 import { z } from 'zod';
 
 import { userRoleSchema, userStatusSchema } from './enums';
-import { isoDateTimeSchema, uuidSchema } from './primitives';
+import { isoDateTimeSchema, slugTextSchema, uuidSchema } from './primitives';
+
+export const accountSlugSchema = slugTextSchema('Введите никнейм').max(
+  120,
+  'Никнейм не длиннее 120 символов',
+);
 
 export const userSchema = z
   .object({
@@ -11,7 +16,8 @@ export const userSchema = z
     emailVerifiedAt: isoDateTimeSchema.nullable(),
     phoneVerifiedAt: isoDateTimeSchema.nullable(),
     acceptedRulesVersion: z.string().trim().min(1).nullable(),
-    displayName: z.string().trim().min(1),
+    displayName: z.string().trim().min(1).nullable(),
+    slug: accountSlugSchema.nullable(),
     role: userRoleSchema,
     status: userStatusSchema,
     createdAt: isoDateTimeSchema,
@@ -28,7 +34,19 @@ export const registerRequestSchema = z
     email: emailAddressSchema,
     password: passwordSchema,
     phone: z.string().trim().min(1).nullable().optional(),
-    displayName: z.string().trim().min(1, 'Введите имя'),
+    slug: accountSlugSchema,
+  })
+  .strict();
+
+export const claimSlugRequestSchema = z
+  .object({
+    slug: accountSlugSchema,
+  })
+  .strict();
+
+export const claimSlugResponseSchema = z
+  .object({
+    slug: accountSlugSchema,
   })
   .strict();
 
@@ -47,5 +65,7 @@ export const meResponseSchema = z
 
 export type User = z.infer<typeof userSchema>;
 export type RegisterRequest = z.infer<typeof registerRequestSchema>;
+export type ClaimSlugRequest = z.infer<typeof claimSlugRequestSchema>;
+export type ClaimSlugResponse = z.infer<typeof claimSlugResponseSchema>;
 export type LoginRequest = z.infer<typeof loginRequestSchema>;
 export type MeResponse = z.infer<typeof meResponseSchema>;

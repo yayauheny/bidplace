@@ -207,26 +207,48 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
       </View>
   );
 }
+type RegistrationStep = 'email' | 'nickname' | 'password';
+
+const registrationCopy: Record<RegistrationStep, { title: string; caption: string }> = {
+  email: {
+    title: 'Введите вашу почту',
+    caption: 'Зарегистрируйтесь или войдите',
+  },
+  nickname: {
+    title: 'Выберите имя пользователя',
+    caption: 'Можете выбрать любой или предложений',
+  },
+  password: {
+    title: 'Создайте пароль',
+    caption: 'Пусть он будет надежный',
+  },
+};
+
 export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
   const auth = useAuth();
   const analytics = useAnalytics();
   const router = useRouter();
+  const [step, setStep] = useState<RegistrationStep>('email');
   const [submitError, setSubmitError] = useState<string | null>(null);
   const trackedRegistrationStart = useRef(false);
+  const created = useRef(false);
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerFormSchema),
-    defaultValues: { email: '', password: '', confirmPassword: '', phone: '', displayName: '' },
+    defaultValues: { email: '', slug: '', password: '', confirmPassword: '', phone: '' },
   });
   const watched = form.watch();
   const complete = useAuthSheetComplete();
+  const continueRegistration = () => {
+    if (complete) complete(redirectTo);
+    else router.replace(redirectTo as Href);
+  };
   useAuthSheetGuard({
-    dirty: Boolean(watched.displayName || watched.email || watched.password || watched.confirmPassword),
+    dirty: Boolean(watched.slug || watched.email || watched.password || watched.confirmPassword),
     busy: form.formState.isSubmitting,
   });
   useEffect(() => {
     if (form.formState.isSubmitSuccessful && auth.isAuthenticated) {
-      if (complete) complete(redirectTo);
-      else router.replace(redirectTo as Href);
+      continueRegistration();
     }
   }, [
     auth.isAuthenticated,
@@ -246,19 +268,38 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
 
   const submit = form.handleSubmit(async (values) => {
     setSubmitError(null);
+    if (created.current) {
+      continueRegistration();
+      return;
+    }
     try {
       const response = await auth.register(registerSubmission(values));
+      created.current = true;
       analytics.identify(response.user.id, { claimAcquisition: true });
     } catch (error) {
-      const failure = readFormFailure(error, ['email', 'password', 'displayName', 'phone']);
+      const failure = readFormFailure(error, ['email', 'slug', 'password', 'phone']);
       if (failure.disposition === 'passthrough') {
         setSubmitError(getUserFacingErrorMessage(error, 'Не удалось зарегистрироваться'));
         return;
       }
-      applyFormFailure(form, failure, ['email', 'password', 'displayName', 'phone']);
+      applyFormFailure(form, failure, ['email', 'slug', 'password', 'phone']);
+      if (failure.fields.slug) setStep('nickname');
+      if (failure.fields.email) setStep('email');
       setSubmitError(failure.formMessage);
     }
   });
+  const goNext = async () => {
+    setSubmitError(null);
+    if (step === 'email') {
+      if (await form.trigger('email')) setStep('nickname');
+      return;
+    }
+    if (step === 'nickname') {
+      if (await form.trigger('slug')) setStep('password');
+      return;
+    }
+    await submit();
+  };
   if (!auth.ready)
     return (
       <AppText role="bodySmall" tone="secondary">
@@ -267,82 +308,97 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
     );
   if (auth.isAuthenticated)
     return (
-      <View style={{ gap: designTokens.auth.formGap }}>
+      <View style={{ gap: designTokens.auth.screenGap }}>
         <AppText role="bodySmall">Перейдите к следующему шагу.</AppText>
         <PrimaryButton
-          label="Перейти дальше"
+          label="Дальше"
           size="auth"
           width="full"
-          onPress={() => {
-            if (complete) complete(redirectTo);
-            else router.replace(redirectTo as Href);
-          }}
+          onPress={continueRegistration}
         />
       </View>
     );
+  const copy = registrationCopy[step];
   return (
-      <View style={{ gap: designTokens.auth.formGap }}>
-        <Controller
-          control={form.control}
-          name="displayName"
-          render={({ field }) => (
-            <TextField ref={field.ref}
-              label="Имя"
-              value={field.value}
-              onChangeText={field.onChange}
-              onBlur={field.onBlur}
-              placeholder="Имя"
-              autoComplete="name"
-              error={form.formState.errors.displayName?.message}
+      <View style={{ gap: designTokens.auth.screenGap, width: '100%' }}>
+        <View style={{ gap: designTokens.space.x2 }}>
+          <AppText role="sectionTitle" style={{ textAlign: 'center', color: designTokens.color.fieldValue, fontSize: 20, lineHeight: 22, fontWeight: '600' }}>
+            {copy.title}
+          </AppText>
+          <AppText role="bodySmall" style={{ textAlign: 'center', color: designTokens.color.textSubdued, fontSize: 14, lineHeight: 20 }}>
+            {copy.caption}
+          </AppText>
+        </View>
+        {step === 'email' ? (
+          <Controller
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <TextField ref={field.ref}
+                label="Электронная почта"
+                value={field.value}
+                onChangeText={field.onChange}
+                onBlur={field.onBlur}
+                placeholder="example@gmail.com"
+                autoComplete="email"
+                keyboardType="email-address"
+                error={form.formState.errors.email?.message}
+              />
+            )}
+          />
+        ) : null}
+        {step === 'nickname' ? (
+          <Controller
+            control={form.control}
+            name="slug"
+            render={({ field }) => (
+              <TextField ref={field.ref}
+                label="Никнейм"
+                value={field.value}
+                onChangeText={field.onChange}
+                onBlur={field.onBlur}
+                placeholder="Никнейм"
+                autoCapitalize="none"
+                autoComplete="username"
+                error={form.formState.errors.slug?.message}
+              />
+            )}
+          />
+        ) : null}
+        {step === 'password' ? (
+          <>
+            <Controller
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <AuthPasswordField
+                  label="Введите пароль"
+                  value={field.value}
+                  onChangeText={field.onChange}
+                  onBlur={field.onBlur}
+                  autoComplete="new-password"
+                  metrics="authScreenPassword"
+                  error={form.formState.errors.password?.message}
+                />
+              )}
             />
-          )}
-        />
-        <Controller
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <TextField ref={field.ref}
-              label="Электронная почта"
-              value={field.value}
-              onChangeText={field.onChange}
-              onBlur={field.onBlur}
-              placeholder="example@gmail.com"
-              autoComplete="email"
-              keyboardType="email-address"
-              error={form.formState.errors.email?.message}
+            <Controller
+              control={form.control}
+              name="confirmPassword"
+              render={({ field }) => (
+                <AuthPasswordField
+                  label="Подтвердите пароль"
+                  value={field.value}
+                  onChangeText={field.onChange}
+                  onBlur={field.onBlur}
+                  autoComplete="new-password"
+                  metrics="authScreenPassword"
+                  error={form.formState.errors.confirmPassword?.message}
+                />
+              )}
             />
-          )}
-        />
-        <Controller
-          control={form.control}
-          name="password"
-          render={({ field }) => (
-            <AuthPasswordField
-              label="Введите пароль"
-              value={field.value}
-              onChangeText={field.onChange}
-              onBlur={field.onBlur}
-              autoComplete="new-password"
-              metrics="authPassword"
-              error={form.formState.errors.password?.message}
-            />
-          )}
-        />
-        <Controller
-          control={form.control}
-          name="confirmPassword"
-          render={({ field }) => (
-            <AuthPasswordField
-              label="Подтвердите пароль"
-              value={field.value}
-              onChangeText={field.onChange}
-              onBlur={field.onBlur}
-              autoComplete="new-password"
-              metrics="authPassword"
-              error={form.formState.errors.confirmPassword?.message}
-            />
-          )}
-        />
+          </>
+        ) : null}
         {submitError ? (
           <AppText
             role="bodySmall"
@@ -353,30 +409,17 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
           </AppText>
         ) : null}
         <PrimaryButton
-          label="Продолжить"
+          label="Дальше"
           size="auth"
           width="full"
           loading={form.formState.isSubmitting}
-          onPress={submit}
+          onPress={() => void goNext()}
         />
-        <AppText role="bodySmall" style={{ color: designTokens.color.textSubdued }}>
-          Я соглашаюсь с политикой конфиденциальности и правилами сервиса
-        </AppText>
-        <Link
-          href={{
-            pathname: '/login',
-            params: redirectTo !== '/' ? { redirectTo } : undefined,
-          }}
-          asChild
-        >
-          <FigmaButton
-            label="Войти"
-            variant="authQuiet"
-            size="auth"
-            width="full"
-            onPress={() => undefined}
-          />
-        </Link>
+        {step === 'email' ? (
+          <AppText role="bodySmall" style={{ textAlign: 'center', color: designTokens.color.textSubdued }}>
+            Я соглашаюсь с политикой конфиденциальности и правилами сервиса
+          </AppText>
+        ) : null}
       </View>
   );
 }

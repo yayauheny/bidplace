@@ -59,16 +59,21 @@ async function createAdminClient() {
   return client;
 }
 
+async function assignSlug(userId: string, slug = `city-author-${Date.now().toString(36)}`) {
+  await prisma.user.update({ where: { id: userId }, data: { slug } });
+  return slug;
+}
+
 function applicationForm(overrides: Record<string, string | null> = {}) {
   const form = new FormData();
+  const { slug: _slug, ...fieldsWithoutSlug } = overrides;
   const fields = {
-    slug: `city-author-${Date.now().toString(36)}`,
     discipline: 'Керамика',
     fullName: 'City Author',
     country: 'BY',
     city: 'Minsk',
     shortDescription: 'Applicant with a required city',
-    ...overrides,
+    ...fieldsWithoutSlug,
   };
   for (const [key, value] of Object.entries(fields)) {
     if (value === null) continue;
@@ -118,6 +123,7 @@ describe('author application HTTP contract', () => {
       where: { id: fixture.buyer.id },
       data: { emailVerifiedAt: new Date() },
     });
+    await assignSlug(fixture.buyer.id);
     expect((await applicant.post('/seller/profile', applicationForm())).status).toBe(201);
 
     await prisma.user.update({
@@ -141,6 +147,7 @@ describe('author application HTTP contract', () => {
     const fixture = await createPermissionFixture(prisma);
     const applicant = new HttpTestClient(http.baseUrl, 'http://localhost:8081');
     await login(applicant, fixture.buyer.email, fixture.buyer.password);
+    await assignSlug(fixture.buyer.id);
     expect((await applicant.post('/seller/profile', applicationForm())).status).toBe(201);
 
     await prisma.user.update({
@@ -173,6 +180,7 @@ describe('author application HTTP contract', () => {
     const fixture = await createPermissionFixture(prisma);
     const applicant = new HttpTestClient(http.baseUrl, 'http://localhost:8081');
     await login(applicant, fixture.buyer.email, fixture.buyer.password);
+    await assignSlug(fixture.buyer.id);
 
     const missingCity = await applicant.post(
       '/seller/profile',
@@ -344,10 +352,11 @@ describe('author application HTTP contract', () => {
     await login(applicant, fixture.buyer.email, fixture.buyer.password);
     const slug = `taken-${Date.now().toString(36)}`;
 
+    const invalidNickname = await applicant.post('/auth/slug', { slug: 'БЕ' });
+    expect(invalidNickname.status).toBe(400);
     const invalid = await applicant.post(
       '/seller/profile',
       applicationForm({
-        slug: 'БЕ',
         publicEmail: 'not-an-email',
         websiteUrl: 'http://example.com',
       }),
@@ -362,22 +371,25 @@ describe('author application HTTP contract', () => {
     expect(invalidBody.code).toBe('validation_error');
     expect(invalidBody.message).toBe('Request validation failed');
     expect(invalidBody.requestId).toEqual(expect.any(String));
-    expect(invalidBody.details.fieldErrors.slug?.[0]).toContain('маленькие латинские');
+    expect(
+      ((await invalidNickname.json()) as { details: { fieldErrors: { slug?: string[] } } }).details
+        .fieldErrors.slug?.[0],
+    ).toContain('маленькие латинские');
     expect(invalidBody.details.fieldErrors.publicEmail).toEqual(['Введите корректный email']);
     expect(invalidBody.details.fieldErrors.websiteUrl?.[0]).toContain('https://');
     expect(JSON.stringify(invalidBody)).not.toContain('password123');
 
+    await assignSlug(fixture.buyer.id, slug);
     const partial = await applicant.post(
       '/seller/profile',
       applicationForm({
-        slug,
         shortDescription: null,
         discipline: null,
       }),
     );
     expect(partial.status).toBe(201);
 
-    const again = await applicant.post('/seller/profile', applicationForm({ slug: `${slug}-2` }));
+    const again = await applicant.post('/seller/profile', applicationForm());
     expect(again.status).toBe(409);
     expect(await again.json()).toMatchObject({
       code: 'conflict',
@@ -395,7 +407,7 @@ describe('author application HTTP contract', () => {
     });
     const second = new HttpTestClient(http.baseUrl, 'http://localhost:8081');
     await login(second, other.email, 'password123');
-    const taken = await second.post('/seller/profile', applicationForm({ slug }));
+    const taken = await second.post('/auth/slug', { slug });
     expect(taken.status).toBe(409);
     expect(await taken.json()).toMatchObject({
       code: 'conflict',
@@ -441,7 +453,7 @@ describe('author application HTTP contract', () => {
     const registered = await new HttpTestClient(http.baseUrl, 'http://localhost:8081').post('/auth/register', {
       email: `short-password-${Date.now()}@wave3.test`,
       password,
-      displayName: 'Synthetic',
+        slug: 'synthetic',
     });
     expect(registered.status).toBe(400);
     const registeredBody = await registered.json();

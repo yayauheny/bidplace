@@ -22,7 +22,7 @@ export function AuthPasswordField({
   onBlur: () => void;
   error?: string;
   autoComplete: 'current-password' | 'new-password';
-  metrics?: 'default' | 'authPassword';
+  metrics?: 'default' | 'authPassword' | 'authScreenPassword';
 }) {
   const inputRef = useRef<TextInput>(null);
   const selection = useRef({ start: value.length, end: value.length });
