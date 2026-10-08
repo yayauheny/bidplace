@@ -115,6 +115,14 @@ export class AuthService {
     }
   }
 
+  async slugAvailability(slug: string): Promise<{ available: boolean }> {
+    const existing = await this.prisma.user.findUnique({
+      where: { slug },
+      select: { id: true },
+    });
+    return { available: existing === null };
+  }
+
   async claimSlug(userId: string, slug: string): Promise<{ slug: string }> {
     try {
       const updated = await this.prisma.user.updateMany({

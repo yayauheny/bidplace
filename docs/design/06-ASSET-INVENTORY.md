@@ -72,11 +72,10 @@ asset или изображения без подтверждённых прав
 
 | Роль | Точный путь в репозитории | Как используется |
 | --- | --- | --- |
-| Основной brand mark в текущем header | `apps/mobile/assets/branding/bidplace-logo.png` | Импортируется в `apps/mobile/src/components/layout/BrandLogo.tsx`; это знак с глазами, ссылка на `/` |
-| Полный wordmark `bidplace` | `apps/mobile/assets/branding/bidplace-wordmark-light.png` и `.svg` | Доступный founder asset; сейчас напрямую не импортируется `BrandLogo.tsx`, использовать только если это подтверждено целевым Pen state |
-| Favicon web | `apps/mobile/assets/branding/bidplace-favicon-light.png` и `.svg` | `apps/mobile/app.json`, web favicon |
-| Mark/adaptive icon | `apps/mobile/assets/branding/bidplace-mark-light.png` и `.svg`; производные `apps/mobile/assets/android-icon-*.png` | App icon, Android adaptive/monochrome icon |
-| Expo splash/icon derivatives | `apps/mobile/assets/icon.png`, `splash-icon.png`, `brand-mark.png` | Expo app configuration; не использовать как desktop wordmark |
+| Основной brand mark | `design/figma-handoff/branding/2026-10-08-brand/bidplace-mark.svg`, runtime `BidplaceBrand.tsx` | Общий знак 30.35×30.35, `#121212`. Header, dock и fullscreen-слот используют его без растяжения. Старый `bidplace-logo.png` с глазами удалён |
+| Wordmark `bidplace` | `design/figma-handoff/branding/2026-10-08-brand/bidplace-wordmark.svg` | Контуры 93×22 на четырёх fullscreen-шагах. Надпись не набирается шрифтом. Старый `bidplace-wordmark-light.*` не является этим контуром |
+| Favicon web | `apps/mobile/assets/branding/bidplace-favicon-light.png` | 32×32 из того же знака на белом; `app.json` |
+| Expo icon | `apps/mobile/assets/icon.png`, `android-icon-foreground.png`, `android-icon-monochrome.png`, `android-icon-background.png` | Растры того же знака. Фон adaptive icon `#FFFFFF` |
 | Product demo media | `packages/database/prisma/fixtures/product-images/dali-estate.png`, `caricature.png`, `yellow-sapphire.png`, `color-calibration.png`, `rainbow-mask.png`, `blossom-vase.png`, `memory.png`, `alice-glass.png`, `between-form.png` plus matching `*-detail.png` crops | Только local/test seed. Catalog covers are Figma raw fills. Vex `alice-glass` / `between-form` are unused Figma fills with demo ownership. Unpublished pending product uses `pending-placeholder.png` (technical 1×1, not catalog) |
 | Achievement demo media | `alice-glass-detail.png`, `between-form-detail.png`, `seller-achievements/pixelp-after-classics.png` | Seeded onto published `SellerProfileRevisionAchievement`. Detail crops are not covers. Spectre fill is Figma History `437:3989`, not Opening Dali. No isolated exhibition-install photos exist in Figma. |
 | Seller profile demo media | `packages/database/prisma/fixtures/seller-profile/vex.png`, `quantumparadox.png`, `havoc.png`, `bala_klava.png`, `pixelp.png` | Только local/test seed. Catalog four + vex are Figma fills. `pixelp.png` is a demo studio portrait because Figma has no isolated unused male portrait. `pending-seller.png` is a technical 1×1 for unpublished moderation. |
@@ -131,11 +130,9 @@ Canonical Pen SHA-256 на дату обновления:
 
 Семантические назначения и размеры находятся в
 `packages/design-tokens/src/tokens.ts`. Важно не смешивать два разных ассета:
-текущий `BrandLogo.tsx` показывает только `bidplace-logo.png` (mark), а
-текстовая надпись `bidplace` доступна отдельным `bidplace-wordmark-light.*` и
-сейчас не является автоматически подключённым CSS-текстом. Выбор между mark и
-wordmark определяется конкретным целевым Pen state; не перерисовывать надпись
-вручную без отдельного решения дизайнера.
+`BrandLogo` и dock рисуют общий векторный знак. Fullscreen-регистрация и
+подтверждение почты ставят тот же знак сверху и контурный wordmark снизу.
+Надпись `bidplace` не набирается шрифтом.
 
 ### 3.4. Иконки и кнопки
 

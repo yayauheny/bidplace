@@ -34,4 +34,26 @@ describe('auth client', () => {
       user: { acceptedRulesVersion: 'MVP_RULES_V1' },
     });
   });
+
+  it('reads slug availability and does not request an invalid nickname', async () => {
+    const calls: string[] = [];
+    const client = createApiClient({
+      baseUrl: 'https://api.example.test',
+      fetchImpl: async (input) => {
+        calls.push(String(input));
+        return new Response(JSON.stringify({ available: true }), {
+          headers: { 'content-type': 'application/json' },
+        });
+      },
+    });
+
+    await expect(client.auth.slugAvailability('author')).resolves.toEqual({
+      available: true,
+    });
+    expect(calls).toEqual([
+      'https://api.example.test/api/auth/slug-availability?slug=author',
+    ]);
+    await expect(client.auth.slugAvailability('Niko 631')).rejects.toThrow();
+    expect(calls).toHaveLength(1);
+  });
 });

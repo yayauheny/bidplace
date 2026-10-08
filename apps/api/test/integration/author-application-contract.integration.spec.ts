@@ -66,7 +66,9 @@ async function assignSlug(userId: string, slug = `city-author-${Date.now().toStr
 
 function applicationForm(overrides: Record<string, string | null> = {}) {
   const form = new FormData();
-  const { slug: _slug, ...fieldsWithoutSlug } = overrides;
+  const fieldsWithoutSlug = Object.fromEntries(
+    Object.entries(overrides).filter(([key]) => key !== 'slug'),
+  );
   const fields = {
     discipline: 'Керамика',
     fullName: 'City Author',

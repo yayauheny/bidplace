@@ -19,6 +19,7 @@ type FigmaTextFieldProps = Omit<TextInputProps, 'editable'> & {
   success?: boolean;
   disabled?: boolean;
   icon?: FigmaIconName;
+  prefix?: string;
   metrics?: 'default' | 'authPassword' | 'authScreenPassword';
   trailing?: ReactNode;
 };
@@ -39,6 +40,7 @@ export const FigmaTextField = forwardRef<TextInput, FigmaTextFieldProps>(functio
   success = false,
   disabled = false,
   icon,
+  prefix,
   metrics = 'default',
   trailing,
   value,
@@ -78,6 +80,15 @@ export const FigmaTextField = forwardRef<TextInput, FigmaTextFieldProps>(functio
             <FigmaIcon name={icon} color={figmaTokens.color.fieldValue} />
           </View>
         ) : null}
+        {prefix ? (
+          <Text
+            accessibilityElementsHidden
+            importantForAccessibility="no"
+            style={{ color: figmaTokens.color.fieldValue, ...figmaTokens.typography.field }}
+          >
+            {prefix}
+          </Text>
+        ) : null}
         <FieldInput
           {...props}
           ref={ref}
@@ -114,7 +125,7 @@ export const FigmaTextField = forwardRef<TextInput, FigmaTextFieldProps>(functio
               color: valueColor,
               padding: 0,
               textAlignVertical: multiline ? 'top' : 'center',
-              ...(metrics === 'authPassword'
+              ...(metrics === 'authPassword' || metrics === 'authScreenPassword'
                 ? figmaTokens.typography.authPassword
                 : figmaTokens.typography.field),
               ...(Platform.OS === 'web' ? (figmaFieldNativeOutlineStyle as object) : null),

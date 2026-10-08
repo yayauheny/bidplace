@@ -79,6 +79,7 @@ test('registration form creates a session and email verification unlocks the aut
   const email = `registration-${id}@bidplace.test`;
   await page.goto('/register?redirectTo=/profile');
   await page.getByRole('textbox', { name: 'Электронная почта', exact: true }).fill(email);
+  await page.getByRole('checkbox', { name: /соглашаюсь/ }).click();
   await page.getByRole('button', { name: 'Дальше', exact: true }).click();
   await page.getByLabel('Никнейм', { exact: true }).fill(`author-${id}`);
   await page.getByRole('button', { name: 'Дальше', exact: true }).click();
@@ -96,7 +97,7 @@ test('registration form creates a session and email verification unlocks the aut
   await page.getByRole('button', { name: 'Дальше', exact: true }).click();
   expect((await registration).status()).toBe(201);
   await expect(page).toHaveURL(/\/verify-email\?/);
-  await expect(page.getByText('Код отправлен на вашу почту.')).toBeVisible();
+  await expect(page.getByText(/Код отправлен на /)).toBeVisible();
 
   const unverified = await context.request.get(`${e2eApiBaseURL}/api/auth/me`);
   expect(unverified.status()).toBe(200);
@@ -132,6 +133,7 @@ test('registration without redirectTo still confirms email and returns home', as
   const email = `registration-home-${id}@bidplace.test`;
   await page.goto('/register');
   await page.getByRole('textbox', { name: 'Электронная почта', exact: true }).fill(email);
+  await page.getByRole('checkbox', { name: /соглашаюсь/ }).click();
   await page.getByRole('button', { name: 'Дальше', exact: true }).click();
   await page.getByLabel('Никнейм', { exact: true }).fill(`home-${id}`);
   await page.getByRole('button', { name: 'Дальше', exact: true }).click();
@@ -149,7 +151,7 @@ test('registration without redirectTo still confirms email and returns home', as
   await page.getByRole('button', { name: 'Дальше', exact: true }).click();
   expect((await registration).status()).toBe(201);
   await expect(page).toHaveURL(/\/verify-email\?redirectTo=%2F$/);
-  await expect(page.getByText('Код отправлен на вашу почту.')).toBeVisible();
+  await expect(page.getByText(/Код отправлен на /)).toBeVisible();
   await page
     .getByLabel('Код из письма')
     .fill(await localTestMailValue(email, 'code'));

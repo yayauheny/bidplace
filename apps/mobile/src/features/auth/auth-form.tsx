@@ -7,12 +7,15 @@ import { designTokens } from '@bidplace/design-tokens';
 import { AppText, PrimaryButton, TextField } from '../../components/ui';
 import { FigmaButton } from '../../components/figma/FigmaButton';
 import { MotionPressable } from '../../components/ui/MotionPressable';
+import { AuthConsentCheckbox } from './auth-consent-checkbox';
 import { AuthPasswordField } from './auth-password-field';
 import { registerSubmission } from './auth-dismissal';
 import { useAuthSheetComplete, useAuthSheetGuard } from './auth-sheet-context';
 import { AuthTelegramIcon } from './auth-telegram-icon';
 import { useAnalytics } from '../../providers/analytics-provider';
+import { useApiClient } from '../../providers/api-provider';
 import { useAuth } from '../../providers/auth-provider';
+import { useSlugAvailability } from './use-slug-availability';
 import { ApiClientError } from '@bidplace/api-client';
 
 import {
@@ -124,6 +127,7 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
                 onChangeText={field.onChange}
                 onBlur={field.onBlur}
                 autoComplete="current-password"
+                metrics="authPassword"
                 error={form.formState.errors.password?.message}
               />
             )}
@@ -226,17 +230,29 @@ const registrationCopy: Record<RegistrationStep, { title: string; caption: strin
 
 export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
   const auth = useAuth();
+  const api = useApiClient();
   const analytics = useAnalytics();
   const router = useRouter();
   const [step, setStep] = useState<RegistrationStep>('email');
   const [submitError, setSubmitError] = useState<string | null>(null);
   const trackedRegistrationStart = useRef(false);
   const created = useRef(false);
+  const registeredUserId = useRef<string | null>(null);
+  const rulesVersion = useRef<string | null>(null);
+  const rulesSaved = useRef(false);
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerFormSchema),
-    defaultValues: { email: '', slug: '', password: '', confirmPassword: '', phone: '' },
+    defaultValues: {
+      email: '',
+      slug: '',
+      password: '',
+      confirmPassword: '',
+      phone: '',
+      rulesAccepted: false,
+    },
   });
   const watched = form.watch();
+  const slugStatus = useSlugAvailability(step === 'nickname' ? watched.slug : '');
   const complete = useAuthSheetComplete();
   const continueRegistration = () => {
     const next = auth.user?.emailVerifiedAt
@@ -246,7 +262,13 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
     else router.replace(next as Href);
   };
   useAuthSheetGuard({
-    dirty: Boolean(watched.slug || watched.email || watched.password || watched.confirmPassword),
+    dirty: Boolean(
+      watched.slug ||
+        watched.email ||
+        watched.password ||
+        watched.confirmPassword ||
+        watched.rulesAccepted,
+    ),
     busy: form.formState.isSubmitting,
   });
   useEffect(() => {
@@ -269,17 +291,38 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
     analytics.track('registration_started', {});
   }, [analytics]);
 
+  const rememberRulesVersion = async () => {
+    if (rulesVersion.current) return rulesVersion.current;
+    const response = await api.auth.getRules();
+    rulesVersion.current = response.rules.version;
+    return rulesVersion.current;
+  };
   const submit = form.handleSubmit(async (values) => {
     setSubmitError(null);
-    if (created.current) {
-      continueRegistration();
-      return;
-    }
     try {
-      const response = await auth.register(registerSubmission(values));
-      created.current = true;
-      analytics.identify(response.user.id, { claimAcquisition: true });
+      if (!created.current) {
+        const response = await auth.register(registerSubmission(values));
+        created.current = true;
+        registeredUserId.current = response.user.id;
+        analytics.identify(response.user.id, { claimAcquisition: true });
+      }
+      if (!rulesSaved.current) {
+        const ownerId = registeredUserId.current;
+        if (!ownerId) throw new Error('Session changed');
+        const version = await rememberRulesVersion();
+        await api.auth.acceptRules({ rulesVersion: version });
+        const refreshed = await auth.refreshSession();
+        if (!refreshed || refreshed.id !== ownerId) {
+          throw new Error('Session changed');
+        }
+        rulesSaved.current = true;
+      }
+      continueRegistration();
     } catch (error) {
+      if (created.current) {
+        setSubmitError('Не удалось сохранить согласие. Повторите принятие правил.');
+        return;
+      }
       const failure = readFormFailure(error, ['email', 'slug', 'password', 'phone']);
       if (failure.disposition === 'passthrough') {
         setSubmitError(getUserFacingErrorMessage(error, 'Не удалось зарегистрироваться'));
@@ -294,7 +337,13 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
   const goNext = async () => {
     setSubmitError(null);
     if (step === 'email') {
-      if (await form.trigger('email')) setStep('nickname');
+      const emailOk = await form.trigger('email');
+      if (!form.getValues('rulesAccepted')) {
+        form.setError('rulesAccepted', { message: 'Подтвердите согласие с правилами' });
+      } else {
+        form.clearErrors('rulesAccepted');
+      }
+      if (emailOk && form.getValues('rulesAccepted')) setStep('nickname');
       return;
     }
     if (step === 'nickname') {
@@ -324,11 +373,11 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
   const copy = registrationCopy[step];
   return (
       <View style={{ gap: designTokens.auth.screenGap, width: '100%' }}>
-        <View style={{ gap: designTokens.space.x2 }}>
-          <AppText role="sectionTitle" style={{ textAlign: 'center', color: designTokens.color.fieldValue, fontSize: 20, lineHeight: 22, fontWeight: '600' }}>
+        <View style={{ gap: designTokens.auth.titleGap }}>
+          <AppText role="sectionTitle" style={{ textAlign: 'center', color: designTokens.color.fieldValue, ...designTokens.typography.authScreenTitle }}>
             {copy.title}
           </AppText>
-          <AppText role="bodySmall" style={{ textAlign: 'center', color: designTokens.color.textSubdued, fontSize: 14, lineHeight: 20 }}>
+          <AppText role="bodySmall" style={{ textAlign: 'center', color: designTokens.color.textSubdued, ...designTokens.typography.authCaption, letterSpacing: 0 }}>
             {copy.caption}
           </AppText>
         </View>
@@ -351,14 +400,16 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
           />
         ) : null}
         {step === 'nickname' ? (
+          <>
           <Controller
             control={form.control}
             name="slug"
             render={({ field }) => (
               <TextField ref={field.ref}
                 label="Никнейм"
+                prefix="@"
                 value={field.value}
-                onChangeText={field.onChange}
+                onChangeText={(value) => field.onChange(value.replace(/^@+/, ''))}
                 onBlur={field.onBlur}
                 placeholder="Никнейм"
                 autoCapitalize="none"
@@ -367,6 +418,20 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
               />
             )}
           />
+          {slugStatus && !form.formState.errors.slug ? (
+            <AppText
+              role="bodySmall"
+              style={{
+                color: slugStatus === 'available'
+                  ? designTokens.auth.available
+                  : designTokens.auth.taken,
+                ...designTokens.typography.authCaption,
+              }}
+            >
+              {slugStatus === 'available' ? 'Никнейм свободен' : 'Никнейм занят'}
+            </AppText>
+          ) : null}
+          </>
         ) : null}
         {step === 'password' ? (
           <>
@@ -419,9 +484,25 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
           onPress={() => void goNext()}
         />
         {step === 'email' ? (
-          <AppText role="bodySmall" style={{ textAlign: 'center', color: designTokens.color.textSubdued }}>
-            Я соглашаюсь с политикой конфиденциальности и правилами сервиса
-          </AppText>
+          <Controller
+            control={form.control}
+            name="rulesAccepted"
+            render={({ field }) => (
+              <AuthConsentCheckbox
+                checked={field.value}
+                onChange={(checked) => {
+                  field.onChange(checked);
+                  if (checked) {
+                    void rememberRulesVersion().catch(() => {
+                      rulesVersion.current = null;
+                    });
+                  }
+                  if (checked) form.clearErrors('rulesAccepted');
+                }}
+                error={form.formState.errors.rulesAccepted?.message}
+              />
+            )}
+          />
         ) : null}
       </View>
   );

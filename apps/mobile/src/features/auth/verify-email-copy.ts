@@ -1,12 +1,10 @@
+import { maskEmail } from './mask-email';
+
 export function verificationStatusCopy(input: {
   email: string | null | undefined;
   sendAccepted: boolean;
 }) {
-  const purpose =
-    'Подтверждение нужно, чтобы создавать и редактировать профиль автора.';
-  if (!input.sendAccepted) {
-    return `Код ещё не отправлен. ${purpose}`;
-  }
-  const address = input.email?.trim() ? input.email : 'ваш email';
-  return `Отправка кода на ${address} принята. Доставку письма это не подтверждает. ${purpose}`;
+  if (!input.sendAccepted) return 'Код ещё не отправлен.';
+  const address = input.email?.trim() ? maskEmail(input.email.trim()) : 'ваш email';
+  return `Код отправлен на ${address}`;
 }

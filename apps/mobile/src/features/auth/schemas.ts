@@ -19,11 +19,16 @@ export const registerFormSchema = z
     confirmPassword: z.string({ required_error: 'Подтвердите пароль' }).min(1, 'Подтвердите пароль'),
     phone: z.string().trim().transform((value) => value || null).nullable().optional(),
     slug: accountSlugSchema,
+    rulesAccepted: z.boolean(),
   })
   .strict()
   .refine((values) => values.password === values.confirmPassword, {
     message: 'Пароли не совпадают',
     path: ['confirmPassword'],
+  })
+  .refine((values) => values.rulesAccepted, {
+    message: 'Подтвердите согласие с правилами',
+    path: ['rulesAccepted'],
   });
 
 export type LoginFormValues = z.infer<typeof loginFormSchema>;

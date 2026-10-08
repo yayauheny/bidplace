@@ -1,5 +1,32 @@
 # bidplace — текущий статус проекта
 
+## 2026-10-08 — Auth brand, consent and nickname read
+
+- `Partial`. Live header, dock, fullscreen registration and email
+  confirmation use one `BidplaceMark` and, on the four fullscreen steps, the
+  outlined wordmark. Favicon and the Expo icon/adaptive rasters referenced
+  by `app.json` are regenerated from that mark. The eye-mark PNG and
+  `AnimatedBidplaceLogo` are removed. Login stays a sheet. Auth sheets hide
+  the Home dock through `hideDock`, including loading, empty and error;
+  leaving auth shows the dock again.
+- Registration email step has one checkbox, initially unchecked. The choice
+  stays across steps. After the single `register`, `acceptRules` stores the
+  version from `getRules` for that session. A failed acceptance retries only
+  `acceptRules`. There is still no public policy page, and the checkbox copy
+  has unresolved mixed text ranges, so consent is not a published legal
+  document.
+- `GET /api/auth/slug-availability` reads whether `User.slug` is free. It
+  validates the shared slug schema, is rate-limited, and does not reserve
+  the nickname. The field shows available or taken only from that response.
+  `@` is a visual prefix. Suggestion chips are not implemented.
+- Login password shell is 51px and fullscreen password shells are 53px.
+  Fullscreen titles use Inter 600 20/22 with tracking −0.4px. Resend is
+  51px. Email confirmation uses the existing six-cell code field. After an
+  accepted send, the caption is `Код отправлен на {masked email}`.
+- Still open: Google glyph fills, mixed text ranges, a public rules page,
+  nickname suggestions, and visual 1:1. Production remains
+  `541d763547f7b021895daa3d533c3196c37a4e67`.
+
 ## 2026-10-08 — Brand/auth sources prepared; runtime correction pending
 
 - `Not implemented` for the new runtime branding/consent correction. Four latest

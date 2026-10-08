@@ -1,0 +1,1 @@
+export const BIDPLACE_PAGE_LOGO_SIZE = 104;

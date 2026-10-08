@@ -15,7 +15,7 @@ import { HomeNewWorks } from './home-new-works';
 import { HomeOpening } from './home-opening';
 import { homeSectionPlan } from './home-sections';
 
-export function HomeScreen() {
+export function HomeScreen({ hideDock = false }: { hideDock?: boolean }) {
   const api = useApiClient();
   const router = useRouter();
   const home = useQuery({
@@ -27,7 +27,7 @@ export function HomeScreen() {
 
   if (pageStatus !== 'ready') {
     return (
-      <AppShell>
+      <AppShell hideDock={hideDock}>
         <InfrastructurePageStatus
           status={pageStatus}
           onRetry={() => void home.refetch()}
@@ -37,7 +37,7 @@ export function HomeScreen() {
   }
 
   return (
-    <AppShell>
+    <AppShell hideDock={hideDock}>
       <ScrollView
         testID="home-scroll"
         contentContainerStyle={{
@@ -53,7 +53,7 @@ export function HomeScreen() {
             marginBottom: designTokens.space.logoGap,
           }}
         >
-          <BrandLogo profile />
+          <BrandLogo />
         </View>
         <View style={{ gap: designTokens.space.homeSectionStack, minWidth: 0 }}>
           {plan.opening ? <HomeOpening selection={plan.opening} /> : null}

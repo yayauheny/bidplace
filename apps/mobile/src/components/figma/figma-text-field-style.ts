@@ -43,16 +43,17 @@ export function figmaFieldStyle(
   metrics: 'default' | 'authPassword' | 'authScreenPassword' = 'default',
 ) {
   const password = metrics === 'authPassword' || metrics === 'authScreenPassword';
+  const passwordHeight =
+    metrics === 'authScreenPassword'
+      ? figmaTokens.auth.screenPasswordHeight
+      : figmaTokens.auth.passwordHeight;
   return {
     width: '100%' as const,
-    minHeight:
-      metrics === 'authScreenPassword'
-        ? figmaTokens.auth.screenPasswordHeight
-        : password
-          ? figmaTokens.auth.passwordHeight
-          : figmaTokens.size.input,
+    ...(password
+      ? { height: passwordHeight, minHeight: passwordHeight }
+      : { minHeight: figmaTokens.size.input }),
     paddingHorizontal: figmaTokens.space.fieldX,
-    paddingVertical: figmaTokens.space.fieldY,
+    paddingVertical: password ? 0 : figmaTokens.space.fieldY,
     borderRadius: figmaTokens.radius.field,
     borderWidth: password ? figmaTokens.auth.passwordBorder : figmaTokens.size.fieldBorder,
     borderColor: fieldBorder(status),

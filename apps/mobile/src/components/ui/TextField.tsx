@@ -12,6 +12,7 @@ export type TextFieldProps = TextInputProps & {
   error?: string;
   required?: boolean;
   metrics?: 'default' | 'authPassword' | 'authScreenPassword';
+  prefix?: string;
   trailing?: ReactNode;
 };
 
@@ -21,6 +22,7 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
   error,
   required,
   metrics,
+  prefix,
   trailing,
   editable = true,
   ...props
@@ -38,6 +40,7 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
         label={required ? `${label} *` : label}
         error={error}
         metrics={metrics}
+        prefix={prefix}
         trailing={trailing}
         disabled={editable === false}
       />

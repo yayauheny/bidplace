@@ -170,13 +170,11 @@ implementations.
 
 `PageState` owns empty, not-found and other screen-local messages, plus compact
 inline loading copy where content chrome stays on screen. Blocking page fetch
-uses `InfrastructurePageStatus`: one `AnimatedBidplaceLogo` at 104px with
-semantic `motion` `loading` | `error`. Loading is the mark only (CSS bounce
-loop, 900ms, 16px, transform-only). Pending → error finishes the current bounce
-via `animationiteration`, then blinks the eyes group twice (520ms) and reveals
-canonical copy in `workTitle` (20/24 semibold, max 300px) plus a large outline
-«Повторить». Success unmounts immediately. `motion="glance"` is reserved for
-later dock interaction and is not wired here.
+uses `InfrastructurePageStatus`: one static `BidplaceMark` at 104px.
+Loading is the mark only. When the fetch stops in error, the same mark stays
+and the canonical copy appears in `workTitle` (20/24 semibold, max 300px)
+plus a large outline «Повторить». Success unmounts immediately. The previous
+eye-mark animation is not part of this mark.
 `InfrastructureErrorState` keeps `presentation="page" | "inline"`; page mode
 composes `InfrastructurePageStatus`. Inline presentation keeps copy + outline
 retry without the logo, for Search, catalog lists, seller works tab, and author

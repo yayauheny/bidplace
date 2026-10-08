@@ -85,6 +85,21 @@ describe('Figma text field states', () => {
     expect(figmaTokens.space.fieldErrorX).toBe(13);
   });
 
+  it('uses separate password heights without letting content grow the shell', () => {
+    expect(figmaFieldStyle('empty', false, 'authPassword')).toMatchObject({
+      height: 51,
+      minHeight: 51,
+      paddingVertical: 0,
+      borderWidth: 1,
+    });
+    expect(figmaFieldStyle('empty', false, 'authScreenPassword')).toMatchObject({
+      height: 53,
+      minHeight: 53,
+      paddingVertical: 0,
+      borderWidth: 1,
+    });
+  });
+
   it('keeps a filled value from becoming the success state', () => {
     expect(state({ filled: true })).toBe('filled');
     expect(figmaFieldValueColor('filled')).toBe('#121212');

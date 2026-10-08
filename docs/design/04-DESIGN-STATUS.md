@@ -4,6 +4,18 @@
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
+## 2026-10-08 — Auth brand and consent correction
+
+- `Partial`. Runtime uses the shared 30.35 mark and 93×22 outlined wordmark
+  on the four fullscreen steps. Login remains a sheet. The background dock
+  is hidden with the existing `hideDock`. Password shells are 51px on the
+  login sheet and 53px on fullscreen. The email step has one unchecked
+  checkbox. Nickname availability is a real read. Google stays a stub
+  because node `I526:14901;298:6024;521:10381` has vector paths and a white
+  fill binding, not the colored glyph. Mixed ranges at `4547:23406`,
+  `4547:25029`, `526:14902`, `526:15580` and `558:16958` are not guessed.
+  No public policy page was added. This is not a 1:1 match.
+
 ## 2026-10-08 — Current fullscreen brand source and correction handoff
 
 - `Partial`: four new fullscreen captures imported unchanged and validated in

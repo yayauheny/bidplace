@@ -50,6 +50,14 @@ export const claimSlugResponseSchema = z
   })
   .strict();
 
+export const slugAvailabilityResponseSchema = z
+  .object({
+    available: z.boolean(),
+  })
+  .strict();
+
+export type SlugAvailabilityResponse = z.infer<typeof slugAvailabilityResponseSchema>;
+
 export const loginRequestSchema = z
   .object({
     email: emailAddressSchema,

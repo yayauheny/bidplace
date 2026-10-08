@@ -263,6 +263,21 @@ describe('AuthService', () => {
     ).rejects.toBeInstanceOf(UnauthorizedException);
   });
 
+  it('reports slug availability without reserving the nickname', async () => {
+    prisma.user.findUnique.mockResolvedValueOnce(null);
+    await expect(service.slugAvailability('author')).resolves.toEqual({
+      available: true,
+    });
+    expect(prisma.user.create).not.toHaveBeenCalled();
+    expect(prisma.user.update).not.toHaveBeenCalled();
+
+    prisma.user.findUnique.mockResolvedValueOnce({ id: 'taken' });
+    await expect(service.slugAvailability('author')).resolves.toEqual({
+      available: false,
+    });
+    expect(prisma.user.create).not.toHaveBeenCalled();
+  });
+
   it('reads service rules from the injected config', async () => {
     vi.stubEnv('SERVICE_RULES_TEXT', 'from-process');
     const rulesService = new AuthService(

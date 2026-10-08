@@ -97,8 +97,11 @@ export function authLeaveDestination(redirectTo: SafeRedirect): SafeRedirect {
   return '/';
 }
 
-export function registerSubmission<T extends { confirmPassword: string }>(values: T) {
-  const { confirmPassword, ...request } = values;
+export function registerSubmission<
+  T extends { confirmPassword: string; rulesAccepted?: boolean },
+>(values: T) {
+  const { confirmPassword, rulesAccepted, ...request } = values;
   void confirmPassword;
+  void rulesAccepted;
   return request;
 }

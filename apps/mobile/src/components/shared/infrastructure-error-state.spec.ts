@@ -3,12 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { designTokens } from '@bidplace/design-tokens';
 
 import { INFRASTRUCTURE_ERROR_COPY } from '../../errors';
-import {
-  BIDPLACE_LOGO_BLINK_MS,
-  BIDPLACE_LOGO_BOUNCE_LIFT_PX,
-  BIDPLACE_LOGO_BOUNCE_MS,
-  BIDPLACE_PAGE_LOGO_SIZE,
-} from '../branding/bidplace-logo-mark';
+import { BIDPLACE_PAGE_LOGO_SIZE } from '../branding/bidplace-brand-metrics';
 import {
   INFRASTRUCTURE_ERROR_COPY_MAX_WIDTH,
   INFRASTRUCTURE_ERROR_TEXT_ROLE,
@@ -44,9 +39,6 @@ describe('InfrastructureErrorState presentation', () => {
     });
     expect(INFRASTRUCTURE_ERROR_COPY_MAX_WIDTH).toBe(300);
     expect(BIDPLACE_PAGE_LOGO_SIZE).toBe(104);
-    expect(BIDPLACE_LOGO_BOUNCE_MS).toBe(900);
-    expect(BIDPLACE_LOGO_BOUNCE_LIFT_PX).toBe(16);
-    expect(BIDPLACE_LOGO_BLINK_MS).toBe(520);
     expect(infrastructurePageErrorLayout).toEqual({
       padX: designTokens.space.x5,
       clusterGap: designTokens.space.x8,

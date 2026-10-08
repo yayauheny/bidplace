@@ -135,6 +135,7 @@ async function expectAuthBrowserHistory(page: Page, navigationApi: boolean) {
   await expect(page).toHaveURL(/\/login$/);
   const loginTitle = page.getByText('Вход на Bidplace', { exact: true });
   await expect(loginTitle).toBeVisible();
+  await expect(page.getByRole('navigation', { name: 'Основная навигация' })).toHaveCount(0);
   const email = page.getByLabel('Электронная почта');
   await email.fill('a');
   await email.fill('');
@@ -142,6 +143,7 @@ async function expectAuthBrowserHistory(page: Page, navigationApi: boolean) {
   await expect(page.getByText('Прервать вход', { exact: true })).toHaveCount(0);
   await expect(page).toHaveURL(/\/$/);
   await expect(loginTitle).toHaveCount(0);
+  await expect(page.getByRole('navigation', { name: 'Основная навигация' })).toHaveCount(1);
 
   await page.getByRole('link', { name: 'Профиль', exact: true }).click();
   await expect(page).toHaveURL(/\/login$/);

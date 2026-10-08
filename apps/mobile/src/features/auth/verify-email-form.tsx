@@ -55,7 +55,7 @@ export function VerifyEmailForm({ redirectTo, autoRequest }: VerifyEmailFormProp
     setError(null);
     try {
       await api.auth.requestEmailVerification();
-      setNotice('Код отправлен на вашу почту.');
+      setNotice('sent');
       setResendDeadline(confirmedResendDeadline(Date.now()));
     } catch (requestError) {
       setError(
@@ -156,15 +156,17 @@ export function VerifyEmailForm({ redirectTo, autoRequest }: VerifyEmailFormProp
 
   return (
       <View style={{ gap: designTokens.auth.screenGap }}>
-        <AppText role="sectionTitle" style={{ textAlign: 'center', color: designTokens.color.fieldValue, fontSize: 20, lineHeight: 22, fontWeight: '600' }}>
-          Проверьте код на почте
-        </AppText>
-        <AppText role="bodySmall" style={{ textAlign: 'center', color: designTokens.color.textSubdued }}>
-          {verificationStatusCopy({
-            email: auth.user?.email,
-            sendAccepted: notice !== null,
-          })}
-        </AppText>
+        <View style={{ gap: designTokens.auth.titleGap }}>
+          <AppText role="sectionTitle" style={{ textAlign: 'center', color: designTokens.color.fieldValue, ...designTokens.typography.authScreenTitle }}>
+            Проверьте код на почте
+          </AppText>
+          <AppText role="bodySmall" style={{ textAlign: 'center', color: designTokens.color.textSubdued, ...designTokens.typography.authCaption, letterSpacing: 0 }}>
+            {verificationStatusCopy({
+              email: auth.user?.email,
+              sendAccepted: notice !== null,
+            })}
+          </AppText>
+        </View>
         <AuthCodeField
           value={code}
           onChangeText={(value) => {
@@ -178,7 +180,6 @@ export function VerifyEmailForm({ redirectTo, autoRequest }: VerifyEmailFormProp
             {error}
           </AppText>
         ) : null}
-        {notice ? <AppText role="bodySmall" tone="secondary">{notice}</AppText> : null}
         <PrimaryButton label="Завершить" size="auth" width="full" loading={verifying} disabled={requesting || verifying || logoutBusy} onPress={() => void verify()} />
         <SecondaryButton label={resendLabel} size="authResend" width="full" disabled={verifying || requesting || logoutBusy || remaining > 0} onPress={() => void requestCode()} />
         <AccountLogoutButton pending={requesting || verifying || logoutBusy} onPress={beginLogout} />

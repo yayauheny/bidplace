@@ -99,7 +99,7 @@ export function CreatorHero({
               designTokens.space.logoGap - designTokens.space.authorSectionGap,
           }}
         >
-          <BrandLogo profile />
+          <BrandLogo />
         </View>
         <CreatorIdentity
           profile={profile}

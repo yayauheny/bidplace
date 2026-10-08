@@ -1,8 +1,10 @@
 import {
   acceptRulesRequestSchema,
   acceptRulesResponseSchema,
+  accountSlugSchema,
   claimSlugRequestSchema,
   claimSlugResponseSchema,
+  slugAvailabilityResponseSchema,
   authResponseSchema,
   emailOtpVerifyRequestSchema,
   forgotPasswordRequestSchema,
@@ -40,6 +42,14 @@ export function createAuthClient(context: RequestContext) {
     },
     me() {
       return requestJson(context, '/api/auth/me', meResponseSchema);
+    },
+    async slugAvailability(slug: string) {
+      const parsed = accountSlugSchema.parse(slug);
+      return requestJson(
+        context,
+        `/api/auth/slug-availability?slug=${encodeURIComponent(parsed)}`,
+        slugAvailabilityResponseSchema,
+      );
     },
     claimSlug(input: { slug: string }) {
       return requestJson(context, '/api/auth/slug', claimSlugResponseSchema, {

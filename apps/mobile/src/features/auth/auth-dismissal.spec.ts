@@ -104,7 +104,7 @@ describe('verification status copy', () => {
     expect(verificationStatusCopy({
       email: 'author@example.com',
       sendAccepted: true,
-    })).toContain('принята');
+    })).toBe('Код отправлен на a***r@example.com');
     expect(verificationStatusCopy({
       email: 'author@example.com',
       sendAccepted: true,

@@ -7,6 +7,8 @@ import {
   meResponseSchema,
   claimSlugRequestSchema,
   claimSlugResponseSchema,
+  accountSlugSchema,
+  slugAvailabilityResponseSchema,
   registerRequestSchema,
   serviceRulesResponseSchema,
 } from '@bidplace/contracts';
@@ -16,6 +18,7 @@ import {
   Get,
   Inject,
   Post,
+  Query,
   Res,
   UnauthorizedException,
   UseGuards,
@@ -116,6 +119,21 @@ export class AuthController {
     return authResponseSchema.parse({
       user: session.user,
     });
+  }
+
+  @UseGuards(RateLimitGuard)
+  @RateLimit({
+    keyPrefix: 'auth:slug-availability',
+    limit: 30,
+    windowMs: 60_000,
+    scope: 'ip',
+  })
+  @Get('slug-availability')
+  async slugAvailability(@Query('slug') slug: unknown) {
+    const parsed = parseBody(accountSlugSchema, slug);
+    return slugAvailabilityResponseSchema.parse(
+      await this.authService.slugAvailability(parsed),
+    );
   }
 
   @UseGuards(BearerAuthGuard, RateLimitGuard)

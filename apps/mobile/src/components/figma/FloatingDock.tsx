@@ -1,5 +1,4 @@
 import type { RefObject } from 'react';
-import { Image } from 'expo-image';
 import { Link, type Href, usePathname, useRouter } from 'expo-router';
 import { Platform, type View, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -12,6 +11,7 @@ import {
 } from '../../hooks/use-seller-capability';
 import { useAuth } from '../../providers/auth-provider';
 import { useSearchOverlay } from '../../features/search/search-overlay-provider';
+import { BidplaceMark } from '../branding/BidplaceBrand';
 import { getMobileCreateHref } from '../layout/header-chrome';
 import { MotionPressable } from '../ui/MotionPressable';
 import { FigmaIcon } from './FigmaIcon';
@@ -24,8 +24,6 @@ import {
   type FigmaDockItem,
 } from './floating-dock';
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const brandMark = require('../../../assets/branding/bidplace-logo.png');
 const dockItemHitSlop =
   (figmaTokens.size.dockIconHit - figmaTokens.size.control) / 2;
 
@@ -152,14 +150,7 @@ function DockItem({
       }}
     >
       {item.icon === 'logo' ? (
-        <Image
-          source={brandMark}
-          contentFit="contain"
-          style={{
-            width: figmaTokens.size.dockIcon,
-            height: 18,
-          }}
-        />
+        <BidplaceMark size={18} />
       ) : (
         <FigmaIcon
           name={item.icon}

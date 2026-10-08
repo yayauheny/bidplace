@@ -249,8 +249,7 @@ SellerProfile
   lives in `apps/mobile/src/components/shared/InfrastructureErrorState.tsx`
   (`presentation="page"` as an `AppShell` flex child, `presentation="inline"`
   when screen chrome stays useful). Blocking page fetch loading/error share
-  `InfrastructurePageStatus` and one `AnimatedBidplaceLogo` instance
-  (`motion="loading" | "error"`). Diagnostics for handled infrastructure
+  `InfrastructurePageStatus` and one static `BidplaceMark`. Diagnostics for handled infrastructure
   failures use `console.info` via `logInfrastructureError`; Expo LogBox is not
   used as UI. Public `AppShell` does not show session
   bootstrap chrome. `ProtectedRoute` owns blocking session failure.

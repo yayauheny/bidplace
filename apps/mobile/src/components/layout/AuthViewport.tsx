@@ -31,6 +31,7 @@ import {
   sheetEnter,
   sheetExit,
 } from '../../lib/layout-transition';
+import { BidplaceMark, BidplaceWordmark } from '../branding/BidplaceBrand';
 import { AppText } from '../ui';
 import { AppIcon } from '../ui/AppIcon';
 import { AppDialogFrame, AppDialogOverlay } from '../ui/app-dialog-layer';
@@ -234,7 +235,7 @@ export function AuthViewport({
           style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }}
           {...(Platform.OS === 'web' ? { inert: true } : {})}
         >
-          <HomeScreen />
+          <HomeScreen hideDock />
         </View>
       ) : null}
       <AuthSheetGuardProvider onGuard={onGuard} complete={complete}>
@@ -289,16 +290,32 @@ export function AuthViewport({
                       paddingHorizontal: screen ? designTokens.auth.screenPaddingX : designTokens.auth.paddingX,
                       paddingBottom: screen ? designTokens.auth.screenPaddingBottom : designTokens.auth.paddingBottom,
                       zIndex: designTokens.layer.modal,
-                      justifyContent: screen ? 'center' : undefined,
+                      justifyContent: screen ? 'flex-start' : undefined,
                     }}
                   >
                     <ScrollView
                       keyboardShouldPersistTaps="handled"
                       keyboardDismissMode="on-drag"
                       showsVerticalScrollIndicator={false}
-                      style={screen ? undefined : { maxHeight: Math.max(height - designTokens.space.x6 - designTokens.auth.paddingTop - designTokens.auth.paddingBottom, designTokens.size.input * 4) }}
-                      contentContainerStyle={{ gap: contentGap, justifyContent: screen ? 'center' : undefined, flexGrow: screen ? 1 : undefined }}
+                      style={screen ? { flex: 1 } : { maxHeight: Math.max(height - designTokens.space.x6 - designTokens.auth.paddingTop - designTokens.auth.paddingBottom, designTokens.size.input * 4) }}
+                      contentContainerStyle={{ gap: screen ? 0 : contentGap, justifyContent: screen ? 'space-between' : undefined, flexGrow: screen ? 1 : undefined }}
                     >
+                      {screen ? (
+                        <View
+                          accessibilityElementsHidden
+                          importantForAccessibility="no-hide-descendants"
+                          style={{
+                            width: designTokens.auth.markSlotWidth,
+                            height: designTokens.auth.markSlotHeight,
+                            marginTop: designTokens.auth.markTop,
+                            alignSelf: 'center',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
+                        >
+                          <BidplaceMark />
+                        </View>
+                      ) : null}
                       {screen ? (
                         <Dialog.Title asChild>
                           <AppText role="sectionTitle" style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden' }}>
@@ -338,6 +355,18 @@ export function AuthViewport({
                         </View>
                       )}
                       <View style={{ gap: screen ? designTokens.auth.screenGap : formGap, width: '100%', maxWidth: 350, alignSelf: 'center' }}>{children}</View>
+                      {screen ? (
+                        <View
+                          accessibilityElementsHidden
+                          importantForAccessibility="no-hide-descendants"
+                          style={{
+                            marginBottom: designTokens.auth.wordmarkBottom,
+                            alignSelf: 'center',
+                          }}
+                        >
+                          <BidplaceWordmark />
+                        </View>
+                      ) : null}
                     </ScrollView>
                   </Dialog.Content>
                 </Animated.View>

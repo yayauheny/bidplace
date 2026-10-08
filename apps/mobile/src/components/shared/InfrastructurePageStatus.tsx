@@ -1,12 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
-import { Platform, View } from 'react-native';
+import { View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
 import { INFRASTRUCTURE_ERROR_COPY } from '../../errors';
-import { useReducedMotion } from '../../lib/reduced-motion';
-import { AnimatedBidplaceLogo } from '../branding/AnimatedBidplaceLogo';
-import { BIDPLACE_PAGE_LOGO_SIZE } from '../branding/bidplace-logo-mark';
+import { BidplaceMark, BIDPLACE_PAGE_LOGO_SIZE } from '../branding/BidplaceBrand';
 import { AppText, SecondaryButton } from '../ui';
 import {
   INFRASTRUCTURE_ERROR_COPY_MAX_WIDTH,
@@ -25,23 +22,7 @@ export function InfrastructurePageStatus({
   status: InfrastructurePageVisualStatus;
   onRetry: () => void;
 }) {
-  const reducedMotion = useReducedMotion();
-  const [settled, setSettled] = useState(status !== 'loading');
-  const statusRef = useRef(status);
-  const canWaitForCycle = Platform.OS === 'web' && !reducedMotion;
-  statusRef.current = status;
-
-  useEffect(() => {
-    if (status === 'loading') {
-      setSettled(false);
-      return;
-    }
-    if (!canWaitForCycle) {
-      setSettled(true);
-    }
-  }, [canWaitForCycle, status]);
-
-  const visual = infrastructurePageVisual(status, settled);
+  const visual = infrastructurePageVisual(status, status !== 'loading');
   const chromeStyle = {
     opacity: visual.showsErrorChrome ? 1 : 0,
     visibility: visual.showsErrorChrome ? 'visible' : 'hidden',
@@ -74,16 +55,7 @@ export function InfrastructurePageStatus({
           paddingBottom: infrastructurePageErrorLayout.clusterLift,
         }}
       >
-        <AnimatedBidplaceLogo
-          motion={visual.logoMotion}
-          size={BIDPLACE_PAGE_LOGO_SIZE}
-          onLoadingCycleEnd={() => {
-            if (statusRef.current === 'error') {
-              setSettled(true);
-              return true;
-            }
-          }}
-        />
+        <BidplaceMark size={BIDPLACE_PAGE_LOGO_SIZE} />
         <View
           accessible={visual.showsErrorChrome}
           importantForAccessibility={

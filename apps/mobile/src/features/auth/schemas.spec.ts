@@ -38,6 +38,7 @@ describe('registration form validation', () => {
       password: 'password123',
       confirmPassword: 'password123',
       slug: 'author',
+      rulesAccepted: true,
       phone,
     });
 
@@ -52,6 +53,7 @@ describe('registration form validation', () => {
       password: 'password123',
       confirmPassword: 'password1234',
       slug: 'author',
+      rulesAccepted: true,
     });
     expect(mismatch.success).toBe(false);
   });
