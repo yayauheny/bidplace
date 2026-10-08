@@ -2,8 +2,10 @@ import { Link, useRouter, type Href } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useQueryClient } from '@tanstack/react-query';
 import { View } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
+import type { User } from '@bidplace/contracts';
 import { AppText, PrimaryButton, TextField } from '../../components/ui';
 import { FigmaButton } from '../../components/figma/FigmaButton';
 import { MotionPressable } from '../../components/ui/MotionPressable';
@@ -15,6 +17,7 @@ import { AuthTelegramIcon } from './auth-telegram-icon';
 import { useAnalytics } from '../../providers/analytics-provider';
 import { useApiClient } from '../../providers/api-provider';
 import { useAuth } from '../../providers/auth-provider';
+import { registrationStillOwns } from './registration-consent';
 import { useSlugAvailability } from './use-slug-availability';
 import { ApiClientError } from '@bidplace/api-client';
 
@@ -23,6 +26,12 @@ import {
   getUserFacingErrorMessage,
   readFormFailure,
 } from '../../errors';
+import {
+  authKeys,
+  canWritePrivateCache,
+  currentAuthEpoch,
+} from '../../lib/query-cache';
+import { usePrivateCacheEpoch } from '../../lib/use-private-cache-epoch';
 import {
   loginFormSchema,
   registerFormSchema,
@@ -99,6 +108,7 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
       </View>
     );
   return (
+      <View style={{ gap: designTokens.auth.loginGap }}>
       <View style={{ gap: designTokens.auth.loginFormGap }}>
         <Controller
           control={form.control}
@@ -116,7 +126,7 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
             />
           )}
         />
-        <View style={{ gap: designTokens.space.x2 }}>
+        <View style={{ gap: designTokens.auth.titleGap }}>
           <Controller
             control={form.control}
             name="password"
@@ -187,9 +197,11 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
             onPress={() => undefined}
           />
         </Link>
-        <AppText role="bodySmall" style={{ textAlign: 'center', color: designTokens.color.textSubdued }}>
+        </View>
+        <AppText role="authOr" style={{ textAlign: 'center', color: designTokens.color.textSubdued }}>
           или
         </AppText>
+        <View style={{ gap: designTokens.auth.loginFormGap }}>
         <FigmaButton
           label="Войти с Telegram"
           iconNode={<AuthTelegramIcon />}
@@ -205,7 +217,8 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
           width="full"
           onPress={() => setProviderNotice('Вход через Google пока недоступен')}
         />
-        <AppText role="bodySmall" style={{ color: designTokens.color.textSubdued }}>
+        </View>
+        <AppText role="authLegal" style={{ textAlign: 'center', color: designTokens.color.textSubdued }}>
           Продолжая, вы принимаете политику конфиденциальности и правила сервиса
         </AppText>
       </View>
@@ -233,13 +246,19 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
   const api = useApiClient();
   const analytics = useAnalytics();
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const authEpoch = usePrivateCacheEpoch(queryClient);
   const [step, setStep] = useState<RegistrationStep>('email');
   const [submitError, setSubmitError] = useState<string | null>(null);
   const trackedRegistrationStart = useRef(false);
-  const created = useRef(false);
-  const registeredUserId = useRef<string | null>(null);
+  const openedAuthenticated = useRef<boolean | null>(null);
   const rulesVersion = useRef<string | null>(null);
-  const rulesSaved = useRef(false);
+  const rulesRequest = useRef(0);
+  const rulesPending = useRef(false);
+  const sessionOperation = useRef(0);
+  const seenAuthEpoch = useRef(authEpoch);
+  const mounted = useRef(true);
+  const completed = useRef(false);
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerFormSchema),
     defaultValues: {
@@ -254,8 +273,22 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
   const watched = form.watch();
   const slugStatus = useSlugAvailability(step === 'nickname' ? watched.slug : '');
   const complete = useAuthSheetComplete();
-  const continueRegistration = () => {
-    const next = auth.user?.emailVerifiedAt
+  const sessionUser = () =>
+    queryClient.getQueryData<User | null>(authKeys.session) ?? null;
+  const owns = (operation: number, epoch: number, userId: string | null) =>
+    registrationStillOwns({
+      mounted: mounted.current,
+      operation,
+      currentOperation: sessionOperation.current,
+      epoch,
+      currentEpoch: currentAuthEpoch(queryClient),
+      userId,
+      sessionUserId: sessionUser()?.id ?? null,
+    }) && (userId === null || canWritePrivateCache(queryClient, epoch));
+  const finishRegistration = (user: User) => {
+    if (!mounted.current || completed.current) return;
+    completed.current = true;
+    const next = user.emailVerifiedAt
       ? redirectTo
       : (`/verify-email?redirectTo=${encodeURIComponent(redirectTo)}` as SafeRedirect);
     if (complete) complete(next);
@@ -272,16 +305,16 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
     busy: form.formState.isSubmitting,
   });
   useEffect(() => {
-    if (form.formState.isSubmitSuccessful && auth.isAuthenticated) {
-      continueRegistration();
-    }
-  }, [
-    auth.isAuthenticated,
-    complete,
-    form.formState.isSubmitSuccessful,
-    redirectTo,
-    router,
-  ]);
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+  useEffect(() => {
+    if (seenAuthEpoch.current === authEpoch) return;
+    seenAuthEpoch.current = authEpoch;
+    sessionOperation.current += 1;
+  }, [authEpoch]);
 
   useEffect(() => {
     if (trackedRegistrationStart.current) {
@@ -291,35 +324,83 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
     analytics.track('registration_started', {});
   }, [analytics]);
 
-  const rememberRulesVersion = async () => {
-    if (rulesVersion.current) return rulesVersion.current;
-    const response = await api.auth.getRules();
-    rulesVersion.current = response.rules.version;
-    return rulesVersion.current;
+  const loadRulesVersion = () => {
+    rulesVersion.current = null;
+    const request = rulesRequest.current + 1;
+    rulesRequest.current = request;
+    const operation = sessionOperation.current;
+    const epoch = currentAuthEpoch(queryClient);
+    const sessionId = sessionUser()?.id ?? null;
+    if (!owns(operation, epoch, sessionId)) return;
+    rulesPending.current = true;
+    void api.auth
+      .getRules()
+      .then((response) => {
+        if (rulesRequest.current !== request || !owns(operation, epoch, sessionId)) return;
+        rulesVersion.current = response.rules.version;
+        form.clearErrors('rulesAccepted');
+      })
+      .catch(() => {
+        if (rulesRequest.current !== request || !owns(operation, epoch, sessionId)) return;
+        rulesVersion.current = null;
+        form.setError('rulesAccepted', { message: 'Не удалось получить правила.' });
+      })
+      .finally(() => {
+        if (rulesRequest.current === request) rulesPending.current = false;
+      });
   };
   const submit = form.handleSubmit(async (values) => {
     setSubmitError(null);
+    let operation = sessionOperation.current;
+    let epoch = currentAuthEpoch(queryClient);
+    let ownerId =
+      openedAuthenticated.current === false ? (sessionUser()?.id ?? null) : null;
+    if (!owns(operation, epoch, ownerId)) return;
+    const version = rulesVersion.current;
+    if (!version) {
+      setSubmitError('Не удалось получить правила.');
+      return;
+    }
     try {
-      if (!created.current) {
+      if (!ownerId) {
         const response = await auth.register(registerSubmission(values));
-        created.current = true;
-        registeredUserId.current = response.user.id;
+        const nextEpoch = currentAuthEpoch(queryClient);
+        if (seenAuthEpoch.current !== nextEpoch) {
+          seenAuthEpoch.current = nextEpoch;
+          sessionOperation.current += 1;
+        }
+        operation = sessionOperation.current;
+        epoch = nextEpoch;
+        ownerId = response.user.id;
+        if (!owns(operation, epoch, ownerId)) return;
         analytics.identify(response.user.id, { claimAcquisition: true });
       }
-      if (!rulesSaved.current) {
-        const ownerId = registeredUserId.current;
-        if (!ownerId) throw new Error('Session changed');
-        const version = await rememberRulesVersion();
-        await api.auth.acceptRules({ rulesVersion: version });
-        const refreshed = await auth.refreshSession();
-        if (!refreshed || refreshed.id !== ownerId) {
-          throw new Error('Session changed');
-        }
-        rulesSaved.current = true;
+      if (!owns(operation, epoch, ownerId) || rulesVersion.current !== version) return;
+      await api.auth.acceptRules({ rulesVersion: version });
+      if (!owns(operation, epoch, ownerId) || rulesVersion.current !== version) return;
+      const refreshed = await auth.refreshSession();
+      if (!owns(operation, epoch, ownerId) || rulesVersion.current !== version) return;
+      if (
+        !refreshed ||
+        refreshed.id !== ownerId ||
+        refreshed.acceptedRulesVersion !== version
+      ) {
+        setSubmitError('Не удалось сохранить согласие. Повторите принятие правил.');
+        return;
       }
-      continueRegistration();
+      finishRegistration(refreshed);
     } catch (error) {
-      if (created.current) {
+      if (!owns(operation, epoch, ownerId)) return;
+      if (ownerId) {
+        if (error instanceof ApiClientError && error.kind === 'conflict') {
+          rulesVersion.current = null;
+          form.setValue('rulesAccepted', false);
+          setStep('email');
+          form.setError('rulesAccepted', {
+            message: 'Правила изменились. Подтвердите согласие ещё раз.',
+          });
+          return;
+        }
         setSubmitError('Не удалось сохранить согласие. Повторите принятие правил.');
         return;
       }
@@ -340,10 +421,16 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
       const emailOk = await form.trigger('email');
       if (!form.getValues('rulesAccepted')) {
         form.setError('rulesAccepted', { message: 'Подтвердите согласие с правилами' });
-      } else {
-        form.clearErrors('rulesAccepted');
+        return;
       }
-      if (emailOk && form.getValues('rulesAccepted')) setStep('nickname');
+      if (!rulesVersion.current) {
+        if (!rulesPending.current) {
+          form.setError('rulesAccepted', { message: 'Не удалось получить правила.' });
+        }
+        return;
+      }
+      form.clearErrors('rulesAccepted');
+      if (emailOk) setStep('nickname');
       return;
     }
     if (step === 'nickname') {
@@ -352,13 +439,17 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
     }
     await submit();
   };
+  if (auth.ready && openedAuthenticated.current === null) {
+    openedAuthenticated.current = auth.isAuthenticated;
+  }
   if (!auth.ready)
     return (
       <AppText role="bodySmall" tone="secondary">
         Подготавливаем форму…
       </AppText>
     );
-  if (auth.isAuthenticated)
+  const visitor = auth.user;
+  if (openedAuthenticated.current && auth.isAuthenticated && visitor)
     return (
       <View style={{ gap: designTokens.auth.screenGap }}>
         <AppText role="bodySmall">Перейдите к следующему шагу.</AppText>
@@ -366,7 +457,7 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
           label="Дальше"
           size="auth"
           width="full"
-          onPress={continueRegistration}
+          onPress={() => finishRegistration(visitor)}
         />
       </View>
     );
@@ -380,7 +471,21 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
           <AppText role="bodySmall" style={{ textAlign: 'center', color: designTokens.color.textSubdued, ...designTokens.typography.authCaption, letterSpacing: 0 }}>
             {copy.caption}
           </AppText>
+          {step === 'nickname' && slugStatus && !form.formState.errors.slug ? (
+            <AppText
+              role="authStatus"
+              style={{
+                textAlign: 'center',
+                color: slugStatus === 'available'
+                  ? designTokens.auth.available
+                  : designTokens.auth.taken,
+              }}
+            >
+              {slugStatus === 'available' ? 'Никнейм свободен' : 'Никнейм занят'}
+            </AppText>
+          ) : null}
         </View>
+        <View style={{ gap: designTokens.auth.formGap, width: '100%' }}>
         {step === 'email' ? (
           <Controller
             control={form.control}
@@ -400,7 +505,6 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
           />
         ) : null}
         {step === 'nickname' ? (
-          <>
           <Controller
             control={form.control}
             name="slug"
@@ -418,20 +522,6 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
               />
             )}
           />
-          {slugStatus && !form.formState.errors.slug ? (
-            <AppText
-              role="bodySmall"
-              style={{
-                color: slugStatus === 'available'
-                  ? designTokens.auth.available
-                  : designTokens.auth.taken,
-                ...designTokens.typography.authCaption,
-              }}
-            >
-              {slugStatus === 'available' ? 'Никнейм свободен' : 'Никнейм занят'}
-            </AppText>
-          ) : null}
-          </>
         ) : null}
         {step === 'password' ? (
           <>
@@ -492,18 +582,18 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
                 checked={field.value}
                 onChange={(checked) => {
                   field.onChange(checked);
-                  if (checked) {
-                    void rememberRulesVersion().catch(() => {
-                      rulesVersion.current = null;
-                    });
-                  }
-                  if (checked) form.clearErrors('rulesAccepted');
+                  rulesRequest.current += 1;
+                  rulesVersion.current = null;
+                  rulesPending.current = false;
+                  if (!checked) return;
+                  loadRulesVersion();
                 }}
                 error={form.formState.errors.rulesAccepted?.message}
               />
             )}
           />
         ) : null}
+        </View>
       </View>
   );
 }

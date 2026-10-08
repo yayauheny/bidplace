@@ -31,12 +31,8 @@ export function combineInfrastructurePageStatus(
   return 'ready';
 }
 
-export function infrastructurePageVisual(
-  status: InfrastructurePageVisualStatus,
-  settled: boolean,
-) {
+export function infrastructurePageVisual(status: InfrastructurePageVisualStatus) {
   return {
-    logoMotion: status === 'loading' || !settled ? 'loading' : 'error',
-    showsErrorChrome: status === 'error' && settled,
+    showsErrorChrome: status === 'error',
   } as const;
 }

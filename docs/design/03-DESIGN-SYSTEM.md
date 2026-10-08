@@ -171,7 +171,8 @@ implementations.
 `PageState` owns empty, not-found and other screen-local messages, plus compact
 inline loading copy where content chrome stays on screen. Blocking page fetch
 uses `InfrastructurePageStatus`: one static `BidplaceMark` at 104px.
-Loading is the mark only. When the fetch stops in error, the same mark stays
+Loading is the mark only. Error chrome follows the fetch status; there is no
+logo motion cycle. When the fetch stops in error, the same mark stays
 and the canonical copy appears in `workTitle` (20/24 semibold, max 300px)
 plus a large outline «Повторить». Success unmounts immediately. The previous
 eye-mark animation is not part of this mark.

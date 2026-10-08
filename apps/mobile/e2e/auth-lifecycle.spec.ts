@@ -77,9 +77,45 @@ test('registration form creates a session and email verification unlocks the aut
 }) => {
   const id = randomUUID().slice(0, 8);
   const email = `registration-${id}@bidplace.test`;
+  let registrations = 0;
+  let accepts = 0;
+  await page.route('**/api/auth/register', async (route) => {
+    registrations += 1;
+    await route.continue();
+  });
+  await page.route('**/api/auth/rules/accept', async (route) => {
+    accepts += 1;
+    if (accepts === 1) {
+      await route.fulfill({
+        status: 500,
+        contentType: 'application/json',
+        body: JSON.stringify({ message: 'failed' }),
+      });
+      return;
+    }
+    await route.continue();
+  });
   await page.goto('/register?redirectTo=/profile');
-  await page.getByRole('textbox', { name: 'Электронная почта', exact: true }).fill(email);
-  await page.getByRole('checkbox', { name: /соглашаюсь/ }).click();
+  const emailField = page.getByRole('textbox', { name: 'Электронная почта', exact: true });
+  await emailField.fill(email);
+  await emailField.focus();
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('Tab');
+  const consent = page.getByRole('checkbox', { name: /соглашаюсь/ });
+  await expect(consent).toBeFocused();
+  const rules = page.waitForResponse(
+    (item) =>
+      item.url() === `${e2eApiBaseURL}/api/auth/rules` &&
+      item.request().method() === 'GET',
+  );
+  await page.keyboard.press('Space');
+  expect((await rules).status()).toBe(200);
+  await expect(consent).toBeChecked();
+  const focusedOutline = await consent.evaluate((node) => {
+    const style = window.getComputedStyle(node);
+    return style.outlineStyle !== 'none' && style.outlineWidth !== '0px';
+  });
+  expect(focusedOutline).toBe(true);
   await page.getByRole('button', { name: 'Дальше', exact: true }).click();
   await page.getByLabel('Никнейм', { exact: true }).fill(`author-${id}`);
   await page.getByRole('button', { name: 'Дальше', exact: true }).click();
@@ -89,14 +125,15 @@ test('registration form creates a session and email verification unlocks the aut
   await page
     .getByLabel('Подтвердите пароль', { exact: true })
     .fill('registration-password-123');
-  const registration = page.waitForResponse(
-    (item) =>
-      item.url() === `${e2eApiBaseURL}/api/auth/register` &&
-      item.request().method() === 'POST',
-  );
   await page.getByRole('button', { name: 'Дальше', exact: true }).click();
-  expect((await registration).status()).toBe(201);
+  await expect(page.getByText('Не удалось сохранить согласие. Повторите принятие правил.')).toBeVisible();
+  await expect(page).toHaveURL(/\/register/);
+  expect(registrations).toBe(1);
+  expect(accepts).toBe(1);
+  await page.getByRole('button', { name: 'Дальше', exact: true }).click();
   await expect(page).toHaveURL(/\/verify-email\?/);
+  expect(registrations).toBe(1);
+  expect(accepts).toBe(2);
   await expect(page.getByText(/Код отправлен на /)).toBeVisible();
 
   const unverified = await context.request.get(`${e2eApiBaseURL}/api/auth/me`);

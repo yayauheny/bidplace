@@ -22,7 +22,7 @@ export function InfrastructurePageStatus({
   status: InfrastructurePageVisualStatus;
   onRetry: () => void;
 }) {
-  const visual = infrastructurePageVisual(status, status !== 'loading');
+  const visual = infrastructurePageVisual(status);
   const chromeStyle = {
     opacity: visual.showsErrorChrome ? 1 : 0,
     visibility: visual.showsErrorChrome ? 'visible' : 'hidden',

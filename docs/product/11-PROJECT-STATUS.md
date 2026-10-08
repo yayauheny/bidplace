@@ -1,30 +1,37 @@
 # bidplace — текущий статус проекта
 
-## 2026-10-08 — Auth brand, consent and nickname read
+## 2026-10-08 — Auth completion, consent retry and sheet anatomy
 
-- `Partial`. Live header, dock, fullscreen registration and email
-  confirmation use one `BidplaceMark` and, on the four fullscreen steps, the
-  outlined wordmark. Favicon and the Expo icon/adaptive rasters referenced
-  by `app.json` are regenerated from that mark. The eye-mark PNG and
-  `AnimatedBidplaceLogo` are removed. Login stays a sheet. Auth sheets hide
-  the Home dock through `hideDock`, including loading, empty and error;
-  leaving auth shows the dock again.
-- Registration email step has one checkbox, initially unchecked. The choice
-  stays across steps. After the single `register`, `acceptRules` stores the
-  version from `getRules` for that session. A failed acceptance retries only
-  `acceptRules`. There is still no public policy page, and the checkbox copy
-  has unresolved mixed text ranges, so consent is not a published legal
-  document.
-- `GET /api/auth/slug-availability` reads whether `User.slug` is free. It
-  validates the shared slug schema, is rate-limited, and does not reserve
-  the nickname. The field shows available or taken only from that response.
-  `@` is a visual prefix. Suggestion chips are not implemented.
-- Login password shell is 51px and fullscreen password shells are 53px.
-  Fullscreen titles use Inter 600 20/22 with tracking −0.4px. Resend is
-  51px. Email confirmation uses the existing six-cell code field. After an
-  accepted send, the caption is `Код отправлен на {masked email}`.
-- Still open: Google glyph fills, mixed text ranges, a public rules page,
-  nickname suggestions, and visual 1:1. Production remains
+- `Partial`. A visitor who was already signed in still leaves registration
+  through the existing next step. An account created by the current attempt
+  stays on the form until `acceptRules` confirms the rules version returned
+  by `getRules` for that attempt. `auth.register` no longer hides a failed
+  acceptance, and submission success no longer navigates on its own. The
+  retry calls only `acceptRules`. A changed auth epoch, a different session
+  user, or an unmounted route does not write consent or publish that
+  attempt's error. A failed `getRules` stays visible and does not accept a
+  later version. Missing approved documents and legal drafts are not
+  published.
+- The consent control is one checkbox. Tab reaches it, Space toggles it, and
+  the shared `focus-visible` outline is the focus ring. Nickname availability
+  belongs to the value that was checked: editing clears the previous result,
+  a late response does not relabel the new value, and a failed request does
+  not claim the nickname is free. Debounce, server uniqueness and the lack
+  of reservation stay.
+- The loading page mark no longer carries `logoMotion` or a settle cycle.
+  Loading and error/retry fetch states remain.
+- Measured on the local 390×874 frame: email title y320.5, mark vector
+  y67.06, wordmark y793. Login sheet height is 543.5 against the source
+  anatomy 545; the legal line box is 29 and the source box is 30 with no
+  exported line-height. At 375×667 and 440×956 the column scrolls without
+  horizontal overflow; at 440 the sheet stays 390 wide and centered. Zoom
+  1.5 does not add a horizontal scrollbar. This is not 1:1.
+- Still open: Google vector `I526:14901;298:6024;521:10381` has no fills in
+  `screens/login-password/design/nodes.json`, and that capture's `assets/`
+  PNGs are not a colored glyph. Mixed ranges `4547:23406`, `4547:25029`,
+  `526:14902`, `526:15580` and `558:16958` are unresolved. Checkbox stroke
+  weight is absent on `4547:23403`. There is no public policy page. Nickname
+  suggestion chips are sample data. Production remains
   `541d763547f7b021895daa3d533c3196c37a4e67`.
 
 ## 2026-10-08 — Brand/auth sources prepared; runtime correction pending

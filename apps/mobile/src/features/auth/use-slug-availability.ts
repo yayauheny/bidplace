@@ -5,26 +5,42 @@ import { useApiClient } from '../../providers/api-provider';
 
 export type SlugAvailabilityStatus = 'available' | 'taken';
 
+export type SlugAvailabilityResult = {
+  slug: string;
+  status: SlugAvailabilityStatus;
+};
+
+export function visibleSlugAvailability(
+  slug: string,
+  result: SlugAvailabilityResult | null,
+): SlugAvailabilityStatus | null {
+  const parsed = accountSlugSchema.safeParse(slug);
+  if (!parsed.success || result?.slug !== parsed.data) return null;
+  return result.status;
+}
+
 export function useSlugAvailability(slug: string) {
   const api = useApiClient();
-  const [status, setStatus] = useState<SlugAvailabilityStatus | null>(null);
+  const [result, setResult] = useState<SlugAvailabilityResult | null>(null);
 
   useEffect(() => {
     const parsed = accountSlugSchema.safeParse(slug);
-    if (!parsed.success) {
-      setStatus(null);
-      return;
-    }
+    if (!parsed.success) return;
     const requested = parsed.data;
     let active = true;
     const timer = setTimeout(() => {
       void api.auth
         .slugAvailability(requested)
-        .then((result) => {
-          if (active) setStatus(result.available ? 'available' : 'taken');
+        .then((response) => {
+          if (!active) return;
+          setResult({
+            slug: requested,
+            status: response.available ? 'available' : 'taken',
+          });
         })
         .catch(() => {
-          if (active) setStatus(null);
+          if (!active) return;
+          setResult((current) => (current?.slug === requested ? null : current));
         });
     }, 400);
     return () => {
@@ -33,5 +49,5 @@ export function useSlugAvailability(slug: string) {
     };
   }, [api, slug]);
 
-  return status;
+  return visibleSlugAvailability(slug, result);
 }

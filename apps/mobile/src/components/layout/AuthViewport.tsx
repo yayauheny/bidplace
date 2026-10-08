@@ -276,6 +276,7 @@ export function AuthViewport({
                     nativeID={focused ? 'auth-sheet' : undefined}
                     aria-modal={focused}
                     style={{
+                      position: 'relative',
                       width: '100%',
                       maxWidth: designTokens.layout.phoneWidth,
                       maxHeight: screen ? height : Math.max(height - designTokens.space.x6, designTokens.size.input * 4),
@@ -293,29 +294,61 @@ export function AuthViewport({
                       justifyContent: screen ? 'flex-start' : undefined,
                     }}
                   >
+                    {screen ? (
+                      <View
+                        pointerEvents="none"
+                        accessibilityElementsHidden
+                        importantForAccessibility="no-hide-descendants"
+                        style={{
+                          position: 'absolute',
+                          top: designTokens.auth.markTop + designTokens.auth.screenPaddingTop,
+                          left: 0,
+                          right: 0,
+                          height: designTokens.auth.markSlotHeight,
+                          alignItems: 'center',
+                        }}
+                      >
+                        <View
+                          style={{
+                            width: designTokens.auth.markSlotWidth,
+                            height: designTokens.auth.markSlotHeight,
+                          }}
+                        >
+                          <View
+                            style={{
+                              position: 'absolute',
+                              left: designTokens.auth.markInsetX,
+                              top: designTokens.auth.markInsetY,
+                            }}
+                          >
+                            <BidplaceMark />
+                          </View>
+                        </View>
+                      </View>
+                    ) : null}
+                    {screen ? (
+                      <View
+                        pointerEvents="none"
+                        accessibilityElementsHidden
+                        importantForAccessibility="no-hide-descendants"
+                        style={{
+                          position: 'absolute',
+                          bottom: designTokens.auth.wordmarkBottom + designTokens.auth.screenPaddingBottom,
+                          left: 0,
+                          right: 0,
+                          alignItems: 'center',
+                        }}
+                      >
+                        <BidplaceWordmark />
+                      </View>
+                    ) : null}
                     <ScrollView
                       keyboardShouldPersistTaps="handled"
                       keyboardDismissMode="on-drag"
                       showsVerticalScrollIndicator={false}
                       style={screen ? { flex: 1 } : { maxHeight: Math.max(height - designTokens.space.x6 - designTokens.auth.paddingTop - designTokens.auth.paddingBottom, designTokens.size.input * 4) }}
-                      contentContainerStyle={{ gap: screen ? 0 : contentGap, justifyContent: screen ? 'space-between' : undefined, flexGrow: screen ? 1 : undefined }}
+                      contentContainerStyle={{ gap: screen ? 0 : contentGap, justifyContent: screen ? 'center' : undefined, flexGrow: screen ? 1 : undefined }}
                     >
-                      {screen ? (
-                        <View
-                          accessibilityElementsHidden
-                          importantForAccessibility="no-hide-descendants"
-                          style={{
-                            width: designTokens.auth.markSlotWidth,
-                            height: designTokens.auth.markSlotHeight,
-                            marginTop: designTokens.auth.markTop,
-                            alignSelf: 'center',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                          }}
-                        >
-                          <BidplaceMark />
-                        </View>
-                      ) : null}
                       {screen ? (
                         <Dialog.Title asChild>
                           <AppText role="sectionTitle" style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden' }}>
@@ -323,7 +356,7 @@ export function AuthViewport({
                           </AppText>
                         </Dialog.Title>
                       ) : (
-                        <View style={{ minHeight: designTokens.auth.headerHeight, gap: designTokens.auth.titleGap }}>
+                        <View style={{ height: designTokens.auth.headerHeight, gap: designTokens.auth.titleGap }}>
                           <View style={{ height: designTokens.auth.handleSlot, alignItems: 'center', justifyContent: 'center' }}>
                             <View
                               accessibilityElementsHidden
@@ -336,9 +369,9 @@ export function AuthViewport({
                               }}
                             />
                           </View>
-                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: designTokens.space.x2 }}>
+                          <View style={{ height: designTokens.typography.authSheetTitle.lineHeight, justifyContent: 'center' }}>
                             <Dialog.Title asChild>
-                              <AppText role="sectionTitle" style={{ flex: 1, color: designTokens.color.fieldValue, ...designTokens.typography.authSheetTitle }}>
+                              <AppText role="sectionTitle" style={{ color: designTokens.color.fieldValue, ...designTokens.typography.authSheetTitle, paddingRight: 36 }}>
                                 {title}
                               </AppText>
                             </Dialog.Title>
@@ -347,26 +380,14 @@ export function AuthViewport({
                               accessibilityLabel="Закрыть"
                               onPress={requestDismiss}
                               preset="icon"
-                              style={{ width: 32, height: 32, alignItems: 'center', justifyContent: 'center' }}
+                              style={{ position: 'absolute', right: 0, top: (designTokens.typography.authSheetTitle.lineHeight - 32) / 2, width: 32, height: 32, alignItems: 'center', justifyContent: 'center' }}
                             >
                               <AppIcon name="x" size={22} />
                             </MotionPressable>
                           </View>
                         </View>
                       )}
-                      <View style={{ gap: screen ? designTokens.auth.screenGap : formGap, width: '100%', maxWidth: 350, alignSelf: 'center' }}>{children}</View>
-                      {screen ? (
-                        <View
-                          accessibilityElementsHidden
-                          importantForAccessibility="no-hide-descendants"
-                          style={{
-                            marginBottom: designTokens.auth.wordmarkBottom,
-                            alignSelf: 'center',
-                          }}
-                        >
-                          <BidplaceWordmark />
-                        </View>
-                      ) : null}
+                      <View style={{ gap: screen ? 0 : formGap, width: '100%', maxWidth: 350, alignSelf: 'center' }}>{children}</View>
                     </ScrollView>
                   </Dialog.Content>
                 </Animated.View>

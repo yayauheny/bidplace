@@ -21,7 +21,12 @@ Current fullscreen registration/confirmation source:
 [`2026-10-08-auth-fullscreen`](../../design/figma-handoff/auth/2026-10-08-auth-fullscreen/README.md).
 `DEC-106` adds the brush mark at the top and outlined wordmark at the bottom.
 Only the previous four fullscreen captures were replaced; login/recovery/exit
-retain the dialog source. Runtime branding and consent corrections are pending.
+retain the dialog source. The runtime mark sits in the source frame and the
+wordmark uses the source bottom inset. The email checkbox is one control.
+Registration continues once, only after `acceptRules` confirms the version
+shown to that attempt. A failed acceptance stays on the form and the retry
+calls only `acceptRules`. The confirmation body has no extra logout button;
+account logout stays on the profile, cabinet and moderation screens.
 The two captured consent checkboxes are two states of one control, not two
 simultaneous fields. This visual source update does not approve legal drafts.
 
@@ -43,7 +48,9 @@ first when the form has input. A multi-step Back or a Forward that leaves auth
 returns the address to the auth entry until the user confirms. Continue keeps
 the values and focus; Interrupt opens the entry that traversal reached. A
 finished or closed sheet is not left as a history entry. Leaving does not
-cancel an in-flight request, delete an account, or log out. Verification can
+cancel an in-flight request, delete an account, or log out. A session change
+during registration does not let the old attempt write consent or show its
+error. Verification can
 be finished later, and the screen does not say a code arrived before the send
 is accepted. Recovery and wide layouts are derived from the phone sheet.
 Details:

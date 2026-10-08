@@ -45,6 +45,7 @@ test('browser back keeps a filled login without the Navigation API', async ({ pa
 
 test('history position stays one number per entry', async ({ page }) => {
   await page.goto('/');
+  await expect(page.getByTestId('app-shell-content')).toBeVisible();
   const pushed = await page.evaluate(() => {
     const href = window.location.href;
     const state = window.history.state as { id?: string; index?: number } | null;

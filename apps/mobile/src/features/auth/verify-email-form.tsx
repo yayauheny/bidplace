@@ -10,8 +10,6 @@ import { getErrorStatus, getUserFacingErrorMessage, readFormFailure } from '../.
 import { useApiClient } from '../../providers/api-provider';
 import { useAuth } from '../../providers/auth-provider';
 import { type SafeRedirect } from './auth-redirect';
-import { useAccountLogout } from './account-logout';
-import { AccountLogoutButton } from './AccountLogoutButton';
 import { AuthCodeField } from './auth-code-field';
 import { useAuthSheetComplete, useAuthSheetGuard } from './auth-sheet-context';
 import { verificationStatusCopy } from './verify-email-copy';
@@ -28,10 +26,8 @@ export function VerifyEmailForm({ redirectTo, autoRequest }: VerifyEmailFormProp
   const api = useApiClient();
   const auth = useAuth();
   const router = useRouter();
-  const accountLogout = useAccountLogout();
   const autoRequested = useRef(false);
   const verificationLock = useRef(false);
-  const logoutStarted = useRef(false);
   const [code, setCode] = useState('');
   const [requesting, setRequesting] = useState(false);
   const [verifying, setVerifying] = useState(false);
@@ -41,15 +37,14 @@ export function VerifyEmailForm({ redirectTo, autoRequest }: VerifyEmailFormProp
   const [resendDeadline, setResendDeadline] = useState<number | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const complete = useAuthSheetComplete();
-  const logoutBusy = logoutStarted.current || accountLogout.busy;
   const remaining = resendRemainingSeconds(resendDeadline, now);
   useAuthSheetGuard({
     dirty: true,
-    busy: requesting || verifying || logoutBusy,
+    busy: requesting || verifying,
   });
 
   const requestCode = async () => {
-    if (logoutStarted.current || accountLogout.busy || verificationLock.current) return;
+    if (verificationLock.current) return;
     verificationLock.current = true;
     setRequesting(true);
     setError(null);
@@ -92,7 +87,7 @@ export function VerifyEmailForm({ redirectTo, autoRequest }: VerifyEmailFormProp
   }, [auth.user?.emailVerifiedAt, autoRequest]);
 
   const verify = async () => {
-    if (logoutStarted.current || accountLogout.busy || verificationLock.current) return;
+    if (verificationLock.current) return;
     if (!/^\d{6}$/.test(code)) {
       setCodeError('Введите шестизначный код.');
       setError(null);
@@ -140,12 +135,6 @@ export function VerifyEmailForm({ redirectTo, autoRequest }: VerifyEmailFormProp
     }
   };
 
-  const beginLogout = () => {
-    if (logoutStarted.current || accountLogout.busy || verificationLock.current || requesting || verifying) return;
-    logoutStarted.current = true;
-    void accountLogout.logout();
-  };
-
   const resendLabel = requesting
     ? 'Отправляем код…'
     : remaining > 0
@@ -180,9 +169,8 @@ export function VerifyEmailForm({ redirectTo, autoRequest }: VerifyEmailFormProp
             {error}
           </AppText>
         ) : null}
-        <PrimaryButton label="Завершить" size="auth" width="full" loading={verifying} disabled={requesting || verifying || logoutBusy} onPress={() => void verify()} />
-        <SecondaryButton label={resendLabel} size="authResend" width="full" disabled={verifying || requesting || logoutBusy || remaining > 0} onPress={() => void requestCode()} />
-        <AccountLogoutButton pending={requesting || verifying || logoutBusy} onPress={beginLogout} />
+        <PrimaryButton label="Завершить" size="auth" width="full" loading={verifying} disabled={requesting || verifying} onPress={() => void verify()} />
+        <SecondaryButton label={resendLabel} size="authResend" width="full" disabled={verifying || requesting || remaining > 0} onPress={() => void requestCode()} />
       </View>
   );
 }

@@ -205,12 +205,13 @@ describe('account logout reachability', () => {
     view.unmount();
   });
 
-  it('shows logout on the email verification destination', async () => {
+  it('keeps logout off the email verification body', async () => {
     const view = mount(
       createElement(VerifyEmailForm, { redirectTo: '/profile', autoRequest: false }),
     );
     await until(view.container, 'Проверьте код на почте');
-    expect([...view.container.querySelectorAll('button')].some((button) => button.textContent === 'Выйти')).toBe(true);
+    expect([...view.container.querySelectorAll('button')].some((button) => button.textContent === 'Выйти')).toBe(false);
+    expect([...view.container.querySelectorAll('button')].some((button) => button.textContent === 'Завершить')).toBe(true);
     view.unmount();
   });
 });

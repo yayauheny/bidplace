@@ -21,7 +21,8 @@ textarea:focus-visible,
 [role='button']:focus-visible,
 [role='link']:focus-visible,
 [role='tab']:focus-visible,
-[role='textbox']:focus-visible {
+[role='textbox']:focus-visible,
+[role='checkbox']:focus-visible {
   outline: var(--bidplace-focus) solid 2px;
   outline-offset: 2px;
 }

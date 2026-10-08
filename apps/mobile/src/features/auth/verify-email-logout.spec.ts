@@ -5,8 +5,6 @@ import { act, createElement, type ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { flush } from '../../testing/dom';
-
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
 const harness = vi.hoisted(() => ({
@@ -147,22 +145,6 @@ function button(container: ParentNode, label: string) {
   return target;
 }
 
-function click(container: ParentNode, label: string) {
-  act(() => {
-    button(container, label).click();
-  });
-}
-
-function setCode(container: ParentNode, value: string) {
-  const input = container.querySelector('[aria-label="Код из письма"]');
-  if (!(input instanceof HTMLInputElement)) throw new Error('Missing code field');
-  const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
-  act(() => {
-    setter?.call(input, value);
-    input.dispatchEvent(new Event('input', { bubbles: true }));
-  });
-}
-
 afterEach(() => {
   document.body.replaceChildren();
   harness.logout.mockReset();
@@ -172,43 +154,14 @@ afterEach(() => {
   harness.verifyEmailVerification.mockReset();
 });
 
-describe('verify email logout boundary', () => {
-  it('does not call logout while email verification is pending', async () => {
-    harness.verifyEmailVerification.mockImplementation(() => new Promise(() => undefined));
+describe('verify email body', () => {
+  it('keeps completion and resend without a logout action', () => {
     const view = mount();
-    setCode(view.container, '123456');
-    click(view.container, 'Продолжить');
-    await flush();
-    expect(button(view.container, 'Выйти').disabled).toBe(true);
-    click(view.container, 'Выйти');
-    expect(harness.logout).not.toHaveBeenCalled();
-    view.unmount();
-  });
-
-  it('disables verify and request-code while logout is pending', async () => {
-    harness.logout.mockImplementation(() => new Promise(() => undefined));
-    const view = mount();
-    click(view.container, 'Выйти');
-    await flush();
-    expect(button(view.container, 'Продолжить').disabled).toBe(true);
-    expect(button(view.container, 'Отправить код').disabled).toBe(true);
-    view.unmount();
-  });
-
-  it('does not refresh the session from a new verify after logout has started', async () => {
-    harness.logout.mockImplementation(() => new Promise(() => undefined));
-    harness.verifyEmailVerification.mockResolvedValue(undefined);
-    harness.refreshSession.mockResolvedValue({ emailVerifiedAt: '2026-09-27T00:00:00.000Z' });
-    const view = mount();
-    setCode(view.container, '123456');
-    click(view.container, 'Выйти');
-    click(view.container, 'Продолжить');
-    click(view.container, 'Отправить код');
-    await flush();
-    expect(harness.logout).toHaveBeenCalledTimes(1);
-    expect(harness.verifyEmailVerification).not.toHaveBeenCalled();
-    expect(harness.requestEmailVerification).not.toHaveBeenCalled();
-    expect(harness.refreshSession).not.toHaveBeenCalled();
+    expect(button(view.container, 'Завершить').textContent).toBe('Завершить');
+    expect(button(view.container, 'Отправить код').textContent).toBe('Отправить код');
+    expect(
+      [...view.container.querySelectorAll('button')].some((item) => item.textContent === 'Выйти'),
+    ).toBe(false);
     view.unmount();
   });
 });

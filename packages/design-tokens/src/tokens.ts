@@ -308,6 +308,23 @@ export const designTokens = {
       lineHeight: 20,
       fontWeight: '400' as const,
     },
+    authStatus: {
+      fontFamily: 'Inter_500Medium',
+      fontSize: 14,
+      lineHeight: 20,
+      fontWeight: '500' as const,
+    },
+    authOr: {
+      fontFamily: 'Inter_400Regular',
+      fontSize: 15,
+      letterSpacing: -0.3,
+      fontWeight: '400' as const,
+    },
+    authLegal: {
+      fontFamily: 'Inter_400Regular',
+      fontSize: 12,
+      fontWeight: '400' as const,
+    },
     authConsent: {
       fontFamily: 'Inter_400Regular',
       fontSize: 13,
@@ -613,6 +630,8 @@ export const designTokens = {
     markSlotHeight: 48,
     markSize: 30.35,
     markTop: 52,
+    markInsetX: 7.87,
+    markInsetY: 7.07,
     wordmarkWidth: 93,
     wordmarkHeight: 22,
     wordmarkBottom: 39,

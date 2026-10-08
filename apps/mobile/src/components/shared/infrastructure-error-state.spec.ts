@@ -47,24 +47,15 @@ describe('InfrastructureErrorState presentation', () => {
   });
 });
 
-describe('infrastructure page visual lifecycle', () => {
-  it('keeps the branded loading mark without error chrome', () => {
-    expect(infrastructurePageVisual('loading', false)).toEqual({
-      logoMotion: 'loading',
+describe('infrastructure page visual', () => {
+  it('keeps loading free of error chrome', () => {
+    expect(infrastructurePageVisual('loading')).toEqual({
       showsErrorChrome: false,
     });
   });
 
-  it('finishes the current loading cycle before revealing error chrome', () => {
-    expect(infrastructurePageVisual('error', false)).toEqual({
-      logoMotion: 'loading',
-      showsErrorChrome: false,
-    });
-  });
-
-  it('reveals canonical copy after the loading cycle settles', () => {
-    expect(infrastructurePageVisual('error', true)).toEqual({
-      logoMotion: 'error',
+  it('shows error chrome when the page is in error', () => {
+    expect(infrastructurePageVisual('error')).toEqual({
       showsErrorChrome: true,
     });
   });
@@ -135,7 +126,7 @@ describe('infrastructurePageFetchStatus', () => {
 });
 
 describe('combineInfrastructurePageStatus', () => {
-  it('prefers loading over error so one logo can finish the bounce', () => {
+  it('prefers loading over error while a fetch is still in flight', () => {
     expect(combineInfrastructurePageStatus(['error', 'loading'])).toBe(
       'loading',
     );
