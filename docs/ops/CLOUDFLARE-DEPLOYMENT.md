@@ -237,24 +237,64 @@ Workers Paid включает 3 000 исходящих писем на акка�
 [Neon pooling](https://neon.com/docs/connect/connection-pooling),
 [Prisma pool](https://www.prisma.io/docs/orm/v6/prisma-client/setup-and-configuration/databases-connections/connection-pool).
 
-Перед каждым deployment — backup и просмотр новых migrations, затем оператор
+Перед каждым обычным deployment — backup и просмотр новых migrations, затем оператор
 на trusted machine запускает `pnpm cloudflare:migrate staging` (production: `pnpm cloudflare:migrate production --confirm-production`) с отдельно безопасно
 переданным `DATABASE_URL` migration role. Для `20261008040000_add_user_slug`
-этот порядок недостаточен. Нужная последовательность: до миграции исключить
-записи старой версии API, дождаться завершения уже принятых записывающих
-запросов, применить миграцию, запустить новую версию, проверить соответствие
-никнеймов и только затем открыть доступ. Такого исключения записей сейчас нет.
-`routeRequest` отправляет любой метод `/api` и `/api/*` в единственный
-контейнер `PortfolioApi`. Отдельного фильтра методов, maintenance binding и
-команды, которая отклоняет запись и позволяет это проверить повторным
-запросом, в Worker нет. `sleepAfter` в 10 минут усыпляет простаивающий
-контейнер и не запрещает запись: следующий запрос поднимает тот же образ.
-`max_instances: 1` запись не отклоняет. Сигнала, что уже принятый запрос
-закончился, тоже нет: `onStop` не задан, Worker не считает активные запросы,
-а `observability.logs.invocation_logs` выключены. Контейнер только включает
-observability и не добавляет ожидание записи. Текущий production workflow
-мигрирует и затем публикует `bid.place` одним job. Пока этих двух механизмов
-нет, эту миграцию им не выполнять.
+этот прежний порядок не использовать. Механизм ниже локальный: production не
+переключался, образ API не заменялся и контейнер production не останавливался.
+
+Канал управления — переменная Worker `RELEASE_HOLD` и секрет Worker
+`RELEASE_CONTROL`. Секрет не копируется в контейнер. Публичного вызова остановки
+без этого секрета нет: неверный или пустой `Authorization: Bearer` даёт 404 и не
+вызывает контейнер. `sleepAfter` и `max_instances` блокировкой не являются.
+
+Порядок выпуска `20261008040000_add_user_slug`:
+
+1. Создать `RELEASE_CONTROL` длиной не короче 32 символов в GitHub Environment
+   `prod` и в операторском хранилище секретов. Значение не печатать и не
+   записывать в vars контейнера. До этого production workflow не запускать.
+2. Подготовительный запуск workflow `Production deploy` на
+   `feature/portfolio-mvp-release`: `release_hold=closed`,
+   `keep_container=true`, `confirm_migration` пустой. Wrangler получает
+   `--containers-rollout none` и `--keep-vars`, проверка нового образа API
+   пропускается. Прежний production-образ остаётся. После успеха `GET` и `POST`
+   на `https://bid.place/api` и `https://bid.place/api/*` возвращают 503 и
+   `Cache-Control: no-store` до кэша и контейнера. Повторный запрос и перезапуск
+   Worker блокировку не снимают.
+3. Остановить прежний контейнер одним запросом оператора, не из браузера
+   посетителя: `POST https://bid.place/_release/stop` с заголовком
+   `Authorization: Bearer` и значением `RELEASE_CONTROL`. Команда вызывает
+   `stop('SIGTERM')` у `@cloudflare/containers` 0.3.7. Nest уже включает
+   `enableShutdownHooks()`, Prisma отключается в `onModuleDestroy`. Успешный
+   возврат `stop()` недостаточен. Повторять `GET https://bid.place/_release/state`
+   с тем же заголовком, пока HTTP 200 и `status` равен `stopped` или
+   `stopped_with_code`. HTTP 409 означает, что контейнер ещё не завершился.
+   HTTP 404 означает, что секрет не принят. Тело ответа и секрет не печатать.
+4. Отдельный запуск workflow: `confirm_migration=migrate-production`,
+   `release_hold=closed`, `keep_container=false`. Job сначала требует живой
+   `GET /_release/state` с HTTP 200 и конечным статусом. Затем
+   `pnpm cloudflare:migrate` отказывается, если другая сессия этой базы в
+   состоянии `active`, `idle in transaction` или `idle in transaction (aborted)`.
+   Обычный `idle` не блокирует: мёртвый процесс новую команду уже не начнёт, а
+   незавершённая транзакция ещё видна как `idle in transaction` и миграцию
+   останавливает. Транзакция, успевшая закоммититься во время SIGTERM, видна
+   копированию slug. После копирования прежний процесс дописать строку не может.
+   Затем deploy публикует новый образ с `RELEASE_HOLD=closed`,
+   `RELEASE_IMAGE=current` и `RELEASE_ID` этого коммита. Доступ остаётся закрыт.
+5. Проверить никнеймы отдельным запуском: `release_hold=open`,
+   `keep_container=false`, `confirm_migration` пустой. Скрипт сверяет
+   `RELEASE_IMAGE=current` и `RELEASE_ID` с этим коммитом, затем на прямом Neon
+   URL требует записанную миграцию `20261008040000_add_user_slug` и ноль строк,
+   где `users.slug` отличается от `seller_profiles.slug`. Только после этого
+   Worker получает `RELEASE_HOLD=open` без замены образа. Ошибка любого шага не
+   заменяет текущий Worker, поэтому закрытая блокировка сохраняется.
+6. После открытого доступа следующий обычный выпуск образа использует
+   `release_hold=keep`. Он сохраняет текущее значение `RELEASE_HOLD` через
+   `--keep-vars`. Пустой `release_hold` workflow отклоняет.
+
+`seller_profiles.slug` этой миграцией не удаляется. Удаление — отдельная
+миграция после равенства никнеймов и после того, как ни один живой запрос не
+читает старую колонку.
 
 Script не загружает repository dotenv;
 schema/migrations копируются во временный каталог. Не брать runtime Worker

@@ -2,7 +2,9 @@ import { spawnSync } from 'node:child_process';
 import { cpSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { blockingDatabaseSessionSql } from '../../deploy/cloudflare/src/release-gate.ts';
 import { root } from './config.mjs';
+import { runDirectSql } from './deploy.mjs';
 
 const target = process.argv[2];
 if (!['staging', 'production'].includes(target)) throw new Error('Choose staging or production');
@@ -20,6 +22,7 @@ if (!['postgres:', 'postgresql:'].includes(database.protocol) ||
 if (database.hostname.split('.')[0].endsWith('-pooler')) {
   throw new Error('Migration requires the direct Neon hostname');
 }
+runDirectSql(blockingDatabaseSessionSql, process.env.DATABASE_URL);
 const temporary = mkdtempSync(join(tmpdir(), 'bidplace-neon-migrate-'));
 try {
   cpSync(join(root, 'packages/database/prisma/schema.prisma'), join(temporary, 'schema.prisma'));

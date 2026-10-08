@@ -4,9 +4,9 @@ import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import test from 'node:test';
-import { requiredSecrets } from '../../deploy/cloudflare/src/environment.ts';
+import { workerSecrets } from '../../deploy/cloudflare/src/environment.ts';
 import { root } from './config.mjs';
-import { assertSecretsFile, gateEnvironment, writeProductionConfig } from './deploy.mjs';
+import { assertProductionReleaseMode, assertSecretsFile, gateEnvironment, productionWranglerArgs, writeProductionConfig } from './deploy.mjs';
 
 const canary = 'local-secret-canary';
 
@@ -19,6 +19,7 @@ function secrets(overrides = {}) {
     SMTP_USERNAME: 'api_token',
     SMTP_PASSWORD: `${canary}-smtp`,
     CLOUDFLARE_CACHE_TOKEN: `${canary}-cache`,
+    RELEASE_CONTROL: `${canary}-release-control-value-32`,
     ...overrides,
   };
 }
@@ -47,11 +48,11 @@ test('gate environment removes runtime and deploy credentials', () => {
     PATH: '/usr/bin', DATABASE_URL: canary, DATABASE_URL_UNPOOLED: canary, NEON_DIRECT_URL: canary,
     CLOUDFLARE_API_TOKEN: canary, SERVICE_RULES_OWNER: 'bidplace',
     SERVICE_RULES_CONTACT: 'work.evles@gmail.com', SERVICE_RULES_TEXT: 'approved rules',
-    SMTP_PASSWORD: canary,
+    SMTP_PASSWORD: canary, RELEASE_CONTROL: canary,
   });
   assert.equal(env.PATH, '/usr/bin');
   assert.equal(env.CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV, 'false');
-  for (const name of [...requiredSecrets, 'DATABASE_URL_UNPOOLED', 'NEON_DIRECT_URL', 'CLOUDFLARE_API_TOKEN', 'SERVICE_RULES_OWNER', 'SERVICE_RULES_CONTACT', 'SERVICE_RULES_TEXT']) {
+  for (const name of [...workerSecrets, 'DATABASE_URL_UNPOOLED', 'NEON_DIRECT_URL', 'CLOUDFLARE_API_TOKEN', 'SERVICE_RULES_OWNER', 'SERVICE_RULES_CONTACT', 'SERVICE_RULES_TEXT']) {
     assert.equal(env[name], undefined);
   }
 });
@@ -65,6 +66,7 @@ test('secrets file accepts the runtime contract and rejects unsafe files without
     [secrets({ DATABASE_URL: `postgresql://role:${canary}@ep-test.neon.tech/neondb?sslmode=require` }), /pooled hostname/],
     [secrets({ SMTP_USERNAME: 'other-user' }), /api_token/],
     [secrets({ JWT_SECRET: canary }), /JWT_SECRET must be at least/],
+    [secrets({ RELEASE_CONTROL: canary }), /RELEASE_CONTROL must be at least/],
     [{ ...secrets(), DATABASE_URL_UNPOOLED: canary }, /runtime contract/],
     [{ ...secrets(), NEON_DIRECT_URL: canary }, /runtime contract/],
   ];
@@ -98,6 +100,48 @@ test('secrets file accepts the runtime contract and rejects unsafe files without
       return true;
     });
   } finally { rmSync(broken.folder, { recursive: true, force: true }); }
+});
+
+test('release commands keep the previous API image until the closed image deploy', () => {
+  const sha = 'a'.repeat(40);
+  const kept = productionWranglerArgs({
+    configFile: '/tmp/wrangler.json', secretsFile: '/tmp/secrets.json',
+    release: 'closed', keepContainer: true, keepHold: false, releaseId: sha,
+  });
+  assert.equal(kept.skipImage, true);
+  assert.ok(kept.args.includes('--containers-rollout'));
+  assert.equal(kept.args[kept.args.indexOf('--containers-rollout') + 1], 'none');
+  assert.ok(kept.args.includes('--keep-vars'));
+  assert.ok(kept.args.includes('RELEASE_HOLD:closed'));
+  assert.ok(kept.args.includes('RELEASE_IMAGE:previous'));
+  const image = productionWranglerArgs({
+    configFile: '/tmp/wrangler.json', secretsFile: '/tmp/secrets.json',
+    release: 'closed', keepContainer: false, keepHold: false, releaseId: sha,
+  });
+  assert.equal(image.skipImage, false);
+  assert.equal(image.args.includes('--containers-rollout'), false);
+  assert.ok(image.args.includes('RELEASE_IMAGE:current'));
+  const open = productionWranglerArgs({
+    configFile: '/tmp/wrangler.json', secretsFile: '/tmp/secrets.json',
+    release: 'open', keepContainer: false, keepHold: false,
+  });
+  assert.equal(open.skipImage, true);
+  assert.ok(open.args.includes('RELEASE_HOLD:open'));
+  assert.equal(open.args.includes('RELEASE_IMAGE:current'), false);
+  assert.throws(() => productionWranglerArgs({
+    configFile: '/tmp/wrangler.json', secretsFile: '/tmp/secrets.json',
+    release: 'open', keepContainer: true, keepHold: false,
+  }), /--keep-container requires --release closed/);
+  assert.throws(() => assertProductionReleaseMode({ release: undefined, keepContainer: false, keepHold: false }),
+    /requires --release closed/);
+  const keptHold = productionWranglerArgs({
+    configFile: '/tmp/wrangler.json', secretsFile: '/tmp/secrets.json',
+    keepContainer: false, keepHold: true,
+  });
+  assert.equal(keptHold.skipImage, false);
+  assert.equal(keptHold.args.includes('RELEASE_HOLD:open'), false);
+  assert.equal(keptHold.args.includes('RELEASE_HOLD:closed'), false);
+  assert.ok(keptHold.args.includes('--keep-vars'));
 });
 
 test('production config receives service rules from the caller and keeps the checkout empty', () => {

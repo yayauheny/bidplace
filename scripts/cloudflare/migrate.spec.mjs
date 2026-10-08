@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
 import test from 'node:test';
+import { containerStopped, databaseGuardFailure } from '../../deploy/cloudflare/src/release-gate.ts';
 import { root } from './config.mjs';
 
 function rejected(args, databaseUrl) {
@@ -23,6 +24,18 @@ test('pooled migration URLs are rejected without printing credentials', () => {
     'postgresql://user:local-secret-canary@ep-test-pooler.neon.tech/neondb?sslmode=require');
   assert.match(output, /direct Neon hostname/);
   assert.doesNotMatch(output, /local-secret-canary/);
+});
+
+test('migration waits for a stopped container and no committable session', () => {
+  assert.equal(containerStopped({ status: 'stopped' }), true);
+  assert.equal(containerStopped({ status: 'stopped_with_code' }), true);
+  assert.equal(containerStopped({ status: 'stopping' }), false);
+  assert.equal(containerStopped({ status: 'running' }), false);
+  assert.equal(containerStopped({ status: 'healthy' }), false);
+  assert.equal(databaseGuardFailure('ERROR: blocking_database_sessions:2'), 'sessions');
+  assert.equal(databaseGuardFailure('ERROR: nickname_mismatch:1'), 'nicknames');
+  assert.equal(databaseGuardFailure('ERROR: nickname_migration_missing'), 'migration');
+  assert.equal(databaseGuardFailure('password=local-secret-canary'), 'failed');
 });
 
 test('invalid or non-Neon migration URLs fail without printing credentials', () => {

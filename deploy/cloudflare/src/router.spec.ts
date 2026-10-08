@@ -1,7 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import { routeRequest } from './router';
 
-function harness(response = () => Response.json({ public: true })) {
+function harness(
+  response = () => Response.json({ public: true }),
+  release: { hold?: string; control?: string; image?: string } = {},
+) {
   const entries = new Map<string, Response>();
   const pending: Promise<unknown>[] = [];
   const cache = {
@@ -11,7 +14,11 @@ function harness(response = () => Response.json({ public: true })) {
   const fetchApi = vi.fn<(request: Request) => Promise<Response>>(async () => response());
   const getByName = vi.fn(() => ({ fetch: fetchApi }));
   const assets = vi.fn(async () => new Response('SPA'));
-  const env = { API: { getByName }, ASSETS: { fetch: assets } };
+  const env = {
+    API: { getByName }, ASSETS: { fetch: assets },
+    RELEASE_HOLD: release.hold, RELEASE_CONTROL: release.control,
+    RELEASE_ID: 'a'.repeat(40), RELEASE_IMAGE: release.image ?? 'current',
+  };
   const ctx = { waitUntil: (promise: Promise<unknown>) => { pending.push(promise); } };
   return { cache, fetchApi, getByName, assets, pending,
     request: (path: string, init?: RequestInit) => routeRequest(new Request('https://bid.place' + path, init), env, ctx, cache as unknown as Cache) };
@@ -81,5 +88,54 @@ describe('Cloudflare application boundary', () => {
     expect(forwarded.headers.has('Forwarded')).toBe(false);
     expect(forwarded.headers.has('X-Real-IP')).toBe(false);
     expect(await forwarded.text()).toBe('payload');
+  });
+
+  it('maintenance rejects every API path before cache or the container', async () => {
+    const h = harness(() => Response.json({ public: true }), { hold: 'closed', control: 'local-release-control-value' });
+    for (const path of ['/api', '/api/', '/api/auth/register', '/api/sellers/me']) {
+      const response = await h.request(path, { method: 'POST', body: 'write' });
+      expect(response.status).toBe(503);
+      expect(response.headers.get('Cache-Control')).toBe('no-store');
+    }
+    expect(h.cache.match).not.toHaveBeenCalled();
+    expect(h.cache.put).not.toHaveBeenCalled();
+    expect(h.getByName).not.toHaveBeenCalled();
+    expect(await (await h.request('/works/example')).text()).toBe('SPA');
+    const again = await h.request('/api/works');
+    expect(again.status).toBe(503);
+    expect(h.getByName).not.toHaveBeenCalled();
+  });
+
+  it('does not stop the container from an unauthenticated request', async () => {
+    const h = harness(() => Response.json({ status: 'stopped' }), { hold: 'closed', control: 'local-release-control-value' });
+    expect((await h.request('/_release/stop', { method: 'POST' })).status).toBe(404);
+    expect((await h.request('/_release/stop', {
+      method: 'POST', headers: { Authorization: 'Bearer wrong-release-control-value' },
+    })).status).toBe(404);
+    expect((await h.request('/_release/state')).status).toBe(404);
+    expect(h.getByName).not.toHaveBeenCalled();
+    expect(h.cache.match).not.toHaveBeenCalled();
+  });
+
+  it('confirms stop by container state and keeps maintenance closed', async () => {
+    const h = harness(() => Response.json({ status: 'stopping', lastChange: 1 }), {
+      hold: 'closed', control: 'local-release-control-value', image: 'previous',
+    });
+    const stopping = await h.request('/_release/stop', {
+      method: 'POST', headers: { Authorization: 'Bearer local-release-control-value' },
+    });
+    expect(stopping.status).toBe(409);
+    expect(await stopping.json()).toMatchObject({ status: 'stopping', releaseImage: 'previous' });
+    expect(h.cache.match).not.toHaveBeenCalled();
+    const forwarded = h.fetchApi.mock.calls[0][0];
+    expect(forwarded.headers.get('Authorization')).toBeNull();
+    expect(new URL(forwarded.url).pathname).toBe('/__release/stop');
+    expect((await h.request('/api/auth/slug', { method: 'POST' })).status).toBe(503);
+    h.fetchApi.mockResolvedValueOnce(Response.json({ status: 'stopped', lastChange: 2 }));
+    const stopped = await h.request('/_release/state', {
+      headers: { Authorization: 'Bearer local-release-control-value' },
+    });
+    expect(stopped.status).toBe(200);
+    expect(await stopped.json()).toMatchObject({ status: 'stopped', releaseId: 'a'.repeat(40) });
   });
 });

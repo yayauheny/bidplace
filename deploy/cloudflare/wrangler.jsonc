@@ -31,7 +31,8 @@
       "S3_SECRET_ACCESS_KEY",
       "SMTP_USERNAME",
       "SMTP_PASSWORD",
-      "CLOUDFLARE_CACHE_TOKEN"
+      "CLOUDFLARE_CACHE_TOKEN",
+      "RELEASE_CONTROL"
     ]
   },
   "observability": {
@@ -80,7 +81,8 @@
           "S3_SECRET_ACCESS_KEY",
           "SMTP_USERNAME",
           "SMTP_PASSWORD",
-          "CLOUDFLARE_CACHE_TOKEN"
+          "CLOUDFLARE_CACHE_TOKEN",
+          "RELEASE_CONTROL"
         ]
       },
       "vars": {
@@ -153,7 +155,8 @@
           "S3_SECRET_ACCESS_KEY",
           "SMTP_USERNAME",
           "SMTP_PASSWORD",
-          "CLOUDFLARE_CACHE_TOKEN"
+          "CLOUDFLARE_CACHE_TOKEN",
+          "RELEASE_CONTROL"
         ]
       },
       "vars": {

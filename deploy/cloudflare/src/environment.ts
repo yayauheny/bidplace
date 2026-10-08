@@ -8,6 +8,11 @@ export const requiredSecrets = [
   'CLOUDFLARE_CACHE_TOKEN',
 ] as const;
 
+// Worker-only. Never copied into the API container.
+export const workerOnlySecrets = ['RELEASE_CONTROL'] as const;
+
+export const workerSecrets = [...requiredSecrets, ...workerOnlySecrets] as const;
+
 export const containerVariables = [
   'NODE_ENV', 'APP_ENV', 'API_PORT', 'API_URL', 'CORS_ORIGIN', 'TRUST_PROXY',
   'RATE_LIMIT_MAX_BUCKETS', 'RATE_LIMIT_CLEANUP_INTERVAL_MS',

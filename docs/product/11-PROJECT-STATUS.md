@@ -1,32 +1,42 @@
 # bidplace — текущий статус проекта
 
-## 2026-10-08 — Slug cutover cannot block old writes yet
+## 2026-10-08 — Local slug release gate
 
-- `Partial`. Required order for `20261008040000_add_user_slug`:
-  1. Before the migration, exclude writes from the old API.
-  2. Wait until every write that the old API already accepted has finished.
-  3. Apply the migration.
-  4. Start the new version, check nickname equality, and only then open access.
-  Design gaps stay `Partial`: consent text, mixed-text ranges, the Google
-  glyph, a public policy page, `acceptRules`, nickname change, and dropping
-  `seller_profiles.slug`. Production remains
-  `541d763547f7b021895daa3d533c3196c37a4e67`. No push or deploy.
-- `Blocker`: the production Worker cannot exclude those writes. `routeRequest`
-  in `deploy/cloudflare/src/router.ts` sends every `/api` and `/api/*` method
-  to the one `PortfolioApi` container, `API.getByName('portfolio-api')`.
-  There is no method filter, maintenance binding, or probe that rejects a
-  mutation before that fetch. `sleepAfter = '10m'` only sleeps an idle
-  container; the next request starts the same image. `max_instances: 1`
-  still performs the write. `scripts/cloudflare` has no command that disables
-  writes and shows they stay disabled. `.github/workflows/production-deploy.yml`
-  migrates, when `migrate-production` is confirmed, and then deploy publishes
-  `bid.place`. That job is not this order. Stopping a process is not a
-  substitute.
-- `Blocker`: nothing reports that an already accepted write has finished.
-  `PortfolioApi` does not implement `onStop`. The Worker does not count
-  in-flight requests. Worker `observability.logs.invocation_logs` is false,
-  and the container block only enables observability. Idle sleep is not that
-  wait.
+- `Partial`. The local release gate can keep `/api` closed, stop the current
+  API container, and open access only after nickname and version checks.
+  It is not deployed. Production remains
+  `541d763547f7b021895daa3d533c3196c37a4e67`. No production migration, push,
+  deploy, or production stop. Design gaps stay `Partial`: consent text,
+  mixed-text ranges, the Google glyph, a public policy page, `acceptRules`,
+  nickname change, and dropping `seller_profiles.slug`.
+- Public hold is the Worker var `RELEASE_HOLD`. Only the value `closed`
+  makes `routeRequest` return 503 and `Cache-Control: no-store` for `/api`
+  and `/api/*` before cache lookup and before `API.getByName`. A new request
+  does not clear the var. A Worker restart keeps the deployed var. A failed
+  deploy does not replace the live Worker, so a closed hold stays closed.
+- Stop control is `POST /_release/stop` and `GET /_release/state`. Both sit
+  outside `/api`. The Worker compares `Authorization: Bearer` with the Worker
+  secret `RELEASE_CONTROL` and returns 404 without calling the container when
+  the secret is missing or wrong. The incoming request is not forwarded.
+  `PortfolioApi.fetch` accepts only the internal paths `/__release/stop` and
+  `/__release/state`. Stop sends `SIGTERM` through `@cloudflare/containers`
+  0.3.7 `stop()`, which reaches the existing Nest `enableShutdownHooks()` and
+  Prisma disconnect. Success is `getState()` status `stopped` or
+  `stopped_with_code`, not the return of `stop()`. There is no request
+  counter and no log-based stop condition.
+- `pnpm cloudflare:migrate` refuses while another database session is
+  `active`, `idle in transaction`, or `idle in transaction (aborted)`. Plain
+  `idle` is not a blocker. The migration workflow also requires a live
+  `GET /_release/state` of HTTP 200 with a terminal status before that SQL.
+  The preparatory image deploy uses Wrangler `--containers-rollout none` and
+  skips the API image build, so the previous production image stays in place.
+- Nickname equality and the migration row are checked on the direct Neon URL
+  before `RELEASE_HOLD` can become `open`. Opening also requires
+  `RELEASE_IMAGE=current` and `RELEASE_ID` equal to that commit. The exact
+  operator steps are in `docs/ops/CLOUDFLARE-DEPLOYMENT.md`.
+- Local check: `pnpm cloudflare:check` on Node 22.20.0. Worker typecheck and
+  lint passed. Vitest: 29 passed. `scripts/cloudflare` node tests: 14 passed.
+  The registration browser gate was not repeated.
 - Nickname check for step 4, once access is still closed: copy any null
   `users.slug` from `seller_profiles.slug`, then require every pair of
   strings to be equal. If any pair differs, do not open `bid.place`.
@@ -53,14 +63,11 @@
   policy page, `acceptRules`, nickname change, and dropping
   `seller_profiles.slug` stay open. This is not a 1:1 match. Production
   remains `541d763547f7b021895daa3d533c3196c37a4e67`. No push or deploy.
-- Future release order for `20261008040000_add_user_slug`: apply that
-  migration first. Then stop every process of the previous API — the build
-  that still writes `seller_profiles.slug` — and confirm none are accepting
-  traffic. Only after that start this build. A rolling overlap is the window
-  where the old process can insert or change a profile slug after the copy.
-  Drop `seller_profiles.slug` later only after every still-null `users.slug`
-  has been copied from the profile column, every pair of strings is equal,
-  and no live query reads the profile column. If any pair differs, stop.
+- The release order for `20261008040000_add_user_slug` is the local gate in
+  the section above. Do not apply that migration before the hold is closed
+  and the previous container is confirmed stopped. Drop
+  `seller_profiles.slug` later only after every pair of nicknames is equal
+  and no live query reads the profile column.
 - Local checks on Node 22.20.0: API and mobile typecheck passed. Lint of the
   touched files passed.   `seller-profile.mapper.spec` (3), `sellers.service.spec` (20), and
   `seller-profile-submit.spec` (48) passed. Chromium and WebKit

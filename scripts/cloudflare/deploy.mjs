@@ -1,15 +1,16 @@
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { chmodSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { requiredSecrets } from '../../deploy/cloudflare/src/environment.ts';
+import { workerSecrets } from '../../deploy/cloudflare/src/environment.ts';
+import { databaseGuardFailure, nicknameGateSql } from '../../deploy/cloudflare/src/release-gate.ts';
 import { configPath, deploymentConfig, root, validateConfig } from './config.mjs';
 
 const RELEASE_BRANCH = 'feature/portfolio-mvp-release';
 const PRODUCTION_JWT_SECRET_MIN_LENGTH = 32;
 const GATE_ONLY_ENV = [
-  ...requiredSecrets,
+  ...workerSecrets,
   'DATABASE_URL_UNPOOLED',
   'NEON_DIRECT_URL',
   'CLOUDFLARE_API_TOKEN',
@@ -57,7 +58,7 @@ export function assertSecretsFile(file, checkoutRoot) {
     throw new Error('Secrets file must be a JSON object; contents are not logged');
   }
   const keys = Object.keys(parsed).sort();
-  const expected = [...requiredSecrets].sort();
+  const expected = [...workerSecrets].sort();
   if (JSON.stringify(keys) !== JSON.stringify(expected)) {
     throw new Error('Secrets file keys must match the runtime contract; values are not logged');
   }
@@ -71,6 +72,9 @@ export function assertSecretsFile(file, checkoutRoot) {
   }
   if (parsed.JWT_SECRET.length < PRODUCTION_JWT_SECRET_MIN_LENGTH) {
     throw new Error(`JWT_SECRET must be at least ${PRODUCTION_JWT_SECRET_MIN_LENGTH} characters`);
+  }
+  if (parsed.RELEASE_CONTROL.length < PRODUCTION_JWT_SECRET_MIN_LENGTH) {
+    throw new Error(`RELEASE_CONTROL must be at least ${PRODUCTION_JWT_SECRET_MIN_LENGTH} characters`);
   }
   let database;
   try { database = new URL(parsed.DATABASE_URL); }
@@ -106,6 +110,79 @@ export function writeProductionConfig(rules) {
   return { directory, file };
 }
 
+export function assertProductionReleaseMode({ release, keepContainer, keepHold }) {
+  if (release !== undefined && release !== 'closed' && release !== 'open') {
+    throw new Error('--release requires closed or open');
+  }
+  if (keepContainer && release !== 'closed') throw new Error('--keep-container requires --release closed');
+  if (keepHold && release) throw new Error('--keep-hold cannot change the release hold');
+  if (!release && !keepHold) {
+    throw new Error('Production deploy requires --release closed, --release open, or --keep-hold');
+  }
+}
+
+export function productionWranglerArgs({ configFile, secretsFile, release, keepContainer, keepHold, releaseId }) {
+  assertProductionReleaseMode({ release, keepContainer, keepHold });
+  const preserveImage = keepContainer || release === 'open';
+  const args = ['deploy', '--config', configFile, '--env', 'production', '--secrets-file', secretsFile, '--keep-vars'];
+  if (release) args.push('--var', `RELEASE_HOLD:${release}`);
+  if (release === 'closed' && releaseId) args.push('--var', `RELEASE_ID:${releaseId}`, '--var', `RELEASE_IMAGE:${keepContainer ? 'previous' : 'current'}`);
+  if (preserveImage) args.push('--containers-rollout', 'none');
+  return { args, skipImage: preserveImage };
+}
+
+export function assertReleaseSha(releaseId) {
+  if (!/^[0-9a-f]{40}$/.test(releaseId)) throw new Error('Release id must be the 40-character commit SHA');
+  return releaseId;
+}
+
+export function runDirectSql(sql, databaseUrl) {
+  let database;
+  try { database = new URL(databaseUrl); }
+  catch { throw new Error('Direct database URL is invalid; value is not logged'); }
+  if (!['postgres:', 'postgresql:'].includes(database.protocol) ||
+      !database.hostname?.endsWith('.neon.tech') || database.searchParams.get('sslmode') !== 'require' ||
+      database.hostname.split('.')[0].endsWith('-pooler')) {
+    throw new Error('Direct database URL must be the non-pooled Neon hostname; value is not logged');
+  }
+  const result = spawnSync(process.execPath, [
+    join(root, 'packages/database/node_modules/prisma/build/index.js'),
+    'db', 'execute', '--stdin', '--schema', join(root, 'packages/database/prisma/schema.prisma'),
+  ], {
+    env: { ...process.env, DATABASE_URL: databaseUrl },
+    input: sql,
+    encoding: 'utf8',
+  });
+  if (result.error || result.status !== 0) {
+    const failure = databaseGuardFailure(`${result.stdout ?? ''}${result.stderr ?? ''}`);
+    if (failure === 'sessions') throw new Error('Migration refused because other database sessions can still commit');
+    if (failure === 'nicknames') throw new Error('Opening access refused because account and profile nicknames differ');
+    if (failure === 'migration') throw new Error('Opening access refused because the slug migration is not recorded');
+    throw new Error('Database guard failed; inspect on a trusted machine');
+  }
+}
+
+function assertClosedRelease(releaseId) {
+  const control = process.env.RELEASE_CONTROL ?? '';
+  if (control.length < 32) throw new Error('Opening access requires RELEASE_CONTROL; value is not logged');
+  const result = spawnSync(process.execPath, ['--input-type=module', '-e', `
+    const response = await fetch('https://bid.place/_release/state', {
+      headers: { Authorization: 'Bearer ' + process.env.RELEASE_CONTROL },
+    });
+    let state = {};
+    try { state = await response.json(); } catch { state = {}; }
+    if (response.status !== 200 || state.releaseImage !== 'current' || state.releaseId !== process.env.EXPECTED_RELEASE_ID) {
+      process.exit(2);
+    }
+  `], {
+    env: { PATH: process.env.PATH, RELEASE_CONTROL: control, EXPECTED_RELEASE_ID: releaseId },
+    encoding: 'utf8',
+  });
+  if (result.status !== 0) {
+    throw new Error('Opening access refused: the closed release does not match this commit');
+  }
+}
+
 function argumentValue(args, name) {
   const index = args.indexOf(name);
   if (index === -1) return undefined;
@@ -138,13 +215,29 @@ function main() {
     assertRulesText(rules.text);
     assertSecretsFile(secretsFile, root);
     if (!process.env.CLOUDFLARE_API_TOKEN?.trim()) throw new Error('CLOUDFLARE_API_TOKEN is required');
+    const release = argumentValue(args, '--release');
+    const keepContainer = args.includes('--keep-container');
+    const keepHold = args.includes('--keep-hold');
+    const releaseId = release === 'closed' || release === 'open'
+      ? assertReleaseSha(execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim())
+      : undefined;
     const gates = gateEnvironment(process.env);
     const { directory, file } = writeProductionConfig(rules);
+    const wrangler = productionWranglerArgs({
+      configFile: file, secretsFile, release, keepContainer, keepHold, releaseId,
+    });
     try {
+      if (release === 'open') {
+        if (!process.env.NEON_DIRECT_URL?.trim()) throw new Error('Opening access requires NEON_DIRECT_URL; value is not logged');
+        assertClosedRelease(releaseId);
+        runDirectSql(nicknameGateSql, process.env.NEON_DIRECT_URL);
+      }
       execFileSync('pnpm', ['cloudflare:check'], { cwd: root, stdio: 'inherit', env: gates });
       execFileSync('node', ['scripts/cloudflare/build-web.mjs', target], { cwd: root, stdio: 'inherit', env: gates });
-      execFileSync('pnpm', ['cloudflare:image:verify'], { cwd: root, stdio: 'inherit', env: gates });
-      execFileSync('pnpm', ['exec', 'wrangler', 'deploy', '--config', file, '--env', target, '--secrets-file', secretsFile], {
+      if (!wrangler.skipImage) {
+        execFileSync('pnpm', ['cloudflare:image:verify'], { cwd: root, stdio: 'inherit', env: gates });
+      }
+      execFileSync('pnpm', ['exec', 'wrangler', ...wrangler.args], {
         cwd: root, stdio: 'inherit',
         env: { ...gates, CLOUDFLARE_API_TOKEN: process.env.CLOUDFLARE_API_TOKEN },
       });

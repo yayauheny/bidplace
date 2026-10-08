@@ -8,6 +8,16 @@ on:
         required: false
         default: ''
         type: string
+      release_hold:
+        description: 'closed keeps /api unavailable. open follows nickname and version checks. keep preserves the current hold while updating the image.'
+        required: false
+        default: ''
+        type: string
+      keep_container:
+        description: 'Deploy the Worker release gate without replacing the current API image.'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -75,7 +85,35 @@ jobs:
       - name: Build the production SPA
         run: pnpm build:web
 
+      - name: Refuse an unsafe release combination
+        env:
+          CONFIRM_MIGRATION: ${{ inputs.confirm_migration }}
+          RELEASE_HOLD: ${{ inputs.release_hold }}
+          KEEP_CONTAINER: ${{ inputs.keep_container }}
+        run: |
+          if [ "$RELEASE_HOLD" != "closed" ] && [ "$RELEASE_HOLD" != "open" ] && [ "$RELEASE_HOLD" != "keep" ]; then
+            echo "release_hold must be closed, open, or keep." >&2
+            exit 1
+          fi
+          if [ "$KEEP_CONTAINER" = "true" ] && [ "$CONFIRM_MIGRATION" = "migrate-production" ]; then
+            echo "The preparatory Worker deploy cannot run the migration." >&2
+            exit 1
+          fi
+          if [ "$KEEP_CONTAINER" = "true" ] && [ "$RELEASE_HOLD" != "closed" ]; then
+            echo "Keeping the current API image requires release_hold closed." >&2
+            exit 1
+          fi
+          if [ "$RELEASE_HOLD" = "open" ] && [ "$CONFIRM_MIGRATION" = "migrate-production" ]; then
+            echo "Opening access cannot run in the same job as the migration." >&2
+            exit 1
+          fi
+          if [ "$RELEASE_HOLD" = "keep" ] && [ "$CONFIRM_MIGRATION" = "migrate-production" ]; then
+            echo "A later image update cannot run the slug migration." >&2
+            exit 1
+          fi
+
       - name: Verify the production image
+        if: inputs.keep_container != true && inputs.release_hold != 'open'
         run: pnpm cloudflare:image:verify
 
       - name: Reject an ambiguous migration confirmation
@@ -94,6 +132,7 @@ jobs:
           S3_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
           CLOUDFLARE_CACHE_TOKEN: ${{ secrets.CLOUDFLARE_CACHE_TOKEN }}
+          RELEASE_CONTROL: ${{ secrets.RELEASE_CONTROL }}
         run: |
           python3 - <<'PY'
           import os
@@ -108,6 +147,7 @@ jobs:
               "S3_SECRET_ACCESS_KEY",
               "SMTP_PASSWORD",
               "CLOUDFLARE_CACHE_TOKEN",
+              "RELEASE_CONTROL",
           ]
           missing = [name for name in required if not os.environ.get(name, "").strip()]
           if missing:
@@ -144,6 +184,21 @@ jobs:
           print("production neondb endpoints accepted")
           PY
 
+      - name: Require a stopped API before migration
+        if: inputs.confirm_migration == 'migrate-production'
+        env:
+          RELEASE_CONTROL: ${{ secrets.RELEASE_CONTROL }}
+        run: |
+          set -euo pipefail
+          code=$(curl --silent --show-error --output /tmp/release-state.json --write-out '%{http_code}' \
+            --header "Authorization: Bearer ${RELEASE_CONTROL}" \
+            https://bid.place/_release/state)
+          if [ "$code" != "200" ]; then
+            echo "Migration refused: the previous API is not confirmed stopped." >&2
+            exit 1
+          fi
+          node -e "const state = JSON.parse(require('fs').readFileSync('/tmp/release-state.json', 'utf8')); if (state.status !== 'stopped' && state.status !== 'stopped_with_code') { console.error('Migration refused: container state is not stopped.'); process.exit(1); }"
+
       - name: Migrate the production database
         if: inputs.confirm_migration == 'migrate-production'
         env:
@@ -163,7 +218,12 @@ jobs:
           S3_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
           CLOUDFLARE_CACHE_TOKEN: ${{ secrets.CLOUDFLARE_CACHE_TOKEN }}
+          RELEASE_CONTROL: ${{ secrets.RELEASE_CONTROL }}
+          NEON_DIRECT_URL: ${{ secrets.NEON_DIRECT_URL }}
           WORKERS_CI_BRANCH: feature/portfolio-mvp-release
+          RELEASE_HOLD: ${{ inputs.release_hold }}
+          KEEP_CONTAINER: ${{ inputs.keep_container }}
+          CONFIRM_MIGRATION: ${{ inputs.confirm_migration }}
         run: |
           set -euo pipefail
           umask 077
@@ -180,6 +240,7 @@ jobs:
               "S3_SECRET_ACCESS_KEY",
               "SMTP_PASSWORD",
               "CLOUDFLARE_CACHE_TOKEN",
+              "RELEASE_CONTROL",
           ]
           missing = [name for name in names if not os.environ.get(name, "").strip()]
           if missing:
@@ -190,4 +251,15 @@ jobs:
               json.dump(payload, handle)
           os.chmod(path, 0o600)
           PY
-          node scripts/cloudflare/deploy.mjs production --secrets-file "$secrets_file"
+          args=(production --secrets-file "$secrets_file")
+          if [ "$RELEASE_HOLD" = "keep" ]; then
+            args+=(--keep-hold)
+          elif [ "$CONFIRM_MIGRATION" = "migrate-production" ] || [ "$RELEASE_HOLD" = "closed" ]; then
+            args+=(--release closed)
+          else
+            args+=(--release open)
+          fi
+          if [ "$KEEP_CONTAINER" = "true" ]; then
+            args+=(--keep-container)
+          fi
+          node scripts/cloudflare/deploy.mjs "${args[@]}"

@@ -1,7 +1,15 @@
+import { containerStopped, isApiPath, releaseHoldClosed, secretMatches } from './release-gate';
+
 export interface RouterBindings {
   API: { getByName(name: string): { fetch(request: Request): Promise<Response> } };
   ASSETS: { fetch(request: Request): Promise<Response> };
+  RELEASE_HOLD?: string;
+  RELEASE_CONTROL?: string;
+  RELEASE_ID?: string;
+  RELEASE_IMAGE?: string;
 }
+
+const privateResponse = { 'Cache-Control': 'no-store' };
 
 function publicCacheTtl(request: Request): number | undefined {
   if (request.method !== 'GET' || request.headers.has('Authorization') ||
@@ -27,6 +35,48 @@ function forwardedRequest(request: Request): Request {
   return forwarded;
 }
 
+function releaseCommand(request: Request): '/__release/stop' | '/__release/state' | null {
+  const url = new URL(request.url);
+  if (url.pathname === '/_release/stop' && request.method === 'POST') return '/__release/stop';
+  if (url.pathname === '/_release/state' && request.method === 'GET') return '/__release/state';
+  return null;
+}
+
+function bearer(request: Request): string {
+  const header = request.headers.get('Authorization') ?? '';
+  return header.startsWith('Bearer ') ? header.slice('Bearer '.length) : '';
+}
+
+async function controlRelease(request: Request, env: RouterBindings): Promise<Response> {
+  const command = releaseCommand(request);
+  const expected = env.RELEASE_CONTROL ?? '';
+  if (!command || !(await secretMatches(expected, bearer(request)))) {
+    return new Response(null, { status: 404, headers: privateResponse });
+  }
+  const origin = new URL(request.url);
+  const response = await env.API.getByName('portfolio-api').fetch(new Request(
+    new URL(command, origin.origin),
+    { method: 'POST' },
+  ));
+  let payload: { status?: string; lastChange?: number; exitCode?: number } | null;
+  try {
+    payload = await response.json();
+  } catch {
+    payload = null;
+  }
+  if (!payload || typeof payload !== 'object') {
+    return new Response(null, { status: 502, headers: privateResponse });
+  }
+  const status = containerStopped(payload) ? 200 : response.status === 200 ? 409 : response.status;
+  return Response.json({
+    status: payload.status,
+    lastChange: payload.lastChange,
+    exitCode: payload.exitCode,
+    releaseId: env.RELEASE_ID ?? null,
+    releaseImage: env.RELEASE_IMAGE ?? null,
+  }, { status, headers: privateResponse });
+}
+
 export async function routeRequest(
   request: Request,
   env: RouterBindings,
@@ -34,7 +84,13 @@ export async function routeRequest(
   cache: Cache,
 ): Promise<Response> {
   const url = new URL(request.url);
-  if (url.pathname !== '/api' && !url.pathname.startsWith('/api/')) {
+  if (url.pathname === '/_release/stop' || url.pathname === '/_release/state') {
+    return controlRelease(request, env);
+  }
+  if (releaseHoldClosed(env.RELEASE_HOLD) && isApiPath(url.pathname)) {
+    return new Response(null, { status: 503, headers: privateResponse });
+  }
+  if (!isApiPath(url.pathname)) {
     return env.ASSETS.fetch(request);
   }
   const ttl = publicCacheTtl(request);
