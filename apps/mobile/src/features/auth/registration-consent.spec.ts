@@ -31,7 +31,26 @@ const harness = vi.hoisted(() => ({
 vi.mock('react-native', () => ({
   Platform: { OS: 'web' },
   View: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
-  Text: ({ children }: { children?: ReactNode }) => createElement('span', null, children),
+  Text: ({
+    children,
+    onPress,
+    accessibilityRole,
+  }: {
+    children?: ReactNode;
+    onPress?: () => void;
+    accessibilityRole?: string;
+  }) =>
+    onPress
+      ? createElement(
+          'button',
+          {
+            type: 'button',
+            role: accessibilityRole ?? 'link',
+            onClick: () => onPress(),
+          },
+          children,
+        )
+      : createElement('span', null, children),
   ScrollView: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
   Pressable: ({
     children,
@@ -62,6 +81,10 @@ vi.mock('react-native-svg', () => ({
   Path: () => null,
   Circle: () => null,
   Ellipse: () => null,
+}));
+
+vi.mock('expo-linear-gradient', () => ({
+  LinearGradient: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
 }));
 
 vi.mock('../../components/figma/FigmaButton', () => ({
@@ -281,6 +304,16 @@ function clickButton(container: ParentNode, label: string) {
   });
 }
 
+function clickLegalLink(container: ParentNode, label: string) {
+  const link = [...container.querySelectorAll('[role="link"]')].find((item) =>
+    item.textContent?.includes(label),
+  );
+  if (!link) throw new Error(`Missing link ${label}`);
+  act(() => {
+    if (link instanceof HTMLElement) link.click();
+  });
+}
+
 async function until(container: ParentNode, marker: string) {
   for (let attempt = 0; attempt < 20; attempt += 1) {
     if (container.textContent?.includes(marker)) return;
@@ -293,7 +326,9 @@ async function reachPassword(container: HTMLElement) {
   await until(container, 'Введите вашу почту');
   fill(container, 'Электронная почта', 'a@example.com');
   clickConsent(container);
-  await until(container, 'Правила сервиса');
+  for (let attempt = 0; attempt < 20 && harness.rulesReads < 1; attempt += 1) {
+    await flush();
+  }
   clickButton(container, 'Дальше');
   await until(container, 'Выберите имя пользователя');
   fill(container, 'Никнейм', 'author-a');
@@ -326,11 +361,14 @@ describe('registration consent attempt', () => {
     fill(view.container, 'Электронная почта', 'a@example.com');
     clickConsent(view.container);
     await until(view.container, 'Не удалось получить правила.');
-    expect(view.container.textContent).not.toContain('Правила сервиса');
     clickButton(view.container, 'Повторить');
-    await until(view.container, 'Правила сервиса');
-    clickButton(view.container, 'Правила сервиса');
+    for (let attempt = 0; attempt < 20 && harness.rulesReads < 2; attempt += 1) {
+      await flush();
+    }
+    clickLegalLink(view.container, 'правилами сервиса');
     await until(view.container, 'Published rules text');
+    clickLegalLink(view.container, 'политикой конфиденциальности');
+    await until(view.container, 'Документ готовится');
     expect(harness.rulesReads).toBe(2);
     expect(harness.registers).toBe(0);
     view.unmount();

@@ -12,6 +12,7 @@ import {
   figmaButtonGradientColors,
   figmaButtonGradientOpacity,
   figmaButtonGradientPlacement,
+  figmaButtonInsetBorderWidth,
   figmaButtonLabelColor,
   figmaButtonRadius,
   figmaButtonStyle,
@@ -118,6 +119,7 @@ export function FigmaButton({
                     styles.gradientSurface,
                     {
                       borderRadius: radius,
+                      margin: figmaButtonInsetBorderWidth(variant),
                       backgroundColor: figmaButtonSurfaceFill(
                         variant,
                         interaction,

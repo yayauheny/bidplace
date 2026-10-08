@@ -1,8 +1,17 @@
 # bidplace — статус дизайна и UI-реализации
 
-Последнее обновление: 2026-10-08
+Последнее обновление: 2026-10-09
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
+
+## 2026-10-09 — Auth provider icon, strokes, and legal inline links
+
+- `Partial`. Runtime matches founder-approved geometry: Google
+  `AuthGoogleIcon` from `google-521-10381.svg`, checkbox/auth button gradient
+  borders left-to-right, consent and login legal phrases as keyboard/mouse
+  links without underline. Policy uses a temporary dialog placeholder; rules
+  use `getRules`. Verify-email mixed copy and nickname suggestion chips are
+  unchanged. This is not 1:1.
 
 ## 2026-10-08 — Fullscreen auth band uses container height
 

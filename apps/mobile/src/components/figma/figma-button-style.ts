@@ -55,8 +55,15 @@ export function figmaButtonStyle(
       ? figmaTokens.space.quietButtonY
       : figmaTokens.space.buttonY,
     borderRadius: figmaButtonRadius(size),
-    borderWidth: compact || insetPressedSurface ? 0 : authHeight ? 0.5 : 1,
-    borderColor: buttonBorder(variant),
+    borderWidth:
+      compact || insetPressedSurface || figmaButtonUsesGradientBorder(variant)
+        ? 0
+        : authHeight
+          ? 0.5
+          : 1,
+    borderColor: figmaButtonUsesGradientBorder(variant)
+      ? 'transparent'
+      : buttonBorder(variant),
     backgroundColor:
       variant === 'outline'
         ? 'transparent'
@@ -92,12 +99,19 @@ export function figmaButtonSurfaceFill(
 }
 
 export function figmaButtonUsesGradientBorder(variant: FigmaButtonVariant) {
-  return variant === 'outline' || variant === 'quiet' || variant === 'authProvider';
+  return (
+    variant === 'outline' ||
+    variant === 'quiet' ||
+    variant === 'authProvider' ||
+    variant === 'authPrimary'
+  );
 }
 
 export function figmaButtonGradientPlacement(variant: FigmaButtonVariant) {
   if (variant === 'quiet') return 'outside' as const;
-  if (variant === 'outline' || variant === 'authProvider') return 'inset' as const;
+  if (variant === 'outline' || variant === 'authProvider' || variant === 'authPrimary') {
+    return 'inset' as const;
+  }
   return 'none' as const;
 }
 
@@ -108,6 +122,12 @@ export function figmaButtonUsesOutsidePaintWrapper(
 }
 
 export function figmaButtonGradientColors(variant: FigmaButtonVariant) {
+  if (variant === 'authPrimary') {
+    return [
+      figmaTokens.auth.primaryBorderStart,
+      figmaTokens.auth.primaryBorderEnd,
+    ] as const;
+  }
   if (variant === 'authProvider') {
     return [
       figmaTokens.auth.providerBorderStart,
@@ -125,6 +145,12 @@ export function figmaButtonGradientColors(variant: FigmaButtonVariant) {
 
 export function figmaButtonGradientOpacity(variant: FigmaButtonVariant) {
   return variant === 'quiet' ? figmaTokens.opacity.quietBorder : 1;
+}
+
+export function figmaButtonInsetBorderWidth(variant: FigmaButtonVariant) {
+  if (variant === 'authPrimary') return figmaTokens.auth.primaryBorderWidth;
+  if (variant === 'authProvider' || variant === 'outline') return 1;
+  return 0;
 }
 
 export function figmaAuthActionVariant(
@@ -181,7 +207,7 @@ function buttonBorder(variant: FigmaButtonVariant) {
     case 'muted':
       return figmaTokens.color.canvas;
     case 'authPrimary':
-      return figmaTokens.color.fieldValue;
+      return 'transparent';
     case 'authQuiet':
       return figmaTokens.color.canvas;
     case 'authProvider':

@@ -13,6 +13,12 @@ import { AuthConsentCheckbox } from './auth-consent-checkbox';
 import { AuthPasswordField } from './auth-password-field';
 import { registerSubmission } from './auth-dismissal';
 import { useAuthSheetComplete, useAuthSheetGuard } from './auth-sheet-context';
+import { AuthGoogleIcon } from './auth-google-icon';
+import {
+  AUTH_POLICY_STUB_BODY,
+  AUTH_POLICY_STUB_TITLE,
+  AuthLegalText,
+} from './auth-legal-text';
 import { AuthTelegramIcon } from './auth-telegram-icon';
 import { useAnalytics } from '../../providers/analytics-provider';
 import { useApiClient } from '../../providers/api-provider';
@@ -41,9 +47,15 @@ import type { SafeRedirect } from './auth-redirect';
 type AuthFormProps = { redirectTo?: SafeRedirect };
 export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
   const auth = useAuth();
+  const api = useApiClient();
   const router = useRouter();
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [providerNotice, setProviderNotice] = useState<string | null>(null);
+  const [policyOpen, setPolicyOpen] = useState(false);
+  const [rulesOpen, setRulesOpen] = useState(false);
+  const [rulesText, setRulesText] = useState<string | null>(null);
+  const [rulesError, setRulesError] = useState<string | null>(null);
+  const rulesPending = useRef(false);
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginFormSchema),
     defaultValues: { email: '', password: '' },
@@ -67,6 +79,28 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
     redirectTo,
     router,
   ]);
+  const loadLoginRules = () => {
+    if (rulesPending.current || rulesText) return;
+    rulesPending.current = true;
+    setRulesError(null);
+    void api.auth
+      .getRules()
+      .then((response) => {
+        setRulesText(response.rules.text);
+      })
+      .catch(() => {
+        setRulesText(null);
+        setRulesError('Не удалось получить правила.');
+      })
+      .finally(() => {
+        rulesPending.current = false;
+      });
+  };
+  const openPolicy = () => setPolicyOpen(true);
+  const openRules = () => {
+    setRulesOpen(true);
+    loadLoginRules();
+  };
   const submit = form.handleSubmit(async (values) => {
     setSubmitError(null);
     try {
@@ -211,15 +245,44 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
         />
         <FigmaButton
           label="Войти с Google"
+          iconNode={<AuthGoogleIcon />}
           variant="authProvider"
           size="auth"
           width="full"
           onPress={() => setProviderNotice('Вход через Google пока недоступен')}
         />
         </View>
-        <AppText role="authLegal" style={{ textAlign: 'center', color: designTokens.color.textSubdued }}>
-          Продолжая, вы принимаете политику конфиденциальности и правила сервиса
-        </AppText>
+        <AuthLegalText
+          variant="login"
+          textAlign="center"
+          onOpenPolicy={openPolicy}
+          onOpenRules={openRules}
+        />
+        {rulesError ? (
+          <AppText role="bodySmall" tone="danger" accessibilityLiveRegion="polite">
+            {rulesError}
+          </AppText>
+        ) : null}
+        <AppDialog
+          open={policyOpen}
+          title={AUTH_POLICY_STUB_TITLE}
+          onClose={() => setPolicyOpen(false)}
+        >
+          <AppText role="bodySmall">{AUTH_POLICY_STUB_BODY}</AppText>
+        </AppDialog>
+        <AppDialog
+          open={rulesOpen}
+          title="Правила сервиса"
+          onClose={() => setRulesOpen(false)}
+        >
+          {rulesText ? (
+            <AppText role="bodySmall">{rulesText}</AppText>
+          ) : rulesError ? (
+            <AppText role="bodySmall" tone="danger">{rulesError}</AppText>
+          ) : (
+            <AppText role="bodySmall" tone="secondary">Загружаем правила…</AppText>
+          )}
+        </AppDialog>
       </View>
   );
 }
@@ -265,6 +328,7 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
   const wasFocused = useRef(focused);
   const [rulesText, setRulesText] = useState<string | null>(null);
   const [rulesOpen, setRulesOpen] = useState(false);
+  const [policyOpen, setPolicyOpen] = useState(false);
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerFormSchema),
     defaultValues: {
@@ -356,6 +420,7 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
     if (!mounted.current) return;
     setRulesText(null);
     setRulesOpen(false);
+    setPolicyOpen(false);
     const owner = createdAccountId.current;
     const sessionId =
       queryClient.getQueryData<User | null>(authKeys.session)?.id ?? null;
@@ -377,9 +442,16 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
     rulesVersion.current = null;
     setRulesText(null);
     setRulesOpen(false);
+    setPolicyOpen(false);
+  };
+  const openPolicy = () => setPolicyOpen(true);
+  const openRulesDialog = () => {
+    setRulesOpen(true);
+    if (!rulesText && !rulesPending.current) loadRulesVersion();
   };
   const loadRulesVersion = () => {
-    clearShownRules();
+    rulesVersion.current = null;
+    setRulesText(null);
     const request = rulesRequest.current + 1;
     rulesRequest.current = request;
     const operation = sessionOperation.current;
@@ -406,7 +478,8 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
           ? consentOwns(operation, epoch)
           : anonymousOwns(operation, epoch);
         if (rulesRequest.current !== request || !stillAllowed) return;
-        clearShownRules();
+        rulesVersion.current = null;
+        setRulesText(null);
         form.setError('rulesAccepted', { message: 'Не удалось получить правила.' });
       })
       .finally(() => {
@@ -673,34 +746,45 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
                 <>
                   <AuthConsentCheckbox
                     checked={field.value}
+                    onOpenPolicy={openPolicy}
+                    onOpenRules={openRulesDialog}
                     onChange={(checked) => {
                       field.onChange(checked);
                       rulesRequest.current += 1;
                       rulesPending.current = false;
-                      clearShownRules();
-                      if (!checked) return;
-                      loadRulesVersion();
+                      if (!checked) {
+                        clearShownRules();
+                        return;
+                      }
+                      if (!rulesVersion.current) loadRulesVersion();
                     }}
                     error={rulesError}
                   />
-                  {rulesText ? (
-                    <TextButton
-                      label="Правила сервиса"
-                      onPress={() => setRulesOpen(true)}
-                    />
-                  ) : null}
                   {field.value && rulesError === 'Не удалось получить правила.' ? (
                     <TextButton label="Повторить" onPress={loadRulesVersion} />
                   ) : null}
-                  {rulesText ? (
-                    <AppDialog
-                      open={rulesOpen}
-                      title="Правила сервиса"
-                      onClose={() => setRulesOpen(false)}
-                    >
+                  <AppDialog
+                    open={policyOpen}
+                    title={AUTH_POLICY_STUB_TITLE}
+                    onClose={() => setPolicyOpen(false)}
+                  >
+                    <AppText role="bodySmall">{AUTH_POLICY_STUB_BODY}</AppText>
+                  </AppDialog>
+                  <AppDialog
+                    open={rulesOpen}
+                    title="Правила сервиса"
+                    onClose={() => setRulesOpen(false)}
+                  >
+                    {rulesText ? (
                       <AppText role="bodySmall">{rulesText}</AppText>
-                    </AppDialog>
-                  ) : null}
+                    ) : rulesError === 'Не удалось получить правила.' ? (
+                      <AppText role="bodySmall" tone="danger">{rulesError}</AppText>
+                    ) : (
+                      <AppText role="bodySmall" tone="secondary">
+                        Загружаем правила…
+                      </AppText>
+                    )}
+                  </AppDialog>
                 </>
               );
             }}

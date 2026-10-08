@@ -1,16 +1,11 @@
 {
   "schemaVersion": 1,
-  "archiveName": "Создать_с_паролем_бидплейс_лого.figmacapture.zip",
-  "archiveSha256": "570aa4f7776ccf178b7b439fec463768c9bb3d1fd71bf4a84c7a99ca1e5c345c",
-  "capturedAt": "2026-10-08T11:16:27.964Z",
+  "archiveName": "Создать_с_паролем_кнопки.figmacapture.zip",
+  "archiveSha256": "46721a83703515d1cf5b119da1c53309699efae65185abe1577afd965ec28cdc",
+  "capturedAt": "2026-10-08T19:40:25.807Z",
   "rootId": "4547:23168",
   "surfaceId": "4547:23379",
   "imported": [
-    {
-      "path": "manifest.json",
-      "sha256": "d17b7455f5ca3a3c3120124b6eac19ad21b8b274f7e0c11b6376442082589105",
-      "size": 6892
-    },
     {
       "path": "assets/001-4547_23173.png",
       "sha256": "f4bfc50376bceedb0438d206ed45bd53cf7e1d63a7af2b0c3dfda58d7f458b48",
@@ -72,6 +67,11 @@
       "size": 539
     },
     {
+      "path": "manifest.json",
+      "sha256": "d17b7455f5ca3a3c3120124b6eac19ad21b8b274f7e0c11b6376442082589105",
+      "size": 6892
+    },
+    {
       "path": "mcp/figma-locator.json",
       "sha256": "2e3694d6ccb0b354d8d5ef98039083374fe7e81b95db2243b54f1df2c0175824",
       "size": 131439
@@ -95,5 +95,6 @@
       "size": 384268,
       "reason": "Generated exporter prompt is not an instruction"
     }
-  ]
+  ],
+  "revisionNote": "2026-10-09: refreshed nodes for checkbox/button stroke weights from Создать_с_паролем_кнопки capture"
 }

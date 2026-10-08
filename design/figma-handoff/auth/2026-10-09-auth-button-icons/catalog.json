@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "library": "auth-button-icons-2026-10-09",
+  "authority": "founder-supplied provider icon geometry; overrides login Google glyph only",
+  "captures": [
+    {
+      "id": "button-icons",
+      "path": "screens/button-icons",
+      "rootNodeId": "297:5598",
+      "googleComponentId": "521:10365",
+      "googleFrameId": "521:10368",
+      "googleVectorId": "521:10381",
+      "sourceArchive": "Иконки_кнопок.figmacapture.zip",
+      "sourceArchiveSha256": "adb509639ed5886d2510b597ed6466399fad907a0edb8ee5f3523584d2c6cd67",
+      "capturedAt": "2026-10-08T19:37:59.761Z",
+      "nodesPath": "screens/button-icons/design/nodes.json",
+      "referencePath": "screens/button-icons/references/001-297_5598.png",
+      "googleSvgPath": "screens/button-icons/assets/google-521-10381.svg"
+    }
+  ]
+}

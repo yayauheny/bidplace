@@ -19,7 +19,11 @@
       "capturedAt": "2026-10-07T07:00:20.757Z",
       "canonicalParentPath": "screens/auth/auth__login-password__1123x1286__node-527-16954",
       "nodesPath": "screens/login-password/design/nodes.json",
-      "referencePath": "screens/login-password/references/001-526_14674.png"
+      "referencePath": "screens/login-password/references/001-526_14674.png",
+      "googleIconComponentId": "521:10365",
+      "googleIconFrameId": "521:10368",
+      "googleIconVectorId": "521:10381",
+      "googleIconSvgPath": "../../2026-10-09-auth-button-icons/screens/button-icons/assets/google-521-10381.svg"
     },
     {
       "id": "verify-email",

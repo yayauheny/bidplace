@@ -29,9 +29,11 @@ Email: title group `4547:23922` at y320, height48, title/caption gap6. Form
 `4547:23387` starts y384, height158, gap12. Input `4547:23389`, action
 `4547:23398`, consent group `4547:23399`. Selected checkbox frame
 `4547:23400` and unselected frame `4547:23403` are two samples of one control:
-20×20, radius6, gap6 to copy. Check path `4547:23402`: 9.33×6.67, stroke1.5,
-white. Consent text `4547:23406`: Inter Regular13, source box298×32, mixed
-ranges unresolved. One runtime checkbox changes horizontal copy width; do not
+20×20, radius6, inside gradient stroke1 (`#2A2A2A→#585858` selected,
+`#D1D1D1→#EBEBEB` unselected), gap6 to copy. Check path `4547:23402`: 9.33×6.67,
+stroke1.5, white. Consent text `4547:23406`: Inter Regular13, `#858585` body,
+`#121212` link phrases without underline. One runtime checkbox changes horizontal
+copy width; do not
 render both sample controls simply to preserve the source box.
 
 Nickname: title group `4547:24139`, y273.5, height100, gap6; positive

@@ -7,6 +7,7 @@ import {
   figmaButtonGradientColors,
   figmaButtonGradientOpacity,
   figmaButtonGradientPlacement,
+  figmaButtonInsetBorderWidth,
   figmaButtonUsesOutsidePaintWrapper,
   figmaButtonLabelColor,
   figmaButtonSurfaceFill,
@@ -19,8 +20,17 @@ describe('Figma button styles', () => {
     expect(figmaButtonStyle('authPrimary', 'idle', 'auth')).toMatchObject({
       minHeight: figmaTokens.auth.actionHeight,
       backgroundColor: figmaTokens.color.fieldValue,
-      borderWidth: 0.5,
+      borderWidth: 0,
+      borderColor: 'transparent',
     });
+    expect(figmaButtonUsesGradientBorder('authPrimary')).toBe(true);
+    expect(figmaButtonGradientColors('authPrimary')).toEqual([
+      figmaTokens.auth.primaryBorderStart,
+      figmaTokens.auth.primaryBorderEnd,
+    ]);
+    expect(figmaButtonInsetBorderWidth('authPrimary')).toBe(
+      figmaTokens.auth.primaryBorderWidth,
+    );
     expect(figmaButtonGradientColors('authProvider')).toEqual([
       figmaTokens.auth.providerBorderStart,
       figmaTokens.auth.providerBorderEnd,
@@ -67,7 +77,7 @@ describe('Figma button styles', () => {
     expect(figmaButtonStyle('outline', 'idle')).toMatchObject({
       backgroundColor: 'transparent',
       borderColor: 'transparent',
-      borderWidth: 1,
+      borderWidth: 0,
     });
     expect(figmaButtonSurfaceFill('outline', 'hover')).toBe(
       figmaTokens.color.ghostHover,

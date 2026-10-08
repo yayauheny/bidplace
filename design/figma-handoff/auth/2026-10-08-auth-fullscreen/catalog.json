@@ -15,9 +15,10 @@
       "markSlotNodeId": "4562:31590",
       "markNodeId": "4562:31593",
       "wordmarkNodeId": "4562:31592",
-      "sourceArchive": "Создать_с_паролем_бидплейс_лого.figmacapture.zip",
-      "sourceArchiveSha256": "570aa4f7776ccf178b7b439fec463768c9bb3d1fd71bf4a84c7a99ca1e5c345c",
-      "capturedAt": "2026-10-08T11:16:27.964Z",
+      "sourceArchive": "Создать_с_паролем_кнопки.figmacapture.zip",
+      "sourceArchiveSha256": "46721a83703515d1cf5b119da1c53309699efae65185abe1577afd965ec28cdc",
+      "capturedAt": "2026-10-08T19:40:25.807Z",
+      "supersedesArchive": "Создать_с_паролем_бидплейс_лого.figmacapture.zip",
       "nodesPath": "screens/email/design/nodes.json",
       "referencePath": "screens/email/references/001-4547_23168.png"
     },

@@ -1,5 +1,26 @@
 # bidplace — текущий статус проекта
 
+## 2026-10-09 — Auth icons, gradient strokes, and legal links
+
+- `Partial`. Login and registration use the imported Google glyph
+  (`521:10381` via `2026-10-09-auth-button-icons`), gradient inside strokes on
+  `authPrimary` (0.5px, `#2A2A2A→#585858`) and provider/checkbox borders
+  (1px light/dark per state), and inline legal links at Inter 13/12 with
+  `#858585` / `#121212`. Policy opens `AppDialog` with the temporary copy
+  «Документ готовится» (not an approved legal document). Rules reuse
+  `getRules` in `AppDialog` before and after the consent checkbox; no separate
+  rules button under consent. OAuth buttons stay stubs. Registration session,
+  `rulesVersion`, `acceptRules`, and recovery flows are unchanged. DEC-078
+  three-item consent composition is not reopened.
+- Handoff: `design/figma-handoff/auth/2026-10-09-auth-button-icons`,
+  refreshed `screens/email` nodes from `Создать_с_паролем_кнопки.figmacapture.zip`,
+  `catalog.json` mapping for Google SVG and email capture SHA
+  `46721a83703515d1cf5b119da1c53309699efae65185abe1577afd965ec28cdc`.
+- Tests: `registration-consent.spec.ts` (legal links + rules retry),
+  `figma-button-style.spec.ts`, `auth-layout.spec.ts` Chromium/WebKit.
+- Still open: approved privacy-policy text and public URL (stub dialog only);
+  production deploy unchanged. This is not 1:1.
+
 ## 2026-10-08 — Auth fullscreen layout no longer depends on resize history
 
 - `Partial`. Fullscreen `AuthViewport` chooses center-or-band from padded
