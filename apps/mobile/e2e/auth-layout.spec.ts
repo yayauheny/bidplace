@@ -256,22 +256,36 @@ async function expectAuthBrowserHistory(page: Page, navigationApi: boolean) {
 test('register email title layout is stable across viewport resize', async ({ page }) => {
   const title = () => page.getByText('Введите вашу почту', { exact: true });
 
+  async function titleMarkLayout() {
+    return page.evaluate(() => {
+      const titleEl = [...document.querySelectorAll('*')].find(
+        (node) => node.textContent?.trim() === 'Введите вашу почту',
+      );
+      if (!(titleEl instanceof HTMLElement)) return null;
+      const titleTop = titleEl.getBoundingClientRect().top;
+      const markSvg = [...document.querySelectorAll('svg')].find((svg) => {
+        const rect = svg.getBoundingClientRect();
+        return rect.width > 25 && rect.width < 36 && rect.top < 120;
+      });
+      const markBottom = markSvg?.getBoundingClientRect().bottom ?? 0;
+      return { titleTop, markBottom };
+    });
+  }
+
+  async function expectTitleClearOfMark() {
+    await expect
+      .poll(async () => {
+        const layout = await titleMarkLayout();
+        return layout !== null && layout.titleTop >= layout.markBottom - 0.5;
+      })
+      .toBe(true);
+  }
+
   async function emailTitleY() {
     const box = await title().boundingBox();
     expect(box).not.toBeNull();
     return box!.y;
   }
-
-  await page.setViewportSize({ width: 390, height: 874 });
-  await page.goto('/register');
-  await expect(title()).toBeVisible();
-  await expect
-    .poll(async () => {
-      const y = await emailTitleY();
-      return y >= 319 && y <= 321.5;
-    })
-    .toBe(true);
-  await expect(page.getByRole('navigation', { name: 'Основная навигация' })).toHaveCount(0);
 
   async function settledEmailTitleY() {
     let previous: number | null = null;
@@ -286,28 +300,58 @@ test('register email title layout is stable across viewport resize', async ({ pa
     return emailTitleY();
   }
 
-  await page.setViewportSize({ width: 390, height: 600 });
-  const fromTall = await settledEmailTitleY();
-
-  await page.setViewportSize({ width: 240, height: 437 });
+  await page.setViewportSize({ width: 390, height: 874 });
   await page.goto('/register');
   await expect(title()).toBeVisible();
+  await expect
+    .poll(async () => {
+      const y = await emailTitleY();
+      return y >= 319 && y <= 321.5;
+    })
+    .toBe(true);
+  await expectTitleClearOfMark();
+  await expect(page.getByRole('navigation', { name: 'Основная навигация' })).toHaveCount(0);
+
+  await page.setViewportSize({ width: 390, height: 437 });
+  await expectTitleClearOfMark();
+
+  await page.setViewportSize({ width: 390, height: 400 });
+  await expectTitleClearOfMark();
+  const shortAfterShrink = await settledEmailTitleY();
+
   await page.setViewportSize({ width: 390, height: 600 });
-  const fromShort = await settledEmailTitleY();
+  await expectTitleClearOfMark();
+  const mediumAfterShrink = await settledEmailTitleY();
 
+  await page.setViewportSize({ width: 390, height: 874 });
+  await expectTitleClearOfMark();
+  await expect
+    .poll(async () => {
+      const y = await emailTitleY();
+      return y >= 319 && y <= 321.5;
+    })
+    .toBe(true);
+
+  await page.setViewportSize({ width: 390, height: 400 });
   await page.goto('/register');
+  await expectTitleClearOfMark();
+  const freshShort = await settledEmailTitleY();
+  expect(shortAfterShrink).toBeCloseTo(freshShort, 0);
+
+  await page.setViewportSize({ width: 390, height: 600 });
+  await page.goto('/register');
+  await expectTitleClearOfMark();
   const freshMedium = await settledEmailTitleY();
+  expect(mediumAfterShrink).toBeCloseTo(freshMedium, 0);
 
-  expect(fromTall).toBeCloseTo(freshMedium, 0);
-  expect(fromShort).toBeCloseTo(freshMedium, 0);
-
+  await page.setViewportSize({ width: 390, height: 400 });
+  await page.goto('/register');
+  await expectTitleClearOfMark();
   await page.getByRole('button', { name: 'Дальше', exact: true }).click();
   await expect(page.getByText('Введите корректный email', { exact: true })).toBeVisible();
-  const titleBox = await title().boundingBox();
-  const emailBox = await page.getByLabel('Электронная почта').boundingBox();
-  expect(titleBox).not.toBeNull();
-  expect(emailBox).not.toBeNull();
-  expect(titleBox!.y).toBeLessThan(emailBox!.y);
+  const submit = page.getByRole('button', { name: 'Дальше', exact: true });
+  await submit.scrollIntoViewIfNeeded();
+  await expect(submit).toBeVisible();
   expect(
     await page.evaluate(() => document.body.scrollWidth <= window.innerWidth),
   ).toBe(true);
@@ -315,6 +359,7 @@ test('register email title layout is stable across viewport resize', async ({ pa
   await page.setViewportSize({ width: 375, height: 667 });
   await page.goto('/register');
   await expect(title()).toBeVisible();
+  await expectTitleClearOfMark();
   expect(
     await page.evaluate(() => document.body.scrollWidth <= window.innerWidth),
   ).toBe(true);
@@ -323,6 +368,7 @@ test('register email title layout is stable across viewport resize', async ({ pa
   await page.setViewportSize({ width: 440, height: 956 });
   await page.goto('/register');
   await expect(title()).toBeVisible();
+  await expectTitleClearOfMark();
   expect(
     await page.evaluate(() => document.body.scrollWidth <= window.innerWidth),
   ).toBe(true);

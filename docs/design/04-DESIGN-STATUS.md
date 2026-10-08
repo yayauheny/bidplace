@@ -6,9 +6,10 @@
 
 ## 2026-10-08 — Fullscreen auth band uses container height
 
-- `Partial`. Centering on the registration screen reads the full padded
-  dialog height, not the post-margin ScrollView height, so resize direction
-  no longer changes the email title position. 390×874 geometry is unchanged.
+- `Partial`. Center-or-band on registration uses padded dialog height plus
+  content `onLayout`; clearing both on viewport resize was removed. Scroll
+  resets on height change so shrink/grow without reload keeps the title
+  below the mark. 390×874 geometry is unchanged.
   Short-window scrolling and export gaps (Google fills, mixed ranges,
   checkbox stroke, policy links) are unchanged. This is not 1:1.
 

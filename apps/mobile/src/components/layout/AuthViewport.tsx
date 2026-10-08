@@ -83,11 +83,11 @@ export function AuthViewport({
   const focused = useIsFocused();
   const historyId = useId();
   const { height, width } = useWindowDimensions();
-  const [screenBandHeight, setScreenBandHeight] = useState(0);
   const [screenContentHeight, setScreenContentHeight] = useState(0);
   const [guard, setGuard] = useState<AuthSheetGuard>({ dirty: false, busy: false });
   const [confirm, setConfirm] = useState(false);
   const [released, setReleased] = useState(false);
+  const screenScrollRef = useRef<ScrollView>(null);
   const pendingAction = useRef<NavigationAction | null>(null);
   const browserLeavePath = useRef<string | null>(null);
   const returnFocus = useRef<HTMLElement | null>(null);
@@ -210,13 +210,9 @@ export function AuthViewport({
     };
   }, [historyId]);
 
-  const seenViewportHeight = useRef(height);
   useEffect(() => {
     if (presentation !== 'screen') return;
-    if (seenViewportHeight.current === height) return;
-    seenViewportHeight.current = height;
-    setScreenBandHeight(0);
-    setScreenContentHeight(0);
+    screenScrollRef.current?.scrollTo({ y: 0, animated: false });
   }, [height, presentation]);
 
   useEffect(() => {
@@ -245,7 +241,12 @@ export function AuthViewport({
   const entering = useMemo(() => sheetEnter(() => undefined), []);
   const screen = presentation === 'screen';
   const brandInset = screenBrandInset();
-  const screenMeasured = screen && screenBandHeight > 0 && screenContentHeight > 0;
+  const screenBandHeight = screen
+    ? height -
+      designTokens.auth.screenPaddingTop -
+      designTokens.auth.screenPaddingBottom
+    : 0;
+  const screenMeasured = screen && screenContentHeight > 0;
   const screenIdeal = screenMeasured
     ? (screenBandHeight - screenContentHeight) / 2
     : 0;
@@ -387,15 +388,8 @@ export function AuthViewport({
                         <BidplaceWordmark />
                       </View>
                     ) : null}
-                    <View
-                      style={screen ? { flex: 1 } : undefined}
-                      onLayout={(event) => {
-                        if (!screen) return;
-                        const next = event.nativeEvent.layout.height;
-                        setScreenBandHeight((current) => (current === next ? current : next));
-                      }}
-                    >
                     <ScrollView
+                      ref={screen ? screenScrollRef : undefined}
                       keyboardShouldPersistTaps="handled"
                       keyboardDismissMode="on-drag"
                       showsVerticalScrollIndicator={false}
@@ -459,7 +453,6 @@ export function AuthViewport({
                         {children}
                       </View>
                     </ScrollView>
-                    </View>
                   </Dialog.Content>
                 </Animated.View>
               </AppDialogFrame>

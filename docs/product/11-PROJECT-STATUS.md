@@ -2,18 +2,15 @@
 
 ## 2026-10-08 — Auth fullscreen layout no longer depends on resize history
 
-- `Partial`. Fullscreen `AuthViewport` chooses centering from the flex band
-  height measured on the scroll container, not from the ScrollView height
-  that band margins shrink. Measurements reset when the viewport height
-  changes so resize does not reuse stale layout state. The same viewport and email step
-  give the same title position whether the window grew or shrank. At
-  390×874 the email title stays y320.5; mark and wordmark insets are
-  unchanged. Short heights keep the scroll band between mark and wordmark.
-  Registration dock hiding and session/consent behavior are unchanged. This
-  is not 1:1.
-- `auth-layout.spec.ts` covers 390×874 → 390×600, 240×437 → 390×600, a
-  fresh 390×600, a short-window validation error, and 375×667 / 440×956
-  without horizontal overflow.
+- `Partial`. Fullscreen `AuthViewport` chooses center-or-band from padded
+  dialog height and content `onLayout`. Clearing both on viewport resize
+  was removed; scroll resets to top on height change. Resize without reload
+  (874→437→400→600→874) matches a fresh load and keeps the title below the
+  mark. At 390×874 the email title stays ~320.5. Registration dock hiding
+  and session/consent behavior are unchanged. This is not 1:1.
+- `auth-layout.spec.ts` checks mark/title overlap, the resize sequence
+  without `goto`, fresh-load parity, a short-window validation error, and
+  375×667 / 440×956 without horizontal overflow.
 
 ## 2026-10-08 — Late registration does not replace a newer session
 
