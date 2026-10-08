@@ -1,5 +1,32 @@
 # bidplace — текущий статус проекта
 
+## 2026-10-08 — Registration consent stays with the account that was created
+
+- `Partial`. The account created by the current registration attempt is the
+  only owner of its rules acceptance. After `acceptRules` fails, a later
+  session for a different user does not receive that attempt's version or
+  acceptance. The epoch change from this attempt's own `register` is not
+  reused to authorize an older operation. Leaving the route, including while
+  Expo keeps it mounted, stops the in-flight acceptance from writing or
+  navigating. One `register` and one successful continuation remain.
+- `getRules` shows the returned text in the existing dialog. A failed load
+  has a visible retry that calls `getRules` again without toggling the
+  checkbox. The accepted version is the one that text belonged to. There is
+  still no approved privacy-policy source, so the policy words are not
+  links. Consent is not fully ready.
+- On the 390×874 frame the email title stays at y320.5, the mark vector at
+  y67.06 and the wordmark at y793. On 240×437 the title is below the mark
+  and the form scrolls in the band above the wordmark. 375×667 and 440×956
+  do not add horizontal overflow; at 440 the column stays 390 wide. The
+  login sheet remains 543.5. This is not 1:1.
+- Still open: Google vector `I526:14901;298:6024;521:10381` and its parent
+  frame `google` have no fills in
+  `screens/login-password/design/nodes.json`. Mixed ranges `4547:23406`,
+  `4547:25029`, `526:14902`, `526:15580` and `558:16958` have no
+  `characterStyleOverrides` or `styleOverrideTable`. Checkbox frames
+  `4547:23400` and `4547:23403` have gradient strokes and no stroke weight.
+  Production remains `541d763547f7b021895daa3d533c3196c37a4e67`.
+
 ## 2026-10-08 — Auth completion, consent retry and sheet anatomy
 
 - `Partial`. A visitor who was already signed in still leaves registration

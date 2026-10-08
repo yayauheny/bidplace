@@ -38,6 +38,26 @@ import { AppDialogFrame, AppDialogOverlay } from '../ui/app-dialog-layer';
 import { appDialogHostStyle } from '../ui/app-dialog-host-style';
 import { MotionPressable } from '../ui/MotionPressable';
 
+function screenBrandInset() {
+  return {
+    markClearance: designTokens.auth.markTop + designTokens.auth.markSlotHeight,
+    wordmarkClearance:
+      designTokens.auth.wordmarkBottom + designTokens.auth.wordmarkHeight,
+  };
+}
+
+function brandContentOffset(
+  scrollHeight: number,
+  contentHeight: number,
+  markClearance: number,
+  wordmarkClearance: number,
+) {
+  const ideal = (scrollHeight - contentHeight) / 2;
+  const maxTop = scrollHeight - wordmarkClearance - contentHeight;
+  if (maxTop < markClearance) return markClearance;
+  return Math.min(Math.max(ideal, markClearance), maxTop);
+}
+
 type NavigationAction = {
   type?: string;
   payload?: { name?: string; params?: { screen?: string } };
@@ -63,6 +83,8 @@ export function AuthViewport({
   const focused = useIsFocused();
   const historyId = useId();
   const { height, width } = useWindowDimensions();
+  const [screenScrollHeight, setScreenScrollHeight] = useState(0);
+  const [screenContentHeight, setScreenContentHeight] = useState(0);
   const [guard, setGuard] = useState<AuthSheetGuard>({ dirty: false, busy: false });
   const [confirm, setConfirm] = useState(false);
   const [released, setReleased] = useState(false);
@@ -213,6 +235,20 @@ export function AuthViewport({
 
   const entering = useMemo(() => sheetEnter(() => undefined), []);
   const screen = presentation === 'screen';
+  const brandInset = screenBrandInset();
+  const screenMeasured = screen && screenScrollHeight > 0 && screenContentHeight > 0;
+  const screenIdeal = screenMeasured
+    ? (screenScrollHeight - screenContentHeight) / 2
+    : 0;
+  const screenOffset = screenMeasured
+    ? brandContentOffset(
+        screenScrollHeight,
+        screenContentHeight,
+        brandInset.markClearance,
+        brandInset.wordmarkClearance,
+      )
+    : 0;
+  const screenCentered = !screenMeasured || screenOffset === screenIdeal;
   const contentGap = screen
     ? designTokens.auth.screenGap
     : tone === 'login'
@@ -346,8 +382,21 @@ export function AuthViewport({
                       keyboardShouldPersistTaps="handled"
                       keyboardDismissMode="on-drag"
                       showsVerticalScrollIndicator={false}
-                      style={screen ? { flex: 1 } : { maxHeight: Math.max(height - designTokens.space.x6 - designTokens.auth.paddingTop - designTokens.auth.paddingBottom, designTokens.size.input * 4) }}
-                      contentContainerStyle={{ gap: screen ? 0 : contentGap, justifyContent: screen ? 'center' : undefined, flexGrow: screen ? 1 : undefined }}
+                      onLayout={(event) => {
+                        if (!screen) return;
+                        const next = event.nativeEvent.layout.height;
+                        setScreenScrollHeight((current) => (current === next ? current : next));
+                      }}
+                      style={screen ? {
+                        flex: 1,
+                        marginTop: screenCentered ? 0 : brandInset.markClearance,
+                        marginBottom: screenCentered ? 0 : brandInset.wordmarkClearance,
+                      } : { maxHeight: Math.max(height - designTokens.space.x6 - designTokens.auth.paddingTop - designTokens.auth.paddingBottom, designTokens.size.input * 4) }}
+                      contentContainerStyle={{
+                        gap: screen ? 0 : contentGap,
+                        flexGrow: screen ? 1 : undefined,
+                        justifyContent: screen && screenCentered ? 'center' : undefined,
+                      }}
                     >
                       {screen ? (
                         <Dialog.Title asChild>
@@ -387,7 +436,16 @@ export function AuthViewport({
                           </View>
                         </View>
                       )}
-                      <View style={{ gap: screen ? 0 : formGap, width: '100%', maxWidth: 350, alignSelf: 'center' }}>{children}</View>
+                      <View
+                        onLayout={(event) => {
+                          if (!screen) return;
+                          const next = event.nativeEvent.layout.height;
+                          setScreenContentHeight((current) => (current === next ? current : next));
+                        }}
+                        style={{ gap: screen ? 0 : formGap, width: '100%', maxWidth: 350, alignSelf: 'center' }}
+                      >
+                        {children}
+                      </View>
                     </ScrollView>
                   </Dialog.Content>
                 </Animated.View>

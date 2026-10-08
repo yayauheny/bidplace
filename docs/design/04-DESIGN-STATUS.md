@@ -4,6 +4,17 @@
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
+## 2026-10-08 — Auth consent owner and short-screen brand band
+
+- `Partial`. The 390×874 email title remains y320.5. On 240×437 the mark no
+  longer covers «Введите вашу почту»; the form scrolls between the mark slot
+  and the wordmark. The rules text from `getRules` opens in the shared
+  dialog, and a failed load can be retried. The policy phrase is not a
+  link: no approved policy source was exported. Google vector
+  `I526:14901;298:6024;521:10381` still has no fills, including on parent
+  frame `I526:14901;298:6024;521:10368`. Mixed-text nodes still have no
+  styled ranges. Checkbox stroke weight is still absent. This is not 1:1.
+
 ## 2026-10-08 — Auth completion and measured anatomy
 
 - `Partial`. Email title on the 390×874 frame is y320.5. The mark vector is

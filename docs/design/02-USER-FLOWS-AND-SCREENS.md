@@ -24,8 +24,11 @@ Only the previous four fullscreen captures were replaced; login/recovery/exit
 retain the dialog source. The runtime mark sits in the source frame and the
 wordmark uses the source bottom inset. The email checkbox is one control.
 Registration continues once, only after `acceptRules` confirms the version
-shown to that attempt. A failed acceptance stays on the form and the retry
-calls only `acceptRules`. The confirmation body has no extra logout button;
+shown to the account this attempt created. A failed acceptance stays on the
+form and the retry calls only `acceptRules` for that account. A different
+session does not inherit the version or the acceptance. The published rules
+text can be read before acceptance; a failed load can be retried. The
+privacy-policy words are not links. The confirmation body has no extra logout button;
 account logout stays on the profile, cabinet and moderation screens.
 The two captured consent checkboxes are two states of one control, not two
 simultaneous fields. This visual source update does not approve legal drafts.

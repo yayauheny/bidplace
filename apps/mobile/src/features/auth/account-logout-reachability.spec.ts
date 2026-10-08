@@ -212,6 +212,7 @@ describe('account logout reachability', () => {
     await until(view.container, 'Проверьте код на почте');
     expect([...view.container.querySelectorAll('button')].some((button) => button.textContent === 'Выйти')).toBe(false);
     expect([...view.container.querySelectorAll('button')].some((button) => button.textContent === 'Завершить')).toBe(true);
+    expect([...view.container.querySelectorAll('button')].some((button) => button.textContent === 'Отправить код')).toBe(true);
     view.unmount();
   });
 });

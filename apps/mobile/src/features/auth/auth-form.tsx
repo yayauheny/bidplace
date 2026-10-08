@@ -1,4 +1,4 @@
-import { Link, useRouter, type Href } from 'expo-router';
+import { Link, useIsFocused, useNavigation, useRouter, type Href } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -6,7 +6,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { View } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
 import type { User } from '@bidplace/contracts';
-import { AppText, PrimaryButton, TextField } from '../../components/ui';
+import { AppDialog, AppText, PrimaryButton, TextButton, TextField } from '../../components/ui';
 import { FigmaButton } from '../../components/figma/FigmaButton';
 import { MotionPressable } from '../../components/ui/MotionPressable';
 import { AuthConsentCheckbox } from './auth-consent-checkbox';
@@ -17,7 +17,6 @@ import { AuthTelegramIcon } from './auth-telegram-icon';
 import { useAnalytics } from '../../providers/analytics-provider';
 import { useApiClient } from '../../providers/api-provider';
 import { useAuth } from '../../providers/auth-provider';
-import { registrationStillOwns } from './registration-consent';
 import { useSlugAvailability } from './use-slug-availability';
 import { ApiClientError } from '@bidplace/api-client';
 
@@ -259,6 +258,15 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
   const seenAuthEpoch = useRef(authEpoch);
   const mounted = useRef(true);
   const completed = useRef(false);
+  const createdAccountId = useRef<string | null>(null);
+  const ownEpochs = useRef(new Set<number>());
+  const expectingOwnSession = useRef(false);
+  const focused = useIsFocused();
+  const navigation = useNavigation();
+  const focusedRef = useRef(focused);
+  const wasFocused = useRef(focused);
+  const [rulesText, setRulesText] = useState<string | null>(null);
+  const [rulesOpen, setRulesOpen] = useState(false);
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerFormSchema),
     defaultValues: {
@@ -275,18 +283,26 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
   const complete = useAuthSheetComplete();
   const sessionUser = () =>
     queryClient.getQueryData<User | null>(authKeys.session) ?? null;
-  const owns = (operation: number, epoch: number, userId: string | null) =>
-    registrationStillOwns({
-      mounted: mounted.current,
-      operation,
-      currentOperation: sessionOperation.current,
-      epoch,
-      currentEpoch: currentAuthEpoch(queryClient),
-      userId,
-      sessionUserId: sessionUser()?.id ?? null,
-    }) && (userId === null || canWritePrivateCache(queryClient, epoch));
-  const finishRegistration = (user: User) => {
-    if (!mounted.current || completed.current) return;
+  const routeOwns = (operation: number) =>
+    mounted.current && focusedRef.current && sessionOperation.current === operation;
+  const anonymousOwns = (operation: number, epoch: number) =>
+    routeOwns(operation) &&
+    createdAccountId.current === null &&
+    (sessionUser()?.id ?? null) === null &&
+    currentAuthEpoch(queryClient) === epoch;
+  const consentOwns = (operation: number, epoch: number) => {
+    const owner = createdAccountId.current;
+    return (
+      routeOwns(operation) &&
+      owner !== null &&
+      (sessionUser()?.id ?? null) === owner &&
+      currentAuthEpoch(queryClient) === epoch &&
+      canWritePrivateCache(queryClient, epoch)
+    );
+  };
+  const finishRegistration = (user: User, operation?: number) => {
+    if (!mounted.current || !focusedRef.current || completed.current) return;
+    if (operation !== undefined && sessionOperation.current !== operation) return;
     completed.current = true;
     const next = user.emailVerifiedAt
       ? redirectTo
@@ -311,10 +327,45 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
     };
   }, []);
   useEffect(() => {
+    const markBlurred = () => {
+      focusedRef.current = false;
+      sessionOperation.current += 1;
+    };
+    const markFocused = () => {
+      focusedRef.current = true;
+    };
+    const unblur = navigation.addListener('blur', markBlurred);
+    const unfocus = navigation.addListener('focus', markFocused);
+    return () => {
+      unblur();
+      unfocus();
+    };
+  }, [navigation]);
+  useEffect(() => {
+    if (wasFocused.current && !focused) {
+      focusedRef.current = false;
+      sessionOperation.current += 1;
+    }
+    if (focused) focusedRef.current = true;
+    wasFocused.current = focused;
+  }, [focused]);
+  useEffect(() => {
     if (seenAuthEpoch.current === authEpoch) return;
     seenAuthEpoch.current = authEpoch;
+    if (expectingOwnSession.current || ownEpochs.current.has(authEpoch)) return;
     sessionOperation.current += 1;
-  }, [authEpoch]);
+    rulesVersion.current = null;
+    if (!mounted.current) return;
+    setRulesText(null);
+    setRulesOpen(false);
+    const owner = createdAccountId.current;
+    const sessionId =
+      queryClient.getQueryData<User | null>(authKeys.session)?.id ?? null;
+    if (owner && sessionId !== owner) {
+      form.setValue('rulesAccepted', false);
+      setSubmitError('Сессия изменилась. Согласие не перенесено.');
+    }
+  }, [authEpoch, form, queryClient]);
 
   useEffect(() => {
     if (trackedRegistrationStart.current) {
@@ -324,25 +375,40 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
     analytics.track('registration_started', {});
   }, [analytics]);
 
-  const loadRulesVersion = () => {
+  const clearShownRules = () => {
     rulesVersion.current = null;
+    setRulesText(null);
+    setRulesOpen(false);
+  };
+  const loadRulesVersion = () => {
+    clearShownRules();
     const request = rulesRequest.current + 1;
     rulesRequest.current = request;
     const operation = sessionOperation.current;
     const epoch = currentAuthEpoch(queryClient);
-    const sessionId = sessionUser()?.id ?? null;
-    if (!owns(operation, epoch, sessionId)) return;
+    const created = createdAccountId.current;
+    const allowed = created
+      ? consentOwns(operation, epoch)
+      : anonymousOwns(operation, epoch);
+    if (!allowed) return;
     rulesPending.current = true;
     void api.auth
       .getRules()
       .then((response) => {
-        if (rulesRequest.current !== request || !owns(operation, epoch, sessionId)) return;
+        const stillAllowed = created
+          ? consentOwns(operation, epoch)
+          : anonymousOwns(operation, epoch);
+        if (rulesRequest.current !== request || !stillAllowed) return;
         rulesVersion.current = response.rules.version;
+        setRulesText(response.rules.text);
         form.clearErrors('rulesAccepted');
       })
       .catch(() => {
-        if (rulesRequest.current !== request || !owns(operation, epoch, sessionId)) return;
-        rulesVersion.current = null;
+        const stillAllowed = created
+          ? consentOwns(operation, epoch)
+          : anonymousOwns(operation, epoch);
+        if (rulesRequest.current !== request || !stillAllowed) return;
+        clearShownRules();
         form.setError('rulesAccepted', { message: 'Не удалось получить правила.' });
       })
       .finally(() => {
@@ -351,49 +417,67 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
   };
   const submit = form.handleSubmit(async (values) => {
     setSubmitError(null);
-    let operation = sessionOperation.current;
-    let epoch = currentAuthEpoch(queryClient);
-    let ownerId =
-      openedAuthenticated.current === false ? (sessionUser()?.id ?? null) : null;
-    if (!owns(operation, epoch, ownerId)) return;
+    const operation = sessionOperation.current;
+    const epoch = currentAuthEpoch(queryClient);
+    if (createdAccountId.current) {
+      if ((sessionUser()?.id ?? null) !== createdAccountId.current) {
+        if (!routeOwns(operation)) return;
+        clearShownRules();
+        form.setValue('rulesAccepted', false);
+        setSubmitError('Сессия изменилась. Согласие не перенесено.');
+        return;
+      }
+      if (!consentOwns(operation, epoch)) return;
+    } else if (!anonymousOwns(operation, epoch)) {
+      return;
+    }
     const version = rulesVersion.current;
     if (!version) {
       setSubmitError('Не удалось получить правила.');
       return;
     }
+    let consentEpoch = epoch;
     try {
-      if (!ownerId) {
+      if (!createdAccountId.current) {
+        expectingOwnSession.current = true;
         const response = await auth.register(registerSubmission(values));
-        const nextEpoch = currentAuthEpoch(queryClient);
-        if (seenAuthEpoch.current !== nextEpoch) {
-          seenAuthEpoch.current = nextEpoch;
-          sessionOperation.current += 1;
+        const epochAfter = currentAuthEpoch(queryClient);
+        ownEpochs.current.add(epochAfter);
+        expectingOwnSession.current = false;
+        createdAccountId.current = response.user.id;
+        consentEpoch = epochAfter;
+        if (
+          !routeOwns(operation) ||
+          (sessionUser()?.id ?? null) !== response.user.id
+        ) {
+          clearShownRules();
+          return;
         }
-        operation = sessionOperation.current;
-        epoch = nextEpoch;
-        ownerId = response.user.id;
-        if (!owns(operation, epoch, ownerId)) return;
         analytics.identify(response.user.id, { claimAcquisition: true });
       }
-      if (!owns(operation, epoch, ownerId) || rulesVersion.current !== version) return;
+      if (!consentOwns(operation, consentEpoch) || rulesVersion.current !== version) return;
       await api.auth.acceptRules({ rulesVersion: version });
-      if (!owns(operation, epoch, ownerId) || rulesVersion.current !== version) return;
+      if (!consentOwns(operation, consentEpoch) || rulesVersion.current !== version) return;
       const refreshed = await auth.refreshSession();
-      if (!owns(operation, epoch, ownerId) || rulesVersion.current !== version) return;
+      if (!consentOwns(operation, consentEpoch) || rulesVersion.current !== version) return;
       if (
         !refreshed ||
-        refreshed.id !== ownerId ||
+        refreshed.id !== createdAccountId.current ||
         refreshed.acceptedRulesVersion !== version
       ) {
         setSubmitError('Не удалось сохранить согласие. Повторите принятие правил.');
         return;
       }
-      finishRegistration(refreshed);
+      finishRegistration(refreshed, operation);
     } catch (error) {
-      if (!owns(operation, epoch, ownerId)) return;
-      if (ownerId) {
+      if (!createdAccountId.current) {
+        if (!anonymousOwns(operation, epoch)) return;
+      } else if (!consentOwns(operation, consentEpoch)) {
+        return;
+      }
+      if (createdAccountId.current) {
         if (error instanceof ApiClientError && error.kind === 'conflict') {
-          rulesVersion.current = null;
+          clearShownRules();
           form.setValue('rulesAccepted', false);
           setStep('email');
           form.setError('rulesAccepted', {
@@ -416,6 +500,15 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
     }
   });
   const goNext = async () => {
+    if (
+      createdAccountId.current &&
+      (sessionUser()?.id ?? null) !== createdAccountId.current
+    ) {
+      clearShownRules();
+      form.setValue('rulesAccepted', false);
+      setSubmitError('Сессия изменилась. Согласие не перенесено.');
+      return;
+    }
     setSubmitError(null);
     if (step === 'email') {
       const emailOk = await form.trigger('email');
@@ -577,20 +670,43 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
           <Controller
             control={form.control}
             name="rulesAccepted"
-            render={({ field }) => (
-              <AuthConsentCheckbox
-                checked={field.value}
-                onChange={(checked) => {
-                  field.onChange(checked);
-                  rulesRequest.current += 1;
-                  rulesVersion.current = null;
-                  rulesPending.current = false;
-                  if (!checked) return;
-                  loadRulesVersion();
-                }}
-                error={form.formState.errors.rulesAccepted?.message}
-              />
-            )}
+            render={({ field }) => {
+              const rulesError = form.formState.errors.rulesAccepted?.message;
+              return (
+                <>
+                  <AuthConsentCheckbox
+                    checked={field.value}
+                    onChange={(checked) => {
+                      field.onChange(checked);
+                      rulesRequest.current += 1;
+                      rulesPending.current = false;
+                      clearShownRules();
+                      if (!checked) return;
+                      loadRulesVersion();
+                    }}
+                    error={rulesError}
+                  />
+                  {rulesText ? (
+                    <TextButton
+                      label="Правила сервиса"
+                      onPress={() => setRulesOpen(true)}
+                    />
+                  ) : null}
+                  {field.value && rulesError === 'Не удалось получить правила.' ? (
+                    <TextButton label="Повторить" onPress={loadRulesVersion} />
+                  ) : null}
+                  {rulesText ? (
+                    <AppDialog
+                      open={rulesOpen}
+                      title="Правила сервиса"
+                      onClose={() => setRulesOpen(false)}
+                    >
+                      <AppText role="bodySmall">{rulesText}</AppText>
+                    </AppDialog>
+                  ) : null}
+                </>
+              );
+            }}
           />
         ) : null}
         </View>

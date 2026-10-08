@@ -16,7 +16,9 @@ These are verified handoff assets, not installed tokens or completed runtime UI.
 The original SVG is #111111 on white; auth vectors are #121212. The original is
 preserved; auth derivatives follow the capture. Keep one shared brand foundation
 and semantic auth variants. Do not substitute arbitrary lettering or stretch
-the mark into its safety slot.
+the mark into its safety slot. On the 390×874 frame the mark and wordmark stay
+on their source insets and the form stays centered. When that centering would
+meet either mark, `AuthViewport` scrolls the form in the band between them.
 
 ### Auth sheet presentation — 2026-10-07
 
