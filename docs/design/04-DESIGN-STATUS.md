@@ -4,6 +4,14 @@
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
+## 2026-10-08 — Fullscreen auth band uses container height
+
+- `Partial`. Centering on the registration screen reads the full padded
+  dialog height, not the post-margin ScrollView height, so resize direction
+  no longer changes the email title position. 390×874 geometry is unchanged.
+  Short-window scrolling and export gaps (Google fills, mixed ranges,
+  checkbox stroke, policy links) are unchanged. This is not 1:1.
+
 ## 2026-10-08 — Registration wait does not adopt a newer session
 
 - `Partial`. No geometry change. A session installed while `register` is

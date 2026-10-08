@@ -1,5 +1,20 @@
 # bidplace — текущий статус проекта
 
+## 2026-10-08 — Auth fullscreen layout no longer depends on resize history
+
+- `Partial`. Fullscreen `AuthViewport` chooses centering from the flex band
+  height measured on the scroll container, not from the ScrollView height
+  that band margins shrink. Measurements reset when the viewport height
+  changes so resize does not reuse stale layout state. The same viewport and email step
+  give the same title position whether the window grew or shrank. At
+  390×874 the email title stays y320.5; mark and wordmark insets are
+  unchanged. Short heights keep the scroll band between mark and wordmark.
+  Registration dock hiding and session/consent behavior are unchanged. This
+  is not 1:1.
+- `auth-layout.spec.ts` covers 390×874 → 390×600, 240×437 → 390×600, a
+  fresh 390×600, a short-window validation error, and 375×667 / 440×956
+  without horizontal overflow.
+
 ## 2026-10-08 — Late registration does not replace a newer session
 
 - `Partial`. `AuthProvider.register` installs its session only when the epoch

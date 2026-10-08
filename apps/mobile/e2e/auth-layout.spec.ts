@@ -253,6 +253,87 @@ async function expectAuthBrowserHistory(page: Page, navigationApi: boolean) {
   await expect(page.getByText('Каталог работ на Bidplace', { exact: true })).toBeVisible();
 }
 
+test('register email title layout is stable across viewport resize', async ({ page }) => {
+  const title = () => page.getByText('Введите вашу почту', { exact: true });
+
+  async function emailTitleY() {
+    const box = await title().boundingBox();
+    expect(box).not.toBeNull();
+    return box!.y;
+  }
+
+  await page.setViewportSize({ width: 390, height: 874 });
+  await page.goto('/register');
+  await expect(title()).toBeVisible();
+  await expect
+    .poll(async () => {
+      const y = await emailTitleY();
+      return y >= 319 && y <= 321.5;
+    })
+    .toBe(true);
+  await expect(page.getByRole('navigation', { name: 'Основная навигация' })).toHaveCount(0);
+
+  async function settledEmailTitleY() {
+    let previous: number | null = null;
+    await expect
+      .poll(async () => {
+        const y = await emailTitleY();
+        if (previous !== null && Math.abs(y - previous) < 0.5) return y;
+        previous = y;
+        return Number.NaN;
+      })
+      .not.toBeNaN();
+    return emailTitleY();
+  }
+
+  await page.setViewportSize({ width: 390, height: 600 });
+  const fromTall = await settledEmailTitleY();
+
+  await page.setViewportSize({ width: 240, height: 437 });
+  await page.goto('/register');
+  await expect(title()).toBeVisible();
+  await page.setViewportSize({ width: 390, height: 600 });
+  const fromShort = await settledEmailTitleY();
+
+  await page.goto('/register');
+  const freshMedium = await settledEmailTitleY();
+
+  expect(fromTall).toBeCloseTo(freshMedium, 0);
+  expect(fromShort).toBeCloseTo(freshMedium, 0);
+
+  await page.getByRole('button', { name: 'Дальше', exact: true }).click();
+  await expect(page.getByText('Введите корректный email', { exact: true })).toBeVisible();
+  const titleBox = await title().boundingBox();
+  const emailBox = await page.getByLabel('Электронная почта').boundingBox();
+  expect(titleBox).not.toBeNull();
+  expect(emailBox).not.toBeNull();
+  expect(titleBox!.y).toBeLessThan(emailBox!.y);
+  expect(
+    await page.evaluate(() => document.body.scrollWidth <= window.innerWidth),
+  ).toBe(true);
+
+  await page.setViewportSize({ width: 375, height: 667 });
+  await page.goto('/register');
+  await expect(title()).toBeVisible();
+  expect(
+    await page.evaluate(() => document.body.scrollWidth <= window.innerWidth),
+  ).toBe(true);
+  await expect(page.getByRole('navigation', { name: 'Основная навигация' })).toHaveCount(0);
+
+  await page.setViewportSize({ width: 440, height: 956 });
+  await page.goto('/register');
+  await expect(title()).toBeVisible();
+  expect(
+    await page.evaluate(() => document.body.scrollWidth <= window.innerWidth),
+  ).toBe(true);
+  const frame = await page.getByRole('dialog').boundingBox();
+  const viewport = page.viewportSize();
+  expect(frame).not.toBeNull();
+  expect(viewport).not.toBeNull();
+  expect(frame!.width).toBeCloseTo(390, 1);
+  expect(frame!.x).toBeCloseTo((viewport!.width - frame!.width) / 2, 0);
+});
+
 test('auth composition is stacked in the S4 phone column', async ({ page }) => {
   await mkdir(artifactDir, { recursive: true });
 

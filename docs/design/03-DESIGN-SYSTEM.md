@@ -19,6 +19,8 @@ and semantic auth variants. Do not substitute arbitrary lettering or stretch
 the mark into its safety slot. On the 390×874 frame the mark and wordmark stay
 on their source insets and the form stays centered. When that centering would
 meet either mark, `AuthViewport` scrolls the form in the band between them.
+The center-or-band choice reads the padded dialog band height from the
+scroll container, not the ScrollView height after band margins.
 
 ### Auth sheet presentation — 2026-10-07
 

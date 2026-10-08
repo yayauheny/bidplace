@@ -83,7 +83,7 @@ export function AuthViewport({
   const focused = useIsFocused();
   const historyId = useId();
   const { height, width } = useWindowDimensions();
-  const [screenScrollHeight, setScreenScrollHeight] = useState(0);
+  const [screenBandHeight, setScreenBandHeight] = useState(0);
   const [screenContentHeight, setScreenContentHeight] = useState(0);
   const [guard, setGuard] = useState<AuthSheetGuard>({ dirty: false, busy: false });
   const [confirm, setConfirm] = useState(false);
@@ -210,6 +210,15 @@ export function AuthViewport({
     };
   }, [historyId]);
 
+  const seenViewportHeight = useRef(height);
+  useEffect(() => {
+    if (presentation !== 'screen') return;
+    if (seenViewportHeight.current === height) return;
+    seenViewportHeight.current = height;
+    setScreenBandHeight(0);
+    setScreenContentHeight(0);
+  }, [height, presentation]);
+
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof document === 'undefined' || !focused) return;
     const onFocusIn = (event: FocusEvent) => {
@@ -236,13 +245,13 @@ export function AuthViewport({
   const entering = useMemo(() => sheetEnter(() => undefined), []);
   const screen = presentation === 'screen';
   const brandInset = screenBrandInset();
-  const screenMeasured = screen && screenScrollHeight > 0 && screenContentHeight > 0;
+  const screenMeasured = screen && screenBandHeight > 0 && screenContentHeight > 0;
   const screenIdeal = screenMeasured
-    ? (screenScrollHeight - screenContentHeight) / 2
+    ? (screenBandHeight - screenContentHeight) / 2
     : 0;
   const screenOffset = screenMeasured
     ? brandContentOffset(
-        screenScrollHeight,
+        screenBandHeight,
         screenContentHeight,
         brandInset.markClearance,
         brandInset.wordmarkClearance,
@@ -378,15 +387,18 @@ export function AuthViewport({
                         <BidplaceWordmark />
                       </View>
                     ) : null}
+                    <View
+                      style={screen ? { flex: 1 } : undefined}
+                      onLayout={(event) => {
+                        if (!screen) return;
+                        const next = event.nativeEvent.layout.height;
+                        setScreenBandHeight((current) => (current === next ? current : next));
+                      }}
+                    >
                     <ScrollView
                       keyboardShouldPersistTaps="handled"
                       keyboardDismissMode="on-drag"
                       showsVerticalScrollIndicator={false}
-                      onLayout={(event) => {
-                        if (!screen) return;
-                        const next = event.nativeEvent.layout.height;
-                        setScreenScrollHeight((current) => (current === next ? current : next));
-                      }}
                       style={screen ? {
                         flex: 1,
                         marginTop: screenCentered ? 0 : brandInset.markClearance,
@@ -447,6 +459,7 @@ export function AuthViewport({
                         {children}
                       </View>
                     </ScrollView>
+                    </View>
                   </Dialog.Content>
                 </Animated.View>
               </AppDialogFrame>
