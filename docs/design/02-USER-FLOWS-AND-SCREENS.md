@@ -17,6 +17,14 @@ contracts по-прежнему определяют routes, data, permissions �
 
 ### Auth presentation — 2026-10-08
 
+Current fullscreen registration/confirmation source:
+[`2026-10-08-auth-fullscreen`](../../design/figma-handoff/auth/2026-10-08-auth-fullscreen/README.md).
+`DEC-106` adds the brush mark at the top and outlined wordmark at the bottom.
+Only the previous four fullscreen captures were replaced; login/recovery/exit
+retain the dialog source. Runtime branding and consent corrections are pending.
+The two captured consent checkboxes are two states of one control, not two
+simultaneous fields. This visual source update does not approve legal drafts.
+
 Login stays a bottom sheet. Registration is the full-screen sequence email,
 nickname, password, then email confirmation (`DEC-105` revision). Deep links
 stay `/login`, `/register`, `/verify-email`, `/forgot-password`, and
@@ -39,7 +47,7 @@ cancel an in-flight request, delete an account, or log out. Verification can
 be finished later, and the screen does not say a code arrived before the send
 is accepted. Recovery and wide layouts are derived from the phone sheet.
 Details:
-[`auth HANDOFF.md`](../../design/figma-handoff/auth/2026-10-07-auth-dialogs/HANDOFF.md).
+[`current auth HANDOFF.md`](../../design/figma-handoff/auth/2026-10-08-auth-fullscreen/HANDOFF.md).
 
 ## 2. Основной flow
 

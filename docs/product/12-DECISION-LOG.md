@@ -2396,8 +2396,9 @@ its first field is «Имя»/`displayName`. Does not revise the login sheet,
 single-use recovery link, exit confirmation, history owner, Google/Telegram
 placeholders, or the exclusion of passwordless login and OAuth.
 
-Registration presentation is the full-screen sequence
-[`2026-10-07-auth-fullscreen`](../../design/figma-handoff/auth/2026-10-07-auth-fullscreen/README.md):
+Registration presentation is the full-screen sequence from the historical
+`2026-10-07-auth-fullscreen` bundle (recoverable in Git tree
+`3b56d84b36c27b623c2dd641a2958729701129c4`; visual source superseded by `DEC-106`):
 email `4547:23379`, nickname `4547:24138`, password `4547:24428`, then email
 confirmation `4547:25026`. Login stays the dialog sheet `526:14885`. Recovery
 and exit confirmation stay the dialog handoff. Step values live in one
@@ -2510,3 +2511,29 @@ account slug through the same approved, active profile filter.
 No sync job, trigger, or second writer keeps the revision snapshot equal to
 `User.slug` after insert. This addition is not implemented. No migration has
 run.
+
+## DEC-106 — Updated brand and fullscreen auth source
+
+Date: 2026-10-08
+Status: Confirmed source/visual decision; runtime replacement pending.
+Source: founder supplied the new brush-mark SVG and four updated Figma captures,
+requested project-wide logo/favicon replacement and removal of the superseded
+fullscreen packages. Revises only the visual source of `DEC-105`.
+
+Registration and email confirmation use
+[`2026-10-08-auth-fullscreen`](../../design/figma-handoff/auth/2026-10-08-auth-fullscreen/README.md),
+with the mark above the form and outlined `bidplace` wordmark below. The new
+brush mark replaces the eye mark in live project branding and consumed icon
+assets. Shared exact vector sources and original SVG are preserved in
+[`2026-10-08-brand`](../../design/figma-handoff/branding/2026-10-08-brand/README.md).
+
+The four previous fullscreen packages are removed from active checkout, with
+archive hashes and recoverable Git tree recorded in `SOURCE-COMPARISON.json`.
+Login/recovery/exit dialog sources, shared fields, read-only canonical portfolio
+library and protected Pen remain. This does not change one `User.slug`, account
+creation, author capability, safe navigation, password recovery, OTP limits,
+OAuth placeholders or the production migration hold. It does not approve legal
+drafts or sample nickname suggestions.
+
+Only source preparation and read-only localhost review have run in this task.
+Runtime implementation, migration, push and production deployment have not run.

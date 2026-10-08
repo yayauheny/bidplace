@@ -1,5 +1,21 @@
 # bidplace — текущий статус проекта
 
+## 2026-10-08 — Brand/auth sources prepared; runtime correction pending
+
+- `Not implemented` for the new runtime branding/consent correction. Four latest
+  fullscreen captures and exact shared brand vectors are imported and validated;
+  the previous four fullscreen packages were removed from checkout with recorded
+  Git lineage. Current source and executor prompt:
+  [HANDOFF.md](../../design/figma-handoff/auth/2026-10-08-auth-fullscreen/HANDOFF.md).
+- Read-only localhost review confirmed the login dock overlap at three phone
+  sizes and missing brand/checkbox/style details in registration. Synthetic
+  email/nickname were used only for local step navigation; no password entry,
+  register request or mail delivery occurred. Confirmation was code-reviewed.
+- No application code, public contract, migration, role, production deployment
+  or release gate changed. Existing `User.slug` decisions and the migration
+  hold remain. Import checks do not close auth/MVP acceptance. See design status
+  and handoff for missing exact ranges/Google/policy/suggestion inputs.
+
 ## 2026-10-08 — Release routes and container image proof
 
 - `Partial`. `/_release/stop` and `/_release/state` are in

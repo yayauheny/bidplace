@@ -4,6 +4,25 @@
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
+## 2026-10-08 — Current fullscreen brand source and correction handoff
+
+- `Partial`: four new fullscreen captures imported unchanged and validated in
+  [`2026-10-08-auth-fullscreen`](../../design/figma-handoff/auth/2026-10-08-auth-fullscreen/README.md).
+  Each adds only four branding nodes. Shared exact vector mark/wordmark and the
+  untouched supplied SVG are in the branding handoff. The superseded fullscreen
+  packages were removed from checkout at the owner's request; Git lineage is
+  recorded. Dialog payloads, common fields, canonical library and Pen are unchanged.
+- Local browser review: login at 375×667, 390×874, 440×956 still has a dock
+  overlapping legal text and no Google glyph. Fullscreen email/nickname/password
+  at 390×874 have no mark/wordmark or checkbox; heading tracking and field/content
+  anatomy differ. Measured gaps and combined prompt:
+  [HANDOFF.md](../../design/figma-handoff/auth/2026-10-08-auth-fullscreen/HANDOFF.md).
+  No account was created. Confirmation was reviewed in source/code, not in an
+  authenticated browser session.
+- Application code and production were not changed. Mixed ranges, Google fills,
+  approved policy/consent persistence and nickname suggestions remain explicit
+  gaps. No 1:1 parity or complete MVP acceptance is claimed.
+
 ## 2026-10-08 — Fullscreen registration hides Home and the dock
 
 - `Partial`: `/register` and `/verify-email` use the existing screen

@@ -3,6 +3,10 @@
 Status: **login, recovery, and exit source**. Registration moved to the
 full-screen sequence in the `DEC-105` revision. Captures are unchanged.
 
+Current fullscreen/branding sources and correction prompt:
+[`2026-10-08-auth-fullscreen`](../2026-10-08-auth-fullscreen/HANDOFF.md).
+Only the earlier four fullscreen captures were replaced, not these dialog payloads.
+
 This bundle remains the versioned source for the login sheet, the recovery
 shell, and exit confirmation. It overrides those mapped captures from
 `portfolio-phone-v1` at `d9fb5c2`. The registration sheet `526:15557` is not

@@ -1,5 +1,11 @@
 # Auth design execution handoff
 
+Current executor prompt:
+[`2026-10-08-auth-fullscreen/HANDOFF.md`](../2026-10-08-auth-fullscreen/HANDOFF.md).
+Snapshots and prompts below are retained history. Current login/recovery/exit
+geometry still belongs to this dialog bundle; the newer handoff owns the
+combined correction scope and current fullscreen/brand sources.
+
 Prepared against release documentation HEAD
 `844e43cd87150f0faf045d709ad6808cea372ddb`; this import is a later local commit.
 Production runtime at preparation: `541d763547f7b021895daa3d533c3196c37a4e67`,
@@ -12,8 +18,8 @@ The `DEC-105` revision replaces the registration parts of this handoff.
 Login `526:14885`, recovery, and exit confirmation `746:23093` stay here.
 Registration is full-screen email `4547:23379`, nickname `4547:24138`,
 password `4547:24428`, then confirmation `4547:25026`. Do not implement
-`526:15557`. The copyable prompt at the bottom of this file is the one to
-execute. The older prompt's registration sentences are history.
+`526:15557`. Copyable prompts below were superseded by the current executor
+prompt linked at the top. Their registration sentences are history.
 
 ## Objective and success criteria
 

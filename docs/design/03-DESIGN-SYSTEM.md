@@ -6,6 +6,18 @@
 
 ## 1. Архитектура источников
 
+### Current brand/fullscreen auth target — 2026-10-08
+
+`DEC-106` replaces the eye mark with the supplied brush mark. Exact mark and
+outlined wordmark, measured auth slots and provenance:
+[`2026-10-08-brand`](../../design/figma-handoff/branding/2026-10-08-brand/README.md),
+[current fullscreen source](../../design/figma-handoff/auth/2026-10-08-auth-fullscreen/STYLES.md).
+These are verified handoff assets, not installed tokens or completed runtime UI.
+The original SVG is #111111 on white; auth vectors are #121212. The original is
+preserved; auth derivatives follow the capture. Keep one shared brand foundation
+and semantic auth variants. Do not substitute arbitrary lettering or stretch
+the mark into its safety slot.
+
 ### Auth sheet presentation — 2026-10-07
 
 `DEC-105` uses
