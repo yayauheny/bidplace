@@ -4,6 +4,14 @@
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
+## 2026-10-09 — Auth screens measured against the current handoff
+
+- `Partial`. 390×874 login, registration steps, and confirmation keep the
+  mark, wordmark, type sizes, and dock hiding. Login password stroke is
+  the shared 0.5 field border; registration password stays 53×1. The login
+  sheet is still 2px off the 545 source height. Confirmation mixed ranges
+  and the policy placeholder stay unresolved. This is not 1:1.
+
 ## 2026-10-09 — Auth form geometry, horizontal strokes, Google slot
 
 - `Partial`. Dialog hosts for the policy stub and rules text are out of

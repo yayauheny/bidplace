@@ -90,7 +90,7 @@ describe('Figma text field states', () => {
       height: 51,
       minHeight: 51,
       paddingVertical: 0,
-      borderWidth: 1,
+      borderWidth: 0.5,
     });
     expect(figmaFieldStyle('empty', false, 'authScreenPassword')).toMatchObject({
       height: 53,

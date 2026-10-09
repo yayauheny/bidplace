@@ -55,7 +55,10 @@ export function figmaFieldStyle(
     paddingHorizontal: figmaTokens.space.fieldX,
     paddingVertical: password ? 0 : figmaTokens.space.fieldY,
     borderRadius: figmaTokens.radius.field,
-    borderWidth: password ? figmaTokens.auth.passwordBorder : figmaTokens.size.fieldBorder,
+    borderWidth:
+      metrics === 'authScreenPassword'
+        ? figmaTokens.auth.passwordBorder
+        : figmaTokens.size.fieldBorder,
     borderColor: fieldBorder(status),
     backgroundColor: fieldFill(status),
     flexDirection: 'row' as const,

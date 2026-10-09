@@ -1,5 +1,21 @@
 # bidplace — текущий статус проекта
 
+## 2026-10-09 — Auth visual check against the current handoff
+
+- `Partial`. Login sheet, registration email/nickname/password, and email
+  confirmation were measured at 390×874 with local synthetic data. Mark
+  30.3 at about x180/y67 and wordmark 93×22 at y793 match the fullscreen
+  source. Email title is y319.5. Password step title is y308.5 and those
+  fields are 350×53 with a 1px border. Dock stays hidden. 375 and 440 do
+  not add horizontal overflow. Login password now uses the same 0.5 field
+  border as the login email field; the 53px registration password keeps
+  the 1px border. At 1× the used border can still paint as 1px.
+- Still not exact: the login surface is 547px at y327 against source 545
+  at y329. The email field shell measures 52px. Nickname title position
+  does not copy the sample-status group. Confirmation copy is the adapted
+  sentence. Policy remains the temporary dialog. Google and Telegram stay
+  unavailable. This is not 1:1.
+
 ## 2026-10-09 — Auth dialogs stay out of form measurement
 
 - `Partial`. Closed policy/rules `AppDialog` roots no longer sit in the
