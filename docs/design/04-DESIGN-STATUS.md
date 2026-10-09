@@ -4,6 +4,16 @@
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
+## 2026-10-09 — Single-line fields keep a 51px outer box
+
+- `Partial`. Single-line `FigmaTextField` locks its border box at 51.
+  At DPR 1 the 0.5 stroke still paints as 1px, and the content box is 49;
+  at DPR 2 the stroke stays 0.5 and the content box is 50. Registration
+  password stays 53×1. Multiline fields still grow. The 390×874 login
+  sheet is 546 in Chromium and WebKit. The in-app DPR 2 sheet stays
+  543.5 against source 545. The rest is the normal line box of the forgot
+  link, «или», and the legal sentence. This is not 1:1.
+
 ## 2026-10-09 — Auth screens measured against the current handoff
 
 - `Partial`. 390×874 login, registration steps, and confirmation keep the

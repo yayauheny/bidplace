@@ -49,9 +49,14 @@ export function figmaFieldStyle(
       : figmaTokens.auth.passwordHeight;
   return {
     width: '100%' as const,
-    ...(password
-      ? { height: passwordHeight, minHeight: passwordHeight }
-      : { minHeight: figmaTokens.size.input }),
+    // A single-line shell has a fixed outer height. At devicePixelRatio 1 the
+    // 0.5 border paints as 1px; minHeight alone then lets padding and the
+    // line box grow the border box. Multiline fields keep only minHeight.
+    ...(multiline
+      ? { minHeight: figmaTokens.size.input }
+      : password
+        ? { height: passwordHeight, minHeight: passwordHeight }
+        : { height: figmaTokens.size.input, minHeight: figmaTokens.size.input }),
     paddingHorizontal: figmaTokens.space.fieldX,
     paddingVertical: password ? 0 : figmaTokens.space.fieldY,
     borderRadius: figmaTokens.radius.field,

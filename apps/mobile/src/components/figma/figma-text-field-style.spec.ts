@@ -60,6 +60,7 @@ describe('Figma text field states', () => {
 
     for (const item of cases) {
       expect(figmaFieldStyle(item.status)).toMatchObject({
+        height: 51,
         minHeight: 51,
         borderWidth: 0.5,
         borderRadius: 18,
@@ -108,10 +109,12 @@ describe('Figma text field states', () => {
   });
 
   it('top-aligns multiline content while preserving the captured field minimum', () => {
-    expect(figmaFieldStyle('filled', true)).toMatchObject({
+    const multiline = figmaFieldStyle('filled', true);
+    expect(multiline).toMatchObject({
       minHeight: figmaTokens.size.input,
       alignItems: 'flex-start',
     });
+    expect(multiline).not.toHaveProperty('height');
   });
 
   it('keeps the shell border as the only focus ring, including an error that is focused', () => {

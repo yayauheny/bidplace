@@ -1,5 +1,22 @@
 # bidplace — текущий статус проекта
 
+## 2026-10-09 — Single-line field height stays 51 when the border snaps
+
+- `Partial`. A single-line `FigmaTextField` now has a fixed outer height of
+  51, so a 0.5 border that paints as 1px at devicePixelRatio 1 no longer
+  grows the border box. Multiline fields still use only `minHeight` and can
+  grow. Registration password stays 53 with a 1px border. Focus stays
+  `#004DFF`, error stays red, and the error line remains outside the shell.
+- Measured at 390×874, DPR 1: login and registration email are 51 in
+  Chromium and WebKit (they were 52). The used border is still 1px; the
+  content box is 49. Nickname is 51. Registration passwords are 53×1.
+  The in-app tab at DPR 2 already kept the 0.5 border and height 51; it
+  still does. The login sheet is 546 in Chromium and WebKit, down from 547.
+  The in-app sheet stays 543.5. Source anatomy is 545.
+- The remaining 2.5px between DPR 1 and DPR 2 is not the field: «Забыли
+  пароль?» is 15 vs 14.5, «или» is 19 vs 18, and the legal line is 30 vs
+  29. Those nodes use `line-height: normal`. This is not 1:1.
+
 ## 2026-10-09 — Auth visual check against the current handoff
 
 - `Partial`. Login sheet, registration email/nickname/password, and email

@@ -1,0 +1,17 @@
+{
+  "browser": "in-app",
+  "dpr": 2,
+  "viewport": { "w": 626, "h": 806 },
+  "note": "The open in-app tab is not 390×874. Field and sheet heights are content boxes, not the viewport.",
+  "login": {
+    "email": { "h": 51, "cssHeight": "51px", "borderTop": "0.5px", "clientHeight": 50 },
+    "password": { "h": 51, "borderTop": "0.5px" },
+    "sheet": { "h": 543.5, "y": 262.5 },
+    "children": {
+      "forgotGroup": 71.5,
+      "or": 18,
+      "legal": 29,
+      "providers": 112
+    }
+  }
+}
