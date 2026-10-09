@@ -2552,3 +2552,25 @@ not reserve a name. `accountSlugSchema` remains the 1–120 character read
 contract for stored users and claim responses. Existing account nicknames,
 author addresses, revision snapshots and the database column are unchanged.
 This decision does not authorize a migration, push or deployment.
+
+## DEC-108 — Local nickname suggestions and explicit availability check
+
+Date: 2026-10-09
+Status: Confirmed.
+Source: founder approved the first library option and the registration behavior.
+
+Registration shows exactly three neutral suggestions generated locally with
+locked `unique-names-generator`, curated short color/animal dictionaries, a
+three-digit suffix, and the existing nickname write contract. The 49,500-value
+space keeps labels compact while reducing collisions. The generator sits behind
+one small synchronous replaceable interface. Library imports stay in one
+adapter. There is no email derivation, AI, remote generation, reservation, new
+endpoint, or new persistence.
+
+Typing and suggestion selection do not check availability. Nickname `Next`
+validates locally and sends one request for the selected value. Taken refreshes
+the three suggestions; retryable failures preserve the field; stale replies
+cannot advance the form. A positive preflight is not a guarantee: `register`
+and the unique `User.slug` constraint remain final authority, and a final
+`slug_taken` returns to the nickname step without clearing the other fields.
+Suggestions remain stable while moving between steps in the same attempt.

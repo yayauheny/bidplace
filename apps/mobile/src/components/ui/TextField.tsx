@@ -4,6 +4,7 @@ import { View, type TextInput, type TextInputProps } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
 
 import { FigmaTextField } from '../figma/FigmaTextField';
+import { type FigmaIconName } from '../figma/figma-icon-names';
 import { AppText } from './AppText';
 
 export type TextFieldProps = TextInputProps & {
@@ -12,6 +13,8 @@ export type TextFieldProps = TextInputProps & {
   error?: string;
   required?: boolean;
   metrics?: 'default' | 'authPassword' | 'authScreenPassword';
+  icon?: FigmaIconName;
+  iconColor?: string;
   prefix?: string;
   trailing?: ReactNode;
 };
@@ -22,6 +25,8 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
   error,
   required,
   metrics,
+  icon,
+  iconColor,
   prefix,
   trailing,
   editable = true,
@@ -40,6 +45,8 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
         label={required ? `${label} *` : label}
         error={error}
         metrics={metrics}
+        icon={icon}
+        iconColor={iconColor}
         prefix={prefix}
         trailing={trailing}
         disabled={editable === false}

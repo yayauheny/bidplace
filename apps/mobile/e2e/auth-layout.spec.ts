@@ -7,6 +7,10 @@ import { e2eEvidenceDir } from './support/evidence-dir';
 import { expectPasswordVisibility } from './support/fill-control';
 
 const artifactDir = resolve(e2eEvidenceDir, 'stabilization');
+const nicknameArtifactDir = resolve(
+  e2eEvidenceDir,
+  '2026-10-09-nickname-suggestions',
+);
 const removedIntro = 'Искусство встречает своего следующего владельца.';
 
 test('dirty login asks before closing and providers stay unavailable', async ({ page }) => {
@@ -523,6 +527,31 @@ test('auth composition is stacked in the S4 phone column', async ({ page }) => {
   await page.getByRole('checkbox', { name: /соглашаюсь/ }).check();
   await page.getByRole('button', { name: 'Дальше', exact: true }).click();
   const nickname = page.getByLabel('Никнейм', { exact: true });
+  const suggestionButtons = page
+    .locator('#nickname-suggestions')
+    .getByRole('button');
+  await expect(suggestionButtons).toHaveCount(3);
+  const suggestionLabels = await suggestionButtons.allTextContents();
+  expect(new Set(suggestionLabels).size).toBe(3);
+  expect(
+    suggestionLabels.every(
+      (suggestion) =>
+        /^[a-z0-9]+(?:[-_][a-z0-9]+)*$/.test(suggestion) &&
+        suggestion.length >= 3 &&
+        suggestion.length <= 20,
+    ),
+  ).toBe(true);
+  await suggestionButtons.first().click();
+  await expect(nickname).toHaveValue(suggestionLabels[0]!);
+  expect(availabilityRequests).toBe(0);
+  await page.setViewportSize({ width: 390, height: 874 });
+  await mkdir(nicknameArtifactDir, { recursive: true });
+  await page.screenshot({
+    path: resolve(
+      nicknameArtifactDir,
+      `${engine(page)}-register-nickname-390x874.png`,
+    ),
+  });
   for (const slug of ['ab', 'a'.repeat(21)]) {
     await nickname.fill(slug);
     await page.getByRole('button', { name: 'Дальше', exact: true }).click();
@@ -533,6 +562,8 @@ test('auth composition is stacked in the S4 phone column', async ({ page }) => {
   await nickname.fill('a'.repeat(20));
   await page.getByRole('button', { name: 'Дальше', exact: true }).click();
   const password = page.getByLabel('Введите пароль', { exact: true });
+  await expect(password).toBeVisible();
+  expect(availabilityRequests).toBe(1);
   const confirmation = page.getByLabel('Подтвердите пароль', { exact: true });
   await password.fill('layout-password-123');
   await confirmation.fill('layout-password-123');
@@ -551,6 +582,305 @@ test('auth composition is stacked in the S4 phone column', async ({ page }) => {
   await expectPasswordVisibility(resetConfirmation);
   await expect(page.locator('#auth-exit-confirm')).toHaveCount(0);
   await page.screenshot({ path: resolve(artifactDir, `${engine(page)}-reset-password-390x400.png`) });
+});
+
+test('nickname suggestions check availability only on explicit Next', async ({
+  page,
+}) => {
+  await mkdir(nicknameArtifactDir, { recursive: true });
+  await page.route('**/api/auth/me', (route) =>
+    route.fulfill({
+      status: 401,
+      json: {
+        status: 401,
+        code: 'unauthorized',
+        message: 'Authentication required',
+      },
+    }),
+  );
+  await page.route('**/api/auth/rules', (route) =>
+    route.fulfill({
+      json: {
+        rules: {
+          version: 'nickname-test',
+          owner: 'Synthetic',
+          contact: 'test@example.com',
+          text: 'Synthetic nickname fixture',
+        },
+      },
+    }),
+  );
+
+  let availabilityRequests = 0;
+  let availabilityMode: 'available' | 'taken' | 'error' | 'delayed' = 'taken';
+  const delayedAvailability = {
+    release: null as (() => void) | null,
+  };
+  await page.route('**/api/auth/slug-availability?*', async (route) => {
+    availabilityRequests += 1;
+    const mode = availabilityMode;
+    if (mode === 'delayed') {
+      await new Promise<void>((resolve) => {
+        delayedAvailability.release = resolve;
+      });
+    }
+    if (mode === 'error') {
+      await route.fulfill({
+        status: 429,
+        json: {
+          status: 429,
+          code: 'rate_limited',
+          message: 'Too many checks',
+        },
+      });
+      return;
+    }
+    await route.fulfill({
+      json: { available: mode === 'available' || mode === 'delayed' },
+    });
+  });
+
+  let registerRequests = 0;
+  await page.route('**/api/auth/register', async (route) => {
+    registerRequests += 1;
+    await route.fulfill({
+      status: 409,
+      json: {
+        status: 409,
+        code: 'conflict',
+        message: 'Nickname is already taken',
+        details: { reason: 'slug_taken' },
+      },
+    });
+  });
+
+  await page.setViewportSize({ width: 390, height: 874 });
+  await page.goto('/register');
+  await page.getByLabel('Электронная почта').fill('nickname-only@example.com');
+  await page.getByRole('checkbox', { name: /соглашаюсь/ }).check();
+  await page.getByRole('button', { name: 'Дальше', exact: true }).click();
+
+  const nickname = page.getByLabel('Никнейм', { exact: true });
+  const suggestions = page.locator('#nickname-suggestions').getByRole('button');
+  await expect(suggestions).toHaveCount(3);
+  const fieldGeometry = await nickname.evaluate((input) => {
+    const shell = input.parentElement;
+    const icon = shell?.querySelector('svg');
+    const iconSlot = icon?.parentElement;
+    const path = icon?.querySelector('path');
+    const rect = (node: Element | null | undefined) => {
+      const box = node?.getBoundingClientRect();
+      return box
+        ? { x: box.x, y: box.y, width: box.width, height: box.height }
+        : null;
+    };
+    return {
+      shell: rect(shell),
+      input: rect(input),
+      icon: rect(icon),
+      iconSlot: rect(iconSlot),
+      iconColor: icon ? getComputedStyle(icon).color : null,
+      pathStroke: path ? getComputedStyle(path).stroke : null,
+      pathStrokeWidth: path ? getComputedStyle(path).strokeWidth : null,
+    };
+  });
+  expect(fieldGeometry.shell).not.toBeNull();
+  expect(fieldGeometry.input).not.toBeNull();
+  expect(fieldGeometry.icon).not.toBeNull();
+  expect(fieldGeometry.iconSlot).not.toBeNull();
+  expect(fieldGeometry.shell!.width).toBeCloseTo(350, 0);
+  expect(fieldGeometry.shell!.height).toBeCloseTo(51, 0);
+  expect(fieldGeometry.icon!.width).toBeCloseTo(18, 1);
+  expect(fieldGeometry.icon!.height).toBeCloseTo(18, 1);
+  expect(fieldGeometry.iconSlot!.width).toBeCloseTo(22, 1);
+  expect(fieldGeometry.iconSlot!.height).toBeCloseTo(22, 1);
+  expect(fieldGeometry.input!.x - fieldGeometry.shell!.x).toBeCloseTo(39, 1);
+  expect(fieldGeometry.iconColor).toBe('rgb(133, 133, 133)');
+  expect(fieldGeometry.pathStroke).toBe('rgb(133, 133, 133)');
+  expect(Number.parseFloat(fieldGeometry.pathStrokeWidth ?? '')).toBeCloseTo(
+    1.13,
+    2,
+  );
+  const mappedGeometry = {
+    title: await page
+      .getByText('Выберите имя пользователя', { exact: true })
+      .boundingBox(),
+    caption: await page
+      .getByText('Можете выбрать любой или предложений', { exact: true })
+      .boundingBox(),
+    status: await page.locator('#nickname-status-slot').boundingBox(),
+    action: await page
+      .getByRole('button', { name: 'Дальше', exact: true })
+      .boundingBox(),
+    suggestionsLabel: await page
+      .getByText('Предложения:', { exact: true })
+      .boundingBox(),
+    firstChip: await suggestions.first().boundingBox(),
+    mark: await page.getByTestId('bidplace-brand-mark').boundingBox(),
+    wordmark: await page.getByTestId('bidplace-brand-wordmark').boundingBox(),
+  };
+  expect(mappedGeometry.title?.y).toBeCloseTo(273.5, 0);
+  expect(mappedGeometry.caption?.y).toBeCloseTo(301.5, 0);
+  expect(mappedGeometry.status?.y).toBeCloseTo(327.5, 0);
+  expect(fieldGeometry.shell!.y).toBeCloseTo(389.5, 0);
+  expect(mappedGeometry.action?.y).toBeCloseTo(452.5, 0);
+  expect(mappedGeometry.action?.width).toBeCloseTo(350, 0);
+  expect(mappedGeometry.action?.height).toBeCloseTo(51, 0);
+  expect(mappedGeometry.suggestionsLabel?.y).toBeCloseTo(527.5, 0);
+  expect(mappedGeometry.firstChip?.y).toBeCloseTo(551.5, 0);
+  expect(mappedGeometry.firstChip?.height).toBeCloseTo(37, 0);
+  expect(mappedGeometry.mark?.y).toBeCloseTo(67, 0);
+  expect(mappedGeometry.wordmark?.y).toBeCloseTo(793, 0);
+  const initialSuggestions = await suggestions.allTextContents();
+  expect(new Set(initialSuggestions).size).toBe(3);
+  await suggestions.first().focus();
+  await expect(suggestions.first()).toBeFocused();
+  await suggestions.first().press('Enter');
+  await expect(nickname).toHaveValue(initialSuggestions[0]!);
+  expect(availabilityRequests).toBe(0);
+
+  for (const viewport of [
+    { width: 375, height: 667 },
+    { width: 440, height: 956 },
+    { width: 1280, height: 720 },
+    { width: 390, height: 400 },
+    { width: 390, height: 874 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await expect(suggestions).toHaveCount(3);
+    expect(
+      await page.evaluate(() => document.body.scrollWidth <= window.innerWidth),
+    ).toBe(true);
+    await suggestions.last().scrollIntoViewIfNeeded();
+    await expect(suggestions.last()).toBeInViewport();
+  }
+
+  await page.evaluate(() => {
+    document.documentElement.style.zoom = '1.5';
+  });
+  expect(
+    await page.evaluate(() => document.body.scrollWidth <= window.innerWidth),
+  ).toBe(true);
+  for (let index = 0; index < 3; index += 1) {
+    await suggestions.nth(index).scrollIntoViewIfNeeded();
+    await expect(suggestions.nth(index)).toBeInViewport();
+  }
+  await page.evaluate(() => {
+    document.documentElement.style.zoom = '';
+  });
+
+  await nickname.fill('taken-author');
+  await page.getByRole('button', { name: 'Дальше', exact: true }).click();
+  await expect(
+    page.getByText('@taken-author недоступен', { exact: true }),
+  ).toBeVisible();
+  await expect(nickname).toHaveValue('taken-author');
+  const refreshedSuggestions = await suggestions.allTextContents();
+  expect(refreshedSuggestions).toHaveLength(3);
+  expect(new Set(refreshedSuggestions).size).toBe(3);
+  expect(
+    refreshedSuggestions.every(
+      (suggestion) => !initialSuggestions.includes(suggestion),
+    ),
+  ).toBe(true);
+  await page.screenshot({
+    path: resolve(
+      nicknameArtifactDir,
+      `${engine(page)}-register-nickname-taken-390x874.png`,
+    ),
+  });
+
+  availabilityMode = 'error';
+  await nickname.fill('retry-author');
+  await page.getByRole('button', { name: 'Дальше', exact: true }).click();
+  await expect(
+    page.getByText('Слишком много проверок. Подождите и попробуйте снова.', {
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(nickname).toHaveValue('retry-author');
+
+  availabilityMode = 'taken';
+  await page.getByRole('button', { name: 'Дальше', exact: true }).click();
+  await expect(
+    page.getByText('@retry-author недоступен', { exact: true }),
+  ).toBeVisible();
+  await expect(nickname).toHaveValue('retry-author');
+
+  availabilityMode = 'delayed';
+  await nickname.fill('stale-author');
+  const delayedResponse = page.waitForResponse(
+    (response) =>
+      response.url().includes('/api/auth/slug-availability') &&
+      new URL(response.url()).searchParams.get('slug') === 'stale-author',
+  );
+  await page.getByRole('button', { name: 'Дальше', exact: true }).click();
+  await expect.poll(() => availabilityRequests).toBe(4);
+  await nickname.fill('current-author');
+  delayedAvailability.release?.();
+  const completedDelayedResponse = await delayedResponse;
+  expect(await completedDelayedResponse.json()).toEqual({ available: true });
+  expect(await completedDelayedResponse.finished()).toBeNull();
+  await expect(
+    page.getByText('@stale-author доступен', { exact: true }),
+  ).toHaveCount(0);
+  await expect(page.getByLabel('Введите пароль', { exact: true })).toHaveCount(
+    0,
+  );
+
+  availabilityMode = 'available';
+  await nickname.fill('available-author');
+  const suggestionsBeforePassword = await suggestions.allTextContents();
+  const next = page.getByRole('button', { name: 'Дальше', exact: true });
+  await next.evaluate((button) => {
+    button.dispatchEvent(
+      new MouseEvent('click', { bubbles: true, cancelable: true }),
+    );
+    button.dispatchEvent(
+      new MouseEvent('click', { bubbles: true, cancelable: true }),
+    );
+  });
+  await expect(
+    page.getByLabel('Введите пароль', { exact: true }),
+  ).toBeVisible();
+  expect(availabilityRequests).toBe(5);
+  await page
+    .getByLabel('Введите пароль', { exact: true })
+    .fill('registration-password-123');
+  await page
+    .getByLabel('Подтвердите пароль', { exact: true })
+    .fill('registration-password-123');
+  await next.click();
+  await expect(
+    page.getByText('Этот никнейм уже занят. Выберите другой.', { exact: true }),
+  ).toBeVisible();
+  expect(registerRequests).toBe(1);
+  expect(await suggestions.allTextContents()).toEqual(
+    suggestionsBeforePassword,
+  );
+
+  await nickname.fill('replacement-author');
+  await next.click();
+  await expect(page.getByLabel('Введите пароль', { exact: true })).toHaveValue(
+    'registration-password-123',
+  );
+  await expect(
+    page.getByLabel('Подтвердите пароль', { exact: true }),
+  ).toHaveValue('registration-password-123');
+  expect(registerRequests).toBe(1);
+
+  await page.evaluate(() => {
+    document.documentElement.style.zoom = '1.5';
+  });
+  await page
+    .getByLabel('Введите пароль', { exact: true })
+    .scrollIntoViewIfNeeded();
+  await expect(
+    page.getByLabel('Введите пароль', { exact: true }),
+  ).toBeInViewport();
+  await page.evaluate(() => {
+    document.documentElement.style.zoom = '';
+  });
 });
 
 async function historyStep(page: Page, delta: number) {

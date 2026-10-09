@@ -4,6 +4,33 @@
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
+## 2026-10-09 — Nickname suggestions from the saved fullscreen export
+
+- `Partial`. Registration nickname now follows saved root `4547:23927` and
+  surface `4547:24138`: shared title/caption/status roles, 350px field/action
+  column, 24px separation to the centered suggestions group, and three shared
+  37px gradient-stroke chips. The field maps icon slot
+  `I4547:24184;303:8697` to the shared 22px-padded `at-sign`: 18px,
+  `#858585`, 1.13 stroke. Chrome measured shell 350×51, slot 22×22, glyph
+  18×18 and input local x=39; source x=38.5 differs by the known DPR-1
+  half-stroke snap. Variable labels wrap on narrow screens and retain keyboard
+  focus. Sample `niko631/632/633` is not runtime content.
+- The source's green and red labels are alternative examples; runtime shows
+  zero or one real status in one reserved 46px area. Therefore the neutral
+  initial composition cannot simultaneously reproduce both sample rows. It
+  intentionally makes no availability claim before explicit `Next`.
+- The isolated existing nickname scenario passes in Chromium/WebKit (2/2),
+  including a completed stale-positive response, 1.5× zoom with reachable
+  nickname chips, 390×874, 375×667, 440×956, 1280×720, 390×400 and resize
+  without horizontal overflow or page errors. Source geometry remains measured
+  at title y=273.5 and chip height=37. Evidence is
+  `/private/tmp/{chromium,webkit}-nickname-supervisor.png`; source and icon
+  probes are `/private/tmp/bidplace-nickname-{probe,icon-probe}.cjs`. The
+  final Chromium neutral/taken screenshots are under
+  `/tmp/bidplace-mobile-web-figma-evidence/2026-10-09-nickname-suggestions`.
+  Native runtime and the real local availability response remain unverified
+  because local `users.slug` is absent; this is not launch readiness.
+
 ## 2026-10-09 — Decorative brand pointer selection
 
 - `Partial`. Shared mark and wordmark SVGs are decorative, absent from the web

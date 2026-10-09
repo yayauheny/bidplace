@@ -44,7 +44,14 @@ stay `/login`, `/register`, `/verify-email`, `/forgot-password`, and
 `/reset-password`. The nickname is `User.slug`, including the public author
 address. New registration and claim requests require 3–20 characters through
 the shared write contract (`DEC-107`); invalid registration input cannot check
-availability or advance. Historical stored nicknames retain their read contract.
+availability or advance. The nickname step shows three neutral local
+suggestions. Typing or selecting one only updates and locally validates the
+field. `Next` performs exactly one availability read: available advances,
+taken stays and refreshes all three suggestions, and a retryable failure stays
+with the entered value. Suggestions remain when returning from password.
+Availability does not reserve the nickname; final `slug_taken` returns to this
+step without clearing email or password. Historical stored nicknames retain
+their read contract.
 The author profile does not edit a second slug. An existing account
 with no slug chooses that nickname, with the registration field, before the
 author profile is created. A slug that is already set is not edited in this

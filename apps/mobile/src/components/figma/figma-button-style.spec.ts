@@ -46,6 +46,25 @@ describe('Figma button styles', () => {
     expect(figmaButtonLabelColor('authQuiet')).toBe(figmaTokens.color.textSubdued);
   });
 
+  it('uses the saved nickname suggestion chip metrics', () => {
+    expect(
+      figmaButtonStyle('authSuggestion', 'idle', 'authSuggestion'),
+    ).toMatchObject({
+      minHeight: 37,
+      paddingHorizontal: 13,
+      paddingVertical: 8,
+      borderRadius: 80,
+      borderWidth: 0,
+      backgroundColor: figmaTokens.color.canvas,
+    });
+    expect(figmaButtonGradientPlacement('authSuggestion')).toBe('inset');
+    expect(figmaButtonInsetBorderWidth('authSuggestion')).toBe(1);
+    expect(figmaButtonGradientColors('authSuggestion')).toEqual([
+      figmaTokens.auth.suggestionBorderStart,
+      figmaTokens.auth.suggestionBorderEnd,
+    ]);
+  });
+
   it('uses the solid charcoal pill for the primary idle state', () => {
     expect(figmaButtonStyle('solid', 'idle')).toMatchObject({
       backgroundColor: figmaTokens.color.solid,

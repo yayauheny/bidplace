@@ -147,11 +147,13 @@ export function FigmaButton({
                 role={compact ? 'buttonCompact' : 'button'}
                 style={{
                   color: textColor,
-                  ...(size === 'auth' || size === 'authResend'
-                    ? variant === 'authPrimary'
-                      ? figmaTokens.typography.authButton
-                      : figmaTokens.typography.authButtonStrong
-                    : null),
+                  ...(size === 'authSuggestion'
+                    ? figmaTokens.typography.authSuggestion
+                    : size === 'auth' || size === 'authResend'
+                      ? variant === 'authPrimary'
+                        ? figmaTokens.typography.authButton
+                        : figmaTokens.typography.authButtonStrong
+                      : null),
                 }}
               >
                 {label}
@@ -196,6 +198,12 @@ export function FigmaButton({
 }
 
 function figmaButtonGradientAxis(variant: FigmaButtonVariant) {
+  if (variant === 'authSuggestion') {
+    return {
+      start: { x: 0, y: 0.5 },
+      end: { x: 0.89, y: 0.39 },
+    };
+  }
   if (variant === 'authPrimary' || variant === 'authProvider') {
     return {
       start: { x: 0, y: 0.5 },

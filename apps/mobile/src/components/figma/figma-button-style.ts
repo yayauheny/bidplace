@@ -10,9 +10,17 @@ export const figmaButtonVariants = [
   'authPrimary',
   'authQuiet',
   'authProvider',
+  'authSuggestion',
 ] as const;
 
-export const figmaButtonSizes = ['regular', 'large', 'compact', 'auth', 'authResend'] as const;
+export const figmaButtonSizes = [
+  'regular',
+  'large',
+  'compact',
+  'auth',
+  'authResend',
+  'authSuggestion',
+] as const;
 
 export type FigmaButtonVariant = (typeof figmaButtonVariants)[number];
 export type FigmaButtonSize = (typeof figmaButtonSizes)[number];
@@ -35,6 +43,8 @@ export function figmaButtonStyle(
       ? figmaTokens.auth.actionHeight
       : size === 'authResend'
         ? figmaTokens.auth.resendHeight
+        : size === 'authSuggestion'
+          ? figmaTokens.auth.suggestionHeight
         : null;
 
   return {
@@ -48,15 +58,25 @@ export function figmaButtonStyle(
                 : figmaTokens.size.button)) - (insetPressedSurface ? 2 : 0),
         }),
     margin: insetPressedSurface ? 1 : 0,
-    paddingHorizontal: compact
-      ? figmaTokens.space.quietButtonX
-      : figmaTokens.space.buttonX,
-    paddingVertical: compact
-      ? figmaTokens.space.quietButtonY
-      : figmaTokens.space.buttonY,
+    paddingHorizontal:
+      size === 'authSuggestion'
+        ? figmaTokens.auth.suggestionX
+        : compact
+          ? figmaTokens.space.quietButtonX
+          : figmaTokens.space.buttonX,
+    paddingVertical:
+      size === 'authSuggestion'
+        ? figmaTokens.auth.suggestionY
+        : compact
+          ? figmaTokens.space.quietButtonY
+          : figmaTokens.space.buttonY,
     borderRadius: figmaButtonRadius(size),
     borderWidth:
-      compact || insetPressedSurface || variant === 'authPrimary' || variant === 'authProvider'
+      compact ||
+      insetPressedSurface ||
+      variant === 'authPrimary' ||
+      variant === 'authProvider' ||
+      variant === 'authSuggestion'
         ? 0
         : authHeight
           ? 0.5
@@ -104,13 +124,19 @@ export function figmaButtonUsesGradientBorder(variant: FigmaButtonVariant) {
     variant === 'outline' ||
     variant === 'quiet' ||
     variant === 'authProvider' ||
-    variant === 'authPrimary'
+    variant === 'authPrimary' ||
+    variant === 'authSuggestion'
   );
 }
 
 export function figmaButtonGradientPlacement(variant: FigmaButtonVariant) {
   if (variant === 'quiet') return 'outside' as const;
-  if (variant === 'outline' || variant === 'authProvider' || variant === 'authPrimary') {
+  if (
+    variant === 'outline' ||
+    variant === 'authProvider' ||
+    variant === 'authPrimary' ||
+    variant === 'authSuggestion'
+  ) {
     return 'inset' as const;
   }
   return 'none' as const;
@@ -129,10 +155,14 @@ export function figmaButtonGradientColors(variant: FigmaButtonVariant) {
       figmaTokens.auth.primaryBorderEnd,
     ] as const;
   }
-  if (variant === 'authProvider') {
+  if (variant === 'authProvider' || variant === 'authSuggestion') {
     return [
-      figmaTokens.auth.providerBorderStart,
-      figmaTokens.auth.providerBorderEnd,
+      variant === 'authSuggestion'
+        ? figmaTokens.auth.suggestionBorderStart
+        : figmaTokens.auth.providerBorderStart,
+      variant === 'authSuggestion'
+        ? figmaTokens.auth.suggestionBorderEnd
+        : figmaTokens.auth.providerBorderEnd,
     ] as const;
   }
   if (variant === 'quiet') {
@@ -150,7 +180,11 @@ export function figmaButtonGradientOpacity(variant: FigmaButtonVariant) {
 
 export function figmaButtonInsetBorderWidth(variant: FigmaButtonVariant) {
   if (variant === 'authPrimary') return figmaTokens.auth.primaryBorderWidth;
-  if (variant === 'authProvider' || variant === 'outline') return 1;
+  if (
+    variant === 'authProvider' ||
+    variant === 'authSuggestion' ||
+    variant === 'outline'
+  ) return 1;
   return 0;
 }
 
@@ -191,6 +225,7 @@ function buttonFill(variant: FigmaButtonVariant, active: boolean) {
       return active ? figmaTokens.color.solidHover : figmaTokens.color.fieldValue;
     case 'authQuiet':
     case 'authProvider':
+    case 'authSuggestion':
       return active ? figmaTokens.color.ghostHover : figmaTokens.color.canvas;
   }
 }
@@ -212,6 +247,7 @@ function buttonBorder(variant: FigmaButtonVariant) {
     case 'authQuiet':
       return figmaTokens.color.canvas;
     case 'authProvider':
+    case 'authSuggestion':
       return 'transparent';
   }
 }

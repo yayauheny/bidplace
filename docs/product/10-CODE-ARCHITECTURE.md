@@ -1,6 +1,6 @@
 # bidplace — архитектура кода
 
-Последнее обновление: 2026-10-05
+Последнее обновление: 2026-10-09
 Статус: Confirmed technical boundaries for the portfolio-first MVP implementation.
 
 ## 2026-10-05 — Cloudflare application deployment (Partial)
@@ -189,6 +189,17 @@ SellerProfile
   1–120 character `accountSlugSchema` read contract. Future write endpoints
   must reuse the write schema; narrowing a response schema would reject
   historical accounts. This introduces no new persistence owner or migration.
+- `apps/mobile/src/features/auth/nickname-suggestion-generator.ts` is the
+  replaceable synchronous nickname-generation boundary. Its sole current
+  adapter confines `unique-names-generator` and curated bundled dictionaries to
+  `unique-names-generator-adapter.ts`, then validates every candidate with the
+  shared write contract. A curated color-or-animal stem plus a three-digit
+  suffix provides a bounded 49,500-value local space. `RegisterForm` owns
+  attempt-local suggestions and the explicit `Next` orchestration;
+  `useSlugAvailability` owns one in-flight check and stale-result invalidation.
+  The existing availability API is only a
+  preflight read; `register` and the unique `User.slug` constraint remain the
+  authority. No generator API, registry, reservation, or persistence was added.
 
 - `APPROVED` SellerProfile is the seller capability; `assertApprovedSeller` is the shared write gate for Product, Listing, image and seller writes, while `AdminModerationService` records append-only audit events for moderation transitions;
 - `User.slug` is the only canonical nickname and the public `/authors/:slug` address. `seller_profiles.slug` stays as a copied column. Migration `20261008040000_add_user_slug` requires this order: exclude writes from the old API, wait until writes it already accepted have finished, apply the migration, start this build, compare nicknames, and only then open access. The local gate is `RELEASE_HOLD=closed` in `deploy/cloudflare/src/router.ts`, which returns 503 before cache or `PortfolioApi`. `/_release/stop` and `/_release/state` are listed in `assets.run_worker_first`. An authorized `POST /_release/stop` confirms `getState()` after `stop('SIGTERM')`. Opening reads the published container image from Wrangler; a Worker var does not prove that image. Migration also refuses while another session can still commit. This gate is not deployed; production still serves the previous Worker. Drop the column only in a later migration, after this application is the only writer, every still-null account slug has been copied, every profile slug equals the account slug, and no live query reads the profile column. Profile creation copies the already stored account slug in the same transaction. Publication and moderation do not copy a revision snapshot onto `users.slug` or `seller_profiles.slug`. While the old column exists, a public read uses `users.slug` and falls back to the profile column only when the account slug is still null. Visibility still requires `seller_profiles.status = APPROVED` and `users.status = active`.

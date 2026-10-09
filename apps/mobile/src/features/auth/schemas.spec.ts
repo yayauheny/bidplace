@@ -1,9 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
-import { registerRequestSchema } from '@bidplace/contracts';
+import { newAccountSlugSchema, registerRequestSchema } from '@bidplace/contracts';
 
 import { registerSubmission } from './auth-dismissal';
 import { loginFormSchema, registerFormSchema, resetPasswordFormSchema } from './schemas';
+import {
+  nicknameSuggestionGenerator,
+  nicknameSuggestionSpaceSize,
+} from './unique-names-generator-adapter';
 
 describe('login form validation', () => {
   it('uses Russian validation copy for an invalid email', () => {
@@ -26,6 +30,30 @@ describe('login form validation', () => {
 });
 
 describe('registration form validation', () => {
+  it('generates and refreshes exactly three distinct valid neutral nicknames', () => {
+    const initial = nicknameSuggestionGenerator.generate();
+    const refreshed = nicknameSuggestionGenerator.generate(initial);
+
+    for (const suggestions of [initial, refreshed]) {
+      expect(suggestions).toHaveLength(3);
+      expect(new Set(suggestions).size).toBe(3);
+      expect(
+        suggestions.every((suggestion) =>
+          newAccountSlugSchema.safeParse(suggestion).success,
+        ),
+      ).toBe(true);
+      expect(
+        suggestions.every((suggestion) =>
+          /^[a-z]+\d{3}$/.test(suggestion),
+        ),
+      ).toBe(true);
+    }
+    expect(refreshed.every((suggestion) => !initial.includes(suggestion))).toBe(
+      true,
+    );
+    expect(nicknameSuggestionSpaceSize).toBe(49_500);
+  });
+
   it.each([2, 3, 20, 21])('uses the shared new-nickname limit for %i characters', (length) => {
     const values = {
       email: 'author@example.com',

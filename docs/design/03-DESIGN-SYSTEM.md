@@ -35,6 +35,22 @@ actions use `authPrimary` (`#121212`, Inter 500). The resend action uses
 unchanged. Mixed legal text, the Google glyph and recovery/desktop frames are
 still unresolved; those screens are derived, not 1:1.
 
+The fullscreen nickname frame `4547:23927` uses `authSuggestion` chips:
+37px high, hug width, 8px vertical / 13px horizontal padding, radius 80,
+white fill, and the exported light gradient stroke. Labels use
+`typography.authSuggestion` (Inter 15/20/500, −2%); the centered
+«Предложения:» label uses `authSuggestionLabel` (13px Medium, grey). The row
+wraps and remains keyboard-focusable. The frame's green and red sample labels
+are alternative states. Runtime reserves one 46px status area and renders zero
+or one real state, never both; the neutral initial state makes no availability
+claim. These roles are shared variants/tokens, not route-local values.
+The nickname field reuses `FigmaIcon` `at-sign` for
+`I4547:24184;303:8697`: 22×22 slot (2px padding), 18×18 glyph,
+`stroke.icon` 1.13 and semantic `color.fieldIcon` `#858585`. Its input starts
+at source local x=38.5. At browser DPR 1 the 0.5 shell stroke snaps to 1px, so
+the measured input edge is x=39; slot and glyph dimensions remain exact. The
+prior text `@` prefix is not the source icon.
+
 ```text
 protected Pen masters
         ↓ visual extraction

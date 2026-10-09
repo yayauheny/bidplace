@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
 import { View, type ViewStyle } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
-import type { User } from '@bidplace/contracts';
+import { newAccountSlugSchema, type User } from '@bidplace/contracts';
 import { AppDialog, AppText, PrimaryButton, TextButton, TextField } from '../../components/ui';
 import { FigmaButton } from '../../components/figma/FigmaButton';
 import { MotionPressable } from '../../components/ui/MotionPressable';
@@ -23,8 +23,13 @@ import { AuthTelegramIcon } from './auth-telegram-icon';
 import { useAnalytics } from '../../providers/analytics-provider';
 import { useApiClient } from '../../providers/api-provider';
 import { registerSessionChangeIsOwn, useAuth } from '../../providers/auth-provider';
-import { useSlugAvailability } from './use-slug-availability';
+import {
+  useSlugAvailability,
+  visibleSlugAvailability,
+} from './use-slug-availability';
 import { ApiClientError } from '@bidplace/api-client';
+import type { NicknameSuggestions } from './nickname-suggestion-generator';
+import { nicknameSuggestionGenerator } from './unique-names-generator-adapter';
 
 import {
   applyFormFailure,
@@ -312,6 +317,66 @@ const registrationCopy: Record<RegistrationStep, { title: string; caption: strin
   },
 };
 
+function nicknameAvailabilityError(error: unknown) {
+  if (error instanceof ApiClientError && error.kind === 'rate_limited') {
+    return 'Слишком много проверок. Подождите и попробуйте снова.';
+  }
+  if (
+    error instanceof ApiClientError &&
+    (error.kind === 'network' ||
+      error.kind === 'server' ||
+      error.kind === 'unexpected_response')
+  ) {
+    return 'Не удалось проверить никнейм. Проверьте соединение и повторите.';
+  }
+  return 'Не удалось проверить никнейм. Попробуйте ещё раз.';
+}
+
+function NicknameSuggestionList({
+  suggestions,
+  onSelect,
+}: {
+  suggestions: NicknameSuggestions;
+  onSelect: (suggestion: string) => void;
+}) {
+  return (
+    <View
+      nativeID="nickname-suggestions"
+      style={{ gap: designTokens.space.x2, width: '100%' }}
+    >
+      <AppText
+        role="metadata"
+        style={{
+          color: designTokens.color.fieldLabel,
+          textAlign: 'center',
+          ...designTokens.typography.authSuggestionLabel,
+        }}
+      >
+        Предложения:
+      </AppText>
+      <View
+        style={{
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          justifyContent: 'center',
+          gap: designTokens.space.x1,
+        }}
+      >
+        {suggestions.map((suggestion) => (
+          <FigmaButton
+            key={suggestion}
+            label={suggestion}
+            accessibilityHint="Заполнить поле никнейма"
+            variant="authSuggestion"
+            size="authSuggestion"
+            onPress={() => onSelect(suggestion)}
+          />
+        ))}
+      </View>
+    </View>
+  );
+}
+
 export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
   const auth = useAuth();
   const api = useApiClient();
@@ -327,6 +392,8 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
   const rulesRequest = useRef(0);
   const rulesPending = useRef(false);
   const sessionOperation = useRef(0);
+  const nicknameAdvancePending = useRef(false);
+  const nicknameAdvanceOperation = useRef(0);
   const seenAuthEpoch = useRef(authEpoch);
   const mounted = useRef(true);
   const completed = useRef(false);
@@ -338,6 +405,9 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
   const [rulesText, setRulesText] = useState<string | null>(null);
   const [rulesOpen, setRulesOpen] = useState(false);
   const [policyOpen, setPolicyOpen] = useState(false);
+  const [suggestions, setSuggestions] = useState<NicknameSuggestions>(() =>
+    nicknameSuggestionGenerator.generate(),
+  );
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerFormSchema),
     defaultValues: {
@@ -350,7 +420,15 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
     },
   });
   const watched = form.watch();
-  const slugStatus = useSlugAvailability(step === 'nickname' ? watched.slug : '');
+  const {
+    check: checkSlugAvailability,
+    invalidate: invalidateSlugAvailability,
+    result: slugAvailabilityResult,
+  } = useSlugAvailability();
+  const slugAvailability = visibleSlugAvailability(
+    watched.slug,
+    slugAvailabilityResult,
+  );
   const complete = useAuthSheetComplete();
   const sessionUser = () =>
     queryClient.getQueryData<User | null>(authKeys.session) ?? null;
@@ -401,6 +479,9 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
     const markBlurred = () => {
       focusedRef.current = false;
       sessionOperation.current += 1;
+      nicknameAdvanceOperation.current += 1;
+      nicknameAdvancePending.current = false;
+      invalidateSlugAvailability();
     };
     const markFocused = () => {
       focusedRef.current = true;
@@ -411,20 +492,26 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
       unblur();
       unfocus();
     };
-  }, [navigation]);
+  }, [invalidateSlugAvailability, navigation]);
   useEffect(() => {
     if (wasFocused.current && !focused) {
       focusedRef.current = false;
       sessionOperation.current += 1;
+      nicknameAdvanceOperation.current += 1;
+      nicknameAdvancePending.current = false;
+      invalidateSlugAvailability();
     }
     if (focused) focusedRef.current = true;
     wasFocused.current = focused;
-  }, [focused]);
+  }, [focused, invalidateSlugAvailability]);
   useEffect(() => {
     if (seenAuthEpoch.current === authEpoch) return;
     seenAuthEpoch.current = authEpoch;
     if (registerSessionChangeIsOwn(queryClient, authEpoch)) return;
     sessionOperation.current += 1;
+    nicknameAdvanceOperation.current += 1;
+    nicknameAdvancePending.current = false;
+    invalidateSlugAvailability();
     rulesVersion.current = null;
     if (!mounted.current) return;
     setRulesText(null);
@@ -437,7 +524,7 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
       form.setValue('rulesAccepted', false);
       setSubmitError('Сессия изменилась. Согласие не перенесено.');
     }
-  }, [authEpoch, form, queryClient]);
+  }, [authEpoch, form, invalidateSlugAvailability, queryClient]);
 
   useEffect(() => {
     if (trackedRegistrationStart.current) {
@@ -573,7 +660,12 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
         return;
       }
       applyFormFailure(form, failure, ['email', 'slug', 'password', 'phone']);
-      if (failure.fields.slug) setStep('nickname');
+      if (failure.fields.slug) {
+        nicknameAdvanceOperation.current += 1;
+        nicknameAdvancePending.current = false;
+        invalidateSlugAvailability();
+        setStep('nickname');
+      }
       if (failure.fields.email) setStep('email');
       setSubmitError(failure.formMessage);
     }
@@ -606,7 +698,48 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
       return;
     }
     if (step === 'nickname') {
-      if (await form.trigger('slug')) setStep('password');
+      if (nicknameAdvancePending.current) return;
+      const advanceOperation = nicknameAdvanceOperation.current + 1;
+      nicknameAdvanceOperation.current = advanceOperation;
+      nicknameAdvancePending.current = true;
+      try {
+        const slugOk = await form.trigger('slug');
+        if (nicknameAdvanceOperation.current !== advanceOperation) return;
+        if (!slugOk) {
+          invalidateSlugAvailability();
+          return;
+        }
+        const parsed = newAccountSlugSchema.safeParse(form.getValues('slug'));
+        if (!parsed.success) return;
+        const requested = parsed.data;
+        const routeOperation = sessionOperation.current;
+        const epoch = currentAuthEpoch(queryClient);
+        if (!anonymousOwns(routeOperation, epoch)) return;
+        const availability = await checkSlugAvailability(requested);
+        if (
+          nicknameAdvanceOperation.current !== advanceOperation ||
+          !availability ||
+          !anonymousOwns(routeOperation, epoch)
+        )
+          return;
+        const current = newAccountSlugSchema.safeParse(form.getValues('slug'));
+        if (!current.success || current.data !== requested) return;
+        if (availability.status === 'available') {
+          form.clearErrors('slug');
+          setStep('password');
+          return;
+        }
+        if (availability.status === 'taken') {
+          form.clearErrors('slug');
+          setSuggestions((currentSuggestions) =>
+            nicknameSuggestionGenerator.generate(currentSuggestions),
+          );
+        }
+      } finally {
+        if (nicknameAdvanceOperation.current === advanceOperation) {
+          nicknameAdvancePending.current = false;
+        }
+      }
       return;
     }
     await submit();
@@ -634,6 +767,49 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
       </View>
     );
   const copy = registrationCopy[step];
+  const nicknameStatus =
+    step === 'nickname' && slugAvailability
+      ? slugAvailability.status === 'checking'
+        ? {
+            color: designTokens.color.textSubdued,
+            text: 'Проверяем никнейм…',
+          }
+        : slugAvailability.status === 'available'
+          ? {
+              color: designTokens.auth.available,
+              text: `@${slugAvailability.slug} доступен`,
+            }
+          : slugAvailability.status === 'taken'
+            ? {
+                color: designTokens.auth.taken,
+                text: `@${slugAvailability.slug} недоступен`,
+              }
+            : {
+                color: designTokens.auth.taken,
+                text: nicknameAvailabilityError(slugAvailability.error),
+              }
+      : null;
+  const nextAction = (
+    <PrimaryButton
+      label="Дальше"
+      size="auth"
+      width="full"
+      loading={
+        form.formState.isSubmitting ||
+        slugAvailability?.status === 'checking'
+      }
+      onPress={() => void goNext()}
+    />
+  );
+  const submitFeedback = submitError ? (
+    <AppText
+      role="bodySmall"
+      tone="danger"
+      accessibilityLiveRegion="polite"
+    >
+      {submitError}
+    </AppText>
+  ) : null;
   return (
       <View style={{ gap: designTokens.auth.screenGap, width: '100%' }}>
         <View style={{ gap: designTokens.auth.titleGap }}>
@@ -643,20 +819,76 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
           <AppText role="bodySmall" style={{ textAlign: 'center', color: designTokens.color.textSubdued, ...designTokens.typography.authCaption, letterSpacing: 0 }}>
             {copy.caption}
           </AppText>
-          {step === 'nickname' && slugStatus && !form.formState.errors.slug ? (
-            <AppText
-              role="authStatus"
+          {step === 'nickname' ? (
+            <View
+              nativeID="nickname-status-slot"
               style={{
-                textAlign: 'center',
-                color: slugStatus === 'available'
-                  ? designTokens.auth.available
-                  : designTokens.auth.taken,
+                minHeight: 46,
+                width: '100%',
+                alignItems: 'center',
               }}
             >
-              {slugStatus === 'available' ? 'Никнейм свободен' : 'Никнейм занят'}
-            </AppText>
+              {nicknameStatus ? (
+                <AppText
+                  nativeID="nickname-availability-status"
+                  role="authStatus"
+                  accessibilityLiveRegion="polite"
+                  style={{
+                    color: nicknameStatus.color,
+                    textAlign: 'center',
+                  }}
+                >
+                  {nicknameStatus.text}
+                </AppText>
+              ) : null}
+            </View>
           ) : null}
         </View>
+        {step === 'nickname' ? (
+          <View style={{ gap: designTokens.space.x6, width: '100%' }}>
+            <View style={{ gap: designTokens.auth.formGap, width: '100%' }}>
+              <Controller
+                control={form.control}
+                name="slug"
+                render={({ field }) => (
+                  <TextField ref={field.ref}
+                    label="Никнейм"
+                    icon="at-sign"
+                    iconColor={designTokens.color.fieldIcon}
+                    value={field.value}
+                    onChangeText={(value) => {
+                      nicknameAdvanceOperation.current += 1;
+                      nicknameAdvancePending.current = false;
+                      invalidateSlugAvailability();
+                      field.onChange(value.replace(/^@+/, ''));
+                    }}
+                    onBlur={field.onBlur}
+                    placeholder="Никнейм"
+                    autoCapitalize="none"
+                    autoComplete="username"
+                    error={form.formState.errors.slug?.message}
+                  />
+                )}
+              />
+              {submitFeedback}
+              {nextAction}
+            </View>
+            <NicknameSuggestionList
+              suggestions={suggestions}
+              onSelect={(suggestion) => {
+                nicknameAdvanceOperation.current += 1;
+                nicknameAdvancePending.current = false;
+                invalidateSlugAvailability();
+                form.clearErrors('slug');
+                form.setValue('slug', suggestion, {
+                  shouldDirty: true,
+                  shouldTouch: true,
+                  shouldValidate: true,
+                });
+              }}
+            />
+          </View>
+        ) : (
         <View style={{ gap: designTokens.auth.formGap, width: '100%' }}>
         {step === 'email' ? (
           <Controller
@@ -672,25 +904,6 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
                 autoComplete="email"
                 keyboardType="email-address"
                 error={form.formState.errors.email?.message}
-              />
-            )}
-          />
-        ) : null}
-        {step === 'nickname' ? (
-          <Controller
-            control={form.control}
-            name="slug"
-            render={({ field }) => (
-              <TextField ref={field.ref}
-                label="Никнейм"
-                prefix="@"
-                value={field.value}
-                onChangeText={(value) => field.onChange(value.replace(/^@+/, ''))}
-                onBlur={field.onBlur}
-                placeholder="Никнейм"
-                autoCapitalize="none"
-                autoComplete="username"
-                error={form.formState.errors.slug?.message}
               />
             )}
           />
@@ -729,22 +942,8 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
             />
           </>
         ) : null}
-        {submitError ? (
-          <AppText
-            role="bodySmall"
-            tone="danger"
-            accessibilityLiveRegion="polite"
-          >
-            {submitError}
-          </AppText>
-        ) : null}
-        <PrimaryButton
-          label="Дальше"
-          size="auth"
-          width="full"
-          loading={form.formState.isSubmitting}
-          onPress={() => void goNext()}
-        />
+        {submitFeedback}
+        {nextAction}
         {step === 'email' ? (
           <Controller
             control={form.control}
@@ -802,6 +1001,7 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
           />
         ) : null}
         </View>
+        )}
       </View>
   );
 }

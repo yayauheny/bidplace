@@ -1,5 +1,33 @@
 # bidplace — текущий статус проекта
 
+## 2026-10-09 — Local nickname suggestions and explicit availability
+
+- `Partial`. Registration generates exactly three distinct contract-valid
+  nickname suggestions locally through `NicknameSuggestionGenerator` and the
+  `unique-names-generator` adapter. Curated bundled color/animal dictionaries
+  supply compact stems; a three-digit suffix provides 49,500 possible readable
+  values. There is no remote generator, reservation, endpoint, or persistence
+  change. Chips only fill the field and make no availability claim.
+- Typing performs local 3–20 validation only. Nickname `Next` issues one
+  existing availability request, rejects rapid duplicate submits, and advances
+  only on an available response. Taken responses refresh all three suggestions;
+  retryable failures preserve input; stale value, route, session, and unmount
+  replies are ignored. Registration remains the unique final authority, and
+  `slug_taken` returns to nickname while retaining the other fields.
+- Node 22 verification passed the design-token build, affected mobile
+  typecheck and lint, five focused owner specs (47/47), and
+  `EXPO_NO_DOTENV=1` web export. Earlier Node 26 evidence covered the broader
+  mobile suite (637/637), contracts (39/39), and API client (31/31).
+- The existing nickname browser scenario passed in Chromium and WebKit (2/2)
+  through a temporary config outside the repository, with no web server or
+  database setup. Synthetic coverage includes a completed available response
+  ignored after editing, 1.5× nickname-chip zoom, five viewport sizes, and
+  resize without horizontal overflow or page errors.
+- Native runtime and real local availability remain unverified. The latter is
+  blocked by the pre-existing missing `users.slug` (`P2022`); no migration or
+  fallback was added. The reported 14MB artifact is the whole app web bundle,
+  not a measured `unique-names-generator` bundle delta.
+
 ## 2026-10-09 — Decorative brand pointer selection
 
 - `Partial`. Shared `BidplaceBrand` mark and wordmark stay decorative on web

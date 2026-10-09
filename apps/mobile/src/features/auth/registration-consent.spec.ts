@@ -4,11 +4,12 @@
 import { act, createElement, type ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { flush } from '../../testing/dom';
 import { authKeys, replaceAuthenticatedSession } from '../../lib/query-cache';
-import type { User } from '@bidplace/contracts';
+import { ApiErrorCode, type User } from '@bidplace/contracts';
+import { ApiClientError } from '@bidplace/api-client';
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
@@ -21,6 +22,8 @@ const harness = vi.hoisted(() => ({
   emitBlur: () => undefined as void,
   rulesReads: 0,
   registers: 0,
+  registerError: null as unknown,
+  slugAvailability: vi.fn<(slug: string) => Promise<{ available: boolean }>>(),
   accepts: [] as Array<{ version: string; userId: string | null }>,
   replace: vi.fn(),
   identify: vi.fn(),
@@ -88,7 +91,24 @@ vi.mock('expo-linear-gradient', () => ({
 }));
 
 vi.mock('../../components/figma/FigmaButton', () => ({
-  FigmaButton: () => null,
+  FigmaButton: ({
+    label,
+    onPress,
+    accessibilityHint,
+  }: {
+    label: string;
+    onPress?: () => void;
+    accessibilityHint?: string;
+  }) =>
+    createElement(
+      'button',
+      {
+        type: 'button',
+        title: accessibilityHint,
+        onClick: () => onPress?.(),
+      },
+      label,
+    ),
 }));
 
 vi.mock('expo-router', () => ({
@@ -123,6 +143,7 @@ vi.mock('../../providers/api-provider', () => ({
       },
       register: (input: { email: string; slug: string }) => {
         harness.registers += 1;
+        if (harness.registerError) return Promise.reject(harness.registerError);
         const user = account('user-a', input.email, input.slug);
         if (harness.blurDuringRegister) {
           harness.focused = false;
@@ -135,6 +156,7 @@ vi.mock('../../providers/api-provider', () => ({
         }
         return Promise.resolve({ user });
       },
+      slugAvailability: harness.slugAvailability,
       getRules: async () => {
         harness.rulesReads += 1;
         if (harness.failRulesOnce && harness.rulesReads === 1) {
@@ -161,10 +183,6 @@ vi.mock('../../providers/api-provider', () => ({
       },
     },
   }),
-}));
-
-vi.mock('./use-slug-availability', () => ({
-  useSlugAvailability: () => null,
 }));
 
 vi.mock('./auth-password-field', () => ({
@@ -213,16 +231,23 @@ vi.mock('../../components/ui', () => ({
     label,
     value,
     onChangeText,
+    error,
   }: {
     label: string;
     value?: string;
     onChangeText?: (value: string) => void;
+    error?: string;
   }) =>
-    createElement('input', {
-      'aria-label': label,
-      value: value ?? '',
-      onChange: (event: { target: { value: string } }) => onChangeText?.(event.target.value),
-    }),
+    createElement(
+      'div',
+      null,
+      createElement('input', {
+        'aria-label': label,
+        value: value ?? '',
+        onChange: (event: { target: { value: string } }) => onChangeText?.(event.target.value),
+      }),
+      error ? createElement('span', null, error) : null,
+    ),
 }));
 
 import { AuthProvider } from '../../providers/auth-provider';
@@ -314,15 +339,24 @@ function clickLegalLink(container: ParentNode, label: string) {
   });
 }
 
-async function until(container: ParentNode, marker: string) {
+async function until(
+  container: ParentNode,
+  marker: string | (() => boolean),
+  description = typeof marker === 'string' ? marker : 'condition',
+) {
   for (let attempt = 0; attempt < 20; attempt += 1) {
-    if (container.textContent?.includes(marker)) return;
+    if (
+      typeof marker === 'string'
+        ? container.textContent?.includes(marker)
+        : marker()
+    )
+      return;
     await flush();
   }
-  throw new Error(`Timed out waiting for ${marker}. Body: ${container.textContent}`);
+  throw new Error(`Timed out waiting for ${description}. Body: ${container.textContent}`);
 }
 
-async function reachPassword(container: HTMLElement) {
+async function reachNickname(container: HTMLElement) {
   await until(container, 'Введите вашу почту');
   fill(container, 'Электронная почта', 'a@example.com');
   clickConsent(container);
@@ -331,12 +365,27 @@ async function reachPassword(container: HTMLElement) {
   }
   clickButton(container, 'Дальше');
   await until(container, 'Выберите имя пользователя');
+}
+
+async function reachPassword(container: HTMLElement) {
+  await reachNickname(container);
+  const suggestions = [
+    ...container.querySelectorAll(
+      'button[title="Заполнить поле никнейма"]',
+    ),
+  ].map((button) => button.textContent);
   fill(container, 'Никнейм', 'author-a');
   clickButton(container, 'Дальше');
   await until(container, 'Создайте пароль');
   fill(container, 'Введите пароль', 'registration-password-123');
   fill(container, 'Подтвердите пароль', 'registration-password-123');
+  return suggestions;
 }
+
+beforeEach(() => {
+  harness.slugAvailability.mockReset();
+  harness.slugAvailability.mockResolvedValue({ available: true });
+});
 
 afterEach(() => {
   document.body.replaceChildren();
@@ -347,6 +396,8 @@ afterEach(() => {
   harness.releaseRegister = null;
   harness.rulesReads = 0;
   harness.registers = 0;
+  harness.registerError = null;
+  harness.slugAvailability.mockReset();
   harness.accepts = [];
   harness.replace.mockReset();
   harness.identify.mockReset();
@@ -354,6 +405,220 @@ afterEach(() => {
 });
 
 describe('registration consent attempt', () => {
+  it('checks only on Next, blocks duplicate requests, and advances on available', async () => {
+    let resolveAvailability: (value: { available: boolean }) => void = () =>
+      undefined;
+    harness.slugAvailability.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveAvailability = resolve;
+        }),
+    );
+    const view = mount();
+    await reachNickname(view.container);
+    expect(harness.slugAvailability).not.toHaveBeenCalled();
+
+    fill(view.container, 'Никнейм', 'typed-author');
+    await flush();
+    expect(harness.slugAvailability).not.toHaveBeenCalled();
+
+    const suggestion = view.container.querySelector(
+      'button[title="Заполнить поле никнейма"]',
+    );
+    expect(suggestion?.textContent).toBeTruthy();
+    act(() => {
+      if (suggestion instanceof HTMLElement) suggestion.click();
+    });
+    await flush();
+    expect(harness.slugAvailability).not.toHaveBeenCalled();
+
+    fill(view.container, 'Никнейм', 'typed-author');
+    clickButton(view.container, 'Дальше');
+    clickButton(view.container, 'Дальше');
+    await until(
+      view.container,
+      () => harness.slugAvailability.mock.calls.length === 1,
+      'one availability request',
+    );
+    expect(view.container.textContent).toContain('Проверяем никнейм…');
+    await act(async () => {
+      resolveAvailability({ available: true });
+    });
+    await until(view.container, 'Создайте пароль');
+    expect(harness.slugAvailability).toHaveBeenCalledTimes(1);
+    view.unmount();
+  });
+
+  it('stays on a taken nickname and refreshes three valid distinct suggestions', async () => {
+    harness.slugAvailability.mockResolvedValueOnce({ available: false });
+    const view = mount();
+    await reachNickname(view.container);
+    const initial = [
+      ...view.container.querySelectorAll(
+        'button[title="Заполнить поле никнейма"]',
+      ),
+    ].map((button) => button.textContent);
+    expect(initial).toHaveLength(3);
+    fill(view.container, 'Никнейм', 'taken-author');
+    clickButton(view.container, 'Дальше');
+    await until(view.container, '@taken-author недоступен');
+
+    const refreshed = [
+      ...view.container.querySelectorAll(
+        'button[title="Заполнить поле никнейма"]',
+      ),
+    ].map((button) => button.textContent);
+    expect(refreshed).toHaveLength(3);
+    expect(new Set(refreshed).size).toBe(3);
+    expect(refreshed.every((suggestion) => !initial.includes(suggestion))).toBe(
+      true,
+    );
+    expect(
+      (
+        view.container.querySelector(
+          '[aria-label="Никнейм"]',
+        ) as HTMLInputElement
+      ).value,
+    ).toBe('taken-author');
+    view.unmount();
+  });
+
+  it('preserves the nickname on a retryable availability error', async () => {
+    harness.slugAvailability
+      .mockRejectedValueOnce(
+        new ApiClientError('network', { kind: 'network', status: 0 }),
+      )
+      .mockResolvedValueOnce({ available: true });
+    const view = mount();
+    await reachNickname(view.container);
+    fill(view.container, 'Никнейм', 'retry-author');
+    clickButton(view.container, 'Дальше');
+    await until(
+      view.container,
+      'Не удалось проверить никнейм. Проверьте соединение и повторите.',
+    );
+    expect(
+      (
+        view.container.querySelector(
+          '[aria-label="Никнейм"]',
+        ) as HTMLInputElement
+      ).value,
+    ).toBe('retry-author');
+    clickButton(view.container, 'Дальше');
+    await until(view.container, 'Создайте пароль');
+    expect(harness.slugAvailability).toHaveBeenCalledTimes(2);
+    view.unmount();
+  });
+
+  it('ignores an availability reply after the session changes', async () => {
+    let resolveAvailability: (value: { available: boolean }) => void = () =>
+      undefined;
+    harness.slugAvailability.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveAvailability = resolve;
+        }),
+    );
+    const view = mount();
+    await reachNickname(view.container);
+    fill(view.container, 'Никнейм', 'session-author');
+    clickButton(view.container, 'Дальше');
+    await until(
+      view.container,
+      () => harness.slugAvailability.mock.calls.length === 1,
+      'availability request',
+    );
+    await act(async () => {
+      await replaceAuthenticatedSession(
+        view.client,
+        account('user-b', 'b@example.com', 'author-b'),
+      );
+    });
+    await act(async () => {
+      resolveAvailability({ available: true });
+    });
+    await flush();
+    expect(view.container.textContent).not.toContain('Создайте пароль');
+    expect(view.container.textContent).not.toContain(
+      '@session-author доступен',
+    );
+    view.unmount();
+  });
+
+  it('ignores an availability reply after the route blurs', async () => {
+    let resolveAvailability: (value: { available: boolean }) => void = () =>
+      undefined;
+    harness.slugAvailability.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveAvailability = resolve;
+        }),
+    );
+    const view = mount();
+    await reachNickname(view.container);
+    fill(view.container, 'Никнейм', 'blurred-author');
+    clickButton(view.container, 'Дальше');
+    await until(
+      view.container,
+      () => harness.slugAvailability.mock.calls.length === 1,
+      'availability request',
+    );
+    act(() => {
+      harness.emitBlur();
+    });
+    await act(async () => {
+      resolveAvailability({ available: true });
+    });
+    await flush();
+    expect(view.container.textContent).not.toContain('Создайте пароль');
+    expect(view.container.textContent).not.toContain(
+      '@blurred-author доступен',
+    );
+    view.unmount();
+  });
+
+  it('returns a final slug conflict to nickname with password values preserved', async () => {
+    harness.registerError = new ApiClientError('taken', {
+      kind: 'conflict',
+      status: 409,
+      code: ApiErrorCode.CONFLICT,
+      details: { reason: 'slug_taken' },
+    });
+    const view = mount();
+    const initialSuggestions = await reachPassword(view.container);
+    clickButton(view.container, 'Дальше');
+    await until(view.container, 'Этот никнейм уже занят. Выберите другой.');
+    expect(harness.registers).toBe(1);
+    expect(harness.accepts).toHaveLength(0);
+    expect(
+      [
+        ...view.container.querySelectorAll(
+          'button[title="Заполнить поле никнейма"]',
+        ),
+      ].map((button) => button.textContent),
+    ).toEqual(initialSuggestions);
+
+    fill(view.container, 'Никнейм', 'replacement-author');
+    clickButton(view.container, 'Дальше');
+    await until(view.container, 'Создайте пароль');
+    expect(
+      (
+        view.container.querySelector(
+          '[aria-label="Введите пароль"]',
+        ) as HTMLInputElement
+      ).value,
+    ).toBe('registration-password-123');
+    expect(
+      (
+        view.container.querySelector(
+          '[aria-label="Подтвердите пароль"]',
+        ) as HTMLInputElement
+      ).value,
+    ).toBe('registration-password-123');
+    expect(harness.registers).toBe(1);
+    view.unmount();
+  });
+
   it('reloads rules without toggling the checkbox', async () => {
     harness.failRulesOnce = true;
     const view = mount();
