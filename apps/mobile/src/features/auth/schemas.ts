@@ -1,4 +1,4 @@
-import { accountSlugSchema, passwordSchema } from '@bidplace/contracts';
+import { newAccountSlugSchema, passwordSchema } from '@bidplace/contracts';
 import { z } from 'zod';
 
 const emailField = z
@@ -18,7 +18,7 @@ export const registerFormSchema = z
     password: passwordSchema,
     confirmPassword: z.string({ required_error: 'Подтвердите пароль' }).min(1, 'Подтвердите пароль'),
     phone: z.string().trim().transform((value) => value || null).nullable().optional(),
-    slug: accountSlugSchema,
+    slug: newAccountSlugSchema,
     rulesAccepted: z.boolean(),
   })
   .strict()

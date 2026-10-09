@@ -4,15 +4,25 @@ import { resolve } from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
 
 import { e2eEvidenceDir } from './support/evidence-dir';
+import { expectPasswordVisibility } from './support/fill-control';
 
 const artifactDir = resolve(e2eEvidenceDir, 'stabilization');
 const removedIntro = 'Искусство встречает своего следующего владельца.';
 
 test('dirty login asks before closing and providers stay unavailable', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  page.on('console', (message) => {
+    if (message.type() === 'error' && /does not recognize/.test(message.text())) errors.push(message.text());
+  });
   await page.setViewportSize({ width: 390, height: 874 });
   await page.goto('/login');
   const email = page.getByLabel('Электронная почта');
   await email.fill('a');
+  const password = page.getByLabel('Пароль', { exact: true });
+  await password.fill('visual-password-123');
+  await expectPasswordVisibility(password);
+  await expect(page.locator('#auth-exit-confirm')).toHaveCount(0);
   await page.getByRole('button', { name: 'Закрыть', exact: true }).click();
   await expect(page.getByText('Прервать вход', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Продолжить', exact: true }).click();
@@ -27,7 +37,84 @@ test('dirty login asks before closing and providers stay unavailable', async ({ 
   const panelBox = await panel.boundingBox();
   expect(panelBox).not.toBeNull();
   expect(panelBox!.width).toBeCloseTo(366, 0);
+  expect(panelBox!.x).toBeCloseTo((390 - panelBox!.width) / 2, 0);
+  await page.getByRole('button', { name: 'Продолжить', exact: true }).click();
+
+  await mkdir(artifactDir, { recursive: true });
+  for (const viewport of [
+    { width: 1280, height: 720 },
+    { width: 1024, height: 768 },
+    { width: 1440, height: 900 },
+    { width: 375, height: 667 },
+    { width: 440, height: 956 },
+    { width: 390, height: 400 },
+    { width: 390, height: 874 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await page.getByRole('button', { name: 'Закрыть', exact: true }).click();
+    await expectCenteredSurface(page, '#auth-exit-confirm');
+    await page.screenshot({ path: resolve(artifactDir, `${engine(page)}-auth-exit-${viewport.width}x${viewport.height}.png`) });
+    await page.getByRole('button', { name: 'Продолжить', exact: true }).click();
+    await page.getByRole('link', { name: 'политику конфиденциальности', exact: true }).click();
+    await expectCenteredSurface(page, '#app-dialog-content');
+    const policy = page.getByText('Политика конфиденциальности', { exact: true });
+    const content = page.locator('#app-dialog-content');
+    const titleBox = await policy.boundingBox();
+    const contentBox = await content.boundingBox();
+    expect(titleBox).not.toBeNull();
+    expect(contentBox).not.toBeNull();
+    expect(titleBox!.x).toBeGreaterThanOrEqual(contentBox!.x);
+    expect(titleBox!.x + titleBox!.width).toBeLessThanOrEqual(contentBox!.x + contentBox!.width);
+    await expect(content).toHaveJSProperty('scrollLeft', 0);
+    expect(await content.evaluate((node) => node.scrollWidth <= node.clientWidth)).toBe(true);
+    await page.screenshot({ path: resolve(artifactDir, `${engine(page)}-auth-policy-${viewport.width}x${viewport.height}.png`) });
+    await page.keyboard.press('Escape');
+    await expect(policy).toHaveCount(0);
+    await expect(page.getByRole('link', { name: 'политику конфиденциальности', exact: true })).toBeFocused();
+    await expect(panel).toHaveCount(0);
+  }
+  await page.getByRole('link', { name: 'правила сервиса', exact: true }).click();
+  await expectCenteredSurface(page, '#app-dialog-content');
+  await expect(page.getByText('Правила сервиса', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Закрыть окно', exact: true }).click();
+  await expect(panel).toHaveCount(0);
+  await page.evaluate(() => { document.documentElement.style.zoom = '1.5'; });
+  await page.getByRole('link', { name: 'политику конфиденциальности', exact: true }).click();
+  expect(await page.locator('#app-dialog-content').evaluate((node) => node.scrollWidth <= node.clientWidth)).toBe(true);
+  await expect(page.getByRole('button', { name: 'Закрыть окно', exact: true })).toBeInViewport();
+  await page.getByRole('button', { name: 'Закрыть окно', exact: true }).click();
+  await page.evaluate(() => { document.documentElement.style.zoom = ''; });
+  await email.fill('login-layout@example.com');
+  for (const failure of [
+    { status: 401, code: 'unauthorized', message: 'Invalid credentials', copy: 'Неверная почта или пароль' },
+    { status: 429, code: 'rate_limited', message: 'Слишком много запросов. Попробуйте немного позже.', copy: 'Слишком много запросов. Попробуйте немного позже.' },
+    { status: 500, code: 'internal_error', message: 'Internal server error', copy: 'Проверьте соединение и попробуйте ещё раз.' },
+  ]) {
+    await page.route('**/api/auth/login', (route) => route.fulfill({
+      status: failure.status,
+      json: { status: failure.status, code: failure.code, message: failure.message },
+    }));
+    await page.getByRole('button', { name: 'Войти', exact: true }).click();
+    await expect(page.getByText(failure.copy, { exact: true }).last()).toBeVisible();
+    if (failure.status !== 401) {
+      await expect(page.getByText('Неверная почта или пароль', { exact: true })).toHaveCount(0);
+    }
+    await page.unroute('**/api/auth/login');
+  }
+  expect(errors).toEqual([]);
 });
+
+async function expectCenteredSurface(page: Page, selector: string) {
+  const surface = page.locator(selector);
+  await expect(surface).toBeVisible();
+  const viewport = page.viewportSize();
+  expect(viewport).not.toBeNull();
+  await expect.poll(async () => {
+    const box = await surface.boundingBox();
+    return box !== null && Math.abs(box.x - (viewport!.width - box.width) / 2) <= 1
+      && box.y >= 0 && box.y + box.height <= viewport!.height;
+  }).toBe(true);
+}
 
 test('browser back keeps a filled login until the user decides', async ({ page }) => {
   await expectAuthBrowserHistory(page, true);
@@ -401,6 +488,47 @@ test('auth composition is stacked in the S4 phone column', async ({ page }) => {
   await page.screenshot({
     path: resolve(artifactDir, `${engine(page)}-register-390.png`),
   });
+
+  await page.route('**/api/auth/rules', (route) => route.fulfill({
+    json: { rules: { version: 'layout-test', owner: 'Synthetic', contact: 'test@example.com', text: 'Synthetic layout fixture' } },
+  }));
+  let availabilityRequests = 0;
+  await page.route('**/api/auth/slug-availability?*', (route) => {
+    availabilityRequests += 1;
+    return route.fulfill({ json: { available: true } });
+  });
+  await page.getByLabel('Электронная почта').fill('layout-only@example.com');
+  await page.getByRole('checkbox', { name: /соглашаюсь/ }).check();
+  await page.getByRole('button', { name: 'Дальше', exact: true }).click();
+  const nickname = page.getByLabel('Никнейм', { exact: true });
+  for (const slug of ['ab', 'a'.repeat(21)]) {
+    await nickname.fill(slug);
+    await page.getByRole('button', { name: 'Дальше', exact: true }).click();
+    await expect(page.getByText('Никнейм должен содержать от 3 до 20 символов', { exact: true })).toBeVisible();
+    await expect(nickname).toBeVisible();
+  }
+  expect(availabilityRequests).toBe(0);
+  await nickname.fill('a'.repeat(20));
+  await page.getByRole('button', { name: 'Дальше', exact: true }).click();
+  const password = page.getByLabel('Введите пароль', { exact: true });
+  const confirmation = page.getByLabel('Подтвердите пароль', { exact: true });
+  await password.fill('layout-password-123');
+  await confirmation.fill('layout-password-123');
+  await expectPasswordVisibility(password);
+  await expectPasswordVisibility(confirmation);
+  await expect(page.locator('#auth-exit-confirm')).toHaveCount(0);
+  await page.setViewportSize({ width: 390, height: 400 });
+  await page.screenshot({ path: resolve(artifactDir, `${engine(page)}-register-password-390x400.png`) });
+
+  await page.goto('/reset-password?token=layout-only-synthetic');
+  const resetPassword = page.getByRole('textbox', { name: 'Новый пароль', exact: true });
+  const resetConfirmation = page.getByLabel('Подтверждение пароля', { exact: true });
+  await resetPassword.fill('layout-password-123');
+  await resetConfirmation.fill('layout-password-123');
+  await expectPasswordVisibility(resetPassword);
+  await expectPasswordVisibility(resetConfirmation);
+  await expect(page.locator('#auth-exit-confirm')).toHaveCount(0);
+  await page.screenshot({ path: resolve(artifactDir, `${engine(page)}-reset-password-390x400.png`) });
 });
 
 async function historyStep(page: Page, delta: number) {

@@ -1,4 +1,4 @@
-import { accountSlugSchema } from '@bidplace/contracts';
+import { newAccountSlugSchema } from '@bidplace/contracts';
 import { useEffect, useState } from 'react';
 
 import { useApiClient } from '../../providers/api-provider';
@@ -14,7 +14,7 @@ export function visibleSlugAvailability(
   slug: string,
   result: SlugAvailabilityResult | null,
 ): SlugAvailabilityStatus | null {
-  const parsed = accountSlugSchema.safeParse(slug);
+  const parsed = newAccountSlugSchema.safeParse(slug);
   if (!parsed.success || result?.slug !== parsed.data) return null;
   return result.status;
 }
@@ -24,7 +24,7 @@ export function useSlugAvailability(slug: string) {
   const [result, setResult] = useState<SlugAvailabilityResult | null>(null);
 
   useEffect(() => {
-    const parsed = accountSlugSchema.safeParse(slug);
+    const parsed = newAccountSlugSchema.safeParse(slug);
     if (!parsed.success) return;
     const requested = parsed.data;
     let active = true;

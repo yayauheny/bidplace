@@ -1,5 +1,36 @@
 # bidplace — текущий статус проекта
 
+## 2026-10-09 — Auth runtime and new nickname validation
+
+- `Partial`. Shared `AuthPasswordField` restores focus and cursor with
+  supported web/native APIs. `AppDialogFrame` centers the actual limited
+  surface; `AppDialog` wraps its shared title next to the close control.
+  `BidplaceBrand` separates decorative web/native accessibility props.
+  Registration, claim-slug and availability reuse the contracts write schema
+  (3–20); stored `User.slug` reads remain 1–120 (`DEC-107`). Login 401 copy is
+  «Неверная почта или пароль»; network, 5xx, 429 and field errors remain separate.
+- Own checks: API unit 409/409, mobile unit 625/625, contracts 39/39,
+  api-client 31/31. Affected graph typecheck, lint without autofix, API build
+  and Expo web export passed. Three existing `auth-layout` scenarios passed
+  in Chromium/WebKit (6/6), including five password fields, cursor/focus/value,
+  real dialog surfaces, long titles, Escape/return focus, zoom, resize without
+  reload, 390×874 / 375×667 / 440×956 / 1280×720 / 390×400 (plus 1024/1440).
+  Layout-only registration uses synthetic rules/availability and never sends
+  `register`; 401/429/500 UI checks use synthetic HTTP responses. Existing
+  consent/session/single-register unit coverage stays intact. Native runtime
+  and the full database-backed `auth-lifecycle`/history gate are not verified.
+- Local API readiness is 200, but a synthetic unknown-email login returned
+  500. Read-only schema checks found no `users.slug` in `bidplace`,
+  `bidplace_e2e` or `bidplace_integration`; a slug-only lookup in the test DB
+  returns Prisma `P2022`, column `users.slug`. Both invalid credential branches
+  return the same 401 in `AuthService` unit tests; their real local HTTP gate
+  remains blocked by schema compatibility. No migration/reset was run.
+  Standard e2e preparation migrates/resets its DB, so it was not used.
+- Evidence and exact verification boundaries:
+  [`auth runtime audit`](../audits/current/evidence/2026-10-09-auth-runtime-validation/README.md).
+  Privacy policy stays a placeholder and OAuth stays unavailable. This does
+  not claim 1:1, launch readiness or a production schema update.
+
 ## 2026-10-09 — Single-line field height stays 51 when the border snaps
 
 - `Partial`. A single-line `FigmaTextField` now has a fixed outer height of

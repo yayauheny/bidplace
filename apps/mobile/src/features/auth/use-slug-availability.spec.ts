@@ -44,6 +44,7 @@ describe('visibleSlugAvailability', () => {
     );
     expect(visibleSlugAvailability('other', { slug: 'author', status: 'available' })).toBeNull();
     expect(visibleSlugAvailability('Author', { slug: 'author', status: 'taken' })).toBeNull();
+    expect(visibleSlugAvailability('ab', { slug: 'ab', status: 'available' })).toBeNull();
   });
 });
 
@@ -92,5 +93,20 @@ describe('useSlugAvailability', () => {
     expect(container.querySelector('span')?.textContent).toBe('none');
     expect(harness.slugAvailability).toHaveBeenNthCalledWith(1, 'author');
     expect(harness.slugAvailability).toHaveBeenNthCalledWith(2, 'other');
+  });
+
+  it.each(['ab', 'a'.repeat(21)])('does not request availability for invalid length %s', async (slug) => {
+    vi.useFakeTimers();
+    try {
+      const container = document.createElement('div');
+      document.body.append(container);
+      root = createRoot(container);
+      act(() => root?.render(createElement(Probe, { slug })));
+      await act(async () => { await vi.advanceTimersByTimeAsync(500); });
+      expect(harness.slugAvailability).not.toHaveBeenCalled();
+      expect(container.textContent).toBe('none');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

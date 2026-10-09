@@ -2537,3 +2537,18 @@ drafts or sample nickname suggestions.
 
 Only source preparation and read-only localhost review have run in this task.
 Runtime implementation, migration, push and production deployment have not run.
+
+## DEC-107 — New account nickname length, historical reads preserved
+
+Date: 2026-10-09
+Status: Confirmed.
+Source: founder requested a shared 3–20 character limit for a new nickname,
+without truncating or renaming historical nicknames or migrating the database.
+Revises the length constraint of DEC-105; ownership remains `User.slug`.
+
+`newAccountSlugSchema` owns the existing grammar and 3–20 character write
+constraint for registration, claim-slug and availability. Availability does
+not reserve a name. `accountSlugSchema` remains the 1–120 character read
+contract for stored users and claim responses. Existing account nicknames,
+author addresses, revision snapshots and the database column are unchanged.
+This decision does not authorize a migration, push or deployment.

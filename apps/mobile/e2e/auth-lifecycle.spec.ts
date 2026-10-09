@@ -7,6 +7,7 @@ test.use({ trace: 'off', screenshot: 'off' });
 
 import { e2eApiBaseURL } from './support/e2e-env';
 import { createBuyerFixture } from './support/e2e-fixtures';
+import { expectPasswordVisibility } from './support/fill-control';
 
 async function localTestMailValue(email: string, field: 'code' | 'token') {
   let value: string | undefined;
@@ -69,6 +70,9 @@ async function loginForm(
   );
   await page.getByRole('button', { name: 'Войти', exact: true }).click();
   expect((await response).status()).toBe(status);
+  if (status === 401) {
+    await expect(page.getByText('Неверная почта или пароль', { exact: true })).toBeVisible();
+  }
 }
 
 test('registration form creates a session and email verification unlocks the author profile', async ({
@@ -117,7 +121,15 @@ test('registration form creates a session and email verification unlocks the aut
   });
   expect(focusedOutline).toBe(true);
   await page.getByRole('button', { name: 'Дальше', exact: true }).click();
-  await page.getByLabel('Никнейм', { exact: true }).fill(`author-${id}`);
+  const nickname = page.getByLabel('Никнейм', { exact: true });
+  for (const slug of ['ab', 'a'.repeat(21)]) {
+    await nickname.fill(slug);
+    await page.getByRole('button', { name: 'Дальше', exact: true }).click();
+    await expect(page.getByText('Никнейм должен содержать от 3 до 20 символов', { exact: true })).toBeVisible();
+    await expect(nickname).toBeVisible();
+    expect(registrations).toBe(0);
+  }
+  await nickname.fill(`author-${id}`);
   await page.getByRole('button', { name: 'Дальше', exact: true }).click();
   await page
     .getByLabel('Введите пароль', { exact: true })
@@ -125,6 +137,8 @@ test('registration form creates a session and email verification unlocks the aut
   await page
     .getByLabel('Подтвердите пароль', { exact: true })
     .fill('registration-password-123');
+  await expectPasswordVisibility(page.getByLabel('Введите пароль', { exact: true }));
+  await expectPasswordVisibility(page.getByLabel('Подтвердите пароль', { exact: true }));
   await page.getByRole('button', { name: 'Дальше', exact: true }).click();
   await expect(page.getByText('Не удалось сохранить согласие. Повторите принятие правил.')).toBeVisible();
   await expect(page).toHaveURL(/\/register/);
@@ -206,6 +220,7 @@ test('login survives reload and password recovery rejects the old password and a
   const { buyer } = await createBuyerFixture();
   await page.goto('/');
   await page.goto('/login?redirectTo=/profile');
+  await loginForm(page, `missing-${randomUUID()}@bidplace.test`, 'wrong-password-123', 401);
   await loginForm(page, buyer.email, 'wrong-password-123', 401);
   await expect(page).toHaveURL(/\/login\?/);
   await loginForm(page, buyer.email, buyer.password, 201);
@@ -240,6 +255,8 @@ test('login survives reload and password recovery rejects the old password and a
   await page.goto(resetPath);
   await page.getByRole('textbox', { name: 'Новый пароль', exact: true }).fill(password);
   await page.getByRole('textbox', { name: 'Подтверждение пароля', exact: true }).fill(password);
+  await expectPasswordVisibility(page.getByRole('textbox', { name: 'Новый пароль', exact: true }));
+  await expectPasswordVisibility(page.getByLabel('Подтверждение пароля', { exact: true }));
   await page.getByRole('button', { name: 'Сохранить пароль' }).click();
   await expect(
     page.getByText('Пароль обновлён', { exact: true }),

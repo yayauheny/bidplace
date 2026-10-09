@@ -8,6 +8,10 @@ export const accountSlugSchema = slugTextSchema('Введите никнейм')
   'Никнейм не длиннее 120 символов',
 );
 
+export const newAccountSlugSchema = slugTextSchema('Введите никнейм')
+  .min(3, 'Никнейм должен содержать от 3 до 20 символов')
+  .max(20, 'Никнейм должен содержать от 3 до 20 символов');
+
 export const userSchema = z
   .object({
     id: uuidSchema,
@@ -34,13 +38,13 @@ export const registerRequestSchema = z
     email: emailAddressSchema,
     password: passwordSchema,
     phone: z.string().trim().min(1).nullable().optional(),
-    slug: accountSlugSchema,
+    slug: newAccountSlugSchema,
   })
   .strict();
 
 export const claimSlugRequestSchema = z
   .object({
-    slug: accountSlugSchema,
+    slug: newAccountSlugSchema,
   })
   .strict();
 

@@ -53,7 +53,9 @@ describe('auth client', () => {
     expect(calls).toEqual([
       'https://api.example.test/api/auth/slug-availability?slug=author',
     ]);
-    await expect(client.auth.slugAvailability('Niko 631')).rejects.toThrow();
+    for (const slug of ['Niko 631', 'ab', 'a'.repeat(21)]) {
+      await expect(client.auth.slugAvailability(slug)).rejects.toMatchObject({ kind: 'validation' });
+    }
     expect(calls).toHaveLength(1);
   });
 });

@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { TextInput, View } from 'react-native';
+import { Platform, TextInput, View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
@@ -49,11 +49,20 @@ export function AuthPasswordField({
           accessibilityLabel={visible ? 'Скрыть пароль' : 'Показать пароль'}
           onPress={() => {
             const next = !visible;
-            setVisible(next);
             const { start, end } = selection.current;
+            setVisible(next);
             requestAnimationFrame(() => {
-              inputRef.current?.focus();
-              inputRef.current?.setSelection(start, end);
+              const input = inputRef.current;
+              if (!input) return;
+              input.focus();
+              if (Platform.OS === 'web') {
+                if (!(input instanceof HTMLInputElement)) {
+                  throw new Error('Expected a web password input');
+                }
+                input.setSelectionRange(start, end);
+              } else {
+                input.setSelection(start, end);
+              }
             });
           }}
           preset="icon"

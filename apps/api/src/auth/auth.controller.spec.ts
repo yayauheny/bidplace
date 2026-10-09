@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { ApiErrorCode } from '@bidplace/contracts';
 
 import {
   syntheticProductionServerEnv,
@@ -8,6 +9,24 @@ import { AuthController } from './auth.controller';
 
 afterEach(() => {
   vi.unstubAllEnvs();
+});
+
+describe('AuthController nickname availability', () => {
+  it.each([2, 3, 20, 21])('checks only valid %i-character new nicknames', async (length) => {
+    const authService = { slugAvailability: vi.fn().mockResolvedValue({ available: true }) };
+    const controller = new AuthController(authService as never, syntheticServerEnv());
+    const slug = 'a'.repeat(length);
+    if (length >= 3 && length <= 20) {
+      await expect(controller.slugAvailability(slug)).resolves.toEqual({ available: true });
+      expect(authService.slugAvailability).toHaveBeenCalledWith(slug);
+    } else {
+      await expect(controller.slugAvailability(slug)).rejects.toMatchObject({
+        apiCode: ApiErrorCode.VALIDATION_ERROR,
+        status: 400,
+      });
+      expect(authService.slugAvailability).not.toHaveBeenCalled();
+    }
+  });
 });
 
 describe('AuthController logout', () => {

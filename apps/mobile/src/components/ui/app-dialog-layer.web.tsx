@@ -67,7 +67,14 @@ export function AppDialogFrame({
   css.pointerEvents = 'none';
   return (
     <div id="app-dialog-host" style={css}>
-      <div style={{ pointerEvents: 'auto', width: '100%' }}>{children}</div>
+      <div style={{
+        pointerEvents: 'auto',
+        width: '100%',
+        display: 'flex',
+        flexDirection: css.flexDirection,
+        alignItems: css.alignItems,
+        justifyContent: css.justifyContent,
+      }}>{children}</div>
     </div>
   );
 }

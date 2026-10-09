@@ -114,7 +114,7 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
       await auth.login(values);
     } catch (error) {
       if (error instanceof ApiClientError && error.kind === 'unauthorized') {
-        setSubmitError('Неверный email или пароль.');
+        setSubmitError('Неверная почта или пароль');
         return;
       }
       const failure = readFormFailure(error, ['email', 'password']);

@@ -413,6 +413,15 @@ initial focus after its entering animation if focus is still outside the dialog;
 it never steals focus already inside. The existing Escape/trap/return-focus
 behavior and motion geometry remain shared with the Work FULL viewer.
 
+The web `AppDialogFrame` inner wrapper shares its host flex alignment, so
+limited dialog surfaces center without route-specific offsets. A dialog title
+uses `sectionTitle` inside the available header width (`flex: 1`, `minWidth: 0`)
+next to the close control; it does not grow to 38/40 from viewport width while
+the surface remains 366px. Sheet typography and sizing remain shared.
+`AuthPasswordField` restores focus and selection through DOM `setSelectionRange`
+on web and `TextInput.setSelection` on native. Decorative `BidplaceBrand` SVGs
+use `aria-hidden`/`focusable` on web and native accessibility props on native.
+
 Filter/sort sheets are dialogs with radio/checkbox rows, local draft, and
 Apply/Reset. They are not `role="menu"`.
 

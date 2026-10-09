@@ -7,7 +7,7 @@ import {
   meResponseSchema,
   claimSlugRequestSchema,
   claimSlugResponseSchema,
-  accountSlugSchema,
+  newAccountSlugSchema,
   slugAvailabilityResponseSchema,
   registerRequestSchema,
   serviceRulesResponseSchema,
@@ -130,7 +130,7 @@ export class AuthController {
   })
   @Get('slug-availability')
   async slugAvailability(@Query('slug') slug: unknown) {
-    const parsed = parseBody(accountSlugSchema, slug);
+    const parsed = parseBody(newAccountSlugSchema, slug);
     return slugAvailabilityResponseSchema.parse(
       await this.authService.slugAvailability(parsed),
     );

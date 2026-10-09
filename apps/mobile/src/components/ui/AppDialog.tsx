@@ -175,15 +175,7 @@ export function AppDialog({
           <Dialog.Title asChild>
             <AppText
               role={isSheet ? 'profileHeading' : 'sectionTitle'}
-              style={
-                presentation === 'dialog' && width >= 600
-                  ? {
-                      fontSize: 38,
-                      lineHeight: 40,
-                      letterSpacing: -1.1,
-                    }
-                  : undefined
-              }
+              style={{ flex: 1, minWidth: 0 }}
             >
               {title}
             </AppText>

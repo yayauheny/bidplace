@@ -1,7 +1,7 @@
 import {
   acceptRulesRequestSchema,
   acceptRulesResponseSchema,
-  accountSlugSchema,
+  newAccountSlugSchema,
   claimSlugRequestSchema,
   claimSlugResponseSchema,
   slugAvailabilityResponseSchema,
@@ -44,7 +44,7 @@ export function createAuthClient(context: RequestContext) {
       return requestJson(context, '/api/auth/me', meResponseSchema);
     },
     async slugAvailability(slug: string) {
-      const parsed = accountSlugSchema.parse(slug);
+      const parsed = parseRequest(newAccountSlugSchema, slug);
       return requestJson(
         context,
         `/api/auth/slug-availability?slug=${encodeURIComponent(parsed)}`,

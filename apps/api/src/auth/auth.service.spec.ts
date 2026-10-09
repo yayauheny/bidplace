@@ -150,15 +150,16 @@ describe('AuthService', () => {
     ).rejects.toBeInstanceOf(ConflictException);
   });
 
-  it('rejects invalid login credentials', async () => {
-    prisma.user.findUnique.mockResolvedValue(null);
+  it.each(['unknown email', 'wrong password'])('rejects invalid login credentials: %s', async (reason) => {
+    prisma.user.findUnique.mockResolvedValue(reason === 'unknown email' ? null : createPrismaUser());
+    passwordHasher.verify.mockResolvedValue(false);
 
     await expect(
       service.login({
         email: 'missing@example.com',
         password: 'super-secret',
       }),
-    ).rejects.toBeInstanceOf(UnauthorizedException);
+    ).rejects.toMatchObject({ status: 401, message: 'Invalid credentials' });
   });
 
   it('logs a user in with a valid password', async () => {

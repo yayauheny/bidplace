@@ -22,7 +22,6 @@ const validateProductImageUploads = vi.mocked(
 );
 
 const profileBody = {
-  slug: 'author',
   fullName: 'Author',
   country: 'Belarus',
   city: 'Minsk',

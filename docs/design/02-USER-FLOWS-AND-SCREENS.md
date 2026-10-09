@@ -1,6 +1,6 @@
 # bidplace — пользовательские потоки и экраны First MVP
 
-Последнее обновление: 2026-10-08
+Последнее обновление: 2026-10-09
 Статус: Confirmed product/UI scope for mobile-web 390 Figma cutover
 Product contract: [`../product/05-MVP-RFC.md`](../product/05-MVP-RFC.md)
 
@@ -32,7 +32,8 @@ does not replace it, accept rules, or continue that attempt. A failed
 `register` drops that in-flight claim. The request is not cancelled and the
 created account is not deleted. The published rules
 text can be read before acceptance; a failed load can be retried. The
-privacy-policy words are not links. The confirmation body has no extra logout button;
+privacy-policy link opens the temporary «Документ готовится» dialog, not an
+approved policy. The confirmation body has no extra logout button;
 account logout stays on the profile, cabinet and moderation screens.
 The two captured consent checkboxes are two states of one control, not two
 simultaneous fields. This visual source update does not approve legal drafts.
@@ -41,7 +42,10 @@ Login stays a bottom sheet. Registration is the full-screen sequence email,
 nickname, password, then email confirmation (`DEC-105` revision). Deep links
 stay `/login`, `/register`, `/verify-email`, `/forgot-password`, and
 `/reset-password`. The nickname is `User.slug`, including the public author
-address. The author profile does not edit a second slug. An existing account
+address. New registration and claim requests require 3–20 characters through
+the shared write contract (`DEC-107`); invalid registration input cannot check
+availability or advance. Historical stored nicknames retain their read contract.
+The author profile does not edit a second slug. An existing account
 with no slug chooses that nickname, with the registration field, before the
 author profile is created. A slug that is already set is not edited in this
 wave. The name is entered later as `fullName`. Having a slug does not by
@@ -275,12 +279,10 @@ Portfolio variant сохраняет визуальную галерею и ин
 3. short about, practice and directions;
 4. optional achievements.
 
-Никнейм на шаге 1 проверяется тем же контрактом slug, что и сохранение:
-«Используйте маленькие латинские буквы и цифры. Между ними можно поставить дефис или подчёркивание».
-Пустой никнейм на нетронутом черновике не показывает ошибку до ухода из поля.
-Неподходящее значение остаётся в поле и показывает ошибку у этого поля;
-заявка не сохраняется и шаг 2 не открывается. После исправления никнейма
-сохраняются введённые поля и выбранное фото. Ошибки сервера
+Никнейм принадлежит `User.slug`, а не заявке автора. Уже выбранное значение
+не редактируется и не отправляется в create/update профиля. Для аккаунта без
+никнейма claim выполняется до создания профиля; его write-контракт описан в
+`DEC-107`, исторические значения не обрезаются. Ошибки сервера
 `validation_error` показываются у известных полей одновременно; неизвестный
 ключ остаётся общей ошибкой формы. Занятый никнейм и уже созданная заявка —
 разные сообщения. Сбой сети и 5xx не выглядят как ошибка ввода. Черновик

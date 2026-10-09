@@ -4,6 +4,25 @@
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
+## 2026-10-09 — Shared auth runtime, dialogs and nickname limits
+
+- `Partial`. Actual policy/rules/exit surfaces center in the shared web host;
+  the 366px dialog title uses the existing 24/29 role and wraps beside its
+  close control. Autofocus no longer scrolls its title horizontally. Sheet
+  geometry and fullscreen email-title tolerance are preserved. Decorative
+  brand vectors no longer send native accessibility attributes to DOM.
+- Chromium/WebKit: 6/6 in three existing auth-layout scenarios. Five password
+  fields keep value/focus/selection through four toggles and subsequent typing.
+  Surface checks cover 390×874, 375×667, 440×956, 1280×720, 390×400, 1024 and
+  1440, resize without reload, long title, short scrolling, Escape, return focus,
+  zoom 1.5 and 401/429/500 copy. Registration layout uses synthetic rules and
+  availability without account creation. New nickname length is 3–20;
+  historical reads remain wider. Screenshots:
+  [`auth runtime evidence`](../audits/current/evidence/2026-10-09-auth-runtime-validation/README.md).
+- Native runtime and the full database-backed auth lifecycle/history gate
+  remain unverified: local databases lack `users.slug`, and migrations were
+  forbidden. Policy/OAuth/export differences remain; this is not 1:1.
+
 ## 2026-10-09 — Single-line fields keep a 51px outer box
 
 - `Partial`. Single-line `FigmaTextField` locks its border box at 51.

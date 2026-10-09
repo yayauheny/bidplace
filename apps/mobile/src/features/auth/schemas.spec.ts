@@ -26,6 +26,22 @@ describe('login form validation', () => {
 });
 
 describe('registration form validation', () => {
+  it.each([2, 3, 20, 21])('uses the shared new-nickname limit for %i characters', (length) => {
+    const values = {
+      email: 'author@example.com',
+      password: 'password123',
+      confirmPassword: 'password123',
+      slug: 'a'.repeat(length),
+      rulesAccepted: true,
+    };
+    const valid = length >= 3 && length <= 20;
+    const result = registerFormSchema.safeParse(values);
+    expect(result.success).toBe(valid);
+    if (!result.success) {
+      expect(result.error.flatten().fieldErrors.slug).toEqual(['Никнейм должен содержать от 3 до 20 символов']);
+    }
+  });
+
   it.each([
     [undefined, undefined],
     [null, null],

@@ -3,6 +3,10 @@ import {
   adminProductStatusUpdateRequestSchema,
   adminSellerStatusUpdateRequestSchema,
   acceptRulesResponseSchema,
+  registerRequestSchema,
+  claimSlugRequestSchema,
+  claimSlugResponseSchema,
+  newAccountSlugSchema,
   ApiErrorCode,
   apiErrorResponseSchema,
   isEditableProductStatus,
@@ -22,6 +26,18 @@ import {
 } from '../src';
 
 describe('shared contracts', () => {
+  it.each([2, 3, 20, 21, 121])('validates %i-character new nicknames at every write boundary', (length) => {
+    const slug = 'a'.repeat(length);
+    const valid = length >= 3 && length <= 20;
+    expect(newAccountSlugSchema.safeParse(slug).success).toBe(valid);
+    expect(registerRequestSchema.safeParse({ email: 'author@example.com', password: 'password123', slug }).success).toBe(valid);
+    expect(claimSlugRequestSchema.safeParse({ slug }).success).toBe(valid);
+  });
+
+  it.each(['ab', 'a'.repeat(120)])('reads a historical nickname %s without applying new-choice limits', (slug) => {
+    expect(claimSlugResponseSchema.parse({ slug })).toEqual({ slug });
+  });
+
   it('keeps discovery facets strict, non-empty, and normalized', () => {
     expect(
       portfolioDiscoveryFacetsResponseSchema.parse({
@@ -60,7 +76,7 @@ describe('shared contracts', () => {
       phoneVerifiedAt: null,
       acceptedRulesVersion: 'MVP_RULES_V1',
       displayName: 'Seller',
-      slug: null,
+      slug: 'a'.repeat(120),
       role: 'user',
       status: 'active',
       createdAt: '2026-09-23T00:00:00.000Z',

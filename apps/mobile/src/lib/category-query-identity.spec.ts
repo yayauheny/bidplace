@@ -182,6 +182,7 @@ vi.mock('react-native-svg', () => {
   return {
     default: shape,
     Svg: shape,
+    SvgXml: shape,
     Circle: shape,
     Ellipse: shape,
     G: shape,
