@@ -94,6 +94,55 @@ test('dock glass samples page content without a split search FAB', async ({
   await expect(page.getByLabel('Поиск')).toBeVisible();
   await expect(page.getByTestId('figma-floating-dock')).toHaveCount(1);
 
+  const brandLogo = page.getByRole('link', {
+    name: 'bidplace — на главную',
+    exact: true,
+  });
+  await expect(brandLogo.getByTestId('bidplace-brand-mark')).toHaveCount(1);
+  await brandLogo.evaluate((element) => {
+    element.addEventListener(
+      'click',
+      (event) => {
+        element.setAttribute('data-keyboard-activated', 'true');
+        event.preventDefault();
+        event.stopPropagation();
+      },
+      true,
+    );
+  });
+  await page.evaluate(() => {
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+  });
+  for (let step = 0; step < 8; step += 1) {
+    if (await brandLogo.evaluate((element) => element === document.activeElement)) break;
+    await page.keyboard.press('Tab');
+  }
+  await expect(brandLogo).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(brandLogo).toHaveAttribute('data-keyboard-activated', 'true');
+
+  const dockHome = dock.getByLabel('Главная', { exact: true });
+  await dockHome.evaluate((element) => {
+    element.addEventListener(
+      'click',
+      (event) => {
+        element.setAttribute('data-keyboard-activated', 'true');
+        event.preventDefault();
+        event.stopPropagation();
+      },
+      true,
+    );
+  });
+  for (let step = 0; step < 32; step += 1) {
+    if (await dockHome.evaluate((element) => element === document.activeElement)) break;
+    await page.keyboard.press('Tab');
+  }
+  await expect(dockHome).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(dockHome).toHaveAttribute('data-keyboard-activated', 'true');
+
   const chrome = await readDockChrome(dock);
   expect(chrome.width).toBe(232);
   expect(chrome.height).toBe(64);

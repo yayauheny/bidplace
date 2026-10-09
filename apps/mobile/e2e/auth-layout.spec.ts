@@ -474,6 +474,28 @@ test('auth composition is stacked in the S4 phone column', async ({ page }) => {
   await page.goto('/register');
   await expectS4Register(page);
   await expectCenteredPhoneColumn(page);
+  for (const brand of [
+    page.getByTestId('bidplace-brand-mark'),
+    page.getByTestId('bidplace-brand-wordmark'),
+  ]) {
+    await expect(brand).toHaveCount(1);
+    expect(
+      await brand.evaluate((svg) => {
+        const style = getComputedStyle(svg);
+        return {
+          tagName: svg.tagName,
+          tabIndex: svg.getAttribute('tabindex'),
+          userSelect: style.userSelect || style.webkitUserSelect,
+          webkitUserSelect: style.webkitUserSelect,
+        };
+      }),
+    ).toEqual({
+      tagName: 'svg',
+      tabIndex: null,
+      userSelect: 'none',
+      webkitUserSelect: 'none',
+    });
+  }
   await page.screenshot({
     path: resolve(artifactDir, `${engine(page)}-register-1440.png`),
   });

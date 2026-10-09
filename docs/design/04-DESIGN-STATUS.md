@@ -4,6 +4,19 @@
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
+## 2026-10-09 — Decorative brand pointer selection
+
+- `Partial`. Shared mark and wordmark SVGs are decorative, absent from the web
+  Tab order and locally non-selectable without suppressing focus on parent
+  `BrandLogo` or dock controls. The infrastructure error keeps its 104×104 mark,
+  selectable copy and keyboard-reachable Retry at 390×874, 1280×720 and
+  390×400 after resize.
+- Chromium/WebKit targeted existing scenarios passed 8/8 for error/loading,
+  register mark+wordmark and keyboard activation of real BrandLogo/dock links.
+  Three compact 390×874 screenshots (Chromium baseline/after and WebKit after)
+  are in the temporary browser evidence directory. Native runtime and broader
+  auth/database readiness are not claimed.
+
 ## 2026-10-09 — Shared auth runtime, dialogs and nickname limits
 
 - `Partial`. Actual policy/rules/exit surfaces center in the shared web host;

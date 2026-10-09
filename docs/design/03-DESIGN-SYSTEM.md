@@ -420,7 +420,9 @@ next to the close control; it does not grow to 38/40 from viewport width while
 the surface remains 366px. Sheet typography and sizing remain shared.
 `AuthPasswordField` restores focus and selection through DOM `setSelectionRange`
 on web and `TextInput.setSelection` on native. Decorative `BidplaceBrand` SVGs
-use `aria-hidden`/`focusable` on web and native accessibility props on native.
+use `aria-hidden` plus local standard/WebKit `user-select: none` on web, without
+`focusable` or `tabindex`; native keeps its decorative accessibility props.
+Interactive parents own their keyboard focus, accessible name and activation.
 
 Filter/sort sheets are dialogs with radio/checkbox rows, local draft, and
 Apply/Reset. They are not `role="menu"`.

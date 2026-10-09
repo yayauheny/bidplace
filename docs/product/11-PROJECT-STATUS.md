@@ -1,5 +1,20 @@
 # bidplace — текущий статус проекта
 
+## 2026-10-09 — Decorative brand pointer selection
+
+- `Partial`. Shared `BidplaceBrand` mark and wordmark stay decorative on web
+  without `focusable`/`tabindex`; local standard and WebKit user-selection
+  styles prevent click, double-click and drag from focusing or selecting the
+  SVG. Parent `BrandLogo` and dock links retain their own keyboard focus,
+  accessible names and Enter activation. Native decorative accessibility props
+  are unchanged; native runtime was not exercised.
+- Existing browser scenarios passed in Chromium/WebKit against localhost:8081
+  with no web server or database preparation: infrastructure error 2/2,
+  pending brand 2/2, auth composition 2/2 and valid Home BrandLogo/dock keyboard
+  coverage 2/2. Error coverage resizes without reload through 390×874,
+  1280×720 and 390×400, preserves selectable message copy and keeps Retry
+  reachable by Tab.
+
 ## 2026-10-09 — Auth runtime and new nickname validation
 
 - `Partial`. Shared `AuthPasswordField` restores focus and cursor with

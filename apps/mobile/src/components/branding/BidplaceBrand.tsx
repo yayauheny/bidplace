@@ -1,4 +1,4 @@
-import { Platform } from 'react-native';
+import { Platform, type ViewStyle } from 'react-native';
 import { SvgXml } from 'react-native-svg';
 
 import { designTokens } from '@bidplace/design-tokens';
@@ -8,8 +8,17 @@ import { BIDPLACE_MARK_SVG, BIDPLACE_WORDMARK_SVG } from './bidplace-brand-svg';
 
 export { BIDPLACE_PAGE_LOGO_SIZE };
 
+type DecorativeBrandWebStyle = ViewStyle & {
+  WebkitUserSelect: 'none';
+};
+
+const decorativeBrandWebStyle: DecorativeBrandWebStyle = {
+  userSelect: 'none',
+  WebkitUserSelect: 'none',
+};
+
 const decorativeSvgProps = Platform.OS === 'web'
-  ? { 'aria-hidden': true, focusable: false }
+  ? { 'aria-hidden': true, style: decorativeBrandWebStyle }
   : { accessibilityElementsHidden: true, importantForAccessibility: 'no' as const };
 
 export function BidplaceMark({
@@ -19,6 +28,7 @@ export function BidplaceMark({
 }) {
   return (
     <SvgXml
+      testID="bidplace-brand-mark"
       xml={BIDPLACE_MARK_SVG}
       width={size}
       height={size}
@@ -36,6 +46,7 @@ export function BidplaceWordmark({
 }) {
   return (
     <SvgXml
+      testID="bidplace-brand-wordmark"
       xml={BIDPLACE_WORDMARK_SVG}
       width={width}
       height={height}
