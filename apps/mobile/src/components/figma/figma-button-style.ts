@@ -56,14 +56,15 @@ export function figmaButtonStyle(
       : figmaTokens.space.buttonY,
     borderRadius: figmaButtonRadius(size),
     borderWidth:
-      compact || insetPressedSurface || figmaButtonUsesGradientBorder(variant)
+      compact || insetPressedSurface || variant === 'authPrimary' || variant === 'authProvider'
         ? 0
         : authHeight
           ? 0.5
           : 1,
-    borderColor: figmaButtonUsesGradientBorder(variant)
-      ? 'transparent'
-      : buttonBorder(variant),
+    borderColor:
+      variant === 'authPrimary' || variant === 'authProvider'
+        ? 'transparent'
+        : buttonBorder(variant),
     backgroundColor:
       variant === 'outline'
         ? 'transparent'

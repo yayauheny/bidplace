@@ -68,7 +68,7 @@
     },
     {
       "path": "manifest.json",
-      "sha256": "d17b7455f5ca3a3c3120124b6eac19ad21b8b274f7e0c11b6376442082589105",
+      "sha256": "02526296a395d955c5714ea2c6050d7058dcd98e9662d4c2e35170b8e55f6994",
       "size": 6892
     },
     {
@@ -96,5 +96,5 @@
       "reason": "Generated exporter prompt is not an instruction"
     }
   ],
-  "revisionNote": "2026-10-09: refreshed nodes for checkbox/button stroke weights from Создать_с_паролем_кнопки capture"
+  "revisionNote": "2026-10-09: manifest identity matches Создать_с_паролем_кнопки.figmacapture.zip. design/nodes.json and references/001-4547_23168.png are byte-identical to that archive and were not rewritten."
 }

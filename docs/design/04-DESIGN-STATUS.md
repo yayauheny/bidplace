@@ -4,14 +4,16 @@
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
-## 2026-10-09 — Auth provider icon, strokes, and legal inline links
+## 2026-10-09 — Auth form geometry, horizontal strokes, Google slot
 
-- `Partial`. Runtime matches founder-approved geometry: Google
-  `AuthGoogleIcon` from `google-521-10381.svg`, checkbox/auth button gradient
-  borders left-to-right, consent and login legal phrases as keyboard/mouse
-  links without underline. Policy uses a temporary dialog placeholder; rules
-  use `getRules`. Verify-email mixed copy and nickname suggestion chips are
-  unchanged. This is not 1:1.
+- `Partial`. Dialog hosts for the policy stub and rules text are out of
+  the measured form flow, so the 390×874 email title stays in the existing
+  319–321.5 band. The 306–311 reading was the closed-dialog gap, not a
+  new source. Auth button and checkbox strokes are horizontal. The Google
+  mark uses the imported paths inside an 18×18 slot with a 1px inset.
+  Outline and quiet border widths are unchanged from before this auth
+  stroke work. Policy copy is still a placeholder, not an approved
+  document. This is not 1:1.
 
 ## 2026-10-08 — Fullscreen auth band uses container height
 

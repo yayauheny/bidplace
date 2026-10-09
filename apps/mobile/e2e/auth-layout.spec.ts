@@ -306,7 +306,7 @@ test('register email title layout is stable across viewport resize', async ({ pa
   await expect
     .poll(async () => {
       const y = await emailTitleY();
-      return y >= 306 && y <= 311;
+      return y >= 319 && y <= 321.5;
     })
     .toBe(true);
   await expectTitleClearOfMark();
@@ -328,7 +328,7 @@ test('register email title layout is stable across viewport resize', async ({ pa
   await expect
     .poll(async () => {
       const y = await emailTitleY();
-      return y >= 306 && y <= 311;
+      return y >= 319 && y <= 321.5;
     })
     .toBe(true);
 

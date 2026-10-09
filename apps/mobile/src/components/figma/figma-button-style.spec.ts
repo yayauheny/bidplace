@@ -77,7 +77,7 @@ describe('Figma button styles', () => {
     expect(figmaButtonStyle('outline', 'idle')).toMatchObject({
       backgroundColor: 'transparent',
       borderColor: 'transparent',
-      borderWidth: 0,
+      borderWidth: 1,
     });
     expect(figmaButtonSurfaceFill('outline', 'hover')).toBe(
       figmaTokens.color.ghostHover,

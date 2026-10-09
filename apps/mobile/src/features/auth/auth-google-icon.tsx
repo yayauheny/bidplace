@@ -1,4 +1,4 @@
-import { Path, Svg } from 'react-native-svg';
+import { G, Path, Svg } from 'react-native-svg';
 
 import { designTokens } from '@bidplace/design-tokens';
 
@@ -11,9 +11,11 @@ const GOOGLE_GLYPH =
 
 export function AuthGoogleIcon() {
   return (
-    <Svg width={18} height={18} viewBox="0 0 16 16" style={{ marginLeft: 1, marginTop: 1 }}>
-      <Path d={GOOGLE_RING} fill={designTokens.color.fieldValue} fillRule="evenodd" />
-      <Path d={GOOGLE_GLYPH} fill={designTokens.color.canvas} />
+    <Svg width={18} height={18} viewBox="0 0 18 18">
+      <G transform="translate(1 1)">
+        <Path d={GOOGLE_RING} fill={designTokens.color.fieldValue} fillRule="evenodd" />
+        <Path d={GOOGLE_GLYPH} fill={designTokens.color.canvas} />
+      </G>
     </Svg>
   );
 }

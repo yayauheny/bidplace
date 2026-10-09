@@ -103,8 +103,8 @@ export function FigmaButton({
                 <LinearGradient
                   pointerEvents="none"
                   colors={[...figmaButtonGradientColors(variant)]}
-                  start={{ x: 0.5, y: 0 }}
-                  end={{ x: 0.5, y: 1 }}
+                  start={figmaButtonGradientAxis(variant).start}
+                  end={figmaButtonGradientAxis(variant).end}
                   style={[
                     styles.gradientBorder,
                     {
@@ -180,8 +180,8 @@ export function FigmaButton({
       <LinearGradient
         pointerEvents="none"
         colors={[...figmaButtonGradientColors(variant)]}
-        start={{ x: 0.5, y: 0 }}
-        end={{ x: 0.5, y: 1 }}
+        start={figmaButtonGradientAxis(variant).start}
+        end={figmaButtonGradientAxis(variant).end}
         style={[
           styles.outsideStroke,
           {
@@ -193,6 +193,19 @@ export function FigmaButton({
       {button}
     </View>
   );
+}
+
+function figmaButtonGradientAxis(variant: FigmaButtonVariant) {
+  if (variant === 'authPrimary' || variant === 'authProvider') {
+    return {
+      start: { x: 0, y: 0.5 },
+      end: { x: 1, y: 0.5 },
+    };
+  }
+  return {
+    start: { x: 0.5, y: 0 },
+    end: { x: 0.5, y: 1 },
+  };
 }
 
 function resolveInteraction({

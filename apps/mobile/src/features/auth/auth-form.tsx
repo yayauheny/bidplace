@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
-import { View } from 'react-native';
+import { View, type ViewStyle } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
 import type { User } from '@bidplace/contracts';
 import { AppDialog, AppText, PrimaryButton, TextButton, TextField } from '../../components/ui';
@@ -44,6 +44,13 @@ import {
   type RegisterFormValues,
 } from './schemas';
 import type { SafeRedirect } from './auth-redirect';
+
+/** Closed dialog roots are empty views. Keep them out of parent gap measurement. */
+const dialogHostStyle: ViewStyle = {
+  position: 'absolute',
+  width: 0,
+  height: 0,
+};
 type AuthFormProps = { redirectTo?: SafeRedirect };
 export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
   const auth = useAuth();
@@ -263,6 +270,7 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
             {rulesError}
           </AppText>
         ) : null}
+        <View pointerEvents="box-none" style={dialogHostStyle}>
         <AppDialog
           open={policyOpen}
           title={AUTH_POLICY_STUB_TITLE}
@@ -283,6 +291,7 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
             <AppText role="bodySmall" tone="secondary">Загружаем правила…</AppText>
           )}
         </AppDialog>
+        </View>
       </View>
   );
 }
@@ -763,6 +772,7 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
                   {field.value && rulesError === 'Не удалось получить правила.' ? (
                     <TextButton label="Повторить" onPress={loadRulesVersion} />
                   ) : null}
+                  <View pointerEvents="box-none" style={dialogHostStyle}>
                   <AppDialog
                     open={policyOpen}
                     title={AUTH_POLICY_STUB_TITLE}
@@ -785,6 +795,7 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
                       </AppText>
                     )}
                   </AppDialog>
+                  </View>
                 </>
               );
             }}

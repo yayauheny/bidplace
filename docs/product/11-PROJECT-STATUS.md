@@ -1,25 +1,23 @@
 # bidplace — текущий статус проекта
 
-## 2026-10-09 — Auth icons, gradient strokes, and legal links
+## 2026-10-09 — Auth dialogs stay out of form measurement
 
-- `Partial`. Login and registration use the imported Google glyph
-  (`521:10381` via `2026-10-09-auth-button-icons`), gradient inside strokes on
-  `authPrimary` (0.5px, `#2A2A2A→#585858`) and provider/checkbox borders
-  (1px light/dark per state), and inline legal links at Inter 13/12 with
-  `#858585` / `#121212`. Policy opens `AppDialog` with the temporary copy
-  «Документ готовится» (not an approved legal document). Rules reuse
-  `getRules` in `AppDialog` before and after the consent checkbox; no separate
-  rules button under consent. OAuth buttons stay stubs. Registration session,
-  `rulesVersion`, `acceptRules`, and recovery flows are unchanged. DEC-078
-  three-item consent composition is not reopened.
-- Handoff: `design/figma-handoff/auth/2026-10-09-auth-button-icons`,
-  refreshed `screens/email` nodes from `Создать_с_паролем_кнопки.figmacapture.zip`,
-  `catalog.json` mapping for Google SVG and email capture SHA
-  `46721a83703515d1cf5b119da1c53309699efae65185abe1577afd965ec28cdc`.
-- Tests: `registration-consent.spec.ts` (legal links + rules retry),
-  `figma-button-style.spec.ts`, `auth-layout.spec.ts` Chromium/WebKit.
-- Still open: approved privacy-policy text and public URL (stub dialog only);
-  production deploy unchanged. This is not 1:1.
+- `Partial`. Closed policy/rules `AppDialog` roots no longer sit in the
+  login and registration `gap` flow: their host is `position: absolute`
+  with zero size, the same out-of-flow treatment used for auth overlays.
+  Opening and closing those dialogs does not change the form height.
+  The earlier email-title band of 306–311 was a mistaken tolerance for
+  that extra gap, not a design change. `auth-layout` again expects
+  319–321.5 at 390×874, and Chromium/WebKit pass that range after resize
+  without reload. Auth primary and provider strokes run left to right
+  (`start` 0,0.5 → `end` 1,0.5) at the agreed weights; outline and quiet
+  keep the previous border width. The Google glyph is an 18×18 slot with
+  the imported 16×16 paths inset by 1. Email `manifest.json` and
+  `PROVENANCE.json` now match `Создать_с_паролем_кнопки.figmacapture.zip`;
+  `nodes.json` and the reference PNG were already identical and were not
+  rewritten. Policy remains the temporary «Документ готовится» dialog.
+  Rules still use `getRules`. Session ownership, `acceptRules`, and
+  DEC-078 are unchanged. This is not 1:1.
 
 ## 2026-10-08 — Auth fullscreen layout no longer depends on resize history
 
