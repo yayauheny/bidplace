@@ -16,21 +16,28 @@ Apply these rules to every task in this repository.
 ## Change Workflow
 
 - Before editing code, first identify the problem, list candidate fixes, and compare trade-offs.
-- Label each candidate explicitly as a durable fix, acceptable workaround, or hack.
-- Prefer a durable fix by default.
+- Choose the smallest durable root-cause fix; do not accept compensating workarounds or hacks as completed solutions.
 - Do not start code edits until the chosen solution is clear.
-- If the issue is ambiguous, stop and ask instead of guessing.
-- Do not use workaround-only patches such as `suppressHydrationWarning`, `any`, `@ts-ignore`, empty catches, or silent fallbacks unless they are explicitly accepted as temporary and documented as such.
+- Resolve material architecture, ownership, or scope choices through `grilling` before dependent edits; continue independent work.
+- Do not conceal the cause with suppressions, `any`, `@ts-ignore`, empty catches, or silent fallbacks.
+
+## Impact and Maintenance
+
+- In every plan/change/review, trace affected UI/state -> contracts/API client -> services -> repository/database -> build/release, including consumers and compatibility. Check only relevant boundaries, not the entire repository.
+- Always state the concrete impact on future extension, reuse, ownership, and maintenance; this does not justify speculative abstractions.
+- Find existing components, variants, tokens, contracts, and services first. Justify new helpers by a current responsibility; remove superseded code/diagnostics after checking consumers.
 
 ## Skill Selection
 
 Use the most specific skill for the task:
 
 - `agent` for worker/supervisor delegation, Worker handoffs, and review loops until the task is complete.
-- `review` for diffs, pull requests, and review-only requests.
+- `code-review-best-practices` for the project checklist; `review` for generic review workflow.
 - `security` for auth, permissions, payments, purchases, bids, balances, webhooks, files, external APIs, admin actions, or sensitive data.
 - `ui` for React, React Native, and Expo UI work.
 - `nest` for NestJS backend logic, persistence, jobs, events, and integrations.
+- `grilling` for unresolved material choices during planning or review; preserve settled decisions.
+- `2step-work` for planning/execution handoffs; `vercel-react-native-skills` for selective platform guidance.
 
 For high-risk backend changes, use both `nest` and `security`.
 
@@ -45,8 +52,10 @@ For high-risk backend changes, use both `nest` and `security`.
 
 ## Verification
 
-- Cover every behavior change with tests.
-- Prefer unit tests unless the change crosses module, database, network, permission, or transaction boundaries.
+- Verify changed behavior with meaningful checks, extending existing owner specs for uncovered contracts. Do not add one test file per bug or tests that mirror implementation.
+- Prefer unit checks; use integration/e2e for affected database, network, permission, or transaction boundaries, and rendered/manual checks for decorative geometry.
+- Remove obsolete diagnostics and duplicate cases after fixes; retain important session, permission, concurrency, saving, and integrity regressions.
+- Do not relax assertions, golden, thresholds, retries, or timeouts to accept unexplained failures. Broaden/repeat checks only for new changes, failures, or unresolved concerns.
 - Run the relevant typecheck, lint without auto-fix, tests, and builds for the affected graph.
 - Do not mark work complete while required checks fail.
 
