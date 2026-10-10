@@ -15,7 +15,9 @@ const databaseUrl =
 export default defineConfig({
   testDir: './e2e',
   // R2 transport fault scenarios have their own server in playwright.media.config.ts.
-  testIgnore: '**/work-media-lifecycle.spec.ts',
+  // Auth-abuse browser cases need the cookie proxy and an auth_browser_* database.
+  // They are owned by playwright.auth-abuse.config.ts.
+  testIgnore: ['**/work-media-lifecycle.spec.ts', '**/auth-abuse.spec.ts'],
   globalTimeout: 45 * 60_000,
   timeout: 60_000,
   workers: 1,
@@ -47,6 +49,8 @@ export default defineConfig({
         E2E_DATABASE_URL: databaseUrl,
         JWT_SECRET: 'e2e-jwt-secret',
         TEST_EMAIL_FILE: 'apps/mobile/e2e/.email.jsonl',
+        TURNSTILE_VERIFIER: 'test',
+        TURNSTILE_HOSTNAME: 'localhost',
       },
     },
     {
@@ -56,7 +60,9 @@ export default defineConfig({
       reuseExistingServer: false,
       env: {
         NODE_ENV: 'development',
+        EXPO_NO_DOTENV: '1',
         EXPO_PUBLIC_API_URL: apiBaseURL,
+        EXPO_PUBLIC_TURNSTILE_SITE_KEY: '1x00000000000000000000AA',
       },
     },
   ],

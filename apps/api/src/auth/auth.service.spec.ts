@@ -1,11 +1,14 @@
 import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { turnstileToken as syntheticTurnstileToken } from '../../test/integration/abuse-request';
 import { syntheticServerEnv } from '../core/config/synthetic-server-env';
 import { authCredentialsSelect, authUserContractSelect } from './auth.mapper';
 import { AuthService } from './auth.service';
 import { AuthTokenService } from './auth-token.service';
 import { PasswordHasherService } from './password-hasher.service';
+
+const registerProof = syntheticTurnstileToken('register');
 
 type PrismaUser = {
   id: string;
@@ -62,17 +65,26 @@ describe('AuthService', () => {
   const passwordHasher = {
     hash: vi.fn(),
     verify: vi.fn(),
-  } satisfies Pick<PasswordHasherService, 'hash' | 'verify'>;
+    dummyHash: vi.fn().mockResolvedValue('dummy-hash'),
+  } satisfies Pick<PasswordHasherService, 'hash' | 'verify' | 'dummyHash'>;
 
   const authTokenService = {
     sign: vi.fn(),
     verify: vi.fn(),
   } satisfies Pick<AuthTokenService, 'sign' | 'verify'>;
 
+  const abuse = {
+    assertRegistration: vi.fn().mockResolvedValue(undefined),
+    assessLogin: vi.fn(async (input: { passwordAccepted: boolean }) =>
+      input.passwordAccepted ? { outcome: 'accepted' as const } : { outcome: 'invalid' as const },
+    ),
+  };
+
   const service = new AuthService(
     prisma,
     passwordHasher,
     authTokenService,
+    abuse as never,
     syntheticServerEnv(),
   );
 
@@ -96,6 +108,7 @@ describe('AuthService', () => {
       password: 'super-secret',
       phone: '+15555550123',
       slug: 'demo-seller',
+      turnstileToken: registerProof,
     });
 
     expect(prisma.user.create).toHaveBeenCalledWith({
@@ -146,12 +159,13 @@ describe('AuthService', () => {
         password: 'super-secret',
         phone: '+15555550123',
         slug: 'demo-seller',
+        turnstileToken: registerProof,
       }),
     ).rejects.toBeInstanceOf(ConflictException);
   });
 
-  it.each(['unknown email', 'wrong password'])('rejects invalid login credentials: %s', async (reason) => {
-    prisma.user.findUnique.mockResolvedValue(reason === 'unknown email' ? null : createPrismaUser());
+  it('rejects an unknown email after a dummy password check', async () => {
+    prisma.user.findUnique.mockResolvedValue(null);
     passwordHasher.verify.mockResolvedValue(false);
 
     await expect(
@@ -160,6 +174,37 @@ describe('AuthService', () => {
         password: 'super-secret',
       }),
     ).rejects.toMatchObject({ status: 401, message: 'Invalid credentials' });
+
+    expect(passwordHasher.dummyHash).toHaveBeenCalled();
+    expect(passwordHasher.verify).toHaveBeenCalledWith('dummy-hash', 'super-secret');
+    expect(abuse.assessLogin).toHaveBeenCalledWith(
+      expect.objectContaining({ passwordAccepted: false, email: 'missing@example.com' }),
+    );
+    expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+
+  it('rejects a wrong password with the stored hash', async () => {
+    prisma.user.findUnique.mockResolvedValue(
+      createPrismaUser({ passwordHash: 'hashed-login-password' }),
+    );
+    passwordHasher.verify.mockResolvedValue(false);
+
+    await expect(
+      service.login({
+        email: 'seller@example.com',
+        password: 'super-secret',
+      }),
+    ).rejects.toMatchObject({ status: 401, message: 'Invalid credentials' });
+
+    expect(passwordHasher.dummyHash).not.toHaveBeenCalled();
+    expect(passwordHasher.verify).toHaveBeenCalledWith(
+      'hashed-login-password',
+      'super-secret',
+    );
+    expect(abuse.assessLogin).toHaveBeenCalledWith(
+      expect.objectContaining({ passwordAccepted: false }),
+    );
+    expect(prisma.user.update).not.toHaveBeenCalled();
   });
 
   it('logs a user in with a valid password', async () => {
@@ -181,6 +226,7 @@ describe('AuthService', () => {
       'hashed-login-password',
       'super-secret',
     );
+    expect(prisma.user.update).not.toHaveBeenCalled();
     expect(authTokenService.sign).toHaveBeenCalledWith({
       sub: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
       email: 'login@example.com',
@@ -262,6 +308,12 @@ describe('AuthService', () => {
         password: 'super-secret',
       }),
     ).rejects.toBeInstanceOf(UnauthorizedException);
+    expect(passwordHasher.dummyHash).toHaveBeenCalled();
+    expect(passwordHasher.verify).toHaveBeenCalledWith('dummy-hash', 'super-secret');
+    expect(abuse.assessLogin).toHaveBeenCalledWith(
+      expect.objectContaining({ passwordAccepted: false, email: 'banned@example.com' }),
+    );
+    expect(prisma.user.update).not.toHaveBeenCalled();
   });
 
   it('reports slug availability without reserving the nickname', async () => {
@@ -285,6 +337,7 @@ describe('AuthService', () => {
       prisma,
       passwordHasher,
       authTokenService,
+      abuse as never,
       syntheticServerEnv({
         SERVICE_RULES_TEXT: 'from-snapshot',
       }),

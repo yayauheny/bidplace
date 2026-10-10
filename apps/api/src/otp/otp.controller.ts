@@ -1,34 +1,68 @@
 import {
+  changeUnverifiedEmailRequestSchema,
+  emailOtpRequestResponseSchema,
+  emailOtpRequestSchema,
   emailOtpVerifyRequestSchema,
+  emailVerificationStateSchema,
+  meResponseSchema,
   type AuthTokenPayload,
 } from '@bidplace/contracts';
-import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
 
-import { BearerAuthGuard, CurrentUser } from '../auth';
+import { AuthService, BearerAuthGuard, CurrentUser } from '../auth';
+import { readClientIpContext, type ClientIpRequest } from '../auth-abuse/client-ip';
 import { parseBody } from '../core/validation';
-import { OtpService, type OtpRequestContext } from './otp.service';
+import { OtpService } from './otp.service';
 
 @Controller('auth/email')
 @UseGuards(BearerAuthGuard)
 export class OtpController {
-  constructor(private readonly otp: OtpService) {}
+  constructor(
+    private readonly otp: OtpService,
+    private readonly auth: AuthService,
+  ) {}
+
+  @Get('state')
+  async state(@CurrentUser() auth: AuthTokenPayload) {
+    return emailVerificationStateSchema.parse(await this.otp.state(auth.sub));
+  }
 
   @Post('request')
-  request(
+  async request(
     @CurrentUser() auth: AuthTokenPayload,
-    @Req() request: OtpRequestContext,
+    @Req() request: ClientIpRequest,
+    @Body() body: unknown,
   ) {
-    return this.otp.request(auth.sub, request).then(() => ({ ok: true }));
+    const parsed = parseBody(emailOtpRequestSchema, body);
+    const result = await this.otp.request(auth.sub, {
+      ...readClientIpContext(request),
+      idempotencyKey: parsed.idempotencyKey,
+      turnstileToken: parsed.turnstileToken,
+    });
+    return emailOtpRequestResponseSchema.parse({ ok: true as const, delivery: result.delivery });
   }
 
   @Post('verify')
-  verify(
+  async verify(
     @CurrentUser() auth: AuthTokenPayload,
-    @Req() request: OtpRequestContext,
+    @Req() request: ClientIpRequest,
     @Body() body: unknown,
   ) {
-    return this.otp
-      .verify(auth.sub, parseBody(emailOtpVerifyRequestSchema, body).code, request)
-      .then(() => ({ ok: true }));
+    const parsed = parseBody(emailOtpVerifyRequestSchema, body);
+    await this.otp.verify(auth.sub, parsed.code, {
+      ...readClientIpContext(request),
+      idempotencyKey: parsed.idempotencyKey,
+    });
+    return { ok: true as const };
+  }
+
+  @Post('address')
+  async changeAddress(
+    @CurrentUser() authUser: AuthTokenPayload,
+    @Body() body: unknown,
+  ) {
+    const parsed = parseBody(changeUnverifiedEmailRequestSchema, body);
+    await this.otp.changeAddress(authUser.sub, parsed.email);
+    return meResponseSchema.parse({ user: await this.auth.me(authUser.sub) });
   }
 }

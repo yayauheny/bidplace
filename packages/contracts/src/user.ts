@@ -33,12 +33,15 @@ export const emailAddressSchema = z.string().email('Введите коррек�
 
 export const passwordSchema = z.string().min(8, 'Используйте пароль от 8 символов');
 
+export const turnstileTokenSchema = z.string().min(1).max(2048);
+
 export const registerRequestSchema = z
   .object({
     email: emailAddressSchema,
     password: passwordSchema,
     phone: z.string().trim().min(1).nullable().optional(),
     slug: newAccountSlugSchema,
+    turnstileToken: turnstileTokenSchema,
   })
   .strict();
 
@@ -66,6 +69,7 @@ export const loginRequestSchema = z
   .object({
     email: emailAddressSchema,
     password: z.string().min(1, 'Введите пароль'),
+    turnstileToken: turnstileTokenSchema.optional(),
   })
   .strict();
 

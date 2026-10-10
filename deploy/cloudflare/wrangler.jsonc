@@ -34,6 +34,7 @@
       "SMTP_USERNAME",
       "SMTP_PASSWORD",
       "CLOUDFLARE_CACHE_TOKEN",
+      "TURNSTILE_SECRET_KEY",
       "RELEASE_CONTROL"
     ]
   },
@@ -84,6 +85,7 @@
           "SMTP_USERNAME",
           "SMTP_PASSWORD",
           "CLOUDFLARE_CACHE_TOKEN",
+          "TURNSTILE_SECRET_KEY",
           "RELEASE_CONTROL"
         ]
       },
@@ -108,7 +110,11 @@
         "SERVICE_RULES_CONTACT": "work.evles@gmail.com",
         "SERVICE_RULES_TEXT": "",
         "PASSWORD_RESET_URL_BASE": "https://staging.bid.place",
+        "TURNSTILE_HOSTNAME": "staging.bid.place",
+        "TURNSTILE_SITE_KEY": "",
         "TEST_EMAIL_BYPASS": "false",
+        "AUTH_MAIL_DAILY_BUDGET": "200",
+        "AUTH_MAIL_MONTHLY_BUDGET": "3000",
         "ANALYTICS_INGEST_ENABLED": "true",
         "MEDIA_STORAGE_PROVIDER": "s3",
         "S3_ENDPOINT": "https://56b0c4b96497366c262447d2a18bf632.r2.cloudflarestorage.com",
@@ -158,6 +164,7 @@
           "SMTP_USERNAME",
           "SMTP_PASSWORD",
           "CLOUDFLARE_CACHE_TOKEN",
+          "TURNSTILE_SECRET_KEY",
           "RELEASE_CONTROL"
         ]
       },
@@ -182,7 +189,11 @@
         "SERVICE_RULES_CONTACT": "",
         "SERVICE_RULES_TEXT": "",
         "PASSWORD_RESET_URL_BASE": "https://bid.place",
+        "TURNSTILE_HOSTNAME": "bid.place",
+        "TURNSTILE_SITE_KEY": "",
         "TEST_EMAIL_BYPASS": "false",
+        "AUTH_MAIL_DAILY_BUDGET": "200",
+        "AUTH_MAIL_MONTHLY_BUDGET": "3000",
         "ANALYTICS_INGEST_ENABLED": "true",
         "MEDIA_STORAGE_PROVIDER": "s3",
         "S3_ENDPOINT": "https://56b0c4b96497366c262447d2a18bf632.r2.cloudflarestorage.com",

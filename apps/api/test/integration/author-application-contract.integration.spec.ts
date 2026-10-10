@@ -15,6 +15,7 @@ import {
   permissionImage,
   resetPermissionFixture,
 } from './permission-fixtures';
+import { idempotencyKey, turnstileToken } from './abuse-request';
 import {
   createIntegrationDatabaseContext,
   type IntegrationDatabaseContext,
@@ -160,11 +161,19 @@ describe('author application HTTP contract', () => {
     update.set('fullName', 'Blocked until OTP');
     expect((await applicant.patch('/seller/profile', update)).status).toBe(403);
 
-    expect((await applicant.post('/auth/email/request')).status).toBe(201);
+    expect(
+      (
+        await applicant.post('/auth/email/request', {
+          idempotencyKey: idempotencyKey(),
+          turnstileToken: turnstileToken('email_verification'),
+        })
+      ).status,
+    ).toBe(201);
     expect(
       (
         await applicant.post('/auth/email/verify', {
           code: await readVerificationCode(),
+          idempotencyKey: idempotencyKey(),
         })
       ).status,
     ).toBe(201);
@@ -455,7 +464,8 @@ describe('author application HTTP contract', () => {
     const registered = await new HttpTestClient(http.baseUrl, 'http://localhost:8081').post('/auth/register', {
       email: `short-password-${Date.now()}@wave3.test`,
       password,
-        slug: 'synthetic',
+      slug: 'synthetic',
+      turnstileToken: turnstileToken('register'),
     });
     expect(registered.status).toBe(400);
     const registeredBody = await registered.json();

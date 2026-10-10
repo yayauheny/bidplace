@@ -1,6 +1,6 @@
 # bidplace — application security (engineering)
 
-Последнее обновление: 2026-10-05
+Последнее обновление: 2026-10-10
 Статус: Confirmed (engineering owner)
 
 ## 2026-10-05 — Cloudflare deployment boundary (Partial)
@@ -100,16 +100,94 @@ Tests: `image-policy.spec.ts`, `image-processing-admission.spec.ts`, `sellers.pr
 
 | Surface | Pattern | Status |
 | --- | --- | --- |
-| Register / login | IP-scoped limits | Implemented (`auth.controller.ts`) |
-| OTP send | IP + user | Implemented (`otp.service.ts`) |
-| Forgot / reset password | IP + email bucket | Implemented (`password-reset.controller.ts`) |
-| Bid place | User + listing resource | Implemented (`bids.controller.ts`) |
+| Register / login | Process-local IP buckets on controllers plus durable login counters in PostgreSQL | Implemented (`auth.controller.ts`, `auth-abuse/`) |
+| OTP send / verify | Process-local IP buckets plus durable mail ledger, cooldowns, OTP pause | Implemented (`otp.service.ts` → `AuthAbuseService`) |
+| Forgot / reset password | Process-local IP buckets plus durable reset ledger and quotas | Implemented (`password-reset/` → `AuthAbuseService`) |
+| Bid place | User + listing resource | Not on active API (commerce runtime archived; leftover Prisma only) |
 | Image upload | User, 10/min | Implemented (`images.controller.ts`, profile photo in `sellers.controller.ts`, achievement in `portfolio.controller.ts`) |
-| Forgot password response | Always `{ ok: true }` | Implemented |
+| Forgot password response | `{ ok: true }` for accepted valid requests and account-specific suppression; typed errors for validation/Turnstile | Implemented |
 
-**Pros:** raises cost of spray attacks without changing product contracts.  
-**Cons:** in-memory limits assume single API replica (same as scheduler note in architecture).  
-**Revisit when:** multi-instance deployment or shared Redis rate-limit store.
+Cheap per-IP gates stay in `RateLimitService` (process-local). Mail sends, login
+abuse counters, idempotent operations, OTP verify pause, and reset send quotas
+are durable in PostgreSQL through `apps/api/src/auth-abuse/` (**DEC-109**). Policy
+numbers live in `auth-abuse.policy.ts`.
+
+**Pros:** raises cost of spray attacks; mail spend and replay bind to one ledger.
+
+**Cons:** process-local IP gates still assume per-replica memory until a shared
+store is chosen (**DEC-069**, revised for auth mail/login by **DEC-109**).
+
+**Revisit when:** multi-instance deployment needs shared cheap gates or high
+contention; durable quotas and idempotency must stay atomic in PostgreSQL.
+
+### 5.1 Auth abuse ledger, mail truth, Turnstile, disposable email (2026-10-10)
+
+Status: Implemented in code; production SMTP delivery, live Turnstile hostname,
+WAF, and coordinated migration rollout remain **Needs verification**.
+
+`AuthAbuseModule` is the single server owner for registration checks, login
+assessment, email-verification send/verify/correction, and password-reset send
+quotas. `auth_abuse_operations` stores purpose, owner user, normalized email,
+idempotency key, content hash, status, and secret linkage; `auth_abuse_counters`
+stores scoped failure/pause state. Short transactions take row locks; SMTP runs
+outside the database transaction.
+
+| Mechanism | Detail |
+| --- | --- |
+| Mail purposes | `email_verification_send`, `password_reset_send` (combined for quotas); verify ledger purpose `email_verification_verify` |
+| Global mail budgets | `AUTH_MAIL_DAILY_BUDGET` default **200** spends / rolling 24h; `AUTH_MAIL_MONTHLY_BUDGET` default **3000** spends / rolling 31 days (`env.ts`; counts all `MAIL_PURPOSES` with spend statuses) |
+| Personal mail quota | **10** spends per rolling 24h **per account and per address** together (`PERSONAL_MAIL_LIMIT` / `PERSONAL_MAIL_WINDOW_MS`); verification and recovery sends share this pool, not separate per-purpose allowances |
+| Send spacing | After 1st/2nd/3rd+ **reserved** spend on the same owner+purpose: 60s / 120s / 300s (`cooldownAfterSends`); not gated on SMTP `accepted` alone |
+| Quota spend | `reserved`, `accepted`, and `unknown` spend; definite `rejected` does not |
+| OTP code TTL | 5 minutes; one active unused code per send cycle |
+| OTP verify pause | Durable `otp_verify` counter per owner (`auth_abuse_counters`); **5** failed verifies then **5** minute pause; survives resend and email correction; after pause expires the failure cycle resets (`refreshOtpPause`) |
+| Login Turnstile | After 5 failed password attempts on an email within 15 minutes (distributed email counter) |
+| Login pair pause | After 10 failed attempts on the email+IP pair: 5 minute pause only |
+| Reset token TTL | 1 hour (unchanged product window) |
+| Idempotency | Required on OTP send, OTP verify, and forgot-password send only (not register/login). Same `(purpose, idempotencyKey)` replays stored outcome without a second SMTP send or verify-attempt recharge |
+| Content binding | Send hashes bind owner, purpose, and address; verify hash includes the six-digit code (`verifyContentHash`). Same key with changed content is rejected |
+
+**SMTP outcome truth:** `accepted` means the transport completed without a
+classified failure. `rejected` is definite only for the single-recipient guard
+or an SMTP `responseCode` in 400–599 (`mail-outcome.ts`). Timeouts, connection
+loss, and ambiguous disconnects stay `unknown`. `unknown` does not trigger an
+automatic SMTP retry; an already-issued code or reset link may still be usable
+until expiry. Clients must not treat `accepted` as proof the message reached the
+mailbox.
+
+**Neutral recovery:** `POST /auth/password/forgot` returns `{ ok: true }` for
+accepted valid requests and for account-specific suppression (unknown email,
+inactive user, quota/cooldown/budget blocks recorded as suppressed operations).
+Malformed body, Turnstile refusal, and other typed API errors still fail closed
+with their normal status codes; neutrality does not remove safe validation or
+infrastructure errors. Suppression is not mailbox-delivery evidence.
+
+**Sessions:** `sessionVersion` does **not** increment on successful login or
+registration (registration starts at `0`). Logout, password reset completion,
+ban, and admin revoke are the current bump paths. Wrong-password, unknown-account,
+and foreign login attempts do not revoke existing sessions; they may trigger
+Turnstile challenge and email+IP pair pause only.
+
+**Turnstile:** server-side Siteverify only; `TURNSTILE_SECRET_KEY` and
+`TURNSTILE_HOSTNAME` are required on the production security profile. Each check
+binds `action` (`register`, `login`, `email_verification`, `password_reset`),
+hostname, challenge age, and stable validation identity for mail sends.
+Mismatch, expiry, or verifier outage fails closed (`TURNSTILE_*` API codes).
+Mobile loads the public widget only when `EXPO_PUBLIC_TURNSTILE_SITE_KEY` is set;
+missing script/site key shows unavailable copy and blocks submit — not a claim
+of native Turnstile completeness.
+
+**Disposable email:** registration and unverified email correction consult a
+pinned local list (**9222** domains, commit
+`81a8976e63879a11bf4301a28c14e0eb7a7855cf`, SHA-256
+`14f873c136310a4e9e8f25a692c67b211aa049eca7642f0c4a435a38b2af8b21`, CC0).
+Source, license, and update command: `apps/api/src/auth-abuse/vendor/SOURCE.md`.
+Login and password recovery do not use the list.
+
+Coverage: `auth-abuse.service.spec.ts`, `auth-abuse.policy.spec.ts`,
+`mail-outcome.spec.ts`, `turnstile-verifier.spec.ts`, `disposable-email.spec.ts`,
+`auth-abuse.integration.spec.ts`, plus auth/OTP/reset service and HTTP integration
+specs that delegate to the module.
 
 ## 6. Decision table (summary)
 
@@ -153,4 +231,8 @@ Coverage: `env-profile.spec.ts`, `env.spec.ts` matrix, `rules.spec.ts`, `local-m
 ## 8. Deferred ops/security (post-pilot)
 
 - **Backup encryption at rest:** `BACKUP_GPG_RECIPIENT` is supported by `scripts/ops/backup-db.sh`; production key management and rotation are not automated yet. See [`docs/ops/00-RELEASE-AND-BACKUP.md`](../ops/00-RELEASE-AND-BACKUP.md).
-- **Multi-instance rate limits:** in-memory upload/auth limits remain single-replica until a shared store is chosen (**DEC-069**).
+- **Multi-instance rate limits:** upload limits and cheap auth IP gates remain
+  process-local per replica (**DEC-069**). Durable auth-abuse quotas, pauses, and
+  mail idempotency stay in PostgreSQL and do not require Redis today (**DEC-109**).
+  Revisit Redis only for shared cheap gates or high-contention IP spray without
+  moving atomic quota/idempotency out of PostgreSQL.

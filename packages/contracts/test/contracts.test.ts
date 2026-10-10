@@ -3,6 +3,10 @@ import {
   adminProductStatusUpdateRequestSchema,
   adminSellerStatusUpdateRequestSchema,
   acceptRulesResponseSchema,
+  emailOtpRequestSchema,
+  emailOtpVerifyRequestSchema,
+  forgotPasswordRequestSchema,
+  loginRequestSchema,
   registerRequestSchema,
   claimSlugRequestSchema,
   claimSlugResponseSchema,
@@ -30,7 +34,14 @@ describe('shared contracts', () => {
     const slug = 'a'.repeat(length);
     const valid = length >= 3 && length <= 20;
     expect(newAccountSlugSchema.safeParse(slug).success).toBe(valid);
-    expect(registerRequestSchema.safeParse({ email: 'author@example.com', password: 'password123', slug }).success).toBe(valid);
+    expect(
+      registerRequestSchema.safeParse({
+        email: 'author@example.com',
+        password: 'password123',
+        slug,
+        turnstileToken: 'synthetic-turnstile-proof',
+      }).success,
+    ).toBe(valid);
     expect(claimSlugRequestSchema.safeParse({ slug }).success).toBe(valid);
   });
 
@@ -574,5 +585,71 @@ describe('shared contracts', () => {
       sellerProductDetailResponseSchema.shape.editingRevision.safeParse(null)
         .success,
     ).toBe(true);
+  });
+});
+
+const proof = 'synthetic-turnstile-proof';
+const key = 'idem-key-1';
+
+describe('auth challenge requests', () => {
+  it('requires a Turnstile proof and idempotency key on OTP send, OTP verify, and forgot password', () => {
+    expect(emailOtpRequestSchema.safeParse({}).success).toBe(false);
+    expect(emailOtpRequestSchema.safeParse({ idempotencyKey: key }).success).toBe(false);
+    expect(emailOtpRequestSchema.safeParse({ turnstileToken: proof }).success).toBe(false);
+    expect(emailOtpRequestSchema.safeParse({ idempotencyKey: 'short', turnstileToken: proof }).success).toBe(false);
+    expect(emailOtpRequestSchema.safeParse({ idempotencyKey: key, turnstileToken: '' }).success).toBe(false);
+    expect(emailOtpRequestSchema.parse({ idempotencyKey: key, turnstileToken: proof })).toEqual({
+      idempotencyKey: key,
+      turnstileToken: proof,
+    });
+
+    expect(emailOtpVerifyRequestSchema.safeParse({ code: '123456' }).success).toBe(false);
+    expect(emailOtpVerifyRequestSchema.safeParse({ code: '123456', idempotencyKey: 'short' }).success).toBe(false);
+    expect(emailOtpVerifyRequestSchema.parse({ code: '123456', idempotencyKey: key })).toEqual({
+      code: '123456',
+      idempotencyKey: key,
+    });
+
+    expect(forgotPasswordRequestSchema.safeParse({ email: 'author@example.com' }).success).toBe(false);
+    expect(
+      forgotPasswordRequestSchema.safeParse({ email: 'author@example.com', idempotencyKey: key }).success,
+    ).toBe(false);
+    expect(
+      forgotPasswordRequestSchema.safeParse({ email: 'author@example.com', turnstileToken: proof }).success,
+    ).toBe(false);
+    expect(
+      forgotPasswordRequestSchema.parse({
+        email: 'Author@Example.com',
+        idempotencyKey: key,
+        turnstileToken: proof,
+      }),
+    ).toEqual({
+      email: 'author@example.com',
+      idempotencyKey: key,
+      turnstileToken: proof,
+    });
+  });
+
+  it('requires a Turnstile proof for registration and keeps it optional for login', () => {
+    expect(
+      registerRequestSchema.safeParse({
+        email: 'author@example.com',
+        password: 'password123',
+        slug: 'author',
+      }).success,
+    ).toBe(false);
+    expect(
+      registerRequestSchema.parse({
+        email: 'author@example.com',
+        password: 'password123',
+        slug: 'author',
+        turnstileToken: proof,
+      }).turnstileToken,
+    ).toBe(proof);
+
+    const login = { email: 'author@example.com', password: 'password123' };
+    expect(loginRequestSchema.parse(login)).toEqual(login);
+    expect(loginRequestSchema.parse({ ...login, turnstileToken: proof }).turnstileToken).toBe(proof);
+    expect(loginRequestSchema.safeParse({ ...login, turnstileToken: '' }).success).toBe(false);
   });
 });

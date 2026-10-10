@@ -12,6 +12,7 @@ Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
 const harness = vi.hoisted(() => ({
   isAuthenticated: true,
+  pathname: '/cabinet',
   logout: vi.fn<() => Promise<void>>(),
   replace: vi.fn(),
 }));
@@ -56,6 +57,7 @@ vi.mock('../../providers/auth-provider', () => ({
 
 vi.mock('expo-router', () => ({
   useRouter: () => ({ replace: harness.replace }),
+  usePathname: () => harness.pathname,
 }));
 
 import { AccountLogoutButton } from './AccountLogoutButton';
@@ -69,6 +71,11 @@ function mount(node: ReactNode) {
   });
   return {
     container,
+    rerender(node: ReactNode) {
+      act(() => {
+        root.render(node);
+      });
+    },
     unmount() {
       act(() => {
         root.unmount();
@@ -91,6 +98,7 @@ function click(container: ParentNode, label: string) {
 afterEach(() => {
   document.body.replaceChildren();
   harness.isAuthenticated = true;
+  harness.pathname = '/cabinet';
   harness.logout.mockReset();
   harness.replace.mockReset();
   vi.restoreAllMocks();
@@ -159,5 +167,66 @@ describe('AccountLogoutButton', () => {
     expect(unhandled).toEqual([]);
     process.off('unhandledRejection', onUnhandled);
     view.unmount();
+  });
+
+  it('releases the account button after an aborted logout and allows the current one', async () => {
+    harness.logout
+      .mockRejectedValueOnce(new DOMException('The operation was aborted', 'AbortError'))
+      .mockResolvedValueOnce(undefined);
+    const view = mount(createElement(AccountLogoutButton));
+    click(view.container, 'Выйти');
+    click(view.container, 'Выйти');
+    await flush();
+    expect(harness.logout).toHaveBeenCalledTimes(1);
+    expect(harness.replace).not.toHaveBeenCalled();
+    const button = view.container.querySelector('button');
+    expect(button).not.toBeNull();
+    expect(button?.hasAttribute('disabled')).toBe(false);
+    click(view.container, 'Выйти');
+    await flush();
+    expect(harness.logout).toHaveBeenCalledTimes(2);
+    expect(harness.replace).toHaveBeenCalledTimes(1);
+    expect(harness.replace).toHaveBeenCalledWith('/');
+    view.unmount();
+  });
+
+  it('does not leave home after the account screen route changes', async () => {
+    let finish: () => void = () => undefined;
+    harness.logout.mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    const view = mount(createElement(AccountLogoutButton));
+    click(view.container, 'Выйти');
+    harness.pathname = '/works/example';
+    view.rerender(createElement(AccountLogoutButton));
+    await act(async () => {
+      finish();
+    });
+    await flush();
+    expect(harness.replace).not.toHaveBeenCalled();
+    view.unmount();
+  });
+
+  it('does not leave home after the account screen unmounts', async () => {
+    let finish: () => void = () => undefined;
+    harness.logout.mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const view = mount(createElement(AccountLogoutButton));
+    click(view.container, 'Выйти');
+    view.unmount();
+    await act(async () => {
+      finish();
+    });
+    await flush();
+    expect(harness.replace).not.toHaveBeenCalled();
+    expect(errors).not.toHaveBeenCalled();
   });
 });

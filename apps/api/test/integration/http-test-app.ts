@@ -14,6 +14,7 @@ export async function createHttpTestApp(
   databaseUrl: string,
   corsOrigin = 'http://localhost:8081',
 ): Promise<HttpTestApp> {
+  process.env.BIDPLACE_ENV_FILE ??= '/private/tmp/bidplace-missing-auth-abuse-env';
   process.env.NODE_ENV = 'test';
   process.env.APP_ENV = 'local';
   process.env.DATABASE_URL = databaseUrl;
@@ -21,6 +22,8 @@ export async function createHttpTestApp(
   process.env.TRUST_PROXY = 'true';
   process.env.JWT_SECRET = 'wave-3-http-test-secret';
   process.env.TEST_EMAIL_BYPASS = 'false';
+  process.env.TURNSTILE_VERIFIER = 'test';
+  process.env.TURNSTILE_HOSTNAME = 'localhost';
 
   const { AppModule } = await import('../../src/app.module');
   const serverEnv = loadServerEnv();

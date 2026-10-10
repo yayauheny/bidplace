@@ -51,6 +51,8 @@ export default defineConfig({
         E2E_DATABASE_URL: databaseUrl,
         JWT_SECRET: 'e2e-jwt-secret',
         TEST_EMAIL_FILE: 'apps/mobile/e2e/.email.jsonl',
+        TURNSTILE_VERIFIER: 'test',
+        TURNSTILE_HOSTNAME: 'localhost',
       },
     },
     {
@@ -58,7 +60,11 @@ export default defineConfig({
       cwd: '../..',
       url: webBaseURL,
       reuseExistingServer: false,
-      env: { EXPO_PUBLIC_API_URL: apiBaseURL },
+      env: {
+        EXPO_NO_DOTENV: '1',
+        EXPO_PUBLIC_API_URL: apiBaseURL,
+        EXPO_PUBLIC_TURNSTILE_SITE_KEY: '1x00000000000000000000AA',
+      },
     },
   ],
 });

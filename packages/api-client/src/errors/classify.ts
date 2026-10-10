@@ -20,6 +20,18 @@ const businessCodeKinds: Partial<
   [ApiErrorCode.EMAIL_VERIFICATION_REQUIRED]: 'forbidden',
   [ApiErrorCode.RULES_ACCEPTANCE_REQUIRED]: 'forbidden',
   [ApiErrorCode.PASSWORD_RESET_INVALID]: 'bad_request',
+  [ApiErrorCode.TURNSTILE_REQUIRED]: 'forbidden',
+  [ApiErrorCode.TURNSTILE_FAILED]: 'forbidden',
+  [ApiErrorCode.TURNSTILE_UNAVAILABLE]: 'server',
+  [ApiErrorCode.DISPOSABLE_EMAIL]: 'bad_request',
+  [ApiErrorCode.MAIL_COOLDOWN]: 'rate_limited',
+  [ApiErrorCode.MAIL_QUOTA]: 'rate_limited',
+  [ApiErrorCode.MAIL_BUDGET]: 'rate_limited',
+  [ApiErrorCode.MAIL_REJECTED]: 'server',
+  [ApiErrorCode.OTP_INVALID]: 'forbidden',
+  [ApiErrorCode.OTP_EXPIRED]: 'forbidden',
+  [ApiErrorCode.OTP_PAUSED]: 'rate_limited',
+  [ApiErrorCode.LOGIN_PAUSED]: 'rate_limited',
 };
 
 export function classifyApiError(

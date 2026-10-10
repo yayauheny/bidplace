@@ -42,6 +42,18 @@ const defaultErrorMessages: Record<ApiErrorCodeValue, string> = {
     'Idempotency key does not match request',
   [ApiErrorCode.PASSWORD_RESET_INVALID]:
     'Password reset link is invalid or expired',
+  [ApiErrorCode.TURNSTILE_REQUIRED]: 'Turnstile token is required',
+  [ApiErrorCode.TURNSTILE_FAILED]: 'Turnstile verification failed',
+  [ApiErrorCode.TURNSTILE_UNAVAILABLE]: 'Turnstile verification is unavailable',
+  [ApiErrorCode.DISPOSABLE_EMAIL]: 'Disposable email domains cannot be registered',
+  [ApiErrorCode.MAIL_COOLDOWN]: 'Email resend cooldown is active',
+  [ApiErrorCode.MAIL_QUOTA]: 'Email quota is exhausted',
+  [ApiErrorCode.MAIL_BUDGET]: 'Email budget is exhausted',
+  [ApiErrorCode.MAIL_REJECTED]: 'Email was rejected by the mail server',
+  [ApiErrorCode.OTP_INVALID]: 'OTP is invalid',
+  [ApiErrorCode.OTP_EXPIRED]: 'OTP has expired',
+  [ApiErrorCode.OTP_PAUSED]: 'OTP retry pause is active',
+  [ApiErrorCode.LOGIN_PAUSED]: 'Login pause is active',
 };
 
 function mapStatusToCode(status: number): ApiErrorCodeValue {

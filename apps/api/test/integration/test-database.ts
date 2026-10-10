@@ -1,7 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
+import { cpSync, mkdtempSync, rmSync } from 'node:fs';
 import { createRequire } from 'node:module';
-import { resolve } from 'node:path';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
 
 import { PrismaClient } from '@bidplace/database';
 
@@ -98,23 +100,31 @@ async function ensureDatabaseExists(databaseUrl: URL): Promise<void> {
 
 function migrateSchema(databaseUrl: string): void {
   const databasePackageDir = resolve(__dirname, '../../../../packages/database');
-  const resolveFromDatabasePackage = createRequire(
-    resolve(databasePackageDir, 'package.json'),
-  );
-  const prismaCliPath = resolveFromDatabasePackage.resolve('prisma/build/index.js');
+  const stage = mkdtempSync(join(tmpdir(), 'bidplace-integration-migrate-'));
+  try {
+    cpSync(join(databasePackageDir, 'prisma'), join(stage, 'prisma'), { recursive: true });
+    const resolveFromDatabasePackage = createRequire(
+      resolve(databasePackageDir, 'package.json'),
+    );
+    const prismaCliPath = resolveFromDatabasePackage.resolve('prisma/build/index.js');
 
-  execFileSync(
-    process.execPath,
-    [prismaCliPath, 'migrate', 'deploy', '--schema=prisma/schema.prisma'],
-    {
-      cwd: databasePackageDir,
-      env: {
-        ...process.env,
-        DATABASE_URL: databaseUrl,
+    execFileSync(
+      process.execPath,
+      [prismaCliPath, 'migrate', 'deploy', '--schema=prisma/schema.prisma'],
+      {
+        cwd: stage,
+        env: {
+          PATH: process.env.PATH,
+          HOME: process.env.HOME,
+          TMPDIR: process.env.TMPDIR,
+          DATABASE_URL: databaseUrl,
+        },
+        stdio: 'pipe',
       },
-      stdio: 'pipe',
-    },
-  );
+    );
+  } finally {
+    rmSync(stage, { recursive: true, force: true });
+  }
 }
 
 async function dropSchema(databaseUrl: URL, schemaName: string): Promise<void> {

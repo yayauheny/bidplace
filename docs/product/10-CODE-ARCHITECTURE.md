@@ -1,6 +1,6 @@
 # bidplace — архитектура кода
 
-Последнее обновление: 2026-10-09
+Последнее обновление: 2026-10-10
 Статус: Confirmed technical boundaries for the portfolio-first MVP implementation.
 
 ## 2026-10-05 — Cloudflare application deployment (Partial)
@@ -67,7 +67,7 @@ See [`11-PROJECT-STATUS.md`](11-PROJECT-STATUS.md) for remaining gates.
 
 ## Applications and shared boundaries
 
-- `apps/api` is the authoritative NestJS HTTP process. Controllers parse shared Zod contracts; services own business rules and Prisma transactions. Its active product modules are Health, Auth, Analytics, Products, OTP, Password Reset, Admin, Images, Sellers and Portfolio; Categories and core database/mail/time/public-id/image-store modules support that graph. Listing, Bid, Order, Discovery, Activity, lifecycle and Socket.IO application modules are not on the default boot graph.
+- `apps/api` is the authoritative NestJS HTTP process. Controllers parse shared Zod contracts; services own business rules and Prisma transactions. Its active product modules are Health, Auth, Auth Abuse, Analytics, Products, OTP, Password Reset, Admin, Images, Sellers and Portfolio; Categories and core database/mail/time/public-id/image-store modules support that graph. `AppModule` imports global `AuthAbuseModule` (`apps/api/src/auth-abuse/`). Listing, Bid, Order, Discovery, Activity, lifecycle and Socket.IO application modules are not on the default boot graph.
 - First-party product analytics ingest lives in `apps/api/src/analytics` (`POST /api/analytics/events`) and persists `AnalyticsEvent` / `AcquisitionAttribution` without duplicating leftover Bid/Order tables. Admin aggregates are served by `GET /api/admin/analytics/overview` and rendered in Expo admin `/(admin)/analytics`. The overview covers users, authors, published works, acquisition and stuck moderation. Auction/bid/order marketplace metrics are not part of the active overview.
 - HTTP requests receive a server-generated `X-Request-Id`. An inbound `X-Request-Id` is not accepted. The same id is returned on the response and written to the request summary and unexpected-error log.
 - `apps/api/src/sellers` owns the authenticated seller detail boundary `GET /api/seller/products/:id`; it verifies product ownership before returning the shared detail contract, including persisted creation-story steps, process-photo metadata and the latest non-null product moderation reason. `apps/mobile/src/features/sellers/ProductDraftScreen` hydrates from this owner detail before initializing the editable wizard, including `REJECTED` recovery on the same Product.
@@ -242,14 +242,14 @@ SellerProfile
   interleaves published non-cover `ProductImage` rows between paragraphs.
   `ProductCreationStep` remains owner-only and is not a public History CMS;
 - persisted entities expose `createdAt` and `updatedAt`; append-only audit records retain immutable business facts;
-- buyer accepts a versioned service-rules text; `auth.service.ts` stores the acceptance and `POST /api/auth/rules/accept` returns the canonical `{ user }` auth response. Mobile derives session capability from one React Query `['user', 'me']` record. A structured 401 from any query or mutation clears that record and user/seller/admin caches once; 403 and infrastructure errors preserve the authenticated state. OTP and password-reset deliver mail through shared `MailTransport` (`SmtpMailTransport` on the production security profile, `LocalMailTransport` otherwise) with a test-only OTP bypass that can activate only for `NODE_ENV=test` and `APP_ENV=local`;
+- buyer accepts a versioned service-rules text; `auth.service.ts` stores the acceptance and `POST /api/auth/rules/accept` returns the canonical `{ user }` auth response. Mobile derives session capability from one React Query `['user', 'me']` record. A structured 401 from any query or mutation clears that record and user/seller/admin caches once; 403 and infrastructure errors preserve the authenticated state. Registration and forgot-password require Turnstile proof; login accepts an optional adaptive Turnstile token after challenge. **Idempotency keys are required only** on email OTP send, OTP verify, and forgot-password (`packages/contracts/src/auth.ts`, `packages/api-client/src/auth.ts`); register/login do not take idempotency keys. Email verification state exposes `serverNow`, `sendStatus`, and deadline fields from the API; mobile `use-email-verification.ts` drives copy and local countdown ticks only and does not auto-send mail. OTP send/verify and password-reset send delegate durable quotas, pauses, operation replay, and SMTP outcome classification to `AuthAbuseService`; cheap per-IP limits stay in `RateLimitService`. Mail still flows through shared `MailTransport` (`SmtpMailTransport` on the production security profile, `LocalMailTransport` otherwise) with a test-only OTP bypass only for `NODE_ENV=test` and `APP_ENV=local`. Unverified email correction and OTP verify share the same user row lock and expiry recheck as reset completion. Policy numbers and SMTP/Turnstile rules are owned by [`13-APPLICATION-SECURITY.md`](13-APPLICATION-SECURITY.md) (**DEC-109**);
 - leftover Listing/Bid/Order rows remain in Prisma. Hide/unhide and admin
   seller/product moderation still fail closed when a `SCHEDULED` or `LIVE`
   Listing exists (`hasBlockingListing`). There is no listing/bid/order HTTP,
   no Socket.IO, no ScheduleModule lifecycle, and no `COMMERCE_ENABLED` gate.
   Ops leftover inventory is `scripts/ops/commerce-inventory.mjs`. The removed
   application code stays on `feature/commerce-runtime-archive` @ `19eb40e`.
-- password recovery lives in `apps/api/src/password-reset/`: forgot is neutral and never enumerates accounts; per-IP forgot limits run before user lookup and per-email limits after an active user is found; resend cooldown applies only to unused tokens; reset consumes a hashed single-use token, invalidates sibling tokens, updates `passwordHash` and increments `sessionVersion` atomically; `MailTransport` sends reset links; `core/email/smtp-transport.ts` builds Nodemailer options with single-address recipient guard; production requires `PASSWORD_RESET_URL_BASE` for reset links and local dev may fall back to `resolveCorsOrigin()`;
+- password recovery lives in `apps/api/src/password-reset/`: forgot is neutral and never enumerates accounts; per-IP forgot limits run before user lookup; durable reset-send ledger, cooldowns, and Turnstile run through `AuthAbuseService`; reset consumes a hashed single-use token, invalidates sibling tokens, updates `passwordHash` and increments `sessionVersion` atomically under the user lock; `MailTransport` sends reset links; `core/email/smtp-transport.ts` builds Nodemailer options with single-address recipient guard; production requires `PASSWORD_RESET_URL_BASE` for reset links and local dev may fall back to `resolveCorsOrigin()`;
 - admin emergency controls live in `apps/api/src/admin/admin-user.service.ts`: exact email user lookup, reasoned ban/unban with `sessionVersion++` on ban, and session revoke. Listing emergency cancel, needs-order recovery and order replacement HTTP are not on the active boot graph.
 - Production SMTP transport must either use implicit TLS or STARTTLS with `requireTLS: true`. `SMTP_AUTH_MODE` explicitly selects `none` or `login`; login requires both `SMTP_USERNAME` and `SMTP_PASSWORD`, while none omits Nodemailer auth. Empty local relay credentials normalize to absent values and production configuration still fails closed for invalid partial auth.
 - automatic winner replacement and AI-assisted evidence assessment are outside MVP and have no approved future workflow.
@@ -356,12 +356,25 @@ Pilot operations are documented in [`docs/ops/00-RELEASE-AND-BACKUP.md`](../ops/
 application, Work, and related media mutations. It reads `User.emailVerifiedAt`
 from persistence and returns 403 for an unverified session; read/public routes
 remain outside this boundary. Mobile keeps `/me` in `['user','me']` as the sole
-session owner after OTP verification.
+session owner after OTP verification. `/verify-email` uses
+`verify-email-copy.ts` for state-first status text (none / accepted without
+mailbox proof / unknown / rejected) and reason lines; Turnstile unavailable on
+web is explicit fail-closed UI, not native widget proof.
 
-The current 2026-08-10 verification is: typecheck/build 7/7 workspaces, lint
-2/2, contracts 7/7, API unit 145/145, mobile unit 113/113, isolated PostgreSQL
-integration 39/39, E2E fence and disposable Chromium Playwright 35/35. The
-browser suite starts real API and Expo web servers against isolated
-`bidplace_e2e`; PostgreSQL integration uses per-suite schemas. Current
-implementation status and external founder/device/10-user gates are owned by
+### Auth abuse persistence and rollout (2026-10-10)
+
+Additive migrations `20261010010000_auth_abuse_protection` and
+`20261010100000_auth_abuse_legacy_import` introduce `auth_abuse_operations` and
+`auth_abuse_counters`. Integration coverage exercises them only on fresh isolated
+PostgreSQL databases (`auth-abuse.integration.spec.ts`). Production rollout is a
+separate operator step: stop old writers, apply both migrations, deploy this
+build, then resume traffic. The legacy import spends one quota unit per retained
+OTP or reset row at source `createdAt`, imports status as `unknown` without
+inventing SMTP acceptance, copies the latest unused OTP attempt count, and starts
+one five-minute cutover pause when that count is already ≥5. Deleted mail history
+and former in-memory login counters are not recoverable; missing historical
+mailbox addresses attribute spend to the user's current email. Do not treat
+imported rows as complete historical quota truth.
+
+Automated verification counts and browser evidence for this branch are owned by
 `11-PROJECT-STATUS.md`.

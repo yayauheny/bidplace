@@ -1,5 +1,53 @@
 # bidplace — текущий статус проекта
 
+## 2026-10-10 — Auth abuse protection (branch `feature/auth-abuse-protection`)
+
+- `Implemented` (automated backend/contracts/SDK/database on Node 22): durable
+  auth-abuse ledger in `apps/api/src/auth-abuse/` (`AuthAbuseModule`,
+  `auth_abuse_operations`, `auth_abuse_counters`); OTP, password-reset, and auth
+  services/controllers delegate mail quotas, idempotency, login assessment,
+  Turnstile, and disposable-email checks. Shared contracts and API client carry
+  idempotency keys (OTP send/verify and forgot only), Turnstile tokens,
+  `delivery`, and `emailVerificationState` with `serverNow`.
+  Mobile auth surfaces use `use-email-verification.ts`, `verify-email-copy.ts`,
+  `turnstile-widget.tsx`, and recovery copy in `apps/mobile/src/errors/copy.ts`.
+  Login continuation after `redirectTo` uses automatic receipt handling; an
+  independent security review found no correctness defect in that path.
+  Evidence: API **437** unit cases (**395** API / **64** files + **42**
+  env/config unit, not an auth-abuse-only unit bucket), PostgreSQL integration
+  **28**, HTTP integration **22**, contracts **41**, API client **35**, Cloudflare
+  config/scripts **12**; typecheck, build, and targeted lint on the affected graph
+  exited **0**. Optional full `packages/contracts` ESLint remains a known baseline
+  failure on `ee37e9d` (`admin.ts` `import/no-duplicates`, unchanged here).
+- `Implemented` (automated mobile units and web export): **709** unit cases across
+  **120** files (includes **11** owner form-unit cases); mobile `tsc`, ESLint, and
+  e2e database fence **0** with `EXPO_NO_DOTENV=1` on Node **22.23.3**. Production
+  web export embeds the configured API origin (root verification).
+- `Implemented` (mobile web, local loopback + scripted Turnstile fixture): **44/44**
+  Playwright project runs (**22** tests × Chromium and WebKit) via
+  `playwright.auth-abuse.config.ts` — layout (**7**), lifecycle (**7**), and
+  auth-abuse (**8**) files covering five viewports, CSS zoom, keyboard, and resize.
+  Harness: loopback cookie proxy, **6** `auth-cookie-proxy.unit.mjs` wire tests,
+  **6** accepted cookie cases (withheld **2xx** + `hasSetCookie`, `/api/auth/me`,
+  reload, same document, no manual **Continue**). API runs with `TEST_EMAIL_BYPASS=false`.
+  E2e gates password visibility on `expectTurnstileReady` after the local fixture;
+  where Turnstile is not in-frame for layout evidence, the register nickname PNG is
+  taken at initial stable **390×874** before resize/zoom. Repro:
+  [`apps/mobile/e2e/README.md`](../../apps/mobile/e2e/README.md). Visual QA: **50**
+  blank-form PNGs (scripted Turnstile only) —
+  [`forms/CAPTURE-MANIFEST.md`](../audits/current/evidence/2026-10-10-auth-abuse-protection/forms/CAPTURE-MANIFEST.md);
+  audit summary:
+  [`README.md`](../audits/current/evidence/2026-10-10-auth-abuse-protection/README.md).
+- `Needs verification` (production): real SMTP mailbox delivery, live Cloudflare
+  Turnstile hostname/Siteverify, edge WAF/rate rules, and coordinated application
+  of migrations `20261010010000_auth_abuse_protection` and
+  `20261010100000_auth_abuse_legacy_import` on production data remain separate
+  operator steps. Legacy import semantics and rollout order are in
+  `10-CODE-ARCHITECTURE.md` and **DEC-109**.
+- `Unchanged` for MVP product scope: no MFA, breach-password list, or Redis
+  dependency for durable quotas. Foreign login failures still do not revoke
+  sessions. Neutral forgot-password still does not prove delivery.
+
 ## 2026-10-09 — Local nickname suggestions and explicit availability
 
 - `Partial`. Registration generates exactly three distinct contract-valid

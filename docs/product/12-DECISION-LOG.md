@@ -2574,3 +2574,49 @@ cannot advance the form. A positive preflight is not a guarantee: `register`
 and the unique `User.slug` constraint remain final authority, and a final
 `slug_taken` returns to the nickname step without clearing the other fields.
 Suggestions remain stable while moving between steps in the same attempt.
+
+## DEC-109 — Auth abuse protection: PostgreSQL ledger, mail truth, deferred Redis
+
+Date: 2026-10-10
+Status: Confirmed
+Source: explicit founder auth/email MVP brief (pasted thresholds and ownership)
+
+Durable auth-abuse state lives in PostgreSQL (`auth_abuse_operations`,
+`auth_abuse_counters`) behind one Nest module (`apps/api/src/auth-abuse/`).
+Mail sends, OTP verify pause, login failure/Turnstile escalation, and password-reset
+send quotas use short locked transactions; SMTP and Siteverify run outside those
+transactions. Cheap per-IP spray limits stay process-local in
+`RateLimitService` until a future shared store is justified.
+
+Selected for MVP:
+
+- PostgreSQL for quotas, pauses, idempotent mail operations, and login counters.
+- Incremental idempotency keys and content-hash replay binding per purpose.
+- SMTP outcomes limited to `accepted`, definite `rejected` (SMTP 4xx–5xx or
+  recipient guard), or `unknown`; `accepted` is not mailbox delivery proof.
+- Turnstile on register, login, email-verification send, and forgot-password
+  send; server-only secret and hostname fail closed.
+- Pinned disposable-domain file (9222 domains; vendor `SOURCE.md`) for registration
+  and unverified email correction only.
+- Global `AUTH_MAIL_DAILY_BUDGET` / `AUTH_MAIL_MONTHLY_BUDGET` defaults 200 / 3000;
+  combined verification+recovery personal limit 10 per account and per address.
+- Neutral forgot `{ ok: true }` for valid accepted requests and account-specific
+  suppression only; validation and Turnstile failures remain typed refusals.
+- `sessionVersion` unchanged on successful login/register; foreign login failures
+  do not bump it (logout, reset, admin revocation do).
+
+Deferred:
+
+- Redis or another shared store for cheap IP gates / high-contention spray only;
+  atomic quota and idempotency remain in PostgreSQL.
+- Production SMTP deliverability proof, live Turnstile/WAF configuration, and
+  coordinated migration plus legacy import on production traffic (operator step).
+
+Additive migrations `20261010010000_auth_abuse_protection` and
+`20261010100000_auth_abuse_legacy_import` are tested on fresh isolated databases;
+they do not by themselves authorize production rollout.
+
+Revises: the **process-local auth critical counters** implication in
+`13-APPLICATION-SECURITY.md` §8 and pilot single-replica ops (**DEC-069**) for
+mail/login abuse state — durable counters moved to PostgreSQL; **DEC-069** itself
+and upload IP limits are unchanged. Original **DEC-069** entry text is not edited.

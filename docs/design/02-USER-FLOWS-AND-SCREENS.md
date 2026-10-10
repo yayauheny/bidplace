@@ -1,6 +1,6 @@
 # bidplace — пользовательские потоки и экраны First MVP
 
-Последнее обновление: 2026-10-09
+Последнее обновление: 2026-10-10
 Статус: Confirmed product/UI scope for mobile-web 390 Figma cutover
 Product contract: [`../product/05-MVP-RFC.md`](../product/05-MVP-RFC.md)
 
@@ -134,6 +134,18 @@ read of `User.slug` and does not reserve it. Login, recovery, registration
 and email confirmation hide the dock; leaving auth shows it again. Public
 browsing and an already authenticated Home visit do not require email
 verification.
+
+Email confirmation is **state-first**: status copy follows server `sendStatus`
+and timers (`none`, SMTP-accepted without mailbox proof, `unknown`, `rejected`)
+before field-level reasons. Wrong-code feedback tells the user to edit the code
+then retry verify; cooldown, quota, pause, Turnstile, and disposable outcomes
+use dedicated reason lines. Unverified email correction is a separate explicit
+action, not mixed into resend. Repeating the same idempotent send after a
+network or `unknown` outcome does not imply another message was sent. Turnstile
+must succeed before send when required; missing site key or script on web shows
+unavailable copy and blocks submit (fail closed). Recovery forgot-password keeps
+neutral accepted copy for successful suppression paths; validation and Turnstile
+refusals stay typed errors. Neutral copy does not prove delivery.
 
 Phone chrome is one 232×64 four-item glass dock: Home, Search, Add, Profile
 (`DEC-088`). Search lives inside the capsule. Cart and the unused split-search

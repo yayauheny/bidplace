@@ -14,6 +14,8 @@ export const ENV_PROFILE_ERROR = {
     'TEST_EMAIL_BYPASS cannot be enabled in production',
   testEmailBypassRequiresLocalTest:
     'TEST_EMAIL_BYPASS can only be enabled when NODE_ENV=test and APP_ENV=local',
+  turnstileTestVerifierRequiresLocalTest:
+    'TURNSTILE_VERIFIER=test can only be enabled when NODE_ENV=test and APP_ENV=local',
   jwtSecretTooShortInProduction: `JWT_SECRET must be at least ${PRODUCTION_JWT_SECRET_MIN_LENGTH} characters in production`,
 } as const;
 

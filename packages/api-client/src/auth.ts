@@ -6,20 +6,27 @@ import {
   claimSlugResponseSchema,
   slugAvailabilityResponseSchema,
   authResponseSchema,
+  changeUnverifiedEmailRequestSchema,
+  emailOtpRequestResponseSchema,
+  emailOtpRequestSchema,
   emailOtpVerifyRequestSchema,
+  emailVerificationStateSchema,
   forgotPasswordRequestSchema,
   loginRequestSchema,
   meResponseSchema,
   registerRequestSchema,
   resetPasswordRequestSchema,
   serviceRulesResponseSchema,
+  type EmailOtpRequest,
+  type EmailOtpVerifyRequest,
+  type ForgotPasswordRequest,
   type LoginRequest,
   type RegisterRequest,
 } from '@bidplace/contracts';
 import { z } from 'zod';
 
 import { parseRequest } from './errors/parse-request';
-import { requestJson, type RequestContext } from './request';
+import { requestJson, signalRequestOptions, type ReadCallOptions, type RequestContext } from './request';
 
 const logoutResponseSchema = z.object({
   ok: z.literal(true),
@@ -28,20 +35,22 @@ const okResponseSchema = z.object({ ok: z.literal(true) });
 
 export function createAuthClient(context: RequestContext) {
   return {
-    register(input: RegisterRequest) {
+    register(input: RegisterRequest, options?: ReadCallOptions) {
       return requestJson(context, '/api/auth/register', authResponseSchema, {
         method: 'POST',
         body: parseRequest(registerRequestSchema, input),
+        ...signalRequestOptions(options),
       });
     },
-    login(input: LoginRequest) {
+    login(input: LoginRequest, options?: ReadCallOptions) {
       return requestJson(context, '/api/auth/login', authResponseSchema, {
         method: 'POST',
         body: parseRequest(loginRequestSchema, input),
+        ...signalRequestOptions(options),
       });
     },
-    me() {
-      return requestJson(context, '/api/auth/me', meResponseSchema);
+    me(options?: ReadCallOptions) {
+      return requestJson(context, '/api/auth/me', meResponseSchema, signalRequestOptions(options));
     },
     async slugAvailability(slug: string) {
       const parsed = parseRequest(newAccountSlugSchema, slug);
@@ -75,23 +84,47 @@ export function createAuthClient(context: RequestContext) {
         },
       );
     },
-    logout() {
+    logout(options?: ReadCallOptions) {
       return requestJson(context, '/api/auth/logout', logoutResponseSchema, {
         method: 'POST',
+        ...signalRequestOptions(options),
       });
     },
-    requestEmailVerification() {
-      return requestJson(context, '/api/auth/email/request', okResponseSchema, {
+    requestEmailVerification(input: EmailOtpRequest, options?: ReadCallOptions) {
+      return requestJson(
+        context,
+        '/api/auth/email/request',
+        emailOtpRequestResponseSchema,
+        {
+          method: 'POST',
+          body: parseRequest(emailOtpRequestSchema, input),
+          ...signalRequestOptions(options),
+        },
+      );
+    },
+    emailVerificationState(options?: ReadCallOptions) {
+      return requestJson(
+        context,
+        '/api/auth/email/state',
+        emailVerificationStateSchema,
+        signalRequestOptions(options),
+      );
+    },
+    changeUnverifiedEmail(input: { email: string }, options?: ReadCallOptions) {
+      return requestJson(context, '/api/auth/email/address', meResponseSchema, {
         method: 'POST',
+        body: parseRequest(changeUnverifiedEmailRequestSchema, input),
+        ...signalRequestOptions(options),
       });
     },
-    verifyEmailVerification(input: { code: string }) {
+    verifyEmailVerification(input: EmailOtpVerifyRequest, options?: ReadCallOptions) {
       return requestJson(context, '/api/auth/email/verify', okResponseSchema, {
         method: 'POST',
         body: parseRequest(emailOtpVerifyRequestSchema, input),
+        ...signalRequestOptions(options),
       });
     },
-    forgotPassword(input: { email: string }) {
+    forgotPassword(input: ForgotPasswordRequest, options?: ReadCallOptions) {
       return requestJson(
         context,
         '/api/auth/password/forgot',
@@ -99,6 +132,7 @@ export function createAuthClient(context: RequestContext) {
         {
           method: 'POST',
           body: parseRequest(forgotPasswordRequestSchema, input),
+          ...signalRequestOptions(options),
         },
       );
     },

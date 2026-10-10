@@ -20,6 +20,7 @@ function secrets(overrides = {}) {
     SMTP_USERNAME: 'api_token',
     SMTP_PASSWORD: `${canary}-smtp`,
     CLOUDFLARE_CACHE_TOKEN: `${canary}-cache`,
+    TURNSTILE_SECRET_KEY: `${canary}-turnstile`,
     RELEASE_CONTROL: `${canary}-release-control-value-32`,
     ...overrides,
   };

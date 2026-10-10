@@ -1,13 +1,13 @@
 import { ApiErrorCode } from '@bidplace/contracts';
 import { describe, expect, it, vi, afterEach } from 'vitest';
 
+import { turnstileToken as syntheticTurnstileToken } from '../../test/integration/abuse-request';
 import { syntheticServerEnv } from '../core/config/synthetic-server-env';
 import { AppException } from '../core/errors';
-import {
-  PasswordResetService,
-  type PasswordResetRequestContext,
-} from './password-reset.service';
-import { MailTransport } from '../core/mail';
+import { PasswordResetController } from './password-reset.controller';
+import { PasswordResetService } from './password-reset.service';
+
+const resetProof = syntheticTurnstileToken('password_reset');
 
 const passwordHasher = {
   hash: vi.fn().mockResolvedValue('new-hash'),
@@ -17,250 +17,77 @@ const rateLimits = {
   consume: vi.fn().mockReturnValue(true),
 };
 
-const mail: MailTransport = {
-  send: vi.fn().mockResolvedValue(undefined),
+const abuse = {
+  sendPasswordReset: vi.fn().mockResolvedValue(undefined),
 };
 
-function createService(
-  prisma: unknown,
-  overrides: NodeJS.ProcessEnv = {},
-) {
+function createService(prisma: unknown) {
   return new PasswordResetService(
     prisma as never,
     passwordHasher as never,
-    mail,
     rateLimits as never,
-    syntheticServerEnv(overrides),
+    syntheticServerEnv(),
+    abuse as never,
   );
 }
 
 describe('PasswordResetService', () => {
   afterEach(() => {
-    vi.unstubAllEnvs();
-    vi.mocked(mail.send).mockReset();
-    vi.mocked(mail.send).mockResolvedValue(undefined);
-    vi.mocked(rateLimits.consume).mockReset();
-    vi.mocked(rateLimits.consume).mockReturnValue(true);
+    vi.clearAllMocks();
+    rateLimits.consume.mockReturnValue(true);
+    passwordHasher.hash.mockResolvedValue('new-hash');
   });
 
-  it('returns without creating a token for unknown emails', async () => {
-    const prisma = {
-      user: {
-        findUnique: vi.fn().mockResolvedValue(null),
-      },
-      passwordResetToken: {
-        findFirst: vi.fn(),
-        create: vi.fn(),
-      },
-    };
-
-    await createService(prisma).requestReset('missing@example.com');
-
-    expect(prisma.passwordResetToken.create).not.toHaveBeenCalled();
-    expect(mail.send).not.toHaveBeenCalled();
-  });
-
-  it('returns without creating a token for banned users', async () => {
-    const prisma = {
-      user: {
-        findUnique: vi.fn().mockResolvedValue({
-          id: 'user-1',
-          email: 'banned@example.com',
-          status: 'banned',
-        }),
-      },
-      passwordResetToken: {
-        findFirst: vi.fn(),
-        create: vi.fn(),
-      },
-    };
-
-    await createService(prisma).requestReset('banned@example.com');
-
-    expect(prisma.passwordResetToken.create).not.toHaveBeenCalled();
-  });
-
-  it('creates a token and sends mail for active users', async () => {
-    vi.stubEnv('PASSWORD_RESET_URL_BASE', 'http://ignored.example');
-    const tx = {
-      passwordResetToken: {
-        updateMany: vi.fn().mockResolvedValue({ count: 0 }),
-        create: vi.fn().mockResolvedValue({ id: 'token-1' }),
-      },
-    };
-    const prisma = {
-      user: {
-        findUnique: vi.fn().mockResolvedValue({
-          id: 'user-1',
-          email: 'user@example.com',
-          status: 'active',
-        }),
-      },
-      passwordResetToken: {
-        findFirst: vi.fn().mockResolvedValue(null),
-      },
-      $transaction: vi.fn(async (callback: (client: typeof tx) => Promise<unknown>) =>
-        callback(tx),
-      ),
-    };
-
-    await createService(prisma).requestReset('user@example.com');
-
-    expect(tx.passwordResetToken.updateMany).toHaveBeenCalled();
-    expect(tx.passwordResetToken.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          userId: 'user-1',
-          tokenHash: expect.any(String),
-        }),
-      }),
-    );
-    expect(mail.send).toHaveBeenCalledWith(
-      expect.objectContaining({
-        to: 'user@example.com',
-        subject: 'bidplace password reset',
-        text: expect.stringContaining(
-          'http://localhost:8081/reset-password?token=',
-        ),
-      }),
-    );
-  });
-
-  it('returns without creating a token when forgot IP rate limits are exceeded', async () => {
+  it('returns before a reset send when the forgot IP limit is exceeded', async () => {
     rateLimits.consume.mockReturnValueOnce(false);
 
-    const prisma = {
-      user: {
-        findUnique: vi.fn(),
-      },
-      passwordResetToken: {
-        findFirst: vi.fn(),
-        create: vi.fn(),
-      },
-      $transaction: vi.fn(),
-    };
-
-    await createService(prisma).requestReset('user@example.com');
-
-    expect(prisma.user.findUnique).not.toHaveBeenCalled();
-    expect(prisma.$transaction).not.toHaveBeenCalled();
-    expect(mail.send).not.toHaveBeenCalled();
-  });
-
-  it('returns without creating a token when forgot email rate limits are exceeded', async () => {
-    rateLimits.consume
-      .mockReturnValueOnce(true)
-      .mockReturnValueOnce(false);
-
-    const prisma = {
-      user: {
-        findUnique: vi.fn().mockResolvedValue({
-          id: 'user-1',
-          email: 'user@example.com',
-          status: 'active',
-        }),
-      },
-      passwordResetToken: {
-        findFirst: vi.fn(),
-        create: vi.fn(),
-      },
-      $transaction: vi.fn(),
-    };
-
-    await createService(prisma).requestReset('user@example.com');
-
-    expect(prisma.user.findUnique).toHaveBeenCalled();
-    expect(prisma.$transaction).not.toHaveBeenCalled();
-    expect(mail.send).not.toHaveBeenCalled();
-  });
-
-  it('ignores resend cooldown for already-used tokens', async () => {
-    const tx = {
-      passwordResetToken: {
-        updateMany: vi.fn().mockResolvedValue({ count: 0 }),
-        create: vi.fn().mockResolvedValue({ id: 'token-2' }),
-      },
-    };
-    const prisma = {
-      user: {
-        findUnique: vi.fn().mockResolvedValue({
-          id: 'user-1',
-          email: 'user@example.com',
-          status: 'active',
-        }),
-      },
-      passwordResetToken: {
-        findFirst: vi.fn().mockResolvedValue(null),
-        delete: vi.fn(),
-      },
-      $transaction: vi.fn(async (callback: (client: typeof tx) => Promise<unknown>) =>
-        callback(tx),
-      ),
-    };
-
-    await createService(prisma).requestReset('user@example.com');
-
-    expect(prisma.passwordResetToken.findFirst).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { userId: 'user-1', usedAt: null },
-      }),
-    );
-    expect(tx.passwordResetToken.create).toHaveBeenCalled();
-  });
-
-  it('deletes the token but still completes when mail delivery fails', async () => {
-    const marker = 'smtp-secret-marker';
-    const failure = new Error(`delivery ${marker}`);
-    failure.stack = [
-      failure.toString(),
-      `    at SMTPConnection.send (/tmp/${marker}.js:4:2)`,
-      '    at MailTransport.send (/app/dist/core/mail/smtp-transport.js:40:8)',
-    ].join('\n');
-    vi.mocked(mail.send).mockRejectedValueOnce(failure);
-
-    const tx = {
-      passwordResetToken: {
-        updateMany: vi.fn().mockResolvedValue({ count: 0 }),
-        create: vi.fn().mockResolvedValue({ id: 'token-1' }),
-      },
-    };
-    const prisma = {
-      user: {
-        findUnique: vi.fn().mockResolvedValue({
-          id: 'user-1',
-          email: 'user@example.com',
-          status: 'active',
-        }),
-      },
-      passwordResetToken: {
-        findFirst: vi.fn().mockResolvedValue(null),
-        delete: vi.fn().mockResolvedValue({ id: 'token-1' }),
-      },
-      $transaction: vi.fn(async (callback: (client: typeof tx) => Promise<unknown>) =>
-        callback(tx),
-      ),
-    };
-
-    const service = createService(prisma);
-    const loggerError = vi
-      .spyOn(
-        (service as unknown as { logger: { error: (...args: unknown[]) => void } })
-          .logger,
-        'error',
-      )
-      .mockImplementation(() => undefined);
-
-    await expect(service.requestReset('user@example.com')).resolves.toBeUndefined();
-
-    expect(prisma.passwordResetToken.delete).toHaveBeenCalledWith({
-      where: { id: 'token-1' },
+    await createService({}).requestReset('user@example.com', {
+      ip: '203.0.113.4',
+      idempotencyKey: 'idem-key-1',
+      turnstileToken: resetProof,
     });
-    expect(loggerError).toHaveBeenCalledOnce();
-    const logged = JSON.stringify(loggerError.mock.calls);
-    expect(logged).toContain('Password reset email delivery failed; token removed');
-    expect(logged).toContain('at=dist/core/mail/smtp-transport.js:40');
-    expect(logged).not.toContain(marker);
-    loggerError.mockRestore();
+
+    expect(abuse.sendPasswordReset).not.toHaveBeenCalled();
+  });
+
+  it('delegates the reset send after the IP limit', async () => {
+    await createService({}).requestReset('User@Example.com', {
+      ip: '203.0.113.9',
+      turnstileToken: resetProof,
+      idempotencyKey: 'idem-key-1',
+    });
+
+    expect(rateLimits.consume).toHaveBeenCalledWith(
+      'password-reset:request:ip:203.0.113.9',
+      10,
+      60_000,
+    );
+    expect(abuse.sendPasswordReset).toHaveBeenCalledWith({
+      email: 'User@Example.com',
+      ip: '203.0.113.9',
+      turnstileToken: resetProof,
+      idempotencyKey: 'idem-key-1',
+    });
+  });
+
+  it('reads the prototype ip getter for a forgot request', async () => {
+    const request = Object.assign(Object.create({ get ip() { return '203.0.113.50'; } }), {
+      socket: { remoteAddress: '10.0.0.9' },
+    });
+    expect({ ...request }.ip).toBeUndefined();
+    const controller = new PasswordResetController({ requestReset: abuse.sendPasswordReset } as never);
+    await controller.forgot(
+      {
+        email: 'person@example.com',
+        idempotencyKey: 'idem-key-1',
+        turnstileToken: resetProof,
+      },
+      request,
+    );
+    expect(abuse.sendPasswordReset).toHaveBeenCalledWith(
+      'person@example.com',
+      expect.objectContaining({ ip: '203.0.113.50', socket: { remoteAddress: '10.0.0.9' } }),
+    );
   });
 
   it('rejects expired tokens with PASSWORD_RESET_INVALID', async () => {
@@ -285,7 +112,15 @@ describe('PasswordResetService', () => {
 
   it('increments sessionVersion and marks the token used on success', async () => {
     const tx = {
+      $executeRaw: vi.fn().mockResolvedValue(0),
+      $queryRaw: vi.fn().mockResolvedValue([{ id: 'user-1' }]),
       passwordResetToken: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'token-1',
+          usedAt: null,
+          expiresAt: new Date(Date.now() + 60_000),
+          user: { status: 'active' },
+        }),
         updateMany: vi
           .fn()
           .mockResolvedValueOnce({ count: 1 })
@@ -312,6 +147,8 @@ describe('PasswordResetService', () => {
 
     await createService(prisma).resetPassword('raw-token', 'new-password123');
 
+    expect(tx.$executeRaw).toHaveBeenCalled();
+    expect(tx.passwordResetToken.findUnique).toHaveBeenCalled();
     expect(passwordHasher.hash).toHaveBeenCalledWith('new-password123');
     expect(tx.user.update).toHaveBeenCalledWith({
       where: { id: 'user-1' },
@@ -320,6 +157,87 @@ describe('PasswordResetService', () => {
         sessionVersion: { increment: 1 },
       },
     });
+  });
+
+  it('rejects a reset that expires while the password hash waits for the user lock', async () => {
+    const early = Date.parse('2026-10-10T12:00:00.000Z');
+    const late = early + 10_000;
+    vi.useFakeTimers({ now: early });
+    const tx = {
+      $executeRaw: vi.fn().mockResolvedValue(0),
+      $queryRaw: vi.fn().mockResolvedValue([{ id: 'user-1' }]),
+      passwordResetToken: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'token-1',
+          usedAt: null,
+          expiresAt: new Date(early + 5_000),
+          user: { status: 'active' },
+        }),
+        updateMany: vi.fn(),
+      },
+      user: { update: vi.fn() },
+    };
+    const prisma = {
+      passwordResetToken: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'token-1',
+          userId: 'user-1',
+          usedAt: null,
+          expiresAt: new Date(early + 60_000),
+          user: { id: 'user-1', status: 'active' },
+        }),
+      },
+      $transaction: vi.fn(async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx)),
+    };
+    passwordHasher.hash.mockImplementation(async () => {
+      vi.setSystemTime(late);
+      return 'new-hash';
+    });
+
+    try {
+      await expect(createService(prisma).resetPassword('raw-token', 'new-password123')).rejects.toMatchObject({
+        apiCode: ApiErrorCode.PASSWORD_RESET_INVALID,
+      });
+      expect(tx.user.update).not.toHaveBeenCalled();
+      expect(tx.passwordResetToken.updateMany).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('does not change the password when the locked user is inactive', async () => {
+    const tx = {
+      $executeRaw: vi.fn().mockResolvedValue(0),
+      $queryRaw: vi.fn().mockResolvedValue([{ id: 'user-1' }]),
+      passwordResetToken: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'token-1',
+          usedAt: null,
+          expiresAt: new Date(Date.now() + 60_000),
+          user: { status: 'banned' },
+        }),
+        updateMany: vi.fn(),
+      },
+      user: { update: vi.fn() },
+    };
+    const prisma = {
+      passwordResetToken: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'token-1',
+          userId: 'user-1',
+          usedAt: null,
+          expiresAt: new Date(Date.now() + 60_000),
+          user: { id: 'user-1', status: 'active' },
+        }),
+      },
+      $transaction: vi.fn(async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx)),
+    };
+
+    await expect(createService(prisma).resetPassword('raw-token', 'new-password123')).rejects.toMatchObject({
+      apiCode: ApiErrorCode.PASSWORD_RESET_INVALID,
+    });
+    expect(tx.passwordResetToken.updateMany).not.toHaveBeenCalled();
+    expect(tx.user.update).not.toHaveBeenCalled();
   });
 
   it('throws RATE_LIMITED when reset IP limit is exceeded', async () => {

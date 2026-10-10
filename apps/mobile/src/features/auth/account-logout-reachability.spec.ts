@@ -14,6 +14,8 @@ const harness = vi.hoisted(() => ({
   logout: vi.fn<() => Promise<void>>(),
   replace: vi.fn(),
   push: vi.fn(),
+  requestEmailVerification: vi.fn(),
+  emailVerificationState: vi.fn(),
   getMyProfile: vi.fn(),
   listCabinetWorks: vi.fn(),
   listSellerProfiles: vi.fn(),
@@ -36,6 +38,8 @@ vi.mock('expo-router', () => ({
     replace: harness.replace,
     push: harness.push,
   }),
+  useIsFocused: () => true,
+  usePathname: () => '/verify-email',
   Link: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
 }));
 
@@ -46,6 +50,7 @@ vi.mock('../../providers/auth-provider', () => ({
     logout: harness.logout,
     refreshSession: vi.fn(),
     user: {
+      id: 'user-a',
       email: 'author@example.com',
       emailVerifiedAt: '2026-09-27T00:00:00.000Z',
       role: 'user',
@@ -59,8 +64,11 @@ vi.mock('../../providers/api-provider', () => ({
     portfolio: { listCabinetWorks: harness.listCabinetWorks },
     admin: { listSellerProfiles: harness.listSellerProfiles },
     auth: {
-      requestEmailVerification: vi.fn(),
+      requestEmailVerification: harness.requestEmailVerification,
       verifyEmailVerification: vi.fn(),
+      emailVerificationState: harness.emailVerificationState,
+      changeUnverifiedEmail: vi.fn(),
+      me: vi.fn(),
     },
   }),
 }));
@@ -170,6 +178,8 @@ afterEach(() => {
   harness.getMyProfile.mockReset();
   harness.listCabinetWorks.mockReset();
   harness.listSellerProfiles.mockReset();
+  harness.requestEmailVerification.mockReset();
+  harness.emailVerificationState.mockReset();
 });
 
 describe('account logout reachability', () => {
@@ -206,13 +216,24 @@ describe('account logout reachability', () => {
   });
 
   it('keeps logout off the email verification body', async () => {
+    harness.emailVerificationState.mockResolvedValue({
+      serverNow: '2026-10-10T08:00:00.000Z',
+      email: 'author@example.com',
+      verified: false,
+      sendStatus: 'none',
+      codeExpiresAt: null,
+      resendAvailableAt: null,
+      pausedUntil: null,
+      quotaResetsAt: null,
+    });
     const view = mount(
-      createElement(VerifyEmailForm, { redirectTo: '/profile', autoRequest: false }),
+      createElement(VerifyEmailForm, { redirectTo: '/profile' }),
     );
-    await until(view.container, 'Проверьте код на почте');
+    await until(view.container, 'Отправить код');
     expect([...view.container.querySelectorAll('button')].some((button) => button.textContent === 'Выйти')).toBe(false);
     expect([...view.container.querySelectorAll('button')].some((button) => button.textContent === 'Завершить')).toBe(true);
     expect([...view.container.querySelectorAll('button')].some((button) => button.textContent === 'Отправить код')).toBe(true);
+    expect(harness.requestEmailVerification).not.toHaveBeenCalled();
     view.unmount();
   });
 });

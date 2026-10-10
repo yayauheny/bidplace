@@ -37,6 +37,8 @@ export function syntheticProductionServerEnv(
     S3_PUBLIC_BUCKET: 'synthetic-public-media',
     MEDIA_PUBLIC_BASE_URL: 'https://media.example.com',
     CLOUDFLARE_ZONE_ID: 'a'.repeat(32),
+    TURNSTILE_SECRET_KEY: 'synthetic-turnstile-secret',
+    TURNSTILE_HOSTNAME: 'localhost',
     CLOUDFLARE_CACHE_TOKEN: 'synthetic-cache-token',
     S3_ACCESS_KEY_ID: 'synthetic-access-key',
     S3_SECRET_ACCESS_KEY: 'synthetic-secret-key',

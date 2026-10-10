@@ -1,3 +1,5 @@
+import type { RegisterRequest } from '@bidplace/contracts';
+
 import { getSafeRedirect, type SafeRedirect } from './auth-redirect';
 
 const AUTH_ROUTES = new Set([
@@ -97,11 +99,19 @@ export function authLeaveDestination(redirectTo: SafeRedirect): SafeRedirect {
   return '/';
 }
 
-export function registerSubmission<
-  T extends { confirmPassword: string; rulesAccepted?: boolean },
->(values: T) {
-  const { confirmPassword, rulesAccepted, ...request } = values;
-  void confirmPassword;
-  void rulesAccepted;
+export function registerSubmission(values: {
+  email: string;
+  password: string;
+  slug: string;
+  phone?: string | null;
+  confirmPassword: string;
+  rulesAccepted?: boolean;
+}): Omit<RegisterRequest, 'turnstileToken'> {
+  const request: Omit<RegisterRequest, 'turnstileToken'> = {
+    email: values.email,
+    password: values.password,
+    slug: values.slug,
+  };
+  if (values.phone !== undefined) request.phone = values.phone;
   return request;
 }

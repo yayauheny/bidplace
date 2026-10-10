@@ -45,6 +45,7 @@ vi.mock('expo-router', () => ({
     push: harness.push,
     setParams: harness.setParams,
   }),
+  usePathname: () => '/cabinet',
   useLocalSearchParams: () => harness.params,
   Link: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
 }));

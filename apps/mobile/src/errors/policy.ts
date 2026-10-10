@@ -3,8 +3,19 @@ import {
   type ApiClientErrorKind,
 } from '@bidplace/api-client';
 
+import { ApiErrorCode } from '@bidplace/contracts';
+
 import { isInfrastructureError } from './classify';
-import { INFRASTRUCTURE_ERROR_COPY } from './copy';
+import {
+  AUTH_CREDENTIALS_COPY,
+  AUTH_DISPOSABLE_EMAIL_COPY,
+  AUTH_LOGIN_PAUSE_COPY,
+  AUTH_RATE_LIMIT_COPY,
+  AUTH_TURNSTILE_FAILED_COPY,
+  AUTH_TURNSTILE_REQUIRED_COPY,
+  AUTH_TURNSTILE_UNAVAILABLE_COPY,
+  INFRASTRUCTURE_ERROR_COPY,
+} from './copy';
 
 const genericMessagesByKind: Record<ApiClientErrorKind, string> = {
   bad_request: 'Не удалось выполнить запрос.',
@@ -45,6 +56,19 @@ export function getUserFacingErrorMessage(
   }
 
   return fallbackMessage;
+}
+
+export function authRequestMessage(error: unknown): string | null {
+  if (!(error instanceof ApiClientError)) return null;
+  if (error.code === ApiErrorCode.LOGIN_PAUSED) return AUTH_LOGIN_PAUSE_COPY;
+  if (error.code === ApiErrorCode.TURNSTILE_REQUIRED) return AUTH_TURNSTILE_REQUIRED_COPY;
+  if (error.code === ApiErrorCode.TURNSTILE_FAILED) return AUTH_TURNSTILE_FAILED_COPY;
+  if (error.code === ApiErrorCode.TURNSTILE_UNAVAILABLE) return AUTH_TURNSTILE_UNAVAILABLE_COPY;
+  if (error.code === ApiErrorCode.DISPOSABLE_EMAIL) return AUTH_DISPOSABLE_EMAIL_COPY;
+  if (error.kind === 'unauthorized') return AUTH_CREDENTIALS_COPY;
+  if (error.kind === 'rate_limited') return AUTH_RATE_LIMIT_COPY;
+  if (isInfrastructureError(error)) return INFRASTRUCTURE_ERROR_COPY;
+  return null;
 }
 
 export function logInfrastructureError(

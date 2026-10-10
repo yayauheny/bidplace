@@ -1,8 +1,35 @@
 # bidplace — статус дизайна и UI-реализации
 
-Последнее обновление: 2026-10-09
+Последнее обновление: 2026-10-10
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
+
+## 2026-10-10 — Auth abuse web surfaces (state-first copy, Turnstile host)
+
+- `Partial`. `/verify-email`, login, registration, and forgot-password use
+  server-owned `sendStatus` / `delivery` and shared Turnstile widget states
+  without claiming mailbox delivery on SMTP `accepted`. Unknown send outcome copy
+  states that repeating the same idempotent request will not send another message
+  and an already-received code may still be used (`verify-email-copy.ts`).
+- `Implemented` (browser matrix, local web + scripted Turnstile fixture): **44/44**
+  project runs (**22** × Chromium and WebKit) for auth layout, lifecycle, and
+  abuse specs — five viewports, CSS zoom, keyboard, and resize. **6** cookie-proxy
+  wire tests; **6** accepted held-response cases (metadata + `/api/auth/me` / reload /
+  same document, no manual **Continue**). `TEST_EMAIL_BYPASS=false` (verification
+  bypass off). Password visibility waits for Turnstile ready after the local fixture;
+  register nickname Turnstile evidence uses initial stable **390×874** before
+  resize/zoom. No production toggle changes. Repro:
+  `apps/mobile/e2e/README.md`, `playwright.auth-abuse.config.ts`.
+- `Partial` (static visual evidence): root reviewed a contact sheet of **50** safe
+  blank-form PNGs plus sample full frames under
+  `docs/audits/current/evidence/2026-10-10-auth-abuse-protection/forms/`
+  (`CAPTURE-MANIFEST.md` unchanged). Five surfaces × five viewports × Chromium and
+  WebKit; scripted Turnstile fixture geometry, not a live Cloudflare challenge. At
+  **390×400**, captures show the scroll band, not every control at once. Summary:
+  [`README.md`](../audits/current/evidence/2026-10-10-auth-abuse-protection/README.md).
+- `Needs verification` (native / live Cloudflare): web fail-closed when the site key
+  or script is missing is intentional; native widget and production Siteverify proof
+  were not collected and are not launch-ready.
 
 ## 2026-10-09 — Nickname suggestions from the saved fullscreen export
 

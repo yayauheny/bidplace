@@ -1,143 +1,56 @@
 import { ApiErrorCode } from '@bidplace/contracts';
-import { HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
-import { createHash, randomBytes } from 'node:crypto';
+import { HttpStatus, Inject, Injectable } from '@nestjs/common';
+import { createHash } from 'node:crypto';
 
+import { AuthAbuseService } from '../auth-abuse/auth-abuse.service';
+import { lockAbuseUser } from '../auth-abuse/auth-abuse.store';
+import { resolveClientIp, type ClientIpRequest } from '../auth-abuse/client-ip';
 import { PasswordHasherService } from '../auth/password-hasher.service';
-import {
-  SERVER_ENV,
-  type ServerEnv,
-  resolveCorsOrigin,
-} from '../core/config';
+import { SERVER_ENV, type ServerEnv } from '../core/config';
 import { PrismaService } from '../core/database';
 import { AppException } from '../core/errors';
-import { MailTransport } from '../core/mail';
 import { RateLimitService } from '../core/rate-limit';
-import { safeFailureLocation } from '../core/request-context/safe-request-log';
-import { buildPasswordResetLink } from './password-reset-link';
 
-const TOKEN_TTL_MS = 60 * 60 * 1000;
-const RESEND_COOLDOWN_MS = 60_000;
-
-export type PasswordResetRequestContext = {
-  ip?: string;
-  socket?: {
-    remoteAddress?: string;
-  };
+export type PasswordResetRequestContext = ClientIpRequest & {
+  turnstileToken: string;
+  idempotencyKey: string;
 };
-
-function normalizeEmail(email: string): string {
-  return email.trim().toLowerCase();
-}
 
 function hashToken(token: string): string {
   return createHash('sha256').update(token).digest('hex');
 }
 
-function resolveIp(context?: PasswordResetRequestContext): string {
-  return context?.ip ?? context?.socket?.remoteAddress ?? 'unknown';
-}
-
-function resolveResetUrlBase(env: ServerEnv): string | undefined {
-  return env.PASSWORD_RESET_URL_BASE ?? resolveCorsOrigin(env);
-}
-
 @Injectable()
 export class PasswordResetService {
-  private readonly logger = new Logger(PasswordResetService.name);
-
   constructor(
     private readonly prisma: PrismaService,
     private readonly passwordHasher: PasswordHasherService,
-    private readonly mail: MailTransport,
     private readonly rateLimits: RateLimitService,
     @Inject(SERVER_ENV) private readonly env: ServerEnv,
+    private readonly abuse: AuthAbuseService,
   ) {}
 
   async requestReset(
     email: string,
-    context?: PasswordResetRequestContext,
+    context: PasswordResetRequestContext,
   ): Promise<void> {
-    const normalizedEmail = normalizeEmail(email);
-    const ip = resolveIp(context);
-    if (!this.consumeForgotIpLimit(ip)) {
-      return;
-    }
+    const ip = resolveClientIp(context, this.env.TRUST_PROXY);
+    if (!this.consumeForgotIpLimit(ip)) return;
 
-    const user = await this.prisma.user.findUnique({
-      where: { email: normalizedEmail },
-      select: { id: true, email: true, status: true },
+    await this.abuse.sendPasswordReset({
+      email,
+      turnstileToken: context.turnstileToken,
+      idempotencyKey: context.idempotencyKey,
+      ip,
     });
-
-    if (!user || user.status !== 'active') {
-      return;
-    }
-
-    if (!this.consumeForgotEmailLimit(normalizedEmail)) {
-      return;
-    }
-
-    const last = await this.prisma.passwordResetToken.findFirst({
-      where: { userId: user.id, usedAt: null },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    if (last && Date.now() - last.createdAt.getTime() < RESEND_COOLDOWN_MS) {
-      return;
-    }
-
-    const env = this.env;
-    const resetUrlBase = resolveResetUrlBase(env);
-    const rawToken = randomBytes(32).toString('base64url');
-    const tokenHash = hashToken(rawToken);
-
-    const record = await this.prisma.$transaction(async (tx) => {
-      await tx.passwordResetToken.updateMany({
-        where: { userId: user.id, usedAt: null },
-        data: { usedAt: new Date() },
-      });
-
-      return tx.passwordResetToken.create({
-        data: {
-          userId: user.id,
-          tokenHash,
-          expiresAt: new Date(Date.now() + TOKEN_TTL_MS),
-        },
-      });
-    });
-
-    if (!resetUrlBase) {
-      await this.prisma.passwordResetToken.delete({ where: { id: record.id } });
-      this.logger.error(
-        'Password reset link base URL is not configured; token removed',
-      );
-      return;
-    }
-
-    const resetLink = buildPasswordResetLink(resetUrlBase, rawToken);
-
-    try {
-      await this.mail.send({
-        to: user.email,
-        subject: 'bidplace password reset',
-        text: `Reset your bidplace password using this link: ${resetLink}`,
-      });
-    } catch (error) {
-      await this.prisma.passwordResetToken.delete({ where: { id: record.id } });
-      const location = safeFailureLocation(error);
-      this.logger.error(
-        location
-          ? `Password reset email delivery failed; token removed at=${location}`
-          : 'Password reset email delivery failed; token removed',
-      );
-    }
   }
 
   async resetPassword(
     token: string,
     password: string,
-    context?: PasswordResetRequestContext,
+    context?: ClientIpRequest,
   ): Promise<void> {
-    const ip = resolveIp(context);
+    const ip = resolveClientIp(context, this.env.TRUST_PROXY);
     this.consumeResetLimits(ip);
 
     const tokenHash = hashToken(token.trim());
@@ -174,13 +87,33 @@ export class PasswordResetService {
     const passwordHash = await this.passwordHasher.hash(password);
 
     const updated = await this.prisma.$transaction(async (tx) => {
+      await lockAbuseUser(tx, record.userId);
+      const current = await tx.passwordResetToken.findUnique({
+        where: { id: record.id },
+        select: {
+          id: true,
+          usedAt: true,
+          expiresAt: true,
+          user: { select: { status: true } },
+        },
+      });
+      const consumedAt = new Date();
+      if (
+        !current ||
+        current.usedAt ||
+        current.expiresAt <= consumedAt ||
+        current.user.status !== 'active'
+      ) {
+        return false;
+      }
+
       const consumed = await tx.passwordResetToken.updateMany({
         where: {
-          id: record.id,
+          id: current.id,
           usedAt: null,
-          expiresAt: { gt: now },
+          expiresAt: { gt: consumedAt },
         },
-        data: { usedAt: now },
+        data: { usedAt: consumedAt },
       });
 
       if (consumed.count !== 1) {
@@ -193,7 +126,7 @@ export class PasswordResetService {
           usedAt: null,
           id: { not: record.id },
         },
-        data: { usedAt: now },
+        data: { usedAt: consumedAt },
       });
 
       await tx.user.update({
@@ -217,19 +150,7 @@ export class PasswordResetService {
   }
 
   private consumeForgotIpLimit(ip: string): boolean {
-    return this.rateLimits.consume(
-      `password-reset:request:ip:${ip}`,
-      10,
-      60_000,
-    );
-  }
-
-  private consumeForgotEmailLimit(email: string): boolean {
-    return this.rateLimits.consume(
-      `password-reset:request:email:${email}`,
-      3,
-      60_000,
-    );
+    return this.rateLimits.consume(`password-reset:request:ip:${ip}`, 10, 60_000);
   }
 
   private consumeResetLimits(ip: string): void {

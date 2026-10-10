@@ -1,7 +1,7 @@
 /**
  * @vitest-environment jsdom
  */
-import { act, createElement, type ReactNode } from 'react';
+import { act, createElement, useLayoutEffect, type ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -22,6 +22,9 @@ const harness = vi.hoisted(() => ({
   emitBlur: () => undefined as void,
   rulesReads: 0,
   registers: 0,
+  lastRegister: null as null | { turnstileToken?: string },
+  proof: 'widget-token' as string | null,
+  availability: 'ready' as 'ready' | 'unavailable',
   registerError: null as unknown,
   slugAvailability: vi.fn<(slug: string) => Promise<{ available: boolean }>>(),
   accepts: [] as Array<{ version: string; userId: string | null }>,
@@ -141,8 +144,9 @@ vi.mock('../../providers/api-provider', () => ({
         }
         return { user: current };
       },
-      register: (input: { email: string; slug: string }) => {
+      register: (input: { email: string; slug: string; turnstileToken?: string }) => {
         harness.registers += 1;
+        harness.lastRegister = input;
         if (harness.registerError) return Promise.reject(harness.registerError);
         const user = account('user-a', input.email, input.slug);
         if (harness.blurDuringRegister) {
@@ -248,6 +252,22 @@ vi.mock('../../components/ui', () => ({
       }),
       error ? createElement('span', null, error) : null,
     ),
+}));
+
+vi.mock('./turnstile-widget', () => ({
+  TurnstileWidget: ({
+      onToken,
+      onAvailability,
+    }: {
+      onToken: (token: string | null) => void;
+      onAvailability?: (availability: 'ready' | 'unavailable') => void;
+    }) => {
+      useLayoutEffect(() => {
+        onAvailability?.(harness.availability);
+        if (harness.proof) onToken(harness.proof);
+      }, [onToken, onAvailability]);
+      return createElement('div', { 'data-turnstile': 'register' });
+    },
 }));
 
 import { AuthProvider } from '../../providers/auth-provider';
@@ -396,6 +416,9 @@ afterEach(() => {
   harness.releaseRegister = null;
   harness.rulesReads = 0;
   harness.registers = 0;
+  harness.lastRegister = null;
+  harness.proof = 'widget-token';
+  harness.availability = 'ready';
   harness.registerError = null;
   harness.slugAvailability.mockReset();
   harness.accepts = [];
@@ -589,6 +612,7 @@ describe('registration consent attempt', () => {
     clickButton(view.container, 'Дальше');
     await until(view.container, 'Этот никнейм уже занят. Выберите другой.');
     expect(harness.registers).toBe(1);
+    expect(harness.lastRegister).toMatchObject({ turnstileToken: 'widget-token' });
     expect(harness.accepts).toHaveLength(0);
     expect(
       [
@@ -704,6 +728,29 @@ describe('registration consent attempt', () => {
     expect(harness.registers).toBe(1);
     expect(harness.accepts).toHaveLength(0);
     expect(harness.replace).not.toHaveBeenCalled();
+    view.unmount();
+  });
+
+  it('requires a fresh proof before the first register and not on the consent retry', async () => {
+    harness.proof = null;
+    const view = mount();
+    await reachPassword(view.container);
+    clickButton(view.container, 'Дальше');
+    await flush();
+    expect(harness.registers).toBe(0);
+    expect(view.container.textContent).toContain('Подтвердите, что вы не робот.');
+    harness.proof = 'widget-token';
+    view.unmount();
+  });
+
+  it('does not register when the shared check is unavailable', async () => {
+    harness.availability = 'unavailable';
+    const view = mount();
+    await reachPassword(view.container);
+    clickButton(view.container, 'Дальше');
+    await flush();
+    expect(harness.registers).toBe(0);
+    expect(view.container.textContent).toContain('Проверка безопасности сейчас недоступна.');
     view.unmount();
   });
 

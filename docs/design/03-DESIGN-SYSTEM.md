@@ -1,6 +1,6 @@
 # bidplace — дизайн-система Pen v2
 
-Последнее обновление: 2026-10-07
+Последнее обновление: 2026-10-10
 
 Статус: **Figma mobile-web 390 tokens and primitives are the production visual layer; Pen measurements remain historical**
 
@@ -34,6 +34,26 @@ actions use `authPrimary` (`#121212`, Inter 500). The resend action uses
 390 px. Common field states stay shared. ShareSheet and unrelated buttons are
 unchanged. Mixed legal text, the Google glyph and recovery/desktop frames are
 still unresolved; those screens are derived, not 1:1.
+
+### Turnstile widget — auth abuse (2026-10-10)
+
+Shared `TurnstileWidget` (`apps/mobile/src/features/auth/turnstile-widget.tsx`)
+is the only production Turnstile surface. It does not change measured auth sheet
+geometry from the 2026-10-08 fullscreen handoff; it stacks below the existing
+field column on login, registration, `/verify-email` send, and forgot-password.
+
+Semantic states (copy from `apps/mobile/src/errors/copy.ts` unless noted):
+
+| Phase | User-visible behavior |
+| --- | --- |
+| `loading` | «Загрузка проверки безопасности…» (widget-local line) |
+| `ready` | Cloudflare widget mounted when site key and script load |
+| `unavailable` | Shared `AUTH_TURNSTILE_UNAVAILABLE_COPY`; primary submit disabled |
+| Server `TURNSTILE_REQUIRED` / `TURNSTILE_FAILED` | Inline reason on the owning form; user retries proof |
+
+Missing `EXPO_PUBLIC_TURNSTILE_SITE_KEY` or script timeout fails closed into
+`unavailable` — not a native Turnstile implementation claim. Figma geometries
+for fields, buttons, and dock hiding stay unchanged.
 
 The fullscreen nickname frame `4547:23927` uses `authSuggestion` chips:
 37px high, hug width, 8px vertical / 13px horizontal padding, radius 80,

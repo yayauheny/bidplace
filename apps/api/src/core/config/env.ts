@@ -63,6 +63,20 @@ const serverEnvSchema = z
     TEST_EMAIL_FILE: z.string().min(1).optional(),
     TEST_EMAIL_BYPASS: booleanEnvSchema,
     PASSWORD_RESET_URL_BASE: z.string().url().optional(),
+    TURNSTILE_SECRET_KEY: optionalNonEmptyStringEnvSchema,
+    TURNSTILE_HOSTNAME: optionalNonEmptyStringEnvSchema,
+    TURNSTILE_VERIFIER: z.preprocess(
+      (value) => (value === '' ? undefined : value),
+      z.enum(['cloudflare', 'test']).optional(),
+    ),
+    AUTH_MAIL_DAILY_BUDGET: z.preprocess(
+      (value) => (value === '' || value === undefined ? undefined : value),
+      z.coerce.number().int().positive().default(200),
+    ),
+    AUTH_MAIL_MONTHLY_BUDGET: z.preprocess(
+      (value) => (value === '' || value === undefined ? undefined : value),
+      z.coerce.number().int().positive().default(3000),
+    ),
     TELEGRAM_BOT_TOKEN: z.string().optional(),
     TELEGRAM_WEBAPP_URL: z.string().url().optional(),
     ANALYTICS_INGEST_ENABLED: z.preprocess(
@@ -145,6 +159,8 @@ const serverEnvSchema = z
         'SMTP_AUTH_MODE',
         'SMTP_FROM',
         'PASSWORD_RESET_URL_BASE',
+        'TURNSTILE_SECRET_KEY',
+        'TURNSTILE_HOSTNAME',
         'SERVICE_RULES_OWNER',
         'SERVICE_RULES_CONTACT',
         'SERVICE_RULES_TEXT',
@@ -176,6 +192,14 @@ const serverEnvSchema = z
         });
       }
 
+      if (env.TURNSTILE_VERIFIER === 'test') {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['TURNSTILE_VERIFIER'],
+          message: ENV_PROFILE_ERROR.turnstileTestVerifierRequiresLocalTest,
+        });
+      }
+
       if (env.MEDIA_STORAGE_PROVIDER !== 's3') {
         context.addIssue({
           code: z.ZodIssueCode.custom,
@@ -183,12 +207,22 @@ const serverEnvSchema = z
           message: 'MEDIA_STORAGE_PROVIDER=s3 is required in production',
         });
       }
-    } else if (env.TEST_EMAIL_BYPASS && !isExplicitLocalTestProfile(env)) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['TEST_EMAIL_BYPASS'],
-        message: ENV_PROFILE_ERROR.testEmailBypassRequiresLocalTest,
-      });
+    } else {
+      if (env.TURNSTILE_VERIFIER === 'test' && !isExplicitLocalTestProfile(env)) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['TURNSTILE_VERIFIER'],
+          message: ENV_PROFILE_ERROR.turnstileTestVerifierRequiresLocalTest,
+        });
+      }
+
+      if (env.TEST_EMAIL_BYPASS && !isExplicitLocalTestProfile(env)) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['TEST_EMAIL_BYPASS'],
+          message: ENV_PROFILE_ERROR.testEmailBypassRequiresLocalTest,
+        });
+      }
     }
 
     if (

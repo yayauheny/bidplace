@@ -11,6 +11,7 @@ import {
 } from '@bidplace/contracts';
 import {
   ConflictException,
+  HttpStatus,
   Inject,
   Injectable,
   UnauthorizedException,
@@ -25,12 +26,14 @@ import {
   toContractUser,
 } from './auth.mapper';
 import { PasswordHasherService } from './password-hasher.service';
+import { AuthAbuseService } from '../auth-abuse/auth-abuse.service';
 import { SERVER_ENV, type ServerEnv } from '../core/config';
 import {
   PrismaService,
   isPrismaUniqueConstraintError,
   prismaUniqueTargets,
 } from '../core/database';
+import { AppException } from '../core/errors';
 import { resolveServiceRules } from '../core/rules';
 
 function normalizeEmail(email: string): string {
@@ -57,12 +60,20 @@ export class AuthService {
     @Inject(PrismaService) private readonly prisma: PrismaService,
     private readonly passwordHasher: PasswordHasherService,
     private readonly authTokenService: AuthTokenService,
+    private readonly abuse: AuthAbuseService,
     @Inject(SERVER_ENV) private readonly env: ServerEnv,
   ) {}
 
-  async register(input: RegisterRequest): Promise<AuthSessionResult> {
+  async register(
+    input: RegisterRequest & { ip?: string },
+  ): Promise<AuthSessionResult> {
     const email = normalizeEmail(input.email);
     const phone = normalizePhone(input.phone);
+    await this.abuse.assertRegistration({
+      email,
+      turnstileToken: input.turnstileToken,
+      ip: input.ip ?? 'unknown',
+    });
 
     const existingUser = await this.prisma.user.findFirst({
       where: phone
@@ -148,29 +159,56 @@ export class AuthService {
     return { slug: current };
   }
 
-  async login(input: LoginRequest): Promise<AuthSessionResult> {
+  async login(input: LoginRequest & { ip?: string }): Promise<AuthSessionResult> {
     const email = normalizeEmail(input.email);
     const user = await this.prisma.user.findUnique({
       where: { email },
       select: authCredentialsSelect,
     });
-
-    if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+    let passwordAccepted = false;
+    if (user && toContractUser(user).status === 'active') {
+      passwordAccepted = await this.passwordHasher.verify(user.passwordHash, input.password);
+    } else {
+      await this.passwordHasher.verify(await this.passwordHasher.dummyHash(), input.password);
     }
 
-    const contractUser = toContractUser(user);
+    const decision = await this.abuse.assessLogin({
+      email,
+      ip: input.ip ?? 'unknown',
+      passwordAccepted,
+      turnstileToken: input.turnstileToken,
+    });
 
-    if (contractUser.status !== 'active') {
-      throw new UnauthorizedException('Invalid credentials');
+    if (decision.outcome === 'paused') {
+      throw new AppException({
+        status: HttpStatus.TOO_MANY_REQUESTS,
+        code: ApiErrorCode.LOGIN_PAUSED,
+        message: 'Login pause is active',
+        details: { pausedUntil: decision.pausedUntil.toISOString() },
+      });
     }
-
-    const isPasswordValid = await this.passwordHasher.verify(
-      user.passwordHash,
-      input.password,
-    );
-
-    if (!isPasswordValid) {
+    if (decision.outcome === 'turnstile_required') {
+      throw new AppException({
+        status: HttpStatus.FORBIDDEN,
+        code: ApiErrorCode.TURNSTILE_REQUIRED,
+        message: 'Turnstile token is required',
+      });
+    }
+    if (decision.outcome === 'turnstile_rejected') {
+      throw new AppException({
+        status: HttpStatus.FORBIDDEN,
+        code: ApiErrorCode.TURNSTILE_FAILED,
+        message: 'Turnstile verification failed',
+      });
+    }
+    if (decision.outcome === 'turnstile_unavailable') {
+      throw new AppException({
+        status: HttpStatus.SERVICE_UNAVAILABLE,
+        code: ApiErrorCode.TURNSTILE_UNAVAILABLE,
+        message: 'Turnstile verification is unavailable',
+      });
+    }
+    if (decision.outcome !== 'accepted' || !user || !passwordAccepted) {
       throw new UnauthorizedException('Invalid credentials');
     }
 

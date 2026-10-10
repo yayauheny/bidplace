@@ -17,6 +17,7 @@ import {
   HttpTestClient,
   type HttpTestApp,
 } from './http-test-app';
+import { idempotencyKey, turnstileToken } from './abuse-request';
 
 let database: IntegrationDatabaseContext;
 let http: HttpTestApp;
@@ -63,6 +64,8 @@ describe('password reset HTTP transport', () => {
 
     const unknown = await client.post('/auth/password/forgot', {
       email: 'missing@example.com',
+      idempotencyKey: idempotencyKey(),
+      turnstileToken: turnstileToken('password_reset'),
     });
     expect(unknown.status).toBe(201);
     expect(await unknown.json()).toEqual({ ok: true });
@@ -77,6 +80,8 @@ describe('password reset HTTP transport', () => {
 
     const forgot = await client.post('/auth/password/forgot', {
       email: fixture.buyer.email,
+      idempotencyKey: idempotencyKey(),
+      turnstileToken: turnstileToken('password_reset'),
     });
     expect(forgot.status).toBe(201);
     expect(await forgot.json()).toEqual({ ok: true });
@@ -128,6 +133,8 @@ describe('password reset HTTP transport', () => {
       (
         await client.post('/auth/password/forgot', {
           email: fixture.buyer.email,
+          idempotencyKey: idempotencyKey(),
+          turnstileToken: turnstileToken('password_reset'),
         })
       ).status,
     ).toBe(201);
@@ -137,11 +144,17 @@ describe('password reset HTTP transport', () => {
       where: { userId: fixture.buyer.id },
       data: { createdAt: new Date(Date.now() - 120_000) },
     });
+    await prisma.authAbuseOperation.updateMany({
+      where: { ownerUserId: fixture.buyer.id, purpose: 'password_reset_send' },
+      data: { createdAt: new Date(Date.now() - 120_000) },
+    });
 
     expect(
       (
         await client.post('/auth/password/forgot', {
           email: fixture.buyer.email,
+          idempotencyKey: idempotencyKey(),
+          turnstileToken: turnstileToken('password_reset'),
         })
       ).status,
     ).toBe(201);
@@ -174,6 +187,8 @@ describe('password reset HTTP transport', () => {
       (
         await client.post('/auth/password/forgot', {
           email: fixture.buyer.email,
+          idempotencyKey: idempotencyKey(),
+          turnstileToken: turnstileToken('password_reset'),
         })
       ).status,
     ).toBe(201);
@@ -190,5 +205,35 @@ describe('password reset HTTP transport', () => {
     });
     expect(reset.status).toBe(400);
     expect((await reset.json()).code).toBe('PASSWORD_RESET_INVALID');
+  });
+
+  it('rejects forgot bodies that omit the proof or idempotency key', async () => {
+    const client = new HttpTestClient(
+      http.baseUrl,
+      'http://localhost:8081',
+      '203.0.113.41',
+    );
+    const tokensBefore = await prisma.passwordResetToken.count();
+    const missingKey = await client.post('/auth/password/forgot', {
+      email: 'missing-key@example.com',
+      turnstileToken: turnstileToken('password_reset'),
+    });
+    const missingProof = await client.post('/auth/password/forgot', {
+      email: 'missing-proof@example.com',
+      idempotencyKey: idempotencyKey(),
+    });
+
+    expect(missingKey.status).toBe(400);
+    expect(await missingKey.json()).toMatchObject({
+      code: 'validation_error',
+      details: { fieldErrors: { idempotencyKey: expect.any(Array) } },
+    });
+    expect(missingProof.status).toBe(400);
+    expect(await missingProof.json()).toMatchObject({
+      code: 'validation_error',
+      details: { fieldErrors: { turnstileToken: expect.any(Array) } },
+    });
+    expect(await prisma.passwordResetToken.count()).toBe(tokensBefore);
+    await expect(readFile(emailFilePath, 'utf8')).rejects.toThrow();
   });
 });

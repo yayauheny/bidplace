@@ -1,11 +1,11 @@
 import { Link, useIsFocused, useNavigation, useRouter, type Href } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
 import { View, type ViewStyle } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
-import { newAccountSlugSchema, type User } from '@bidplace/contracts';
+import { ApiErrorCode, newAccountSlugSchema, type User } from '@bidplace/contracts';
 import { AppDialog, AppText, PrimaryButton, TextButton, TextField } from '../../components/ui';
 import { FigmaButton } from '../../components/figma/FigmaButton';
 import { MotionPressable } from '../../components/ui/MotionPressable';
@@ -33,6 +33,9 @@ import { nicknameSuggestionGenerator } from './unique-names-generator-adapter';
 
 import {
   applyFormFailure,
+  authRequestMessage,
+  AUTH_TURNSTILE_REQUIRED_COPY,
+  AUTH_TURNSTILE_UNAVAILABLE_COPY,
   getUserFacingErrorMessage,
   readFormFailure,
 } from '../../errors';
@@ -40,6 +43,7 @@ import {
   authKeys,
   canWritePrivateCache,
   currentAuthEpoch,
+  readAuthEpoch,
 } from '../../lib/query-cache';
 import { usePrivateCacheEpoch } from '../../lib/use-private-cache-epoch';
 import {
@@ -49,6 +53,30 @@ import {
   type RegisterFormValues,
 } from './schemas';
 import type { SafeRedirect } from './auth-redirect';
+import { TurnstileWidget, type TurnstileAvailability } from './turnstile-widget';
+
+function aborted(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'name' in error &&
+    error.name === 'AbortError'
+  );
+}
+
+type LoginSuccessReceipt = {
+  userId: string;
+  epochId: number;
+  controller: AbortController;
+};
+
+function loginValuesMatch(
+  held: { email: string; password: string } | null,
+  email: string,
+  password: string,
+): boolean {
+  return held !== null && held.email === email && held.password === password;
+}
 
 /** Closed dialog roots are empty views. Keep them out of parent gap measurement. */
 const dialogHostStyle: ViewStyle = {
@@ -61,7 +89,20 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
   const auth = useAuth();
   const api = useApiClient();
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const focused = useIsFocused();
+  const navigation = useNavigation();
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [challengeEmail, setChallengeEmail] = useState<string | null>(null);
+  const [proof, setProof] = useState<string | null>(null);
+  const [proofAvailability, setProofAvailability] = useState<TurnstileAvailability>('ready');
+  const [widgetGeneration, setWidgetGeneration] = useState(0);
+  const transport = useRef<AbortController | null>(null);
+  const loginReceipt = useRef<LoginSuccessReceipt | null>(null);
+  const submitting = useRef(false);
+  const mounted = useRef(true);
+  const focusedRef = useRef(focused);
+  const privateCacheEpoch = usePrivateCacheEpoch(queryClient);
   const [providerNotice, setProviderNotice] = useState<string | null>(null);
   const [policyOpen, setPolicyOpen] = useState(false);
   const [rulesOpen, setRulesOpen] = useState(false);
@@ -74,20 +115,128 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
   });
   const emailValue = form.watch('email');
   const passwordValue = form.watch('password');
+  const normalizedEmail = emailValue.trim().toLowerCase();
+  const challenge = challengeEmail !== null && challengeEmail === normalizedEmail;
+  const submittedValues = useRef<{ email: string; password: string } | null>(null);
+  const onProof = useCallback((token: string | null) => setProof(token), []);
+  const onProofAvailability = useCallback((availability: TurnstileAvailability) => {
+    setProofAvailability(availability);
+  }, []);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      transport.current?.abort();
+    };
+  }, []);
+  useEffect(() => {
+    focusedRef.current = focused;
+    if (!focused) transport.current?.abort();
+  }, [focused]);
+  useEffect(() => {
+    return navigation.addListener('blur', () => {
+      focusedRef.current = false;
+      transport.current?.abort();
+    });
+  }, [navigation]);
+  useEffect(() => {
+    const current = submittedValues.current;
+    if (!current || !transport.current) return;
+    if (current.email !== emailValue || current.password !== passwordValue) transport.current.abort();
+  }, [emailValue, passwordValue]);
+  useEffect(() => {
+    if (challengeEmail === null || normalizedEmail === challengeEmail) return;
+    setChallengeEmail(null);
+    setProof(null);
+    setSubmitError(null);
+    setWidgetGeneration((generation) => generation + 1);
+  }, [challengeEmail, normalizedEmail]);
   const complete = useAuthSheetComplete();
   useAuthSheetGuard({
     dirty: Boolean(emailValue || passwordValue),
     busy: form.formState.isSubmitting,
   });
-  useEffect(() => {
-    if (form.formState.isSubmitSuccessful && auth.isAuthenticated) {
-      if (complete) complete(redirectTo);
-      else router.replace(redirectTo as Href);
+  const dropLoginReceipt = useCallback((controller?: AbortController) => {
+    const receipt = loginReceipt.current;
+    if (controller && receipt?.controller !== controller) return;
+    loginReceipt.current = null;
+    if (transport.current === receipt?.controller) {
+      transport.current = null;
+      submittedValues.current = null;
     }
+  }, []);
+  const admitLoginReceipt = useCallback(
+    (receipt: LoginSuccessReceipt) => {
+      const { controller } = receipt;
+      if (controller.signal.aborted || !mounted.current || !focusedRef.current) {
+        dropLoginReceipt(controller);
+        return;
+      }
+      if (transport.current !== controller) {
+        dropLoginReceipt(controller);
+        return;
+      }
+      if (!loginValuesMatch(submittedValues.current, emailValue, passwordValue)) {
+        dropLoginReceipt(controller);
+        return;
+      }
+      const epoch = readAuthEpoch(queryClient);
+      const installed = queryClient.getQueryData<User | null>(authKeys.session);
+      if (
+        epoch.id !== receipt.epochId ||
+        !epoch.writesOpen ||
+        installed?.id !== receipt.userId
+      ) {
+        dropLoginReceipt(controller);
+        return;
+      }
+      loginReceipt.current = receipt;
+    },
+    [dropLoginReceipt, emailValue, passwordValue, queryClient],
+  );
+  useEffect(() => {
+    const receipt = loginReceipt.current;
+    if (!receipt) return;
+    const { controller } = receipt;
+    if (controller.signal.aborted || !mounted.current || !focusedRef.current) {
+      dropLoginReceipt(controller);
+      return;
+    }
+    if (transport.current !== controller) {
+      dropLoginReceipt(controller);
+      return;
+    }
+    if (!loginValuesMatch(submittedValues.current, emailValue, passwordValue)) {
+      dropLoginReceipt(controller);
+      return;
+    }
+    const epoch = readAuthEpoch(queryClient);
+    if (epoch.id !== receipt.epochId || !epoch.writesOpen) {
+      dropLoginReceipt(controller);
+      return;
+    }
+    const installed = queryClient.getQueryData<User | null>(authKeys.session);
+    if (installed?.id !== receipt.userId) {
+      dropLoginReceipt(controller);
+      return;
+    }
+    if (!auth.isAuthenticated || auth.user?.id !== receipt.userId) return;
+    if (form.formState.isSubmitting) return;
+    loginReceipt.current = null;
+    transport.current = null;
+    submittedValues.current = null;
+    if (complete) complete(redirectTo);
+    else router.replace(redirectTo as Href);
   }, [
     auth.isAuthenticated,
+    auth.user?.id,
     complete,
-    form.formState.isSubmitSuccessful,
+    dropLoginReceipt,
+    emailValue,
+    form.formState.isSubmitting,
+    passwordValue,
+    privateCacheEpoch,
+    queryClient,
     redirectTo,
     router,
   ]);
@@ -113,13 +262,67 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
     setRulesOpen(true);
     loadLoginRules();
   };
-  const submit = form.handleSubmit(async (values) => {
+  const submitLogin = form.handleSubmit(async (values) => {
+    if (challenge && proofAvailability === 'unavailable') {
+      setSubmitError(AUTH_TURNSTILE_UNAVAILABLE_COPY);
+      return;
+    }
+    if (challenge && !proof) {
+      setSubmitError(AUTH_TURNSTILE_REQUIRED_COPY);
+      return;
+    }
     setSubmitError(null);
+    dropLoginReceipt();
+    transport.current?.abort();
+    const controller = new AbortController();
+    transport.current = controller;
+    submittedValues.current = { email: values.email, password: values.password };
+    const token = proof;
+    if (challenge) {
+      setProof(null);
+      setWidgetGeneration((generation) => generation + 1);
+    }
     try {
-      await auth.login(values);
+      const response = await auth.login(
+        { email: values.email, password: values.password, ...(token ? { turnstileToken: token } : {}) },
+        { signal: controller.signal },
+      );
+      const installed = queryClient.getQueryData<User | null>(authKeys.session);
+      const epoch = readAuthEpoch(queryClient);
+      const sameValues = loginValuesMatch(submittedValues.current, emailValue, passwordValue);
+      if (
+        controller.signal.aborted ||
+        !mounted.current ||
+        !focusedRef.current ||
+        transport.current !== controller ||
+        installed?.id !== response.user.id ||
+        !epoch.writesOpen ||
+        !sameValues
+      ) {
+        return;
+      }
+      admitLoginReceipt({
+        userId: response.user.id,
+        epochId: epoch.id,
+        controller,
+      });
     } catch (error) {
-      if (error instanceof ApiClientError && error.kind === 'unauthorized') {
-        setSubmitError('Неверная почта или пароль');
+      if (controller.signal.aborted || aborted(error)) {
+        dropLoginReceipt(controller);
+        return;
+      }
+      const message = authRequestMessage(error);
+      if (
+        error instanceof ApiClientError &&
+        error.code === ApiErrorCode.TURNSTILE_REQUIRED &&
+        mounted.current &&
+        focusedRef.current &&
+        transport.current === controller
+      ) {
+        setChallengeEmail(values.email.trim().toLowerCase());
+      }
+      if (message) {
+        setSubmitError(message);
         return;
       }
       const failure = readFormFailure(error, ['email', 'password']);
@@ -129,8 +332,20 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
       }
       applyFormFailure(form, failure, ['email', 'password']);
       setSubmitError(failure.formMessage);
+    } finally {
+      if (transport.current === controller && loginReceipt.current?.controller !== controller) {
+        transport.current = null;
+        submittedValues.current = null;
+      }
     }
   });
+  const submit = () => {
+    if (submitting.current) return;
+    submitting.current = true;
+    void Promise.resolve(submitLogin()).finally(() => {
+      submitting.current = false;
+    });
+  };
   if (!auth.ready)
     return (
       <AppText role="bodySmall" tone="secondary">
@@ -184,6 +399,7 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
                 autoComplete="current-password"
                 metrics="authPassword"
                 error={form.formState.errors.password?.message}
+                onSubmitEditing={() => void submit()}
               />
             )}
           />
@@ -206,6 +422,14 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
             </MotionPressable>
           </Link>
         </View>
+        {challenge ? (
+          <TurnstileWidget
+            key={widgetGeneration}
+            action="login"
+            onToken={onProof}
+            onAvailability={onProofAvailability}
+          />
+        ) : null}
         {submitError ? (
           <AppText
             role="bodySmall"
@@ -398,6 +622,16 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
   const mounted = useRef(true);
   const completed = useRef(false);
   const createdAccountId = useRef<string | null>(null);
+  const registerTransport = useRef<AbortController | null>(null);
+  const registerSnapshot = useRef<string | null>(null);
+  const registerSubmitting = useRef(false);
+  const [proof, setProof] = useState<string | null>(null);
+  const [proofAvailability, setProofAvailability] = useState<TurnstileAvailability>('ready');
+  const [widgetGeneration, setWidgetGeneration] = useState(0);
+  const onProof = useCallback((token: string | null) => setProof(token), []);
+  const onProofAvailability = useCallback((availability: TurnstileAvailability) => {
+    setProofAvailability(availability);
+  }, []);
   const focused = useIsFocused();
   const navigation = useNavigation();
   const focusedRef = useRef(focused);
@@ -473,11 +707,18 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
     mounted.current = true;
     return () => {
       mounted.current = false;
+      registerTransport.current?.abort();
     };
   }, []);
   useEffect(() => {
+    if (!registerSnapshot.current || !registerTransport.current) return;
+    const current = `${watched.email}\0${watched.slug}\0${watched.password}`;
+    if (current !== registerSnapshot.current) registerTransport.current.abort();
+  }, [watched.email, watched.password, watched.slug]);
+  useEffect(() => {
     const markBlurred = () => {
       focusedRef.current = false;
+      registerTransport.current?.abort();
       sessionOperation.current += 1;
       nicknameAdvanceOperation.current += 1;
       nicknameAdvancePending.current = false;
@@ -496,6 +737,7 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
   useEffect(() => {
     if (wasFocused.current && !focused) {
       focusedRef.current = false;
+      registerTransport.current?.abort();
       sessionOperation.current += 1;
       nicknameAdvanceOperation.current += 1;
       nicknameAdvancePending.current = false;
@@ -582,7 +824,7 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
         if (rulesRequest.current === request) rulesPending.current = false;
       });
   };
-  const submit = form.handleSubmit(async (values) => {
+  const submitRegistration = form.handleSubmit(async (values) => {
     setSubmitError(null);
     const operation = sessionOperation.current;
     const epoch = currentAuthEpoch(queryClient);
@@ -603,10 +845,35 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
       setSubmitError('Не удалось получить правила.');
       return;
     }
+    if (!createdAccountId.current) {
+      if (proofAvailability === 'unavailable') {
+        setSubmitError(AUTH_TURNSTILE_UNAVAILABLE_COPY);
+        return;
+      }
+      if (!proof) {
+        setSubmitError(AUTH_TURNSTILE_REQUIRED_COPY);
+        return;
+      }
+    }
     let consentEpoch = epoch;
+    registerTransport.current?.abort();
+    const controller = new AbortController();
+    registerTransport.current = controller;
+    registerSnapshot.current = `${values.email}\0${values.slug}\0${values.password}`;
     try {
       if (!createdAccountId.current) {
-        const response = await auth.register(registerSubmission(values));
+        const token = proof;
+        if (!token) {
+          setSubmitError(AUTH_TURNSTILE_REQUIRED_COPY);
+          return;
+        }
+        setProof(null);
+        setWidgetGeneration((generation) => generation + 1);
+        const response = await auth.register(
+          { ...registerSubmission(values), turnstileToken: token },
+          { signal: controller.signal },
+        );
+        if (controller.signal.aborted || !mounted.current || !focusedRef.current) return;
         const sessionId = sessionUser()?.id ?? null;
         createdAccountId.current = response.user.id;
         const installedHere = sessionId === response.user.id;
@@ -636,6 +903,20 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
       }
       finishRegistration(refreshed, operation);
     } catch (error) {
+      if (controller.signal.aborted || aborted(error)) {
+        const sessionId = sessionUser()?.id ?? null;
+        if (
+          mounted.current &&
+          focusedRef.current &&
+          sessionId &&
+          sessionId !== createdAccountId.current
+        ) {
+          clearShownRules();
+          form.setValue('rulesAccepted', false);
+          setSubmitError('Сессия изменилась. Согласие не перенесено.');
+        }
+        return;
+      }
       if (!createdAccountId.current) {
         if (!anonymousOwns(operation, epoch)) return;
       } else if (!consentOwns(operation, consentEpoch)) {
@@ -654,6 +935,11 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
         setSubmitError('Не удалось сохранить согласие. Повторите принятие правил.');
         return;
       }
+      const message = authRequestMessage(error);
+      if (message) {
+        setSubmitError(message);
+        return;
+      }
       const failure = readFormFailure(error, ['email', 'slug', 'password', 'phone']);
       if (failure.disposition === 'passthrough') {
         setSubmitError(getUserFacingErrorMessage(error, 'Не удалось зарегистрироваться'));
@@ -668,8 +954,20 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
       }
       if (failure.fields.email) setStep('email');
       setSubmitError(failure.formMessage);
+    } finally {
+      if (registerTransport.current === controller) {
+        registerTransport.current = null;
+        registerSnapshot.current = null;
+      }
     }
   });
+  const submit = () => {
+    if (registerSubmitting.current) return;
+    registerSubmitting.current = true;
+    void Promise.resolve(submitRegistration()).finally(() => {
+      registerSubmitting.current = false;
+    });
+  };
   const goNext = async () => {
     if (
       createdAccountId.current &&
@@ -742,6 +1040,7 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
       }
       return;
     }
+    if (registerSubmitting.current) return;
     await submit();
   };
   if (auth.ready && openedAuthenticated.current === null) {
@@ -940,6 +1239,14 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
                 />
               )}
             />
+            {createdAccountId.current ? null : (
+              <TurnstileWidget
+                key={widgetGeneration}
+                action="register"
+                onToken={onProof}
+                onAvailability={onProofAvailability}
+              />
+            )}
           </>
         ) : null}
         {submitFeedback}

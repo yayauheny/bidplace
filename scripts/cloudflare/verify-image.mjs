@@ -71,6 +71,7 @@ try {
     CORS_ORIGIN: 'https://staging.bid.place', TRUST_PROXY: 'true',
     SMTP_HOST: 'smtp.example.invalid', SMTP_PORT: '587', SMTP_SECURE: 'false', SMTP_AUTH_MODE: 'none',
     SMTP_FROM: 'smoke@example.invalid', PASSWORD_RESET_URL_BASE: 'https://staging.bid.place',
+    TURNSTILE_SECRET_KEY: 'local-smoke-only', TURNSTILE_HOSTNAME: 'staging.bid.place',
     SERVICE_RULES_OWNER: 'Local image smoke', SERVICE_RULES_CONTACT: 'smoke@example.invalid',
     SERVICE_RULES_TEXT: 'Local verification only; never deployed.', TEST_EMAIL_BYPASS: 'false',
     MEDIA_STORAGE_PROVIDER: 's3', S3_ENDPOINT: 'https://r2.example.invalid', S3_REGION: 'auto',

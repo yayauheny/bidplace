@@ -3,8 +3,10 @@ import { resolve } from 'node:path';
 
 import { expect, test, type Page } from '@playwright/test';
 
+import { AUTH_BROWSER_VIEWPORTS, viewportLabel } from './support/auth-viewports';
 import { e2eEvidenceDir } from './support/evidence-dir';
 import { expectPasswordVisibility } from './support/fill-control';
+import { expectTurnstileReady, installTurnstileFixture } from './support/turnstile-fixture';
 
 const artifactDir = resolve(e2eEvidenceDir, 'stabilization');
 const nicknameArtifactDir = resolve(
@@ -45,19 +47,19 @@ test('dirty login asks before closing and providers stay unavailable', async ({ 
   await page.getByRole('button', { name: 'Продолжить', exact: true }).click();
 
   await mkdir(artifactDir, { recursive: true });
+  const loginUrl = page.url();
+  const seen = new Set<string>();
   for (const viewport of [
-    { width: 1280, height: 720 },
+    ...AUTH_BROWSER_VIEWPORTS,
     { width: 1024, height: 768 },
     { width: 1440, height: 900 },
-    { width: 375, height: 667 },
-    { width: 440, height: 956 },
-    { width: 390, height: 400 },
-    { width: 390, height: 874 },
   ]) {
+    seen.add(viewportLabel(viewport));
     await page.setViewportSize(viewport);
+    expect(page.url()).toBe(loginUrl);
     await page.getByRole('button', { name: 'Закрыть', exact: true }).click();
     await expectCenteredSurface(page, '#auth-exit-confirm');
-    await page.screenshot({ path: resolve(artifactDir, `${engine(page)}-auth-exit-${viewport.width}x${viewport.height}.png`) });
+    await captureAuthSurface(page, page.locator('#auth-exit-confirm'), resolve(artifactDir, `${engine(page)}-auth-exit-${viewport.width}x${viewport.height}.png`));
     await page.getByRole('button', { name: 'Продолжить', exact: true }).click();
     await page.getByRole('link', { name: 'политику конфиденциальности', exact: true }).click();
     await expectCenteredSurface(page, '#app-dialog-content');
@@ -71,7 +73,7 @@ test('dirty login asks before closing and providers stay unavailable', async ({ 
     expect(titleBox!.x + titleBox!.width).toBeLessThanOrEqual(contentBox!.x + contentBox!.width);
     await expect(content).toHaveJSProperty('scrollLeft', 0);
     expect(await content.evaluate((node) => node.scrollWidth <= node.clientWidth)).toBe(true);
-    await page.screenshot({ path: resolve(artifactDir, `${engine(page)}-auth-policy-${viewport.width}x${viewport.height}.png`) });
+    await captureAuthSurface(page, content, resolve(artifactDir, `${engine(page)}-auth-policy-${viewport.width}x${viewport.height}.png`));
     await page.keyboard.press('Escape');
     await expect(policy).toHaveCount(0);
     await expect(page.getByRole('link', { name: 'политику конфиденциальности', exact: true })).toBeFocused();
@@ -82,11 +84,16 @@ test('dirty login asks before closing and providers stay unavailable', async ({ 
   await expect(page.getByText('Правила сервиса', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Закрыть окно', exact: true }).click();
   await expect(panel).toHaveCount(0);
+  await page.setViewportSize({ width: 390, height: 874 });
   await page.evaluate(() => { document.documentElement.style.zoom = '1.5'; });
-  await page.getByRole('link', { name: 'политику конфиденциальности', exact: true }).click();
+  const privacyAtZoom = page
+    .locator('#auth-sheet')
+    .getByRole('link', { name: 'политику конфиденциальности', exact: true });
+  await clickAtHitCenter(page, privacyAtZoom);
   expect(await page.locator('#app-dialog-content').evaluate((node) => node.scrollWidth <= node.clientWidth)).toBe(true);
-  await expect(page.getByRole('button', { name: 'Закрыть окно', exact: true })).toBeInViewport();
-  await page.getByRole('button', { name: 'Закрыть окно', exact: true }).click();
+  const closeAtZoom = page.getByRole('button', { name: 'Закрыть окно', exact: true });
+  await expect(closeAtZoom).toBeInViewport();
+  await clickAtHitCenter(page, closeAtZoom);
   await page.evaluate(() => { document.documentElement.style.zoom = ''; });
   await email.fill('login-layout@example.com');
   for (const failure of [
@@ -105,6 +112,19 @@ test('dirty login asks before closing and providers stay unavailable', async ({ 
     }
     await page.unroute('**/api/auth/login');
   }
+  expect([...seen]).toEqual(expect.arrayContaining(AUTH_BROWSER_VIEWPORTS.map(viewportLabel)));
+  await page.setViewportSize({ width: 390, height: 400 });
+  await page.evaluate(() => { document.documentElement.style.zoom = '1.5'; });
+  await page.route('**/api/auth/login', (route) => route.fulfill({
+    status: 429,
+    json: { status: 429, code: 'rate_limited', message: 'Too many requests' },
+  }));
+  await clickAtHitCenter(page, page.getByRole('button', { name: 'Войти', exact: true }));
+  const limited = page.getByText('Слишком много запросов. Попробуйте немного позже.', { exact: true }).last();
+  await expect(limited).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Войти', exact: true })).toBeInViewport();
+  await page.evaluate(() => { document.documentElement.style.zoom = ''; });
+  await page.unroute('**/api/auth/login');
   expect(errors).toEqual([]);
 });
 
@@ -293,10 +313,7 @@ async function expectAuthBrowserHistory(page: Page, navigationApi: boolean) {
   await expect(page.getByText('Введите вашу почту', { exact: true })).toHaveCount(0);
 
   await page.goto('/');
-  const catalog = page.getByRole('button', { name: 'Смотреть все' }).first();
-  await catalog.scrollIntoViewIfNeeded();
-  await catalog.click();
-  await expect(page).toHaveURL(/\/works$/);
+  await openWorksCatalog(page);
   await page.getByRole('link', { name: 'Профиль', exact: true }).click();
   await expect(page).toHaveURL(/\/login$/);
   await expect(loginTitle).toBeVisible();
@@ -473,6 +490,7 @@ test('register email title layout is stable across viewport resize', async ({ pa
 
 test('auth composition is stacked in the S4 phone column', async ({ page }) => {
   await mkdir(artifactDir, { recursive: true });
+  await installTurnstileFixture(page);
 
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/register');
@@ -564,6 +582,7 @@ test('auth composition is stacked in the S4 phone column', async ({ page }) => {
   const password = page.getByLabel('Введите пароль', { exact: true });
   await expect(password).toBeVisible();
   expect(availabilityRequests).toBe(1);
+  await expectTurnstileReady(page, 'register');
   const confirmation = page.getByLabel('Подтвердите пароль', { exact: true });
   await password.fill('layout-password-123');
   await confirmation.fill('layout-password-123');
@@ -571,7 +590,11 @@ test('auth composition is stacked in the S4 phone column', async ({ page }) => {
   await expectPasswordVisibility(confirmation);
   await expect(page.locator('#auth-exit-confirm')).toHaveCount(0);
   await page.setViewportSize({ width: 390, height: 400 });
-  await page.screenshot({ path: resolve(artifactDir, `${engine(page)}-register-password-390x400.png`) });
+  await captureAuthSurface(
+    page,
+    page.getByText('Создайте пароль', { exact: true }),
+    resolve(artifactDir, `${engine(page)}-register-password-390x400.png`),
+  );
 
   await page.goto('/reset-password?token=layout-only-synthetic');
   const resetPassword = page.getByRole('textbox', { name: 'Новый пароль', exact: true });
@@ -581,12 +604,20 @@ test('auth composition is stacked in the S4 phone column', async ({ page }) => {
   await expectPasswordVisibility(resetPassword);
   await expectPasswordVisibility(resetConfirmation);
   await expect(page.locator('#auth-exit-confirm')).toHaveCount(0);
-  await page.screenshot({ path: resolve(artifactDir, `${engine(page)}-reset-password-390x400.png`) });
+  await page.getByRole('button', { name: 'Закрыть', exact: true }).click();
+  const resetExitCopy = page.getByText('Новый пароль не сохранится, пока форма не отправлена.', { exact: true });
+  await expect(resetExitCopy).toBeVisible();
+  await captureAuthSurface(
+    page,
+    resetExitCopy,
+    resolve(artifactDir, `${engine(page)}-reset-password-390x400.png`),
+  );
 });
 
 test('nickname suggestions check availability only on explicit Next', async ({
   page,
 }) => {
+  await installTurnstileFixture(page);
   await mkdir(nicknameArtifactDir, { recursive: true });
   await page.route('**/api/auth/me', (route) =>
     route.fulfill({
@@ -850,6 +881,7 @@ test('nickname suggestions check availability only on explicit Next', async ({
   await page
     .getByLabel('Подтвердите пароль', { exact: true })
     .fill('registration-password-123');
+  await expectTurnstileReady(page, 'register');
   await next.click();
   await expect(
     page.getByText('Этот никнейм уже занят. Выберите другой.', { exact: true }),
@@ -883,13 +915,54 @@ test('nickname suggestions check availability only on explicit Next', async ({
   });
 });
 
+async function clickAtHitCenter(page: Page, target: ReturnType<Page['locator']>) {
+  await target.scrollIntoViewIfNeeded();
+  const point = await target.evaluate((node) => {
+    const reaches = (x: number, y: number) => {
+      const hit = document.elementFromPoint(x, y);
+      return hit === node || (hit !== null && node.contains(hit));
+    };
+    for (const rect of node.getClientRects()) {
+      const left = Math.max(rect.left, 0);
+      const top = Math.max(rect.top, 0);
+      const right = Math.min(rect.right, window.innerWidth);
+      const bottom = Math.min(rect.bottom, window.innerHeight);
+      if (right - left < 1 || bottom - top < 1) continue;
+      const x = left + (right - left) / 2;
+      const y = top + (bottom - top) / 2;
+      if (reaches(x, y)) return { x, y, reached: true };
+    }
+    return { x: 0, y: 0, reached: false };
+  });
+  expect(point.reached).toBe(true);
+  await page.mouse.click(point.x, point.y);
+}
+
 async function historyStep(page: Page, delta: number) {
   await page.evaluate((step) => {
     window.history.go(step);
   }, delta);
 }
 
+async function worksCatalogButton(page: Page) {
+  const populated = page.getByRole('button', { name: 'Смотреть все' });
+  if ((await populated.count()) > 0) return populated.first();
+  return page.getByRole('button', { name: 'Все работы', exact: true });
+}
+
+async function openWorksCatalog(page: Page) {
+  const catalog = await worksCatalogButton(page);
+  await catalog.scrollIntoViewIfNeeded();
+  await catalog.click();
+  await expect(page).toHaveURL(/\/works$/);
+}
+
 async function pushWorksFromBackground(page: Page) {
+  const nonce = await page.evaluate(() => {
+    const value = crypto.randomUUID();
+    document.documentElement.dataset.bidplaceLayoutNonce = value;
+    return value;
+  });
   await expect.poll(async () =>
     page.evaluate(() => {
       const buttons = [...document.querySelectorAll('[role="button"]')];
@@ -901,6 +974,8 @@ async function pushWorksFromBackground(page: Page) {
       return true;
     }),
   ).toBe(true);
+  await expect(page).toHaveURL(/\/works$/);
+  expect(await page.evaluate(() => document.documentElement.dataset.bidplaceLayoutNonce)).toBe(nonce);
 }
 
 async function expectS4Register(page: Page) {
@@ -930,6 +1005,14 @@ async function expectCenteredPhoneColumn(page: Page) {
   expect(viewport).not.toBeNull();
   expect(frame!.width).toBeCloseTo(390, 1);
   expect(frame!.x).toBeCloseTo((viewport!.width - frame!.width) / 2, 0);
+}
+
+async function captureAuthSurface(page: Page, target: ReturnType<Page['locator']>, path: string) {
+  if (process.env.E2E_REDACT_AUTH_ARTIFACTS === '1') {
+    await target.screenshot({ path });
+    return;
+  }
+  await page.screenshot({ path });
 }
 
 function engine(page: Page) {

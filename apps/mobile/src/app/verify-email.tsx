@@ -26,7 +26,7 @@ function VerifyEmailScreen() {
         description: 'Подтверждение можно пройти позже. Аккаунт сохранится.',
       }}
     >
-      <VerifyEmailForm redirectTo={safeRedirect} autoRequest />
+      <VerifyEmailForm redirectTo={safeRedirect} />
     </AuthViewport>
   );
 }

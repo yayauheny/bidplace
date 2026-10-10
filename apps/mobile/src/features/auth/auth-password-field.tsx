@@ -15,6 +15,7 @@ export function AuthPasswordField({
   error,
   autoComplete,
   metrics = 'default',
+  onSubmitEditing,
 }: {
   label: string;
   value: string;
@@ -23,6 +24,7 @@ export function AuthPasswordField({
   error?: string;
   autoComplete: 'current-password' | 'new-password';
   metrics?: 'default' | 'authPassword' | 'authScreenPassword';
+  onSubmitEditing?: () => void;
 }) {
   const inputRef = useRef<TextInput>(null);
   const selection = useRef({ start: value.length, end: value.length });
@@ -38,6 +40,8 @@ export function AuthPasswordField({
       placeholder={label}
       autoComplete={autoComplete}
       secureTextEntry={!visible}
+      returnKeyType={onSubmitEditing ? 'go' : 'done'}
+      onSubmitEditing={onSubmitEditing}
       metrics={metrics}
       error={error}
       onSelectionChange={(event) => {

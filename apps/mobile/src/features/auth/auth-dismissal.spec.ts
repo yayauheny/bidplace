@@ -9,9 +9,8 @@ import {
   authRouteFromLocation,
   registerSubmission,
 } from './auth-dismissal';
-import { verificationStatusCopy } from './verify-email-copy';
+import { verificationReasonCopy, verificationSendLabel, verificationStatusCopy } from './verify-email-copy';
 import { maskEmail } from './mask-email';
-import { confirmedResendDeadline, resendRemainingSeconds } from './resend-deadline';
 
 describe('auth sheet dismissal', () => {
   it('allows movement between auth steps and confirms a dirty exit', () => {
@@ -85,30 +84,81 @@ describe('masked recovery address', () => {
   });
 });
 
-describe('verification resend deadline', () => {
-  it('counts from a confirmed response and reaches zero without sending again', () => {
-    const now = 1_000;
-    const deadline = confirmedResendDeadline(now);
-    expect(resendRemainingSeconds(deadline, now)).toBe(60);
-    expect(resendRemainingSeconds(deadline, now + 60_000)).toBe(0);
-    expect(resendRemainingSeconds(null, now)).toBe(0);
+describe('verification send label', () => {
+  it('uses the server wait and does not invent a 60 second countdown', () => {
+    expect(verificationSendLabel({
+      sending: false,
+      sendStatus: 'accepted',
+      resendSeconds: 120,
+      quotaSeconds: 0,
+    })).toBe('Новый код через 120 сек');
+    expect(verificationSendLabel({
+      sending: false,
+      sendStatus: 'accepted',
+      resendSeconds: 0,
+      quotaSeconds: 45,
+    })).toBe('Новый код через 45 сек');
+    expect(verificationSendLabel({
+      sending: false,
+      sendStatus: 'accepted',
+      resendSeconds: 0,
+      quotaSeconds: 0,
+    })).toBe('Отправить новый код');
+    expect(verificationSendLabel({
+      sending: false,
+      sendStatus: 'none',
+      resendSeconds: 0,
+      quotaSeconds: 0,
+    })).toBe('Отправить код');
+    expect(verificationSendLabel({
+      sending: true,
+      sendStatus: 'none',
+      resendSeconds: 0,
+      quotaSeconds: 0,
+    })).toBe('Отправляем запрос…');
   });
 });
 
 describe('verification status copy', () => {
-  it('does not claim the code arrived before a send is accepted', () => {
+  it('does not treat an accepted request as proof the message was delivered', () => {
+    const pending = verificationStatusCopy({
+      email: 'author@example.com',
+      sendStatus: 'none',
+      verified: false,
+    });
+    const accepted = verificationStatusCopy({
+      email: 'author@example.com',
+      sendStatus: 'accepted',
+      verified: false,
+    });
+    expect(pending).toBe('Код ещё не отправлен.');
+    expect(accepted).toContain('a***r@example.com');
+    expect(accepted).toContain('Почтовый сервер принял письмо с кодом');
+    expect(accepted).toContain('Доставка в почтовый ящик не подтверждена');
+    expect(accepted).not.toContain('попытаемся');
+    expect(accepted).not.toContain('Код отправлен');
+    expect(accepted).not.toContain('пришел');
     expect(verificationStatusCopy({
       email: 'author@example.com',
-      sendAccepted: false,
-    })).not.toContain('пришел');
+      sendStatus: 'unknown',
+      verified: false,
+    })).toContain('не отправит ещё одно письмо');
     expect(verificationStatusCopy({
       email: 'author@example.com',
-      sendAccepted: true,
-    })).toBe('Код отправлен на a***r@example.com');
+      sendStatus: 'rejected',
+      verified: false,
+    })).toBe('Запрос отклонён. Код не отправлялся.');
     expect(verificationStatusCopy({
       email: 'author@example.com',
-      sendAccepted: true,
-    })).not.toContain('пришел');
+      sendStatus: 'accepted',
+      verified: true,
+    })).toBe('Адрес уже подтверждён.');
+    expect(verificationReasonCopy({ kind: 'otp-invalid' }, { resend: 0, pause: 0, quota: 0 }))
+      .toBe('Код не подошёл. Измените его, затем повторите проверку.');
+    expect(verificationReasonCopy({ kind: 'cooldown' }, { resend: 12, pause: 0, quota: 0 }))
+      .toBe('Новый код можно запросить через 12 с.');
+    expect(verificationReasonCopy({ kind: 'code-invalidated' }, { resend: 0, pause: 0, quota: 0 }))
+      .toBe('Прежний код больше не действует. Письмо не отправлено.');
   });
 });
 

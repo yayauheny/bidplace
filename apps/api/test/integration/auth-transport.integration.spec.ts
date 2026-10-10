@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import type { PrismaClient } from '@bidplace/database';
 import { CURRENT_RULES_VERSION } from '@bidplace/contracts';
@@ -16,6 +18,7 @@ import {
   HttpTestClient,
   type HttpTestApp,
 } from './http-test-app';
+import { idempotencyKey, turnstileToken } from './abuse-request';
 
 let database: IntegrationDatabaseContext;
 let http: HttpTestApp;
@@ -133,6 +136,7 @@ describe('auth HTTP transport', () => {
       phone: '  +375291234567  ',
       slug: 'new-wave-3-user',
       password: 'password123',
+      turnstileToken: turnstileToken('register'),
     });
     expect(registration.status).toBe(201);
     expect(registration.headers.getSetCookie()[0]).toContain('HttpOnly');
@@ -166,6 +170,7 @@ describe('auth HTTP transport', () => {
       phone: '+375291234567',
       slug: 'another-user',
       password: 'password123',
+      turnstileToken: turnstileToken('register'),
     });
     expect(duplicate.status).toBe(409);
     expect(await permissionState(prisma)).toEqual(duplicateBefore);
@@ -292,5 +297,94 @@ describe('auth HTTP transport', () => {
     expect(forbidden.headers.get('access-control-allow-origin')).not.toBe(
       'https://forbidden.example',
     );
+  });
+
+  it('uses the trusted forwarded address for the OTP IP gate', async () => {
+    const email = `fwd-${randomUUID().slice(0, 8)}@example.com`;
+    const password = 'password123';
+    const clientA = new HttpTestClient(http.baseUrl, 'http://localhost:8081', '203.0.113.10');
+    const registration = await clientA.post('/auth/register', {
+      email,
+      password,
+      slug: `fwd${randomUUID().slice(0, 6)}`,
+      turnstileToken: turnstileToken('register'),
+    });
+    expect(registration.status).toBe(201);
+
+    const requestCode = () =>
+      clientA.post('/auth/email/request', {
+        idempotencyKey: idempotencyKey(),
+        turnstileToken: turnstileToken('email_verification'),
+      });
+    for (let attempt = 0; attempt < 10; attempt += 1) {
+      await requestCode();
+    }
+    const limited = await requestCode();
+    expect(limited.status).toBe(429);
+    expect(await limited.json()).toMatchObject({
+      code: 'rate_limited',
+      message: 'Too many requests',
+    });
+
+    const clientB = new HttpTestClient(http.baseUrl, 'http://localhost:8081', '203.0.113.11');
+    const loginResponse = await clientB.post('/auth/login', {
+      email,
+      password,
+      turnstileToken: turnstileToken('login'),
+    });
+    expect(loginResponse.status).toBe(201);
+    const otherAddress = await clientB.post('/auth/email/request', {
+      idempotencyKey: idempotencyKey(),
+      turnstileToken: turnstileToken('email_verification'),
+    });
+    expect(otherAddress.status).toBe(429);
+    expect((await otherAddress.json()).code).toBe('MAIL_COOLDOWN');
+  });
+
+  it('rejects register and OTP bodies that omit the proof or idempotency key', async () => {
+    const fixture = await createPermissionFixture(prisma);
+    const client = new HttpTestClient(
+      http.baseUrl,
+      'http://localhost:8081',
+      '203.0.113.40',
+    );
+    const email = `missing-proof-${randomUUID().slice(0, 8)}@wave3.test`;
+    const register = await client.post('/auth/register', {
+      email,
+      password: 'password123',
+      slug: `mp${randomUUID().slice(0, 6)}`,
+    });
+    expect(register.status).toBe(400);
+    expect(await register.json()).toMatchObject({
+      code: 'validation_error',
+      details: { fieldErrors: { turnstileToken: expect.any(Array) } },
+    });
+    expect(await prisma.user.findUnique({ where: { email } })).toBeNull();
+
+    await login(client, fixture.buyer);
+    const missingKey = await client.post('/auth/email/request', {
+      turnstileToken: turnstileToken('email_verification'),
+    });
+    const missingProof = await client.post('/auth/email/request', {
+      idempotencyKey: idempotencyKey(),
+    });
+    const missingVerifyKey = await client.post('/auth/email/verify', {
+      code: '123456',
+    });
+    expect(missingKey.status).toBe(400);
+    expect(await missingKey.json()).toMatchObject({
+      code: 'validation_error',
+      details: { fieldErrors: { idempotencyKey: expect.any(Array) } },
+    });
+    expect(missingProof.status).toBe(400);
+    expect(await missingProof.json()).toMatchObject({
+      code: 'validation_error',
+      details: { fieldErrors: { turnstileToken: expect.any(Array) } },
+    });
+    expect(missingVerifyKey.status).toBe(400);
+    expect(await missingVerifyKey.json()).toMatchObject({
+      code: 'validation_error',
+      details: { fieldErrors: { idempotencyKey: expect.any(Array) } },
+    });
   });
 });

@@ -87,8 +87,16 @@ describe('registration form validation', () => {
     });
 
     expect(registration.phone).toBe(expected);
-    expect(registerRequestSchema.safeParse(registerSubmission(registration)).success).toBe(true);
-    expect(registerSubmission(registration)).not.toHaveProperty('confirmPassword');
+    const submission = registerSubmission(registration);
+    expect(submission).not.toHaveProperty('confirmPassword');
+    expect(submission).not.toHaveProperty('turnstileToken');
+    expect(registerRequestSchema.safeParse(submission).success).toBe(false);
+    expect(
+      registerRequestSchema.safeParse({
+        ...submission,
+        turnstileToken: 'synthetic-turnstile-proof',
+      }).success,
+    ).toBe(true);
   });
 
   it('keeps a repeated password in the form and out of the request', () => {

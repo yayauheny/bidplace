@@ -22,27 +22,6 @@ export function isEmailVerificationCode(value: string): boolean {
   return /^\d{6}$/.test(value);
 }
 
-export function emailVerificationRequestErrorMessage(
-  status: number | null,
-  fallback: string,
-): string {
-  return status === 409
-    ? 'Код уже отправлен. Попробуйте запросить новый немного позже.'
-    : fallback;
-}
-
-export async function verifyEmailAndRefresh(input: {
-  code: string;
-  verify: (code: string) => Promise<void>;
-  refreshSession: () => Promise<{ emailVerifiedAt: string | null } | null>;
-}): Promise<'invalid-code' | 'not-verified' | 'verified'> {
-  if (!isEmailVerificationCode(input.code)) return 'invalid-code';
-
-  await input.verify(input.code);
-  const user = await input.refreshSession();
-  return user?.emailVerifiedAt ? 'verified' : 'not-verified';
-}
-
 export function verificationDestination(
   verified: boolean,
   redirectTo: SafeRedirect,

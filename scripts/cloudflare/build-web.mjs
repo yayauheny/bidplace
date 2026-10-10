@@ -11,9 +11,10 @@ const result = spawnSync('pnpm', ['--filter', '@bidplace/mobile', 'build:web', '
   env: { ...process.env, NODE_ENV: 'production', EXPO_NO_DOTENV: '1',
     EXPO_PUBLIC_API_URL: config.vars.API_URL, EXPO_PUBLIC_APP_ENV: target,
     EXPO_PUBLIC_ANALYTICS_ENABLED: config.vars.ANALYTICS_INGEST_ENABLED,
+    EXPO_PUBLIC_TURNSTILE_SITE_KEY: config.vars.TURNSTILE_SITE_KEY ?? '',
     JWT_SECRET: secretCanary, DATABASE_URL: secretCanary,
     S3_SECRET_ACCESS_KEY: secretCanary, SMTP_PASSWORD: secretCanary,
-    CLOUDFLARE_CACHE_TOKEN: secretCanary },
+    CLOUDFLARE_CACHE_TOKEN: secretCanary, TURNSTILE_SECRET_KEY: secretCanary },
 });
 if (result.error) throw result.error;
 if (result.status !== 0) process.exit(result.status ?? 1);

@@ -124,6 +124,7 @@ async function createUser(
   email: string,
   displayName: string,
   role: 'admin' | 'user' = 'user',
+  slug?: string,
 ): Promise<E2EUser> {
   const user = await prisma.user.create({
     data: {
@@ -132,6 +133,7 @@ async function createUser(
       phone: `+37529${Math.floor(1_000_000 + Math.random() * 8_999_999)}`,
       displayName,
       role,
+      ...(slug ? { slug } : {}),
       emailVerifiedAt: new Date(),
       phoneVerifiedAt: new Date(),
       termsAcceptances: {
@@ -445,6 +447,8 @@ export async function createBuyerFixture(): Promise<{ buyer: E2EUser }> {
   const buyer = await createUser(
     prisma,
     uniqueEmail('buyer', suffix),
+    `buyer-${suffix}`,
+    'user',
     `buyer-${suffix}`,
   );
   await prisma.$disconnect();

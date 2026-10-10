@@ -59,6 +59,8 @@
     "web": "pnpm run build:api-client && pnpm --filter @bidplace/design-tokens build && expo start --web",
     "test:e2e-fence": "node e2e/test-e2e-fence.mjs",
     "test:e2e": "playwright test",
+    "test:e2e:auth-abuse": "playwright test --config=playwright.auth-abuse.config.ts",
+    "test:e2e:auth-cookie-proxy": "node --test e2e/support/auth-cookie-proxy.unit.mjs",
     "test:e2e:stabilization": "playwright test --config=playwright.stabilization.config.ts",
     "test:e2e:all": "playwright test",
     "lint": "eslint .",

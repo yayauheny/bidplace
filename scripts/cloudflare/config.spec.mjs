@@ -26,6 +26,10 @@ test('confirmed mail settings stay fail-closed without GitHub service rules', ()
     assert.equal(config.vars.SMTP_AUTH_MODE, 'login');
     assert.equal(config.vars.SMTP_FROM, 'noreply@bid.place');
     assert.equal(config.vars.TEST_EMAIL_BYPASS, 'false');
+    assert.equal(config.vars.AUTH_MAIL_DAILY_BUDGET, '200');
+    assert.equal(config.vars.AUTH_MAIL_MONTHLY_BUDGET, '3000');
+    assert.equal(config.vars.TURNSTILE_SITE_KEY, '');
+    assert.equal(Object.hasOwn(config.vars, 'TURNSTILE_SECRET_KEY'), false);
     const emptyFrom = deploymentConfig(target);
     emptyFrom.vars = { ...emptyFrom.vars, SMTP_FROM: '' };
     assert.throws(() => validateConfig(emptyFrom), /SMTP_FROM/);

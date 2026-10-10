@@ -114,6 +114,7 @@ model User {
   emailCodes        EmailVerificationCode[]
   passwordResetTokens PasswordResetToken[]
   termsAcceptances   TermsAcceptance[]
+  authAbuseOperations AuthAbuseOperation[]
   auditEvents       AuditEvent[]          @relation("AuditActor")
   curatorSelections CuratorSelection[]    @relation("CuratorSelectionActor")
 
@@ -699,6 +700,41 @@ model MediaOperation {
   @@index([profileId, productId, kind, state])
   @@map("media_operations")
 }
+model AuthAbuseOperation {
+  id             String    @id @default(uuid()) @db.Uuid
+  ownerUserId    String?   @map("owner_user_id") @db.Uuid
+  email          String    @db.VarChar(255)
+  purpose        String    @db.VarChar(40)
+  idempotencyKey String    @map("idempotency_key") @db.VarChar(80)
+  contentHash    String    @map("content_hash") @db.Char(64)
+  status         String    @db.VarChar(20)
+  secretId       String?   @map("secret_id") @db.Uuid
+  resultDeadline DateTime? @map("result_deadline")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  completedAt    DateTime? @map("completed_at")
+  owner          User?     @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+
+  @@unique([purpose, idempotencyKey])
+  @@index([ownerUserId, purpose, createdAt])
+  @@index([email, purpose, createdAt])
+  @@index([purpose, status, createdAt])
+  @@map("auth_abuse_operations")
+}
+
+model AuthAbuseCounter {
+  id          String    @id @default(uuid()) @db.Uuid
+  scope       String    @db.VarChar(40)
+  subjectHash String    @map("subject_hash") @db.Char(64)
+  failures          Int        @default(0)
+  windowStart       DateTime   @map("window_start")
+  pausedUntil       DateTime?  @map("paused_until")
+  failureTimestamps DateTime[] @default([]) @map("failure_timestamps")
+  updatedAt         DateTime   @updatedAt @map("updated_at")
+
+  @@unique([scope, subjectHash])
+  @@map("auth_abuse_counters")
+}
+
 model MediaOperationObject {
   operationId String @map("operation_id") @db.Uuid
   objectId String @map("object_id") @db.Uuid

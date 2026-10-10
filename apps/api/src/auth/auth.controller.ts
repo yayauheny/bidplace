@@ -19,6 +19,7 @@ import {
   Inject,
   Post,
   Query,
+  Req,
   Res,
   UnauthorizedException,
   UseGuards,
@@ -37,6 +38,7 @@ import {
   type ServerEnv,
   requiresProductionSecurity,
 } from '../core/config';
+import { resolveClientIp, type ClientIpRequest } from '../auth-abuse/client-ip';
 import { parseBody } from '../core/validation';
 import { RateLimit, RateLimitGuard } from '../core/rate-limit';
 
@@ -85,11 +87,14 @@ export class AuthController {
   @Post('register')
   async register(
     @Body() body: unknown,
+    @Req() request: ClientIpRequest,
     @Res({ passthrough: true }) response: AuthCookieResponse,
   ) {
-    const session = await this.authService.register(
-      parseBody(registerRequestSchema, body),
-    );
+    const parsed = parseBody(registerRequestSchema, body);
+    const session = await this.authService.register({
+      ...parsed,
+      ip: resolveClientIp(request, this.env.TRUST_PROXY),
+    });
 
     this.writeSessionCookie(response, session.accessToken);
 
@@ -108,11 +113,14 @@ export class AuthController {
   @Post('login')
   async login(
     @Body() body: unknown,
+    @Req() request: ClientIpRequest,
     @Res({ passthrough: true }) response: AuthCookieResponse,
   ) {
-    const session = await this.authService.login(
-      parseBody(loginRequestSchema, body),
-    );
+    const parsed = parseBody(loginRequestSchema, body);
+    const session = await this.authService.login({
+      ...parsed,
+      ip: resolveClientIp(request, this.env.TRUST_PROXY),
+    });
 
     this.writeSessionCookie(response, session.accessToken);
 
