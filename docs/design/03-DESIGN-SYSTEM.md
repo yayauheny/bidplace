@@ -516,16 +516,18 @@ disabled. State priority: disabled → pressed → hover → idle. Disabled appl
 | Label | Inter 600 14/26, letterSpacing −0.28 |
 | Padding | 8 vertical / 16 horizontal |
 | Radius | 80 (disabled solid: 40, node `292:5054`) |
-| Stroke | 0.5 inside; solid/outline use SVG gradient strokes (`userSpaceOnUse` axes in handoff SVG); ghost/muted flat |
-| Sample «Кнопка» | 83×43 hug; other labels hug content |
+| Paint | `FigmaButtonSurface` draws base fill, hover/pressed overlay, and stroke as stacked `Rect`s in one `Svg` (no CSS shell fill or clip). The interactive shell stays `backgroundColor: transparent`. Solid stroke is `#2A2A2A → #585858` and outline is `#D1D1D1 → #EBEBEB`, `userSpaceOnUse` from the 83×43 sample axis. Ghost stroke is white, muted is `#F3F3F3`, pressed ghost (`292:5046`) paints 82×42 at the origin with no stroke inside the hug frame. Stroke sits above the overlay. Capsule `rx`/`ry`: `min(radius, (width − stroke) / 2, (height − stroke) / 2)` |
+| Web size | RN Web `onLayout` rounds; `useFigmaButtonLayout` reads fractional border-box width/height from `getComputedStyle` so the `Svg` viewport matches the shell (sample «Кнопка» ≈ 82.71875×43, not 83×43). |
+| QA stand | `/dev/figma-buttons` renders a static 4×4 board (`FigmaButtonStatePreview`, handoff `714×283`) plus live controls below; previews use the same `figmaButtonStyle` shell and `FigmaButtonVisualContent` as production `FigmaButton` |
+| Sample «Кнопка» | Source 83×43 hug; web width follows fractional glyph metrics. Other labels hug content |
 | Touch | ≥44 px via shared `hitSlop` |
 
 | Variant | Idle fill | Hover / pressed | Disabled | Label |
 | --- | --- | --- | --- | --- |
 | solid | `#121212` | white 15% overlay | `#949494` + shell opacity 0.5 | white |
 | outline | white | black 5% overlay | white + shell opacity 0.5 | `#565656` |
-| ghost | white | black 5% overlay; pressed `292:5046` inset 82×42, no stroke | white + shell opacity 0.5 | `#565656` |
-| muted | `#F3F3F3` | black 6% overlay | `#F3F3F3` + shell opacity 0.5 | `#565656` |
+| ghost | white, white stroke | black 5% overlay; pressed node `292:5046` paints 82×42 with no stroke inside the 83×43 frame | white + white stroke + shell opacity 0.5 | `#565656` |
+| muted | `#F3F3F3`, stroke `#F3F3F3` | black 6% overlay; stroke stays `#F3F3F3` | `#F3F3F3` + shell opacity 0.5 | `#565656` |
 
 Auth, Home «Смотреть все», admin links, and semantic wrappers map onto this
 matrix. `DestructiveButton` stays semantic but renders `solid`. Chips,

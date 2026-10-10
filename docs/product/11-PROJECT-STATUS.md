@@ -2,26 +2,41 @@
 
 ## 2026-10-10 — Shared text-button matrix (`fix/button-states`)
 
+- `Implemented` on local web. `/dev/figma-buttons` static 4×4
+  `FigmaButtonStatePreview` board (handoff `292:5058`, `714×283` chrome, Russian
+  headings, one `image` name per cell) plus live controls below. Preview and
+  production share `FigmaButtonVisualContent` → `FigmaButtonSurface` (one `Svg`
+  for fill, overlay, stroke), transparent `figmaButtonStyle` shells, and
+  `useFigmaButtonLayout` fractional web sizing. Handoff:
+  `design/figma-handoff/buttons/2026-10-10-buttons/`.
 - `Implemented` on local web. `packages/design-tokens/src/figma-button.ts`
   owns the 16-cell matrix. `FigmaButton` is the only text-button renderer
   (`solid` | `outline` | `ghost` | `muted`, typed `href`). `MotionPressable`
   `opacityFeedback: 'component'` keeps matrix opacity from being darkened again.
   Auth, Home «Смотреть все», admin «Модерация», and exit confirmation use that
-  matrix. Handoff `design/figma-handoff/buttons/2026-10-10-buttons/` stores the
-  exporter files and checksums without `prompt.md`.
-- Checks on Node 22: design-tokens typecheck/build, mobile typecheck, lint
-  without autofix, 713/713 mobile unit tests (121 files), and a clean
-  `expo export --platform web`. Chromium and WebKit both passed 5/5 stand
-  cases: 390×874, 1024×900, 1440×900, 390×400, plus resize, 200% zoom,
-  focus-visible, reduced motion, hover, mouse hold, keyboard Enter, disabled
-  opacity, loading spinner, icon, and link role. Evidence:
-  `/tmp/bidplace-button-matrix-evidence/`. The «Кнопка» frame measured 82.7×43;
-  height matches the capture, width follows the glyph.
-- Login rendered «Войти», Telegram, and Google. Catalog rendered «Фильтры» and
-  «Сортировка». Home and `/analytics` stopped on the connection retry because
-  the API was not running, so «Смотреть все» and «Модерация» were not seen in
-  the browser. ShareSheet was not opened. Native touch and loading were not
-  exercised.
+  matrix.
+- Node 22 verification (2026-10-10, SVG surface track): design-tokens `tsc
+  --noEmit` and build **0**, `apps/mobile/node_modules/typescript`
+  `tsc --noEmit` **0**, mobile eslint **0**, Vitest **721/721** (121 files),
+  `EXPO_NO_DOTENV=1` `expo export` → `/private/tmp/bidplace-buttons-grid/dist`
+  **0**, Playwright Chromium+WebKit **10/10** (private
+  `playwright.figma-matrix.config.mjs`, loopback-only): SVG paint probes,
+  preview-vs-live, pointer/keyboard/disabled/loading/link/focus/reduced-motion,
+  resize, 200% zoom, 390 horizontal scroll. Evidence:
+  `/private/tmp/bidplace-buttons-grid/evidence/` (`figma-button-matrix-*`,
+  `figma-button-matrix-cells-{browser}-{width}x{height}.json`,
+  `matrix-1440-{chromium,webkit}.png`). Coverage:
+  `Button.spec.ts`, `figma-button-style.spec.ts`,
+  `e2e/figma-button-matrix.spec.ts`, `e2e/support/figma-button-svg-probe.ts`.
+  Native touch/loading remains unverified.
+- Manual verification on `localhost:8081`: all 16 preview SVG viewports match
+  their shells. Login «Войти», Telegram, and Google paint inside 350×43 frames;
+  Home «Смотреть все» paints inside 366×43. Analytics «Модерация» and ShareSheet
+  remain unverified on their actual screens; the stand link is covered above.
+- Capture geometry: solid stroke gradient `#2A2A2A → #585858`, outline
+  `#D1D1D1 → #EBEBEB`, pressed ghost `292:5046` paints 82×42 at `0,0` with no
+  stroke inside the hug frame; sample «Кнопка» shell ≈ 82.71875×43 must not pair
+  with an 83-wide `Svg` viewport.
 
 ## 2026-10-10 — Verification state retry after email correction
 

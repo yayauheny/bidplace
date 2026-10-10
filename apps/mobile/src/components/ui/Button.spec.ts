@@ -1,9 +1,22 @@
 /**
  * @vitest-environment jsdom
  */
-import { act, createElement, forwardRef, type ReactNode } from 'react';
+import {
+  act,
+  cloneElement,
+  createElement,
+  forwardRef,
+  isValidElement,
+  type ReactElement,
+  type ReactNode,
+} from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { figmaButtonTokens } from '@bidplace/design-tokens';
+import {
+  figmaButtonInteractions,
+  figmaButtonMatrixCell,
+  figmaButtonTokens,
+  figmaButtonVariants,
+} from '@bidplace/design-tokens';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
@@ -15,6 +28,29 @@ function flattenStyle(style: unknown): Record<string, unknown> {
   }
   if (typeof style === 'object') return style as Record<string, unknown>;
   return {};
+}
+
+const SAMPLE_SHELL_WIDTH = 82.71875;
+const SAMPLE_SHELL_HEIGHT = 43;
+
+function attachFractionalLayout(
+  node: HTMLElement | null,
+  onLayout?: (event: {
+    nativeEvent: {
+      layout: { width: number; height: number };
+      target: HTMLElement;
+    };
+  }) => void,
+) {
+  if (!node || !onLayout) return;
+  node.style.width = `${SAMPLE_SHELL_WIDTH}px`;
+  node.style.height = `${SAMPLE_SHELL_HEIGHT}px`;
+  onLayout({
+    nativeEvent: {
+      layout: { width: 83, height: 43 },
+      target: node,
+    },
+  });
 }
 
 vi.mock('react-native', () => ({
@@ -38,13 +74,43 @@ vi.mock('react-native', () => ({
   },
   ActivityIndicator: () => createElement('span', { role: 'progressbar' }),
   View: forwardRef(function View(
-    { style, children }: { style?: unknown; children?: ReactNode },
+    {
+      style,
+      children,
+      testID,
+      onLayout,
+    }: {
+      style?: unknown;
+      children?: ReactNode;
+      testID?: string;
+      onLayout?: (event: {
+        nativeEvent: {
+          layout: { width: number; height: number };
+          target: HTMLElement;
+        };
+      }) => void;
+    },
     ref,
   ) {
     const flat = flattenStyle(style);
     return createElement(
       'div',
-      { ref, 'data-align-self': String(flat.alignSelf ?? '') },
+      {
+        ref: (node: HTMLDivElement | null) => {
+          if (typeof ref === 'function') ref(node);
+          else if (ref && typeof ref === 'object') {
+            (ref as { current: HTMLDivElement | null }).current = node;
+          }
+          attachFractionalLayout(node, onLayout);
+        },
+        'data-testid': testID,
+        'data-align-self': String(flat.alignSelf ?? ''),
+        'data-bg': String(flat.backgroundColor ?? ''),
+        'data-opacity': String(flat.opacity ?? ''),
+        'data-pad-x': String(flat.paddingHorizontal ?? ''),
+        'data-pad-y': String(flat.paddingVertical ?? ''),
+        'data-radius': String(flat.borderRadius ?? ''),
+      },
       children,
     );
   }),
@@ -66,6 +132,12 @@ vi.mock('react-native', () => ({
       accessibilityRole?: string;
       disabled?: boolean;
       onPress?: () => void;
+      onLayout?: (event: {
+        nativeEvent: {
+          layout: { width: number; height: number };
+          target: HTMLElement;
+        };
+      }) => void;
       hitSlop?: { top?: number; left?: number };
       opacityFeedback?: string;
     },
@@ -84,7 +156,13 @@ vi.mock('react-native', () => ({
     return createElement(
       'button',
       {
-        ref,
+        ref: (node: HTMLButtonElement | null) => {
+          if (typeof ref === 'function') ref(node);
+          else if (ref && typeof ref === 'object') {
+            (ref as { current: HTMLButtonElement | null }).current = node;
+          }
+          attachFractionalLayout(node, props.onLayout);
+        },
         type: 'button',
         'aria-label': props.accessibilityLabel,
         'aria-description': props.accessibilityHint,
@@ -111,15 +189,57 @@ vi.mock('react-native', () => ({
 }));
 
 vi.mock('expo-router', () => ({
-  Link: ({ children }: { children: ReactNode }) => children,
+  Link: ({
+    asChild,
+    children,
+  }: {
+    asChild?: boolean;
+    children: ReactNode;
+  }) => {
+    if (!asChild || !isValidElement(children)) return children;
+    const rawStyle = (children.props as { style?: unknown }).style;
+    const style =
+      rawStyle && typeof rawStyle === 'object' ? { ...rawStyle } : {};
+    return cloneElement(children as ReactElement<{ style?: unknown }>, {
+      style,
+    });
+  },
 }));
 
 vi.mock('react-native-svg', () => ({
-  Svg: () => null,
-  Defs: () => null,
-  LinearGradient: () => null,
-  Rect: () => null,
-  Stop: () => null,
+  Svg: ({
+    children,
+    width,
+    height,
+    ...props
+  }: {
+    children?: ReactNode;
+    width?: number;
+    height?: number;
+  }) =>
+    createElement(
+      'svg',
+      {
+        ...props,
+        width,
+        height,
+        xmlns: 'http://www.w3.org/2000/svg',
+      },
+      children,
+    ),
+  Defs: ({ children }: { children?: ReactNode }) => createElement('defs', null, children),
+  LinearGradient: ({
+    children,
+    x2,
+    y2,
+  }: {
+    children?: ReactNode;
+    x2?: number;
+    y2?: number;
+  }) => createElement('linearGradient', { x2, y2 }, children),
+  Rect: (props: Record<string, unknown>) => createElement('rect', props),
+  Stop: ({ stopColor }: { stopColor?: string }) =>
+    createElement('stop', { 'stop-color': stopColor }),
 }));
 
 vi.mock('@hugeicons/react-native', () => ({
@@ -132,18 +252,22 @@ import {
   SecondaryButton,
   TextButton,
 } from './Button';
-import { FigmaButton } from '../figma/FigmaButton';
+import { FigmaButton, FigmaButtonStatePreview } from '../figma/FigmaButton';
+import { FigmaButtonSurface } from '../figma/FigmaButtonSurface';
 
 afterEach(() => {
   document.body.replaceChildren();
 });
 
-function mount(node: ReactNode) {
+async function mount(node: ReactNode) {
   const container = document.createElement('div');
   document.body.append(container);
   const root: Root = createRoot(container);
-  act(() => {
+  await act(async () => {
     root.render(node);
+  });
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 0));
   });
   return {
     container,
@@ -179,27 +303,39 @@ function expectMatrixMetrics(button: HTMLButtonElement) {
   );
 }
 
+function svgRects(container: ParentNode) {
+  return [...container.querySelectorAll('rect')].map((rect) => ({
+    x: Number(rect.getAttribute('x')),
+    y: Number(rect.getAttribute('y')),
+    width: Number(rect.getAttribute('width')),
+    height: Number(rect.getAttribute('height')),
+    rx: Number(rect.getAttribute('rx')),
+    fill: rect.getAttribute('fill'),
+    stroke: rect.getAttribute('stroke'),
+  }));
+}
+
 describe('shared text button wrappers', () => {
-  it('renders primary, secondary, destructive, and ghost through FigmaButton metrics', () => {
-    const primary = mount(
+  it('renders primary, secondary, destructive, and ghost through FigmaButton metrics', async () => {
+    const primary = await mount(
       createElement(PrimaryButton, {
         label: 'Одобрить',
         onPress: () => undefined,
       }),
     );
-    const secondary = mount(
+    const secondary = await mount(
       createElement(SecondaryButton, {
         label: 'Закрыть',
         onPress: () => undefined,
       }),
     );
-    const destructive = mount(
+    const destructive = await mount(
       createElement(DestructiveButton, {
         label: 'Удалить',
         onPress: () => undefined,
       }),
     );
-    const ghost = mount(
+    const ghost = await mount(
       createElement(TextButton, {
         label: 'Текст',
         onPress: () => undefined,
@@ -208,19 +344,21 @@ describe('shared text button wrappers', () => {
 
     const primaryButton = buttonOf(primary.container);
     expectMatrixMetrics(primaryButton);
-    expect(primaryButton.dataset.bg).toBe(figmaButtonTokens.colors.solidIdle);
+    expect(primaryButton.dataset.bg).toBe('transparent');
+    expect(svgRects(primary.container)[0]?.fill).toBe(figmaButtonTokens.colors.solidIdle);
 
     const secondaryButton = buttonOf(secondary.container);
     expectMatrixMetrics(secondaryButton);
-    expect(secondaryButton.dataset.bg).toBe(figmaButtonTokens.colors.canvas);
+    expect(secondaryButton.dataset.bg).toBe('transparent');
+    expect(svgRects(secondary.container)[0]?.fill).toBe(figmaButtonTokens.colors.canvas);
 
     const destructiveButton = buttonOf(destructive.container);
     expectMatrixMetrics(destructiveButton);
-    expect(destructiveButton.dataset.bg).toBe(figmaButtonTokens.colors.solidIdle);
+    expect(destructiveButton.dataset.bg).toBe('transparent');
 
     const ghostButton = buttonOf(ghost.container);
     expectMatrixMetrics(ghostButton);
-    expect(ghostButton.dataset.bg).toBe(figmaButtonTokens.colors.canvas);
+    expect(ghostButton.dataset.bg).toBe('transparent');
 
     primary.unmount();
     secondary.unmount();
@@ -228,9 +366,9 @@ describe('shared text button wrappers', () => {
     ghost.unmount();
   });
 
-  it('blocks repeat actions while disabled or loading', () => {
+  it('blocks repeat actions while disabled or loading', async () => {
     const onPress = vi.fn();
-    const disabled = mount(
+    const disabled = await mount(
       createElement(PrimaryButton, {
         disabled: true,
         label: 'Одобрить',
@@ -238,7 +376,7 @@ describe('shared text button wrappers', () => {
         onPress,
       }),
     );
-    const loading = mount(
+    const loading = await mount(
       createElement(DestructiveButton, {
         loading: true,
         label: 'Отклонить',
@@ -262,15 +400,79 @@ describe('shared text button wrappers', () => {
     loading.unmount();
   });
 
-  it('exposes link semantics for href buttons', () => {
-    const view = mount(
+  it('renders all 16 static matrix previews with transparent shells and SVG fills', async () => {
+    for (const variant of figmaButtonVariants) {
+      for (const interaction of figmaButtonInteractions) {
+        const cell = figmaButtonMatrixCell(variant, interaction);
+        const view = await mount(
+          createElement(FigmaButtonStatePreview, {
+            variant,
+            interaction,
+            label: figmaButtonTokens.metrics.sampleLabel,
+            accessibilityLabel: `Кнопка ${variant} ${interaction}`,
+          }),
+        );
+        const shell = view.container.querySelector(
+          `[data-testid="figma-button-preview-${variant}-${interaction}"]`,
+        ) as HTMLDivElement | null;
+        if (!shell) throw new Error('expected preview shell');
+        expect(shell.dataset.opacity).toBe(String(cell.controlOpacity));
+        expect(shell.dataset.bg).toBe('transparent');
+        const svg = view.container.querySelector('svg');
+        expect(svg?.getAttribute('width')).toBe(String(SAMPLE_SHELL_WIDTH));
+        expect(svgRects(view.container)[0]?.fill).toBe(cell.fill);
+        view.unmount();
+      }
+    }
+  });
+
+  it('paints pressed ghost as an 82×42 SVG frame without a stroke', async () => {
+    const view = await mount(
+      createElement(FigmaButtonSurface, {
+        variant: 'ghost',
+        interaction: 'pressed',
+        width: SAMPLE_SHELL_WIDTH,
+        height: SAMPLE_SHELL_HEIGHT,
+      }),
+    );
+    const rects = svgRects(view.container);
+    expect(rects.find((rect) => rect.stroke)).toBeUndefined();
+    const base = rects[0];
+    expect(base.width).toBe(82);
+    expect(base.height).toBe(42);
+    expect(base.x).toBe(0);
+    expect(base.y).toBe(0);
+    expect(base.rx).toBeCloseTo(21, 1);
+    view.unmount();
+  });
+
+  it('does not round fractional sample shells to an 83-wide SVG viewport', async () => {
+    const view = await mount(
+      createElement(FigmaButtonSurface, {
+        variant: 'solid',
+        interaction: 'idle',
+        width: SAMPLE_SHELL_WIDTH,
+        height: SAMPLE_SHELL_HEIGHT,
+      }),
+    );
+    const svg = view.container.querySelector('svg');
+    expect(svg?.getAttribute('width')).toBe(String(SAMPLE_SHELL_WIDTH));
+    expect(svg?.getAttribute('width')).not.toBe('83');
+    view.unmount();
+  });
+
+  it('exposes link semantics for href buttons', async () => {
+    const view = await mount(
       createElement(FigmaButton, {
         label: 'Модерация',
         variant: 'outline',
         href: '/admin',
       }),
     );
-    expect(buttonOf(view.container).dataset.role).toBe('link');
+    const link = buttonOf(view.container);
+    expect(link.dataset.role).toBe('link');
+    expectMatrixMetrics(link);
+    expect(link.dataset.bg).toBe('transparent');
     view.unmount();
   });
 });

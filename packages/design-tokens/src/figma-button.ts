@@ -83,6 +83,7 @@ export type FigmaButtonMatrixCell = {
   strokeMode: 'gradient' | 'flat' | 'ghost' | 'none';
   strokeColor: string | null;
   controlOpacity: number;
+  /** Pressed ghost paints 82×42 from the same origin as the 83×43 frame. Node `292:5046`. */
   pressedGhostInset: boolean;
 };
 
@@ -112,6 +113,25 @@ function baseFill(variant: FigmaButtonVariant): string {
     case 'muted':
       return colors.mutedFill;
   }
+}
+
+function strokeModeFor(
+  variant: FigmaButtonVariant,
+  interaction: FigmaButtonInteraction,
+): FigmaButtonMatrixCell['strokeMode'] {
+  if (variant === 'ghost' && interaction === 'pressed') return 'none';
+  if (variant === 'ghost') return 'ghost';
+  if (variant === 'solid' || variant === 'outline') return 'gradient';
+  return 'flat';
+}
+
+function strokeColorFor(
+  strokeMode: FigmaButtonMatrixCell['strokeMode'],
+): string | null {
+  const { colors } = figmaButtonTokens;
+  if (strokeMode === 'ghost') return colors.ghostStroke;
+  if (strokeMode === 'flat') return colors.flatStroke;
+  return null;
 }
 
 function activeOverlay(variant: FigmaButtonVariant): string {
@@ -145,14 +165,8 @@ export function figmaButtonMatrixCell(
       overlay: null,
       labelColor,
       borderRadius: radius,
-      strokeMode:
-        variant === 'solid' || variant === 'outline' ? 'gradient' : 'flat',
-      strokeColor:
-        variant === 'ghost' || variant === 'muted'
-          ? variant === 'ghost'
-            ? colors.ghostStroke
-            : colors.flatStroke
-          : null,
+      strokeMode: strokeModeFor(variant, interaction),
+      strokeColor: strokeColorFor(strokeModeFor(variant, interaction)),
       controlOpacity: disabledOpacity,
       pressedGhostInset: false,
     };
@@ -162,19 +176,7 @@ export function figmaButtonMatrixCell(
   const active =
     interaction === 'hover' || interaction === 'pressed';
   const overlay = active ? activeOverlay(variant) : null;
-  const pressedGhost =
-    variant === 'ghost' && interaction === 'pressed';
-
-  let strokeMode: FigmaButtonMatrixCell['strokeMode'];
-  if (pressedGhost) {
-    strokeMode = 'none';
-  } else if (variant === 'solid' || variant === 'outline') {
-    strokeMode = 'gradient';
-  } else if (variant === 'ghost') {
-    strokeMode = 'ghost';
-  } else {
-    strokeMode = 'flat';
-  }
+  const strokeMode = strokeModeFor(variant, interaction);
 
   return {
     fill,
@@ -182,14 +184,9 @@ export function figmaButtonMatrixCell(
     labelColor,
     borderRadius: radius,
     strokeMode,
-    strokeColor:
-      strokeMode === 'ghost'
-        ? colors.ghostStroke
-        : strokeMode === 'flat'
-          ? colors.flatStroke
-          : null,
+    strokeColor: strokeColorFor(strokeMode),
     controlOpacity: 1,
-    pressedGhostInset: pressedGhost,
+    pressedGhostInset: variant === 'ghost' && interaction === 'pressed',
   };
 }
 

@@ -288,9 +288,21 @@
 - `Implemented` on local web. One `FigmaButton` matrix replaces auth/Home
   special sizes, quiet compact pills, and the red text-button variant. Handoff:
   `design/figma-handoff/buttons/2026-10-10-buttons/`. Stand:
-  `/dev/figma-buttons`. Chromium and WebKit passed hover, mouse hold, keyboard
-  press, disabled, focus-visible, reduced motion, resize, and zoom at 390, 1024,
-  and 1440, including a 390×400 screen. Native loading/touch remains unverified.
+  `/dev/figma-buttons` shows all 16 cells on a static white board via
+  `FigmaButtonStatePreview` (read-only, same renderer content) and keeps live
+  controls below for hover, hold, keyboard, disabled, loading, icon, and link.
+  Chromium and WebKit passed hover, mouse hold, keyboard press, disabled,
+  focus-visible, reduced motion, resize, and zoom at 390, 1024, and 1440,
+  including a 390×400 screen, with handoff chrome alignment, SVG surface paint
+  probes (shell/Svg alignment within 0.01px, shared rect geometry, pressed
+  ghost 82×42 without stroke, fractional sample width ≠ 83-wide viewport),
+  preview-vs-live checks, and keyboard reach for the horizontal matrix scroll.
+  Previews use one Russian `image` name per cell. `FigmaButtonSurface` paints
+  fill, overlay, and stroke in one `Svg`; the shell is transparent. Link buttons
+  keep the matrix via `interactionStyle`. Native loading/touch remains
+  unverified. Evidence:
+  `/private/tmp/bidplace-buttons-grid/evidence/` (Playwright **10/10** on Node
+  22 after fresh `expo export` to the private dist).
 
 ## 2026-10-07 — Auth Back uses the Expo history entry
 

@@ -115,7 +115,11 @@ See [`11-PROJECT-STATUS.md`](11-PROJECT-STATUS.md) for remaining gates.
 - `apps/mobile/src/components/ui` is the only runtime component system.
   Text-button geometry and the 16-cell visual matrix live in
   `packages/design-tokens` (`figma-button.ts`); `FigmaButton` in
-  `apps/mobile/src/components/figma` is the only text-button renderer.
+  `apps/mobile/src/components/figma` is the only text-button renderer, with
+  `FigmaButtonSurface` (single `Svg` for fill/overlay/stroke),
+  `useFigmaButtonLayout` (fractional web border-box via `getComputedStyle`), and
+  read-only `FigmaButtonStatePreview` reusing the same private visual content
+  for the `/dev/figma-buttons` matrix stand.
   Product tabs are controlled by Expo Router URL state, and related Product/
   Creator grids reuse `WorkCoverCardGrid` rather than duplicating card anatomy.
   Cross-platform UI motion uses `react-native-reanimated`. Creator and Work

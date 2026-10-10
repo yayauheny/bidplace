@@ -12,7 +12,8 @@ import {
   figmaButtonLabelColor,
   figmaButtonOverlayColor,
   figmaButtonPressedGhostInset,
-  figmaButtonStrokeMode,
+  figmaButtonScaledGradientAxis,
+  figmaButtonStrokeRadius,
   figmaButtonStyle,
 } from './figma-button-style';
 
@@ -61,6 +62,16 @@ describe('figma button matrix', () => {
     }
   });
 
+  it('keeps the interactive shell transparent and paints in SVG', () => {
+    for (const variant of figmaButtonVariants) {
+      for (const interaction of figmaButtonInteractions) {
+        const style = figmaButtonStyle(variant, interaction);
+        expect(style.backgroundColor).toBe('transparent');
+        expect('overflow' in style).toBe(false);
+      }
+    }
+  });
+
   it('uses shared metrics and label colors', () => {
     const idle = figmaButtonStyle('solid', 'idle');
     expect(idle.paddingHorizontal).toBe(
@@ -97,13 +108,83 @@ describe('figma button matrix', () => {
     );
   });
 
-  it('drops ghost stroke on pressed and insets the pressed surface', () => {
-    expect(figmaButtonStrokeMode('ghost', 'pressed')).toBe('none');
+  it('insets the pressed ghost surface to the 82×42 capture and hides its stroke', () => {
+    for (const interaction of figmaButtonInteractions) {
+      const cell = figmaButtonMatrixCell('ghost', interaction);
+      expect(cell.fill).toBe(figmaButtonTokens.colors.canvas);
+      expect(cell.borderRadius).toBe(figmaButtonTokens.metrics.radius);
+      expect(cell.labelColor).toBe(figmaButtonTokens.colors.labelDefault);
+      if (interaction === 'pressed') {
+        expect(cell.strokeMode).toBe('none');
+        expect(cell.strokeColor).toBeNull();
+        expect(cell.overlay).toBe(figmaButtonTokens.overlay.outlineGhostActive);
+      } else if (interaction === 'hover') {
+        expect(cell.strokeMode).toBe('ghost');
+        expect(cell.strokeColor).toBe(figmaButtonTokens.colors.ghostStroke);
+        expect(cell.overlay).toBe(figmaButtonTokens.overlay.outlineGhostActive);
+      } else if (interaction === 'disabled') {
+        expect(cell.strokeColor).toBe(figmaButtonTokens.colors.ghostStroke);
+        expect(cell.overlay).toBeNull();
+        expect(cell.controlOpacity).toBe(figmaButtonTokens.disabledOpacity);
+      } else {
+        expect(cell.strokeColor).toBe(figmaButtonTokens.colors.ghostStroke);
+        expect(cell.overlay).toBeNull();
+        expect(cell.controlOpacity).toBe(1);
+      }
+      expect(figmaButtonStyle('ghost', interaction).backgroundColor).toBe(
+        'transparent',
+      );
+    }
     expect(figmaButtonPressedGhostInset('ghost', 'pressed')).toBe(true);
-    expect(figmaButtonStrokeMode('ghost', 'idle')).toBe('ghost');
-    expect(figmaButtonStyle('ghost', 'pressed').backgroundColor).toBe(
-      'transparent',
-    );
+    expect(figmaButtonPressedGhostInset('ghost', 'idle')).toBe(false);
+    expect(figmaButtonTokens.metrics.pressedGhostWidth).toBe(82);
+    expect(figmaButtonTokens.metrics.pressedGhostHeight).toBe(42);
+  });
+
+  it('keeps the muted stroke the same gray as the fill on every state', () => {
+    for (const interaction of figmaButtonInteractions) {
+      const cell = figmaButtonMatrixCell('muted', interaction);
+      expect(cell.fill).toBe('#F3F3F3');
+      expect(cell.strokeMode).toBe('flat');
+      expect(cell.strokeColor).toBe('#F3F3F3');
+      expect(cell.borderRadius).toBe(figmaButtonTokens.metrics.radius);
+      expect(cell.labelColor).toBe('#565656');
+      if (interaction === 'hover' || interaction === 'pressed') {
+        expect(cell.overlay).toBe('rgba(0, 0, 0, 0.06)');
+        expect(cell.controlOpacity).toBe(1);
+      } else if (interaction === 'disabled') {
+        expect(cell.overlay).toBeNull();
+        expect(cell.controlOpacity).toBe(0.5);
+      } else {
+        expect(cell.overlay).toBeNull();
+        expect(cell.controlOpacity).toBe(1);
+      }
+    }
+  });
+
+  it('paints solid and outline with the SVG gradient on every state', () => {
+    for (const interaction of figmaButtonInteractions) {
+      const solid = figmaButtonMatrixCell('solid', interaction);
+      const outline = figmaButtonMatrixCell('outline', interaction);
+      expect(solid.strokeMode).toBe('gradient');
+      expect(solid.strokeColor).toBeNull();
+      expect(outline.strokeMode).toBe('gradient');
+      expect(outline.strokeColor).toBeNull();
+      expect(solid.pressedGhostInset).toBe(false);
+      expect(outline.pressedGhostInset).toBe(false);
+    }
+    expect(figmaButtonTokens.gradientStroke.solid).toMatchObject({
+      x2: 84.791,
+      y2: 39.1182,
+      start: '#2A2A2A',
+      end: '#585858',
+    });
+    expect(figmaButtonTokens.gradientStroke.outline).toMatchObject({
+      x2: 88.232,
+      y2: 20.724,
+      start: '#D1D1D1',
+      end: '#EBEBEB',
+    });
   });
 
   it('keeps gradient stroke axes aligned with fallbacks/001-292_5058.svg', () => {
@@ -123,5 +204,40 @@ describe('figma button matrix', () => {
       start: '#2A2A2A',
       end: '#585858',
     });
+  });
+
+  it('uses one capsule stroke radius for both axes', () => {
+    const { strokeWidth, radius, sampleWidth, sampleHeight } =
+      figmaButtonTokens.metrics;
+    expect(
+      figmaButtonStrokeRadius({
+        borderRadius: radius,
+        width: sampleWidth,
+        height: sampleHeight,
+        strokeWidth,
+      }),
+    ).toBe(21.25);
+    expect(
+      figmaButtonStrokeRadius({
+        borderRadius: radius,
+        width: 136,
+        height: sampleHeight,
+        strokeWidth,
+      }),
+    ).toBe((sampleHeight - strokeWidth) / 2);
+  });
+
+  it('scales the sample gradient axis with the measured button', () => {
+    const { sampleWidth, sampleHeight } = figmaButtonTokens.metrics;
+    expect(figmaButtonScaledGradientAxis('solid', sampleWidth, sampleHeight)).toMatchObject({
+      x2: 84.791,
+      y2: 39.1182,
+    });
+    const wide = figmaButtonScaledGradientAxis('solid', 136, sampleHeight);
+    expect(wide.x2).toBeCloseTo(84.791 * (136 / sampleWidth));
+    expect(wide.y2).toBeCloseTo(39.1182);
+    const outline = figmaButtonScaledGradientAxis('outline', 141, sampleHeight);
+    expect(outline.x2).toBeCloseTo(88.232 * (141 / sampleWidth));
+    expect(outline.y2).toBeCloseTo(20.724);
   });
 });

@@ -1,7 +1,7 @@
 import { Link, type Href } from 'expo-router';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
-import { ActivityIndicator, LayoutChangeEvent, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, LayoutChangeEvent, Platform, StyleSheet, View } from 'react-native';
 
 import {
   figmaButtonContentHeight,
@@ -17,13 +17,106 @@ import { FigmaIcon } from './FigmaIcon';
 import { type FigmaIconName } from './figma-icon-names';
 import {
   figmaButtonLabelColor,
-  figmaButtonOverlayColor,
-  figmaButtonPressedGhostInset,
-  figmaButtonSurfaceFill,
   figmaButtonStyle,
+  type FigmaButtonInteraction,
   type FigmaButtonVariant,
 } from './figma-button-style';
-import { FigmaButtonGradientStroke } from './FigmaButtonGradientStroke';
+import { FigmaButtonSurface } from './FigmaButtonSurface';
+
+function useFigmaButtonLayout() {
+  const [layout, setLayout] = useState({ width: 0, height: 0 });
+  const onLayout = (event: LayoutChangeEvent) => {
+    const target = 'target' in event.nativeEvent ? event.nativeEvent.target : undefined;
+    // RN Web rounds offsetWidth. Resolved CSS sizes preserve fractions before zoom/transform.
+    const style = Platform.OS === 'web' && target instanceof HTMLElement
+      ? getComputedStyle(target)
+      : null;
+    const measured = style
+      ? { width: Number.parseFloat(style.width), height: Number.parseFloat(style.height) }
+      : event.nativeEvent.layout;
+    const { width, height } = measured;
+    setLayout((previous) =>
+      previous.width === width && previous.height === height
+        ? previous
+        : { width, height },
+    );
+  };
+  return { layout, onLayout };
+}
+
+type FigmaButtonVisualContentProps = {
+  variant: FigmaButtonVariant;
+  interaction: FigmaButtonInteraction;
+  label: string;
+  layout: { width: number; height: number };
+  loading?: boolean;
+  icon?: FigmaIconName;
+  iconNode?: ReactNode;
+  iconPosition?: 'left' | 'right';
+  presentational?: boolean;
+};
+
+function FigmaButtonVisualContent({
+  variant,
+  interaction,
+  label,
+  layout,
+  loading = false,
+  icon,
+  iconNode,
+  iconPosition = 'left',
+  presentational = false,
+}: FigmaButtonVisualContentProps) {
+  const textColor = figmaButtonLabelColor(variant);
+  const iconElement = icon ? (
+    <View style={styles.iconFrame}>
+      <FigmaIcon name={icon} color={textColor} />
+    </View>
+  ) : null;
+
+  return (
+    <>
+      <FigmaButtonSurface
+        variant={variant}
+        interaction={interaction}
+        width={layout.width}
+        height={layout.height}
+      />
+      <View
+        importantForAccessibility={presentational ? 'no-hide-descendants' : undefined}
+        accessibilityElementsHidden={presentational ? true : undefined}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: iconNode || icon ? figmaTokens.space.x2 : 0,
+          opacity: loading ? 0 : 1,
+        }}
+      >
+        {iconNode ?? (iconPosition === 'left' ? iconElement : null)}
+        <AppText
+          role={presentational ? 'body' : 'button'}
+          importantForAccessibility={presentational ? 'no' : undefined}
+          accessibilityElementsHidden={presentational ? true : undefined}
+          style={{
+            color: textColor,
+            ...figmaButtonTokens.typography,
+          }}
+        >
+          {label}
+        </AppText>
+        {iconPosition === 'right' ? iconElement : null}
+      </View>
+      {loading ? (
+        <ActivityIndicator
+          color={textColor}
+          size="small"
+          style={{ position: 'absolute' }}
+        />
+      ) : null}
+    </>
+  );
+}
 
 type FigmaButtonBaseProps = {
   label: string;
@@ -50,6 +143,52 @@ type FigmaButtonLinkProps = FigmaButtonBaseProps & {
 
 export type FigmaButtonProps = FigmaButtonPressProps | FigmaButtonLinkProps;
 
+export type FigmaButtonStatePreviewProps = {
+  variant: FigmaButtonVariant;
+  interaction: FigmaButtonInteraction;
+  label?: string;
+  testID?: string;
+  accessibilityLabel: string;
+};
+
+export function FigmaButtonStatePreview({
+  variant,
+  interaction,
+  label = figmaButtonTokens.metrics.sampleLabel,
+  testID,
+  accessibilityLabel,
+}: FigmaButtonStatePreviewProps) {
+  const { layout, onLayout } = useFigmaButtonLayout();
+  const resolvedTestID =
+    testID ?? `figma-button-preview-${variant}-${interaction}`;
+
+  const shellStyle = figmaButtonStyle(variant, interaction);
+
+  return (
+    <View
+      testID={resolvedTestID}
+      accessible
+      accessibilityRole="image"
+      accessibilityLabel={accessibilityLabel}
+      pointerEvents="none"
+      onLayout={onLayout}
+      style={{
+        position: 'relative',
+        alignSelf: 'flex-start',
+        ...shellStyle,
+      }}
+    >
+      <FigmaButtonVisualContent
+        variant={variant}
+        interaction={interaction}
+        label={label}
+        layout={layout}
+        presentational
+      />
+    </View>
+  );
+}
+
 export function FigmaButton(props: FigmaButtonPressProps | FigmaButtonLinkProps) {
   const {
     label,
@@ -64,21 +203,14 @@ export function FigmaButton(props: FigmaButtonPressProps | FigmaButtonLinkProps)
     testID,
   } = props;
   const inactive = disabled || loading;
-  const textColor = figmaButtonLabelColor(variant);
   const alignSelf = width === 'full' ? 'stretch' : 'flex-start';
-  const [layout, setLayout] = useState({ width: 0, height: 0 });
-
-  const onLayout = (event: LayoutChangeEvent) => {
-    const { width: w, height: h } = event.nativeEvent.layout;
-    setLayout((prev) => (prev.width === w && prev.height === h ? prev : { width: w, height: h }));
-  };
+  const { layout, onLayout } = useFigmaButtonLayout();
 
   const contentHeight = figmaButtonContentHeight();
   const hitSlop = figmaButtonHitSlop({
     width: layout.width > 0 ? layout.width : undefined,
     height: layout.height > 0 ? layout.height : contentHeight,
   });
-  const ghostInsetMetrics = figmaButtonTokens.metrics.strokeWidth;
 
   const pressable = (
     <MotionPressable
@@ -93,19 +225,17 @@ export function FigmaButton(props: FigmaButtonPressProps | FigmaButtonLinkProps)
       opacityFeedback="component"
       hitSlop={hitSlop}
       onLayout={onLayout}
-      style={({ hovered, pressed }) => {
+      style={{
+        position: 'relative',
+        alignSelf,
+      }}
+      interactionStyle={({ hovered, pressed }) => {
         const interaction = resolveFigmaButtonInteraction({
           inactive,
           hovered,
           pressed,
         });
-        return [
-          {
-            position: 'relative',
-            alignSelf,
-          },
-          figmaButtonStyle(variant, interaction),
-        ];
+        return figmaButtonStyle(variant, interaction);
       }}
     >
       {({ hovered, pressed }) => {
@@ -114,79 +244,18 @@ export function FigmaButton(props: FigmaButtonPressProps | FigmaButtonLinkProps)
           hovered,
           pressed,
         });
-        const overlay = figmaButtonOverlayColor(variant, interaction);
-        const ghostInset = figmaButtonPressedGhostInset(variant, interaction);
-        const surfaceFill = figmaButtonSurfaceFill(variant, interaction);
-        const { borderRadius } = figmaButtonStyle(variant, interaction);
-        const insetBoxStyle = ghostInset
-          ? {
-              position: 'absolute' as const,
-              top: ghostInsetMetrics,
-              left: ghostInsetMetrics,
-              right: ghostInsetMetrics,
-              bottom: ghostInsetMetrics,
-              borderRadius,
-            }
-          : null;
-        const iconElement = icon ? (
-          <View style={styles.iconFrame}>
-            <FigmaIcon name={icon} color={textColor} />
-          </View>
-        ) : null;
 
         return (
-          <>
-            {ghostInset ? (
-              <View
-                pointerEvents="none"
-                style={[insetBoxStyle, { backgroundColor: surfaceFill }]}
-              />
-            ) : null}
-            <FigmaButtonGradientStroke
-              variant={variant}
-              interaction={interaction}
-              borderRadius={borderRadius}
-              width={layout.width}
-              height={layout.height}
-            />
-            {overlay ? (
-              <View
-                pointerEvents="none"
-                style={[
-                  ghostInset ? insetBoxStyle : StyleSheet.absoluteFill,
-                  { backgroundColor: overlay, borderRadius },
-                ]}
-              />
-            ) : null}
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: iconNode || icon ? figmaTokens.space.x2 : 0,
-                opacity: loading ? 0 : 1,
-              }}
-            >
-              {iconNode ?? (iconPosition === 'left' ? iconElement : null)}
-              <AppText
-                role="button"
-                style={{
-                  color: textColor,
-                  ...figmaButtonTokens.typography,
-                }}
-              >
-                {label}
-              </AppText>
-              {iconPosition === 'right' ? iconElement : null}
-            </View>
-            {loading ? (
-              <ActivityIndicator
-                color={textColor}
-                size="small"
-                style={{ position: 'absolute' }}
-              />
-            ) : null}
-          </>
+          <FigmaButtonVisualContent
+            variant={variant}
+            interaction={interaction}
+            label={label}
+            layout={layout}
+            loading={loading}
+            icon={icon}
+            iconNode={iconNode}
+            iconPosition={iconPosition}
+          />
         );
       }}
     </MotionPressable>
