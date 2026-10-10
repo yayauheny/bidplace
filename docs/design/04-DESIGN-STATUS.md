@@ -10,8 +10,12 @@
   `search/2026-10-10-search-popup` (`456:8298`): white 60%, blur 12, gradient
   `#D1D1D1 → #EBEBEB`. Selected search tab is `#F3F3F3` at 41px, not a 43px
   text button. Older portfolio stroke `#DEDEDE → #F3F3F3` stays unused for this
-  popup only. Chromium and WebKit screenshots and measurements are in
-  `docs/audits/current/evidence/2026-10-10-search-chrome/`. Native is not claimed.
+  popup only. The field and close SVG viewports include the outer half of the
+  stroke, and the three tabs are equal shares of the capsule. Chromium and
+  WebKit screenshots and measurements are in
+  `docs/audits/current/evidence/2026-10-10-search-chrome/`. Completion pass:
+  Vitest **723/723**, search chrome E2E **4/4**, text-button matrix **10/10**
+  (Chromium and WebKit). Native is not claimed.
 
 ## 2026-10-10 — Email correction state-read recovery
 

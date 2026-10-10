@@ -14,6 +14,16 @@
   running `localhost:8081` (390, 1024, 1440, short, resize, zoom 200%,
   keyboard focus, reduced motion). Evidence:
   `docs/audits/current/evidence/2026-10-10-search-chrome/`. Native is not claimed.
+- Stroke viewport includes the outer half of the 0.5px stroke, the three tabs
+  share the rail equally (115.67px at 364px), and web SVG sizes use shared
+  `useCssBorderBox` (`use-css-border-box.ts`) with text buttons.
+- Completion pass (Node 22.23.3, `EXPO_NO_DOTENV=1`): design-tokens `tsc` and
+  build **0**, mobile `tsc` 6.0.3 **0**, mobile eslint **0**, Vitest **723/723**
+  (121 files), `expo export --platform web` **0**. Chromium and WebKit search
+  chrome **4/4** and text-button matrix **10/10** on `localhost:8081` (390,
+  1024, 1440, short, resize, zoom 200%, keyboard, reduced motion). Evidence
+  refreshed under `docs/audits/current/evidence/2026-10-10-search-chrome/`.
+  Native is not claimed.
 
 ## 2026-10-10 — Shared text-button matrix (`fix/button-states`)
 

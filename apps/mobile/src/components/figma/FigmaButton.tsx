@@ -1,7 +1,6 @@
 import { Link, type Href } from 'expo-router';
 import type { ReactNode } from 'react';
-import { useState } from 'react';
-import { ActivityIndicator, LayoutChangeEvent, Platform, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import {
   figmaButtonContentHeight,
@@ -22,27 +21,7 @@ import {
   type FigmaButtonVariant,
 } from './figma-button-style';
 import { FigmaButtonSurface } from './FigmaButtonSurface';
-
-function useFigmaButtonLayout() {
-  const [layout, setLayout] = useState({ width: 0, height: 0 });
-  const onLayout = (event: LayoutChangeEvent) => {
-    const target = 'target' in event.nativeEvent ? event.nativeEvent.target : undefined;
-    // RN Web rounds offsetWidth. Resolved CSS sizes preserve fractions before zoom/transform.
-    const style = Platform.OS === 'web' && target instanceof HTMLElement
-      ? getComputedStyle(target)
-      : null;
-    const measured = style
-      ? { width: Number.parseFloat(style.width), height: Number.parseFloat(style.height) }
-      : event.nativeEvent.layout;
-    const { width, height } = measured;
-    setLayout((previous) =>
-      previous.width === width && previous.height === height
-        ? previous
-        : { width, height },
-    );
-  };
-  return { layout, onLayout };
-}
+import { useCssBorderBox } from './use-css-border-box';
 
 type FigmaButtonVisualContentProps = {
   variant: FigmaButtonVariant;
@@ -158,7 +137,7 @@ export function FigmaButtonStatePreview({
   testID,
   accessibilityLabel,
 }: FigmaButtonStatePreviewProps) {
-  const { layout, onLayout } = useFigmaButtonLayout();
+  const { layout, onLayout } = useCssBorderBox();
   const resolvedTestID =
     testID ?? `figma-button-preview-${variant}-${interaction}`;
 
@@ -204,7 +183,7 @@ export function FigmaButton(props: FigmaButtonPressProps | FigmaButtonLinkProps)
   } = props;
   const inactive = disabled || loading;
   const alignSelf = width === 'full' ? 'stretch' : 'flex-start';
-  const { layout, onLayout } = useFigmaButtonLayout();
+  const { layout, onLayout } = useCssBorderBox();
 
   const contentHeight = figmaButtonContentHeight();
   const hitSlop = figmaButtonHitSlop({

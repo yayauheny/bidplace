@@ -1,7 +1,11 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-import { searchChromeScaledPaint, searchChromeTokens } from '@bidplace/design-tokens';
+import {
+  searchChromeScaledPaint,
+  searchChromeStrokeViewport,
+  searchChromeTokens,
+} from '@bidplace/design-tokens';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -88,5 +92,30 @@ describe('search overlay header style', () => {
       fontWeight: '500',
     });
     expect(searchChromeTokens.blur).toEqual({ figmaRadius: 12, cssPx: 6 });
+  });
+
+  it('keeps the outer half of the stroke inside the SVG viewport', () => {
+    const half = searchChromeTokens.strokeWidth / 2;
+    for (const sample of [
+      ['field', 302, 52],
+      ['close', 52, 52],
+      ['rail', 364, 50],
+      ['field', 109.578, 52],
+    ] as const) {
+      const frame = searchChromeStrokeViewport(sample[0], sample[1], sample[2]);
+      expect(frame.path.x - half).toBeGreaterThanOrEqual(-1e-9);
+      expect(frame.path.y - half).toBeGreaterThanOrEqual(-1e-9);
+      expect(frame.path.x + frame.path.width + half).toBeLessThanOrEqual(frame.width + 1e-9);
+      expect(frame.path.y + frame.path.height + half).toBeLessThanOrEqual(frame.height + 1e-9);
+    }
+    const fractional = searchChromeStrokeViewport('field', 109.578, 52);
+    expect(fractional.width).not.toBe(110);
+    expect(fractional.width).toBeGreaterThan(109.578);
+    const field = searchChromeStrokeViewport('field', 302, 52);
+    expect(field.left).toBeCloseTo(-0.5, 5);
+    expect(field.width).toBeCloseTo(303, 5);
+    expect(field.height).toBeCloseTo(53, 5);
+    expect(field.path.x).toBeCloseTo(0.25, 5);
+    expect(field.axis.x2 - field.axis.x1).toBeCloseTo(225.915, 3);
   });
 });

@@ -395,6 +395,10 @@ at 60% with backdrop blur 12 (CSS `blur(6px)`), and the SVG gradient
 `#D1D1D1 → #EBEBEB`. The tab capsule `4306:9061` is 50px with that same stroke
 and no blur. Its tabs are 41px, Inter Medium 14/20, white or selected
 `#F3F3F3`, with a white 0.5 stroke. They are not the 43px text-button matrix.
+`search-chrome.ts` owns the SVG stroke paths and axes; `searchChromeStrokeViewport`
+includes the outer half of the 0.5px stroke. `FigmaSearchGlass` and tab shells
+use `useCssBorderBox` (same helper as text buttons) so web `Svg` sizes match the
+fractional CSS border-box, not rounded `onLayout`.
 `FilterSearchField` stays the catalog field (floating label, radius 18). Author/Category/Work hits use a shared hover fill/ring
 (`ghostHover` / inset `border`) without changing layout.
 `WorkCoverCardGrid` may render one catalog column or a two-column overlay grid.
@@ -520,7 +524,7 @@ disabled. State priority: disabled → pressed → hover → idle. Disabled appl
 | Padding | 8 vertical / 16 horizontal |
 | Radius | 80 (disabled solid: 40, node `292:5054`) |
 | Paint | `FigmaButtonSurface` draws base fill, hover/pressed overlay, and stroke as stacked `Rect`s in one `Svg` (no CSS shell fill or clip). The interactive shell stays `backgroundColor: transparent`. Solid stroke is `#2A2A2A → #585858` and outline is `#D1D1D1 → #EBEBEB`, `userSpaceOnUse` from the 83×43 sample axis. Ghost stroke is white, muted is `#F3F3F3`, pressed ghost (`292:5046`) paints 82×42 at the origin with no stroke inside the hug frame. Stroke sits above the overlay. Capsule `rx`/`ry`: `min(radius, (width − stroke) / 2, (height − stroke) / 2)` |
-| Web size | RN Web `onLayout` rounds; `useFigmaButtonLayout` reads fractional border-box width/height from `getComputedStyle` so the `Svg` viewport matches the shell (sample «Кнопка» ≈ 82.71875×43, not 83×43). |
+| Web size | RN Web `onLayout` rounds; `useCssBorderBox` (`use-css-border-box.ts`) reads fractional border-box width/height from `getComputedStyle` so the `Svg` viewport matches the shell for text buttons and search chrome (sample «Кнопка» ≈ 82.71875×43, not 83×43). |
 | QA stand | `/dev/figma-buttons` renders a static 4×4 board (`FigmaButtonStatePreview`, handoff `714×283`) plus live controls below; previews use the same `figmaButtonStyle` shell and `FigmaButtonVisualContent` as production `FigmaButton` |
 | Sample «Кнопка» | Source 83×43 hug; web width follows fractional glyph metrics. Other labels hug content |
 | Touch | ≥44 px via shared `hitSlop` |

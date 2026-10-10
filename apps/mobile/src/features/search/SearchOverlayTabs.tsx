@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { Platform, View, type LayoutChangeEvent } from 'react-native';
+import { Platform, View } from 'react-native';
 import { Rect, Svg } from 'react-native-svg';
 
 import { searchChromeTokens } from '@bidplace/design-tokens';
@@ -7,6 +6,7 @@ import { searchChromeTokens } from '@bidplace/design-tokens';
 import { AppText } from '../../components/ui/AppText';
 import { MotionPressable } from '../../components/ui/MotionPressable';
 import { FigmaSearchGlass } from '../../components/figma/FigmaSearchGlass';
+import { useCssBorderBox } from '../../components/figma/use-css-border-box';
 import {
   searchOverlayTabPanelId,
   searchOverlayTabs,
@@ -70,12 +70,7 @@ function SearchOverlayTabButton({
   onPress: () => void;
 }) {
   const { tab } = searchChromeTokens;
-  const [width, setWidth] = useState(0);
-
-  const onLayout = (event: LayoutChangeEvent) => {
-    const next = event.nativeEvent.layout.width;
-    setWidth((prev) => (prev === next ? prev : next));
-  };
+  const { layout, onLayout } = useCssBorderBox();
 
   return (
     <MotionPressable
@@ -91,7 +86,8 @@ function SearchOverlayTabButton({
       style={{
         flexGrow: 1,
         flexShrink: 1,
-        flexBasis: 'auto',
+        flexBasis: 0,
+        minWidth: 0,
         height: tab.height,
         borderRadius: tab.radius,
         backgroundColor: selected ? tab.selectedFill : tab.fill,
@@ -100,7 +96,7 @@ function SearchOverlayTabButton({
         overflow: 'hidden',
       }}
     >
-      <SearchTabStroke width={width} height={tab.height} />
+      <SearchTabStroke width={layout.width} height={layout.height} />
       <AppText
         role="body"
         numberOfLines={1}

@@ -1,17 +1,11 @@
-import { useState, type ReactNode } from 'react';
+import { type ReactNode } from 'react';
 import { BlurView } from 'expo-blur';
-import {
-  Platform,
-  StyleSheet,
-  View,
-  type LayoutChangeEvent,
-  type StyleProp,
-  type ViewStyle,
-} from 'react-native';
+import { Platform, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { figmaTokens, searchChromeTokens, type SearchChromeKind } from '@bidplace/design-tokens';
 
 import { FigmaSearchChromeStroke } from './FigmaSearchChromeStroke';
+import { useCssBorderBox } from './use-css-border-box';
 
 export function FigmaSearchGlass({
   kind,
@@ -24,16 +18,9 @@ export function FigmaSearchGlass({
   style?: StyleProp<ViewStyle>;
   testID?: string;
 }) {
-  const [size, setSize] = useState({ width: 0, height: 0 });
+  const { layout, onLayout } = useCssBorderBox();
   const shape = searchChromeTokens[kind];
   const blurred = kind !== 'rail';
-
-  const onLayout = (event: LayoutChangeEvent) => {
-    const { width, height } = event.nativeEvent.layout;
-    setSize((prev) =>
-      prev.width === width && prev.height === height ? prev : { width, height },
-    );
-  };
 
   return (
     <View
@@ -72,7 +59,7 @@ export function FigmaSearchGlass({
         />
       ) : null}
       {children}
-      <FigmaSearchChromeStroke kind={kind} width={size.width} height={size.height} />
+      <FigmaSearchChromeStroke kind={kind} width={layout.width} height={layout.height} />
     </View>
   );
 }

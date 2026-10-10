@@ -79,6 +79,45 @@ export function searchChromeShape(kind: SearchChromeKind) {
   return searchChromeTokens[kind];
 }
 
+/**
+ * SVG frame that contains the whole stroke, including the outer half of
+ * `strokeWidth`. The path and gradient axis are shifted into that frame.
+ */
+export function searchChromeStrokeViewport(
+  kind: SearchChromeKind,
+  width: number,
+  height: number,
+) {
+  const paint = searchChromeScaledPaint(kind, width, height);
+  const half = searchChromeTokens.strokeWidth / 2;
+  const left = Math.min(0, paint.x - half);
+  const top = Math.min(0, paint.y - half);
+  const right = Math.max(width, paint.x + paint.width + half);
+  const bottom = Math.max(height, paint.y + paint.height + half);
+  return {
+    left,
+    top,
+    width: right - left,
+    height: bottom - top,
+    path: {
+      x: paint.x - left,
+      y: paint.y - top,
+      width: paint.width,
+      height: paint.height,
+      rx: paint.rx,
+      ry: paint.ry,
+    },
+    axis: {
+      x1: paint.axis.x1 - left,
+      y1: paint.axis.y1 - top,
+      x2: paint.axis.x2 - left,
+      y2: paint.axis.y2 - top,
+      start: paint.axis.start,
+      end: paint.axis.end,
+    },
+  };
+}
+
 /** Scale the sample SVG stroke path and gradient axis onto the measured box. */
 export function searchChromeScaledPaint(
   kind: SearchChromeKind,

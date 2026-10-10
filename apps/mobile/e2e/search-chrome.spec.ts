@@ -3,7 +3,11 @@ import { join } from 'node:path';
 
 import { expect, test, type Page } from '@playwright/test';
 
-import { searchChromeScaledPaint } from '@bidplace/design-tokens';
+import {
+  searchChromeScaledPaint,
+  searchChromeStrokeViewport,
+  searchChromeTokens,
+} from '@bidplace/design-tokens';
 
 import { e2eEvidenceDir } from './support/evidence-dir';
 
@@ -133,6 +137,9 @@ async function expectChrome(page: Page) {
   const fieldBox = await field.boundingBox();
   const closeBox = await close.boundingBox();
   const railBox = await rail.boundingBox();
+  const fieldSize = await cssBorderBox(field);
+  const closeSize = await cssBorderBox(close);
+  const railSize = await cssBorderBox(rail);
   expect(fieldBox!.height).toBeCloseTo(52, 0);
   expect(closeBox!.width).toBeCloseTo(52, 0);
   expect(closeBox!.height).toBeCloseTo(52, 0);
@@ -140,9 +147,9 @@ async function expectChrome(page: Page) {
   expect(railBox!.height).toBeCloseTo(50, 0);
   expect(closeBox!.x - (fieldBox!.x + fieldBox!.width)).toBeCloseTo(12, 0);
 
-  const fieldId = await expectGradient(field, 'field', fieldBox!.width, fieldBox!.height);
-  const closeId = await expectGradient(close, 'close', closeBox!.width, closeBox!.height);
-  const railId = await expectGradient(rail, 'rail', railBox!.width, railBox!.height);
+  const fieldId = await expectGradient(field, 'field', fieldSize.width, fieldSize.height);
+  const closeId = await expectGradient(close, 'close', closeSize.width, closeSize.height);
+  const railId = await expectGradient(rail, 'rail', railSize.width, railSize.height);
   expect(new Set([fieldId, closeId, railId]).size).toBe(3);
 
   const blur = await field.evaluate((node) => getComputedStyle(node).backdropFilter);
@@ -153,6 +160,33 @@ async function expectChrome(page: Page) {
   const tab = page.getByRole('tab', { name: 'Категории' });
   const tabBox = await tab.boundingBox();
   expect(tabBox!.height).toBeCloseTo(41, 0);
+  const measuredTabs = await page.getByRole('tab').evaluateAll((nodes) =>
+    nodes.map((node) => {
+      const shell = getComputedStyle(node);
+      const svg = node.querySelector('svg');
+      return {
+        shellWidth: Number.parseFloat(shell.width),
+        shellHeight: Number.parseFloat(shell.height),
+        svgWidth: Number(svg?.getAttribute('width')),
+        svgHeight: Number(svg?.getAttribute('height')),
+      };
+    }),
+  );
+  expect(measuredTabs).toHaveLength(3);
+  const share =
+    (railSize.width -
+      searchChromeTokens.rail.padding * 2 -
+      searchChromeTokens.rail.gap * 2) /
+    3;
+  for (const item of measuredTabs) {
+    expect(item.shellWidth).toBeCloseTo(share, 1);
+    expect(item.svgWidth).toBeCloseTo(item.shellWidth, 2);
+    expect(item.svgHeight).toBeCloseTo(item.shellHeight, 2);
+    expect(Math.abs(item.shellWidth - Math.round(item.shellWidth))).toBeGreaterThan(0.05);
+    expect(item.svgWidth).not.toBe(Math.round(item.shellWidth));
+  }
+  const tabWidths = measuredTabs.map((item) => item.shellWidth);
+  expect(Math.max(...tabWidths) - Math.min(...tabWidths)).toBeLessThan(0.05);
   const type = await tab.evaluate((node) => {
     const label = node.querySelector('[role="text"], span, div') ?? node;
     const style = getComputedStyle(label as Element);
@@ -176,8 +210,8 @@ async function expectGradient(
   height: number,
 ) {
   const paint = searchChromeScaledPaint(kind, width, height);
-  const left = Math.min(0, paint.x);
-  const top = Math.min(0, paint.y);
+  const frame = searchChromeStrokeViewport(kind, width, height);
+  const half = searchChromeTokens.strokeWidth / 2;
   const measured = await locator.locator('svg:has(linearGradient)').evaluate((node) => {
     const gradient = node.querySelector('linearGradient');
     const rect = node.querySelector('rect');
@@ -193,6 +227,8 @@ async function expectGradient(
       stops,
       rx: Number(rect?.getAttribute('rx')),
       ry: Number(rect?.getAttribute('ry')),
+      rectX: Number(rect?.getAttribute('x')),
+      rectY: Number(rect?.getAttribute('y')),
       rectWidth: Number(rect?.getAttribute('width')),
       rectHeight: Number(rect?.getAttribute('height')),
       svgWidth: Number(node.getAttribute('width')),
@@ -200,15 +236,34 @@ async function expectGradient(
     };
   });
   expect(measured.stops).toEqual(['#D1D1D1', '#EBEBEB']);
-  expect(measured.x2).toBeCloseTo(paint.axis.x2 - left, 1);
-  expect(measured.y2).toBeCloseTo(paint.axis.y2 - top, 1);
+  expect(measured.x2 - measured.x1).toBeCloseTo(paint.axis.x2 - paint.axis.x1, 1);
+  expect(measured.y2 - measured.y1).toBeCloseTo(paint.axis.y2 - paint.axis.y1, 1);
+  expect(measured.x1).toBeCloseTo(frame.axis.x1, 1);
+  expect(measured.y1).toBeCloseTo(frame.axis.y1, 1);
   expect(measured.rx).toBeCloseTo(paint.rx, 1);
   expect(measured.ry).toBe(measured.rx);
   expect(measured.rectWidth).toBeCloseTo(paint.width, 1);
   expect(measured.rectHeight).toBeCloseTo(paint.height, 1);
-  expect(measured.svgWidth).toBeGreaterThanOrEqual(width - 0.01);
+  expect(measured.rectX - half).toBeGreaterThanOrEqual(-0.01);
+  expect(measured.rectY - half).toBeGreaterThanOrEqual(-0.01);
+  expect(measured.rectX + measured.rectWidth + half).toBeLessThanOrEqual(measured.svgWidth + 0.01);
+  expect(measured.rectY + measured.rectHeight + half).toBeLessThanOrEqual(
+    measured.svgHeight + 0.01,
+  );
+  expect(measured.svgWidth).toBeCloseTo(frame.width, 2);
+  expect(measured.svgHeight).toBeCloseTo(frame.height, 2);
   expect(measured.id.length).toBeGreaterThan(0);
   return measured.id;
+}
+
+async function cssBorderBox(locator: ReturnType<Page['getByTestId']>) {
+  return locator.evaluate((node) => {
+    const style = getComputedStyle(node);
+    return {
+      width: Number.parseFloat(style.width),
+      height: Number.parseFloat(style.height),
+    };
+  });
 }
 
 async function tabPaint(locator: ReturnType<Page['getByRole']>) {

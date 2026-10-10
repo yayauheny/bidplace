@@ -117,12 +117,13 @@ See [`11-PROJECT-STATUS.md`](11-PROJECT-STATUS.md) for remaining gates.
   `packages/design-tokens` (`figma-button.ts`); `FigmaButton` in
   `apps/mobile/src/components/figma` is the only text-button renderer, with
   `FigmaButtonSurface` (single `Svg` for fill/overlay/stroke),
-  `useFigmaButtonLayout` (fractional web border-box via `getComputedStyle`), and
+  `useCssBorderBox` in `use-css-border-box.ts` (fractional web border-box via
+  `getComputedStyle` for `FigmaButton` and search `FigmaSearchGlass`), and
   read-only `FigmaButtonStatePreview` reusing the same private visual content
   for the `/dev/figma-buttons` matrix stand.
-  Search overlay chrome lives in `packages/design-tokens` (`search-chrome.ts`)
-  and `FigmaSearchGlass`; it does not reuse the text-button matrix or the dock
-  glass stroke.
+  Search overlay chrome lives in `packages/design-tokens` (`search-chrome.ts`,
+  `searchChromeStrokeViewport` for full stroke bounds) and `FigmaSearchGlass`;
+  it does not reuse the text-button matrix or the dock glass stroke.
   Product tabs are controlled by Expo Router URL state, and related Product/
   Creator grids reuse `WorkCoverCardGrid` rather than duplicating card anatomy.
   Cross-platform UI motion uses `react-native-reanimated`. Creator and Work
