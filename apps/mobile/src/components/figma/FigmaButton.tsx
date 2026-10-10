@@ -1,44 +1,32 @@
-import { LinearGradient } from 'expo-linear-gradient';
+import { Link, type Href } from 'expo-router';
 import type { ReactNode } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { useState } from 'react';
+import { ActivityIndicator, LayoutChangeEvent, StyleSheet, View } from 'react-native';
 
-import { figmaTokens } from '@bidplace/design-tokens';
+import {
+  figmaButtonContentHeight,
+  figmaButtonHitSlop,
+  figmaButtonTokens,
+  figmaTokens,
+  resolveFigmaButtonInteraction,
+} from '@bidplace/design-tokens';
 
 import { AppText } from '../ui/AppText';
 import { MotionPressable } from '../ui/MotionPressable';
 import { FigmaIcon } from './FigmaIcon';
 import { type FigmaIconName } from './figma-icon-names';
 import {
-  figmaButtonGradientColors,
-  figmaButtonGradientOpacity,
-  figmaButtonGradientPlacement,
-  figmaButtonInsetBorderWidth,
   figmaButtonLabelColor,
-  figmaButtonRadius,
-  figmaButtonStyle,
+  figmaButtonOverlayColor,
+  figmaButtonPressedGhostInset,
   figmaButtonSurfaceFill,
-  figmaButtonUsesGradientBorder,
-  figmaButtonUsesOutsidePaintWrapper,
-  type FigmaButtonInteraction,
-  type FigmaButtonSize,
+  figmaButtonStyle,
   type FigmaButtonVariant,
 } from './figma-button-style';
+import { FigmaButtonGradientStroke } from './FigmaButtonGradientStroke';
 
-export function FigmaButton({
-  label,
-  onPress,
-  variant = 'solid',
-  disabled = false,
-  loading = false,
-  icon,
-  iconNode,
-  iconPosition = 'left',
-  accessibilityHint,
-  width = 'content',
-  size = 'regular',
-}: {
+type FigmaButtonBaseProps = {
   label: string;
-  onPress: () => void;
   variant?: FigmaButtonVariant;
   disabled?: boolean;
   loading?: boolean;
@@ -47,48 +35,99 @@ export function FigmaButton({
   iconPosition?: 'left' | 'right';
   accessibilityHint?: string;
   width?: 'content' | 'full';
-  size?: FigmaButtonSize;
-}) {
+  testID?: string;
+};
+
+type FigmaButtonPressProps = FigmaButtonBaseProps & {
+  href?: undefined;
+  onPress: () => void;
+};
+
+type FigmaButtonLinkProps = FigmaButtonBaseProps & {
+  href: Href;
+  onPress?: () => void;
+};
+
+export type FigmaButtonProps = FigmaButtonPressProps | FigmaButtonLinkProps;
+
+export function FigmaButton(props: FigmaButtonPressProps | FigmaButtonLinkProps) {
+  const {
+    label,
+    variant = 'solid',
+    disabled = false,
+    loading = false,
+    icon,
+    iconNode,
+    iconPosition = 'left',
+    accessibilityHint,
+    width = 'content',
+    testID,
+  } = props;
   const inactive = disabled || loading;
   const textColor = figmaButtonLabelColor(variant);
-  const radius = figmaButtonRadius(size);
-  const compact = size === 'compact';
-  const gradientPlacement = figmaButtonGradientPlacement(variant);
   const alignSelf = width === 'full' ? 'stretch' : 'flex-start';
+  const [layout, setLayout] = useState({ width: 0, height: 0 });
 
-  const button = (
+  const onLayout = (event: LayoutChangeEvent) => {
+    const { width: w, height: h } = event.nativeEvent.layout;
+    setLayout((prev) => (prev.width === w && prev.height === h ? prev : { width: w, height: h }));
+  };
+
+  const contentHeight = figmaButtonContentHeight();
+  const hitSlop = figmaButtonHitSlop({
+    width: layout.width > 0 ? layout.width : undefined,
+    height: layout.height > 0 ? layout.height : contentHeight,
+  });
+  const ghostInsetMetrics = figmaButtonTokens.metrics.strokeWidth;
+
+  const pressable = (
     <MotionPressable
-      accessibilityRole="button"
+      testID={testID}
+      accessibilityRole={props.href ? 'link' : 'button'}
       accessibilityLabel={label}
       accessibilityHint={accessibilityHint}
       accessibilityState={{ disabled: inactive, busy: Boolean(loading) }}
       disabled={inactive}
-      onPress={onPress}
+      onPress={props.href ? undefined : props.onPress}
       preset="primaryAction"
-      hitSlop={
-        compact
-          ? {
-              top: figmaTokens.space.quietButtonY,
-              bottom: figmaTokens.space.quietButtonY,
-              left: figmaTokens.space.quietButtonX,
-              right: figmaTokens.space.quietButtonX,
-            }
-          : undefined
-      }
-      style={({ hovered, pressed }) => [
-        {
-          position: 'relative',
-          alignSelf,
-        },
-        figmaButtonStyle(
-          variant,
-          resolveInteraction({ inactive, hovered, pressed }),
-          size,
-        ),
-      ]}
+      opacityFeedback="component"
+      hitSlop={hitSlop}
+      onLayout={onLayout}
+      style={({ hovered, pressed }) => {
+        const interaction = resolveFigmaButtonInteraction({
+          inactive,
+          hovered,
+          pressed,
+        });
+        return [
+          {
+            position: 'relative',
+            alignSelf,
+          },
+          figmaButtonStyle(variant, interaction),
+        ];
+      }}
     >
       {({ hovered, pressed }) => {
-        const interaction = resolveInteraction({ inactive, hovered, pressed });
+        const interaction = resolveFigmaButtonInteraction({
+          inactive,
+          hovered,
+          pressed,
+        });
+        const overlay = figmaButtonOverlayColor(variant, interaction);
+        const ghostInset = figmaButtonPressedGhostInset(variant, interaction);
+        const surfaceFill = figmaButtonSurfaceFill(variant, interaction);
+        const { borderRadius } = figmaButtonStyle(variant, interaction);
+        const insetBoxStyle = ghostInset
+          ? {
+              position: 'absolute' as const,
+              top: ghostInsetMetrics,
+              left: ghostInsetMetrics,
+              right: ghostInsetMetrics,
+              bottom: ghostInsetMetrics,
+              borderRadius,
+            }
+          : null;
         const iconElement = icon ? (
           <View style={styles.iconFrame}>
             <FigmaIcon name={icon} color={textColor} />
@@ -97,63 +136,43 @@ export function FigmaButton({
 
         return (
           <>
-            {figmaButtonUsesGradientBorder(variant) &&
-            gradientPlacement === 'inset' ? (
-              <>
-                <LinearGradient
-                  pointerEvents="none"
-                  colors={[...figmaButtonGradientColors(variant)]}
-                  start={figmaButtonGradientAxis(variant).start}
-                  end={figmaButtonGradientAxis(variant).end}
-                  style={[
-                    styles.gradientBorder,
-                    {
-                      borderRadius: radius,
-                      opacity: figmaButtonGradientOpacity(variant),
-                    },
-                  ]}
-                />
-                <View
-                  pointerEvents="none"
-                  style={[
-                    styles.gradientSurface,
-                    {
-                      borderRadius: radius,
-                      margin: figmaButtonInsetBorderWidth(variant),
-                      backgroundColor: figmaButtonSurfaceFill(
-                        variant,
-                        interaction,
-                      ),
-                    },
-                  ]}
-                />
-              </>
+            {ghostInset ? (
+              <View
+                pointerEvents="none"
+                style={[insetBoxStyle, { backgroundColor: surfaceFill }]}
+              />
+            ) : null}
+            <FigmaButtonGradientStroke
+              variant={variant}
+              interaction={interaction}
+              borderRadius={borderRadius}
+              width={layout.width}
+              height={layout.height}
+            />
+            {overlay ? (
+              <View
+                pointerEvents="none"
+                style={[
+                  ghostInset ? insetBoxStyle : StyleSheet.absoluteFill,
+                  { backgroundColor: overlay, borderRadius },
+                ]}
+              />
             ) : null}
             <View
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: iconNode ? 2 : icon
-                  ? compact
-                    ? figmaTokens.space.quietButtonGap
-                    : figmaTokens.space.x2
-                  : 0,
+                gap: iconNode || icon ? figmaTokens.space.x2 : 0,
                 opacity: loading ? 0 : 1,
               }}
             >
               {iconNode ?? (iconPosition === 'left' ? iconElement : null)}
               <AppText
-                role={compact ? 'buttonCompact' : 'button'}
+                role="button"
                 style={{
                   color: textColor,
-                  ...(size === 'authSuggestion'
-                    ? figmaTokens.typography.authSuggestion
-                    : size === 'auth' || size === 'authResend'
-                      ? variant === 'authPrimary'
-                        ? figmaTokens.typography.authButton
-                        : figmaTokens.typography.authButtonStrong
-                      : null),
+                  ...figmaButtonTokens.typography,
                 }}
               >
                 {label}
@@ -173,92 +192,18 @@ export function FigmaButton({
     </MotionPressable>
   );
 
-  if (!figmaButtonUsesOutsidePaintWrapper(variant)) {
-    return button;
+  if (props.href) {
+    return (
+      <Link href={props.href} asChild>
+        {pressable}
+      </Link>
+    );
   }
 
-  return (
-    <View style={[styles.outsideWrapper, { alignSelf }]}>
-      <LinearGradient
-        pointerEvents="none"
-        colors={[...figmaButtonGradientColors(variant)]}
-        start={figmaButtonGradientAxis(variant).start}
-        end={figmaButtonGradientAxis(variant).end}
-        style={[
-          styles.outsideStroke,
-          {
-            borderRadius: radius + 1,
-            opacity: figmaButtonGradientOpacity(variant),
-          },
-        ]}
-      />
-      {button}
-    </View>
-  );
-}
-
-function figmaButtonGradientAxis(variant: FigmaButtonVariant) {
-  if (variant === 'authSuggestion') {
-    return {
-      start: { x: 0, y: 0.5 },
-      end: { x: 0.89, y: 0.39 },
-    };
-  }
-  if (variant === 'authPrimary' || variant === 'authProvider') {
-    return {
-      start: { x: 0, y: 0.5 },
-      end: { x: 1, y: 0.5 },
-    };
-  }
-  return {
-    start: { x: 0.5, y: 0 },
-    end: { x: 0.5, y: 1 },
-  };
-}
-
-function resolveInteraction({
-  inactive,
-  hovered,
-  pressed,
-}: {
-  inactive: boolean;
-  hovered: boolean;
-  pressed: boolean;
-}): FigmaButtonInteraction {
-  if (inactive) return 'disabled';
-  if (pressed) return 'pressed';
-  if (hovered) return 'hover';
-  return 'idle';
+  return pressable;
 }
 
 const styles = StyleSheet.create({
-  outsideWrapper: {
-    position: 'relative',
-  },
-  outsideStroke: {
-    position: 'absolute',
-    top: -1,
-    right: -1,
-    bottom: -1,
-    left: -1,
-  },
-  gradientBorder: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-    borderRadius: figmaTokens.radius.button,
-  },
-  gradientSurface: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-    margin: 1,
-    borderRadius: figmaTokens.radius.button,
-  },
   iconFrame: {
     width: figmaTokens.size.buttonIconFrame,
     height: figmaTokens.size.buttonIconFrame,

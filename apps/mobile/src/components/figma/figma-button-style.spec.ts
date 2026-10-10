@@ -1,178 +1,127 @@
+import {
+  figmaButtonInteractions,
+  figmaButtonMatrixCell,
+  figmaButtonTokens,
+  figmaButtonVariants,
+  resolveFigmaButtonInteraction,
+} from '@bidplace/design-tokens';
 import { describe, expect, it } from 'vitest';
 
-import { figmaTokens } from '@bidplace/design-tokens';
-
 import {
-  figmaAuthActionVariant,
-  figmaButtonGradientColors,
-  figmaButtonGradientOpacity,
-  figmaButtonGradientPlacement,
-  figmaButtonInsetBorderWidth,
-  figmaButtonUsesOutsidePaintWrapper,
+  figmaButtonGradientAxis,
   figmaButtonLabelColor,
-  figmaButtonSurfaceFill,
+  figmaButtonOverlayColor,
+  figmaButtonPressedGhostInset,
+  figmaButtonStrokeMode,
   figmaButtonStyle,
-  figmaButtonUsesGradientBorder,
 } from './figma-button-style';
 
-describe('Figma button styles', () => {
-  it('uses the auth sheet primary and provider measurements', () => {
-    expect(figmaButtonStyle('authPrimary', 'idle', 'auth')).toMatchObject({
-      minHeight: figmaTokens.auth.actionHeight,
-      backgroundColor: figmaTokens.color.fieldValue,
-      borderWidth: 0,
-      borderColor: 'transparent',
-    });
-    expect(figmaButtonUsesGradientBorder('authPrimary')).toBe(true);
-    expect(figmaButtonGradientColors('authPrimary')).toEqual([
-      figmaTokens.auth.primaryBorderStart,
-      figmaTokens.auth.primaryBorderEnd,
-    ]);
-    expect(figmaButtonInsetBorderWidth('authPrimary')).toBe(
-      figmaTokens.auth.primaryBorderWidth,
-    );
-    expect(figmaButtonGradientColors('authProvider')).toEqual([
-      figmaTokens.auth.providerBorderStart,
-      figmaTokens.auth.providerBorderEnd,
-    ]);
-    expect(figmaButtonLabelColor('authProvider')).toBe(figmaTokens.color.textSubdued);
-    expect(figmaAuthActionVariant('auth', 'primary')).toBe('authPrimary');
-    expect(figmaAuthActionVariant('authResend', 'secondary')).toBe('authQuiet');
-    expect(figmaButtonStyle('authQuiet', 'idle', 'authResend')).toMatchObject({
-      minHeight: figmaTokens.auth.resendHeight,
-      backgroundColor: figmaTokens.color.canvas,
-      borderColor: figmaTokens.color.canvas,
-    });
-    expect(figmaButtonLabelColor('authQuiet')).toBe(figmaTokens.color.textSubdued);
-  });
-
-  it('uses the saved nickname suggestion chip metrics', () => {
-    expect(
-      figmaButtonStyle('authSuggestion', 'idle', 'authSuggestion'),
-    ).toMatchObject({
-      minHeight: 37,
-      paddingHorizontal: 13,
-      paddingVertical: 8,
-      borderRadius: 80,
-      borderWidth: 0,
-      backgroundColor: figmaTokens.color.canvas,
-    });
-    expect(figmaButtonGradientPlacement('authSuggestion')).toBe('inset');
-    expect(figmaButtonInsetBorderWidth('authSuggestion')).toBe(1);
-    expect(figmaButtonGradientColors('authSuggestion')).toEqual([
-      figmaTokens.auth.suggestionBorderStart,
-      figmaTokens.auth.suggestionBorderEnd,
-    ]);
-  });
-
-  it('uses the solid charcoal pill for the primary idle state', () => {
-    expect(figmaButtonStyle('solid', 'idle')).toMatchObject({
-      backgroundColor: figmaTokens.color.solid,
-      borderColor: figmaTokens.color.ink,
-      borderRadius: 80,
-      minHeight: 44,
-    });
-    expect(figmaButtonLabelColor('solid')).toBe(figmaTokens.color.white);
-  });
-
-  it('darkens a pressed pill without a decorative ring', () => {
-    expect(figmaButtonStyle('outline', 'pressed')).toMatchObject({
-      backgroundColor: 'transparent',
-      borderRadius: 80,
-    });
-    expect(figmaButtonStyle('solid', 'pressed').backgroundColor).toBe(
-      figmaTokens.color.solidHover,
-    );
-    expect(figmaButtonStyle('solid', 'pressed')).not.toHaveProperty(
-      'boxShadow',
-    );
-    expect(figmaButtonSurfaceFill('outline', 'pressed')).toBe(
-      figmaTokens.color.ghostHover,
-    );
-  });
-
-  it('uses the captured gradient border for outline variants', () => {
-    expect(figmaButtonUsesGradientBorder('outline')).toBe(true);
-    expect(figmaButtonStyle('outline', 'idle')).toMatchObject({
-      backgroundColor: 'transparent',
-      borderColor: 'transparent',
-      borderWidth: 1,
-    });
-    expect(figmaButtonSurfaceFill('outline', 'hover')).toBe(
-      figmaTokens.color.ghostHover,
-    );
-  });
-
-  it('insets borderless pressed surfaces without changing their outer footprint', () => {
-    expect(figmaButtonStyle('ghost', 'pressed')).toMatchObject({
-      minHeight: 42,
-      margin: 1,
-      borderWidth: 0,
-    });
-  });
-
-  it('dims disabled variants instead of inventing a second control size', () => {
-    expect(figmaButtonStyle('solid', 'disabled').opacity).toBe(0.5);
-    expect(figmaButtonStyle('muted', 'disabled').opacity).toBe(0.5);
-  });
-
-  it('hugs the quiet compact pill from padding and type, not 149×34', () => {
-    const compact = figmaButtonStyle('quiet', 'idle', 'compact');
-    expect(compact).toMatchObject({
-      backgroundColor: figmaTokens.color.quietFill,
-      borderColor: 'transparent',
-      borderWidth: 0,
-      borderRadius: figmaTokens.radius.chip,
-      paddingHorizontal: figmaTokens.space.quietButtonX,
-      paddingVertical: figmaTokens.space.quietButtonY,
-    });
-    expect(compact.backgroundColor).toBe('#EFEFEF');
-    expect(compact).not.toHaveProperty('minHeight');
-    expect(compact).not.toHaveProperty('width');
-    expect(compact).not.toHaveProperty('height');
-    expect(figmaButtonUsesGradientBorder('quiet')).toBe(true);
-    expect(figmaButtonGradientPlacement('quiet')).toBe('outside');
-    expect(figmaButtonGradientPlacement('outline')).toBe('inset');
-    expect(figmaButtonUsesOutsidePaintWrapper('quiet')).toBe(true);
-    expect(figmaButtonUsesOutsidePaintWrapper('outline')).toBe(false);
-    for (const variant of ['solid', 'ghost', 'muted', 'danger'] as const) {
-      expect(figmaButtonGradientPlacement(variant)).toBe('none');
-      expect(figmaButtonUsesOutsidePaintWrapper(variant)).toBe(false);
+describe('figma button matrix', () => {
+  it('covers all 16 variant × interaction cells', () => {
+    for (const variant of figmaButtonVariants) {
+      for (const interaction of figmaButtonInteractions) {
+        expect(figmaButtonMatrixCell(variant, interaction)).toMatchObject({
+          fill: expect.any(String),
+          labelColor: expect.any(String),
+          borderRadius: expect.any(Number),
+          controlOpacity: expect.any(Number),
+        });
+      }
     }
-    expect(figmaButtonGradientColors('quiet')).toEqual([
-      figmaTokens.color.quietBorderStart,
-      figmaTokens.color.quietBorderEnd,
-    ]);
-    expect(figmaButtonGradientOpacity('quiet')).toBe(
-      figmaTokens.opacity.quietBorder,
-    );
-    expect(figmaButtonStyle('quiet', 'hover', 'compact').backgroundColor).toBe(
-      figmaTokens.color.quietFill,
-    );
-    expect(figmaButtonSurfaceFill('quiet', 'idle')).toBe(
-      figmaTokens.color.quietFill,
-    );
-    expect(figmaButtonLabelColor('quiet')).toBe(figmaTokens.color.ink);
   });
 
-  it('keeps danger visually distinct from the primary solid pill', () => {
-    expect(figmaButtonStyle('danger', 'idle')).toMatchObject({
-      backgroundColor: figmaTokens.color.danger,
-      borderColor: figmaTokens.color.dangerHover,
-    });
-    expect(figmaButtonStyle('danger', 'hover').backgroundColor).toBe(
-      figmaTokens.color.dangerHover,
+  it('prioritizes disabled over pressed and hover', () => {
+    expect(
+      resolveFigmaButtonInteraction({
+        inactive: true,
+        hovered: true,
+        pressed: true,
+      }),
+    ).toBe('disabled');
+    expect(
+      resolveFigmaButtonInteraction({
+        inactive: false,
+        hovered: true,
+        pressed: true,
+      }),
+    ).toBe('pressed');
+    expect(
+      resolveFigmaButtonInteraction({
+        inactive: false,
+        hovered: true,
+        pressed: false,
+      }),
+    ).toBe('hover');
+  });
+
+  it('applies disabled opacity once on the control shell', () => {
+    for (const variant of figmaButtonVariants) {
+      const style = figmaButtonStyle(variant, 'disabled');
+      expect(style.opacity).toBe(figmaButtonTokens.disabledOpacity);
+    }
+  });
+
+  it('uses shared metrics and label colors', () => {
+    const idle = figmaButtonStyle('solid', 'idle');
+    expect(idle.paddingHorizontal).toBe(
+      figmaButtonTokens.metrics.paddingX + figmaButtonTokens.metrics.strokeWidth,
     );
-    expect(figmaButtonStyle('danger', 'pressed')).toMatchObject({
-      backgroundColor: figmaTokens.color.dangerHover,
-    });
-    expect(figmaButtonStyle('danger', 'disabled')).toMatchObject({
-      backgroundColor: figmaTokens.color.danger,
-      opacity: 0.5,
-    });
-    expect(figmaButtonLabelColor('danger')).toBe(figmaTokens.color.white);
-    expect(figmaButtonStyle('danger', 'idle').backgroundColor).not.toBe(
-      figmaButtonStyle('solid', 'idle').backgroundColor,
+    expect(idle.paddingVertical).toBe(
+      figmaButtonTokens.metrics.paddingY + figmaButtonTokens.metrics.strokeWidth,
     );
+    expect(idle.borderRadius).toBe(figmaButtonTokens.metrics.radius);
+    expect(figmaButtonLabelColor('solid')).toBe(
+      figmaButtonTokens.colors.labelOnSolid,
+    );
+    expect(figmaButtonLabelColor('outline')).toBe(
+      figmaButtonTokens.colors.labelDefault,
+    );
+  });
+
+  it('maps solid disabled fill and radius from export node 292:5054', () => {
+    const cell = figmaButtonMatrixCell('solid', 'disabled');
+    expect(cell.fill).toBe(figmaButtonTokens.colors.solidDisabledFill);
+    expect(cell.borderRadius).toBe(figmaButtonTokens.metrics.disabledSolidRadius);
+  });
+
+  it('uses overlay tints for hover and pressed without lowering control opacity', () => {
+    expect(figmaButtonOverlayColor('outline', 'hover')).toBe(
+      figmaButtonTokens.overlay.outlineGhostActive,
+    );
+    expect(figmaButtonStyle('outline', 'hover').opacity).toBe(1);
+    expect(figmaButtonOverlayColor('solid', 'pressed')).toBe(
+      figmaButtonTokens.overlay.solidActive,
+    );
+    expect(figmaButtonOverlayColor('muted', 'pressed')).toBe(
+      figmaButtonTokens.overlay.mutedActive,
+    );
+  });
+
+  it('drops ghost stroke on pressed and insets the pressed surface', () => {
+    expect(figmaButtonStrokeMode('ghost', 'pressed')).toBe('none');
+    expect(figmaButtonPressedGhostInset('ghost', 'pressed')).toBe(true);
+    expect(figmaButtonStrokeMode('ghost', 'idle')).toBe('ghost');
+    expect(figmaButtonStyle('ghost', 'pressed').backgroundColor).toBe(
+      'transparent',
+    );
+  });
+
+  it('keeps gradient stroke axes aligned with fallbacks/001-292_5058.svg', () => {
+    expect(figmaButtonGradientAxis('outline')).toMatchObject({
+      x1: 0,
+      y1: 0,
+      x2: 88.232,
+      y2: 20.724,
+      start: '#D1D1D1',
+      end: '#EBEBEB',
+    });
+    expect(figmaButtonGradientAxis('solid')).toMatchObject({
+      x1: 0,
+      y1: 0,
+      x2: 84.791,
+      y2: 39.1182,
+      start: '#2A2A2A',
+      end: '#585858',
+    });
   });
 });

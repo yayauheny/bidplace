@@ -18,6 +18,7 @@ import { designTokens } from '@bidplace/design-tokens';
 import { useReducedMotion } from '../../lib/reduced-motion';
 import {
   motionPressableFeedback,
+  type MotionPressableOpacityFeedback,
   type MotionPressablePreset,
 } from './motion-pressable-feedback';
 
@@ -35,6 +36,7 @@ type MotionPressableProps = Omit<
     | ((state: MotionPressableState) => ReactNode);
   interactionStyle?: (state: MotionPressableState) => StyleProp<ViewStyle>;
   preset?: MotionPressablePreset;
+  opacityFeedback?: MotionPressableOpacityFeedback;
   style?:
     | StyleProp<ViewStyle>
     | ((state: MotionPressableState) => StyleProp<ViewStyle>);
@@ -46,6 +48,7 @@ export const MotionPressable = forwardRef<
 >(function MotionPressable(
   {
     preset = 'button',
+    opacityFeedback = 'preset',
     disabled,
     interactionStyle,
     onBlur,
@@ -61,7 +64,11 @@ export const MotionPressable = forwardRef<
   const reducedMotion = useReducedMotion();
   const [focused, setFocused] = useState(false);
   const [hovered, setHovered] = useState(false);
-  const feedback = motionPressableFeedback(preset, reducedMotion);
+  const feedback = motionPressableFeedback(
+    preset,
+    reducedMotion,
+    opacityFeedback,
+  );
   const transitionStyle =
     Platform.OS === 'web'
       ? ({
@@ -99,20 +106,28 @@ export const MotionPressable = forwardRef<
         setHovered(false);
         onHoverOut?.(event);
       }}
-      style={(state) => [
-        typeof style === 'function'
-          ? style({ ...state, focused, hovered })
-          : style,
-        interactionStyle?.({ ...state, focused, hovered }),
-        transitionStyle,
-        {
-          opacity: disabled
-            ? designTokens.opacity.disabled
-            : state.pressed
-              ? feedback.pressedOpacity
-              : 1,
-        },
-      ]}
+      style={(state) => {
+        const composed = [
+          typeof style === 'function'
+            ? style({ ...state, focused, hovered })
+            : style,
+          interactionStyle?.({ ...state, focused, hovered }),
+          transitionStyle,
+        ];
+        if (opacityFeedback === 'component') {
+          return composed;
+        }
+        return [
+          ...composed,
+          {
+            opacity: disabled
+              ? designTokens.opacity.disabled
+              : state.pressed
+                ? feedback.pressedOpacity
+                : 1,
+          },
+        ];
+      }}
     />
   );
 });

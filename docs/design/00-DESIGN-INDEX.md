@@ -44,6 +44,9 @@ wallet/NFT/crypto semantics; их разрешённая роль закрепл
 библиотека остаётся read-only, остальные её экраны не переопределяются.
 Общие состояния полей принадлежат
 [`fields/2026-10-06-text-fields`](../../design/figma-handoff/fields/2026-10-06-text-fields/README.md).
+Общая матрица текстовых кнопок (`292:5058`) —
+[`buttons/2026-10-10-buttons`](../../design/figma-handoff/buttons/2026-10-10-buttons/README.md)
+(`DEC-110`); заменяет auth/Home special button parameters в runtime.
 Node map, style measurements, source discrepancies и execution handoff находятся
 в новом пакете. Статус — импорт/план, не runtime parity. Эти архивы имеют приоритет
 в своей зафиксированной волне; отличающиеся live Inspect значения не смешиваются

@@ -42,7 +42,7 @@ export function ResetPasswordForm({ token }: { token: string | null }) {
           Откройте ссылку из письма или запросите восстановление пароля заново.
         </AppText>
         <Link href="/forgot-password" asChild>
-          <FigmaButton label="Запросить новую ссылку" variant="authQuiet" size="auth" width="full" onPress={() => undefined} />
+          <FigmaButton label="Запросить новую ссылку" variant="ghost" width="full" onPress={() => undefined} />
         </Link>
       </View>
     );
@@ -80,7 +80,6 @@ export function ResetPasswordForm({ token }: { token: string | null }) {
         <AppText role="bodySmall">{RESET_PASSWORD_SUCCESS_DESCRIPTION}</AppText>
         <PrimaryButton
           label="Перейти ко входу"
-          size="auth"
           width="full"
           onPress={() => router.replace('/login')}
         />
@@ -128,13 +127,12 @@ export function ResetPasswordForm({ token }: { token: string | null }) {
         ) : null}
         <PrimaryButton
           label="Сохранить пароль"
-          size="auth"
           width="full"
           loading={form.formState.isSubmitting}
           onPress={submit}
         />
         <Link href="/forgot-password" asChild>
-          <FigmaButton label="Запросить новую ссылку" variant="authQuiet" size="auth" width="full" onPress={() => undefined} />
+          <FigmaButton label="Запросить новую ссылку" variant="ghost" width="full" onPress={() => undefined} />
         </Link>
       </View>
   );

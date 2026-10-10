@@ -536,7 +536,6 @@ export function AdminModerationScreen() {
                     {review && pendingRevision(review.status) ? (
                       <>
                         <PrimaryButton
-                          compact
                           label="Одобрить"
                           loading={sellerStatus.isPending}
                           onPress={() =>
@@ -548,7 +547,6 @@ export function AdminModerationScreen() {
                           }
                         />
                         <DestructiveButton
-                          compact
                           label="Запросить изменения"
                           loading={sellerStatus.isPending}
                           onPress={() =>
@@ -560,7 +558,6 @@ export function AdminModerationScreen() {
                           }
                         />
                         <DestructiveButton
-                          compact
                           label="Отклонить"
                           loading={sellerStatus.isPending}
                           onPress={() =>
@@ -575,7 +572,6 @@ export function AdminModerationScreen() {
                     ) : null}
                     {!review && seller.parentStatus === 'PENDING_REVIEW' ? (
                       <PrimaryButton
-                        compact
                         label="Одобрить"
                         loading={sellerStatus.isPending}
                         onPress={() =>
@@ -588,7 +584,6 @@ export function AdminModerationScreen() {
                       />
                     ) : null}
                     <DestructiveButton
-                      compact
                       disabled={
                         seller.parentStatus === 'SUSPENDED' ||
                         seller.hasBlockingListing
@@ -772,7 +767,6 @@ export function AdminModerationScreen() {
                     ) : null}
                     {review && pendingRevision(review.status) ? (
                       <PrimaryButton
-                        compact
                         label="Одобрить"
                         loading={productStatus.isPending}
                         disabled={!productSellerApproved}
@@ -795,7 +789,6 @@ export function AdminModerationScreen() {
                     {review && pendingRevision(review.status) ? (
                       <>
                         <DestructiveButton
-                          compact
                           label="Запросить изменения"
                           loading={productStatus.isPending}
                           onPress={() =>
@@ -807,7 +800,6 @@ export function AdminModerationScreen() {
                           }
                         />
                         <DestructiveButton
-                          compact
                           label="Отклонить"
                           loading={productStatus.isPending}
                           onPress={() =>

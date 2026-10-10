@@ -2620,3 +2620,23 @@ Revises: the **process-local auth critical counters** implication in
 `13-APPLICATION-SECURITY.md` §8 and pilot single-replica ops (**DEC-069**) for
 mail/login abuse state — durable counters moved to PostgreSQL; **DEC-069** itself
 and upload IP limits are unchanged. Original **DEC-069** entry text is not edited.
+
+## DEC-110 — Shared text-button matrix (`292:5058`)
+
+Date: 2026-10-10
+Status: Confirmed
+Source: founder button brief; Figma component set `292:5058` (`Кнопки.figmacapture.zip`)
+
+All text buttons use one renderer (`FigmaButton`) and one four-variant × four-state
+matrix (`solid`, `outline`, `ghost`, `muted` × idle, hover, pressed, disabled).
+Geometry, colors, gradient stroke axes, and disabled handling live in
+`packages/design-tokens` (`figma-button.ts`). This replaces special auth sizes,
+Home quiet+compact pill parameters, and the red `danger` text-button variant.
+`DestructiveButton` remains a semantic wrapper that renders `solid`.
+
+Pressed feedback stays on fill/overlay only; **DEC-104** still means no mint press
+ring. Gradient strokes are drawn with `react-native-svg`, not horizontal CSS
+gradients.
+
+Handoff: `design/figma-handoff/buttons/2026-10-10-buttons/`. Read-only portfolio
+library and canonical Pen are unchanged.

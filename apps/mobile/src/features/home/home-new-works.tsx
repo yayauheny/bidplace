@@ -32,8 +32,7 @@ export function HomeNewWorks({ works }: { works: HomeWorkItem[] }) {
         </AppText>
         <FigmaButton
           label="Смотреть все"
-          variant="quiet"
-          size="compact"
+          variant="muted"
           onPress={() => push('/works')}
         />
       </View>

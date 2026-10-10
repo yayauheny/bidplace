@@ -87,7 +87,6 @@ export function InfrastructurePageStatus({
           label="Повторить"
           onPress={onRetry}
           width="full"
-          size="large"
         />
       </View>
     </View>

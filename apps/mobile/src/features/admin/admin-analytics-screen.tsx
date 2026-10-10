@@ -19,6 +19,7 @@ import {
   PageHeader,
   SecondaryButton,
 } from '../../components/ui';
+import { FigmaButton } from '../../components/figma/FigmaButton';
 import { useApiClient } from '../../providers/api-provider';
 
 type PeriodOption = Exclude<AdminAnalyticsQuery['period'], 'custom'>;
@@ -279,23 +280,7 @@ export function AdminAnalyticsScreen() {
           gap: designTokens.space.x2,
         }}
       >
-        <Link href="/admin" asChild>
-          <MotionPressable
-            accessibilityRole="link"
-            accessibilityLabel="Модерация"
-            preset="button"
-            style={{
-              minHeight: designTokens.size.touch,
-              paddingHorizontal: designTokens.space.x4,
-              justifyContent: 'center',
-              borderWidth: 1,
-              borderColor: designTokens.color.border,
-              backgroundColor: designTokens.color.surface,
-            }}
-          >
-            <AppText role="button">Модерация</AppText>
-          </MotionPressable>
-        </Link>
+        <FigmaButton label="Модерация" variant="outline" href="/admin" />
         {periodOptions.map((option) => (
           <SecondaryButton
             key={option.value}

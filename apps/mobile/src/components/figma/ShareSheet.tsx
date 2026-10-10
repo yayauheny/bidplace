@@ -141,7 +141,6 @@ function ShareContent({ sharePath }: { sharePath: string }) {
       <View style={{ gap: designTokens.space.x2 }}>
         <PrimaryButton
           label="Скачать QR"
-          size="large"
           icon="qr-code-01"
           width="full"
           disabled={!qr}
@@ -150,7 +149,6 @@ function ShareContent({ sharePath }: { sharePath: string }) {
         <FigmaButton
           label="Копировать ссылку"
           variant="ghost"
-          size="large"
           icon="copy"
           width="full"
           onPress={() => void copy()}

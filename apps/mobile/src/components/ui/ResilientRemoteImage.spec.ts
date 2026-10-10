@@ -121,6 +121,10 @@ vi.mock('expo-linear-gradient', () => ({
   LinearGradient: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
 }));
 
+vi.mock('expo-router', () => ({
+  Link: ({ children }: { children?: ReactNode }) => children,
+}));
+
 vi.mock('react-native-svg', () => ({
   Svg: ({
     children,
@@ -131,6 +135,10 @@ vi.mock('react-native-svg', () => ({
     role?: string;
     'aria-label'?: string;
   }) => createElement('svg', { role, 'aria-label': props['aria-label'] }, children),
+  Defs: ({ children }: { children?: ReactNode }) => createElement('defs', null, children),
+  LinearGradient: () => null,
+  Rect: () => null,
+  Stop: () => null,
   G: ({ children }: { children?: ReactNode }) => createElement('g', null, children),
   Path: () => null,
   Circle: () => null,

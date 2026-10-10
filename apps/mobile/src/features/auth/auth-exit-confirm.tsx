@@ -3,8 +3,8 @@ import { useWindowDimensions, View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
+import { FigmaButton } from '../../components/figma/FigmaButton';
 import { AppText } from '../../components/ui';
-import { MotionPressable } from '../../components/ui/MotionPressable';
 import { AppDialogFrame, AppDialogOverlay } from '../../components/ui/app-dialog-layer';
 
 export type AuthExitCopy = {
@@ -67,46 +67,22 @@ export function AuthExitConfirm({
               </Dialog.Description>
             </View>
             <View style={{ flexDirection: 'row', gap: designTokens.auth.exitActionsGap }}>
-              <MotionPressable
-                accessibilityRole="button"
-                accessibilityLabel="Прервать"
-                onPress={onLeave}
-                preset="primaryAction"
-                style={{
-                  flex: 1,
-                  minHeight: designTokens.auth.exitActionHeight,
-                  borderRadius: designTokens.radius.button,
-                  borderWidth: designTokens.size.fieldBorder,
-                  borderColor: designTokens.color.mutedFill,
-                  backgroundColor: designTokens.color.mutedFill,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <AppText role="button" style={{ color: designTokens.color.textSubdued, ...designTokens.typography.authButton }}>
-                  Прервать
-                </AppText>
-              </MotionPressable>
-              <MotionPressable
-                accessibilityRole="button"
-                accessibilityLabel="Продолжить"
-                onPress={onContinue}
-                preset="primaryAction"
-                style={{
-                  flex: 1,
-                  minHeight: designTokens.auth.exitActionHeight,
-                  borderRadius: designTokens.radius.button,
-                  borderWidth: designTokens.size.fieldBorder,
-                  borderColor: designTokens.color.fieldValue,
-                  backgroundColor: designTokens.color.fieldValue,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <AppText role="button" style={{ color: designTokens.color.white, ...designTokens.typography.authButton }}>
-                  Продолжить
-                </AppText>
-              </MotionPressable>
+              <View style={{ flex: 1 }}>
+                <FigmaButton
+                  label="Прервать"
+                  variant="muted"
+                  width="full"
+                  onPress={onLeave}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <FigmaButton
+                  label="Продолжить"
+                  variant="solid"
+                  width="full"
+                  onPress={onContinue}
+                />
+              </View>
             </View>
           </Dialog.Content>
         </AppDialogFrame>

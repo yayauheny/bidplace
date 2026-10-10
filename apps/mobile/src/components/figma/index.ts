@@ -19,9 +19,7 @@ export {
   type FigmaIconName,
 } from './figma-icon-names';
 export {
-  figmaButtonSizes,
   figmaButtonVariants,
-  type FigmaButtonSize,
   type FigmaButtonVariant,
 } from './figma-button-style';
 export { figmaDockItems } from './floating-dock';

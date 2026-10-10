@@ -126,8 +126,7 @@ export function HomeOpening({ selection }: { selection: HomeCuratorSelection }) 
             ) : null}
             <FigmaButton
               label="Смотреть профиль"
-              variant="quiet"
-              size="compact"
+              variant="muted"
               onPress={() => router.push(`/seller/${selection.curator.slug}`)}
             />
           </View>

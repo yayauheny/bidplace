@@ -15,12 +15,17 @@ const pressedOpacity: Record<MotionPressablePreset, number> = {
   primaryAction: 0.9,
 };
 
+export type MotionPressableOpacityFeedback = 'preset' | 'component';
+
 export function motionPressableFeedback(
   preset: MotionPressablePreset,
   reducedMotion: boolean,
+  opacityFeedback: MotionPressableOpacityFeedback = 'preset',
 ) {
+  const usePresetOpacity = opacityFeedback === 'preset';
   return {
-    pressedOpacity: reducedMotion ? 1 : pressedOpacity[preset],
+    pressedOpacity:
+      !usePresetOpacity || reducedMotion ? 1 : pressedOpacity[preset],
     transitionDuration:
       reducedMotion || preset === 'dock'
         ? reducedMotion

@@ -113,6 +113,9 @@ See [`11-PROJECT-STATUS.md`](11-PROJECT-STATUS.md) for remaining gates.
   (`router.canGoBack()`).
 - `apps/mobile/src/components/layout/AppShell.tsx` owns the shared safe-area responsive shell. `AppHeader` is one horizontal, role-aware composition with desktop navigation and a compact mobile navigation row; route screens remain responsible for their own scroll/content and business interactions.
 - `apps/mobile/src/components/ui` is the only runtime component system.
+  Text-button geometry and the 16-cell visual matrix live in
+  `packages/design-tokens` (`figma-button.ts`); `FigmaButton` in
+  `apps/mobile/src/components/figma` is the only text-button renderer.
   Product tabs are controlled by Expo Router URL state, and related Product/
   Creator grids reuse `WorkCoverCardGrid` rather than duplicating card anatomy.
   Cross-platform UI motion uses `react-native-reanimated`. Creator and Work

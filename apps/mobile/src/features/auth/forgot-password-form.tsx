@@ -241,7 +241,6 @@ export function ForgotPasswordForm({ redirectTo = '/' }: ForgotPasswordFormProps
         />
         <PrimaryButton
           label="Вернуться ко входу"
-          size="auth"
           width="full"
           onPress={() => router.replace(loginHref(redirectTo) as Href)}
         />
@@ -281,13 +280,12 @@ export function ForgotPasswordForm({ redirectTo = '/' }: ForgotPasswordFormProps
         ) : null}
         <PrimaryButton
           label="Отправить ссылку"
-          size="auth"
           width="full"
           loading={form.formState.isSubmitting}
           onPress={submit}
         />
         <Link href={loginHref(redirectTo)} asChild>
-          <FigmaButton label="Вернуться ко входу" variant="authQuiet" size="auth" width="full" onPress={() => undefined} />
+          <FigmaButton label="Вернуться ко входу" variant="ghost" width="full" onPress={() => undefined} />
         </Link>
       </View>
   );

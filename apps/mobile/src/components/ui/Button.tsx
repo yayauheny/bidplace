@@ -1,12 +1,11 @@
 import { View, type ViewStyle } from 'react-native';
 
 import { FigmaButton } from '../figma/FigmaButton';
-import { figmaAuthActionVariant } from '../figma/figma-button-style';
+
 import { type FigmaIconName } from '../figma/figma-icon-names';
 
 type ButtonProps = {
   label: string;
-  size?: 'regular' | 'large' | 'auth' | 'authResend';
   onPress: () => void;
   disabled?: boolean;
   loading?: boolean;
@@ -14,7 +13,6 @@ type ButtonProps = {
   accessibilityHint?: string;
   width?: 'content' | 'full' | 'block';
   alignSelf?: ViewStyle['alignSelf'];
-  compact?: boolean;
 };
 
 function resolvedButtonWidth(width: ButtonProps['width']) {
@@ -24,8 +22,6 @@ function resolvedButtonWidth(width: ButtonProps['width']) {
 export function PrimaryButton({
   width = 'content',
   alignSelf,
-  compact,
-  size,
   ...props
 }: ButtonProps) {
   const resolvedWidth = resolvedButtonWidth(width);
@@ -35,12 +31,7 @@ export function PrimaryButton({
         alignSelf: alignSelf ?? (resolvedWidth === 'full' ? 'stretch' : 'flex-start'),
       }}
     >
-      <FigmaButton
-        {...props}
-        size={compact ? 'compact' : size}
-        variant={figmaAuthActionVariant(size, 'primary')}
-        width={resolvedWidth}
-      />
+      <FigmaButton {...props} variant="solid" width={resolvedWidth} />
     </View>
   );
 }
@@ -48,8 +39,6 @@ export function PrimaryButton({
 export function SecondaryButton({
   width = 'content',
   alignSelf,
-  compact,
-  size,
   ...props
 }: ButtonProps) {
   const resolvedWidth = resolvedButtonWidth(width);
@@ -59,12 +48,7 @@ export function SecondaryButton({
         alignSelf: alignSelf ?? (resolvedWidth === 'full' ? 'stretch' : 'flex-start'),
       }}
     >
-      <FigmaButton
-        {...props}
-        size={compact ? 'compact' : size}
-        variant={figmaAuthActionVariant(size, 'secondary')}
-        width={resolvedWidth}
-      />
+      <FigmaButton {...props} variant="outline" width={resolvedWidth} />
     </View>
   );
 }
@@ -72,8 +56,6 @@ export function SecondaryButton({
 export function DestructiveButton({
   width = 'content',
   alignSelf,
-  compact,
-  size,
   ...props
 }: ButtonProps) {
   const resolvedWidth = resolvedButtonWidth(width);
@@ -83,12 +65,7 @@ export function DestructiveButton({
         alignSelf: alignSelf ?? (resolvedWidth === 'full' ? 'stretch' : 'flex-start'),
       }}
     >
-      <FigmaButton
-        {...props}
-        size={compact ? 'compact' : size}
-        variant="danger"
-        width={resolvedWidth}
-      />
+      <FigmaButton {...props} variant="solid" width={resolvedWidth} />
     </View>
   );
 }

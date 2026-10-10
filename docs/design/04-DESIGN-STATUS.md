@@ -283,6 +283,15 @@
   on disposable `bidplace_e2e`. Google, mixed text, consent, and derived
   recovery remain open. This is not a 1:1 match. Production was not updated.
 
+## 2026-10-10 — Shared text-button matrix (`292:5058`)
+
+- `Implemented` on local web. One `FigmaButton` matrix replaces auth/Home
+  special sizes, quiet compact pills, and the red text-button variant. Handoff:
+  `design/figma-handoff/buttons/2026-10-10-buttons/`. Stand:
+  `/dev/figma-buttons`. Chromium and WebKit passed hover, mouse hold, keyboard
+  press, disabled, focus-visible, reduced motion, resize, and zoom at 390, 1024,
+  and 1440, including a 390×400 screen. Native loading/touch remains unverified.
+
 ## 2026-10-07 — Auth Back uses the Expo history entry
 
 - `Partial`: an empty auth form leaves with one browser Back. A filled form

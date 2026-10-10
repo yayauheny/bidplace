@@ -479,13 +479,13 @@ muted caption line with renderer tail truncation; the author row hugs
 | Bio | `439:4415` | `typography.authorRowBio` 14/17/400, `color.textSubtle` `#6F6F6F` |
 | «Выбор куратора» | `439:4417` | `typography.editorialTitle` 20/24/500/−2%, `color.ink` |
 | Curator note | `439:4418` | `typography.editorial` 16/22/400/−1%, `color.textSubdued` |
-| Profile pill | `439:4419`/`439:4420` | `FigmaButton` `quiet`+`compact`: hug, pad 8/14, `radius.chip` 28, flat control fill `quietFill` `#EFEFEF`, outside 1px stroke `#FFFFFF`→`#999999` @ 0.16 (Figma `renderBounds` −1), label `typography.buttonCompact` 13/18/500 |
+| Profile pill | `439:4419`/`439:4420` | `FigmaButton` `muted`: shared text-button matrix (pad 8/16, radius 80, label Inter 600 14/26/−0.28) |
 
 Do not reuse `authorHandle`, `authorName`, `body`/`bodySmall`, `cardTitle`,
 `muted`, or global `outline` for these roles.
 
 Home «Новые работы» reuses Figma Active-auctions Frame `439:4478` as layout
-only: `sectionTitle` + hug `FigmaButton` `quiet`+`compact` «Смотреть все»,
+only: `sectionTitle` + hug `FigmaButton` `muted` «Смотреть все»,
 then a horizontal `WorkCoverCard` scroller (`264×352`, gutter/gap 12).
 Cards stay title + `@author` frost — no price, timer, or «В продаже».
 Inter-section stack after Opening is `space.homeSectionStack` 67 (Opening
@@ -503,7 +503,35 @@ shell, not the anonymous wrapper. Catalog `/authors` radius stays 28. No
 work price/timer/status. The 366 wrapper does not clip (`clipsContent: false`);
 page width stays 390.
 
-## 6.2 Shared text field
+## 6.2 Shared text button
+
+Source: `design/figma-handoff/buttons/2026-10-10-buttons` (root `292:5058`,
+captured 2026-10-10). One `FigmaButton` renderer and four variants:
+`solid`, `outline`, `ghost`, `muted`. Each has idle, hover, pressed, and
+disabled. State priority: disabled → pressed → hover → idle. Disabled applies
+`opacity` 0.5 once on the control shell.
+
+| Token | Value |
+| --- | --- |
+| Label | Inter 600 14/26, letterSpacing −0.28 |
+| Padding | 8 vertical / 16 horizontal |
+| Radius | 80 (disabled solid: 40, node `292:5054`) |
+| Stroke | 0.5 inside; solid/outline use SVG gradient strokes (`userSpaceOnUse` axes in handoff SVG); ghost/muted flat |
+| Sample «Кнопка» | 83×43 hug; other labels hug content |
+| Touch | ≥44 px via shared `hitSlop` |
+
+| Variant | Idle fill | Hover / pressed | Disabled | Label |
+| --- | --- | --- | --- | --- |
+| solid | `#121212` | white 15% overlay | `#949494` + shell opacity 0.5 | white |
+| outline | white | black 5% overlay | white + shell opacity 0.5 | `#565656` |
+| ghost | white | black 5% overlay; pressed `292:5046` inset 82×42, no stroke | white + shell opacity 0.5 | `#565656` |
+| muted | `#F3F3F3` | black 6% overlay | `#F3F3F3` + shell opacity 0.5 | `#565656` |
+
+Auth, Home «Смотреть все», admin links, and semantic wrappers map onto this
+matrix. `DestructiveButton` stays semantic but renders `solid`. Chips,
+icon buttons, and fields keep their own controls.
+
+## 6.3 Shared text field
 
 Source: founder export `design/figma-handoff/fields/2026-10-06-text-fields`
 (root `292:5044`, captured 2026-10-06). The board is 789×552. The reference
@@ -544,7 +572,7 @@ shell stays the only ring. `apps/mobile/global.css` still draws
 `[role='textbox']:focus-visible` for controls outside that component.
 The field success border stays `color.success` `#039600`.
 
-## 6.3 Press feedback
+## 6.4 Press feedback
 
 `DEC-104`. A pressed `FigmaButton` or `FigmaChoiceChip` keeps its existing
 fill, inset, or opacity change. It does not draw a mint ring. Selected chips

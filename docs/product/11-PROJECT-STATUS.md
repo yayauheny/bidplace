@@ -1,5 +1,28 @@
 # bidplace — текущий статус проекта
 
+## 2026-10-10 — Shared text-button matrix (`fix/button-states`)
+
+- `Implemented` on local web. `packages/design-tokens/src/figma-button.ts`
+  owns the 16-cell matrix. `FigmaButton` is the only text-button renderer
+  (`solid` | `outline` | `ghost` | `muted`, typed `href`). `MotionPressable`
+  `opacityFeedback: 'component'` keeps matrix opacity from being darkened again.
+  Auth, Home «Смотреть все», admin «Модерация», and exit confirmation use that
+  matrix. Handoff `design/figma-handoff/buttons/2026-10-10-buttons/` stores the
+  exporter files and checksums without `prompt.md`.
+- Checks on Node 22: design-tokens typecheck/build, mobile typecheck, lint
+  without autofix, 713/713 mobile unit tests (121 files), and a clean
+  `expo export --platform web`. Chromium and WebKit both passed 5/5 stand
+  cases: 390×874, 1024×900, 1440×900, 390×400, plus resize, 200% zoom,
+  focus-visible, reduced motion, hover, mouse hold, keyboard Enter, disabled
+  opacity, loading spinner, icon, and link role. Evidence:
+  `/tmp/bidplace-button-matrix-evidence/`. The «Кнопка» frame measured 82.7×43;
+  height matches the capture, width follows the glyph.
+- Login rendered «Войти», Telegram, and Google. Catalog rendered «Фильтры» and
+  «Сортировка». Home and `/analytics` stopped on the connection retry because
+  the API was not running, so «Смотреть все» and «Модерация» were not seen in
+  the browser. ShareSheet was not opened. Native touch and loading were not
+  exercised.
+
 ## 2026-10-10 — Verification state retry after email correction
 
 - `Implemented` (automated unit and local web verification). `use-email-verification.ts` keeps the
