@@ -47,6 +47,10 @@ wallet/NFT/crypto semantics; их разрешённая роль закрепл
 Общая матрица текстовых кнопок (`292:5058`) —
 [`buttons/2026-10-10-buttons`](../../design/figma-handoff/buttons/2026-10-10-buttons/README.md)
 (`DEC-110`); заменяет auth/Home special button parameters в runtime.
+Chrome поиска (`456:8298`) —
+[`search/2026-10-10-search-popup`](../../design/figma-handoff/search/2026-10-10-search-popup/README.md).
+Его градиент `#D1D1D1 → #EBEBEB` заменяет только stroke этого popup; остальные
+glass-компоненты сохраняют свои материалы.
 Node map, style measurements, source discrepancies и execution handoff находятся
 в новом пакете. Статус — импорт/план, не runtime parity. Эти архивы имеют приоритет
 в своей зафиксированной волне; отличающиеся live Inspect значения не смешиваются

@@ -1,0 +1,26 @@
+{
+  "viewports": [
+    {
+      "width": 390,
+      "height": 874,
+      "name": "390"
+    },
+    {
+      "width": 1024,
+      "height": 900,
+      "name": "1024"
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "name": "1440"
+    },
+    {
+      "width": 390,
+      "height": 480,
+      "name": "short"
+    }
+  ],
+  "zoom": 2,
+  "reducedMotion": "0s"
+}

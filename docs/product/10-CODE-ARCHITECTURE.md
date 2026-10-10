@@ -120,6 +120,9 @@ See [`11-PROJECT-STATUS.md`](11-PROJECT-STATUS.md) for remaining gates.
   `useFigmaButtonLayout` (fractional web border-box via `getComputedStyle`), and
   read-only `FigmaButtonStatePreview` reusing the same private visual content
   for the `/dev/figma-buttons` matrix stand.
+  Search overlay chrome lives in `packages/design-tokens` (`search-chrome.ts`)
+  and `FigmaSearchGlass`; it does not reuse the text-button matrix or the dock
+  glass stroke.
   Product tabs are controlled by Expo Router URL state, and related Product/
   Creator grids reuse `WorkCoverCardGrid` rather than duplicating card anatomy.
   Cross-platform UI motion uses `react-native-reanimated`. Creator and Work

@@ -4,6 +4,7 @@ import { useRef } from 'react';
 import { figmaTokens } from '@bidplace/design-tokens';
 
 import { FigmaIcon } from '../../components/figma/FigmaIcon';
+import { FigmaSearchGlass } from '../../components/figma/FigmaSearchGlass';
 import { MotionPressable } from '../../components/ui/MotionPressable';
 import { SearchOverlayTabs } from './SearchOverlayTabs';
 import {
@@ -31,7 +32,9 @@ export function SearchOverlayHeader({
   return (
     <>
       <View style={searchOverlayFieldRowStyle()}>
-        <SearchOverlayField value={query} onChangeText={onChangeQuery} />
+        <FigmaSearchGlass kind="field" style={{ flex: 1, minWidth: 0 }} testID="search-overlay-field">
+          <SearchOverlayField value={query} onChangeText={onChangeQuery} />
+        </FigmaSearchGlass>
         <MotionPressable
           accessibilityRole="button"
           accessibilityLabel="Закрыть поиск"
@@ -39,7 +42,13 @@ export function SearchOverlayHeader({
           preset="icon"
           style={searchOverlayCloseStyle()}
         >
-          <FigmaIcon name="x" size={figmaTokens.size.dockIcon} />
+          <FigmaSearchGlass
+            kind="close"
+            testID="search-overlay-close"
+            style={searchOverlayCloseStyle()}
+          >
+            <FigmaIcon name="x" size={figmaTokens.size.dockIcon} />
+          </FigmaSearchGlass>
         </MotionPressable>
       </View>
       <SearchOverlayTabs tab={tab} onChangeTab={onChangeTab} />

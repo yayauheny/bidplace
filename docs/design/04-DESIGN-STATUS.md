@@ -4,6 +4,15 @@
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
+## 2026-10-10 — Search popup chrome
+
+- `Partial` on local web. Field, close, and tab capsule follow
+  `search/2026-10-10-search-popup` (`456:8298`): white 60%, blur 12, gradient
+  `#D1D1D1 → #EBEBEB`. Selected search tab is `#F3F3F3` at 41px, not a 43px
+  text button. Older portfolio stroke `#DEDEDE → #F3F3F3` stays unused for this
+  popup only. Chromium and WebKit screenshots and measurements are in
+  `docs/audits/current/evidence/2026-10-10-search-chrome/`. Native is not claimed.
+
 ## 2026-10-10 — Email correction state-read recovery
 
 - `Implemented` (local web). The existing verification loading,

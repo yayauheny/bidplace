@@ -1,16 +1,17 @@
-import { View } from 'react-native';
+import { useState } from 'react';
+import { Platform, View, type LayoutChangeEvent } from 'react-native';
+import { Rect, Svg } from 'react-native-svg';
 
-import { figmaTokens } from '@bidplace/design-tokens';
+import { searchChromeTokens } from '@bidplace/design-tokens';
 
-import { FigmaChoiceChip } from '../../components/figma/FigmaChoiceChip';
-
+import { AppText } from '../../components/ui/AppText';
+import { MotionPressable } from '../../components/ui/MotionPressable';
+import { FigmaSearchGlass } from '../../components/figma/FigmaSearchGlass';
 import {
+  searchOverlayTabPanelId,
   searchOverlayTabs,
   type SearchOverlayTab,
 } from './search-overlay-tabs';
-
-/** Figma `456:8247` — 6px between the three Search tabs. */
-const SEARCH_OVERLAY_TAB_GAP = 6;
 
 export function SearchOverlayTabs({
   tab,
@@ -19,28 +20,132 @@ export function SearchOverlayTabs({
   tab: SearchOverlayTab;
   onChangeTab: (tab: SearchOverlayTab) => void;
 }) {
+  const { rail } = searchChromeTokens;
+
   return (
-    <View
-      accessibilityRole="tablist"
-      accessibilityLabel="Разделы поиска"
+    <FigmaSearchGlass
+      kind="rail"
+      testID="search-overlay-tabs"
       style={{
-        width: '100%',
-        marginTop: figmaTokens.space.x2,
-        flexDirection: 'row',
-        gap: SEARCH_OVERLAY_TAB_GAP,
+        width: rail.sampleWidth,
+        maxWidth: '100%',
+        alignSelf: 'flex-start',
+        marginTop: searchChromeTokens.railOffset,
       }}
     >
-      {searchOverlayTabs.map((item) => (
-        <View key={item.value} style={{ flex: 1, minWidth: 0 }}>
-          <FigmaChoiceChip
+      <View
+        accessibilityRole="tablist"
+        accessibilityLabel="Разделы поиска"
+        style={{
+          height: rail.sampleHeight,
+          flexDirection: 'row',
+          alignItems: 'center',
+          padding: rail.padding,
+          gap: rail.gap,
+        }}
+      >
+        {searchOverlayTabs.map((item) => (
+          <SearchOverlayTabButton
+            key={item.value}
             label={item.label}
             selected={tab === item.value}
-            stretch
-            accessibilityRole="tab"
+            panelId={searchOverlayTabPanelId(item.value)}
             onPress={() => onChangeTab(item.value)}
           />
-        </View>
-      ))}
-    </View>
+        ))}
+      </View>
+    </FigmaSearchGlass>
+  );
+}
+
+function SearchOverlayTabButton({
+  label,
+  selected,
+  panelId,
+  onPress,
+}: {
+  label: string;
+  selected: boolean;
+  panelId: string;
+  onPress: () => void;
+}) {
+  const { tab } = searchChromeTokens;
+  const [width, setWidth] = useState(0);
+
+  const onLayout = (event: LayoutChangeEvent) => {
+    const next = event.nativeEvent.layout.width;
+    setWidth((prev) => (prev === next ? prev : next));
+  };
+
+  return (
+    <MotionPressable
+      accessibilityRole="tab"
+      accessibilityLabel={label}
+      accessibilityState={{ selected }}
+      {...(Platform.OS === 'web'
+        ? ({ 'aria-selected': selected, 'aria-controls': panelId } as object)
+        : {})}
+      onPress={onPress}
+      opacityFeedback="component"
+      onLayout={onLayout}
+      style={{
+        flexGrow: 1,
+        flexShrink: 1,
+        flexBasis: 'auto',
+        height: tab.height,
+        borderRadius: tab.radius,
+        backgroundColor: selected ? tab.selectedFill : tab.fill,
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden',
+      }}
+    >
+      <SearchTabStroke width={width} height={tab.height} />
+      <AppText
+        role="body"
+        numberOfLines={1}
+        style={{
+          color: tab.label,
+          fontFamily: tab.typography.fontFamily,
+          fontSize: tab.typography.fontSize,
+          lineHeight: tab.typography.lineHeight,
+          letterSpacing: tab.typography.letterSpacing,
+          fontWeight: tab.typography.fontWeight,
+        }}
+      >
+        {label}
+      </AppText>
+    </MotionPressable>
+  );
+}
+
+function SearchTabStroke({ width, height }: { width: number; height: number }) {
+  const { tab, strokeWidth } = searchChromeTokens;
+  if (width <= 0 || height <= 0) return null;
+  const inset = strokeWidth / 2;
+  const innerWidth = width - strokeWidth;
+  const innerHeight = height - strokeWidth;
+  const radius = Math.min(tab.radius, innerWidth / 2, innerHeight / 2);
+
+  return (
+    <Svg
+      pointerEvents="none"
+      aria-hidden
+      width={width}
+      height={height}
+      style={{ position: 'absolute', top: 0, left: 0 }}
+    >
+      <Rect
+        x={inset}
+        y={inset}
+        width={innerWidth}
+        height={innerHeight}
+        rx={radius}
+        ry={radius}
+        fill="none"
+        stroke={tab.stroke}
+        strokeWidth={strokeWidth}
+      />
+    </Svg>
   );
 }

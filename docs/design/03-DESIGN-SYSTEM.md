@@ -388,11 +388,14 @@ same column. 1024/1440 compositions are out of this wave.
 `FloatingDock` is one 232×64 glass capsule: Главная / Поиск / Добавить /
 Профиль. Search is an item inside that capsule. Dock Search opens a fullscreen
 `SearchOverlay` over the current page (`DEC-096`) using the `FilterSheet` Modal
-pattern and the shared overlay focus trap: pill field + circular close, then
-Категории / Авторы / Работы chips. `FilterSearchField` stays the catalog field
-(floating label, radius 18). Overlay search is a stadium canvas field with
-`border` `#DEDEDE` 0.5px (Figma `439:4789`), not `searchSurface` grey and not
-the catalog field. Author/Category/Work hits use a shared hover fill/ring
+pattern and the shared overlay focus trap. The popup chrome follows
+`search/2026-10-10-search-popup` (`456:8298`), not the older portfolio stroke
+`#DEDEDE → #F3F3F3`. Field `456:8369` and close `456:8375` are 52px tall, white
+at 60% with backdrop blur 12 (CSS `blur(6px)`), and the SVG gradient
+`#D1D1D1 → #EBEBEB`. The tab capsule `4306:9061` is 50px with that same stroke
+and no blur. Its tabs are 41px, Inter Medium 14/20, white or selected
+`#F3F3F3`, with a white 0.5 stroke. They are not the 43px text-button matrix.
+`FilterSearchField` stays the catalog field (floating label, radius 18). Author/Category/Work hits use a shared hover fill/ring
 (`ghostHover` / inset `border`) without changing layout.
 `WorkCoverCardGrid` may render one catalog column or a two-column overlay grid.
 The 64×64 search FAB and the

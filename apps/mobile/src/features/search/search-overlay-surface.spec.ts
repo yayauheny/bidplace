@@ -138,6 +138,10 @@ vi.mock('react-native', () => {
   };
 });
 
+vi.mock('expo-blur', () => ({
+  BlurView: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
+}));
+
 vi.mock('react-native-svg', () => {
   const shape = ({ children }: { children?: ReactNode }) => createElement('svg', null, children);
   return {
@@ -149,6 +153,9 @@ vi.mock('react-native-svg', () => {
     Line: shape,
     Path: shape,
     Rect: shape,
+    Defs: shape,
+    LinearGradient: shape,
+    Stop: shape,
   };
 });
 

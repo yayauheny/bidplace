@@ -1,5 +1,20 @@
 # bidplace — текущий статус проекта
 
+## 2026-10-10 — Search popup chrome (`fix/control-reuse`)
+
+- `Partial` on local web. Text action buttons stay on the 16-cell matrix in
+  `figma-button.ts`. Search field `456:8369`, close `456:8375`, and tab capsule
+  `4306:9061` use `search-chrome.ts` and `FigmaSearchGlass`. The scoped stroke is
+  `#D1D1D1 → #EBEBEB` from `fallbacks/001-456_8298.svg`. Tabs stay 41px Medium
+  14/20. Icon buttons, chips, dock, and catalog fields keep their own roles.
+- Node 22.23.3, `EXPO_NO_DOTENV=1`: design-tokens `tsc` and build **0**,
+  mobile `tsc` 6.0.3 **0**, mobile eslint **0**, Vitest **722/722** (121 files),
+  `expo export --platform web` **0**. Chromium and WebKit search chrome
+  **4/4** and the existing 16-cell button matrix **10/10** against the already
+  running `localhost:8081` (390, 1024, 1440, short, resize, zoom 200%,
+  keyboard focus, reduced motion). Evidence:
+  `docs/audits/current/evidence/2026-10-10-search-chrome/`. Native is not claimed.
+
 ## 2026-10-10 — Shared text-button matrix (`fix/button-states`)
 
 - `Implemented` on local web. `/dev/figma-buttons` static 4×4

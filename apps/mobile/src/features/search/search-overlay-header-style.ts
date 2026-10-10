@@ -1,14 +1,13 @@
-import { figmaTokens } from '@bidplace/design-tokens';
+import { searchChromeTokens } from '@bidplace/design-tokens';
 
-/** Stadium search control. It is not the form field, so it keeps its own size and type. */
-const searchControlSize = 52;
+const { field, close, rowGap } = searchChromeTokens;
 
 export function searchOverlayFieldRowStyle() {
   return {
     width: '100%' as const,
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
-    gap: figmaTokens.space.x3,
+    gap: rowGap,
   };
 }
 
@@ -16,22 +15,18 @@ export function searchOverlayFieldChromeStyle() {
   return {
     flex: 1,
     minWidth: 0,
-    height: searchControlSize,
+    height: field.sampleHeight,
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
-    gap: figmaTokens.space.x2,
-    padding: figmaTokens.space.x2,
-    borderRadius: figmaTokens.radius.dock,
-    backgroundColor: figmaTokens.color.canvas,
-    borderWidth: 0.5,
-    borderColor: figmaTokens.color.border,
+    gap: field.gap,
+    padding: field.padding,
   };
 }
 
 export function searchOverlayIconFrameStyle() {
   return {
-    width: figmaTokens.size.control,
-    height: figmaTokens.size.control,
+    width: field.iconFrame,
+    height: field.iconFrame,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
     flexShrink: 0,
@@ -42,28 +37,25 @@ export function searchOverlayFieldInputStyle() {
   return {
     flex: 1,
     minWidth: 0,
-    height: figmaTokens.size.control,
+    height: field.typography.lineHeight,
     padding: 0,
     margin: 0,
-    color: figmaTokens.color.ink,
-    backgroundColor: 'transparent',
-    ...figmaTokens.typography.field,
-    fontSize: 16,
-    lineHeight: 19,
-    letterSpacing: -0.16,
+    color: field.typography.color,
+    backgroundColor: 'transparent' as const,
+    fontFamily: field.typography.fontFamily,
+    fontSize: field.typography.fontSize,
+    lineHeight: field.typography.lineHeight,
+    letterSpacing: field.typography.letterSpacing,
+    fontWeight: field.typography.fontWeight,
   };
 }
 
 export function searchOverlayCloseStyle() {
   return {
-    width: searchControlSize,
-    height: searchControlSize,
-    borderRadius: figmaTokens.radius.dock,
-    backgroundColor: figmaTokens.color.canvas,
-    borderWidth: 0.5,
-    borderColor: figmaTokens.color.border,
+    width: close.sampleWidth,
+    height: close.sampleHeight,
+    flexShrink: 0,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
-    flexShrink: 0,
   };
 }
