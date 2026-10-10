@@ -140,8 +140,11 @@ and timers (`none`, SMTP-accepted without mailbox proof, `unknown`, `rejected`)
 before field-level reasons. Wrong-code feedback tells the user to edit the code
 then retry verify; cooldown, quota, pause, Turnstile, and disposable outcomes
 use dedicated reason lines. Unverified email correction is a separate explicit
-action, not mixed into resend. Repeating the same idempotent send after a
-network or `unknown` outcome does not imply another message was sent. Turnstile
+action, not mixed into resend. After it succeeds, confirmation reads fresh
+state for the saved canonical address. A failed read keeps that address and
+offers «Повторить чтение»; retry performs only GET and does not send mail.
+Repeating the same idempotent send after a network or `unknown` outcome does not
+imply another message was sent. Turnstile
 must succeed before send when required; missing site key or script on web shows
 unavailable copy and blocks submit (fail closed). Recovery forgot-password keeps
 neutral accepted copy for successful suppression paths; validation and Turnstile

@@ -4,6 +4,17 @@
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
+## 2026-10-10 — Email correction state-read recovery
+
+- `Implemented` (local web). The existing verification loading,
+  read-error, and «Повторить чтение» states also cover a failed GET after saving
+  a new address. Canonical account data stays saved; a successful read retry
+  restores the form and clears its read error without sending mail. Regression
+  evidence is in the existing hook/form owner specs and six Chromium/WebKit
+  scenarios, including a short viewport and keyboard retry; see
+  [project status](../product/11-PROJECT-STATUS.md#2026-10-10--verification-state-retry-after-email-correction).
+  No layout or token change. Native and deployed environment checks remain open.
+
 ## 2026-10-10 — Auth abuse web surfaces (state-first copy, Turnstile host)
 
 - `Partial`. `/verify-email`, login, registration, and forgot-password use

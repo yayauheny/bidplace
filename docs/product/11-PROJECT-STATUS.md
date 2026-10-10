@@ -1,5 +1,25 @@
 # bidplace — текущий статус проекта
 
+## 2026-10-10 — Verification state retry after email correction
+
+- `Implemented` (automated unit and local web verification). `use-email-verification.ts` keeps the
+  saved canonical `User` when its following state GET fails, clears the obsolete
+  mailbox/code state, and exposes the existing read retry. A successful retry
+  clears the read error without another address POST or automatic mail send.
+  `use-email-verification.spec.ts` and `verify-email-form.spec.ts` cover network
+  and 503 failures, retry recovery, and a late failure after another owner
+  becomes active. Recovery remains owned by the existing verification hook.
+  Cursor checks on Node
+  22 passed: 52/52 focused auth tests, 713/713 mobile tests (120 files),
+  typecheck, lint, and web export. The unmodified export passed 6/6 synthetic
+  API scenarios in Chromium/WebKit at 390×874, 390×400, and 1280×720: keyboard
+  read retry, saved address after reload, one address POST, and no send/verify
+  POST. Private check logs: `/private/tmp/bidplace-verification-retry-units.log`,
+  `/private/tmp/bidplace-verification-retry-export-fresh.log`, and
+  `/private/tmp/bidplace-verification-retry-browser.log`. Server contracts,
+  quotas, persistence, and the MVP scope are unchanged. Native and deployed
+  environment verification remain outside this correction's evidence.
+
 ## 2026-10-10 — Auth abuse protection (branch `feature/auth-abuse-protection`)
 
 - `Implemented` (automated backend/contracts/SDK/database on Node 22): durable

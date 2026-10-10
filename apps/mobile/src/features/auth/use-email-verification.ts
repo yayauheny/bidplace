@@ -341,6 +341,7 @@ export function useEmailVerification(input: {
     setServerState(state);
     setReadStatus('ready');
     setReading(false);
+    setReason((current) => current?.kind === 'read-error' ? null : current);
   }, []);
 
   const installOwner = useCallback((next: User, token: number, scope: Scope, signal: AbortSignal) => {
@@ -786,12 +787,24 @@ export function useEmailVerification(input: {
       setRejectedCode(null);
       setEditingEmailState(null);
       setReason({ kind: 'code-invalidated' });
-      const state = await apiRef.current.auth.emailVerificationState({ signal: controller.signal });
-      if (!stillOwner(token, scope, controller.signal, allowedEmails)) return;
-      const installed = queryClient.getQueryData<User | null>(authKeys.session) ?? null;
-      if (installed?.id !== scope.userId || logicalEmail(installed.email) !== nextEmail) return;
-      if (logicalEmail(state.email) !== nextEmail) return;
-      applyState(state, Date.now());
+      serverEmailRef.current = null;
+      setServerState(null);
+      setDeadlines((current) => ({ ...current, codeExpiresAt: null }));
+      setReadStatus('loading');
+      setReading(true);
+      try {
+        const state = await apiRef.current.auth.emailVerificationState({ signal: controller.signal });
+        if (!stillOwner(token, scope, controller.signal, allowedEmails)) return;
+        const installed = queryClient.getQueryData<User | null>(authKeys.session) ?? null;
+        if (installed?.id !== scope.userId || logicalEmail(installed.email) !== nextEmail) return;
+        if (logicalEmail(state.email) !== nextEmail) return;
+        applyState(state, Date.now());
+      } catch (readError) {
+        if (!stillOwner(token, scope, controller.signal, allowedEmails) || isAbort(readError)) return;
+        setReading(false);
+        setReadStatus('error');
+        setReason({ kind: 'read-error' });
+      }
     } catch (error) {
       if (!stillOwner(token, scope, controller.signal, [scope.email]) || isAbort(error)) return;
       if (error instanceof ApiClientError && error.code === ApiErrorCode.CONFLICT) {

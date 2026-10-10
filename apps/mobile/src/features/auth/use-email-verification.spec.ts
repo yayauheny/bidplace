@@ -576,6 +576,113 @@ describe('useEmailVerification', () => {
     expect(container.textContent).toContain('reason:none');
   });
 
+  it.each([
+    { failure: 'network', error: networkError() },
+    { failure: 'server', error: new ApiClientError('synthetic-server', { kind: 'server', status: 503, code: null }) },
+  ])('retries only state reading after an owned correction and a $failure failure', async ({ error }) => {
+    harness.emailVerificationState.mockResolvedValueOnce(verificationState({
+      sendStatus: 'accepted',
+      codeExpiresAt: '2099-01-01T00:00:00.000Z',
+    }));
+    const container = render();
+    await flush();
+    let rejectRead: (failure: unknown) => void = () => {};
+    harness.emailVerificationState.mockImplementationOnce(
+      () => new Promise((_resolve, reject) => {
+        rejectRead = reject;
+      }),
+    );
+    harness.changeUnverifiedEmail.mockResolvedValueOnce({ user: account({ email: 'next@example.com' }) });
+    await act(async () => {
+      click(container, 'code');
+      click(container, 'next-email');
+      click(container, 'correct');
+    });
+    await flush();
+    expect(client?.getQueryData<User>(authKeys.session)?.email).toBe('next@example.com');
+    replaceUser(account({ email: 'next@example.com' }));
+    await flush();
+    await act(async () => {
+      rejectRead(error);
+    });
+    await flush();
+    expect(container.textContent).toContain('status:error');
+    expect(container.textContent).toContain('reason:read-error');
+    expect(container.textContent).toContain('send:nostate');
+    expect(container.textContent).toContain('codeLeft:0');
+    expect(container.textContent).not.toContain('entered:123456');
+    expect(container.textContent).toContain('busy:no');
+    expect(client?.getQueryData<User>(authKeys.session)).toMatchObject({
+      id: OWNER_ID,
+      email: 'next@example.com',
+      slug: 'author',
+      acceptedRulesVersion: 'MVP_RULES_V1',
+    });
+    await act(async () => {
+      click(container, 'send');
+      click(container, 'verify');
+    });
+    expect(harness.requestEmailVerification).not.toHaveBeenCalled();
+    expect(harness.verifyEmailVerification).not.toHaveBeenCalled();
+
+    harness.emailVerificationState.mockResolvedValue(verificationState({ email: 'next@example.com' }));
+    await act(async () => {
+      click(container, 'retry');
+    });
+    await flush();
+    expect(container.textContent).toContain('status:ready');
+    expect(harness.emailVerificationState).toHaveBeenCalledTimes(3);
+    expect(container.textContent).toContain('reason:none');
+    expect(harness.changeUnverifiedEmail).toHaveBeenCalledTimes(1);
+    expect(harness.requestEmailVerification).not.toHaveBeenCalled();
+    harness.requestEmailVerification.mockResolvedValueOnce({ ok: true, delivery: 'accepted' });
+    await act(async () => {
+      click(container, 'send');
+    });
+    await flush();
+    expect(harness.requestEmailVerification).toHaveBeenCalledTimes(1);
+    expect(harness.verified).toBe(0);
+  });
+
+  it('ignores a failed correction state read after a different owner becomes active', async () => {
+    harness.emailVerificationState.mockResolvedValueOnce(verificationState());
+    const container = render();
+    await flush();
+    let rejectRead: (failure: unknown) => void = () => {};
+    harness.emailVerificationState.mockImplementationOnce(
+      () => new Promise((_resolve, reject) => {
+        rejectRead = reject;
+      }),
+    );
+    harness.changeUnverifiedEmail.mockResolvedValueOnce({ user: account({ email: 'next@example.com' }) });
+    await act(async () => {
+      click(container, 'next-email');
+      click(container, 'correct');
+    });
+    await flush();
+    const readOptions = harness.emailVerificationState.mock.calls.at(-1)?.[0] as { signal?: AbortSignal };
+    replaceUser(account({ email: 'next@example.com' }));
+    await flush();
+    const otherId = '11111111-1111-4111-8111-111111111111';
+    harness.emailVerificationState.mockResolvedValue(verificationState({
+      email: 'other@example.com',
+      sendStatus: 'rejected',
+    }));
+    replaceUser(account({ id: otherId, email: 'other@example.com' }));
+    await flush();
+    expect(readOptions.signal?.aborted).toBe(true);
+    await act(async () => {
+      rejectRead(networkError());
+    });
+    await flush();
+    expect(container.textContent).toContain('status:ready');
+    expect(container.textContent).toContain('send:rejected');
+    expect(container.textContent).not.toContain('reason:read-error');
+    expect(client?.getQueryData<User>(authKeys.session)).toMatchObject({ id: otherId, email: 'other@example.com' });
+    expect(harness.requestEmailVerification).not.toHaveBeenCalled();
+    expect(harness.verified).toBe(0);
+  });
+
   it('replays a retained unknown send during cooldown and quota, then rotates an explicit send after the deadline', async () => {
     vi.useFakeTimers();
     vi.setSystemTime(LOCAL);

@@ -438,6 +438,48 @@ describe('verify email form', () => {
     view.unmount();
   });
 
+  it('shows state-read retry after saving an address and clears the read error when retry succeeds', async () => {
+    harness.user = account();
+    harness.emailVerificationState.mockResolvedValueOnce(verificationState());
+    const view = mount();
+    await flush();
+    let rejectRead: (failure: unknown) => void = () => {};
+    harness.emailVerificationState.mockImplementationOnce(
+      () => new Promise((_resolve, reject) => {
+        rejectRead = reject;
+      }),
+    );
+    harness.changeUnverifiedEmail.mockResolvedValueOnce({ user: account({ email: 'next@example.com' }) });
+    click(view.container, 'Изменить адрес');
+    fill(view.container, 'Электронная почта', 'next@example.com');
+    click(view.container, 'Сохранить адрес');
+    await flush();
+    expect(view.client.getQueryData<User>(authKeys.session)?.email).toBe('next@example.com');
+    harness.user = account({ email: 'next@example.com' });
+    act(() => harness.redraw());
+    await flush();
+    expect(view.container.textContent).toContain('Проверяем статус подтверждения…');
+    await act(async () => {
+      rejectRead(new ApiClientError('synthetic-network', { kind: 'network', status: 0, code: null }));
+    });
+    await flush();
+    expect(view.container.textContent).toContain('Не удалось прочитать статус подтверждения.');
+    expect([...view.container.querySelectorAll('button')].some((button) => button.textContent === 'Повторить чтение')).toBe(true);
+    expect(harness.requestEmailVerification).not.toHaveBeenCalled();
+    expect(harness.verifyEmailVerification).not.toHaveBeenCalled();
+    harness.emailVerificationState.mockResolvedValue(verificationState({ email: 'next@example.com' }));
+    click(view.container, 'Повторить чтение');
+    await flush();
+    expect(view.container.textContent).toContain('Код ещё не отправлен.');
+    expect(view.container.textContent).not.toContain('Не удалось прочитать');
+    expect([...view.container.querySelectorAll('button')].some((button) => button.textContent === 'Повторить чтение')).toBe(false);
+    expect(harness.emailVerificationState).toHaveBeenCalledTimes(3);
+    expect(harness.changeUnverifiedEmail).toHaveBeenCalledTimes(1);
+    expect(harness.requestEmailVerification).not.toHaveBeenCalled();
+    expect(view.client.getQueryData<User>(authKeys.session)?.email).toBe('next@example.com');
+    view.unmount();
+  });
+
   it('keeps a rejected code until it is edited', async () => {
     harness.user = account();
     harness.emailVerificationState.mockResolvedValue(verificationState({
