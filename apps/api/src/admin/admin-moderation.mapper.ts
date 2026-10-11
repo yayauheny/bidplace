@@ -4,7 +4,9 @@ import { type Prisma } from '@bidplace/database';
 import { imageKey } from '../core/image-store/image-key';
 import {
   productRevisionImageSelect,
+  projectedCatalogLabel,
   revisionSelectionSelect,
+  selectedCategoryView,
   selectionFromRevision,
   toImageContracts,
   toRevisionGalleryImages,
@@ -61,6 +63,20 @@ export const adminSellerRevisionSelect = {
       byteLength: true,
       checksum: true,
       objectKey: true,
+    },
+  },
+  directions: {
+    orderBy: { position: 'asc' },
+    select: {
+      category: {
+        select: {
+          id: true,
+          slug: true,
+          name: true,
+          description: true,
+          active: true,
+        },
+      },
     },
   },
 } satisfies Prisma.SellerProfileRevisionSelect;
@@ -371,6 +387,10 @@ export function toAdminSellerProfile(
             achievements: revision.achievements.map((item) =>
               toPortfolioAchievement(item),
             ),
+            directions: (revision.directions ?? []).flatMap((item) => {
+              const category = selectedCategoryView(item.category);
+              return category ? [category] : [];
+            }),
           },
         }
       : null,
@@ -408,6 +428,8 @@ export function toAdminProduct(
           content: productContent({
             ...revision,
             images: revisionImages ?? [],
+            technique: projectedCatalogLabel(revision.terms, 'TECHNIQUE'),
+            materials: projectedCatalogLabel(revision.terms, 'MATERIAL'),
           }),
           story: {
             storyToken: revision.storyToken,

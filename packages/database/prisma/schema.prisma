@@ -241,12 +241,13 @@ model Category {
   id          String    @id @default(uuid()) @db.Uuid
   slug        String    @unique @db.VarChar(120)
   name        String    @db.VarChar(160)
-  normalizedName String @default("") @map("normalized_name") @db.VarChar(160)
+  normalizedName String @map("normalized_name") @db.VarChar(160)
   description String?   @db.Text
   active      Boolean   @default(true)
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
   products    Product[]
+  productRevisions ProductRevision[]
   directions  SellerProfileRevisionDirection[]
   mappedProposals CatalogProposal[] @relation("MappedProposalCategory")
 
@@ -300,6 +301,7 @@ model ProductRevision {
   version       Int
   status        ProductStatus @default(DRAFT)
   categoryId    String?       @map("category_id") @db.Uuid
+  category      Category?     @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   title         String?       @db.VarChar(200)
   story         String?       @db.Text
   technique     String?       @db.Text
@@ -648,7 +650,7 @@ model CatalogTerm {
   role      CatalogTermRole
   slug      String          @db.VarChar(120)
   name      String          @db.VarChar(160)
-  normalizedName String     @default("") @map("normalized_name") @db.VarChar(160)
+  normalizedName String     @map("normalized_name") @db.VarChar(160)
   active    Boolean         @default(true)
   createdAt DateTime        @default(now()) @map("created_at")
   updatedAt DateTime        @updatedAt @map("updated_at")

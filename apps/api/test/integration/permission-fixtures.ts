@@ -2,6 +2,8 @@ import { randomUUID } from 'node:crypto';
 
 import { Prisma, type PrismaClient } from '@bidplace/database';
 
+import { normalizeCatalogName } from '../../src/catalog/catalog-data';
+
 const fixtureDate = new Date('2026-08-05T12:00:00.000Z');
 export const fixturePasswordHash =
   '$argon2id$v=19$m=65536,t=3,p=4$Hv01HhuWHyFmMIRCcxhH3w$9dvY3hECfoulYwe4VEPwWEJ4OHvYCCYbiw685vNdLZM';
@@ -13,7 +15,12 @@ export async function attachAuthorDirection(
   const category = await prisma.category.upsert({
     where: { slug: 'painting' },
     update: {},
-    create: { slug: 'painting', name: 'Живопись', active: true },
+    create: {
+      slug: 'painting',
+      name: 'Живопись',
+      normalizedName: normalizeCatalogName('Живопись'),
+      active: true,
+    },
   });
   await prisma.sellerProfileRevisionDirection.upsert({
     where: {
@@ -259,7 +266,11 @@ export async function createPermissionFixture(
   const suffix = randomUUID().replace(/-/g, '').slice(0, 8);
   const buyer = await createUser(prisma, 'buyer', suffix);
   const category = await prisma.category.create({
-    data: { slug: `wave3-category-${suffix}`, name: 'Wave 3 category' },
+    data: {
+      slug: `wave3-category-${suffix}`,
+      name: 'Wave 3 category',
+      normalizedName: normalizeCatalogName('Wave 3 category'),
+    },
   });
 
   const sellers = {

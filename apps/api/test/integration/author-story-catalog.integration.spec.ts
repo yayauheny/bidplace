@@ -543,6 +543,17 @@ describe('author story, catalog, and proposals', () => {
     const canvas = await prisma.catalogTerm.findUniqueOrThrow({
       where: { role_slug: { role: 'MATERIAL', slug: 'canvas' } },
     });
+    const roman = await admin.client.post('/admin/categories', { name: 'Ⅰ' });
+    expect(roman.status).toBe(201);
+    const romanCategory = ((await roman.json()) as { category: { id: string } }).category;
+    const latin = await admin.client.post('/admin/categories', { name: 'I' });
+    expect(latin.status).toBe(201);
+    expect(((await latin.json()) as { category: { id: string } }).category.id).toBe(
+      romanCategory.id,
+    );
+    expect(
+      await prisma.category.count({ where: { normalizedName: 'i' } }),
+    ).toBe(1);
     const created = await admin.client.post('/admin/catalog/terms', {
       role: 'MATERIAL',
       name: '  ХОЛСТ  ',
@@ -1067,5 +1078,217 @@ describe('author story, catalog, and proposals', () => {
     expect(
       ((await facets.json()) as { materials: string[] }).materials,
     ).toContain('Холст');
+  });
+
+  it('returns the saved term projection and reads hidden selected records', async () => {
+    await bootstrapCatalog(prisma as never);
+    const { owner, profile, painting } = await authorWithoutCity();
+    const admin = await user('admin');
+    const canvas = await prisma.catalogTerm.findUniqueOrThrow({
+      where: { role_slug: { role: 'MATERIAL', slug: 'canvas' } },
+    });
+    const oil = await prisma.catalogTerm.findUniqueOrThrow({
+      where: { role_slug: { role: 'MATERIAL', slug: 'oil' } },
+    });
+    const drawing = await prisma.catalogTerm.findUniqueOrThrow({
+      where: { role_slug: { role: 'TECHNIQUE', slug: 'drawing' } },
+    });
+    const modeling = await prisma.catalogTerm.findUniqueOrThrow({
+      where: { role_slug: { role: 'TECHNIQUE', slug: 'modeling' } },
+    });
+    const sculpture = await prisma.category.findUniqueOrThrow({
+      where: { slug: 'sculpture' },
+    });
+    const created = await owner.client.post('/products', {
+      title: 'Projected work',
+      categoryId: painting.id,
+      materialTermIds: [canvas.id],
+      techniqueTermIds: [drawing.id],
+    });
+    expect(created.status, await created.clone().text()).toBe(201);
+    const createdBody = (await created.json()) as {
+      product: { id: string; materials: string | null; technique: string | null };
+    };
+    expect(createdBody.product).toMatchObject({
+      materials: 'Холст',
+      technique: 'Рисунок',
+    });
+    const read = async () => {
+      const response = await owner.client.get(`/seller/products/${createdBody.product.id}`);
+      expect(response.status).toBe(200);
+      return (await response.json()) as {
+        product: { materials: string | null; technique: string | null };
+        selection: {
+          category: { id: string; name: string; active: boolean } | null;
+          materialTerms: Array<{ id: string; name: string; active: boolean; role: string }>;
+          techniqueTerms: Array<{ id: string; name: string; active: boolean }>;
+        };
+      };
+    };
+    expect((await read()).product).toMatchObject({
+      materials: createdBody.product.materials,
+      technique: createdBody.product.technique,
+    });
+    const replaced = await owner.client.patch(`/products/${createdBody.product.id}`, {
+      materialTermIds: [oil.id],
+      techniqueTermIds: [modeling.id],
+    });
+    expect(replaced.status, await replaced.clone().text()).toBe(200);
+    const replacedBody = (await replaced.json()) as {
+      product: { materials: string | null; technique: string | null };
+    };
+    expect(replacedBody.product).toMatchObject({
+      materials: 'Масло',
+      technique: 'Лепка',
+    });
+    expect((await read()).product).toMatchObject({
+      materials: replacedBody.product.materials,
+      technique: replacedBody.product.technique,
+    });
+    const cleared = await owner.client.patch(`/products/${createdBody.product.id}`, {
+      materialTermIds: [],
+      techniqueTermIds: [],
+    });
+    expect(cleared.status, await cleared.clone().text()).toBe(200);
+    const clearedBody = (await cleared.json()) as {
+      product: { materials: string | null; technique: string | null };
+    };
+    expect(clearedBody.product.materials).toBeNull();
+    expect(clearedBody.product.technique).toBeNull();
+    const empty = await read();
+    expect(empty.product.materials).toBeNull();
+    expect(empty.product.technique).toBeNull();
+    expect(empty.selection.materialTerms).toEqual([]);
+    expect(empty.selection.techniqueTerms).toEqual([]);
+    const revisionId = (
+      await prisma.product.findUniqueOrThrow({
+        where: { id: createdBody.product.id },
+        select: { editingRevisionId: true },
+      })
+    ).editingRevisionId;
+    await prisma.productRevision.update({
+      where: { id: revisionId! },
+      data: { materials: 'Unregistered material', technique: 'Unregistered technique' },
+    });
+    const staleColumn = await read();
+    expect(staleColumn.product.materials).toBeNull();
+    expect(staleColumn.product.technique).toBeNull();
+    expect(
+      (await owner.client.patch(`/products/${createdBody.product.id}`, {
+        materials: 'Unregistered material',
+      })).status,
+    ).toBe(400);
+    expect(
+      (await owner.client.post('/products', { title: 'Free text', technique: 'Oil' })).status,
+    ).toBe(400);
+    const reselected = await owner.client.patch(`/products/${createdBody.product.id}`, {
+      materialTermIds: [canvas.id],
+      techniqueTermIds: [drawing.id],
+    });
+    expect(reselected.status, await reselected.clone().text()).toBe(200);
+    await prisma.catalogTerm.update({ where: { id: canvas.id }, data: { active: false } });
+    await prisma.catalogTerm.update({ where: { id: drawing.id }, data: { active: false } });
+    await prisma.category.update({ where: { id: painting.id }, data: { active: false } });
+    const hidden = await read();
+    expect(hidden.selection.category).toMatchObject({
+      id: painting.id,
+      name: 'Живопись',
+      active: false,
+    });
+    expect(hidden.selection.materialTerms[0]).toMatchObject({
+      id: canvas.id,
+      name: 'Холст',
+      active: false,
+      role: 'MATERIAL',
+    });
+    expect(hidden.selection.techniqueTerms[0]).toMatchObject({
+      id: drawing.id,
+      name: 'Рисунок',
+      active: false,
+    });
+    const picker = await owner.client.get('/catalog/terms?role=MATERIAL');
+    expect(
+      ((await picker.json()) as { terms: Array<{ id: string }> }).terms.some(
+        (term) => term.id === canvas.id,
+      ),
+    ).toBe(false);
+    expect(
+      (
+        await owner.client.post('/products', {
+          title: 'Hidden term',
+          categoryId: sculpture.id,
+          materialTermIds: [canvas.id],
+        })
+      ).status,
+    ).toBe(409);
+    const profileResponse = await owner.client.get('/seller/profile');
+    expect(profileResponse.status).toBe(200);
+    const profileBody = (await profileResponse.json()) as {
+      sellerProfile: {
+        directionCategoryIds: string[];
+        directions: Array<{ id: string; name: string; active: boolean }>;
+      };
+    };
+    expect(profileBody.sellerProfile.directionCategoryIds).toContain(painting.id);
+    expect(profileBody.sellerProfile.directions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: painting.id, name: 'Живопись', active: false }),
+      ]),
+    );
+    const image = await prisma.productImage.create({
+      data: {
+        productId: createdBody.product.id,
+        position: 0,
+        mimeType: 'image/png',
+        byteLength: permissionImage.byteLength,
+        data: permissionImage,
+        checksum: 'd'.repeat(64),
+      },
+    });
+    await prisma.productRevisionImage.create({
+      data: { revisionId: revisionId!, imageId: image.id, position: 0 },
+    });
+    expect((await owner.client.post(`/products/${createdBody.product.id}/submit`)).status).toBe(
+      201,
+    );
+    const adminProducts = await admin.client.get('/admin/products?filter=PENDING_REVIEW');
+    const review = (
+      (await adminProducts.json()) as {
+        products: Array<{
+          id: string;
+          reviewTarget: {
+            selection: {
+              category: { name: string; active: boolean } | null;
+              materialTerms: Array<{ id: string; name: string; active: boolean }>;
+            };
+          } | null;
+        }>;
+      }
+    ).products.find((item) => item.id === createdBody.product.id);
+    expect(review?.reviewTarget?.selection.materialTerms[0]).toMatchObject({
+      id: canvas.id,
+      name: 'Холст',
+      active: false,
+    });
+    expect(review?.reviewTarget?.selection.category).toMatchObject({
+      name: 'Живопись',
+      active: false,
+    });
+    const adminSellers = await admin.client.get('/admin/seller-profiles?filter=APPROVED');
+    const seller = (
+      (await adminSellers.json()) as {
+        sellerProfiles: Array<{
+          id: string;
+          reviewTarget: {
+            content: { directions: Array<{ id: string; name: string; active: boolean }> };
+          } | null;
+        }>;
+      }
+    ).sellerProfiles.find((item) => item.id === profile.id);
+    expect(seller?.reviewTarget?.content.directions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: painting.id, name: 'Живопись', active: false }),
+      ]),
+    );
   });
 });

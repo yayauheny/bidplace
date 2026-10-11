@@ -87,10 +87,27 @@ export const catalogProposalRejectSchema = z
   .object({ reason: z.string().trim().min(1).max(2000) })
   .strict();
 
+export const selectedCategorySchema = z
+  .object({
+    id: uuidSchema,
+    slug: z.string().trim().min(1),
+    name: z.string().trim().min(1),
+    description: z.string().trim().min(1).nullable(),
+    active: z.boolean(),
+  })
+  .strict();
+
+export function normalizeCatalogName(value: string): string {
+  return value.normalize('NFKC').replace(/\s+/g, ' ').trim().toLocaleLowerCase('ru');
+}
+
 export const workSelectionViewSchema = z
   .object({
+    category: selectedCategorySchema.nullable(),
     materialTermIds: z.array(uuidSchema),
     techniqueTermIds: z.array(uuidSchema),
+    materialTerms: z.array(catalogTermSchema),
+    techniqueTerms: z.array(catalogTermSchema),
     proposals: z.array(catalogProposalSchema),
   })
   .strict();

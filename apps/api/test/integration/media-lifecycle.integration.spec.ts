@@ -14,6 +14,7 @@ import {
   createIntegrationDatabaseContext,
   type IntegrationDatabaseContext,
 } from './test-database';
+import { normalizeCatalogName } from '../../src/catalog/catalog-data';
 import { MediaLifecycleService } from '../../src/core/media/media-lifecycle.service';
 import {
   MediaObjectStore,
@@ -158,7 +159,12 @@ async function author(media: MediaLifecycleService) {
     const direction = await tx.category.upsert({
       where: { slug: 'painting' },
       update: {},
-      create: { slug: 'painting', name: 'Живопись', active: true },
+      create: {
+        slug: 'painting',
+        name: 'Живопись',
+        normalizedName: normalizeCatalogName('Живопись'),
+        active: true,
+      },
     });
     await tx.sellerProfileRevisionDirection.create({
       data: { revisionId: revision.id, categoryId: direction.id, position: 0 },
@@ -245,7 +251,11 @@ describe('durable media lifecycle on PostgreSQL', () => {
       },
     });
     const category = await prisma.category.create({
-      data: { slug: `legacy-${randomUUID()}`, name: 'Legacy' },
+      data: {
+        slug: `legacy-${randomUUID()}`,
+        name: 'Legacy',
+        normalizedName: normalizeCatalogName('Legacy'),
+      },
     });
     const imageData = {
       data: bytes,

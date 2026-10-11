@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { type PrismaClient } from '@bidplace/database';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
+import { normalizeCatalogName } from '../../src/catalog/catalog-data';
 import { ProductsService } from '../../src/products/products.service';
 import { PublicIdService } from '../../src/core/public-id';
 import {
@@ -70,6 +71,7 @@ describe('Public work pagination PostgreSQL behavior', () => {
       data: {
         slug: `pagination-${suffix}`,
         name: 'Pagination category',
+        normalizedName: normalizeCatalogName('Pagination category'),
       },
     });
     const now = new Date('2026-08-12T10:00:00.000Z');

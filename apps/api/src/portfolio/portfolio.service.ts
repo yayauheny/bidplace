@@ -477,6 +477,13 @@ function toPortfolioAuthor(profile: {
   publicEmail: string | null;
   shortDescription: string | null;
   directionCategoryIds?: string[];
+  directions?: Array<{
+    id: string;
+    slug: string;
+    name: string;
+    description: string | null;
+    active: boolean;
+  }>;
   achievements?:
     | Array<{
         id: string;
@@ -502,6 +509,7 @@ function toPortfolioAuthor(profile: {
     city: profile.city?.trim() || null,
     discipline: profile.discipline,
     directionCategoryIds: profile.directionCategoryIds ?? [],
+    directions: profile.directions ?? [],
     practice: profile.practice,
     biography: profile.biography ?? null,
     profilePhotoUrl: profile.profilePhotoUrl,

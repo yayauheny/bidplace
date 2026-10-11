@@ -16,7 +16,7 @@ import {
   productImageSchema,
   productSchema,
 } from './product';
-import { workSelectionViewSchema } from './catalog';
+import { selectedCategorySchema, workSelectionViewSchema } from './catalog';
 import { storyResponseSchema } from './story';
 import {
   sellerDisciplineSchema,
@@ -231,6 +231,7 @@ export const adminSellerRevisionContentSchema = adminSellerContentSchema
   .extend({
     profilePhoto: adminSellerRevisionPhotoSchema.nullable(),
     achievements: z.array(portfolioAchievementSchema),
+    directions: z.array(selectedCategorySchema).default([]),
   })
   .strict();
 

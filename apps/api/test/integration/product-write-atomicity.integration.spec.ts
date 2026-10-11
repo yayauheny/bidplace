@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { Prisma, type PrismaClient } from '@bidplace/database';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
+import { normalizeCatalogName } from '../../src/catalog/catalog-data';
 import { PostgresImageStore } from '../../src/core/image-store';
 import { PublicIdService } from '../../src/core/public-id';
 import { AdminModerationService } from '../../src/admin/admin-moderation.service';
@@ -92,7 +93,11 @@ async function createSubmitReadyProduct(
     },
   });
   const category = await prisma.category.create({
-    data: { slug: `write-race-${suffix}`, name: 'Write race' },
+    data: {
+      slug: `write-race-${suffix}`,
+      name: 'Write race',
+      normalizedName: normalizeCatalogName('Write race'),
+    },
   });
   const sellerProfile = await prisma.sellerProfile.create({
     data: {

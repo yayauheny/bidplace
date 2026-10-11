@@ -1,3 +1,4 @@
+import { selectedCategorySchema } from './catalog';
 import { publicMediaUrlSchema } from './media';
 import { z } from 'zod';
 
@@ -69,6 +70,7 @@ export const portfolioAuthorSchema = z
     city: publicText.nullable(),
     discipline: publicText.nullable(),
     directionCategoryIds: z.array(uuidSchema).default([]),
+    directions: z.array(selectedCategorySchema).default([]),
     practice: z.string().trim().min(1).nullable(),
     biography: z.string().trim().min(1).nullable(),
     profilePhotoUrl: z.union([

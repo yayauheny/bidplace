@@ -55,14 +55,28 @@ Backend на `fix/author-story-review` уже говорит новыми кон
   колонку. `q` ищет название, короткое описание, имя автора, текст блоков
   истории и имена опубликованных терминов. Черновик и предложения в публичный
   поиск не входят.
-- Если у ревизии есть термины, `materials` и `technique` в ответе владельца и
-  публичной карточки — имена этих терминов. Колонка без терминов остаётся только
-  для текущего клиента, который ещё не пишет ID. Новый клиент сохраняет
-  `materialTermIds` и `techniqueTermIds` и не дублирует их свободной строкой
-  ради поиска.
-- `GET /seller/products/:id` возвращает `selection`: `materialTermIds`,
-  `techniqueTermIds` и `proposals`. Цель `GET /admin/products` возвращает тот
-  же `selection` у `reviewTarget`. Предложение содержит `id`, `kind`, `rawName`,
+- `materials` и `technique` в ответах — только проекция выбранных терминов.
+  Пустой выбор даёт `null`, даже если в старой колонке осталась строка.
+  `POST` и `PATCH /products` больше не принимают эти поля: тело с ними
+  отклоняется строгой валидацией (400). Неизвестный материал или техника
+  сохраняются как `materialProposals` / `techniqueProposals`, а не как
+  свободная строка и не как сразу одобренный термин. Старый клиент, который
+  пишет `materials` или `technique`, несовместим. Новые формы подключаются
+  отдельно; временный второй источник не оставляем.
+- Успешный `POST` и `PATCH /products` возвращают `product` уже после записи
+  выбора. Эти поля совпадают с `product` следующего `GET /seller/products/:id`.
+- `GET /seller/products/:id` возвращает `selection`: `category`,
+  `materialTermIds`, `techniqueTermIds`, `materialTerms`, `techniqueTerms` и
+  `proposals`. Термин повторяет `catalogTermSchema` (`id`, `role`, `slug`,
+  `name`, `active`), в том числе для скрытого выбранного термина. Категория
+  выбора содержит `id`, `slug`, `name`, `description`, `active`. Цель
+  `GET /admin/products` возвращает тот же `selection` у `reviewTarget`.
+  `GET /categories` и `GET /catalog/terms` по-прежнему отдают только активные
+  записи. Скрытый термин, категорию или направление можно оставить в прежнем
+  выборе, но нельзя назначить впервые.
+- `GET /seller/profile`, публичный автор и цель модерации профиля содержат
+  `directions` с теми же полями категории, рядом с `directionCategoryIds`.
+- Предложение содержит `id`, `kind`, `rawName`,
   `normalizedName`, `status`, `selected`, `mappedCategoryId`, `mappedTermId`,
   `rejectionReason`, `reviewedAt`. Публичная карточка отдаёт только
   `materialTermIds` и `techniqueTermIds` опубликованной ревизии, без proposals.

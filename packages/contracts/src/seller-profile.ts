@@ -9,6 +9,7 @@ import {
   sellerStatusSchema,
   sellerTypeSchema,
 } from './enums';
+import { selectedCategorySchema } from './catalog';
 import { isCountryCode } from './countries';
 import {
   achievementOccurredDateSchema,
@@ -84,6 +85,7 @@ export const sellerProfileSchema = z
     publicEmail: sellerPublicEmailSchema.nullable(),
     shortDescription: z.string().trim().min(1).nullable(),
     directionCategoryIds: z.array(uuidSchema).default([]),
+    directions: z.array(selectedCategorySchema).default([]),
     handoffContactType: handoffContactTypeSchema.nullable(),
     handoffContactValue: z.string().trim().min(1).nullable(),
     handoffInitiator: handoffInitiatorSchema.nullable(),
@@ -117,6 +119,7 @@ export const publicSellerProfileSchema = sellerProfileSchema
     discipline: sellerDisciplineSchema.nullable(),
     shortDescription: z.string().trim().min(1),
     directionCategoryIds: z.array(uuidSchema).default([]),
+    directions: z.array(selectedCategorySchema).default([]),
     achievements: z
       .array(
         z

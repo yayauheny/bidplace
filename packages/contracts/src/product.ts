@@ -109,8 +109,6 @@ export const productWriteRequestSchema = z
     categoryId: uuidSchema.nullable().optional(),
     title: z.string().trim().min(1).nullable().optional(),
     story: z.string().trim().min(1).nullable().optional(),
-    technique: z.string().trim().min(1).nullable().optional(),
-    materials: z.string().trim().min(1).nullable().optional(),
     dimensions: z.string().trim().min(1).nullable().optional(),
     weight: z.string().trim().min(1).nullable().optional(),
     year: z

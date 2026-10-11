@@ -18,6 +18,7 @@ import {
   HttpTestClient,
   type HttpTestApp,
 } from './http-test-app';
+import { normalizeCatalogName } from '../../src/catalog/catalog-data';
 import { productModerationRequest } from './admin-status-request';
 import { productImageAuthorizationSelect } from '../../src/images/images.service';
 import {
@@ -397,6 +398,17 @@ describe('portfolio published revision HTTP transport', () => {
         },
       },
       select: { id: true },
+    });
+    const publishedMaterial = await prisma.catalogTerm.create({
+      data: {
+        role: 'MATERIAL',
+        slug: `published-material-${randomUUID().slice(0, 8)}`,
+        name: 'Published material',
+        normalizedName: normalizeCatalogName('Published material'),
+      },
+    });
+    await prisma.productRevisionTerm.create({
+      data: { revisionId: publishedRevision.id, termId: publishedMaterial.id },
     });
     const editingRevision = await prisma.productRevision.create({
       data: {

@@ -1,3 +1,7 @@
+import { normalizeCatalogName } from '@bidplace/contracts';
+
+export { normalizeCatalogName };
+
 export const OTHER_CATEGORY_SLUG = 'other';
 
 export const STARTER_CATEGORIES = [
@@ -132,10 +136,6 @@ export const STARTER_TECHNIQUES = [
   ['felting', 'Валяние'],
   ['beadwork', 'Бисероплетение'],
 ] as const;
-
-export function normalizeCatalogName(value: string): string {
-  return value.normalize('NFKC').replace(/\s+/g, ' ').trim().toLocaleLowerCase('ru');
-}
 
 const TRANSLIT: Record<string, string> = {
   а: 'a', б: 'b', в: 'v', г: 'g', д: 'd', е: 'e', ё: 'e', ж: 'zh', з: 'z', и: 'i',

@@ -184,7 +184,15 @@ export async function createRevisionModerationFixture(): Promise<RevisionModerat
       where: { slug: 'e2e-art' },
     });
     const other = await prisma.category.create({
-      data: { slug: `pending-${suffix}`, name: pendingCategory },
+      data: {
+        slug: `pending-${suffix}`,
+        name: pendingCategory,
+        normalizedName: pendingCategory
+          .normalize('NFKC')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .toLocaleLowerCase('ru'),
+      },
     });
     const profile = await prisma.sellerProfile.create({
       data: {

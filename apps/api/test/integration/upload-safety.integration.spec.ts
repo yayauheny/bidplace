@@ -10,6 +10,7 @@ import {
   vi,
 } from 'vitest';
 import sharp from 'sharp';
+import { normalizeCatalogName } from '../../src/catalog/catalog-data';
 import { MediaLifecycleService } from '../../src/core/media/media-lifecycle.service';
 import {
   S3MediaObjectStore,
@@ -202,7 +203,11 @@ async function approvedAuthor(suffix: string) {
   ).toBe(200);
   await runPublish(profileId);
   const category = await db.prisma.category.create({
-    data: { slug: `${suffix}-works`, name: suffix },
+    data: {
+      slug: `${suffix}-works`,
+      name: suffix,
+      normalizedName: normalizeCatalogName(suffix),
+    },
   });
   const workResponse = await author.client.post('/products', {
     title: `${suffix} work`,

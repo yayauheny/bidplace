@@ -17,6 +17,7 @@ import {
   isEditableProductStatus,
   listCountries,
   listingStatusSchema,
+  normalizeCatalogName,
   productWriteRequestSchema,
   portfolioWorksQuerySchema,
   portfolioWorkDetailResponseSchema,
@@ -355,6 +356,14 @@ describe('shared contracts', () => {
     expect(
       productWriteRequestSchema.safeParse({ title: 'Personal item' }).success,
     ).toBe(true);
+    expect(productWriteRequestSchema.safeParse({ materials: 'Clay' }).success).toBe(
+      false,
+    );
+    expect(productWriteRequestSchema.safeParse({ technique: 'Oil' }).success).toBe(
+      false,
+    );
+    expect(normalizeCatalogName('Ⅰ')).toBe(normalizeCatalogName('I'));
+    expect(normalizeCatalogName('  ХОЛСТ  ')).toBe('холст');
   });
   it('rejects an unknown listing leftover status', () => {
     expect(listingStatusSchema.safeParse('active').success).toBe(false);

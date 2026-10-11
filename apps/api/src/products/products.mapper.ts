@@ -29,11 +29,42 @@ export const productRevisionImageSelect = {
   image: { select: productImageBlobSelect },
 } satisfies Prisma.ProductRevisionImageSelect;
 
+const selectedCategorySelect = {
+  id: true,
+  slug: true,
+  name: true,
+  description: true,
+  active: true,
+} satisfies Prisma.CategorySelect;
+
+export function selectedCategoryView(
+  category: {
+    id: string;
+    slug: string;
+    name: string;
+    description: string | null;
+    active: boolean;
+  } | null | undefined,
+) {
+  if (!category) return null;
+  const description = category.description?.trim();
+  return {
+    id: category.id,
+    slug: category.slug,
+    name: category.name,
+    description: description ? description : null,
+    active: category.active,
+  };
+}
+
 export const revisionSelectionSelect = {
+  category: { select: selectedCategorySelect },
   terms: {
     select: {
       termId: true,
-      term: { select: { role: true, name: true } },
+      term: {
+        select: { id: true, role: true, slug: true, name: true, active: true },
+      },
     },
   },
   proposals: {
@@ -56,7 +87,23 @@ export const revisionSelectionSelect = {
 
 export function selectionFromRevision(
   revision: {
-    terms?: Array<{ termId: string; term: { role: string } }>;
+    category?: {
+      id: string;
+      slug: string;
+      name: string;
+      description: string | null;
+      active: boolean;
+    } | null;
+    terms?: Array<{
+      termId: string;
+      term: {
+        id: string;
+        role: string;
+        slug: string;
+        name: string;
+        active: boolean;
+      };
+    }>;
     proposals?: Array<{
       id: string;
       productRevisionId: string;
@@ -73,13 +120,26 @@ export function selectionFromRevision(
   } | null | undefined,
 ) {
   const terms = revision?.terms ?? [];
+  const selectedTerms = (role: 'MATERIAL' | 'TECHNIQUE') =>
+    terms
+      .filter((item) => item.term.role === role)
+      .map((item) => ({
+        id: item.term.id,
+        role: item.term.role as 'MATERIAL' | 'TECHNIQUE',
+        slug: item.term.slug,
+        name: item.term.name,
+        active: item.term.active,
+      }));
   return {
+    category: selectedCategoryView(revision?.category),
     materialTermIds: terms
       .filter((item) => item.term.role === 'MATERIAL')
       .map((item) => item.termId),
     techniqueTermIds: terms
       .filter((item) => item.term.role === 'TECHNIQUE')
       .map((item) => item.termId),
+    materialTerms: selectedTerms('MATERIAL'),
+    techniqueTerms: selectedTerms('TECHNIQUE'),
     proposals: (revision?.proposals ?? []).map((proposal) => ({
       id: proposal.id,
       productRevisionId: proposal.productRevisionId,
@@ -100,8 +160,6 @@ export const productRevisionGallerySelect = {
   title: true,
   story: true,
   categoryId: true,
-  technique: true,
-  materials: true,
   dimensions: true,
   year: true,
   uniqueness: true,
@@ -249,7 +307,6 @@ export function toRevisionGalleryImages(
 export function projectedCatalogLabel(
   terms: ReadonlyArray<{ term: { role: string; name?: string } }> | null | undefined,
   role: 'MATERIAL' | 'TECHNIQUE',
-  stored: string | null,
 ) {
   const names = (terms ?? [])
     .flatMap((item) =>
@@ -258,7 +315,7 @@ export function projectedCatalogLabel(
         : [],
     )
     .sort((left, right) => left.localeCompare(right, 'ru-RU'));
-  return names.length > 0 ? names.join(', ') : stored;
+  return names.length > 0 ? names.join(', ') : null;
 }
 
 export function toContractProduct(product: ProductRecord): Product {
@@ -304,16 +361,8 @@ export function toOwnerContractProduct(
     categoryId: editingRevision.categoryId ?? null,
     title: editingRevision.title ?? null,
     story: editingRevision.story ?? null,
-    technique: projectedCatalogLabel(
-      editingRevision.terms,
-      'TECHNIQUE',
-      editingRevision.technique ?? null,
-    ),
-    materials: projectedCatalogLabel(
-      editingRevision.terms,
-      'MATERIAL',
-      editingRevision.materials ?? null,
-    ),
+    technique: projectedCatalogLabel(editingRevision.terms, 'TECHNIQUE'),
+    materials: projectedCatalogLabel(editingRevision.terms, 'MATERIAL'),
     dimensions: editingRevision.dimensions ?? null,
     weight: editingRevision.weight ?? null,
     year: editingRevision.year ?? null,

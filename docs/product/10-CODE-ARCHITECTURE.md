@@ -375,9 +375,16 @@ or visibility. Public story bytes are an IMAGE block on the published revision.
 A story-asset hold retains the file for the editing revision and does not publish
 it. `MediaLifecycleService` publishes, revokes, restores and checks that link.
 Public search and material facets read published term names and story-block text.
-When terms exist, owner and public materials/technique strings are those names;
-the stored columns are not a second search source. The mobile and admin clients
-still speak the previous contracts.
+Owner and public materials/technique strings are the selected term names, or
+null when the selection is empty. The stored columns are a freshness side effect
+of `writeTermLabel`, not a read source and not a write contract. Product create
+and update return the editing revision after `syncWorkSelection` in the same
+transaction. Owner, admin, and public author DTOs include selected term,
+category, and direction metadata, including hidden rows. `GET /categories` and
+`GET /catalog/terms` stay active-only. `normalizeCatalogName` is the only name
+identity; writers set `normalizedName`, and the column has no SQL default or
+insert trigger. The mobile and admin clients still speak the previous contracts,
+including the removed free-text materials and technique writes.
 
 Contracts belong to [05-MVP-RFC.md](05-MVP-RFC.md); affected consumers, migration
 and API work are in [the backend plan](../tasks/2026-10-11-author-story-backend/PLAN.md).

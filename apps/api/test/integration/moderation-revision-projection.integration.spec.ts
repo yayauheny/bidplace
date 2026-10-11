@@ -3,6 +3,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import type { PrismaClient } from '@bidplace/database';
 
+import { normalizeCatalogName } from '../../src/catalog/catalog-data';
 import { imageKey } from '../../src/core/image-store/image-key';
 import {
   createHttpTestApp,
@@ -616,7 +617,11 @@ describe('moderation revision projection', () => {
     expect(Buffer.from(await fallback.arrayBuffer())).toEqual(publishedBytes);
 
     const category = await prisma.category.create({
-      data: { slug: `cat-${randomUUID().slice(0, 8)}`, name: 'Projection' },
+      data: {
+        slug: `cat-${randomUUID().slice(0, 8)}`,
+        name: 'Projection',
+        normalizedName: normalizeCatalogName('Projection'),
+      },
     });
     const created = await ownerClient.post('/products', {
       title: 'Published work',
@@ -730,7 +735,11 @@ describe('moderation revision projection', () => {
       ).status,
     ).toBe(200);
     const category = await prisma.category.create({
-      data: { slug: `works-${randomUUID().slice(0, 8)}`, name: 'Works' },
+      data: {
+        slug: `works-${randomUUID().slice(0, 8)}`,
+        name: 'Works',
+        normalizedName: normalizeCatalogName('Works'),
+      },
     });
     const created = await ownerClient.post('/products', {
       title: 'Published work',

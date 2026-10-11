@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import sharp from 'sharp';
+import { normalizeCatalogName } from '../../src/catalog/catalog-data';
 import { MediaLifecycleService } from '../../src/core/media/media-lifecycle.service';
 import {
   S3MediaObjectStore,
@@ -175,7 +176,11 @@ describe('Work media lifecycle over authenticated HTTP and PostgreSQL', () => {
     ).toBe(200);
     await run('PUBLISH', undefined, profileId);
     const category = await db.prisma.category.create({
-      data: { slug: 'http-media', name: 'HTTP media' },
+      data: {
+        slug: 'http-media',
+        name: 'HTTP media',
+        normalizedName: normalizeCatalogName('HTTP media'),
+      },
     });
     const created = await author.client.post('/products', {
       title: 'First work',

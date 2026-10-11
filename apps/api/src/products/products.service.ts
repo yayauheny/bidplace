@@ -56,6 +56,29 @@ import {
 import { assertApprovedSeller } from '../sellers/seller-capability';
 import { toPublicSellerProfile } from '../sellers/seller-profile.mapper';
 
+async function readOwnerProductResponse(
+  tx: Prisma.TransactionClient,
+  productId: string,
+  revisionId: string,
+) {
+  const [product, editingRevision] = await Promise.all([
+    tx.product.findUniqueOrThrow({
+      where: { id: productId },
+      select: productSelect,
+    }),
+    tx.productRevision.findUniqueOrThrow({
+      where: { id: revisionId },
+      select: productRevisionOwnerSelect,
+    }),
+  ]);
+  return productResponseSchema.parse({
+    product: toOwnerContractProduct(product, editingRevision),
+    ...(product.mediaOperations?.[0]
+      ? { publication: product.mediaOperations[0] }
+      : {}),
+  });
+}
+
 @Injectable()
 export class ProductsService {
   constructor(
@@ -92,8 +115,6 @@ export class ProductsService {
           categoryId: input.categoryId ?? null,
           title: input.title ?? null,
           story: input.story ?? null,
-          technique: input.technique ?? null,
-          materials: input.materials ?? null,
           dimensions: input.dimensions ?? null,
           weight: input.weight ?? null,
           year: input.year ?? null,
@@ -120,8 +141,6 @@ export class ProductsService {
               categoryId: data.categoryId ?? null,
               title: data.title ?? null,
               story: data.story ?? null,
-              technique: data.technique ?? null,
-              materials: data.materials ?? null,
               dimensions: data.dimensions ?? null,
               weight: data.weight ?? null,
               year: data.year ?? null,
@@ -135,15 +154,14 @@ export class ProductsService {
             },
           });
           await syncWorkSelection(tx, revision.id, authorUserId, input, null);
-
-          return tx.product.update({
+          await tx.product.update({
             where: { id: created.id },
             data: { editingRevisionId: revision.id },
-            select: productSelect,
           });
+          return readOwnerProductResponse(tx, created.id, revision.id);
         });
 
-        return toProductResponse(product);
+        return product;
       } catch (error) {
         if (
           !(
@@ -176,14 +194,6 @@ export class ProductsService {
     if (input.story !== undefined) {
       data.story = input.story;
       revisionData.story = input.story;
-    }
-    if (input.technique !== undefined) {
-      data.technique = input.technique;
-      revisionData.technique = input.technique;
-    }
-    if (input.materials !== undefined) {
-      data.materials = input.materials;
-      revisionData.materials = input.materials;
     }
     if (input.dimensions !== undefined) {
       data.dimensions = input.dimensions;
@@ -325,19 +335,7 @@ export class ProductsService {
           input,
           priorRevision.categoryId,
         );
-        const [updated, editingRevision] = await Promise.all([
-          tx.product.findUniqueOrThrow({
-            where: { id },
-            select: productSelect,
-          }),
-          tx.productRevision.findUniqueOrThrow({
-            where: { id: editingRevisionId },
-            select: productRevisionOwnerSelect,
-          }),
-        ]);
-        return productResponseSchema.parse({
-          product: toOwnerContractProduct(updated, editingRevision),
-        });
+        return readOwnerProductResponse(tx, id, editingRevisionId);
       }
       assertProductWritable(product, userId, 'edit');
       if (!product.editingRevisionId) {
@@ -380,22 +378,12 @@ export class ProductsService {
         }
       }
 
-      const [updated, persistedRevision] = await Promise.all([
-        tx.product.findUniqueOrThrow({
-          where: { id },
-          select: productSelect,
-        }),
-        Object.keys(revisionData).length > 0
-          ? tx.productRevision.update({
-              where: { id: product.editingRevisionId },
-              data: revisionData,
-              select: productRevisionOwnerSelect,
-            })
-          : tx.productRevision.findUniqueOrThrow({
-              where: { id: product.editingRevisionId },
-              select: productRevisionOwnerSelect,
-            }),
-      ]);
+      if (Object.keys(revisionData).length > 0) {
+        await tx.productRevision.update({
+          where: { id: product.editingRevisionId },
+          data: revisionData,
+        });
+      }
       await syncWorkSelection(
         tx,
         product.editingRevisionId,
@@ -403,9 +391,7 @@ export class ProductsService {
         input,
         priorRevision.categoryId,
       );
-      return productResponseSchema.parse({
-        product: toOwnerContractProduct(updated, persistedRevision),
-      });
+      return readOwnerProductResponse(tx, id, product.editingRevisionId);
     });
   }
 
@@ -897,16 +883,8 @@ export class ProductsService {
         title: published.title,
         story: published.story,
         categoryId: published.categoryId,
-        technique: projectedCatalogLabel(
-          published.terms,
-          'TECHNIQUE',
-          published.technique,
-        ),
-        materials: projectedCatalogLabel(
-          published.terms,
-          'MATERIAL',
-          published.materials,
-        ),
+        technique: projectedCatalogLabel(published.terms, 'TECHNIQUE'),
+        materials: projectedCatalogLabel(published.terms, 'MATERIAL'),
         dimensions: published.dimensions,
         year: published.year,
         uniqueness: published.uniqueness?.trim() || null,

@@ -29,7 +29,18 @@ export const publicSellerProfileSelect = {
       profilePhotoAsset: { select: publicMediaAssetSelect },
       directions: {
         orderBy: { position: 'asc' },
-        select: { categoryId: true },
+        select: {
+          categoryId: true,
+          category: {
+            select: {
+              id: true,
+              slug: true,
+              name: true,
+              description: true,
+              active: true,
+            },
+          },
+        },
       },
       achievements: {
         orderBy: [
@@ -107,7 +118,18 @@ export const sellerProfileOwnerSelect = {
       shortDescription: true,
       directions: {
         orderBy: { position: 'asc' },
-        select: { categoryId: true },
+        select: {
+          categoryId: true,
+          category: {
+            select: {
+              id: true,
+              slug: true,
+              name: true,
+              description: true,
+              active: true,
+            },
+          },
+        },
       },
     },
   },
@@ -191,6 +213,31 @@ export function toPortfolioAchievement(
   };
 }
 
+function selectedDirections(
+  directions:
+    | ReadonlyArray<{
+        category: {
+          id: string;
+          slug: string;
+          name: string;
+          description: string | null;
+          active: boolean;
+        };
+      }>
+    | undefined,
+) {
+  return (directions ?? []).map((item) => {
+    const description = item.category.description?.trim();
+    return {
+      id: item.category.id,
+      slug: item.category.slug,
+      name: item.category.name,
+      description: description ? description : null,
+      active: item.category.active,
+    };
+  });
+}
+
 export function toPublicSellerProfile(
   sellerProfile: Omit<PublicSellerProfileRecord, 'publishedRevision'> & {
     publishedRevision?: PublicSellerProfileRecord['publishedRevision'];
@@ -225,6 +272,7 @@ export function toPublicSellerProfile(
     publicEmail: sellerProfile.publicEmail ?? null,
     shortDescription: sellerProfile.shortDescription,
     directionCategoryIds,
+    directions: selectedDirections(sellerProfile.publishedRevision?.directions),
     achievements:
       sellerProfile.publishedRevision?.achievements.map((item) =>
         toPortfolioAchievement(item, 'public'),
@@ -285,6 +333,7 @@ export function toSellerProfileResponse(
       slug: accountSlug,
       directionCategoryIds:
         editingRevision?.directions?.map((item) => item.categoryId) ?? [],
+      directions: selectedDirections(editingRevision?.directions),
       applicationStage: sellerProfileResponse.applicationStage ?? null,
       city:
         (revisionOwnsFields

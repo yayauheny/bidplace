@@ -632,6 +632,11 @@ export async function createIsolatedWorksPaginationFixture(): Promise<{
       data: {
         slug: `e2e-page2-${suffix}`,
         name: `E2E page2 ${suffix}`,
+        normalizedName: `E2E page2 ${suffix}`
+          .normalize('NFKC')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .toLocaleLowerCase('ru'),
       },
     });
     categoryId = category.id;

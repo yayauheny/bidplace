@@ -365,6 +365,11 @@ async function main() {
     data: {
       slug: 'art-object',
       name: 'Авторские работы',
+      normalizedName: 'Авторские работы'
+        .normalize('NFKC')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .toLocaleLowerCase('ru'),
       description: 'Работы, созданные и предложенные авторами напрямую.',
     },
   });

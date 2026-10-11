@@ -19,8 +19,15 @@
   asset may appear in several IMAGE blocks; the byte budget counts it once.
   Country writes accept only the codes returned by `GET /countries`. Public
   search, the materials filter and material facets read published terms and
-  story-block text. When a revision has terms, the materials and technique
-  strings in owner and public reads are those term names.
+  story-block text. A successful product write returns the editing revision
+  after the selection sync, so its product fields match the following owner
+  read. `materials` and `technique` are read-only projections of selected
+  terms; an empty selection is null. Free-text writes of those fields are
+  rejected. Owner, admin, and public author reads include metadata for the
+  selected terms, category, and directions, including hidden records. New
+  assignment of a hidden record stays rejected. Catalog name identity is
+  `normalizeCatalogName` (NFKC, collapsed spaces, Russian lower case). The
+  database column has no default and no insert trigger.
 - Mobile, admin UI and `@bidplace/api-client` remain `Not implemented` for this
   contract. Backend readiness is not release readiness.
 - Evidence: `images.service.ts`, `media-lifecycle.service.ts`,
@@ -28,7 +35,8 @@
   `catalog.service.ts`, `admin-moderation.service.ts`,
   `products-catalog.query.ts`, contracts `catalog.ts`, `countries.ts`,
   `product.ts`, `admin.ts`, `portfolio.ts`, migration
-  `20261011213000_catalog_normalized_name`. Isolated-schema coverage is
+  `20261011213000_catalog_normalized_name` and
+  `20261011230000_product_revision_category_fk`. Isolated-schema coverage is
   `author-story-catalog.integration.spec.ts`,
   `media-lifecycle.integration.spec.ts`,
   `work-media-http.integration.spec.ts` and

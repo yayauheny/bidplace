@@ -281,15 +281,34 @@ describe('ProductsService', () => {
       product: {
         create: productCreate,
         update: vi.fn().mockResolvedValue(product),
+        findUniqueOrThrow: vi.fn().mockResolvedValue(product),
       },
       productRevision: {
         create: vi.fn().mockResolvedValue({ id: 'revision-id' }),
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
+          id: 'revision-id',
+          categoryId: null,
+          title: null,
+          story: null,
+          dimensions: null,
+          weight: null,
+          year: null,
+          condition: null,
+          uniqueness: null,
+          provenance: null,
+          city: null,
+          packaging: null,
+          deliveryInfo: null,
+          images: [],
+          terms: [],
+        }),
       },
       $transaction: vi.fn(async (callback: (tx: unknown) => unknown) =>
         callback({
           product: {
             create: productCreate,
             update: prisma.product.update,
+            findUniqueOrThrow: prisma.product.findUniqueOrThrow,
           },
           productRevision: prisma.productRevision,
         }),
@@ -354,7 +373,6 @@ describe('ProductsService', () => {
     expect(tx.productRevision.update).toHaveBeenCalledWith({
       where: { id: 'revision-id' },
       data: { title: 'Corrected title' },
-      select: expect.any(Object),
     });
   });
 
@@ -949,6 +967,16 @@ describe('ProductsService', () => {
       categoryId: 'd0d82a10-3170-49eb-904f-a8bc87d311a8',
       technique: 'Published technique',
       materials: 'Published material',
+      terms: [
+        {
+          termId: 'e0d82a10-3170-49eb-904f-a8bc87d311a1',
+          term: { role: 'MATERIAL', name: 'Published material' },
+        },
+        {
+          termId: 'e0d82a10-3170-49eb-904f-a8bc87d311a2',
+          term: { role: 'TECHNIQUE', name: 'Published technique' },
+        },
+      ],
       dimensions: '10 cm',
       year: 2024,
       uniqueness: ' published-unique ',

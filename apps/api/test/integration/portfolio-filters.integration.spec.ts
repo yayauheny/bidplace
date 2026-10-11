@@ -612,7 +612,11 @@ describe('portfolio catalog SQL filters and pagination', () => {
     const fixture = await createPermissionFixture(prisma);
     const guest = new HttpTestClient(http.baseUrl, 'http://localhost:8081');
     const woodCategory = await prisma.category.create({
-      data: { slug: `wood-${fixture.categoryId.slice(0, 8)}`, name: 'Wood' },
+      data: {
+        slug: `wood-${fixture.categoryId.slice(0, 8)}`,
+        name: 'Wood',
+        normalizedName: normalizeCatalogName('Wood'),
+      },
     });
     const older = new Date('2026-08-20T00:00:00.000Z');
     const newer = new Date('2026-09-01T00:00:00.000Z');
@@ -712,7 +716,7 @@ describe('portfolio catalog SQL filters and pagination', () => {
     const authorWorks = await guest.get(
       `/authors/${approved.slug}?q=Clay&materials=шамот`,
     );
-    expect(authorWorks.status).toBe(200);
+    expect(authorWorks.status, await authorWorks.clone().text()).toBe(200);
     const authorBody = (await authorWorks.json()) as {
       works: Array<{ work: { publicId: string } }>;
       pagination: { total: number };
@@ -851,7 +855,11 @@ describe('portfolio catalog SQL filters and pagination', () => {
 
   it('keeps public facet values and drops private, blank, and non-published ones', async () => {
     const category = await prisma.category.create({
-      data: { slug: 'facet-visibility', name: 'Facet visibility' },
+      data: {
+        slug: 'facet-visibility',
+        name: 'Facet visibility',
+        normalizedName: normalizeCatalogName('Facet visibility'),
+      },
       select: { id: true },
     });
     const visible = await createFacetAuthor({
@@ -1159,7 +1167,11 @@ describe('portfolio catalog SQL filters and pagination', () => {
 
   it('returns the same facet JSON from distinct rows when many records share values', async () => {
     const category = await prisma.category.create({
-      data: { slug: 'facet-volume', name: 'Facet volume' },
+      data: {
+        slug: 'facet-volume',
+        name: 'Facet volume',
+        normalizedName: normalizeCatalogName('Facet volume'),
+      },
       select: { id: true },
     });
     const primary = await createFacetAuthor({
