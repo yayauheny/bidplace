@@ -22,7 +22,11 @@
   story-block text. A successful product write returns the editing revision
   after the selection sync, so its product fields match the following owner
   read. `materials` and `technique` are read-only projections of selected
-  terms; an empty selection is null. Free-text writes of those fields are
+  terms; an empty selection is null. Owner detail and product writes project
+  the editing revision. The owner list, hide/unhide, and the admin product
+  snapshot project the published revision when one exists, and the editing
+  revision only while the work is unpublished. A later editing draft does not
+  replace the published names. Free-text writes of those fields are
   rejected. Owner, admin, and public author reads include metadata for the
   selected terms, category, and directions, including hidden records. New
   assignment of a hidden record stays rejected. Catalog name identity is
@@ -31,8 +35,9 @@
 - Mobile, admin UI and `@bidplace/api-client` remain `Not implemented` for this
   contract. Backend readiness is not release readiness.
 - Evidence: `images.service.ts`, `media-lifecycle.service.ts`,
-  `products.service.ts`, `product-story.ts`, `work-selection.ts`,
-  `catalog.service.ts`, `admin-moderation.service.ts`,
+  `products.service.ts`, `products.mapper.ts`, `product-story.ts`,
+  `work-selection.ts`, `catalog.service.ts`, `admin-moderation.service.ts`,
+  `admin-moderation.mapper.ts`,
   `products-catalog.query.ts`, contracts `catalog.ts`, `countries.ts`,
   `product.ts`, `admin.ts`, `portfolio.ts`, migration
   `20261011213000_catalog_normalized_name` and

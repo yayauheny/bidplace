@@ -149,6 +149,63 @@ describe('product image contracts', () => {
     ]);
     expect(product.title).toBe('Черновик');
   });
+
+  it('projects the revision a response represents and ignores stored columns', () => {
+    const publishedTerms = [
+      { termId: 'm1', term: { role: 'MATERIAL', name: 'Холст обновлённый' } },
+      { termId: 't1', term: { role: 'TECHNIQUE', name: 'Рисунок обновлённый' } },
+    ];
+    const editingTerms = [
+      { termId: 'm2', term: { role: 'MATERIAL', name: 'Масло' } },
+      { termId: 't2', term: { role: 'TECHNIQUE', name: 'Лепка' } },
+    ];
+    const published = {
+      ...productWithImages([]),
+      publishedRevisionId: 'published-revision',
+      materials: 'Холст',
+      technique: 'Рисунок',
+      publishedRevision: { terms: publishedTerms },
+      editingRevision: { terms: editingTerms },
+    } as ProductRecord;
+
+    expect(toContractProduct(published)).toMatchObject({
+      materials: 'Холст обновлённый',
+      technique: 'Рисунок обновлённый',
+    });
+    expect(
+      toOwnerContractProduct(published, {
+        terms: editingTerms,
+        categoryId: null,
+        title: 'Черновик',
+        story: null,
+        dimensions: null,
+        weight: null,
+        year: null,
+        condition: null,
+        uniqueness: null,
+        provenance: null,
+        city: null,
+        packaging: null,
+        deliveryInfo: null,
+        images: [],
+      } as unknown as ProductRevisionOwnerRecord),
+    ).toMatchObject({
+      materials: 'Масло',
+      technique: 'Лепка',
+      title: 'Черновик',
+    });
+
+    const empty = toContractProduct({
+      ...productWithImages([]),
+      publishedRevisionId: null,
+      materials: 'Холст',
+      technique: 'Рисунок',
+      publishedRevision: null,
+      editingRevision: { terms: [] },
+    } as ProductRecord);
+    expect(empty.materials).toBeNull();
+    expect(empty.technique).toBeNull();
+  });
 });
 
 describe('portfolioCatalogProductSelect', () => {

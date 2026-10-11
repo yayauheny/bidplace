@@ -57,6 +57,13 @@ Backend на `fix/author-story-review` уже говорит новыми кон
   поиск не входят.
 - `materials` и `technique` в ответах — только проекция выбранных терминов.
   Пустой выбор даёт `null`, даже если в старой колонке осталась строка.
+  `POST`, `PATCH /products` и `GET /seller/products/:id` проецируют текущую
+  editing-ревизию. `GET /seller/products`, hide/unhide и readback
+  административной смены статуса проецируют опубликованную ревизию, если она
+  есть, и editing-ревизию только у ещё не опубликованной работы. Отдельный
+  черновик не подменяет опубликованные имена. Родительский `parent` в
+  `GET /admin/products` следует тому же правилу; `reviewTarget` остаётся
+  editing-ревизией.
   `POST` и `PATCH /products` больше не принимают эти поля: тело с ними
   отклоняется строгой валидацией (400). Неизвестный материал или техника
   сохраняются как `materialProposals` / `techniqueProposals`, а не как
@@ -65,6 +72,8 @@ Backend на `fix/author-story-review` уже говорит новыми кон
   отдельно; временный второй источник не оставляем.
 - Успешный `POST` и `PATCH /products` возвращают `product` уже после записи
   выбора. Эти поля совпадают с `product` следующего `GET /seller/products/:id`.
+  Список владельца совпадает с ними, пока у работы нет отдельной опубликованной
+  ревизии.
 - `GET /seller/products/:id` возвращает `selection`: `category`,
   `materialTermIds`, `techniqueTermIds`, `materialTerms`, `techniqueTerms` и
   `proposals`. Термин повторяет `catalogTermSchema` (`id`, `role`, `slug`,

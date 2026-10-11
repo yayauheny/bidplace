@@ -156,6 +156,15 @@ export function selectionFromRevision(
   };
 }
 
+export const revisionTermLabelSelect = {
+  terms: {
+    select: {
+      termId: true,
+      term: { select: { role: true, name: true } },
+    },
+  },
+} satisfies Prisma.ProductRevisionSelect;
+
 export const productRevisionGallerySelect = {
   title: true,
   story: true,
@@ -167,12 +176,7 @@ export const productRevisionGallerySelect = {
     orderBy: { position: 'asc' as const },
     select: productRevisionImageSelect,
   },
-  terms: {
-    select: {
-      termId: true,
-      term: { select: { role: true, name: true } },
-    },
-  },
+  ...revisionTermLabelSelect,
 } satisfies Prisma.ProductRevisionSelect;
 
 export const productRevisionOwnerSelect = {
@@ -236,6 +240,8 @@ export const productSelect = {
   status: true,
   editingRevisionId: true,
   publishedRevisionId: true,
+  publishedRevision: { select: revisionTermLabelSelect },
+  editingRevision: { select: revisionTermLabelSelect },
   createdAt: true,
   updatedAt: true,
   images: {
@@ -318,7 +324,21 @@ export function projectedCatalogLabel(
   return names.length > 0 ? names.join(', ') : null;
 }
 
+export function catalogContentTerms(product: {
+  publishedRevisionId?: string | null;
+  publishedRevision?: {
+    terms?: ReadonlyArray<{ term: { role: string; name?: string } }> | null;
+  } | null;
+  editingRevision?: {
+    terms?: ReadonlyArray<{ term: { role: string; name?: string } }> | null;
+  } | null;
+}) {
+  if (product.publishedRevisionId) return product.publishedRevision?.terms;
+  return product.editingRevision?.terms;
+}
+
 export function toContractProduct(product: ProductRecord): Product {
+  const terms = catalogContentTerms(product);
   return {
     id: product.id,
     publicId: product.publicId,
@@ -326,8 +346,8 @@ export function toContractProduct(product: ProductRecord): Product {
     categoryId: product.categoryId ?? null,
     title: product.title ?? null,
     story: product.story ?? null,
-    technique: product.technique ?? null,
-    materials: product.materials ?? null,
+    technique: projectedCatalogLabel(terms, 'TECHNIQUE'),
+    materials: projectedCatalogLabel(terms, 'MATERIAL'),
     dimensions: product.dimensions ?? null,
     weight: product.weight ?? null,
     year: product.year ?? null,

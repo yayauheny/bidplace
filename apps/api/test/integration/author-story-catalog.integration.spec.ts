@@ -1113,6 +1113,18 @@ describe('author story, catalog, and proposals', () => {
       materials: 'Холст',
       technique: 'Рисунок',
     });
+    const createdList = await owner.client.get('/seller/products');
+    expect(createdList.status).toBe(200);
+    expect(
+      (
+        (await createdList.json()) as {
+          products: Array<{ id: string; materials: string | null; technique: string | null }>;
+        }
+      ).products.find((item) => item.id === createdBody.product.id),
+    ).toMatchObject({
+      materials: 'Холст',
+      technique: 'Рисунок',
+    });
     const read = async () => {
       const response = await owner.client.get(`/seller/products/${createdBody.product.id}`);
       expect(response.status).toBe(200);
@@ -1170,9 +1182,21 @@ describe('author story, catalog, and proposals', () => {
       where: { id: revisionId! },
       data: { materials: 'Unregistered material', technique: 'Unregistered technique' },
     });
+    await prisma.product.update({
+      where: { id: createdBody.product.id },
+      data: { materials: 'Unregistered material', technique: 'Unregistered technique' },
+    });
     const staleColumn = await read();
     expect(staleColumn.product.materials).toBeNull();
     expect(staleColumn.product.technique).toBeNull();
+    const staleList = await owner.client.get('/seller/products');
+    expect(
+      (
+        (await staleList.json()) as {
+          products: Array<{ id: string; materials: string | null; technique: string | null }>;
+        }
+      ).products.find((item) => item.id === createdBody.product.id),
+    ).toMatchObject({ materials: null, technique: null });
     expect(
       (await owner.client.patch(`/products/${createdBody.product.id}`, {
         materials: 'Unregistered material',
@@ -1290,5 +1314,225 @@ describe('author story, catalog, and proposals', () => {
         expect.objectContaining({ id: painting.id, name: 'Живопись', active: false }),
       ]),
     );
+  });
+
+  it('reads materials and technique from the revision each response represents', async () => {
+    await bootstrapCatalog(prisma as never);
+    const { owner, painting } = await authorWithoutCity();
+    const admin = await user('admin');
+    const canvas = await prisma.catalogTerm.findUniqueOrThrow({
+      where: { role_slug: { role: 'MATERIAL', slug: 'canvas' } },
+    });
+    const oil = await prisma.catalogTerm.findUniqueOrThrow({
+      where: { role_slug: { role: 'MATERIAL', slug: 'oil' } },
+    });
+    const drawing = await prisma.catalogTerm.findUniqueOrThrow({
+      where: { role_slug: { role: 'TECHNIQUE', slug: 'drawing' } },
+    });
+    const modeling = await prisma.catalogTerm.findUniqueOrThrow({
+      where: { role_slug: { role: 'TECHNIQUE', slug: 'modeling' } },
+    });
+    const created = await owner.client.post('/products', {
+      title: 'Canonical labels',
+      categoryId: painting.id,
+      materialTermIds: [canvas.id],
+      techniqueTermIds: [drawing.id],
+    });
+    expect(created.status, await created.clone().text()).toBe(201);
+    const productId = ((await created.json()) as { product: { id: string } }).product.id;
+    const listed = async () => {
+      const response = await owner.client.get('/seller/products');
+      expect(response.status).toBe(200);
+      const product = (
+        (await response.json()) as {
+          products: Array<{
+            id: string;
+            materials: string | null;
+            technique: string | null;
+            status: string;
+          }>;
+        }
+      ).products.find((item) => item.id === productId);
+      expect(product).toBeDefined();
+      return product!;
+    };
+    const detail = async () => {
+      const response = await owner.client.get(`/seller/products/${productId}`);
+      expect(response.status).toBe(200);
+      return (await response.json()) as {
+        product: { materials: string | null; technique: string | null; status: string };
+        selection: {
+          materialTerms: Array<{ id: string; name: string; active: boolean }>;
+          techniqueTerms: Array<{ id: string; name: string; active: boolean }>;
+        };
+      };
+    };
+    const productBody = async (response: Response) =>
+      (await response.json()) as {
+        product: { materials: string | null; technique: string | null; status: string };
+      };
+
+    expect(await listed()).toMatchObject({ materials: 'Холст', technique: 'Рисунок' });
+    expect((await detail()).product).toMatchObject({ materials: 'Холст', technique: 'Рисунок' });
+
+    const revisionId = (
+      await prisma.product.findUniqueOrThrow({
+        where: { id: productId },
+        select: { editingRevisionId: true },
+      })
+    ).editingRevisionId!;
+    const image = await prisma.productImage.create({
+      data: {
+        productId,
+        position: 0,
+        mimeType: 'image/png',
+        byteLength: permissionImage.byteLength,
+        data: permissionImage,
+        checksum: 'd'.repeat(64),
+      },
+    });
+    await prisma.productRevisionImage.create({
+      data: { revisionId, imageId: image.id, position: 0 },
+    });
+    expect((await owner.client.post(`/products/${productId}/submit`)).status).toBe(201);
+    const approved = await admin.client.patch(
+      `/admin/products/${productId}/status`,
+      await productModerationRequest(prisma, productId, 'APPROVED'),
+    );
+    expect(approved.status, await approved.clone().text()).toBe(200);
+    expect((await productBody(approved)).product).toMatchObject({
+      materials: 'Холст',
+      technique: 'Рисунок',
+    });
+
+    await prisma.catalogTerm.update({
+      where: { id: canvas.id },
+      data: { name: 'Холст обновлённый' },
+    });
+    await prisma.catalogTerm.update({
+      where: { id: drawing.id },
+      data: { name: 'Рисунок обновлённый' },
+    });
+    const publishedRevisionId = (
+      await prisma.product.findUniqueOrThrow({
+        where: { id: productId },
+        select: { publishedRevisionId: true },
+      })
+    ).publishedRevisionId!;
+    await prisma.product.update({
+      where: { id: productId },
+      data: { materials: 'Холст', technique: 'Рисунок' },
+    });
+    await prisma.productRevision.update({
+      where: { id: publishedRevisionId },
+      data: { materials: 'Холст', technique: 'Рисунок' },
+    });
+    const renamed = { materials: 'Холст обновлённый', technique: 'Рисунок обновлённый' };
+    expect(await listed()).toMatchObject(renamed);
+    expect((await detail()).product).toMatchObject(renamed);
+
+    const hidden = await owner.client.post(`/products/${productId}/hide`);
+    expect(hidden.status, await hidden.clone().text()).toBe(201);
+    expect((await productBody(hidden)).product).toMatchObject({
+      ...renamed,
+      status: 'ARCHIVED',
+    });
+    const restored = await owner.client.post(`/products/${productId}/unhide`);
+    expect(restored.status, await restored.clone().text()).toBe(201);
+    expect((await productBody(restored)).product).toMatchObject({
+      ...renamed,
+      status: 'APPROVED',
+    });
+
+    const archived = await admin.client.patch(
+      `/admin/products/${productId}/status`,
+      await productModerationRequest(
+        prisma,
+        productId,
+        'ARCHIVED',
+        'Работа временно скрыта',
+      ),
+    );
+    expect(archived.status, await archived.clone().text()).toBe(200);
+    expect((await productBody(archived)).product).toMatchObject({
+      ...renamed,
+      status: 'ARCHIVED',
+    });
+    const republished = await admin.client.patch(
+      `/admin/products/${productId}/status`,
+      await productModerationRequest(prisma, productId, 'APPROVED'),
+    );
+    expect(republished.status, await republished.clone().text()).toBe(200);
+    expect((await productBody(republished)).product).toMatchObject({
+      ...renamed,
+      status: 'APPROVED',
+    });
+
+    await prisma.catalogTerm.update({ where: { id: canvas.id }, data: { active: false } });
+    await prisma.catalogTerm.update({ where: { id: drawing.id }, data: { active: false } });
+    const hiddenCatalog = await detail();
+    expect(hiddenCatalog.product).toMatchObject(renamed);
+    expect(hiddenCatalog.selection.materialTerms[0]).toMatchObject({
+      id: canvas.id,
+      name: 'Холст обновлённый',
+      active: false,
+    });
+    expect(hiddenCatalog.selection.techniqueTerms[0]).toMatchObject({
+      id: drawing.id,
+      name: 'Рисунок обновлённый',
+      active: false,
+    });
+    expect(await listed()).toMatchObject(renamed);
+
+    const edited = await owner.client.patch(`/products/${productId}`, {
+      materialTermIds: [oil.id],
+      techniqueTermIds: [modeling.id],
+    });
+    expect(edited.status, await edited.clone().text()).toBe(200);
+    const draftLabels = { materials: 'Масло', technique: 'Лепка' };
+    expect((await productBody(edited)).product).toMatchObject(draftLabels);
+    expect((await detail()).product).toMatchObject(draftLabels);
+    expect(await listed()).toMatchObject(renamed);
+
+    const adminList = await admin.client.get('/admin/products?filter=APPROVED');
+    expect(adminList.status).toBe(200);
+    const adminProduct = (
+      (await adminList.json()) as {
+        products: Array<{
+          id: string;
+          parent: { materials: string | null; technique: string | null };
+          reviewTarget: {
+            content: { materials: string | null; technique: string | null };
+          } | null;
+        }>;
+      }
+    ).products.find((item) => item.id === productId);
+    expect(adminProduct?.parent).toMatchObject(renamed);
+    expect(adminProduct?.reviewTarget?.content).toMatchObject(draftLabels);
+
+    const hiddenDraft = await owner.client.post(`/products/${productId}/hide`);
+    expect(hiddenDraft.status, await hiddenDraft.clone().text()).toBe(201);
+    expect((await productBody(hiddenDraft)).product).toMatchObject({
+      ...renamed,
+      status: 'ARCHIVED',
+    });
+    await prisma.productRevisionTerm.deleteMany({ where: { revisionId: publishedRevisionId } });
+    await prisma.product.update({
+      where: { id: productId },
+      data: { materials: 'Холст', technique: 'Рисунок' },
+    });
+    await prisma.productRevision.update({
+      where: { id: publishedRevisionId },
+      data: { materials: 'Холст', technique: 'Рисунок' },
+    });
+    expect(await listed()).toMatchObject({ materials: null, technique: null });
+    expect((await detail()).product).toMatchObject(draftLabels);
+    const unhidden = await owner.client.post(`/products/${productId}/unhide`);
+    expect(unhidden.status, await unhidden.clone().text()).toBe(201);
+    expect((await productBody(unhidden)).product).toMatchObject({
+      materials: null,
+      technique: null,
+      status: 'APPROVED',
+    });
   });
 });

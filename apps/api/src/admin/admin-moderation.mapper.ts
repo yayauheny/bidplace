@@ -3,9 +3,11 @@ import { type Prisma } from '@bidplace/database';
 
 import { imageKey } from '../core/image-store/image-key';
 import {
+  catalogContentTerms,
   productRevisionImageSelect,
   projectedCatalogLabel,
   revisionSelectionSelect,
+  revisionTermLabelSelect,
   selectedCategoryView,
   selectionFromRevision,
   toImageContracts,
@@ -147,6 +149,8 @@ export const adminProductListSelect = {
     select: creationStepSelect,
   },
   createdAt: true,
+  publishedRevisionId: true,
+  publishedRevision: { select: revisionTermLabelSelect },
   sellerProfile: { select: { slug: true, fullName: true, status: true } },
   listings: {
     where: { status: { in: ['SCHEDULED', 'LIVE'] } },
@@ -308,30 +312,31 @@ function creationSteps(steps: AdminProductListRecord['creationSteps']) {
   }));
 }
 
-function productContent(record: {
-  categoryId: string | null;
-  title: string | null;
-  story: string | null;
-  technique: string | null;
-  materials: string | null;
-  dimensions: string | null;
-  weight: string | null;
-  year: number | null;
-  condition: string | null;
-  uniqueness: string | null;
-  provenance: string | null;
-  city: string | null;
-  packaging: string | null;
-  deliveryInfo: string | null;
-  creationIntro: string | null;
-  images: Parameters<typeof toImageContracts>[0];
-}) {
+function productContent(
+  record: {
+    categoryId: string | null;
+    title: string | null;
+    story: string | null;
+    dimensions: string | null;
+    weight: string | null;
+    year: number | null;
+    condition: string | null;
+    uniqueness: string | null;
+    provenance: string | null;
+    city: string | null;
+    packaging: string | null;
+    deliveryInfo: string | null;
+    creationIntro: string | null;
+    images: Parameters<typeof toImageContracts>[0];
+  },
+  terms: Parameters<typeof projectedCatalogLabel>[0],
+) {
   return {
     categoryId: record.categoryId,
     title: nullableText(record.title),
     story: nullableText(record.story),
-    technique: nullableText(record.technique),
-    materials: nullableText(record.materials),
+    technique: projectedCatalogLabel(terms, 'TECHNIQUE'),
+    materials: projectedCatalogLabel(terms, 'MATERIAL'),
     dimensions: nullableText(record.dimensions),
     weight: nullableText(record.weight),
     year: record.year,
@@ -416,7 +421,7 @@ export function toAdminProduct(
     parentUpdatedAt: product.updatedAt.toISOString(),
     publishedAt: product.publishedAt?.toISOString() ?? null,
     sellerProfile: product.sellerProfile,
-    parent: productContent(product),
+    parent: productContent(product, catalogContentTerms(product)),
     creationSteps: creationSteps(product.creationSteps),
     reviewTarget: revision
       ? {
@@ -425,12 +430,13 @@ export function toAdminProduct(
           status: revision.status,
           updatedAt: revision.updatedAt.toISOString(),
           submittedAt: revision.submittedAt?.toISOString() ?? null,
-          content: productContent({
-            ...revision,
-            images: revisionImages ?? [],
-            technique: projectedCatalogLabel(revision.terms, 'TECHNIQUE'),
-            materials: projectedCatalogLabel(revision.terms, 'MATERIAL'),
-          }),
+          content: productContent(
+            {
+              ...revision,
+              images: revisionImages ?? [],
+            },
+            revision.terms,
+          ),
           story: {
             storyToken: revision.storyToken,
             blocks: revision.storyBlocks.map((block) => ({

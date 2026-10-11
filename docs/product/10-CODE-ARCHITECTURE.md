@@ -376,7 +376,10 @@ A story-asset hold retains the file for the editing revision and does not publis
 it. `MediaLifecycleService` publishes, revokes, restores and checks that link.
 Public search and material facets read published term names and story-block text.
 Owner and public materials/technique strings are the selected term names, or
-null when the selection is empty. The stored columns are a freshness side effect
+null when the selection is empty. Owner detail and product writes use the
+editing revision. The owner list, hide/unhide, and the admin product snapshot
+use the published revision when `publishedRevisionId` is set, otherwise the
+editing revision. The stored columns are a freshness side effect
 of `writeTermLabel`, not a read source and not a write contract. Product create
 and update return the editing revision after `syncWorkSelection` in the same
 transaction. Owner, admin, and public author DTOs include selected term,
