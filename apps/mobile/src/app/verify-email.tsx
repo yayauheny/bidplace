@@ -21,10 +21,6 @@ function VerifyEmailScreen() {
       tone="section"
       presentation="screen"
       redirectTo="/"
-      exit={{
-        title: 'Выйти из подтверждения',
-        description: 'Подтверждение можно пройти позже. Аккаунт сохранится.',
-      }}
     >
       <VerifyEmailForm redirectTo={safeRedirect} />
     </AuthViewport>

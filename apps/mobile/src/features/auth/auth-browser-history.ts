@@ -4,6 +4,7 @@ export type AuthHistoryLive = {
   id: string;
   dirty: boolean;
   busy: boolean;
+  protectEnteredData: boolean;
   released: () => boolean;
   completed: () => boolean;
   confirm: () => void;
@@ -34,6 +35,7 @@ function dismissalFor(path: string) {
     decision: authNavigationDismissal({
       dirty: live.dirty,
       busy: live.busy,
+      protectEnteredData: live.protectEnteredData,
       targetRoute: authRouteFromLocation(path),
       released: false,
     }),

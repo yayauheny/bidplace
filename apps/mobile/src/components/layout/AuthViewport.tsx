@@ -63,21 +63,27 @@ type NavigationAction = {
   payload?: { name?: string; params?: { screen?: string } };
 };
 
-export function AuthViewport({
-  title,
-  children,
-  redirectTo = '/',
-  tone = 'login',
-  presentation = 'sheet',
-  exit,
-}: {
+type AuthViewportProps = {
   title: string;
   children: ReactNode;
   redirectTo?: SafeRedirect;
   tone?: 'login' | 'section';
   presentation?: 'sheet' | 'screen';
-  exit: AuthExitCopy;
-}) {
+} & (
+  | { protectEnteredData: true; exit: AuthExitCopy }
+  | { protectEnteredData?: false; exit?: undefined }
+);
+
+export function AuthViewport(props: AuthViewportProps) {
+  const {
+    title,
+    children,
+    redirectTo = '/',
+    tone = 'login',
+    presentation = 'sheet',
+  } = props;
+  const protectEnteredData = props.protectEnteredData === true;
+  const exit = protectEnteredData ? props.exit : undefined;
   const router = useRouter();
   const navigation = useNavigation();
   const focused = useIsFocused();
@@ -95,8 +101,10 @@ export function AuthViewport({
   const completionRef = useRef<SafeRedirect | null>(null);
   const focusedRef = useRef(focused);
   const guardRef = useRef(guard);
+  const protectEnteredDataRef = useRef(protectEnteredData);
   focusedRef.current = focused;
   guardRef.current = guard;
+  protectEnteredDataRef.current = protectEnteredData;
 
   const onGuard = useCallback((next: AuthSheetGuard) => {
     setGuard((current) =>
@@ -119,6 +127,7 @@ export function AuthViewport({
         id: historyId,
         dirty: guard.dirty,
         busy: guard.busy,
+        protectEnteredData,
         released: () => releasedRef.current,
         completed: () => completionRef.current !== null,
         confirm: openConfirm,
@@ -165,6 +174,7 @@ export function AuthViewport({
     const decision = authNavigationDismissal({
       dirty: guardRef.current.dirty,
       busy: guardRef.current.busy,
+      protectEnteredData: protectEnteredDataRef.current,
       targetRoute: undefined,
       released: false,
     });
@@ -178,31 +188,35 @@ export function AuthViewport({
     openConfirm();
   }, [commitLeave, openConfirm]);
 
-  usePreventRemove(focused && (guard.dirty || guard.busy) && !released, ({ data }) => {
-    if (!focusedRef.current) {
-      navigation.dispatch(data.action);
-      return;
-    }
-    if (releasedRef.current || completionRef.current) {
-      navigation.dispatch(data.action);
-      return;
-    }
-    const action = data.action as NavigationAction;
-    const decision = authNavigationDismissal({
-      dirty: guardRef.current.dirty,
-      busy: guardRef.current.busy,
-      targetRoute: authNavigationTarget(action),
-      released: false,
-    });
-    if (decision === 'allow') {
-      navigation.dispatch(data.action);
-      return;
-    }
-    if (decision === 'keep') return;
-    pendingAction.current = action;
-    browserLeavePath.current = null;
-    openConfirm();
-  });
+  usePreventRemove(
+    focused && !released && (guard.busy || (protectEnteredData && guard.dirty)),
+    ({ data }) => {
+      if (!focusedRef.current) {
+        navigation.dispatch(data.action);
+        return;
+      }
+      if (releasedRef.current || completionRef.current) {
+        navigation.dispatch(data.action);
+        return;
+      }
+      const action = data.action as NavigationAction;
+      const decision = authNavigationDismissal({
+        dirty: guardRef.current.dirty,
+        busy: guardRef.current.busy,
+        protectEnteredData: protectEnteredDataRef.current,
+        targetRoute: authNavigationTarget(action),
+        released: false,
+      });
+      if (decision === 'allow') {
+        navigation.dispatch(data.action);
+        return;
+      }
+      if (decision === 'keep') return;
+      pendingAction.current = action;
+      browserLeavePath.current = null;
+      openConfirm();
+    },
+  );
 
   useEffect(() => {
     return () => {
@@ -460,7 +474,7 @@ export function AuthViewport({
           </Dialog.Portal>
         </Dialog.Root>
       </AuthSheetGuardProvider>
-      {focused ? (
+      {focused && exit ? (
         <AuthExitConfirm open={confirm} copy={exit} onLeave={commitLeave} onContinue={continueForm} />
       ) : null}
     </View>

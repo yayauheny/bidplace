@@ -1,6 +1,6 @@
 # bidplace — журнал решений
 
-Последнее обновление: 2026-10-07
+Последнее обновление: 2026-10-11
 
 Записи не удаляются. При пересмотре создаётся новая запись со ссылкой на старую.
 
@@ -2640,3 +2640,24 @@ gradients.
 
 Handoff: `design/figma-handoff/buttons/2026-10-10-buttons/`. Read-only portfolio
 library and canonical Pen are unchanged.
+
+## DEC-111 — Entered-data confirmation stays on registration only
+
+Date: 2026-10-11
+Status: Confirmed
+Source: refined designer and founder decision.
+
+Revises the runtime scope of the shared exit confirmation from `DEC-105`.
+The dialog component and its registration copy stay. Login, forgot-password,
+reset-password, and email verification no longer ask before closing, including
+when their fields contain input. Close, Escape, backdrop, and Back/Forward use
+that same policy. Registration explicitly protects entered data: an empty
+registration leaves without asking; a registration with input asks before an
+exit that leaves auth. Continue keeps the current step, values, and focus.
+Interrupt performs the chosen exit. Movement between auth routes still does
+not ask.
+
+An in-flight request still keeps the sheet. Leaving does not abort that
+request, delete an account, or replace a newer session. A late response from
+a login the user already left does not navigate. This decision does not change
+button geometry, Turnstile, auth contracts, or persistence.

@@ -1,5 +1,11 @@
 # bidplace — текущий статус проекта
 
+## 2026-10-11 — Login dismissal (`fix/login-dismissal`)
+
+- `Partial` on local web. `DEC-111` keeps entered-data confirmation on registration only. `/login` closes without «Прервать вход» when email and password are filled. The close button, Escape, backdrop, and Back/Forward use `authNavigationDismissal`. `/register` passes `protectEnteredData`: an empty registration leaves, and a filled one asks. Continue keeps the current step, values, and focus. Interrupt follows the chosen exit. Forgot-password, reset-password, and email verification do not ask. A busy request still keeps the sheet. Leaving does not cancel the request, and a late login response still cannot replace a newer session. This is not a 1:1 Figma match. Production was not updated. No push or deploy.
+- Node 22.20.0, `EXPO_NO_DOTENV=1`, `BIDPLACE_ENV_FILE` pointed at a missing path for the API. Mobile `tsc` **0**, eslint of the touched auth files without autofix **0**, Vitest **725/725** (121 files), `expo export --platform web --clear` **0** (`entry-3af721c78097eccaf571e83da6104842.js`).
+- Auth browser **44/44** (2.1m) on Chromium and WebKit against schema `auth_browser_login_20261011` in a new loopback database `bidplace_login_dismissal` (`playwright.auth-abuse.config.ts`, no webServer, no `migrate reset`). The API listened on `127.0.0.1` with `TURNSTILE_VERIFIER=test` and `TRUST_PROXY=true`.
+
 ## 2026-10-11 — Local release integration (`fix/portfolio-release-integration`)
 
 - `Partial` on local web. Node 22.23.3, `EXPO_NO_DOTENV=1`. Not deployed, not native, and not a production migration. Logs: `/private/tmp/bidplace-release-integration-checks/`.

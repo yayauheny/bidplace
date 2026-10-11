@@ -4,6 +4,11 @@
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
+## 2026-10-11 — Login closes without an interruption confirmation
+
+- `Partial` on local web. `DEC-111` revises the earlier rule that every filled auth form asks before leaving. Login, forgot-password, reset-password, and email verification close without that dialog, including when fields contain input. Close, Escape, backdrop, and Back/Forward share the policy. Registration still protects entered data: an empty registration leaves, and a filled one asks. Continue keeps the current step, values, and focus. Interrupt performs the chosen exit. The exit dialog geometry is unchanged; at 390 px the registration panel stays 366 wide and centered.
+- Chromium and WebKit auth browser **44/44** (2.1m). Native is not claimed. Evidence is the local auth suite, not a new screenshot set. Production was not updated.
+
 ## 2026-10-11 — Local release integration
 
 - `Partial` on local web. Auth layout, lifecycle, and abuse are **44/44** on Chromium and WebKit. Search chrome and the text-button matrix are **14/14** on the fresh `--clear` export. Mobile Vitest **725/725**. Assertions on the register title band and nickname title stayed as written.

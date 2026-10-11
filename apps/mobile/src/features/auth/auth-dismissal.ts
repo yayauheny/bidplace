@@ -70,14 +70,15 @@ export function authNavigationTarget(action: NavigationAction | undefined) {
 export function authNavigationDismissal(input: {
   dirty: boolean;
   busy: boolean;
+  protectEnteredData: boolean;
   targetRoute: string | undefined;
   released?: boolean;
 }): AuthDismissal {
   if (input.released) return 'allow';
   if (input.targetRoute && AUTH_ROUTES.has(input.targetRoute)) return 'allow';
   if (input.busy) return 'keep';
-  if (!input.dirty) return 'allow';
-  return 'confirm';
+  if (input.protectEnteredData && input.dirty) return 'confirm';
+  return 'allow';
 }
 
 export function authLeaveCommit(input: {

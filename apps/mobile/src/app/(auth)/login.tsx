@@ -10,10 +10,6 @@ export default function LoginScreen() {
     <AuthViewport
       title="Вход на Bidplace"
       redirectTo={getSafeRedirect(redirectTo)}
-      exit={{
-        title: 'Прервать вход',
-        description: 'Введённые данные не сохранятся, если уйти до входа.',
-      }}
     >
       <LoginForm redirectTo={getSafeRedirect(redirectTo)} />
     </AuthViewport>

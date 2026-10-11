@@ -15,10 +15,6 @@ export default function ForgotPasswordScreen() {
       title="Восстановление пароля"
       tone="section"
       redirectTo={safeRedirect}
-      exit={{
-        title: 'Прервать восстановление',
-        description: 'Ссылка не отправляется, если уйти до завершения запроса.',
-      }}
     >
       <ForgotPasswordForm redirectTo={safeRedirect} />
     </AuthViewport>

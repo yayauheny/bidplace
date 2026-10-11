@@ -1,6 +1,6 @@
 # bidplace — пользовательские потоки и экраны First MVP
 
-Последнее обновление: 2026-10-10
+Последнее обновление: 2026-10-11
 Статус: Confirmed product/UI scope for mobile-web 390 Figma cutover
 Product contract: [`../product/05-MVP-RFC.md`](../product/05-MVP-RFC.md)
 
@@ -59,13 +59,18 @@ wave. The name is entered later as `fullName`. Having a slug does not by
 itself publish the author. Password repeat stays on the client. The
 account is created once. Recovery stays the single-use link. Google and
 Telegram report that sign-in is unavailable. A successful login, registration,
-or confirmation continues once and does not ask to leave. An empty form leaves
-with one Back. Back from one auth step to another does not ask, even when that
-step has input. A user close, Escape, backdrop, or Back that leaves auth asks
-first when the form has input. A multi-step Back or a Forward that leaves auth
-returns the address to the auth entry until the user confirms. Continue keeps
-the values and focus; Interrupt opens the entry that traversal reached. A
-finished or closed sheet is not left as a history entry. Leaving does not
+or confirmation continues once and does not ask to leave. Login, password
+recovery, and email verification close without an interruption confirmation,
+including when their fields contain input. Close, Escape, backdrop, and
+Back/Forward share that policy (`DEC-111`). Registration is the only auth form
+that protects entered data. An empty registration leaves without asking. A
+registration that has input asks before a close, Escape, backdrop, or history
+traversal that leaves auth. Continue keeps the current step, values, and
+focus. Interrupt performs that exit. Back from one auth route to another does
+not ask, even when registration has input. A multi-step Back or a Forward that
+leaves a filled registration returns the address to that registration until
+the user confirms. A request in progress still keeps the sheet and is not
+cancelled. Successful completion navigates once. Leaving does not
 cancel an in-flight request, delete an account, or log out. A session change
 during registration, including while `register` is still waiting, does not
 let the old attempt replace the newer session, write consent, or continue.
