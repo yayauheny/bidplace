@@ -9,6 +9,10 @@ Read and apply [AGENTS.md](../../../AGENTS.md) in the active checkout and applic
 
 Read the [project review checklist](../code-review-best-practices/SKILL.md) before choosing a solution. Use every applicable check as an implementation acceptance criterion, then apply it again to the real diff and affected consumers before completion.
 
+## Before implementation
+
+Before implementing any task, always invoke [$grilling](/Users/yayauheny/.codex/skills/grilling/SKILL.md) after inspecting the repository and existing decisions. Resolve outstanding requirements, scope, architecture, ownership, and trade-offs before dependent edits; record the agreed approach instead of making an unapproved material choice. If no questions remain, say so briefly and proceed without reopening settled decisions.
+
 ## Less code first
 
 - Search the repository and the installed libraries' APIs before writing custom logic. Prefer an existing project implementation, then a suitable built-in library capability, then the smallest custom code for a demonstrated gap.
