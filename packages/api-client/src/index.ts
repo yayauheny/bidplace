@@ -4,6 +4,7 @@ import { createAdminClient } from './admin';
 import { createAnalyticsClient } from './analytics';
 import { createAuthClient } from './auth';
 import { createCategoriesClient } from './categories';
+import { createCountriesClient } from './countries';
 export {
   ApiClientError,
   classifyApiError,
@@ -45,6 +46,7 @@ export function createApiClient(options: ApiClientOptions) {
     sellers: createSellersClient(context),
     admin: createAdminClient(context),
     categories: createCategoriesClient(context),
+    countries: createCountriesClient(context),
   };
 }
 
