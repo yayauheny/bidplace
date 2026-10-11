@@ -364,10 +364,19 @@ to the editing or published `ProductRevision` and reference `MediaAsset`.
 number. `STORY_IMAGE` uploads create a private draft hold and do not add a gallery
 image. Categories stay in `Category` with `active`. Materials and techniques are
 `CatalogTerm` rows. Author directions are Category IDs on the profile revision.
-Country is an ISO alpha-2 code. City is optional in readiness and public
-predicates. Catalog proposals are separate rows; confirming one updates the
-pending revision and does not publish it. Bootstrap inserts missing starter rows
-and does not overwrite admin names or visibility. The mobile and admin clients
+Country is an ISO alpha-2 code from the same list as `GET /countries`. City is
+optional in readiness and public predicates. Catalog proposals are separate rows;
+confirming one updates the pending revision and does not publish it. A decision
+locks the product row and re-reads the proposal. Re-selecting a proposal keeps
+its status, including `REJECTED`. `Category.normalizedName` and
+`CatalogTerm (role, normalizedName)` are the name identity; slug stays the stable
+key. Bootstrap inserts missing starter rows and does not overwrite admin names
+or visibility. Public story bytes are an IMAGE block on the published revision.
+A story-asset hold retains the file for the editing revision and does not publish
+it. `MediaLifecycleService` publishes, revokes, restores and checks that link.
+Public search and material facets read published term names and story-block text.
+When terms exist, owner and public materials/technique strings are those names;
+the stored columns are not a second search source. The mobile and admin clients
 still speak the previous contracts.
 
 Contracts belong to [05-MVP-RFC.md](05-MVP-RFC.md); affected consumers, migration

@@ -5,6 +5,7 @@ import { categorySchema } from './category';
 import { productStatusSchema } from './enums';
 import { isoDateTimeSchema, uuidSchema } from './primitives';
 import { creationStepSchema, productSchema } from './product';
+import { workSelectionViewSchema } from './catalog';
 import { storyResponseSchema } from './story';
 
 export const categoryListResponseSchema = z
@@ -35,6 +36,7 @@ export const sellerProductDetailResponseSchema = z
     creationIntro: z.string().trim().min(1).nullable(),
     creationSteps: z.array(creationStepSchema),
     story: storyResponseSchema,
+    selection: workSelectionViewSchema,
     lastModerationReason: z.string().nullable(),
   })
   .strict();

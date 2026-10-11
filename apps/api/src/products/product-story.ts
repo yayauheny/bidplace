@@ -93,6 +93,9 @@ export async function replaceProductStory(
     input.request.idempotencyKey &&
     input.request.idempotencyKey === revision.storyIdempotencyKey
   ) {
+    if (!sameStory(revision.storyBlocks, input.request)) {
+      throw new ConflictException('Story idempotency key does not match this snapshot');
+    }
     return readStory(tx, input.revisionId);
   }
   if (
@@ -160,12 +163,10 @@ async function assertStoryImages(
   if (assetIds.length > STORY_LIMITS.maxImages) {
     throw new ConflictException('Story has too many images');
   }
-  if (new Set(assetIds).size !== assetIds.length) {
-    throw new ConflictException('Story images must be unique');
-  }
-  if (assetIds.length === 0) return;
+  const uniqueIds = [...new Set(assetIds)];
+  if (uniqueIds.length === 0) return;
   const assets = await tx.mediaAsset.findMany({
-    where: { id: { in: [...assetIds] } },
+    where: { id: { in: uniqueIds } },
     select: {
       id: true,
       ownerUserId: true,
@@ -179,7 +180,7 @@ async function assertStoryImages(
       },
     },
   });
-  if (assets.length !== assetIds.length) {
+  if (assets.length !== uniqueIds.length) {
     throw new NotFoundException('Story image not found');
   }
   let bytes = 0;

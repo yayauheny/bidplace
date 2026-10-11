@@ -2,6 +2,7 @@ import { MediaLifecycleService } from '../core/media/media-lifecycle.service';
 import {
   productResponseSchema,
   type PortfolioWorksQuery,
+  isEditableProductStatus,
   type ProductStatus,
   type ProductWriteRequest,
   type SellerStatus,
@@ -25,6 +26,7 @@ import {
   toImageContracts,
   toOwnerContractProduct,
   toProductResponse,
+  projectedCatalogLabel,
   toRevisionGalleryImages,
   type PortfolioCatalogProductRecord,
 } from './products.mapper';
@@ -36,7 +38,7 @@ import {
 } from './products-catalog.query';
 import { missingProductApprovalFields } from './product-requirements';
 import { copyRevisionStory, readStory, replaceProductStory } from './product-story';
-import { syncWorkSelection } from './work-selection';
+import { assertSelectableCategory, syncWorkSelection } from './work-selection';
 import {
   assertProductWritable,
   lockProductRowForUpdate,
@@ -106,6 +108,9 @@ export class ProductsService {
         };
 
         const product = await this.prisma.$transaction(async (tx) => {
+          if (input.categoryId) {
+            await assertSelectableCategory(tx, input.categoryId, null);
+          }
           const created = await tx.product.create({ data });
           const revision = await tx.productRevision.create({
             data: {
@@ -129,7 +134,7 @@ export class ProductsService {
               creationIntro: data.creationIntro ?? null,
             },
           });
-          await syncWorkSelection(tx, revision.id, authorUserId, input);
+          await syncWorkSelection(tx, revision.id, authorUserId, input, null);
 
           return tx.product.update({
             where: { id: created.id },
@@ -296,13 +301,30 @@ export class ProductsService {
           }
         }
 
+        const priorRevision = await tx.productRevision.findUniqueOrThrow({
+          where: { id: editingRevisionId },
+          select: { categoryId: true },
+        });
+        if (input.categoryId) {
+          await assertSelectableCategory(
+            tx,
+            input.categoryId,
+            priorRevision.categoryId,
+          );
+        }
         if (Object.keys(revisionData).length > 0) {
           await tx.productRevision.update({
             where: { id: editingRevisionId },
             data: revisionData,
           });
         }
-        await syncWorkSelection(tx, editingRevisionId, userId, input);
+        await syncWorkSelection(
+          tx,
+          editingRevisionId,
+          userId,
+          input,
+          priorRevision.categoryId,
+        );
         const [updated, editingRevision] = await Promise.all([
           tx.product.findUniqueOrThrow({
             where: { id },
@@ -320,6 +342,17 @@ export class ProductsService {
       assertProductWritable(product, userId, 'edit');
       if (!product.editingRevisionId) {
         throw new ConflictException('Product editing revision is missing');
+      }
+      const priorRevision = await tx.productRevision.findUniqueOrThrow({
+        where: { id: product.editingRevisionId },
+        select: { categoryId: true },
+      });
+      if (input.categoryId) {
+        await assertSelectableCategory(
+          tx,
+          input.categoryId,
+          priorRevision.categoryId,
+        );
       }
       const editingRevision = await tx.productRevision.findUniqueOrThrow({
         where: { id: product.editingRevisionId },
@@ -363,7 +396,13 @@ export class ProductsService {
               select: productRevisionOwnerSelect,
             }),
       ]);
-      await syncWorkSelection(tx, product.editingRevisionId, userId, input);
+      await syncWorkSelection(
+        tx,
+        product.editingRevisionId,
+        userId,
+        input,
+        priorRevision.categoryId,
+      );
       return productResponseSchema.parse({
         product: toOwnerContractProduct(updated, persistedRevision),
       });
@@ -679,11 +718,41 @@ export class ProductsService {
       await lockProductRowForUpdate(tx, productId);
       const product = await tx.product.findUnique({
         where: { id: productId },
-        select: { ...productWriteGuardSelect, editingRevisionId: true },
+        select: {
+          ...productWriteGuardSelect,
+          editingRevisionId: true,
+          publishedRevisionId: true,
+        },
       });
-      assertProductWritable(product, userId, 'creation-story');
+      if (!product) throw new NotFoundException('Product not found');
+      if (product.sellerProfile.userId !== userId) {
+        throw new ForbiddenException('Product is not owned by user');
+      }
+      assertApprovedSeller(product.sellerProfile.status as SellerStatus);
+      if (product.listings.length > 0) {
+        throw new ConflictException('Product is locked by an active Listing');
+      }
       if (!product.editingRevisionId) {
         throw new ConflictException('Product editing revision is missing');
+      }
+      const editingPublishedRevision =
+        product.publishedRevisionId === product.editingRevisionId;
+      const separateDraftOfPublishedWork =
+        !editingPublishedRevision &&
+        (product.status === 'APPROVED' || product.status === 'ARCHIVED');
+      if (
+        editingPublishedRevision ||
+        (!separateDraftOfPublishedWork &&
+          !isEditableProductStatus(product.status as ProductStatus))
+      ) {
+        throw new ForbiddenException('Product creation story is locked');
+      }
+      const revision = await tx.productRevision.findUniqueOrThrow({
+        where: { id: product.editingRevisionId },
+        select: { status: true },
+      });
+      if (!canAuthorEditRevision(revision.status)) {
+        throw new ConflictException('Product revision cannot be edited');
       }
       return replaceProductStory(tx, {
         userId,
@@ -742,9 +811,15 @@ export class ProductsService {
     });
     const rows = await this.prisma.$queryRaw<PublicWorkFacetRow[]>(
       Prisma.sql`${cte}
-        SELECT DISTINCT "materials"
+        SELECT DISTINCT term."name" AS "materials"
         FROM filtered
-        WHERE NULLIF(BTRIM("materials"), '') IS NOT NULL`,
+        INNER JOIN "products" catalog_product ON catalog_product."id" = filtered."id"
+        INNER JOIN "product_revision_terms" selected_term
+          ON selected_term."revision_id" = catalog_product."published_revision_id"
+        INNER JOIN "catalog_terms" term
+          ON term."id" = selected_term."term_id"
+          AND term."role" = 'MATERIAL'
+        WHERE NULLIF(BTRIM(term."name"), '') IS NOT NULL`,
     );
     return rows.map((row) => row.materials);
   }
@@ -822,13 +897,27 @@ export class ProductsService {
         title: published.title,
         story: published.story,
         categoryId: published.categoryId,
-        technique: published.technique,
-        materials: published.materials,
+        technique: projectedCatalogLabel(
+          published.terms,
+          'TECHNIQUE',
+          published.technique,
+        ),
+        materials: projectedCatalogLabel(
+          published.terms,
+          'MATERIAL',
+          published.materials,
+        ),
         dimensions: published.dimensions,
         year: published.year,
         uniqueness: published.uniqueness?.trim() || null,
         images: toImageContracts(images, 'public'),
         publishedAt: product.publishedAt.toISOString(),
+        materialTermIds: (published.terms ?? [])
+          .filter((item) => item.term.role === 'MATERIAL')
+          .map((item) => item.termId),
+        techniqueTermIds: (published.terms ?? [])
+          .filter((item) => item.term.role === 'TECHNIQUE')
+          .map((item) => item.termId),
       },
       sellerProfile: toPublicSellerProfile(product.sellerProfile),
     };

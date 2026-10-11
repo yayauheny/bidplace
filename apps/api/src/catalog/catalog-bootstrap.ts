@@ -5,6 +5,7 @@ import {
   STARTER_CATEGORIES,
   STARTER_MATERIALS,
   STARTER_TECHNIQUES,
+  normalizeCatalogName,
 } from './catalog-data';
 
 function isUniqueConflict(error: unknown): boolean {
@@ -23,6 +24,7 @@ export async function bootstrapCatalog(prisma: PrismaService): Promise<void> {
         data: {
           slug: category.slug,
           name: category.name,
+          normalizedName: normalizeCatalogName(category.name),
           description: category.description,
         },
       });
@@ -42,7 +44,9 @@ export async function bootstrapCatalog(prisma: PrismaService): Promise<void> {
     });
     if (existing) continue;
     try {
-      await prisma.catalogTerm.create({ data: term });
+      await prisma.catalogTerm.create({
+        data: { ...term, normalizedName: normalizeCatalogName(term.name) },
+      });
     } catch (error) {
       if (!isUniqueConflict(error)) throw error;
     }

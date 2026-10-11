@@ -29,6 +29,73 @@ export const productRevisionImageSelect = {
   image: { select: productImageBlobSelect },
 } satisfies Prisma.ProductRevisionImageSelect;
 
+export const revisionSelectionSelect = {
+  terms: {
+    select: {
+      termId: true,
+      term: { select: { role: true, name: true } },
+    },
+  },
+  proposals: {
+    orderBy: { createdAt: 'asc' as const },
+    select: {
+      id: true,
+      productRevisionId: true,
+      kind: true,
+      rawName: true,
+      normalizedName: true,
+      status: true,
+      selected: true,
+      mappedCategoryId: true,
+      mappedTermId: true,
+      rejectionReason: true,
+      reviewedAt: true,
+    },
+  },
+} satisfies Prisma.ProductRevisionSelect;
+
+export function selectionFromRevision(
+  revision: {
+    terms?: Array<{ termId: string; term: { role: string } }>;
+    proposals?: Array<{
+      id: string;
+      productRevisionId: string;
+      kind: string;
+      rawName: string;
+      normalizedName: string;
+      status: string;
+      selected: boolean;
+      mappedCategoryId: string | null;
+      mappedTermId: string | null;
+      rejectionReason: string | null;
+      reviewedAt: Date | null;
+    }>;
+  } | null | undefined,
+) {
+  const terms = revision?.terms ?? [];
+  return {
+    materialTermIds: terms
+      .filter((item) => item.term.role === 'MATERIAL')
+      .map((item) => item.termId),
+    techniqueTermIds: terms
+      .filter((item) => item.term.role === 'TECHNIQUE')
+      .map((item) => item.termId),
+    proposals: (revision?.proposals ?? []).map((proposal) => ({
+      id: proposal.id,
+      productRevisionId: proposal.productRevisionId,
+      kind: proposal.kind,
+      rawName: proposal.rawName,
+      normalizedName: proposal.normalizedName,
+      status: proposal.status,
+      selected: proposal.selected,
+      mappedCategoryId: proposal.mappedCategoryId,
+      mappedTermId: proposal.mappedTermId,
+      rejectionReason: proposal.rejectionReason,
+      reviewedAt: proposal.reviewedAt?.toISOString() ?? null,
+    })),
+  };
+}
+
 export const productRevisionGallerySelect = {
   title: true,
   story: true,
@@ -41,6 +108,12 @@ export const productRevisionGallerySelect = {
   images: {
     orderBy: { position: 'asc' as const },
     select: productRevisionImageSelect,
+  },
+  terms: {
+    select: {
+      termId: true,
+      term: { select: { role: true, name: true } },
+    },
   },
 } satisfies Prisma.ProductRevisionSelect;
 
@@ -75,6 +148,7 @@ export const productRevisionOwnerSelect = {
       mediaAssetId: true,
     },
   },
+  ...revisionSelectionSelect,
   images: {
     orderBy: { position: 'asc' as const },
     select: productRevisionImageSelect,
@@ -172,6 +246,21 @@ export function toRevisionGalleryImages(
   }));
 }
 
+export function projectedCatalogLabel(
+  terms: ReadonlyArray<{ term: { role: string; name?: string } }> | null | undefined,
+  role: 'MATERIAL' | 'TECHNIQUE',
+  stored: string | null,
+) {
+  const names = (terms ?? [])
+    .flatMap((item) =>
+      item.term.role === role && item.term.name?.trim()
+        ? [item.term.name.trim()]
+        : [],
+    )
+    .sort((left, right) => left.localeCompare(right, 'ru-RU'));
+  return names.length > 0 ? names.join(', ') : stored;
+}
+
 export function toContractProduct(product: ProductRecord): Product {
   return {
     id: product.id,
@@ -215,8 +304,16 @@ export function toOwnerContractProduct(
     categoryId: editingRevision.categoryId ?? null,
     title: editingRevision.title ?? null,
     story: editingRevision.story ?? null,
-    technique: editingRevision.technique ?? null,
-    materials: editingRevision.materials ?? null,
+    technique: projectedCatalogLabel(
+      editingRevision.terms,
+      'TECHNIQUE',
+      editingRevision.technique ?? null,
+    ),
+    materials: projectedCatalogLabel(
+      editingRevision.terms,
+      'MATERIAL',
+      editingRevision.materials ?? null,
+    ),
     dimensions: editingRevision.dimensions ?? null,
     weight: editingRevision.weight ?? null,
     year: editingRevision.year ?? null,

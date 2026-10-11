@@ -889,7 +889,8 @@ describe('ProductsService', () => {
     const pageQuery = prisma.$queryRaw.mock.calls[0]?.[0] as { sql: unknown };
     const pageQueryText = String(pageQuery.sql);
     expect(pageQueryText).toContain('sp."slug"');
-    expect(pageQueryText).toContain('published."materials"');
+    expect(pageQueryText).toContain(`term."role" = 'MATERIAL'`);
+    expect(pageQueryText).not.toContain('published."materials"');
   });
 
   it('keeps published Work JSON and drops unread parent data', async () => {
@@ -1215,13 +1216,15 @@ describe('ProductsService', () => {
     ]);
 
     const sql = String(queryRaw.mock.calls[0]?.[0]?.sql);
-    expect(sql).toContain('SELECT DISTINCT "materials"');
+    expect(sql).toContain('SELECT DISTINCT term."name" AS "materials"');
+    expect(sql).toContain(`term."role" = 'MATERIAL'`);
     expect(sql).toContain(`p."status" = 'APPROVED'`);
     expect(sql).toContain(`sp."status" = 'APPROVED'`);
     expect(sql).toContain('p."published_revision_id" IS NOT NULL');
     expect(sql).toContain('published."id" = p."published_revision_id"');
     expect(sql).not.toContain(`NULLIF(BTRIM(sp."city"), '') IS NOT NULL`);
-    expect(sql).toContain(`NULLIF(BTRIM("materials"), '') IS NOT NULL`);
+    expect(sql).toContain(`NULLIF(BTRIM(term."name"), '') IS NOT NULL`);
+    expect(sql).not.toContain('published."materials"');
     expect(sql).not.toContain('LOWER(');
     expect(sql).not.toContain('unnest');
     expect(sql).not.toContain('SELECT "id"');

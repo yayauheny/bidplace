@@ -857,6 +857,192 @@ describe('durable media lifecycle on PostgreSQL', () => {
       'Upload source must be resent',
     );
   });
+
+  it('publishes and revokes a story image that is not in the gallery', async () => {
+    const s = setup();
+    const f = await author(s.media);
+    await s.media.run((await approve(s.media, f.profile, f.user.id)).id);
+    const gallery = await s.media.stage(f.user.id, 'WORK_IMAGE', {
+      buffer: bytes,
+      mimetype: 'image/png',
+    });
+    const story = await s.media.stage(f.user.id, 'STORY_IMAGE', {
+      buffer: bytes,
+      mimetype: 'image/png',
+    });
+    const held = await s.media.stage(f.user.id, 'STORY_IMAGE', {
+      buffer: bytes,
+      mimetype: 'image/png',
+    });
+    const work = await prisma.$transaction(async (tx) => {
+      await s.media.attach(tx, gallery.id);
+      await s.media.attach(tx, story.id);
+      await s.media.attach(tx, held.id);
+      const product = await tx.product.create({
+        data: {
+          sellerProfileId: f.profile.id,
+          publicId: randomUUID().replace(/-/g, '').slice(0, 11),
+          title: 'Story media',
+          status: 'PENDING_REVIEW',
+        },
+      });
+      const image = await tx.productImage.create({
+        data: {
+          productId: product.id,
+          position: 0,
+          mediaAssetId: gallery.id,
+          objectKey: gallery.preview.objectKey,
+          mimeType: gallery.preview.mimeType,
+          byteLength: gallery.preview.byteLength,
+          checksum: gallery.preview.sha256,
+          data: new Uint8Array(0),
+        },
+      });
+      const revision = await tx.productRevision.create({
+        data: {
+          productId: product.id,
+          version: 1,
+          status: 'PENDING_REVIEW',
+          title: 'Story media',
+          images: { create: { imageId: image.id, position: 0 } },
+          storyBlocks: {
+            create: [
+              {
+                position: 0,
+                type: 'IMAGE',
+                mediaAssetId: story.id,
+                altText: 'First',
+              },
+              {
+                position: 1,
+                type: 'IMAGE',
+                mediaAssetId: story.id,
+                altText: 'Second',
+              },
+            ],
+          },
+          storyAssets: { create: { mediaAssetId: held.id } },
+        },
+      });
+      await tx.product.update({
+        where: { id: product.id },
+        data: { editingRevisionId: revision.id },
+      });
+      const operation = await s.media.enqueuePublication(
+        tx,
+        { productId: product.id },
+        revision,
+        null,
+        f.user.id,
+      );
+      return { product, revision, operation };
+    });
+    s.store.failPublic = true;
+    await expect(s.media.deliver(work.operation.id)).rejects.toThrow(
+      'Media delivery failed',
+    );
+    s.store.failPublic = false;
+    await s.media.deliver(work.operation.id);
+    const publicCount = () =>
+      prisma.mediaObject.count({
+        where: { assetId: story.id, tier: 'PUBLIC' },
+      });
+    const publishedCount = await publicCount();
+    expect(publishedCount).toBeGreaterThan(0);
+    expect(await s.store.get('PUBLIC', story.preview.objectKey)).not.toBeNull();
+    expect(await s.store.get('PUBLIC', held.preview.objectKey)).toBeNull();
+    await s.media.run(work.operation.id);
+    expect(await publicCount()).toBe(publishedCount);
+    await prisma.productRevisionStoryBlock.deleteMany({
+      where: { revisionId: work.revision.id, position: 1 },
+    });
+    await prisma.$transaction((tx) => s.media.enqueueCleanup(tx, [story.id]));
+    const cleanup = await prisma.mediaOperation.findFirstOrThrow({
+      where: { kind: 'CLEANUP', objects: { some: { object: { assetId: story.id } } } },
+      orderBy: { createdAt: 'desc' },
+    });
+    await s.media.run(cleanup.id);
+    expect(await s.store.get('PRIVATE', story.source.objectKey)).not.toBeNull();
+    expect(await s.store.get('PUBLIC', story.preview.objectKey)).not.toBeNull();
+    await prisma.$transaction(async (tx) => {
+      await tx.product.update({
+        where: { id: work.product.id },
+        data: { status: 'ARCHIVED' },
+      });
+      await s.media.enqueueRevoke(tx, { productId: work.product.id });
+    });
+    await s.media.run(
+      (
+        await prisma.mediaOperation.findFirstOrThrow({
+          where: { productId: work.product.id, kind: 'REVOKE' },
+          orderBy: { createdAt: 'desc' },
+        })
+      ).id,
+    );
+    expect(await s.store.get('PUBLIC', story.preview.objectKey)).toBeNull();
+    expect(await s.store.get('PRIVATE', story.source.objectKey)).not.toBeNull();
+    expect(s.cache.urls.some((url) => url.includes(story.preview.objectKey))).toBe(
+      true,
+    );
+    const revision = await prisma.productRevision.findUniqueOrThrow({
+      where: { id: work.revision.id },
+    });
+    await prisma.product.update({
+      where: { id: work.product.id },
+      data: { status: 'APPROVED' },
+    });
+    await s.media.run(
+      (
+        await prisma.$transaction((tx) =>
+          s.media.enqueuePublication(
+            tx,
+            { productId: work.product.id },
+            revision,
+            revision.id,
+            f.user.id,
+            true,
+          ),
+        )
+      ).id,
+    );
+    expect(await s.store.get('PUBLIC', story.preview.objectKey)).not.toBeNull();
+    expect(await publicCount()).toBe(publishedCount);
+    await prisma.$transaction(async (tx) => {
+      await tx.sellerProfile.update({
+        where: { id: f.profile.id },
+        data: { status: 'SUSPENDED' },
+      });
+      await s.media.enqueueRevoke(tx, { profileId: f.profile.id });
+    });
+    await s.media.run(
+      (
+        await prisma.mediaOperation.findFirstOrThrow({
+          where: { profileId: f.profile.id, kind: 'REVOKE' },
+          orderBy: { createdAt: 'desc' },
+        })
+      ).id,
+    );
+    expect(await s.store.get('PUBLIC', story.preview.objectKey)).toBeNull();
+    const profileRevision = await prisma.sellerProfileRevision.findUniqueOrThrow({
+      where: { id: f.profile.revision.id },
+    });
+    await s.media.run(
+      (
+        await prisma.$transaction((tx) =>
+          s.media.enqueuePublication(
+            tx,
+            { profileId: f.profile.id },
+            profileRevision,
+            profileRevision.id,
+            f.user.id,
+            true,
+          ),
+        )
+      ).id,
+    );
+    expect(await s.store.get('PUBLIC', story.preview.objectKey)).not.toBeNull();
+    expect(await s.store.get('PUBLIC', held.preview.objectKey)).toBeNull();
+  });
 });
 
 describe('scheduled media recovery on PostgreSQL', () => {

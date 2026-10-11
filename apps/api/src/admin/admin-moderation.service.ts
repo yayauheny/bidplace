@@ -30,7 +30,10 @@ import { MediaLifecycleService } from '../core/media/media-lifecycle.service';
 import { ImageStore } from '../core/image-store';
 import { productSelect, toProductResponse } from '../products/products.mapper';
 import { missingProductApprovalFields } from '../products/product-requirements';
-import { selectedPendingProposalCount } from '../products/work-selection';
+import {
+  selectedPendingProposalCount,
+  writeTermLabel,
+} from '../products/work-selection';
 import { assertProductRevisionTransition } from '../products/product-revision-state';
 import { lockProductRowForUpdate } from '../products/product-write-guard';
 import {
@@ -932,6 +935,14 @@ export class AdminModerationService {
     },
   ) {
     return runReadCommittedTransaction(this.prisma, async (tx) => {
+      const located = await tx.catalogProposal.findUnique({
+        where: { id: proposalId },
+        select: { revision: { select: { productId: true } } },
+      });
+      if (!located) {
+        throw new ConflictException('Catalog proposal is not awaiting review');
+      }
+      await lockProductRowForUpdate(tx, located.revision.productId);
       const proposal = await tx.catalogProposal.findUnique({
         where: { id: proposalId },
       });
@@ -954,7 +965,6 @@ export class AdminModerationService {
       ) {
         throw new ConflictException('Moderation target is stale');
       }
-      await lockProductRowForUpdate(tx, revision.productId);
       if (this.media?.enabled) {
         await this.media.assertNotPending(tx, { productId: revision.productId });
       }
@@ -1031,6 +1041,11 @@ export class AdminModerationService {
           data: [{ revisionId: revision.id, termId: term.id }],
           skipDuplicates: true,
         });
+        await writeTermLabel(
+          tx,
+          revision.id,
+          proposal.kind === 'TECHNIQUE' ? 'TECHNIQUE' : 'MATERIAL',
+        );
         await tx.catalogProposal.update({
           where: { id: proposal.id },
           data: {

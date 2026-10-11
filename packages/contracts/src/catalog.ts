@@ -87,6 +87,14 @@ export const catalogProposalRejectSchema = z
   .object({ reason: z.string().trim().min(1).max(2000) })
   .strict();
 
+export const workSelectionViewSchema = z
+  .object({
+    materialTermIds: z.array(uuidSchema),
+    techniqueTermIds: z.array(uuidSchema),
+    proposals: z.array(catalogProposalSchema),
+  })
+  .strict();
+
 export const workSelectionSchema = z
   .object({
     materialTermIds: z.array(uuidSchema).max(40).optional(),

@@ -748,7 +748,7 @@ export class ImagesService {
     role?: string,
   ) {
     const links = await this.prisma.productRevisionStoryBlock.findMany({
-      where: { mediaAssetId: assetId, revision: { productId } },
+      where: { mediaAssetId: assetId, type: 'IMAGE', revision: { productId } },
       select: {
         revisionId: true,
         revision: {
@@ -795,28 +795,10 @@ export class ImagesService {
         },
       },
     });
-    const rows = [...links, ...holds];
-    if (!rows.length) throw new NotFoundException('Story image not found');
-    const isAdmin = role === 'admin';
-    const visible = rows.some((row) => {
-      const product = row.revision.product;
-      const isOwner = product.sellerProfile.userId === userId;
-      const isPublic =
-        product.status === 'APPROVED' &&
-        product.sellerProfile.status === 'APPROVED' &&
-        product.sellerProfile.user.status === 'active' &&
-        product.publishedRevisionId === row.revisionId;
-      const isDraftOwner =
-        isOwner && product.editingRevisionId === row.revisionId;
-      return isAdmin || isPublic || isDraftOwner;
-    });
-    if (!visible) throw new NotFoundException('Story image not found');
-    if (!this.media?.enabled) {
+    if (!links.length && !holds.length) {
       throw new NotFoundException('Story image not found');
     }
-    const stored = await this.media.readPreview(assetId);
-    if (!stored) throw new NotFoundException('Story image not found');
-    const isPublic = rows.some((row) => {
+    const isPublishedImage = (row: (typeof links)[number]) => {
       const product = row.revision.product;
       return (
         product.status === 'APPROVED' &&
@@ -824,7 +806,24 @@ export class ImagesService {
         product.sellerProfile.user.status === 'active' &&
         product.publishedRevisionId === row.revisionId
       );
-    });
+    };
+    const isDraftOwner = (row: (typeof links)[number] | (typeof holds)[number]) => {
+      const product = row.revision.product;
+      return (
+        product.sellerProfile.userId === userId &&
+        product.editingRevisionId === row.revisionId
+      );
+    };
+    const isPublic = links.some(isPublishedImage);
+    const isAdmin = role === 'admin';
+    const visible =
+      isAdmin || isPublic || links.some(isDraftOwner) || holds.some(isDraftOwner);
+    if (!visible) throw new NotFoundException('Story image not found');
+    if (!this.media?.enabled) {
+      throw new NotFoundException('Story image not found');
+    }
+    const stored = await this.media.readPreview(assetId);
+    if (!stored) throw new NotFoundException('Story image not found');
     return { mimeType: stored.mimeType, data: stored.bytes, isPublic };
   }
 

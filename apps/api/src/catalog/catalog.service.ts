@@ -1,5 +1,5 @@
 import { catalogTermListResponseSchema, countryListResponseSchema, listCountries } from '@bidplace/contracts';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@bidplace/database';
 
 import { PrismaService } from '../core/database';
@@ -47,29 +47,37 @@ export class CatalogService {
     actorUserId: string,
     input: { name: string; slug?: string | undefined; description?: string | null | undefined },
   ) {
-    const slug = input.slug ?? catalogSlug(input.name);
+    const name = input.name.trim();
+    const normalizedName = this.requireNormalizedName(name);
+    const slug = input.slug ?? catalogSlug(name);
     try {
       const category = await this.prisma.category.create({
-        data: { slug, name: input.name.trim(), description: input.description ?? null },
+        data: { slug, name, normalizedName, description: input.description ?? null },
       });
       await this.audit(actorUserId, category.id, null, 'ACTIVE', `create category ${slug}`);
       return category;
     } catch (error) {
       if (!isUniqueConflict(error)) throw error;
-      const existing = await this.prisma.category.findUnique({ where: { slug } });
-      if (!existing) throw error;
-      return existing;
+      const existing = await this.prisma.category.findUnique({ where: { normalizedName } });
+      if (existing) return existing;
+      throw new ConflictException('Category slug is already used');
     }
   }
 
   async renameCategory(actorUserId: string, id: string, name: string) {
     const current = await this.requireCategory(id);
-    const category = await this.prisma.category.update({
-      where: { id },
-      data: { name: name.trim() },
-    });
-    await this.audit(actorUserId, id, current.name, category.name, 'rename category');
-    return category;
+    const trimmed = name.trim();
+    try {
+      const category = await this.prisma.category.update({
+        where: { id },
+        data: { name: trimmed, normalizedName: this.requireNormalizedName(trimmed) },
+      });
+      await this.audit(actorUserId, id, current.name, category.name, 'rename category');
+      return category;
+    } catch (error) {
+      if (!isUniqueConflict(error)) throw error;
+      throw new ConflictException('Category name is already used');
+    }
   }
 
   async setCategoryActive(actorUserId: string, id: string, active: boolean) {
@@ -86,31 +94,39 @@ export class CatalogService {
     actorUserId: string,
     input: { role: TermRole; name: string; slug?: string | undefined },
   ) {
-    const slug = input.slug ?? catalogSlug(input.name);
+    const name = input.name.trim();
+    const normalizedName = this.requireNormalizedName(name);
+    const slug = input.slug ?? catalogSlug(name);
     try {
       const term = await this.prisma.catalogTerm.create({
-        data: { role: input.role, slug, name: input.name.trim() },
+        data: { role: input.role, slug, name, normalizedName },
       });
       await this.audit(actorUserId, term.id, null, 'ACTIVE', `create ${input.role} ${slug}`);
       return term;
     } catch (error) {
       if (!isUniqueConflict(error)) throw error;
       const existing = await this.prisma.catalogTerm.findUnique({
-        where: { role_slug: { role: input.role, slug } },
+        where: { role_normalizedName: { role: input.role, normalizedName } },
       });
-      if (!existing) throw error;
-      return existing;
+      if (existing) return existing;
+      throw new ConflictException('Catalog term slug is already used');
     }
   }
 
   async renameTerm(actorUserId: string, id: string, name: string) {
     const current = await this.requireTerm(id);
-    const term = await this.prisma.catalogTerm.update({
-      where: { id },
-      data: { name: name.trim() },
-    });
-    await this.audit(actorUserId, id, current.name, term.name, 'rename term');
-    return term;
+    const trimmed = name.trim();
+    try {
+      const term = await this.prisma.catalogTerm.update({
+        where: { id },
+        data: { name: trimmed, normalizedName: this.requireNormalizedName(trimmed) },
+      });
+      await this.audit(actorUserId, id, current.name, term.name, 'rename term');
+      return term;
+    } catch (error) {
+      if (!isUniqueConflict(error)) throw error;
+      throw new ConflictException('Catalog term name is already used');
+    }
   }
 
   async setTermActive(actorUserId: string, id: string, active: boolean) {
@@ -124,9 +140,15 @@ export class CatalogService {
   }
 
   async findTermByNormalizedName(role: TermRole, name: string) {
-    const normalized = normalizeCatalogName(name);
-    const terms = await this.prisma.catalogTerm.findMany({ where: { role, active: true } });
-    return terms.find((term) => normalizeCatalogName(term.name) === normalized) ?? null;
+    return this.prisma.catalogTerm.findFirst({
+      where: { role, normalizedName: normalizeCatalogName(name), active: true },
+    });
+  }
+
+  private requireNormalizedName(name: string) {
+    const normalizedName = normalizeCatalogName(name);
+    if (!normalizedName) throw new ConflictException('Catalog name is empty');
+    return normalizedName;
   }
 
   private async requireCategory(id: string) {

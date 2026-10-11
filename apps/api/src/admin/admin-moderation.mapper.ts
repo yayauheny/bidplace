@@ -4,6 +4,8 @@ import { type Prisma } from '@bidplace/database';
 import { imageKey } from '../core/image-store/image-key';
 import {
   productRevisionImageSelect,
+  revisionSelectionSelect,
+  selectionFromRevision,
   toImageContracts,
   toRevisionGalleryImages,
 } from '../products/products.mapper';
@@ -163,6 +165,7 @@ export const adminProductListSelect = {
         select: productRevisionImageSelect,
       },
       storyToken: true,
+      ...revisionSelectionSelect,
       storyBlocks: {
         orderBy: { position: 'asc' },
         select: {
@@ -417,6 +420,7 @@ export function toAdminProduct(
                 : { text: block.text }),
             })),
           },
+          selection: selectionFromRevision(revision),
         }
       : null,
     hasBlockingListing: product.listings.length > 0,

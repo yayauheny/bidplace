@@ -16,6 +16,7 @@ import {
   productImageSchema,
   productSchema,
 } from './product';
+import { workSelectionViewSchema } from './catalog';
 import { storyResponseSchema } from './story';
 import {
   sellerDisciplineSchema,
@@ -277,6 +278,7 @@ const adminProductReviewTargetSchema = z
     submittedAt: isoDateTimeSchema.nullable(),
     content: adminProductRevisionContentSchema,
     story: storyResponseSchema,
+    selection: workSelectionViewSchema,
   })
   .strict();
 

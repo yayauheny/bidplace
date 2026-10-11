@@ -13,7 +13,9 @@ import {
   newAccountSlugSchema,
   ApiErrorCode,
   apiErrorResponseSchema,
+  isCountryCode,
   isEditableProductStatus,
+  listCountries,
   listingStatusSchema,
   productWriteRequestSchema,
   portfolioWorksQuerySchema,
@@ -391,6 +393,18 @@ describe('shared contracts', () => {
       }).success,
     ).toBe(true);
   });
+  it('accepts only the country picker list', () => {
+    const listed = listCountries();
+    expect(listed.length).toBeGreaterThan(200);
+    expect(listed.every((country) => isCountryCode(country.code))).toBe(true);
+    expect(isCountryCode('BY')).toBe(true);
+    expect(isCountryCode('GB')).toBe(true);
+    expect(isCountryCode('EU')).toBe(false);
+    expect(isCountryCode('UN')).toBe(false);
+    expect(isCountryCode('UK')).toBe(false);
+    expect(isCountryCode('Belarus')).toBe(false);
+  });
+
   it('keeps discipline validation aligned with the VARCHAR(160) column', () => {
     const base = {
       discipline: 'Керамика',

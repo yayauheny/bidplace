@@ -1,5 +1,9 @@
+import { randomUUID } from 'node:crypto';
+
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { Prisma, type PrismaClient } from '@bidplace/database';
+
+import { catalogSlug, normalizeCatalogName } from '../../src/catalog/catalog-data';
 
 import { portfolioCatalogCte } from '../../src/products/products-catalog.query';
 import { ProductsService } from '../../src/products/products.service';
@@ -107,6 +111,7 @@ async function publishWork(
       publishedRevisionId: revision.id,
     },
   });
+  await attachMaterialTerm(revision.id, input.materials);
   return product;
 }
 
@@ -158,12 +163,8 @@ async function createFacetAuthor(input: {
     });
     const label = input.discipline?.trim();
     if (label) {
-      const slug = `facet-${label.toLocaleLowerCase('ru-RU').replace(/\s+/g, '-')}`;
-      const category = await prisma.category.upsert({
-        where: { slug },
-        update: {},
-        create: { slug, name: label, active: true },
-      });
+      const category = await categoryForLabel(label);
+      if (!category) return profile;
       await prisma.sellerProfileRevisionDirection.create({
         data: { revisionId: revision.id, categoryId: category.id, position: 0 },
       });
@@ -184,12 +185,8 @@ async function replacePublishedDirection(profileId: string, name: string) {
     where: { id: profileId },
     select: { publishedRevisionId: true },
   });
-  const slug = `facet-${name.toLocaleLowerCase('ru-RU').replace(/\s+/g, '-')}`;
-  const category = await prisma.category.upsert({
-    where: { slug },
-    update: { name },
-    create: { slug, name, active: true },
-  });
+  const category = await categoryForLabel(name);
+  if (!category) throw new Error('Direction name is blank');
   await prisma.sellerProfileRevisionDirection.deleteMany({
     where: { revisionId: profile.publishedRevisionId! },
   });
@@ -300,13 +297,61 @@ async function createFacetWork(input: {
       publishedRevisionId: linkPublishedRevision ? revision.id : null,
     },
   });
+  if (linkPublishedRevision) await attachMaterialTerm(revision.id, input.materials);
+  if (input.editingMaterials !== undefined) {
+    await attachMaterialTerm(editingRevisionId, input.editingMaterials);
+  }
   return product;
 }
 
+async function categoryForLabel(name: string) {
+  const normalizedName = normalizeCatalogName(name);
+  if (!normalizedName) return null;
+  const slug = `facet-${name.toLocaleLowerCase('ru-RU').replace(/\s+/g, '-')}`;
+  const existing = await prisma.category.findFirst({
+    where: { OR: [{ slug }, { normalizedName }] },
+  });
+  if (existing) return existing;
+  return prisma.category.create({
+    data: { slug, name: name.trim(), normalizedName, active: true },
+  });
+}
+
+async function attachMaterialTerm(
+  revisionId: string,
+  name: string | null | undefined,
+) {
+  if (!name) return;
+  const normalizedName = normalizeCatalogName(name);
+  if (!normalizedName) return;
+  const existing = await prisma.catalogTerm.findFirst({
+    where: { role: 'MATERIAL', normalizedName },
+  });
+  const term =
+    existing ??
+    (await prisma.catalogTerm.create({
+      data: {
+        role: 'MATERIAL',
+        slug: `${catalogSlug(name)}-${randomUUID().slice(0, 8)}`,
+        name: name.trim(),
+        normalizedName,
+      },
+    }));
+  await prisma.productRevisionTerm.create({
+    data: { revisionId, termId: term.id },
+  });
+}
+
 const previousMaterialFacetSql = Prisma.sql`
-  SELECT "materials"
+  SELECT term."name" AS "materials"
   FROM filtered
-  WHERE NULLIF(BTRIM("materials"), '') IS NOT NULL`;
+  INNER JOIN "products" catalog_product ON catalog_product."id" = filtered."id"
+  INNER JOIN "product_revision_terms" selected_term
+    ON selected_term."revision_id" = catalog_product."published_revision_id"
+  INNER JOIN "catalog_terms" term
+    ON term."id" = selected_term."term_id"
+    AND term."role" = 'MATERIAL'
+  WHERE NULLIF(BTRIM(term."name"), '') IS NOT NULL`;
 
 describe('portfolio catalog SQL filters and pagination', () => {
   it.each(['hide', 'suspend', 'ban', 'unpublish'] as const)(
@@ -1094,8 +1139,8 @@ describe('portfolio catalog SQL filters and pagination', () => {
         INNER JOIN "seller_profile_revision_directions" direction
           ON direction."revision_id" = filtered."published_revision_id"`,
     );
-    expect(fullMaterials).toHaveLength(10);
-    expect(materialRows).toHaveLength(8);
+    expect(fullMaterials).toHaveLength(9);
+    expect(materialRows).toHaveLength(4);
     expect(new Set(materialRows)).toEqual(
       new Set(fullMaterials.map((row) => row.materials)),
     );
@@ -1105,7 +1150,7 @@ describe('portfolio catalog SQL filters and pagination', () => {
     expect(new Set(authorRows.tags)).toEqual(
       new Set(fullTags.map((row) => row.tag)),
     );
-    expect(materialRows).toContain('\t');
+    expect(materialRows).not.toContain('\t');
     expect(materialRows).not.toContain('   ');
     expect(materialRows).toContain('Материал без города');
     expect(authorRows.cities).toContain('\u00A0');

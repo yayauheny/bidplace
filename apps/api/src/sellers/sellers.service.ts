@@ -32,6 +32,7 @@ import { type ValidatedImageUpload } from '../images/image-policy';
 import {
   productRevisionOwnerSelect,
   productSelect,
+  selectionFromRevision,
   toCreationStepContract,
   toContractProduct,
   toOwnerContractProduct,
@@ -93,12 +94,27 @@ async function replaceProfileDirections(
   if (new Set(categoryIds).size !== categoryIds.length) {
     throw new ConflictException('Author directions must be unique');
   }
-  if (categoryIds.length > 0) {
-    const categories = await tx.category.findMany({
-      where: { id: { in: [...categoryIds] }, active: true },
+  const current = await tx.sellerProfileRevisionDirection.findMany({
+    where: { revisionId },
+    select: { categoryId: true },
+  });
+  const keptIds = new Set(current.map((item) => item.categoryId));
+  const additions = categoryIds.filter((categoryId) => !keptIds.has(categoryId));
+  if (additions.length > 0) {
+    const active = await tx.category.findMany({
+      where: { id: { in: additions }, active: true },
       select: { id: true },
     });
-    if (categories.length !== categoryIds.length) {
+    if (active.length !== additions.length) {
+      throw new ConflictException('Author direction is unknown or hidden');
+    }
+  }
+  if (categoryIds.length > 0) {
+    const known = await tx.category.findMany({
+      where: { id: { in: [...categoryIds] } },
+      select: { id: true },
+    });
+    if (known.length !== categoryIds.length) {
       throw new ConflictException('Author direction is unknown or hidden');
     }
   }
@@ -933,6 +949,7 @@ export class SellersService {
       creationIntro: product.creationIntro ?? null,
       creationSteps: product.creationSteps.map(toCreationStepContract),
       story,
+      selection: selectionFromRevision(product.editingRevision),
       lastModerationReason: latestReason?.reason ?? null,
     });
   }

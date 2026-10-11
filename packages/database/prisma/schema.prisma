@@ -241,6 +241,7 @@ model Category {
   id          String    @id @default(uuid()) @db.Uuid
   slug        String    @unique @db.VarChar(120)
   name        String    @db.VarChar(160)
+  normalizedName String @default("") @map("normalized_name") @db.VarChar(160)
   description String?   @db.Text
   active      Boolean   @default(true)
   createdAt   DateTime  @default(now()) @map("created_at")
@@ -249,6 +250,7 @@ model Category {
   directions  SellerProfileRevisionDirection[]
   mappedProposals CatalogProposal[] @relation("MappedProposalCategory")
 
+  @@unique([normalizedName])
   @@map("categories")
 }
 
@@ -646,6 +648,7 @@ model CatalogTerm {
   role      CatalogTermRole
   slug      String          @db.VarChar(120)
   name      String          @db.VarChar(160)
+  normalizedName String     @default("") @map("normalized_name") @db.VarChar(160)
   active    Boolean         @default(true)
   createdAt DateTime        @default(now()) @map("created_at")
   updatedAt DateTime        @updatedAt @map("updated_at")
@@ -653,6 +656,7 @@ model CatalogTerm {
   mappedProposals CatalogProposal[] @relation("MappedProposalTerm")
 
   @@unique([role, slug])
+  @@unique([role, normalizedName])
   @@map("catalog_terms")
 }
 

@@ -26,6 +26,7 @@ const COUNTRY_CODES = [
   'ZA','ZM','ZW',
 ] as const;
 
+const COUNTRY_CODE_SET = new Set<string>(COUNTRY_CODES);
 const countryNames = new Intl.DisplayNames(['ru'], { type: 'region' });
 
 export type CountryOption = { code: string; name: string };
@@ -38,7 +39,7 @@ export function countryName(code: string): string | null {
 }
 
 export function isCountryCode(code: string): boolean {
-  return countryName(code) !== null;
+  return COUNTRY_CODE_SET.has(code);
 }
 
 export function listCountries(query?: string): CountryOption[] {

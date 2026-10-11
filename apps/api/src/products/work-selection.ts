@@ -12,11 +12,27 @@ export type WorkSelectionInput = {
   categoryProposal?: string | null | undefined;
 };
 
+export async function assertSelectableCategory(
+  tx: Prisma.TransactionClient,
+  categoryId: string,
+  priorCategoryId: string | null,
+) {
+  const category = await tx.category.findUnique({
+    where: { id: categoryId },
+    select: { id: true, active: true },
+  });
+  if (!category) throw new ConflictException('Category is unknown');
+  if (!category.active && priorCategoryId !== category.id) {
+    throw new ConflictException('Category is hidden from new selections');
+  }
+}
+
 export async function syncWorkSelection(
   tx: Prisma.TransactionClient,
   revisionId: string,
   authorUserId: string,
   input: WorkSelectionInput,
+  priorCategoryId: string | null = null,
 ) {
   if (input.materialTermIds) {
     await replaceTerms(tx, revisionId, input.materialTermIds, 'MATERIAL');
@@ -25,18 +41,7 @@ export async function syncWorkSelection(
     await replaceTerms(tx, revisionId, input.techniqueTermIds, 'TECHNIQUE');
   }
   if (input.categoryId) {
-    const category = await tx.category.findUnique({
-      where: { id: input.categoryId },
-      select: { id: true, slug: true, active: true },
-    });
-    if (!category) throw new ConflictException('Category is unknown');
-    const current = await tx.productRevision.findUnique({
-      where: { id: revisionId },
-      select: { categoryId: true },
-    });
-    if (!category.active && current?.categoryId !== category.id) {
-      throw new ConflictException('Category is hidden from new selections');
-    }
+    await assertSelectableCategory(tx, input.categoryId, priorCategoryId);
   }
   if (input.categoryProposal !== undefined) {
     await syncNameProposals(tx, {
@@ -86,19 +91,30 @@ async function replaceTerms(
   if (new Set(termIds).size !== termIds.length) {
     throw new ConflictException('Catalog terms must be unique');
   }
-  if (termIds.length > 0) {
-    const terms = await tx.catalogTerm.findMany({
-      where: { id: { in: [...termIds] }, role, active: true },
-      select: { id: true },
-    });
-    if (terms.length !== termIds.length) {
-      throw new ConflictException('Catalog term is unknown, hidden, or has the wrong role');
-    }
-  }
   const existing = await tx.productRevisionTerm.findMany({
     where: { revisionId, term: { role } },
     select: { termId: true },
   });
+  const keptIds = new Set(existing.map((item) => item.termId));
+  const additions = termIds.filter((termId) => !keptIds.has(termId));
+  if (additions.length > 0) {
+    const active = await tx.catalogTerm.findMany({
+      where: { id: { in: additions }, role, active: true },
+      select: { id: true },
+    });
+    if (active.length !== additions.length) {
+      throw new ConflictException('Catalog term is unknown, hidden, or has the wrong role');
+    }
+  }
+  if (termIds.length > 0) {
+    const known = await tx.catalogTerm.findMany({
+      where: { id: { in: [...termIds] }, role },
+      select: { id: true },
+    });
+    if (known.length !== termIds.length) {
+      throw new ConflictException('Catalog term is unknown, hidden, or has the wrong role');
+    }
+  }
   if (existing.length > 0) {
     await tx.productRevisionTerm.deleteMany({
       where: { revisionId, termId: { in: existing.map((item) => item.termId) } },
@@ -109,6 +125,27 @@ async function replaceTerms(
       data: termIds.map((termId) => ({ revisionId, termId })),
     });
   }
+  await writeTermLabel(tx, revisionId, role);
+}
+
+export async function writeTermLabel(
+  tx: Prisma.TransactionClient,
+  revisionId: string,
+  role: 'MATERIAL' | 'TECHNIQUE',
+) {
+  const selected = await tx.productRevisionTerm.findMany({
+    where: { revisionId, term: { role } },
+    select: { term: { select: { name: true } } },
+  });
+  const label = selected
+    .map((item) => item.term.name.trim())
+    .filter((name) => name.length > 0)
+    .sort((left, right) => left.localeCompare(right, 'ru-RU'))
+    .join(', ');
+  await tx.productRevision.update({
+    where: { id: revisionId },
+    data: role === 'MATERIAL' ? { materials: label || null } : { technique: label || null },
+  });
 }
 
 async function syncNameProposals(
@@ -128,7 +165,7 @@ async function syncNameProposals(
     throw new ConflictException('Catalog proposals must be unique');
   }
   const current = await tx.catalogProposal.findMany({
-    where: { productRevisionId: input.revisionId, kind: input.kind, selected: true },
+    where: { productRevisionId: input.revisionId, kind: input.kind },
   });
   const next = new Set(normalized.map((item) => item.normalizedName));
   for (const proposal of current) {

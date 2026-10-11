@@ -511,12 +511,13 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
                 images: {
                   select: { image: { select: { mediaAssetId: true } } },
                 },
+                storyBlocks: { select: { mediaAssetId: true } },
               },
             },
           },
         });
         if (!works.length) break;
-        for (const work of works)
+        for (const work of works) {
           for (const item of work.publishedRevision?.images ?? []) {
             if (!item.image.mediaAssetId)
               throw new ConflictException(
@@ -524,6 +525,10 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
               );
             ids.add(item.image.mediaAssetId);
           }
+          for (const block of work.publishedRevision?.storyBlocks ?? []) {
+            if (block.mediaAssetId) ids.add(block.mediaAssetId);
+          }
+        }
         cursor = works.at(-1)!.id;
       }
     }
@@ -569,7 +574,16 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
       tier: 'PUBLIC',
       asset: target.profileId
         ? { owner: { sellerProfile: { id: target.profileId } } }
-        : { images: { some: { productId: target.productId! } } },
+        : {
+            OR: [
+              { images: { some: { productId: target.productId! } } },
+              {
+                storyBlocks: {
+                  some: { revision: { productId: target.productId! } },
+                },
+              },
+            ],
+          },
     };
     let cursor: string | undefined;
     for (;;) {
@@ -1011,6 +1025,21 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
           mediaAssetId: assetId,
           revision: {
             publishedFor: { status: 'APPROVED', user: { status: 'active' } },
+          },
+        },
+      })) ||
+      (await this.prisma.productRevisionStoryBlock.count({
+        where: {
+          mediaAssetId: assetId,
+          type: 'IMAGE',
+          revision: {
+            publishedFor: {
+              status: 'APPROVED',
+              sellerProfile: {
+                status: 'APPROVED',
+                user: { status: 'active' },
+              },
+            },
           },
         },
       })),

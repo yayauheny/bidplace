@@ -1,5 +1,39 @@
 # bidplace — текущий статус проекта
 
+## 2026-10-11 — Author story review fixes
+
+- `Partial` for the user-facing author application, dictionaries and Work story.
+  The API review on `fix/author-story-review` closes the confirmed backend gaps:
+  a guest reads a story image only from an IMAGE block on the current published
+  revision; a hold is private draft access. Publication, hide, author suspend,
+  restore, cleanup and public-reference checks use that same published block.
+  Story saves write the current editing revision, including a private draft of
+  an approved work, and do not mutate the published revision or `Product.status`.
+  Owner detail and the admin review target return selected term IDs and
+  proposals. A proposal decision locks the product and re-reads it. Mapping a
+  term updates the revision, so the previous moderation target conflicts.
+  Re-adding a proposal reuses the same row and keeps an existing rejection.
+  A hidden category, term or direction is not a new selection. Catalog identity
+  is the normalized name per role, separate from the stable slug. Story
+  idempotency conflicts when the same key carries a different snapshot. One
+  asset may appear in several IMAGE blocks; the byte budget counts it once.
+  Country writes accept only the codes returned by `GET /countries`. Public
+  search, the materials filter and material facets read published terms and
+  story-block text. When a revision has terms, the materials and technique
+  strings in owner and public reads are those term names.
+- Mobile, admin UI and `@bidplace/api-client` remain `Not implemented` for this
+  contract. Backend readiness is not release readiness.
+- Evidence: `images.service.ts`, `media-lifecycle.service.ts`,
+  `products.service.ts`, `product-story.ts`, `work-selection.ts`,
+  `catalog.service.ts`, `admin-moderation.service.ts`,
+  `products-catalog.query.ts`, contracts `catalog.ts`, `countries.ts`,
+  `product.ts`, `admin.ts`, `portfolio.ts`, migration
+  `20261011213000_catalog_normalized_name`. Isolated-schema coverage is
+  `author-story-catalog.integration.spec.ts`,
+  `media-lifecycle.integration.spec.ts`,
+  `work-media-http.integration.spec.ts` and
+  `portfolio-filters.integration.spec.ts`. The shared database was not reset.
+
 ## 2026-10-11 — Author story backend
 
 - `Partial` for the user-facing author application, dictionaries and Work story.

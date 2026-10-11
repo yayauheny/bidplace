@@ -49,6 +49,8 @@ export const portfolioWorkSchema = z
     categoryId: uuidSchema,
     technique: publicText.nullable(),
     materials: publicText.nullable(),
+    materialTermIds: z.array(uuidSchema).default([]),
+    techniqueTermIds: z.array(uuidSchema).default([]),
     dimensions: publicText.nullable(),
     year: z.number().int().nullable(),
     uniqueness: z.string().trim().min(1).nullable(),
