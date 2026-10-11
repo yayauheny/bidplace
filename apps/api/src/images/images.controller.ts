@@ -68,6 +68,79 @@ export class ImagesController {
     return this.images.add(auth.sub, productId, files, idempotencyKey);
   }
 
+  @Post('products/:productId/story-images')
+  @UseGuards(BearerAuthGuard, VerifiedEmailGuard, RateLimitGuard)
+  @RateLimit({
+    keyPrefix: 'images:story-upload',
+    limit: 10,
+    windowMs: 60_000,
+    scope: 'user',
+  })
+  @UseInterceptors(
+    FilesInterceptor('image', 1, {
+      limits: {
+        fileSize: productImageUploadLimits.maxFileBytes,
+        files: 1,
+      },
+      fileFilter: (_request, file, done) =>
+        acceptSupportedUploadMimeType(file.mimetype, done),
+    }),
+  )
+  async addStoryImage(
+    @CurrentUser() auth: { sub: string },
+    @Param('productId', new ParseUUIDPipe({ version: '4' }))
+    productId: string,
+    @UploadedFiles() files: RawImageUpload[] = [],
+    @Headers('idempotency-key') idempotencyKey?: string,
+  ) {
+    if (files.length !== 1) throw new BadRequestException('An image is required');
+    return this.images.addStoryImage(
+      auth.sub,
+      productId,
+      files[0]!,
+      idempotencyKey,
+    );
+  }
+
+  @Delete('products/:productId/story-images/:assetId')
+  @UseGuards(BearerAuthGuard, VerifiedEmailGuard)
+  removeStoryImage(
+    @CurrentUser() auth: { sub: string },
+    @Param('productId', new ParseUUIDPipe({ version: '4' }))
+    productId: string,
+    @Param('assetId', new ParseUUIDPipe({ version: '4' })) assetId: string,
+  ) {
+    return this.images.removeStoryImage(auth.sub, productId, assetId);
+  }
+
+  @Get('products/:productId/story-images/:assetId')
+  @UseGuards(OptionalBearerAuthGuard)
+  async getStoryImage(
+    @Param('productId', new ParseUUIDPipe({ version: '4' }))
+    productId: string,
+    @Param('assetId', new ParseUUIDPipe({ version: '4' })) assetId: string,
+    @CurrentUser() auth: { sub: string; role: string } | undefined,
+    @Res()
+    response: {
+      setHeader(name: string, value: string): void;
+      type(value: string): void;
+      send(value: Buffer): void;
+    },
+  ) {
+    const image = await this.images.getStoryImage(
+      productId,
+      assetId,
+      auth?.sub,
+      auth?.role,
+    );
+    response.setHeader(
+      'Cache-Control',
+      getImageCacheControl({ isPublic: image.isPublic, kind: 'product' }),
+    );
+    response.type(image.mimeType);
+    response.send(Buffer.from(image.data));
+  }
+
   @Post('products/:productId/creation-steps/:stepId/image')
   @UseGuards(BearerAuthGuard, VerifiedEmailGuard, RateLimitGuard)
   @RateLimit({

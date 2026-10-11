@@ -23,7 +23,7 @@ const validateProductImageUploads = vi.mocked(
 
 const profileBody = {
   fullName: 'Author',
-  country: 'Belarus',
+  country: 'BY',
   city: 'Minsk',
 };
 const file = { buffer: Buffer.from([1]), mimetype: 'image/png' };

@@ -660,6 +660,174 @@ export class ImagesService {
     };
   }
 
+  async addStoryImage(
+    userId: string,
+    productId: string,
+    file: RawImageUpload,
+    idempotencyKey?: string,
+  ) {
+    if (!this.media?.enabled) {
+      throw new ConflictException('Story images require the media pipeline');
+    }
+    if (
+      idempotencyKey !== undefined &&
+      !/^[a-zA-Z0-9:_-]{1,100}$/.test(idempotencyKey)
+    ) {
+      throw new BadRequestException('Invalid idempotency key');
+    }
+    const media = this.media;
+    const scopedKey = idempotencyKey
+      ? createHash('sha256')
+          .update(`${productId}:story:${idempotencyKey}`)
+          .digest('hex')
+      : undefined;
+    const asset = await media.stage(userId, 'STORY_IMAGE', file, scopedKey);
+    return runReadCommittedTransaction(this.prisma, async (tx) => {
+      const product = await this.requireWritableOwnerInTx(
+        tx,
+        userId,
+        productId,
+      );
+      if (!product.editingRevisionId) {
+        throw new ConflictException('Product editing revision is missing');
+      }
+      await media.assertNotPending(tx, { productId });
+      const revisionId = product.editingRevisionId;
+      const held = await tx.productRevisionStoryAsset.findUnique({
+        where: { revisionId_mediaAssetId: { revisionId, mediaAssetId: asset.id } },
+      });
+      if (!held) {
+        const holds = await tx.productRevisionStoryAsset.count({
+          where: { revisionId },
+        });
+        if (holds >= 5) {
+          throw new ConflictException('Story image holds are full');
+        }
+        await tx.productRevisionStoryAsset.create({
+          data: { revisionId, mediaAssetId: asset.id },
+        });
+      }
+      await media.attach(tx, asset.id);
+      return { mediaAssetId: asset.id };
+    });
+  }
+
+  async removeStoryImage(userId: string, productId: string, assetId: string) {
+    if (!this.media?.enabled) {
+      throw new ConflictException('Story images require the media pipeline');
+    }
+    const media = this.media;
+    return runReadCommittedTransaction(this.prisma, async (tx) => {
+      const product = await this.requireWritableOwnerInTx(
+        tx,
+        userId,
+        productId,
+      );
+      if (!product.editingRevisionId) {
+        throw new ConflictException('Product editing revision is missing');
+      }
+      const revisionId = product.editingRevisionId;
+      const used = await tx.productRevisionStoryBlock.count({
+        where: { revisionId, mediaAssetId: assetId },
+      });
+      if (used > 0) {
+        throw new ConflictException('Story image is used by a block');
+      }
+      await tx.productRevisionStoryAsset.deleteMany({
+        where: { revisionId, mediaAssetId: assetId },
+      });
+      await media.enqueueCleanup(tx, [assetId]);
+      return { ok: true as const };
+    });
+  }
+
+  async getStoryImage(
+    productId: string,
+    assetId: string,
+    userId?: string,
+    role?: string,
+  ) {
+    const links = await this.prisma.productRevisionStoryBlock.findMany({
+      where: { mediaAssetId: assetId, revision: { productId } },
+      select: {
+        revisionId: true,
+        revision: {
+          select: {
+            product: {
+              select: {
+                status: true,
+                publishedRevisionId: true,
+                editingRevisionId: true,
+                sellerProfile: {
+                  select: {
+                    userId: true,
+                    status: true,
+                    user: { select: { status: true } },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+    const holds = await this.prisma.productRevisionStoryAsset.findMany({
+      where: { mediaAssetId: assetId, revision: { productId } },
+      select: {
+        revisionId: true,
+        revision: {
+          select: {
+            product: {
+              select: {
+                status: true,
+                publishedRevisionId: true,
+                editingRevisionId: true,
+                sellerProfile: {
+                  select: {
+                    userId: true,
+                    status: true,
+                    user: { select: { status: true } },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+    const rows = [...links, ...holds];
+    if (!rows.length) throw new NotFoundException('Story image not found');
+    const isAdmin = role === 'admin';
+    const visible = rows.some((row) => {
+      const product = row.revision.product;
+      const isOwner = product.sellerProfile.userId === userId;
+      const isPublic =
+        product.status === 'APPROVED' &&
+        product.sellerProfile.status === 'APPROVED' &&
+        product.sellerProfile.user.status === 'active' &&
+        product.publishedRevisionId === row.revisionId;
+      const isDraftOwner =
+        isOwner && product.editingRevisionId === row.revisionId;
+      return isAdmin || isPublic || isDraftOwner;
+    });
+    if (!visible) throw new NotFoundException('Story image not found');
+    if (!this.media?.enabled) {
+      throw new NotFoundException('Story image not found');
+    }
+    const stored = await this.media.readPreview(assetId);
+    if (!stored) throw new NotFoundException('Story image not found');
+    const isPublic = rows.some((row) => {
+      const product = row.revision.product;
+      return (
+        product.status === 'APPROVED' &&
+        product.sellerProfile.status === 'APPROVED' &&
+        product.sellerProfile.user.status === 'active' &&
+        product.publishedRevisionId === row.revisionId
+      );
+    });
+    return { mimeType: stored.mimeType, data: stored.bytes, isPublic };
+  }
+
   private async requireWritableOwnerInTx(
     tx: Prisma.TransactionClient,
     userId: string,

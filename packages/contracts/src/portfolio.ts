@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 import { paginationMetaSchema, paginationQuerySchema } from './pagination';
 import { productImageSchema } from './product';
+import { storyResponseSchema } from './story';
 import {
   authorApplicationStageSchema,
   productStatusSchema,
@@ -63,8 +64,9 @@ export const portfolioAuthorSchema = z
     slug: slugSchema,
     fullName: publicText,
     country: publicText,
-    city: publicText,
-    discipline: publicText,
+    city: publicText.nullable(),
+    discipline: publicText.nullable(),
+    directionCategoryIds: z.array(uuidSchema).default([]),
     practice: z.string().trim().min(1).nullable(),
     biography: z.string().trim().min(1).nullable(),
     profilePhotoUrl: z.union([
@@ -87,7 +89,9 @@ export const portfolioWorkListItemSchema = z
 
 export const portfolioWorkDetailResponseSchema = z
   .object({
-    work: portfolioWorkSchema,
+    work: portfolioWorkSchema.extend({
+      creationStory: storyResponseSchema,
+    }),
     author: portfolioAuthorSchema,
     relatedWorks: z.array(portfolioWorkListItemSchema),
   })
@@ -110,6 +114,8 @@ export const portfolioWorksQuerySchema = paginationQuerySchema
         z.array(z.string().trim().min(1).max(80)).max(20),
       )
       .optional(),
+    materialId: uuidSchema.optional(),
+    techniqueId: uuidSchema.optional(),
     sort: z.enum(['newest', 'oldest']).default('newest'),
   })
   .strict();
@@ -125,6 +131,7 @@ export const portfolioAuthorsQuerySchema = paginationQuerySchema
   .extend({
     q: z.string().trim().min(1).max(120).optional(),
     tag: z.string().trim().min(1).max(160).optional(),
+    directionId: uuidSchema.optional(),
     city: z.string().trim().min(1).max(160).optional(),
     sort: z.enum(['name', 'added']).default('added'),
   })

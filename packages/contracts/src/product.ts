@@ -1,6 +1,8 @@
 import { publicMediaUrlSchema, mediaDeliverySchema } from './media';
 import { z } from 'zod';
 
+import { workSelectionSchema } from './catalog';
+
 import { type ProductStatus, productStatusSchema } from './enums';
 import { isoDateTimeSchema, uuidSchema } from './primitives';
 
@@ -126,6 +128,7 @@ export const productWriteRequestSchema = z
     deliveryInfo: z.string().trim().min(1).nullable().optional(),
     creationIntro: z.string().trim().min(1).max(5000).nullable().optional(),
   })
+  .merge(workSelectionSchema)
   .strict();
 
 export const creationStepWriteSchema = z

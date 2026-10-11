@@ -36,6 +36,7 @@ import {
   toContractProduct,
   toOwnerContractProduct,
 } from '../products/products.mapper';
+import { storyFromRows } from '../products/product-story';
 import {
   portfolioCatalogProductWhere,
   publicAuthorCityWhere,
@@ -60,29 +61,56 @@ import {
 
 function assertProfileRevisionReadyToSubmit(revision: {
   slug: string;
-  discipline: string | null;
   fullName: string;
   country: string;
-  city: string | null;
   shortDescription: string | null;
   profilePhotoMimeType: string | null;
   profilePhotoByteLength: number | null;
   profilePhotoChecksum: string | null;
   profilePhotoObjectKey: string | null;
+  directionCount: number;
 }) {
   if (
     !revision.slug ||
-    !revision.discipline ||
     !revision.fullName ||
     !revision.country ||
-    !revision.city ||
     !revision.shortDescription ||
+    revision.directionCount < 1 ||
     !revision.profilePhotoMimeType ||
     !revision.profilePhotoByteLength ||
     !revision.profilePhotoChecksum ||
     !revision.profilePhotoObjectKey
   ) {
     throw new ConflictException('Author profile is missing required fields');
+  }
+}
+
+async function replaceProfileDirections(
+  tx: Prisma.TransactionClient,
+  revisionId: string,
+  categoryIds: readonly string[],
+) {
+  if (new Set(categoryIds).size !== categoryIds.length) {
+    throw new ConflictException('Author directions must be unique');
+  }
+  if (categoryIds.length > 0) {
+    const categories = await tx.category.findMany({
+      where: { id: { in: [...categoryIds] }, active: true },
+      select: { id: true },
+    });
+    if (categories.length !== categoryIds.length) {
+      throw new ConflictException('Author direction is unknown or hidden');
+    }
+  }
+  await tx.sellerProfileRevisionDirection.deleteMany({ where: { revisionId } });
+  if (categoryIds.length > 0) {
+    await tx.sellerProfileRevisionDirection.createMany({
+      data: categoryIds.map((categoryId, position) => ({
+        revisionId,
+        categoryId,
+        position,
+      })),
+    });
   }
 }
 
@@ -280,7 +308,7 @@ export class SellersService {
             discipline: input.discipline ?? null,
             fullName: input.fullName,
             country: input.country,
-            city: input.city,
+            city: input.city ?? null,
             practice: input.practice ?? null,
             biography: input.biography ?? null,
             socialLink: input.socialLink ?? null,
@@ -335,7 +363,7 @@ export class SellersService {
             discipline: input.discipline ?? null,
             fullName: input.fullName,
             country: input.country,
-            city: input.city,
+            city: input.city ?? null,
             practice: input.practice ?? null,
             biography: input.biography ?? null,
             socialLink: input.socialLink ?? null,
@@ -361,6 +389,13 @@ export class SellersService {
           where: { id: created.id },
           data: { editingRevisionId: revision.id },
         });
+        if (input.directionCategoryIds?.length) {
+          await replaceProfileDirections(
+            tx,
+            revision.id,
+            input.directionCategoryIds,
+          );
+        }
 
         return tx.sellerProfile.findUniqueOrThrow({
           where: { id: created.id },
@@ -445,6 +480,13 @@ export class SellersService {
               ...profilePhotoData,
             },
           });
+          if (input.directionCategoryIds) {
+            await replaceProfileDirections(
+              tx,
+              editing.revisionId,
+              input.directionCategoryIds,
+            );
+          }
           if (prepared?.asset) await this.media!.attach(tx, prepared.asset.id);
           if (profilePhoto && !prepared?.asset) {
             await this.imageStore.put(
@@ -470,8 +512,10 @@ export class SellersService {
       throw new ForbiddenException('Seller profile cannot be edited');
     }
 
+    const { directionCategoryIds: _directions, ...profileInput } = input;
+    void _directions;
     const data = Object.fromEntries(
-      Object.entries(input).filter(([, value]) => value !== undefined),
+      Object.entries(profileInput).filter(([, value]) => value !== undefined),
     ) as Prisma.SellerProfileUncheckedUpdateInput;
 
     const prepared = profilePhoto
@@ -506,6 +550,13 @@ export class SellersService {
             where: { id: editing.revisionId },
             data: { ...publicProfileRevisionData(input), ...profilePhotoData },
           });
+          if (input.directionCategoryIds) {
+            await replaceProfileDirections(
+              tx,
+              editing.revisionId,
+              input.directionCategoryIds,
+            );
+          }
           if (prepared?.asset) await this.media!.attach(tx, prepared.asset.id);
           if (profilePhoto && !prepared?.asset) {
             await this.imageStore.put(
@@ -550,7 +601,10 @@ export class SellersService {
       const revision = profile.editingRevision;
       if (!revision)
         throw new NotFoundException('Seller profile revision not found');
-      assertProfileRevisionReadyToSubmit(revision);
+      const directionCount = await tx.sellerProfileRevisionDirection.count({
+        where: { revisionId: revision.id },
+      });
+      assertProfileRevisionReadyToSubmit({ ...revision, directionCount });
       await tx.sellerProfileRevision.update({
         where: { id: revision.id },
         data: { status: 'PENDING_REVIEW', submittedAt: new Date() },
@@ -586,7 +640,10 @@ export class SellersService {
         });
       } else if (stage === 'ABOUT') {
         const revision = profile.editingRevision;
-        if (!revision.discipline || !revision.shortDescription) {
+        const directionCount = await tx.sellerProfileRevisionDirection.count({
+          where: { revisionId: revision.id },
+        });
+        if (directionCount < 1 || !revision.shortDescription) {
           throw new ConflictException(
             'Author profile is missing required fields',
           );
@@ -608,17 +665,7 @@ export class SellersService {
   async addAchievement(
     userId: string,
     input: PortfolioAchievementWriteRequest,
-    image?: ValidatedImageUpload,
   ) {
-    if (image && this.media?.enabled) {
-      await runReadCommittedTransaction(this.prisma, async (tx) => {
-        await ensureEditableEditingRevision(tx, userId);
-      });
-    }
-    const prepared = image
-      ? await this.preparePhoto(userId, image, 'ACHIEVEMENT')
-      : undefined;
-    if (prepared) image = prepared.photo;
     return runReadCommittedTransaction(this.prisma, async (tx) => {
       const editing = await ensureEditableEditingRevision(tx, userId);
       const position = await tx.sellerProfileRevisionAchievement.count({
@@ -626,12 +673,6 @@ export class SellersService {
       });
       const achievement = await tx.sellerProfileRevisionAchievement.create({
         data: {
-          ...(prepared?.asset
-            ? {
-                mediaAssetId: prepared.asset.id,
-                objectKey: prepared.asset.preview.objectKey,
-              }
-            : {}),
           revisionId: editing.revisionId,
           position,
           occurredAt: new Date(
@@ -644,26 +685,8 @@ export class SellersService {
           occurredAtPrecision:
             input.occurredDate.day === null ? 'MONTH' : 'DAY',
           body: input.body,
-          mimeType: image?.mimeType ?? null,
-          byteLength: image?.buffer.byteLength ?? null,
-          checksum: image
-            ? createHash('sha256').update(image.buffer).digest('hex')
-            : null,
         },
       });
-      if (prepared?.asset) await this.media!.attach(tx, prepared.asset.id);
-      if (image && !prepared?.asset) {
-        const objectKey = imageKey.sellerAchievement(achievement.id);
-        await tx.sellerProfileRevisionAchievement.update({
-          where: { id: achievement.id },
-          data: { objectKey },
-        });
-        await this.imageStore.put(
-          objectKey,
-          { bytes: image.buffer, mimeType: image.mimeType },
-          tx,
-        );
-      }
       return portfolioAchievementResponseSchema.parse({
         achievement: {
           id: achievement.id,
@@ -673,16 +696,7 @@ export class SellersService {
             day: input.occurredDate.day,
           },
           body: achievement.body,
-          image: image
-            ? {
-                url: `/api/author-achievements/${achievement.id}/image`,
-                mimeType: image.mimeType,
-                byteLength: image.buffer.byteLength,
-                checksum: createHash('sha256')
-                  .update(image.buffer)
-                  .digest('hex'),
-              }
-            : null,
+          image: null,
         },
       });
     });
@@ -893,6 +907,7 @@ export class SellersService {
     });
 
     if (!product) throw new NotFoundException('Product not found');
+    const story = storyFromRows(product.editingRevision);
 
     const latestReason = await this.prisma.auditEvent.findFirst({
       where: {
@@ -917,6 +932,7 @@ export class SellersService {
         : null,
       creationIntro: product.creationIntro ?? null,
       creationSteps: product.creationSteps.map(toCreationStepContract),
+      story,
       lastModerationReason: latestReason?.reason ?? null,
     });
   }
@@ -986,25 +1002,24 @@ export class SellersService {
   }
 
   async listPublicFacets() {
-    const cte = publicAuthorCte(
-      { page: 1, limit: 1, sort: 'added' },
-      { requireCity: true },
-    );
+    const cte = publicAuthorCte({ page: 1, limit: 1, sort: 'added' });
     const [cities, tags] = await Promise.all([
       this.prisma.$queryRaw<Array<{ city: string | null }>>(
         Prisma.sql`${cte}
           SELECT DISTINCT "city"
           FROM filtered`,
       ),
-      this.prisma.$queryRaw<Array<{ discipline: string | null }>>(
+      this.prisma.$queryRaw<Array<{ tag: string }>>(
         Prisma.sql`${cte}
-          SELECT DISTINCT "discipline"
-          FROM filtered`,
+          SELECT DISTINCT direction."category_id"::text AS "tag"
+          FROM filtered
+          INNER JOIN "seller_profile_revision_directions" direction
+            ON direction."revision_id" = filtered."published_revision_id"`,
       ),
     ]);
     return {
       cities: cities.map((row) => row.city),
-      tags: tags.map((row) => row.discipline),
+      tags: tags.map((row) => row.tag),
     };
   }
 

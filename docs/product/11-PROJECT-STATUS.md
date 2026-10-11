@@ -1,5 +1,53 @@
 # bidplace — текущий статус проекта
 
+## 2026-10-11 — Author story backend
+
+- `Partial` for the user-facing author application, dictionaries and Work story.
+  The API can save and resume an application, submit it, store directions as
+  category IDs, accept catalog proposals, save revision-owned story blocks and
+  publish their media. Mobile, admin UI and `@bidplace/api-client` are not
+  adapted. That is the next stage, not a hidden compatibility layer.
+- Backend readiness is not release readiness. Shipping the API together with
+  updated clients is a separate release gate. No push and no deploy.
+- Evidence: `apps/api/src/catalog`, `sellers.service.ts`, `products/product-story.ts`,
+  `products/work-selection.ts`, `images.service.ts`, `media-lifecycle.service.ts`,
+  `admin-moderation.service.ts`, Prisma migration
+  `20261011180000_author_story_catalog`, contracts `catalog.ts`, `story.ts`,
+  `countries.ts`. Integration coverage is
+  `author-story-catalog.integration.spec.ts` on an isolated `itest_*` schema.
+  The shared database was not reset.
+- City is optional for approval and public author/work visibility. New
+  achievements are date plus description. Story limits live in `STORY_LIMITS`.
+- `Not implemented` for the client handoff:
+  [UI-HANDOFF.md](../tasks/2026-10-11-author-story-backend/UI-HANDOFF.md).
+
+## 2026-10-11 — Author/story backend target and next sales wave
+
+- `Not implemented` for the new target (`DEC-112`–`DEC-114`). Product decisions
+  now include revision-owned story blocks, common approved classifiers and
+  required country / optional city. No application code, API, migration or
+  runtime behavior was changed by this planning pass.
+- Current evidence: `product-draft-story.tsx` still edits `story` as text;
+  `work-content.ts` still interleaves gallery extras per the earlier `DEC-093`;
+  Prisma `ProductCreationStep` belongs to Product rather than ProductRevision.
+  `MediaLifecycleService` publication gathers revision gallery media, not new
+  story-block references. Existing media/state ownership is the reuse boundary.
+- Classifiers are not migrated: Prisma Category exists, while `materials`,
+  `technique` and `discipline` remain text. `seller-profile.ts`, submit readiness
+  in `SellersService`, `profile-validation.ts` and portfolio public author
+  contracts/queries still require city. Their existing specs cover the previous
+  behavior, not the new target.
+- Backend execution, capture roots and unresolved points:
+  [PLAN.md](../tasks/2026-10-11-author-story-backend/PLAN.md).
+  Eight founder-provided author captures were inspected from 2026-10-11 exports.
+  Their node source and product scope differ in places; UI parity is not claimed.
+- `Not implemented` for the next sales wave (`DEC-115`). Its complete product
+  map is [15-POST-MVP-BACKLOG.md](15-POST-MVP-BACKLOG.md); execution mapping stays
+  in the post-MVP backlog. This documentation does not enable commerce.
+- Verification for this pass is documentation links, diff and decision
+  consistency only. Application tests, native, live Figma and production were
+  not run; earlier green test totals below do not validate these planned changes.
+
 ## 2026-10-11 — Login dismissal (`fix/login-dismissal`)
 
 - `Partial` on local web. `DEC-111` keeps entered-data confirmation on registration only. `/login` closes without «Прервать вход» when email and password are filled. The close button, Escape, backdrop, and Back/Forward use `authNavigationDismissal`. `/register` passes `protectEnteredData`: an empty registration leaves, and a filled one asks. Continue keeps the current step, values, and focus. Interrupt follows the chosen exit. Forgot-password, reset-password, and email verification do not ask. A busy request still keeps the sheet. Leaving does not cancel the request, and a late login response still cannot replace a newer session. This is not a 1:1 Figma match. Production was not updated. No push or deploy.

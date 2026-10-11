@@ -89,6 +89,7 @@ enum AuditTargetType {
   ORDER
   LISTING
   USER
+  CATALOG
 }
 
 model User {
@@ -117,6 +118,8 @@ model User {
   authAbuseOperations AuthAbuseOperation[]
   auditEvents       AuditEvent[]          @relation("AuditActor")
   curatorSelections CuratorSelection[]    @relation("CuratorSelectionActor")
+  catalogProposals  CatalogProposal[]     @relation("CatalogProposalAuthor")
+  reviewedProposals CatalogProposal[]     @relation("CatalogProposalReviewer")
 
   @@map("users")
 }
@@ -198,6 +201,7 @@ model SellerProfileRevision {
   editingFor      SellerProfile?      @relation("SellerProfileEditingRevision")
   publishedFor    SellerProfile?      @relation("SellerProfilePublishedRevision")
   achievements    SellerProfileRevisionAchievement[]
+  directions      SellerProfileRevisionDirection[]
 
   @@unique([sellerProfileId, version])
   @@index([sellerProfileId, status])
@@ -238,7 +242,12 @@ model Category {
   slug        String    @unique @db.VarChar(120)
   name        String    @db.VarChar(160)
   description String?   @db.Text
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
   products    Product[]
+  directions  SellerProfileRevisionDirection[]
+  mappedProposals CatalogProposal[] @relation("MappedProposalCategory")
 
   @@map("categories")
 }
@@ -311,6 +320,12 @@ model ProductRevision {
   editingFor    Product?      @relation("ProductEditingRevision")
   publishedFor  Product?      @relation("ProductPublishedRevision")
   images        ProductRevisionImage[]
+  terms         ProductRevisionTerm[]
+  proposals     CatalogProposal[]
+  storyBlocks   ProductRevisionStoryBlock[]
+  storyAssets   ProductRevisionStoryAsset[]
+  storyToken    Int           @default(0) @map("story_token")
+  storyIdempotencyKey String? @map("story_idempotency_key") @db.VarChar(80)
 
   @@unique([productId, version])
   @@index([productId, status])
@@ -590,11 +605,129 @@ model CuratorSelection {
 }
 
 
+enum CatalogTermRole {
+  MATERIAL
+  TECHNIQUE
+}
+
+enum CatalogProposalKind {
+  CATEGORY
+  MATERIAL
+  TECHNIQUE
+}
+
+enum CatalogProposalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum StoryBlockType {
+  HEADING
+  PARAGRAPH
+  IMAGE
+}
+
+model SellerProfileRevisionDirection {
+  revisionId String @map("revision_id") @db.Uuid
+  categoryId String @map("category_id") @db.Uuid
+  position   Int
+  revision   SellerProfileRevision @relation(fields: [revisionId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  @@id([revisionId, categoryId])
+  @@unique([revisionId, position])
+  @@index([categoryId])
+  @@map("seller_profile_revision_directions")
+}
+
+model CatalogTerm {
+  id        String          @id @default(uuid()) @db.Uuid
+  role      CatalogTermRole
+  slug      String          @db.VarChar(120)
+  name      String          @db.VarChar(160)
+  active    Boolean         @default(true)
+  createdAt DateTime        @default(now()) @map("created_at")
+  updatedAt DateTime        @updatedAt @map("updated_at")
+  selections ProductRevisionTerm[]
+  mappedProposals CatalogProposal[] @relation("MappedProposalTerm")
+
+  @@unique([role, slug])
+  @@map("catalog_terms")
+}
+
+model ProductRevisionTerm {
+  revisionId String @map("revision_id") @db.Uuid
+  termId     String @map("term_id") @db.Uuid
+  revision   ProductRevision @relation(fields: [revisionId], references: [id], onDelete: Cascade)
+  term       CatalogTerm @relation(fields: [termId], references: [id], onDelete: Restrict)
+
+  @@id([revisionId, termId])
+  @@index([termId])
+  @@map("product_revision_terms")
+}
+
+model CatalogProposal {
+  id                String                @id @default(uuid()) @db.Uuid
+  authorUserId      String                @map("author_user_id") @db.Uuid
+  productRevisionId String                @map("product_revision_id") @db.Uuid
+  kind              CatalogProposalKind
+  rawName           String                @map("raw_name") @db.VarChar(160)
+  normalizedName    String                @map("normalized_name") @db.VarChar(160)
+  status            CatalogProposalStatus @default(PENDING)
+  selected          Boolean               @default(true)
+  mappedCategoryId  String?               @map("mapped_category_id") @db.Uuid
+  mappedTermId      String?               @map("mapped_term_id") @db.Uuid
+  rejectionReason   String?               @map("rejection_reason") @db.Text
+  reviewedByUserId  String?               @map("reviewed_by_user_id") @db.Uuid
+  reviewedAt        DateTime?             @map("reviewed_at")
+  createdAt         DateTime              @default(now()) @map("created_at")
+  updatedAt         DateTime              @updatedAt @map("updated_at")
+  author            User                  @relation("CatalogProposalAuthor", fields: [authorUserId], references: [id], onDelete: Restrict)
+  reviewer          User?                 @relation("CatalogProposalReviewer", fields: [reviewedByUserId], references: [id], onDelete: Restrict)
+  revision          ProductRevision       @relation(fields: [productRevisionId], references: [id], onDelete: Cascade)
+  mappedCategory    Category?             @relation("MappedProposalCategory", fields: [mappedCategoryId], references: [id], onDelete: Restrict)
+  mappedTerm        CatalogTerm?          @relation("MappedProposalTerm", fields: [mappedTermId], references: [id], onDelete: Restrict)
+
+  @@unique([productRevisionId, kind, normalizedName])
+  @@index([productRevisionId, status, selected])
+  @@index([kind, normalizedName, status])
+  @@map("catalog_proposals")
+}
+
+model ProductRevisionStoryBlock {
+  id           String         @id @default(uuid()) @db.Uuid
+  revisionId   String         @map("revision_id") @db.Uuid
+  position     Int
+  type         StoryBlockType
+  text         String?        @db.Text
+  altText      String?        @map("alt_text") @db.VarChar(300)
+  mediaAssetId String?        @map("media_asset_id") @db.Uuid
+  revision     ProductRevision @relation(fields: [revisionId], references: [id], onDelete: Cascade)
+  mediaAsset   MediaAsset?    @relation(fields: [mediaAssetId], references: [id], onDelete: Restrict)
+
+  @@unique([revisionId, position])
+  @@index([mediaAssetId])
+  @@map("product_revision_story_blocks")
+}
+
+model ProductRevisionStoryAsset {
+  revisionId   String @map("revision_id") @db.Uuid
+  mediaAssetId String @map("media_asset_id") @db.Uuid
+  revision     ProductRevision @relation(fields: [revisionId], references: [id], onDelete: Cascade)
+  mediaAsset   MediaAsset @relation(fields: [mediaAssetId], references: [id], onDelete: Restrict)
+
+  @@id([revisionId, mediaAssetId])
+  @@index([mediaAssetId])
+  @@map("product_revision_story_assets")
+}
+
 enum MediaPurpose {
   WORK_IMAGE
   AUTHOR_PHOTO
   ACHIEVEMENT
   LEGACY_CREATION_STEP
+  STORY_IMAGE
 }
 enum MediaProvenance {
   ORIGINAL
@@ -648,6 +781,8 @@ model MediaAsset {
   achievements SellerProfileRevisionAchievement[]
   images ProductImage[]
   creationSteps ProductCreationStep[]
+  storyBlocks ProductRevisionStoryBlock[]
+  storyAssets ProductRevisionStoryAsset[]
   @@map("media_assets")
 }
 model MediaObject {

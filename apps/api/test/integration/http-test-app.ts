@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import type { INestApplication } from '@nestjs/common';
 
 import { configureHttpApp } from '../../src/bootstrap';
+import { CatalogService } from '../../src/catalog/catalog.service';
 import { loadServerEnv, resolveCorsOrigin } from '../../src/core/config';
 
 export type HttpTestApp = {
@@ -35,6 +36,7 @@ export async function createHttpTestApp(
     logger: false,
     abortOnError: false,
   });
+  await app.get(CatalogService).bootstrap();
 
   configureHttpApp(app, runtimeEnv);
   await app.listen(0, '127.0.0.1');

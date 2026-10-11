@@ -52,6 +52,7 @@ export class PortfolioService {
 
   async getWork(publicId: string) {
     const response = await this.products.getPortfolio(publicId);
+    const creationStory = await this.products.getPublishedStory(publicId);
     const work = toPortfolioWorkItem(response);
     const authorWorks = await this.products.listPortfolio({
       page: 1,
@@ -62,6 +63,7 @@ export class PortfolioService {
 
     return portfolioWorkDetailResponseSchema.parse({
       ...work,
+      work: { ...work.work, creationStory },
       relatedWorks: authorWorks.items
         .filter((item) => item.product.publicId !== publicId)
         .map(toPortfolioWorkItem),
@@ -70,7 +72,7 @@ export class PortfolioService {
 
   async listAuthors(query: PortfolioAuthorsQuery) {
     const response = await this.sellers.listPortfolioAuthors(query, {
-      requireCity: true,
+      requireCity: false,
     });
     const authors = response.sellers.map((item) => ({
       author: toPortfolioAuthor(item.sellerProfile),
@@ -97,17 +99,12 @@ export class PortfolioService {
 
   async getAuthor(slug: string, query: PortfolioWorksQuery) {
     const author = await this.sellers.getApprovedPublicAuthor(slug, {
-      requireCity: true,
+      requireCity: false,
     });
     if (!author) throw new NotFoundException('Author not found');
 
     const works = await this.products.listPortfolio({
-      page: query.page,
-      limit: query.limit,
-      q: query.q,
-      category: query.category,
-      materials: query.materials,
-      sort: query.sort,
+      ...query,
       author: slug,
     });
 
@@ -142,7 +139,7 @@ export class PortfolioService {
           const [item, curator] = await Promise.all([
             this.products.getPortfolio(product.publicId),
             this.sellers.getApprovedPublicAuthor(selection.curator.slug, {
-              requireCity: true,
+              requireCity: false,
             }),
           ]);
           if (curator) {
@@ -186,7 +183,7 @@ export class PortfolioService {
       throw error;
     }
     const curator = await this.sellers.getApprovedPublicAuthor(curatorSlug, {
-      requireCity: true,
+      requireCity: false,
     });
     if (!curator) {
       throw new ConflictException('Curator is not publicly visible');
@@ -256,12 +253,8 @@ export class PortfolioService {
     return this.getApplication(userId);
   }
 
-  addAchievement(
-    userId: string,
-    input: PortfolioAchievementWriteRequest,
-    image?: Parameters<SellersService['addAchievement']>[2],
-  ) {
-    return this.sellers.addAchievement(userId, input, image);
+  addAchievement(userId: string, input: PortfolioAchievementWriteRequest) {
+    return this.sellers.addAchievement(userId, input);
   }
 
   deleteAchievement(userId: string, achievementId: string) {
@@ -483,6 +476,7 @@ function toPortfolioAuthor(profile: {
   websiteUrl: string | null;
   publicEmail: string | null;
   shortDescription: string | null;
+  directionCategoryIds?: string[];
   achievements?:
     | Array<{
         id: string;
@@ -497,7 +491,7 @@ function toPortfolioAuthor(profile: {
       }>
     | undefined;
 }) {
-  if (!profile.discipline || !profile.shortDescription) {
+  if (!profile.shortDescription) {
     throw new Error('Public author is missing required fields');
   }
   return {
@@ -505,8 +499,9 @@ function toPortfolioAuthor(profile: {
     slug: profile.slug,
     fullName: profile.fullName,
     country: profile.country,
-    city: profile.city ?? '',
+    city: profile.city?.trim() || null,
     discipline: profile.discipline,
+    directionCategoryIds: profile.directionCategoryIds ?? [],
     practice: profile.practice,
     biography: profile.biography ?? null,
     profilePhotoUrl: profile.profilePhotoUrl,

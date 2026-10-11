@@ -155,6 +155,14 @@ async function author(media: MediaLifecycleService) {
         profilePhotoChecksum: asset.preview.sha256,
       },
     });
+    const direction = await tx.category.upsert({
+      where: { slug: 'painting' },
+      update: {},
+      create: { slug: 'painting', name: 'Живопись', active: true },
+    });
+    await tx.sellerProfileRevisionDirection.create({
+      data: { revisionId: revision.id, categoryId: direction.id, position: 0 },
+    });
     await tx.sellerProfile.update({
       where: { id: profile.id },
       data: { editingRevisionId: revision.id },

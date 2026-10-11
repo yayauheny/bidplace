@@ -4,6 +4,31 @@
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
+## 2026-10-11 — Author story backend, UI still previous screens
+
+- `Partial`. The API now stores the author application, shared dictionaries and
+  block story described in the RFC. Screens still use the previous forms:
+  required city, text directions, achievement image upload and plain-text story.
+  Layout transfer is a separate task. No new rendered, responsive or
+  accessibility check was run for those screens.
+- Achievement photos are out of the new write path (`DEC-116`). The capture node
+  that still shows an upload is not the contract.
+
+## 2026-10-11 — Author onboarding sources and story target, planning only
+
+- `Not implemented` for `DEC-112`–`DEC-114`: story blocks, shared classifier
+  selections and country-name popup with optional city. Eight new author capture
+  archives were inspected by manifest/nodes; source roots and conflicts are in
+  [the backend plan](../tasks/2026-10-11-author-story-backend/PLAN.md).
+- New author capture copy still mentions sales/buyers and mandatory location;
+  product behavior follows the updated RFC. The achievement archive filename
+  excludes photos while node `578:17378` still contains upload UI: this choice
+  must be resolved explicitly before dependent implementation.
+- No UI code, tokens, canonical Pen or imported library changed. No rendered,
+  responsive, accessibility or native parity verification was performed.
+- Commerce screens remain deferred in [the sales plan](../product/15-POST-MVP-BACKLOG.md),
+  rather than being lost from the design scope.
+
 ## 2026-10-11 — Login closes without an interruption confirmation
 
 - `Partial` on local web. `DEC-111` revises the earlier rule that every filled auth form asks before leaving. Login, forgot-password, reset-password, and email verification close without that dialog, including when fields contain input. Close, Escape, backdrop, and Back/Forward share the policy. Registration still protects entered data: an empty registration leaves, and a filled one asks. Continue keeps the current step, values, and focus. Interrupt performs the chosen exit. The exit dialog geometry is unchanged; at 390 px the registration panel stays 366 wide and centered.

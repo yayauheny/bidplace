@@ -193,22 +193,16 @@ describe('author application HTTP contract', () => {
     await login(applicant, fixture.buyer.email, fixture.buyer.password);
     await assignSlug(fixture.buyer.id);
 
-    const missingCity = await applicant.post(
-      '/seller/profile',
-      applicationForm({ city: null }),
-    );
-    expect(missingCity.status).toBe(400);
-
     const created = await applicant.post(
       '/seller/profile',
-      applicationForm({ discipline: null, shortDescription: null }),
+      applicationForm({ city: null, discipline: null, shortDescription: null }),
     );
     expect(created.status).toBe(201);
     const body = (await created.json()) as {
-      sellerProfile: { id: string; slug: string; city: string; socialLink: string | null; status: string; applicationStage: string | null };
+      sellerProfile: { id: string; slug: string; city: string | null; socialLink: string | null; status: string; applicationStage: string | null };
       editingRevision: { status: string; id: string } | null;
     };
-    expect(body.sellerProfile.city).toBe('Minsk');
+    expect(body.sellerProfile.city).toBeNull();
     expect(body.sellerProfile.socialLink).toBeNull();
     expect(body.sellerProfile.status).toBe('DRAFT');
     expect(body.sellerProfile.applicationStage).toBe('CONTACTS');
@@ -221,7 +215,7 @@ describe('author application HTTP contract', () => {
       where: { userId: fixture.buyer.id },
       select: { socialLink: true, city: true, status: true, applicationStage: true, editingRevision: { select: { status: true, submittedAt: true } } },
     });
-    expect(stored.city).toBe('Minsk');
+    expect(stored.city).toBeNull();
     expect(stored.socialLink).toBeNull();
     expect(stored.status).toBe('DRAFT');
     expect(stored.applicationStage).toBe('CONTACTS');
@@ -234,10 +228,10 @@ describe('author application HTTP contract', () => {
     const mine = await applicant.get('/seller/profile');
     expect(mine.status).toBe(200);
     const mineBody = (await mine.json()) as {
-      sellerProfile: { city: string; status: string };
+      sellerProfile: { city: string | null; status: string };
       editingRevision: { status: string } | null;
     };
-    expect(mineBody.sellerProfile.city).toBe('Minsk');
+    expect(mineBody.sellerProfile.city).toBeNull();
     expect(mineBody.sellerProfile.status).toBe('DRAFT');
     expect(mineBody.editingRevision?.status).toBe('DRAFT');
 
@@ -266,6 +260,17 @@ describe('author application HTTP contract', () => {
     update.set('publicEmail', 'PUBLIC@EXAMPLE.COM');
     expect((await applicant.patch('/seller/profile', update)).status).toBe(200);
 
+    const painting = await prisma.category.findUniqueOrThrow({
+      where: { slug: 'painting' },
+      select: { id: true },
+    });
+    await prisma.sellerProfileRevisionDirection.create({
+      data: {
+        revisionId: body.editingRevision!.id,
+        categoryId: painting.id,
+        position: 0,
+      },
+    });
     const achievementsAdvance = await applicant.post('/author/application/advance');
     expect(achievementsAdvance.status).toBe(201);
     expect(((await achievementsAdvance.json()) as { application: { applicationStage: string | null } }).application.applicationStage).toBe('ACHIEVEMENTS');
@@ -448,12 +453,10 @@ describe('author application HTTP contract', () => {
     });
     expect(draft.status).toBe(201);
 
-    const achievement = await author.post('/author/application/achievements', (() => {
-      const form = new FormData();
-      form.set('body', 'Synthetic achievement');
-      form.set('occurredDate', JSON.stringify({ year: 2024, month: 2, day: 31 }));
-      return form;
-    })());
+    const achievement = await author.post('/author/application/achievements', {
+      body: 'Synthetic achievement',
+      occurredDate: { year: 2024, month: 2, day: 31 },
+    });
     expect(achievement.status).toBe(400);
     expect(
       ((await achievement.json()) as { details: { fieldErrors: { occurredDate?: string[] } } }).details

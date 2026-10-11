@@ -82,6 +82,9 @@ function createWritePrisma(options: {
     packaging: options.product?.packaging ?? null,
     deliveryInfo: options.product?.deliveryInfo ?? null,
     images: [],
+    storyToken: 0,
+    storyIdempotencyKey: null,
+    storyBlocks: [],
     updatedAt: new Date('2026-07-18T00:00:00.000Z'),
   };
   const revisionForApproval = {
@@ -123,6 +126,13 @@ function createWritePrisma(options: {
           args.select?.images?.take === 1 ? revisionForApproval : revision,
         ),
       update: vi.fn().mockResolvedValue(revision),
+    },
+    productRevisionStoryBlock: {
+      findMany: vi.fn().mockResolvedValue([]),
+      deleteMany: vi.fn(),
+      updateMany: vi.fn(),
+      update: vi.fn(),
+      create: vi.fn().mockResolvedValue({ id: 'block-id' }),
     },
     ...options.extraTx,
   };
@@ -246,7 +256,6 @@ describe('ProductsService', () => {
     expect(portfolioCatalogProductWhere.sellerProfile).toEqual({
       status: 'APPROVED',
       user: { status: 'active' },
-      city: { not: '' },
     });
     expect(portfolioCatalogProductWhere).not.toHaveProperty('listings');
     expect(portfolioCatalogProductWhere).toEqual(
@@ -402,6 +411,9 @@ describe('ProductsService', () => {
         update: vi.fn().mockResolvedValue(response),
         updateMany: vi.fn(),
       },
+      productRevisionStoryBlock: { findMany: vi.fn().mockResolvedValue([]) },
+      productRevisionStoryAsset: { findMany: vi.fn().mockResolvedValue([]) },
+      productRevisionTerm: { findMany: vi.fn().mockResolvedValue([]) },
       productRevision: {
         findUniqueOrThrow: vi
           .fn()
@@ -672,8 +684,8 @@ describe('ProductsService', () => {
         pending.prisma as never,
         {} as never,
       ).replaceCreationStory('owner-id', product.id, {
-        intro: 'Intro',
-        steps: [],
+        storyToken: 0,
+        blocks: [],
       }),
     ).rejects.toThrow('Product creation story is locked');
     expect(pending.tx.product.updateMany).not.toHaveBeenCalled();
@@ -685,7 +697,10 @@ describe('ProductsService', () => {
       new ProductsService(
         listed.prisma as never,
         {} as never,
-      ).reorderCreationSteps('owner-id', product.id, []),
+      ).replaceCreationStory('owner-id', product.id, {
+        storyToken: 0,
+        blocks: [],
+      }),
     ).rejects.toThrow('Product is locked by an active Listing');
   });
 
@@ -699,16 +714,19 @@ describe('ProductsService', () => {
     const service = new ProductsService(prisma as never, {} as never);
 
     await service.replaceCreationStory('owner-id', product.id, {
-      intro: 'How it was made',
-      steps: [],
+      storyToken: 0,
+      blocks: [{ type: 'PARAGRAPH', text: 'How it was made' }],
     });
 
     expect(tx.$queryRaw).toHaveBeenCalled();
-    expect(tx.product.updateMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: { creationIntro: 'How it was made' },
+    expect(tx.productRevisionStoryBlock.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        revisionId: 'revision-id',
+        type: 'PARAGRAPH',
+        text: 'How it was made',
       }),
-    );
+    });
+    expect(tx.product.updateMany).not.toHaveBeenCalled();
   });
 
   it('uses a narrow seller select for public portfolio queries', async () => {
@@ -1095,7 +1113,7 @@ describe('ProductsService', () => {
           ...wideRow,
           sellerProfile: { ...sellerProfile, city: '   ' },
         }) as unknown as Parameters<ProductsService['toPortfolioItem']>[0],
-      ),
+      )?.sellerProfile.city,
     ).toBeNull();
   });
 
@@ -1202,7 +1220,7 @@ describe('ProductsService', () => {
     expect(sql).toContain(`sp."status" = 'APPROVED'`);
     expect(sql).toContain('p."published_revision_id" IS NOT NULL');
     expect(sql).toContain('published."id" = p."published_revision_id"');
-    expect(sql).toContain(`NULLIF(BTRIM(sp."city"), '') IS NOT NULL`);
+    expect(sql).not.toContain(`NULLIF(BTRIM(sp."city"), '') IS NOT NULL`);
     expect(sql).toContain(`NULLIF(BTRIM("materials"), '') IS NOT NULL`);
     expect(sql).not.toContain('LOWER(');
     expect(sql).not.toContain('unnest');

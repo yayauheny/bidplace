@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -9,12 +8,9 @@ import {
   Post,
   Query,
   Res,
-  UploadedFiles,
   UseGuards,
-  UseInterceptors,
 } from '@nestjs/common';
 import { Buffer } from 'node:buffer';
-import { FilesInterceptor } from '@nestjs/platform-express';
 import {
   portfolioAuthorsQuerySchema,
   portfolioCabinetWorksQuerySchema,
@@ -30,13 +26,7 @@ import {
   VerifiedEmailGuard,
 } from '../auth';
 import { RateLimit, RateLimitGuard } from '../core/rate-limit';
-import {
-  acceptSupportedUploadMimeType,
-  getImageCacheControl,
-  productImageUploadLimits,
-  type RawImageUpload,
-  validateProductImageUploads,
-} from '../images/image-policy';
+import { getImageCacheControl } from '../images/image-policy';
 import { PortfolioService } from './portfolio.service';
 
 @Controller()
@@ -121,30 +111,18 @@ export class PortfolioController {
   @Post('author/application/achievements')
   @UseGuards(BearerAuthGuard, VerifiedEmailGuard, RateLimitGuard)
   @RateLimit({
-    keyPrefix: 'images:achievement-upload',
+    keyPrefix: 'author:achievement',
     limit: 10,
     windowMs: 60_000,
     scope: 'user',
   })
-  @UseInterceptors(
-    FilesInterceptor('image', 1, {
-      limits: { fileSize: productImageUploadLimits.maxFileBytes, files: 1 },
-      fileFilter: (_request, file, done) =>
-        acceptSupportedUploadMimeType(file.mimetype, done),
-    }),
-  )
-  async addAchievement(
+  addAchievement(
     @CurrentUser() auth: { sub: string },
     @Body() body: unknown,
-    @UploadedFiles() files: RawImageUpload[] = [],
   ) {
-    if (files.length > 1) {
-      throw new BadRequestException('Only one achievement image is allowed');
-    }
     return this.portfolio.addAchievement(
       auth.sub,
       parseBody(portfolioAchievementWriteRequestSchema, body),
-      files.length ? (await validateProductImageUploads(files))[0] : undefined,
     );
   }
 

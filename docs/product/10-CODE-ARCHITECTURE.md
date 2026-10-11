@@ -177,10 +177,14 @@ See [`11-PROJECT-STATUS.md`](11-PROJECT-STATUS.md) for remaining gates.
 ```text
 SellerProfile
   ├─ SellerProfileRevision[]
-  │    └─ SellerProfileRevisionAchievement[] (text/date + optional image; revision scoped)
+  │    ├─ SellerProfileRevisionAchievement[] (date + description; new writes have no image)
+  │    └─ SellerProfileRevisionDirection[] (Category IDs)
   └─ Product
        ├─ ProductRevision[]
-       │    └─ ProductRevisionImage[]
+       │    ├─ ProductRevisionImage[]
+       │    ├─ ProductRevisionStoryBlock[] / ProductRevisionStoryAsset[]
+       │    ├─ ProductRevisionTerm[] (CatalogTerm MATERIAL | TECHNIQUE)
+       │    └─ CatalogProposal[]
        ├─ ProductImage[] (legacy metadata)
        ├─ CuratorSelection? (home editorial pointer: curator SellerProfile + product + optional note)
        └─ Listing[]
@@ -351,6 +355,25 @@ bearer token. `OptionalBearerAuthGuard` accepts that cookie or a bearer token.
 Public and owner projections stay on their existing records.
 
 The active API is an HTTP process. There is no scheduler or Socket.IO adapter on the boot graph. Do not add future sale types, payments, delivery or automatic winner replacement until a product decision requires them. Commerce application code is not restored from leftover Prisma tables; the archive branch is `feature/commerce-runtime-archive` @ `19eb40e`.
+
+## Author story and catalog — 2026-10-11
+
+`DEC-112`–`DEC-114` and `DEC-116` are implemented in the API. Story blocks belong
+to the editing or published `ProductRevision` and reference `MediaAsset`.
+`storyToken` detects a stale save; `ProductRevision.version` stays the edition
+number. `STORY_IMAGE` uploads create a private draft hold and do not add a gallery
+image. Categories stay in `Category` with `active`. Materials and techniques are
+`CatalogTerm` rows. Author directions are Category IDs on the profile revision.
+Country is an ISO alpha-2 code. City is optional in readiness and public
+predicates. Catalog proposals are separate rows; confirming one updates the
+pending revision and does not publish it. Bootstrap inserts missing starter rows
+and does not overwrite admin names or visibility. The mobile and admin clients
+still speak the previous contracts.
+
+Contracts belong to [05-MVP-RFC.md](05-MVP-RFC.md); affected consumers, migration
+and API work are in [the backend plan](../tasks/2026-10-11-author-story-backend/PLAN.md).
+The next sales wave has its own [complete product plan](15-POST-MVP-BACKLOG.md)
+(`DEC-115`), without changing the active boot graph.
 
 Pilot operations are documented in [`docs/ops/00-RELEASE-AND-BACKUP.md`](../ops/00-RELEASE-AND-BACKUP.md):
 

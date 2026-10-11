@@ -447,6 +447,9 @@ describe('AdminModerationService', () => {
         update: vi.fn().mockResolvedValue({ ...sellerProfile }),
       },
       sellerProfileRevision: { update: vi.fn() },
+      sellerProfileRevisionDirection: {
+        count: vi.fn().mockResolvedValue(1),
+      },
       auditEvent: { create: vi.fn() },
     };
     const service = moderationService(transactionPrisma(tx));
@@ -509,16 +512,23 @@ describe('AdminModerationService', () => {
           update: vi.fn(),
         },
         sellerProfileRevision: { update: vi.fn() },
+        sellerProfileRevisionDirection: {
+          count: vi.fn().mockResolvedValue(0),
+        },
         auditEvent: { create: vi.fn() },
       };
       const service = moderationService(transactionPrisma(tx));
 
-      await expect(
-        service.updateSellerStatus('admin-id', sellerId, {
-          status: 'APPROVED',
-          target: revision ? revisionTarget : parentModerationTarget(status),
-        }),
-      ).rejects.toBeInstanceOf(ConflictException);
+      const decision = service.updateSellerStatus('admin-id', sellerId, {
+        status: 'APPROVED',
+        target: revision ? revisionTarget : parentModerationTarget(status),
+      });
+      if (status === 'SUSPENDED') {
+        await expect(decision).resolves.toBeUndefined();
+        expect(tx.sellerProfileRevision.update).not.toHaveBeenCalled();
+        return;
+      }
+      await expect(decision).rejects.toBeInstanceOf(ConflictException);
       expect(tx.sellerProfile.update).not.toHaveBeenCalled();
       expect(tx.sellerProfileRevision.update).not.toHaveBeenCalled();
       expect(tx.auditEvent.create).not.toHaveBeenCalled();
@@ -628,6 +638,7 @@ describe('AdminModerationService', () => {
         update: vi.fn().mockResolvedValue({ ...product, status: 'APPROVED' }),
       },
       productRevision: { update: vi.fn() },
+      catalogProposal: { count: vi.fn().mockResolvedValue(0) },
       auditEvent: { create: vi.fn() },
     };
     const service = moderationService(transactionPrisma(tx));
@@ -829,17 +840,15 @@ describe('AdminModerationService', () => {
     };
     const service = moderationService(transactionPrisma(tx));
 
-    await service.updateSellerStatus('admin-id', 'seller-id', {
-      status: 'APPROVED',
-      target: parentModerationTarget('PENDING_REVIEW'),
-    });
+    await expect(
+      service.updateSellerStatus('admin-id', 'seller-id', {
+        status: 'APPROVED',
+        target: parentModerationTarget('PENDING_REVIEW'),
+      }),
+    ).rejects.toBeInstanceOf(ConflictException);
 
     expect(tx.sellerProfileRevision.update).not.toHaveBeenCalled();
-    expect(tx.sellerProfile.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: { status: 'APPROVED' },
-      }),
-    );
+    expect(tx.sellerProfile.update).not.toHaveBeenCalled();
   });
 
   it('does not let a parent target approve a pending seller revision', async () => {

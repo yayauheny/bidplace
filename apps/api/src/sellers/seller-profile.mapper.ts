@@ -27,6 +27,10 @@ export const publicSellerProfileSelect = {
   publishedRevision: {
     select: {
       profilePhotoAsset: { select: publicMediaAssetSelect },
+      directions: {
+        orderBy: { position: 'asc' },
+        select: { categoryId: true },
+      },
       achievements: {
         orderBy: [
           { occurredAt: { sort: 'desc', nulls: 'last' } },
@@ -101,6 +105,10 @@ export const sellerProfileOwnerSelect = {
       websiteUrl: true,
       publicEmail: true,
       shortDescription: true,
+      directions: {
+        orderBy: { position: 'asc' },
+        select: { categoryId: true },
+      },
     },
   },
 } satisfies Prisma.SellerProfileSelect;
@@ -188,9 +196,12 @@ export function toPublicSellerProfile(
     publishedRevision?: PublicSellerProfileRecord['publishedRevision'];
   },
 ) {
-  if (!sellerProfile.discipline || !sellerProfile.shortDescription) {
+  if (!sellerProfile.shortDescription) {
     throw new Error('Published SellerProfile is missing required fields');
   }
+  const directionCategoryIds =
+    sellerProfile.publishedRevision?.directions?.map((item) => item.categoryId) ??
+    [];
   const slug = sellerProfile.user?.slug ?? sellerProfile.slug;
   return {
     id: sellerProfile.id,
@@ -213,6 +224,7 @@ export function toPublicSellerProfile(
     websiteUrl: sellerProfile.websiteUrl ?? null,
     publicEmail: sellerProfile.publicEmail ?? null,
     shortDescription: sellerProfile.shortDescription,
+    directionCategoryIds,
     achievements:
       sellerProfile.publishedRevision?.achievements.map((item) =>
         toPortfolioAchievement(item, 'public'),
@@ -271,6 +283,8 @@ export function toSellerProfileResponse(
       ...sellerProfileResponse,
       ...publicFields,
       slug: accountSlug,
+      directionCategoryIds:
+        editingRevision?.directions?.map((item) => item.categoryId) ?? [],
       applicationStage: sellerProfileResponse.applicationStage ?? null,
       city:
         (revisionOwnsFields

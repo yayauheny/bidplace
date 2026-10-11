@@ -323,6 +323,12 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
       })) ||
       (await tx.productCreationStep.count({
         where: { mediaAssetId: assetId },
+      })) ||
+      (await tx.productRevisionStoryBlock.count({
+        where: { mediaAssetId: assetId },
+      })) ||
+      (await tx.productRevisionStoryAsset.count({
+        where: { mediaAssetId: assetId },
       })),
     );
   }
@@ -474,12 +480,16 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
         where: { id: revisionId },
         select: {
           images: { select: { image: { select: { mediaAssetId: true } } } },
+          storyBlocks: { select: { mediaAssetId: true } },
         },
       });
       for (const item of revision.images) {
         if (!item.image.mediaAssetId)
           throw new ConflictException('Work image has not been migrated');
         ids.add(item.image.mediaAssetId);
+      }
+      for (const block of revision.storyBlocks) {
+        if (block.mediaAssetId) ids.add(block.mediaAssetId);
       }
     }
     if (target.profileId && restore) {

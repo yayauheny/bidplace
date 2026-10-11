@@ -32,7 +32,7 @@ export async function buildMediaPipeline(
     };
     const variants = [source];
     const settings =
-      purpose === 'WORK_IMAGE'
+      purpose === 'WORK_IMAGE' || purpose === 'STORY_IMAGE'
         ? [
             { variant: 'PREVIEW' as const, edge: 1600, quality: 82 },
             { variant: 'FULL' as const, edge: 3840, quality: 90 },

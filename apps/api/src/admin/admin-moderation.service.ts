@@ -30,6 +30,7 @@ import { MediaLifecycleService } from '../core/media/media-lifecycle.service';
 import { ImageStore } from '../core/image-store';
 import { productSelect, toProductResponse } from '../products/products.mapper';
 import { missingProductApprovalFields } from '../products/product-requirements';
+import { selectedPendingProposalCount } from '../products/work-selection';
 import { assertProductRevisionTransition } from '../products/product-revision-state';
 import { lockProductRowForUpdate } from '../products/product-write-guard';
 import {
@@ -306,6 +307,16 @@ export class AdminModerationService {
             editingRevision.status,
             revisionStatus,
           );
+          if (input.status === 'APPROVED') {
+            const directionCount = await tx.sellerProfileRevisionDirection.count({
+              where: { revisionId: editingRevision.id },
+            });
+            if (directionCount < 1) {
+              throw new ConflictException(
+                'Seller profile does not meet approval requirements',
+              );
+            }
+          }
           const approvedPhoto =
             input.status === 'APPROVED'
               ? this.requiredApprovedSellerPhoto({
@@ -391,7 +402,21 @@ export class AdminModerationService {
 
         if (this.media?.enabled && input.status === 'SUSPENDED')
           await this.media.enqueueRevoke(tx, { profileId: sellerProfileId });
-        if (input.status === 'APPROVED') {
+        if (input.status === 'APPROVED' && !isVisibilityTransition) {
+          const revisionId =
+            sellerProfile.publishedRevisionId ??
+            sellerProfile.editingRevision?.id ??
+            null;
+          const directionCount = revisionId
+            ? await tx.sellerProfileRevisionDirection.count({
+                where: { revisionId },
+              })
+            : 0;
+          if (directionCount < 1) {
+            throw new ConflictException(
+              'Seller profile does not meet approval requirements',
+            );
+          }
           this.assertSellerApprovalRequirements(sellerProfile);
           if (this.media?.enabled && sellerProfile.publishedRevisionId) {
             const revision = await tx.sellerProfileRevision.findUniqueOrThrow({
@@ -522,6 +547,13 @@ export class AdminModerationService {
           );
 
           if (input.status === 'APPROVED') {
+            if (
+              (await selectedPendingProposalCount(tx, editingRevision.id)) > 0
+            ) {
+              throw new ConflictException(
+                'Selected catalog proposals must be resolved before approval',
+              );
+            }
             this.assertProductApprovalRequirements({
               ...editingRevision,
               images: editingRevision.images.map(({ imageId }) => ({
@@ -810,8 +842,6 @@ export class AdminModerationService {
     const hasLegacyPhoto = Boolean(sellerProfile.profilePhotoData?.byteLength);
     if (
       !sellerProfile.fullName ||
-      !sellerProfile.discipline ||
-      !sellerProfile.city ||
       !sellerProfile.shortDescription ||
       (!hasRevisionPhoto && !hasLegacyPhoto)
     ) {
@@ -874,5 +904,154 @@ export class AdminModerationService {
         'Product does not meet approval requirements',
       );
     }
+  }
+
+  async mapCatalogProposal(
+    adminUserId: string,
+    proposalId: string,
+    target: { categoryId?: string | undefined; termId?: string | undefined },
+  ) {
+    return this.resolveCatalogProposal(adminUserId, proposalId, target);
+  }
+
+  async rejectCatalogProposal(
+    adminUserId: string,
+    proposalId: string,
+    reason: string,
+  ) {
+    return this.resolveCatalogProposal(adminUserId, proposalId, { reason });
+  }
+
+  private async resolveCatalogProposal(
+    adminUserId: string,
+    proposalId: string,
+    target: {
+      categoryId?: string | undefined;
+      termId?: string | undefined;
+      reason?: string | undefined;
+    },
+  ) {
+    return runReadCommittedTransaction(this.prisma, async (tx) => {
+      const proposal = await tx.catalogProposal.findUnique({
+        where: { id: proposalId },
+      });
+      if (!proposal || proposal.status !== 'PENDING' || !proposal.selected) {
+        throw new ConflictException('Catalog proposal is not awaiting review');
+      }
+      const revision = await tx.productRevision.findUnique({
+        where: { id: proposal.productRevisionId },
+        select: {
+          id: true,
+          status: true,
+          productId: true,
+          product: { select: { editingRevisionId: true, status: true } },
+        },
+      });
+      if (
+        !revision ||
+        revision.product.editingRevisionId !== revision.id ||
+        revision.status !== 'PENDING_REVIEW'
+      ) {
+        throw new ConflictException('Moderation target is stale');
+      }
+      await lockProductRowForUpdate(tx, revision.productId);
+      if (this.media?.enabled) {
+        await this.media.assertNotPending(tx, { productId: revision.productId });
+      }
+      if (target.reason) {
+        await tx.catalogProposal.update({
+          where: { id: proposal.id },
+          data: {
+            status: 'REJECTED',
+            rejectionReason: target.reason,
+            reviewedByUserId: adminUserId,
+            reviewedAt: new Date(),
+          },
+        });
+        await tx.productRevision.update({
+          where: { id: revision.id },
+          data: { status: 'CHANGES_REQUESTED', reviewedAt: new Date() },
+        });
+        if (revision.product.status === 'PENDING_REVIEW') {
+          await tx.product.update({
+            where: { id: revision.productId },
+            data: { status: 'CHANGES_REQUESTED' },
+          });
+        }
+        if (this.media?.enabled) {
+          await this.media.cancelPublication(tx, { productId: revision.productId });
+        }
+        await tx.auditEvent.create({
+          data: {
+            actorUserId: adminUserId,
+            targetType: 'PRODUCT',
+            targetId: revision.productId,
+            oldStatus: 'PENDING_REVIEW',
+            newStatus: 'CHANGES_REQUESTED',
+            reason: target.reason,
+          },
+        });
+        return { ok: true as const };
+      }
+
+      if (proposal.kind === 'CATEGORY') {
+        if (!target.categoryId) {
+          throw new ConflictException('Category proposal must map to a category');
+        }
+        const category = await tx.category.findUnique({
+          where: { id: target.categoryId },
+          select: { id: true, active: true },
+        });
+        if (!category?.active) throw new ConflictException('Category is unavailable');
+        await tx.productRevision.update({
+          where: { id: revision.id },
+          data: { categoryId: category.id },
+        });
+        await tx.catalogProposal.update({
+          where: { id: proposal.id },
+          data: {
+            status: 'APPROVED',
+            mappedCategoryId: category.id,
+            reviewedByUserId: adminUserId,
+            reviewedAt: new Date(),
+          },
+        });
+      } else {
+        if (!target.termId) {
+          throw new ConflictException('Term proposal must map to a term');
+        }
+        const term = await tx.catalogTerm.findUnique({
+          where: { id: target.termId },
+          select: { id: true, role: true, active: true },
+        });
+        if (!term?.active || term.role !== proposal.kind) {
+          throw new ConflictException('Catalog term is unavailable');
+        }
+        await tx.productRevisionTerm.createMany({
+          data: [{ revisionId: revision.id, termId: term.id }],
+          skipDuplicates: true,
+        });
+        await tx.catalogProposal.update({
+          where: { id: proposal.id },
+          data: {
+            status: 'APPROVED',
+            mappedTermId: term.id,
+            reviewedByUserId: adminUserId,
+            reviewedAt: new Date(),
+          },
+        });
+      }
+      await tx.auditEvent.create({
+        data: {
+          actorUserId: adminUserId,
+          targetType: 'PRODUCT',
+          targetId: revision.productId,
+          oldStatus: proposal.status,
+          newStatus: 'APPROVED',
+          reason: `map ${proposal.kind} proposal`,
+        },
+      });
+      return { ok: true as const };
+    });
   }
 }

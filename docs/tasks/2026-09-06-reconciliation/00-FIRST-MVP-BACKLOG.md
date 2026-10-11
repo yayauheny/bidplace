@@ -1,6 +1,6 @@
 # bidplace — execution backlog первого portfolio MVP
 
-Дата: 2026-09-08
+Последнее обновление: 2026-10-11
 Статус: active
 Product contract: [`docs/product/05-MVP-RFC.md`](../../product/05-MVP-RFC.md)
 Future work: [`99-POST-MVP-BACKLOG.md`](99-POST-MVP-BACKLOG.md)
@@ -10,6 +10,9 @@ Ready-to-run prompts: [`../2026-09-08-first-mvp/00-EXECUTION-ORDER.md`](../2026-
 Существующие commerce task-prompts не удалены: они перенесены во второй backlog.
 Каждая code-задача выполняется в отдельной короткоживущей ветке и логическом commit.
 PostgreSQL checks запускаются вне sandbox.
+
+Уточнения `DEC-112`–`DEC-114`: [backend заявки автора и блочной истории](../2026-10-11-author-story-backend/PLAN.md).
+Это план до реализации; прежние execution-промты сверять с обновлённым RFC.
 
 ## Порядок выполнения
 
@@ -27,7 +30,7 @@ PostgreSQL checks запускаются вне sandbox.
 | F06 | P1 | [Security/dependency review](08-SECURITY-DEPENDENCY-REVIEW.md) | Evidence review auth, uploads, admin, external APIs и самописных security utilities; только необходимые исправления | Grok 4.6 High; review GPT-5.6 Sol |
 | F07 | P1 | [Legacy HTTPS preflight](02-HTTPS-LEGACY-PREFLIGHT.md) | Публичные ссылки и старые записи совместимы со strict HTTPS без скрытого breakage | Grok 4.6 High; review GPT-5.6 Sol |
 | F08 | P0 | Author application/profile contract и API | Required/optional fields, structured socials, achievements, moderation/revision и public projection соответствуют RFC | GPT-5.6 Sol contract; Grok 4.6 High implementation |
-| F09 | P0 | Work creation и cabinet | Три шага, autosaved draft, images/cover, details, optional text story, submit/resubmit/hide и status feedback | Grok 4.6 High; review GPT-5.6 Sol |
+| F09 | P0 | Work creation и cabinet | Три content-шага, saved draft, images/cover, details, optional revision-owned story blocks, submit/resubmit/hide и status feedback (`DEC-112`) | Grok 4.6 High; review GPT-5.6 Sol |
 | F10 | P0 | Portfolio discovery contracts | Home, work/author search, минимальные filters/sort, pagination и public-only projections без commerce fields | GPT-5.6 Sol contract; Grok 4.6 High implementation |
 | F11 | P0 | Legal portfolio pack и controls | Адаптированные документы Беларуси, registration/cookie controls, author license, moderation/rightsholder contact; lawyer review complete | Founder + Belarus lawyer; implementation Grok 4.6 High |
 | F12 | P0 | Read-only Figma cutover и mobile-first UI | Home, Works, Authors, Creator, Work, auth, author onboarding и creation flow; 390→1024→1440; commerce elements отсутствуют | Grok 4.6 High; visual/contract review GPT-5.6 Sol |

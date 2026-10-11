@@ -127,7 +127,7 @@ describe('PortfolioService', () => {
 
     expect(sellers.listPortfolioAuthors).toHaveBeenCalledWith(
       expect.objectContaining({ page: 1, limit: 20, sort: 'added' }),
-      { requireCity: true },
+      { requireCity: false },
     );
   });
 
@@ -216,7 +216,7 @@ describe('PortfolioService', () => {
 
     expect(sellers.getApprovedPublicAuthor).toHaveBeenCalledWith(
       'author-slug',
-      { requireCity: true },
+      { requireCity: false },
     );
   });
 
@@ -715,7 +715,7 @@ describe('PortfolioService', () => {
       }),
     );
     expect(sellers.getApprovedPublicAuthor).toHaveBeenCalledWith('vex', {
-      requireCity: true,
+      requireCity: false,
     });
     expect(prisma.curatorSelection.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -787,6 +787,9 @@ describe('PortfolioService', () => {
     };
     const products = {
       getPortfolio: vi.fn().mockResolvedValue(item),
+      getPublishedStory: vi
+        .fn()
+        .mockResolvedValue({ storyToken: 0, blocks: [] }),
       listPortfolio: vi.fn().mockResolvedValue({
         items: [item, related],
         pagination: { page: 1, limit: 4, total: 2 },

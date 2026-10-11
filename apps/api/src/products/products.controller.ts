@@ -10,8 +10,7 @@ import {
 } from '@nestjs/common';
 import {
   productWriteRequestSchema,
-  creationStepOrderRequestSchema,
-  creationStoryWriteRequestSchema,
+  storyWriteRequestSchema,
 } from '@bidplace/contracts';
 
 import { BearerAuthGuard, CurrentUser, VerifiedEmailGuard } from '../auth';
@@ -82,21 +81,7 @@ export class ProductsController {
     return this.products.replaceCreationStory(
       auth.sub,
       id,
-      parseBody(creationStoryWriteRequestSchema, body),
-    );
-  }
-
-  @Patch(':id/creation/order')
-  @UseGuards(BearerAuthGuard, VerifiedEmailGuard)
-  reorderCreation(
-    @CurrentUser() auth: { sub: string },
-    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
-    @Body() body: unknown,
-  ) {
-    return this.products.reorderCreationSteps(
-      auth.sub,
-      id,
-      parseBody(creationStepOrderRequestSchema, body).stepIds,
+      parseBody(storyWriteRequestSchema, body),
     );
   }
 }

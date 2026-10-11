@@ -203,6 +203,8 @@ describe('admin moderation mapper', () => {
         packaging: null,
         deliveryInfo: null,
         creationIntro: null,
+        storyToken: 0,
+        storyBlocks: [],
         images: [
           {
             position: 0,

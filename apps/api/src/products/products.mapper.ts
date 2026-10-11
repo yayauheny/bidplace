@@ -63,6 +63,18 @@ export const productRevisionOwnerSelect = {
   city: true,
   packaging: true,
   deliveryInfo: true,
+  storyToken: true,
+  storyBlocks: {
+    orderBy: { position: 'asc' as const },
+    select: {
+      id: true,
+      position: true,
+      type: true,
+      text: true,
+      altText: true,
+      mediaAssetId: true,
+    },
+  },
   images: {
     orderBy: { position: 'asc' as const },
     select: productRevisionImageSelect,

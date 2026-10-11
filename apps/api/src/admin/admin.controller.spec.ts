@@ -12,6 +12,7 @@ function controllerWith(moderation: object) {
     {} as never,
     {} as never,
     {} as never,
+    {} as never,
     { now: () => new Date() } as never,
   );
 }

@@ -1,6 +1,6 @@
 # bidplace — индекс канонической документации
 
-Последнее обновление: 2026-09-08
+Последнее обновление: 2026-10-11
 Статус: Confirmed
 
 Текущее состояние: [`../audits/00-CURRENT-MVP-READINESS.md`](../audits/00-CURRENT-MVP-READINESS.md).
@@ -10,8 +10,12 @@
 [`../tasks/2026-09-06-reconciliation/00-FIRST-MVP-BACKLOG.md`](../tasks/2026-09-06-reconciliation/00-FIRST-MVP-BACKLOG.md).
 Готовые execution-промты для восьми пакетов:
 [`../tasks/2026-09-08-first-mvp/00-EXECUTION-ORDER.md`](../tasks/2026-09-08-first-mvp/00-EXECUTION-ORDER.md).
-Отложенные задачи:
+Следующая волна — продажи, цены, аукционы, жалобы и отложенные улучшения:
+[`15-POST-MVP-BACKLOG.md`](15-POST-MVP-BACKLOG.md).
+Отложенные execution-задачи:
 [`../tasks/2026-09-06-reconciliation/99-POST-MVP-BACKLOG.md`](../tasks/2026-09-06-reconciliation/99-POST-MVP-BACKLOG.md).
+План адаптации backend заявки автора и истории:
+[`../tasks/2026-10-11-author-story-backend/PLAN.md`](../tasks/2026-10-11-author-story-backend/PLAN.md).
 Открытые решения: [`14-OPEN-MVP-DECISIONS.md`](14-OPEN-MVP-DECISIONS.md).
 Юридический вход: [`../legal/README.md`](../legal/README.md).
 
@@ -52,7 +56,7 @@
 | `12-DECISION-LOG.md`                    | Реестр решений, альтернатив, причин и условий пересмотра                     |
 | `13-APPLICATION-SECURITY.md`            | Инженерная application security: auth, admin emergency, uploads, rate limits |
 | `14-OPEN-MVP-DECISIONS.md`              | Оставшиеся внешние/продуктовые развилки первого MVP; сейчас product blockers отсутствуют |
-| `15-POST-MVP-BACKLOG.md`                | Сохранённые будущие функции и условия возврата в работу                        |
+| `15-POST-MVP-BACKLOG.md`                | Единый план следующей волны продаж: цены, аукционы, сделки, жалобы, UI и gates; остальные будущие функции |
 | `analytics-contract.md`                 | Identity, attribution, event naming and current product analytics events     |
 | `analytics-metrics.md`                  | Definitions and sources for admin dashboard metrics                          |
 | `../design/00-DESIGN-INDEX.md`          | Навигация по дизайн-принципам, flows, системе, статусу и handoff             |
@@ -93,6 +97,13 @@
 - `06-ROADMAP-24-MONTHS.md`
 - `10-CODE-ARCHITECTURE.md`
 - релевантные решения из `12-DECISION-LOG.md`
+
+### Подключение цен, аукционов или продаж после portfolio MVP
+
+Сначала прочитать целиком `15-POST-MVP-BACKLOG.md`, включая карту §2 и порядок
+полного ответа §10, затем `99-POST-MVP-BACKLOG.md` и указанные документы-владельцы.
+Разделять принятые решения, фактический runtime и открытые механики. Нельзя
+сводить задачу к показу цены или включению архивного commerce-кода.
 
 ### UI, экран или пользовательский маршрут
 

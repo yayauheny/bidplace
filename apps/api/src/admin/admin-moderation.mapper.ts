@@ -162,6 +162,18 @@ export const adminProductListSelect = {
         orderBy: { position: 'asc' },
         select: productRevisionImageSelect,
       },
+      storyToken: true,
+      storyBlocks: {
+        orderBy: { position: 'asc' },
+        select: {
+          id: true,
+          position: true,
+          type: true,
+          text: true,
+          altText: true,
+          mediaAssetId: true,
+        },
+      },
     },
   },
 } satisfies Prisma.ProductSelect;
@@ -394,6 +406,17 @@ export function toAdminProduct(
             ...revision,
             images: revisionImages ?? [],
           }),
+          story: {
+            storyToken: revision.storyToken,
+            blocks: revision.storyBlocks.map((block) => ({
+              id: block.id,
+              position: block.position,
+              type: block.type,
+              ...(block.type === 'IMAGE'
+                ? { mediaAssetId: block.mediaAssetId, altText: block.altText }
+                : { text: block.text }),
+            })),
+          },
         }
       : null,
     hasBlockingListing: product.listings.length > 0,

@@ -1,8 +1,8 @@
 # bidplace — execution backlog после первого portfolio MVP
 
-Дата: 2026-09-08
+Последнее обновление: 2026-10-11
 Статус: deferred; задачи сохранены, не входят в First MVP
-Product directions: [`docs/product/15-POST-MVP-BACKLOG.md`](../../product/15-POST-MVP-BACKLOG.md)
+Product owner и полная карта следующей волны: [`15-POST-MVP-BACKLOG.md`](../../product/15-POST-MVP-BACKLOG.md) (`DEC-115`)
 
 Эти задачи не удаляются и не маскируются под portfolio scope. Они возвращаются в
 работу только после отдельного решения, обновлённого RFC и соответствующего legal/
@@ -24,17 +24,28 @@ data/design gate.
 | C10 | Commerce legal pack | Auction/sale rules, contract moments, contacts, consumer duties, outcomes и retention; Belarus lawyer review |
 | C11 | Commerce UI | Auction/fixed/offer, purchases/sales, contact/outcome/problem states на базе утверждённого Figma handoff |
 | C12 | Commerce release review | Race, idempotency, privacy, notification delivery, abuse, backup/rollback и controlled pilot |
+| C13 | Жалобы и проблемы сделки | Определить eligibility/причины/evidence, private queue, rate limits, review/outcomes/retention; расширить существующие moderation/audit boundaries |
+| C14 | Критические commerce notifications | Согласовать каналы и события; durable delivery/replay/retry, без повторной отправки и утечек чужих контактов |
+| C15 | Цена и торговые правила | Согласовать валюту, точность, increment, time/closing/ties/extension/cancellation; проследить контракт от DTO и БД до UI/discovery |
+
+Перед планом подключения аукционов пройти всю карту §2 продуктового owner,
+а не только `C03`. Статусы и детали решений хранятся у owner; эта таблица —
+execution mapping, не второй product contract.
 
 ## Ранние улучшения портфолио после запуска
 
 1. Clickable chips и tag discovery.
-2. История создания из упорядоченных photo/text этапов; затем video.
+2. Video и расширение медиа после `DEC-112`: базовая блочная история уже входит
+   в текущий MVP и планируется в [author/story backend](../2026-10-11-author-story-backend/PLAN.md).
 3. In-app notification center.
 4. Likes/wishlist, follow author и buyer collections только после появления понятной
    visitor-account value.
 5. Общие reports на Work/автора и privacy-safe `Сообщить об ошибке` с preview context.
 6. Именные серии/коллекции, ручная сортировка работ, расширенный social export.
 7. AI draft для профиля/Work, category hints и photo assistance после data/legal gate.
+8. Пользовательские предложения новых категорий/терминов и их модерация:
+   [product owner §5](../../product/15-POST-MVP-BACKLOG.md#5-медиа-и-creator-profile).
+   Общие утверждённые справочники относятся к текущему MVP (`DEC-113`).
 
 ## Более поздние направления
 

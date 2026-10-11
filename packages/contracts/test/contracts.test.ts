@@ -336,7 +336,7 @@ describe('shared contracts', () => {
   it('normalizes public email and rejects impossible achievement calendar dates', () => {
     expect(
       sellerProfileCreateRequestSchema.parse({
-        fullName: 'Author', country: 'Belarus', city: 'Minsk',
+        fullName: 'Author', country: 'BY', city: 'Minsk',
         publicEmail: ' AUTHOR@EXAMPLE.COM ',
       }).publicEmail,
     ).toBe('author@example.com');
@@ -419,7 +419,7 @@ describe('shared contracts', () => {
         ...base,
         city: undefined,
       }).success,
-    ).toBe(false);
+    ).toBe(true);
     expect(
       sellerProfileCreateRequestSchema.safeParse({
         ...base,

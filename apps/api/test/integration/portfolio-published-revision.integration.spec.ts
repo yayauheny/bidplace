@@ -237,64 +237,10 @@ describe('portfolio published revision HTTP transport', () => {
       fixture.sellers.otherApproved.password,
     );
 
-    const gif = new FormData();
-    gif.set('body', 'Show');
-    gif.set('occurredDate', JSON.stringify({ year: 2025, month: 3, day: null }));
-    gif.append(
-      'image',
-      new Blob(
-        [
-          Buffer.from(
-            'GIF89a\x01\x00\x01\x00\x80\x00\x00\xff\x00\x00\x00\x00\x00!\xf9\x04\x01\x00\x00\x00\x00,\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02D\x01\x00;',
-          ),
-        ],
-        { type: 'image/gif' },
-      ),
-      'animation.gif',
-    );
-    expect((await owner.post('/author/application/achievements', gif)).status).toBe(
-      400,
-    );
-
-    const uploaded = await owner.post(
-      '/author/application/achievements',
-      (() => {
-        const form = new FormData();
-        form.set('body', 'Show');
-        form.set('occurredDate', JSON.stringify({ year: 2025, month: 3, day: null }));
-        form.append(
-          'image',
-          new Blob([permissionImage], { type: 'image/png' }),
-          'show.png',
-        );
-        return form;
-      })(),
-    );
-    expect(uploaded.status).toBe(201);
-    const uploadedId = (
-      (await uploaded.json()) as { achievement: { id: string } }
-    ).achievement.id;
-    const ownerImage = await owner.get(
-      `/author-achievements/${uploadedId}/image`,
-    );
-    expect(ownerImage.status).toBe(200);
-    expect(ownerImage.headers.get('content-type')).toMatch(/image\/png/);
-    expect(Buffer.from(await ownerImage.arrayBuffer()).subarray(0, 8)).toEqual(
-      Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
-    );
-    expect(
-      (await guest.get(`/author-achievements/${uploadedId}/image`)).status,
-    ).toBe(404);
-    expect(
-      (await stranger.get(`/author-achievements/${uploadedId}/image`)).status,
-    ).toBe(404);
-
-    const created = await owner.post('/author/application/achievements', (() => {
-      const form = new FormData();
-      form.set('body', 'Show text only');
-      form.set('occurredDate', JSON.stringify({ year: 2025, month: 3, day: null }));
-      return form;
-    })());
+    const created = await owner.post('/author/application/achievements', {
+      body: 'Show text only',
+      occurredDate: { year: 2025, month: 3, day: null },
+    });
     expect(created.status).toBe(201);
     const achievementId = (
       (await created.json()) as { achievement: { id: string } }

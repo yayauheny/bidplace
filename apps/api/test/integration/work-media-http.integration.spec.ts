@@ -15,7 +15,10 @@ import {
   createIntegrationDatabaseContext,
   type IntegrationDatabaseContext,
 } from './test-database';
-import { fixturePasswordHash } from './permission-fixtures';
+import {
+  attachAuthorDirection,
+  fixturePasswordHash,
+} from './permission-fixtures';
 import {
   productModerationRequest,
   sellerModerationRequest,
@@ -150,6 +153,11 @@ describe('Work media lifecycle over authenticated HTTP and PostgreSQL', () => {
     const createdAuthor = await author.client.post('/seller/profile', photo);
     expect(createdAuthor.status).toBe(201);
     const profileId = (await createdAuthor.json()).sellerProfile.id;
+    const application = await db.prisma.sellerProfile.findUniqueOrThrow({
+      where: { id: profileId },
+      select: { editingRevisionId: true },
+    });
+    await attachAuthorDirection(db.prisma, application.editingRevisionId!);
     await author.client.post('/author/application/advance');
     await author.client.post('/author/application/advance');
     expect(

@@ -2661,3 +2661,130 @@ An in-flight request still keeps the sheet. Leaving does not abort that
 request, delete an account, or replace a newer session. A late response from
 a login the user already left does not navigate. This decision does not change
 button geometry, Turnstile, auth contracts, or persistence.
+
+## DEC-112 — Portfolio Work story uses revision-owned blocks
+
+Date: 2026-10-11
+Status: Confirmed product decision; implementation planned
+Source: explicit founder answer to the story/MVP scope question.
+
+Revises: the plain-text authoring and automatic gallery-interleaving scope of
+`DEC-092`/`DEC-093`, and the story-builder deferral in `DEC-082` / RFC §10/§15.
+The earlier decision entries remain unchanged as history.
+
+The current portfolio MVP includes optional ordered `HEADING`, `PARAGRAPH`,
+`IMAGE` blocks, with add/delete/up/down and a server-confirmed save. Gallery and
+story have independent order; an image may be referenced in both via the existing
+`MediaAsset`. The selected target binds blocks to `ProductRevision` and reuses
+the existing moderation/publication/media boundaries. Published content remains
+on the last approved revision while a new revision is edited/reviewed.
+
+Video, rich-text/HTML/Markdown, AI fill and commerce screens remain out of this
+MVP. Numeric block/text limits and the migration of existing story data still
+require a bounded implementation plan; the proposed 5/20 limits are not approved
+merely by accepting the block editor.
+
+Contract owner: [05-MVP-RFC.md](05-MVP-RFC.md). Execution plan:
+[author/story backend](../tasks/2026-10-11-author-story-backend/PLAN.md).
+Deferred trade screens and video: [15-POST-MVP-BACKLOG.md](15-POST-MVP-BACKLOG.md).
+
+## DEC-113 — Shared approved classifiers now; user proposals after MVP
+
+Date: 2026-10-11
+Status: Confirmed product decision; implementation planned
+Source: explicit founder answer selecting common dictionaries now and deferring proposals.
+
+Categories, materials/techniques and author directions use shared approved
+dictionaries with stable IDs and a safely bootstrapped initial set. Forms,
+checkboxes/chips and public filters use those same records. No separate copy of
+the list belongs to each screen. The exact initial set and term applicability
+must be checked against the capture and existing data before migration.
+
+User-created suggestions, approval/mapping/rejection, admin proposal queues and
+controlled reclassification are explicitly deferred; their scope is preserved
+in [15-POST-MVP-BACKLOG.md §5](15-POST-MVP-BACKLOG.md#5-медиа-и-creator-profile).
+This does not approve an arbitrary initial category list from an attached proposal.
+
+Contract owner: [05-MVP-RFC.md](05-MVP-RFC.md). Execution plan:
+[author/story backend](../tasks/2026-10-11-author-story-backend/PLAN.md).
+
+## DEC-114 — Country selection hides codes; city is optional
+
+Date: 2026-10-11
+Status: Confirmed product decision; implementation planned
+Source: explicit founder geography answer: popup list/search, country names only.
+
+Revises: mandatory city in RFC §8. Country remains required and is selected
+from a searchable popup. The UI shows a localized country name; the standard
+country code is internal storage/API data. City is one optional text value,
+without a city table, geocoding, multiple locations or delivery geography.
+An approved author is not hidden just because city is absent. Country selection
+does not itself authorize a new launch country.
+
+The change must cover validation, profile/revision writes, submit readiness,
+public author/work projections, search/facets and their consumers together.
+The old country strings need an explicit migration mapping, not silent guessing.
+
+Contract owner: [05-MVP-RFC.md](05-MVP-RFC.md). Execution plan:
+[author/story backend](../tasks/2026-10-11-author-story-backend/PLAN.md).
+
+## DEC-115 — Next wave adds sales; one complete post-MVP plan
+
+Date: 2026-10-11
+Status: Confirmed direction; sales mechanics and implementation remain planned
+Source: explicit founder request to preserve all deferred work and make the next
+wave sales through the platform.
+
+The current launch remains portfolio-only. The next wave introduces sales,
+including the price/auction direction and required complaint/problem handling.
+[15-POST-MVP-BACKLOG.md](15-POST-MVP-BACKLOG.md) is the single product entrypoint
+for the complete future plan. The index routes auction/sales planning there;
+the execution backlog maps work without duplicating the full product contract.
+
+The plan must retain deferred Figma trade screens, classifier proposals, prices,
+auctions, buyer eligibility, Listings/Orders/handoff, double-sale prevention,
+complaints/moderation, notifications, privacy, legal and release gates. It must
+distinguish selected decisions, open mechanics, runtime evidence and later ideas.
+An auction plan cannot omit these boundaries by reducing the work to a price
+field or restoring an archived module.
+
+This direction does not approve unspecified auction timings, offer/second-chance
+rules, new countries, platform custody of money, escrow, fees or shipping services.
+Those require their own decisions before dependent implementation.
+
+## DEC-116 — Eighteen categories, proposals in MVP, story limits
+
+Date: 2026-10-11
+Status: Confirmed; backend implemented, client integration not started
+Source: explicit founder instruction for the author-story backend.
+
+Revises the deferred-proposal part of `DEC-113`. User proposals for a missing
+category, material or technique are in the current MVP. The author selects the
+existing category «Другое» when proposing a category name. A proposal stores the
+raw name, a Unicode/case/space normalized value, status and review result. It is
+not a substitute foreign key. Confirming it writes the real category or term onto
+the pending Work revision and does not publish the Work. Rejecting a still
+selected proposal returns that revision for changes. An old rejected proposal
+that the author has removed no longer blocks resubmission. Published revisions
+are not rewritten. MVP merge means mapping one proposal to an existing record.
+Bulk reassignment of terms already in use stays after MVP.
+
+Confirms the rest of `DEC-113`: one shared Category table, one CatalogTerm
+dictionary with material and technique roles, stable IDs, and idempotent
+bootstrap that does not delete rows or undo an admin rename or hide.
+
+The starting categories are the eighteen named in
+[08-SELLER-AND-ITEM-POLICY.md §5](08-SELLER-AND-ITEM-POLICY.md). Digital art as
+a standalone file is out. Author directions are several of those category IDs,
+not material names. Hiding a category does not hide works already approved with
+it. A category does not waive authorship or the ban on mass resale.
+
+New achievements are a MONTH/DAY date and a description. This flow no longer
+accepts an image. The profile photo stays. City stays optional (`DEC-114`).
+
+Story limits are five images, twenty heading and paragraph blocks together,
+200 / 5000 / 300 characters, the existing 5 MiB file cap, and a separate 20 MiB
+story-photo budget. An empty story and an image-only story are valid.
+
+Contract owner: [05-MVP-RFC.md](05-MVP-RFC.md). Client follow-up:
+[UI-HANDOFF.md](../tasks/2026-10-11-author-story-backend/UI-HANDOFF.md).

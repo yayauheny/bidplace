@@ -111,7 +111,7 @@ Commerce routes/actions отсутствуют в First MVP navigation и fail-c
 | Work | Gallery, title, author, chips, optional story, details, related works, payment/delivery stub | Price, timer, archive badge, bid CTA/history |
 | Auth | Email/password, verify email, forgot/reset | Telegram/Google OAuth, passwordless code, buyer-only promotion |
 | Author application | Photo, name, slug, location, about, tags, optional socials/achievements | Sale language, buyer handoff contact |
-| Work creation | Photos/title, details, optional plain-text story, moderation submit | Sale mode, price/currency/time, payment, delivery, buyer contact, AI, process blocks |
+| Work creation | Photos/title, details, optional heading/paragraph/image blocks, moderation submit (`DEC-112`; planned) | Sale mode, price/currency/time, payment, delivery, buyer contact, AI, video |
 | Admin | Author and Work moderation, user ban/session revoke | Commerce Orders/recovery as active First MVP workflow |
 
 The admin author card shows the revision approval publishes, including an
@@ -288,12 +288,14 @@ maxScroll shrinks; no fake min-height. Native Work stays expanded-only.
 
 Portfolio variant сохраняет визуальную галерею и информационные блоки. Tabs:
 
-- `История` только если заполнен plain text; public rendering may interleave
-  same-work gallery extras between paragraphs (`DEC-093`);
+- Цель `DEC-112`: `История` появляется при наличии блоков в опубликованной
+  ревизии, показывает их в сохранённом порядке и не вставляет галерею автоматически.
+  Текущий runtime всё ещё показывает plain text с gallery extras по прежнему `DEC-093`;
 - `Детали` всегда.
 
-`Оплата и доставка` показывается как v1 stub без цены и CTA ставки. `Ставки`
-отсутствуют. `Другие работы автора` содержит только Work cards; ссылка имени уже
+`Оплата и доставка` пока присутствует в runtime как v1 stub; в portfolio target
+она отсутствует и отложена в [sales plan](../product/15-POST-MVP-BACKLOG.md).
+`Ставки` отсутствуют. `Другие работы автора` содержит только Work cards; ссылка имени уже
 ведёт в Creator profile. Claims об authenticity/provenance маркируются как
 информация автора, если platform не проводила экспертизу.
 
@@ -305,6 +307,12 @@ Portfolio variant сохраняет визуальную галерею и ин
 2. optional public Telegram, Instagram, HTTPS website and author-provided email;
 3. short about, practice and directions;
 4. optional achievements.
+
+Уточнение цели, пока без реализации (`DEC-113`/`DEC-114`): страна выбирается по
+названию в popup со списком и поиском; код остаётся внутри API/БД. Город необязателен.
+Направления выбираются из общего утверждённого справочника; поиск, чекбоксы и
+выбранные чипы работают с одними ID. Источники 2026-10-11 и расхождения с product
+copy: [backend/capture plan](../tasks/2026-10-11-author-story-backend/PLAN.md).
 
 Никнейм принадлежит `User.slug`, а не заявке автора. Уже выбранное значение
 не редактируется и не отправляется в create/update профиля. Для аккаунта без
@@ -370,7 +378,7 @@ input. Обычное сохранение оставляет поле и фот
 
 1. title, category, dimensions, material/technique, edition fact and creation date/year;
 2. main images;
-3. optional plain-text creation story;
+3. optional heading/paragraph/image story blocks (`DEC-112`; target not implemented);
 4. review and moderation submit.
 
 Шаг хранится в URL. Поля принадлежат одной форме; server detail остаётся
@@ -399,9 +407,16 @@ pending не открывает Save и Submit. Более новое решен
 Save failure оставляет автора на текущем экране. Повторное открытие
 `/products/:id` восстанавливает сохранённую editing revision.
 
-CTA: `Отправить на модерацию`. Main gallery и future process media — разные сущности.
-Packaging, delivery, condition, provenance, city, weight, повторяющиеся photo/text
-stages и video не входят в portfolio MVP editor.
+CTA: `Отправить на модерацию`. Main gallery и story независимы; их фотографии
+могут ссылаться на один MediaAsset. «Закончить» подтверждает сохранение
+истории, а не публикацию. Backend хранит упорядоченные блоки `HEADING`,
+`PARAGRAPH` и `IMAGE` на ревизии Work. Экран создания в клиенте ещё редактирует
+прежний plain-text `story`; перенос вёрстки — отдельный этап
+[UI-HANDOFF.md](../tasks/2026-10-11-author-story-backend/UI-HANDOFF.md).
+Город автора необязателен. Новые достижения не загружают фотографию.
+Packaging, delivery, condition, provenance, город продажи, weight и video не
+входят в portfolio MVP editor. Торговые шаги сохранены в
+[post-MVP sales plan](../product/15-POST-MVP-BACKLOG.md).
 
 ## 10. Required states
 

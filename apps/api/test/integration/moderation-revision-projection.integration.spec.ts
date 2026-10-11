@@ -10,6 +10,7 @@ import {
   type HttpTestApp,
 } from './http-test-app';
 import {
+  attachAuthorDirection,
   fixturePasswordHash,
   permissionImage,
   resetPermissionFixture,
@@ -71,7 +72,20 @@ async function postApplication(
   fullName: string,
 ) {
   await prisma.user.update({ where: { id: userId }, data: { slug } });
-  return ownerClient.post('/seller/profile', applicationForm(fullName));
+  const response = await ownerClient.post(
+    '/seller/profile',
+    applicationForm(fullName),
+  );
+  if (response.status === 201) {
+    const profile = await prisma.sellerProfile.findUnique({
+      where: { userId },
+      select: { editingRevisionId: true },
+    });
+    if (profile?.editingRevisionId) {
+      await attachAuthorDirection(prisma, profile.editingRevisionId);
+    }
+  }
+  return response;
 }
 
 async function login(
@@ -408,7 +422,7 @@ describe('moderation revision projection', () => {
     ).toEqual({ status: 'PENDING_REVIEW', fullName: 'Unpublished revision' });
   });
 
-  it('keeps a legacy pending seller approvable only through the parent target', async () => {
+  it('rejects approval of a pending seller that has no revision or direction', async () => {
     const admin = await createUser('admin', 'admin');
     const owner = await createUser('user', 'legacy');
     const adminClient = client('10.2.0.9');
@@ -462,13 +476,14 @@ describe('moderation revision projection', () => {
         },
       },
     );
-    expect(approved.status).toBe(200);
+    expect(approved.status).toBe(409);
+    expect(await auditCount('SELLER_PROFILE', legacy.id)).toBe(0);
     expect(
       await prisma.sellerProfile.findUniqueOrThrow({
         where: { id: legacy.id },
         select: { status: true, editingRevisionId: true },
       }),
-    ).toEqual({ status: 'APPROVED', editingRevisionId: null });
+    ).toEqual({ status: 'PENDING_REVIEW', editingRevisionId: null });
 
     const revisionOwner = await createUser('user', 'revision-owner');
     const revisionClient = client('10.2.0.10');

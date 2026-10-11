@@ -16,6 +16,7 @@ import {
   productImageSchema,
   productSchema,
 } from './product';
+import { storyResponseSchema } from './story';
 import {
   sellerDisciplineSchema,
   sellerProfileResponseSchema,
@@ -275,6 +276,7 @@ const adminProductReviewTargetSchema = z
     updatedAt: isoDateTimeSchema,
     submittedAt: isoDateTimeSchema.nullable(),
     content: adminProductRevisionContentSchema,
+    story: storyResponseSchema,
   })
   .strict();
 

@@ -38,7 +38,6 @@ export const portfolioCatalogProductWhere = {
   sellerProfile: {
     status: 'APPROVED',
     user: { status: 'active' },
-    city: publicAuthorCityWhere,
   },
   ...portfolioProductContentWhere,
 } satisfies Prisma.ProductWhereInput;
@@ -48,7 +47,6 @@ export const portfolioDirectProductWhere = {
   sellerProfile: {
     status: 'APPROVED',
     user: { status: 'active' },
-    city: publicAuthorCityWhere,
   },
   ...portfolioProductContentWhere,
 } satisfies Prisma.ProductWhereInput;
