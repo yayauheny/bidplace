@@ -1,6 +1,7 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import type { PrismaClient } from '@bidplace/database';
 import { readFile, rm } from 'node:fs/promises';
+import sharp from 'sharp';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -21,6 +22,7 @@ import {
   type IntegrationDatabaseContext,
 } from './test-database';
 import { sellerModerationRequest } from './admin-status-request';
+import { sellerProfileForm } from './seller-profile-form';
 
 let database: IntegrationDatabaseContext;
 let http: HttpTestApp;
@@ -66,28 +68,22 @@ async function assignSlug(userId: string, slug = `city-author-${Date.now().toStr
 }
 
 function applicationForm(overrides: Record<string, string | null> = {}) {
-  const form = new FormData();
-  const fieldsWithoutSlug = Object.fromEntries(
-    Object.entries(overrides).filter(([key]) => key !== 'slug'),
-  );
-  const fields = {
+  const fields: Record<string, string> = {
     discipline: 'Керамика',
     fullName: 'City Author',
     country: 'BY',
     city: 'Minsk',
     shortDescription: 'Applicant with a required city',
-    ...fieldsWithoutSlug,
   };
-  for (const [key, value] of Object.entries(fields)) {
-    if (value === null) continue;
-    form.set(key, value);
+  for (const [key, value] of Object.entries(overrides)) {
+    if (key === 'slug') continue;
+    if (value === null) delete fields[key];
+    else fields[key] = value;
   }
-  form.set(
-    'profilePhoto',
+  return sellerProfileForm(
+    fields,
     new Blob([permissionImage], { type: 'image/png' }),
-    'profile.png',
   );
-  return form;
 }
 
 async function readVerificationCode(): Promise<string> {
@@ -133,8 +129,9 @@ describe('author application HTTP contract', () => {
       where: { id: fixture.buyer.id },
       data: { emailVerifiedAt: null },
     });
-    const update = new FormData();
-    update.set('fullName', 'Blocked draft author');
+    const update = sellerProfileForm({
+      fullName: 'Blocked draft author',
+    });
     expect((await applicant.patch('/seller/profile', update)).status).toBe(403);
     expect((await applicant.post('/author/application/advance')).status).toBe(403);
     expect((await applicant.post('/author/application/submit')).status).toBe(403);
@@ -157,8 +154,9 @@ describe('author application HTTP contract', () => {
       where: { id: fixture.buyer.id },
       data: { emailVerifiedAt: null },
     });
-    const update = new FormData();
-    update.set('fullName', 'Blocked until OTP');
+    const update = sellerProfileForm({
+      fullName: 'Blocked until OTP',
+    });
     expect((await applicant.patch('/seller/profile', update)).status).toBe(403);
 
     expect(
@@ -253,11 +251,55 @@ describe('author application HTTP contract', () => {
     expect(((await contactsAdvance.json()) as { application: { applicationStage: string | null } }).application.applicationStage).toBe('ABOUT');
     expect((await applicant.post('/author/application/advance')).status).toBe(409);
 
-    const update = new FormData();
-    update.set('fullName', 'Latest draft author');
-    update.set('discipline', 'Керамика');
-    update.set('shortDescription', 'Latest draft description');
-    update.set('publicEmail', 'PUBLIC@EXAMPLE.COM');
+    expect(
+      (await applicant.patch('/seller/profile', sellerProfileForm({ city: 'Minsk' })))
+        .status,
+    ).toBe(200);
+    const withCity = await prisma.sellerProfile.findUniqueOrThrow({
+      where: { userId: fixture.buyer.id },
+      select: { city: true, profilePhotoChecksum: true },
+    });
+    expect(withCity.city).toBe('Minsk');
+
+    const replacement = await sharp({
+      create: { width: 8, height: 8, channels: 3, background: '#2f6fed' },
+    })
+      .png()
+      .toBuffer();
+    const cleared = await applicant.patch(
+      '/seller/profile',
+      sellerProfileForm(
+        { city: null },
+        new Blob([new Uint8Array(replacement)], { type: 'image/png' }),
+      ),
+    );
+    expect(cleared.status).toBe(200);
+    const afterClear = await prisma.sellerProfile.findUniqueOrThrow({
+      where: { userId: fixture.buyer.id },
+      select: { city: true, profilePhotoChecksum: true },
+    });
+    expect(afterClear.city).toBeNull();
+    expect(afterClear.profilePhotoChecksum).not.toBe(withCity.profilePhotoChecksum);
+
+    const malformed = new FormData();
+    malformed.set('data', '{"city":');
+    expect((await applicant.patch('/seller/profile', malformed)).status).toBe(400);
+    const unknownField = sellerProfileForm({ city: 'Grodno' });
+    unknownField.set('city', 'Grodno');
+    expect((await applicant.patch('/seller/profile', unknownField)).status).toBe(400);
+    await expect(
+      prisma.sellerProfile.findUniqueOrThrow({
+        where: { userId: fixture.buyer.id },
+        select: { city: true },
+      }),
+    ).resolves.toEqual({ city: null });
+
+    const update = sellerProfileForm({
+      fullName: 'Latest draft author',
+      discipline: 'Керамика',
+      shortDescription: 'Latest draft description',
+      publicEmail: 'PUBLIC@EXAMPLE.COM',
+    });
     expect((await applicant.patch('/seller/profile', update)).status).toBe(200);
 
     const painting = await prisma.category.findUniqueOrThrow({
@@ -334,9 +376,10 @@ describe('author application HTTP contract', () => {
       fixture.sellers.approved.password,
     );
 
-    const draft = new FormData();
-    draft.set('fullName', 'Draft Author');
-    draft.set('city', 'Grodno');
+    const draft = sellerProfileForm({
+      fullName: 'Draft Author',
+      city: 'Grodno',
+    });
     expect((await owner.patch('/seller/profile', draft)).status).toBe(200);
 
     const mine = await owner.get('/seller/profile');

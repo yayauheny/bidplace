@@ -24,6 +24,7 @@ import {
   productModerationRequest,
   sellerModerationRequest,
 } from './admin-status-request';
+import { sellerProfileForm } from './seller-profile-form';
 
 let database: IntegrationDatabaseContext;
 let http: HttpTestApp;
@@ -43,24 +44,20 @@ afterAll(async () => {
 });
 
 function applicationForm(): FormData {
-  const form = new FormData();
-  form.set('discipline', 'Керамика');
-  form.set('fullName', '  Applicant Creator  ');
-  form.set('country', ' BY ');
-  form.set('city', ' Minsk ');
-  form.set('shortDescription', '  Applicant description  ');
-  form.set(
-    'profilePhoto',
+  return sellerProfileForm(
+    {
+      discipline: 'Керамика',
+      fullName: '  Applicant Creator  ',
+      country: ' BY ',
+      city: ' Minsk ',
+      shortDescription: '  Applicant description  ',
+    },
     new Blob([permissionImage], { type: 'image/png' }),
-    'profile.png',
   );
-  return form;
 }
 
 function sellerUpdateForm(fullName: string): FormData {
-  const form = new FormData();
-  form.set('fullName', fullName);
-  return form;
+  return sellerProfileForm({ fullName });
 }
 
 async function createAdmin(

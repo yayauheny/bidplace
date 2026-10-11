@@ -27,6 +27,7 @@ import {
   productRevisionGallerySelect,
 } from '../../src/products/products.mapper';
 import { publicSellerProfileSelect } from '../../src/sellers/seller-profile.mapper';
+import { sellerProfileForm } from './seller-profile-form';
 
 let database: IntegrationDatabaseContext;
 let http: HttpTestApp;
@@ -284,10 +285,8 @@ describe('portfolio published revision HTTP transport', () => {
       'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
       'base64',
     );
-    const photoForm = new FormData();
-    photoForm.set('fullName', 'Pending photo author');
-    photoForm.append(
-      'profilePhoto',
+    const photoForm = sellerProfileForm(
+      { fullName: 'Pending photo author' },
       new Blob([nextPhoto], { type: 'image/png' }),
       'next.png',
     );

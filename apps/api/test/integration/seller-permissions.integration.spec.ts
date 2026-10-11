@@ -17,6 +17,7 @@ import {
   HttpTestClient,
   type HttpTestApp,
 } from './http-test-app';
+import { sellerProfileForm } from './seller-profile-form';
 
 let database: IntegrationDatabaseContext;
 let http: HttpTestApp;
@@ -100,9 +101,7 @@ function productInput(title: string) {
 }
 
 function sellerUpdateForm(fullName: string): FormData {
-  const form = new FormData();
-  form.set('fullName', fullName);
-  return form;
+  return sellerProfileForm({ fullName });
 }
 
 function imageForm(): FormData {

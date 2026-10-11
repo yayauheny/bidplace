@@ -27,6 +27,7 @@ const profileBody = {
   city: 'Minsk',
 };
 const file = { buffer: Buffer.from([1]), mimetype: 'image/png' };
+const jsonRequest = { headers: { 'content-type': 'application/json' } };
 
 describe('profile photo upload rate limit', () => {
   const sellers = {
@@ -69,9 +70,11 @@ describe('profile photo upload rate limit', () => {
   async function submit(method: 'create' | 'update', userId = 'user-1') {
     guard.canActivate(context(method, userId));
     if (method === 'create') {
-      return controller.create({ sub: userId }, profileBody, [file]);
+      return controller.create({ sub: userId }, jsonRequest, profileBody, [
+        file,
+      ]);
     }
-    return controller.update({ sub: userId }, {}, [file]);
+    return controller.update({ sub: userId }, jsonRequest, {}, [file]);
   }
 
   it('does not normalize a profile photo after the shared upload limit', async () => {

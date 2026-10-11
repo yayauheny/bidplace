@@ -4,6 +4,41 @@ import { ApiClientError } from '../src/errors';
 import { createRequestContext } from '../src/request';
 import { createSellersClient } from '../src/sellers';
 
+const savedProfileResponse = {
+  sellerProfile: {
+    id: '22222222-2222-4222-8222-222222222222',
+    userId: '11111111-1111-4111-8111-111111111111',
+    slug: 'synthetic-author',
+    sellerType: 'creator',
+    discipline: null,
+    fullName: 'Synthetic Author',
+    country: 'BY',
+    city: 'Minsk',
+    practice: null,
+    biography: null,
+    profilePhotoUrl: '/api/sellers/synthetic-author/photo',
+    socialLink: null,
+    telegramUrl: null,
+    instagramUrl: null,
+    websiteUrl: null,
+    publicEmail: null,
+    shortDescription: null,
+    handoffContactType: null,
+    handoffContactValue: null,
+    handoffInitiator: null,
+    status: 'DRAFT',
+    applicationStage: null,
+    createdAt: '2026-10-06T14:14:00.000Z',
+    updatedAt: '2026-10-06T14:14:00.000Z',
+  },
+  editingRevision: {
+    id: '33333333-3333-4333-8333-333333333333',
+    version: 1,
+    status: 'DRAFT',
+    updatedAt: '2026-10-06T14:14:00.000Z',
+  },
+};
+
 const photo = new Blob(['portrait'], { type: 'image/png' });
 const profile = {
   fullName: 'Synthetic Author',
@@ -21,7 +56,10 @@ describe('seller profile create', () => {
   it('rejects an independent slug and an invalid public email before any request', async () => {
     const fetchImpl = vi.fn<typeof fetch>();
     expect(() =>
-      client(fetchImpl).createProfile({ ...profile, slug: 'synthetic-author' } as never, photo),
+      client(fetchImpl).createProfile(
+        { ...profile, slug: 'synthetic-author' } as never,
+        photo,
+      ),
     ).toThrow(ApiClientError);
     let rejected: unknown;
     expect(() => {
@@ -46,40 +84,7 @@ describe('seller profile create', () => {
 
   it('sends the author profile without an independent slug', async () => {
     const fetchImpl = vi.fn<typeof fetch>(async () =>
-      Response.json({
-        sellerProfile: {
-          id: '22222222-2222-4222-8222-222222222222',
-          userId: '11111111-1111-4111-8111-111111111111',
-          slug: 'synthetic-author',
-          sellerType: 'creator',
-          discipline: null,
-          fullName: 'Synthetic Author',
-          country: 'BY',
-          city: 'Minsk',
-          practice: null,
-          biography: null,
-          profilePhotoUrl: '/api/sellers/synthetic-author/photo',
-          socialLink: null,
-          telegramUrl: null,
-          instagramUrl: null,
-          websiteUrl: null,
-          publicEmail: null,
-          shortDescription: null,
-          handoffContactType: null,
-          handoffContactValue: null,
-          handoffInitiator: null,
-          status: 'DRAFT',
-          applicationStage: null,
-          createdAt: '2026-10-06T14:14:00.000Z',
-          updatedAt: '2026-10-06T14:14:00.000Z',
-        },
-        editingRevision: {
-          id: '33333333-3333-4333-8333-333333333333',
-          version: 1,
-          status: 'DRAFT',
-          updatedAt: '2026-10-06T14:14:00.000Z',
-        },
-      }),
+      Response.json(savedProfileResponse),
     );
     const created = await client(fetchImpl).createProfile(profile, photo);
     expect(fetchImpl).toHaveBeenCalledTimes(1);
@@ -88,9 +93,45 @@ describe('seller profile create', () => {
     expect(init?.method).toBe('POST');
     expect(init?.body).toBeInstanceOf(FormData);
     const body = init?.body as FormData;
-    expect(body.get('slug')).toBeNull();
-    expect(body.get('fullName')).toBe('Synthetic Author');
+    expect(body.get('fullName')).toBeNull();
     expect(body.get('profilePhoto')).toBeInstanceOf(Blob);
+    expect(JSON.parse(String(body.get('data')))).toEqual({
+      fullName: 'Synthetic Author',
+      country: 'BY',
+      city: 'Minsk',
+    });
     expect(created.sellerProfile.slug).toBe('synthetic-author');
+  });
+});
+
+describe('seller profile update envelope', () => {
+  it('sends an explicit null city inside the data part, never as a top-level field', async () => {
+    const fetchImpl = vi.fn<typeof fetch>(async () =>
+      Response.json(savedProfileResponse),
+    );
+
+    await client(fetchImpl).updateProfile({ city: null }, photo);
+
+    const [, init] = fetchImpl.mock.calls[0] ?? [];
+    const body = init?.body as FormData;
+    expect(body.has('city')).toBe(false);
+    expect(JSON.parse(String(body.get('data')))).toEqual({ city: null });
+    expect(body.get('profilePhoto')).toBeInstanceOf(Blob);
+  });
+
+  it('sends a profile update without a photo as data only', async () => {
+    const fetchImpl = vi.fn<typeof fetch>(async () =>
+      Response.json(savedProfileResponse),
+    );
+
+    await client(fetchImpl).updateProfile({ city: null, country: 'BY' });
+
+    const [, init] = fetchImpl.mock.calls[0] ?? [];
+    const body = init?.body as FormData;
+    expect(body.get('profilePhoto')).toBeNull();
+    expect(JSON.parse(String(body.get('data')))).toEqual({
+      city: null,
+      country: 'BY',
+    });
   });
 });

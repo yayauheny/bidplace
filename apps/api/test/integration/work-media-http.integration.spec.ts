@@ -26,6 +26,7 @@ import {
   productModerationRequest,
   sellerModerationRequest,
 } from './admin-status-request';
+import { sellerProfileForm } from './seller-profile-form';
 
 let db: IntegrationDatabaseContext;
 let http: HttpTestApp;
@@ -139,19 +140,15 @@ describe('Work media lifecycle over authenticated HTTP and PostgreSQL', () => {
     })
       .png()
       .toBuffer();
-    const photo = new FormData();
-    for (const [key, value] of Object.entries({
-      fullName: 'HTTP author',
-      country: 'BY',
-      city: 'Minsk',
-      discipline: 'Автор',
-      shortDescription: 'Portfolio author',
-    }))
-      photo.set(key, value);
-    photo.set(
-      'profilePhoto',
+    const photo = sellerProfileForm(
+      {
+        fullName: 'HTTP author',
+        country: 'BY',
+        city: 'Minsk',
+        discipline: 'Автор',
+        shortDescription: 'Portfolio author',
+      },
       new Blob([new Uint8Array(bytes)], { type: 'image/png' }),
-      'photo.png',
     );
     const createdAuthor = await author.client.post('/seller/profile', photo);
     expect(createdAuthor.status).toBe(201);

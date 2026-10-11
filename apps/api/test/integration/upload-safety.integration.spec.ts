@@ -32,6 +32,7 @@ import {
   fixturePasswordHash,
 } from './permission-fixtures';
 import { sellerModerationRequest } from './admin-status-request';
+import { sellerProfileForm } from './seller-profile-form';
 
 let db: IntegrationDatabaseContext;
 let http: HttpTestApp;
@@ -123,17 +124,14 @@ async function user(suffix: string, role: 'user' | 'admin' = 'user') {
 }
 
 function profilePhoto(bytes: Buffer, fields: Record<string, string> = {}) {
-  const form = new FormData();
-  for (const [key, value] of Object.entries(fields)) {
-    if (key === 'slug') continue;
-    form.set(key, value);
-  }
-  form.set(
-    'profilePhoto',
+  const profileFields = Object.fromEntries(
+    Object.entries(fields).filter(([key]) => key !== 'slug'),
+  );
+  return sellerProfileForm(
+    profileFields,
     new Blob([new Uint8Array(bytes)], { type: 'image/png' }),
     'photo.png',
   );
-  return form;
 }
 
 function upload(bytes: Buffer) {

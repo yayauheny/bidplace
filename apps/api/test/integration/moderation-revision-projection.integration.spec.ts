@@ -20,6 +20,7 @@ import {
   createIntegrationDatabaseContext,
   type IntegrationDatabaseContext,
 } from './test-database';
+import { sellerProfileForm } from './seller-profile-form';
 
 const pendingPhoto = Buffer.from('pending-revision-photo');
 const publishedPhoto = Buffer.from(permissionImage);
@@ -46,18 +47,16 @@ function checksum(bytes: Buffer) {
 }
 
 function applicationForm(fullName: string) {
-  const form = new FormData();
-  form.set('discipline', 'Керамика');
-  form.set('fullName', fullName);
-  form.set('country', 'BY');
-  form.set('city', 'Minsk');
-  form.set('shortDescription', 'Published description');
-  form.set(
-    'profilePhoto',
+  return sellerProfileForm(
+    {
+      discipline: 'Керамика',
+      fullName,
+      country: 'BY',
+      city: 'Minsk',
+      shortDescription: 'Published description',
+    },
     new Blob([publishedPhoto], { type: 'image/png' }),
-    'profile.png',
   );
-  return form;
 }
 
 function imageForm(bytes: Buffer = publishedPhoto) {
@@ -212,8 +211,9 @@ describe('moderation revision projection', () => {
       where: { id: submitted!.reviewTarget!.id },
       select: { updatedAt: true },
     });
-    const form = new FormData();
-    form.set('fullName', 'Resubmitted author');
+    const form = sellerProfileForm({
+      fullName: 'Resubmitted author',
+    });
     expect((await ownerClient.patch('/seller/profile', form)).status).toBe(200);
     expect((await ownerClient.post('/author/application/submit')).status).toBe(201);
     const resubmitted = await prisma.sellerProfileRevision.findUniqueOrThrow({
@@ -277,8 +277,9 @@ describe('moderation revision projection', () => {
         })
       ).status,
     ).toBe(200);
-    const edited = new FormData();
-    edited.set('fullName', 'Pending author');
+    const edited = sellerProfileForm({
+      fullName: 'Pending author',
+    });
     expect((await ownerClient.patch('/seller/profile', edited)).status).toBe(200);
     expect((await ownerClient.post('/author/application/submit')).status).toBe(201);
     const review = (await adminSellers(adminClient)).find(
