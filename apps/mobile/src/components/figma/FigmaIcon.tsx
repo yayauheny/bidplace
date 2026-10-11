@@ -69,17 +69,27 @@ const icons = {
   'shopping-basket-01': ShoppingBasket01Icon,
 } as const satisfies Record<FigmaIconName, typeof Search01Icon>;
 
+const iconGridSize = 24;
+
 export function FigmaIcon({
   name,
   size = figmaTokens.size.icon,
   color = figmaTokens.color.ink,
   label,
+  strokeWidthPx,
 }: {
   name: FigmaIconName;
   size?: number;
   color?: string;
   label?: string;
+  /** Final rendered stroke in px; replaces the per-icon grid stroke policy. */
+  strokeWidthPx?: number;
 }) {
+  // Hugeicons strokes live on the 24-unit grid, so a px value is scaled to it.
+  const strokeWidth =
+    strokeWidthPx === undefined
+      ? figmaIconStrokeWidth(name, size)
+      : (strokeWidthPx * iconGridSize) / size;
   if (name === 'internet') {
     // Hugeicons RN 1.0.16 drops ellipse nodes; preserve the source glyph.
     const elements = { circle: Circle, ellipse: Ellipse, path: Path };
@@ -97,7 +107,7 @@ export function FigmaIcon({
           createElement(elements[tag as keyof typeof elements], {
             ...attributes,
             key,
-            strokeWidth: figmaIconStrokeWidth(name, size),
+            strokeWidth,
           }),
         )}
       </Svg>
@@ -108,7 +118,7 @@ export function FigmaIcon({
       icon={icons[name]}
       size={size}
       color={color}
-      strokeWidth={figmaIconStrokeWidth(name, size)}
+      strokeWidth={strokeWidth}
       {...(label
         ? { accessibilityLabel: label }
         : Platform.OS === 'web'

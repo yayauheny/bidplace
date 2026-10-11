@@ -28,6 +28,10 @@ if (typeof Element !== 'undefined') {
 
 vi.mock('./app-dialog-layer', () => import('./app-dialog-layer.web'));
 
+vi.mock('../figma/FigmaIcon', () => ({
+  FigmaIcon: () => null,
+}));
+
 vi.mock('lucide-react-native', () => ({
   X: () => null,
 }));
@@ -234,6 +238,21 @@ function ClosableDialog({
     open,
     presentation,
     title,
+    onClose: () => {
+      closes.count += 1;
+      setOpen(false);
+    },
+    children: dialogChildren(),
+  });
+}
+
+function MediaSheetDialog({ closes }: { closes: { count: number } }) {
+  const [open, setOpen] = useState(true);
+  return createElement(AppDialog, {
+    open,
+    presentation: 'mediaSheet',
+    title: 'Медиа',
+    media: createElement('img', { alt: '', src: 'collage.png' }),
     onClose: () => {
       closes.count += 1;
       setOpen(false);
@@ -473,6 +492,33 @@ describe('AppDialog web focus lifecycle', () => {
     expect(opener.isConnected).toBe(false);
     expect(focus).not.toHaveBeenCalled();
     expect(document.activeElement).not.toBe(opener);
+    view.unmount();
+  });
+
+  it('keeps the media sheet on the shared focus, Escape, and return-focus lifecycle', async () => {
+    const opener = document.createElement('button');
+    document.body.append(opener);
+    opener.focus();
+    const closes = { count: 0 };
+    const view = mount(createElement(MediaSheetDialog, { closes }));
+    await flush();
+    const dialog = dialogByTitle('Медиа');
+    if (!dialog) throw new Error('missing dialog');
+    expect(dialog.querySelector('img')).not.toBeNull();
+    expect(document.activeElement).toBe(closeButton(dialog));
+
+    act(() => {
+      dialog.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+      );
+    });
+    await flush();
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 40));
+    });
+    expect(closes.count).toBe(1);
+    expect(dialogByTitle('Медиа')).toBeUndefined();
+    expect(document.activeElement).toBe(opener);
     view.unmount();
   });
 

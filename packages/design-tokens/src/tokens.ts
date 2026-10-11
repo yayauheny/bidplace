@@ -15,6 +15,8 @@ export const designTokens = {
     dialogSurface: '#FFFFFF',
     ink: '#2A2A2A',
     inkSoft: '#2A2A2A',
+    // Figma variable `Black`: media sheet heading and close glyph.
+    inkStrong: '#121212',
     textSecondary: '#8A8A8A',
     textMuted: '#8A8A8A',
     tabInactive: '#565656',
@@ -139,6 +141,8 @@ export const designTokens = {
     socialGroupGap: 12,
     filterOptionY: 9,
     headerIconHitSlop: 9,
+    // Inset of the media sheet heading block (Figma Frame 139 padding).
+    mediaSheetTextInset: 6,
   },
   radius: {
     small: 12,
@@ -164,6 +168,7 @@ export const designTokens = {
     social: 30,
     achievement: 20,
     shareSheet: 20,
+    mediaSheet: 32,
     workGallery: 20,
     statusDot: 20,
     filterSort: 14,
@@ -183,6 +188,7 @@ export const designTokens = {
     openingAvatar: 54,
     choiceChip: 38,
     buttonIconFrame: 26,
+    mediaSheetClose: 38,
     iconButton: 36,
     header: 48,
     mobileHeader: 48,
@@ -233,6 +239,20 @@ export const designTokens = {
       lineHeight: 29,
       letterSpacing: -0.72,
       fontWeight: '600' as const,
+    },
+    mediaSheetTitle: {
+      fontFamily: 'Inter_600SemiBold',
+      fontSize: 24,
+      lineHeight: 29,
+      letterSpacing: -0.48,
+      fontWeight: '600' as const,
+    },
+    mediaSheetBody: {
+      fontFamily: 'Inter_400Regular',
+      fontSize: 15,
+      lineHeight: 20,
+      letterSpacing: -0.15,
+      fontWeight: '400' as const,
     },
     cardTitle: {
       fontFamily: 'Inter_500Medium',
@@ -710,6 +730,8 @@ export const designTokens = {
     icon: 1.13,
     iconHeavy: 1.25,
     dockIcon: 1.5,
+    // Final rendered px for the media sheet close glyph (not icon-grid units).
+    mediaSheetClosePx: 2,
   },
   // Shared Creator/Work top chrome. Distinct from `size.dock*` bottom nav.
   // controlTop = space.x3, controlSize = size.header, controlInset = space.x5.

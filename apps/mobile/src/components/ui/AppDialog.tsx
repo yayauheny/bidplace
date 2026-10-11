@@ -6,6 +6,7 @@ import Animated from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
 import { designTokens } from '@bidplace/design-tokens';
+
 import {
   sheetBackdropEnter,
   sheetBackdropExit,
@@ -13,20 +14,30 @@ import {
   sheetExit,
 } from '../../lib/layout-transition';
 
+import { FigmaIcon } from '../figma/FigmaIcon';
 import { AppText } from './AppText';
 import { AppIcon } from './AppIcon';
 import { appDialogHostStyle } from './app-dialog-host-style';
 import { AppDialogFrame, AppDialogOverlay } from './app-dialog-layer';
 import { MotionPressable } from './MotionPressable';
 
-type AppDialogProps = {
+type AppDialogBaseProps = {
   open: boolean;
-  presentation?: 'dialog' | 'sheet';
   title: string;
   description?: string;
   onClose: () => void;
   children: ReactNode;
 };
+
+type AppDialogProps = AppDialogBaseProps &
+  (
+    | { presentation?: 'dialog' | 'sheet'; media?: never }
+    | { presentation: 'mediaSheet'; media: ReactNode }
+  );
+
+const mediaSheetCloseHitSlop =
+  (designTokens.size.touch - designTokens.size.mediaSheetClose) / 2;
+const centeredTextStyle = { textAlign: 'center' } as const;
 
 function connectedDialogOpener(
   active: Element | null,
@@ -43,6 +54,7 @@ function connectedDialogOpener(
 export function AppDialog({
   open,
   presentation = 'dialog',
+  media,
   title,
   description,
   onClose,
@@ -83,7 +95,8 @@ export function AppDialog({
     };
   }, []);
 
-  const isSheet = presentation === 'sheet';
+  const isSheet = presentation !== 'dialog';
+  const isMediaSheet = presentation === 'mediaSheet';
   const overlay = (
     <AppDialogOverlay
       forceMount={isSheet ? true : undefined}
@@ -95,6 +108,142 @@ export function AppDialog({
         zIndex: designTokens.layer.modal,
       }}
     />
+  );
+  const closeButton = (
+    <MotionPressable
+      ref={closeButtonRef}
+      accessibilityRole="button"
+      accessibilityLabel="Закрыть окно"
+      onPress={onClose}
+      preset="icon"
+      hitSlop={isMediaSheet ? mediaSheetCloseHitSlop : undefined}
+      style={
+        isMediaSheet
+          ? {
+              width: designTokens.size.mediaSheetClose,
+              height: designTokens.size.mediaSheetClose,
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: designTokens.radius.pill,
+            }
+          : {
+              width: 32,
+              height: 32,
+              flexShrink: 0,
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: designTokens.radius.pill,
+            }
+      }
+      interactionStyle={({ hovered, pressed }) => ({
+        backgroundColor:
+          hovered || pressed
+            ? designTokens.color.surfaceStrong
+            : isMediaSheet
+              ? designTokens.color.dialogSurface
+              : 'transparent',
+      })}
+    >
+      {isMediaSheet ? (
+        <FigmaIcon
+          name="x"
+          size={designTokens.size.buttonIconFrame}
+          color={designTokens.color.inkStrong}
+          strokeWidthPx={designTokens.stroke.mediaSheetClosePx}
+        />
+      ) : (
+        <AppIcon name="x" size={22} />
+      )}
+    </MotionPressable>
+  );
+  const body = isMediaSheet ? (
+    <>
+      <View>
+        <View
+          style={{
+            borderRadius: designTokens.radius.mediaSheet,
+            overflow: 'hidden',
+          }}
+        >
+          {media}
+        </View>
+        <View
+          style={{
+            position: 'absolute',
+            top: designTokens.space.x4,
+            right: designTokens.space.x4,
+          }}
+        >
+          {closeButton}
+        </View>
+      </View>
+      <View
+        style={{
+          paddingHorizontal: designTokens.space.pageGutter,
+          gap: designTokens.space.x4,
+        }}
+      >
+        <View
+          style={{
+            gap: designTokens.space.x2,
+            paddingHorizontal: designTokens.space.mediaSheetTextInset,
+            paddingTop: designTokens.space.mediaSheetTextInset,
+            paddingBottom: designTokens.space.x2,
+          }}
+        >
+          <Dialog.Title asChild>
+            <AppText
+              role="mediaSheetTitle"
+              tone="strong"
+              style={centeredTextStyle}
+            >
+              {title}
+            </AppText>
+          </Dialog.Title>
+          {description ? (
+            <Dialog.Description asChild>
+              <AppText
+                role="mediaSheetBody"
+                tone="subdued"
+                style={centeredTextStyle}
+              >
+                {description}
+              </AppText>
+            </Dialog.Description>
+          ) : null}
+        </View>
+        <View style={{ gap: designTokens.space.x3 }}>{children}</View>
+      </View>
+    </>
+  ) : (
+    <>
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+          gap: designTokens.space.x4,
+        }}
+      >
+        <Dialog.Title asChild>
+          <AppText
+            role={isSheet ? 'profileHeading' : 'sectionTitle'}
+            style={{ flex: 1, minWidth: 0 }}
+          >
+            {title}
+          </AppText>
+        </Dialog.Title>
+        {closeButton}
+      </View>
+      {description ? (
+        <Dialog.Description asChild>
+          <AppText role="bodySmall" tone="secondary">
+            {description}
+          </AppText>
+        </Dialog.Description>
+      ) : null}
+      <View style={{ gap: designTokens.space.x3 }}>{children}</View>
+    </>
   );
   const content = (
     <Dialog.Content
@@ -137,21 +286,25 @@ export function AppDialog({
           : designTokens.layout.dialogMaxWidth,
         maxHeight: Math.max(height - viewportGutter * 2, 0),
         zIndex: designTokens.layer.modal,
-        borderWidth: 1,
+        borderWidth: isMediaSheet ? 0 : 1,
         borderColor: 'rgba(20, 20, 20, 0.08)',
-        borderRadius: isSheet
-          ? designTokens.radius.shareSheet
-          : designTokens.radius.dialog,
+        borderRadius: isMediaSheet
+          ? designTokens.radius.mediaSheet
+          : isSheet
+            ? designTokens.radius.shareSheet
+            : designTokens.radius.dialog,
         ...(isSheet
           ? { borderBottomLeftRadius: 0, borderBottomRightRadius: 0 }
           : {}),
         backgroundColor: designTokens.color.dialogSurface,
-        padding: isSheet
-          ? designTokens.space.pageGutter
-          : width >= 600
-            ? designTokens.space.x8
-            : designTokens.space.x5,
-        ...designTokens.elevation.floating,
+        padding: isMediaSheet
+          ? 0
+          : isSheet
+            ? designTokens.space.pageGutter
+            : width >= 600
+              ? designTokens.space.x8
+              : designTokens.space.x5,
+        ...(isMediaSheet ? {} : designTokens.elevation.floating),
       }}
     >
       <ScrollView
@@ -159,59 +312,19 @@ export function AppDialog({
         keyboardShouldPersistTaps="handled"
         nestedScrollEnabled
         showsVerticalScrollIndicator
-        contentContainerStyle={{
-          gap: designTokens.space.x4,
-          paddingBottom: designTokens.space.x1,
-        }}
+        contentContainerStyle={
+          isMediaSheet
+            ? {
+                gap: designTokens.space.x5,
+                paddingBottom: designTokens.space.x5,
+              }
+            : {
+                gap: designTokens.space.x4,
+                paddingBottom: designTokens.space.x1,
+              }
+        }
       >
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'flex-start',
-            justifyContent: 'space-between',
-            gap: designTokens.space.x4,
-          }}
-        >
-          <Dialog.Title asChild>
-            <AppText
-              role={isSheet ? 'profileHeading' : 'sectionTitle'}
-              style={{ flex: 1, minWidth: 0 }}
-            >
-              {title}
-            </AppText>
-          </Dialog.Title>
-          <MotionPressable
-            ref={closeButtonRef}
-            accessibilityRole="button"
-            accessibilityLabel="Закрыть окно"
-            onPress={onClose}
-            preset="icon"
-            style={{
-              width: 32,
-              height: 32,
-              flexShrink: 0,
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: designTokens.radius.pill,
-            }}
-            interactionStyle={({ hovered, pressed }) => ({
-              backgroundColor:
-                hovered || pressed
-                  ? designTokens.color.surfaceStrong
-                  : 'transparent',
-            })}
-          >
-            <AppIcon name="x" size={22} />
-          </MotionPressable>
-        </View>
-        {description ? (
-          <Dialog.Description asChild>
-            <AppText role="bodySmall" tone="secondary">
-              {description}
-            </AppText>
-          </Dialog.Description>
-        ) : null}
-        <View style={{ gap: designTokens.space.x3 }}>{children}</View>
+        {body}
       </ScrollView>
     </Dialog.Content>
   );

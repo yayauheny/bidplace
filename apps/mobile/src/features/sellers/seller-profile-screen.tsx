@@ -46,6 +46,7 @@ import { useAccountLogout } from '../auth/account-logout';
 import { useApiClient } from '../../providers/api-provider';
 import { useAuth } from '../../providers/auth-provider';
 import { AuthorApplicationAchievements } from './AuthorApplicationAchievements';
+import { AuthorIntroDialog } from './AuthorIntroDialog';
 import {
   profileDraftAllowsSave,
   profileDraftSchema,
@@ -1324,28 +1325,11 @@ export function SellerProfileScreen() {
                 {formAlert}
               </AppText>
             ) : null}
-            <AppDialog
+            <AuthorIntroDialog
               open={introOpen}
-              title="Стать автором на Bidplace"
-              description="Создайте профиль автора, расскажите о себе и публикуйте свои работы."
+              onStart={() => router.replace('/profile?step=1')}
               onClose={() => router.replace('/profile')}
-            >
-              <PrimaryButton
-                label="Начать"
-                width="block"
-                onPress={() => router.replace('/profile?step=1')}
-              />
-              <SecondaryButton
-                label="Позже"
-                width="block"
-                onPress={() => router.replace('/')}
-              />
-              <AccountLogoutButton
-                width="block"
-                pending={saveMutation.isPending || accountLogout.busy}
-                onPress={() => requestExit('logout')}
-              />
-            </AppDialog>
+            />
             {exitDialog}
           </View>
         </FormPageShell>

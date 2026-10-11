@@ -40,13 +40,18 @@ test('approved author logout leaves the cabinet and a later visit requires auth'
   }
 });
 
-test('author without a profile can logout from the intro', async ({ browser }) => {
+test('author without a profile closes the intro and then logs out', async ({ browser }) => {
   const { buyer } = await createBuyerFixture();
   const { context, page } = await authenticatedPage(browser, buyer);
 
   try {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/profile?intro=1');
+    const intro = page.getByRole('dialog', { name: 'Стать автором на Bidplace' });
+    await expect(intro.getByRole('button', { name: 'Выйти' })).toHaveCount(0);
+    await intro.getByRole('button', { name: 'Закрыть окно' }).click();
+    await expect(page).toHaveURL(/\/profile$/);
+    await expect(intro).toHaveCount(0);
     await page.getByRole('button', { name: 'Выйти' }).click();
     await expect(page).toHaveURL(/\/$/);
     await page.goto('/profile');

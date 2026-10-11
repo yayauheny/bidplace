@@ -8,11 +8,11 @@ export function appDialogHostStyle({
   width,
   viewportGutter,
 }: {
-  presentation: 'dialog' | 'sheet';
+  presentation: 'dialog' | 'sheet' | 'mediaSheet';
   width: number;
   viewportGutter: number;
 }): ViewStyle {
-  const isSheet = presentation === 'sheet';
+  const isSheet = presentation !== 'dialog';
 
   return {
     inset: 0,

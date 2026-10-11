@@ -30,6 +30,10 @@ vi.mock('@rn-primitives/portal', () => ({
   PortalHost: () => null,
 }));
 
+vi.mock('../figma/FigmaIcon', () => ({
+  FigmaIcon: () => null,
+}));
+
 vi.mock('lucide-react-native', () => ({
   X: () => null,
 }));

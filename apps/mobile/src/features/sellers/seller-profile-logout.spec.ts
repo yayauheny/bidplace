@@ -516,7 +516,7 @@ describe('seller profile logout', () => {
     view.unmount();
   });
 
-  it('shows logout for a missing profile, a draft, and a profile in review', async () => {
+  it('keeps the intro to Начать and offers logout after it closes, for a missing profile, a draft, and a profile in review', async () => {
     harness.params = { intro: '1' };
     harness.getMyProfile.mockRejectedValue(
       new ApiClientError('missing', { kind: 'not_found', status: 404 }),
@@ -527,10 +527,21 @@ describe('seller profile logout', () => {
       () => dialog(missing.container)?.getAttribute('aria-label') === 'Стать автором на Bidplace',
       'intro dialog',
     );
-    expect([...missing.container.querySelectorAll('button')].some((button) => button.textContent === 'Выйти')).toBe(true);
+    const introButtons = [...(dialog(missing.container)?.querySelectorAll('button') ?? [])].map(
+      (button) => button.textContent,
+    );
+    expect(introButtons).toEqual(['Начать']);
     missing.unmount();
 
     harness.params = {};
+    const closedIntro = mount();
+    await until(
+      closedIntro.container,
+      () => [...closedIntro.container.querySelectorAll('button')].some((button) => button.textContent === 'Выйти'),
+      'missing profile logout after the intro',
+    );
+    closedIntro.unmount();
+
     harness.getMyProfile.mockResolvedValue({
       sellerProfile: profile('DRAFT'),
       editingRevision: { status: 'DRAFT', updatedAt: '2026-09-27T00:00:00.000Z' },

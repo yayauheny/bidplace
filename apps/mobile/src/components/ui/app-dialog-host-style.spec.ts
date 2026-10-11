@@ -30,6 +30,17 @@ describe('app dialog host style', () => {
     expect(style.alignItems).toBe('stretch');
   });
 
+  it('docks the media sheet to the bottom like the sheet', () => {
+    const style = appDialogHostStyle({
+      presentation: 'mediaSheet',
+      width: designTokens.layout.phoneWidth,
+      viewportGutter,
+    });
+
+    expect(style.justifyContent).toBe('flex-end');
+    expect(style.alignItems).toBe('stretch');
+  });
+
   it('centers a dialog on the same column axis', () => {
     const style = appDialogHostStyle({
       presentation: 'dialog',
