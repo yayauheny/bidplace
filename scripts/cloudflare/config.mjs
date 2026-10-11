@@ -11,6 +11,14 @@ export function deploymentConfig(target) {
   return JSON.parse(readFileSync(configPath, 'utf8')).env[target];
 }
 
+export function turnstileSiteKeyForBuild(callerValue, configuredValue) {
+  const caller = typeof callerValue === 'string' ? callerValue.trim() : '';
+  const configured = typeof configuredValue === 'string' ? configuredValue.trim() : '';
+  const value = caller || configured;
+  if (!value) throw new Error('TURNSTILE_SITE_KEY is required for the Cloudflare web build');
+  return value;
+}
+
 export function validateConfig(config) {
   if (workerSecrets.some((name) => Object.hasOwn(config.vars, name))) {
     throw new Error('Runtime secrets must not be stored in Wrangler vars');

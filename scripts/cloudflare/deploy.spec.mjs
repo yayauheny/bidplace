@@ -51,8 +51,10 @@ test('gate environment removes runtime and deploy credentials', () => {
     CLOUDFLARE_API_TOKEN: canary, SERVICE_RULES_OWNER: 'bidplace',
     SERVICE_RULES_CONTACT: 'work.evles@gmail.com', SERVICE_RULES_TEXT: 'approved rules',
     SMTP_PASSWORD: canary, RELEASE_CONTROL: canary,
+    TURNSTILE_SITE_KEY: 'task-public-site-key', TURNSTILE_SECRET_KEY: canary,
   });
   assert.equal(env.PATH, '/usr/bin');
+  assert.equal(env.TURNSTILE_SITE_KEY, 'task-public-site-key');
   assert.equal(env.CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV, 'false');
   for (const name of [...workerSecrets, 'DATABASE_URL_UNPOOLED', 'NEON_DIRECT_URL', 'CLOUDFLARE_API_TOKEN', 'SERVICE_RULES_OWNER', 'SERVICE_RULES_CONTACT', 'SERVICE_RULES_TEXT']) {
     assert.equal(env[name], undefined);
@@ -194,4 +196,116 @@ test('production config receives service rules from the caller and keeps the che
   assert.throws(() => writeProductionConfig({ owner: '', contact: 'ops@example.invalid', text: 'rules' }), /SERVICE_RULES_OWNER is required/);
   assert.throws(() => writeProductionConfig({ owner: 'bidplace', contact: ' ', text: 'rules' }), /SERVICE_RULES_CONTACT is required/);
   assert.throws(() => writeProductionConfig({ owner: 'bidplace', contact: 'ops@example.invalid', text: '   ' }), /SERVICE_RULES_TEXT is required/);
+});
+
+function workflowStep(workflow, title) {
+  const marker = `- name: ${title}\n`;
+  const start = workflow.indexOf(marker);
+  assert.notEqual(start, -1);
+  const next = workflow.indexOf('\n      - name: ', start + marker.length);
+  return workflow.slice(start, next === -1 ? undefined : next);
+}
+
+function secretBindings(step) {
+  const names = [];
+  for (const line of step.split('\n')) {
+    const match = line.match(/^ +([A-Z][A-Z0-9_]*): \$\{\{ secrets\.([A-Z][A-Z0-9_]*) \}\}$/);
+    if (!match) continue;
+    assert.equal(match[1], match[2]);
+    names.push(match[1]);
+  }
+  return names;
+}
+
+function embeddedPython(step) {
+  const header = "python3 - <<'PY'\n";
+  const start = step.indexOf(header);
+  assert.notEqual(start, -1);
+  const rest = step.slice(start + header.length);
+  const end = rest.search(/\n *PY\n/);
+  assert.notEqual(end, -1);
+  const lines = rest.slice(0, end).split('\n');
+  const indent = Math.min(...lines.filter((line) => line.trim()).map((line) => line.match(/^ */)[0].length));
+  return `${lines.map((line) => line.slice(indent)).join('\n')}\n`;
+}
+
+function runPython(script, env) {
+  return spawnSync('python3', ['-'], {
+    encoding: 'utf8',
+    input: script,
+    env: { PATH: process.env.PATH ?? '', ...env },
+  });
+}
+
+function missingNames(result, prefix) {
+  assert.equal(result.error, undefined);
+  assert.notEqual(result.status, 0);
+  const message = result.stderr.trim();
+  assert.equal(message.startsWith(prefix), true);
+  assert.equal(result.stdout, '');
+  return message.slice(prefix.length).split(', ').filter(Boolean);
+}
+
+test('production workflow validation and secrets payload stay aligned with worker secrets', () => {
+  const workflow = readFileSync(resolve(root, '.github/workflows/production-deploy.yml'), 'utf8');
+  const verifyStep = workflowStep(workflow, 'Verify production settings');
+  const deployStep = workflowStep(workflow, 'Deploy production');
+  const verifyPy = embeddedPython(verifyStep);
+  const deployPy = embeddedPython(deployStep);
+  const verifyBindings = secretBindings(verifyStep);
+  const deployBindings = secretBindings(deployStep);
+  const spaBindings = secretBindings(workflowStep(workflow, 'Build the production SPA'));
+  assert.deepEqual(spaBindings, ['TURNSTILE_SITE_KEY']);
+  assert.equal(deployBindings.includes('TURNSTILE_SITE_KEY'), true);
+  const folder = mkdtempSync(join(tmpdir(), 'bidplace-workflow-secrets-'));
+  chmodSync(folder, 0o700);
+  const file = join(folder, 'secrets.json');
+  const canary = 'workflow-secret-canary-value-32';
+  const quiet = (result) => assert.doesNotMatch(`${result.stdout}${result.stderr}`, new RegExp(canary));
+  try {
+    const verifyRequired = missingNames(runPython(verifyPy, {}), 'Missing production settings: ');
+    const deployRequired = missingNames(runPython(deployPy, { SECRETS_FILE: file }), 'Missing deployment secret names: ');
+    assert.equal(workerSecrets.includes('TURNSTILE_SITE_KEY'), false);
+    assert.equal(deployRequired.includes('TURNSTILE_SITE_KEY'), false);
+    assert.equal(verifyRequired.includes('TURNSTILE_SECRET_KEY'), true);
+    for (const name of deployRequired) {
+      assert.equal(workerSecrets.includes(name), true);
+      assert.equal(verifyRequired.includes(name), true);
+      assert.equal(verifyBindings.includes(name), true);
+      assert.equal(deployBindings.includes(name), true);
+    }
+
+    const endpoint = verifyPy.match(/^expected = "([^"]+)"$/m);
+    assert.ok(endpoint);
+    const neonUrl = (pooled) => {
+      const host = pooled ? `${endpoint[1]}-pooler.neon.tech` : `${endpoint[1]}.neon.tech`;
+      return `postgresql://role:${canary}@${host}/neondb?sslmode=require`;
+    };
+    const pooledDatabaseUrl = neonUrl(true);
+    const directDatabaseUrl = neonUrl(false);
+    const verifyEnv = {};
+    for (const name of verifyRequired) {
+      if (name === 'DATABASE_URL') verifyEnv[name] = pooledDatabaseUrl;
+      else if (name === 'NEON_DIRECT_URL') verifyEnv[name] = directDatabaseUrl;
+      else verifyEnv[name] = `${canary}-${name}`;
+    }
+    const verified = runPython(verifyPy, verifyEnv);
+    quiet(verified);
+    assert.equal(verified.status, 0);
+
+    const deployEnv = { SECRETS_FILE: file };
+    for (const name of deployRequired) {
+      deployEnv[name] = name === 'DATABASE_URL' ? pooledDatabaseUrl : `${canary}-${name}-padding`;
+    }
+    const deployed = runPython(deployPy, deployEnv);
+    quiet(deployed);
+    assert.equal(deployed.status, 0);
+    assert.deepEqual(
+      Object.keys(JSON.parse(readFileSync(file, 'utf8'))).sort(),
+      [...workerSecrets].sort(),
+    );
+    assertSecretsFile(file, root);
+  } finally {
+    rmSync(folder, { recursive: true, force: true });
+  }
 });

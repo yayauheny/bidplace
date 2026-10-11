@@ -5,9 +5,11 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import {
   figmaButtonContentHeight,
   figmaButtonHitSlop,
+  figmaButtonSizeMetrics,
   figmaButtonTokens,
   figmaTokens,
   resolveFigmaButtonInteraction,
+  type FigmaButtonSize,
 } from '@bidplace/design-tokens';
 
 import { AppText } from '../ui/AppText';
@@ -28,6 +30,7 @@ type FigmaButtonVisualContentProps = {
   interaction: FigmaButtonInteraction;
   label: string;
   layout: { width: number; height: number };
+  size?: FigmaButtonSize;
   loading?: boolean;
   icon?: FigmaIconName;
   iconNode?: ReactNode;
@@ -40,6 +43,7 @@ function FigmaButtonVisualContent({
   interaction,
   label,
   layout,
+  size = 'matrix',
   loading = false,
   icon,
   iconNode,
@@ -79,7 +83,7 @@ function FigmaButtonVisualContent({
           accessibilityElementsHidden={presentational ? true : undefined}
           style={{
             color: textColor,
-            ...figmaButtonTokens.typography,
+            ...figmaButtonSizeMetrics(size).typography,
           }}
         >
           {label}
@@ -107,6 +111,7 @@ type FigmaButtonBaseProps = {
   iconPosition?: 'left' | 'right';
   accessibilityHint?: string;
   width?: 'content' | 'full';
+  size?: FigmaButtonSize;
   testID?: string;
 };
 
@@ -179,13 +184,14 @@ export function FigmaButton(props: FigmaButtonPressProps | FigmaButtonLinkProps)
     iconPosition = 'left',
     accessibilityHint,
     width = 'content',
+    size = 'matrix',
     testID,
   } = props;
   const inactive = disabled || loading;
   const alignSelf = width === 'full' ? 'stretch' : 'flex-start';
   const { layout, onLayout } = useCssBorderBox();
 
-  const contentHeight = figmaButtonContentHeight();
+  const contentHeight = figmaButtonContentHeight(size);
   const hitSlop = figmaButtonHitSlop({
     width: layout.width > 0 ? layout.width : undefined,
     height: layout.height > 0 ? layout.height : contentHeight,
@@ -214,7 +220,7 @@ export function FigmaButton(props: FigmaButtonPressProps | FigmaButtonLinkProps)
           hovered,
           pressed,
         });
-        return figmaButtonStyle(variant, interaction);
+        return figmaButtonStyle(variant, interaction, size);
       }}
     >
       {({ hovered, pressed }) => {
@@ -230,6 +236,7 @@ export function FigmaButton(props: FigmaButtonPressProps | FigmaButtonLinkProps)
             interaction={interaction}
             label={label}
             layout={layout}
+            size={size}
             loading={loading}
             icon={icon}
             iconNode={iconNode}

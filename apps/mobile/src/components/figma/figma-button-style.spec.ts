@@ -1,4 +1,6 @@
 import {
+  designTokens,
+  figmaButtonContentHeight,
   figmaButtonInteractions,
   figmaButtonMatrixCell,
   figmaButtonTokens,
@@ -70,6 +72,32 @@ describe('figma button matrix', () => {
         expect('overflow' in style).toBe(false);
       }
     }
+  });
+
+  it('keeps auth and nickname suggestion heights on the shared padding formula', () => {
+    expect(figmaButtonContentHeight()).toBe(43);
+    expect(figmaButtonContentHeight('auth')).toBe(designTokens.auth.actionHeight);
+    expect(figmaButtonContentHeight('auth')).toBe(designTokens.auth.resendHeight);
+    expect(figmaButtonContentHeight('suggestion')).toBe(
+      designTokens.auth.suggestionHeight,
+    );
+    const auth = figmaButtonStyle('solid', 'idle', 'auth');
+    expect(auth.paddingHorizontal).toBe(
+      figmaButtonTokens.metrics.paddingX + figmaButtonTokens.metrics.strokeWidth,
+    );
+    expect(auth.paddingVertical).toBe(
+      designTokens.space.x3 + figmaButtonTokens.metrics.strokeWidth,
+    );
+    expect(auth.backgroundColor).toBe('transparent');
+    expect(auth.opacity).toBe(1);
+    const suggestion = figmaButtonStyle('outline', 'idle', 'suggestion');
+    expect(suggestion.paddingHorizontal).toBe(
+      designTokens.auth.suggestionX + figmaButtonTokens.metrics.strokeWidth,
+    );
+    expect(suggestion.paddingVertical).toBe(
+      designTokens.auth.suggestionY + figmaButtonTokens.metrics.strokeWidth,
+    );
+    expect(suggestion.borderRadius).toBe(figmaButtonTokens.metrics.radius);
   });
 
   it('uses shared metrics and label colors', () => {

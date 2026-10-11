@@ -3,6 +3,7 @@ import { resolve } from 'node:path';
 
 import { expect, test, type Page } from '@playwright/test';
 
+import { assignAuthClientIp } from './support/auth-client-ip';
 import { AUTH_BROWSER_VIEWPORTS, viewportLabel } from './support/auth-viewports';
 import { e2eEvidenceDir } from './support/evidence-dir';
 import { expectPasswordVisibility } from './support/fill-control';
@@ -14,6 +15,10 @@ const nicknameArtifactDir = resolve(
   '2026-10-09-nickname-suggestions',
 );
 const removedIntro = 'Искусство встречает своего следующего владельца.';
+
+test.beforeEach(async ({ context }) => {
+  await assignAuthClientIp(context);
+});
 
 test('dirty login asks before closing and providers stay unavailable', async ({ page }) => {
   const errors: string[] = [];
@@ -302,7 +307,7 @@ async function expectAuthBrowserHistory(page: Page, navigationApi: boolean) {
 
   await page.goto('/login');
   await expect(loginTitle).toBeVisible();
-  await page.getByRole('button', { name: 'Регистрация', exact: true }).click();
+  await page.getByRole('link', { name: 'Регистрация', exact: true }).click();
   await expect(page).toHaveURL(/\/register$/);
   await expect(page.getByText('Введите вашу почту', { exact: true })).toBeVisible();
   await page.getByPlaceholder('example@gmail.com').fill('author@example.com');

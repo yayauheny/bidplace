@@ -45,7 +45,18 @@ Environment и попадают только в временный production co
 production Wrangler эти три поля пустые. Пустое правило останавливает deploy
 до Wrangler. Перед migration CI проверяет наличие secrets и что pooled
 `DATABASE_URL` и direct `NEON_DIRECT_URL` ведут в production `neondb`, не
-печатая значения.
+печатая значения. Workflow использует GitHub Secrets `TURNSTILE_SITE_KEY`
+(публичный site key) и `TURNSTILE_SECRET_KEY` (backend). Workflow передаёт
+site key в Build the production SPA и в Deploy production. `build-web.mjs`
+берёт непустой caller, иначе непустой `TURNSTILE_SITE_KEY` из Wrangler vars,
+обрезает пробелы и кладёт результат в `EXPO_PUBLIC_TURNSTILE_SITE_KEY`.
+Записанный Wrangler держит это поле пустым, поэтому production build без
+caller останавливается до Expo export. Site key не входит в `workerSecrets`
+и не пишется в secrets-file. `TURNSTILE_SECRET_KEY` остаётся только в проверке
+production settings и в payload Container. `gateEnvironment` удаляет его до
+дочерней сборки и оставляет public site key. Значения не печатаются. Локально
+это проверяют `scripts/cloudflare/config.spec.mjs` и `deploy.spec.mjs` на
+синтетическом env, без живых secrets и без запросов в GitHub или Cloudflare.
 
 Environment `prod` — источник значений для этого deploy, не восстановимая
 копия. Оригиналы остаются в зашифрованном хранилище оператора. Секреты не

@@ -1,5 +1,17 @@
 # bidplace — текущий статус проекта
 
+## 2026-10-11 — Local release integration (`fix/portfolio-release-integration`)
+
+- `Partial` on local web. Node 22.23.3, `EXPO_NO_DOTENV=1`. Not deployed, not native, and not a production migration. Logs: `/private/tmp/bidplace-release-integration-checks/`.
+- Earlier green checks, not repeated: config/contracts/api-client/database/API typechecks **0**; API graph build and `pnpm build` **0**; turbo lint **0**; contracts ESLint **0**; config **8**, contracts **41**, api-client **35**, database **1**, API unit **437**, ops **31**, e2e fence **0**, cookie-proxy wire **6**; Cloudflare local tsc/eslint/vitest/node specs **0**; API integration **138** passed (**28** skipped) on disposable `bidplace_integration`; auth-abuse PostgreSQL **28/28** on caller-owned `127.0.0.1:53189` / `bidplace_auth_abuse_test`.
+- This pass: design-tokens `tsc` and build **0**; mobile TypeScript **6.0.3** **0**; mobile eslint **0**; mobile Vitest **725/725** (121 files), including `LegalLink` and the auth/suggestion cases in `Button.spec.ts` and `figma-button-style.spec.ts`.
+- Fresh `expo export --platform web --clear` to `web-dist-geometry` (`entry-60dc056ca7b8420536eaac498f298184.js`) embeds `http://127.0.0.1:50281` once and `127.0.0.1:50181` zero times.
+- Search chrome and the 16-cell button matrix: **14/14** (48.2s) on Chromium and WebKit against that export. Full `search-overlay.spec.ts` was not run: the standard Playwright config starts `e2e/prepare.mjs`, which loads `.env` and runs `migrate reset --force`.
+- Auth browser **44/44** (1.8m) on schema `auth_browser_release_20261011_v3` (`playwright.auth-abuse.config.ts`, no webServer). The previous four geometry failures passed first (14.1s). Test API only uses `TRUST_PROXY=true`; `assignAuthClientIp` keeps a distinct documentation IP per test so the register limit stays **5/60s per IP**. «Вернуться ко входу» and «Регистрация» stay links. Chromium privacy Escape restores the legal span after `LegalLink` focuses itself before open.
+- Auth and nickname layout geometry is restored on the shared `FigmaButton` renderer via size presets `auth` and `suggestion` (default matrix unchanged for the 4×4 board). Tokens and measurements: [design system §6.2](../design/03-DESIGN-SYSTEM.md#62-shared-text-button).
+- Production Cloudflare SPA build: Node 22, `EXPO_NO_DOTENV=1`, `node scripts/cloudflare/build-web.mjs production` with synthetic public Turnstile site key **exit 0**. Output `apps/mobile/dist` (`entry-d486afb3492577ae340f2a839e167129.js`). Post-export checks passed: production API origin present, staging origin absent, build secret canary absent from assets.
+- Rollout still needs a coordinated old-writer stop and a separate operator deploy for slug `20261008040000`, auth-abuse `20261010010000`, and legacy import `20261010100000`. Real SMTP, live Turnstile, and WAF were not exercised. Workflow wiring passes the public Turnstile site key into both SPA builds and the Turnstile secret only into backend validation/runtime. Secret values and their GitHub environment scope were not inspected.
+
 ## 2026-10-10 — Search popup chrome (`fix/control-reuse`)
 
 - `Partial` on local web. Text action buttons stay on the 16-cell matrix in

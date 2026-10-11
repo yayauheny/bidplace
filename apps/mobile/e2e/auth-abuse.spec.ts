@@ -11,6 +11,7 @@ import {
 } from '../src/errors/copy';
 
 import { registerUntilVerify, sendVerification } from './support/auth-browser-flow';
+import { assignAuthClientIp } from './support/auth-client-ip';
 import {
   armAuthWriteHold,
   cleanupAuthCookieProxyHold,
@@ -26,9 +27,7 @@ import { assertScriptedProof, expectTurnstileReady, expectTurnstileSizeForHost, 
 test.use({ trace: 'off', screenshot: 'off', video: 'off' });
 
 test.beforeEach(async ({ context }) => {
-  const hex = randomUUID().replace(/-/g, '');
-  const documentationIp = `2001:db8:${hex.slice(0, 4)}:${hex.slice(4, 8)}:${hex.slice(8, 12)}:${hex.slice(12, 16)}:${hex.slice(16, 20)}:${hex.slice(20, 24)}`;
-  await context.setExtraHTTPHeaders({ 'X-Forwarded-For': documentationIp });
+  await assignAuthClientIp(context);
 });
 
 test('the shared Turnstile frame follows its width rule without a reload', async ({ page }) => {
@@ -219,7 +218,7 @@ test('a late login response cannot replace the account installed while it was he
     await submitLogin(page, first.buyer.email, first.buyer.password);
     await waitForHeldAuthWrite();
     await page.getByRole('link', { name: 'Забыли пароль?', exact: true }).click();
-    await page.getByRole('button', { name: 'Вернуться ко входу', exact: true }).click();
+    await page.getByRole('link', { name: 'Вернуться ко входу', exact: true }).click();
     await expectSameDocument(page, nonce);
     await submitLogin(page, second.buyer.email, second.buyer.password);
     await expectProfilePath(page);
@@ -244,7 +243,7 @@ test('a late registration response cannot replace the account installed while it
     await installTurnstileFixture(page);
     await page.goto('/login?redirectTo=/profile');
     const nonce = await pinDocument(page);
-    await page.getByRole('button', { name: 'Регистрация', exact: true }).click();
+    await page.getByRole('link', { name: 'Регистрация', exact: true }).click();
     const id = randomUUID().slice(0, 8);
     await page.getByRole('textbox', { name: 'Электронная почта', exact: true }).fill(`late-a-${id}@bidplace.test`);
     await page.getByRole('checkbox', { name: /соглашаюсь/ }).click();

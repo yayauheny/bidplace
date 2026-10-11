@@ -12,6 +12,7 @@ import {
   registerUntilVerify,
   sendVerification,
 } from './support/auth-browser-flow';
+import { assignAuthClientIp } from './support/auth-client-ip';
 import { e2eApiBaseURL } from './support/e2e-env';
 import { createBuyerFixture } from './support/e2e-fixtures';
 import { expectPasswordVisibility } from './support/fill-control';
@@ -25,9 +26,7 @@ import {
 test.use({ trace: 'off', screenshot: 'off', video: 'off' });
 
 test.beforeEach(async ({ context }) => {
-  const hex = randomUUID().replace(/-/g, '');
-  const documentationIp = `2001:db8:${hex.slice(0, 4)}:${hex.slice(4, 8)}:${hex.slice(8, 12)}:${hex.slice(12, 16)}:${hex.slice(16, 20)}:${hex.slice(20, 24)}`;
-  await context.setExtraHTTPHeaders({ 'X-Forwarded-For': documentationIp });
+  await assignAuthClientIp(context);
 });
 
 async function expectProfilePath(page: Page): Promise<void> {

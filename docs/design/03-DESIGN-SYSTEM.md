@@ -27,10 +27,14 @@ Scroll resets to the top when height changes.
 
 `DEC-105` uses
 [`2026-10-07-auth-dialogs`](../../design/figma-handoff/auth/2026-10-07-auth-dialogs/README.md).
-Measured sheet, OTP, password, provider and exit values live in `designTokens.auth`
-and the `authPrimary` / `authQuiet` / `authProvider` button sizes. Auth primary
-actions use `authPrimary` (`#121212`, Inter 500). The resend action uses
-`authQuiet`. The exit panel uses the 12 px mobile gutter, so it is 366 wide at
+Measured sheet, OTP, password, provider, and exit spacing still live in
+`designTokens.auth` from that handoff. Runtime text actions no longer use removed
+`authPrimary` / `authQuiet` / `authProvider` variants; they map onto the shared
+text-button matrix in [§6.2](#62-shared-text-button) (`solid`, `outline`, `ghost`,
+`muted`) with size presets `auth` and `suggestion` where fullscreen auth needs
+51 px actions or 37 px nickname chips. Primary «Дальше» / «Войти» / resend rows
+use `solid` or `outline` at size `auth`; quiet full-width links use `ghost` at
+size `auth`. The exit panel keeps the 12 px mobile gutter, so it is 366 wide at
 390 px. Common field states stay shared. ShareSheet and unrelated buttons are
 unchanged. Mixed legal text, the Google glyph and recovery/desktop frames are
 still unresolved; those screens are derived, not 1:1.
@@ -528,6 +532,7 @@ disabled. State priority: disabled → pressed → hover → idle. Disabled appl
 | QA stand | `/dev/figma-buttons` renders a static 4×4 board (`FigmaButtonStatePreview`, handoff `714×283`) plus live controls below; previews use the same `figmaButtonStyle` shell and `FigmaButtonVisualContent` as production `FigmaButton` |
 | Sample «Кнопка» | Source 83×43 hug; web width follows fractional glyph metrics. Other labels hug content |
 | Touch | ≥44 px via shared `hitSlop` |
+| Sizes | `matrix` (default, 43: pad 8/16, Inter 600 14/26), `auth` (51: pad 12/16, same 14/26 label; `actionHeight` and `resendHeight`), `suggestion` (37: pad 8/13, `authSuggestion` 15/20). Height is `(paddingY + 0.5 stroke) × 2 + lineHeight`. Same four variants and renderer; size only changes padding and label metrics |
 
 | Variant | Idle fill | Hover / pressed | Disabled | Label |
 | --- | --- | --- | --- | --- |
@@ -536,9 +541,11 @@ disabled. State priority: disabled → pressed → hover → idle. Disabled appl
 | ghost | white, white stroke | black 5% overlay; pressed node `292:5046` paints 82×42 with no stroke inside the 83×43 frame | white + white stroke + shell opacity 0.5 | `#565656` |
 | muted | `#F3F3F3`, stroke `#F3F3F3` | black 6% overlay; stroke stays `#F3F3F3` | `#F3F3F3` + shell opacity 0.5 | `#565656` |
 
-Auth, Home «Смотреть все», admin links, and semantic wrappers map onto this
-matrix. `DestructiveButton` stays semantic but renders `solid`. Chips,
-icon buttons, and fields keep their own controls.
+Auth fullscreen actions and nickname suggestions use this matrix with size
+`auth` or `suggestion` (see Sizes row). Home «Смотреть все», admin links, and
+semantic wrappers use the default `matrix` size. `DestructiveButton` stays
+semantic but renders `solid`. Chips, icon buttons, and fields keep their own
+controls.
 
 ## 6.3 Shared text field
 

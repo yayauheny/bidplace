@@ -1,9 +1,11 @@
 import {
   figmaButtonMatrixCell,
+  figmaButtonSizeMetrics,
   figmaButtonTokens,
   figmaButtonVariants,
   resolveFigmaButtonInteraction,
   type FigmaButtonInteraction,
+  type FigmaButtonSize,
   type FigmaButtonVariant,
 } from '@bidplace/design-tokens';
 
@@ -11,20 +13,23 @@ export {
   figmaButtonVariants,
   resolveFigmaButtonInteraction,
   type FigmaButtonInteraction,
+  type FigmaButtonSize,
   type FigmaButtonVariant,
 };
 
 export function figmaButtonStyle(
   variant: FigmaButtonVariant,
   interaction: FigmaButtonInteraction,
+  size: FigmaButtonSize = 'matrix',
 ) {
   const cell = figmaButtonMatrixCell(variant, interaction);
-  const { metrics } = figmaButtonTokens;
+  const sizeMetrics = figmaButtonSizeMetrics(size);
+  const { strokeWidth } = figmaButtonTokens.metrics;
 
   return {
-    // Inside stroke sits in the frame, so the sample «Кнопка» box is 83×43.
-    paddingHorizontal: metrics.paddingX + metrics.strokeWidth,
-    paddingVertical: metrics.paddingY + metrics.strokeWidth,
+    // Inside stroke sits in the frame. Matrix sample «Кнопка» is 83×43.
+    paddingHorizontal: sizeMetrics.paddingX + strokeWidth,
+    paddingVertical: sizeMetrics.paddingY + strokeWidth,
     borderRadius: cell.borderRadius,
     backgroundColor: 'transparent',
     opacity: cell.controlOpacity,

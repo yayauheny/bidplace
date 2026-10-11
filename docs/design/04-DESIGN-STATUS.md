@@ -1,8 +1,14 @@
 # bidplace — статус дизайна и UI-реализации
 
-Последнее обновление: 2026-10-10
+Последнее обновление: 2026-10-11
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
+
+## 2026-10-11 — Local release integration
+
+- `Partial` on local web. Auth layout, lifecycle, and abuse are **44/44** on Chromium and WebKit. Search chrome and the text-button matrix are **14/14** on the fresh `--clear` export. Mobile Vitest **725/725**. Assertions on the register title band and nickname title stayed as written.
+- Fullscreen auth actions and nickname chips again match the 2026-10-08 capture on one matrix renderer (`auth` / `suggestion` presets; default **43** matrix unchanged). Owner: [design system §6.2](03-DESIGN-SYSTEM.md#62-shared-text-button).
+- Privacy Escape returns focus to «политику конфиденциальности» after the legal link focuses itself before the dialog opens. «Вернуться ко входу» and «Регистрация» stay links. Native, live SMTP, live Turnstile, and WAF are not claimed. Evidence: `/private/tmp/bidplace-release-integration-checks/`.
 
 ## 2026-10-10 — Search popup chrome
 

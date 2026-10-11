@@ -1,3 +1,4 @@
+import type { FigmaButtonSize } from '@bidplace/design-tokens';
 import { View, type ViewStyle } from 'react-native';
 
 import { FigmaButton } from '../figma/FigmaButton';
@@ -12,6 +13,7 @@ type ButtonProps = {
   icon?: FigmaIconName;
   accessibilityHint?: string;
   width?: 'content' | 'full' | 'block';
+  size?: FigmaButtonSize;
   alignSelf?: ViewStyle['alignSelf'];
 };
 
@@ -76,7 +78,7 @@ export function TextButton({
   disabled,
   icon,
   accessibilityHint,
-}: Omit<ButtonProps, 'loading'>) {
+}: Omit<ButtonProps, 'loading' | 'size'>) {
   return (
     <FigmaButton
       label={label}

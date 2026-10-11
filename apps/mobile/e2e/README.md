@@ -26,6 +26,7 @@ Create that empty schema yourself. Then, as a separate step, apply the repositor
    - `TEST_EMAIL_BYPASS=false` — verification bypass must stay off for this suite (real OTP/verification flow; `true` would skip the verified gate)
    - `PASSWORD_RESET_URL_BASE` — same origin as the web app (for example the Expo loopback origin)
    - `TURNSTILE_VERIFIER=test`, `TURNSTILE_HOSTNAME=localhost`
+   - `TRUST_PROXY=true` — the loopback cookie proxy forwards a distinct synthetic client IP for each test. Keep this IP stable within the scenario so production rate limits remain active without sharing buckets across unrelated tests.
 
    Starting the API does not migrate; apply additive migrations only to the fresh owned schema in the separate step above. Do not migrate existing shared local databases.
 3. Start the cookie proxy with Node, binding only through the script:
@@ -39,7 +40,7 @@ node apps/mobile/e2e/support/auth-cookie-proxy.mjs
 
 The upstream must be loopback and must include a port. The two listen ports must be distinct. The proxy listens on `127.0.0.1`.
 
-4. Start Expo web with `EXPO_NO_DOTENV=1`, `EXPO_PUBLIC_API_URL` pointed at the proxy origin, and `EXPO_PUBLIC_TURNSTILE_SITE_KEY=1x00000000000000000000AA` (Cloudflare's public always-pass widget test key).
+4. Start Expo web with `EXPO_NO_DOTENV=1`, `EXPO_PUBLIC_API_URL` pointed at the proxy origin, and `EXPO_PUBLIC_TURNSTILE_SITE_KEY=1x00000000000000000000AA` (Cloudflare's public always-pass widget test key). Clear the Metro cache when changing these public build inputs (`--clear` for Expo start or export); a reused bundle can still target a previous proxy port. For a static export, serve the newly exported directory.
 
 ## Repeat
 

@@ -1,17 +1,18 @@
 import { spawnSync } from 'node:child_process';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { deploymentConfig, root } from './config.mjs';
+import { deploymentConfig, root, turnstileSiteKeyForBuild } from './config.mjs';
 
 const target = process.argv[2];
 const config = deploymentConfig(target);
+const siteKey = turnstileSiteKeyForBuild(process.env.TURNSTILE_SITE_KEY, config.vars.TURNSTILE_SITE_KEY);
 const secretCanary = 'bidplace-build-isolation-canary';
 const result = spawnSync('pnpm', ['--filter', '@bidplace/mobile', 'build:web', '--clear'], {
   cwd: root, stdio: 'inherit',
   env: { ...process.env, NODE_ENV: 'production', EXPO_NO_DOTENV: '1',
     EXPO_PUBLIC_API_URL: config.vars.API_URL, EXPO_PUBLIC_APP_ENV: target,
     EXPO_PUBLIC_ANALYTICS_ENABLED: config.vars.ANALYTICS_INGEST_ENABLED,
-    EXPO_PUBLIC_TURNSTILE_SITE_KEY: config.vars.TURNSTILE_SITE_KEY ?? '',
+    EXPO_PUBLIC_TURNSTILE_SITE_KEY: siteKey,
     JWT_SECRET: secretCanary, DATABASE_URL: secretCanary,
     S3_SECRET_ACCESS_KEY: secretCanary, SMTP_PASSWORD: secretCanary,
     CLOUDFLARE_CACHE_TOKEN: secretCanary, TURNSTILE_SECRET_KEY: secretCanary },

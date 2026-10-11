@@ -1,8 +1,11 @@
+import { designTokens } from './tokens';
+
 /**
  * Text-button geometry and 16-cell visual matrix from Figma `292:5058`.
  * Button-only colors; does not replace shared field/chip/quietFill tokens.
  */
 export const figmaButtonVariants = ['solid', 'outline', 'ghost', 'muted'] as const;
+export const figmaButtonSizes = ['matrix', 'auth', 'suggestion'] as const;
 export type FigmaButtonVariant = (typeof figmaButtonVariants)[number];
 
 export const figmaButtonInteractions = [
@@ -12,6 +15,7 @@ export const figmaButtonInteractions = [
   'disabled',
 ] as const;
 export type FigmaButtonInteraction = (typeof figmaButtonInteractions)[number];
+export type FigmaButtonSize = (typeof figmaButtonSizes)[number];
 
 export const figmaButtonTokens = {
   figmaNode: '292:5058',
@@ -209,8 +213,31 @@ export function figmaButtonHitSlop(measured: {
   };
 }
 
-export function figmaButtonContentHeight() {
-  const { paddingY, strokeWidth } = figmaButtonTokens.metrics;
-  const line = figmaButtonTokens.typography.lineHeight;
-  return (paddingY + strokeWidth) * 2 + line;
+/** Padding and label metrics. Paint stays on the shared matrix. */
+export function figmaButtonSizeMetrics(size: FigmaButtonSize = 'matrix') {
+  if (size === 'auth') {
+    return {
+      paddingX: figmaButtonTokens.metrics.paddingX,
+      paddingY: designTokens.space.x3,
+      typography: figmaButtonTokens.typography,
+    };
+  }
+  if (size === 'suggestion') {
+    return {
+      paddingX: designTokens.auth.suggestionX,
+      paddingY: designTokens.auth.suggestionY,
+      typography: designTokens.typography.authSuggestion,
+    };
+  }
+  return {
+    paddingX: figmaButtonTokens.metrics.paddingX,
+    paddingY: figmaButtonTokens.metrics.paddingY,
+    typography: figmaButtonTokens.typography,
+  };
+}
+
+export function figmaButtonContentHeight(size: FigmaButtonSize = 'matrix') {
+  const { paddingY, typography } = figmaButtonSizeMetrics(size);
+  const { strokeWidth } = figmaButtonTokens.metrics;
+  return (paddingY + strokeWidth) * 2 + typography.lineHeight;
 }

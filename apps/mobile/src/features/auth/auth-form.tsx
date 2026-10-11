@@ -358,6 +358,7 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
         <AppText role="bodySmall">Перейдите к следующему шагу.</AppText>
         <PrimaryButton
           label="Перейти дальше"
+          size="auth"
           width="full"
           onPress={() => {
             if (complete) complete(redirectTo);
@@ -445,6 +446,7 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
         ) : null}
         <PrimaryButton
           label="Войти"
+          size="auth"
           width="full"
           loading={form.formState.isSubmitting}
           onPress={submit}
@@ -459,6 +461,7 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
           <FigmaButton
             label="Регистрация"
             variant="ghost"
+            size="auth"
             width="full"
             onPress={() => undefined}
           />
@@ -472,6 +475,7 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
           label="Войти с Telegram"
           iconNode={<AuthTelegramIcon />}
           variant="outline"
+          size="auth"
           width="full"
           onPress={() => setProviderNotice('Вход через Telegram пока недоступен')}
         />
@@ -479,6 +483,7 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
           label="Войти с Google"
           iconNode={<AuthGoogleIcon />}
           variant="outline"
+          size="auth"
           width="full"
           onPress={() => setProviderNotice('Вход через Google пока недоступен')}
         />
@@ -587,6 +592,7 @@ function NicknameSuggestionList({
             label={suggestion}
             accessibilityHint="Заполнить поле никнейма"
             variant="outline"
+            size="suggestion"
             onPress={() => onSelect(suggestion)}
           />
         ))}
@@ -1053,6 +1059,7 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
         <AppText role="bodySmall">Перейдите к следующему шагу.</AppText>
         <PrimaryButton
           label="Дальше"
+          size="auth"
           width="full"
           onPress={() => finishRegistration(visitor)}
         />
@@ -1084,6 +1091,7 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
   const nextAction = (
     <PrimaryButton
       label="Дальше"
+      size="auth"
       width="full"
       loading={
         form.formState.isSubmitting ||

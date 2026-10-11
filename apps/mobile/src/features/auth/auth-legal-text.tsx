@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import type { TextStyle } from 'react-native';
 import { Platform, Text } from 'react-native';
 
@@ -23,6 +24,11 @@ const mutedStyle = {
   color: designTokens.color.gray2,
 } as const;
 
+function focusLegalLink(node: unknown) {
+  if (Platform.OS !== 'web' || !(node instanceof HTMLElement)) return;
+  node.focus({ preventScroll: true });
+}
+
 function LegalLink({
   label,
   onPress,
@@ -30,16 +36,24 @@ function LegalLink({
   label: string;
   onPress: () => void;
 }) {
+  const hostRef = useRef<unknown>(null);
+  const activate = () => {
+    focusLegalLink(hostRef.current);
+    onPress();
+  };
   const handleKeyDown = (event: { key: string; preventDefault: () => void }) => {
     if (event.key !== 'Enter' && event.key !== ' ') return;
     event.preventDefault();
-    onPress();
+    activate();
   };
 
   return (
     <Text
+      ref={(node) => {
+        hostRef.current = node;
+      }}
       accessibilityRole="link"
-      onPress={onPress}
+      onPress={activate}
       {...(Platform.OS === 'web' ? ({ onKeyDown: handleKeyDown, tabIndex: 0 } as object) : {})}
       style={linkStyle}
     >

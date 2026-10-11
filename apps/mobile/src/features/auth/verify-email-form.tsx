@@ -115,6 +115,7 @@ export function VerifyEmailForm({ redirectTo }: VerifyEmailFormProps) {
       {verification.readStatus === 'error' ? (
         <SecondaryButton
           label="Повторить чтение"
+          size="auth"
           width="full"
           disabled={verification.reading}
           onPress={verification.retry}
@@ -135,6 +136,7 @@ export function VerifyEmailForm({ redirectTo }: VerifyEmailFormProps) {
           />
           <SecondaryButton
             label="Сохранить адрес"
+            size="auth"
             width="full"
             loading={verification.correcting}
             disabled={busy}
@@ -171,6 +173,7 @@ export function VerifyEmailForm({ redirectTo }: VerifyEmailFormProps) {
       {ready ? (
         <PrimaryButton
           label="Завершить"
+          size="auth"
           width="full"
           loading={verification.verifying}
           disabled={busy || verification.code.length !== 6 || verification.verifyLocked || paused || codeExpired}
@@ -180,6 +183,7 @@ export function VerifyEmailForm({ redirectTo }: VerifyEmailFormProps) {
       {ready && verification.retrySendPending ? (
         <SecondaryButton
           label="Повторить тот же запрос"
+          size="auth"
           width="full"
           disabled={busy || clientUnavailable}
           onPress={() => send(false)}
@@ -188,6 +192,7 @@ export function VerifyEmailForm({ redirectTo }: VerifyEmailFormProps) {
       {ready ? (
         <SecondaryButton
           label={sendLabel}
+          size="auth"
           width="full"
           disabled={busy || waitSeconds > 0 || clientUnavailable}
           onPress={() => send(true)}

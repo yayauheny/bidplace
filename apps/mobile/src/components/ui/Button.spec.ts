@@ -12,6 +12,7 @@ import {
 } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import {
+  designTokens,
   figmaButtonInteractions,
   figmaButtonMatrixCell,
   figmaButtonTokens,
@@ -364,6 +365,45 @@ describe('shared text button wrappers', () => {
     secondary.unmount();
     destructive.unmount();
     ghost.unmount();
+  });
+
+  it('forwards auth and suggestion sizes through the same paint', async () => {
+    const auth = await mount(
+      createElement(PrimaryButton, {
+        label: 'Дальше',
+        size: 'auth',
+        onPress: () => undefined,
+      }),
+    );
+    const chip = await mount(
+      createElement(FigmaButton, {
+        label: 'имя',
+        variant: 'outline',
+        size: 'suggestion',
+        onPress: () => undefined,
+      }),
+    );
+    const authButton = buttonOf(auth.container);
+    expect(authButton.dataset.padY).toBe(
+      String(designTokens.space.x3 + figmaButtonTokens.metrics.strokeWidth),
+    );
+    expect(authButton.querySelector('span')?.dataset.fontSize).toBe(
+      String(figmaButtonTokens.typography.fontSize),
+    );
+    expect(svgRects(auth.container)[0]?.fill).toBe(figmaButtonTokens.colors.solidIdle);
+    const chipButton = buttonOf(chip.container);
+    expect(chipButton.dataset.padX).toBe(
+      String(designTokens.auth.suggestionX + figmaButtonTokens.metrics.strokeWidth),
+    );
+    expect(chipButton.dataset.padY).toBe(
+      String(designTokens.auth.suggestionY + figmaButtonTokens.metrics.strokeWidth),
+    );
+    expect(chipButton.querySelector('span')?.dataset.fontSize).toBe(
+      String(designTokens.typography.authSuggestion.fontSize),
+    );
+    expect(svgRects(chip.container)[0]?.fill).toBe(figmaButtonTokens.colors.canvas);
+    auth.unmount();
+    chip.unmount();
   });
 
   it('blocks repeat actions while disabled or loading', async () => {
