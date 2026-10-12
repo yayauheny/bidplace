@@ -81,7 +81,7 @@ describe('product draft form lifecycle', () => {
       proposals: persistedSelection.proposals.map((proposal) => ({
         ...proposal,
         status: 'APPROVED' as const,
-        mappedTermId: persistedSelection.materialTermIds[0],
+        mappedTermId: persistedSelection.materialTermIds[0] ?? null,
       })),
     };
     expect(productToDraftFormValues(persistedProduct, approved).materialProposals).toEqual([]);
