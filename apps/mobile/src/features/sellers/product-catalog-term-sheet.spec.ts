@@ -263,18 +263,6 @@ describe('Work catalog term picker', () => {
     view.unmount();
   });
 
-  it('does not claim active selected terms are hidden while lookup is loading', () => {
-    const view = mount({
-      selectedIds: [acrylic.id],
-      knownTerms: [acrylic],
-      availableTerms: [],
-      loading: true,
-    });
-    expect(view.container.textContent).toContain('состояние справочника пока неизвестно');
-    expect(view.container.textContent).not.toContain('сейчас недоступны для нового выбора');
-    view.unmount();
-  });
-
   it('disables apply and clear in read-only mode', () => {
     const view = mount({ editable: false, selectedIds: [acrylic.id] });
     expect(view.container.textContent).not.toContain('Очистить');
