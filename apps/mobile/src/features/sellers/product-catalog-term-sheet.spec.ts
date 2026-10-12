@@ -161,6 +161,12 @@ function mount(overrides: Partial<ComponentProps<typeof ProductCatalogTermSheet>
   return {
     container,
     onApply,
+    rerender(next: Partial<ComponentProps<typeof ProductCatalogTermSheet>>) {
+      Object.assign(props, next);
+      act(() => {
+        root.render(createElement(ProductCatalogTermSheet, { ...props }));
+      });
+    },
     unmount() {
       act(() => root.unmount());
       container.remove();
@@ -234,6 +240,27 @@ describe('Work catalog term picker', () => {
     click(view.container, 'Очистить');
     click(view.container, 'Применить');
     expect(view.onApply).toHaveBeenCalledWith([], []);
+    view.unmount();
+  });
+
+  it('does not erase an unsaved selection on a background props refresh', () => {
+    const view = mount();
+    clickOption(view.container, 'Акрил');
+    view.rerender({ selectedIds: [], proposals: [] });
+    click(view.container, 'Применить');
+    expect(view.onApply).toHaveBeenCalledWith([acrylic.id], []);
+    view.unmount();
+  });
+
+  it('does not claim active selected terms are hidden while lookup is loading', () => {
+    const view = mount({
+      selectedIds: [acrylic.id],
+      knownTerms: [acrylic],
+      availableTerms: [],
+      loading: true,
+    });
+    expect(view.container.textContent).toContain('состояние справочника пока неизвестно');
+    expect(view.container.textContent).not.toContain('сейчас недоступны для нового выбора');
     view.unmount();
   });
 

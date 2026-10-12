@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 
 import {
@@ -47,14 +47,19 @@ export function ProductCatalogTermSheet({
   onApply: (ids: string[], newNames: string[]) => void;
 }) {
   const [search, setSearch] = useState('');
-  const [draftIds, setDraftIds] = useState<string[]>([]);
-  const [draftProposals, setDraftProposals] = useState<string[]>([]);
+  const [draftIds, setDraftIds] = useState<string[]>(() => [...selectedIds]);
+  const [draftProposals, setDraftProposals] = useState<string[]>(() => [...proposals]);
+  const wasOpen = useRef(open);
 
+  // Source props can change after a background refetch. Never overwrite choices
+  // that the author is making in the still-open sheet.
   useEffect(() => {
-    if (!open) return;
-    setDraftIds([...selectedIds]);
-    setDraftProposals([...proposals]);
-    setSearch('');
+    if (open && !wasOpen.current) {
+      setDraftIds([...selectedIds]);
+      setDraftProposals([...proposals]);
+      setSearch('');
+    }
+    wasOpen.current = open;
   }, [open, selectedIds, proposals]);
 
   const known = new Map([...knownTerms, ...availableTerms].map((term) => [term.id, term]));
@@ -153,7 +158,11 @@ export function ProductCatalogTermSheet({
         ) : null}
         {hiddenSelected.length > 0 ? (
           <>
-            <AppText role="bodySmall" tone="secondary">Ранее выбранные, сейчас недоступны для нового выбора:</AppText>
+            <AppText role="bodySmall" tone="secondary">
+              {loading || error
+                ? 'Ранее выбранные значения (состояние справочника пока неизвестно):'
+                : 'Ранее выбранные, сейчас недоступны для нового выбора:'}
+            </AppText>
             {hiddenSelected.map((term) => (
               <FilterOptionRow
                 key={term.id}

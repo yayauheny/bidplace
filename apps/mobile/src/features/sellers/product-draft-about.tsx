@@ -102,6 +102,11 @@ export function ProductDraftAboutStep({
     categoryId,
     title,
   });
+  const hiddenSelectedCategory =
+    selection?.category?.id === categoryId &&
+    !categories.some((category) => category.id === categoryId)
+      ? selection.category
+      : null;
   const rejectedCategoryProposal = selection?.proposals.find(
     (proposal) =>
       proposal.kind === 'CATEGORY' &&
@@ -153,6 +158,12 @@ export function ProductDraftAboutStep({
         }
       >
         <FormSection title="Категория">
+          {hiddenSelectedCategory ? (
+            <AppText role="bodySmall" tone="secondary">
+              Ранее выбрана категория «{hiddenSelectedCategory.name}», сейчас она скрыта.
+              Можно оставить её или выбрать другую.
+            </AppText>
+          ) : null}
           {categories.map((category) => (
             <SecondaryButton
               key={category.id}
