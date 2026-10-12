@@ -1,9 +1,10 @@
 import { z } from 'zod';
-import { productImageOrderRequestSchema } from '@bidplace/contracts';
+import { productImageOrderRequestSchema, uuidSchema } from '@bidplace/contracts';
 
 import { requestJson, type RequestContext } from './request';
 
 const imageUploadResponseSchema = z.object({ ok: z.literal(true) }).strict();
+const storyImageUploadResponseSchema = z.object({ mediaAssetId: uuidSchema }).strict();
 
 export function createImagesClient(context: RequestContext) {
   return {
@@ -26,6 +27,27 @@ export function createImagesClient(context: RequestContext) {
           body: { images },
           asFormData: true,
         },
+      );
+    },
+    addStoryImage(productId: string, image: Blob, idempotencyKey: string) {
+      return requestJson(
+        context,
+        `/api/products/${productId}/story-images`,
+        storyImageUploadResponseSchema,
+        {
+          method: 'POST',
+          body: { image },
+          asFormData: true,
+          headers: { 'Idempotency-Key': idempotencyKey },
+        },
+      );
+    },
+    removeStoryImage(productId: string, mediaAssetId: string) {
+      return requestJson(
+        context,
+        `/api/products/${productId}/story-images/${mediaAssetId}`,
+        imageUploadResponseSchema,
+        { method: 'DELETE' },
       );
     },
     addCreationStepImage(productId: string, stepId: string, image: Blob) {

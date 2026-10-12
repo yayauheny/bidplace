@@ -37,3 +37,30 @@ describe('Work upload identity', () => {
     ).toBe(true);
   });
 });
+
+
+describe('Work story image lifecycle', () => {
+  it('uploads once using an idempotency identity and returns the media asset id', async () => {
+    const id = '81111111-1111-4111-8111-111111111111';
+    const requests: Array<{ url: string; init: RequestInit }> = [];
+    const fetchImpl = vi.fn<typeof fetch>().mockImplementation(async (url, init) => {
+      requests.push({ url: String(url), init: init! });
+      return new Response(JSON.stringify({ mediaAssetId: id }), {
+        headers: { 'Content-Type': 'application/json' },
+      });
+    });
+    const client = createImagesClient(
+      createRequestContext({ baseUrl: 'https://api.example.test', fetchImpl }),
+    );
+
+    expect(await client.addStoryImage('work-id', new Blob(['image'], { type: 'image/png' }), 'one-upload')).toEqual({
+      mediaAssetId: id,
+    });
+    expect(requests).toHaveLength(1);
+    expect(requests[0]?.url).toBe('https://api.example.test/api/products/work-id/story-images');
+    expect(requests[0]?.init.method).toBe('POST');
+    expect(new Headers(requests[0]?.init.headers).get('Idempotency-Key')).toBe('one-upload');
+    expect(requests[0]?.init.body).toBeInstanceOf(FormData);
+    expect((requests[0]?.init.body as FormData).getAll('image')).toHaveLength(1);
+  });
+});
