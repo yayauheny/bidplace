@@ -196,13 +196,16 @@ export function ProductDraftScreen({
     queryKey: categoryKeys.all,
     queryFn: ({ signal }) => api.categories.list({ signal }),
   });
+  const [catalogOpenRole, setCatalogOpenRole] = useState<'MATERIAL' | 'TECHNIQUE' | null>(null);
   const materialsCatalog = useQuery({
     queryKey: ['catalog', 'terms', 'MATERIAL'],
     queryFn: ({ signal }) => api.catalog.listTerms('MATERIAL', { signal }),
+    enabled: catalogOpenRole === 'MATERIAL',
   });
   const techniquesCatalog = useQuery({
     queryKey: ['catalog', 'terms', 'TECHNIQUE'],
     queryFn: ({ signal }) => api.catalog.listTerms('TECHNIQUE', { signal }),
+    enabled: catalogOpenRole === 'TECHNIQUE',
   });
   const productDetail = useQuery({
     queryKey: productId
@@ -1057,6 +1060,7 @@ export function ProductDraftScreen({
               editable={editable && !inputsLocked}
               categories={categories.data.categories}
               selection={productDetail.data?.selection}
+              onCatalogOpen={setCatalogOpenRole}
               catalog={{
                 MATERIAL: {
                   terms: materialsCatalog.data?.terms ?? [],

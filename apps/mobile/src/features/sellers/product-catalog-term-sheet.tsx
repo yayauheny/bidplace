@@ -8,7 +8,6 @@ import {
 } from '@bidplace/contracts';
 import { designTokens } from '@bidplace/design-tokens';
 
-import { FilterOptionRow } from '../../components/figma/FilterOptionRow';
 import { FilterSearchField } from '../../components/figma/FilterSearchField';
 import { FilterSheet } from '../../components/figma/FilterSheet';
 import { FigmaChoiceChip } from '../../components/figma/FigmaChoiceChip';
@@ -163,16 +162,19 @@ export function ProductCatalogTermSheet({
                 ? 'Ранее выбранные значения (состояние справочника пока неизвестно):'
                 : 'Ранее выбранные, сейчас недоступны для нового выбора:'}
             </AppText>
-            {hiddenSelected.map((term) => (
-              <FilterOptionRow
-                key={term.id}
-                label={term.name}
-                mode="checkbox"
-                selected
-                disabled={!editable}
-                onPress={() => toggle(term.id)}
-              />
-            ))}
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: designTokens.space.x2 }}>
+              {hiddenSelected.map((term) => (
+                <FigmaChoiceChip
+                  key={term.id}
+                  label={term.name}
+                  selected
+                  removable
+                  disabled={!editable}
+                  onPress={() => toggle(term.id)}
+                  onRemove={() => toggle(term.id)}
+                />
+              ))}
+            </View>
           </>
         ) : null}
         {loading ? (
@@ -184,16 +186,22 @@ export function ProductCatalogTermSheet({
           </>
         ) : (
           <>
-            {filtered.map((term) => (
-              <FilterOptionRow
-                key={term.id}
-                label={term.name}
-                mode="checkbox"
-                selected={draftIds.includes(term.id)}
-                disabled={!editable || (!draftIds.includes(term.id) && draftIds.length >= WORK_CATALOG_LIMITS.termsPerRole)}
-                onPress={() => toggle(term.id)}
-              />
-            ))}
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: designTokens.space.x2 }}>
+              {filtered.map((term) => {
+                const selected = draftIds.includes(term.id);
+                return (
+                  <FigmaChoiceChip
+                    key={term.id}
+                    label={term.name}
+                    selected={selected}
+                    removable={selected}
+                    disabled={!editable || (!selected && draftIds.length >= WORK_CATALOG_LIMITS.termsPerRole)}
+                    onPress={() => toggle(term.id)}
+                    onRemove={() => toggle(term.id)}
+                  />
+                );
+              })}
+            </View>
             {canPropose ? (
               <SecondaryButton
                 label={`Предложить «${search.trim()}»`}

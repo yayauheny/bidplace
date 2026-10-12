@@ -29,6 +29,7 @@ export type ProductDraftAboutStepProps = {
   editable: boolean;
   categories: Array<{ id: string; name: string; slug: string }>;
   selection?: SellerProductDetailResponse['selection'];
+  onCatalogOpen: (role: 'MATERIAL' | 'TECHNIQUE' | null) => void;
   catalog: Record<'MATERIAL' | 'TECHNIQUE', {
     terms: SellerProductDetailResponse['selection']['materialTerms'];
     loading: boolean;
@@ -50,6 +51,7 @@ export function ProductDraftAboutStep({
   editable,
   categories,
   selection,
+  onCatalogOpen,
   catalog,
   stepOneAttempted,
   saveIsPending,
@@ -131,14 +133,20 @@ export function ProductDraftAboutStep({
               placeholder="Выберите или предложите"
               value={termLabels(techniqueTermIds, techniqueProposals, catalog.TECHNIQUE.terms, selection?.techniqueTerms ?? [])}
               disabled={!editable}
-              onPress={() => setOpenRole('TECHNIQUE')}
+              onPress={() => {
+                onCatalogOpen('TECHNIQUE');
+                setOpenRole('TECHNIQUE');
+              }}
             />
             <FigmaSelectField
               label="Материалы"
               placeholder="Выберите или предложите"
               value={termLabels(materialTermIds, materialProposals, catalog.MATERIAL.terms, selection?.materialTerms ?? [])}
               disabled={!editable}
-              onPress={() => setOpenRole('MATERIAL')}
+              onPress={() => {
+                onCatalogOpen('MATERIAL');
+                setOpenRole('MATERIAL');
+              }}
             />
             <ProductDraftTextField
               name="dimensions"
@@ -279,7 +287,10 @@ export function ProductDraftAboutStep({
           error={activeRoleQuery.error}
           editable={editable}
           onRetry={activeRoleQuery.onRetry}
-          onClose={() => setOpenRole(null)}
+          onClose={() => {
+            setOpenRole(null);
+            onCatalogOpen(null);
+          }}
           onApply={(ids, names) => {
             if (guard.current) return;
             const idField = openRole === 'MATERIAL' ? 'materialTermIds' : 'techniqueTermIds';

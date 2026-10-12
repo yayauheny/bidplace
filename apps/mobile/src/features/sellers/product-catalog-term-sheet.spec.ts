@@ -83,14 +83,25 @@ vi.mock('../../components/figma/FilterOptionRow', () => ({
 vi.mock('../../components/figma/FigmaChoiceChip', () => ({
   FigmaChoiceChip: ({
     label,
+    selected,
     disabled,
+    onPress,
     onRemove,
+    removable,
   }: {
     label: string;
+    selected: boolean;
     disabled: boolean;
+    removable?: boolean;
+    onPress: () => void;
     onRemove?: () => void;
   }) =>
-    createElement('button', { type: 'button', disabled, onClick: onRemove }, label),
+    createElement('button', {
+      type: 'button',
+      disabled,
+      'aria-pressed': onRemove === undefined || !removable ? selected : undefined,
+      onClick: removable ? onRemove : onPress,
+    }, label),
 }));
 
 vi.mock('../../components/ui', () => ({
