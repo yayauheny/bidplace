@@ -11,6 +11,7 @@ describe('formatAchievementDate', () => {
   it.each([
     [{ year: 2026, month: 8, day: null }, 'Август, 2026'],
     [{ year: 2016, month: 12, day: null }, 'Декабрь, 2016'],
+    [{ year: 4, month: 2, day: null }, 'Февраль, 0004'],
   ])('formats %o without fabricating a day', (value, expected) => {
     expect(formatAchievementDate(value)).toBe(expected);
   });
@@ -18,6 +19,9 @@ describe('formatAchievementDate', () => {
   it('keeps an author-provided day in the owner format', () => {
     expect(formatAchievementDate({ year: 2025, month: 3, day: 17 })).toContain(
       '17',
+    );
+    expect(formatAchievementDate({ year: 4, month: 2, day: 29 })).toBe(
+      '29 февраля 0004 г.',
     );
   });
 });
@@ -27,6 +31,7 @@ describe('parseAchievementDateInput', () => {
     ['03.2025', { year: 2025, month: 3, day: null }],
     [' 3.2025 ', { year: 2025, month: 3, day: null }],
     ['29.02.2024', { year: 2024, month: 2, day: 29 }],
+    ['29.02.0004', { year: 4, month: 2, day: 29 }],
   ])('accepts %s without inventing date precision', (input, date) => {
     expect(parseAchievementDateInput(input)).toEqual({ date, error: null });
   });
@@ -52,6 +57,7 @@ describe('formatAuthorAchievementLabel', () => {
   it.each([
     [{ year: 2026, month: 4, day: null }, '04.2026'],
     [{ year: 2016, month: 12, day: 31 }, '31.12.2016'],
+    [{ year: 4, month: 2, day: 29 }, '29.02.0004'],
   ])('uses a day only when the author provided one', (value, expected) => {
     expect(formatAuthorAchievementLabel(value)).toBe(expected);
   });
