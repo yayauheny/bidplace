@@ -32,6 +32,13 @@ import {
   slugSchema,
 } from '../src';
 
+const registrationLegal = {
+  agreement: { version: 'portfolio-legal-2026-10-12', confirmed: true },
+  privacy: { version: 'portfolio-legal-2026-10-12', confirmed: true },
+  dataConsent: { version: 'portfolio-legal-2026-10-12', confirmed: true },
+  age18Confirmed: true,
+};
+
 describe('shared contracts', () => {
   it.each([2, 3, 20, 21, 121])(
     'validates %i-character new nicknames at every write boundary',
@@ -45,6 +52,7 @@ describe('shared contracts', () => {
           password: 'password123',
           slug,
           turnstileToken: 'synthetic-turnstile-proof',
+          legal: registrationLegal,
         }).success,
       ).toBe(valid);
       expect(claimSlugRequestSchema.safeParse({ slug }).success).toBe(valid);
@@ -740,8 +748,24 @@ describe('auth challenge requests', () => {
         password: 'password123',
         slug: 'author',
         turnstileToken: proof,
+        legal: registrationLegal,
       }).turnstileToken,
     ).toBe(proof);
+
+    expect(registerRequestSchema.safeParse({
+      email: 'author@example.com',
+      password: 'password123',
+      slug: 'author',
+      turnstileToken: proof,
+      legal: { ...registrationLegal, age18Confirmed: false },
+    }).success).toBe(false);
+    expect(registerRequestSchema.safeParse({
+      email: 'author@example.com',
+      password: 'password123',
+      slug: 'author',
+      turnstileToken: proof,
+      legal: { ...registrationLegal, dataConsent: { version: registrationLegal.dataConsent.version, confirmed: false } },
+    }).success).toBe(false);
 
     const login = { email: 'author@example.com', password: 'password123' };
     expect(loginRequestSchema.parse(login)).toEqual(login);
