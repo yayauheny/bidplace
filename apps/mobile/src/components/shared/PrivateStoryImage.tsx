@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Image } from 'expo-image';
 import { View, type ImageStyle } from 'react-native';
 
-import { AppText } from '../ui';
+import { AppText, SecondaryButton } from '../ui';
 import { useApiClient } from '../../providers/api-provider';
 
 /**
@@ -27,7 +27,8 @@ export function PrivateStoryImage({
   const api = useApiClient();
   const apiRef = useRef(api);
   apiRef.current = api;
-  const mediaKey = `${sessionEpoch}:${productId}:${mediaAssetId}:${galleryImageId ?? ''}`;
+  const [retry, setRetry] = useState(0);
+  const mediaKey = `${sessionEpoch}:${productId}:${mediaAssetId}:${galleryImageId ?? ''}:${retry}`;
   const [view, setView] = useState<{ key: string; uri: string | null; failed: boolean }>({
     key: '',
     uri: null,
@@ -58,11 +59,15 @@ export function PrivateStoryImage({
   }, [mediaKey, galleryImageId, productId, mediaAssetId]);
 
   if (view.key !== mediaKey || !view.uri || view.failed) {
+    const failed = view.key === mediaKey && view.failed;
     return (
       <View style={[style, { justifyContent: 'center', alignItems: 'center' }]}>
-        <AppText role="bodySmall" tone={view.key === mediaKey && view.failed ? 'danger' : 'secondary'}>
-          {view.key === mediaKey && view.failed ? 'Фото истории недоступно' : 'Загрузка фото'}
+        <AppText role="bodySmall" tone={failed ? 'danger' : 'secondary'}>
+          {failed ? 'Фото истории недоступно' : 'Загрузка фото'}
         </AppText>
+        {failed ? (
+          <SecondaryButton label="Повторить загрузку фото" onPress={() => setRetry((value) => value + 1)} />
+        ) : null}
       </View>
     );
   }
