@@ -6,9 +6,6 @@ import { designTokens } from '@bidplace/design-tokens';
 
 import { appTextRoleStyle } from '../../components/ui/app-text-role-style';
 
-export const AUTH_POLICY_STUB_TITLE = 'Политика конфиденциальности';
-export const AUTH_POLICY_STUB_BODY = 'Документ готовится';
-
 type AuthLegalTextProps = {
   variant: 'consent' | 'login';
   onOpenPolicy: () => void;
@@ -87,10 +84,10 @@ export function AuthLegalText({
         </>
       ) : (
         <>
-          Продолжая, вы принимаете{' '}
-          <LegalLink label="политику конфиденциальности" onPress={onOpenPolicy} />
+          Ознакомьтесь с{' '}
+          <LegalLink label="политикой персональных данных и cookies" onPress={onOpenPolicy} />
           {' '}и{' '}
-          <LegalLink label="правила сервиса" onPress={onOpenRules} />
+          <LegalLink label="пользовательским соглашением" onPress={onOpenRules} />
         </>
       )}
     </Text>

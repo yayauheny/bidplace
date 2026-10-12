@@ -7,10 +7,12 @@ export function LegalDocumentViewer({
   selected,
   documents,
   onClose,
+  loading = false,
 }: {
   selected: LegalDocumentId | null;
   documents: LegalDocumentsResponse | null;
   onClose: () => void;
+  loading?: boolean;
 }) {
   const document = documents?.documents.find((item) => item.id === selected);
   return (
@@ -21,7 +23,7 @@ export function LegalDocumentViewer({
           <LegalDocumentContent markdown={document.markdown} />
         </>
       ) : (
-        <AppText role="bodySmall" tone="danger">Документ пока не опубликован. Регистрация недоступна до публикации.</AppText>
+        <AppText role="bodySmall" tone="secondary">{loading ? 'Загружаем документ…' : 'Документ пока не опубликован.'}</AppText>
       )}
     </AppDialog>
   );
