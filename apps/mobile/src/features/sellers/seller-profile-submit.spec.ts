@@ -1735,6 +1735,54 @@ describe('seller profile save reconciliation', () => {
     );
   });
 
+  it('keeps a confirmed pending revision when submission completes off-screen', async () => {
+    let finishSubmit: (result: ReturnType<typeof submitResponse>) => void =
+      () => undefined;
+    harness.getMyProfile.mockResolvedValue(response('APPROVED', 'DRAFT'));
+    harness.updateProfile.mockResolvedValue(savedProfile());
+    harness.submitAuthorApplication.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          finishSubmit = resolve;
+        }),
+    );
+    const view = mount();
+    await until(
+      view.container,
+      () =>
+        findButton(view.container, 'Отправить на проверку') instanceof
+          HTMLButtonElement &&
+        !buttonDisabled(view.container, 'Отправить на проверку'),
+      'submit',
+    );
+    click(view.container, 'Отправить на проверку');
+    await until(
+      view.container,
+      () => harness.submitAuthorApplication.mock.calls.length === 1,
+      'pending submission',
+    );
+
+    harness.focused = false;
+    view.rerender();
+    await act(async () => {
+      finishSubmit(submitResponse('APPROVED', 'PENDING_REVIEW'));
+      await Promise.resolve();
+    });
+    await until(
+      view.container,
+      () =>
+        view.queryClient.getQueryData<ReturnType<typeof response>>([
+          'seller',
+          'profile',
+        ])?.editingRevision?.status === 'PENDING_REVIEW',
+      'confirmed revision',
+    );
+    harness.focused = true;
+    view.rerender();
+    expect(findButton(view.container, 'Отправить на проверку')).toBeUndefined();
+    view.unmount();
+  });
+
   it('does not apply a pending submission after the screen unmounts', async () => {
     let finishSubmit: (result: ReturnType<typeof submitResponse>) => void =
       () => undefined;
