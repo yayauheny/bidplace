@@ -613,6 +613,47 @@ describe('admin moderation revision projection', () => {
     view.unmount();
   });
 
+  it('prevents approving a revision with a selected rejected catalog proposal', async () => {
+    const product = pendingProduct();
+    harness.listSellerProfiles.mockResolvedValue({ sellerProfiles: [] });
+    harness.listProducts.mockResolvedValue({
+      products: [{
+        ...product,
+        reviewTarget: {
+          ...product.reviewTarget,
+          selection: {
+            ...product.reviewTarget.selection,
+            proposals: [{
+              id: '83333333-3333-4333-8333-333333333333',
+              productRevisionId,
+              kind: 'MATERIAL',
+              rawName: 'Неясный материал',
+              normalizedName: 'неясный материал',
+              status: 'REJECTED',
+              selected: true,
+              mappedCategoryId: null,
+              mappedTermId: null,
+              rejectionReason: 'Уточните материал',
+              reviewedAt: seenAt,
+            }],
+          },
+        },
+      }],
+    });
+    const view = mount(createElement(AdminModerationScreen));
+    await until(view.container, 'Модерация');
+    clickButton(view.container, 'Работы');
+    await until(view.container, 'Pending work');
+
+    expect(buttonNamed(view.container, 'Одобрить').disabled).toBe(true);
+    expect(view.container.textContent).toContain(
+      'Есть отклонённые предложения. Запросите изменения',
+    );
+    clickButton(view.container, 'Одобрить');
+    expect(harness.updateProductStatus).not.toHaveBeenCalled();
+    view.unmount();
+  });
+
   it('passes the current revision photo identity into the photo component', async () => {
     const seenChecksum = 'a'.repeat(64);
     const freshChecksum = 'b'.repeat(64);
