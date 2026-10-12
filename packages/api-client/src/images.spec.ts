@@ -64,3 +64,27 @@ describe('Work story image lifecycle', () => {
     expect((requests[0]?.init.body as FormData).getAll('image')).toHaveLength(1);
   });
 });
+
+describe('Authenticated Work Story previews', () => {
+  it('reads draft story assets and reused gallery images through bearer-authenticated requests', async () => {
+    const requests: Array<{ url: string; headers: Headers }> = [];
+    const fetchImpl = vi.fn<typeof fetch>().mockImplementation(async (url, init) => {
+      requests.push({ url: String(url), headers: new Headers(init?.headers) });
+      return new Response(new Blob(['image'], { type: 'image/png' }), {
+        headers: { 'Content-Type': 'image/png' },
+      });
+    });
+    const client = createImagesClient(createRequestContext({
+      baseUrl: 'https://api.example.test',
+      getAccessToken: () => 'session-token',
+      fetchImpl,
+    }));
+    expect((await client.getStoryImage('work-id', 'asset-id')).type).toBe('image/png');
+    expect((await client.getImage('gallery-id')).type).toBe('image/png');
+    expect(requests.map(({ url }) => url)).toEqual([
+      'https://api.example.test/api/products/work-id/story-images/asset-id',
+      'https://api.example.test/api/images/gallery-id',
+    ]);
+    expect(requests.every(({ headers }) => headers.get('Authorization') === 'Bearer session-token')).toBe(true);
+  });
+});
