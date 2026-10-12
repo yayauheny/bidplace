@@ -1,13 +1,23 @@
 import { z } from 'zod';
 import { productImageOrderRequestSchema, uuidSchema } from '@bidplace/contracts';
 
-import { requestJson, type RequestContext } from './request';
+import { requestBlob, requestJson, type RequestContext, type ReadCallOptions } from './request';
 
 const imageUploadResponseSchema = z.object({ ok: z.literal(true) }).strict();
 const storyImageUploadResponseSchema = z.object({ mediaAssetId: uuidSchema }).strict();
 
 export function createImagesClient(context: RequestContext) {
   return {
+    getImage(imageId: string, options?: ReadCallOptions) {
+      return requestBlob(context, `/api/images/${imageId}`, options);
+    },
+    getStoryImage(productId: string, mediaAssetId: string, options?: ReadCallOptions) {
+      return requestBlob(
+        context,
+        `/api/products/${productId}/story-images/${mediaAssetId}`,
+        options,
+      );
+    },
     async add(productId: string, images: Blob[], idempotencyKey?: string) {
       if (idempotencyKey) {
         for (const [index, image] of images.entries()) {
