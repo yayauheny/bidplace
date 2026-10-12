@@ -559,6 +559,8 @@ export function SellerProfileScreen() {
     mountedRef.current = true;
     return () => {
       mountedRef.current = false;
+      // The screen no longer owns pending saves, submissions or navigation.
+      sessionOperation.current += 1;
     };
   }, []);
   useEffect(() => {
@@ -585,6 +587,9 @@ export function SellerProfileScreen() {
     photoBlobRef.current = null;
     setPhotoBlob(null);
     setPhotoUri(null);
+    // Do not retain the previous account's draft while the next query loads.
+    form.reset(emptyProfileDraft);
+    hydratedProfileToken.current = null;
     forceProfileHydration.current = true;
   }, [authEpoch]);
   const rememberSavedProfile = (
@@ -611,6 +616,7 @@ export function SellerProfileScreen() {
     queueProfileDraftValidation();
   };
   const saveStillOwns = (operation: number, authEpoch: number) =>
+    mountedRef.current &&
     sessionOperation.current === operation &&
     canWritePrivateCache(queryClient, authEpoch);
   const saveMutation = useMutation({
@@ -669,7 +675,9 @@ export function SellerProfileScreen() {
       epoch,
     }),
     onSuccess: ({ saved, epoch }) => {
-      if (!canWritePrivateCache(queryClient, epoch)) return;
+      if (!mountedRef.current || !canWritePrivateCache(queryClient, epoch)) {
+        return;
+      }
       void refreshPrivateQuery(queryClient, ['seller', 'application'], epoch);
       void queryClient.invalidateQueries({ queryKey: ['seller', 'profile'] });
       queryClient.setQueryData(

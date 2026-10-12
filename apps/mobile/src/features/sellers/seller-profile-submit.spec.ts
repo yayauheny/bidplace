@@ -1522,6 +1522,83 @@ describe('seller profile save reconciliation', () => {
     view.unmount();
   });
 
+  it('does not navigate or restore a profile after the screen unmounts during a step save', async () => {
+    let finishSave: (saved: ReturnType<typeof savedProfile>) => void =
+      () => undefined;
+    const original = response('DRAFT', 'DRAFT');
+    harness.params = { step: '1' };
+    harness.getMyProfile.mockResolvedValue(original);
+    harness.updateProfile.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          finishSave = resolve;
+        }),
+    );
+    const view = mount();
+    await until(
+      view.container,
+      () =>
+        findButton(view.container, 'Продолжить') instanceof HTMLButtonElement,
+      'continue',
+    );
+    click(view.container, 'Продолжить');
+    await until(
+      view.container,
+      () => harness.updateProfile.mock.calls.length === 1,
+      'pending save',
+    );
+
+    view.unmount();
+    await act(async () => {
+      finishSave(savedProfile({ city: 'Late city' }));
+      await Promise.resolve();
+    });
+    await flush();
+    expect(harness.push).not.toHaveBeenCalled();
+    expect(view.queryClient.getQueryData(['seller', 'profile'])).toEqual(
+      original,
+    );
+  });
+
+  it('does not apply a pending submission after the screen unmounts', async () => {
+    let finishSubmit: (result: ReturnType<typeof submitResponse>) => void =
+      () => undefined;
+    harness.getMyProfile.mockResolvedValue(response('APPROVED', 'DRAFT'));
+    harness.updateProfile.mockResolvedValue(savedProfile());
+    harness.submitAuthorApplication.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          finishSubmit = resolve;
+        }),
+    );
+    const view = mount();
+    await until(
+      view.container,
+      () =>
+        findButton(view.container, 'Отправить на проверку') instanceof
+        HTMLButtonElement,
+      'submit',
+    );
+    click(view.container, 'Отправить на проверку');
+    await until(
+      view.container,
+      () => harness.submitAuthorApplication.mock.calls.length === 1,
+      'pending submit',
+    );
+    const savedAtUnmount = view.queryClient.getQueryData(['seller', 'profile']);
+    view.unmount();
+    await act(async () => {
+      finishSubmit(submitResponse('APPROVED', 'PENDING_REVIEW'));
+      await Promise.resolve();
+    });
+    await flush();
+    expect(view.queryClient.getQueryData(['seller', 'profile'])).toEqual(
+      savedAtUnmount,
+    );
+    expect(harness.push).not.toHaveBeenCalled();
+    expect(harness.replace).not.toHaveBeenCalled();
+  });
+
   it('drops a save from the previous session after logout and login', async () => {
     let resolveSave: (value: ReturnType<typeof savedProfile>) => void = () =>
       undefined;
