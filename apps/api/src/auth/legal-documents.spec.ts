@@ -21,7 +21,7 @@ describe('published legal documents', () => {
 
   it('exposes five documents with their source version', () => {
     const result = readPublishedLegalDocuments();
-    expect(result.version).toMatch(/^portfolio-legal-2026-10-12\\+[a-f0-9]{32}$/);
+    expect(result.version).toMatch(/^portfolio-legal-2026-10-12\+[a-f0-9]{32}$/);
     expect(result.documents.map((doc) => doc.id)).toEqual([
       'agreement', 'privacy', 'data-consent', 'author-rules', 'prohibited',
     ]);
