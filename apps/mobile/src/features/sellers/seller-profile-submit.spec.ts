@@ -1640,6 +1640,10 @@ describe('seller profile save reconciliation', () => {
     let finishSave: (saved: ReturnType<typeof savedProfile>) => void =
       () => undefined;
     const original = response('DRAFT', 'DRAFT');
+    const savedDraft = {
+      ...original,
+      sellerProfile: { ...original.sellerProfile, city: 'Late city' },
+    };
     harness.params = { step: '1' };
     harness.getMyProfile.mockResolvedValue(original);
     harness.updateProfile.mockImplementationOnce(
@@ -1668,17 +1672,15 @@ describe('seller profile save reconciliation', () => {
     harness.focused = true;
     view.rerender();
     await act(async () => {
-      finishSave(savedProfile({ city: 'Late city' }));
+      finishSave(savedDraft);
       await Promise.resolve();
     });
     await flush();
     expect(harness.push).not.toHaveBeenCalled();
     expect(view.queryClient.getQueryData(['seller', 'profile'])).toEqual(
-      savedProfile({ city: 'Late city' }),
+      savedDraft,
     );
 
-    harness.focused = true;
-    view.rerender();
     harness.updateProfile.mockResolvedValueOnce(response('DRAFT', 'DRAFT'));
     click(view.container, 'Продолжить');
     await flush();
