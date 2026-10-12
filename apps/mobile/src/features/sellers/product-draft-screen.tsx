@@ -605,7 +605,8 @@ export function ProductDraftScreen({
     [form, save],
   );
   const persistAll = async (mode: 'ordinary' | 'transition' = 'ordinary') => {
-    if (storyEditor.pending) return false;
+    // Never release a route guard while another transition or save is in flight.
+    if (transitionLock.current || saveInFlight.current || storyEditor.pending) return false;
     if (form.formState.isDirty) {
       if (!(await persistCurrentForm(mode))) return false;
     } else if (storyEditor.dirty && mode === 'transition') {
@@ -633,7 +634,7 @@ export function ProductDraftScreen({
     });
   });
   useEffect(() => {
-    if (typeof window === 'undefined' || (!form.formState.isDirty && !storyEditor.dirty)) return;
+    if (typeof window === 'undefined' || (!form.formState.isDirty && !storyEditor.dirty && !storyEditor.pending)) return;
 
     const guard = {
       id: `${productId ?? 'new'}:${Date.now()}`,
@@ -685,7 +686,7 @@ export function ProductDraftScreen({
         browserNavigation.current = null;
       }
     };
-  }, [form.formState.isDirty, storyEditor.dirty, productId]);
+  }, [form.formState.isDirty, storyEditor.dirty, storyEditor.pending, productId]);
 
   useEffect(() => {
     if (!moderationHold || !trustedRevision) return;
