@@ -25,7 +25,6 @@ import { resolvePublicWorkPageState } from './public-work-page-state';
 import {
   resolveWorkTab,
   workFacts,
-  workHistoryBlocks,
   workTabs,
 } from './work-content';
 import { navigateWorkPageBack } from './work-page-back';
@@ -48,7 +47,7 @@ export function ProductScreen({ publicId }: { publicId: string }) {
     if (
       query.data &&
       requestedTab &&
-      resolveWorkTab(query.data.work.story, requestedTab) !== requestedTab
+      resolveWorkTab(query.data.work.creationStory.blocks, requestedTab) !== requestedTab
     ) {
       router.setParams({ tab: undefined });
     }
@@ -79,7 +78,7 @@ export function ProductScreen({ publicId }: { publicId: string }) {
       </AppShell>
     );
   const { work, author, relatedWorks } = query.data;
-  const tab = resolveWorkTab(work.story, requestedTab);
+  const tab = resolveWorkTab(work.creationStory.blocks, requestedTab);
   const facts = workFacts(work);
   const related = relatedWorks.filter(
     (item) => item.work.publicId !== publicId,
@@ -113,7 +112,7 @@ export function ProductScreen({ publicId }: { publicId: string }) {
             } as Href
           }
           chips={chips}
-          tabs={workTabs(work.story)}
+          tabs={workTabs(work.creationStory.blocks)}
           tab={tab}
           onTabChange={(value) => router.setParams({ tab: value })}
           panelId={panelId}
@@ -137,26 +136,32 @@ export function ProductScreen({ publicId }: { publicId: string }) {
                   testID="work-history"
                   style={{ gap: designTokens.space.x5 }}
                 >
-                  {workHistoryBlocks(work.story, work.images).map(
-                    (block, index) =>
-                      block.type === 'text' ? (
-                        <AppText key={`text-${index}`} role="bodySmall">
-                          {block.text}
-                        </AppText>
-                      ) : (
-                        <View
-                          key={block.image.id}
-                          testID="work-history-image"
-                        >
-                          <ResilientRemoteImage
-                            uri={getApiAssetUrl(block.image.url)}
-                            component="ProductGallery"
-                            accessibilityLabel={`${work.title}, фото из истории`}
-                            fallbackLabel="Изображение недоступно"
-                            style={productMediaStyle()}
-                          />
-                        </View>
-                      ),
+                  {work.creationStory.blocks.map((block) =>
+                    block.type === 'IMAGE' ? (
+                      <View
+                        key={block.id}
+                        testID="work-history-image"
+                      >
+                        <ResilientRemoteImage
+                          uri={getApiAssetUrl(
+                            `/api/products/${work.id}/story-images/${block.mediaAssetId}`,
+                          )}
+                          component="ProductGallery"
+                          accessibilityLabel={
+                            block.altText ?? `${work.title}, фото из истории`
+                          }
+                          fallbackLabel="Изображение недоступно"
+                          style={productMediaStyle()}
+                        />
+                      </View>
+                    ) : (
+                      <AppText
+                        key={block.id}
+                        role={block.type === 'HEADING' ? 'label' : 'bodySmall'}
+                      >
+                        {block.text}
+                      </AppText>
+                    ),
                   )}
                 </View>
               ) : tab === 'delivery' ? (
