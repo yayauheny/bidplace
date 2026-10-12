@@ -675,6 +675,8 @@ export class ImagesService {
     ) {
       throw new BadRequestException('Invalid idempotency key');
     }
+    // Match gallery uploads: reject non-owners before staging bytes in R2.
+    await this.requireEditableOwner(this.prisma, userId, productId);
     const media = this.media;
     const scopedKey = idempotencyKey
       ? createHash('sha256')
