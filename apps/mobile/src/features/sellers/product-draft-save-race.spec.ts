@@ -30,6 +30,23 @@ const harness = vi.hoisted(() => ({
   reorderImages: vi.fn(),
 }));
 
+vi.mock('../../components/figma/FigmaIconButton', () => ({
+  FigmaIconButton: ({ label, onPress, disabled }: {
+    label: string;
+    onPress: () => void;
+    disabled?: boolean;
+  }) => createElement('button', {
+    type: 'button',
+    'aria-label': label,
+    disabled,
+    onClick: onPress,
+  }, label),
+}));
+
+vi.mock('./product-draft-story', () => ({
+  ProductDraftStoryStep: () => null,
+}));
+
 vi.mock('../../components/figma/FigmaChoiceChip', () => ({
   FigmaChoiceChip: ({
     label,
