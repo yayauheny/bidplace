@@ -34,13 +34,8 @@ function resolvedButtonWidth(width: ButtonProps['width']) {
   return width === 'block' ? 'full' : (width ?? 'content');
 }
 
-type TextButtonProps = Omit<ButtonProps, 'size' | 'alignSelf'>;
-
-function isPressButtonProps(
-  props: TextButtonProps,
-): props is TextButtonProps & ButtonPressAction {
-  return !('href' in props);
-}
+export type TextButtonProps = Omit<ButtonPropsBase, 'size' | 'alignSelf'> &
+  (ButtonPressAction | ButtonNavigationAction);
 
 export function PrimaryButton({
   width = 'content',
@@ -93,27 +88,12 @@ export function DestructiveButton({
   );
 }
 
-export function TextButton(props: TextButtonProps) {
-  const { label, disabled, loading, icon, accessibilityHint, width } = props;
-  const resolvedWidth = resolvedButtonWidth(width);
-  const shared = {
-    label,
-    disabled,
-    loading,
-    icon,
-    accessibilityHint,
-    width: resolvedWidth,
-    variant: 'ghost' as const,
-  };
-
-  if (isPressButtonProps(props)) {
-    return <FigmaButton {...shared} onPress={props.onPress} />;
-  }
-
-  const { href } = props;
-  if (href === undefined) {
-    throw new Error('TextButton requires href or onPress');
-  }
-
-  return <FigmaButton {...shared} href={href} />;
+export function TextButton({ width, ...props }: TextButtonProps) {
+  return (
+    <FigmaButton
+      {...props}
+      variant="ghost"
+      width={resolvedButtonWidth(width)}
+    />
+  );
 }

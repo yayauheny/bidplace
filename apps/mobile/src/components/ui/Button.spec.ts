@@ -7,6 +7,7 @@ import {
   createElement,
   forwardRef,
   isValidElement,
+  type ComponentProps,
   type ReactElement,
   type ReactNode,
 } from 'react';
@@ -272,6 +273,7 @@ vi.mock('@hugeicons/react-native', () => ({
 
 import {
   type ButtonProps,
+  type TextButtonProps,
   DestructiveButton,
   PrimaryButton,
   SecondaryButton,
@@ -660,32 +662,74 @@ describe('shared text button wrappers', () => {
 });
 
 describe('button href/onPress type contract', () => {
-  it('requires either href or onPress', () => {
-    expectTypeOf<{ label: string }>().not.toMatchTypeOf<FigmaButtonProps>();
-    expectTypeOf<{ label: string }>().not.toMatchTypeOf<ButtonProps>();
+  type PrimaryProps = ComponentProps<typeof PrimaryButton>;
+  type SecondaryProps = ComponentProps<typeof SecondaryButton>;
+  type DestructiveProps = ComponentProps<typeof DestructiveButton>;
+
+  const hrefAndOnPress = {
+    label: 'Пример',
+    href: '/cabinet' as const,
+    onPress: () => undefined,
+  };
+
+  const labelOnly = { label: 'Пример' };
+
+  const objectHref = {
+    label: 'Регистрация',
+    href: { pathname: '/register' as const, params: { redirectTo: '/' } },
+  };
+
+  const invalidHref = { label: 'Пример', href: 123 };
+
+  it('FigmaButton accepts onPress, string href, or object href', () => {
+    expectTypeOf<{ label: string; onPress: () => void }>().toMatchTypeOf<
+      FigmaButtonProps
+    >();
+    expectTypeOf<{ label: string; href: '/profile' }>().toMatchTypeOf<
+      FigmaButtonProps
+    >();
+    expectTypeOf(objectHref).toMatchTypeOf<FigmaButtonProps>();
   });
 
-  it('rejects href and onPress together', () => {
-    expectTypeOf<{
-      label: string;
-      href: '/cabinet';
-      onPress: () => void;
-    }>().not.toMatchTypeOf<FigmaButtonProps>();
-    expectTypeOf<{
-      label: string;
-      href: '/cabinet';
-      onPress: () => void;
-    }>().not.toMatchTypeOf<ButtonProps>();
+  it('FigmaButton rejects missing action, both actions, or invalid href', () => {
+    expectTypeOf(labelOnly).not.toMatchTypeOf<FigmaButtonProps>();
+    expectTypeOf(hrefAndOnPress).not.toMatchTypeOf<FigmaButtonProps>();
+    expectTypeOf(invalidHref).not.toMatchTypeOf<FigmaButtonProps>();
   });
 
-  it('accepts object href routes', () => {
-    expectTypeOf<{
-      label: string;
-      href: { pathname: '/register'; params: { redirectTo: '/' } };
-    }>().toMatchTypeOf<FigmaButtonProps>();
-    expectTypeOf<{
-      label: string;
-      href: { pathname: '/register'; params: { redirectTo: '/' } };
-    }>().toMatchTypeOf<ButtonProps>();
+  it('TextButton keeps the href/onPress union on public props', () => {
+    expectTypeOf<{ label: string; onPress: () => void }>().toMatchTypeOf<
+      TextButtonProps
+    >();
+    expectTypeOf<{ label: string; href: '/profile' }>().toMatchTypeOf<
+      TextButtonProps
+    >();
+    expectTypeOf(objectHref).toMatchTypeOf<TextButtonProps>();
+    expectTypeOf(labelOnly).not.toMatchTypeOf<TextButtonProps>();
+    expectTypeOf(hrefAndOnPress).not.toMatchTypeOf<TextButtonProps>();
+    expectTypeOf(invalidHref).not.toMatchTypeOf<TextButtonProps>();
+    expectTypeOf(labelOnly).not.toMatchTypeOf<
+      ComponentProps<typeof TextButton>
+    >();
+    expectTypeOf(hrefAndOnPress).not.toMatchTypeOf<
+      ComponentProps<typeof TextButton>
+    >();
+  });
+
+  it('semantic wrappers share ButtonProps navigation contract', () => {
+    expectTypeOf<{ label: string; onPress: () => void }>().toMatchTypeOf<
+      ButtonProps
+    >();
+    expectTypeOf<{ label: string; href: '/profile' }>().toMatchTypeOf<
+      ButtonProps
+    >();
+    expectTypeOf(objectHref).toMatchTypeOf<ButtonProps>();
+    expectTypeOf(labelOnly).not.toMatchTypeOf<ButtonProps>();
+    expectTypeOf(hrefAndOnPress).not.toMatchTypeOf<ButtonProps>();
+
+    expectTypeOf(hrefAndOnPress).not.toMatchTypeOf<PrimaryProps>();
+    expectTypeOf(hrefAndOnPress).not.toMatchTypeOf<SecondaryProps>();
+    expectTypeOf(hrefAndOnPress).not.toMatchTypeOf<DestructiveProps>();
+    expectTypeOf(labelOnly).not.toMatchTypeOf<PrimaryProps>();
   });
 });
