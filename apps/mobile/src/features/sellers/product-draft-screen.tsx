@@ -1240,6 +1240,7 @@ export function ProductDraftScreen({
           (!isCreationFlow || wizardStep === productWizardStep.story) ? (
             <ProductDraftStoryStep
               productId={existingProduct.id}
+              sessionEpoch={authEpoch}
               isCreationFlow={isCreationFlow}
               images={existingProduct.images}
               blocks={storyEditor.blocks}
