@@ -40,12 +40,14 @@ export function useProductStoryEditor({
   revisionId,
   authEpoch,
   story,
+  onSaved,
 }: {
   api: ApiClient;
   productId?: string;
   revisionId?: string;
   authEpoch: number;
   story?: StorySnapshot;
+  onSaved?: (story: StorySnapshot) => void;
 }) {
   const identity = `${authEpoch}:${productId ?? ''}:${revisionId ?? ''}`;
   const [state, setState] = useState<DraftState>(() => fromServer(identity, story));
@@ -218,6 +220,7 @@ export function useProductStoryEditor({
           result.blocks.flatMap((block) => block.type === 'IMAGE' ? [block.mediaAssetId] : []),
         );
         replace({ ...current.current, token: result.storyToken, blocks: saved, dirty: false, pending: false });
+        onSaved?.(result);
         for (const assetId of removedAssets) {
           try {
             await api.images.removeStoryImage(productId, assetId);
@@ -244,6 +247,11 @@ export function useProductStoryEditor({
     return task;
   };
 
+  const reportError = (message: string) => {
+    if (current.current.identity !== identity) return;
+    replace({ ...current.current, error: message });
+  };
+
   return {
     blocks: state.blocks,
     dirty: state.dirty,
@@ -257,6 +265,7 @@ export function useProductStoryEditor({
     remove,
     move,
     addImage,
+    reportError,
     save,
   };
 }

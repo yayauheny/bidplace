@@ -242,6 +242,15 @@ export function ProductDraftScreen({
     revisionId: productDetail.data?.editingRevision?.id,
     authEpoch,
     story: productDetail.data?.story,
+    onSaved: (savedStory) => {
+      if (!productId || !canWritePrivateCache(queryClient, authEpoch)) return;
+      queryClient.setQueryData<SellerProductDetailResponse>(
+        ownerWorkQueryKeys.detail(productId),
+        (current) => current && current.editingRevision?.id === productDetail.data?.editingRevision?.id
+          ? { ...current, story: savedStory }
+          : current,
+      );
+    },
   });
   const existingProduct = productDetail.data?.product;
   const persistedRevisionUpdatedAt =
@@ -838,7 +847,7 @@ export function ProductDraftScreen({
       if (sessionOperation.current !== operation) return;
       await storyEditor.addImage(blob);
     } catch {
-      // Cancelling photo selection should leave the story unchanged.
+      storyEditor.reportError('Не удалось прочитать выбранное фото. Выберите файл ещё раз.');
     }
   };
 
