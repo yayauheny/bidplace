@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { productWriteRequestSchema, type Product } from '@bidplace/contracts';
+import { productWriteRequestSchema, type Product, type SellerProductDetailResponse } from '@bidplace/contracts';
 
 import {
   emptyProductDraftFormValues,
@@ -9,6 +9,17 @@ import {
   productToDraftFormValues,
   shouldHydrateProductDraft,
 } from './product-draft-form';
+
+const persistedSelection = {
+  category: null,
+  materialTermIds: ['81111111-1111-4111-8111-111111111111'],
+  techniqueTermIds: ['82222222-2222-4222-8222-222222222222'],
+  materialTerms: [{ id: '81111111-1111-4111-8111-111111111111', role: 'MATERIAL', slug: 'canvas', name: 'Холст', active: false }],
+  techniqueTerms: [{ id: '82222222-2222-4222-8222-222222222222', role: 'TECHNIQUE', slug: 'oil', name: 'Масло', active: true }],
+  proposals: [
+    { id: '83333333-3333-4333-8333-333333333333', productRevisionId: '84444444-4444-4444-8444-444444444444', kind: 'MATERIAL', rawName: 'Ткань', normalizedName: 'ткань', status: 'PENDING', selected: true, mappedCategoryId: null, mappedTermId: null, rejectionReason: null, reviewedAt: null },
+  ],
+} satisfies SellerProductDetailResponse['selection'];
 
 const persistedProduct = {
   id: 'a0d82a10-3170-49eb-904f-a8bc87d311a5',
@@ -49,16 +60,24 @@ describe('product draft form lifecycle', () => {
   });
 
   it('hydrates the editable portfolio fields from a persisted Work', () => {
-    expect(productToDraftFormValues(persistedProduct)).toEqual({
+    expect(productToDraftFormValues(persistedProduct, persistedSelection)).toEqual({
       categoryId: persistedProduct.categoryId,
       title: 'Persisted title',
       story: 'Persisted story',
-      technique: 'Oil',
-      materials: 'Canvas',
+      materialTermIds: persistedSelection.materialTermIds,
+      techniqueTermIds: persistedSelection.techniqueTermIds,
+      materialProposals: ['Ткань'],
+      techniqueProposals: [],
+      categoryProposal: '',
       dimensions: '20 × 30 cm',
       year: '2026',
       uniqueness: '1/1',
     });
+  });
+
+  it('retains freshly submitted selections until the authoritative detail read arrives', () => {
+    const submitted = productToDraftFormValues(persistedProduct, persistedSelection);
+    expect(productToDraftFormValues(persistedProduct, undefined, submitted)).toEqual(submitted);
   });
 
   it('hydrates a clean form when the persisted editing revision is newer', () => {
@@ -87,7 +106,7 @@ describe('product draft form lifecycle', () => {
 
   it('builds writes through the canonical contract and omits legacy commerce fields', () => {
     const request = productDraftToWriteRequest({
-      ...productToDraftFormValues(persistedProduct),
+      ...productToDraftFormValues(persistedProduct, persistedSelection),
       title: '  Current form title  ',
       story: '',
     });
@@ -97,12 +116,17 @@ describe('product draft form lifecycle', () => {
       categoryId: persistedProduct.categoryId,
       title: 'Current form title',
       story: null,
-      technique: 'Oil',
-      materials: 'Canvas',
+      materialTermIds: persistedSelection.materialTermIds,
+      techniqueTermIds: persistedSelection.techniqueTermIds,
+      materialProposals: ['Ткань'],
+      techniqueProposals: [],
+      categoryProposal: null,
       dimensions: '20 × 30 cm',
       year: 2026,
       uniqueness: '1/1',
     });
+    expect(request).not.toHaveProperty('technique');
+    expect(request).not.toHaveProperty('materials');
     expect(request).not.toHaveProperty('packaging');
     expect(request).not.toHaveProperty('deliveryInfo');
     expect(request).not.toHaveProperty('creationIntro');

@@ -1,6 +1,13 @@
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useFormContext, useFormState, useWatch } from 'react-hook-form';
 
+import type { SellerProductDetailResponse } from '@bidplace/contracts';
+
 import { FormPageColumns } from '../../components/layout';
+import { FigmaSelectField } from '../../components/figma/FigmaSelectField';
+import { useApiClient } from '../../providers/api-provider';
+import { ProductCatalogTermSheet } from './product-catalog-term-sheet';
 import {
   AppText,
   FormSection,
@@ -22,7 +29,8 @@ export type ProductDraftAboutStepProps = {
   isCreationFlow: boolean;
   wizardStep: number;
   editable: boolean;
-  categories: Array<{ id: string; name: string }>;
+  categories: Array<{ id: string; name: string; slug: string }>;
+  selection?: SellerProductDetailResponse['selection'];
   stepOneAttempted: boolean;
   saveIsPending: boolean;
   saveIsError: boolean;
@@ -37,6 +45,7 @@ export function ProductDraftAboutStep({
   wizardStep,
   editable,
   categories,
+  selection,
   stepOneAttempted,
   saveIsPending,
   saveIsError,
@@ -45,12 +54,50 @@ export function ProductDraftAboutStep({
   wizardCanOpenImages,
   onContinueToImages,
 }: ProductDraftAboutStepProps) {
+  const api = useApiClient();
+  const [openRole, setOpenRole] = useState<'MATERIAL' | 'TECHNIQUE' | null>(null);
+  const materials = useQuery({
+    queryKey: ['catalog', 'terms', 'MATERIAL'],
+    queryFn: ({ signal }) => api.catalog.listTerms('MATERIAL', { signal }),
+  });
+  const techniques = useQuery({
+    queryKey: ['catalog', 'terms', 'TECHNIQUE'],
+    queryFn: ({ signal }) => api.catalog.listTerms('TECHNIQUE', { signal }),
+  });
   const guard = useProductDraftWriteGuard();
   const { control, setValue } = useFormContext<ProductDraftFormValues>();
-  const [categoryId = '', title = ''] = useWatch({
+  const [
+    categoryId = '',
+    title = '',
+    materialTermIds = [],
+    techniqueTermIds = [],
+    materialProposals = [],
+    techniqueProposals = [],
+  ] = useWatch({
     control,
-    name: ['categoryId', 'title'],
+    name: [
+      'categoryId',
+      'title',
+      'materialTermIds',
+      'techniqueTermIds',
+      'materialProposals',
+      'techniqueProposals',
+    ],
   });
+  const activeRoleQuery = openRole === 'MATERIAL' ? materials : techniques;
+  const knownTerms = openRole === 'MATERIAL'
+    ? (selection?.materialTerms ?? [])
+    : (selection?.techniqueTerms ?? []);
+  const termLabels = (
+    ids: readonly string[],
+    names: readonly string[],
+    active: typeof materials.data,
+    previous: typeof knownTerms,
+  ) => {
+    const byId = new Map([...(active?.terms ?? []), ...previous].map((term) => [term.id, term.name]));
+    const selected = ids.map((id) => byId.get(id) ?? 'Выбранный термин');
+    return [...selected, ...names].join(', ');
+  };
   const { errors } = useFormState({ control, name: 'year' });
   const requiredErrors = productDraftRequiredErrors({
     ...emptyProductDraftFormValues,
@@ -69,17 +116,19 @@ export function ProductDraftAboutStep({
             title="Характеристики"
             description="Параметры помогают точно описать работу."
           >
-            <ProductDraftTextField
-              name="technique"
-              label="Техника"
-              placeholder="Необязательно"
-              editable={editable}
+            <FigmaSelectField
+              label="Техники"
+              placeholder="Выберите или предложите"
+              value={termLabels(techniqueTermIds, techniqueProposals, techniques.data, selection?.techniqueTerms ?? [])}
+              disabled={!editable}
+              onPress={() => setOpenRole('TECHNIQUE')}
             />
-            <ProductDraftTextField
-              name="materials"
-              label="Материал"
-              placeholder="Необязательно"
-              editable={editable}
+            <FigmaSelectField
+              label="Материалы"
+              placeholder="Выберите или предложите"
+              value={termLabels(materialTermIds, materialProposals, materials.data, selection?.materialTerms ?? [])}
+              disabled={!editable}
+              onPress={() => setOpenRole('MATERIAL')}
             />
             <ProductDraftTextField
               name="dimensions"
@@ -107,6 +156,9 @@ export function ProductDraftAboutStep({
               width="block"
               onPress={() => {
                 if (guard.current) return;
+                if (category.slug !== 'other') {
+                  setValue('categoryProposal', '', { shouldDirty: true, shouldValidate: true });
+                }
                 setValue('categoryId', category.id, {
                   shouldDirty: true,
                   shouldTouch: true,
@@ -115,6 +167,15 @@ export function ProductDraftAboutStep({
               }}
             />
           ))}
+          {categories.find((category) => category.id === categoryId)?.slug === 'other' ||
+          (categoryId === selection?.category?.id && selection?.category?.slug === 'other') ? (
+            <ProductDraftTextField
+              name="categoryProposal"
+              label="Предложить категорию"
+              placeholder="Укажите название, если нужной категории нет"
+              editable={editable}
+            />
+          ) : null}
           {stepOneAttempted && requiredErrors.categoryId ? (
             <AppText role="bodySmall" tone="danger">
               {requiredErrors.categoryId}
@@ -179,6 +240,28 @@ export function ProductDraftAboutStep({
         <AppText role="bodySmall" tone="danger" accessibilityLiveRegion="polite">
           {saveMessage ?? 'Не удалось сохранить предмет.'}
         </AppText>
+      ) : null}
+      {openRole ? (
+        <ProductCatalogTermSheet
+          role={openRole}
+          open
+          selectedIds={openRole === 'MATERIAL' ? materialTermIds : techniqueTermIds}
+          proposals={openRole === 'MATERIAL' ? materialProposals : techniqueProposals}
+          availableTerms={activeRoleQuery.data?.terms ?? []}
+          knownTerms={knownTerms}
+          loading={activeRoleQuery.isPending}
+          error={activeRoleQuery.isError}
+          editable={editable}
+          onRetry={() => void activeRoleQuery.refetch()}
+          onClose={() => setOpenRole(null)}
+          onApply={(ids, names) => {
+            if (guard.current) return;
+            const idField = openRole === 'MATERIAL' ? 'materialTermIds' : 'techniqueTermIds';
+            const proposalField = openRole === 'MATERIAL' ? 'materialProposals' : 'techniqueProposals';
+            setValue(idField, ids, { shouldDirty: true, shouldTouch: true, shouldValidate: true });
+            setValue(proposalField, names, { shouldDirty: true, shouldTouch: true, shouldValidate: true });
+          }}
+        />
       ) : null}
     </>
   );

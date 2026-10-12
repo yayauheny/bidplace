@@ -123,8 +123,11 @@ export function ProductDraftScreen({
   const productFieldOrder = [
     'categoryId',
     'title',
-    'technique',
-    'materials',
+    'materialTermIds',
+    'techniqueTermIds',
+    'materialProposals',
+    'techniqueProposals',
+    'categoryProposal',
     'dimensions',
     'year',
     'uniqueness',
@@ -267,12 +270,13 @@ export function ProductDraftScreen({
     ) {
       return;
     }
-    form.reset(productToDraftFormValues(existingProduct));
+    form.reset(productToDraftFormValues(existingProduct, productDetail.data?.selection));
     hydratedProductId.current = existingProduct.id;
     hydratedUpdatedAt.current =
       persistedRevisionUpdatedAt ?? existingProduct.updatedAt;
   }, [
     existingProduct,
+    productDetail.data?.selection,
     form,
     form.formState.isDirty,
     persistedRevisionUpdatedAt,
@@ -344,7 +348,7 @@ export function ProductDraftScreen({
       cached?.editingRevision?.updatedAt ??
       cached?.product.updatedAt ??
       product.updatedAt;
-    const persisted = productToDraftFormValues(product);
+    const persisted = productToDraftFormValues(product, undefined, submitted);
     const overrides = persistedFieldOverrides(
       submitted,
       form.getValues(),
@@ -1044,6 +1048,7 @@ export function ProductDraftScreen({
               wizardStep={wizardStep}
               editable={editable && !inputsLocked}
               categories={categories.data.categories}
+              selection={productDetail.data?.selection}
               stepOneAttempted={stepOneAttempted}
               saveIsPending={save.isPending}
               saveIsError={save.isError && !formAlert}
