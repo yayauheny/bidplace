@@ -1609,7 +1609,7 @@ describe('seller profile save reconciliation', () => {
     view.unmount();
   });
 
-  it('does not navigate or restore a profile when the screen loses focus during a step save', async () => {
+  it('does not navigate after focus leaves and returns during a step save', async () => {
     let finishSave: (saved: ReturnType<typeof savedProfile>) => void =
       () => undefined;
     const original = response('DRAFT', 'DRAFT');
@@ -1637,6 +1637,8 @@ describe('seller profile save reconciliation', () => {
     );
 
     harness.focused = false;
+    view.rerender();
+    harness.focused = true;
     view.rerender();
     await act(async () => {
       finishSave(savedProfile({ city: 'Late city' }));

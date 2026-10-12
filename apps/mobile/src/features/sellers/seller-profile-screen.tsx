@@ -283,7 +283,11 @@ function useProfileData() {
 export function SellerProfileScreen() {
   const isFocused = useIsFocused();
   const focusedRef = useRef(isFocused);
-  focusedRef.current = isFocused;
+  const focusTurn = useRef(0);
+  if (focusedRef.current !== isFocused) {
+    focusedRef.current = isFocused;
+    focusTurn.current += 1;
+  }
   const api = useApiClient();
   const auth = useAuth();
   const queryClient = useQueryClient();
@@ -718,6 +722,7 @@ export function SellerProfileScreen() {
     const fields = form.getValues();
     if (!profileDraftAllowsSave(fields)) return null;
     if (source === 'transition' && !beginLockedTransition()) return null;
+    const startedInFocus = focusTurn.current;
     bumpParentOperation();
     const operation = sessionOperation.current;
     const variables: ProfileSaveVariables = {
@@ -730,7 +735,10 @@ export function SellerProfileScreen() {
     setFormAlert(null);
     try {
       const saved = await saveMutation.mutateAsync(variables);
-      if (!screenStillOwns(operation, variables.authEpoch)) return null;
+      if (
+        !screenStillOwns(operation, variables.authEpoch) ||
+        focusTurn.current !== startedInFocus
+      ) return null;
       if (saved.outcome === 'stored-slug') {
         form.setValue('slug', saved.slug, {
           shouldDirty: false,
@@ -742,11 +750,19 @@ export function SellerProfileScreen() {
       setFormAlert(null);
       return saved.profile;
     } catch (error) {
-      if (!screenStillOwns(operation, variables.authEpoch)) return null;
+      if (
+        !screenStillOwns(operation, variables.authEpoch) ||
+        focusTurn.current !== startedInFocus
+      ) return null;
       if (source === 'transition') endLockedTransition();
       throw error;
     } finally {
-      if (sessionOperation.current === operation) saveInFlight.current = false;
+      if (sessionOperation.current === operation) {
+        saveInFlight.current = false;
+        if (source === 'transition' && focusTurn.current !== startedInFocus) {
+          endLockedTransition();
+        }
+      }
     }
   };
   const submitRevision = async () => {
@@ -766,9 +782,12 @@ export function SellerProfileScreen() {
     if (!beginLockedTransition()) return;
     const submitEpoch = currentAuthEpoch(queryClient);
     const operation = sessionOperation.current;
+    const startedInFocus = focusTurn.current;
     revisionSubmitInFlight.current = true;
     setRevisionSubmitActive(true);
-    const stillOwnsSubmit = () => screenStillOwns(operation, submitEpoch);
+    const stillOwnsSubmit = () =>
+      focusTurn.current === startedInFocus &&
+      screenStillOwns(operation, submitEpoch);
     try {
       let saved;
       try {
@@ -819,7 +838,10 @@ export function SellerProfileScreen() {
     if (transitionLock.current || achievementWriteBlocksParent()) return;
     const epoch = currentAuthEpoch(queryClient);
     const operation = sessionOperation.current;
-    const stillOwnsStep = () => screenStillOwns(operation, epoch);
+    const startedInFocus = focusTurn.current;
+    const stillOwnsStep = () =>
+      focusTurn.current === startedInFocus &&
+      screenStillOwns(operation, epoch);
     try {
       const saved = await save('transition');
       if (!saved || !stillOwnsStep()) return;
@@ -841,9 +863,11 @@ export function SellerProfileScreen() {
     if (!fieldsEditable || transitionLock.current) return;
     const epoch = currentAuthEpoch(queryClient);
     const operation = sessionOperation.current;
+    const startedInFocus = focusTurn.current;
     const selection = photoSelection.current + 1;
     photoSelection.current = selection;
     const stillOwnsPhoto = () =>
+      focusTurn.current === startedInFocus &&
       selection === photoSelection.current &&
       !transitionLock.current &&
       screenStillOwns(operation, epoch);
