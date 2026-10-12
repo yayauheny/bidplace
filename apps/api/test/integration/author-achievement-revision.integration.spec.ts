@@ -256,7 +256,11 @@ describe('author achievement editing revision HTTP contract', () => {
     const body = (await application.json()) as {
       achievements: Array<{
         id: string;
-        occurredDate: { year: number; month: number; day: number | null } | null;
+        occurredDate: {
+          year: number;
+          month: number;
+          day: number | null;
+        } | null;
       }>;
     };
     expect(

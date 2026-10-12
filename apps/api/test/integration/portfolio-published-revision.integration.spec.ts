@@ -79,7 +79,10 @@ describe('portfolio published revision HTTP transport', () => {
     });
     const owner = new HttpTestClient(http.baseUrl, 'http://localhost:8081');
     const guest = new HttpTestClient(http.baseUrl, 'http://localhost:8081');
-    const adminClient = new HttpTestClient(http.baseUrl, 'http://localhost:8081');
+    const adminClient = new HttpTestClient(
+      http.baseUrl,
+      'http://localhost:8081',
+    );
 
     await login(
       owner,
@@ -102,7 +105,9 @@ describe('portfolio published revision HTTP transport', () => {
     expect(
       (await owner.post(`/products/${productId}/images`, imageForm())).status,
     ).toBe(201);
-    expect((await owner.post(`/products/${productId}/submit`)).status).toBe(201);
+    expect((await owner.post(`/products/${productId}/submit`)).status).toBe(
+      201,
+    );
     expect(
       (
         await adminClient.patch(
@@ -197,7 +202,9 @@ describe('portfolio published revision HTTP transport', () => {
     expect((await guest.get(`/works/${publicId}`)).status).toBe(404);
     expect((await guest.get(`/images/${publishedImageId}`)).status).toBe(404);
 
-    expect((await owner.post(`/products/${productId}/unhide`)).status).toBe(201);
+    expect((await owner.post(`/products/${productId}/unhide`)).status).toBe(
+      201,
+    );
     const restored = await guest.get(`/works/${publicId}`);
     expect(restored.status).toBe(200);
     expect(
@@ -208,7 +215,9 @@ describe('portfolio published revision HTTP transport', () => {
   it('keeps an author without listings visible on the public author route', async () => {
     const fixture = await createPermissionFixture(prisma);
     await prisma.listing.deleteMany({
-      where: { product: { sellerProfileId: fixture.sellers.approved.profileId } },
+      where: {
+        product: { sellerProfileId: fixture.sellers.approved.profileId },
+      },
     });
     const author = await prisma.sellerProfile.findUniqueOrThrow({
       where: { id: fixture.sellers.approved.profileId },
@@ -268,8 +277,11 @@ describe('portfolio published revision HTTP transport', () => {
       (await guest.get(`/author-achievements/${achievementId}/image`)).status,
     ).toBe(404);
     expect(
-      (await stranger.delete(`/author/application/achievements/${achievementId}`))
-        .status,
+      (
+        await stranger.delete(
+          `/author/application/achievements/${achievementId}`,
+        )
+      ).status,
     ).toBe(404);
   });
 
@@ -310,7 +322,9 @@ describe('portfolio published revision HTTP transport', () => {
 
     const publicPhoto = await guest.get(`/sellers/${author.slug}/photo`);
     expect(publicPhoto.status).toBe(200);
-    expect(Buffer.from(await publicPhoto.arrayBuffer())).toEqual(permissionImage);
+    expect(Buffer.from(await publicPhoto.arrayBuffer())).toEqual(
+      permissionImage,
+    );
 
     const ownerPhoto = await owner.get('/author/application/photo');
     expect(ownerPhoto.status).toBe(200);
@@ -454,8 +468,16 @@ describe('portfolio published revision HTTP transport', () => {
       },
       select: { email: true },
     });
-    const guest = new HttpTestClient(http.baseUrl, 'http://localhost:8081', '10.8.0.1');
-    const owner = new HttpTestClient(http.baseUrl, 'http://localhost:8081', '10.8.0.2');
+    const guest = new HttpTestClient(
+      http.baseUrl,
+      'http://localhost:8081',
+      '10.8.0.1',
+    );
+    const owner = new HttpTestClient(
+      http.baseUrl,
+      'http://localhost:8081',
+      '10.8.0.2',
+    );
     const stranger = new HttpTestClient(
       http.baseUrl,
       'http://localhost:8081',
@@ -466,7 +488,11 @@ describe('portfolio published revision HTTP transport', () => {
       'http://localhost:8081',
       '10.8.0.4',
     );
-    await login(owner, fixture.sellers.approved.email, fixture.sellers.approved.password);
+    await login(
+      owner,
+      fixture.sellers.approved.email,
+      fixture.sellers.approved.password,
+    );
     await login(
       stranger,
       fixture.sellers.otherApproved.email,
@@ -487,7 +513,11 @@ describe('portfolio published revision HTTP transport', () => {
         images: Array<{ id: string; position: number; url: string }>;
         publishedAt: string;
       };
-      author: { biography: string | null; achievements: unknown[]; slug: string };
+      author: {
+        biography: string | null;
+        achievements: unknown[];
+        slug: string;
+      };
       relatedWorks: Array<{ work: { publicId: string } }>;
     };
     expect(detailBody.work).toMatchObject({
@@ -508,7 +538,9 @@ describe('portfolio published revision HTTP transport', () => {
     ]);
     expect(detailBody.work.story?.includes('PARENT_STORY_MARKER')).toBe(false);
     expect(detailBody.author.slug).toBe(author.slug);
-    expect(detailBody.author.biography?.includes('BIOGRAPHY_MARKER')).toBe(true);
+    expect(detailBody.author.biography?.includes('BIOGRAPHY_MARKER')).toBe(
+      true,
+    );
     expect(detailBody.author.achievements).toHaveLength(8);
     expect(detailBody.relatedWorks.map((item) => item.work.publicId)).toEqual([
       existing.publicId,
@@ -538,9 +570,13 @@ describe('portfolio published revision HTTP transport', () => {
     ).newWorks.map((item) => item.work.publicId);
     expect(homeIds.slice(0, 2)).toEqual([publicId, existing.publicId]);
 
-    const publishedResponse = await guest.get(`/images/${publishedWorkImage!.id}`);
+    const publishedResponse = await guest.get(
+      `/images/${publishedWorkImage!.id}`,
+    );
     expect(publishedResponse.status).toBe(200);
-    expect(publishedResponse.headers.get('content-type')).toMatch(/^image\/png/);
+    expect(publishedResponse.headers.get('content-type')).toMatch(
+      /^image\/png/,
+    );
     expect(publishedResponse.headers.get('cache-control')).toBe(
       'public, max-age=31536000, immutable',
     );
@@ -548,18 +584,26 @@ describe('portfolio published revision HTTP transport', () => {
       permissionImage,
     );
     expect((await guest.get(`/images/${pendingImage!.id}`)).status).toBe(404);
-    expect((await guest.get(`/images/${parentOnlyImage!.id}`)).status).toBe(404);
-    expect((await stranger.get(`/images/${pendingImage!.id}`)).status).toBe(404);
+    expect((await guest.get(`/images/${parentOnlyImage!.id}`)).status).toBe(
+      404,
+    );
+    expect((await stranger.get(`/images/${pendingImage!.id}`)).status).toBe(
+      404,
+    );
     expect((await guest.get(`/images/${randomUUID()}`)).status).toBe(404);
 
     const ownerPending = await owner.get(`/images/${pendingImage!.id}`);
     expect(ownerPending.status).toBe(200);
     expect(ownerPending.headers.get('cache-control')).toBe('private, no-store');
-    expect(Buffer.from(await ownerPending.arrayBuffer())).toEqual(permissionImage);
+    expect(Buffer.from(await ownerPending.arrayBuffer())).toEqual(
+      permissionImage,
+    );
     const adminPending = await adminClient.get(`/images/${pendingImage!.id}`);
     expect(adminPending.status).toBe(200);
     expect(adminPending.headers.get('cache-control')).toBe('private, no-store');
-    expect(Buffer.from(await adminPending.arrayBuffer())).toEqual(permissionImage);
+    expect(Buffer.from(await adminPending.arrayBuffer())).toEqual(
+      permissionImage,
+    );
 
     const narrowImage = await prisma.productImage.findUnique({
       where: { id: publishedWorkImage!.id },
@@ -573,8 +617,12 @@ describe('portfolio published revision HTTP transport', () => {
     const wideImageBytes = Buffer.byteLength(JSON.stringify(wideImage));
     expect(narrowImageBytes).toBeLessThan(wideImageBytes);
     expect(wideImageBytes - narrowImageBytes).toBeGreaterThan(80_000);
-    expect(JSON.stringify(narrowImage).includes('BIOGRAPHY_MARKER')).toBe(false);
-    expect(JSON.stringify(narrowImage).includes('ACHIEVEMENT_MARKER')).toBe(false);
+    expect(JSON.stringify(narrowImage).includes('BIOGRAPHY_MARKER')).toBe(
+      false,
+    );
+    expect(JSON.stringify(narrowImage).includes('ACHIEVEMENT_MARKER')).toBe(
+      false,
+    );
     expect(JSON.stringify(wideImage).includes('BIOGRAPHY_MARKER')).toBe(true);
 
     const narrowWork = await prisma.product.findUnique({
@@ -589,20 +637,30 @@ describe('portfolio published revision HTTP transport', () => {
     const wideWorkBytes = Buffer.byteLength(JSON.stringify(wideWork));
     expect(narrowWorkBytes).toBeLessThan(wideWorkBytes);
     expect(wideWorkBytes - narrowWorkBytes).toBeGreaterThan(50_000);
-    expect(JSON.stringify(narrowWork).includes('PARENT_STORY_MARKER')).toBe(false);
-    expect(JSON.stringify(narrowWork).includes(parentOnlyImage!.id)).toBe(false);
+    expect(JSON.stringify(narrowWork).includes('PARENT_STORY_MARKER')).toBe(
+      false,
+    );
+    expect(JSON.stringify(narrowWork).includes(parentOnlyImage!.id)).toBe(
+      false,
+    );
     expect(JSON.stringify(wideWork).includes('PARENT_STORY_MARKER')).toBe(true);
-    expect(JSON.stringify(narrowWork).includes(publishedWorkImage!.id)).toBe(true);
+    expect(JSON.stringify(narrowWork).includes(publishedWorkImage!.id)).toBe(
+      true,
+    );
 
     await prisma.sellerProfile.update({
       where: { id: fixture.sellers.approved.profileId },
       data: { status: 'SUSPENDED' },
     });
     expect((await guest.get(`/works/${publicId}`)).status).toBe(404);
-    expect((await guest.get(`/images/${publishedWorkImage!.id}`)).status).toBe(404);
+    expect((await guest.get(`/images/${publishedWorkImage!.id}`)).status).toBe(
+      404,
+    );
     const ownerSuspended = await owner.get(`/images/${publishedWorkImage!.id}`);
     expect(ownerSuspended.status).toBe(200);
-    expect(ownerSuspended.headers.get('cache-control')).toBe('private, no-store');
+    expect(ownerSuspended.headers.get('cache-control')).toBe(
+      'private, no-store',
+    );
 
     await prisma.sellerProfile.update({
       where: { id: fixture.sellers.approved.profileId },
@@ -613,7 +671,9 @@ describe('portfolio published revision HTTP transport', () => {
       data: { status: 'ARCHIVED' },
     });
     expect((await guest.get(`/works/${publicId}`)).status).toBe(404);
-    expect((await guest.get(`/images/${publishedWorkImage!.id}`)).status).toBe(404);
+    expect((await guest.get(`/images/${publishedWorkImage!.id}`)).status).toBe(
+      404,
+    );
     const ownerHidden = await owner.get(`/images/${publishedWorkImage!.id}`);
     expect(ownerHidden.status).toBe(200);
     expect(ownerHidden.headers.get('cache-control')).toBe('private, no-store');

@@ -97,7 +97,9 @@ async function replaceProfileDirections(
     select: { categoryId: true },
   });
   const keptIds = new Set(current.map((item) => item.categoryId));
-  const additions = categoryIds.filter((categoryId) => !keptIds.has(categoryId));
+  const additions = categoryIds.filter(
+    (categoryId) => !keptIds.has(categoryId),
+  );
   if (additions.length > 0) {
     const active = await tx.category.findMany({
       where: { id: { in: additions }, active: true },
@@ -157,7 +159,10 @@ function uniqueTargetNames(error: unknown): string[] {
   return prismaUniqueTargets(error);
 }
 
-function throwSellerProfileUniqueConflict(error: unknown, unknownMessage: string): never {
+function throwSellerProfileUniqueConflict(
+  error: unknown,
+  unknownMessage: string,
+): never {
   const targets = uniqueTargetNames(error);
   const slugTaken = targets.some((target) => /(^|_)slug($|_)/.test(target));
   const profileExists = targets.some(
@@ -182,7 +187,6 @@ function throwSellerProfileUniqueConflict(error: unknown, unknownMessage: string
 
 @Injectable()
 export class SellersService {
-
   constructor(
     private readonly prisma: PrismaService,
     private readonly imageStore: ImageStore,
@@ -881,7 +885,9 @@ export class SellersService {
 
     return sellerProductDetailResponseSchema.parse({
       product: toOwnerContractProduct(product, product.editingRevision),
-      ...(product.mediaOperations[0] ? { publication: product.mediaOperations[0] } : {}),
+      ...(product.mediaOperations[0]
+        ? { publication: product.mediaOperations[0] }
+        : {}),
       editingRevision: product.editingRevision
         ? {
             id: product.editingRevision.id,
@@ -1022,7 +1028,9 @@ export class SellersService {
 
     const isOwner = sellerProfile.userId === userId;
     const isAdmin = role === 'admin';
-    const isPublic = sellerProfile.status === 'APPROVED' && sellerProfile.user.status === 'active';
+    const isPublic =
+      sellerProfile.status === 'APPROVED' &&
+      sellerProfile.user.status === 'active';
 
     if (!isOwner && !isAdmin && !isPublic) {
       throw new NotFoundException('Seller profile not found');
