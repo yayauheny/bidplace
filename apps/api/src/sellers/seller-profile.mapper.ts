@@ -172,7 +172,6 @@ export function toPortfolioAchievement(
     byteLength: number | null;
     checksum: string | null;
     objectKey: string | null;
-    mediaAssetId?: string | null;
     mediaAsset?: PublicMediaAsset | null;
   },
   visibility: 'private' | 'public' = 'private',
@@ -197,8 +196,7 @@ export function toPortfolioAchievement(
     image:
       achievement.mimeType &&
       achievement.byteLength &&
-      achievement.checksum &&
-      (achievement.objectKey || achievement.mediaAssetId || achievement.mediaAsset)
+      achievement.checksum
         ? {
             url:
               publicImageUrl ?? `/api/author-achievements/${achievement.id}/image`,

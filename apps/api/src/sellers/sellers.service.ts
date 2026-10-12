@@ -226,7 +226,6 @@ export class SellersService {
                 byteLength: true,
                 checksum: true,
                 objectKey: true,
-                mediaAssetId: true,
               },
             },
           },
@@ -883,7 +882,8 @@ export class SellersService {
             achievement.objectKey ?? imageKey.sellerAchievement(achievementId),
           );
     // Pre-R2 records may still have their original bytes in the database.
-    const image = stored ??
+    const image =
+      stored ??
       (achievement.data?.byteLength
         ? { bytes: achievement.data, mimeType: achievement.mimeType }
         : null);
