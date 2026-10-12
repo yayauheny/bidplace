@@ -241,6 +241,7 @@ export function ProductDraftScreen({
     productId,
     revisionId: productDetail.data?.editingRevision?.id,
     authEpoch,
+    canChange: () => !transitionLock.current,
     story: productDetail.data?.story,
     onSaved: (savedStory) => {
       if (!productId || !canWritePrivateCache(queryClient, authEpoch)) return;
@@ -1197,7 +1198,7 @@ export function ProductDraftScreen({
               images={existingProduct.images}
               blocks={storyEditor.blocks}
               storyNeedsDraft={storyNeedsDraft}
-              onStartDraft={() => void persistCurrentForm('ordinary')}
+              onStartDraft={editable ? () => void persistCurrentForm('ordinary') : undefined}
               editable={editable && !inputsLocked && !storyNeedsDraft}
               savePending={storyEditor.pending || save.isPending}
               saveError={storyEditor.error}

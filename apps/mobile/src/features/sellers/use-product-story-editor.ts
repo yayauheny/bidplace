@@ -41,6 +41,7 @@ export function useProductStoryEditor({
   authEpoch,
   story,
   onSaved,
+  canChange,
 }: {
   api: ApiClient;
   productId?: string;
@@ -48,6 +49,7 @@ export function useProductStoryEditor({
   authEpoch: number;
   story?: StorySnapshot;
   onSaved?: (story: StorySnapshot) => void;
+  canChange?: () => boolean;
 }) {
   const identity = `${authEpoch}:${productId ?? ''}:${revisionId ?? ''}`;
   const [state, setState] = useState<DraftState>(() => fromServer(identity, story));
@@ -91,7 +93,7 @@ export function useProductStoryEditor({
 
   const change = (update: (blocks: EditableStoryBlock[]) => EditableStoryBlock[]) => {
     const previous = current.current;
-    if (previous.identity !== identity || previous.pending) return;
+    if (previous.identity !== identity || previous.pending || canChange?.() === false) return;
     replace({ ...previous, blocks: update(previous.blocks), dirty: true, error: null });
     retry.current = null;
   };
@@ -135,7 +137,7 @@ export function useProductStoryEditor({
   });
 
   const addImage = async (image?: Blob): Promise<boolean> => {
-    if (!productId || current.current.pending || current.current.identity !== identity) return false;
+    if (!productId || current.current.pending || current.current.identity !== identity || canChange?.() === false) return false;
     if (current.current.blocks.filter((block) => block.type === 'IMAGE').length >= STORY_LIMITS.maxImages) {
       replace({ ...current.current, error: 'Достигнут лимит изображений истории.' });
       return false;

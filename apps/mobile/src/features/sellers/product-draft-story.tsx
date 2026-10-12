@@ -25,7 +25,7 @@ export type ProductDraftStoryStepProps = {
   productId: string;
   isCreationFlow: boolean;
   storyNeedsDraft: boolean;
-  onStartDraft: () => void;
+  onStartDraft?: () => void;
   blocks: EditableStoryBlock[];
   images: GalleryImage[];
   editable: boolean;
@@ -86,8 +86,8 @@ export function ProductDraftStoryStep({
             </AppText>
             <SecondaryButton
               label="Начать редактирование истории"
-              disabled={savePending}
-              onPress={onStartDraft}
+              disabled={savePending || !onStartDraft}
+              onPress={() => onStartDraft?.()}
             />
           </>
         ) : null}
