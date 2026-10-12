@@ -73,6 +73,8 @@ export function ProductCatalogTermSheet({
   );
   const canPropose =
     editable &&
+    !loading &&
+    !error &&
     search.trim().length > 0 &&
     search.trim().length <= WORK_CATALOG_LIMITS.nameLength &&
     ![...availableTerms, ...hiddenSelected].some(

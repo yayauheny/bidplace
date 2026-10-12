@@ -1,10 +1,14 @@
 import { useState } from 'react';
+import { View } from 'react-native';
+
+import { designTokens } from '@bidplace/design-tokens';
 import { useFormContext, useFormState, useWatch } from 'react-hook-form';
 
 import { normalizeCatalogName, type SellerProductDetailResponse } from '@bidplace/contracts';
 
 import { FormPageColumns } from '../../components/layout';
 import { FigmaSelectField } from '../../components/figma/FigmaSelectField';
+import { FigmaChoiceChip } from '../../components/figma/FigmaChoiceChip';
 import { ProductCatalogTermSheet } from './product-catalog-term-sheet';
 import {
   AppText,
@@ -172,25 +176,27 @@ export function ProductDraftAboutStep({
               Можно оставить её или выбрать другую.
             </AppText>
           ) : null}
-          {categories.map((category) => (
-            <SecondaryButton
-              key={category.id}
-              label={categoryId === category.id ? `✓ ${category.name}` : category.name}
-              disabled={!editable}
-              width="block"
-              onPress={() => {
-                if (guard.current) return;
-                if (category.slug !== 'other') {
-                  setValue('categoryProposal', '', { shouldDirty: true, shouldValidate: true });
-                }
-                setValue('categoryId', category.id, {
-                  shouldDirty: true,
-                  shouldTouch: true,
-                  shouldValidate: true,
-                });
-              }}
-            />
-          ))}
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: designTokens.space.x2 }}>
+            {categories.map((category) => (
+              <FigmaChoiceChip
+                key={category.id}
+                label={category.name}
+                selected={categoryId === category.id}
+                disabled={!editable}
+                onPress={() => {
+                  if (guard.current) return;
+                  if (category.slug !== 'other') {
+                    setValue('categoryProposal', '', { shouldDirty: true, shouldValidate: true });
+                  }
+                  setValue('categoryId', category.id, {
+                    shouldDirty: true,
+                    shouldTouch: true,
+                    shouldValidate: true,
+                  });
+                }}
+              />
+            ))}
+          </View>
           {categories.find((category) => category.id === categoryId)?.slug === 'other' ||
           (categoryId === selection?.category?.id && selection?.category?.slug === 'other') ? (
             <>
