@@ -87,6 +87,9 @@ jobs:
 
       - name: Build workspace and production web for opted-in draft PR
         if: github.event_name == 'pull_request' && github.event.pull_request.draft == true && contains(github.event.pull_request.title, '[build-check]')
+        # Public Cloudflare Turnstile test site key, never a production credential.
+        env:
+          TURNSTILE_SITE_KEY: 1x00000000000000000000AA
         run: |
           pnpm build
           pnpm build:web
