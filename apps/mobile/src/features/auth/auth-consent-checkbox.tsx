@@ -22,6 +22,7 @@ export function AuthConsentCheckbox({
   linkLabel,
   onOpenDocument,
   error,
+  disabled = false,
 }: {
   checked: boolean;
   onChange: (checked: boolean) => void;
@@ -29,8 +30,9 @@ export function AuthConsentCheckbox({
   linkLabel?: string;
   onOpenDocument?: () => void;
   error?: string;
+  disabled?: boolean;
 }) {
-  const toggle = () => onChange(!checked);
+  const toggle = () => { if (!disabled) onChange(!checked); };
   const handleWebKeyDown = (event: { key: string; preventDefault: () => void }) => {
     if (event.key !== ' ') return;
     event.preventDefault();
@@ -47,9 +49,10 @@ export function AuthConsentCheckbox({
       <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: designTokens.auth.titleGap }}>
         <MotionPressable
           accessibilityRole="checkbox"
-          accessibilityState={{ checked }}
+          accessibilityState={{ checked, disabled }}
           accessibilityLabel={label}
           aria-checked={checked}
+          disabled={disabled}
           onPress={toggle}
           preset="button"
           {...(Platform.OS === 'web' ? ({ onKeyDown: handleWebKeyDown } as object) : {})}

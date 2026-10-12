@@ -726,6 +726,11 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
 
   const loadRegistrationLegal = () => {
     const request = ++legalRequest.current;
+    setLegalDocuments(null);
+    // An earlier checkbox click is never treated as acceptance of a newer or unavailable version.
+    for (const key of ['agreementAccepted', 'privacyAcknowledged', 'dataConsentGiven', 'age18Confirmed'] as const) {
+      form.setValue(key, false);
+    }
     setRegistrationLegalPending(true);
     setRegistrationLegalError(null);
     void api.auth.getLegalDocuments()
@@ -1123,6 +1128,7 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
                 render={({ field }) => (
                   <AuthConsentCheckbox
                     checked={field.value}
+                    disabled={!legalDocuments || registrationLegalPending}
                     onChange={field.onChange}
                     label={label}
                     linkLabel={linkLabel || undefined}

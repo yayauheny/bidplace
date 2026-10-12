@@ -633,7 +633,6 @@ describe('registration consent attempt', () => {
     const view = mount();
     await until(view.container, 'Юридические документы пока не опубликованы.');
     fill(view.container, 'Электронная почта', 'a@example.com');
-    clickAllConsents(view.container);
     clickButton(view.container, 'Дальше');
     await flush();
     expect(harness.registers).toBe(0);
