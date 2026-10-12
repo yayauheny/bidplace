@@ -282,6 +282,8 @@ function useProfileData() {
 
 export function SellerProfileScreen() {
   const isFocused = useIsFocused();
+  const focusedRef = useRef(isFocused);
+  focusedRef.current = isFocused;
   const api = useApiClient();
   const auth = useAuth();
   const queryClient = useQueryClient();
@@ -315,7 +317,7 @@ export function SellerProfileScreen() {
     fallback = 'Не удалось сохранить профиль',
     operation = sessionOperation.current,
   ) => {
-    if (sessionOperation.current !== operation) return;
+    if (!focusedRef.current || sessionOperation.current !== operation) return;
     logInfrastructureError(error, surface);
     const failure = readFormFailure(error, profileFieldOrder);
     if (failure.disposition === 'passthrough') {
@@ -617,6 +619,7 @@ export function SellerProfileScreen() {
   };
   const saveStillOwns = (operation: number, authEpoch: number) =>
     mountedRef.current &&
+    focusedRef.current &&
     sessionOperation.current === operation &&
     canWritePrivateCache(queryClient, authEpoch);
   const saveMutation = useMutation({
@@ -675,7 +678,11 @@ export function SellerProfileScreen() {
       epoch,
     }),
     onSuccess: ({ saved, epoch }) => {
-      if (!mountedRef.current || !canWritePrivateCache(queryClient, epoch)) {
+      if (
+        !mountedRef.current ||
+        !focusedRef.current ||
+        !canWritePrivateCache(queryClient, epoch)
+      ) {
         return;
       }
       void refreshPrivateQuery(queryClient, ['seller', 'application'], epoch);
@@ -701,7 +708,7 @@ export function SellerProfileScreen() {
   resetSaveMutation.current = () => saveMutation.reset();
 
   const save = async (source?: 'revision-submit' | 'transition') => {
-    if (achievementWriteBlocksParent()) return null;
+    if (!focusedRef.current || achievementWriteBlocksParent()) return null;
     if (logoutStarted.current || saveInFlight.current) return null;
     if (revisionSubmitInFlight.current && source !== 'revision-submit')
       return null;
@@ -760,6 +767,8 @@ export function SellerProfileScreen() {
     revisionSubmitInFlight.current = true;
     setRevisionSubmitActive(true);
     const stillOwnsSubmit = () =>
+      mountedRef.current &&
+      focusedRef.current &&
       sessionOperation.current === operation &&
       canWritePrivateCache(queryClient, submitEpoch);
     try {
@@ -813,6 +822,8 @@ export function SellerProfileScreen() {
     const epoch = currentAuthEpoch(queryClient);
     const operation = sessionOperation.current;
     const stillOwnsStep = () =>
+      mountedRef.current &&
+      focusedRef.current &&
       sessionOperation.current === operation &&
       canWritePrivateCache(queryClient, epoch);
     try {
@@ -840,6 +851,7 @@ export function SellerProfileScreen() {
     photoSelection.current = selection;
     const stillOwnsPhoto = () =>
       mountedRef.current &&
+      focusedRef.current &&
       selection === photoSelection.current &&
       !transitionLock.current &&
       sessionOperation.current === operation &&

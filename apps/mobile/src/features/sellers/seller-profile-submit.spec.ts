@@ -16,6 +16,7 @@ Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
 const harness = vi.hoisted(() => ({
   params: {} as { intro?: string; step?: string },
+  focused: true,
   logout: vi.fn<() => Promise<void>>(),
   replace: vi.fn(),
   push: vi.fn(),
@@ -55,7 +56,7 @@ vi.mock('react-native', () => ({
 }));
 
 vi.mock('expo-router', () => ({
-  useIsFocused: () => true,
+  useIsFocused: () => harness.focused,
   useRouter: () => ({
     replace: harness.replace,
     push: harness.push,
@@ -391,18 +392,21 @@ function mount(sessionId = 'user-a') {
   const container = document.createElement('div');
   document.body.append(container);
   const root: Root = createRoot(container);
-  act(() => {
-    root.render(
-      createElement(
-        QueryClientProvider,
-        { client: queryClient },
-        createElement(SellerProfileScreen),
-      ),
+  const render = () =>
+    createElement(
+      QueryClientProvider,
+      { client: queryClient },
+      createElement(SellerProfileScreen),
     );
+  act(() => {
+    root.render(render());
   });
   return {
     container,
     queryClient,
+    rerender() {
+      act(() => root.render(render()));
+    },
     unmount() {
       act(() => {
         root.unmount();
@@ -509,6 +513,7 @@ function buttonDisabled(container: ParentNode, label: string) {
 
 beforeEach(() => {
   harness.params = {};
+  harness.focused = true;
   harness.logout.mockReset();
   harness.replace.mockReset();
   harness.push.mockReset();
@@ -1519,6 +1524,54 @@ describe('seller profile save reconciliation', () => {
     await flush();
     expect(harness.updateProfile.mock.calls[0]?.[1]).toBe(secondPhoto);
     vi.unstubAllGlobals();
+    view.unmount();
+  });
+
+  it('does not navigate or restore a profile when the screen loses focus during a step save', async () => {
+    let finishSave: (saved: ReturnType<typeof savedProfile>) => void =
+      () => undefined;
+    const original = response('DRAFT', 'DRAFT');
+    harness.params = { step: '1' };
+    harness.getMyProfile.mockResolvedValue(original);
+    harness.updateProfile.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finishSave = resolve;
+        }),
+    );
+    const view = mount();
+    await until(
+      view.container,
+      () =>
+        findButton(view.container, 'Продолжить') instanceof HTMLButtonElement,
+      'continue',
+    );
+    click(view.container, 'Продолжить');
+    await until(
+      view.container,
+      () => harness.updateProfile.mock.calls.length === 1,
+      'pending save',
+    );
+
+    harness.focused = false;
+    view.rerender();
+    await act(async () => {
+      finishSave(savedProfile({ city: 'Late city' }));
+      await Promise.resolve();
+    });
+    await flush();
+    expect(harness.push).not.toHaveBeenCalled();
+    expect(view.queryClient.getQueryData(['seller', 'profile'])).toEqual(
+      original,
+    );
+
+    harness.focused = true;
+    view.rerender();
+    harness.updateProfile.mockResolvedValueOnce(response('DRAFT', 'DRAFT'));
+    click(view.container, 'Продолжить');
+    await flush();
+    expect(harness.updateProfile).toHaveBeenCalledTimes(2);
+    expect(harness.push).toHaveBeenCalledWith('/profile?step=2');
     view.unmount();
   });
 
