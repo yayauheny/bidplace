@@ -170,6 +170,10 @@ export function useProductStoryEditor({
       replace({ ...current.current, error: 'Достигнут лимит изображений истории.' });
       return false;
     }
+    if (image && image.size > STORY_LIMITS.maxFileBytes) {
+      replace({ ...current.current, error: 'Фото истории должно быть не больше 5 МиБ.' });
+      return false;
+    }
     if (image && pendingImage.current) {
       replace({ ...current.current, error: 'Сначала повторите предыдущую загрузку.' });
       return false;
