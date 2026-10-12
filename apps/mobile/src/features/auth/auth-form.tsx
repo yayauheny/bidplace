@@ -738,7 +738,7 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
     analytics.track('registration_started', {});
   }, [analytics]);
 
-  const loadRegistrationLegal = useCallback(() => {
+  const loadRegistrationLegal = () => {
     const request = ++legalRequest.current;
     registrationLegalTransport.current?.abort();
     const controller = new AbortController();
@@ -764,10 +764,11 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
         if (registrationLegalTransport.current === controller) registrationLegalTransport.current = null;
         if (mounted.current && !controller.signal.aborted && request === legalRequest.current) setRegistrationLegalPending(false);
       });
-  }, [api.auth, form]);
+  };
   useEffect(() => {
+    // Initial fetch only. Manual retries must not reset checks on ordinary re-renders.
     loadRegistrationLegal();
-  }, [loadRegistrationLegal]);
+  }, []);
 
   const submitRegistration = form.handleSubmit(async (values) => {
     setSubmitError(null);
