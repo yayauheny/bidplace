@@ -105,7 +105,7 @@ describe('SellersService', () => {
         create: vi.fn(),
       },
       sellerProfileRevisionAchievement: {
-        count: vi.fn().mockResolvedValue(2),
+        findFirst: vi.fn().mockResolvedValue({ position: 4 }),
         create: vi.fn().mockResolvedValue({
           id: 'dc6c9612-cf38-48aa-b328-011f1b093b6c',
           occurredAt: new Date('2025-03-01T00:00:00.000Z'),
@@ -138,11 +138,13 @@ describe('SellersService', () => {
 
     expect(tx.$queryRaw).toHaveBeenCalledTimes(2);
     expect(tx.sellerProfileRevision.create).not.toHaveBeenCalled();
-    expect(tx.sellerProfileRevisionAchievement.count).toHaveBeenCalledWith({
+    expect(tx.sellerProfileRevisionAchievement.findFirst).toHaveBeenCalledWith({
       where: { revisionId: 'revision-id' },
+      select: { position: true },
+      orderBy: { position: 'desc' },
     });
     expect(tx.sellerProfileRevisionAchievement.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({ revisionId: 'revision-id', position: 2 }),
+      data: expect.objectContaining({ revisionId: 'revision-id', position: 5 }),
     });
   });
 
@@ -1086,4 +1088,67 @@ describe('SellersService', () => {
     expect(logged).not.toContain(marker);
     loggerWarn.mockRestore();
   });
+  it.each([0, 1])(
+    'compacts remaining achievements after deleting legacy media with %i other references',
+    async (remainingReferences) => {
+      const assetId = '11111111-1111-4111-8111-111111111111';
+      const update = vi.fn().mockResolvedValue({});
+      const tx = {
+        $queryRaw: vi.fn().mockResolvedValue([{ id: 'profile-id' }]),
+        sellerProfile: {
+          findUnique: vi.fn().mockResolvedValue({
+            id: 'profile-id',
+            status: 'DRAFT',
+            editingRevision: { id: 'revision-id', status: 'DRAFT' },
+            publishedRevision: null,
+          }),
+        },
+        sellerProfileRevisionAchievement: {
+          findFirst: vi
+            .fn()
+            .mockResolvedValueOnce({ id: 'achievement-id' })
+            .mockResolvedValueOnce({
+              id: 'achievement-id',
+              objectKey: 'legacy:image',
+              mediaAssetId: assetId,
+            }),
+          delete: vi.fn().mockResolvedValue({}),
+          findMany: vi.fn().mockResolvedValue([
+            { id: 'other-a', position: 0 },
+            { id: 'other-b', position: 4 },
+          ]),
+          update,
+          count: vi.fn().mockResolvedValue(remainingReferences),
+        },
+      };
+      const media = { enabled: true, enqueueCleanup: vi.fn() };
+      const remove = vi.fn();
+      const service = new SellersService(
+        { $transaction: vi.fn(async (run: (tx: typeof tx) => Promise<unknown>) => run(tx)) } as never,
+        { ...imageStore, delete: remove } as never,
+        media as never,
+      );
+
+      await expect(
+        service.deleteAchievement('user-id', 'achievement-id'),
+      ).resolves.toEqual({ ok: true });
+
+      expect(update.mock.calls.map(([arg]) => [arg.where.id, arg.data.position])).toEqual([
+        ['other-a', 5],
+        ['other-b', 6],
+        ['other-a', 0],
+        ['other-b', 1],
+      ]);
+      expect(tx.sellerProfileRevisionAchievement.count).toHaveBeenCalledWith({
+        where: { mediaAssetId: assetId },
+      });
+      if (remainingReferences === 0) {
+        expect(media.enqueueCleanup).toHaveBeenCalledWith(tx, [assetId]);
+      } else {
+        expect(media.enqueueCleanup).not.toHaveBeenCalled();
+      }
+      expect(remove).not.toHaveBeenCalled();
+    },
+  );
+
 });

@@ -13,7 +13,6 @@ import {
 import { selectedCategorySchema } from './catalog';
 import { isCountryCode } from './countries';
 import {
-  achievementOccurredDateSchema,
   httpsUrlSchema,
   isoDateTimeSchema,
   slugSchema,
