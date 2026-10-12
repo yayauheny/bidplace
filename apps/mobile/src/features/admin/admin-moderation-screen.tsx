@@ -637,8 +637,11 @@ export function AdminModerationScreen() {
                 const content = displayedProduct(product);
                 const review = product.reviewTarget;
                 const selection = review?.selection;
-                const pendingCatalogProposals = selection?.proposals.some(
-                  (proposal) => proposal.selected && proposal.status === 'PENDING',
+                const unresolvedCatalogProposals = selection?.proposals.some(
+                  (proposal) => proposal.selected && proposal.status !== 'APPROVED',
+                ) ?? false;
+                const rejectedCatalogProposals = selection?.proposals.some(
+                  (proposal) => proposal.selected && proposal.status === 'REJECTED',
                 ) ?? false;
                 const productSellerApproved =
                   product.sellerProfile.status === 'APPROVED';
@@ -775,16 +778,18 @@ export function AdminModerationScreen() {
                         публикации недоступно.
                       </AppText>
                     ) : null}
-                    {review && pendingRevision(review.status) && pendingCatalogProposals ? (
+                    {review && pendingRevision(review.status) && unresolvedCatalogProposals ? (
                       <AppText role="bodySmall" tone="secondary">
-                        Сначала рассмотрите предложения автора по категории, материалам и техникам.
+                        {rejectedCatalogProposals
+                          ? 'Есть отклонённые предложения. Запросите изменения, чтобы автор удалил или заменил их.'
+                          : 'Сначала рассмотрите предложения автора по категории, материалам и техникам.'}
                       </AppText>
                     ) : null}
                     {review && pendingRevision(review.status) ? (
                       <PrimaryButton
                         label="Одобрить"
                         loading={productStatus.isPending}
-                        disabled={!productSellerApproved || pendingCatalogProposals}
+                        disabled={!productSellerApproved || unresolvedCatalogProposals}
                         onPress={() =>
                           mutateProductStatus({
                             id: product.id,
