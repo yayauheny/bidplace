@@ -90,6 +90,22 @@ describe('revision-backed Work Story editor', () => {
     );
   });
 
+  it('keeps an unsaved block and its revision token after a server conflict', async () => {
+    const view = mount();
+    view.replaceCreation.mockRejectedValueOnce(new Error('conflict'));
+    act(() => {
+      view.editor.addText('PARAGRAPH');
+      view.editor.editText(view.editor.blocks[0]!.key, 'Сохранить локально');
+    });
+    await act(async () => {
+      expect(await view.editor.save()).toBe(false);
+    });
+    expect(view.editor.dirty).toBe(true);
+    expect(view.editor.blocks[0]).toMatchObject({ text: 'Сохранить локально' });
+    expect(view.editor.error).toContain('История не сохранена');
+    expect(view.replaceCreation.mock.calls[0]?.[1].storyToken).toBe(0);
+  });
+
   it('preserves block order after editing and moving before save', async () => {
     const view = mount();
     const secondId = '85555555-5555-4555-8555-555555555555';
