@@ -375,6 +375,10 @@ async function reachNickname(container: HTMLElement) {
   await until(container, 'Введите вашу почту');
   fill(container, 'Электронная почта', 'a@example.com');
   await until(container, 'Редакция документов: portfolio-legal-2026-10-12');
+  await until(container, () => {
+    const boxes = [...container.querySelectorAll('[role="checkbox"]')];
+    return boxes.length === 4 && boxes.every((node) => node instanceof HTMLButtonElement && !node.disabled);
+  }, 'four enabled legal checkboxes');
   clickAllConsents(container);
   clickButton(container, 'Дальше');
   await until(container, 'Выберите имя пользователя');

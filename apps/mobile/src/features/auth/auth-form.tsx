@@ -754,15 +754,16 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
       .then((documents) => {
         if (!mounted.current || controller.signal.aborted || request !== legalRequest.current) return;
         setLegalDocuments(documents);
+        setRegistrationLegalPending(false);
       })
       .catch(() => {
         if (!mounted.current || controller.signal.aborted || request !== legalRequest.current) return;
         setLegalDocuments(null);
         setRegistrationLegalError('Юридические документы пока не опубликованы. Регистрация временно недоступна.');
+        setRegistrationLegalPending(false);
       })
       .finally(() => {
         if (registrationLegalTransport.current === controller) registrationLegalTransport.current = null;
-        if (mounted.current && !controller.signal.aborted && request === legalRequest.current) setRegistrationLegalPending(false);
       });
   };
   useEffect(() => {
