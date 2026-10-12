@@ -206,13 +206,18 @@ describe('author achievement editing revision HTTP contract', () => {
         { revisionId, position: 4, body: 'Last show' },
       ],
     });
-    const middle = await prisma.sellerProfileRevisionAchievement.findFirstOrThrow({
-      where: { revisionId, position: 2 },
-      select: { id: true },
-    });
+    const middle =
+      await prisma.sellerProfileRevisionAchievement.findFirstOrThrow({
+        where: { revisionId, position: 2 },
+        select: { id: true },
+      });
 
     const owner = new HttpTestClient(http.baseUrl, 'http://localhost:8081');
-    await login(owner, fixture.sellers.changes.email, fixture.sellers.changes.password);
+    await login(
+      owner,
+      fixture.sellers.changes.email,
+      fixture.sellers.changes.password,
+    );
 
     expect(
       (await owner.delete(`/author/application/achievements/${middle.id}`)).status,
@@ -235,10 +240,11 @@ describe('author achievement editing revision HTTP contract', () => {
     expect(added.status).toBe(201);
     const createdId = ((await added.json()) as { achievement: { id: string } })
       .achievement.id;
-    const persisted = await prisma.sellerProfileRevisionAchievement.findUniqueOrThrow({
-      where: { id: createdId },
-      select: { occurredAt: true, position: true },
-    });
+    const persisted =
+      await prisma.sellerProfileRevisionAchievement.findUniqueOrThrow({
+        where: { id: createdId },
+        select: { occurredAt: true, position: true },
+      });
     expect(persisted.occurredAt?.toISOString()).toBe(
       '0004-02-29T00:00:00.000Z',
     );

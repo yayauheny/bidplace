@@ -100,67 +100,67 @@ describe('SellersService', () => {
   ])(
     'adds an achievement for year $occurredDate.year after locking the revision',
     async ({ occurredDate, storedDate }) => {
-    const tx = {
-      $queryRaw: vi.fn().mockResolvedValue([{ id: 'seller-profile-id' }]),
-      sellerProfile: {
-        findUnique: vi.fn().mockResolvedValue({
-          id: 'seller-profile-id',
-          status: 'CHANGES_REQUESTED',
-          editingRevisionId: 'revision-id',
-          publishedRevisionId: null,
-          editingRevision: { id: 'revision-id', status: 'DRAFT' },
-          publishedRevision: null,
-        }),
-      },
-      sellerProfileRevision: {
-        create: vi.fn(),
-      },
-      sellerProfileRevisionAchievement: {
-        findFirst: vi.fn().mockResolvedValue({ position: 4 }),
-        create: vi.fn().mockResolvedValue({
-          id: 'dc6c9612-cf38-48aa-b328-011f1b093b6c',
-          occurredAt: storedDate,
-          occurredAtPrecision: occurredDate.day === null ? 'MONTH' : 'DAY',
+      const tx = {
+        $queryRaw: vi.fn().mockResolvedValue([{ id: 'seller-profile-id' }]),
+        sellerProfile: {
+          findUnique: vi.fn().mockResolvedValue({
+            id: 'seller-profile-id',
+            status: 'CHANGES_REQUESTED',
+            editingRevisionId: 'revision-id',
+            publishedRevisionId: null,
+            editingRevision: { id: 'revision-id', status: 'DRAFT' },
+            publishedRevision: null,
+          }),
+        },
+        sellerProfileRevision: {
+          create: vi.fn(),
+        },
+        sellerProfileRevisionAchievement: {
+          findFirst: vi.fn().mockResolvedValue({ position: 4 }),
+          create: vi.fn().mockResolvedValue({
+            id: 'dc6c9612-cf38-48aa-b328-011f1b093b6c',
+            occurredAt: storedDate,
+            occurredAtPrecision: occurredDate.day === null ? 'MONTH' : 'DAY',
+            body: 'First exhibition',
+          }),
+        },
+      };
+      const prisma = {
+        $transaction: vi.fn(
+          async (callback: (client: typeof tx) => Promise<unknown>) =>
+            callback(tx),
+        ),
+      };
+      const service = new SellersService(prisma as never, imageStore as never);
+
+      await expect(
+        service.addAchievement('user-id', {
           body: 'First exhibition',
+          occurredDate,
         }),
-      },
-    };
-    const prisma = {
-      $transaction: vi.fn(
-        async (callback: (client: typeof tx) => Promise<unknown>) =>
-          callback(tx),
-      ),
-    };
-    const service = new SellersService(prisma as never, imageStore as never);
+      ).resolves.toEqual({
+        achievement: {
+          id: 'dc6c9612-cf38-48aa-b328-011f1b093b6c',
+          occurredDate,
+          body: 'First exhibition',
+          image: null,
+        },
+      });
 
-    await expect(
-      service.addAchievement('user-id', {
-        body: 'First exhibition',
-        occurredDate,
-      }),
-    ).resolves.toEqual({
-      achievement: {
-        id: 'dc6c9612-cf38-48aa-b328-011f1b093b6c',
-        occurredDate,
-        body: 'First exhibition',
-        image: null,
-      },
-    });
-
-    expect(tx.$queryRaw).toHaveBeenCalledTimes(2);
-    expect(tx.sellerProfileRevision.create).not.toHaveBeenCalled();
-    expect(tx.sellerProfileRevisionAchievement.findFirst).toHaveBeenCalledWith({
-      where: { revisionId: 'revision-id' },
-      select: { position: true },
-      orderBy: { position: 'desc' },
-    });
-    expect(tx.sellerProfileRevisionAchievement.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({
-        revisionId: 'revision-id',
-        position: 5,
-        occurredAt: storedDate,
-      }),
-    });
+      expect(tx.$queryRaw).toHaveBeenCalledTimes(2);
+      expect(tx.sellerProfileRevision.create).not.toHaveBeenCalled();
+      expect(tx.sellerProfileRevisionAchievement.findFirst).toHaveBeenCalledWith({
+        where: { revisionId: 'revision-id' },
+        select: { position: true },
+        orderBy: { position: 'desc' },
+      });
+      expect(tx.sellerProfileRevisionAchievement.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          revisionId: 'revision-id',
+          position: 5,
+          occurredAt: storedDate,
+        }),
+      });
     },
   );
 

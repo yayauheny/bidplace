@@ -197,8 +197,10 @@ describe('toPortfolioAchievement legacy image compatibility', () => {
     const publicUrl =
       'https://media.bid.place/assets/11111111-1111-4111-8111-111111111111/p1/preview.webp';
     expect(
-      toPortfolioAchievement({ ...achievement, mediaAsset: { objects: [] } }, 'public')
-        .image?.url,
+      toPortfolioAchievement(
+        { ...achievement, mediaAsset: { objects: [] } },
+        'public',
+      ).image?.url,
     ).toBe(privateUrl);
     expect(
       toPortfolioAchievement(
