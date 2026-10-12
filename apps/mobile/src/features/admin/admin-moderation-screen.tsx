@@ -46,6 +46,7 @@ import {
 } from '../../lib/presentation';
 import { AccountLogoutButton } from '../auth/AccountLogoutButton';
 import { formatAchievementDate } from '../sellers/achievement-date';
+import { PrivateStoryImage } from '../../components/shared/PrivateStoryImage';
 import { AdminReviewImage, AdminRevisionPhoto } from './AdminRevisionPhoto';
 import { AdminWorkCatalogProposals } from './AdminWorkCatalogProposals';
 import {
@@ -726,19 +727,16 @@ export function AdminModerationScreen() {
                         {review.story.blocks.map((block) => (
                           <View key={block.id} style={{ gap: designTokens.space.x1 }}>
                             {block.type === 'IMAGE' ? (
-                              <ResilientRemoteImage
-                                uri={getApiAssetUrl(
-                                  `/api/products/${product.id}/story-images/${block.mediaAssetId}`,
-                                )}
-                                component="CreationStep"
-                                accessibilityLabel={block.altText ?? 'Фотография истории создания'}
-                                fallbackLabel="Фотография истории недоступна"
+                              <PrivateStoryImage
+                                productId={product.id}
+                                mediaAssetId={block.mediaAssetId}
+                                sessionEpoch={currentAuthEpoch(queryClient)}
+                                label={block.altText ?? 'Фотография истории создания'}
                                 style={{
                                   width: 120,
                                   height: 90,
                                   borderRadius: designTokens.radius.image,
                                 }}
-                                contentFit="cover"
                               />
                             ) : (
                               <AppText
