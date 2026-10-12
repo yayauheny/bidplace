@@ -1239,9 +1239,13 @@ describe('SellersService', () => {
     expect(remove).not.toHaveBeenCalled();
   });
 
-  it.each([0, 1])(
-    'compacts remaining achievements after deleting legacy media with %i other references',
-    async (remainingReferences) => {
+  it.each([
+    { remainingReferences: 0, enabled: true },
+    { remainingReferences: 1, enabled: true },
+    { remainingReferences: 0, enabled: false },
+  ])(
+    'compacts achievements with $remainingReferences references and media enabled=$enabled',
+    async ({ remainingReferences, enabled }) => {
       const assetId = '11111111-1111-4111-8111-111111111111';
       const update = vi.fn().mockResolvedValue({});
       const tx = {
@@ -1272,7 +1276,7 @@ describe('SellersService', () => {
           count: vi.fn().mockResolvedValue(remainingReferences),
         },
       };
-      const media = { enabled: true, enqueueCleanup: vi.fn() };
+      const media = { enabled, enqueueCleanup: vi.fn() };
       const remove = vi.fn();
       const service = new SellersService(
         {
@@ -1296,10 +1300,14 @@ describe('SellersService', () => {
         ['other-a', 0],
         ['other-b', 1],
       ]);
-      expect(tx.sellerProfileRevisionAchievement.count).toHaveBeenCalledWith({
-        where: { mediaAssetId: assetId },
-      });
-      if (remainingReferences === 0) {
+      if (enabled) {
+        expect(tx.sellerProfileRevisionAchievement.count).toHaveBeenCalledWith({
+          where: { mediaAssetId: assetId },
+        });
+      } else {
+        expect(tx.sellerProfileRevisionAchievement.count).not.toHaveBeenCalled();
+      }
+      if (enabled && remainingReferences === 0) {
         expect(media.enqueueCleanup).toHaveBeenCalledWith(tx, [assetId]);
       } else {
         expect(media.enqueueCleanup).not.toHaveBeenCalled();

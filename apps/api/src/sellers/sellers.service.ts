@@ -772,13 +772,15 @@ export class SellersService {
           ),
         );
 
-        if (achievement.mediaAssetId && this.media?.enabled) {
-          // Forked revisions can still reference the same historical asset.
-          const references = await tx.sellerProfileRevisionAchievement.count({
-            where: { mediaAssetId: achievement.mediaAssetId },
-          });
-          if (references === 0) {
-            await this.media.enqueueCleanup(tx, [achievement.mediaAssetId]);
+        if (achievement.mediaAssetId) {
+          // Migrated images must never be deleted through the legacy store.
+          if (this.media?.enabled) {
+            const references = await tx.sellerProfileRevisionAchievement.count({
+              where: { mediaAssetId: achievement.mediaAssetId },
+            });
+            if (references === 0) {
+              await this.media.enqueueCleanup(tx, [achievement.mediaAssetId]);
+            }
           }
           return null;
         }
