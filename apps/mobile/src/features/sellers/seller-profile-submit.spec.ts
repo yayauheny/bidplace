@@ -1553,10 +1553,16 @@ describe('seller profile save reconciliation', () => {
     await until(
       view.container,
       () =>
-        findButton(view.container, 'Продолжить') instanceof HTMLButtonElement,
+        findButton(view.container, 'Продолжить') instanceof HTMLButtonElement &&
+        !buttonDisabled(view.container, 'Продолжить'),
       'continue',
     );
     click(view.container, 'Продолжить');
+    await until(
+      view.container,
+      () => harness.getMyProfile.mock.calls.length >= 2,
+      'in-flight stale profile refetch',
+    );
     await until(
       view.container,
       () => harness.advanceAuthorApplication.mock.calls.length === 1,
@@ -1597,7 +1603,8 @@ describe('seller profile save reconciliation', () => {
     await until(
       view.container,
       () =>
-        findButton(view.container, 'Продолжить') instanceof HTMLButtonElement,
+        findButton(view.container, 'Продолжить') instanceof HTMLButtonElement &&
+        !buttonDisabled(view.container, 'Продолжить'),
       'continue',
     );
     click(view.container, 'Продолжить');
@@ -1645,7 +1652,8 @@ describe('seller profile save reconciliation', () => {
     await until(
       view.container,
       () =>
-        findButton(view.container, 'Продолжить') instanceof HTMLButtonElement,
+        findButton(view.container, 'Продолжить') instanceof HTMLButtonElement &&
+        !buttonDisabled(view.container, 'Продолжить'),
       'continue',
     );
     click(view.container, 'Продолжить');
@@ -1683,7 +1691,8 @@ describe('seller profile save reconciliation', () => {
       view.container,
       () =>
         findButton(view.container, 'Отправить на проверку') instanceof
-        HTMLButtonElement,
+          HTMLButtonElement &&
+        !buttonDisabled(view.container, 'Отправить на проверку'),
       'submit',
     );
     click(view.container, 'Отправить на проверку');
