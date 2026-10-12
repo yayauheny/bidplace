@@ -260,7 +260,7 @@ export class SellersService {
   private async preparePhoto(
     userId: string,
     photo: ValidatedImageUpload,
-    purpose: 'AUTHOR_PHOTO' | 'ACHIEVEMENT',
+    purpose: 'AUTHOR_PHOTO',
   ) {
     if (!this.media?.enabled) return { photo, asset: undefined };
     if (!photo.source)
@@ -684,9 +684,12 @@ export class SellersService {
   ) {
     return runReadCommittedTransaction(this.prisma, async (tx) => {
       const editing = await ensureEditableEditingRevision(tx, userId);
-      const position = await tx.sellerProfileRevisionAchievement.count({
+      const last = await tx.sellerProfileRevisionAchievement.findFirst({
         where: { revisionId: editing.revisionId },
+        select: { position: true },
+        orderBy: { position: 'desc' },
       });
+      const position = (last?.position ?? -1) + 1;
       const achievement = await tx.sellerProfileRevisionAchievement.create({
         data: {
           revisionId: editing.revisionId,
@@ -743,26 +746,14 @@ export class SellersService {
         await tx.sellerProfileRevisionAchievement.delete({
           where: { id: achievement.id },
         });
-        if (achievement.mediaAssetId && this.media?.enabled) {
-          await this.media.enqueueCleanup(tx, [achievement.mediaAssetId]);
-          return null;
-        }
-        let deletedKey: string | null = null;
-        if (achievement.objectKey) {
-          const remainingReferences =
-            await tx.sellerProfileRevisionAchievement.count({
-              where: { objectKey: achievement.objectKey },
-            });
-          if (remainingReferences === 0) {
-            deletedKey = achievement.objectKey;
-          }
-        }
+
+        // Reindex on every delete, including legacy media-backed achievements.
         const remaining = await tx.sellerProfileRevisionAchievement.findMany({
           where: { revisionId: editing.revisionId },
-          select: { id: true },
+          select: { id: true, position: true },
           orderBy: { position: 'asc' },
         });
-        const temporaryBase = remaining.length + 1;
+        const temporaryBase = (remaining.at(-1)?.position ?? -1) + 1;
         await Promise.all(
           remaining.map((item, index) =>
             tx.sellerProfileRevisionAchievement.update({
@@ -779,7 +770,22 @@ export class SellersService {
             }),
           ),
         );
-        return deletedKey;
+
+        if (achievement.mediaAssetId && this.media?.enabled) {
+          // Forked revisions can still reference the same historical asset.
+          const references = await tx.sellerProfileRevisionAchievement.count({
+            where: { mediaAssetId: achievement.mediaAssetId },
+          });
+          if (references === 0) {
+            await this.media.enqueueCleanup(tx, [achievement.mediaAssetId]);
+          }
+          return null;
+        }
+        if (!achievement.objectKey) return null;
+        const references = await tx.sellerProfileRevisionAchievement.count({
+          where: { objectKey: achievement.objectKey },
+        });
+        return references === 0 ? achievement.objectKey : null;
       },
     );
     if (objectKeyToDelete) {

@@ -1,5 +1,6 @@
 import { publicMediaUrlSchema, mediaDeliverySchema } from './media';
 import { z } from 'zod';
+import { portfolioAchievementSchema } from './portfolio';
 
 import {
   authorApplicationStageSchema,
@@ -120,28 +121,7 @@ export const publicSellerProfileSchema = sellerProfileSchema
     shortDescription: z.string().trim().min(1),
     directionCategoryIds: z.array(uuidSchema).default([]),
     directions: z.array(selectedCategorySchema).default([]),
-    achievements: z
-      .array(
-        z
-          .object({
-            id: uuidSchema,
-            occurredDate: achievementOccurredDateSchema.nullable(),
-            body: z.string().trim().min(1),
-            image: z
-              .object({
-                url: z
-                  .string()
-                  .regex(/^\/api\/author-achievements\/[0-9a-f-]+\/image$/),
-                mimeType: z.string().trim().min(1),
-                byteLength: z.number().int().positive(),
-                checksum: z.string().length(64),
-              })
-              .strict()
-              .nullable(),
-          })
-          .strict(),
-      )
-      .optional(),
+    achievements: z.array(portfolioAchievementSchema).optional(),
   });
 
 export const sellerProfileCreateRequestSchema = z
