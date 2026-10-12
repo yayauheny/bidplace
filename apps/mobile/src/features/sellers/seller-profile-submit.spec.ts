@@ -1576,8 +1576,13 @@ describe('seller profile save reconciliation', () => {
       });
       advanceAuthEpoch(view.queryClient);
     });
-    await flush();
-    expect(inputValue(view.container, 'Никнейм')).toBe('next-author');
+    await until(
+      view.container,
+      () =>
+        view.container.querySelector<HTMLInputElement>('[aria-label="Никнейм"]')
+          ?.value === 'next-author',
+      'new session slug',
+    );
     view.unmount();
   });
 
@@ -1645,7 +1650,9 @@ describe('seller profile save reconciliation', () => {
       sellerProfile: { ...original.sellerProfile, city: 'Late city' },
     };
     harness.params = { step: '1' };
-    harness.getMyProfile.mockResolvedValue(original);
+    harness.getMyProfile
+      .mockResolvedValueOnce(original)
+      .mockResolvedValue(savedDraft);
     harness.updateProfile.mockImplementationOnce(
       () =>
         new Promise((resolve) => {
