@@ -30,7 +30,7 @@ test('browser workflow supports manual and ready-for-review Chromium coverage', 
     'utf8',
   );
   assert.match(workflow, /workflow_dispatch:/);
-  assert.match(workflow, /pull_request:\\s*\\n\\s*types: \\[ready_for_review\\]/);
+  assert.match(workflow, /pull_request:\s*\n\s*types: \[ready_for_review\]/);
   assert.doesNotMatch(workflow, /push:/);
   assert.match(workflow, /--project=chromium/);
   assert.match(workflow, /shard: \[1, 2, 3, 4\]/);
