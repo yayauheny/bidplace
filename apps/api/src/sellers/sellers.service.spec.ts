@@ -954,6 +954,48 @@ describe('SellersService', () => {
     expect(prisma.auditEvent.delete).not.toHaveBeenCalled();
   });
 
+  it('serves a published historical achievement image without author credentials', async () => {
+    const bytes = new Uint8Array([1, 2, 3]);
+    const readPreview = vi.fn().mockResolvedValue({
+      bytes,
+      mimeType: 'image/webp',
+    });
+    const prisma = {
+      sellerProfileRevisionAchievement: {
+        findUnique: vi.fn().mockResolvedValue({
+          mimeType: 'image/webp',
+          objectKey: 'legacy:achievement',
+          mediaAssetId: '11111111-1111-4111-8111-111111111111',
+          revisionId: 'published-revision-id',
+          revision: {
+            sellerProfile: {
+              userId: 'owner-id',
+              status: 'APPROVED',
+              user: { status: 'active' },
+              publishedRevisionId: 'published-revision-id',
+            },
+          },
+        }),
+      },
+    };
+    const get = vi.fn();
+    const service = new SellersService(
+      prisma as never,
+      { ...imageStore, get } as never,
+      { enabled: true, readPreview } as never,
+    );
+
+    await expect(service.getAchievementImage('achievement-id')).resolves.toEqual({
+      mimeType: 'image/webp',
+      data: bytes,
+      isPublic: true,
+    });
+    expect(readPreview).toHaveBeenCalledWith(
+      '11111111-1111-4111-8111-111111111111',
+    );
+    expect(get).not.toHaveBeenCalled();
+  });
+
   it('hides unpublished achievement images from strangers', async () => {
     const prisma = {
       sellerProfileRevisionAchievement: {
