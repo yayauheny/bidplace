@@ -62,11 +62,15 @@ vi.mock('react-native', () => ({
     onPress,
     accessibilityRole,
     accessibilityLabel,
+    accessibilityState,
+    disabled,
   }: {
     children?: ReactNode;
     onPress?: () => void;
     accessibilityRole?: string;
     accessibilityLabel?: string;
+    accessibilityState?: { checked?: boolean };
+    disabled?: boolean;
   }) =>
     createElement(
       'button',
@@ -74,6 +78,8 @@ vi.mock('react-native', () => ({
         type: 'button',
         role: accessibilityRole,
         'aria-label': accessibilityLabel,
+        'aria-checked': accessibilityState?.checked,
+        disabled,
         onClick: () => onPress?.(),
       },
       children,
@@ -630,6 +636,9 @@ describe('registration consent attempt', () => {
     harness.failLegalOnce = true;
     const view = mount();
     await until(view.container, 'Юридические документы пока не опубликованы.');
+    expect([...view.container.querySelectorAll('[role="checkbox"]')].every(
+      (node) => node instanceof HTMLButtonElement && node.disabled,
+    )).toBe(true);
     fill(view.container, 'Электронная почта', 'a@example.com');
     clickButton(view.container, 'Дальше');
     await flush();

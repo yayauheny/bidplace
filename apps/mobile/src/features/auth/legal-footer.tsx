@@ -24,7 +24,6 @@ export function LegalFooter() {
           </MotionPressable>
         </Link>
       ))}
-      <AppText role="metadata">Связаться с оператором: work.evles@gmail.com</AppText>
     </View>
   );
 }
