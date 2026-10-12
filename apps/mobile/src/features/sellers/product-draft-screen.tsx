@@ -70,6 +70,7 @@ import {
   type ProductRevisionIdentity,
 } from './product-draft-state';
 import { ProductDraftStoryStep } from './product-draft-story';
+import { FigmaIconButton } from '../../components/figma/FigmaIconButton';
 import { useProductStoryEditor } from './use-product-story-editor';
 import {
   canOpenProductWizardStep,
@@ -978,11 +979,13 @@ export function ProductDraftScreen({
     reorderImages.mutate(ids);
   };
 
+  const storyWizardView = isCreationFlow && wizardStep === productWizardStep.story;
+
   return (
     <FormProvider {...form}>
       <ProductDraftWriteGuard guard={transitionLock}>
         <FormPageShell hideDock>
-          {isCreationFlow ? (
+          {isCreationFlow && !storyWizardView ? (
             <FormSection
               title={
                 wizardSubmitted ? 'Предмет отправлен' : 'Создание предмета'
@@ -1037,15 +1040,49 @@ export function ProductDraftScreen({
             </FormSection>
           ) : null}
 
-          <View style={{ gap: designTokens.space.x2 }}>
-            <AppText role="screenTitle">
+          {storyWizardView ? (
+            <View style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              paddingVertical: designTokens.space.x2,
+            }}>
+              <FigmaIconButton
+                icon="arrow-left-01"
+                label="Назад к изображениям"
+                disabled={storyEditor.pending || inputsLocked}
+                onPress={() => void moveToWizardStep(productWizardStep.images)}
+              />
+              <View accessibilityLabel="Шаг 3 из 4" style={{ flexDirection: 'row', gap: designTokens.space.x2 }}>
+                {[1, 2, 3, 4].map((index) => (
+                  <View key={index} style={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: 6,
+                    backgroundColor: index === 2 ? designTokens.color.inkStrong : designTokens.color.border,
+                  }} />
+                ))}
+              </View>
+              <FigmaIconButton
+                icon="x"
+                label="Сохранить и закрыть"
+                disabled={storyEditor.pending || inputsLocked}
+                onPress={() => void saveAndClose()}
+              />
+            </View>
+          ) : null}
+
+          {!storyWizardView ? (
+            <View style={{ gap: designTokens.space.x2 }}>
+              <AppText role="screenTitle">
               {existingProduct ? 'Редактировать предмет' : 'Новый предмет'}
             </AppText>
             <AppText role="bodySmall" tone="secondary">
               Черновик можно сохранить неполным. Для модерации нужны название,
               категория и хотя бы одно изображение.
             </AppText>
-          </View>
+            </View>
+          ) : null}
 
           <MediaDeliveryNotice delivery={productDetail.data?.publication} />
           {moderationNotice ? (
