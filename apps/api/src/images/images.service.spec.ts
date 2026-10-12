@@ -1112,6 +1112,15 @@ describe('ImagesService media gallery admission', () => {
     };
   }
 
+  it('rejects story uploads from a non-owner before staging media', async () => {
+    const { service, stage, prisma } = createMediaHarness({});
+    await expect(
+      service.addStoryImage('stranger-id', 'product-id', file, 'story-upload'),
+    ).rejects.toThrow(ForbiddenException);
+    expect(stage).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
   it('rejects a full gallery before stage and provider writes', async () => {
     const { service, stage, prisma } = createMediaHarness({
       images: gallery(imagePolicy.productImageUploadLimits.maxFiles),
