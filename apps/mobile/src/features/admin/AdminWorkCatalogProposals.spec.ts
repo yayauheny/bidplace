@@ -1,7 +1,7 @@
 /**
  * @vitest-environment jsdom
  */
-import { act, createElement, type ReactNode } from 'react';
+import { act, createElement, type ComponentProps, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -69,7 +69,7 @@ const materialProposal = {
   reviewedAt: null,
 };
 
-function mount(proposals = [materialProposal]) {
+function mount(proposals: ComponentProps<typeof AdminWorkCatalogProposals>['proposals'] = [materialProposal]) {
   const el = document.createElement('div');
   document.body.append(el);
   const queryClient = new QueryClient({
