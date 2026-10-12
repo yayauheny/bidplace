@@ -239,6 +239,13 @@ describe('portfolio published revision HTTP transport', () => {
       fixture.sellers.otherApproved.password,
     );
 
+    const rejectedImage = await owner.post('/author/application/achievements', {
+      body: 'Unsupported image upload',
+      occurredDate: { year: 2025, month: 3, day: null },
+      image: { url: '/api/author-achievements/legacy/image' },
+    });
+    expect(rejectedImage.status).toBe(400);
+
     const created = await owner.post('/author/application/achievements', {
       body: 'Show text only',
       occurredDate: { year: 2025, month: 3, day: null },
