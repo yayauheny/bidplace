@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "dev": "pnpm exec turbo run build --filter=@bidplace/database && nest start --watch",
-    "build": "nest build",
+    "build": "nest build && node scripts/copy-legal.mjs",
     "start": "node dist/main.js",
     "lint": "eslint .",
     "test": "vitest run",

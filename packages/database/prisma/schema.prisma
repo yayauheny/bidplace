@@ -115,6 +115,7 @@ model User {
   emailCodes        EmailVerificationCode[]
   passwordResetTokens PasswordResetToken[]
   termsAcceptances   TermsAcceptance[]
+  registrationLegalEvidence RegistrationLegalEvidence?
   authAbuseOperations AuthAbuseOperation[]
   auditEvents       AuditEvent[]          @relation("AuditActor")
   curatorSelections CuratorSelection[]    @relation("CuratorSelectionActor")
@@ -522,6 +523,21 @@ model PasswordResetToken {
 
   @@index([userId, createdAt])
   @@map("password_reset_tokens")
+}
+
+// Immutable registration-time evidence. Legacy users have no record; never backfill consent.
+model RegistrationLegalEvidence {
+  userId                  String   @id @map("user_id") @db.Uuid
+  agreementVersion        String   @map("agreement_version") @db.VarChar(80)
+  agreementAcceptedAt     DateTime @map("agreement_accepted_at")
+  privacyVersion          String   @map("privacy_version") @db.VarChar(80)
+  privacyAcknowledgedAt   DateTime @map("privacy_acknowledged_at")
+  dataConsentVersion      String   @map("data_consent_version") @db.VarChar(80)
+  dataConsentedAt         DateTime @map("data_consented_at")
+  age18ConfirmedAt        DateTime @map("age_18_confirmed_at")
+  user                    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("registration_legal_evidence")
 }
 
 model TermsAcceptance {

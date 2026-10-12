@@ -11,6 +11,7 @@ import {
   slugAvailabilityResponseSchema,
   registerRequestSchema,
   serviceRulesResponseSchema,
+  legalDocumentsResponseSchema,
 } from '@bidplace/contracts';
 import {
   Body,
@@ -71,6 +72,11 @@ export class AuthController {
     private readonly authService: AuthService,
     @Inject(SERVER_ENV) private readonly env: ServerEnv,
   ) {}
+
+  @Get('legal')
+  getLegalDocuments() {
+    return legalDocumentsResponseSchema.parse(this.authService.getLegalDocuments());
+  }
 
   @Get('rules')
   async getRules() {

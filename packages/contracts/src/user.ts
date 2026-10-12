@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { userRoleSchema, userStatusSchema } from './enums';
+import { registrationLegalSchema } from './legal';
 import { isoDateTimeSchema, slugTextSchema, uuidSchema } from './primitives';
 
 export const accountSlugSchema = slugTextSchema('Введите никнейм').max(
@@ -42,6 +43,7 @@ export const registerRequestSchema = z
     phone: z.string().trim().min(1).nullable().optional(),
     slug: newAccountSlugSchema,
     turnstileToken: turnstileTokenSchema,
+    legal: registrationLegalSchema,
   })
   .strict();
 

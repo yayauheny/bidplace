@@ -20,6 +20,8 @@ RUN pnpm install --frozen-lockfile
 
 COPY apps/api apps/api
 COPY packages packages
+# Source legal markdown is packaged by the API build; no runtime workspace dependency.
+COPY docs/legal/site docs/legal/site
 
 RUN pnpm db:generate \
   && pnpm --filter @bidplace/api... build \

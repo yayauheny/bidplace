@@ -9,6 +9,7 @@ export * from './dashboard';
 export * from './error';
 export * from './enums';
 export * from './rules';
+export * from './legal';
 export * from './product';
 export * from './portfolio';
 export * from './pagination';
