@@ -6,7 +6,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { View, type ViewStyle } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
 import { ApiErrorCode, newAccountSlugSchema, type User, type LegalDocumentId, type LegalDocumentsResponse } from '@bidplace/contracts';
-import { AppDialog, AppText, PrimaryButton, TextButton, TextField } from '../../components/ui';
+import { AppText, PrimaryButton, TextButton, TextField } from '../../components/ui';
 import { FigmaButton } from '../../components/figma/FigmaButton';
 import { MotionPressable } from '../../components/ui/MotionPressable';
 import { AuthConsentCheckbox } from './auth-consent-checkbox';
@@ -38,7 +38,6 @@ import {
 } from '../../errors';
 import {
   authKeys,
-  canWritePrivateCache,
   currentAuthEpoch,
   readAuthEpoch,
 } from '../../lib/query-cache';
@@ -724,7 +723,7 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
     analytics.track('registration_started', {});
   }, [analytics]);
 
-  const loadRegistrationLegal = () => {
+  const loadRegistrationLegal = useCallback(() => {
     const request = ++legalRequest.current;
     setLegalDocuments(null);
     // An earlier checkbox click is never treated as acceptance of a newer or unavailable version.
@@ -746,12 +745,10 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
       .finally(() => {
         if (mounted.current && request === legalRequest.current) setRegistrationLegalPending(false);
       });
-  };
+  }, [api.auth, form]);
   useEffect(() => {
     loadRegistrationLegal();
-    // Intentionally one fetch per mounted form; retry is explicit, not tied to checkbox state.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loadRegistrationLegal]);
 
   const submitRegistration = form.handleSubmit(async (values) => {
     setSubmitError(null);
