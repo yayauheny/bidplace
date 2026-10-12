@@ -366,10 +366,8 @@ async function until(
 async function reachNickname(container: HTMLElement) {
   await until(container, 'Введите вашу почту');
   fill(container, 'Электронная почта', 'a@example.com');
+  await until(container, 'Редакция документов: portfolio-legal-2026-10-12');
   clickAllConsents(container);
-  for (let attempt = 0; attempt < 20 && harness.legalReads < 1; attempt += 1) {
-    await flush();
-  }
   clickButton(container, 'Дальше');
   await until(container, 'Выберите имя пользователя');
 }
