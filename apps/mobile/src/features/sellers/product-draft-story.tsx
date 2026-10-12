@@ -6,14 +6,13 @@ import { designTokens } from '@bidplace/design-tokens';
 
 import {
   AppText,
-  ResilientRemoteImage,
   SecondaryButton,
   productMediaStyle,
 } from '../../components/ui';
 import { MotionPressable } from '../../components/ui/MotionPressable';
 import { FigmaButton } from '../../components/figma/FigmaButton';
 import { FigmaIcon } from '../../components/figma/FigmaIcon';
-import { getApiAssetUrl } from '../../lib/environment';
+import { PrivateStoryImage } from '../../components/shared/PrivateStoryImage';
 import type { EditableStoryBlock } from './use-product-story-editor';
 
 type GalleryImage = {
@@ -24,6 +23,7 @@ type GalleryImage = {
 
 export type ProductDraftStoryStepProps = {
   productId: string;
+  sessionEpoch: number;
   isCreationFlow: boolean;
   storyNeedsDraft: boolean;
   onStartDraft?: () => void;
@@ -89,6 +89,7 @@ function StoryTool({
 
 export function ProductDraftStoryStep({
   productId,
+  sessionEpoch,
   isCreationFlow,
   storyNeedsDraft,
   onStartDraft,
@@ -154,20 +155,20 @@ export function ProductDraftStoryStep({
         {blocks.map((block, index) => {
           const disabled = !editable || savePending;
           const active = menuKey === block.key;
-          const imageUrl = block.type === 'IMAGE'
-            ? availableGallery.find((item) => item.mediaAssetId === block.mediaAssetId)?.url
-              ?? `/api/products/${productId}/story-images/${block.mediaAssetId}`
-            : null;
+          const galleryImageId = block.type === 'IMAGE'
+            ? availableGallery.find((item) => item.mediaAssetId === block.mediaAssetId)?.id
+            : undefined;
           return (
             <View key={block.key} style={{ gap: designTokens.space.x2 }}>
               <View style={{ position: 'relative', gap: designTokens.space.x1 }}>
                 {block.type === 'IMAGE' ? (
-                  <ResilientRemoteImage
-                    uri={getApiAssetUrl(imageUrl!)}
-                    component="ProductGallery"
-                    accessibilityLabel={block.altText ?? 'Фото истории работы'}
-                    fallbackLabel="Изображение недоступно"
-                    style={[productMediaStyle(), { borderRadius: 0 }]}
+                  <PrivateStoryImage
+                    productId={productId}
+                    mediaAssetId={block.mediaAssetId}
+                    galleryImageId={galleryImageId}
+                    sessionEpoch={sessionEpoch}
+                    label={block.altText ?? 'Фото истории работы'}
+                    style={{ ...productMediaStyle(), borderRadius: 0 }}
                   />
                 ) : (
                   <TextInput
