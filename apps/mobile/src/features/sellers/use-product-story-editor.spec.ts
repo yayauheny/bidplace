@@ -32,19 +32,18 @@ function mount() {
   let editor!: ReturnType<typeof useProductStoryEditor>;
   const container = document.createElement('div');
   const root = createRoot(container);
-  const render = (authEpoch: number) => {
-    act(() => {
-      root.render(createElement(() => {
-        editor = useProductStoryEditor({
-          api,
-          productId: workId,
-          revisionId,
-          authEpoch,
-          story: emptyStory,
-        });
-        return null;
-      }));
+  function Probe({ authEpoch }: { authEpoch: number }) {
+    editor = useProductStoryEditor({
+      api,
+      productId: workId,
+      revisionId,
+      authEpoch,
+      story: emptyStory,
     });
+    return null;
+  }
+  const render = (authEpoch: number) => {
+    act(() => root.render(createElement(Probe, { authEpoch })));
   };
   render(1);
   cases.push(() => act(() => root.unmount()));
@@ -82,7 +81,7 @@ describe('revision-backed Work Story editor', () => {
       expect(await view.editor.save()).toBe(false);
     });
     expect(view.editor.dirty).toBe(true);
-    expect(view.editor.blocks[0]?.text).toBe('Текст');
+    expect(view.editor.blocks[0]).toMatchObject({ text: 'Текст' });
     await act(async () => {
       expect(await view.editor.save()).toBe(true);
     });
