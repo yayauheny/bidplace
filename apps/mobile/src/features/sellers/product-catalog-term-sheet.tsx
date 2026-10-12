@@ -14,6 +14,7 @@ import { FigmaChoiceChip } from '../../components/figma/FigmaChoiceChip';
 import { AppText, SecondaryButton } from '../../components/ui';
 
 type CatalogTerm = SellerProductDetailResponse['selection']['materialTerms'][number];
+type CatalogProposal = SellerProductDetailResponse['selection']['proposals'][number];
 
 export function ProductCatalogTermSheet({
   role,
@@ -22,6 +23,7 @@ export function ProductCatalogTermSheet({
   proposals,
   availableTerms,
   knownTerms,
+  knownProposals,
   loading,
   error,
   editable,
@@ -35,6 +37,7 @@ export function ProductCatalogTermSheet({
   proposals: readonly string[];
   availableTerms: readonly CatalogTerm[];
   knownTerms: readonly CatalogTerm[];
+  knownProposals: readonly CatalogProposal[];
   loading: boolean;
   error: boolean;
   editable: boolean;
@@ -67,13 +70,25 @@ export function ProductCatalogTermSheet({
     editable &&
     search.trim().length > 0 &&
     search.trim().length <= 160 &&
-    !availableTerms.some((term) => normalizeCatalogName(term.name) === normalized) &&
+    ![...availableTerms, ...hiddenSelected].some(
+      (term) => normalizeCatalogName(term.name) === normalized,
+    ) &&
     !draftProposals.some((name) => normalizeCatalogName(name) === normalized) &&
     draftProposals.length < 20;
   const toggle = (id: string) => {
-    setDraftIds((current) =>
-      current.includes(id) ? current.filter((value) => value !== id) : [...current, id],
-    );
+    if (!editable) return;
+    if (draftIds.includes(id)) {
+      setDraftIds((current) => current.filter((value) => value !== id));
+      return;
+    }
+    setDraftIds((current) => [...current, id]);
+    const term = known.get(id);
+    if (term) {
+      const name = normalizeCatalogName(term.name);
+      setDraftProposals((current) =>
+        current.filter((proposal) => normalizeCatalogName(proposal) !== name),
+      );
+    }
   };
 
   return (
@@ -81,10 +96,14 @@ export function ProductCatalogTermSheet({
       open={open}
       onClose={onClose}
       title={role === 'MATERIAL' ? 'Материалы' : 'Техники'}
-      onClear={() => {
-        setDraftIds([]);
-        setDraftProposals([]);
-      }}
+      onClear={
+        editable
+          ? () => {
+              setDraftIds([]);
+              setDraftProposals([]);
+            }
+          : undefined
+      }
       primaryAction={{
         label: 'Применить',
         disabled: !editable || loading || error,
@@ -100,17 +119,34 @@ export function ProductCatalogTermSheet({
           <>
             <AppText role="bodySmall" tone="secondary">На проверку модератору:</AppText>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: designTokens.space.x2 }}>
-              {draftProposals.map((name) => (
-                <FigmaChoiceChip
-                  key={name}
-                  label={name}
-                  selected
-                  removable
-                  disabled={!editable}
-                  onPress={() => setDraftProposals((current) => current.filter((item) => item !== name))}
-                  onRemove={() => setDraftProposals((current) => current.filter((item) => item !== name))}
-                />
-              ))}
+              {draftProposals.map((name) => {
+                const rejected = knownProposals.find(
+                  (proposal) =>
+                    proposal.kind === role &&
+                    proposal.selected &&
+                    proposal.status === 'REJECTED' &&
+                    normalizeCatalogName(proposal.rawName) === normalizeCatalogName(name),
+                );
+                return (
+                  <View key={name} style={{ gap: designTokens.space.x2 }}>
+                    <FigmaChoiceChip
+                      label={name}
+                      selected
+                      removable
+                      disabled={!editable}
+                      onPress={() => setDraftProposals((current) => current.filter((item) => item !== name))}
+                      onRemove={() => setDraftProposals((current) => current.filter((item) => item !== name))}
+                    />
+                    {rejected ? (
+                      <AppText role="bodySmall" tone="danger">
+                        {rejected.rejectionReason
+                          ? `Отклонено: ${rejected.rejectionReason}`
+                          : 'Отклонено модератором — удалите или замените предложение'}
+                      </AppText>
+                    ) : null}
+                  </View>
+                );
+              })}
             </View>
           </>
         ) : null}

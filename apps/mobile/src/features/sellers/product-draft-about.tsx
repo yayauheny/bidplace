@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useFormContext, useFormState, useWatch } from 'react-hook-form';
 
-import type { SellerProductDetailResponse } from '@bidplace/contracts';
+import { normalizeCatalogName, type SellerProductDetailResponse } from '@bidplace/contracts';
 
 import { FormPageColumns } from '../../components/layout';
 import { FigmaSelectField } from '../../components/figma/FigmaSelectField';
@@ -69,6 +69,7 @@ export function ProductDraftAboutStep({
     techniqueTermIds = [],
     materialProposals = [],
     techniqueProposals = [],
+    categoryProposal = '',
   ] = useWatch({
     control,
     name: [
@@ -78,6 +79,7 @@ export function ProductDraftAboutStep({
       'techniqueTermIds',
       'materialProposals',
       'techniqueProposals',
+      'categoryProposal',
     ],
   });
   const activeRoleQuery = catalog[openRole ?? 'MATERIAL'];
@@ -165,12 +167,25 @@ export function ProductDraftAboutStep({
           ))}
           {categories.find((category) => category.id === categoryId)?.slug === 'other' ||
           (categoryId === selection?.category?.id && selection?.category?.slug === 'other') ? (
-            <ProductDraftTextField
-              name="categoryProposal"
-              label="Предложить категорию"
-              placeholder="Укажите название, если нужной категории нет"
-              editable={editable}
-            />
+            <>
+              <ProductDraftTextField
+                name="categoryProposal"
+                label="Предложить категорию"
+                placeholder="Укажите название, если нужной категории нет"
+                editable={editable}
+              />
+              {selection?.proposals.some(
+                (proposal) =>
+                  proposal.kind === 'CATEGORY' &&
+                  proposal.selected &&
+                  proposal.status === 'REJECTED' &&
+                  proposal.normalizedName === normalizeCatalogName(categoryProposal),
+              ) ? (
+                <AppText role="bodySmall" tone="danger">
+                  Предложение категории отклонено модератором. Измените или удалите его.
+                </AppText>
+              ) : null}
+            </>
           ) : null}
           {stepOneAttempted && requiredErrors.categoryId ? (
             <AppText role="bodySmall" tone="danger">
@@ -245,6 +260,7 @@ export function ProductDraftAboutStep({
           proposals={openRole === 'MATERIAL' ? materialProposals : techniqueProposals}
           availableTerms={activeRoleQuery.terms}
           knownTerms={knownTerms}
+          knownProposals={selection?.proposals ?? []}
           loading={activeRoleQuery.loading}
           error={activeRoleQuery.error}
           editable={editable}

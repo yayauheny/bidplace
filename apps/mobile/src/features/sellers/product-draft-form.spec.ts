@@ -75,6 +75,30 @@ describe('product draft form lifecycle', () => {
     });
   });
 
+  it('does not re-propose already approved catalog names after moderation', () => {
+    const approved = {
+      ...persistedSelection,
+      proposals: persistedSelection.proposals.map((proposal) => ({
+        ...proposal,
+        status: 'APPROVED' as const,
+        mappedTermId: persistedSelection.materialTermIds[0],
+      })),
+    };
+    expect(productToDraftFormValues(persistedProduct, approved).materialProposals).toEqual([]);
+  });
+
+  it('keeps rejected proposals visible so an author can remove them', () => {
+    const rejected = {
+      ...persistedSelection,
+      proposals: persistedSelection.proposals.map((proposal) => ({
+        ...proposal,
+        status: 'REJECTED' as const,
+        rejectionReason: 'Неоднозначное название',
+      })),
+    };
+    expect(productToDraftFormValues(persistedProduct, rejected).materialProposals).toEqual(['Ткань']);
+  });
+
   it('retains freshly submitted selections until the authoritative detail read arrives', () => {
     const submitted = productToDraftFormValues(persistedProduct, persistedSelection);
     expect(productToDraftFormValues(persistedProduct, undefined, submitted)).toEqual(submitted);
