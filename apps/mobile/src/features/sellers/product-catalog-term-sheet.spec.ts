@@ -176,6 +176,14 @@ function click(container: ParentNode, name: string) {
   act(() => button.click());
 }
 
+function clickOption(container: ParentNode, name: string) {
+  const option = [...container.querySelectorAll<HTMLButtonElement>('button[aria-pressed]')].find(
+    (item) => item.textContent === name,
+  );
+  if (!option) throw new Error(`Missing catalog option ${name}`);
+  act(() => option.click());
+}
+
 afterEach(() => document.body.replaceChildren());
 
 describe('Work catalog term picker', () => {
@@ -200,7 +208,9 @@ describe('Work catalog term picker', () => {
 
   it('replaces a pending proposal when the matching directory term is selected', () => {
     const view = mount({ proposals: ['Акрил'] });
-    click(view.container, 'Акрил');
+    // The removable proposal chip and catalog option have the same visible text.
+    // Select the actual directory option instead of accidentally deleting the chip.
+    clickOption(view.container, 'Акрил');
     click(view.container, 'Применить');
     expect(view.onApply).toHaveBeenCalledWith([acrylic.id], []);
     view.unmount();
