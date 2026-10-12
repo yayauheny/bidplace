@@ -1,5 +1,39 @@
 # bidplace — текущий статус проекта
 
+## 2026-10-12 — Consolidated legal documents (`fix/legal-pack`)
+
+- `Implemented` (documentation): один актуальный юридический handoff в
+  [`../legal/00-FINAL-LEGAL-AUDIT.md`](../legal/00-FINAL-LEGAL-AUDIT.md); прежние
+  checklist/document-set/questions/manifest и drafts сохранены без переписывания
+  в `docs/legal/archive`. Восстановлен закрытый вопросник из `0bb2f86e`, где вопросы
+  1–7 закрыты основателем после уточнений юриста. Повторно предоставленный конспект
+  сохранён побайтово в `docs/research/raw/2026-08-24-founder-lawyer-meeting-notes.txt`.
+- `Prepared`: `docs/legal/site/01–04,06–09` содержит полные тексты и legal copy;
+  `docs/legal/deferred/05-commerce-and-future-features.md` сохраняет условия будущей
+  волны. DEC-118 подтверждает DEC-078, portfolio scope и целевые сроки хранения.
+  Неактивное приложение не включает commerce и не создаёт согласие на будущие цели.
+- `Partial` (publication readiness): основной открытый вопрос — основание текущей
+  аналитики без отдельного выбора, явно оставленное основателем для юриста. Не
+  заполнены полное наименование/УНП и отдельные provider/country/backup facts;
+  адрес для официальных обращений требует проверки. Регистрационный номер
+  `693460361` не обозначен как УНП, контакт — `work.evles@gmail.com`.
+- `Not implemented` by this task: UI/API legal pages, отдельные registration
+  confirmations/18+, многодокументный evidence, analytics control и cleanup.
+  `AuthLegalText` пока показывает объединённую галочку и policy stub;
+  `AuthService.register/acceptRules`, `TermsAcceptance`, `AnalyticsProvider`,
+  `AnalyticsService`, `AnalyticsEvent`/`AcquisitionAttribution` остаются без изменений.
+  Выбранное удаление до 30 дней и другие сроки не объявлены текущей функцией.
+- Verification: Prettier `--check` passes on all 14 current package/navigation
+  files; staged whitespace check of active documents passes. Whole staged check
+  reports original trailing spaces in the byte-preserved source notes and restored
+  consultation pack; sources were not formatted. Document QA checks 157 relative links;
+  13 archived and 3 restored source files are byte-identical to their Git versions;
+  the raw attachment SHA-256 matches. Diff is docs-only and excludes protected
+  principles and `.pen`. Runtime typecheck/lint/tests/build were not run because
+  application/schema behavior is unchanged; this is not a runtime verification claim.
+  Architecture and production are unchanged.
+
+
 ## 2026-10-12 — Author application mobile-web (`fix/author-onboarding-figma`)
 
 - `Implemented` for **intro + four URL steps** on **local mobile-web** (Chromium/WebKit
@@ -3336,7 +3370,7 @@ build-web` (4 successful tasks), `make test` and dev smoke passed. Production
 - `Needs verification`: отдельный обязательный PD consent из `DEC-078` требует
   purpose-by-purpose legal basis check. Это не отменяет решение основателя молча;
   финальный registration contract остаётся заблокирован вопросом 1 из
-  [`../legal/06-OPEN-QUESTIONS-FOR-BELARUS-LAWYER.md`](../legal/06-OPEN-QUESTIONS-FOR-BELARUS-LAWYER.md).
+  [итоговый юридический аудит](../legal/00-FINAL-LEGAL-AUDIT.md).
 - Code behavior is unchanged by this documentation update. Tests were not rerun.
 - `Planned` (docs only): backlog содержит независимые security/dependency evidence и
   public-pilot operations reviews. Они не разрешают открытые вопросы автоматически и
@@ -3453,7 +3487,7 @@ build-web` (4 successful tasks), `make test` and dev smoke passed. Production
 
 - `Superseded`: этот исторический BY+RF пакет удалён из рабочего дерева после
   `DEC-077`. Текущая юридическая работа ограничена Беларусью; исходная версия остаётся
-  в Git. Актуальный список — `docs/legal/06-OPEN-QUESTIONS-FOR-BELARUS-LAWYER.md`.
+  в Git. Актуальный список — `docs/legal/00-FINAL-LEGAL-AUDIT.md`.
 
 ## 2026-09-05 — Expanded MVP product contract (P0-A)
 

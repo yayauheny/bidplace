@@ -35,16 +35,18 @@ optional achievements до первой проверки.
 
 Это не продуктовые решения основателя:
 
-- юрист Беларуси подтверждает registration/data basis, author content license,
-  retention, cookies, moderation/rightsholder procedure и фактических processors;
-- команда выбирает реальные hosting/object-storage/email providers и составляет data
-  inventory;
+- юридические решения и publication gates сведены в
+  [единый аудит](../legal/00-FINAL-LEGAL-AUDIT.md): DEC-078 подтверждён, сроки приняты
+  как target policy. Основатель оставил юристу конкретный вопрос об основании
+  текущей персональной аналитики без отдельного выбора;
+- Cloudflare/R2/Email и Neon уже выбраны; остаются полные публичные реквизиты,
+  provider/country/backup facts и проверка обязательных требований к публикации;
 - implementation review определяет точную migration для Work revisions и object
   storage, не меняя RFC;
 - read-only Figma handoff должен быть versioned перед UI implementation.
 
 Актуальные вопросы юристу находятся в
-[`../legal/06-OPEN-QUESTIONS-FOR-BELARUS-LAWYER.md`](../legal/06-OPEN-QUESTIONS-FOR-BELARUS-LAWYER.md).
+[итоговый юридический аудит](../legal/00-FINAL-LEGAL-AUDIT.md).
 Технические варианты находятся в
 [`../audits/01-OPEN-ARCHITECTURE-GAPS.md`](../audits/01-OPEN-ARCHITECTURE-GAPS.md).
 

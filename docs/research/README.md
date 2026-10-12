@@ -49,7 +49,7 @@ Raw используется, если:
 - `2026-07-deep-research-methodology.txt`
 - `2026-08-25-bidbaits-legal-documents.md`
 - `2026-09-06-researcher-marketplace-abuse-by-legal-response.md`
-- фиксация встречи с юристом: `docs/legal/02-LAWYER-ANSWERS-2026-08-24.md` (26 августа наложена расшифровка созвона)
+- фиксация встречи с юристом: `docs/legal/archive/2026-09-08/02-LAWYER-ANSWERS-2026-08-24.md` (26 августа наложена расшифровка созвона)
 
 ## 2026-09-08 — creator-commerce research
 
@@ -58,3 +58,13 @@ Raw browser-research response:
 It is evidence for the deferred commerce wave, not a First MVP product contract.
 Citations and changing marketplace practices must be rechecked before implementation.
 Portfolio-first conclusions were recorded separately in `DEC-082`–`DEC-084`.
+
+
+## Конспект встречи с юристом, повторно предоставленный 12 октября
+
+`raw/2026-08-24-founder-lawyer-meeting-notes.txt` — побайтовая копия вложения
+основателя. Дата встречи — 24 августа; это личный конспект и советы, а не дословная
+расшифровка или новое решение. SHA-256:
+`865f10a9ea09e0a68f2d55d4922f70e0a60c3e633afc357a7b84e5d1c71b2e04`.
+Выводы и разрешённые разночтения — в
+[итоговом юридическом аудите](../legal/00-FINAL-LEGAL-AUDIT.md).

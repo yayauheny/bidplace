@@ -1,6 +1,6 @@
 # bidplace — индекс канонической документации
 
-Последнее обновление: 2026-10-11
+Последнее обновление: 2026-10-12
 Статус: Confirmed
 
 Текущее состояние: [`../audits/00-CURRENT-MVP-READINESS.md`](../audits/00-CURRENT-MVP-READINESS.md).
@@ -39,47 +39,45 @@
 
 ## 2. Карта файлов
 
-| Файл                                    | Единственная зона ответственности                                            |
-| --------------------------------------- | ---------------------------------------------------------------------------- |
-| `00-PROJECT-INDEX.md`                   | Навигация, правила чтения и обновления                                       |
-| `01-PRODUCT-FOUNDATION.md`              | Неизменяемое ядро: ценность, миссия, границы, North Star                     |
-| `02-PRODUCT-EVOLUTION.md`               | История появления идеи и хронология изменений                                |
-| `03-CUSTDEV-TAISIA.md`                  | Полный разбор первого интервью                                               |
-| `04-MARKET-AND-COMPETITIVE-PLAYBOOK.md` | Что заимствовать у рынка и чего избегать                                     |
-| `05-MVP-RFC.md`                         | Точный portfolio-first контракт первого публичного MVP (`DEC-082`–`DEC-084`) |
-| `06-ROADMAP-24-MONTHS.md`               | Волны развития на два года и переходные критерии                             |
-| `07-GROWTH-AND-ADVERTISING-PLAYBOOK.md` | Реклама, контент и запуск авторов                                            |
-| `08-SELLER-AND-ITEM-POLICY.md`          | Кто может продавать и какие предметы допустимы                               |
-| `09-TRUST-AND-AUCTION-INTEGRITY.md`     | Честность ставок, provenance, приватность и расследования                    |
-| `10-CODE-ARCHITECTURE.md`               | Фактическая архитектура, stack, contracts, persistence и технические границы |
-| `11-PROJECT-STATUS.md`                  | Часто меняющийся фактический статус кода                                     |
-| `12-DECISION-LOG.md`                    | Реестр решений, альтернатив, причин и условий пересмотра                     |
-| `13-APPLICATION-SECURITY.md`            | Инженерная application security: auth, admin emergency, uploads, rate limits |
-| `14-OPEN-MVP-DECISIONS.md`              | Оставшиеся внешние/продуктовые развилки первого MVP; сейчас product blockers отсутствуют |
-| `15-POST-MVP-BACKLOG.md`                | Единый план следующей волны продаж: цены, аукционы, сделки, жалобы, UI и gates; остальные будущие функции |
-| `analytics-contract.md`                 | Identity, attribution, event naming and current product analytics events     |
-| `analytics-metrics.md`                  | Definitions and sources for admin dashboard metrics                          |
-| `../design/00-DESIGN-INDEX.md`          | Навигация по дизайн-принципам, flows, системе, статусу и handoff             |
-| `../design-handoff/00-BRIEF.md`         | Исторический бриф прежней commerce-волны; не текущий First MVP contract       |
-| `../design-handoff/13-FOOTER-AND-COMPLAINT.md` | Исторический commerce handoff; актуальные legal controls — в `../legal/` |
-| `../design-handoff/14-CABINET-LOGIC.md`  | Исторический commerce handoff; не First MVP owner                             |
-| `../00-WAVES.md`                        | Две волны: portfolio MVP и сохранённый post-MVP/commerce scope               |
-| `../legal/00-MVP-LAUNCH-CHECKLIST.md`   | Когда публиковать документы; не бриф дизайнеру                              |
-| `../legal/02-LAWYER-ANSWERS-2026-08-24.md` | Фиксация встречи 24 августа (с наложением расшифровки 26 августа)         |
-| `../legal/04-DOCUMENT-SET.md`            | Комплект portfolio MVP и отложенные commerce drafts                           |
-| `../legal/06-OPEN-QUESTIONS-FOR-BELARUS-LAWYER.md` | Нерешённые вопросы финальной проверки юристом Беларуси        |
-| `../legal/08-BIDBAITS-SOURCE-MAPPING-2026-09-06.md` | Текущая карта использования материалов Bidbaits без копирования      |
-| `../tasks/2026-09-06-reconciliation/00-FIRST-MVP-BACKLOG.md` | Активный execution backlog первого portfolio MVP                    |
-| `../tasks/2026-09-06-reconciliation/99-POST-MVP-BACKLOG.md` | Сохранённые execution-задачи после MVP и commerce wave              |
-| `../tasks/2026-09-08-first-mvp/00-EXECUTION-ORDER.md` | Восемь готовых к передаче implementation/review пакетов First MVP |
-| `../research/2026-09-06-BELARUS-LEGAL-UX-PATTERNS.md` | Проверенные правовые опоры, рыночные patterns и legal UX matrix |
-| `../legal/drafts/*`                     | Рабочие черновики оферты и правил; не выкладка на прод                     |
-| `../ops/00-RELEASE-AND-BACKUP.md`       | Deploy, backup, restore drill и `pnpm verify` gate для пилота              |
-| `../ops/CLOUDFLARE-DEPLOYMENT.md`       | Portfolio Cloudflare staging/production: domains, secrets, migrations и smoke |
-| `../audits/00-CURRENT-MVP-READINESS.md` | Главный текущий аудит готовности и блокеров                                   |
-| `../audits/01-OPEN-ARCHITECTURE-GAPS.md` | Нерешённые архитектурные пробелы, варианты и зависимости от решений          |
-| `../research/README.md`                 | Правила хранения сырого исследования                                         |
-| `../research/raw/*`                     | Архив исходных отчётов; не каноническое решение                              |
+| Файл                                                         | Единственная зона ответственности                                                                         |
+| ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------- |
+| `00-PROJECT-INDEX.md`                                        | Навигация, правила чтения и обновления                                                                    |
+| `01-PRODUCT-FOUNDATION.md`                                   | Неизменяемое ядро: ценность, миссия, границы, North Star                                                  |
+| `02-PRODUCT-EVOLUTION.md`                                    | История появления идеи и хронология изменений                                                             |
+| `03-CUSTDEV-TAISIA.md`                                       | Полный разбор первого интервью                                                                            |
+| `04-MARKET-AND-COMPETITIVE-PLAYBOOK.md`                      | Что заимствовать у рынка и чего избегать                                                                  |
+| `05-MVP-RFC.md`                                              | Точный portfolio-first контракт первого публичного MVP (`DEC-082`–`DEC-084`)                              |
+| `06-ROADMAP-24-MONTHS.md`                                    | Волны развития на два года и переходные критерии                                                          |
+| `07-GROWTH-AND-ADVERTISING-PLAYBOOK.md`                      | Реклама, контент и запуск авторов                                                                         |
+| `08-SELLER-AND-ITEM-POLICY.md`                               | Кто может продавать и какие предметы допустимы                                                            |
+| `09-TRUST-AND-AUCTION-INTEGRITY.md`                          | Честность ставок, provenance, приватность и расследования                                                 |
+| `10-CODE-ARCHITECTURE.md`                                    | Фактическая архитектура, stack, contracts, persistence и технические границы                              |
+| `11-PROJECT-STATUS.md`                                       | Часто меняющийся фактический статус кода                                                                  |
+| `12-DECISION-LOG.md`                                         | Реестр решений, альтернатив, причин и условий пересмотра                                                  |
+| `13-APPLICATION-SECURITY.md`                                 | Инженерная application security: auth, admin emergency, uploads, rate limits                              |
+| `14-OPEN-MVP-DECISIONS.md`                                   | Оставшиеся внешние/продуктовые развилки первого MVP; сейчас product blockers отсутствуют                  |
+| `15-POST-MVP-BACKLOG.md`                                     | Единый план следующей волны продаж: цены, аукционы, сделки, жалобы, UI и gates; остальные будущие функции |
+| `analytics-contract.md`                                      | Identity, attribution, event naming and current product analytics events                                  |
+| `analytics-metrics.md`                                       | Definitions and sources for admin dashboard metrics                                                       |
+| `../design/00-DESIGN-INDEX.md`                               | Навигация по дизайн-принципам, flows, системе, статусу и handoff                                          |
+| `../design-handoff/00-BRIEF.md`                              | Исторический бриф прежней commerce-волны; не текущий First MVP contract                                   |
+| `../design-handoff/13-FOOTER-AND-COMPLAINT.md`               | Исторический commerce handoff; актуальные legal controls — в `../legal/`                                  |
+| `../design-handoff/14-CABINET-LOGIC.md`                      | Исторический commerce handoff; не First MVP owner                                                         |
+| `../00-WAVES.md`                                             | Две волны: portfolio MVP и сохранённый post-MVP/commerce scope                                            |
+| `../legal/00-FINAL-LEGAL-AUDIT.md`                           | Единый юридический handoff: согласованные решения, данные, controls, сроки, вопросы и публикация          |
+| `../legal/site/`                                             | Полные русские тексты для сайта; подключение отдельной задачей                                            |
+| `../legal/deferred/05-commerce-and-future-features.md`       | Неактивное приложение будущих продаж, платежей, доставки и отзывов                                        |
+| `../legal/archive/README.md`                                 | Консультация, закрытый вопросник и старые редакции; не текущие задачи                                     |
+| `../tasks/2026-09-06-reconciliation/00-FIRST-MVP-BACKLOG.md` | Активный execution backlog первого portfolio MVP                                                          |
+| `../tasks/2026-09-06-reconciliation/99-POST-MVP-BACKLOG.md`  | Сохранённые execution-задачи после MVP и commerce wave                                                    |
+| `../tasks/2026-09-08-first-mvp/00-EXECUTION-ORDER.md`        | Восемь готовых к передаче implementation/review пакетов First MVP                                         |
+| `../research/2026-09-06-BELARUS-LEGAL-UX-PATTERNS.md`        | Проверенные правовые опоры, рыночные patterns и legal UX matrix                                           |
+| `../ops/00-RELEASE-AND-BACKUP.md`                            | Deploy, backup, restore drill и `pnpm verify` gate для пилота                                             |
+| `../ops/CLOUDFLARE-DEPLOYMENT.md`                            | Portfolio Cloudflare staging/production: domains, secrets, migrations и smoke                             |
+| `../audits/00-CURRENT-MVP-READINESS.md`                      | Главный текущий аудит готовности и блокеров                                                               |
+| `../audits/01-OPEN-ARCHITECTURE-GAPS.md`                     | Нерешённые архитектурные пробелы, варианты и зависимости от решений                                       |
+| `../research/README.md`                                      | Правила хранения сырого исследования                                                                      |
+| `../research/raw/*`                                          | Архив исходных отчётов; не каноническое решение                                                           |
 
 ## 3. Минимальные пакеты чтения
 
@@ -129,14 +127,15 @@
 
 Дополнительно:
 
-- `../legal/02-LAWYER-ANSWERS-2026-08-24.md` — фиксация решений встречи 24 августа;
-- `../legal/04-DOCUMENT-SET.md` — какие семь файлов, слои, галочки;
-- `../legal/drafts/` — рабочие черновики; канон смысла остаётся в `02`;
-- `../legal/00-MVP-LAUNCH-CHECKLIST.md` — когда выкладывать на сайт;
-- `../legal/06-OPEN-QUESTIONS-FOR-BELARUS-LAWYER.md` — только оставшиеся вопросы;
-- `../research/2026-09-06-BELARUS-LEGAL-UX-PATTERNS.md` — размещение controls и граница между законом и рыночным pattern.
+1. [`../legal/00-FINAL-LEGAL-AUDIT.md`](../legal/00-FINAL-LEGAL-AUDIT.md) — весь текущий
+   юридический handoff, включая условия публикации и единственный оставленный
+   основателем вопрос об аналитике.
+2. Нужный пользовательский текст из `../legal/site/`.
+3. Для будущих функций — `../legal/deferred/05-commerce-and-future-features.md`.
+4. Архив и raw источники — только при проверке происхождения/разночтения.
 
-Эти файлы не являются юридической консультацией или подтверждением compliance.
+Не открывать закрытые вопросы заново и не считать архивный manifest текущим статусом.
+Продуктовое согласование не является доказательством внедрения или заключением юриста.
 
 ### Позиционирование, реклама, запуск автора
 

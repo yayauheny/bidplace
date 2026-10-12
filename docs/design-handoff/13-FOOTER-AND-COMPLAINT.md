@@ -6,9 +6,9 @@
 
 Источники:
 
-- [`../legal/04-DOCUMENT-SET.md`](../legal/04-DOCUMENT-SET.md);
+- [итоговый юридический аудит](../legal/00-FINAL-LEGAL-AUDIT.md);
 - [`../research/2026-09-06-BELARUS-LEGAL-UX-PATTERNS.md`](../research/2026-09-06-BELARUS-LEGAL-UX-PATTERNS.md);
-- [`../legal/06-OPEN-QUESTIONS-FOR-BELARUS-LAWYER.md`](../legal/06-OPEN-QUESTIONS-FOR-BELARUS-LAWYER.md).
+- [итоговый юридический аудит](../legal/00-FINAL-LEGAL-AUDIT.md).
 
 ## Подвал MVP
 

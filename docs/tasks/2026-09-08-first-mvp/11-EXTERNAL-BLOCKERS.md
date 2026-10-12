@@ -1,17 +1,17 @@
 # First MVP external blockers before design
 
-Status: `Open` as of 2026-09-08. These are external launch gates; they do not authorize
-package 07 or a deployment.
+Historical technical checkpoint: 2026-09-08. Legal section updated 2026-10-12
+after DEC-118; other dated technical sections below are not a new runtime review.
+These launch gates do not authorize deployment.
 
-## Lawyer review
+## Legal preparation and publication
 
-- Belarus lawyer must answer every section A item in
-  [`../../legal/06-OPEN-QUESTIONS-FOR-BELARUS-LAWYER.md`](../../legal/06-OPEN-QUESTIONS-FOR-BELARUS-LAWYER.md).
-- Operator identity, support contact, lawful basis, age control, licence wording,
-  rightsholder procedure, retention/deletion and cookie wording must be approved before
-  publishing legal drafts.
-- Evidence: dated lawyer response plus accepted document versions recorded in the
-  legal review manifest.
+The prepared package and all current legal requirements have one owner:
+[final audit](../../legal/00-FINAL-LEGAL-AUDIT.md). DEC-078 registration and the target
+retention schedule are confirmed by DEC-118; do not request the closed questionnaire
+again. The founder explicitly retained one lawyer question: the lawful basis for
+current immediately enabled identifiable analytics. Complete operator/provider facts
+and connect/verify the promised controls and cleanup before publishing the texts.
 
 ## Production providers and configuration
 
