@@ -326,7 +326,7 @@ export function ProductDraftScreen({
     const navigate = pendingNavigation.current;
     pendingNavigation.current = null;
     navigate();
-  }, [form.formState.isDirty, storyEditor.dirty, storyEditor.pending, inputsLocked, pendingNavigationVersion];
+  }, [form.formState.isDirty, storyEditor.dirty, storyEditor.pending, inputsLocked, pendingNavigationVersion]);
 
   const beginLockedTransition = () => {
     if (transitionLock.current) return false;
