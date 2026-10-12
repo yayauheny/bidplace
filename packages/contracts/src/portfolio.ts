@@ -245,18 +245,9 @@ export const portfolioAuthorApplicationResponseSchema = z
   })
   .strict();
 
-const portfolioAchievementOccurredDateWriteSchema = z.preprocess((value) => {
-  if (typeof value !== 'string') return value;
-  try {
-    return JSON.parse(value);
-  } catch {
-    return value;
-  }
-}, portfolioAchievementSchema.shape.occurredDate.unwrap());
-
 export const portfolioAchievementWriteRequestSchema = z
   .object({
-    occurredDate: portfolioAchievementOccurredDateWriteSchema,
+    occurredDate: achievementOccurredDateSchema,
     body: publicText.max(4_000, 'Введите описание короче 4000 символов'),
   })
   .strict();

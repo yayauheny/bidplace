@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   portfolioCabinetWorksQuerySchema,
   portfolioCabinetWorksResponseSchema,
+  portfolioAchievementWriteRequestSchema,
 } from './portfolio';
 
 describe('portfolio cabinet contracts', () => {
@@ -31,5 +32,26 @@ describe('portfolio cabinet contracts', () => {
     ).toMatchObject({
       works: [{ status: 'APPROVED', editingRevisionStatus: 'PENDING_REVIEW' }],
     });
+  });
+});
+
+describe('achievement writes', () => {
+  const date = { year: 2025, month: 3, day: null };
+  const input = { occurredDate: date, body: 'Групповая выставка' };
+
+  it('accepts only a text achievement with an object date', () => {
+    expect(portfolioAchievementWriteRequestSchema.parse(input)).toEqual(input);
+    expect(
+      portfolioAchievementWriteRequestSchema.safeParse({
+        ...input,
+        occurredDate: JSON.stringify(date),
+      }).success,
+    ).toBe(false);
+    expect(
+      portfolioAchievementWriteRequestSchema.safeParse({
+        ...input,
+        image: null,
+      }).success,
+    ).toBe(false);
   });
 });

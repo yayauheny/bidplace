@@ -15,7 +15,6 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
-  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { createHash } from 'node:crypto';
@@ -27,7 +26,6 @@ import {
   runReadCommittedTransaction,
 } from '../core/database';
 import { emptyImageBytes, ImageStore, imageKey } from '../core/image-store';
-import { safeFailureLocation } from '../core/request-context/safe-request-log';
 import { type ValidatedImageUpload } from '../images/image-policy';
 import {
   productRevisionOwnerSelect,
@@ -99,7 +97,9 @@ async function replaceProfileDirections(
     select: { categoryId: true },
   });
   const keptIds = new Set(current.map((item) => item.categoryId));
-  const additions = categoryIds.filter((categoryId) => !keptIds.has(categoryId));
+  const additions = categoryIds.filter(
+    (categoryId) => !keptIds.has(categoryId),
+  );
   if (additions.length > 0) {
     const active = await tx.category.findMany({
       where: { id: { in: additions }, active: true },
@@ -159,7 +159,10 @@ function uniqueTargetNames(error: unknown): string[] {
   return prismaUniqueTargets(error);
 }
 
-function throwSellerProfileUniqueConflict(error: unknown, unknownMessage: string): never {
+function throwSellerProfileUniqueConflict(
+  error: unknown,
+  unknownMessage: string,
+): never {
   const targets = uniqueTargetNames(error);
   const slugTaken = targets.some((target) => /(^|_)slug($|_)/.test(target));
   const profileExists = targets.some(
@@ -184,8 +187,6 @@ function throwSellerProfileUniqueConflict(error: unknown, unknownMessage: string
 
 @Injectable()
 export class SellersService {
-  private readonly logger = new Logger(SellersService.name);
-
   constructor(
     private readonly prisma: PrismaService,
     private readonly imageStore: ImageStore,
@@ -260,7 +261,7 @@ export class SellersService {
   private async preparePhoto(
     userId: string,
     photo: ValidatedImageUpload,
-    purpose: 'AUTHOR_PHOTO' | 'ACHIEVEMENT',
+    purpose: 'AUTHOR_PHOTO',
   ) {
     if (!this.media?.enabled) return { photo, asset: undefined };
     if (!photo.source)
@@ -684,20 +685,24 @@ export class SellersService {
   ) {
     return runReadCommittedTransaction(this.prisma, async (tx) => {
       const editing = await ensureEditableEditingRevision(tx, userId);
-      const position = await tx.sellerProfileRevisionAchievement.count({
+      const last = await tx.sellerProfileRevisionAchievement.findFirst({
         where: { revisionId: editing.revisionId },
+        select: { position: true },
+        orderBy: { position: 'desc' },
       });
+      const position = (last?.position ?? -1) + 1;
+      // Date.UTC treats years 1..99 as 1901..1999. Set the full year explicitly.
+      const occurredAt = new Date(0);
+      occurredAt.setUTCFullYear(
+        input.occurredDate.year,
+        input.occurredDate.month - 1,
+        input.occurredDate.day ?? 1,
+      );
       const achievement = await tx.sellerProfileRevisionAchievement.create({
         data: {
           revisionId: editing.revisionId,
           position,
-          occurredAt: new Date(
-            Date.UTC(
-              input.occurredDate.year,
-              input.occurredDate.month - 1,
-              input.occurredDate.day ?? 1,
-            ),
-          ),
+          occurredAt,
           occurredAtPrecision:
             input.occurredDate.day === null ? 'MONTH' : 'DAY',
           body: input.body,
@@ -719,82 +724,25 @@ export class SellersService {
   }
 
   async deleteAchievement(userId: string, achievementId: string) {
-    const objectKeyToDelete = await runReadCommittedTransaction(
-      this.prisma,
-      async (tx) => {
-        const editing = await ensureEditableEditingRevision(tx, userId);
-        const targetAchievementId = await resolveEditingAchievementId(
-          tx,
-          editing,
-          achievementId,
-        );
-        const achievement = await tx.sellerProfileRevisionAchievement.findFirst(
-          {
-            where: {
-              id: targetAchievementId,
-              revisionId: editing.revisionId,
-            },
-            select: { id: true, objectKey: true, mediaAssetId: true },
-          },
-        );
-        if (!achievement) {
-          throw new NotFoundException('Achievement not found');
-        }
-        await tx.sellerProfileRevisionAchievement.delete({
-          where: { id: achievement.id },
-        });
-        if (achievement.mediaAssetId && this.media?.enabled) {
-          await this.media.enqueueCleanup(tx, [achievement.mediaAssetId]);
-          return null;
-        }
-        let deletedKey: string | null = null;
-        if (achievement.objectKey) {
-          const remainingReferences =
-            await tx.sellerProfileRevisionAchievement.count({
-              where: { objectKey: achievement.objectKey },
-            });
-          if (remainingReferences === 0) {
-            deletedKey = achievement.objectKey;
-          }
-        }
-        const remaining = await tx.sellerProfileRevisionAchievement.findMany({
-          where: { revisionId: editing.revisionId },
-          select: { id: true },
-          orderBy: { position: 'asc' },
-        });
-        const temporaryBase = remaining.length + 1;
-        await Promise.all(
-          remaining.map((item, index) =>
-            tx.sellerProfileRevisionAchievement.update({
-              where: { id: item.id },
-              data: { position: temporaryBase + index },
-            }),
-          ),
-        );
-        await Promise.all(
-          remaining.map((item, index) =>
-            tx.sellerProfileRevisionAchievement.update({
-              where: { id: item.id },
-              data: { position: index },
-            }),
-          ),
-        );
-        return deletedKey;
-      },
-    );
-    if (objectKeyToDelete) {
-      try {
-        await this.imageStore.delete(objectKeyToDelete);
-      } catch (error) {
-        const location = safeFailureLocation(error);
-        this.logger.warn(
-          location
-            ? `Failed to delete unreferenced achievement image at=${location}`
-            : 'Failed to delete unreferenced achievement image',
-        );
-      }
-    }
-    return { ok: true as const };
+    return runReadCommittedTransaction(this.prisma, async (tx) => {
+      const editing = await ensureEditableEditingRevision(tx, userId);
+      const targetId = await resolveEditingAchievementId(
+        tx,
+        editing,
+        achievementId,
+      );
+      const achievement = await tx.sellerProfileRevisionAchievement.findFirst({
+        where: { id: targetId, revisionId: editing.revisionId },
+        select: { id: true },
+      });
+      if (!achievement) throw new NotFoundException('Achievement not found');
+
+      // Gaps are safe: new achievements append after the highest position.
+      await tx.sellerProfileRevisionAchievement.delete({
+        where: { id: achievement.id },
+      });
+      return { ok: true as const };
+    });
   }
 
   async getEditingPhoto(userId: string) {
@@ -937,7 +885,9 @@ export class SellersService {
 
     return sellerProductDetailResponseSchema.parse({
       product: toOwnerContractProduct(product, product.editingRevision),
-      ...(product.mediaOperations[0] ? { publication: product.mediaOperations[0] } : {}),
+      ...(product.mediaOperations[0]
+        ? { publication: product.mediaOperations[0] }
+        : {}),
       editingRevision: product.editingRevision
         ? {
             id: product.editingRevision.id,
@@ -1078,7 +1028,9 @@ export class SellersService {
 
     const isOwner = sellerProfile.userId === userId;
     const isAdmin = role === 'admin';
-    const isPublic = sellerProfile.status === 'APPROVED' && sellerProfile.user.status === 'active';
+    const isPublic =
+      sellerProfile.status === 'APPROVED' &&
+      sellerProfile.user.status === 'active';
 
     if (!isOwner && !isAdmin && !isPublic) {
       throw new NotFoundException('Seller profile not found');

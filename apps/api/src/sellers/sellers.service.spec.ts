@@ -12,12 +12,44 @@ const imageStore = {
 function ownerRecord(now: Date) {
   return {
     id: 'a0d82a10-3170-49eb-904f-a8bc87d311a5',
-    userId: '1e14b6f1-e63b-4f6b-8131-a01f6ab4dc61', slug: 'seller-slug',
-    fullName: 'Updated seller', sellerType: 'creator', discipline: 'Керамика', country: 'BY', city: 'Minsk',
-    practice: null, biography: null, socialLink: 'https://example.com/seller', telegramUrl: null, instagramUrl: null, websiteUrl: null,
-    shortDescription: 'Updated description', handoffContactType: null, handoffContactValue: null, handoffInitiator: null,
-    status: 'CHANGES_REQUESTED', createdAt: now, updatedAt: now,
-    editingRevision: { id: 'f3e4cc9c-d42a-4fda-8c2e-7ed73a4ef05a', version: 1, status: 'CHANGES_REQUESTED', updatedAt: now, slug: 'seller-slug', discipline: 'Керамика', fullName: 'Updated seller', country: 'BY', city: 'Minsk', practice: null, biography: null, socialLink: 'https://example.com/seller', telegramUrl: null, instagramUrl: null, websiteUrl: null, shortDescription: 'Updated description' },
+    userId: '1e14b6f1-e63b-4f6b-8131-a01f6ab4dc61',
+    slug: 'seller-slug',
+    fullName: 'Updated seller',
+    sellerType: 'creator',
+    discipline: 'Керамика',
+    country: 'BY',
+    city: 'Minsk',
+    practice: null,
+    biography: null,
+    socialLink: 'https://example.com/seller',
+    telegramUrl: null,
+    instagramUrl: null,
+    websiteUrl: null,
+    shortDescription: 'Updated description',
+    handoffContactType: null,
+    handoffContactValue: null,
+    handoffInitiator: null,
+    status: 'CHANGES_REQUESTED',
+    createdAt: now,
+    updatedAt: now,
+    editingRevision: {
+      id: 'f3e4cc9c-d42a-4fda-8c2e-7ed73a4ef05a',
+      version: 1,
+      status: 'CHANGES_REQUESTED',
+      updatedAt: now,
+      slug: 'seller-slug',
+      discipline: 'Керамика',
+      fullName: 'Updated seller',
+      country: 'BY',
+      city: 'Minsk',
+      practice: null,
+      biography: null,
+      socialLink: 'https://example.com/seller',
+      telegramUrl: null,
+      instagramUrl: null,
+      websiteUrl: null,
+      shortDescription: 'Updated description',
+    },
   };
 }
 
@@ -31,7 +63,12 @@ describe('SellersService', () => {
           id: 'seller-profile-id',
           status: 'DRAFT',
           applicationStage: 'CONTACTS',
-          editingRevision: { id: 'revision-id', status: 'DRAFT', discipline: null, shortDescription: null },
+          editingRevision: {
+            id: 'revision-id',
+            status: 'DRAFT',
+            discipline: null,
+            shortDescription: null,
+          },
         }),
         update: vi.fn(),
         findUniqueOrThrow: vi
@@ -46,11 +83,16 @@ describe('SellersService', () => {
       },
     };
     const prisma = {
-      $transaction: vi.fn(async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx)),
+      $transaction: vi.fn(
+        async (callback: (client: typeof tx) => Promise<unknown>) =>
+          callback(tx),
+      ),
     };
     const service = new SellersService(prisma as never, imageStore as never);
 
-    await expect(service.advanceApplicationStage('user-id')).resolves.toMatchObject({
+    await expect(
+      service.advanceApplicationStage('user-id'),
+    ).resolves.toMatchObject({
       sellerProfile: { status: 'CHANGES_REQUESTED' },
     });
     expect(tx.sellerProfile.update).toHaveBeenCalledWith({
@@ -64,22 +106,39 @@ describe('SellersService', () => {
       $queryRaw: vi.fn().mockResolvedValue([{ id: 'seller-profile-id' }]),
       sellerProfile: {
         findUnique: vi.fn().mockResolvedValue({
-          id: 'seller-profile-id', status: 'DRAFT', applicationStage: 'ABOUT',
-          editingRevision: { id: 'revision-id', status: 'DRAFT', discipline: null, shortDescription: null },
+          id: 'seller-profile-id',
+          status: 'DRAFT',
+          applicationStage: 'ABOUT',
+          editingRevision: {
+            id: 'revision-id',
+            status: 'DRAFT',
+            discipline: null,
+            shortDescription: null,
+          },
         }),
         update: vi.fn(),
         findUniqueOrThrow: vi.fn().mockResolvedValue({
           id: 'seller-profile-id',
           status: 'DRAFT',
           applicationStage: 'ABOUT',
-          editingRevision: { id: 'revision-id', status: 'DRAFT', discipline: null, shortDescription: null },
+          editingRevision: {
+            id: 'revision-id',
+            status: 'DRAFT',
+            discipline: null,
+            shortDescription: null,
+          },
         }),
       },
       sellerProfileRevisionDirection: {
         count: vi.fn().mockResolvedValue(0),
       },
     };
-    const prisma = { $transaction: vi.fn(async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx)) };
+    const prisma = {
+      $transaction: vi.fn(
+        async (callback: (client: typeof tx) => Promise<unknown>) =>
+          callback(tx),
+      ),
+    };
     const service = new SellersService(prisma as never, imageStore as never);
 
     await expect(service.advanceApplicationStage('user-id')).rejects.toThrow(
@@ -105,7 +164,7 @@ describe('SellersService', () => {
         create: vi.fn(),
       },
       sellerProfileRevisionAchievement: {
-        count: vi.fn().mockResolvedValue(2),
+        findFirst: vi.fn().mockResolvedValue({ position: 4 }),
         create: vi.fn().mockResolvedValue({
           id: 'dc6c9612-cf38-48aa-b328-011f1b093b6c',
           occurredAt: new Date('2025-03-01T00:00:00.000Z'),
@@ -138,11 +197,13 @@ describe('SellersService', () => {
 
     expect(tx.$queryRaw).toHaveBeenCalledTimes(2);
     expect(tx.sellerProfileRevision.create).not.toHaveBeenCalled();
-    expect(tx.sellerProfileRevisionAchievement.count).toHaveBeenCalledWith({
+    expect(tx.sellerProfileRevisionAchievement.findFirst).toHaveBeenCalledWith({
       where: { revisionId: 'revision-id' },
+      select: { position: true },
+      orderBy: { position: 'desc' },
     });
     expect(tx.sellerProfileRevisionAchievement.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({ revisionId: 'revision-id', position: 2 }),
+      data: expect.objectContaining({ revisionId: 'revision-id', position: 5 }),
     });
   });
 
@@ -153,7 +214,10 @@ describe('SellersService', () => {
     };
     const prisma = {
       sellerProfile: { findUnique: vi.fn().mockResolvedValue(null) },
-      $transaction: vi.fn(async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx)),
+      $transaction: vi.fn(
+        async (callback: (client: typeof tx) => Promise<unknown>) =>
+          callback(tx),
+      ),
     };
     const service = new SellersService(prisma as never, imageStore as never);
 
@@ -219,11 +283,15 @@ describe('SellersService', () => {
     const photo = { buffer: Buffer.from([1]), mimeType: 'image/png' as const };
     const existing = new SellersService(
       {
-        sellerProfile: { findUnique: vi.fn().mockResolvedValue({ id: 'profile' }) },
+        sellerProfile: {
+          findUnique: vi.fn().mockResolvedValue({ id: 'profile' }),
+        },
       } as never,
       imageStore as never,
     );
-    await expect(existing.create('user-id', input, photo)).rejects.toMatchObject({
+    await expect(
+      existing.create('user-id', input, photo),
+    ).rejects.toMatchObject({
       response: {
         message: 'Seller profile already exists',
         details: { reason: 'profile_exists' },
@@ -233,13 +301,18 @@ describe('SellersService', () => {
     const tx = {
       user: { findUnique: vi.fn().mockResolvedValue({ slug: 'taken-slug' }) },
       sellerProfile: {
-        create: vi.fn().mockRejectedValue({ code: 'P2002', meta: { target: ['slug'] } }),
+        create: vi
+          .fn()
+          .mockRejectedValue({ code: 'P2002', meta: { target: ['slug'] } }),
       },
     };
     const taken = new SellersService(
       {
         sellerProfile: { findUnique: vi.fn().mockResolvedValue(null) },
-        $transaction: vi.fn(async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx)),
+        $transaction: vi.fn(
+          async (callback: (client: typeof tx) => Promise<unknown>) =>
+            callback(tx),
+        ),
       } as never,
       imageStore as never,
     );
@@ -575,8 +648,19 @@ describe('SellersService', () => {
     const tx = {
       $queryRaw: vi.fn().mockResolvedValue([{ id: record.id }]),
       sellerProfile: {
-        findUnique: vi.fn().mockResolvedValue({ id: record.id, status: 'CHANGES_REQUESTED', editingRevisionId: 'f3e4cc9c-d42a-4fda-8c2e-7ed73a4ef05a', publishedRevisionId: null, editingRevision: { id: 'f3e4cc9c-d42a-4fda-8c2e-7ed73a4ef05a', status: 'CHANGES_REQUESTED' }, publishedRevision: null }),
-        update: vi.fn(), findUniqueOrThrow: vi.fn().mockResolvedValue(record),
+        findUnique: vi.fn().mockResolvedValue({
+          id: record.id,
+          status: 'CHANGES_REQUESTED',
+          editingRevisionId: 'f3e4cc9c-d42a-4fda-8c2e-7ed73a4ef05a',
+          publishedRevisionId: null,
+          editingRevision: {
+            id: 'f3e4cc9c-d42a-4fda-8c2e-7ed73a4ef05a',
+            status: 'CHANGES_REQUESTED',
+          },
+          publishedRevision: null,
+        }),
+        update: vi.fn(),
+        findUniqueOrThrow: vi.fn().mockResolvedValue(record),
       },
       sellerProfileRevision: { update: vi.fn() },
     };
@@ -605,7 +689,10 @@ describe('SellersService', () => {
           updatedAt: now,
         }),
       },
-      $transaction: vi.fn(async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx)),
+      $transaction: vi.fn(
+        async (callback: (client: typeof tx) => Promise<unknown>) =>
+          callback(tx),
+      ),
     };
     const service = new SellersService(prisma as never, imageStore as never);
 
@@ -645,7 +732,17 @@ describe('SellersService', () => {
           createdAt: now,
           updatedAt: now,
         }),
-        findUnique: vi.fn().mockResolvedValue({ id: record.id, status: 'CHANGES_REQUESTED', editingRevisionId: 'f3e4cc9c-d42a-4fda-8c2e-7ed73a4ef05a', publishedRevisionId: null, editingRevision: { id: 'f3e4cc9c-d42a-4fda-8c2e-7ed73a4ef05a', status: 'CHANGES_REQUESTED' }, publishedRevision: null }),
+        findUnique: vi.fn().mockResolvedValue({
+          id: record.id,
+          status: 'CHANGES_REQUESTED',
+          editingRevisionId: 'f3e4cc9c-d42a-4fda-8c2e-7ed73a4ef05a',
+          publishedRevisionId: null,
+          editingRevision: {
+            id: 'f3e4cc9c-d42a-4fda-8c2e-7ed73a4ef05a',
+            status: 'CHANGES_REQUESTED',
+          },
+          publishedRevision: null,
+        }),
         findUniqueOrThrow: vi.fn().mockResolvedValue(record),
       },
       sellerProfileRevision: { update: vi.fn() },
@@ -1019,71 +1116,45 @@ describe('SellersService', () => {
     }
   });
 
-  it('keeps the achievement deletion when image removal fails', async () => {
-    const marker = 'object-secret-marker';
-    const objectKey = `seller-achievement:${marker}`;
-    const failure = new Error(`delete ${marker}`);
-    failure.stack = [
-      failure.toString(),
-      `    at ImageStore.delete (/tmp/${marker}.js:2:2)`,
-      '    at ImageStore.delete (/app/dist/core/image-store/image-store.js:18:4)',
-    ].join('\n');
-    const remove = vi.fn().mockRejectedValue(failure);
+  it('deletes only the editable achievement without renumbering remaining rows', async () => {
     const tx = {
-      $queryRaw: vi
-        .fn()
-        .mockResolvedValueOnce([{ id: 'profile-id' }])
-        .mockResolvedValueOnce([{ id: 'revision-id' }]),
+      $queryRaw: vi.fn().mockResolvedValue([{ id: 'profile-id' }]),
       sellerProfile: {
         findUnique: vi.fn().mockResolvedValue({
           id: 'profile-id',
           status: 'DRAFT',
           editingRevision: { id: 'revision-id', status: 'DRAFT' },
+          publishedRevision: null,
         }),
       },
       sellerProfileRevisionAchievement: {
         findFirst: vi
           .fn()
           .mockResolvedValueOnce({ id: 'achievement-id' })
-          .mockResolvedValueOnce({
-            id: 'achievement-id',
-            objectKey,
-            mediaAssetId: null,
-          }),
-        delete: vi.fn().mockResolvedValue({}),
-        count: vi.fn().mockResolvedValue(0),
-        findMany: vi.fn().mockResolvedValue([]),
+          .mockResolvedValueOnce({ id: 'achievement-id' }),
+        delete: vi.fn(),
+        findMany: vi.fn(),
         update: vi.fn(),
       },
     };
+    const remove = vi.fn();
     const service = new SellersService(
       {
         $transaction: vi.fn(
-          async (callback: (client: typeof tx) => Promise<unknown>) =>
-            callback(tx),
+          async (run: (client: typeof tx) => Promise<unknown>) => run(tx),
         ),
       } as never,
       { ...imageStore, delete: remove } as never,
     );
-    const loggerWarn = vi
-      .spyOn(
-        (service as unknown as { logger: { warn: (...args: unknown[]) => void } })
-          .logger,
-        'warn',
-      )
-      .mockImplementation(() => undefined);
 
     await expect(
       service.deleteAchievement('user-id', 'achievement-id'),
     ).resolves.toEqual({ ok: true });
-
-    expect(remove).toHaveBeenCalledWith(objectKey);
-    expect(loggerWarn).toHaveBeenCalledOnce();
-    expect(loggerWarn.mock.calls[0]).toHaveLength(1);
-    const logged = JSON.stringify(loggerWarn.mock.calls);
-    expect(logged).toContain('Failed to delete unreferenced achievement image');
-    expect(logged).toContain('at=dist/core/image-store/image-store.js:18');
-    expect(logged).not.toContain(marker);
-    loggerWarn.mockRestore();
+    expect(tx.sellerProfileRevisionAchievement.delete).toHaveBeenCalledWith({
+      where: { id: 'achievement-id' },
+    });
+    expect(tx.sellerProfileRevisionAchievement.findMany).not.toHaveBeenCalled();
+    expect(tx.sellerProfileRevisionAchievement.update).not.toHaveBeenCalled();
+    expect(remove).not.toHaveBeenCalled();
   });
 });
