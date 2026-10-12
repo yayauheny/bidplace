@@ -10,8 +10,18 @@ test('Verify retains general pull request coverage and release branch pushes', a
     resolve(root, '.github/workflows/verify.yml'),
     'utf8',
   );
-  assert.match(workflow, /pull_request:\s*\n\s*\nconcurrency:/);
-  assert.match(workflow, /- feature\/portfolio-mvp-release/);
+  // Feature pushes are checked via PR only: one change must not trigger two runs.
+  assert.match(workflow, /pull_request:\s*\n\s*types: \[opened, synchronize, reopened, ready_for_review, converted_to_draft\]/);
+  assert.match(workflow, /push:\s*\n\s*branches:\s*\n\s*- main\s*\n\s*- master\s*\n\s*- feature\/portfolio-mvp-release/);
+  assert.doesNotMatch(workflow, /- 'fix\/\*\*'/);
+  assert.doesNotMatch(workflow, /- 'feat\/\*\*'/);
+  assert.match(workflow, /workflow_dispatch:/);
+  assert.match(workflow, /Fast checks for draft PR/);
+  assert.match(workflow, /Work editor regression tests for draft PR/);
+  assert.match(workflow, /github\.event\.pull_request\.draft == true/);
+  assert.match(workflow, /github\.event\.pull_request\.draft == false/);
+  assert.match(workflow, /run: pnpm verify/);
+  assert.match(workflow, /cancel-in-progress: true/);
 });
 
 test('browser workflow is manual-only and retains sharded Chromium coverage', async () => {
