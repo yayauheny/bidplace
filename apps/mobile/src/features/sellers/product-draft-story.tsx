@@ -23,6 +23,7 @@ type GalleryImage = {
 
 export type ProductDraftStoryStepProps = {
   productId: string;
+  isCreationFlow: boolean;
   blocks: EditableStoryBlock[];
   images: GalleryImage[];
   editable: boolean;
@@ -43,6 +44,7 @@ export type ProductDraftStoryStepProps = {
 
 export function ProductDraftStoryStep({
   productId,
+  isCreationFlow,
   blocks,
   images,
   editable,
@@ -182,13 +184,15 @@ export function ProductDraftStoryStep({
           />
         ) : null}
         {saveError ? <AppText role="bodySmall" tone="danger">{saveError}</AppText> : null}
-        <SecondaryButton
-          label="Назад к изображениям"
-          disabled={savePending}
-          onPress={onBackToImages}
-        />
+        {isCreationFlow ? (
+          <SecondaryButton
+            label="Назад к изображениям"
+            disabled={savePending}
+            onPress={onBackToImages}
+          />
+        ) : null}
         <PrimaryButton
-          label="Сохранить и перейти к проверке"
+          label={isCreationFlow ? 'Сохранить и перейти к проверке' : 'Сохранить историю'}
           loading={savePending}
           disabled={!editable}
           onPress={onSaveAndContinue}

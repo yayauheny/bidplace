@@ -12,6 +12,7 @@ export type ProductDraftReviewStepProps = {
   editable: boolean;
   existingProductImagesLength: number;
   submitLabel: string;
+  hasStory: boolean;
 
   wizardSubmitted: boolean;
   submitPending: boolean;
@@ -24,16 +25,14 @@ export function ProductDraftReviewStep({
   editable,
   existingProductImagesLength,
   submitLabel,
+  hasStory,
   wizardSubmitted,
   submitPending,
   submitError,
   onSubmitPress,
   onBackToStory,
 }: ProductDraftReviewStepProps) {
-  const [title = '', story = ''] = useWatch<ProductDraftFormValues, ['title', 'story']>({
-    name: ['title', 'story'],
-  });
-  const hasStory = Boolean(story.trim());
+  const title = useWatch<ProductDraftFormValues, 'title'>({ name: 'title' }) ?? '';
   return (
     <FormSection
       title="Проверка перед модерацией"
