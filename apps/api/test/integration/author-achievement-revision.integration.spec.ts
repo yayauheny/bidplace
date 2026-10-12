@@ -191,6 +191,73 @@ describe('author achievement editing revision HTTP contract', () => {
     ).toBe(404);
   });
 
+  it('closes sparse position gaps and retains an early date after a real DB round-trip', async () => {
+    const fixture = await createPermissionFixture(prisma);
+    const revisionId = (
+      await prisma.sellerProfile.findUniqueOrThrow({
+        where: { id: fixture.sellers.changes.profileId },
+        select: { editingRevisionId: true },
+      })
+    ).editingRevisionId!;
+    await prisma.sellerProfileRevisionAchievement.createMany({
+      data: [
+        { revisionId, position: 0, body: 'First show' },
+        { revisionId, position: 2, body: 'Remove this show' },
+        { revisionId, position: 4, body: 'Last show' },
+      ],
+    });
+    const middle = await prisma.sellerProfileRevisionAchievement.findFirstOrThrow({
+      where: { revisionId, position: 2 },
+      select: { id: true },
+    });
+
+    const owner = new HttpTestClient(http.baseUrl, 'http://localhost:8081');
+    await login(owner, fixture.sellers.changes.email, fixture.sellers.changes.password);
+
+    expect(
+      (await owner.delete(`/author/application/achievements/${middle.id}`)).status,
+    ).toBe(200);
+    const readPositions = async () =>
+      prisma.sellerProfileRevisionAchievement.findMany({
+        where: { revisionId },
+        select: { position: true, body: true },
+        orderBy: { position: 'asc' },
+      });
+    expect(await readPositions()).toEqual([
+      { position: 0, body: 'First show' },
+      { position: 1, body: 'Last show' },
+    ]);
+
+    const added = await owner.post('/author/application/achievements', {
+      body: 'Early show',
+      occurredDate: { year: 4, month: 2, day: 29 },
+    });
+    expect(added.status).toBe(201);
+    const createdId = ((await added.json()) as { achievement: { id: string } })
+      .achievement.id;
+    const persisted = await prisma.sellerProfileRevisionAchievement.findUniqueOrThrow({
+      where: { id: createdId },
+      select: { occurredAt: true, position: true },
+    });
+    expect(persisted.occurredAt?.toISOString()).toBe(
+      '0004-02-29T00:00:00.000Z',
+    );
+    expect(persisted.position).toBe(2);
+
+    const application = await owner.get('/author/application');
+    expect(application.status).toBe(200);
+    const body = (await application.json()) as {
+      achievements: Array<{
+        id: string;
+        occurredDate: { year: number; month: number; day: number | null } | null;
+      }>;
+    };
+    expect(
+      body.achievements.find((achievement) => achievement.id === createdId)
+        ?.occurredDate,
+    ).toEqual({ year: 4, month: 2, day: 29 });
+  });
+
   it('rejects achievement writes while a revision is pending review', async () => {
     const fixture = await createPermissionFixture(prisma);
     const owner = new HttpTestClient(http.baseUrl, 'http://localhost:8081');
