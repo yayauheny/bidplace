@@ -72,7 +72,11 @@ export class AuthService {
     const published = readPublishedLegalDocuments();
     const { agreement, privacy, dataConsent } = input.legal;
     if ([agreement.version, privacy.version, dataConsent.version].some((version) => version !== published.version)) {
-      throw new ConflictException('Legal document version is stale');
+      throw new ConflictException({
+        code: ApiErrorCode.CONFLICT,
+        message: 'Legal document version is stale',
+        details: { reason: 'legal_version_stale' },
+      });
     }
     const email = normalizeEmail(input.email);
     const phone = normalizePhone(input.phone);

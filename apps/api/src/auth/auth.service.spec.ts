@@ -7,7 +7,21 @@ import { authCredentialsSelect, authUserContractSelect } from './auth.mapper';
 import { AuthService } from './auth.service';
 import { AuthTokenService } from './auth-token.service';
 import { PasswordHasherService } from './password-hasher.service';
+import { readPublishedLegalDocuments } from './legal-documents';
 
+vi.mock('./legal-documents', () => ({
+  readPublishedLegalDocuments: vi.fn(() => ({
+    version: 'portfolio-legal-2026-10-12',
+    documents: [],
+  })),
+}));
+
+const legal = {
+  agreement: { version: 'portfolio-legal-2026-10-12', confirmed: true as const },
+  privacy: { version: 'portfolio-legal-2026-10-12', confirmed: true as const },
+  dataConsent: { version: 'portfolio-legal-2026-10-12', confirmed: true as const },
+  age18Confirmed: true as const,
+};
 const registerProof = syntheticTurnstileToken('register');
 
 type PrismaUser = {
@@ -109,6 +123,7 @@ describe('AuthService', () => {
       phone: '+15555550123',
       slug: 'demo-seller',
       turnstileToken: registerProof,
+      legal,
     });
 
     expect(prisma.user.create).toHaveBeenCalledWith({
@@ -122,6 +137,17 @@ describe('AuthService', () => {
         sessionVersion: 0,
         emailVerifiedAt: null,
         phoneVerifiedAt: null,
+        registrationLegalEvidence: {
+          create: {
+            agreementVersion: legal.agreement.version,
+            agreementAcceptedAt: expect.any(Date),
+            privacyVersion: legal.privacy.version,
+            privacyAcknowledgedAt: expect.any(Date),
+            dataConsentVersion: legal.dataConsent.version,
+            dataConsentedAt: expect.any(Date),
+            age18ConfirmedAt: expect.any(Date),
+          },
+        },
       },
       select: authCredentialsSelect,
     });
@@ -150,6 +176,36 @@ describe('AuthService', () => {
     });
   });
 
+  it('rejects a stale legal version without creating a user or checking abuse', async () => {
+    vi.mocked(readPublishedLegalDocuments).mockReturnValueOnce({
+      version: 'new-legal-version',
+      documents: [],
+    });
+    await expect(service.register({
+      email: 'seller@example.com',
+      password: 'super-secret',
+      slug: 'seller',
+      turnstileToken: registerProof,
+      legal,
+    })).rejects.toMatchObject({ status: 409 });
+    expect(prisma.user.create).not.toHaveBeenCalled();
+    expect(abuse.assertRegistration).not.toHaveBeenCalled();
+  });
+
+  it('does not issue a session when the atomic user/evidence insert fails', async () => {
+    prisma.user.findFirst.mockResolvedValue(null);
+    prisma.user.create.mockRejectedValueOnce(new Error('registration evidence insert failed'));
+    passwordHasher.hash.mockResolvedValue('hash');
+    await expect(service.register({
+      email: 'seller@example.com',
+      password: 'super-secret',
+      slug: 'seller',
+      turnstileToken: registerProof,
+      legal,
+    })).rejects.toThrow('registration evidence insert failed');
+    expect(authTokenService.sign).not.toHaveBeenCalled();
+  });
+
   it('rejects duplicate email or phone on registration', async () => {
     prisma.user.findFirst.mockResolvedValue(createPrismaUser());
 
@@ -160,6 +216,7 @@ describe('AuthService', () => {
         phone: '+15555550123',
         slug: 'demo-seller',
         turnstileToken: registerProof,
+      legal,
       }),
     ).rejects.toBeInstanceOf(ConflictException);
   });

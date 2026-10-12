@@ -787,24 +787,23 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
     } catch (error) {
       if (controller.signal.aborted || aborted(error)) return;
       if (!anonymousOwns(operation, epoch)) return;
-      if (error instanceof ApiClientError && error.kind === 'conflict') {
-        // A stale legal version must be shown again; never silently reconfirm it.
-        if (error.code !== ApiErrorCode.CONFLICT || !(
-          typeof error.details === 'object' &&
-          error.details !== null &&
-          'reason' in error.details &&
-          error.details.reason === 'slug_taken'
-        )) {
-          setStep('email');
-          setLegalDocuments(null);
-          form.setValue('agreementAccepted', false);
-          form.setValue('privacyAcknowledged', false);
-          form.setValue('dataConsentGiven', false);
-          form.setValue('age18Confirmed', false);
-          loadRegistrationLegal();
-          setSubmitError('Документы или данные регистрации изменились. Проверьте и подтвердите их снова.');
-          return;
-        }
+      if (
+        error instanceof ApiClientError &&
+        error.kind === 'conflict' &&
+        typeof error.details === 'object' &&
+        error.details !== null &&
+        'reason' in error.details &&
+        error.details.reason === 'legal_version_stale'
+      ) {
+        setStep('email');
+        setLegalDocuments(null);
+        form.setValue('agreementAccepted', false);
+        form.setValue('privacyAcknowledged', false);
+        form.setValue('dataConsentGiven', false);
+        form.setValue('age18Confirmed', false);
+        loadRegistrationLegal();
+        setSubmitError('Редакция документов изменилась. Ознакомьтесь с ней и подтвердите ещё раз.');
+        return;
       }
       const message = authRequestMessage(error);
       if (message) {
