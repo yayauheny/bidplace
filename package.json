@@ -9,7 +9,7 @@
     "dev": "turbo dev",
     "build": "turbo build",
     "lint": "turbo lint",
-    "typecheck": "turbo typecheck",
+    "typecheck": "pnpm exec turbo run build --filter=@bidplace/database && turbo typecheck",
     "db:generate": "pnpm --filter @bidplace/database db:generate",
     "db:migrate": "pnpm --filter @bidplace/database db:migrate",
     "db:seed": "pnpm --filter @bidplace/database db:seed",
