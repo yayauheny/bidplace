@@ -1194,6 +1194,51 @@ describe('SellersService', () => {
     loggerWarn.mockRestore();
   });
 
+  it('does not delete the implicit image key of a published source when its fork is removed', async () => {
+    const remove = vi.fn();
+    const count = vi.fn();
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ id: 'profile-id' }]),
+      sellerProfile: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'profile-id',
+          status: 'APPROVED',
+          editingRevision: { id: 'draft-revision-id', status: 'DRAFT' },
+          publishedRevision: null,
+        }),
+      },
+      sellerProfileRevisionAchievement: {
+        findFirst: vi
+          .fn()
+          .mockResolvedValueOnce({ id: 'draft-achievement-id' })
+          .mockResolvedValueOnce({
+            id: 'draft-achievement-id',
+            objectKey: 'seller-achievement:published-achievement-id',
+            mediaAssetId: null,
+          }),
+        delete: vi.fn(),
+        findMany: vi.fn().mockResolvedValue([]),
+        update: vi.fn(),
+        count,
+      },
+    };
+    const service = new SellersService(
+      {
+        $transaction: vi.fn(
+          async (run: (client: typeof tx) => Promise<unknown>) => run(tx),
+        ),
+      } as never,
+      { ...imageStore, delete: remove } as never,
+    );
+
+    await expect(
+      service.deleteAchievement('user-id', 'draft-achievement-id'),
+    ).resolves.toEqual({ ok: true });
+    expect(tx.sellerProfileRevisionAchievement.delete).toHaveBeenCalledOnce();
+    expect(count).not.toHaveBeenCalled();
+    expect(remove).not.toHaveBeenCalled();
+  });
+
   it.each([0, 1])(
     'compacts remaining achievements after deleting legacy media with %i other references',
     async (remainingReferences) => {
