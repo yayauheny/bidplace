@@ -28,6 +28,48 @@ import { ProductDraftStoryStep } from './product-draft-story';
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
+vi.mock('../../components/figma/FigmaChoiceChip', () => ({
+  FigmaChoiceChip: ({
+    label,
+    selected,
+    onPress,
+    disabled,
+  }: {
+    label: string;
+    selected: boolean;
+    onPress: () => void;
+    disabled?: boolean;
+  }) => createElement('button', {
+    type: 'button',
+    disabled,
+    'aria-pressed': selected,
+    onClick: onPress,
+  }, label),
+}));
+
+vi.mock('../../components/figma/FigmaSelectField', () => ({
+  FigmaSelectField: ({
+    label,
+    value,
+    disabled,
+    onPress,
+  }: {
+    label: string;
+    value: string;
+    disabled?: boolean;
+    onPress: () => void;
+  }) => createElement('button', {
+    type: 'button',
+    'aria-label': label,
+    disabled,
+    onClick: () => onPress(),
+  }, value || label),
+}));
+
+vi.mock('./product-catalog-term-sheet', () => ({
+  ProductCatalogTermSheet: () => null,
+}));
+
 vi.mock('react-native', () => ({
   View: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
 }));
@@ -89,7 +131,7 @@ vi.mock('../../components/ui', () => ({
     ),
 }));
 
-const categories = [{ id: 'cat-1', name: 'Painting' }];
+const categories = [{ id: 'cat-1', name: 'Painting', slug: 'painting' }];
 
 function Harness({ guard }: { guard: RefObject<boolean> }) {
   const [step, setStep] = useState<'about' | 'story'>('about');
@@ -124,6 +166,11 @@ function Harness({ guard }: { guard: RefObject<boolean> }) {
                 wizardStep: 1,
                 editable: true,
                 categories,
+                onCatalogOpen: () => undefined,
+                catalog: {
+                  MATERIAL: { terms: [], loading: false, error: false, onRetry: () => undefined },
+                  TECHNIQUE: { terms: [], loading: false, error: false, onRetry: () => undefined },
+                },
                 stepOneAttempted,
                 saveIsPending: false,
                 saveIsError: false,
@@ -204,7 +251,7 @@ describe('product draft field ownership', () => {
     click(view.container, 'Painting');
     await flush();
     expect(input(view.container, 'Название').value).toBe('First work');
-    expect(view.container.textContent).toContain('✓ Painting');
+    expect(view.container.querySelector('button[aria-pressed="true"]')?.textContent).toBe('Painting');
     setInput(view.container, 'Название', '');
     setInput(view.container, 'Год создания', '10000');
     await flush();
@@ -230,7 +277,7 @@ describe('product draft field ownership', () => {
     setInput(view.container, 'Название', 'Other');
     click(view.container, 'Painting');
     expect(input(view.container, 'Название').value).toBe('Kept title');
-    expect(view.container.textContent).not.toContain('✓ Painting');
+    expect(view.container.querySelector('button[aria-pressed="true"]')).toBeNull();
     view.unmount();
   });
 });

@@ -42,6 +42,7 @@ const categoriesBody = {
       slug: 'glass',
       name: 'Glass',
       description: null,
+      active: true,
     },
   ],
 };
@@ -457,6 +458,7 @@ function workRecord() {
 
 function bodyFor(url: URL) {
   if (url.pathname === '/api/categories') return categoriesBody;
+  if (url.pathname === '/api/catalog/terms') return { terms: [] };
   if (url.pathname === '/api/portfolio/facets') {
     return { materials: ['Glass'], cities: ['Minsk'], tags: ['ceramic'] };
   }
@@ -507,6 +509,15 @@ function bodyFor(url: URL) {
       },
       creationIntro: null,
       creationSteps: [],
+      story: { storyToken: 0, blocks: [] },
+      selection: {
+        category: null,
+        materialTermIds: [],
+        techniqueTermIds: [],
+        materialTerms: [],
+        techniqueTerms: [],
+        proposals: [],
+      },
       lastModerationReason: null,
     };
   }

@@ -66,6 +66,10 @@ vi.mock('../auth/AccountLogoutButton', () => ({
   AccountLogoutButton: () => null,
 }));
 
+vi.mock('./AdminWorkCatalogProposals', () => ({
+  AdminWorkCatalogProposals: () => null,
+}));
+
 vi.mock('./AdminUsersPanel', () => ({
   AdminUsersPanel: () => null,
 }));
@@ -309,6 +313,15 @@ function pendingProduct() {
         deliveryInfo: null,
         creationIntro: null,
         images: [],
+      },
+      story: { storyToken: 0, blocks: [] },
+      selection: {
+        category: null,
+        materialTermIds: [],
+        techniqueTermIds: [],
+        materialTerms: [],
+        techniqueTerms: [],
+        proposals: [],
       },
     },
     hasBlockingListing: false,
@@ -597,6 +610,47 @@ describe('admin moderation revision projection', () => {
         updatedAt: seenAt,
       },
     });
+    view.unmount();
+  });
+
+  it('prevents approving a revision with a selected rejected catalog proposal', async () => {
+    const product = pendingProduct();
+    harness.listSellerProfiles.mockResolvedValue({ sellerProfiles: [] });
+    harness.listProducts.mockResolvedValue({
+      products: [{
+        ...product,
+        reviewTarget: {
+          ...product.reviewTarget,
+          selection: {
+            ...product.reviewTarget.selection,
+            proposals: [{
+              id: '83333333-3333-4333-8333-333333333333',
+              productRevisionId,
+              kind: 'MATERIAL',
+              rawName: 'Неясный материал',
+              normalizedName: 'неясный материал',
+              status: 'REJECTED',
+              selected: true,
+              mappedCategoryId: null,
+              mappedTermId: null,
+              rejectionReason: 'Уточните материал',
+              reviewedAt: seenAt,
+            }],
+          },
+        },
+      }],
+    });
+    const view = mount(createElement(AdminModerationScreen));
+    await until(view.container, 'Модерация');
+    clickButton(view.container, 'Работы');
+    await until(view.container, 'Pending work');
+
+    expect(buttonNamed(view.container, 'Одобрить').disabled).toBe(true);
+    expect(view.container.textContent).toContain(
+      'Есть отклонённые предложения. Запросите изменения',
+    );
+    clickButton(view.container, 'Одобрить');
+    expect(harness.updateProductStatus).not.toHaveBeenCalled();
     view.unmount();
   });
 

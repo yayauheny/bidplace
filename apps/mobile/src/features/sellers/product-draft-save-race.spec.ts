@@ -30,6 +30,48 @@ const harness = vi.hoisted(() => ({
   reorderImages: vi.fn(),
 }));
 
+vi.mock('../../components/figma/FigmaChoiceChip', () => ({
+  FigmaChoiceChip: ({
+    label,
+    selected,
+    onPress,
+    disabled,
+  }: {
+    label: string;
+    selected: boolean;
+    onPress: () => void;
+    disabled?: boolean;
+  }) => createElement('button', {
+    type: 'button',
+    disabled,
+    'aria-pressed': selected,
+    onClick: onPress,
+  }, label),
+}));
+
+vi.mock('../../components/figma/FigmaSelectField', () => ({
+  FigmaSelectField: ({
+    label,
+    value,
+    disabled,
+    onPress,
+  }: {
+    label: string;
+    value: string;
+    disabled?: boolean;
+    onPress: () => void;
+  }) => createElement('button', {
+    type: 'button',
+    'aria-label': label,
+    disabled,
+    onClick: () => onPress(),
+  }, value || label),
+}));
+
+vi.mock('./product-catalog-term-sheet', () => ({
+  ProductCatalogTermSheet: () => null,
+}));
+
 vi.mock('react-native', () => ({
   Platform: { OS: 'web' },
   View: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
@@ -54,6 +96,7 @@ vi.mock('expo-image-picker', () => ({
 vi.mock('../../providers/api-provider', () => ({
   useApiClient: () => ({
     categories: { list: harness.listCategories },
+    catalog: { listTerms: async () => ({ terms: [] }) },
     sellers: { getProduct: harness.getProduct },
     products: {
       create: harness.createProduct,
@@ -141,7 +184,7 @@ import { advanceAuthEpoch, authKeys, clearAuthenticatedSession } from '../../lib
 import { ownerWorkQueryKeys } from './owner-work-query';
 import { ProductDraftScreen } from './product-draft-screen';
 
-function product(title = 'Saved title', technique = 'Oil') {
+function product(title = 'Saved title', dimensions = '') {
   return {
     id: productId,
     publicId: 'draftwork01',
@@ -149,9 +192,9 @@ function product(title = 'Saved title', technique = 'Oil') {
     categoryId,
     title,
     story: '',
-    technique,
+    technique: 'Oil',
     materials: '',
-    dimensions: '',
+    dimensions,
     weight: null,
     year: null,
     condition: null,
@@ -179,9 +222,9 @@ function product(title = 'Saved title', technique = 'Oil') {
   };
 }
 
-function detail(title = 'Saved title', technique = 'Oil') {
+function detail(title = 'Saved title', dimensions = '') {
   return {
-    product: product(title, technique),
+    product: product(title, dimensions),
     editingRevision: {
       id: '22222222-2222-4222-8222-222222222222',
       version: 1,
@@ -319,7 +362,7 @@ describe('product draft save reconciliation', () => {
     });
     await flush();
     expect(inputValue(view.container, 'Название')).toBe('Typed later');
-    expect(inputValue(view.container, 'Техника')).toBe('Oil paint');
+    expect(inputValue(view.container, 'Размеры')).toBe('Oil paint');
     expect(formIsDirty()).toBe(true);
     expect(harness.updateProduct).toHaveBeenCalledTimes(1);
     setInput(view.container, 'Название', 'Saved title');
@@ -347,7 +390,7 @@ describe('product draft save reconciliation', () => {
     });
     await flush();
     expect(inputValue(view.container, 'Название')).toBe('Next title');
-    expect(inputValue(view.container, 'Техника')).toBe('Oil paint');
+    expect(inputValue(view.container, 'Размеры')).toBe('Oil paint');
     expect(formIsDirty()).toBe(false);
     view.unmount();
   });
@@ -471,7 +514,7 @@ describe('product draft save reconciliation', () => {
     });
     await flush();
     expect(inputValue(view.container, 'Название')).toBe('Local edit');
-    expect(inputValue(view.container, 'Техника')).toBe('Oil');
+    expect(inputValue(view.container, 'Размеры')).toBe('');
     view.unmount();
   });
 
@@ -567,7 +610,7 @@ describe('product draft save reconciliation', () => {
     });
     await flush();
     expect(inputValue(view.container, 'Название')).toBe('Title B');
-    expect(inputValue(view.container, 'Техника')).toBe('First paint');
+    expect(inputValue(view.container, 'Размеры')).toBe('First paint');
     click(view.container, 'Сохранить изменения');
     await flush();
     expect(harness.updateProduct).toHaveBeenCalledTimes(2);

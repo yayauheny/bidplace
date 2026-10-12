@@ -1,5 +1,6 @@
 name: Browser E2E
 
+# Large browser suites run only through manual dispatch.
 on:
   workflow_dispatch:
 
@@ -60,3 +61,4 @@ jobs:
             apps/mobile/playwright-report
             apps/mobile/test-results
           if-no-files-found: ignore
+          retention-days: 7

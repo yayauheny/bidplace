@@ -1,6 +1,15 @@
+import { useState } from 'react';
+import { View } from 'react-native';
+
+import { designTokens } from '@bidplace/design-tokens';
 import { useFormContext, useFormState, useWatch } from 'react-hook-form';
 
+import { normalizeCatalogName, type SellerProductDetailResponse } from '@bidplace/contracts';
+
 import { FormPageColumns } from '../../components/layout';
+import { FigmaSelectField } from '../../components/figma/FigmaSelectField';
+import { FigmaChoiceChip } from '../../components/figma/FigmaChoiceChip';
+import { ProductCatalogTermSheet } from './product-catalog-term-sheet';
 import {
   AppText,
   FormSection,
@@ -22,7 +31,15 @@ export type ProductDraftAboutStepProps = {
   isCreationFlow: boolean;
   wizardStep: number;
   editable: boolean;
-  categories: Array<{ id: string; name: string }>;
+  categories: Array<{ id: string; name: string; slug: string }>;
+  selection?: SellerProductDetailResponse['selection'];
+  onCatalogOpen: (role: 'MATERIAL' | 'TECHNIQUE' | null) => void;
+  catalog: Record<'MATERIAL' | 'TECHNIQUE', {
+    terms: SellerProductDetailResponse['selection']['materialTerms'];
+    loading: boolean;
+    error: boolean;
+    onRetry: () => void;
+  }>;
   stepOneAttempted: boolean;
   saveIsPending: boolean;
   saveIsError: boolean;
@@ -37,6 +54,9 @@ export function ProductDraftAboutStep({
   wizardStep,
   editable,
   categories,
+  selection,
+  onCatalogOpen,
+  catalog,
   stepOneAttempted,
   saveIsPending,
   saveIsError,
@@ -45,18 +65,61 @@ export function ProductDraftAboutStep({
   wizardCanOpenImages,
   onContinueToImages,
 }: ProductDraftAboutStepProps) {
+  const [openRole, setOpenRole] = useState<'MATERIAL' | 'TECHNIQUE' | null>(null);
   const guard = useProductDraftWriteGuard();
   const { control, setValue } = useFormContext<ProductDraftFormValues>();
-  const [categoryId = '', title = ''] = useWatch({
+  const [
+    categoryId = '',
+    title = '',
+    materialTermIds = [],
+    techniqueTermIds = [],
+    materialProposals = [],
+    techniqueProposals = [],
+    categoryProposal = '',
+  ] = useWatch({
     control,
-    name: ['categoryId', 'title'],
+    name: [
+      'categoryId',
+      'title',
+      'materialTermIds',
+      'techniqueTermIds',
+      'materialProposals',
+      'techniqueProposals',
+      'categoryProposal',
+    ],
   });
+  const activeRoleQuery = catalog[openRole ?? 'MATERIAL'];
+  const knownTerms = openRole === 'MATERIAL'
+    ? (selection?.materialTerms ?? [])
+    : (selection?.techniqueTerms ?? []);
+  const termLabels = (
+    ids: readonly string[],
+    names: readonly string[],
+    active: typeof catalog.MATERIAL.terms,
+    previous: typeof knownTerms,
+  ) => {
+    const byId = new Map([...active, ...previous].map((term) => [term.id, term.name]));
+    const selected = ids.map((id) => byId.get(id) ?? 'Выбранный термин');
+    return [...selected, ...names].join(', ');
+  };
   const { errors } = useFormState({ control, name: 'year' });
   const requiredErrors = productDraftRequiredErrors({
     ...emptyProductDraftFormValues,
     categoryId,
     title,
   });
+  const hiddenSelectedCategory =
+    selection?.category?.id === categoryId &&
+    !categories.some((category) => category.id === categoryId)
+      ? selection.category
+      : null;
+  const rejectedCategoryProposal = selection?.proposals.find(
+    (proposal) =>
+      proposal.kind === 'CATEGORY' &&
+      proposal.selected &&
+      proposal.status === 'REJECTED' &&
+      proposal.normalizedName === normalizeCatalogName(categoryProposal),
+  );
   const yearError = typeof errors.year?.message === 'string' ? errors.year.message : undefined;
   const canSaveStepOne = !requiredErrors.categoryId && !requiredErrors.title && !yearError;
   const titleLabel = isCreationFlow ? 'Сохранить и продолжить' : 'Сохранить изменения';
@@ -69,17 +132,25 @@ export function ProductDraftAboutStep({
             title="Характеристики"
             description="Параметры помогают точно описать работу."
           >
-            <ProductDraftTextField
-              name="technique"
-              label="Техника"
-              placeholder="Необязательно"
-              editable={editable}
+            <FigmaSelectField
+              label="Техники"
+              placeholder="Выберите или предложите"
+              value={termLabels(techniqueTermIds, techniqueProposals, catalog.TECHNIQUE.terms, selection?.techniqueTerms ?? [])}
+              disabled={!editable}
+              onPress={() => {
+                onCatalogOpen('TECHNIQUE');
+                setOpenRole('TECHNIQUE');
+              }}
             />
-            <ProductDraftTextField
-              name="materials"
-              label="Материал"
-              placeholder="Необязательно"
-              editable={editable}
+            <FigmaSelectField
+              label="Материалы"
+              placeholder="Выберите или предложите"
+              value={termLabels(materialTermIds, materialProposals, catalog.MATERIAL.terms, selection?.materialTerms ?? [])}
+              disabled={!editable}
+              onPress={() => {
+                onCatalogOpen('MATERIAL');
+                setOpenRole('MATERIAL');
+              }}
             />
             <ProductDraftTextField
               name="dimensions"
@@ -99,22 +170,51 @@ export function ProductDraftAboutStep({
         }
       >
         <FormSection title="Категория">
-          {categories.map((category) => (
-            <SecondaryButton
-              key={category.id}
-              label={categoryId === category.id ? `✓ ${category.name}` : category.name}
-              disabled={!editable}
-              width="block"
-              onPress={() => {
-                if (guard.current) return;
-                setValue('categoryId', category.id, {
-                  shouldDirty: true,
-                  shouldTouch: true,
-                  shouldValidate: true,
-                });
-              }}
-            />
-          ))}
+          {hiddenSelectedCategory ? (
+            <AppText role="bodySmall" tone="secondary">
+              Ранее выбрана категория «{hiddenSelectedCategory.name}», сейчас она скрыта.
+              Можно оставить её или выбрать другую.
+            </AppText>
+          ) : null}
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: designTokens.space.x2 }}>
+            {categories.map((category) => (
+              <FigmaChoiceChip
+                key={category.id}
+                label={category.name}
+                selected={categoryId === category.id}
+                disabled={!editable}
+                onPress={() => {
+                  if (guard.current) return;
+                  if (category.slug !== 'other') {
+                    setValue('categoryProposal', '', { shouldDirty: true, shouldValidate: true });
+                  }
+                  setValue('categoryId', category.id, {
+                    shouldDirty: true,
+                    shouldTouch: true,
+                    shouldValidate: true,
+                  });
+                }}
+              />
+            ))}
+          </View>
+          {categories.find((category) => category.id === categoryId)?.slug === 'other' ||
+          (categoryId === selection?.category?.id && selection?.category?.slug === 'other') ? (
+            <>
+              <ProductDraftTextField
+                name="categoryProposal"
+                label="Предложить категорию"
+                placeholder="Укажите название, если нужной категории нет"
+                editable={editable}
+              />
+              {rejectedCategoryProposal ? (
+                <AppText role="bodySmall" tone="danger">
+                  {rejectedCategoryProposal.rejectionReason
+                    ? `Отклонено: ${rejectedCategoryProposal.rejectionReason}`
+                    : 'Предложение категории отклонено. Измените или удалите его.'}
+                </AppText>
+              ) : null}
+            </>
+          ) : null}
           {stepOneAttempted && requiredErrors.categoryId ? (
             <AppText role="bodySmall" tone="danger">
               {requiredErrors.categoryId}
@@ -179,6 +279,32 @@ export function ProductDraftAboutStep({
         <AppText role="bodySmall" tone="danger" accessibilityLiveRegion="polite">
           {saveMessage ?? 'Не удалось сохранить предмет.'}
         </AppText>
+      ) : null}
+      {openRole ? (
+        <ProductCatalogTermSheet
+          role={openRole}
+          open
+          selectedIds={openRole === 'MATERIAL' ? materialTermIds : techniqueTermIds}
+          proposals={openRole === 'MATERIAL' ? materialProposals : techniqueProposals}
+          availableTerms={activeRoleQuery.terms}
+          knownTerms={knownTerms}
+          knownProposals={selection?.proposals ?? []}
+          loading={activeRoleQuery.loading}
+          error={activeRoleQuery.error}
+          editable={editable}
+          onRetry={activeRoleQuery.onRetry}
+          onClose={() => {
+            setOpenRole(null);
+            onCatalogOpen(null);
+          }}
+          onApply={(ids, names) => {
+            if (guard.current) return;
+            const idField = openRole === 'MATERIAL' ? 'materialTermIds' : 'techniqueTermIds';
+            const proposalField = openRole === 'MATERIAL' ? 'materialProposals' : 'techniqueProposals';
+            setValue(idField, ids, { shouldDirty: true, shouldTouch: true, shouldValidate: true });
+            setValue(proposalField, names, { shouldDirty: true, shouldTouch: true, shouldValidate: true });
+          }}
+        />
       ) : null}
     </>
   );

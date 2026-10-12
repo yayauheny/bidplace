@@ -1,5 +1,20 @@
 # bidplace — текущий статус проекта
 
+## 2026-10-12 — Work Catalog integration (PR #37)
+
+- **Implemented in code:** Work author editor uses catalog term IDs and moderated proposals; materials and techniques use searchable Figma chips, category uses single-select chips. Existing selected terms, rejected proposals and revision hydration are retained.
+- **Admin moderation:** uses existing API to map proposals to active catalog entries, create new entries, or reject with a reason. Work approval is disabled while selected pending proposals remain; display uses canonical term names.
+- **Verification policy:** expensive Browser E2E and Release Gate are manual-only. Current follow-up commits deliberately include `[skip ci]` at the founder's request; they have **not** had a fresh full test or E2E run. Earlier green checks apply to earlier SHAs only.
+- **Pending handoff:** run local TypeScript, lint, targeted Vitest and browser smoke on exact PR HEAD before merge. The category catalog is flat and single-select by contract: Figma-style nested category grouping would require a separate taxonomy decision, not fabricated groups.
+- **Merge order:** PR #34 author onboarding first, then this stacked PR #37; target portfolio MVP, never `main` directly.
+
+## 2026-10-12 — GitHub Actions verification policy (`fix/portfolio-work-catalog-client`)
+
+- `Needs verification`: `.github/workflows/verify.yml` checks draft PRs with TypeScript, lint, and config/contracts/API-client unit tests. Ready PRs, release-branch pushes, and manual dispatch run the unchanged full `pnpm verify`, Cloudflare checks, web build, and container image verification. Feature pushes are covered via PR events only, to avoid duplicate workflows; `ready_for_review` and `converted_to_draft` re-evaluate the gate.
+- `Implemented` in source: root `test:unit` builds the API (including packaged disposable email domain assets) before the `disposable-email.spec.ts` built-module assertion. Test assertions are unchanged.
+- `Implemented` in source: failure artifacts in manual Browser E2E and Portfolio Release Gate workflows are retained for seven days. No deployment trigger or production credentials changed.
+- `Not implemented`: automatic preview deployment. Browser E2E and Release Gate are manual-only; full browser verification is deferred to the founder's local run. Tests and known failures are not waived. GitHub workflow execution on this commit is required to confirm results.
+
 ## 2026-10-12 — Consolidated legal documents (`fix/legal-pack`)
 
 - `Implemented` (documentation): один актуальный юридический handoff в

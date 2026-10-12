@@ -28,6 +28,48 @@ const harness = vi.hoisted(() => ({
   launchImageLibraryAsync: vi.fn(),
 }));
 
+vi.mock('../../components/figma/FigmaChoiceChip', () => ({
+  FigmaChoiceChip: ({
+    label,
+    selected,
+    onPress,
+    disabled,
+  }: {
+    label: string;
+    selected: boolean;
+    onPress: () => void;
+    disabled?: boolean;
+  }) => createElement('button', {
+    type: 'button',
+    disabled,
+    'aria-pressed': selected,
+    onClick: onPress,
+  }, label),
+}));
+
+vi.mock('../../components/figma/FigmaSelectField', () => ({
+  FigmaSelectField: ({
+    label,
+    value,
+    disabled,
+    onPress,
+  }: {
+    label: string;
+    value: string;
+    disabled?: boolean;
+    onPress: () => void;
+  }) => createElement('button', {
+    type: 'button',
+    'aria-label': label,
+    disabled,
+    onClick: () => onPress(),
+  }, value || label),
+}));
+
+vi.mock('./product-catalog-term-sheet', () => ({
+  ProductCatalogTermSheet: () => null,
+}));
+
 vi.mock('react-native', () => ({
   Platform: { OS: 'web' },
   View: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
@@ -49,6 +91,7 @@ vi.mock('expo-image-picker', () => ({
 vi.mock('../../providers/api-provider', () => ({
   useApiClient: () => ({
     categories: { list: harness.listCategories },
+    catalog: { listTerms: async () => ({ terms: [] }) },
     sellers: { getProduct: harness.getProduct },
     products: {
       create: vi.fn(),

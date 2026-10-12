@@ -1,14 +1,18 @@
 name: Verify
 
+# Draft PR: fast and automatic. Ready PR / release pushes / manual: full suite.
+# Explicit [build-only] push merge commits run production builds but skip tests and
+# Cloudflare verification. Regular pushes, PRs and manual runs are unchanged.
+# Feature branches are checked through pull_request only to avoid duplicate runs.
 on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
   push:
     branches:
       - main
       - master
       - feature/portfolio-mvp-release
-      - 'fix/**'
-      - 'feat/**'
-  pull_request:
+  workflow_dispatch:
 
 concurrency:
   group: verify-${{ github.workflow }}-${{ github.ref }}
@@ -59,14 +63,47 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Fast checks for draft PR
+        if: github.event_name == 'pull_request' && github.event.pull_request.draft == true
+        run: |
+          pnpm typecheck
+          pnpm lint
+          pnpm --filter @bidplace/config test
+          pnpm --filter @bidplace/contracts test
+          pnpm --filter @bidplace/api-client test
+
+      - name: Work editor regression tests for draft PR
+        if: github.event_name == 'pull_request' && github.event.pull_request.draft == true
+        run: |
+          pnpm --filter @bidplace/mobile exec vitest run \
+            src/features/sellers/product-catalog-term-sheet.spec.ts \
+            src/features/sellers/product-draft-form.spec.ts \
+            src/features/sellers/product-draft-fields.spec.ts \
+            src/features/sellers/product-draft-save-race.spec.ts \
+            src/features/sellers/product-draft-submit-lifecycle.spec.ts \
+            src/features/sellers/product-draft-route-guard.spec.ts
+          pnpm --filter @bidplace/mobile exec vitest run src/features/admin/AdminWorkCatalogProposals.spec.ts
+
+      - name: Build workspace only (no tests)
+        if: github.event_name == 'push' && contains(github.event.head_commit.message, '[build-only]')
+        run: pnpm build
+
       - name: Verify workspace
+        if: (github.event_name != 'pull_request' || github.event.pull_request.draft == false) && !contains(github.event.head_commit.message, '[build-only]')
         run: pnpm verify
 
       - name: Verify Cloudflare routing and configuration
+        if: (github.event_name != 'pull_request' || github.event.pull_request.draft == false) && !contains(github.event.head_commit.message, '[build-only]')
         run: pnpm cloudflare:check
 
       - name: Build production static assets
+        if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+        # Official Cloudflare Turnstile public test site key, verification build only.
+        # Release/deploy workflows must use the real site key for their target.
+        env:
+          TURNSTILE_SITE_KEY: 1x00000000000000000000AA
         run: pnpm build:web
 
       - name: Verify production-like amd64 container
+        if: (github.event_name != 'pull_request' || github.event.pull_request.draft == false) && !contains(github.event.head_commit.message, '[build-only]')
         run: pnpm cloudflare:image:verify

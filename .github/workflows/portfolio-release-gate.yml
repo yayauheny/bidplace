@@ -93,3 +93,4 @@ jobs:
             apps/mobile/playwright-report
             apps/mobile/test-results
           if-no-files-found: ignore
+          retention-days: 7

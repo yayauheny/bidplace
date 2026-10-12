@@ -1,6 +1,10 @@
+import { randomUUID } from 'node:crypto';
+
+import { PrismaClient } from '../../../packages/database/dist/index.js';
 import { expect, test, type Page } from '@playwright/test';
 
 import { createSellerFixture } from './support/e2e-fixtures';
+import { e2eDatabaseURL } from './support/e2e-env';
 import { authenticatedPage } from './support/auth-session';
 import { fillControl } from './support/fill-control';
 import { productWizardStepOneIncompleteMessage } from '../src/features/sellers/product-draft-wizard';
@@ -49,6 +53,66 @@ async function createEditableProduct(page: Page, title: string) {
   await expect(page.getByLabel('Название')).toHaveValue(title);
   return product;
 }
+
+test.describe('Work catalog browser round-trip', () => {
+  test('saves selected materials and an author proposal, then restores them after reload', async ({
+    browser,
+  }) => {
+    test.setTimeout(120_000);
+    const { seller } = await createSellerFixture();
+    const prisma = new PrismaClient({
+      datasources: { db: { url: e2eDatabaseURL } },
+    });
+    const materialName = `Холст E2E ${randomUUID().slice(0, 8)}`;
+    try {
+      await prisma.catalogTerm.create({
+        data: {
+          role: 'MATERIAL',
+          slug: `e2e-canvas-${randomUUID().slice(0, 8)}`,
+          name: materialName,
+          normalizedName: materialName.toLocaleLowerCase('ru'),
+        },
+      });
+    } finally {
+      await prisma.$disconnect();
+    }
+    const { context, page } = await authenticatedPage(browser, seller);
+    try {
+      await page.goto('/products/new');
+      await page.getByRole('button', { name: 'E2E art' }).click();
+      await fillControl(page.getByRole('textbox', { name: /Название/ }), `Work catalog ${Date.now()}`);
+
+      await page.getByRole('button', { name: 'Материалы' }).click();
+      await expect(page.getByRole('dialog', { name: 'Материалы' })).toBeVisible();
+      await page.getByRole('button', { name: materialName, exact: true }).click();
+      await fillControl(
+        page.getByRole('textbox', { name: 'Поиск или новое значение' }),
+        'Авторский материал E2E',
+      );
+      await page.getByRole('button', { name: 'Предложить «Авторский материал E2E»' }).click();
+      await page.getByRole('button', { name: 'Применить' }).click();
+
+      const save = page.waitForResponse(
+        (response) =>
+          response.url().endsWith('/api/products') &&
+          response.request().method() === 'POST',
+      );
+      await page.getByRole('button', { name: 'Сохранить и продолжить' }).click();
+      const response = await save;
+      expect(response.ok()).toBeTruthy();
+      const { product } = await response.json();
+
+      await page.goto(`/products/${product.id}?flow=creation&step=1`);
+      await expect(page.getByRole('button', { name: 'Материалы' })).toContainText(materialName);
+      await expect(page.getByRole('button', { name: 'Материалы' })).toContainText('Авторский материал E2E');
+      await page.getByRole('button', { name: 'Материалы' }).click();
+      await expect(page.getByRole('button', { name: `Удалить ${materialName}` })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Удалить Авторский материал E2E' })).toBeVisible();
+    } finally {
+      await context.close();
+    }
+  });
+});
 
 test.describe('product creation wizard navigation', () => {
   test('keeps later steps open after returning to step 1', async ({

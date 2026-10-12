@@ -1,5 +1,5 @@
 import { createContext, useContext, type ReactNode, type RefObject } from 'react';
-import { useController, useFormContext, type FieldPath } from 'react-hook-form';
+import { useController, useFormContext, type FieldPathByValue } from 'react-hook-form';
 
 import { TextField } from '../../components/ui';
 import type { ProductDraftFormValues } from './product-draft-form';
@@ -38,7 +38,7 @@ export function ProductDraftTextField({
   keyboardType,
   error,
 }: {
-  name: FieldPath<ProductDraftFormValues>;
+  name: FieldPathByValue<ProductDraftFormValues, string>;
   label: string;
   placeholder?: string;
   editable: boolean;
