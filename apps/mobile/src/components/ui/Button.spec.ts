@@ -64,8 +64,7 @@ function attachFractionalLayout(
   if (visible) {
     const rect = layoutRect(SAMPLE_SHELL_WIDTH, SAMPLE_SHELL_HEIGHT);
     node.getBoundingClientRect = () => rect;
-    node.getClientRects = () =>
-      [rect] as unknown as DOMRectList;
+    node.getClientRects = () => [rect] as unknown as DOMRectList;
   } else {
     node.getClientRects = () => [] as unknown as DOMRectList;
   }
@@ -149,7 +148,9 @@ vi.mock('react-native', () => ({
   Pressable: forwardRef(function Pressable(
     props: {
       style?: unknown;
-      children?: ReactNode | ((state: { pressed: boolean; hovered: boolean }) => ReactNode);
+      children?:
+        | ReactNode
+        | ((state: { pressed: boolean; hovered: boolean }) => ReactNode);
       accessibilityLabel?: string;
       accessibilityHint?: string;
       accessibilityState?: { disabled?: boolean; busy?: boolean };
@@ -170,9 +171,12 @@ vi.mock('react-native', () => ({
     const resolve = (state: { pressed: boolean; hovered: boolean }) =>
       flattenStyle(
         typeof props.style === 'function'
-          ? (props.style as (state: { pressed: boolean; hovered: boolean }) => unknown)(
-              state,
-            )
+          ? (
+              props.style as (state: {
+                pressed: boolean;
+                hovered: boolean;
+              }) => unknown
+            )(state)
           : props.style,
       );
     const flat = resolve({ pressed: false, hovered: false });
@@ -200,7 +204,8 @@ vi.mock('react-native', () => ({
         'data-bg': String(flat.backgroundColor ?? ''),
         'data-opacity': String(flat.opacity ?? ''),
         'data-align-self': String(flat.alignSelf ?? ''),
-        'data-hit-top': props.hitSlop?.top == null ? '' : String(props.hitSlop.top),
+        'data-hit-top':
+          props.hitSlop?.top == null ? '' : String(props.hitSlop.top),
         onClick: () => {
           if (!inactive) props.onPress?.();
         },
@@ -213,13 +218,7 @@ vi.mock('react-native', () => ({
 }));
 
 vi.mock('expo-router', () => ({
-  Link: ({
-    asChild,
-    children,
-  }: {
-    asChild?: boolean;
-    children: ReactNode;
-  }) => {
+  Link: ({ asChild, children }: { asChild?: boolean; children: ReactNode }) => {
     if (!asChild || !isValidElement(children)) return children;
     const rawStyle = (children.props as { style?: unknown }).style;
     const style =
@@ -251,7 +250,8 @@ vi.mock('react-native-svg', () => ({
       },
       children,
     ),
-  Defs: ({ children }: { children?: ReactNode }) => createElement('defs', null, children),
+  Defs: ({ children }: { children?: ReactNode }) =>
+    createElement('defs', null, children),
   LinearGradient: ({
     children,
     x2,
@@ -313,12 +313,14 @@ function buttonOf(container: ParentNode) {
 function expectMatrixMetrics(button: HTMLButtonElement) {
   expect(button.dataset.padX).toBe(
     String(
-      figmaButtonTokens.metrics.paddingX + figmaButtonTokens.metrics.strokeWidth,
+      figmaButtonTokens.metrics.paddingX +
+        figmaButtonTokens.metrics.strokeWidth,
     ),
   );
   expect(button.dataset.padY).toBe(
     String(
-      figmaButtonTokens.metrics.paddingY + figmaButtonTokens.metrics.strokeWidth,
+      figmaButtonTokens.metrics.paddingY +
+        figmaButtonTokens.metrics.strokeWidth,
     ),
   );
   expect(button.dataset.radius).toBe(String(figmaButtonTokens.metrics.radius));
@@ -369,12 +371,16 @@ describe('shared text button wrappers', () => {
     const primaryButton = buttonOf(primary.container);
     expectMatrixMetrics(primaryButton);
     expect(primaryButton.dataset.bg).toBe('transparent');
-    expect(svgRects(primary.container)[0]?.fill).toBe(figmaButtonTokens.colors.solidIdle);
+    expect(svgRects(primary.container)[0]?.fill).toBe(
+      figmaButtonTokens.colors.solidIdle,
+    );
 
     const secondaryButton = buttonOf(secondary.container);
     expectMatrixMetrics(secondaryButton);
     expect(secondaryButton.dataset.bg).toBe('transparent');
-    expect(svgRects(secondary.container)[0]?.fill).toBe(figmaButtonTokens.colors.canvas);
+    expect(svgRects(secondary.container)[0]?.fill).toBe(
+      figmaButtonTokens.colors.canvas,
+    );
 
     const destructiveButton = buttonOf(destructive.container);
     expectMatrixMetrics(destructiveButton);
@@ -413,18 +419,26 @@ describe('shared text button wrappers', () => {
     expect(authButton.querySelector('span')?.dataset.fontSize).toBe(
       String(figmaButtonTokens.typography.fontSize),
     );
-    expect(svgRects(auth.container)[0]?.fill).toBe(figmaButtonTokens.colors.solidIdle);
+    expect(svgRects(auth.container)[0]?.fill).toBe(
+      figmaButtonTokens.colors.solidIdle,
+    );
     const chipButton = buttonOf(chip.container);
     expect(chipButton.dataset.padX).toBe(
-      String(designTokens.auth.suggestionX + figmaButtonTokens.metrics.strokeWidth),
+      String(
+        designTokens.auth.suggestionX + figmaButtonTokens.metrics.strokeWidth,
+      ),
     );
     expect(chipButton.dataset.padY).toBe(
-      String(designTokens.auth.suggestionY + figmaButtonTokens.metrics.strokeWidth),
+      String(
+        designTokens.auth.suggestionY + figmaButtonTokens.metrics.strokeWidth,
+      ),
     );
     expect(chipButton.querySelector('span')?.dataset.fontSize).toBe(
       String(designTokens.typography.authSuggestion.fontSize),
     );
-    expect(svgRects(chip.container)[0]?.fill).toBe(figmaButtonTokens.colors.canvas);
+    expect(svgRects(chip.container)[0]?.fill).toBe(
+      figmaButtonTokens.colors.canvas,
+    );
     auth.unmount();
     chip.unmount();
   });

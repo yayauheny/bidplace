@@ -117,7 +117,12 @@ export function ExitConfirmDialog({
               keyboardShouldPersistTaps="handled"
               nestedScrollEnabled
               showsVerticalScrollIndicator
-              style={{ flexShrink: 1, minHeight: 0, minWidth: 0, width: '100%' }}
+              style={{
+                flexShrink: 1,
+                minHeight: 0,
+                minWidth: 0,
+                width: '100%',
+              }}
               contentContainerStyle={{
                 paddingTop: designTokens.auth.exitPaddingTop,
                 paddingHorizontal: designTokens.auth.exitPaddingX,

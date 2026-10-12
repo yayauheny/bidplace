@@ -1,5 +1,18 @@
-import { forwardRef, useId, useState, type ComponentRef, type ReactNode, type Ref } from 'react';
-import { Platform, Text, TextInput, View, type TextInputProps } from 'react-native';
+import {
+  forwardRef,
+  useId,
+  useState,
+  type ComponentRef,
+  type ReactNode,
+  type Ref,
+} from 'react';
+import {
+  Platform,
+  Text,
+  TextInput,
+  View,
+  type TextInputProps,
+} from 'react-native';
 
 import { figmaTokens } from '@bidplace/design-tokens';
 
@@ -38,166 +51,179 @@ function FieldInput(props: FieldInputProps) {
   return <TextInput {...(props as TextInputProps)} />;
 }
 
-export const FigmaTextField = forwardRef<TextInput, FigmaTextFieldProps>(function FigmaTextField({
-  label,
-  error,
-  success = false,
-  disabled = false,
-  icon,
-  iconColor = figmaTokens.color.fieldValue,
-  prefix,
-  metrics = 'default',
-  variant = 'default',
-  trailing,
-  value,
-  defaultValue,
-  placeholder,
-  multiline = false,
-  onChangeText,
-  onFocus,
-  onBlur,
-  style: inputStyle,
-  ...props
-}, ref) {
-  const errorId = useId();
-  const [focused, setFocused] = useState(false);
-  const [hovered, setHovered] = useState(false);
-  const [uncontrolledFilled, setUncontrolledFilled] = useState(
-    String(defaultValue ?? '').length > 0,
-  );
-  const filled =
-    value === undefined ? uncontrolledFilled : String(value).length > 0;
-  const status = figmaFieldStatus({
-    disabled,
-    error: Boolean(error),
-    success: success && !error,
-    focused,
-    hovered,
-    filled: filled || focused,
-  });
-  const showLabel = figmaFieldShowsFloatingLabel(status);
-  const valueColor = figmaFieldValueColor(status);
+export const FigmaTextField = forwardRef<TextInput, FigmaTextFieldProps>(
+  function FigmaTextField(
+    {
+      label,
+      error,
+      success = false,
+      disabled = false,
+      icon,
+      iconColor = figmaTokens.color.fieldValue,
+      prefix,
+      metrics = 'default',
+      variant = 'default',
+      trailing,
+      value,
+      defaultValue,
+      placeholder,
+      multiline = false,
+      onChangeText,
+      onFocus,
+      onBlur,
+      style: inputStyle,
+      ...props
+    },
+    ref,
+  ) {
+    const errorId = useId();
+    const [focused, setFocused] = useState(false);
+    const [hovered, setHovered] = useState(false);
+    const [uncontrolledFilled, setUncontrolledFilled] = useState(
+      String(defaultValue ?? '').length > 0,
+    );
+    const filled =
+      value === undefined ? uncontrolledFilled : String(value).length > 0;
+    const status = figmaFieldStatus({
+      disabled,
+      error: Boolean(error),
+      success: success && !error,
+      focused,
+      hovered,
+      filled: filled || focused,
+    });
+    const showLabel = figmaFieldShowsFloatingLabel(status);
+    const valueColor = figmaFieldValueColor(status);
 
-  const field = (
-    <View style={{ width: '100%' }}>
-      <View style={figmaFieldStyle(status, multiline, metrics, variant)}>
-        {icon ? (
-          <View style={{ padding: figmaTokens.space.iconPad }}>
-            <FigmaIcon
-              name={icon}
-              color={iconColor}
-              strokeWidthPx={
-                variant === 'authorApplication'
-                  ? figmaTokens.stroke.authorApplicationFieldPx
-                  : undefined
-              }
-            />
-          </View>
-        ) : null}
-        {prefix ? (
-          <Text
-            accessibilityElementsHidden
-            importantForAccessibility="no"
-            style={{ color: figmaTokens.color.fieldValue, ...figmaTokens.typography.field }}
-          >
-            {prefix}
-          </Text>
-        ) : null}
-        <FieldInput
-          {...props}
-          ref={ref}
-          value={value}
-          defaultValue={defaultValue}
-          editable={!disabled}
-          accessibilityLabel={label}
-          accessibilityHint={error ? `Ошибка: ${error}` : props.accessibilityHint}
-          accessibilityState={{ disabled }}
-          aria-invalid={error ? true : undefined}
-          aria-describedby={error ? errorId : undefined}
-          placeholder={showLabel ? undefined : (placeholder ?? label)}
-          placeholderTextColor={figmaFieldPlaceholderColor(status, variant)}
-          multiline={multiline}
-          dataSet={Platform.OS === 'web' ? { figmaField: 'true' } : undefined}
-          onChangeText={(nextValue) => {
-            if (value === undefined) {
-              setUncontrolledFilled(nextValue.length > 0);
-            }
-            onChangeText?.(nextValue);
-          }}
-          onFocus={(event) => {
-            setFocused(true);
-            onFocus?.(event);
-          }}
-          onBlur={(event) => {
-            setFocused(false);
-            onBlur?.(event);
-          }}
-          style={[
-            {
-              flex: 1,
-              minWidth: 0,
-              color: valueColor,
-              padding: 0,
-              textAlignVertical: multiline ? 'top' : 'center',
-              ...(metrics === 'authPassword' || metrics === 'authScreenPassword'
-                ? figmaTokens.typography.authPassword
-                : figmaTokens.typography.field),
-              ...(Platform.OS === 'web' ? (figmaFieldNativeOutlineStyle as object) : null),
-            },
-            inputStyle,
-          ]}
-        />
-        {trailing}
-        {showLabel ? (
-          <View
-            pointerEvents="none"
-            style={{
-              position: 'absolute',
-              left: figmaTokens.space.fieldLabelX,
-              top: figmaTokens.space.fieldLabelY,
-              paddingHorizontal: 4,
-              backgroundColor: figmaTokens.color.canvas,
-            }}
-          >
+    const field = (
+      <View style={{ width: '100%' }}>
+        <View style={figmaFieldStyle(status, multiline, metrics, variant)}>
+          {icon ? (
+            <View style={{ padding: figmaTokens.space.iconPad }}>
+              <FigmaIcon
+                name={icon}
+                color={iconColor}
+                strokeWidthPx={
+                  variant === 'authorApplication'
+                    ? figmaTokens.stroke.authorApplicationFieldPx
+                    : undefined
+                }
+              />
+            </View>
+          ) : null}
+          {prefix ? (
             <Text
+              accessibilityElementsHidden
+              importantForAccessibility="no"
               style={{
-                color: figmaTokens.color.fieldLabel,
-                ...figmaTokens.typography.fieldLabel,
+                color: figmaTokens.color.fieldValue,
+                ...figmaTokens.typography.field,
               }}
             >
-              {label}
+              {prefix}
             </Text>
-          </View>
+          ) : null}
+          <FieldInput
+            {...props}
+            ref={ref}
+            value={value}
+            defaultValue={defaultValue}
+            editable={!disabled}
+            accessibilityLabel={label}
+            accessibilityHint={
+              error ? `Ошибка: ${error}` : props.accessibilityHint
+            }
+            accessibilityState={{ disabled }}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error ? errorId : undefined}
+            placeholder={showLabel ? undefined : (placeholder ?? label)}
+            placeholderTextColor={figmaFieldPlaceholderColor(status, variant)}
+            multiline={multiline}
+            dataSet={Platform.OS === 'web' ? { figmaField: 'true' } : undefined}
+            onChangeText={(nextValue) => {
+              if (value === undefined) {
+                setUncontrolledFilled(nextValue.length > 0);
+              }
+              onChangeText?.(nextValue);
+            }}
+            onFocus={(event) => {
+              setFocused(true);
+              onFocus?.(event);
+            }}
+            onBlur={(event) => {
+              setFocused(false);
+              onBlur?.(event);
+            }}
+            style={[
+              {
+                flex: 1,
+                minWidth: 0,
+                color: valueColor,
+                padding: 0,
+                textAlignVertical: multiline ? 'top' : 'center',
+                ...(metrics === 'authPassword' ||
+                metrics === 'authScreenPassword'
+                  ? figmaTokens.typography.authPassword
+                  : figmaTokens.typography.field),
+                ...(Platform.OS === 'web'
+                  ? (figmaFieldNativeOutlineStyle as object)
+                  : null),
+              },
+              inputStyle,
+            ]}
+          />
+          {trailing}
+          {showLabel ? (
+            <View
+              pointerEvents="none"
+              style={{
+                position: 'absolute',
+                left: figmaTokens.space.fieldLabelX,
+                top: figmaTokens.space.fieldLabelY,
+                paddingHorizontal: 4,
+                backgroundColor: figmaTokens.color.canvas,
+              }}
+            >
+              <Text
+                style={{
+                  color: figmaTokens.color.fieldLabel,
+                  ...figmaTokens.typography.fieldLabel,
+                }}
+              >
+                {label}
+              </Text>
+            </View>
+          ) : null}
+        </View>
+        {error ? (
+          <Text
+            nativeID={errorId}
+            accessibilityLiveRegion="polite"
+            style={{
+              marginTop: figmaTokens.space.fieldErrorGap,
+              marginLeft: figmaTokens.space.fieldErrorX,
+              marginRight: figmaTokens.space.fieldX,
+              color: figmaTokens.color.error,
+              ...figmaTokens.typography.fieldError,
+            }}
+          >
+            {error}
+          </Text>
         ) : null}
       </View>
-      {error ? (
-        <Text
-          nativeID={errorId}
-          accessibilityLiveRegion="polite"
-          style={{
-            marginTop: figmaTokens.space.fieldErrorGap,
-            marginLeft: figmaTokens.space.fieldErrorX,
-            marginRight: figmaTokens.space.fieldX,
-            color: figmaTokens.color.error,
-            ...figmaTokens.typography.fieldError,
-          }}
-        >
-          {error}
-        </Text>
-      ) : null}
-    </View>
-  );
+    );
 
-  if (Platform.OS !== 'web') {
-    return field;
-  }
+    if (Platform.OS !== 'web') {
+      return field;
+    }
 
-  return (
-    <View
-      onPointerEnter={() => setHovered(true)}
-      onPointerLeave={() => setHovered(false)}
-    >
-      {field}
-    </View>
-  );
-});
+    return (
+      <View
+        onPointerEnter={() => setHovered(true)}
+        onPointerLeave={() => setHovered(false)}
+      >
+        {field}
+      </View>
+    );
+  },
+);

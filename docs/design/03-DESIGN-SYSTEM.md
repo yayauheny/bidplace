@@ -48,12 +48,12 @@ field column on login, registration, `/verify-email` send, and forgot-password.
 
 Semantic states (copy from `apps/mobile/src/errors/copy.ts` unless noted):
 
-| Phase | User-visible behavior |
-| --- | --- |
-| `loading` | «Загрузка проверки безопасности…» (widget-local line) |
-| `ready` | Cloudflare widget mounted when site key and script load |
-| `unavailable` | Shared `AUTH_TURNSTILE_UNAVAILABLE_COPY`; primary submit disabled |
-| Server `TURNSTILE_REQUIRED` / `TURNSTILE_FAILED` | Inline reason on the owning form; user retries proof |
+| Phase                                            | User-visible behavior                                             |
+| ------------------------------------------------ | ----------------------------------------------------------------- |
+| `loading`                                        | «Загрузка проверки безопасности…» (widget-local line)             |
+| `ready`                                          | Cloudflare widget mounted when site key and script load           |
+| `unavailable`                                    | Shared `AUTH_TURNSTILE_UNAVAILABLE_COPY`; primary submit disabled |
+| Server `TURNSTILE_REQUIRED` / `TURNSTILE_FAILED` | Inline reason on the owning form; user retries proof              |
 
 Missing `EXPO_PUBLIC_TURNSTILE_SITE_KEY` or script timeout fails closed into
 `unavailable` — not a native Turnstile implementation claim. Figma geometries
@@ -125,10 +125,10 @@ values.
 | Catalog controls             | height 36, radius 18, horizontal padding 13, `Onest` 14/500                           |
 | Auction card example         | 322×456, media 322×322, radius 12, info surface `#F7F7F5`                             |
 | Platform content container   | starts at x=104 at 1440 desktop, width 1232; aligned to the left edge of `Аукционы`   |
-| Responsive gutters           | tablet 48 px; mobile 16 px                                                         |
-| Platform column gap          | 40 px for public content-page compositions                                         |
-| Wizard workspace             | centered 1088 px: 600 px primary + 48 px gap + 440 px preview; top offset 56 px    |
-| Tablet wizard workspace      | centered 928 px: 500 px primary + 32 px gap + 396 px preview                       |
+| Responsive gutters           | tablet 48 px; mobile 16 px                                                            |
+| Platform column gap          | 40 px for public content-page compositions                                            |
+| Wizard workspace             | centered 1088 px: 600 px primary + 48 px gap + 440 px preview; top offset 56 px       |
+| Tablet wizard workspace      | centered 928 px: 500 px primary + 32 px gap + 396 px preview                          |
 | Card title                   | `Onest` 16/700, line-height 20                                                        |
 | Card creator/metadata        | 14/500; metric label 12/500; metric value 16/700                                      |
 | Creator profile card example | 340×526, media 340×380                                                                |
@@ -483,14 +483,14 @@ seeded `shortDescription` (logical break kept). First-fold visual is one
 muted caption line with renderer tail truncation; the author row hugs
 `439:4411` instead of a 68px lock.
 
-| Role | Node | Token |
-| --- | --- | --- |
-| «Открытие недели» | `439:4408` | `typography.sectionTitle` 24/29/600/−0.72, `color.ink` |
-| Handle `@slug` | `439:4414` | `typography.authorRowHandle` 22/25/500/−1%, `color.ink` |
-| Bio | `439:4415` | `typography.authorRowBio` 14/17/400, `color.textSubtle` `#6F6F6F` |
-| «Выбор куратора» | `439:4417` | `typography.editorialTitle` 20/24/500/−2%, `color.ink` |
-| Curator note | `439:4418` | `typography.editorial` 16/22/400/−1%, `color.textSubdued` |
-| Profile pill | `439:4419`/`439:4420` | `FigmaButton` `muted`: shared text-button matrix (pad 8/16, radius 80, label Inter 600 14/26/−0.28) |
+| Role              | Node                  | Token                                                                                               |
+| ----------------- | --------------------- | --------------------------------------------------------------------------------------------------- |
+| «Открытие недели» | `439:4408`            | `typography.sectionTitle` 24/29/600/−0.72, `color.ink`                                              |
+| Handle `@slug`    | `439:4414`            | `typography.authorRowHandle` 22/25/500/−1%, `color.ink`                                             |
+| Bio               | `439:4415`            | `typography.authorRowBio` 14/17/400, `color.textSubtle` `#6F6F6F`                                   |
+| «Выбор куратора»  | `439:4417`            | `typography.editorialTitle` 20/24/500/−2%, `color.ink`                                              |
+| Curator note      | `439:4418`            | `typography.editorial` 16/22/400/−1%, `color.textSubdued`                                           |
+| Profile pill      | `439:4419`/`439:4420` | `FigmaButton` `muted`: shared text-button matrix (pad 8/16, radius 80, label Inter 600 14/26/−0.28) |
 
 Do not reuse `authorHandle`, `authorName`, `body`/`bodySmall`, `cardTitle`,
 `muted`, or global `outline` for these roles.
@@ -522,24 +522,24 @@ captured 2026-10-10). One `FigmaButton` renderer and four variants:
 disabled. State priority: disabled → pressed → hover → idle. Disabled applies
 `opacity` 0.5 once on the control shell.
 
-| Token | Value |
-| --- | --- |
-| Label | Inter 600 14/26, letterSpacing −0.28 |
-| Padding | 8 vertical / 16 horizontal |
-| Radius | 80 (disabled solid: 40, node `292:5054`) |
-| Paint | `FigmaButtonSurface` draws base fill, hover/pressed overlay, and stroke as stacked `Rect`s in one `Svg` (no CSS shell fill or clip). The interactive shell stays `backgroundColor: transparent`. Solid stroke is `#2A2A2A → #585858` and outline is `#D1D1D1 → #EBEBEB`, `userSpaceOnUse` from the 83×43 sample axis. Ghost stroke is white, muted is `#F3F3F3`, pressed ghost (`292:5046`) paints 82×42 at the origin with no stroke inside the hug frame. Stroke sits above the overlay. Capsule `rx`/`ry`: `min(radius, (width − stroke) / 2, (height − stroke) / 2)` |
-| Web size | RN Web `onLayout` rounds; `useCssBorderBox` (`use-css-border-box.ts`) reads fractional border-box width/height from `getComputedStyle` so the `Svg` viewport matches the shell for text buttons and search chrome (sample «Кнопка» ≈ 82.71875×43, not 83×43). |
-| QA stand | `/dev/figma-buttons` renders a static 4×4 board (`FigmaButtonStatePreview`, handoff `714×283`) plus live controls below; previews use the same `figmaButtonStyle` shell and `FigmaButtonVisualContent` as production `FigmaButton` |
-| Sample «Кнопка» | Source 83×43 hug; web width follows fractional glyph metrics. Other labels hug content |
-| Touch | ≥44 px via shared `hitSlop` |
-| Sizes | `matrix` (default, 43: pad 8/16, Inter 600 14/26), `auth` (51: pad 12/16, same 14/26 label; `actionHeight` and `resendHeight`), `suggestion` (37: pad 8/13, `authSuggestion` 15/20). Height is `(paddingY + 0.5 stroke) × 2 + lineHeight`. Same four variants and renderer; size only changes padding and label metrics |
+| Token           | Value                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Label           | Inter 600 14/26, letterSpacing −0.28                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| Padding         | 8 vertical / 16 horizontal                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| Radius          | 80 (disabled solid: 40, node `292:5054`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| Paint           | `FigmaButtonSurface` draws base fill, hover/pressed overlay, and stroke as stacked `Rect`s in one `Svg` (no CSS shell fill or clip). The interactive shell stays `backgroundColor: transparent`. Solid stroke is `#2A2A2A → #585858` and outline is `#D1D1D1 → #EBEBEB`, `userSpaceOnUse` from the 83×43 sample axis. Ghost stroke is white, muted is `#F3F3F3`, pressed ghost (`292:5046`) paints 82×42 at the origin with no stroke inside the hug frame. Stroke sits above the overlay. Capsule `rx`/`ry`: `min(radius, (width − stroke) / 2, (height − stroke) / 2)` |
+| Web size        | RN Web `onLayout` rounds; `useCssBorderBox` (`use-css-border-box.ts`) reads fractional border-box width/height from `getComputedStyle` so the `Svg` viewport matches the shell for text buttons and search chrome (sample «Кнопка» ≈ 82.71875×43, not 83×43).                                                                                                                                                                                                                                                                                                            |
+| QA stand        | `/dev/figma-buttons` renders a static 4×4 board (`FigmaButtonStatePreview`, handoff `714×283`) plus live controls below; previews use the same `figmaButtonStyle` shell and `FigmaButtonVisualContent` as production `FigmaButton`                                                                                                                                                                                                                                                                                                                                       |
+| Sample «Кнопка» | Source 83×43 hug; web width follows fractional glyph metrics. Other labels hug content                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| Touch           | ≥44 px via shared `hitSlop`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| Sizes           | `matrix` (default, 43: pad 8/16, Inter 600 14/26), `auth` (51: pad 12/16, same 14/26 label; `actionHeight` and `resendHeight`), `suggestion` (37: pad 8/13, `authSuggestion` 15/20). Height is `(paddingY + 0.5 stroke) × 2 + lineHeight`. Same four variants and renderer; size only changes padding and label metrics                                                                                                                                                                                                                                                  |
 
-| Variant | Idle fill | Hover / pressed | Disabled | Label |
-| --- | --- | --- | --- | --- |
-| solid | `#121212` | white 15% overlay | `#949494` + shell opacity 0.5 | white |
-| outline | white | black 5% overlay | white + shell opacity 0.5 | `#565656` |
-| ghost | white, white stroke | black 5% overlay; pressed node `292:5046` paints 82×42 with no stroke inside the 83×43 frame | white + white stroke + shell opacity 0.5 | `#565656` |
-| muted | `#F3F3F3`, stroke `#F3F3F3` | black 6% overlay; stroke stays `#F3F3F3` | `#F3F3F3` + shell opacity 0.5 | `#565656` |
+| Variant | Idle fill                   | Hover / pressed                                                                              | Disabled                                 | Label     |
+| ------- | --------------------------- | -------------------------------------------------------------------------------------------- | ---------------------------------------- | --------- |
+| solid   | `#121212`                   | white 15% overlay                                                                            | `#949494` + shell opacity 0.5            | white     |
+| outline | white                       | black 5% overlay                                                                             | white + shell opacity 0.5                | `#565656` |
+| ghost   | white, white stroke         | black 5% overlay; pressed node `292:5046` paints 82×42 with no stroke inside the 83×43 frame | white + white stroke + shell opacity 0.5 | `#565656` |
+| muted   | `#F3F3F3`, stroke `#F3F3F3` | black 6% overlay; stroke stays `#F3F3F3`                                                     | `#F3F3F3` + shell opacity 0.5            | `#565656` |
 
 Auth fullscreen actions and nickname suggestions use this matrix with size
 `auth` or `suggestion` (see Sizes row). Home «Смотреть все», admin links, and
@@ -559,16 +559,16 @@ inside border `size.fieldBorder` 0.5, padding 12×13, gap 4. Input is
 `color.ink` stays `#2A2A2A` and is the filled border. The stadium search
 control keeps its own 52 px height and 16/19 type.
 
-| State | Node | Border | Fill |
-| --- | --- | --- | --- |
-| empty | `292:5043` | `#8A8A8A` | `#FFFFFF` |
-| hoverEmpty | `292:5041` | `fieldHoverBorder` `#535353` | `fieldHoverFill` `#FCFCFC` |
-| filled | `292:5038` | `ink` `#2A2A2A` | `#FFFFFF` |
-| hoverFilled | `292:5039` | `solidHover` `#000000` | `#FCFCFC` |
-| focus | `292:5037` | `focus` `#004DFF` | `#FFFFFF` |
-| error | `292:5040` | `error` `#FF0000` | `#FFFFFF` |
-| success | `292:5036` | `success` `#039600` | `#FFFFFF` |
-| disabled | `292:5042` | `#8A8A8A` | `mutedFill` `#F3F3F3` |
+| State       | Node       | Border                       | Fill                       |
+| ----------- | ---------- | ---------------------------- | -------------------------- |
+| empty       | `292:5043` | `#8A8A8A`                    | `#FFFFFF`                  |
+| hoverEmpty  | `292:5041` | `fieldHoverBorder` `#535353` | `fieldHoverFill` `#FCFCFC` |
+| filled      | `292:5038` | `ink` `#2A2A2A`              | `#FFFFFF`                  |
+| hoverFilled | `292:5039` | `solidHover` `#000000`       | `#FCFCFC`                  |
+| focus       | `292:5037` | `focus` `#004DFF`            | `#FFFFFF`                  |
+| error       | `292:5040` | `error` `#FF0000`            | `#FFFFFF`                  |
+| success     | `292:5036` | `success` `#039600`          | `#FFFFFF`                  |
+| disabled    | `292:5042` | `#8A8A8A`                    | `mutedFill` `#F3F3F3`      |
 
 The floating label is `typography.fieldLabel` Inter 400 12, `color.fieldLabel`
 `#999999`. Its wrapper is `fieldLabelX` 15 and `fieldLabelY` −8, with 4 px

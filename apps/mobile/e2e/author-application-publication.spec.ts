@@ -24,7 +24,9 @@ async function completeBasics(page: Page, city: string): Promise<string> {
   const chooserPromise = page.waitForEvent('filechooser');
   await page.getByRole('button', { name: 'Загрузить фото' }).click();
   await (await chooserPromise).setFiles('e2e/fixtures/profile-photo.png');
-  await page.getByRole('textbox', { name: 'Имя или название', exact: true }).fill('Автор с городом');
+  await page
+    .getByRole('textbox', { name: 'Имя или название', exact: true })
+    .fill('Автор с городом');
   const slug = await readAccountNickname(page);
   await selectCountry(page, 'Беларусь');
   await page.getByRole('textbox', { name: 'Город', exact: true }).fill(city);
@@ -47,7 +49,9 @@ test('author application without city continues and stores the city as null', as
     const chooserPromise = page.waitForEvent('filechooser');
     await page.getByRole('button', { name: 'Загрузить фото' }).click();
     await (await chooserPromise).setFiles('e2e/fixtures/profile-photo.png');
-    await page.getByRole('textbox', { name: 'Имя или название', exact: true }).fill('Без города');
+    await page
+      .getByRole('textbox', { name: 'Имя или название', exact: true })
+      .fill('Без города');
     await readAccountNickname(page);
     await selectCountry(page, 'Беларусь');
     await page.getByRole('button', { name: 'Продолжить' }).click();
@@ -82,7 +86,9 @@ for (const city of ['Минск', '']) {
       await expect(
         page.getByRole('progressbar', { name: 'Шаг 2 из 4' }),
       ).toBeVisible();
-      await page.getByRole('textbox', { name: 'Telegram', exact: true }).fill('@city_author');
+      await page
+        .getByRole('textbox', { name: 'Telegram', exact: true })
+        .fill('@city_author');
       await page.getByRole('button', { name: 'Закрыть' }).click();
       await page.getByRole('button', { name: 'Прервать' }).click();
       await expect(page).toHaveURL(/\/$/);
@@ -90,9 +96,9 @@ for (const city of ['Минск', '']) {
       await expect(
         page.getByRole('progressbar', { name: 'Шаг 2 из 4' }),
       ).toBeVisible();
-      await expect(page.getByRole('textbox', { name: 'Telegram', exact: true })).toHaveValue(
-        'https://t.me/city_author',
-      );
+      await expect(
+        page.getByRole('textbox', { name: 'Telegram', exact: true }),
+      ).toHaveValue('https://t.me/city_author');
       await page.getByRole('button', { name: 'Продолжить' }).click();
       await expect(page).toHaveURL(/\/profile\?step=3/);
       await page
@@ -224,28 +230,25 @@ test('author onboarding matches source geometry and preserves entered data throu
     ).toHaveCount(0);
     const start = intro.getByRole('button', { name: 'Начать', exact: true });
     await expect(start).toBeInViewport();
-    await page.waitForFunction(
-      (name) => {
-        const dialog = document.querySelector('[role="dialog"]');
-        if (!dialog) return false;
-        const buttons = Array.from(
-          dialog.querySelectorAll<HTMLElement>('button, [role="button"]'),
-        );
-        const startButton = buttons.find(
-          (node) => node.textContent?.trim() === name,
-        );
-        if (!startButton) return false;
-        const rect = startButton.getBoundingClientRect();
-        const viewport = window.innerHeight;
-        return (
-          rect.height > 0 &&
-          rect.top >= 0 &&
-          rect.bottom <= viewport &&
-          rect.bottom > rect.top
-        );
-      },
-      'Начать',
-    );
+    await page.waitForFunction((name) => {
+      const dialog = document.querySelector('[role="dialog"]');
+      if (!dialog) return false;
+      const buttons = Array.from(
+        dialog.querySelectorAll<HTMLElement>('button, [role="button"]'),
+      );
+      const startButton = buttons.find(
+        (node) => node.textContent?.trim() === name,
+      );
+      if (!startButton) return false;
+      const rect = startButton.getBoundingClientRect();
+      const viewport = window.innerHeight;
+      return (
+        rect.height > 0 &&
+        rect.top >= 0 &&
+        rect.bottom <= viewport &&
+        rect.bottom > rect.top
+      );
+    }, 'Начать');
     await captureIdle('intro-390');
     await intro.getByRole('button', { name: 'Начать', exact: true }).click();
     await expect(intro).toHaveCount(0);
@@ -262,7 +265,9 @@ test('author onboarding matches source geometry and preserves entered data throu
     await page.getByRole('radio', { name: 'Беларусь', exact: true }).click();
     await expect(country).toBeFocused();
     await page.keyboard.press('Tab');
-    await expect(page.getByRole('textbox', { name: 'Город', exact: true })).toBeFocused();
+    await expect(
+      page.getByRole('textbox', { name: 'Город', exact: true }),
+    ).toBeFocused();
     await fieldHeight('Имя или название');
     const icon = page.locator('svg[width="65.23"]');
     await expect(icon).toHaveCount(1);
@@ -282,9 +287,13 @@ test('author onboarding matches source geometry and preserves entered data throu
     await expectAuthorFieldIconPhysicalStroke('Instagram');
     await fieldHeight('Instagram');
     await fieldHeight('Telegram');
-    await expect(page.getByRole('textbox', { name: 'Почта', exact: true })).toHaveValue('');
+    await expect(
+      page.getByRole('textbox', { name: 'Почта', exact: true }),
+    ).toHaveValue('');
     await responsive('contacts');
-    await page.getByRole('textbox', { name: 'Telegram', exact: true }).fill('@visual_author');
+    await page
+      .getByRole('textbox', { name: 'Telegram', exact: true })
+      .fill('@visual_author');
     await page.getByRole('button', { name: 'Назад', exact: true }).click();
     await expect(page).toHaveURL(/step=1/);
     await page.getByRole('button', { name: 'Продолжить', exact: true }).click();
@@ -292,9 +301,9 @@ test('author onboarding matches source geometry and preserves entered data throu
     await expect(
       page.getByRole('progressbar', { name: 'Шаг 2 из 4' }),
     ).toBeVisible();
-    await expect(page.getByRole('textbox', { name: 'Telegram', exact: true })).toHaveValue(
-      'https://t.me/visual_author',
-    );
+    await expect(
+      page.getByRole('textbox', { name: 'Telegram', exact: true }),
+    ).toHaveValue('https://t.me/visual_author');
     await expect(
       page.getByRole('button', { name: 'Продолжить', exact: true }),
     ).toBeEnabled();
@@ -326,18 +335,23 @@ test('author onboarding matches source geometry and preserves entered data throu
     await expect(
       page.getByRole('checkbox', { name: 'Керамика', exact: true }),
     ).toBeVisible();
-    const ceramic = page.getByRole('checkbox', { name: 'Керамика', exact: true });
+    const ceramic = page.getByRole('checkbox', {
+      name: 'Керамика',
+      exact: true,
+    });
     await ceramic.focus();
     await page.keyboard.press('Space');
     await expect(ceramic).toBeChecked();
     expect(
-      await ceramic.locator('svg path').evaluateAll((paths) =>
-        paths.every(
-          (path) =>
-            getComputedStyle(path).strokeLinecap === 'round' &&
-            getComputedStyle(path).strokeLinejoin === 'round',
+      await ceramic
+        .locator('svg path')
+        .evaluateAll((paths) =>
+          paths.every(
+            (path) =>
+              getComputedStyle(path).strokeLinecap === 'round' &&
+              getComputedStyle(path).strokeLinejoin === 'round',
+          ),
         ),
-      ),
     ).toBe(true);
     const apply = page.getByRole('button', { name: 'Применить', exact: true });
     expect((await apply.boundingBox())?.height).toBeCloseTo(51, 1);
@@ -371,7 +385,9 @@ test('author onboarding matches source geometry and preserves entered data throu
       page.getByRole('button', { name: /Добавить фото/ }),
     ).toHaveCount(0);
     await responsive('achievements');
-    await page.getByRole('textbox', { name: 'Дата достижения', exact: true }).fill('03.2025');
+    await page
+      .getByRole('textbox', { name: 'Дата достижения', exact: true })
+      .fill('03.2025');
     await page
       .getByRole('textbox', { name: 'Описание достижения', exact: true })
       .fill('Выставка');

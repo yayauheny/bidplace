@@ -244,7 +244,13 @@ export function AppDialog({
           </AppText>
         </Dialog.Description>
       ) : null}
-      <View style={{ gap: designTokens.space.x3, minWidth: 0, alignSelf: 'stretch' }}>
+      <View
+        style={{
+          gap: designTokens.space.x3,
+          minWidth: 0,
+          alignSelf: 'stretch',
+        }}
+      >
         {children}
       </View>
     </>

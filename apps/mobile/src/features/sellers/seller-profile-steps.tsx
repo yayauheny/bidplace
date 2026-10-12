@@ -15,11 +15,7 @@ import { designTokens } from '@bidplace/design-tokens';
 
 import { type FigmaIconName } from '../../components/figma/figma-icon-names';
 import { type FigmaFieldVariant } from '../../components/figma/figma-text-field-style';
-import {
-  AppText,
-  FormSection,
-  TextField,
-} from '../../components/ui';
+import { AppText, FormSection, TextField } from '../../components/ui';
 import { FigmaSelectField } from '../../components/figma/FigmaSelectField';
 import { FigmaButton } from '../../components/figma/FigmaButton';
 import { FigmaChoiceChip } from '../../components/figma/FigmaChoiceChip';

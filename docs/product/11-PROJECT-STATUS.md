@@ -26,7 +26,9 @@
   DB; author publication + geometry **8/8** (both browsers); source-geometry sub-checks
   **2/2**; matrix **10/10**; auth filled-login-dismiss **2/2**. Auth history **2/2** did
   **not** reach the shared dialog (blocked on Home «Все работы» catalog fixture) — track
-  separately. Clean web export previously passed; **latest final export pending** Codex.
+  separately. Clean web export **passed** (2026-10-12, `EXPO_NO_DOTENV=1`, `apps/mobile/dist`,
+  bundle `entry-e29b977a2398a6f0f9e6bec19d658305.js`). `category-query-identity` **4/4**
+  still fails on base `d8bfba17` — not fixed or claimed caused by this branch.
 - Evidence:
   [`docs/audits/current/evidence/2026-10-12-author-onboarding/README.md`](../audits/current/evidence/2026-10-12-author-onboarding/README.md),
   `author-application-publication.spec.ts`, owner specs under `apps/mobile/src/features/sellers`

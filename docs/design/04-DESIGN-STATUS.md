@@ -20,7 +20,7 @@
 - Local verification (Codex): author publication + geometry **8/8** both browsers;
   matrix **10/10**; affected Vitest **376/376**. No pixel diff; node + rendered checks.
   Full mobile Vitest still has **30** unrelated failures; CI/native/production not run.
-  Latest clean web export **pending** final Codex run.
+  Clean web export **passed** 2026-10-12 (`EXPO_NO_DOTENV=1`, `apps/mobile/dist`).
 
 Последнее обновление: 2026-10-12
 

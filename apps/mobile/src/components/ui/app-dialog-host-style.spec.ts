@@ -12,9 +12,8 @@ let appDialogHostFlexDirection: typeof import('./app-dialog-host-style').appDial
 
 describe('app dialog host style', () => {
   beforeAll(async () => {
-    ({ appDialogHostStyle, appDialogHostFlexDirection } = await import(
-      './app-dialog-host-style'
-    ));
+    ({ appDialogHostStyle, appDialogHostFlexDirection } =
+      await import('./app-dialog-host-style'));
   });
 
   it('keeps the sheet on a column axis so flex-end docks to the bottom', () => {
@@ -57,5 +56,4 @@ describe('app dialog host style', () => {
     expect(appDialogHostFlexDirection(undefined)).toBe('column');
     expect(appDialogHostFlexDirection('column')).toBe('column');
   });
-
 });

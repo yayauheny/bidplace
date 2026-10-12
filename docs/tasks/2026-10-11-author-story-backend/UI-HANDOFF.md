@@ -106,7 +106,7 @@ Work creation-story UI and admin surfaces below remain on this handoff plan.
   стоит в текущей опубликованной ревизии одобренной работы одобренного
   активного автора. Тогда `Cache-Control` — публичный immutable. Hold без блока
   даёт 200 только владельцу editing revision и админу, с `Cache-Control:
-  private, no-store`. Гость, другой пользователь, скрытая работа и
+private, no-store`. Гость, другой пользователь, скрытая работа и
   приостановленный автор получают 404. Шестой IMAGE-блок отклоняет контракт
   (400). Один `mediaAssetId` можно поставить в несколько блоков; бюджет байтов
   считается по уникальным asset.

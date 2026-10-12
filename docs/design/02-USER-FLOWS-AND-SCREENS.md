@@ -101,18 +101,18 @@ Commerce routes/actions отсутствуют в First MVP navigation и fail-c
 
 ## 3. Screen matrix
 
-| Экран | First MVP | Убирается/откладывается |
-|---|---|---|
-| Global navigation | Home, Search, Add, Profile | Cart, likes, notification bell |
-| Home | Открытие недели (optional server selection), новые работы, авторы | Активные торги, цены, timers |
-| Works | Search, category/material filters, newest/oldest sort, pagination | Auction/announcement/archive tabs, price/status filters |
-| Authors | Search, tag/city filters, name/date sort | Rating, followers, sales and verified authenticity claims |
-| Creator | Header, chips, socials, share/QR, `Работы`, `Об авторе`, achievements | Public `Архив`, cart, like, bell, private states |
-| Work | Gallery, title, author, chips, optional story, details, related works, payment/delivery stub | Price, timer, archive badge, bid CTA/history |
-| Auth | Email/password, verify email, forgot/reset | Telegram/Google OAuth, passwordless code, buyer-only promotion |
-| Author application | Photo, name, slug, location, about, tags, optional socials/achievements | Sale language, buyer handoff contact |
-| Work creation | Photos/title, details, optional heading/paragraph/image blocks, moderation submit (`DEC-112`; planned) | Sale mode, price/currency/time, payment, delivery, buyer contact, AI, video |
-| Admin | Author and Work moderation, user ban/session revoke | Commerce Orders/recovery as active First MVP workflow |
+| Экран              | First MVP                                                                                              | Убирается/откладывается                                                     |
+| ------------------ | ------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------- |
+| Global navigation  | Home, Search, Add, Profile                                                                             | Cart, likes, notification bell                                              |
+| Home               | Открытие недели (optional server selection), новые работы, авторы                                      | Активные торги, цены, timers                                                |
+| Works              | Search, category/material filters, newest/oldest sort, pagination                                      | Auction/announcement/archive tabs, price/status filters                     |
+| Authors            | Search, tag/city filters, name/date sort                                                               | Rating, followers, sales and verified authenticity claims                   |
+| Creator            | Header, chips, socials, share/QR, `Работы`, `Об авторе`, achievements                                  | Public `Архив`, cart, like, bell, private states                            |
+| Work               | Gallery, title, author, chips, optional story, details, related works, payment/delivery stub           | Price, timer, archive badge, bid CTA/history                                |
+| Auth               | Email/password, verify email, forgot/reset                                                             | Telegram/Google OAuth, passwordless code, buyer-only promotion              |
+| Author application | Photo, name, slug, location, about, tags, optional socials/achievements                                | Sale language, buyer handoff contact                                        |
+| Work creation      | Photos/title, details, optional heading/paragraph/image blocks, moderation submit (`DEC-112`; planned) | Sale mode, price/currency/time, payment, delivery, buyer contact, AI, video |
+| Admin              | Author and Work moderation, user ban/session revoke                                                    | Commerce Orders/recovery as active First MVP workflow                       |
 
 The admin author card shows the revision approval publishes, including an
 achievement date at its stored month or day precision. A null date is omitted.
