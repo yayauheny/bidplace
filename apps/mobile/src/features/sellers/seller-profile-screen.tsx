@@ -617,7 +617,7 @@ export function SellerProfileScreen() {
     }
     queueProfileDraftValidation();
   };
-  const saveStillOwns = (operation: number, authEpoch: number) =>
+  const screenStillOwns = (operation: number, authEpoch: number) =>
     mountedRef.current &&
     focusedRef.current &&
     sessionOperation.current === operation &&
@@ -642,7 +642,7 @@ export function SellerProfileScreen() {
       if (!auth.user?.slug) {
         const requested = variables.fields.slug.trim();
         const claimed = await api.auth.claimSlug({ slug: requested });
-        if (!saveStillOwns(variables.operation, variables.authEpoch)) {
+        if (!screenStillOwns(variables.operation, variables.authEpoch)) {
           throw new Error('Session changed');
         }
         if (claimed.slug !== requested) {
@@ -659,7 +659,7 @@ export function SellerProfileScreen() {
     },
     onSuccess: (result, variables) => {
       if (result.outcome !== 'saved') return;
-      if (!saveStillOwns(variables.operation, variables.authEpoch)) return;
+      if (!screenStillOwns(variables.operation, variables.authEpoch)) return;
       const saved = result.profile;
       rememberSavedProfile(saved, variables.fields);
       if (photoBlobRef.current === variables.photo) {
@@ -673,18 +673,12 @@ export function SellerProfileScreen() {
     },
   });
   const advanceMutation = useMutation({
-    mutationFn: async (epoch: number) => ({
+    mutationFn: async (owner: { epoch: number; operation: number }) => ({
       saved: await api.portfolio.advanceAuthorApplication(),
-      epoch,
+      ...owner,
     }),
-    onSuccess: ({ saved, epoch }) => {
-      if (
-        !mountedRef.current ||
-        !focusedRef.current ||
-        !canWritePrivateCache(queryClient, epoch)
-      ) {
-        return;
-      }
+    onSuccess: ({ saved, epoch, operation }) => {
+      if (!screenStillOwns(operation, epoch)) return;
       void refreshPrivateQuery(queryClient, ['seller', 'application'], epoch);
       void queryClient.invalidateQueries({ queryKey: ['seller', 'profile'] });
       queryClient.setQueryData(
@@ -728,7 +722,7 @@ export function SellerProfileScreen() {
     setFormAlert(null);
     try {
       const saved = await saveMutation.mutateAsync(variables);
-      if (!saveStillOwns(operation, variables.authEpoch)) return null;
+      if (!screenStillOwns(operation, variables.authEpoch)) return null;
       if (saved.outcome === 'stored-slug') {
         form.setValue('slug', saved.slug, {
           shouldDirty: false,
@@ -740,7 +734,7 @@ export function SellerProfileScreen() {
       setFormAlert(null);
       return saved.profile;
     } catch (error) {
-      if (!saveStillOwns(operation, variables.authEpoch)) return null;
+      if (!screenStillOwns(operation, variables.authEpoch)) return null;
       if (source === 'transition') endLockedTransition();
       throw error;
     } finally {
@@ -766,11 +760,7 @@ export function SellerProfileScreen() {
     const operation = sessionOperation.current;
     revisionSubmitInFlight.current = true;
     setRevisionSubmitActive(true);
-    const stillOwnsSubmit = () =>
-      mountedRef.current &&
-      focusedRef.current &&
-      sessionOperation.current === operation &&
-      canWritePrivateCache(queryClient, submitEpoch);
+    const stillOwnsSubmit = () => screenStillOwns(operation, submitEpoch);
     try {
       let saved;
       try {
@@ -821,11 +811,7 @@ export function SellerProfileScreen() {
     if (transitionLock.current || achievementWriteBlocksParent()) return;
     const epoch = currentAuthEpoch(queryClient);
     const operation = sessionOperation.current;
-    const stillOwnsStep = () =>
-      mountedRef.current &&
-      focusedRef.current &&
-      sessionOperation.current === operation &&
-      canWritePrivateCache(queryClient, epoch);
+    const stillOwnsStep = () => screenStillOwns(operation, epoch);
     try {
       const saved = await save('transition');
       if (!saved || !stillOwnsStep()) return;
@@ -833,7 +819,7 @@ export function SellerProfileScreen() {
         visibleStep !== 1 &&
         shouldAdvanceSellerApplication(saved.sellerProfile, visibleStep)
       ) {
-        await advanceMutation.mutateAsync(epoch);
+        await advanceMutation.mutateAsync({ epoch, operation });
         if (!stillOwnsStep()) return;
       }
       router.push(`/profile?step=${visibleStep + 1}`);
@@ -850,12 +836,9 @@ export function SellerProfileScreen() {
     const selection = photoSelection.current + 1;
     photoSelection.current = selection;
     const stillOwnsPhoto = () =>
-      mountedRef.current &&
-      focusedRef.current &&
       selection === photoSelection.current &&
       !transitionLock.current &&
-      sessionOperation.current === operation &&
-      canWritePrivateCache(queryClient, epoch);
+      screenStillOwns(operation, epoch);
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
