@@ -40,6 +40,7 @@ import {
 } from '../../errors';
 import { getApiAssetUrl } from '../../lib/environment';
 import {
+  authKeys,
   canWritePrivateCache,
   categoryKeys,
   currentAuthEpoch,
@@ -593,8 +594,11 @@ export function SellerProfileScreen() {
     photoBlobRef.current = null;
     setPhotoBlob(null);
     setPhotoUri(null);
-    // Do not retain the previous account's draft while the next query loads.
-    form.reset({ ...emptyProfileDraft, slug: auth.user?.slug ?? '' });
+    // Read the installed session, not a possibly stale auth context during handoff.
+    const sessionSlug = canWritePrivateCache(queryClient, authEpoch)
+      ? queryClient.getQueryData<{ slug?: string | null }>(authKeys.session)?.slug
+      : null;
+    form.reset({ ...emptyProfileDraft, slug: sessionSlug ?? '' });
     hydratedProfileToken.current = null;
     forceProfileHydration.current = true;
   }, [authEpoch]);

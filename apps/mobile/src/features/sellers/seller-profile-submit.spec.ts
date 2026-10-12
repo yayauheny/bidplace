@@ -387,11 +387,14 @@ function submitResponse(
   };
 }
 
-function mount(sessionId = 'user-a') {
+function mount(sessionId = 'user-a', sessionSlug: string | null = null) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
-  queryClient.setQueryData(authKeys.session, { id: sessionId });
+  queryClient.setQueryData(authKeys.session, {
+    id: sessionId,
+    slug: sessionSlug,
+  });
   const container = document.createElement('div');
   document.body.append(container);
   const root: Root = createRoot(container);
@@ -1540,7 +1543,7 @@ describe('seller profile save reconciliation', () => {
     harness.getMyProfile.mockRejectedValue(
       new ApiClientError('missing', { kind: 'not_found', status: 404 }),
     );
-    const view = mount();
+    const view = mount('user-a', 'claimed-author');
     await until(
       view.container,
       () => inputValue(view.container, 'Никнейм') === 'claimed-author',
@@ -1551,6 +1554,30 @@ describe('seller profile save reconciliation', () => {
     });
     await flush();
     expect(inputValue(view.container, 'Никнейм')).toBe('claimed-author');
+    view.unmount();
+  });
+
+  it('hydrates only the new session slug even if the auth context is stale', async () => {
+    harness.authSlug = 'previous-author';
+    harness.getMyProfile.mockRejectedValue(
+      new ApiClientError('missing', { kind: 'not_found', status: 404 }),
+    );
+    const view = mount('user-a', 'previous-author');
+    await until(
+      view.container,
+      () => inputValue(view.container, 'Никнейм') === 'previous-author',
+      'previous slug',
+    );
+    await act(async () => {
+      await clearAuthenticatedSession(view.queryClient);
+      view.queryClient.setQueryData(authKeys.session, {
+        id: 'user-b',
+        slug: 'next-author',
+      });
+      advanceAuthEpoch(view.queryClient);
+    });
+    await flush();
+    expect(inputValue(view.container, 'Никнейм')).toBe('next-author');
     view.unmount();
   });
 
