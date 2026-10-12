@@ -648,19 +648,17 @@ describe('SellersService', () => {
     const tx = {
       $queryRaw: vi.fn().mockResolvedValue([{ id: record.id }]),
       sellerProfile: {
-        findUnique: vi
-          .fn()
-          .mockResolvedValue({
-            id: record.id,
+        findUnique: vi.fn().mockResolvedValue({
+          id: record.id,
+          status: 'CHANGES_REQUESTED',
+          editingRevisionId: 'f3e4cc9c-d42a-4fda-8c2e-7ed73a4ef05a',
+          publishedRevisionId: null,
+          editingRevision: {
+            id: 'f3e4cc9c-d42a-4fda-8c2e-7ed73a4ef05a',
             status: 'CHANGES_REQUESTED',
-            editingRevisionId: 'f3e4cc9c-d42a-4fda-8c2e-7ed73a4ef05a',
-            publishedRevisionId: null,
-            editingRevision: {
-              id: 'f3e4cc9c-d42a-4fda-8c2e-7ed73a4ef05a',
-              status: 'CHANGES_REQUESTED',
-            },
-            publishedRevision: null,
-          }),
+          },
+          publishedRevision: null,
+        }),
         update: vi.fn(),
         findUniqueOrThrow: vi.fn().mockResolvedValue(record),
       },
@@ -734,19 +732,17 @@ describe('SellersService', () => {
           createdAt: now,
           updatedAt: now,
         }),
-        findUnique: vi
-          .fn()
-          .mockResolvedValue({
-            id: record.id,
+        findUnique: vi.fn().mockResolvedValue({
+          id: record.id,
+          status: 'CHANGES_REQUESTED',
+          editingRevisionId: 'f3e4cc9c-d42a-4fda-8c2e-7ed73a4ef05a',
+          publishedRevisionId: null,
+          editingRevision: {
+            id: 'f3e4cc9c-d42a-4fda-8c2e-7ed73a4ef05a',
             status: 'CHANGES_REQUESTED',
-            editingRevisionId: 'f3e4cc9c-d42a-4fda-8c2e-7ed73a4ef05a',
-            publishedRevisionId: null,
-            editingRevision: {
-              id: 'f3e4cc9c-d42a-4fda-8c2e-7ed73a4ef05a',
-              status: 'CHANGES_REQUESTED',
-            },
-            publishedRevision: null,
-          }),
+          },
+          publishedRevision: null,
+        }),
         findUniqueOrThrow: vi.fn().mockResolvedValue(record),
       },
       sellerProfileRevision: { update: vi.fn() },
