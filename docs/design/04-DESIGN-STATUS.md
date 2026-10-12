@@ -1,8 +1,30 @@
 # bidplace — статус дизайна и UI-реализации
 
-Последнее обновление: 2026-10-11
+Последнее обновление: 2026-10-12
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
+
+## 2026-10-12 — Author application step 1 (basic information)
+
+- `Partial`. Step 1 (`527:16416`) is implemented in the mobile client:
+  the photo block with `photoGuide` lines and `image-add-02`, name and nickname
+  with Figma placeholders, the country popup, optional city, a `Загрузить фото`
+  button, and a ghost `Выйти` below `Продолжить`. The field border variant
+  `authorApplication` changes only the empty border and the placeholder to
+  `#999999`. The subtitle is `Город можно не указывать` (`DEC-117`).
+- Matched against the Figma reference capture at 390 px by screenshot. The
+  deliberate differences are the subtitle, a separate city field, and the
+  assigned nickname shown as a value. At 1024 and 1440 px the column stays
+  centered at the same width. Empty, uploaded, country-search and save-error
+  states were checked in Chromium and WebKit.
+- A save error on step 1 shows the same form alert above `Продолжить`. It was
+  below the logout button before this pass.
+- `Needs verification`: keyboard order, zoom, and reduced-motion behavior of
+  step 1 were not checked in this pass. The match against the reference is
+  visual; a pixel diff was not run.
+- `Not implemented`: steps 2–4 still use the previous forms, and step 3 has no
+  direction control (`DEC-116`). Until it exists the transition 3 → 4 returns 409.
+  Details are in [11-PROJECT-STATUS.md](../product/11-PROJECT-STATUS.md).
 
 ## 2026-10-11 — Author story backend, UI still previous screens
 

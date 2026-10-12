@@ -46,6 +46,7 @@ import { useAccountLogout } from '../auth/account-logout';
 import { useApiClient } from '../../providers/api-provider';
 import { useAuth } from '../../providers/auth-provider';
 import { AuthorApplicationAchievements } from './AuthorApplicationAchievements';
+import { AuthorApplicationBasicsStep } from './author-application-basics-step';
 import { AuthorIntroDialog } from './AuthorIntroDialog';
 import {
   profileDraftAllowsSave,
@@ -57,6 +58,7 @@ import {
   isSellerProfileFormEditable,
 } from './seller-profile-editable';
 import {
+  ProfileBasicsFields,
   ProfileFieldWriteGuard,
   ProfileRequirementScope,
   type ProfileRequirementControls,
@@ -78,7 +80,7 @@ const emptyFields: ProfileFields = {
   slug: '',
   fullName: '',
   discipline: '',
-  country: 'BY',
+  country: '',
   city: '',
   practice: '',
   socialLink: '',
@@ -210,7 +212,7 @@ function profileFieldsToUpdate(fields: ProfileFields) {
     fullName: fields.fullName,
     discipline: fields.discipline.trim() || undefined,
     country: fields.country,
-    city: fields.city.trim(),
+    city: fields.city.trim() || null,
     practice: fields.practice.trim() || null,
     socialLink: fields.socialLink.trim() || null,
     telegramUrl: normalizeTelegram(fields.telegramUrl) ?? null,
@@ -225,7 +227,7 @@ function profileFieldsToCreate(fields: ProfileFields) {
   return {
     fullName: fields.fullName,
     country: fields.country,
-    city: fields.city.trim(),
+    city: fields.city.trim() || null,
   };
 }
 
@@ -294,6 +296,11 @@ export function SellerProfileScreen() {
     'shortDescription',
   ] as const;
   const [formAlert, setFormAlert] = useState<string | null>(null);
+  const formAlertText = formAlert ? (
+    <AppText role="bodySmall" tone="danger" accessibilityLiveRegion="polite">
+      {formAlert}
+    </AppText>
+  ) : null;
   const [requirementEpoch, setRequirementEpoch] = useState(0);
   const requirementControls = useRef<ProfileRequirementControls>({
     reveal: () => undefined,
@@ -314,14 +321,13 @@ export function SellerProfileScreen() {
     applyFormFailure(form, failure, profileFieldOrder);
     setFormAlert(failure.formMessage);
   };
-  const [slug, fullName, country, city, discipline, shortDescription] =
+  const [slug, fullName, country, discipline, shortDescription] =
     useWatch({
       control: form.control,
       name: [
         'slug',
         'fullName',
         'country',
-        'city',
         'discipline',
         'shortDescription',
         'telegramUrl',
@@ -383,6 +389,7 @@ export function SellerProfileScreen() {
     !profile ||
     ['DRAFT', 'CHANGES_REQUESTED', 'REJECTED'].includes(profile.status);
   const profileStep = isApplicationWizard ? requestedStep : 1;
+  const basicsStep = isApplicationWizard && profileStep === 1;
   const editable = isSellerProfileFormEditable(profile, editingRevision);
   const canSubmitRevision = canSubmitSellerProfileRevision(
     profile,
@@ -799,7 +806,6 @@ export function SellerProfileScreen() {
     slug.trim() &&
     fullName.trim() &&
     country.trim() &&
-    city.trim() &&
     (profile || photoBlob),
   );
   const draftAllowsSave = profileDraftAllowsSave(form.getValues());
@@ -980,12 +986,56 @@ export function SellerProfileScreen() {
       </AppShell>
     );
 
+  const basicsAction = (
+    <PrimaryButton
+      loading={saveMutation.isPending}
+      disabled={
+        !canSave ||
+        !hasRequiredDetails ||
+        accountLogout.busy ||
+        revisionSubmitActive ||
+        inputsLocked ||
+        achievementWriteActive
+      }
+      onPress={() =>
+        void (async () => {
+          if (
+            transitionLock.current ||
+            achievementWriteBlocksParent()
+          )
+            return;
+          const epoch = currentAuthEpoch(queryClient);
+          const operation = sessionOperation.current;
+          try {
+            const saved = await save('transition');
+            if (
+              !saved ||
+              sessionOperation.current !== operation ||
+              !canWritePrivateCache(queryClient, epoch)
+            )
+              return;
+            router.push('/profile?step=2');
+          } catch (error) {
+            reportProfileError(error, 'seller-profile-step', undefined, operation);
+          } finally {
+            if (sessionOperation.current === operation)
+              endLockedTransition();
+          }
+        })()
+      }
+      label="Продолжить"
+      size="auth"
+      width="block"
+    />
+  );
+
   return (
     <FormProvider {...form}>
       <ProfileRequirementScope epoch={requirementEpoch} controls={requirementControls}>
       <ProfileFieldWriteGuard guard={transitionLock}>
         <FormPageShell hideDock={isApplicationWizard}>
           <View style={{ gap: designTokens.space.x5 }}>
+            {basicsStep ? null : (
             <View
               style={{
                 flexDirection: 'row',
@@ -1044,7 +1094,8 @@ export function SellerProfileScreen() {
                 />
               ) : null}
             </View>
-            {isApplicationWizard ? (
+            )}
+            {isApplicationWizard && !basicsStep ? (
               <SellerProfileCreationStepSelector profileStep={profileStep} />
             ) : null}
             <MediaDeliveryNotice delivery={query.data?.publication} />
@@ -1063,7 +1114,45 @@ export function SellerProfileScreen() {
                 onPress={() => void goToPreviousStep()}
               />
             ) : null}
-            {!isApplicationWizard || profileStep === 1 ? (
+            {basicsStep ? (
+              <AuthorApplicationBasicsStep
+                closeDisabled={
+                  revisionSubmitActive || inputsLocked || achievementWriteActive
+                }
+                onClose={() => requestExit('home')}
+                photo={{
+                  uri: preview,
+                  local: photoBlob !== null,
+                  failed: photoFailed,
+                  disabled: !fieldsEditable,
+                  onChoose: () => void choosePhoto(),
+                  onFailed: () => setPhotoFailed(true),
+                }}
+                fields={
+                  <ProfileBasicsFields
+                    editable={fieldsEditable}
+                    slugEditable={fieldsEditable && !profile && !auth.user?.slug}
+                  />
+                }
+                formAlert={formAlertText}
+                action={basicsAction}
+                footer={
+                  introOpen ? null : (
+                    <AccountLogoutButton
+                      variant="ghost"
+                      width="content"
+                      pending={
+                        saveMutation.isPending ||
+                        accountLogout.busy ||
+                        revisionSubmitActive
+                      }
+                      onPress={() => requestExit('logout')}
+                    />
+                  )
+                }
+              />
+            ) : null}
+            {!isApplicationWizard ? (
               <FormPageColumns
                 sidebarFirstOnCompact
                 sidebar={
@@ -1110,11 +1199,6 @@ export function SellerProfileScreen() {
                       width="block"
                       onPress={() => void choosePhoto()}
                     />
-                    {!profile ? (
-                      <AppText role="bodySmall" tone="secondary">
-                        Фото обязательно для сохранения заявки.
-                      </AppText>
-                    ) : null}
                   </FormSection>
                 }
               >
@@ -1125,14 +1209,15 @@ export function SellerProfileScreen() {
                   slugEditable={fieldsEditable && !profile && !auth.user?.slug}
                 />
               </FormPageColumns>
-            ) : (
+            ) : null}
+            {isApplicationWizard && !basicsStep ? (
               <SellerProfileFormSteps
                 profileStep={profileStep}
                 showAllSteps={false}
                 editable={fieldsEditable}
                 slugEditable={fieldsEditable && !profile && !auth.user?.slug}
               />
-            )}
+            ) : null}
             {isApplicationWizard && profileStep === 4 ? (
               <SellerProfileVerificationSection />
             ) : null}
@@ -1154,47 +1239,6 @@ export function SellerProfileScreen() {
                   ? 'Заявка на проверке. Редактирование откроется, если модератор запросит правки.'
                   : 'Сейчас профиль нельзя редактировать.'}
               </AppText>
-            ) : null}
-            {isApplicationWizard && profileStep === 1 ? (
-              <PrimaryButton
-                loading={saveMutation.isPending}
-                disabled={
-                  !canSave ||
-                  !hasRequiredDetails ||
-                  accountLogout.busy ||
-                  revisionSubmitActive ||
-                  inputsLocked ||
-                  achievementWriteActive
-                }
-                onPress={() =>
-                  void (async () => {
-                    if (
-                      transitionLock.current ||
-                      achievementWriteBlocksParent()
-                    )
-                      return;
-                    const epoch = currentAuthEpoch(queryClient);
-                    const operation = sessionOperation.current;
-                    try {
-                      const saved = await save('transition');
-                      if (
-                        !saved ||
-                        sessionOperation.current !== operation ||
-                        !canWritePrivateCache(queryClient, epoch)
-                      )
-                        return;
-                      router.push('/profile?step=2');
-                    } catch (error) {
-                      reportProfileError(error, 'seller-profile-step', undefined, operation);
-                    } finally {
-                      if (sessionOperation.current === operation)
-                        endLockedTransition();
-                    }
-                  })()
-                }
-                label="Продолжить"
-                width="block"
-              />
             ) : null}
             {isApplicationWizard && profileStep === 2 && editable ? (
               <PrimaryButton
@@ -1320,11 +1364,7 @@ export function SellerProfileScreen() {
                 />
               </Link>
             ) : null}
-            {formAlert ? (
-              <AppText role="bodySmall" tone="danger" accessibilityLiveRegion="polite">
-                {formAlert}
-              </AppText>
-            ) : null}
+            {basicsStep ? null : formAlertText}
             <AuthorIntroDialog
               open={introOpen}
               onStart={() => router.replace('/profile?step=1')}

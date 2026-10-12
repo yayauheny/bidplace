@@ -1,4 +1,5 @@
 import {
+  isCountryCode,
   sellerPublicEmailSchema,
   sellerPublicUrlSchema,
   slugGrammarMessage,
@@ -15,10 +16,9 @@ type PublicLinkField =
   | 'websiteUrl'
   | 'publicEmail';
 
-export type ProfileFieldErrors = Partial<Record<PublicLinkField | 'city', string>>;
+export type ProfileFieldErrors = Partial<Record<PublicLinkField, string>>;
 
 const profileDraftErrorFields = [
-  'city',
   'socialLink',
   'telegramUrl',
   'instagramUrl',
@@ -60,8 +60,15 @@ export const profileDraftSchema = z
     slug: z.string().refine(acceptsProfileSlug, slugGrammarMessage),
     fullName: z.string(),
     discipline: z.string(),
-    country: z.string(),
-    city: z.string().refine((value) => value.trim().length > 0, 'Укажите город'),
+    country: z
+      .string()
+      .trim()
+      .toUpperCase()
+      .refine(
+        (v) => !v || isCountryCode(v),
+        'Выберите страну из списка',
+      ),
+    city: z.string(),
     practice: z.string(),
     socialLink: z.string().refine(acceptsOptionalPublicLink, 'Введите HTTPS-ссылку, начиная с https://'),
     telegramUrl: z

@@ -33,7 +33,7 @@ const emptyFields: ProfileFields = {
   slug: '',
   fullName: '',
   discipline: '',
-  country: 'BY',
+  country: '',
   city: '',
   practice: '',
   socialLink: '',
@@ -46,6 +46,12 @@ const emptyFields: ProfileFields = {
 
 vi.mock('react-native', () => ({
   View: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
+  Pressable: ({ children, disabled }: { children?: ReactNode; disabled?: boolean }) =>
+    createElement('div', { 'data-disabled': Boolean(disabled) }, children),
+}));
+
+vi.mock('./country-picker-sheet', () => ({
+  CountryPickerSheet: () => null,
 }));
 
 vi.mock('../../components/ui', () => ({
@@ -163,8 +169,8 @@ describe('seller profile field ownership', () => {
   it('shows draft field errors from the form resolver and keeps raw contact text', async () => {
     const view = mount();
     await flush();
-    expect(view.container.textContent).toContain('Укажите город');
-    setInput(view.container, 'Город', 'Минск');
+    expect(view.container.textContent).not.toContain('Укажите город');
+    setInput(view.container, 'Город', '');
     await flush();
     expect(view.container.textContent).not.toContain('Укажите город');
     act(() => {

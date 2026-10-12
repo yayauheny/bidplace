@@ -21,18 +21,36 @@ describe('seller profile field validation', () => {
     expect(getPublicLinkError(value)).toBe(expected);
   });
 
-  it('requires a non-blank city', () => {
-    const valid = {
-      city: 'Минск',
+  it('keeps the city optional, blank included', () => {
+    const base = {
       socialLink: '',
       telegramUrl: '',
       instagramUrl: '',
       websiteUrl: '',
+      publicEmail: '',
     };
-    expect(getProfileFieldErrors(valid).city).toBeUndefined();
-    expect(getProfileFieldErrors({ ...valid, city: '   ' }).city).toBe(
-      'Укажите город',
-    );
+    expect(getProfileFieldErrors({ ...base, city: '' })).toEqual({});
+    expect(getProfileFieldErrors({ ...base, city: '   ' })).toEqual({});
+    expect(getProfileFieldErrors({ ...base, city: 'Минск' })).toEqual({});
+  });
+
+  it('accepts only ISO country codes from the directory when a country is set', () => {
+    const draft = {
+      slug: '',
+      fullName: 'Иван',
+      discipline: '',
+      city: '',
+      practice: '',
+      socialLink: '',
+      telegramUrl: '',
+      instagramUrl: '',
+      websiteUrl: '',
+      publicEmail: '',
+      shortDescription: '',
+    };
+    expect(profileDraftAllowsSave({ ...draft, country: 'BY' })).toBe(true);
+    expect(profileDraftAllowsSave({ ...draft, country: '' })).toBe(true);
+    expect(profileDraftAllowsSave({ ...draft, country: 'ZZ' })).toBe(false);
   });
 
   it('accepts empty public contacts and rejects invalid ones', () => {
@@ -101,7 +119,7 @@ describe('seller profile field validation', () => {
     expect(profileDraftAllowsSave({ ...draft, discipline: ' ', shortDescription: ' ' })).toBe(true);
     expect(profileDraftAllowsSave({ ...draft, telegramUrl: 'bad handle' })).toBe(false);
     expect(profileDraftAllowsSave({ ...draft, telegramUrl: '@maker_art' })).toBe(true);
-    expect(profileDraftAllowsSave({ ...draft, city: '   ' })).toBe(false);
+    expect(profileDraftAllowsSave({ ...draft, city: '   ' })).toBe(true);
   });
 
   it('rejects a nickname outside the slug contract', () => {

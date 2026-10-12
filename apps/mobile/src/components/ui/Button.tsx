@@ -76,16 +76,20 @@ export function TextButton({
   label,
   onPress,
   disabled,
+  loading,
   icon,
   accessibilityHint,
-}: Omit<ButtonProps, 'loading' | 'size'>) {
+  width,
+}: Omit<ButtonProps, 'size' | 'alignSelf'>) {
   return (
     <FigmaButton
       label={label}
       onPress={onPress}
       disabled={disabled}
+      loading={loading}
       icon={icon}
       accessibilityHint={accessibilityHint}
+      width={resolvedButtonWidth(width)}
       variant="ghost"
     />
   );

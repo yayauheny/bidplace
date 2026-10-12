@@ -1,6 +1,6 @@
 # bidplace — журнал решений
 
-Последнее обновление: 2026-10-11
+Последнее обновление: 2026-10-12
 
 Записи не удаляются. При пересмотре создаётся новая запись со ссылкой на старую.
 
@@ -2788,3 +2788,51 @@ story-photo budget. An empty story and an image-only story are valid.
 
 Contract owner: [05-MVP-RFC.md](05-MVP-RFC.md). Client follow-up:
 [UI-HANDOFF.md](../tasks/2026-10-11-author-story-backend/UI-HANDOFF.md).
+
+---
+
+## DEC-117 — Author basics step copy, country popup and city clearing
+
+Date: 2026-10-12
+Status: Confirmed for the requester's answers in the author-application-figma task; extends `DEC-114` and `DEC-116` without revising them.
+Source: explicit answers recorded during that task on 2026-10-12.
+
+### Decision
+
+Step 1 of the author application uses the subtitle «Город можно не указывать».
+Its placeholders are «Ваше имя фамилия, (обязательное)», «Никнейм, (обязательное)»
+and «Страна (обязательное)», and the city placeholder is «Город». Step 1 shows no
+extra asterisk marks, and the validation does not depend on a visual marker.
+
+Country starts empty. «Продолжить» stays unavailable until a country is chosen, and
+a saved country is not replaced by a default. The popup reuses the shared filter
+sheet with search and radio rows. The shown value is the country name; the stored
+and sent value is the ISO code. City is an optional separate field under the country.
+
+Clearing the city goes in one save. The `PATCH` is `multipart/form-data`: profile
+JSON in the `data` part and the photo in the `profilePhoto` part. An absent field
+keeps the stored value, `null` clears it, and `[]` clears a list. The string `"null"`
+is not used. The shared serializer is unchanged.
+
+The initial photo state has no «Фото обязательно» line. The requirement stays in
+readiness and the server contract. Upload, selection and validation errors use the
+existing mechanisms. The logout action is a ghost «Выйти» below «Продолжить» in the
+normal flow. The field variant `authorApplication` changes only the empty border and
+the placeholder to `#999999`; icons keep their color.
+
+### Alternatives
+
+- A separate clear request or a second save for the city was rejected: it breaks one
+  save per user action.
+- Sending the city as the string `"null"` or an empty string was rejected: it mixes
+  a clear marker with user text.
+
+### Rationale
+
+The Figma copy and shared components stay as they are. City remains optional under
+`DEC-114`, so the wire format needs one explicit clear marker and no new endpoint.
+
+### Revisit when
+
+The step-3 direction control is implemented, or the placeholder or field copy is
+changed by the founder or the assigned designer.

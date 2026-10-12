@@ -31,6 +31,24 @@ vi.mock('react-native', () => ({
   Platform: { OS: 'web' },
   View: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
   Image: () => null,
+  Pressable: ({
+    children,
+    onPress,
+    disabled,
+  }: {
+    children?: ReactNode;
+    onPress?: () => void;
+    disabled?: boolean;
+  }) =>
+    createElement(
+      'div',
+      {
+        onClick: () => {
+          if (!disabled) onPress?.();
+        },
+      },
+      children,
+    ),
 }));
 
 vi.mock('expo-router', () => ({
@@ -100,6 +118,58 @@ vi.mock('./AuthorApplicationAchievements', () => ({
   AuthorApplicationAchievements: () => null,
 }));
 
+vi.mock('./author-application-basics-step', () => ({
+  AuthorApplicationBasicsStep: ({
+    closeDisabled,
+    onClose,
+    photo,
+    fields,
+    formAlert,
+    action,
+    footer,
+  }: {
+    closeDisabled: boolean;
+    onClose: () => void;
+    photo: { uri: string | null; failed: boolean; disabled: boolean; onChoose: () => void };
+    fields: ReactNode;
+    formAlert: ReactNode;
+    action: ReactNode;
+    footer: ReactNode;
+  }) =>
+    createElement(
+      'div',
+      null,
+      createElement('button', {
+        type: 'button',
+        'aria-label': 'Закрыть',
+        disabled: closeDisabled,
+        onClick: () => {
+          if (!closeDisabled) onClose();
+        },
+      }),
+      createElement(
+        'button',
+        {
+          type: 'button',
+          disabled: photo.disabled,
+          onClick: () => {
+            if (!photo.disabled) photo.onChoose();
+          },
+        },
+        photo.uri && !photo.failed ? 'Изменить фото' : 'Загрузить фото',
+      ),
+      fields,
+      formAlert,
+      action,
+      footer,
+    ),
+}));
+
+vi.mock('./country-picker-sheet', () => ({
+  CountryPickerSheet: ({ open, onSelect }: { open: boolean; onSelect: (code: string) => void }) =>
+    open ? createElement('button', { type: 'button', onClick: () => onSelect('BY') }, 'Беларусь') : null,
+}));
+
 vi.mock('../../components/ui', () => {
   function PressButton({
     label,
@@ -145,6 +215,7 @@ vi.mock('../../components/ui', () => {
     PageHeader: ({ title }: { title: string }) => createElement('h1', null, title),
     PrimaryButton: PressButton,
     SecondaryButton: PressButton,
+    TextButton: PressButton,
     ResilientRemoteImage: () => null,
     TextField: ({
       label,
@@ -268,7 +339,10 @@ async function until(container: HTMLElement, predicate: () => boolean, label: st
 }
 
 function findButton(container: ParentNode, label: string) {
-  return [...container.querySelectorAll('button')].find((button) => button.textContent === label);
+  // Matches the accessible name: visible text, or aria-label for icon-only controls.
+  return [...container.querySelectorAll('button')].find(
+    (button) => button.textContent === label || button.getAttribute('aria-label') === label,
+  );
 }
 
 function click(container: ParentNode, label: string) {
@@ -277,6 +351,15 @@ function click(container: ParentNode, label: string) {
   act(() => {
     target.click();
   });
+}
+
+function selectCountry(container: ParentNode, countryName: string) {
+  const field = container.querySelector('[aria-label="Страна"]');
+  if (!(field instanceof HTMLElement)) throw new Error('Missing country field');
+  act(() => {
+    field.click();
+  });
+  click(container, countryName);
 }
 
 function clickInOneTurn(container: ParentNode, labels: string[]) {
@@ -1570,7 +1653,7 @@ describe('seller profile validation freshness', () => {
     view.unmount();
   });
 
-  it('saves empty optional contacts and still blocks a blank city', async () => {
+  it('saves empty optional contacts and stores a blank city as null', async () => {
     harness.getMyProfile.mockResolvedValue(profileWithTelegram());
     harness.updateProfile.mockResolvedValue(response('APPROVED', 'DRAFT'));
     const view = mount();
@@ -1600,7 +1683,8 @@ describe('seller profile validation freshness', () => {
     setInput(view.container, 'Город', '   ');
     click(view.container, 'Сохранить');
     await flush();
-    expect(harness.updateProfile).not.toHaveBeenCalled();
+    expect(harness.updateProfile).toHaveBeenCalledTimes(1);
+    expect(harness.updateProfile.mock.calls[0]?.[0]).toEqual(expect.objectContaining({ city: null }));
     view.unmount();
   });
 
@@ -1673,9 +1757,9 @@ describe('seller profile validation freshness', () => {
     );
     setInput(view.container, 'Никнейм', 'БЕ');
     setInput(view.container, 'Имя или название', 'Synthetic Author');
-    setInput(view.container, 'Страна', 'BY');
+    selectCountry(view.container, 'Беларусь');
     setInput(view.container, 'Город', 'Minsk');
-    click(view.container, 'Добавить фото');
+    click(view.container, 'Загрузить фото');
     await until(
       view.container,
       () => findButton(view.container, 'Изменить фото') instanceof HTMLButtonElement,
@@ -1696,7 +1780,7 @@ describe('seller profile validation freshness', () => {
     expect(view.container.textContent).not.toContain('Не удалось сохранить профиль');
     expect(inputValue(view.container, 'Никнейм')).toBe('БЕ');
     expect(inputValue(view.container, 'Имя или название')).toBe('Synthetic Author');
-    expect(inputValue(view.container, 'Страна')).toBe('BY');
+    expect(inputValue(view.container, 'Страна')).toBe('Беларусь');
     expect(inputValue(view.container, 'Город')).toBe('Minsk');
     setInput(view.container, 'Никнейм', 'synthetic-author');
     await until(
@@ -1749,9 +1833,9 @@ describe('seller profile validation freshness', () => {
     );
     setInput(view.container, 'Никнейм', 'synthetic-author');
     setInput(view.container, 'Имя или название', 'Synthetic Author');
-    setInput(view.container, 'Страна', 'BY');
+    selectCountry(view.container, 'Беларусь');
     setInput(view.container, 'Город', 'Minsk');
-    click(view.container, 'Добавить фото');
+    click(view.container, 'Загрузить фото');
     await until(
       view.container,
       () =>

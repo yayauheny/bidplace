@@ -4,6 +4,7 @@ import { figmaTokens } from '@bidplace/design-tokens';
 
 import {
   figmaFieldNativeOutlineStyle,
+  figmaFieldPlaceholderColor,
   figmaFieldShowsFloatingLabel,
   figmaFieldStatus,
   figmaFieldStyle,
@@ -99,6 +100,22 @@ describe('Figma text field states', () => {
       paddingVertical: 0,
       borderWidth: 1,
     });
+  });
+
+  it('lightens only the empty border and placeholder for the authorApplication variant', () => {
+    expect(figmaFieldStyle('empty', false, 'default', 'authorApplication')).toMatchObject({
+      borderColor: '#999999',
+      backgroundColor: '#FFFFFF',
+    });
+    expect(figmaFieldPlaceholderColor('empty', 'authorApplication')).toBe('#999999');
+    expect(figmaFieldPlaceholderColor('empty')).toBe('#8A8A8A');
+
+    for (const status of ['hoverEmpty', 'filled', 'focus', 'error', 'disabled'] as const) {
+      expect(figmaFieldStyle(status, false, 'default', 'authorApplication').borderColor).toBe(
+        figmaFieldStyle(status).borderColor,
+      );
+    }
+    expect(figmaFieldStyle('empty').borderColor).toBe('#8A8A8A');
   });
 
   it('keeps a filled value from becoming the success state', () => {

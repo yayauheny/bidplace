@@ -56,6 +56,10 @@ export const designTokens = {
     fieldLabel: '#999999',
     fieldValue: '#121212',
     fieldIcon: '#858585',
+    // Empty border and placeholder of the `authorApplication` field variant.
+    authorApplicationField: '#999999',
+    // Guide lines drawn over the author photo placeholder (Стать автором 527:16416).
+    photoGuide: '#911E05',
     fieldHoverBorder: '#535353',
     ghostHover: '#F7F7F7',
     mutedFill: '#F3F3F3',
@@ -278,6 +282,14 @@ export const designTokens = {
       fontFamily: 'Inter_500Medium',
       fontSize: 16,
       lineHeight: 26,
+      letterSpacing: -0.32,
+      fontWeight: '500' as const,
+    },
+    // Form block heading above a control group (Figma 578:17481 "Фото профиля").
+    formLabel: {
+      fontFamily: 'Inter_500Medium',
+      fontSize: 16,
+      lineHeight: 19,
       letterSpacing: -0.32,
       fontWeight: '500' as const,
     },

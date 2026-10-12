@@ -35,6 +35,7 @@ import {
 
 import { figmaTokens } from '@bidplace/design-tokens';
 
+import { ImageAdd02Icon } from './figma-icon-glyphs';
 import { type FigmaIconName, figmaIconNames } from './figma-icon-names';
 import { figmaIconStrokeWidth } from './figma-icon-style';
 
@@ -67,6 +68,7 @@ const icons = {
   'ai-magic': AiMagicIcon,
   user: UserIcon,
   'shopping-basket-01': ShoppingBasket01Icon,
+  'image-add-02': ImageAdd02Icon,
 } as const satisfies Record<FigmaIconName, typeof Search01Icon>;
 
 const iconGridSize = 24;

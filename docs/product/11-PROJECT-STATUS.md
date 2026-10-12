@@ -1,5 +1,58 @@
 # bidplace — текущий статус проекта
 
+## 2026-10-12 — Author application step 1 (`feature/author-application-figma`)
+
+- `Partial`: the first step of the author application is implemented in the
+  mobile client. The photo block, name, nickname, country popup, optional city,
+  `Продолжить` and ghost `Выйти` are on `AuthorApplicationBasicsStep`
+  (`author-application-basics-step.tsx`), with `ProfileBasicsFields`,
+  `ProfileCountryField` and `CountryPickerSheet` in `seller-profile-steps.tsx`
+  and `country-picker-sheet.tsx`. Country names come from `GET /countries` through
+  `api.countries.list` (`countryListResponseSchema`); the stored and sent value
+  is the ISO code. Country starts empty, and `Продолжить` needs it. The nickname is
+  the account `User.slug` and is not sent by create or update. `profile-validation.ts`
+  has no `directionCategoryIds`.
+- City clearing is one `PATCH /api/seller/profile` request in
+  `multipart/form-data`: JSON in the `data` part and the photo in `profilePhoto`
+  (`seller-profile-write-body.ts`, `sellers.controller.ts`,
+  `packages/api-client/src/sellers.ts`). Wire format is in
+  [10-CODE-ARCHITECTURE.md](10-CODE-ARCHITECTURE.md). The client sends `null` for a
+  blank city. The rule is recorded in `DEC-117`.
+- `Partial` for the author application as a whole. Steps 2–4 still use the older
+  forms. Step 3 has no direction control, and `DEC-116` requires directions as
+  category IDs. The transition `POST /api/author/application/advance` from
+  `ABOUT` to `ACHIEVEMENTS` returns 409 `Author profile is missing required
+  fields` when no directions exist (`sellers.service.ts`
+  `advanceApplicationStage`). The HEAD client never sent `directionCategoryIds`, so
+  this gap was already there. Release gate: the e2e test «city application is
+  approved and appears in the public authors catalog» in
+  `author-application-publication.spec.ts` fails at this transition in Chromium and
+  WebKit. The test was not weakened.
+- Verification in this pass: owner vitest for `src/features/sellers`,
+  `src/features/auth`, `src/components/figma`, `src/components/ui`: 465 passed,
+  26 failed in 5 Work and product-draft files that this change does not touch.
+  `country-picker-sheet.spec.ts` 5/5. ESLint without fix on the changed mobile
+  files: exit 0. Mobile `typecheck`: 7 baseline errors, none new. `@bidplace/api-client`
+  41/41. API `src/sellers` 49/49. API integration
+  `author-application-contract.integration.spec.ts` 6/6 on a separate local database.
+  Isolated e2e (`bidplace_verify_author_step1`, migrate deploy, no reset, no
+  prepare): a temporary step-1 check passed in Chromium and WebKit for render,
+  country search, city and photo in one save, and a 500 on save that keeps the
+  entered data. The `author-application-publication` test without city passed in
+  both browsers.
+- `Needs verification`: keyboard order, zoom, and reduced motion on step 1; the
+  full WebKit suite; the API suites changed by `ae0b3673` other than
+  `author-application-contract`. The step-1 pixel match against the Figma reference
+  was visual, not a pixel diff.
+- Evidence: `author-application-basics-step.tsx`, `country-picker-sheet.tsx`,
+  `seller-profile-steps.tsx`, `seller-profile-screen.tsx`, `profile-validation.ts`,
+  `figma-text-field-style.ts` (`authorApplication`), `packages/design-tokens`
+  (`authorApplicationField`, `photoGuide`, `formLabel`), owner specs
+  `seller-profile-submit.spec.ts`, `seller-profile-fields.spec.ts`,
+  `seller-profile-logout.spec.ts`, `author-application-achievements.spec.ts`,
+  `profile-validation.spec.ts`, `country-picker-sheet.spec.ts`, and the e2e spec
+  `author-application-publication.spec.ts`.
+
 ## 2026-10-11 — Author story review fixes
 
 - `Partial` for the user-facing author application, dictionaries and Work story.

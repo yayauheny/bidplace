@@ -588,6 +588,21 @@ shell stays the only ring. `apps/mobile/global.css` still draws
 `[role='textbox']:focus-visible` for controls outside that component.
 The field success border stays `color.success` `#039600`.
 
+### Author application field variant
+
+`FigmaTextField` and `TextField` take `variant="authorApplication"` (`FigmaFieldVariant`
+in `figma-text-field-style.ts`). Only that variant changes the empty border and the
+placeholder to `color.authorApplicationField` `#999999`. Icons keep `#8A8A8A`, and the
+default variant is unchanged for every other field. The basics step (`527:16416`)
+uses it for name, nickname, country and city. No route-local recolor is allowed.
+
+Other step-1 pieces are shared: `typography.formLabel` (Inter 500 16/19, letter
+spacing -0.32) names the photo block; `color.photoGuide` `#911E05` draws the two
+crop lines of the empty photo slot at 0.72 px; `FigmaIcon` `image-add-02` is the
+empty slot icon. The country picker is `CountryPickerSheet`, a composition of
+`FilterSheet`, `FilterSearchField` and radio `FilterOptionRow`. It adds no renderer
+and no local style.
+
 ## 6.4 Press feedback
 
 `DEC-104`. A pressed `FigmaButton` or `FigmaChoiceChip` keeps its existing

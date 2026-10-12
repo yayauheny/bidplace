@@ -7,10 +7,12 @@ import { FigmaIcon } from './FigmaIcon';
 import { type FigmaIconName } from './figma-icon-names';
 import {
   figmaFieldNativeOutlineStyle,
+  figmaFieldPlaceholderColor,
   figmaFieldShowsFloatingLabel,
   figmaFieldStatus,
   figmaFieldStyle,
   figmaFieldValueColor,
+  type FigmaFieldVariant,
 } from './figma-text-field-style';
 
 type FigmaTextFieldProps = Omit<TextInputProps, 'editable'> & {
@@ -22,6 +24,7 @@ type FigmaTextFieldProps = Omit<TextInputProps, 'editable'> & {
   iconColor?: string;
   prefix?: string;
   metrics?: 'default' | 'authPassword' | 'authScreenPassword';
+  variant?: FigmaFieldVariant;
   trailing?: ReactNode;
 };
 
@@ -44,6 +47,7 @@ export const FigmaTextField = forwardRef<TextInput, FigmaTextFieldProps>(functio
   iconColor = figmaTokens.color.fieldValue,
   prefix,
   metrics = 'default',
+  variant = 'default',
   trailing,
   value,
   defaultValue,
@@ -76,7 +80,7 @@ export const FigmaTextField = forwardRef<TextInput, FigmaTextFieldProps>(functio
 
   const field = (
     <View style={{ width: '100%' }}>
-      <View style={figmaFieldStyle(status, multiline, metrics)}>
+      <View style={figmaFieldStyle(status, multiline, metrics, variant)}>
         {icon ? (
           <View style={{ padding: figmaTokens.space.iconPad }}>
             <FigmaIcon name={icon} color={iconColor} />
@@ -103,7 +107,7 @@ export const FigmaTextField = forwardRef<TextInput, FigmaTextFieldProps>(functio
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? errorId : undefined}
           placeholder={showLabel ? undefined : (placeholder ?? label)}
-          placeholderTextColor={figmaTokens.color.muted}
+          placeholderTextColor={figmaFieldPlaceholderColor(status, variant)}
           multiline={multiline}
           dataSet={Platform.OS === 'web' ? { figmaField: 'true' } : undefined}
           onChangeText={(nextValue) => {

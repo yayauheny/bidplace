@@ -37,6 +37,24 @@ vi.mock('react-native', () => ({
   Platform: { OS: 'web' },
   View: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
   Image: () => null,
+  Pressable: ({
+    children,
+    onPress,
+    disabled,
+  }: {
+    children?: ReactNode;
+    onPress?: () => void;
+    disabled?: boolean;
+  }) =>
+    createElement(
+      'div',
+      {
+        onClick: () => {
+          if (!disabled) onPress?.();
+        },
+      },
+      children,
+    ),
 }));
 
 vi.mock('expo-router', () => ({
@@ -106,6 +124,58 @@ vi.mock('../../components/shared/InfrastructureErrorState', () => ({
   InfrastructureErrorState: () => createElement('div', null, 'application-error'),
 }));
 
+vi.mock('./author-application-basics-step', () => ({
+  AuthorApplicationBasicsStep: ({
+    closeDisabled,
+    onClose,
+    photo,
+    fields,
+    formAlert,
+    action,
+    footer,
+  }: {
+    closeDisabled: boolean;
+    onClose: () => void;
+    photo: { uri: string | null; failed: boolean; disabled: boolean; onChoose: () => void };
+    fields: ReactNode;
+    formAlert: ReactNode;
+    action: ReactNode;
+    footer: ReactNode;
+  }) =>
+    createElement(
+      'div',
+      null,
+      createElement('button', {
+        type: 'button',
+        'aria-label': 'Закрыть',
+        disabled: closeDisabled,
+        onClick: () => {
+          if (!closeDisabled) onClose();
+        },
+      }),
+      createElement(
+        'button',
+        {
+          type: 'button',
+          disabled: photo.disabled,
+          onClick: () => {
+            if (!photo.disabled) photo.onChoose();
+          },
+        },
+        photo.uri && !photo.failed ? 'Изменить фото' : 'Загрузить фото',
+      ),
+      fields,
+      formAlert,
+      action,
+      footer,
+    ),
+}));
+
+vi.mock('./country-picker-sheet', () => ({
+  CountryPickerSheet: ({ open, onSelect }: { open: boolean; onSelect: (code: string) => void }) =>
+    open ? createElement('button', { type: 'button', onClick: () => onSelect('BY') }, 'Беларусь') : null,
+}));
+
 vi.mock('../../components/ui', () => {
   function PressButton({
     label,
@@ -151,6 +221,7 @@ vi.mock('../../components/ui', () => {
     PageHeader: ({ title }: { title: string }) => createElement('h1', null, title),
     PrimaryButton: PressButton,
     SecondaryButton: PressButton,
+    TextButton: PressButton,
     ResilientRemoteImage: () => null,
     TextField: ({
       label,
@@ -295,7 +366,10 @@ async function until(container: HTMLElement, predicate: () => boolean, label: st
 }
 
 function findButton(container: ParentNode, label: string) {
-  return [...container.querySelectorAll('button')].find((button) => button.textContent === label);
+  // Matches the accessible name: visible text, or aria-label for icon-only controls.
+  return [...container.querySelectorAll('button')].find(
+    (button) => button.textContent === label || button.getAttribute('aria-label') === label,
+  );
 }
 
 function click(container: ParentNode, label: string) {

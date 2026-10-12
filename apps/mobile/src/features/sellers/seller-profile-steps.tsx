@@ -1,10 +1,14 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode, type RefObject } from 'react';
 import { useController, useFormContext, useWatch } from 'react-hook-form';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
+import { countryName } from '@bidplace/contracts';
 import { designTokens } from '@bidplace/design-tokens';
 
+import { type FigmaIconName } from '../../components/figma/figma-icon-names';
+import { type FigmaFieldVariant } from '../../components/figma/figma-text-field-style';
 import { AppText, FormSection, TextField } from '../../components/ui';
+import { CountryPickerSheet } from './country-picker-sheet';
 
 export type ProfileFields = {
   slug: string;
@@ -25,7 +29,6 @@ export const requiredProfileMessages: Partial<Record<keyof ProfileFields, string
   slug: 'Введите никнейм',
   fullName: 'Введите имя или название',
   country: 'Укажите страну',
-  city: 'Укажите город',
   discipline: 'Укажите направление',
   shortDescription: 'Добавьте короткое описание о себе',
 };
@@ -104,15 +107,25 @@ function ProfileDraftField({
   autoCapitalize,
   editable,
   required,
+  requiredMarker = true,
   multiline,
+  variant,
+  icon,
+  iconColor,
 }: {
   name: keyof ProfileFields;
   label: string;
   placeholder?: string;
   autoCapitalize?: 'none' | 'characters';
   editable: boolean;
+  /** Reveals the requirement message on blur. */
   required?: boolean;
+  /** Adds the ` *` label marker. The basic-information step states requirements in its placeholders instead. */
+  requiredMarker?: boolean;
   multiline?: boolean;
+  variant?: FigmaFieldVariant;
+  icon?: FigmaIconName;
+  iconColor?: string;
 }) {
   const guard = useContext(ProfileFieldWriteGuardContext);
   if (!guard) {
@@ -134,6 +147,7 @@ function ProfileDraftField({
     <TextField
       ref={field.ref}
       label={label}
+      required={required && requiredMarker}
       value={field.value}
       onBlur={() => {
         field.onBlur();
@@ -147,20 +161,138 @@ function ProfileDraftField({
       placeholder={placeholder}
       autoCapitalize={autoCapitalize}
       editable={editable}
-      required={required}
       multiline={multiline}
+      variant={variant}
+      icon={icon}
+      iconColor={iconColor}
       error={typeof message === 'string' ? message : undefined}
     />
   );
 }
 
+/** Country is chosen from the `GET /countries` directory; the form keeps only the ISO code. */
+function ProfileCountryField({ editable }: { editable: boolean }) {
+  const guard = useContext(ProfileFieldWriteGuardContext);
+  if (!guard) {
+    throw new Error('Profile field write guard is missing');
+  }
+  const requirements = useContext(ProfileRequirementContext);
+  if (!requirements) {
+    throw new Error('Profile requirement scope is missing');
+  }
+  const { control, setValue } = useFormContext<ProfileFields>();
+  const { field, fieldState } = useController({ control, name: 'country' });
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const revealed = requirements.revealed.country === true;
+  const requirementMessage =
+    revealed && !field.value.trim() ? requiredProfileMessages.country : undefined;
+  const message = fieldState.error?.message ?? requirementMessage;
+  return (
+    <>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Страна"
+        accessibilityState={{ disabled: !editable }}
+        disabled={!editable}
+        onPress={() => setPickerOpen(true)}
+      >
+        <View style={{ pointerEvents: 'none' }}>
+          <TextField
+            variant="authorApplication"
+            label="Страна"
+            placeholder="Страна (обязательное)"
+            value={field.value ? (countryName(field.value) ?? field.value) : ''}
+            editable={editable}
+            error={typeof message === 'string' ? message : undefined}
+          />
+        </View>
+      </Pressable>
+      <CountryPickerSheet
+        open={pickerOpen}
+        selectedCode={field.value}
+        onClose={() => {
+          setPickerOpen(false);
+          if (!field.value.trim()) requirements.reveal(['country']);
+        }}
+        onSelect={(code) => {
+          setPickerOpen(false);
+          if (guard.current) return;
+          setValue('country', code, {
+            shouldDirty: true,
+            shouldTouch: true,
+            shouldValidate: true,
+          });
+        }}
+      />
+    </>
+  );
+}
+
+/** Basic information of the author application; slug stays read-only after it is assigned. */
+export function ProfileBasicsFields({
+  editable,
+  slugEditable,
+}: {
+  editable: boolean;
+  slugEditable: boolean;
+}) {
+  return (
+    <>
+      <ProfileDraftField
+        name="fullName"
+        label="Имя или название"
+        placeholder="Ваше имя фамилия, (обязательное)"
+        editable={editable}
+        required
+        requiredMarker={false}
+        variant="authorApplication"
+      />
+      <ProfileDraftField
+        name="slug"
+        label="Никнейм"
+        placeholder="Никнейм, (обязательное)"
+        autoCapitalize="none"
+        editable={slugEditable}
+        required
+        requiredMarker={false}
+        variant="authorApplication"
+        icon="at-sign"
+        iconColor={designTokens.color.muted}
+      />
+      <ProfileCountryField editable={editable} />
+      <ProfileDraftField
+        name="city"
+        label="Город"
+        placeholder="Город"
+        editable={editable}
+        variant="authorApplication"
+      />
+    </>
+  );
+}
+
 export function SellerProfileCreationStepSelector({ profileStep }: { profileStep: number }) {
-  return <View accessibilityRole="progressbar" accessibilityValue={{ min: 1, max: 4, now: profileStep }} style={{ alignItems: 'center', gap: designTokens.space.x2 }}>
-    <View style={{ flexDirection: 'row', gap: designTokens.space.x2 }}>
-      {[1, 2, 3, 4].map((step) => <View key={step} style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: step <= profileStep ? designTokens.color.ink : designTokens.color.border }} />)}
+  return (
+    <View
+      accessibilityRole="progressbar"
+      accessibilityLabel={`Шаг ${profileStep} из 4`}
+      accessibilityValue={{ min: 1, max: 4, now: profileStep }}
+      style={{ flexDirection: 'row', gap: designTokens.space.x2 }}
+    >
+      {[1, 2, 3, 4].map((step) => (
+        <View
+          key={step}
+          style={{
+            width: 6,
+            height: 6,
+            borderRadius: 3,
+            backgroundColor:
+              step <= profileStep ? designTokens.color.inkStrong : designTokens.color.border,
+          }}
+        />
+      ))}
     </View>
-    <AppText role="metadata" tone="secondary">Шаг {profileStep} из 4</AppText>
-  </View>;
+  );
 }
 
 export function SellerProfileFormSteps({
@@ -176,10 +308,7 @@ export function SellerProfileFormSteps({
 }) {
   return <>
     {(showAllSteps || profileStep === 1) && <FormSection title="Основная информация" description="Эти данные увидят посетители после одобрения заявки.">
-      <ProfileDraftField name="slug" label="Никнейм" placeholder="Никнейм" autoCapitalize="none" editable={slugEditable} required />
-      <ProfileDraftField name="fullName" label="Имя или название" placeholder="Иван Иванов" editable={editable} required />
-      <ProfileDraftField name="country" label="Страна" placeholder="BY" autoCapitalize="characters" editable={editable} required />
-      <ProfileDraftField name="city" label="Город" placeholder="Минск" editable={editable} required />
+      <ProfileBasicsFields editable={editable} slugEditable={slugEditable} />
     </FormSection>}
     {(showAllSteps || profileStep === 2) && <FormSection title="Контакты" description="Все контакты необязательны и станут публичными только после одобрения.">
       <ProfileDraftField name="telegramUrl" label="Telegram" placeholder="@username" autoCapitalize="none" editable={editable} />
