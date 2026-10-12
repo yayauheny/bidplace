@@ -617,11 +617,12 @@ export function SellerProfileScreen() {
     }
     queueProfileDraftValidation();
   };
-  const screenStillOwns = (operation: number, authEpoch: number) =>
+  const sessionStillOwns = (operation: number, authEpoch: number) =>
     mountedRef.current &&
-    focusedRef.current &&
     sessionOperation.current === operation &&
     canWritePrivateCache(queryClient, authEpoch);
+  const screenStillOwns = (operation: number, authEpoch: number) =>
+    focusedRef.current && sessionStillOwns(operation, authEpoch);
   const saveMutation = useMutation({
     mutationFn: async (
       variables: ProfileSaveVariables,
@@ -659,7 +660,8 @@ export function SellerProfileScreen() {
     },
     onSuccess: (result, variables) => {
       if (result.outcome !== 'saved') return;
-      if (!screenStillOwns(variables.operation, variables.authEpoch)) return;
+      // A completed write still belongs in the cache after the screen blurs.
+      if (!sessionStillOwns(variables.operation, variables.authEpoch)) return;
       const saved = result.profile;
       rememberSavedProfile(saved, variables.fields);
       if (photoBlobRef.current === variables.photo) {
@@ -678,13 +680,13 @@ export function SellerProfileScreen() {
       ...owner,
     }),
     onSuccess: async ({ saved, epoch, operation }) => {
-      if (!screenStillOwns(operation, epoch)) return;
+      if (!sessionStillOwns(operation, epoch)) return;
       // A profile refetch started by save must not rewind the confirmed stage.
       await queryClient.cancelQueries(
         { queryKey: sellerProfileQueryKey },
         { revert: false },
       );
-      if (!screenStillOwns(operation, epoch)) return;
+      if (!sessionStillOwns(operation, epoch)) return;
       queryClient.setQueryData(
         sellerProfileQueryKey,
         (current: SellerProfileResponse | undefined) =>
@@ -777,12 +779,12 @@ export function SellerProfileScreen() {
       }
       if (!saved || !stillOwnsSubmit()) return;
       const submitted = await submitMutation.mutateAsync();
-      if (!stillOwnsSubmit()) return;
+      if (!sessionStillOwns(operation, submitEpoch)) return;
       await queryClient.cancelQueries(
         { queryKey: sellerProfileQueryKey },
         { revert: false },
       );
-      if (!stillOwnsSubmit()) return;
+      if (!sessionStillOwns(operation, submitEpoch)) return;
       queryClient.setQueryData<SellerProfileResponse>(
         sellerProfileQueryKey,
         (current) => withSubmittedRevision(current, submitted),

@@ -1645,7 +1645,7 @@ describe('seller profile save reconciliation', () => {
     await flush();
     expect(harness.push).not.toHaveBeenCalled();
     expect(view.queryClient.getQueryData(['seller', 'profile'])).toEqual(
-      original,
+      savedProfile({ city: 'Late city' }),
     );
 
     harness.focused = true;
