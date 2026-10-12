@@ -90,6 +90,56 @@ describe('revision-backed Work Story editor', () => {
     );
   });
 
+  it('preserves block order after editing and moving before save', async () => {
+    const view = mount();
+    const secondId = '85555555-5555-4555-8555-555555555555';
+    view.replaceCreation.mockImplementationOnce(async (_id, request) => ({
+      storyToken: 1,
+      blocks: request.blocks.map((block: Record<string, unknown>, index: number) => ({
+        ...block,
+        id: index === 0 ? blockId : secondId,
+        position: index,
+      })),
+    }));
+    act(() => {
+      view.editor.addText('PARAGRAPH');
+      view.editor.addText('HEADING');
+    });
+    const [paragraph, heading] = view.editor.blocks;
+    act(() => {
+      view.editor.editText(paragraph!.key, 'Абзац');
+      view.editor.editText(heading!.key, 'Заголовок');
+      view.editor.move(heading!.key, -1);
+    });
+    await act(async () => {
+      expect(await view.editor.save()).toBe(true);
+    });
+    const payload = view.replaceCreation.mock.calls[0]?.[1];
+    expect(payload.blocks).toEqual([
+      { type: 'HEADING', text: 'Заголовок' },
+      { type: 'PARAGRAPH', text: 'Абзац' },
+    ]);
+    expect(view.editor.blocks.map((block) => block.key)).toEqual([
+      heading!.key,
+      paragraph!.key,
+    ]);
+  });
+
+  it('retries an uncertain image upload with the same idempotency key', async () => {
+    const view = mount();
+    view.addStoryImage.mockRejectedValueOnce(new Error('connection dropped'));
+    const image = new Blob(['image'], { type: 'image/png' });
+    await act(async () => {
+      expect(await view.editor.addImage(image)).toBe(false);
+    });
+    expect(view.editor.retryUpload).toBe(true);
+    await act(async () => {
+      expect(await view.editor.addImage()).toBe(true);
+    });
+    expect(view.addStoryImage.mock.calls[0]?.[2]).toBe(view.addStoryImage.mock.calls[1]?.[2]);
+    expect(view.editor.blocks).toMatchObject([{ type: 'IMAGE', mediaAssetId: assetId }]);
+  });
+
   it('does not add a completed upload from a previous authentication epoch', async () => {
     const view = mount();
     let deliver!: (response: { mediaAssetId: string }) => void;
