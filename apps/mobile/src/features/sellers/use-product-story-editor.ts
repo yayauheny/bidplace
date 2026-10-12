@@ -16,14 +16,28 @@ type DraftState = {
   error: string | null;
 };
 
+function editableBlock(block: StoryBlock, key: string = block.id): EditableStoryBlock {
+  switch (block.type) {
+    case 'HEADING':
+      return { id: block.id, key, type: block.type, text: block.text };
+    case 'PARAGRAPH':
+      return { id: block.id, key, type: block.type, text: block.text };
+    case 'IMAGE':
+      return {
+        id: block.id,
+        key,
+        type: 'IMAGE',
+        mediaAssetId: block.mediaAssetId,
+        altText: block.altText ?? null,
+      };
+  }
+}
+
 function fromServer(identity: string, story?: StorySnapshot): DraftState {
   return {
     identity,
     token: story?.storyToken ?? 0,
-    blocks: (story?.blocks ?? []).map(({ position: _position, ...block }) => ({
-      ...block,
-      key: block.id,
-    })),
+    blocks: (story?.blocks ?? []).map((block) => editableBlock(block)),
     dirty: false,
     pending: false,
     error: null,
@@ -31,7 +45,21 @@ function fromServer(identity: string, story?: StorySnapshot): DraftState {
 }
 
 function writeBlocks(blocks: readonly EditableStoryBlock[]): StoryWriteRequest['blocks'] {
-  return blocks.map(({ key: _key, ...block }) => block);
+  return blocks.map((block) => {
+    if (block.type === 'IMAGE') {
+      return {
+        id: block.id,
+        type: 'IMAGE',
+        mediaAssetId: block.mediaAssetId,
+        altText: block.altText ?? null,
+      };
+    }
+    return {
+      id: block.id,
+      type: block.type,
+      text: block.text,
+    };
+  });
 }
 
 export function useProductStoryEditor({
@@ -210,10 +238,9 @@ export function useProductStoryEditor({
         const result = await api.products.replaceCreation(productId, request);
         if (current.current.identity !== identity) return false;
         retry.current = null;
-        const saved = result.blocks.map(({ position: _position, ...block }, index) => ({
-          ...block,
-          key: before.blocks[index]?.key ?? block.id,
-        }));
+        const saved = result.blocks.map((block, index) =>
+          editableBlock(block, before.blocks[index]?.key ?? block.id),
+        );
         const removedAssets = [...new Set([
           ...persistedAssets.current,
           ...uploaded.current,
