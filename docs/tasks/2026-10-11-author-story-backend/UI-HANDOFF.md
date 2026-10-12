@@ -154,3 +154,13 @@ private, no-store`. Гость, другой пользователь, скры�
 Не переносить Figma-вёрстку в этой backend-задаче. После клиента проверить
 сохранение, возобновление, отправку, модерацию, фильтры и публикацию истории
 в браузере.
+
+## Work Story UI integration (PR #38)
+
+- Design source: [Figma · История создания работы · Mobile, node 7008:27134](https://www.figma.com/design/pAPQo6cADmG5XzVmBX76EE/Bidplace--Copy-?node-id=7008-27134).
+  Four visual states: empty canvas, text entry, focused block, text + image.
+- Block canvas uses existing Expo/React Native components and Bidplace tokens: compact H/text/image action row, contextual move/delete menu and optional gallery reuse.
+- The owner editor writes only `storyToken + blocks` with an idempotency key. Legacy `product.story` is no longer written by the Work form; editing a published Work first creates a new revision.
+- Route leave, wizard transitions and submit save unsaved blocks before navigating; 409 preserves the local draft; late responses after auth changes are ignored.
+- Admin reads review-target story; public detail reads published-revision story. Existing story-image endpoint reads R2 media through server permission checks.
+- Acceptance gate: targeted Vitest, typecheck, lint and production build; review the diff and visually inspect the mobile layout before merging. CI report and merge decision live in PR #38.
