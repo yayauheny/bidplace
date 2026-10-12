@@ -226,6 +226,7 @@ export class SellersService {
                 byteLength: true,
                 checksum: true,
                 objectKey: true,
+                mediaAssetId: true,
               },
             },
           },
@@ -690,17 +691,18 @@ export class SellersService {
         orderBy: { position: 'desc' },
       });
       const position = (last?.position ?? -1) + 1;
+      // Date.UTC treats years 1..99 as 1901..1999. Set the full year explicitly.
+      const occurredAt = new Date(0);
+      occurredAt.setUTCFullYear(
+        input.occurredDate.year,
+        input.occurredDate.month - 1,
+        input.occurredDate.day ?? 1,
+      );
       const achievement = await tx.sellerProfileRevisionAchievement.create({
         data: {
           revisionId: editing.revisionId,
           position,
-          occurredAt: new Date(
-            Date.UTC(
-              input.occurredDate.year,
-              input.occurredDate.month - 1,
-              input.occurredDate.day ?? 1,
-            ),
-          ),
+          occurredAt,
           occurredAtPrecision:
             input.occurredDate.day === null ? 'MONTH' : 'DAY',
           body: input.body,
@@ -848,6 +850,7 @@ export class SellersService {
           objectKey: true,
           revisionId: true,
           mediaAssetId: true,
+          data: true,
           revision: {
             select: {
               sellerProfile: {
@@ -862,7 +865,7 @@ export class SellersService {
           },
         },
       });
-    if (!achievement?.mimeType || !achievement.objectKey) {
+    if (!achievement?.mimeType) {
       throw new NotFoundException('Achievement image not found');
     }
     const profile = achievement.revision.sellerProfile;
@@ -876,11 +879,18 @@ export class SellersService {
     const stored =
       achievement.mediaAssetId && this.media?.enabled
         ? await this.media.readPreview(achievement.mediaAssetId)
-        : await this.imageStore.get(achievement.objectKey);
-    if (!stored) {
+        : await this.imageStore.get(
+            achievement.objectKey ?? imageKey.sellerAchievement(achievementId),
+          );
+    // Pre-R2 records may still have their original bytes in the database.
+    const image = stored ??
+      (achievement.data?.byteLength
+        ? { bytes: achievement.data, mimeType: achievement.mimeType }
+        : null);
+    if (!image) {
       throw new NotFoundException('Achievement image not found');
     }
-    return { mimeType: stored.mimeType, data: stored.bytes, isPublic };
+    return { mimeType: image.mimeType, data: image.bytes, isPublic };
   }
 
   async listProducts(userId: string) {
