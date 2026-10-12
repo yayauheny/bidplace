@@ -52,7 +52,7 @@ export function AuthConsentCheckbox({
           disabled={disabled}
           onPress={toggle}
           preset="button"
-          hitSlop={8}
+          hitSlop={12}
         >
           <LinearGradient
             colors={borderColors}

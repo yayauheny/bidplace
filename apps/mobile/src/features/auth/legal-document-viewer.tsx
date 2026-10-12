@@ -19,7 +19,7 @@ export function LegalDocumentViewer({
     <AppDialog open={selected !== null} title={document?.title ?? 'Юридический документ'} onClose={onClose}>
       {document ? (
         <>
-          <AppText role="metadata">Редакция: {document.version}</AppText>
+          <AppText role="metadata">Редакция: {document.version.split('+')[0]}</AppText>
           <LegalDocumentContent markdown={document.markdown} />
         </>
       ) : (

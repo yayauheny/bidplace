@@ -1169,7 +1169,7 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
                 <TextButton label="Повторить" onPress={loadRegistrationLegal} />
               </>
             ) : legalDocuments ? (
-              <AppText role="metadata">Редакция документов: {legalDocuments.version}</AppText>
+              <AppText role="metadata">Редакция документов: {legalDocuments.version.split('+')[0]}</AppText>
             ) : null}
           </View>
         ) : null}

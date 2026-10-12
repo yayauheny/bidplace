@@ -5,7 +5,8 @@ import { legalDocumentIdSchema } from '@bidplace/contracts';
 import { designTokens } from '@bidplace/design-tokens';
 
 import { AppShell } from '../../../components/layout/AppShell';
-import { AppText } from '../../../components/ui';
+import { BrandLogo } from '../../../components/layout/BrandLogo';
+import { AppText, TextButton } from '../../../components/ui';
 import { LegalDocumentContent } from '../../../features/auth/legal-document-content';
 import { LegalFooter } from '../../../features/auth/legal-footer';
 import { useApiClient } from '../../../providers/api-provider';
@@ -23,10 +24,14 @@ export default function LegalDocumentRoute() {
   return (
     <AppShell hideDock>
       <ScrollView contentContainerStyle={{ padding: designTokens.space.pageGutter, gap: designTokens.space.x4 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <BrandLogo />
+          <TextButton href="/" label="На главную" />
+        </View>
         <AppText role="sectionTitle">{document?.title ?? 'Юридические документы'}</AppText>
         {document ? (
           <View style={{ gap: designTokens.space.x4 }}>
-            <AppText role="metadata">Редакция: {document.version}</AppText>
+            <AppText role="metadata">Редакция: {document.version.split('+')[0]}</AppText>
             <LegalDocumentContent markdown={document.markdown} />
           </View>
         ) : (
