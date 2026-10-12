@@ -27,7 +27,6 @@ export const productDraftFormSchema = z
     dimensions: draftTextSchema,
     year: draftYearSchema,
     uniqueness: draftTextSchema,
-    story: draftTextSchema,
   })
   .strict();
 
@@ -44,7 +43,6 @@ export const emptyProductDraftFormValues: ProductDraftFormValues = {
   dimensions: '',
   year: '',
   uniqueness: '',
-  story: '',
 };
 
 export function productToDraftFormValues(
@@ -74,7 +72,6 @@ export function productToDraftFormValues(
     dimensions: product.dimensions ?? '',
     year: product.year?.toString() ?? '',
     uniqueness: product.uniqueness ?? '',
-    story: product.story ?? '',
   };
 }
 
@@ -97,7 +94,6 @@ export function productDraftToWriteRequest(
     dimensions: nullableText(parsed.dimensions),
     year: parsed.year.trim() ? Number(parsed.year) : null,
     uniqueness: nullableText(parsed.uniqueness),
-    story: nullableText(parsed.story),
   });
 }
 

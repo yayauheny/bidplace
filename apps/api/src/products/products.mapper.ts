@@ -289,7 +289,7 @@ export function toImageContracts(
       throw new Error('Published media is not delivered');
     return {
       id: image.id,
-      mediaAssetId: image.mediaAssetId ?? null,
+      ...(image.mediaAssetId ? { mediaAssetId: image.mediaAssetId } : {}),
       position: image.position,
       url: `/api/images/${image.id}`,
       mimeType: image.mimeType,

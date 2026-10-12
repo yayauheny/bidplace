@@ -24,7 +24,6 @@ import {
   productDraftFormSchema,
   type ProductDraftFormValues,
 } from './product-draft-form';
-import { ProductDraftStoryStep } from './product-draft-story';
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
@@ -178,13 +177,7 @@ function Harness({ guard }: { guard: RefObject<boolean> }) {
                 wizardCanOpenImages: false,
                 onContinueToImages: () => undefined,
               })
-            : createElement(ProductDraftStoryStep, {
-                editable: true,
-                savePending: false,
-                saveError: false,
-                onBackToImages: () => undefined,
-                onSaveAndContinue: () => undefined,
-              }),
+            : createElement('div', null, 'Шаг истории'),
       }),
     ),
   });
@@ -270,7 +263,6 @@ describe('product draft field ownership', () => {
     setInput(view.container, 'Название', 'Kept title');
     click(view.container, 'История');
     expect(view.container.querySelector('[aria-label="Название"]')).toBeNull();
-    setInput(view.container, 'История создания', 'A story');
     click(view.container, 'О работе');
     expect(input(view.container, 'Название').value).toBe('Kept title');
     view.guard.current = true;

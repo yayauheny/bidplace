@@ -132,7 +132,6 @@ export function ProductDraftScreen({
     'dimensions',
     'year',
     'uniqueness',
-    'story',
   ] as const;
   const draftTitle = useWatch({ control: form.control, name: 'title' });
   const hydratedProductId = useRef<string | null>(null);
@@ -709,7 +708,7 @@ export function ProductDraftScreen({
   }, [moderationHold, productDetail.data?.editingRevision, submittedRevision]);
 
   const moveToWizardStep = async (nextStep: number) => {
-    if (transitionLock.current) return;
+    if (transitionLock.current || storyEditor.pending) return;
     if (!existingProduct) return;
     if (!canOpenProductWizardStep(nextStep, wizardDraft)) return;
     if (nextStep === wizardStep) return;
