@@ -140,6 +140,7 @@ describe('admin catalog proposal moderation', () => {
   });
 
   it('creates a new catalog term and maps it to the proposal', async () => {
+    harness.listTerms.mockResolvedValueOnce({ terms: [] });
     const view = mount();
     click(view.el, 'Материал: Холст');
     await waitFor(() => expect(view.el.textContent).toContain('Создать «Холст» и сопоставить'));

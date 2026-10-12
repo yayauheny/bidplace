@@ -168,8 +168,10 @@ export function AdminWorkCatalogProposals({
             value={reason}
             onChangeText={setReason}
           />
-          {reason.trim().length > 2000 ? (
-            <AppText role="bodySmall" tone="danger">Причина слишком длинная (максимум 2000 символов).</AppText>
+          {reason.trim().length > 0 && !validRejectionReason ? (
+            <AppText role="bodySmall" tone="danger">
+              Причина отклонения не соответствует ограничениям формы.
+            </AppText>
           ) : null}
           <DestructiveButton
             label="Отклонить предложение"
