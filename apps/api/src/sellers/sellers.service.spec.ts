@@ -1017,26 +1017,23 @@ describe('SellersService', () => {
   it('reads legacy bytes without an object key only for the owner', async () => {
     const bytes = new Uint8Array([1, 2, 3]);
     const get = vi.fn().mockResolvedValue(null);
-    const service = new SellersService(
-      {
-        sellerProfileRevisionAchievement: {
-          findUnique: vi.fn().mockResolvedValue({
-            mimeType: 'image/png',
+    const findUnique = vi.fn().mockResolvedValue({
+      mimeType: 'image/png',
             objectKey: null,
             mediaAssetId: null,
             data: bytes,
-            revisionId: 'draft-revision-id',
-            revision: {
-              sellerProfile: {
-                userId: 'owner-id',
-                status: 'APPROVED',
-                user: { status: 'active' },
-                publishedRevisionId: 'published-revision-id',
-              },
-            },
-          }),
+      revisionId: 'draft-revision-id',
+      revision: {
+        sellerProfile: {
+          userId: 'owner-id',
+          status: 'APPROVED',
+          user: { status: 'active' },
+          publishedRevisionId: 'published-revision-id',
         },
-      } as never,
+      },
+    });
+    const service = new SellersService(
+      { sellerProfileRevisionAchievement: { findUnique } } as never,
       { ...imageStore, get } as never,
     );
 
@@ -1044,6 +1041,8 @@ describe('SellersService', () => {
       service.getAchievementImage('achievement-id', 'stranger-id'),
     ).rejects.toThrow('Achievement image not found');
     expect(get).not.toHaveBeenCalled();
+    expect(findUnique).toHaveBeenCalledTimes(1);
+    expect(findUnique.mock.calls[0]?.[0]?.select).not.toHaveProperty('data');
 
     await expect(
       service.getAchievementImage('achievement-id', 'owner-id'),
@@ -1053,6 +1052,11 @@ describe('SellersService', () => {
       isPublic: false,
     });
     expect(get).toHaveBeenCalledOnce();
+    expect(findUnique).toHaveBeenCalledTimes(3);
+    expect(findUnique.mock.calls[2]?.[0]).toEqual({
+      where: { id: 'achievement-id' },
+      select: { data: true },
+    });
   });
 
   it('hides unpublished achievement images from strangers', async () => {
