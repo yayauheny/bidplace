@@ -176,10 +176,6 @@ export function toPortfolioAchievement(
   },
   visibility: 'private' | 'public' = 'private',
 ) {
-  const publicPreview =
-    visibility === 'public'
-      ? publicVariant(achievement.mediaAsset, 'PREVIEW')
-      : null;
   return {
     id: achievement.id,
     occurredDate: achievement.occurredAt
@@ -194,13 +190,24 @@ export function toPortfolioAchievement(
       : null,
     body: achievement.body,
     image:
-      achievement.mimeType && achievement.byteLength && achievement.checksum
+      achievement.mimeType &&
+      achievement.byteLength &&
+      achievement.checksum &&
+      achievement.objectKey
         ? {
-            url:
-              publicPreview?.url ?? `/api/author-achievements/${achievement.id}/image`,
-            mimeType: publicPreview?.mimeType ?? achievement.mimeType,
-            byteLength: publicPreview?.byteLength ?? achievement.byteLength,
-            checksum: publicPreview?.checksum ?? achievement.checksum,
+            url: `/api/author-achievements/${achievement.id}/image`,
+            mimeType: achievement.mimeType,
+            byteLength: achievement.byteLength,
+            checksum: achievement.checksum,
+            ...(visibility === 'public' && achievement.mediaAsset
+              ? {
+                  url:
+                    publicVariant(achievement.mediaAsset, 'PREVIEW')?.url ??
+                    (() => {
+                      throw new Error('Published achievement is not delivered');
+                    })(),
+                }
+              : {}),
           }
         : null,
   };

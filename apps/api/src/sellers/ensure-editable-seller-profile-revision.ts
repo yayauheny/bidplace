@@ -5,8 +5,6 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@bidplace/database';
 
-import { imageKey } from '../core/image-store/image-key';
-
 import {
   lockSellerProfileRevisionRowForUpdate,
   lockSellerProfileRowForUpdate,
@@ -124,9 +122,7 @@ export async function ensureEditableEditingRevision(
         mimeType: source.mimeType,
         byteLength: source.byteLength,
         checksum: source.checksum,
-        objectKey:
-          source.objectKey ??
-          (source.mimeType ? imageKey.sellerAchievement(source.id) : null),
+        objectKey: source.objectKey,
         mediaAssetId: source.mediaAssetId,
         data: source.data,
       },
