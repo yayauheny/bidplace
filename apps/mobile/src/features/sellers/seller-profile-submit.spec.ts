@@ -26,6 +26,7 @@ const harness = vi.hoisted(() => ({
   createProfile: vi.fn(),
   claimSlug: vi.fn(),
   getAuthorApplicationPhoto: vi.fn(),
+  advanceAuthorApplication: vi.fn(),
   submitAuthorApplication: vi.fn(),
   launchImageLibraryAsync: vi.fn(),
 }));
@@ -97,7 +98,7 @@ vi.mock('../../providers/api-provider', () => ({
     },
     portfolio: {
       getAuthorApplicationPhoto: harness.getAuthorApplicationPhoto,
-      advanceAuthorApplication: vi.fn(),
+      advanceAuthorApplication: harness.advanceAuthorApplication,
       submitAuthorApplication: harness.submitAuthorApplication,
     },
     categories: {
@@ -523,6 +524,7 @@ beforeEach(() => {
   harness.createProfile.mockReset();
   harness.claimSlug.mockReset();
   harness.getAuthorApplicationPhoto.mockReset();
+  harness.advanceAuthorApplication.mockReset();
   harness.submitAuthorApplication.mockReset();
   harness.launchImageLibraryAsync.mockReset();
   harness.logout.mockResolvedValue(undefined);
@@ -536,6 +538,9 @@ beforeEach(() => {
   harness.updateProfile.mockImplementation(async () =>
     response('APPROVED', 'DRAFT'),
   );
+  harness.advanceAuthorApplication.mockResolvedValue({
+    application: { applicationStage: 'ABOUT' },
+  });
   harness.submitAuthorApplication.mockImplementation(async () =>
     submitResponse('APPROVED', 'PENDING_REVIEW'),
   );
@@ -1524,6 +1529,55 @@ describe('seller profile save reconciliation', () => {
     await flush();
     expect(harness.updateProfile.mock.calls[0]?.[1]).toBe(secondPhoto);
     vi.unstubAllGlobals();
+    view.unmount();
+  });
+
+  it('does not rewind an advanced wizard stage when a previous profile refetch resolves late', async () => {
+    const draft = response('DRAFT', 'DRAFT');
+    draft.sellerProfile.applicationStage = 'CONTACTS';
+    const advanced = response('DRAFT', 'DRAFT');
+    advanced.sellerProfile.applicationStage = 'ABOUT';
+    let finishOldRead: (value: typeof draft) => void = () => undefined;
+    harness.params = { step: '2' };
+    harness.getMyProfile
+      .mockResolvedValueOnce(draft)
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            finishOldRead = resolve;
+          }),
+      )
+      .mockResolvedValue(advanced);
+    harness.updateProfile.mockResolvedValue(draft);
+    const view = mount();
+    await until(
+      view.container,
+      () =>
+        findButton(view.container, 'Продолжить') instanceof HTMLButtonElement,
+      'continue',
+    );
+    click(view.container, 'Продолжить');
+    await until(
+      view.container,
+      () => harness.advanceAuthorApplication.mock.calls.length === 1,
+      'stage advance',
+    );
+    await until(
+      view.container,
+      () => harness.push.mock.calls.length === 1,
+      'next step',
+    );
+    expect(harness.push).toHaveBeenCalledWith('/profile?step=3');
+    await act(async () => {
+      finishOldRead(draft);
+      await Promise.resolve();
+    });
+    await flush();
+    const current = view.queryClient.getQueryData<ReturnType<typeof response>>([
+      'seller',
+      'profile',
+    ]);
+    expect(current?.sellerProfile.applicationStage).toBe('ABOUT');
     view.unmount();
   });
 

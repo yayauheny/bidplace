@@ -677,10 +677,14 @@ export function SellerProfileScreen() {
       saved: await api.portfolio.advanceAuthorApplication(),
       ...owner,
     }),
-    onSuccess: ({ saved, epoch, operation }) => {
+    onSuccess: async ({ saved, epoch, operation }) => {
       if (!screenStillOwns(operation, epoch)) return;
-      void refreshPrivateQuery(queryClient, ['seller', 'application'], epoch);
-      void queryClient.invalidateQueries({ queryKey: ['seller', 'profile'] });
+      // A profile refetch started by save must not rewind the confirmed stage.
+      await queryClient.cancelQueries(
+        { queryKey: sellerProfileQueryKey },
+        { revert: false },
+      );
+      if (!screenStillOwns(operation, epoch)) return;
       queryClient.setQueryData(
         sellerProfileQueryKey,
         (current: SellerProfileResponse | undefined) =>
@@ -694,6 +698,8 @@ export function SellerProfileScreen() {
               }
             : current,
       );
+      void refreshPrivateQuery(queryClient, ['seller', 'application'], epoch);
+      void queryClient.invalidateQueries({ queryKey: sellerProfileQueryKey });
     },
   });
   const submitMutation = useMutation({
