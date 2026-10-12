@@ -24,13 +24,13 @@ test('Verify retains general pull request coverage and release branch pushes', a
   assert.match(workflow, /cancel-in-progress: true/);
 });
 
-test('browser workflow is manual-only and retains sharded Chromium coverage', async () => {
+test('browser workflow supports manual and ready-for-review Chromium coverage', async () => {
   const workflow = await readFile(
     resolve(root, '.github/workflows/browser-e2e.yml'),
     'utf8',
   );
   assert.match(workflow, /workflow_dispatch:/);
-  assert.doesNotMatch(workflow, /pull_request:/);
+  assert.match(workflow, /pull_request:\\s*\\n\\s*types: \\[ready_for_review\\]/);
   assert.doesNotMatch(workflow, /push:/);
   assert.match(workflow, /--project=chromium/);
   assert.match(workflow, /shard: \[1, 2, 3, 4\]/);

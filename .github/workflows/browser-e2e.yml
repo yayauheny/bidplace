@@ -1,7 +1,11 @@
 name: Browser E2E
 
+# Full Chromium suite runs once when a draft PR is marked ready.
+# Manual dispatch remains available for reruns.
 on:
   workflow_dispatch:
+  pull_request:
+    types: [ready_for_review]
 
 concurrency:
   group: browser-e2e-${{ github.workflow }}-${{ github.ref }}

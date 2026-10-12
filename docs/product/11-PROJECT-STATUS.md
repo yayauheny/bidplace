@@ -5,7 +5,7 @@
 - `Needs verification`: `.github/workflows/verify.yml` checks draft PRs with TypeScript, lint, and config/contracts/API-client unit tests. Ready PRs, release-branch pushes, and manual dispatch run the unchanged full `pnpm verify`, Cloudflare checks, web build, and container image verification. Feature pushes are covered via PR events only, to avoid duplicate workflows; `ready_for_review` and `converted_to_draft` re-evaluate the gate.
 - `Implemented` in source: root `test:unit` builds the API (including packaged disposable email domain assets) before the `disposable-email.spec.ts` built-module assertion. Test assertions are unchanged.
 - `Implemented` in source: failure artifacts in manual Browser E2E and Portfolio Release Gate workflows are retained for seven days. No deployment trigger or production credentials changed.
-- `Not implemented`: automatic preview deployment; Browser E2E and Release Gate remain manual. Mobile Vitest baseline and existing unrelated test failures are not waived. GitHub workflow execution on this commit is required to confirm results.
+- `Not implemented`: automatic preview deployment. Browser E2E remains manually dispatchable and also runs once on a Draft → Ready-for-review transition; Release Gate remains manual. Tests and known failures are not waived. GitHub workflow execution on this commit is required to confirm results.
 
 ## 2026-10-12 — Consolidated legal documents (`fix/legal-pack`)
 
