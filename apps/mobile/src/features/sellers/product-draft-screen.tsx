@@ -196,6 +196,14 @@ export function ProductDraftScreen({
     queryKey: categoryKeys.all,
     queryFn: ({ signal }) => api.categories.list({ signal }),
   });
+  const materialsCatalog = useQuery({
+    queryKey: ['catalog', 'terms', 'MATERIAL'],
+    queryFn: ({ signal }) => api.catalog.listTerms('MATERIAL', { signal }),
+  });
+  const techniquesCatalog = useQuery({
+    queryKey: ['catalog', 'terms', 'TECHNIQUE'],
+    queryFn: ({ signal }) => api.catalog.listTerms('TECHNIQUE', { signal }),
+  });
   const productDetail = useQuery({
     queryKey: productId
       ? ownerWorkQueryKeys.detail(productId)
@@ -1049,6 +1057,20 @@ export function ProductDraftScreen({
               editable={editable && !inputsLocked}
               categories={categories.data.categories}
               selection={productDetail.data?.selection}
+              catalog={{
+                MATERIAL: {
+                  terms: materialsCatalog.data?.terms ?? [],
+                  loading: materialsCatalog.isPending,
+                  error: materialsCatalog.isError,
+                  onRetry: () => void materialsCatalog.refetch(),
+                },
+                TECHNIQUE: {
+                  terms: techniquesCatalog.data?.terms ?? [],
+                  loading: techniquesCatalog.isPending,
+                  error: techniquesCatalog.isError,
+                  onRetry: () => void techniquesCatalog.refetch(),
+                },
+              }}
               stepOneAttempted={stepOneAttempted}
               saveIsPending={save.isPending}
               saveIsError={save.isError && !formAlert}

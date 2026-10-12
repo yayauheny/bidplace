@@ -22,7 +22,7 @@ export const productDraftFormSchema = z
     techniqueTermIds: z.array(z.string().uuid()).max(40),
     materialProposals: z.array(z.string().trim().min(1).max(160)).max(20),
     techniqueProposals: z.array(z.string().trim().min(1).max(160)).max(20),
-    categoryProposal: draftTextSchema,
+    categoryProposal: z.string().max(160),
     dimensions: draftTextSchema,
     year: draftYearSchema,
     uniqueness: draftTextSchema,

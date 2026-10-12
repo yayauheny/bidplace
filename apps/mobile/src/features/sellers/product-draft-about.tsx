@@ -1,12 +1,10 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { useFormContext, useFormState, useWatch } from 'react-hook-form';
 
 import type { SellerProductDetailResponse } from '@bidplace/contracts';
 
 import { FormPageColumns } from '../../components/layout';
 import { FigmaSelectField } from '../../components/figma/FigmaSelectField';
-import { useApiClient } from '../../providers/api-provider';
 import { ProductCatalogTermSheet } from './product-catalog-term-sheet';
 import {
   AppText,
@@ -31,6 +29,12 @@ export type ProductDraftAboutStepProps = {
   editable: boolean;
   categories: Array<{ id: string; name: string; slug: string }>;
   selection?: SellerProductDetailResponse['selection'];
+  catalog: Record<'MATERIAL' | 'TECHNIQUE', {
+    terms: SellerProductDetailResponse['selection']['materialTerms'];
+    loading: boolean;
+    error: boolean;
+    onRetry: () => void;
+  }>;
   stepOneAttempted: boolean;
   saveIsPending: boolean;
   saveIsError: boolean;
@@ -46,6 +50,7 @@ export function ProductDraftAboutStep({
   editable,
   categories,
   selection,
+  catalog,
   stepOneAttempted,
   saveIsPending,
   saveIsError,
@@ -54,16 +59,7 @@ export function ProductDraftAboutStep({
   wizardCanOpenImages,
   onContinueToImages,
 }: ProductDraftAboutStepProps) {
-  const api = useApiClient();
   const [openRole, setOpenRole] = useState<'MATERIAL' | 'TECHNIQUE' | null>(null);
-  const materials = useQuery({
-    queryKey: ['catalog', 'terms', 'MATERIAL'],
-    queryFn: ({ signal }) => api.catalog.listTerms('MATERIAL', { signal }),
-  });
-  const techniques = useQuery({
-    queryKey: ['catalog', 'terms', 'TECHNIQUE'],
-    queryFn: ({ signal }) => api.catalog.listTerms('TECHNIQUE', { signal }),
-  });
   const guard = useProductDraftWriteGuard();
   const { control, setValue } = useFormContext<ProductDraftFormValues>();
   const [
@@ -84,17 +80,17 @@ export function ProductDraftAboutStep({
       'techniqueProposals',
     ],
   });
-  const activeRoleQuery = openRole === 'MATERIAL' ? materials : techniques;
+  const activeRoleQuery = catalog[openRole ?? 'MATERIAL'];
   const knownTerms = openRole === 'MATERIAL'
     ? (selection?.materialTerms ?? [])
     : (selection?.techniqueTerms ?? []);
   const termLabels = (
     ids: readonly string[],
     names: readonly string[],
-    active: typeof materials.data,
+    active: typeof catalog.MATERIAL.terms,
     previous: typeof knownTerms,
   ) => {
-    const byId = new Map([...(active?.terms ?? []), ...previous].map((term) => [term.id, term.name]));
+    const byId = new Map([...active, ...previous].map((term) => [term.id, term.name]));
     const selected = ids.map((id) => byId.get(id) ?? 'Выбранный термин');
     return [...selected, ...names].join(', ');
   };
@@ -119,14 +115,14 @@ export function ProductDraftAboutStep({
             <FigmaSelectField
               label="Техники"
               placeholder="Выберите или предложите"
-              value={termLabels(techniqueTermIds, techniqueProposals, techniques.data, selection?.techniqueTerms ?? [])}
+              value={termLabels(techniqueTermIds, techniqueProposals, catalog.TECHNIQUE.terms, selection?.techniqueTerms ?? [])}
               disabled={!editable}
               onPress={() => setOpenRole('TECHNIQUE')}
             />
             <FigmaSelectField
               label="Материалы"
               placeholder="Выберите или предложите"
-              value={termLabels(materialTermIds, materialProposals, materials.data, selection?.materialTerms ?? [])}
+              value={termLabels(materialTermIds, materialProposals, catalog.MATERIAL.terms, selection?.materialTerms ?? [])}
               disabled={!editable}
               onPress={() => setOpenRole('MATERIAL')}
             />
@@ -247,12 +243,12 @@ export function ProductDraftAboutStep({
           open
           selectedIds={openRole === 'MATERIAL' ? materialTermIds : techniqueTermIds}
           proposals={openRole === 'MATERIAL' ? materialProposals : techniqueProposals}
-          availableTerms={activeRoleQuery.data?.terms ?? []}
+          availableTerms={activeRoleQuery.terms}
           knownTerms={knownTerms}
-          loading={activeRoleQuery.isPending}
-          error={activeRoleQuery.isError}
+          loading={activeRoleQuery.loading}
+          error={activeRoleQuery.error}
           editable={editable}
-          onRetry={() => void activeRoleQuery.refetch()}
+          onRetry={activeRoleQuery.onRetry}
           onClose={() => setOpenRole(null)}
           onApply={(ids, names) => {
             if (guard.current) return;

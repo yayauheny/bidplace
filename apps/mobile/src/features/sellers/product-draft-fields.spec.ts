@@ -28,6 +28,29 @@ import { ProductDraftStoryStep } from './product-draft-story';
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
+vi.mock('../../components/figma/FigmaSelectField', () => ({
+  FigmaSelectField: ({
+    label,
+    value,
+    disabled,
+    onPress,
+  }: {
+    label: string;
+    value: string;
+    disabled?: boolean;
+    onPress: () => void;
+  }) => createElement('button', {
+    type: 'button',
+    'aria-label': label,
+    disabled,
+    onClick: () => onPress(),
+  }, value || label),
+}));
+
+vi.mock('./product-catalog-term-sheet', () => ({
+  ProductCatalogTermSheet: () => null,
+}));
+
 vi.mock('react-native', () => ({
   View: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
 }));
@@ -89,7 +112,7 @@ vi.mock('../../components/ui', () => ({
     ),
 }));
 
-const categories = [{ id: 'cat-1', name: 'Painting' }];
+const categories = [{ id: 'cat-1', name: 'Painting', slug: 'painting' }];
 
 function Harness({ guard }: { guard: RefObject<boolean> }) {
   const [step, setStep] = useState<'about' | 'story'>('about');
@@ -124,6 +147,10 @@ function Harness({ guard }: { guard: RefObject<boolean> }) {
                 wizardStep: 1,
                 editable: true,
                 categories,
+                catalog: {
+                  MATERIAL: { terms: [], loading: false, error: false, onRetry: () => undefined },
+                  TECHNIQUE: { terms: [], loading: false, error: false, onRetry: () => undefined },
+                },
                 stepOneAttempted,
                 saveIsPending: false,
                 saveIsError: false,
