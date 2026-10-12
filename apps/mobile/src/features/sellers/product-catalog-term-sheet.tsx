@@ -107,7 +107,7 @@ export function ProductCatalogTermSheet({
       }
       primaryAction={{
         label: 'Применить',
-        disabled: !editable || loading || error,
+        disabled: !editable,
         onPress: () => {
           onApply(draftIds, draftProposals);
           onClose();
@@ -118,7 +118,7 @@ export function ProductCatalogTermSheet({
         <FilterSearchField value={search} onChangeText={setSearch} placeholder="Поиск или новое значение" />
         {draftProposals.length > 0 ? (
           <>
-            <AppText role="bodySmall" tone="secondary">На проверку модератору:</AppText>
+            <AppText role="bodySmall" tone="secondary">Предложенные значения:</AppText>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: designTokens.space.x2 }}>
               {draftProposals.map((name) => {
                 const rejected = knownProposals.find(
