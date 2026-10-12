@@ -24,6 +24,25 @@ const harness = vi.hoisted(() => ({
   callback: null as null | ((event: { data: { action: { type: string } } }) => void),
 }));
 
+vi.mock('../../components/figma/FigmaChoiceChip', () => ({
+  FigmaChoiceChip: ({
+    label,
+    selected,
+    onPress,
+    disabled,
+  }: {
+    label: string;
+    selected: boolean;
+    onPress: () => void;
+    disabled?: boolean;
+  }) => createElement('button', {
+    type: 'button',
+    disabled,
+    'aria-pressed': selected,
+    onClick: onPress,
+  }, label),
+}));
+
 vi.mock('../../components/figma/FigmaSelectField', () => ({
   FigmaSelectField: ({
     label,
