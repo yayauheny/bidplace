@@ -1062,5 +1062,4 @@ describe('SellersService', () => {
     expect(tx.sellerProfileRevisionAchievement.update).not.toHaveBeenCalled();
     expect(remove).not.toHaveBeenCalled();
   });
-
 });

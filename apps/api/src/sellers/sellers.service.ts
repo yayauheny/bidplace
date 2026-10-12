@@ -15,7 +15,6 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
-  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { createHash } from 'node:crypto';
@@ -27,7 +26,6 @@ import {
   runReadCommittedTransaction,
 } from '../core/database';
 import { emptyImageBytes, ImageStore, imageKey } from '../core/image-store';
-import { safeFailureLocation } from '../core/request-context/safe-request-log';
 import { type ValidatedImageUpload } from '../images/image-policy';
 import {
   productRevisionOwnerSelect,
@@ -184,7 +182,6 @@ function throwSellerProfileUniqueConflict(error: unknown, unknownMessage: string
 
 @Injectable()
 export class SellersService {
-  private readonly logger = new Logger(SellersService.name);
 
   constructor(
     private readonly prisma: PrismaService,

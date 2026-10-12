@@ -54,6 +54,4 @@ describe('achievement writes', () => {
       }).success,
     ).toBe(false);
   });
-
-
 });

@@ -223,7 +223,7 @@ describe('portfolio published revision HTTP transport', () => {
     ).toBe(author.slug);
   });
 
-  it('rejects unsupported achievement images and hides unpublished bytes from guests', async () => {
+  it('rejects achievement image fields and foreign edits', async () => {
     const fixture = await createPermissionFixture(prisma);
     const owner = new HttpTestClient(http.baseUrl, 'http://localhost:8081');
     const stranger = new HttpTestClient(http.baseUrl, 'http://localhost:8081');
@@ -264,9 +264,9 @@ describe('portfolio published revision HTTP transport', () => {
       (await created.json()) as { achievement: { id: string } }
     ).achievement.id;
 
-    expect((await guest.get(`/author-achievements/${achievementId}/image`)).status).toBe(
-      404,
-    );
+    expect(
+      (await guest.get(`/author-achievements/${achievementId}/image`)).status,
+    ).toBe(404);
     expect(
       (await stranger.delete(`/author/application/achievements/${achievementId}`))
         .status,
