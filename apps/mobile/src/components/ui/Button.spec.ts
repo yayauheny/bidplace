@@ -18,7 +18,7 @@ import {
   figmaButtonTokens,
   figmaButtonVariants,
 } from '@bidplace/design-tokens';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, expectTypeOf, it, vi } from 'vitest';
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
@@ -271,12 +271,17 @@ vi.mock('@hugeicons/react-native', () => ({
 }));
 
 import {
+  type ButtonProps,
   DestructiveButton,
   PrimaryButton,
   SecondaryButton,
   TextButton,
 } from './Button';
-import { FigmaButton, FigmaButtonStatePreview } from '../figma/FigmaButton';
+import {
+  FigmaButton,
+  FigmaButtonStatePreview,
+  type FigmaButtonProps,
+} from '../figma/FigmaButton';
 import { FigmaButtonSurface } from '../figma/FigmaButtonSurface';
 
 afterEach(() => {
@@ -308,6 +313,12 @@ function buttonOf(container: ParentNode) {
   const button = container.querySelector('button');
   if (!button) throw new Error('expected a button');
   return button;
+}
+
+function interactiveOf(container: ParentNode) {
+  const node = container.querySelector('button');
+  if (!node) throw new Error('expected an interactive control');
+  return node;
 }
 
 function expectMatrixMetrics(button: HTMLButtonElement) {
@@ -561,8 +572,120 @@ describe('shared text button wrappers', () => {
     );
     const link = buttonOf(view.container);
     expect(link.dataset.role).toBe('link');
+    expect(link.getAttribute('aria-label')).toBe('Модерация');
     expectMatrixMetrics(link);
     expect(link.dataset.bg).toBe('transparent');
     view.unmount();
+  });
+
+  it('exposes button semantics and label for onPress actions', async () => {
+    const view = await mount(
+      createElement(FigmaButton, {
+        label: 'Сохранить',
+        onPress: () => undefined,
+      }),
+    );
+    const control = buttonOf(view.container);
+    expect(control.dataset.role).toBe('button');
+    expect(control.getAttribute('aria-label')).toBe('Сохранить');
+    view.unmount();
+  });
+
+  it('forwards href through semantic button wrappers with link role', async () => {
+    const cases = [
+      {
+        name: 'primary',
+        node: createElement(PrimaryButton, {
+          label: 'Создать',
+          href: '/products/new',
+          width: 'full',
+        }),
+      },
+      {
+        name: 'secondary',
+        node: createElement(SecondaryButton, {
+          label: 'Профиль',
+          href: '/profile',
+        }),
+      },
+      {
+        name: 'text',
+        node: createElement(TextButton, {
+          label: 'Автор',
+          href: {
+            pathname: '/seller/[slug]',
+            params: { slug: 'demo' },
+          },
+        }),
+      },
+    ] as const;
+
+    for (const caseItem of cases) {
+      const view = await mount(caseItem.node);
+      const control = interactiveOf(view.container);
+      expect(control.dataset.role).toBe('link');
+      expect(control.getAttribute('aria-label')).toBe(
+        caseItem.node.props.label as string,
+      );
+      view.unmount();
+    }
+  });
+
+  it('keeps disabled and loading href controls inert', async () => {
+    const disabled = await mount(
+      createElement(FigmaButton, {
+        label: 'Кабинет',
+        href: '/cabinet',
+        disabled: true,
+      }),
+    );
+    const loading = await mount(
+      createElement(PrimaryButton, {
+        label: 'Дальше',
+        href: '/register',
+        loading: true,
+      }),
+    );
+
+    const disabledControl = buttonOf(disabled.container);
+    const loadingControl = buttonOf(loading.container);
+    expect(disabledControl.disabled).toBe(true);
+    expect(disabledControl.getAttribute('aria-disabled')).toBe('true');
+    expect(loadingControl.disabled).toBe(true);
+    expect(loadingControl.getAttribute('aria-busy')).toBe('true');
+
+    disabled.unmount();
+    loading.unmount();
+  });
+});
+
+describe('button href/onPress type contract', () => {
+  it('requires either href or onPress', () => {
+    expectTypeOf<{ label: string }>().not.toMatchTypeOf<FigmaButtonProps>();
+    expectTypeOf<{ label: string }>().not.toMatchTypeOf<ButtonProps>();
+  });
+
+  it('rejects href and onPress together', () => {
+    expectTypeOf<{
+      label: string;
+      href: '/cabinet';
+      onPress: () => void;
+    }>().not.toMatchTypeOf<FigmaButtonProps>();
+    expectTypeOf<{
+      label: string;
+      href: '/cabinet';
+      onPress: () => void;
+    }>().not.toMatchTypeOf<ButtonProps>();
+  });
+
+  it('accepts object href routes', () => {
+    expectTypeOf<{
+      label: string;
+      href: { pathname: '/register'; params: { redirectTo: '/' } };
+    }>().toMatchTypeOf<FigmaButtonProps>();
+    expectTypeOf<{
+      label: string;
+      href: { pathname: '/register'; params: { redirectTo: '/' } };
+    }>().toMatchTypeOf<ButtonProps>();
   });
 });

@@ -14,7 +14,9 @@ test('approved author opens an owned Work from the cabinet', async ({
     await page.goto('/cabinet');
     await expect(page.getByText('Кабинет автора')).toBeVisible();
     await expect(page.getByText(fixture.product.title)).toBeVisible();
-    await page.getByRole('button', { name: 'Редактировать' }).last().click();
+    await page
+      .getByRole('link', { name: 'Редактировать', exact: true })
+      .click();
     await expect(page).toHaveURL(new RegExp(`/products/${fixture.product.id}`));
   } finally {
     await context.close();

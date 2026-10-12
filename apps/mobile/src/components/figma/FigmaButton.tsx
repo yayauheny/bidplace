@@ -133,15 +133,19 @@ type FigmaButtonBaseProps = {
   testID?: string;
 };
 
-type FigmaButtonPressProps = FigmaButtonBaseProps & {
-  href?: undefined;
+type FigmaButtonPressAction = {
+  href?: never;
   onPress: () => void;
 };
 
-type FigmaButtonLinkProps = FigmaButtonBaseProps & {
+type FigmaButtonNavigationAction = {
   href: Href;
-  onPress?: () => void;
+  onPress?: never;
 };
+
+type FigmaButtonPressProps = FigmaButtonBaseProps & FigmaButtonPressAction;
+
+type FigmaButtonLinkProps = FigmaButtonBaseProps & FigmaButtonNavigationAction;
 
 export type FigmaButtonProps = FigmaButtonPressProps | FigmaButtonLinkProps;
 

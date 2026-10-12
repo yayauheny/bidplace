@@ -17,12 +17,29 @@ type ButtonPropsBase = {
   alignSelf?: ViewStyle['alignSelf'];
 };
 
-type ButtonProps =
-  | (ButtonPropsBase & { href?: undefined; onPress: () => void })
-  | (ButtonPropsBase & { href: Href; onPress?: () => void });
+type ButtonPressAction = {
+  href?: never;
+  onPress: () => void;
+};
+
+type ButtonNavigationAction = {
+  href: Href;
+  onPress?: never;
+};
+
+export type ButtonProps = ButtonPropsBase &
+  (ButtonPressAction | ButtonNavigationAction);
 
 function resolvedButtonWidth(width: ButtonProps['width']) {
   return width === 'block' ? 'full' : (width ?? 'content');
+}
+
+type TextButtonProps = Omit<ButtonProps, 'size' | 'alignSelf'>;
+
+function isPressButtonProps(
+  props: TextButtonProps,
+): props is TextButtonProps & ButtonPressAction {
+  return !('href' in props);
 }
 
 export function PrimaryButton({
@@ -76,43 +93,27 @@ export function DestructiveButton({
   );
 }
 
-export function TextButton({
-  label,
-  disabled,
-  loading,
-  icon,
-  accessibilityHint,
-  width,
-  ...action
-}: Omit<ButtonProps, 'size' | 'alignSelf'>) {
+export function TextButton(props: TextButtonProps) {
+  const { label, disabled, loading, icon, accessibilityHint, width } = props;
   const resolvedWidth = resolvedButtonWidth(width);
-  if (action.href) {
-    return (
-      <FigmaButton
-        label={label}
-        href={action.href}
-        onPress={action.onPress}
-        disabled={disabled}
-        loading={loading}
-        icon={icon}
-        accessibilityHint={accessibilityHint}
-        width={resolvedWidth}
-        variant="ghost"
-      />
-    );
+  const shared = {
+    label,
+    disabled,
+    loading,
+    icon,
+    accessibilityHint,
+    width: resolvedWidth,
+    variant: 'ghost' as const,
+  };
+
+  if (isPressButtonProps(props)) {
+    return <FigmaButton {...shared} onPress={props.onPress} />;
   }
 
-  const { onPress } = action as { onPress: () => void };
-  return (
-    <FigmaButton
-      label={label}
-      onPress={onPress}
-      disabled={disabled}
-      loading={loading}
-      icon={icon}
-      accessibilityHint={accessibilityHint}
-      width={resolvedWidth}
-      variant="ghost"
-    />
-  );
+  const { href } = props;
+  if (href === undefined) {
+    throw new Error('TextButton requires href or onPress');
+  }
+
+  return <FigmaButton {...shared} href={href} />;
 }
