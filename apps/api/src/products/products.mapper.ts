@@ -11,6 +11,7 @@ import { publicSellerProfileSelect } from '../sellers/seller-profile.mapper';
 
 export const productImageBlobSelect = {
   mediaAsset: { select: publicMediaAssetSelect },
+  mediaAssetId: true,
   id: true,
   mimeType: true,
   byteLength: true,
@@ -256,6 +257,7 @@ export type ProductRecord = Prisma.ProductGetPayload<{
 
 type GalleryImage = {
   mediaAsset?: PublicMediaAsset | null;
+  mediaAssetId?: string | null;
   id: string;
   position: number;
   mimeType: string;
@@ -287,6 +289,7 @@ export function toImageContracts(
       throw new Error('Published media is not delivered');
     return {
       id: image.id,
+      mediaAssetId: image.mediaAssetId ?? null,
       position: image.position,
       url: `/api/images/${image.id}`,
       mimeType: image.mimeType,
