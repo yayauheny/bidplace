@@ -1205,3 +1205,52 @@ describe('ImagesService media gallery admission', () => {
 function productImageUploadLimitMax(): number {
   return imagePolicy.productImageUploadLimits.maxFiles;
 }
+
+
+describe('Story image release safety', () => {
+  function setup(held: boolean, used = 0) {
+    const release = vi.fn();
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ id: 'product-id' }]),
+      product: { findUnique: vi.fn().mockResolvedValue(createApprovedProduct([])) },
+      productRevisionStoryBlock: { count: vi.fn().mockResolvedValue(used) },
+      productRevisionStoryAsset: {
+        findUnique: vi.fn().mockResolvedValue(held ? { revisionId: 'revision-id' } : null),
+        delete: vi.fn(),
+      },
+      mediaAsset: { findUnique: vi.fn().mockResolvedValue({ purpose: 'STORY_IMAGE' }) },
+    };
+    const prisma = {
+      $transaction: vi.fn(async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx)),
+    };
+    const service = new ImagesService(
+      prisma as never,
+      createImageStoreMock() as never,
+      { enabled: true, enqueueCleanup: release } as never,
+    );
+    return { service, tx, release };
+  }
+
+  it('never cleans up a gallery asset without a story hold', async () => {
+    const { service, tx, release } = setup(false);
+    await expect(service.removeStoryImage('owner-id', 'product-id', 'gallery-asset'))
+      .resolves.toEqual({ ok: true });
+    expect(tx.productRevisionStoryAsset.delete).not.toHaveBeenCalled();
+    expect(release).not.toHaveBeenCalled();
+  });
+
+  it('releases a detached story asset only after deleting its hold', async () => {
+    const { service, tx, release } = setup(true);
+    await expect(service.removeStoryImage('owner-id', 'product-id', 'story-asset'))
+      .resolves.toEqual({ ok: true });
+    expect(tx.productRevisionStoryAsset.delete).toHaveBeenCalledOnce();
+    expect(release).toHaveBeenCalledOnce();
+  });
+
+  it('does not release an asset while it remains in a story block', async () => {
+    const { service, release } = setup(true, 1);
+    await expect(service.removeStoryImage('owner-id', 'product-id', 'story-asset'))
+      .rejects.toThrow('Story image is used by a block');
+    expect(release).not.toHaveBeenCalled();
+  });
+});
