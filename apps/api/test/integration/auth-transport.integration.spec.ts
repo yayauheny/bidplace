@@ -147,6 +147,19 @@ describe('auth HTTP transport', () => {
     );
   });
 
+  it('serves the legal document pack anonymously with a no-store response', async () => {
+    const visitor = new HttpTestClient(http.baseUrl, 'http://localhost:8081', '203.0.113.42');
+    const response = await visitor.get('/auth/legal');
+    expect(response.status).toBe(200);
+    expect(response.headers.get('Cache-Control')).toContain('no-store');
+    expect(await response.json()).toMatchObject({
+      version: LEGAL_VERSION,
+      documents: [
+        { id: 'agreement', title: 'Agreement', version: LEGAL_VERSION },
+      ],
+    });
+  });
+
   it('registers over HTTP with normalized identity fields, establishes a session and rejects duplicates without a write', async () => {
     await createPermissionFixture(prisma);
     const client = new HttpTestClient(
