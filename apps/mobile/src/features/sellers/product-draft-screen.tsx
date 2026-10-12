@@ -613,6 +613,7 @@ export function ProductDraftScreen({
       if (!beginLockedTransition()) return false;
     }
     if (storyEditor.dirty && !(await storyEditor.save())) {
+      setFormAlert('Не удалось сохранить историю создания. Проверьте блоки и повторите сохранение.');
       if (mode === 'transition') endLockedTransition();
       return false;
     }
@@ -773,7 +774,7 @@ export function ProductDraftScreen({
   };
 
   const saveAndClose = async () => {
-    if (transitionLock.current) return;
+    if (transitionLock.current || saveInFlight.current || storyEditor.pending) return;
     const operation = sessionOperation.current;
     if (form.formState.isDirty || storyEditor.dirty) {
       if (!(await persistAll('transition'))) return;
@@ -809,7 +810,12 @@ export function ProductDraftScreen({
     }
     try {
       setFormAlert(null);
-      if (storyEditor.dirty && !(await storyEditor.save())) return;
+      if (storyEditor.dirty && !(await storyEditor.save())) {
+        if (sessionOperation.current === operation) {
+          setFormAlert('История создания не сохранена. Исправьте ошибки и повторите отправку.');
+        }
+        return;
+      }
       if (sessionOperation.current !== operation) return;
       await submit.mutateAsync({
         id,
@@ -853,7 +859,9 @@ export function ProductDraftScreen({
       if (sessionOperation.current !== operation) return;
       await storyEditor.addImage(blob);
     } catch {
-      storyEditor.reportError('Не удалось прочитать выбранное фото. Выберите файл ещё раз.');
+      if (sessionOperation.current === operation) {
+        storyEditor.reportError('Не удалось прочитать выбранное фото. Выберите файл ещё раз.');
+      }
     }
   };
 
