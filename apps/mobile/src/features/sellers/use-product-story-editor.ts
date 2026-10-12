@@ -54,6 +54,9 @@ export function useProductStoryEditor({
   const retry = useRef<{ snapshot: string; key: string } | null>(null);
   const pendingImage = useRef<{ image: Blob; key: string } | null>(null);
   const uploaded = useRef<Set<string>>(new Set());
+  const persistedAssets = useRef<Set<string>>(new Set(
+    (story?.blocks ?? []).flatMap((block) => block.type === 'IMAGE' ? [block.mediaAssetId] : []),
+  ));
 
   const replace = (next: DraftState) => {
     current.current = next;
@@ -64,6 +67,9 @@ export function useProductStoryEditor({
     const previous = current.current;
     if (previous.identity !== identity) {
       uploaded.current = new Set();
+      persistedAssets.current = new Set(
+        (story?.blocks ?? []).flatMap((block) => block.type === 'IMAGE' ? [block.mediaAssetId] : []),
+      );
       outstanding.current = null;
       pendingImage.current = null;
       retry.current = null;
@@ -74,6 +80,9 @@ export function useProductStoryEditor({
       !previous.pending &&
       story.storyToken > previous.token
     ) {
+      persistedAssets.current = new Set(
+        story.blocks.flatMap((block) => block.type === 'IMAGE' ? [block.mediaAssetId] : []),
+      );
       replace(fromServer(identity, story));
     }
   }, [identity, story?.storyToken]);
@@ -89,6 +98,17 @@ export function useProductStoryEditor({
     const count = current.current.blocks.filter((block) => block.type !== 'IMAGE').length;
     if (count >= STORY_LIMITS.maxTextBlocks) return;
     change((blocks) => [...blocks, { key: crypto.randomUUID(), type, text: '' }]);
+  };
+
+  const addGalleryImage = (mediaAssetId: string) => {
+    const count = current.current.blocks.filter((block) => block.type === 'IMAGE').length;
+    if (count >= STORY_LIMITS.maxImages) return;
+    change((blocks) => [...blocks, {
+      key: crypto.randomUUID(),
+      type: 'IMAGE',
+      mediaAssetId,
+      altText: null,
+    }]);
   };
 
   const editText = (key: string, text: string) =>
@@ -191,9 +211,12 @@ export function useProductStoryEditor({
           key: before.blocks[index]?.key ?? block.id,
         }));
         const removedAssets = [...new Set([
-          ...before.blocks.filter((block) => block.type === 'IMAGE').map((block) => block.mediaAssetId),
+          ...persistedAssets.current,
           ...uploaded.current,
         ])].filter((id) => !result.blocks.some((block) => block.type === 'IMAGE' && block.mediaAssetId === id));
+        persistedAssets.current = new Set(
+          result.blocks.flatMap((block) => block.type === 'IMAGE' ? [block.mediaAssetId] : []),
+        );
         replace({ ...current.current, token: result.storyToken, blocks: saved, dirty: false, pending: false });
         for (const assetId of removedAssets) {
           try {
@@ -214,7 +237,7 @@ export function useProductStoryEditor({
         }
         return false;
       } finally {
-        outstanding.current = null;
+        if (outstanding.current === task) outstanding.current = null;
       }
     })();
     outstanding.current = task;
@@ -228,6 +251,7 @@ export function useProductStoryEditor({
     error: state.error,
     retryUpload: pendingImage.current !== null,
     addText,
+    addGalleryImage,
     editText,
     editAlt,
     remove,
