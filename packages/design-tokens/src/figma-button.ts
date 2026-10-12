@@ -4,8 +4,21 @@ import { designTokens } from './tokens';
  * Text-button geometry and 16-cell visual matrix from Figma `292:5058`.
  * Button-only colors; does not replace shared field/chip/quietFill tokens.
  */
-export const figmaButtonVariants = ['solid', 'outline', 'ghost', 'muted'] as const;
-export const figmaButtonSizes = ['matrix', 'auth', 'suggestion'] as const;
+export const figmaButtonVariants = [
+  'solid',
+  'outline',
+  'ghost',
+  'muted',
+] as const;
+export const figmaButtonSizes = [
+  'matrix',
+  'auth',
+  'suggestion',
+  'navigation',
+  'exitConfirm',
+  'event',
+  'pickerAction',
+] as const;
 export type FigmaButtonVariant = (typeof figmaButtonVariants)[number];
 
 export const figmaButtonInteractions = [
@@ -177,8 +190,7 @@ export function figmaButtonMatrixCell(
   }
 
   const fill = baseFill(variant);
-  const active =
-    interaction === 'hover' || interaction === 'pressed';
+  const active = interaction === 'hover' || interaction === 'pressed';
   const overlay = active ? activeOverlay(variant) : null;
   const strokeMode = strokeModeFor(variant, interaction);
 
@@ -229,6 +241,48 @@ export function figmaButtonSizeMetrics(size: FigmaButtonSize = 'matrix') {
       typography: designTokens.typography.authSuggestion,
     };
   }
+  if (size === 'navigation') {
+    return {
+      paddingX: 16.5,
+      paddingY: 10,
+      typography: {
+        fontFamily: 'Inter_500Medium',
+        fontSize: 14,
+        lineHeight: 20,
+        letterSpacing: -0.28,
+        fontWeight: '500' as const,
+      },
+    };
+  }
+  if (size === 'exitConfirm') {
+    return {
+      paddingX: 14,
+      paddingY: 14,
+      typography: {
+        ...figmaButtonTokens.typography,
+        fontFamily: 'Inter_500Medium',
+        fontWeight: '500' as const,
+      },
+    };
+  }
+  if (size === 'event') {
+    return {
+      paddingX: 16,
+      paddingY: 10,
+      typography: figmaButtonTokens.typography,
+    };
+  }
+  if (size === 'pickerAction') {
+    return {
+      paddingX: 16,
+      paddingY: 12,
+      typography: {
+        ...figmaButtonTokens.typography,
+        fontFamily: 'Inter_500Medium',
+        fontWeight: '500' as const,
+      },
+    };
+  }
   return {
     paddingX: figmaButtonTokens.metrics.paddingX,
     paddingY: figmaButtonTokens.metrics.paddingY,
@@ -237,6 +291,13 @@ export function figmaButtonSizeMetrics(size: FigmaButtonSize = 'matrix') {
 }
 
 export function figmaButtonContentHeight(size: FigmaButtonSize = 'matrix') {
+  if (size === 'navigation') {
+    return 47;
+  }
+  if (size === 'event') return 47;
+  if (size === 'exitConfirm') {
+    return designTokens.auth.exitActionHeight;
+  }
   const { paddingY, typography } = figmaButtonSizeMetrics(size);
   const { strokeWidth } = figmaButtonTokens.metrics;
   return (paddingY + strokeWidth) * 2 + typography.lineHeight;

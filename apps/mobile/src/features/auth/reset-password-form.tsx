@@ -1,4 +1,4 @@
-import { Link, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -41,9 +41,13 @@ export function ResetPasswordForm({ token }: { token: string | null }) {
         <AppText role="bodySmall">
           Откройте ссылку из письма или запросите восстановление пароля заново.
         </AppText>
-        <Link href="/forgot-password" asChild>
-          <FigmaButton label="Запросить новую ссылку" variant="ghost" size="auth" width="full" onPress={() => undefined} />
-        </Link>
+        <FigmaButton
+          label="Запросить новую ссылку"
+          variant="ghost"
+          size="auth"
+          width="full"
+          href="/forgot-password"
+        />
       </View>
     );
   }
@@ -133,9 +137,13 @@ export function ResetPasswordForm({ token }: { token: string | null }) {
           loading={form.formState.isSubmitting}
           onPress={submit}
         />
-        <Link href="/forgot-password" asChild>
-          <FigmaButton label="Запросить новую ссылку" variant="ghost" size="auth" width="full" onPress={() => undefined} />
-        </Link>
+        <FigmaButton
+          label="Запросить новую ссылку"
+          variant="ghost"
+          size="auth"
+          width="full"
+          href="/forgot-password"
+        />
       </View>
   );
 }

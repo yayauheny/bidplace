@@ -42,7 +42,7 @@ export function createSellersClient(context: RequestContext) {
         {
           method: 'POST',
           body: {
-            ...parseRequest(sellerProfileCreateRequestSchema, input),
+            data: parseRequest(sellerProfileCreateRequestSchema, input),
             profilePhoto,
           },
           asFormData: true,
@@ -57,7 +57,7 @@ export function createSellersClient(context: RequestContext) {
         {
           method: 'PATCH',
           body: {
-            ...parseRequest(sellerProfileUpdateRequestSchema, input),
+            data: parseRequest(sellerProfileUpdateRequestSchema, input),
             profilePhoto,
           },
           asFormData: true,

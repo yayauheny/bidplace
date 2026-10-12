@@ -5,14 +5,17 @@ import { designTokens } from '@bidplace/design-tokens';
 
 import { FigmaTextField } from '../figma/FigmaTextField';
 import { type FigmaIconName } from '../figma/figma-icon-names';
+import { type FigmaFieldVariant } from '../figma/figma-text-field-style';
 import { AppText } from './AppText';
 
 export type TextFieldProps = TextInputProps & {
   label: string;
   hint?: string;
   error?: string;
+  /** Adds the ` *` marker to the label. Validation is owned by the form, not by this prop. */
   required?: boolean;
   metrics?: 'default' | 'authPassword' | 'authScreenPassword';
+  variant?: FigmaFieldVariant;
   icon?: FigmaIconName;
   iconColor?: string;
   prefix?: string;
@@ -25,6 +28,7 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
   error,
   required,
   metrics,
+  variant,
   icon,
   iconColor,
   prefix,
@@ -45,6 +49,7 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
         label={required ? `${label} *` : label}
         error={error}
         metrics={metrics}
+        variant={variant}
         icon={icon}
         iconColor={iconColor}
         prefix={prefix}

@@ -24,7 +24,7 @@
 
 Отдельно: «мне есть 18 лет». Паспорт не просим.
 
-Список документов и короткие фразы — [13-FOOTER-AND-COMPLAINT.md](./13-FOOTER-AND-COMPLAINT.md). Полные черновики — [../legal/drafts/](../legal/drafts/).
+Список документов и короткие фразы — [13-FOOTER-AND-COMPLAINT.md](./13-FOOTER-AND-COMPLAINT.md). Полные черновики — [../legal/drafts/](../legal/archive/2026-09-08/drafts).
 
 ## Вход
 

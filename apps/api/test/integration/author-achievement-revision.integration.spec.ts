@@ -9,7 +9,6 @@ import {
 import {
   createPermissionFixture,
   fixturePasswordHash,
-  permissionImage,
   resetPermissionFixture,
 } from './permission-fixtures';
 import {
@@ -40,18 +39,11 @@ async function login(client: HttpTestClient, email: string, password: string) {
   expect(response.status).toBe(201);
 }
 
-function achievementForm(body: string, withImage = false) {
-  const form = new FormData();
-  form.set('body', body);
-  form.set('occurredDate', JSON.stringify({ year: 2025, month: 3, day: null }));
-  if (withImage) {
-    form.append(
-      'image',
-      new Blob([permissionImage], { type: 'image/png' }),
-      'show.png',
-    );
-  }
-  return form;
+function achievementWrite(body: string) {
+  return {
+    body,
+    occurredDate: { year: 2025, month: 3, day: null },
+  };
 }
 
 type PublicAchievement = { id: string; body: string };
@@ -158,7 +150,7 @@ describe('author achievement editing revision HTTP contract', () => {
 
     const added = await owner.post(
       '/author/application/achievements',
-      achievementForm('Added show', true),
+      achievementWrite('Added show'),
     );
     expect(added.status).toBe(201);
     const addedId = ((await added.json()) as { achievement: { id: string } })
@@ -172,7 +164,7 @@ describe('author achievement editing revision HTTP contract', () => {
     ).toBe(404);
     expect(
       (await owner.get(`/author-achievements/${addedId}/image`)).status,
-    ).toBe(200);
+    ).toBe(404);
 
     expect((await owner.post('/author/application/submit')).status).toBe(201);
     expect(
@@ -196,7 +188,7 @@ describe('author achievement editing revision HTTP contract', () => {
     expect(publishedAfter[0]!.id).toBe(addedId);
     expect(
       (await guest.get(`/author-achievements/${addedId}/image`)).status,
-    ).toBe(200);
+    ).toBe(404);
   });
 
   it('rejects achievement writes while a revision is pending review', async () => {
@@ -210,7 +202,7 @@ describe('author achievement editing revision HTTP contract', () => {
 
     const added = await owner.post(
       '/author/application/achievements',
-      achievementForm('Too early'),
+      achievementWrite('Too early'),
     );
     expect(added.status).toBe(409);
 

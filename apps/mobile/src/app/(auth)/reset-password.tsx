@@ -11,10 +11,6 @@ export default function ResetPasswordScreen() {
     <AuthViewport
       title="Новый пароль"
       tone="section"
-      exit={{
-        title: 'Прервать восстановление',
-        description: 'Новый пароль не сохранится, пока форма не отправлена.',
-      }}
     >
       <ResetPasswordForm token={resolvedToken} />
     </AuthViewport>

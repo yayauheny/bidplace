@@ -1,12 +1,12 @@
 import { MediaLifecycleService } from '../core/media/media-lifecycle.service';
 import {
-  creationStoryResponseSchema,
   productResponseSchema,
-  type CreationStoryWriteRequest,
   type PortfolioWorksQuery,
+  isEditableProductStatus,
   type ProductStatus,
   type ProductWriteRequest,
   type SellerStatus,
+  type StoryWriteRequest,
 } from '@bidplace/contracts';
 import { Prisma } from '@bidplace/database';
 import {
@@ -23,10 +23,10 @@ import {
   portfolioCatalogProductSelect,
   productRevisionOwnerSelect,
   productSelect,
-  toCreationStepContract,
   toImageContracts,
   toOwnerContractProduct,
   toProductResponse,
+  projectedCatalogLabel,
   toRevisionGalleryImages,
   type PortfolioCatalogProductRecord,
 } from './products.mapper';
@@ -37,6 +37,8 @@ import {
   type PublicWorkFacetRow,
 } from './products-catalog.query';
 import { missingProductApprovalFields } from './product-requirements';
+import { copyRevisionStory, readStory, replaceProductStory } from './product-story';
+import { assertSelectableCategory, syncWorkSelection } from './work-selection';
 import {
   assertProductWritable,
   lockProductRowForUpdate,
@@ -53,6 +55,29 @@ import {
 } from './product-revision-state';
 import { assertApprovedSeller } from '../sellers/seller-capability';
 import { toPublicSellerProfile } from '../sellers/seller-profile.mapper';
+
+async function readOwnerProductResponse(
+  tx: Prisma.TransactionClient,
+  productId: string,
+  revisionId: string,
+) {
+  const [product, editingRevision] = await Promise.all([
+    tx.product.findUniqueOrThrow({
+      where: { id: productId },
+      select: productSelect,
+    }),
+    tx.productRevision.findUniqueOrThrow({
+      where: { id: revisionId },
+      select: productRevisionOwnerSelect,
+    }),
+  ]);
+  return productResponseSchema.parse({
+    product: toOwnerContractProduct(product, editingRevision),
+    ...(product.mediaOperations?.[0]
+      ? { publication: product.mediaOperations[0] }
+      : {}),
+  });
+}
 
 @Injectable()
 export class ProductsService {
@@ -74,11 +99,12 @@ export class ProductsService {
     }
 
     assertApprovedSeller(seller.status as SellerStatus);
-    return this.createWithPublicId(seller.id, input);
+    return this.createWithPublicId(seller.id, userId, input);
   }
 
   private async createWithPublicId(
     sellerProfileId: string,
+    authorUserId: string,
     input: ProductWriteRequest,
   ) {
     for (let attempt = 0; attempt < 5; attempt += 1) {
@@ -89,8 +115,6 @@ export class ProductsService {
           categoryId: input.categoryId ?? null,
           title: input.title ?? null,
           story: input.story ?? null,
-          technique: input.technique ?? null,
-          materials: input.materials ?? null,
           dimensions: input.dimensions ?? null,
           weight: input.weight ?? null,
           year: input.year ?? null,
@@ -105,6 +129,9 @@ export class ProductsService {
         };
 
         const product = await this.prisma.$transaction(async (tx) => {
+          if (input.categoryId) {
+            await assertSelectableCategory(tx, input.categoryId, null);
+          }
           const created = await tx.product.create({ data });
           const revision = await tx.productRevision.create({
             data: {
@@ -114,8 +141,6 @@ export class ProductsService {
               categoryId: data.categoryId ?? null,
               title: data.title ?? null,
               story: data.story ?? null,
-              technique: data.technique ?? null,
-              materials: data.materials ?? null,
               dimensions: data.dimensions ?? null,
               weight: data.weight ?? null,
               year: data.year ?? null,
@@ -128,15 +153,15 @@ export class ProductsService {
               creationIntro: data.creationIntro ?? null,
             },
           });
-
-          return tx.product.update({
+          await syncWorkSelection(tx, revision.id, authorUserId, input, null);
+          await tx.product.update({
             where: { id: created.id },
             data: { editingRevisionId: revision.id },
-            select: productSelect,
           });
+          return readOwnerProductResponse(tx, created.id, revision.id);
         });
 
-        return toProductResponse(product);
+        return product;
       } catch (error) {
         if (
           !(
@@ -169,14 +194,6 @@ export class ProductsService {
     if (input.story !== undefined) {
       data.story = input.story;
       revisionData.story = input.story;
-    }
-    if (input.technique !== undefined) {
-      data.technique = input.technique;
-      revisionData.technique = input.technique;
-    }
-    if (input.materials !== undefined) {
-      data.materials = input.materials;
-      revisionData.materials = input.materials;
     }
     if (input.dimensions !== undefined) {
       data.dimensions = input.dimensions;
@@ -278,6 +295,7 @@ export class ProductsService {
               },
             },
           });
+          await copyRevisionStory(tx, published.id, editing.id);
           editingRevisionId = editing.id;
           await tx.product.update({
             where: { id: product.id },
@@ -293,27 +311,46 @@ export class ProductsService {
           }
         }
 
-        await tx.productRevision.update({
+        const priorRevision = await tx.productRevision.findUniqueOrThrow({
           where: { id: editingRevisionId },
-          data: revisionData,
+          select: { categoryId: true },
         });
-        const [updated, editingRevision] = await Promise.all([
-          tx.product.findUniqueOrThrow({
-            where: { id },
-            select: productSelect,
-          }),
-          tx.productRevision.findUniqueOrThrow({
+        if (input.categoryId) {
+          await assertSelectableCategory(
+            tx,
+            input.categoryId,
+            priorRevision.categoryId,
+          );
+        }
+        if (Object.keys(revisionData).length > 0) {
+          await tx.productRevision.update({
             where: { id: editingRevisionId },
-            select: productRevisionOwnerSelect,
-          }),
-        ]);
-        return productResponseSchema.parse({
-          product: toOwnerContractProduct(updated, editingRevision),
-        });
+            data: revisionData,
+          });
+        }
+        await syncWorkSelection(
+          tx,
+          editingRevisionId,
+          userId,
+          input,
+          priorRevision.categoryId,
+        );
+        return readOwnerProductResponse(tx, id, editingRevisionId);
       }
       assertProductWritable(product, userId, 'edit');
       if (!product.editingRevisionId) {
         throw new ConflictException('Product editing revision is missing');
+      }
+      const priorRevision = await tx.productRevision.findUniqueOrThrow({
+        where: { id: product.editingRevisionId },
+        select: { categoryId: true },
+      });
+      if (input.categoryId) {
+        await assertSelectableCategory(
+          tx,
+          input.categoryId,
+          priorRevision.categoryId,
+        );
       }
       const editingRevision = await tx.productRevision.findUniqueOrThrow({
         where: { id: product.editingRevisionId },
@@ -323,36 +360,38 @@ export class ProductsService {
         throw new ConflictException('Product revision cannot be edited');
       }
 
-      const written = await tx.product.updateMany({
-        where: { id, ...writableProductWhere },
-        data,
-      });
-      if (written.count !== 1) {
-        assertProductWritable(
-          await tx.product.findUnique({
-            where: { id },
-            select: productWriteGuardSelect,
-          }),
-          userId,
-          'edit',
-        );
-        throw new ConflictException('Product cannot be edited');
+      if (Object.keys(data).length > 0) {
+        const written = await tx.product.updateMany({
+          where: { id, ...writableProductWhere },
+          data,
+        });
+        if (written.count !== 1) {
+          assertProductWritable(
+            await tx.product.findUnique({
+              where: { id },
+              select: productWriteGuardSelect,
+            }),
+            userId,
+            'edit',
+          );
+          throw new ConflictException('Product cannot be edited');
+        }
       }
 
-      const [updated, persistedRevision] = await Promise.all([
-        tx.product.findUniqueOrThrow({
-          where: { id },
-          select: productSelect,
-        }),
-        tx.productRevision.update({
+      if (Object.keys(revisionData).length > 0) {
+        await tx.productRevision.update({
           where: { id: product.editingRevisionId },
           data: revisionData,
-          select: productRevisionOwnerSelect,
-        }),
-      ]);
-      return productResponseSchema.parse({
-        product: toOwnerContractProduct(updated, persistedRevision),
-      });
+        });
+      }
+      await syncWorkSelection(
+        tx,
+        product.editingRevisionId,
+        userId,
+        input,
+        priorRevision.categoryId,
+      );
+      return readOwnerProductResponse(tx, id, product.editingRevisionId);
     });
   }
 
@@ -659,121 +698,66 @@ export class ProductsService {
   async replaceCreationStory(
     userId: string,
     productId: string,
-    input: CreationStoryWriteRequest,
+    input: StoryWriteRequest,
   ) {
-    const incomingIds = input.steps.flatMap((step) =>
-      step.id ? [step.id] : [],
-    );
-    if (new Set(incomingIds).size !== incomingIds.length) {
-      throw new ConflictException('Creation steps must be unique');
-    }
-
     return runReadCommittedTransaction(this.prisma, async (tx) => {
       await lockProductRowForUpdate(tx, productId);
       const product = await tx.product.findUnique({
         where: { id: productId },
-        select: productWriteGuardSelect,
+        select: {
+          ...productWriteGuardSelect,
+          editingRevisionId: true,
+          publishedRevisionId: true,
+        },
       });
-      assertProductWritable(product, userId, 'creation-story');
-
-      const existing = await tx.productCreationStep.findMany({
-        where: { productId },
-        select: { id: true },
-      });
-      const existingIds = new Set(existing.map((step) => step.id));
-      if (incomingIds.some((id) => !existingIds.has(id))) {
-        throw new NotFoundException('Creation step not found');
+      if (!product) throw new NotFoundException('Product not found');
+      if (product.sellerProfile.userId !== userId) {
+        throw new ForbiddenException('Product is not owned by user');
       }
-
-      const introWritten = await tx.product.updateMany({
-        where: { id: product.id, ...writableProductWhere },
-        data: { creationIntro: input.intro },
-      });
-      if (introWritten.count !== 1) {
+      assertApprovedSeller(product.sellerProfile.status as SellerStatus);
+      if (product.listings.length > 0) {
+        throw new ConflictException('Product is locked by an active Listing');
+      }
+      if (!product.editingRevisionId) {
+        throw new ConflictException('Product editing revision is missing');
+      }
+      const editingPublishedRevision =
+        product.publishedRevisionId === product.editingRevisionId;
+      const separateDraftOfPublishedWork =
+        !editingPublishedRevision &&
+        (product.status === 'APPROVED' || product.status === 'ARCHIVED');
+      if (
+        editingPublishedRevision ||
+        (!separateDraftOfPublishedWork &&
+          !isEditableProductStatus(product.status as ProductStatus))
+      ) {
         throw new ForbiddenException('Product creation story is locked');
       }
-      await tx.productCreationStep.deleteMany({
-        where: { productId, id: { notIn: incomingIds } },
+      const revision = await tx.productRevision.findUniqueOrThrow({
+        where: { id: product.editingRevisionId },
+        select: { status: true },
       });
-      await tx.productCreationStep.updateMany({
-        where: { productId },
-        data: { position: { increment: 1000 } },
-      });
-      for (const [position, step] of input.steps.entries()) {
-        if (step.id) {
-          await tx.productCreationStep.update({
-            where: { id: step.id },
-            data: { position, title: step.title, body: step.body },
-          });
-        } else {
-          await tx.productCreationStep.create({
-            data: { productId, position, title: step.title, body: step.body },
-          });
-        }
+      if (!canAuthorEditRevision(revision.status)) {
+        throw new ConflictException('Product revision cannot be edited');
       }
-
-      const steps = await tx.productCreationStep.findMany({
-        where: { productId },
-        orderBy: { position: 'asc' },
-        select: {
-          id: true,
-          position: true,
-          title: true,
-          body: true,
-          mimeType: true,
-          byteLength: true,
-          checksum: true,
-          width: true,
-          height: true,
-        },
-      });
-      return creationStoryResponseSchema.parse({
-        creation: {
-          intro: input.intro,
-          steps: steps.map(toCreationStepContract),
-        },
+      return replaceProductStory(tx, {
+        userId,
+        productId,
+        revisionId: product.editingRevisionId,
+        request: input,
       });
     });
   }
 
-  async reorderCreationSteps(
-    userId: string,
-    productId: string,
-    stepIds: string[],
-  ) {
-    return runReadCommittedTransaction(this.prisma, async (tx) => {
-      await lockProductRowForUpdate(tx, productId);
-      const product = await tx.product.findUnique({
-        where: { id: productId },
-        select: productWriteGuardSelect,
-      });
-      assertProductWritable(product, userId, 'creation-story');
-
-      const steps = await tx.productCreationStep.findMany({
-        where: { productId },
-        select: { id: true },
-      });
-      const knownIds = new Set(steps.map((step) => step.id));
-      if (
-        stepIds.length !== knownIds.size ||
-        new Set(stepIds).size !== stepIds.length ||
-        stepIds.some((id) => !knownIds.has(id))
-      ) {
-        throw new ConflictException(
-          'Creation step order must include every step exactly once',
-        );
-      }
-      await tx.productCreationStep.updateMany({
-        where: { productId },
-        data: { position: { increment: 1000 } },
-      });
-      await Promise.all(
-        stepIds.map((id, position) =>
-          tx.productCreationStep.update({ where: { id }, data: { position } }),
-        ),
-      );
-      return { ok: true as const };
+  async getPublishedStory(publicId: string) {
+    const product = await this.prisma.product.findFirst({
+      where: { publicId, ...portfolioDirectProductWhere },
+      select: { publishedRevisionId: true },
     });
+    if (!product?.publishedRevisionId) {
+      throw new NotFoundException('Work not found');
+    }
+    return readStory(this.prisma, product.publishedRevisionId);
   }
 
   async getPortfolio(publicId: string) {
@@ -813,9 +797,15 @@ export class ProductsService {
     });
     const rows = await this.prisma.$queryRaw<PublicWorkFacetRow[]>(
       Prisma.sql`${cte}
-        SELECT DISTINCT "materials"
+        SELECT DISTINCT term."name" AS "materials"
         FROM filtered
-        WHERE NULLIF(BTRIM("materials"), '') IS NOT NULL`,
+        INNER JOIN "products" catalog_product ON catalog_product."id" = filtered."id"
+        INNER JOIN "product_revision_terms" selected_term
+          ON selected_term."revision_id" = catalog_product."published_revision_id"
+        INNER JOIN "catalog_terms" term
+          ON term."id" = selected_term."term_id"
+          AND term."role" = 'MATERIAL'
+        WHERE NULLIF(BTRIM(term."name"), '') IS NOT NULL`,
     );
     return rows.map((row) => row.materials);
   }
@@ -880,7 +870,6 @@ export class ProductsService {
       !published?.title ||
       !published.categoryId ||
       !product.publishedAt ||
-      !product.sellerProfile.city?.trim() ||
       !images ||
       images.length === 0
     ) {
@@ -894,13 +883,19 @@ export class ProductsService {
         title: published.title,
         story: published.story,
         categoryId: published.categoryId,
-        technique: published.technique,
-        materials: published.materials,
+        technique: projectedCatalogLabel(published.terms, 'TECHNIQUE'),
+        materials: projectedCatalogLabel(published.terms, 'MATERIAL'),
         dimensions: published.dimensions,
         year: published.year,
         uniqueness: published.uniqueness?.trim() || null,
         images: toImageContracts(images, 'public'),
         publishedAt: product.publishedAt.toISOString(),
+        materialTermIds: (published.terms ?? [])
+          .filter((item) => item.term.role === 'MATERIAL')
+          .map((item) => item.termId),
+        techniqueTermIds: (published.terms ?? [])
+          .filter((item) => item.term.role === 'TECHNIQUE')
+          .map((item) => item.termId),
       },
       sellerProfile: toPublicSellerProfile(product.sellerProfile),
     };

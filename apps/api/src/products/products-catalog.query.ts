@@ -30,8 +30,18 @@ export function portfolioCatalogCte(query: PortfolioWorksQuery): Prisma.Sql {
     filters.push(Prisma.sql`(
       published."title" ILIKE ${pattern} ESCAPE '\\'
       OR published."story" ILIKE ${pattern} ESCAPE '\\'
-      OR published."materials" ILIKE ${pattern} ESCAPE '\\'
       OR sp."full_name" ILIKE ${pattern} ESCAPE '\\'
+      OR EXISTS (
+        SELECT 1 FROM "product_revision_story_blocks" story_block
+        WHERE story_block."revision_id" = published."id"
+          AND story_block."text" ILIKE ${pattern} ESCAPE '\\'
+      )
+      OR EXISTS (
+        SELECT 1 FROM "product_revision_terms" named_term
+        INNER JOIN "catalog_terms" term ON term."id" = named_term."term_id"
+        WHERE named_term."revision_id" = published."id"
+          AND term."name" ILIKE ${pattern} ESCAPE '\\'
+      )
     )`);
   }
 
@@ -47,11 +57,34 @@ export function portfolioCatalogCte(query: PortfolioWorksQuery): Prisma.Sql {
     );
   }
 
+  if (query.materialId) {
+    filters.push(Prisma.sql`EXISTS (
+      SELECT 1 FROM "product_revision_terms" selected_term
+      INNER JOIN "catalog_terms" term ON term."id" = selected_term."term_id"
+      WHERE selected_term."revision_id" = published."id"
+        AND term."role" = 'MATERIAL'
+        AND term."id" = CAST(${query.materialId} AS uuid)
+    )`);
+  }
+  if (query.techniqueId) {
+    filters.push(Prisma.sql`EXISTS (
+      SELECT 1 FROM "product_revision_terms" selected_term
+      INNER JOIN "catalog_terms" term ON term."id" = selected_term."term_id"
+      WHERE selected_term."revision_id" = published."id"
+        AND term."role" = 'TECHNIQUE'
+        AND term."id" = CAST(${query.techniqueId} AS uuid)
+    )`);
+  }
+
   for (const material of query.materials ?? []) {
     const pattern = `%${escapeLikePattern(material)}%`;
-    filters.push(
-      Prisma.sql`published."materials" ILIKE ${pattern} ESCAPE '\\'`,
-    );
+    filters.push(Prisma.sql`EXISTS (
+      SELECT 1 FROM "product_revision_terms" selected_term
+      INNER JOIN "catalog_terms" term ON term."id" = selected_term."term_id"
+      WHERE selected_term."revision_id" = published."id"
+        AND term."role" = 'MATERIAL'
+        AND term."name" ILIKE ${pattern} ESCAPE '\\'
+    )`);
   }
 
   return Prisma.sql`WITH filtered AS (
@@ -59,7 +92,6 @@ export function portfolioCatalogCte(query: PortfolioWorksQuery): Prisma.Sql {
       p."id",
       published."category_id",
       p."seller_profile_id",
-      published."materials",
       p."published_at"
     FROM "products" p
     INNER JOIN "seller_profiles" sp ON sp."id" = p."seller_profile_id"
@@ -68,7 +100,6 @@ export function portfolioCatalogCte(query: PortfolioWorksQuery): Prisma.Sql {
       ON published."id" = p."published_revision_id"
     WHERE sp."status" = 'APPROVED'
       AND author_user."status" = 'active'
-      AND NULLIF(BTRIM(sp."city"), '') IS NOT NULL
       AND ${portfolioProductContentSql}
       AND ${Prisma.join(filters, ' AND ')}
   )`;

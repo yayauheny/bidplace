@@ -7,6 +7,7 @@ import {
   Patch,
   ParseUUIDPipe,
   Post,
+  Req,
   Res,
   UploadedFiles,
   UseGuards,
@@ -26,7 +27,6 @@ import {
   VerifiedEmailGuard,
 } from '../auth';
 import { RateLimit, RateLimitGuard } from '../core/rate-limit';
-import { parseBody } from '../core/validation';
 import {
   getImageCacheControl,
   productImageUploadLimits,
@@ -34,6 +34,10 @@ import {
   type RawImageUpload,
   validateProductImageUploads,
 } from '../images/image-policy';
+import {
+  parseSellerProfileWriteBody,
+  type ContentTypeRequest,
+} from './seller-profile-write-body';
 import { SellersService } from './sellers.service';
 
 @Controller()
@@ -66,6 +70,7 @@ export class SellersController {
   )
   async create(
     @CurrentUser() auth: { sub: string },
+    @Req() request: ContentTypeRequest,
     @Body() body: unknown,
     @UploadedFiles() files: RawImageUpload[] = [],
   ) {
@@ -77,7 +82,11 @@ export class SellersController {
 
     return this.sellers.create(
       auth.sub,
-      parseBody(sellerProfileCreateRequestSchema, body),
+      parseSellerProfileWriteBody(
+        sellerProfileCreateRequestSchema,
+        body,
+        request,
+      ),
       validatedFiles[0]!,
     );
   }
@@ -102,12 +111,17 @@ export class SellersController {
   )
   async update(
     @CurrentUser() auth: { sub: string },
+    @Req() request: ContentTypeRequest,
     @Body() body: unknown,
     @UploadedFiles() files: RawImageUpload[] = [],
   ) {
     return this.sellers.update(
       auth.sub,
-      parseBody(sellerProfileUpdateRequestSchema, body),
+      parseSellerProfileWriteBody(
+        sellerProfileUpdateRequestSchema,
+        body,
+        request,
+      ),
       files.length ? (await validateProductImageUploads(files))[0] : undefined,
     );
   }

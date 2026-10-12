@@ -1,28 +1,11 @@
-# bidplace — актуальная юридическая документация
+# Юридические документы bidplace
 
-Дата: 2026-09-08
-Юрисдикция текущей работы: Республика Беларусь
-Текущий scope: публичное portfolio без commerce (`DEC-082`)
+Единая точка входа и файл для копирования в новый рабочий контекст:
+[итоговый юридический аудит](00-FINAL-LEGAL-AUDIT.md).
 
-## Читать сейчас
+- [Тексты для сайта](site/) — согласованная редакция для подключения отдельной задачей.
+- [Будущие функции](deferred/05-commerce-and-future-features.md) — сохранённые условия; сейчас не действуют.
+- [Архив источников](archive/README.md) — встреча, закрытый вопросник и прежние редакции.
 
-1. [`04-DOCUMENT-SET.md`](04-DOCUMENT-SET.md) — пакет первого portfolio launch и
-   сохранённая граница commerce drafts.
-2. [`06-OPEN-QUESTIONS-FOR-BELARUS-LAWYER.md`](06-OPEN-QUESTIONS-FOR-BELARUS-LAWYER.md)
-   — сначала вопросы A, которые блокируют portfolio; commerce-вопросы сохранены в B.
-3. [`00-MVP-LAUNCH-CHECKLIST.md`](00-MVP-LAUNCH-CHECKLIST.md) — gate публикации.
-4. [`02-LAWYER-ANSWERS-2026-08-24.md`](02-LAWYER-ANSWERS-2026-08-24.md) — исторический
-   источник встречи и сообщений юриста; не новый portfolio contract.
-5. [`08-BIDBAITS-SOURCE-MAPPING-2026-09-06.md`](08-BIDBAITS-SOURCE-MAPPING-2026-09-06.md)
-   — структура/риски источника, который нельзя копировать.
-6. [`drafts/`](drafts/) — рабочие тексты; не одобрены для публикации.
-
-Auction/sale draft и вопросы не удалены, но не блокируют первый portfolio MVP и не
-должны публиковаться как действующие правила до commerce wave.
-
-# Legal preparation
-
-The active portfolio-only legal review status and evidence matrix are in
-[`09-PORTFOLIO-LEGAL-REVIEW-MANIFEST.md`](09-PORTFOLIO-LEGAL-REVIEW-MANIFEST.md).
-No draft is approved for publication until its external Belarus lawyer review and the
-operator/provider facts are recorded.
+Решения, состояние кода, незаполненные реквизиты и условия публикации собраны в аудите.
+Архивные вопросники не являются новым списком задач юристу.

@@ -11,6 +11,14 @@ import {
   adminUserStatusUpdateRequestSchema,
   adminUsersLookupQuerySchema,
   adminUsersLookupResponseSchema,
+  catalogActiveSchema,
+  catalogCategoryWriteSchema,
+  catalogProposalMapSchema,
+  catalogProposalRejectSchema,
+  catalogRenameSchema,
+  catalogTermSchema,
+  catalogTermWriteSchema,
+  categorySchema,
 } from '@bidplace/contracts';
 import {
   Body,
@@ -28,6 +36,7 @@ import {
 } from '@nestjs/common';
 
 import { BearerAuthGuard, CurrentUser } from '../auth';
+import { CatalogService } from '../catalog/catalog.service';
 import { Clock } from '../core/time';
 import { parseBody, parseQuery } from '../core/validation';
 import { PortfolioService } from '../portfolio/portfolio.service';
@@ -46,6 +55,7 @@ export class AdminController {
     private readonly analytics: AdminAnalyticsService,
     private readonly users: AdminUserService,
     private readonly portfolio: PortfolioService,
+    private readonly catalog: CatalogService,
     private readonly clock: Clock,
   ) {}
 
@@ -177,4 +187,147 @@ export class AdminController {
       await this.portfolio.clearCuratorSelection(),
     );
   }
+
+  @Post('categories')
+  async createCategory(
+    @CurrentUser() auth: { sub: string },
+    @Body() body: unknown,
+  ) {
+    const category = await this.catalog.createCategory(
+      auth.sub,
+      parseBody(catalogCategoryWriteSchema, body),
+    );
+    return {
+      category: categorySchema.parse({
+        id: category.id,
+        slug: category.slug,
+        name: category.name,
+        description: category.description,
+        active: category.active,
+      }),
+    };
+  }
+
+  @Patch('categories/:id')
+  async renameCategory(
+    @CurrentUser() auth: { sub: string },
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Body() body: unknown,
+  ) {
+    const category = await this.catalog.renameCategory(
+      auth.sub,
+      id,
+      parseBody(catalogRenameSchema, body).name,
+    );
+    return {
+      category: categorySchema.parse({
+        id: category.id,
+        slug: category.slug,
+        name: category.name,
+        description: category.description,
+        active: category.active,
+      }),
+    };
+  }
+
+  @Patch('categories/:id/active')
+  async setCategoryActive(
+    @CurrentUser() auth: { sub: string },
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Body() body: unknown,
+  ) {
+    const category = await this.catalog.setCategoryActive(
+      auth.sub,
+      id,
+      parseBody(catalogActiveSchema, body).active,
+    );
+    return {
+      category: categorySchema.parse({
+        id: category.id,
+        slug: category.slug,
+        name: category.name,
+        description: category.description,
+        active: category.active,
+      }),
+    };
+  }
+
+  @Post('catalog/terms')
+  async createTerm(
+    @CurrentUser() auth: { sub: string },
+    @Body() body: unknown,
+  ) {
+    const term = await this.catalog.createTerm(
+      auth.sub,
+      parseBody(catalogTermWriteSchema, body),
+    );
+    return { term: toTerm(term) };
+  }
+
+  @Patch('catalog/terms/:id')
+  async renameTerm(
+    @CurrentUser() auth: { sub: string },
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Body() body: unknown,
+  ) {
+    const term = await this.catalog.renameTerm(
+      auth.sub,
+      id,
+      parseBody(catalogRenameSchema, body).name,
+    );
+    return { term: toTerm(term) };
+  }
+
+  @Patch('catalog/terms/:id/active')
+  async setTermActive(
+    @CurrentUser() auth: { sub: string },
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Body() body: unknown,
+  ) {
+    const term = await this.catalog.setTermActive(
+      auth.sub,
+      id,
+      parseBody(catalogActiveSchema, body).active,
+    );
+    return { term: toTerm(term) };
+  }
+
+  @Post('catalog/proposals/:id/map')
+  mapProposal(
+    @CurrentUser() auth: { sub: string },
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Body() body: unknown,
+  ) {
+    return this.moderation.mapCatalogProposal(
+      auth.sub,
+      id,
+      parseBody(catalogProposalMapSchema, body),
+    );
+  }
+
+  @Post('catalog/proposals/:id/reject')
+  rejectProposal(
+    @CurrentUser() auth: { sub: string },
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Body() body: unknown,
+  ) {
+    const parsed = parseBody(catalogProposalRejectSchema, body);
+    return this.moderation.rejectCatalogProposal(auth.sub, id, parsed.reason);
+  }
+}
+
+function toTerm(term: {
+  id: string;
+  role: 'MATERIAL' | 'TECHNIQUE';
+  slug: string;
+  name: string;
+  active: boolean;
+}) {
+  return catalogTermSchema.parse({
+    id: term.id,
+    role: term.role,
+    slug: term.slug,
+    name: term.name,
+    active: term.active,
+  });
 }

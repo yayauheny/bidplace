@@ -12,9 +12,8 @@ let appDialogHostFlexDirection: typeof import('./app-dialog-host-style').appDial
 
 describe('app dialog host style', () => {
   beforeAll(async () => {
-    ({ appDialogHostStyle, appDialogHostFlexDirection } = await import(
-      './app-dialog-host-style'
-    ));
+    ({ appDialogHostStyle, appDialogHostFlexDirection } =
+      await import('./app-dialog-host-style'));
   });
 
   it('keeps the sheet on a column axis so flex-end docks to the bottom', () => {
@@ -26,6 +25,17 @@ describe('app dialog host style', () => {
 
     expect(style.flexDirection).toBe('column');
     expect(style.flexDirection).not.toBe('row');
+    expect(style.justifyContent).toBe('flex-end');
+    expect(style.alignItems).toBe('stretch');
+  });
+
+  it('docks the media sheet to the bottom like the sheet', () => {
+    const style = appDialogHostStyle({
+      presentation: 'mediaSheet',
+      width: designTokens.layout.phoneWidth,
+      viewportGutter,
+    });
+
     expect(style.justifyContent).toBe('flex-end');
     expect(style.alignItems).toBe('stretch');
   });

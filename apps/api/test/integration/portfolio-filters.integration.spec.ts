@@ -1,5 +1,9 @@
+import { randomUUID } from 'node:crypto';
+
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { Prisma, type PrismaClient } from '@bidplace/database';
+
+import { catalogSlug, normalizeCatalogName } from '../../src/catalog/catalog-data';
 
 import { portfolioCatalogCte } from '../../src/products/products-catalog.query';
 import { ProductsService } from '../../src/products/products.service';
@@ -107,6 +111,7 @@ async function publishWork(
       publishedRevisionId: revision.id,
     },
   });
+  await attachMaterialTerm(revision.id, input.materials);
   return product;
 }
 
@@ -124,7 +129,7 @@ async function createFacetAuthor(input: {
     },
     select: { id: true },
   });
-  return prisma.sellerProfile.create({
+  const profile = await prisma.sellerProfile.create({
     data: {
       userId: user.id,
       slug: input.slug,
@@ -137,10 +142,62 @@ async function createFacetAuthor(input: {
       profilePhotoByteLength: permissionImage.byteLength,
       profilePhotoChecksum: 'b'.repeat(64),
       profilePhotoData: permissionImage,
+      shortDescription: input.slug,
       status: input.status ?? 'APPROVED',
     },
     select: { id: true },
   });
+  if ((input.status ?? 'APPROVED') === 'APPROVED') {
+    const revision = await prisma.sellerProfileRevision.create({
+      data: {
+        sellerProfileId: profile.id,
+        version: 1,
+        status: 'APPROVED',
+        slug: input.slug,
+        fullName: input.slug,
+        country: 'BY',
+        city: input.city,
+        discipline: input.discipline,
+        shortDescription: input.slug,
+      },
+    });
+    const label = input.discipline?.trim();
+    if (label) {
+      const category = await categoryForLabel(label);
+      if (!category) return profile;
+      await prisma.sellerProfileRevisionDirection.create({
+        data: { revisionId: revision.id, categoryId: category.id, position: 0 },
+      });
+    }
+    await prisma.sellerProfile.update({
+      where: { id: profile.id },
+      data: {
+        editingRevisionId: revision.id,
+        publishedRevisionId: revision.id,
+      },
+    });
+  }
+  return profile;
+}
+
+async function replacePublishedDirection(profileId: string, name: string) {
+  const profile = await prisma.sellerProfile.findUniqueOrThrow({
+    where: { id: profileId },
+    select: { publishedRevisionId: true },
+  });
+  const category = await categoryForLabel(name);
+  if (!category) throw new Error('Direction name is blank');
+  await prisma.sellerProfileRevisionDirection.deleteMany({
+    where: { revisionId: profile.publishedRevisionId! },
+  });
+  await prisma.sellerProfileRevisionDirection.create({
+    data: {
+      revisionId: profile.publishedRevisionId!,
+      categoryId: category.id,
+      position: 0,
+    },
+  });
+  return category.id;
 }
 
 async function createFacetWork(input: {
@@ -240,17 +297,61 @@ async function createFacetWork(input: {
       publishedRevisionId: linkPublishedRevision ? revision.id : null,
     },
   });
+  if (linkPublishedRevision) await attachMaterialTerm(revision.id, input.materials);
+  if (input.editingMaterials !== undefined) {
+    await attachMaterialTerm(editingRevisionId, input.editingMaterials);
+  }
   return product;
 }
 
-const previousMaterialFacetSql = Prisma.sql`
-  SELECT "materials"
-  FROM filtered
-  WHERE NULLIF(BTRIM("materials"), '') IS NOT NULL`;
+async function categoryForLabel(name: string) {
+  const normalizedName = normalizeCatalogName(name);
+  if (!normalizedName) return null;
+  const slug = `facet-${name.toLocaleLowerCase('ru-RU').replace(/\s+/g, '-')}`;
+  const existing = await prisma.category.findFirst({
+    where: { OR: [{ slug }, { normalizedName }] },
+  });
+  if (existing) return existing;
+  return prisma.category.create({
+    data: { slug, name: name.trim(), normalizedName, active: true },
+  });
+}
 
-const previousAuthorFacetSql = Prisma.sql`
-  SELECT "city", "discipline"
-  FROM filtered`;
+async function attachMaterialTerm(
+  revisionId: string,
+  name: string | null | undefined,
+) {
+  if (!name) return;
+  const normalizedName = normalizeCatalogName(name);
+  if (!normalizedName) return;
+  const existing = await prisma.catalogTerm.findFirst({
+    where: { role: 'MATERIAL', normalizedName },
+  });
+  const term =
+    existing ??
+    (await prisma.catalogTerm.create({
+      data: {
+        role: 'MATERIAL',
+        slug: `${catalogSlug(name)}-${randomUUID().slice(0, 8)}`,
+        name: name.trim(),
+        normalizedName,
+      },
+    }));
+  await prisma.productRevisionTerm.create({
+    data: { revisionId, termId: term.id },
+  });
+}
+
+const previousMaterialFacetSql = Prisma.sql`
+  SELECT term."name" AS "materials"
+  FROM filtered
+  INNER JOIN "products" catalog_product ON catalog_product."id" = filtered."id"
+  INNER JOIN "product_revision_terms" selected_term
+    ON selected_term."revision_id" = catalog_product."published_revision_id"
+  INNER JOIN "catalog_terms" term
+    ON term."id" = selected_term."term_id"
+    AND term."role" = 'MATERIAL'
+  WHERE NULLIF(BTRIM(term."name"), '') IS NOT NULL`;
 
 describe('portfolio catalog SQL filters and pagination', () => {
   it.each(['hide', 'suspend', 'ban', 'unpublish'] as const)(
@@ -376,6 +477,14 @@ describe('portfolio catalog SQL filters and pagination', () => {
       where: { id: fixture.sellers.otherApproved.profileId },
       data: { city: 'Гродно', discipline: 'Керамика' },
     });
+    const paintingId = await replacePublishedDirection(
+      fixture.sellers.approved.profileId,
+      'Живопись',
+    );
+    const ceramicId = await replacePublishedDirection(
+      fixture.sellers.otherApproved.profileId,
+      'Керамика',
+    );
     await prisma.sellerProfile.update({
       where: { id: fixture.sellers.pending.profileId },
       data: { city: 'Секретный город', discipline: 'Секрет' },
@@ -422,7 +531,11 @@ describe('portfolio catalog SQL filters and pagination', () => {
     expect(body.materials[0]?.toLocaleLowerCase('ru-RU')).toBe('холст');
     expect(['Холст', 'холст']).toContain(body.materials[0]);
     expect(body.cities).toEqual(['Гродно', 'Минск']);
-    expect(body.tags).toEqual(['Живопись', 'Керамика']);
+    expect(body.tags).toEqual(
+      [paintingId, ceramicId].sort((left, right) =>
+        left.localeCompare(right, 'ru-RU', { sensitivity: 'base' }),
+      ),
+    );
     const publishedFilter = await guest.get('/works?materials=Холст');
     const draftFilter = await guest.get(
       '/works?materials=Непубличный%20черновик',
@@ -499,7 +612,11 @@ describe('portfolio catalog SQL filters and pagination', () => {
     const fixture = await createPermissionFixture(prisma);
     const guest = new HttpTestClient(http.baseUrl, 'http://localhost:8081');
     const woodCategory = await prisma.category.create({
-      data: { slug: `wood-${fixture.categoryId.slice(0, 8)}`, name: 'Wood' },
+      data: {
+        slug: `wood-${fixture.categoryId.slice(0, 8)}`,
+        name: 'Wood',
+        normalizedName: normalizeCatalogName('Wood'),
+      },
     });
     const older = new Date('2026-08-20T00:00:00.000Z');
     const newer = new Date('2026-09-01T00:00:00.000Z');
@@ -557,6 +674,10 @@ describe('portfolio catalog SQL filters and pagination', () => {
   it('forwards author work filters and SQL-filters the author directory', async () => {
     const fixture = await createPermissionFixture(prisma);
     const guest = new HttpTestClient(http.baseUrl, 'http://localhost:8081');
+    await replacePublishedDirection(
+      fixture.sellers.approved.profileId,
+      'Керамика',
+    );
     const approved = await prisma.sellerProfile.update({
       where: { id: fixture.sellers.approved.profileId },
       data: {
@@ -595,7 +716,7 @@ describe('portfolio catalog SQL filters and pagination', () => {
     const authorWorks = await guest.get(
       `/authors/${approved.slug}?q=Clay&materials=шамот`,
     );
-    expect(authorWorks.status).toBe(200);
+    expect(authorWorks.status, await authorWorks.clone().text()).toBe(200);
     const authorBody = (await authorWorks.json()) as {
       works: Array<{ work: { publicId: string } }>;
       pagination: { total: number };
@@ -734,7 +855,11 @@ describe('portfolio catalog SQL filters and pagination', () => {
 
   it('keeps public facet values and drops private, blank, and non-published ones', async () => {
     const category = await prisma.category.create({
-      data: { slug: 'facet-visibility', name: 'Facet visibility' },
+      data: {
+        slug: 'facet-visibility',
+        name: 'Facet visibility',
+        normalizedName: normalizeCatalogName('Facet visibility'),
+      },
       select: { id: true },
     });
     const visible = await createFacetAuthor({
@@ -939,11 +1064,13 @@ describe('portfolio catalog SQL filters and pagination', () => {
     expect(body.materials.map((value) => value.toLocaleLowerCase('ru-RU'))).toEqual([
       'бронза',
       'дерево',
+      'материал без города',
       'холст',
     ]);
     expect(body.materials[0]).toBe('Бронза');
     expect(['Дерево', 'дерево']).toContain(body.materials[1]);
-    expect(['Холст', 'холст']).toContain(body.materials[2]);
+    expect(body.materials[2]).toBe('Материал без города');
+    expect(['Холст', 'холст']).toContain(body.materials[3]);
     expect(body.cities).toEqual([
       'Брест',
       'Витебск',
@@ -951,16 +1078,31 @@ describe('portfolio catalog SQL filters and pagination', () => {
       'Гродно',
       'Минск',
     ]);
-    expect(body.tags.map((value) => value.toLocaleLowerCase('ru-RU'))).toEqual([
-      'живопись',
-      'керамика',
-      'неразрывный',
-      'стекло',
-    ]);
-    expect(['Живопись', 'живопись']).toContain(body.tags[0]);
-    expect(['Керамика', 'керамика']).toContain(body.tags[1]);
-    expect(body.tags[2]).toBe('Неразрывный');
-    expect(body.tags[3]).toBe('Стекло');
+    const publicDirections = await prisma.category.findMany({
+      where: {
+        slug: {
+          in: [
+            'facet-живопись',
+            'facet-керамика',
+            'facet-стекло',
+            'facet-неразрывный',
+            'facet-пробельный-город',
+            'facet-без-города',
+            'facet-материал-без-города',
+          ],
+        },
+      },
+      select: { id: true },
+    });
+    expect(body.tags).toEqual(
+      publicDirections
+        .map((item) => item.id)
+        .sort(
+          (left, right) =>
+            left.localeCompare(right, 'ru-RU', { sensitivity: 'base' }) ||
+            left.localeCompare(right),
+        ),
+    );
     const privateValues = [
       'Родительский материал',
       'Черновик материала',
@@ -972,7 +1114,6 @@ describe('portfolio catalog SQL filters and pagination', () => {
       'Материал без фото',
       'Материал без ревизии',
       'Материал без даты',
-      'Материал без города',
       'Материал без категории',
       'Пробельный город',
       'Без города',
@@ -995,36 +1136,42 @@ describe('portfolio catalog SQL filters and pagination', () => {
       Prisma.sql`${portfolioCatalogCte({ page: 1, limit: 1, sort: 'newest' })}
         ${previousMaterialFacetSql}`,
     );
-    const fullAuthors = await prisma.$queryRaw<
-      Array<{ city: string | null; discipline: string | null }>
-    >(
-      Prisma.sql`${publicAuthorCte({ page: 1, limit: 1, sort: 'added' }, { requireCity: true })}
-        ${previousAuthorFacetSql}`,
+    const authorCte = publicAuthorCte({ page: 1, limit: 1, sort: 'added' });
+    const fullCities = await prisma.$queryRaw<Array<{ city: string | null }>>(
+      Prisma.sql`${authorCte} SELECT DISTINCT "city" FROM filtered`,
+    );
+    const fullTags = await prisma.$queryRaw<Array<{ tag: string }>>(
+      Prisma.sql`${authorCte}
+        SELECT DISTINCT direction."category_id"::text AS "tag"
+        FROM filtered
+        INNER JOIN "seller_profile_revision_directions" direction
+          ON direction."revision_id" = filtered."published_revision_id"`,
     );
     expect(fullMaterials).toHaveLength(9);
-    expect(materialRows).toHaveLength(7);
+    expect(materialRows).toHaveLength(4);
     expect(new Set(materialRows)).toEqual(
       new Set(fullMaterials.map((row) => row.materials)),
     );
-    expect(fullAuthors).toHaveLength(8);
-    expect(authorRows.cities).toHaveLength(7);
-    expect(authorRows.tags).toHaveLength(8);
     expect(new Set(authorRows.cities)).toEqual(
-      new Set(fullAuthors.map((row) => row.city)),
+      new Set(fullCities.map((row) => row.city)),
     );
     expect(new Set(authorRows.tags)).toEqual(
-      new Set(fullAuthors.map((row) => row.discipline)),
+      new Set(fullTags.map((row) => row.tag)),
     );
-    expect(materialRows).toContain('\t');
+    expect(materialRows).not.toContain('\t');
     expect(materialRows).not.toContain('   ');
-    expect(authorRows.tags).toContain('Неразрывный');
+    expect(materialRows).toContain('Материал без города');
     expect(authorRows.cities).toContain('\u00A0');
     expect(body.cities).not.toContain('\u00A0');
   });
 
   it('returns the same facet JSON from distinct rows when many records share values', async () => {
     const category = await prisma.category.create({
-      data: { slug: 'facet-volume', name: 'Facet volume' },
+      data: {
+        slug: 'facet-volume',
+        name: 'Facet volume',
+        normalizedName: normalizeCatalogName('Facet volume'),
+      },
       select: { id: true },
     });
     const primary = await createFacetAuthor({
@@ -1048,13 +1195,25 @@ describe('portfolio catalog SQL filters and pagination', () => {
       });
     }
 
+    const painting = await prisma.category.findUniqueOrThrow({
+      where: { slug: 'facet-живопись' },
+      select: { id: true },
+    });
+    const ceramic = await prisma.category.findUniqueOrThrow({
+      where: { slug: 'facet-керамика' },
+      select: { id: true },
+    });
     const guest = new HttpTestClient(http.baseUrl, 'http://localhost:8081');
     const response = await guest.get('/portfolio/facets');
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({
       materials: ['Дерево', 'Холст'],
       cities: ['Гродно', 'Минск'],
-      tags: ['Живопись', 'Керамика'],
+      tags: [painting.id, ceramic.id].sort(
+        (left, right) =>
+          left.localeCompare(right, 'ru-RU', { sensitivity: 'base' }) ||
+          left.localeCompare(right),
+      ),
     });
 
     const materialRows = await http.app
@@ -1065,21 +1224,14 @@ describe('portfolio catalog SQL filters and pagination', () => {
       Prisma.sql`${portfolioCatalogCte({ page: 1, limit: 1, sort: 'newest' })}
         ${previousMaterialFacetSql}`,
     );
-    const fullAuthors = await prisma.$queryRaw<
-      Array<{ city: string | null; discipline: string | null }>
-    >(
-      Prisma.sql`${publicAuthorCte({ page: 1, limit: 1, sort: 'added' }, { requireCity: true })}
-        ${previousAuthorFacetSql}`,
-    );
     expect(fullMaterials).toHaveLength(36);
     expect(materialRows).toHaveLength(2);
     expect(new Set(materialRows)).toEqual(new Set(['Холст', 'Дерево']));
-    expect(fullAuthors).toHaveLength(25);
     expect(authorRows.cities).toHaveLength(2);
     expect(authorRows.tags).toHaveLength(2);
     expect(new Set(authorRows.cities)).toEqual(new Set(['Минск', 'Гродно']));
     expect(new Set(authorRows.tags)).toEqual(
-      new Set(['Живопись', 'Керамика']),
+      new Set([painting.id, ceramic.id]),
     );
   });
 });

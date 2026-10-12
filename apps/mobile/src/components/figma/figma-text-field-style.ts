@@ -37,10 +37,14 @@ export function figmaFieldShowsFloatingLabel(status: FigmaFieldStatus) {
   return status !== 'empty' && status !== 'disabled';
 }
 
+/** `authorApplication` lightens only the empty border and placeholder; every other state is shared. */
+export type FigmaFieldVariant = 'default' | 'authorApplication';
+
 export function figmaFieldStyle(
   status: FigmaFieldStatus,
   multiline = false,
   metrics: 'default' | 'authPassword' | 'authScreenPassword' = 'default',
+  variant: FigmaFieldVariant = 'default',
 ) {
   const password = metrics === 'authPassword' || metrics === 'authScreenPassword';
   const passwordHeight =
@@ -64,7 +68,7 @@ export function figmaFieldStyle(
       metrics === 'authScreenPassword'
         ? figmaTokens.auth.passwordBorder
         : figmaTokens.size.fieldBorder,
-    borderColor: fieldBorder(status),
+    borderColor: fieldBorder(status, variant),
     backgroundColor: fieldFill(status),
     flexDirection: 'row' as const,
     alignItems: multiline ? ('flex-start' as const) : ('center' as const),
@@ -85,9 +89,22 @@ export function figmaFieldValueColor(status: FigmaFieldStatus) {
   return figmaTokens.color.fieldValue;
 }
 
-function fieldBorder(status: FigmaFieldStatus) {
+/** Placeholder text is drawn only while the label is not floating, i.e. for `empty`. */
+export function figmaFieldPlaceholderColor(
+  status: FigmaFieldStatus,
+  variant: FigmaFieldVariant = 'default',
+) {
+  return variant === 'authorApplication' && status === 'empty'
+    ? figmaTokens.color.authorApplicationField
+    : figmaTokens.color.muted;
+}
+
+function fieldBorder(status: FigmaFieldStatus, variant: FigmaFieldVariant) {
   switch (status) {
     case 'empty':
+      return variant === 'authorApplication'
+        ? figmaTokens.color.authorApplicationField
+        : figmaTokens.color.muted;
     case 'disabled':
       return figmaTokens.color.muted;
     case 'hoverEmpty':

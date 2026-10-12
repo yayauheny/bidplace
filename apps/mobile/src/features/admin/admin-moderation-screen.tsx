@@ -14,7 +14,7 @@ import {
 import type { ApiClient } from '@bidplace/api-client';
 import { ApiClientError } from '@bidplace/api-client';
 import { readFormFailure } from '../../errors';
-import { Link, type Href, useRouter } from 'expo-router';
+import { type Href, useRouter } from 'expo-router';
 import { View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
@@ -674,20 +674,15 @@ export function AdminModerationScreen() {
                         Основное изображение отсутствует
                       </AppText>
                     )}
-                    <Link
+                    <TextButton
+                      label={`Автор: ${product.sellerProfile.fullName}`}
                       href={
                         {
                           pathname: '/seller/[slug]',
                           params: { slug: product.sellerProfile.slug },
                         } as Href
                       }
-                      asChild
-                    >
-                      <TextButton
-                        label={`Автор: ${product.sellerProfile.fullName}`}
-                        onPress={() => undefined}
-                      />
-                    </Link>
+                    />
                     <AppText role="bodySmall" tone="secondary">
                       {content.city ?? 'Город не указан'} ·{' '}
                       {content.story ?? 'Описание не указано'}

@@ -9,6 +9,8 @@ import {
   sellerStatusSchema,
   sellerTypeSchema,
 } from './enums';
+import { selectedCategorySchema } from './catalog';
+import { isCountryCode } from './countries';
 import {
   achievementOccurredDateSchema,
   httpsUrlSchema,
@@ -56,8 +58,12 @@ export const sellerProfileConflictDetailsSchema = z
   .strict();
 
 const authorNameSchema = z.string().trim().min(1, 'Введите имя или название');
-const authorCountrySchema = z.string().trim().min(1, 'Укажите страну');
-const authorCitySchema = z.string().trim().min(1, 'Укажите город');
+const authorCountrySchema = z
+  .string()
+  .trim()
+  .toUpperCase()
+  .refine(isCountryCode, 'Укажите страну');
+const authorCitySchema = z.string().trim().min(1).max(160);
 
 export const sellerProfileSchema = z
   .object({
@@ -78,6 +84,8 @@ export const sellerProfileSchema = z
     websiteUrl: sellerPublicUrlSchema.nullable(),
     publicEmail: sellerPublicEmailSchema.nullable(),
     shortDescription: z.string().trim().min(1).nullable(),
+    directionCategoryIds: z.array(uuidSchema).default([]),
+    directions: z.array(selectedCategorySchema).default([]),
     handoffContactType: handoffContactTypeSchema.nullable(),
     handoffContactValue: z.string().trim().min(1).nullable(),
     handoffInitiator: handoffInitiatorSchema.nullable(),
@@ -108,8 +116,10 @@ export const publicSellerProfileSchema = sellerProfileSchema
     shortDescription: true,
   })
   .extend({
-    discipline: sellerDisciplineSchema,
+    discipline: sellerDisciplineSchema.nullable(),
     shortDescription: z.string().trim().min(1),
+    directionCategoryIds: z.array(uuidSchema).default([]),
+    directions: z.array(selectedCategorySchema).default([]),
     achievements: z
       .array(
         z
@@ -138,7 +148,8 @@ export const sellerProfileCreateRequestSchema = z
   .object({
     fullName: authorNameSchema,
     country: authorCountrySchema,
-    city: authorCitySchema,
+    city: authorCitySchema.nullable().optional(),
+    directionCategoryIds: z.array(uuidSchema).optional(),
     discipline: sellerDisciplineSchema.optional(),
     practice: z.string().trim().min(1).nullable().optional(),
     biography: z.string().trim().min(1).nullable().optional(),
@@ -158,6 +169,7 @@ export const sellerProfileUpdateRequestSchema = z
     fullName: authorNameSchema.optional(),
     country: authorCountrySchema.optional(),
     city: authorCitySchema.nullable().optional(),
+    directionCategoryIds: z.array(uuidSchema).optional(),
     practice: z.string().trim().min(1).nullable().optional(),
     biography: z.string().trim().min(1).nullable().optional(),
     socialLink: sellerPublicUrlSchema.nullable().optional(),
@@ -165,7 +177,7 @@ export const sellerProfileUpdateRequestSchema = z
     instagramUrl: sellerPublicUrlSchema.nullable().optional(),
     websiteUrl: sellerPublicUrlSchema.nullable().optional(),
     publicEmail: sellerPublicEmailSchema.nullable().optional(),
-    shortDescription: z.string().trim().min(1).optional(),
+    shortDescription: z.string().trim().min(1).nullable().optional(),
     handoffContactType: handoffContactTypeSchema.optional(),
     handoffContactValue: z.string().trim().min(1).optional(),
     handoffInitiator: handoffInitiatorSchema.optional(),

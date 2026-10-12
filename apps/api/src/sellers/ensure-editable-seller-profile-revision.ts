@@ -91,6 +91,19 @@ export async function ensureEditableEditingRevision(
       profilePhotoAssetId: published.profilePhotoAssetId,
     },
   });
+  const directions = await tx.sellerProfileRevisionDirection.findMany({
+    where: { revisionId: published.id },
+    orderBy: { position: 'asc' },
+  });
+  if (directions.length > 0) {
+    await tx.sellerProfileRevisionDirection.createMany({
+      data: directions.map((direction) => ({
+        revisionId: draft.id,
+        categoryId: direction.categoryId,
+        position: direction.position,
+      })),
+    });
+  }
   await tx.sellerProfile.update({
     where: { id: profile.id },
     data: { editingRevisionId: draft.id },

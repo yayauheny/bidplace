@@ -116,21 +116,14 @@ export function createPortfolioClient(context: RequestContext) {
         { method: 'POST' },
       );
     },
-    addAuthorAchievement(
-      input: PortfolioAchievementWriteRequest,
-      image?: Blob,
-    ) {
+    addAuthorAchievement(input: PortfolioAchievementWriteRequest) {
       return requestJson(
         context,
         '/api/author/application/achievements',
         portfolioAchievementResponseSchema,
         {
           method: 'POST',
-          body: {
-            ...parseRequest(portfolioAchievementWriteRequestSchema, input),
-            image,
-          },
-          asFormData: true,
+          body: parseRequest(portfolioAchievementWriteRequestSchema, input),
         },
       );
     },

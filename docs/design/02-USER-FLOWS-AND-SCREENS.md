@@ -1,6 +1,6 @@
 # bidplace — пользовательские потоки и экраны First MVP
 
-Последнее обновление: 2026-10-10
+Последнее обновление: 2026-10-11
 Статус: Confirmed product/UI scope for mobile-web 390 Figma cutover
 Product contract: [`../product/05-MVP-RFC.md`](../product/05-MVP-RFC.md)
 
@@ -59,13 +59,18 @@ wave. The name is entered later as `fullName`. Having a slug does not by
 itself publish the author. Password repeat stays on the client. The
 account is created once. Recovery stays the single-use link. Google and
 Telegram report that sign-in is unavailable. A successful login, registration,
-or confirmation continues once and does not ask to leave. An empty form leaves
-with one Back. Back from one auth step to another does not ask, even when that
-step has input. A user close, Escape, backdrop, or Back that leaves auth asks
-first when the form has input. A multi-step Back or a Forward that leaves auth
-returns the address to the auth entry until the user confirms. Continue keeps
-the values and focus; Interrupt opens the entry that traversal reached. A
-finished or closed sheet is not left as a history entry. Leaving does not
+or confirmation continues once and does not ask to leave. Login, password
+recovery, and email verification close without an interruption confirmation,
+including when their fields contain input. Close, Escape, backdrop, and
+Back/Forward share that policy (`DEC-111`). Registration is the only auth form
+that protects entered data. An empty registration leaves without asking. A
+registration that has input asks before a close, Escape, backdrop, or history
+traversal that leaves auth. Continue keeps the current step, values, and
+focus. Interrupt performs that exit. Back from one auth route to another does
+not ask, even when registration has input. A multi-step Back or a Forward that
+leaves a filled registration returns the address to that registration until
+the user confirms. A request in progress still keeps the sheet and is not
+cancelled. Successful completion navigates once. Leaving does not
 cancel an in-flight request, delete an account, or log out. A session change
 during registration, including while `register` is still waiting, does not
 let the old attempt replace the newer session, write consent, or continue.
@@ -96,18 +101,18 @@ Commerce routes/actions отсутствуют в First MVP navigation и fail-c
 
 ## 3. Screen matrix
 
-| Экран | First MVP | Убирается/откладывается |
-|---|---|---|
-| Global navigation | Home, Search, Add, Profile | Cart, likes, notification bell |
-| Home | Открытие недели (optional server selection), новые работы, авторы | Активные торги, цены, timers |
-| Works | Search, category/material filters, newest/oldest sort, pagination | Auction/announcement/archive tabs, price/status filters |
-| Authors | Search, tag/city filters, name/date sort | Rating, followers, sales and verified authenticity claims |
-| Creator | Header, chips, socials, share/QR, `Работы`, `Об авторе`, achievements | Public `Архив`, cart, like, bell, private states |
-| Work | Gallery, title, author, chips, optional story, details, related works, payment/delivery stub | Price, timer, archive badge, bid CTA/history |
-| Auth | Email/password, verify email, forgot/reset | Telegram/Google OAuth, passwordless code, buyer-only promotion |
-| Author application | Photo, name, slug, location, about, tags, optional socials/achievements | Sale language, buyer handoff contact |
-| Work creation | Photos/title, details, optional plain-text story, moderation submit | Sale mode, price/currency/time, payment, delivery, buyer contact, AI, process blocks |
-| Admin | Author and Work moderation, user ban/session revoke | Commerce Orders/recovery as active First MVP workflow |
+| Экран              | First MVP                                                                                              | Убирается/откладывается                                                     |
+| ------------------ | ------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------- |
+| Global navigation  | Home, Search, Add, Profile                                                                             | Cart, likes, notification bell                                              |
+| Home               | Открытие недели (optional server selection), новые работы, авторы                                      | Активные торги, цены, timers                                                |
+| Works              | Search, category/material filters, newest/oldest sort, pagination                                      | Auction/announcement/archive tabs, price/status filters                     |
+| Authors            | Search, tag/city filters, name/date sort                                                               | Rating, followers, sales and verified authenticity claims                   |
+| Creator            | Header, chips, socials, share/QR, `Работы`, `Об авторе`, achievements                                  | Public `Архив`, cart, like, bell, private states                            |
+| Work               | Gallery, title, author, chips, optional story, details, related works, payment/delivery stub           | Price, timer, archive badge, bid CTA/history                                |
+| Auth               | Email/password, verify email, forgot/reset                                                             | Telegram/Google OAuth, passwordless code, buyer-only promotion              |
+| Author application | Photo, name, slug, location, about, tags, optional socials/achievements                                | Sale language, buyer handoff contact                                        |
+| Work creation      | Photos/title, details, optional heading/paragraph/image blocks, moderation submit (`DEC-112`; planned) | Sale mode, price/currency/time, payment, delivery, buyer contact, AI, video |
+| Admin              | Author and Work moderation, user ban/session revoke                                                    | Commerce Orders/recovery as active First MVP workflow                       |
 
 The admin author card shows the revision approval publishes, including an
 achievement date at its stored month or day precision. A null date is omitted.
@@ -283,12 +288,14 @@ maxScroll shrinks; no fake min-height. Native Work stays expanded-only.
 
 Portfolio variant сохраняет визуальную галерею и информационные блоки. Tabs:
 
-- `История` только если заполнен plain text; public rendering may interleave
-  same-work gallery extras between paragraphs (`DEC-093`);
+- Цель `DEC-112`: `История` появляется при наличии блоков в опубликованной
+  ревизии, показывает их в сохранённом порядке и не вставляет галерею автоматически.
+  Текущий runtime всё ещё показывает plain text с gallery extras по прежнему `DEC-093`;
 - `Детали` всегда.
 
-`Оплата и доставка` показывается как v1 stub без цены и CTA ставки. `Ставки`
-отсутствуют. `Другие работы автора` содержит только Work cards; ссылка имени уже
+`Оплата и доставка` пока присутствует в runtime как v1 stub; в portfolio target
+она отсутствует и отложена в [sales plan](../product/15-POST-MVP-BACKLOG.md).
+`Ставки` отсутствуют. `Другие работы автора` содержит только Work cards; ссылка имени уже
 ведёт в Creator profile. Claims об authenticity/provenance маркируются как
 информация автора, если platform не проводила экспертизу.
 
@@ -300,6 +307,8 @@ Portfolio variant сохраняет визуальную галерею и ин
 2. optional public Telegram, Instagram, HTTPS website and author-provided email;
 3. short about, practice and directions;
 4. optional achievements.
+
+Шаг 1 реализован в мобильном клиенте (`DEC-114`, `DEC-117`): страна выбирается по названию в popup со списком и поиском, код хранится и отправляется в API; страна пустая, пока не выбрана, и «Продолжить» без неё недоступно. Город необязателен и стоит отдельным полем под страной; очистка города уходит в том же сохранении, что и замена фото. Подзаголовок шага — «Город можно не указывать». Фото в начальном состоянии без строки «Фото обязательно»: требование остаётся в готовности и в контракте сервера. Интро и все четыре шага используют общий мобильный chrome (`AuthorApplicationStepShell`, модули `author-application-*-step.tsx`) и Figma-поля; актуальный статус — [04-DESIGN-STATUS.md](04-DESIGN-STATUS.md) (2026-10-12). Шаг 3 подключает направления через `AuthorDirectionsPickerSheet` (`DEC-116`): поиск, чекбоксы и снимаемые чипы работают с теми же category ID, что и сервер. Шаг 4 — опциональные достижения: одно поле «Дата достижения» (месяц и год `MM.YYYY` либо точная дата `DD.MM.YYYY`), без выбора фото для новой записи. Источники 2026-10-11 и расхождения с product copy: [backend/capture plan](../tasks/2026-10-11-author-story-backend/PLAN.md).
 
 Никнейм принадлежит `User.slug`, а не заявке автора. Уже выбранное значение
 не редактируется и не отправляется в create/update профиля. Для аккаунта без
@@ -332,21 +341,16 @@ input. Обычное сохранение оставляет поле и фот
 той же учётной записи. Выбор фото или чтение файла, которые завершаются уже
 после смены сессии, не попадают в форму и в следующее сохранение.
 Переход шага, выход и отправка блокируют ввод до конца перехода и не продолжаются,
-если сохранение не удалось. На время добавления или удаления достижения год,
-месяц, день, описание и выбор фото недоступны; описание остаётся видимым.
-Неудачное добавление оставляет текст и фото. Неверные год, месяц и день
-показывают свои сообщения у соответствующих полей. Серверная ошибка даты без
-точного пути показывается у группы даты, а не у года. Успех очищает только черновик этой
-операции. Отправка, переход шага, выход и logout не начинаются, пока эта запись
-не завершилась, и новая запись достижения не начинается после уже начатого
-перехода. Открытый выбор фото и повторное чтение заявки сами по себе записью не
-являются. Поздний выбор не применяется, если форма уже заблокирована, сессия
-сменилась, выбран более новый файл, или выбор начался до завершившегося
-сохранения достижения, сохранения профиля или блокировки формы. Блокировка
-принятым снимком профиля тоже отменяет начатый до неё выбор; последующее
-открытие формы этот выбор не возвращает. Новый выбор после этого применяется. Успешная запись достижения заменяет чтение списка,
-которое началось раньше неё. Achievements показывают месяц без
-придуманного дня.
+если сохранение не удалось. На время добавления или удаления достижения поля
+даты и описания недоступны; описание остаётся видимым. Неудачное добавление
+оставляет введённый текст и дату. Неверный формат даты и серверные ошибки
+`occurredDate` показываются у группы «Дата достижения». Успех очищает только
+черновик этой операции. Отправка, переход шага, выход и logout не начинаются,
+пока эта запись не завершилась, и новая запись достижения не начинается после
+уже начатого перехода родителя (включая прерывание несохранённого события при
+«Назад»). Повторное чтение заявки само по себе записью не является. Успешная
+запись достижения заменяет чтение списка, которое началось раньше неё.
+Отображение даты в списке не придумывает день, если его не было.
 
 Одобренный автор остаётся на том же `/profile` без шагов заявки. «Отправить на
 проверку» показывается, когда editing revision уже можно отправить:
@@ -365,7 +369,7 @@ input. Обычное сохранение оставляет поле и фот
 
 1. title, category, dimensions, material/technique, edition fact and creation date/year;
 2. main images;
-3. optional plain-text creation story;
+3. optional heading/paragraph/image story blocks (`DEC-112`; target not implemented);
 4. review and moderation submit.
 
 Шаг хранится в URL. Поля принадлежат одной форме; server detail остаётся
@@ -394,9 +398,16 @@ pending не открывает Save и Submit. Более новое решен
 Save failure оставляет автора на текущем экране. Повторное открытие
 `/products/:id` восстанавливает сохранённую editing revision.
 
-CTA: `Отправить на модерацию`. Main gallery и future process media — разные сущности.
-Packaging, delivery, condition, provenance, city, weight, повторяющиеся photo/text
-stages и video не входят в portfolio MVP editor.
+CTA: `Отправить на модерацию`. Main gallery и story независимы; их фотографии
+могут ссылаться на один MediaAsset. «Закончить» подтверждает сохранение
+истории, а не публикацию. Backend хранит упорядоченные блоки `HEADING`,
+`PARAGRAPH` и `IMAGE` на ревизии Work. Экран создания в клиенте ещё редактирует
+прежний plain-text `story`; перенос вёрстки — отдельный этап
+[UI-HANDOFF.md](../tasks/2026-10-11-author-story-backend/UI-HANDOFF.md).
+Город автора необязателен. Новые достижения не загружают фотографию.
+Packaging, delivery, condition, provenance, город продажи, weight и video не
+входят в portfolio MVP editor. Торговые шаги сохранены в
+[post-MVP sales plan](../product/15-POST-MVP-BACKLOG.md).
 
 ## 10. Required states
 

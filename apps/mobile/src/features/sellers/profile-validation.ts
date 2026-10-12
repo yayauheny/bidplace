@@ -1,4 +1,5 @@
 import {
+  isCountryCode,
   sellerPublicEmailSchema,
   sellerPublicUrlSchema,
   slugGrammarMessage,
@@ -15,10 +16,9 @@ type PublicLinkField =
   | 'websiteUrl'
   | 'publicEmail';
 
-export type ProfileFieldErrors = Partial<Record<PublicLinkField | 'city', string>>;
+export type ProfileFieldErrors = Partial<Record<PublicLinkField, string>>;
 
 const profileDraftErrorFields = [
-  'city',
   'socialLink',
   'telegramUrl',
   'instagramUrl',
@@ -60,10 +60,20 @@ export const profileDraftSchema = z
     slug: z.string().refine(acceptsProfileSlug, slugGrammarMessage),
     fullName: z.string(),
     discipline: z.string(),
-    country: z.string(),
-    city: z.string().refine((value) => value.trim().length > 0, 'Укажите город'),
+    directionCategoryIds: z.array(z.string()),
+    country: z
+      .string()
+      .trim()
+      .toUpperCase()
+      .refine((v) => !v || isCountryCode(v), 'Выберите страну из списка'),
+    city: z.string(),
     practice: z.string(),
-    socialLink: z.string().refine(acceptsOptionalPublicLink, 'Введите HTTPS-ссылку, начиная с https://'),
+    socialLink: z
+      .string()
+      .refine(
+        acceptsOptionalPublicLink,
+        'Введите HTTPS-ссылку, начиная с https://',
+      ),
     telegramUrl: z
       .string()
       .refine(
@@ -76,8 +86,15 @@ export const profileDraftSchema = z
         (value) => acceptsOptionalHandle(value, normalizeInstagram),
         'Введите Instagram username или HTTPS-ссылку',
       ),
-    websiteUrl: z.string().refine(acceptsOptionalPublicLink, 'Введите HTTPS-ссылку, начиная с https://'),
-    publicEmail: z.string().refine(acceptsOptionalPublicEmail, 'Введите корректный email'),
+    websiteUrl: z
+      .string()
+      .refine(
+        acceptsOptionalPublicLink,
+        'Введите HTTPS-ссылку, начиная с https://',
+      ),
+    publicEmail: z
+      .string()
+      .refine(acceptsOptionalPublicEmail, 'Введите корректный email'),
     shortDescription: z.string(),
   })
   .strict();
@@ -86,6 +103,7 @@ const emptyProfileDraft = {
   slug: '',
   fullName: '',
   discipline: '',
+  directionCategoryIds: [],
   country: '',
   city: '',
   practice: '',
@@ -115,13 +133,20 @@ export function getProfileFieldErrors(fields: {
   for (const issue of parsed.error.issues) {
     const key = issue.path[0];
     if (typeof key !== 'string') continue;
-    if (!profileDraftErrorFields.includes(key as (typeof profileDraftErrorFields)[number])) continue;
+    if (
+      !profileDraftErrorFields.includes(
+        key as (typeof profileDraftErrorFields)[number],
+      )
+    )
+      continue;
     const field = key as keyof ProfileFieldErrors;
     if (!errors[field]) errors[field] = issue.message;
   }
   return errors;
 }
 
-export function profileDraftAllowsSave(fields: z.input<typeof profileDraftSchema>): boolean {
+export function profileDraftAllowsSave(
+  fields: z.input<typeof profileDraftSchema>,
+): boolean {
   return profileDraftSchema.safeParse(fields).success;
 }

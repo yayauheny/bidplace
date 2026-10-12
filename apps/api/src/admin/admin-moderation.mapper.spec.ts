@@ -162,8 +162,21 @@ describe('admin moderation mapper', () => {
       categoryId: '00000000-0000-4000-8000-000000000007',
       title: 'Published title',
       story: 'Published story',
-      technique: null,
-      materials: null,
+      technique: 'Рисунок',
+      materials: 'Холст',
+      publishedRevisionId: '00000000-0000-4000-8000-000000000009',
+      publishedRevision: {
+        terms: [
+          {
+            termId: '00000000-0000-4000-8000-000000000011',
+            term: { role: 'MATERIAL', name: 'Холст обновлённый' },
+          },
+          {
+            termId: '00000000-0000-4000-8000-000000000012',
+            term: { role: 'TECHNIQUE', name: 'Рисунок обновлённый' },
+          },
+        ],
+      },
       dimensions: null,
       weight: null,
       year: null,
@@ -191,8 +204,30 @@ describe('admin moderation mapper', () => {
         categoryId: '00000000-0000-4000-8000-000000000008',
         title: 'Pending title',
         story: null,
-        technique: null,
-        materials: null,
+        technique: 'Лепка',
+        materials: 'Масло',
+        terms: [
+          {
+            termId: '00000000-0000-4000-8000-000000000013',
+            term: {
+              id: '00000000-0000-4000-8000-000000000013',
+              role: 'MATERIAL',
+              slug: 'oil',
+              name: 'Масло',
+              active: true,
+            },
+          },
+          {
+            termId: '00000000-0000-4000-8000-000000000014',
+            term: {
+              id: '00000000-0000-4000-8000-000000000014',
+              role: 'TECHNIQUE',
+              slug: 'modeling',
+              name: 'Лепка',
+              active: true,
+            },
+          },
+        ],
         dimensions: null,
         weight: null,
         year: null,
@@ -203,6 +238,8 @@ describe('admin moderation mapper', () => {
         packaging: null,
         deliveryInfo: null,
         creationIntro: null,
+        storyToken: 0,
+        storyBlocks: [],
         images: [
           {
             position: 0,
@@ -222,8 +259,12 @@ describe('admin moderation mapper', () => {
     const mapped = toAdminProduct(product, null);
     expect(mapped.parent.story).toBe('Published story');
     expect(mapped.parent.city).toBe('Minsk');
+    expect(mapped.parent.materials).toBe('Холст обновлённый');
+    expect(mapped.parent.technique).toBe('Рисунок обновлённый');
     expect(mapped.reviewTarget?.content.story).toBeNull();
     expect(mapped.reviewTarget?.content.city).toBeNull();
+    expect(mapped.reviewTarget?.content.materials).toBe('Масло');
+    expect(mapped.reviewTarget?.content.technique).toBe('Лепка');
     expect(mapped.reviewTarget?.content.images.map((image) => image.id)).toEqual([
       imageId,
     ]);

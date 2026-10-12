@@ -15,11 +15,13 @@ type AppTextProps = PropsWithChildren<Omit<TextProps, 'role'>> & {
     | 'muted'
     | 'accent'
     | 'danger'
-    | 'success';
+    | 'success'
+    | 'strong';
 };
 
 const toneColors = {
   default: designTokens.color.ink,
+  strong: designTokens.color.inkStrong,
   secondary: designTokens.color.textSecondary,
   subdued: designTokens.color.textSubdued,
   subtle: designTokens.color.textSubtle,

@@ -82,6 +82,9 @@ function createWritePrisma(options: {
     packaging: options.product?.packaging ?? null,
     deliveryInfo: options.product?.deliveryInfo ?? null,
     images: [],
+    storyToken: 0,
+    storyIdempotencyKey: null,
+    storyBlocks: [],
     updatedAt: new Date('2026-07-18T00:00:00.000Z'),
   };
   const revisionForApproval = {
@@ -123,6 +126,13 @@ function createWritePrisma(options: {
           args.select?.images?.take === 1 ? revisionForApproval : revision,
         ),
       update: vi.fn().mockResolvedValue(revision),
+    },
+    productRevisionStoryBlock: {
+      findMany: vi.fn().mockResolvedValue([]),
+      deleteMany: vi.fn(),
+      updateMany: vi.fn(),
+      update: vi.fn(),
+      create: vi.fn().mockResolvedValue({ id: 'block-id' }),
     },
     ...options.extraTx,
   };
@@ -246,7 +256,6 @@ describe('ProductsService', () => {
     expect(portfolioCatalogProductWhere.sellerProfile).toEqual({
       status: 'APPROVED',
       user: { status: 'active' },
-      city: { not: '' },
     });
     expect(portfolioCatalogProductWhere).not.toHaveProperty('listings');
     expect(portfolioCatalogProductWhere).toEqual(
@@ -272,15 +281,34 @@ describe('ProductsService', () => {
       product: {
         create: productCreate,
         update: vi.fn().mockResolvedValue(product),
+        findUniqueOrThrow: vi.fn().mockResolvedValue(product),
       },
       productRevision: {
         create: vi.fn().mockResolvedValue({ id: 'revision-id' }),
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
+          id: 'revision-id',
+          categoryId: null,
+          title: null,
+          story: null,
+          dimensions: null,
+          weight: null,
+          year: null,
+          condition: null,
+          uniqueness: null,
+          provenance: null,
+          city: null,
+          packaging: null,
+          deliveryInfo: null,
+          images: [],
+          terms: [],
+        }),
       },
       $transaction: vi.fn(async (callback: (tx: unknown) => unknown) =>
         callback({
           product: {
             create: productCreate,
             update: prisma.product.update,
+            findUniqueOrThrow: prisma.product.findUniqueOrThrow,
           },
           productRevision: prisma.productRevision,
         }),
@@ -345,7 +373,6 @@ describe('ProductsService', () => {
     expect(tx.productRevision.update).toHaveBeenCalledWith({
       where: { id: 'revision-id' },
       data: { title: 'Corrected title' },
-      select: expect.any(Object),
     });
   });
 
@@ -402,6 +429,9 @@ describe('ProductsService', () => {
         update: vi.fn().mockResolvedValue(response),
         updateMany: vi.fn(),
       },
+      productRevisionStoryBlock: { findMany: vi.fn().mockResolvedValue([]) },
+      productRevisionStoryAsset: { findMany: vi.fn().mockResolvedValue([]) },
+      productRevisionTerm: { findMany: vi.fn().mockResolvedValue([]) },
       productRevision: {
         findUniqueOrThrow: vi
           .fn()
@@ -672,8 +702,8 @@ describe('ProductsService', () => {
         pending.prisma as never,
         {} as never,
       ).replaceCreationStory('owner-id', product.id, {
-        intro: 'Intro',
-        steps: [],
+        storyToken: 0,
+        blocks: [],
       }),
     ).rejects.toThrow('Product creation story is locked');
     expect(pending.tx.product.updateMany).not.toHaveBeenCalled();
@@ -685,7 +715,10 @@ describe('ProductsService', () => {
       new ProductsService(
         listed.prisma as never,
         {} as never,
-      ).reorderCreationSteps('owner-id', product.id, []),
+      ).replaceCreationStory('owner-id', product.id, {
+        storyToken: 0,
+        blocks: [],
+      }),
     ).rejects.toThrow('Product is locked by an active Listing');
   });
 
@@ -699,16 +732,19 @@ describe('ProductsService', () => {
     const service = new ProductsService(prisma as never, {} as never);
 
     await service.replaceCreationStory('owner-id', product.id, {
-      intro: 'How it was made',
-      steps: [],
+      storyToken: 0,
+      blocks: [{ type: 'PARAGRAPH', text: 'How it was made' }],
     });
 
     expect(tx.$queryRaw).toHaveBeenCalled();
-    expect(tx.product.updateMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: { creationIntro: 'How it was made' },
+    expect(tx.productRevisionStoryBlock.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        revisionId: 'revision-id',
+        type: 'PARAGRAPH',
+        text: 'How it was made',
       }),
-    );
+    });
+    expect(tx.product.updateMany).not.toHaveBeenCalled();
   });
 
   it('uses a narrow seller select for public portfolio queries', async () => {
@@ -871,7 +907,8 @@ describe('ProductsService', () => {
     const pageQuery = prisma.$queryRaw.mock.calls[0]?.[0] as { sql: unknown };
     const pageQueryText = String(pageQuery.sql);
     expect(pageQueryText).toContain('sp."slug"');
-    expect(pageQueryText).toContain('published."materials"');
+    expect(pageQueryText).toContain(`term."role" = 'MATERIAL'`);
+    expect(pageQueryText).not.toContain('published."materials"');
   });
 
   it('keeps published Work JSON and drops unread parent data', async () => {
@@ -930,6 +967,16 @@ describe('ProductsService', () => {
       categoryId: 'd0d82a10-3170-49eb-904f-a8bc87d311a8',
       technique: 'Published technique',
       materials: 'Published material',
+      terms: [
+        {
+          termId: 'e0d82a10-3170-49eb-904f-a8bc87d311a1',
+          term: { role: 'MATERIAL', name: 'Published material' },
+        },
+        {
+          termId: 'e0d82a10-3170-49eb-904f-a8bc87d311a2',
+          term: { role: 'TECHNIQUE', name: 'Published technique' },
+        },
+      ],
       dimensions: '10 cm',
       year: 2024,
       uniqueness: ' published-unique ',
@@ -1095,7 +1142,7 @@ describe('ProductsService', () => {
           ...wideRow,
           sellerProfile: { ...sellerProfile, city: '   ' },
         }) as unknown as Parameters<ProductsService['toPortfolioItem']>[0],
-      ),
+      )?.sellerProfile.city,
     ).toBeNull();
   });
 
@@ -1197,13 +1244,15 @@ describe('ProductsService', () => {
     ]);
 
     const sql = String(queryRaw.mock.calls[0]?.[0]?.sql);
-    expect(sql).toContain('SELECT DISTINCT "materials"');
+    expect(sql).toContain('SELECT DISTINCT term."name" AS "materials"');
+    expect(sql).toContain(`term."role" = 'MATERIAL'`);
     expect(sql).toContain(`p."status" = 'APPROVED'`);
     expect(sql).toContain(`sp."status" = 'APPROVED'`);
     expect(sql).toContain('p."published_revision_id" IS NOT NULL');
     expect(sql).toContain('published."id" = p."published_revision_id"');
-    expect(sql).toContain(`NULLIF(BTRIM(sp."city"), '') IS NOT NULL`);
-    expect(sql).toContain(`NULLIF(BTRIM("materials"), '') IS NOT NULL`);
+    expect(sql).not.toContain(`NULLIF(BTRIM(sp."city"), '') IS NOT NULL`);
+    expect(sql).toContain(`NULLIF(BTRIM(term."name"), '') IS NOT NULL`);
+    expect(sql).not.toContain('published."materials"');
     expect(sql).not.toContain('LOWER(');
     expect(sql).not.toContain('unnest');
     expect(sql).not.toContain('SELECT "id"');

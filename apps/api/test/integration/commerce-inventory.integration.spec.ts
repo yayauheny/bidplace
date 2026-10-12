@@ -6,6 +6,7 @@ import { pathToFileURL } from 'node:url';
 import { Prisma, type PrismaClient } from '@bidplace/database';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
+import { normalizeCatalogName } from '../../src/catalog/catalog-data';
 import {
   createIntegrationDatabaseContext,
   type IntegrationDatabaseContext,
@@ -100,7 +101,11 @@ async function createListings() {
     },
   });
   const category = await prisma.category.create({
-    data: { slug: `inventory-${suffix}`, name: 'Inventory' },
+    data: {
+      slug: `inventory-${suffix}`,
+      name: 'Inventory',
+      normalizedName: normalizeCatalogName('Inventory'),
+    },
   });
   const sellerProfile = await prisma.sellerProfile.create({
     data: {

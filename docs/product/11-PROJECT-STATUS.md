@@ -1,5 +1,183 @@
 # bidplace — текущий статус проекта
 
+## 2026-10-12 — Consolidated legal documents (`fix/legal-pack`)
+
+- `Implemented` (documentation): один актуальный юридический handoff в
+  [`../legal/00-FINAL-LEGAL-AUDIT.md`](../legal/00-FINAL-LEGAL-AUDIT.md); прежние
+  checklist/document-set/questions/manifest и drafts сохранены без переписывания
+  в `docs/legal/archive`. Восстановлен закрытый вопросник из `0bb2f86e`, где вопросы
+  1–7 закрыты основателем после уточнений юриста. Повторно предоставленный конспект
+  сохранён побайтово в `docs/research/raw/2026-08-24-founder-lawyer-meeting-notes.txt`.
+- `Prepared`: `docs/legal/site/01–04,06–09` содержит полные тексты и legal copy;
+  `docs/legal/deferred/05-commerce-and-future-features.md` сохраняет условия будущей
+  волны. DEC-118 подтверждает DEC-078, portfolio scope и целевые сроки хранения.
+  Неактивное приложение не включает commerce и не создаёт согласие на будущие цели.
+- `Partial` (publication readiness): основной открытый вопрос — основание текущей
+  аналитики без отдельного выбора, явно оставленное основателем для юриста. Не
+  заполнены полное наименование/УНП и отдельные provider/country/backup facts;
+  адрес для официальных обращений требует проверки. Регистрационный номер
+  `693460361` не обозначен как УНП, контакт — `work.evles@gmail.com`.
+- `Not implemented` by this task: UI/API legal pages, отдельные registration
+  confirmations/18+, многодокументный evidence, analytics control и cleanup.
+  `AuthLegalText` пока показывает объединённую галочку и policy stub;
+  `AuthService.register/acceptRules`, `TermsAcceptance`, `AnalyticsProvider`,
+  `AnalyticsService`, `AnalyticsEvent`/`AcquisitionAttribution` остаются без изменений.
+  Выбранное удаление до 30 дней и другие сроки не объявлены текущей функцией.
+- Verification: Prettier `--check` passes on all 14 current package/navigation
+  files; staged whitespace check of active documents passes. Whole staged check
+  reports original trailing spaces in the byte-preserved source notes and restored
+  consultation pack; sources were not formatted. Document QA checks 157 relative links;
+  13 archived and 3 restored source files are byte-identical to their Git versions;
+  the raw attachment SHA-256 matches. Diff is docs-only and excludes protected
+  principles and `.pen`. Runtime typecheck/lint/tests/build were not run because
+  application/schema behavior is unchanged; this is not a runtime verification claim.
+  Architecture and production are unchanged.
+
+
+## 2026-10-12 — Author application mobile-web (`fix/author-onboarding-figma`)
+
+- `Implemented` for **intro + four URL steps** on **local mobile-web** (Chromium/WebKit
+  publication/geometry E2E and affected Vitest). **Not** production, native iOS/Android,
+  CI, or whole-repo green. Work **creation-story** product UI stays `Partial` and
+  separate from this onboarding scope.
+- UI: `AuthorApplicationStepShell` on all four steps; `author-application-*-step.tsx`;
+  `FigmaSelectField` + `CountryPickerSheet`; `AuthorDirectionsPickerSheet` with
+  `directionCategoryIds` and retained inactive category chips; `AuthorApplicationAchievements`
+  (JSON date/body, no new photo); shared `ExitConfirmDialog` for author exit and auth
+  interrupt paths (`auth-exit-confirm.tsx`, `author-application-exit-confirm.tsx`).
+- Contracts / client / API alignment: `packages/contracts` seller-profile and portfolio
+  shapes; JSON `POST`/`DELETE` achievement writes; directions as category UUIDs across
+  mobile saves, `packages/api-client`, and `apps/api` sellers/portfolio services.
+  `@bidplace/api-client` `requestJson` validates responses with **`z.output`**.
+  Application **read** DTOs no longer treat legacy `discipline` as the gate for a
+  partially saved draft; **submit**, **advance**, and server readiness remain
+  authoritative (`sellers.service.ts`, application stage clamp).
+- Verification (Codex, Node 22.20.0, `EXPO_NO_DOTENV=1`): design-tokens/contracts/
+  api-client/database/API builds; mobile typecheck **0**; changed-file ESLint **0**;
+  affected UI/author/auth Vitest **376/376**; full mobile **702 passed / 30 failed**
+  (established Work/product-draft + **4** category-query-identity — **not** fixed here);
+  contracts **42**, client **42**, API unit **444**, API integration **40/40** on isolated
+  DB; author publication + geometry **8/8** (both browsers); source-geometry sub-checks
+  **2/2**; matrix **10/10**; auth filled-login-dismiss **2/2**. Auth history **2/2** did
+  **not** reach the shared dialog (blocked on Home «Все работы» catalog fixture) — track
+  separately. Clean web export **passed** (2026-10-12, `EXPO_NO_DOTENV=1`, `apps/mobile/dist`,
+  bundle `entry-e29b977a2398a6f0f9e6bec19d658305.js`). `category-query-identity` **4/4**
+  still fails on base `d8bfba17` — not fixed or claimed caused by this branch.
+- Evidence:
+  [`docs/audits/current/evidence/2026-10-12-author-onboarding/README.md`](../audits/current/evidence/2026-10-12-author-onboarding/README.md),
+  `author-application-publication.spec.ts`, owner specs under `apps/mobile/src/features/sellers`
+  and `components/{figma,ui}`.
+
+## 2026-10-12 — Author application step 1 (historical snapshot, superseded)
+
+_Superseded by the section above. Retained for the step-1-only audit trail._
+
+- Step 1 modules: `author-application-basics-step.tsx`, `ProfileBasicsFields`,
+  `ProfileCountryField`, `CountryPickerSheet`, `FigmaSelectField` (not a separate
+  `author-application-picker-field` module). `DEC-117` city optional; `DEC-114` country
+  directory. Earlier claims that steps 2–4 or directions were missing are obsolete.
+
+## 2026-10-11 — Author story review fixes
+
+- `Partial` for the user-facing author application, dictionaries and Work story.
+  The API review on `fix/author-story-review` closes the confirmed backend gaps:
+  a guest reads a story image only from an IMAGE block on the current published
+  revision; a hold is private draft access. Publication, hide, author suspend,
+  restore, cleanup and public-reference checks use that same published block.
+  Story saves write the current editing revision, including a private draft of
+  an approved work, and do not mutate the published revision or `Product.status`.
+  Owner detail and the admin review target return selected term IDs and
+  proposals. A proposal decision locks the product and re-reads it. Mapping a
+  term updates the revision, so the previous moderation target conflicts.
+  Re-adding a proposal reuses the same row and keeps an existing rejection.
+  A hidden category, term or direction is not a new selection. Catalog identity
+  is the normalized name per role, separate from the stable slug. Story
+  idempotency conflicts when the same key carries a different snapshot. One
+  asset may appear in several IMAGE blocks; the byte budget counts it once.
+  Country writes accept only the codes returned by `GET /countries`. Public
+  search, the materials filter and material facets read published terms and
+  story-block text. A successful product write returns the editing revision
+  after the selection sync, so its product fields match the following owner
+  read. `materials` and `technique` are read-only projections of selected
+  terms; an empty selection is null. Owner detail and product writes project
+  the editing revision. The owner list, hide/unhide, and the admin product
+  snapshot project the published revision when one exists, and the editing
+  revision only while the work is unpublished. A later editing draft does not
+  replace the published names. Free-text writes of those fields are
+  rejected. Owner, admin, and public author reads include metadata for the
+  selected terms, category, and directions, including hidden records. New
+  assignment of a hidden record stays rejected. Catalog name identity is
+  `normalizeCatalogName` (NFKC, collapsed spaces, Russian lower case). The
+  database column has no default and no insert trigger.
+- Mobile, admin UI and `@bidplace/api-client` remain `Not implemented` for this
+  contract. Backend readiness is not release readiness.
+- Evidence: `images.service.ts`, `media-lifecycle.service.ts`,
+  `products.service.ts`, `products.mapper.ts`, `product-story.ts`,
+  `work-selection.ts`, `catalog.service.ts`, `admin-moderation.service.ts`,
+  `admin-moderation.mapper.ts`,
+  `products-catalog.query.ts`, contracts `catalog.ts`, `countries.ts`,
+  `product.ts`, `admin.ts`, `portfolio.ts`, migration
+  `20261011213000_catalog_normalized_name` and
+  `20261011230000_product_revision_category_fk`. Isolated-schema coverage is
+  `author-story-catalog.integration.spec.ts`,
+  `media-lifecycle.integration.spec.ts`,
+  `work-media-http.integration.spec.ts` and
+  `portfolio-filters.integration.spec.ts`. The shared database was not reset.
+
+## 2026-10-11 — Author story backend
+
+- `Partial` for the user-facing author application, dictionaries and Work story.
+  The API can save and resume an application, submit it, store directions as
+  category IDs, accept catalog proposals, save revision-owned story blocks and
+  publish their media. Mobile, admin UI and `@bidplace/api-client` are not
+  adapted. That is the next stage, not a hidden compatibility layer.
+- Backend readiness is not release readiness. Shipping the API together with
+  updated clients is a separate release gate. No push and no deploy.
+- Evidence: `apps/api/src/catalog`, `sellers.service.ts`, `products/product-story.ts`,
+  `products/work-selection.ts`, `images.service.ts`, `media-lifecycle.service.ts`,
+  `admin-moderation.service.ts`, Prisma migration
+  `20261011180000_author_story_catalog`, contracts `catalog.ts`, `story.ts`,
+  `countries.ts`. Integration coverage is
+  `author-story-catalog.integration.spec.ts` on an isolated `itest_*` schema.
+  The shared database was not reset.
+- City is optional for approval and public author/work visibility. New
+  achievements are date plus description. Story limits live in `STORY_LIMITS`.
+- `Not implemented` for the client handoff:
+  [UI-HANDOFF.md](../tasks/2026-10-11-author-story-backend/UI-HANDOFF.md).
+
+## 2026-10-11 — Author/story backend target and next sales wave
+
+- `Not implemented` for the new target (`DEC-112`–`DEC-114`). Product decisions
+  now include revision-owned story blocks, common approved classifiers and
+  required country / optional city. No application code, API, migration or
+  runtime behavior was changed by this planning pass.
+- Current evidence: `product-draft-story.tsx` still edits `story` as text;
+  `work-content.ts` still interleaves gallery extras per the earlier `DEC-093`;
+  Prisma `ProductCreationStep` belongs to Product rather than ProductRevision.
+  `MediaLifecycleService` publication gathers revision gallery media, not new
+  story-block references. Existing media/state ownership is the reuse boundary.
+- Classifiers are not migrated: Prisma Category exists, while `materials`,
+  `technique` and `discipline` remain text. `seller-profile.ts`, submit readiness
+  in `SellersService`, `profile-validation.ts` and portfolio public author
+  contracts/queries still require city. Their existing specs cover the previous
+  behavior, not the new target.
+- Backend execution, capture roots and unresolved points:
+  [PLAN.md](../tasks/2026-10-11-author-story-backend/PLAN.md).
+  Eight founder-provided author captures were inspected from 2026-10-11 exports.
+  Their node source and product scope differ in places; UI parity is not claimed.
+- `Not implemented` for the next sales wave (`DEC-115`). Its complete product
+  map is [15-POST-MVP-BACKLOG.md](15-POST-MVP-BACKLOG.md); execution mapping stays
+  in the post-MVP backlog. This documentation does not enable commerce.
+- Verification for this pass is documentation links, diff and decision
+  consistency only. Application tests, native, live Figma and production were
+  not run; earlier green test totals below do not validate these planned changes.
+
+## 2026-10-11 — Login dismissal (`fix/login-dismissal`)
+
+- `Partial` on local web. `DEC-111` keeps entered-data confirmation on registration only. `/login` closes without «Прервать вход» when email and password are filled. The close button, Escape, backdrop, and Back/Forward use `authNavigationDismissal`. `/register` passes `protectEnteredData`: an empty registration leaves, and a filled one asks. Continue keeps the current step, values, and focus. Interrupt follows the chosen exit. Forgot-password, reset-password, and email verification do not ask. A busy request still keeps the sheet. Leaving does not cancel the request, and a late login response still cannot replace a newer session. This is not a 1:1 Figma match. Production was not updated. No push or deploy.
+- Node 22.20.0, `EXPO_NO_DOTENV=1`, `BIDPLACE_ENV_FILE` pointed at a missing path for the API. Mobile `tsc` **0**, eslint of the touched auth files without autofix **0**, Vitest **725/725** (121 files), `expo export --platform web --clear` **0** (`entry-3af721c78097eccaf571e83da6104842.js`).
+- Auth browser **44/44** (2.1m) on Chromium and WebKit against schema `auth_browser_login_20261011` in a new loopback database `bidplace_login_dismissal` (`playwright.auth-abuse.config.ts`, no webServer, no `migrate reset`). The API listened on `127.0.0.1` with `TURNSTILE_VERIFIER=test` and `TRUST_PROXY=true`.
+
 ## 2026-10-11 — Local release integration (`fix/portfolio-release-integration`)
 
 - `Partial` on local web. Node 22.23.3, `EXPO_NO_DOTENV=1`. Not deployed, not native, and not a production migration. Logs: `/private/tmp/bidplace-release-integration-checks/`.
@@ -53,7 +231,7 @@
   Auth, Home «Смотреть все», admin «Модерация», and exit confirmation use that
   matrix.
 - Node 22 verification (2026-10-10, SVG surface track): design-tokens `tsc
-  --noEmit` and build **0**, `apps/mobile/node_modules/typescript`
+--noEmit` and build **0**, `apps/mobile/node_modules/typescript`
   `tsc --noEmit` **0**, mobile eslint **0**, Vitest **721/721** (121 files),
   `EXPO_NO_DOTENV=1` `expo export` → `/private/tmp/bidplace-buttons-grid/dist`
   **0**, Playwright Chromium+WebKit **10/10** (private
@@ -205,8 +383,7 @@
   `register`; 401/429/500 UI checks use synthetic HTTP responses. Existing
   consent/session/single-register unit coverage stays intact. Native runtime
   and the full database-backed `auth-lifecycle`/history gate are not verified.
-- Local API readiness is 200, but a synthetic unknown-email login returned
-  500. Read-only schema checks found no `users.slug` in `bidplace`,
+- Local API readiness is 200, but a synthetic unknown-email login returned 500. Read-only schema checks found no `users.slug` in `bidplace`,
   `bidplace_e2e` or `bidplace_integration`; a slug-only lookup in the test DB
   returns Prisma `P2022`, column `users.slug`. Both invalid credential branches
   return the same 401 in `AuthService` unit tests; their real local HTTP gate
@@ -231,8 +408,7 @@
   still does. The login sheet is 546 in Chromium and WebKit, down from 547.
   The in-app sheet stays 543.5. Source anatomy is 545.
 - The remaining 2.5px between DPR 1 and DPR 2 is not the field: «Забыли
-  пароль?» is 15 vs 14.5, «или» is 19 vs 18, and the legal line is 30 vs
-  29. Those nodes use `line-height: normal`. This is not 1:1.
+  пароль?» is 15 vs 14.5, «или» is 19 vs 18, and the legal line is 30 vs 29. Those nodes use `line-height: normal`. This is not 1:1.
 
 ## 2026-10-09 — Auth visual check against the current handoff
 
@@ -465,7 +641,7 @@
   `seller_profiles.slug` later only after every pair of nicknames is equal
   and no live query reads the profile column.
 - Local checks on Node 22.20.0: API and mobile typecheck passed. Lint of the
-  touched files passed.   `seller-profile.mapper.spec` (3), `sellers.service.spec` (20), and
+  touched files passed. `seller-profile.mapper.spec` (3), `sellers.service.spec` (20), and
   `seller-profile-submit.spec` (48) passed. Chromium and WebKit
   `auth-layout` and `auth-lifecycle` passed, including registration without
   `redirectTo` and the fullscreen column without Home. One WebKit history
@@ -684,8 +860,7 @@
   `8b9c125e-11f4-4db3-b185-629e563c4a2b`.
 - Live smoke: `https://bid.place/` opened with Home current and «Пока здесь
   тихо». Catalog opened at `/works` with filters and «Пока нет работ».
-  `/login` opened with «Вход на Bidplace». `GET /api/portfolio/home` returned
-  200. `GET /api/health` and `GET /api/health/ready` each returned 200 once.
+  `/login` opened with «Вход на Bidplace». `GET /api/portfolio/home` returned 200. `GET /api/health` and `GET /api/health/ready` each returned 200 once.
   A public home GET sent with a synthetic `X-Request-Id` and query marker
   returned a new server UUID in the response header. The cacheable
   unauthenticated home response still omits that header.
@@ -1018,9 +1193,9 @@
   отдельный API token с Email Sending: Edit. `SMTP_FROM` — адрес на домене,
   подключённом к Email Sending. SDK, email binding и новый adapter не добавлены.
 - Контракт: `deploy/cloudflare/wrangler.jsonc` задаёт host, port `465` и
-`SMTP_SECURE=true` для staging и production. Позже подтверждённый
-`SMTP_FROM` записан как `noreply@bid.place`; см. верхний раздел. Username и
-password остаются Worker secrets.
+  `SMTP_SECURE=true` для staging и production. Позже подтверждённый
+  `SMTP_FROM` записан как `noreply@bid.place`; см. верхний раздел. Username и
+  password остаются Worker secrets.
 - Совместимость: `apps/api/src/core/email/smtp-transport.ts` и
   `smtp-transport.spec.ts`. Runtime не переписывался.
 - `Needs verification`: Email Sending в аккаунте, Workers Paid, DNS домена
@@ -3195,7 +3370,7 @@ build-web` (4 successful tasks), `make test` and dev smoke passed. Production
 - `Needs verification`: отдельный обязательный PD consent из `DEC-078` требует
   purpose-by-purpose legal basis check. Это не отменяет решение основателя молча;
   финальный registration contract остаётся заблокирован вопросом 1 из
-  [`../legal/06-OPEN-QUESTIONS-FOR-BELARUS-LAWYER.md`](../legal/06-OPEN-QUESTIONS-FOR-BELARUS-LAWYER.md).
+  [итоговый юридический аудит](../legal/00-FINAL-LEGAL-AUDIT.md).
 - Code behavior is unchanged by this documentation update. Tests were not rerun.
 - `Planned` (docs only): backlog содержит независимые security/dependency evidence и
   public-pilot operations reviews. Они не разрешают открытые вопросы автоматически и
@@ -3312,7 +3487,7 @@ build-web` (4 successful tasks), `make test` and dev smoke passed. Production
 
 - `Superseded`: этот исторический BY+RF пакет удалён из рабочего дерева после
   `DEC-077`. Текущая юридическая работа ограничена Беларусью; исходная версия остаётся
-  в Git. Актуальный список — `docs/legal/06-OPEN-QUESTIONS-FOR-BELARUS-LAWYER.md`.
+  в Git. Актуальный список — `docs/legal/00-FINAL-LEGAL-AUDIT.md`.
 
 ## 2026-09-05 — Expanded MVP product contract (P0-A)
 

@@ -27,6 +27,21 @@ export const publicSellerProfileSelect = {
   publishedRevision: {
     select: {
       profilePhotoAsset: { select: publicMediaAssetSelect },
+      directions: {
+        orderBy: { position: 'asc' },
+        select: {
+          categoryId: true,
+          category: {
+            select: {
+              id: true,
+              slug: true,
+              name: true,
+              description: true,
+              active: true,
+            },
+          },
+        },
+      },
       achievements: {
         orderBy: [
           { occurredAt: { sort: 'desc', nulls: 'last' } },
@@ -101,6 +116,21 @@ export const sellerProfileOwnerSelect = {
       websiteUrl: true,
       publicEmail: true,
       shortDescription: true,
+      directions: {
+        orderBy: { position: 'asc' },
+        select: {
+          categoryId: true,
+          category: {
+            select: {
+              id: true,
+              slug: true,
+              name: true,
+              description: true,
+              active: true,
+            },
+          },
+        },
+      },
     },
   },
 } satisfies Prisma.SellerProfileSelect;
@@ -183,14 +213,42 @@ export function toPortfolioAchievement(
   };
 }
 
+function selectedDirections(
+  directions:
+    | ReadonlyArray<{
+        category: {
+          id: string;
+          slug: string;
+          name: string;
+          description: string | null;
+          active: boolean;
+        };
+      }>
+    | undefined,
+) {
+  return (directions ?? []).map((item) => {
+    const description = item.category.description?.trim();
+    return {
+      id: item.category.id,
+      slug: item.category.slug,
+      name: item.category.name,
+      description: description ? description : null,
+      active: item.category.active,
+    };
+  });
+}
+
 export function toPublicSellerProfile(
   sellerProfile: Omit<PublicSellerProfileRecord, 'publishedRevision'> & {
     publishedRevision?: PublicSellerProfileRecord['publishedRevision'];
   },
 ) {
-  if (!sellerProfile.discipline || !sellerProfile.shortDescription) {
+  if (!sellerProfile.shortDescription) {
     throw new Error('Published SellerProfile is missing required fields');
   }
+  const directionCategoryIds =
+    sellerProfile.publishedRevision?.directions?.map((item) => item.categoryId) ??
+    [];
   const slug = sellerProfile.user?.slug ?? sellerProfile.slug;
   return {
     id: sellerProfile.id,
@@ -213,6 +271,8 @@ export function toPublicSellerProfile(
     websiteUrl: sellerProfile.websiteUrl ?? null,
     publicEmail: sellerProfile.publicEmail ?? null,
     shortDescription: sellerProfile.shortDescription,
+    directionCategoryIds,
+    directions: selectedDirections(sellerProfile.publishedRevision?.directions),
     achievements:
       sellerProfile.publishedRevision?.achievements.map((item) =>
         toPortfolioAchievement(item, 'public'),
@@ -271,6 +331,9 @@ export function toSellerProfileResponse(
       ...sellerProfileResponse,
       ...publicFields,
       slug: accountSlug,
+      directionCategoryIds:
+        editingRevision?.directions?.map((item) => item.categoryId) ?? [],
+      directions: selectedDirections(editingRevision?.directions),
       applicationStage: sellerProfileResponse.applicationStage ?? null,
       city:
         (revisionOwnsFields

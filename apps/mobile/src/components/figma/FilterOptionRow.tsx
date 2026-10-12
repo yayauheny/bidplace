@@ -1,9 +1,10 @@
 import { Platform, View } from 'react-native';
 
-import { figmaTokens } from '@bidplace/design-tokens';
+import { designTokens, figmaTokens } from '@bidplace/design-tokens';
 
 import { AppText } from '../ui/AppText';
 import { MotionPressable } from '../ui/MotionPressable';
+import { FigmaIcon } from './FigmaIcon';
 import {
   filterOptionControlStyle,
   filterOptionLabelStyle,
@@ -16,12 +17,14 @@ export function FilterOptionRow({
   mode,
   selected,
   disabled = false,
+  variant = 'default',
   onPress,
 }: {
   label: string;
   mode: FilterOptionMode;
   selected: boolean;
   disabled?: boolean;
+  variant?: 'default' | 'directions';
   onPress: () => void;
 }) {
   const handleWebKeyDown = (event: {
@@ -51,7 +54,15 @@ export function FilterOptionRow({
       style={[filterOptionRowStyle(), disabled ? { opacity: 0.5 } : null]}
     >
       <View style={filterOptionControlStyle(mode, selected)}>
-        {selected && mode === 'checkbox' ? (
+        {selected && mode === 'checkbox' && variant === 'directions' ? (
+          <FigmaIcon
+            name="check"
+            size={figmaTokens.size.filterOptionCheck}
+            color={figmaTokens.color.white}
+            strokeWidthPx={figmaTokens.stroke.filterOptionCheck}
+          />
+        ) : null}
+        {selected && mode === 'checkbox' && variant !== 'directions' ? (
           <View
             style={{
               width: 10,
@@ -78,7 +89,12 @@ export function FilterOptionRow({
       <AppText
         role="body"
         numberOfLines={1}
-        style={filterOptionLabelStyle()}
+        style={[
+          filterOptionLabelStyle(),
+          variant === 'directions'
+            ? designTokens.typography.directionsOption
+            : null,
+        ]}
       >
         {label}
       </AppText>

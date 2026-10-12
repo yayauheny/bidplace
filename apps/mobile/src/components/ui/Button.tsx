@@ -1,13 +1,13 @@
 import type { FigmaButtonSize } from '@bidplace/design-tokens';
+import type { Href } from 'expo-router';
 import { View, type ViewStyle } from 'react-native';
 
 import { FigmaButton } from '../figma/FigmaButton';
 
 import { type FigmaIconName } from '../figma/figma-icon-names';
 
-type ButtonProps = {
+type ButtonPropsBase = {
   label: string;
-  onPress: () => void;
   disabled?: boolean;
   loading?: boolean;
   icon?: FigmaIconName;
@@ -17,9 +17,25 @@ type ButtonProps = {
   alignSelf?: ViewStyle['alignSelf'];
 };
 
+type ButtonPressAction = {
+  href?: never;
+  onPress: () => void;
+};
+
+type ButtonNavigationAction = {
+  href: Href;
+  onPress?: never;
+};
+
+export type ButtonProps = ButtonPropsBase &
+  (ButtonPressAction | ButtonNavigationAction);
+
 function resolvedButtonWidth(width: ButtonProps['width']) {
   return width === 'block' ? 'full' : (width ?? 'content');
 }
+
+export type TextButtonProps = Omit<ButtonPropsBase, 'size' | 'alignSelf'> &
+  (ButtonPressAction | ButtonNavigationAction);
 
 export function PrimaryButton({
   width = 'content',
@@ -72,21 +88,12 @@ export function DestructiveButton({
   );
 }
 
-export function TextButton({
-  label,
-  onPress,
-  disabled,
-  icon,
-  accessibilityHint,
-}: Omit<ButtonProps, 'loading' | 'size'>) {
+export function TextButton({ width, ...props }: TextButtonProps) {
   return (
     <FigmaButton
-      label={label}
-      onPress={onPress}
-      disabled={disabled}
-      icon={icon}
-      accessibilityHint={accessibilityHint}
+      {...props}
       variant="ghost"
+      width={resolvedButtonWidth(width)}
     />
   );
 }

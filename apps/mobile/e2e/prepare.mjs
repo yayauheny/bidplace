@@ -92,6 +92,10 @@ const prisma = new PrismaClient({
 });
 
 await prisma.category.create({
-  data: { slug: 'e2e-art', name: 'E2E art' },
+  data: {
+    slug: 'e2e-art',
+    name: 'E2E art',
+    normalizedName: 'E2E art'.normalize('NFKC').replace(/\s+/g, ' ').trim().toLocaleLowerCase('ru'),
+  },
 });
 await prisma.$disconnect();

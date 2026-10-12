@@ -20,7 +20,7 @@ test.beforeEach(async ({ context }) => {
   await assignAuthClientIp(context);
 });
 
-test('dirty login asks before closing and providers stay unavailable', async ({ page }) => {
+test('filled login closes without confirmation and providers stay unavailable', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
   page.on('console', (message) => {
@@ -29,27 +29,52 @@ test('dirty login asks before closing and providers stay unavailable', async ({ 
   await page.setViewportSize({ width: 390, height: 874 });
   await page.goto('/login');
   const email = page.getByLabel('Электронная почта');
-  await email.fill('a');
   const password = page.getByLabel('Пароль', { exact: true });
+  const loginTitle = page.getByText('Вход на Bidplace', { exact: true });
+  await email.fill('a');
   await password.fill('visual-password-123');
   await expectPasswordVisibility(password);
   await expect(page.locator('#auth-exit-confirm')).toHaveCount(0);
   await page.getByRole('button', { name: 'Закрыть', exact: true }).click();
-  await expect(page.getByText('Прервать вход', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Продолжить', exact: true }).click();
-  await expect(email).toHaveValue('a');
+  await expect(page.getByText('Прервать вход', { exact: true })).toHaveCount(0);
+  await expect(page.locator('#auth-exit-confirm')).toHaveCount(0);
+  await expect(loginTitle).toHaveCount(0);
+  await expect(page).toHaveURL(/\/$/);
+
+  await page.goto('/login');
+  await expect(loginTitle).toBeVisible();
+  await email.fill('escape@example.com');
+  await password.fill('visual-password-123');
+  await page.keyboard.press('Escape');
+  await expect(page.getByText('Прервать вход', { exact: true })).toHaveCount(0);
+  await expect(page.locator('#auth-exit-confirm')).toHaveCount(0);
+  await expect(loginTitle).toHaveCount(0);
+  await expect(page).toHaveURL(/\/$/);
+
+  await page.goto('/login');
+  await expect(loginTitle).toBeVisible();
+  await email.fill('backdrop@example.com');
+  await password.fill('visual-password-123');
+  const sheet = page.locator('#auth-sheet');
+  await expect(sheet).toBeVisible();
+  const sheetBox = await sheet.boundingBox();
+  expect(sheetBox).not.toBeNull();
+  await page.mouse.click(sheetBox!.x + sheetBox!.width / 2, Math.max(8, sheetBox!.y - 20));
+  await expect(page.getByText('Прервать вход', { exact: true })).toHaveCount(0);
+  await expect(page.locator('#auth-exit-confirm')).toHaveCount(0);
+  await expect(loginTitle).toHaveCount(0);
+  await expect(page).toHaveURL(/\/$/);
+
+  await page.goto('/login');
+  await expect(loginTitle).toBeVisible();
+  await email.fill('a');
+  await password.fill('visual-password-123');
   await page.getByRole('button', { name: 'Войти с Google', exact: true }).click();
   await expect(page.getByText('Вход через Google пока недоступен')).toBeVisible();
   await page.getByRole('button', { name: 'Войти с Telegram', exact: true }).click();
   await expect(page.getByText('Вход через Telegram пока недоступен')).toBeVisible();
-  const panel = page.locator('#auth-exit-confirm');
-  await page.getByRole('button', { name: 'Закрыть', exact: true }).click();
-  await expect(panel).toBeVisible();
-  const panelBox = await panel.boundingBox();
-  expect(panelBox).not.toBeNull();
-  expect(panelBox!.width).toBeCloseTo(366, 0);
-  expect(panelBox!.x).toBeCloseTo((390 - panelBox!.width) / 2, 0);
-  await page.getByRole('button', { name: 'Продолжить', exact: true }).click();
+  await expect(page.locator('#auth-exit-confirm')).toHaveCount(0);
+  await expect(loginTitle).toBeVisible();
 
   await mkdir(artifactDir, { recursive: true });
   const loginUrl = page.url();
@@ -62,10 +87,8 @@ test('dirty login asks before closing and providers stay unavailable', async ({ 
     seen.add(viewportLabel(viewport));
     await page.setViewportSize(viewport);
     expect(page.url()).toBe(loginUrl);
-    await page.getByRole('button', { name: 'Закрыть', exact: true }).click();
-    await expectCenteredSurface(page, '#auth-exit-confirm');
-    await captureAuthSurface(page, page.locator('#auth-exit-confirm'), resolve(artifactDir, `${engine(page)}-auth-exit-${viewport.width}x${viewport.height}.png`));
-    await page.getByRole('button', { name: 'Продолжить', exact: true }).click();
+    await expect(page.locator('#auth-exit-confirm')).toHaveCount(0);
+    await expect(loginTitle).toBeVisible();
     await page.getByRole('link', { name: 'политику конфиденциальности', exact: true }).click();
     await expectCenteredSurface(page, '#app-dialog-content');
     const policy = page.getByText('Политика конфиденциальности', { exact: true });
@@ -82,13 +105,15 @@ test('dirty login asks before closing and providers stay unavailable', async ({ 
     await page.keyboard.press('Escape');
     await expect(policy).toHaveCount(0);
     await expect(page.getByRole('link', { name: 'политику конфиденциальности', exact: true })).toBeFocused();
-    await expect(panel).toHaveCount(0);
+    await expect(page.locator('#auth-exit-confirm')).toHaveCount(0);
+    await expect(loginTitle).toBeVisible();
   }
   await page.getByRole('link', { name: 'правила сервиса', exact: true }).click();
   await expectCenteredSurface(page, '#app-dialog-content');
   await expect(page.getByText('Правила сервиса', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Закрыть окно', exact: true }).click();
-  await expect(panel).toHaveCount(0);
+  await expect(page.locator('#auth-exit-confirm')).toHaveCount(0);
+  await expect(loginTitle).toBeVisible();
   await page.setViewportSize({ width: 390, height: 874 });
   await page.evaluate(() => { document.documentElement.style.zoom = '1.5'; });
   const privacyAtZoom = page
@@ -145,11 +170,11 @@ async function expectCenteredSurface(page: Page, selector: string) {
   }).toBe(true);
 }
 
-test('browser back keeps a filled login until the user decides', async ({ page }) => {
+test('browser back leaves a filled login and confirms a filled registration', async ({ page }) => {
   await expectAuthBrowserHistory(page, true);
 });
 
-test('browser back keeps a filled login without the Navigation API', async ({ page }) => {
+test('browser back leaves a filled login without the Navigation API', async ({ page }) => {
   await page.addInitScript(() => {
     Object.defineProperty(window, 'navigation', {
       configurable: true,
@@ -254,6 +279,7 @@ async function expectAuthBrowserHistory(page: Page, navigationApi: boolean) {
   await expect(loginTitle).toBeVisible();
   await expect(page.getByRole('navigation', { name: 'Основная навигация' })).toHaveCount(0);
   const email = page.getByLabel('Электронная почта');
+  const password = page.getByLabel('Пароль', { exact: true });
   await email.fill('a');
   await email.fill('');
   await historyStep(page, -1);
@@ -266,21 +292,14 @@ async function expectAuthBrowserHistory(page: Page, navigationApi: boolean) {
   await expect(page).toHaveURL(/\/login$/);
   await expect(loginTitle).toBeVisible();
   await email.fill('a');
+  await password.fill('visual-password-123');
   await historyStep(page, -1);
-  await expect(page.getByText('Прервать вход', { exact: true })).toBeVisible();
-  await expect(page).toHaveURL(/\/login$/);
-  await expect(email).toHaveValue('a');
-  await page.getByRole('button', { name: 'Продолжить', exact: true }).click();
-  await expect(email).toHaveValue('a');
-  await expect(email).toBeFocused();
-  await historyStep(page, -1);
-  await page.getByRole('button', { name: 'Прервать', exact: true }).click();
+  await expect(page.getByText('Прервать вход', { exact: true })).toHaveCount(0);
+  await expect(page.locator('#auth-exit-confirm')).toHaveCount(0);
   await expect(page).toHaveURL(/\/$/);
   await expect(loginTitle).toHaveCount(0);
-  await historyStep(page, -1);
-  await expect(loginTitle).toHaveCount(0);
   await historyStep(page, 1);
-  await expect(loginTitle).toHaveCount(0);
+  await expect(page.locator('#auth-exit-confirm')).toHaveCount(0);
 
   await page.goto('/');
   await page.getByRole('link', { name: 'Профиль', exact: true }).click();
@@ -290,18 +309,10 @@ async function expectAuthBrowserHistory(page: Page, navigationApi: boolean) {
   await expect(page).toHaveURL(/\/login$/);
   await expect(loginTitle).toBeVisible();
   await email.fill('r');
+  await password.fill('visual-password-123');
   await historyStep(page, -1);
-  await expect(page.getByText('Прервать вход', { exact: true })).toBeVisible();
-  await expect(page).toHaveURL(/\/login$/);
-  await expect(loginTitle).toBeVisible();
-  await expect(email).toHaveValue('r');
-  await page.getByRole('button', { name: 'Продолжить', exact: true }).click();
-  await expect(page).toHaveURL(/\/login$/);
-  await expect(loginTitle).toBeVisible();
-  await expect(email).toHaveValue('r');
-  await expect(email).toBeFocused();
-  await historyStep(page, -1);
-  await page.getByRole('button', { name: 'Прервать', exact: true }).click();
+  await expect(page.getByText('Прервать вход', { exact: true })).toHaveCount(0);
+  await expect(page.locator('#auth-exit-confirm')).toHaveCount(0);
   await expect(page).toHaveURL(/\/$/);
   await expect(loginTitle).toHaveCount(0);
 
@@ -321,19 +332,86 @@ async function expectAuthBrowserHistory(page: Page, navigationApi: boolean) {
   await openWorksCatalog(page);
   await page.getByRole('link', { name: 'Профиль', exact: true }).click();
   await expect(page).toHaveURL(/\/login$/);
-  await expect(loginTitle).toBeVisible();
-  await email.fill('b');
+  await page.getByRole('link', { name: 'Регистрация', exact: true }).click();
+  await expect(page).toHaveURL(/\/register$/);
   await historyStep(page, -2);
-  await expect(page.getByText('Прервать вход', { exact: true })).toBeVisible();
+  await expect(page.getByText('Прервать регистрацию', { exact: true })).toHaveCount(0);
+  await expect(page.locator('#auth-exit-confirm')).toHaveCount(0);
+  await expect(page).toHaveURL(/\/works$/);
+
+  await page.goto('/');
+  await openWorksCatalog(page);
+  await page.getByRole('link', { name: 'Профиль', exact: true }).click();
   await expect(page).toHaveURL(/\/login$/);
-  await expect(loginTitle).toBeVisible();
-  await expect(email).toHaveValue('b');
+  await page.getByRole('link', { name: 'Регистрация', exact: true }).click();
+  await expect(page).toHaveURL(/\/register$/);
+  const registerEmail = page.getByPlaceholder('example@gmail.com');
+  await registerEmail.fill('kept@example.com');
+  const rulesReady = page.waitForResponse(
+    (response) => response.url().includes('/api/auth/rules') && response.ok(),
+  );
+  await page.getByRole('checkbox', { name: /соглашаюсь/ }).check();
+  await rulesReady;
+  await page.getByRole('button', { name: 'Дальше', exact: true }).click();
+  const nickname = page.getByLabel('Никнейм', { exact: true });
+  await expect(nickname).toBeVisible();
+  await nickname.fill('author');
+  await historyStep(page, -2);
+  const registrationExit = page.getByText('Прервать регистрацию', { exact: true });
+  await expect(registrationExit).toBeVisible();
+  await expect(page).toHaveURL(/\/register$/);
+  await expect(page.getByText('Выберите имя пользователя', { exact: true })).toBeVisible();
+  await expect(nickname).toHaveValue('author');
+  const panel = page.locator('#auth-exit-confirm');
+  await expect(panel).toBeVisible();
+  const panelBox = await panel.boundingBox();
+  expect(panelBox).not.toBeNull();
+  expect(panelBox!.width).toBeCloseTo(366, 0);
+  expect(panelBox!.x).toBeCloseTo((390 - panelBox!.width) / 2, 0);
   await page.getByRole('button', { name: 'Продолжить', exact: true }).click();
-  await expect(page).toHaveURL(/\/login$/);
-  await expect(email).toHaveValue('b');
-  await expect(email).toBeFocused();
+  await expect(page).toHaveURL(/\/register$/);
+  await expect(page.getByText('Выберите имя пользователя', { exact: true })).toBeVisible();
+  await expect(nickname).toHaveValue('author');
+  await expect(nickname).toBeFocused();
+  await expect(registerEmail).toHaveCount(0);
   await historyStep(page, -2);
   await page.getByRole('button', { name: 'Прервать', exact: true }).click();
+  await expect(page).toHaveURL(/\/works$/);
+  await expect(page.getByText('Выберите имя пользователя', { exact: true })).toHaveCount(0);
+
+  await page.goto('/');
+  await openWorksCatalog(page);
+  await page.getByRole('link', { name: 'Профиль', exact: true }).click();
+  await page.getByRole('link', { name: 'Регистрация', exact: true }).click();
+  await expect(page).toHaveURL(/\/register$/);
+  await page.reload();
+  await expect(page).toHaveURL(/\/register$/);
+  await expect(page.getByText('Введите вашу почту', { exact: true })).toBeVisible();
+  const reloadedEmail = page.getByLabel('Электронная почта', { exact: true });
+  await reloadedEmail.fill('reloaded@example.com');
+  await historyStep(page, -2);
+  await expect(page.getByText('Прервать регистрацию', { exact: true })).toBeVisible();
+  await expect(page).toHaveURL(/\/register$/);
+  await expect(page.getByText('Введите вашу почту', { exact: true })).toBeVisible();
+  await expect(reloadedEmail).toHaveValue('reloaded@example.com');
+  await page.getByRole('button', { name: 'Продолжить', exact: true }).click();
+  await expect(page).toHaveURL(/\/register$/);
+  await expect(reloadedEmail).toHaveValue('reloaded@example.com');
+  await expect(reloadedEmail).toBeFocused();
+  await historyStep(page, -2);
+  await page.getByRole('button', { name: 'Прервать', exact: true }).click();
+  await expect(page).toHaveURL(/\/works$/);
+
+  await page.goto('/');
+  await openWorksCatalog(page);
+  await page.getByRole('link', { name: 'Профиль', exact: true }).click();
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(loginTitle).toBeVisible();
+  await email.fill('b');
+  await password.fill('visual-password-123');
+  await historyStep(page, -2);
+  await expect(page.getByText('Прервать вход', { exact: true })).toHaveCount(0);
+  await expect(page.locator('#auth-exit-confirm')).toHaveCount(0);
   await expect(page).toHaveURL(/\/$/);
   await expect(loginTitle).toHaveCount(0);
 
@@ -350,20 +428,37 @@ async function expectAuthBrowserHistory(page: Page, navigationApi: boolean) {
   await expect(page.getByText('Прервать вход', { exact: true })).toHaveCount(0);
   await expect(loginTitle).toBeVisible();
   await email.fill('c');
+  await password.fill('visual-password-123');
   await historyStep(page, 1);
-  await expect(page.getByText('Прервать вход', { exact: true })).toBeVisible();
-  await expect(page).toHaveURL(/\/login$/);
-  await expect(loginTitle).toBeVisible();
-  await expect(email).toHaveValue('c');
-  await page.getByRole('button', { name: 'Продолжить', exact: true }).click();
-  await expect(page).toHaveURL(/\/login$/);
-  await expect(email).toHaveValue('c');
-  await expect(email).toBeFocused();
-  await historyStep(page, 1);
-  await page.getByRole('button', { name: 'Прервать', exact: true }).click();
+  await expect(page.getByText('Прервать вход', { exact: true })).toHaveCount(0);
+  await expect(page.locator('#auth-exit-confirm')).toHaveCount(0);
   await expect(page).toHaveURL(/\/works$/);
   await expect(loginTitle).not.toBeVisible();
   await expect(page.getByText('Каталог работ на Bidplace', { exact: true })).toBeVisible();
+
+  await page.goto('/register');
+  await expect(page.getByText('Введите вашу почту', { exact: true })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByText('Прервать регистрацию', { exact: true })).toHaveCount(0);
+  await expect(page.getByText('Введите вашу почту', { exact: true })).toHaveCount(0);
+
+  await page.goto('/register');
+  await expect(page.getByText('Введите вашу почту', { exact: true })).toBeVisible();
+  const escapeEmail = page.getByLabel('Электронная почта', { exact: true });
+  await escapeEmail.fill('escape-register@example.com');
+  await page.keyboard.press('Escape');
+  await expect(page.getByText('Прервать регистрацию', { exact: true })).toBeVisible();
+  await expect(page).toHaveURL(/\/register$/);
+  await expect(escapeEmail).toHaveValue('escape-register@example.com');
+  await page.getByRole('button', { name: 'Продолжить', exact: true }).click();
+  await expect(page).toHaveURL(/\/register$/);
+  await expect(page.getByText('Введите вашу почту', { exact: true })).toBeVisible();
+  await expect(escapeEmail).toHaveValue('escape-register@example.com');
+  await expect(escapeEmail).toBeFocused();
+  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: 'Прервать', exact: true }).click();
+  await expect(page.getByText('Прервать регистрацию', { exact: true })).toHaveCount(0);
+  await expect(page.getByText('Введите вашу почту', { exact: true })).toHaveCount(0);
 }
 
 test('register email title layout is stable across viewport resize', async ({ page }) => {
@@ -610,13 +705,18 @@ test('auth composition is stacked in the S4 phone column', async ({ page }) => {
   await expectPasswordVisibility(resetConfirmation);
   await expect(page.locator('#auth-exit-confirm')).toHaveCount(0);
   await page.getByRole('button', { name: 'Закрыть', exact: true }).click();
-  const resetExitCopy = page.getByText('Новый пароль не сохранится, пока форма не отправлена.', { exact: true });
-  await expect(resetExitCopy).toBeVisible();
-  await captureAuthSurface(
-    page,
-    resetExitCopy,
-    resolve(artifactDir, `${engine(page)}-reset-password-390x400.png`),
-  );
+  await expect(page.getByText('Новый пароль не сохранится, пока форма не отправлена.', { exact: true })).toHaveCount(0);
+  await expect(page.getByText('Прервать восстановление', { exact: true })).toHaveCount(0);
+  await expect(page.locator('#auth-exit-confirm')).toHaveCount(0);
+  await expect(resetPassword).toHaveCount(0);
+
+  await page.goto('/forgot-password');
+  await expect(page.getByText('Восстановление пароля', { exact: true })).toBeVisible();
+  await page.getByLabel('Электронная почта').fill('recover@example.com');
+  await page.getByRole('button', { name: 'Закрыть', exact: true }).click();
+  await expect(page.getByText('Прервать восстановление', { exact: true })).toHaveCount(0);
+  await expect(page.locator('#auth-exit-confirm')).toHaveCount(0);
+  await expect(page.getByText('Восстановление пароля', { exact: true })).toHaveCount(0);
 });
 
 test('nickname suggestions check availability only on explicit Next', async ({

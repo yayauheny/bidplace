@@ -1,6 +1,7 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import type { PrismaClient } from '@bidplace/database';
 import { readFile, rm } from 'node:fs/promises';
+import sharp from 'sharp';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -21,6 +22,7 @@ import {
   type IntegrationDatabaseContext,
 } from './test-database';
 import { sellerModerationRequest } from './admin-status-request';
+import { sellerProfileForm } from './seller-profile-form';
 
 let database: IntegrationDatabaseContext;
 let http: HttpTestApp;
@@ -52,7 +54,12 @@ async function login(client: HttpTestClient, email: string, password: string) {
 
 async function createAdminClient() {
   const admin = await prisma.user.create({
-    data: { email: `author-draft-admin-${Date.now()}@wave3.test`, passwordHash: fixturePasswordHash, displayName: 'Author draft admin', role: 'admin' },
+    data: {
+      email: `author-draft-admin-${Date.now()}@wave3.test`,
+      passwordHash: fixturePasswordHash,
+      displayName: 'Author draft admin',
+      role: 'admin',
+    },
     select: { email: true },
   });
   const client = new HttpTestClient(http.baseUrl, 'http://localhost:8081');
@@ -60,34 +67,31 @@ async function createAdminClient() {
   return client;
 }
 
-async function assignSlug(userId: string, slug = `city-author-${Date.now().toString(36)}`) {
+async function assignSlug(
+  userId: string,
+  slug = `city-author-${Date.now().toString(36)}`,
+) {
   await prisma.user.update({ where: { id: userId }, data: { slug } });
   return slug;
 }
 
 function applicationForm(overrides: Record<string, string | null> = {}) {
-  const form = new FormData();
-  const fieldsWithoutSlug = Object.fromEntries(
-    Object.entries(overrides).filter(([key]) => key !== 'slug'),
-  );
-  const fields = {
+  const fields: Record<string, string> = {
     discipline: 'Керамика',
     fullName: 'City Author',
     country: 'BY',
     city: 'Minsk',
     shortDescription: 'Applicant with a required city',
-    ...fieldsWithoutSlug,
   };
-  for (const [key, value] of Object.entries(fields)) {
-    if (value === null) continue;
-    form.set(key, value);
+  for (const [key, value] of Object.entries(overrides)) {
+    if (key === 'slug') continue;
+    if (value === null) delete fields[key];
+    else fields[key] = value;
   }
-  form.set(
-    'profilePhoto',
+  return sellerProfileForm(
+    fields,
     new Blob([permissionImage], { type: 'image/png' }),
-    'profile.png',
   );
-  return form;
 }
 
 async function readVerificationCode(): Promise<string> {
@@ -99,6 +103,52 @@ async function readVerificationCode(): Promise<string> {
 }
 
 describe('author application HTTP contract', () => {
+  it('clears saved about text in one multipart draft write and blocks advance until it is restored', async () => {
+    const fixture = await createPermissionFixture(prisma);
+    const applicant = new HttpTestClient(http.baseUrl, 'http://localhost:8081');
+    await login(applicant, fixture.buyer.email, fixture.buyer.password);
+    await assignSlug(fixture.buyer.id);
+    expect(
+      (await applicant.post('/seller/profile', applicationForm())).status,
+    ).toBe(201);
+    const category = await prisma.category.findFirstOrThrow({
+      where: { active: true },
+    });
+    const cleared = await applicant.patch(
+      '/seller/profile',
+      sellerProfileForm({
+        directionCategoryIds: [category.id],
+        shortDescription: null,
+      }),
+    );
+    expect(cleared.status).toBe(200);
+    expect((await cleared.json()) as unknown).toMatchObject({
+      sellerProfile: {
+        shortDescription: null,
+        directionCategoryIds: [category.id],
+      },
+    });
+    expect(
+      (await (await applicant.get('/seller/profile')).json()) as unknown,
+    ).toMatchObject({ sellerProfile: { shortDescription: null } });
+    expect((await applicant.post('/author/application/advance')).status).toBe(
+      201,
+    );
+    expect((await applicant.post('/author/application/advance')).status).toBe(
+      409,
+    );
+    expect(
+      (
+        await applicant.patch('/seller/profile', {
+          shortDescription: 'Restored about text',
+        })
+      ).status,
+    ).toBe(200);
+    expect((await applicant.post('/author/application/advance')).status).toBe(
+      201,
+    );
+  });
+
   it('requires verified email for Author writes while keeping public reads available', async () => {
     const fixture = await createPermissionFixture(prisma);
     const applicant = new HttpTestClient(http.baseUrl, 'http://localhost:8081');
@@ -118,26 +168,31 @@ describe('author application HTTP contract', () => {
     expect((await create.json()) as { message: string }).toMatchObject({
       message: 'Email verification is required',
     });
-    expect(
-      (await guest.get(`/authors/${approved.slug}`)).status,
-    ).not.toBe(403);
+    expect((await guest.get(`/authors/${approved.slug}`)).status).not.toBe(403);
 
     await prisma.user.update({
       where: { id: fixture.buyer.id },
       data: { emailVerifiedAt: new Date() },
     });
     await assignSlug(fixture.buyer.id);
-    expect((await applicant.post('/seller/profile', applicationForm())).status).toBe(201);
+    expect(
+      (await applicant.post('/seller/profile', applicationForm())).status,
+    ).toBe(201);
 
     await prisma.user.update({
       where: { id: fixture.buyer.id },
       data: { emailVerifiedAt: null },
     });
-    const update = new FormData();
-    update.set('fullName', 'Blocked draft author');
+    const update = sellerProfileForm({
+      fullName: 'Blocked draft author',
+    });
     expect((await applicant.patch('/seller/profile', update)).status).toBe(403);
-    expect((await applicant.post('/author/application/advance')).status).toBe(403);
-    expect((await applicant.post('/author/application/submit')).status).toBe(403);
+    expect((await applicant.post('/author/application/advance')).status).toBe(
+      403,
+    );
+    expect((await applicant.post('/author/application/submit')).status).toBe(
+      403,
+    );
 
     await prisma.user.update({
       where: { id: fixture.buyer.id },
@@ -151,14 +206,17 @@ describe('author application HTTP contract', () => {
     const applicant = new HttpTestClient(http.baseUrl, 'http://localhost:8081');
     await login(applicant, fixture.buyer.email, fixture.buyer.password);
     await assignSlug(fixture.buyer.id);
-    expect((await applicant.post('/seller/profile', applicationForm())).status).toBe(201);
+    expect(
+      (await applicant.post('/seller/profile', applicationForm())).status,
+    ).toBe(201);
 
     await prisma.user.update({
       where: { id: fixture.buyer.id },
       data: { emailVerifiedAt: null },
     });
-    const update = new FormData();
-    update.set('fullName', 'Blocked until OTP');
+    const update = sellerProfileForm({
+      fullName: 'Blocked until OTP',
+    });
     expect((await applicant.patch('/seller/profile', update)).status).toBe(403);
 
     expect(
@@ -193,58 +251,79 @@ describe('author application HTTP contract', () => {
     await login(applicant, fixture.buyer.email, fixture.buyer.password);
     await assignSlug(fixture.buyer.id);
 
-    const missingCity = await applicant.post(
-      '/seller/profile',
-      applicationForm({ city: null }),
-    );
-    expect(missingCity.status).toBe(400);
-
     const created = await applicant.post(
       '/seller/profile',
-      applicationForm({ discipline: null, shortDescription: null }),
+      applicationForm({ city: null, discipline: null, shortDescription: null }),
     );
     expect(created.status).toBe(201);
     const body = (await created.json()) as {
-      sellerProfile: { id: string; slug: string; city: string; socialLink: string | null; status: string; applicationStage: string | null };
+      sellerProfile: {
+        id: string;
+        slug: string;
+        city: string | null;
+        socialLink: string | null;
+        status: string;
+        applicationStage: string | null;
+      };
       editingRevision: { status: string; id: string } | null;
     };
-    expect(body.sellerProfile.city).toBe('Minsk');
+    expect(body.sellerProfile.city).toBeNull();
     expect(body.sellerProfile.socialLink).toBeNull();
     expect(body.sellerProfile.status).toBe('DRAFT');
     expect(body.sellerProfile.applicationStage).toBe('CONTACTS');
     expect(body.editingRevision?.status).toBe('DRAFT');
 
-    const publicDraft = await applicant.get(`/authors/${body.sellerProfile.slug}`);
+    const publicDraft = await applicant.get(
+      `/authors/${body.sellerProfile.slug}`,
+    );
     expect(publicDraft.status).toBe(404);
 
     const stored = await prisma.sellerProfile.findUniqueOrThrow({
       where: { userId: fixture.buyer.id },
-      select: { socialLink: true, city: true, status: true, applicationStage: true, editingRevision: { select: { status: true, submittedAt: true } } },
+      select: {
+        socialLink: true,
+        city: true,
+        status: true,
+        applicationStage: true,
+        editingRevision: { select: { status: true, submittedAt: true } },
+      },
     });
-    expect(stored.city).toBe('Minsk');
+    expect(stored.city).toBeNull();
     expect(stored.socialLink).toBeNull();
     expect(stored.status).toBe('DRAFT');
     expect(stored.applicationStage).toBe('CONTACTS');
-    expect(stored.editingRevision).toMatchObject({ status: 'DRAFT', submittedAt: null });
+    expect(stored.editingRevision).toMatchObject({
+      status: 'DRAFT',
+      submittedAt: null,
+    });
 
     const admin = await createAdminClient();
-    const draftQueue = (await (await admin.get('/admin/seller-profiles')).json()) as { sellerProfiles: Array<{ id: string }> };
-    expect(draftQueue.sellerProfiles.map((item) => item.id)).not.toContain(body.sellerProfile.id);
+    const draftQueue = (await (
+      await admin.get('/admin/seller-profiles')
+    ).json()) as { sellerProfiles: Array<{ id: string }> };
+    expect(draftQueue.sellerProfiles.map((item) => item.id)).not.toContain(
+      body.sellerProfile.id,
+    );
 
     const mine = await applicant.get('/seller/profile');
     expect(mine.status).toBe(200);
     const mineBody = (await mine.json()) as {
-      sellerProfile: { city: string; status: string };
+      sellerProfile: { city: string | null; status: string };
       editingRevision: { status: string } | null;
     };
-    expect(mineBody.sellerProfile.city).toBe('Minsk');
+    expect(mineBody.sellerProfile.city).toBeNull();
     expect(mineBody.sellerProfile.status).toBe('DRAFT');
     expect(mineBody.editingRevision?.status).toBe('DRAFT');
 
     const applicationDraft = (await (
       await applicant.get('/author/application')
     ).json()) as {
-      application: { status: string; applicationStage: string | null; discipline: string | null; shortDescription: string | null };
+      application: {
+        status: string;
+        applicationStage: string | null;
+        discipline: string | null;
+        shortDescription: string | null;
+      };
       editingRevision: { status: string; updatedAt: string } | null;
     };
     expect(applicationDraft.application.status).toBe('DRAFT');
@@ -252,31 +331,124 @@ describe('author application HTTP contract', () => {
     expect(applicationDraft.application.discipline).toBeNull();
     expect(applicationDraft.application.shortDescription).toBeNull();
     expect(applicationDraft.editingRevision?.status).toBe('DRAFT');
-    expect(applicationDraft.editingRevision?.updatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+    expect(applicationDraft.editingRevision?.updatedAt).toMatch(
+      /^\d{4}-\d{2}-\d{2}T/,
+    );
 
     const contactsAdvance = await applicant.post('/author/application/advance');
     expect(contactsAdvance.status).toBe(201);
-    expect(((await contactsAdvance.json()) as { application: { applicationStage: string | null } }).application.applicationStage).toBe('ABOUT');
-    expect((await applicant.post('/author/application/advance')).status).toBe(409);
+    expect(
+      (
+        (await contactsAdvance.json()) as {
+          application: { applicationStage: string | null };
+        }
+      ).application.applicationStage,
+    ).toBe('ABOUT');
+    expect((await applicant.post('/author/application/advance')).status).toBe(
+      409,
+    );
 
-    const update = new FormData();
-    update.set('fullName', 'Latest draft author');
-    update.set('discipline', 'Керамика');
-    update.set('shortDescription', 'Latest draft description');
-    update.set('publicEmail', 'PUBLIC@EXAMPLE.COM');
+    expect(
+      (
+        await applicant.patch(
+          '/seller/profile',
+          sellerProfileForm({ city: 'Minsk' }),
+        )
+      ).status,
+    ).toBe(200);
+    const withCity = await prisma.sellerProfile.findUniqueOrThrow({
+      where: { userId: fixture.buyer.id },
+      select: { city: true, profilePhotoChecksum: true },
+    });
+    expect(withCity.city).toBe('Minsk');
+
+    const replacement = await sharp({
+      create: { width: 8, height: 8, channels: 3, background: '#2f6fed' },
+    })
+      .png()
+      .toBuffer();
+    const cleared = await applicant.patch(
+      '/seller/profile',
+      sellerProfileForm(
+        { city: null },
+        new Blob([new Uint8Array(replacement)], { type: 'image/png' }),
+      ),
+    );
+    expect(cleared.status).toBe(200);
+    const afterClear = await prisma.sellerProfile.findUniqueOrThrow({
+      where: { userId: fixture.buyer.id },
+      select: { city: true, profilePhotoChecksum: true },
+    });
+    expect(afterClear.city).toBeNull();
+    expect(afterClear.profilePhotoChecksum).not.toBe(
+      withCity.profilePhotoChecksum,
+    );
+
+    const malformed = new FormData();
+    malformed.set('data', '{"city":');
+    expect((await applicant.patch('/seller/profile', malformed)).status).toBe(
+      400,
+    );
+    const unknownField = sellerProfileForm({ city: 'Grodno' });
+    unknownField.set('city', 'Grodno');
+    expect(
+      (await applicant.patch('/seller/profile', unknownField)).status,
+    ).toBe(400);
+    await expect(
+      prisma.sellerProfile.findUniqueOrThrow({
+        where: { userId: fixture.buyer.id },
+        select: { city: true },
+      }),
+    ).resolves.toEqual({ city: null });
+
+    const update = sellerProfileForm({
+      fullName: 'Latest draft author',
+      shortDescription: 'Latest draft description',
+      publicEmail: 'PUBLIC@EXAMPLE.COM',
+    });
     expect((await applicant.patch('/seller/profile', update)).status).toBe(200);
 
-    const achievementsAdvance = await applicant.post('/author/application/advance');
+    const painting = await prisma.category.findUniqueOrThrow({
+      where: { slug: 'painting' },
+      select: { id: true },
+    });
+    await prisma.sellerProfileRevisionDirection.create({
+      data: {
+        revisionId: body.editingRevision!.id,
+        categoryId: painting.id,
+        position: 0,
+      },
+    });
+    const achievementsAdvance = await applicant.post(
+      '/author/application/advance',
+    );
     expect(achievementsAdvance.status).toBe(201);
-    expect(((await achievementsAdvance.json()) as { application: { applicationStage: string | null } }).application.applicationStage).toBe('ACHIEVEMENTS');
+    expect(
+      (
+        (await achievementsAdvance.json()) as {
+          application: { applicationStage: string | null };
+        }
+      ).application.applicationStage,
+    ).toBe('ACHIEVEMENTS');
     const canonical = await prisma.sellerProfile.findUniqueOrThrow({
       where: { id: body.sellerProfile.id },
-      select: { fullName: true, publicEmail: true, applicationStage: true, editingRevision: { select: { fullName: true, shortDescription: true, publicEmail: true } } },
+      select: {
+        fullName: true,
+        publicEmail: true,
+        applicationStage: true,
+        editingRevision: {
+          select: { fullName: true, shortDescription: true, publicEmail: true },
+        },
+      },
     });
     expect(canonical.fullName).toBe('Latest draft author');
     expect(canonical.publicEmail).toBe('public@example.com');
     expect(canonical.applicationStage).toBe('ACHIEVEMENTS');
-    expect(canonical.editingRevision).toMatchObject({ fullName: 'Latest draft author', shortDescription: 'Latest draft description', publicEmail: 'public@example.com' });
+    expect(canonical.editingRevision).toMatchObject({
+      fullName: 'Latest draft author',
+      shortDescription: 'Latest draft description',
+      publicEmail: 'public@example.com',
+    });
 
     const submitResponse = await applicant.post('/author/application/submit');
     expect(submitResponse.status).toBe(201);
@@ -286,6 +458,7 @@ describe('author application HTTP contract', () => {
       editingRevision: { status: string; updatedAt: string } | null;
     };
     expect(applicationSubmitted.application.status).toBe('PENDING_REVIEW');
+    expect((await applicant.get('/author/application')).status).toBe(200);
     expect(applicationSubmitted.application.applicationStage).toBeNull();
     expect(applicationSubmitted.editingRevision?.status).toBe('PENDING_REVIEW');
     expect(applicationSubmitted.editingRevision?.updatedAt).toMatch(
@@ -293,25 +466,52 @@ describe('author application HTTP contract', () => {
     );
     const submitted = await prisma.sellerProfile.findUniqueOrThrow({
       where: { id: body.sellerProfile.id },
-      select: { status: true, editingRevision: { select: { status: true, submittedAt: true } } },
+      select: {
+        status: true,
+        editingRevision: { select: { status: true, submittedAt: true } },
+      },
     });
     expect(submitted.status).toBe('PENDING_REVIEW');
     expect(submitted.editingRevision?.status).toBe('PENDING_REVIEW');
     expect(submitted.editingRevision?.submittedAt).toBeInstanceOf(Date);
 
-    const pendingQueue = (await (await admin.get('/admin/seller-profiles')).json()) as { sellerProfiles: Array<{ id: string }> };
-    expect(pendingQueue.sellerProfiles.map((item) => item.id)).toContain(body.sellerProfile.id);
+    const pendingQueue = (await (
+      await admin.get('/admin/seller-profiles')
+    ).json()) as { sellerProfiles: Array<{ id: string }> };
+    expect(pendingQueue.sellerProfiles.map((item) => item.id)).toContain(
+      body.sellerProfile.id,
+    );
     expect(
       (
         await admin.patch(
           `/admin/seller-profiles/${body.sellerProfile.id}/status`,
-          await sellerModerationRequest(prisma, body.sellerProfile.id, 'APPROVED'),
+          await sellerModerationRequest(
+            prisma,
+            body.sellerProfile.id,
+            'APPROVED',
+          ),
         )
       ).status,
     ).toBe(200);
-    const published = await applicant.get(`/authors/${body.sellerProfile.slug}`);
+    const published = await applicant.get(
+      `/authors/${body.sellerProfile.slug}`,
+    );
     expect(published.status).toBe(200);
-    expect(((await published.json()) as { author: { fullName: string; shortDescription: string; publicEmail: string | null } }).author).toMatchObject({ fullName: 'Latest draft author', shortDescription: 'Latest draft description', publicEmail: 'public@example.com' });
+    expect(
+      (
+        (await published.json()) as {
+          author: {
+            fullName: string;
+            shortDescription: string;
+            publicEmail: string | null;
+          };
+        }
+      ).author,
+    ).toMatchObject({
+      fullName: 'Latest draft author',
+      shortDescription: 'Latest draft description',
+      publicEmail: 'public@example.com',
+    });
   });
 
   it('keeps the published public projection unchanged while the owner sees draft fields', async () => {
@@ -329,9 +529,10 @@ describe('author application HTTP contract', () => {
       fixture.sellers.approved.password,
     );
 
-    const draft = new FormData();
-    draft.set('fullName', 'Draft Author');
-    draft.set('city', 'Grodno');
+    const draft = sellerProfileForm({
+      fullName: 'Draft Author',
+      city: 'Grodno',
+    });
     expect((await owner.patch('/seller/profile', draft)).status).toBe(200);
 
     const mine = await owner.get('/seller/profile');
@@ -383,11 +584,18 @@ describe('author application HTTP contract', () => {
     expect(invalidBody.message).toBe('Request validation failed');
     expect(invalidBody.requestId).toEqual(expect.any(String));
     expect(
-      ((await invalidNickname.json()) as { details: { fieldErrors: { slug?: string[] } } }).details
-        .fieldErrors.slug?.[0],
+      (
+        (await invalidNickname.json()) as {
+          details: { fieldErrors: { slug?: string[] } };
+        }
+      ).details.fieldErrors.slug?.[0],
     ).toContain('маленькие латинские');
-    expect(invalidBody.details.fieldErrors.publicEmail).toEqual(['Введите корректный email']);
-    expect(invalidBody.details.fieldErrors.websiteUrl?.[0]).toContain('https://');
+    expect(invalidBody.details.fieldErrors.publicEmail).toEqual([
+      'Введите корректный email',
+    ]);
+    expect(invalidBody.details.fieldErrors.websiteUrl?.[0]).toContain(
+      'https://',
+    );
     expect(JSON.stringify(invalidBody)).not.toContain('password123');
 
     await assignSlug(fixture.buyer.id, slug);
@@ -430,7 +638,11 @@ describe('author application HTTP contract', () => {
     const fixture = await createPermissionFixture(prisma);
     const author = new HttpTestClient(http.baseUrl, 'http://localhost:8081');
     const admin = await createAdminClient();
-    await login(author, fixture.sellers.approved.email, fixture.sellers.approved.password);
+    await login(
+      author,
+      fixture.sellers.approved.email,
+      fixture.sellers.approved.password,
+    );
 
     const year = await author.post('/products', {
       title: 'Year check',
@@ -438,9 +650,10 @@ describe('author application HTTP contract', () => {
       year: 10000,
     });
     expect(year.status).toBe(400);
-    expect(((await year.json()) as { details: { fieldErrors: { year?: string[] } } }).details.fieldErrors.year).toEqual([
-      'Введите год числом от 0 до 9999',
-    ]);
+    expect(
+      ((await year.json()) as { details: { fieldErrors: { year?: string[] } } })
+        .details.fieldErrors.year,
+    ).toEqual(['Введите год числом от 0 до 9999']);
 
     const draft = await author.post('/products', {
       title: 'Partial draft',
@@ -448,20 +661,24 @@ describe('author application HTTP contract', () => {
     });
     expect(draft.status).toBe(201);
 
-    const achievement = await author.post('/author/application/achievements', (() => {
-      const form = new FormData();
-      form.set('body', 'Synthetic achievement');
-      form.set('occurredDate', JSON.stringify({ year: 2024, month: 2, day: 31 }));
-      return form;
-    })());
+    const achievement = await author.post('/author/application/achievements', {
+      body: 'Synthetic achievement',
+      occurredDate: { year: 2024, month: 2, day: 31 },
+    });
     expect(achievement.status).toBe(400);
     expect(
-      ((await achievement.json()) as { details: { fieldErrors: { occurredDate?: string[] } } }).details
-        .fieldErrors.occurredDate,
+      (
+        (await achievement.json()) as {
+          details: { fieldErrors: { occurredDate?: string[] } };
+        }
+      ).details.fieldErrors.occurredDate,
     ).toEqual(['Укажите существующую дату']);
 
     const password = 'short';
-    const registered = await new HttpTestClient(http.baseUrl, 'http://localhost:8081').post('/auth/register', {
+    const registered = await new HttpTestClient(
+      http.baseUrl,
+      'http://localhost:8081',
+    ).post('/auth/register', {
       email: `short-password-${Date.now()}@wave3.test`,
       password,
       slug: 'synthetic',
@@ -470,18 +687,28 @@ describe('author application HTTP contract', () => {
     expect(registered.status).toBe(400);
     const registeredBody = await registered.json();
     expect(registeredBody).toMatchObject({
-      details: { fieldErrors: { password: ['Используйте пароль от 8 символов'] } },
+      details: {
+        fieldErrors: { password: ['Используйте пароль от 8 символов'] },
+      },
     });
     expect(JSON.stringify(registeredBody)).not.toContain(password);
 
     const reason = await admin.patch(
       `/admin/seller-profiles/${fixture.sellers.pending.profileId}/status`,
-      await sellerModerationRequest(prisma, fixture.sellers.pending.profileId, 'REJECTED'),
+      await sellerModerationRequest(
+        prisma,
+        fixture.sellers.pending.profileId,
+        'REJECTED',
+      ),
     );
     expect(reason.status).toBe(400);
-    expect(((await reason.json()) as { details: { fieldErrors: { reason?: string[] } } }).details.fieldErrors.reason).toEqual([
-      'Укажите причину',
-    ]);
+    expect(
+      (
+        (await reason.json()) as {
+          details: { fieldErrors: { reason?: string[] } };
+        }
+      ).details.fieldErrors.reason,
+    ).toEqual(['Укажите причину']);
     const unchanged = await prisma.sellerProfile.findUniqueOrThrow({
       where: { id: fixture.sellers.pending.profileId },
       select: { status: true },

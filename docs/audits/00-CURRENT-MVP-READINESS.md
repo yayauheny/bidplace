@@ -1,5 +1,10 @@
 # bidplace — готовность первого portfolio MVP
 
+> Датированный срез 8 сентября. Юридическая часть актуализирована 12 октября:
+> [единый итоговый юридический аудит](../legal/00-FINAL-LEGAL-AUDIT.md) содержит
+> подтверждённые решения, тексты сайта и конкретные оставшиеся условия публикации.
+> Юридические gates ниже — исторические, не новый список вопросов.
+
 Дата среза: 2026-09-08
 Product contract: [`docs/product/05-MVP-RFC.md`](../product/05-MVP-RFC.md)
 Active work: [`00-FIRST-MVP-BACKLOG.md`](../tasks/2026-09-06-reconciliation/00-FIRST-MVP-BACKLOG.md)

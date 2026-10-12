@@ -20,13 +20,16 @@ export function CreatorHero({
   leadingAction,
   compact = false,
 }: CreatorHeroProps) {
+  const directionTags = (profile.directions ?? []).map(
+    (direction) => direction.name,
+  );
+  const disciplineTags =
+    profile.discipline
+      ?.split(',')
+      .map((tag) => tag.trim())
+      .filter(Boolean) ?? [];
   const tags = [
-    ...new Set(
-      profile.discipline
-        .split(',')
-        .map((tag) => tag.trim())
-        .filter(Boolean),
-    ),
+    ...new Set(directionTags.length ? directionTags : disciplineTags),
   ];
   const tagRow =
     tags.length > 0 ? (

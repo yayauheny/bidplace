@@ -13,25 +13,47 @@ import { verificationReasonCopy, verificationSendLabel, verificationStatusCopy }
 import { maskEmail } from './mask-email';
 
 describe('auth sheet dismissal', () => {
-  it('allows movement between auth steps and confirms a dirty exit', () => {
+  it('confirms only a dirty registration exit and lets other filled forms leave', () => {
     expect(authNavigationDismissal({
       dirty: true,
       busy: false,
-      targetRoute: 'register',
+      protectEnteredData: true,
+      targetRoute: 'login',
     })).toBe('allow');
     expect(authNavigationDismissal({
       dirty: true,
       busy: true,
+      protectEnteredData: true,
       targetRoute: undefined,
     })).toBe('keep');
     expect(authNavigationDismissal({
       dirty: true,
       busy: false,
+      protectEnteredData: true,
       targetRoute: undefined,
     })).toBe('confirm');
     expect(authNavigationDismissal({
+      dirty: false,
+      busy: false,
+      protectEnteredData: true,
+      targetRoute: undefined,
+    })).toBe('allow');
+    expect(authNavigationDismissal({
+      dirty: true,
+      busy: false,
+      protectEnteredData: false,
+      targetRoute: undefined,
+    })).toBe('allow');
+    expect(authNavigationDismissal({
       dirty: true,
       busy: true,
+      protectEnteredData: false,
+      targetRoute: undefined,
+    })).toBe('keep');
+    expect(authNavigationDismissal({
+      dirty: true,
+      busy: true,
+      protectEnteredData: true,
       targetRoute: undefined,
       released: true,
     })).toBe('allow');
@@ -54,6 +76,7 @@ describe('auth sheet dismissal', () => {
     expect(authNavigationDismissal({
       dirty: true,
       busy: false,
+      protectEnteredData: true,
       targetRoute: authNavigationTarget({
         type: 'RESET',
         payload: { index: 0, routes: [{ name: 'index', path: '/' }] },
@@ -61,7 +84,17 @@ describe('auth sheet dismissal', () => {
     })).toBe('confirm');
     expect(authNavigationDismissal({
       dirty: true,
+      busy: false,
+      protectEnteredData: false,
+      targetRoute: authNavigationTarget({
+        type: 'RESET',
+        payload: { index: 0, routes: [{ name: 'index', path: '/' }] },
+      }),
+    })).toBe('allow');
+    expect(authNavigationDismissal({
+      dirty: true,
       busy: true,
+      protectEnteredData: true,
       targetRoute: 'register',
     })).toBe('allow');
     expect(authLeaveCommit({ hasNavigationAction: true })).toBe('dispatch');

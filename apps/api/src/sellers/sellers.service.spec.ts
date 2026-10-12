@@ -75,6 +75,9 @@ describe('SellersService', () => {
           editingRevision: { id: 'revision-id', status: 'DRAFT', discipline: null, shortDescription: null },
         }),
       },
+      sellerProfileRevisionDirection: {
+        count: vi.fn().mockResolvedValue(0),
+      },
     };
     const prisma = { $transaction: vi.fn(async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx)) };
     const service = new SellersService(prisma as never, imageStore as never);
@@ -524,6 +527,10 @@ describe('SellersService', () => {
       sellerProfileRevisionAchievement: {
         create: vi.fn().mockResolvedValue({ id: 'draft-achievement-id' }),
         findMany: vi.fn().mockResolvedValue([]),
+      },
+      sellerProfileRevisionDirection: {
+        findMany: vi.fn().mockResolvedValue([]),
+        createMany: vi.fn(),
       },
     };
     const prisma = {
@@ -980,9 +987,8 @@ describe('SellersService', () => {
       .fn()
       .mockResolvedValueOnce([{ city: 'Минск' }, { city: ' Минск ' }])
       .mockResolvedValueOnce([
-        { discipline: 'Живопись' },
-        { discipline: null },
-        { discipline: '   ' },
+        { tag: '00000000-0000-4000-8000-000000000001' },
+        { tag: '00000000-0000-4000-8000-000000000002' },
       ]);
     const service = new SellersService(
       { $queryRaw: queryRaw } as never,
@@ -991,19 +997,23 @@ describe('SellersService', () => {
 
     await expect(service.listPublicFacets()).resolves.toEqual({
       cities: ['Минск', ' Минск '],
-      tags: ['Живопись', null, '   '],
+      tags: [
+        '00000000-0000-4000-8000-000000000001',
+        '00000000-0000-4000-8000-000000000002',
+      ],
     });
 
     expect(queryRaw).toHaveBeenCalledTimes(2);
     const citySql = String(queryRaw.mock.calls[0]?.[0]?.sql);
     const tagSql = String(queryRaw.mock.calls[1]?.[0]?.sql);
     expect(citySql).toContain('SELECT DISTINCT "city"');
-    expect(tagSql).toContain('SELECT DISTINCT "discipline"');
+    expect(tagSql).toContain('seller_profile_revision_directions');
+    expect(tagSql).toContain('category_id');
     expect(citySql).not.toContain('SELECT "city", "discipline"');
-    expect(tagSql).not.toContain('SELECT "city", "discipline"');
+    expect(tagSql).not.toContain('SELECT DISTINCT "discipline"');
     for (const sql of [citySql, tagSql]) {
       expect(sql).toContain(`author."status" = 'APPROVED'`);
-      expect(sql).toContain(`NULLIF(BTRIM(author."city"), '') IS NOT NULL`);
+      expect(sql).not.toContain(`NULLIF(BTRIM(author."city"), '') IS NOT NULL`);
       expect(sql).not.toContain('LOWER(');
       expect(sql).not.toContain('unnest');
     }

@@ -1,5 +1,8 @@
+import { randomUUID } from 'node:crypto';
+
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import sharp from 'sharp';
+import { normalizeCatalogName } from '../../src/catalog/catalog-data';
 import { MediaLifecycleService } from '../../src/core/media/media-lifecycle.service';
 import {
   S3MediaObjectStore,
@@ -15,11 +18,15 @@ import {
   createIntegrationDatabaseContext,
   type IntegrationDatabaseContext,
 } from './test-database';
-import { fixturePasswordHash } from './permission-fixtures';
+import {
+  attachAuthorDirection,
+  fixturePasswordHash,
+} from './permission-fixtures';
 import {
   productModerationRequest,
   sellerModerationRequest,
 } from './admin-status-request';
+import { sellerProfileForm } from './seller-profile-form';
 
 let db: IntegrationDatabaseContext;
 let http: HttpTestApp;
@@ -133,23 +140,24 @@ describe('Work media lifecycle over authenticated HTTP and PostgreSQL', () => {
     })
       .png()
       .toBuffer();
-    const photo = new FormData();
-    for (const [key, value] of Object.entries({
-      fullName: 'HTTP author',
-      country: 'BY',
-      city: 'Minsk',
-      discipline: 'Автор',
-      shortDescription: 'Portfolio author',
-    }))
-      photo.set(key, value);
-    photo.set(
-      'profilePhoto',
+    const photo = sellerProfileForm(
+      {
+        fullName: 'HTTP author',
+        country: 'BY',
+        city: 'Minsk',
+        discipline: 'Автор',
+        shortDescription: 'Portfolio author',
+      },
       new Blob([new Uint8Array(bytes)], { type: 'image/png' }),
-      'photo.png',
     );
     const createdAuthor = await author.client.post('/seller/profile', photo);
     expect(createdAuthor.status).toBe(201);
     const profileId = (await createdAuthor.json()).sellerProfile.id;
+    const application = await db.prisma.sellerProfile.findUniqueOrThrow({
+      where: { id: profileId },
+      select: { editingRevisionId: true },
+    });
+    await attachAuthorDirection(db.prisma, application.editingRevisionId!);
     await author.client.post('/author/application/advance');
     await author.client.post('/author/application/advance');
     expect(
@@ -165,7 +173,11 @@ describe('Work media lifecycle over authenticated HTTP and PostgreSQL', () => {
     ).toBe(200);
     await run('PUBLISH', undefined, profileId);
     const category = await db.prisma.category.create({
-      data: { slug: 'http-media', name: 'HTTP media' },
+      data: {
+        slug: 'http-media',
+        name: 'HTTP media',
+        normalizedName: normalizeCatalogName('HTTP media'),
+      },
     });
     const created = await author.client.post('/products', {
       title: 'First work',
@@ -389,5 +401,151 @@ describe('Work media lifecycle over authenticated HTTP and PostgreSQL', () => {
       expect(purged).toContain(url);
     }
     expect((await guest.get(`/works/${work.publicId}`)).status).toBe(404);
+  });
+
+  it('publishes only a story image that is in the published revision', async () => {
+    const owner = await user('user', `story-read-${Date.now()}`);
+    const outsider = await user('user', `story-outsider-${Date.now()}`);
+    const painting = await db.prisma.category.findUniqueOrThrow({
+      where: { slug: 'painting' },
+    });
+    const profile = await db.prisma.sellerProfile.create({
+      data: {
+        userId: owner.row.id,
+        slug: `story-read-${owner.row.id.slice(0, 8)}`,
+        sellerType: 'creator',
+        fullName: 'Story reader',
+        country: 'BY',
+        shortDescription: 'Story images',
+        status: 'APPROVED',
+        profilePhotoMimeType: 'image/png',
+        profilePhotoByteLength: 8,
+        profilePhotoChecksum: 'c'.repeat(64),
+        profilePhotoData: Buffer.from('storypng'),
+      },
+    });
+    const profileRevision = await db.prisma.sellerProfileRevision.create({
+      data: {
+        sellerProfileId: profile.id,
+        version: 1,
+        status: 'APPROVED',
+        slug: profile.slug,
+        fullName: profile.fullName,
+        country: 'BY',
+        shortDescription: profile.shortDescription,
+        directions: { create: { categoryId: painting.id, position: 0 } },
+      },
+    });
+    await db.prisma.sellerProfile.update({
+      where: { id: profile.id },
+      data: {
+        editingRevisionId: profileRevision.id,
+        publishedRevisionId: profileRevision.id,
+      },
+    });
+    const product = await db.prisma.product.create({
+      data: {
+        sellerProfileId: profile.id,
+        publicId: `s${owner.row.id.replace(/-/g, '').slice(0, 10)}`,
+        title: 'Story read',
+        status: 'APPROVED',
+        publishedAt: new Date(),
+        categoryId: painting.id,
+      },
+    });
+    const revision = await db.prisma.productRevision.create({
+      data: {
+        productId: product.id,
+        version: 1,
+        status: 'APPROVED',
+        title: 'Story read',
+        categoryId: painting.id,
+      },
+    });
+    await db.prisma.product.update({
+      where: { id: product.id },
+      data: { editingRevisionId: revision.id, publishedRevisionId: revision.id },
+    });
+    async function previewAsset(purpose: 'STORY_IMAGE') {
+      const key = `story/${randomUUID()}`;
+      objects.set(`PRIVATE:${key}`, {
+        bytes: Buffer.from('story-preview'),
+        mimeType: 'image/png',
+      });
+      return db.prisma.mediaAsset.create({
+        data: {
+          ownerUserId: owner.row.id,
+          purpose,
+          state: 'READY',
+          objects: {
+            create: [
+              {
+                variant: 'SOURCE',
+                tier: 'PRIVATE',
+                pipelineVersion: 'source',
+                objectKey: `${key}/source`,
+                mimeType: 'image/png',
+                byteLength: 32,
+                sha256: 'a'.repeat(64),
+                width: 10,
+                height: 10,
+                state: 'READY',
+              },
+              {
+                variant: 'PREVIEW',
+                tier: 'PRIVATE',
+                pipelineVersion: 'v1',
+                objectKey: key,
+                mimeType: 'image/png',
+                byteLength: 13,
+                sha256: 'b'.repeat(64),
+                width: 10,
+                height: 10,
+                state: 'READY',
+              },
+            ],
+          },
+        },
+      });
+    }
+    const publishedAsset = await previewAsset('STORY_IMAGE');
+    const heldAsset = await previewAsset('STORY_IMAGE');
+    await db.prisma.productRevisionStoryBlock.create({
+      data: {
+        revisionId: revision.id,
+        position: 0,
+        type: 'IMAGE',
+        mediaAssetId: publishedAsset.id,
+      },
+    });
+    await db.prisma.productRevisionStoryAsset.create({
+      data: { revisionId: revision.id, mediaAssetId: heldAsset.id },
+    });
+    const guest = new HttpTestClient(http.baseUrl);
+    const publishedPath = `/products/${product.id}/story-images/${publishedAsset.id}`;
+    const heldPath = `/products/${product.id}/story-images/${heldAsset.id}`;
+    const published = await guest.get(publishedPath);
+    expect(published.status).toBe(200);
+    expect(published.headers.get('cache-control')).not.toBe('private, no-store');
+    expect((await guest.get(heldPath)).status).toBe(404);
+    const owned = await owner.client.get(heldPath);
+    expect(owned.status).toBe(200);
+    expect(owned.headers.get('cache-control')).toBe('private, no-store');
+    expect((await outsider.client.get(heldPath)).status).toBe(404);
+    await db.prisma.product.update({
+      where: { id: product.id },
+      data: { status: 'ARCHIVED' },
+    });
+    expect((await guest.get(publishedPath)).status).toBe(404);
+    await db.prisma.product.update({
+      where: { id: product.id },
+      data: { status: 'APPROVED' },
+    });
+    await db.prisma.sellerProfile.update({
+      where: { id: profile.id },
+      data: { status: 'SUSPENDED' },
+    });
+    expect((await guest.get(publishedPath)).status).toBe(404);
+    expect((await owner.client.get(publishedPath)).status).toBe(200);
   });
 });

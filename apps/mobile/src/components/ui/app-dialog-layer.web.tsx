@@ -8,6 +8,7 @@ function toFixedCss(style: StyleProp<ViewStyle>): CSSProperties {
   const flat = StyleSheet.flatten(style) ?? {};
   const {
     paddingHorizontal,
+    paddingVertical,
     pointerEvents: _pointerEvents,
     alignItems,
     justifyContent,
@@ -15,6 +16,7 @@ function toFixedCss(style: StyleProp<ViewStyle>): CSSProperties {
     ...rest
   } = flat as ViewStyle & {
     paddingHorizontal?: number;
+    paddingVertical?: number;
     pointerEvents?: string;
   };
   void _pointerEvents;
@@ -25,6 +27,10 @@ function toFixedCss(style: StyleProp<ViewStyle>): CSSProperties {
   if (paddingHorizontal != null) {
     css.paddingLeft = paddingHorizontal;
     css.paddingRight = paddingHorizontal;
+  }
+  if (paddingVertical != null) {
+    css.paddingTop = paddingVertical;
+    css.paddingBottom = paddingVertical;
   }
   if (alignItems) {
     css.alignItems = alignItems;
@@ -67,14 +73,25 @@ export function AppDialogFrame({
   css.pointerEvents = 'none';
   return (
     <div id="app-dialog-host" style={css}>
-      <div style={{
-        pointerEvents: 'auto',
-        width: '100%',
-        display: 'flex',
-        flexDirection: css.flexDirection,
-        alignItems: css.alignItems,
-        justifyContent: css.justifyContent,
-      }}>{children}</div>
+      <div
+        style={{
+          pointerEvents: 'none',
+          width: '100%',
+          height: '100%',
+          minWidth: 0,
+          minHeight: 0,
+          maxHeight: '100%',
+          maxWidth: '100%',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: css.flexDirection,
+          alignItems: css.alignItems,
+          justifyContent: css.justifyContent,
+          boxSizing: 'border-box',
+        }}
+      >
+        {children}
+      </div>
     </div>
   );
 }

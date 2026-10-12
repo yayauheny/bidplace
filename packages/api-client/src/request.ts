@@ -1,4 +1,4 @@
-import { type ZodType } from 'zod';
+import { type ZodType, type z } from 'zod';
 
 import { rethrowIfAbort } from './errors/abort';
 import {
@@ -99,9 +99,7 @@ async function fetchApi(
   }
 }
 
-function normalizeQuery(
-  query?: RequestOptions['query'],
-): string {
+function normalizeQuery(query?: RequestOptions['query']): string {
   if (!query) {
     return '';
   }
@@ -135,12 +133,12 @@ export function createRequestContext(
   };
 }
 
-export async function requestJson<T>(
+export async function requestJson<TSchema extends ZodType>(
   context: RequestContext,
   path: string,
-  schema: ZodType<T>,
+  schema: TSchema,
   options: RequestOptions = {},
-): Promise<T> {
+): Promise<z.output<TSchema>> {
   const url = requestUrl(context, path, options.query);
   const headers = requestHeaders(context, options.headers);
 
@@ -216,7 +214,7 @@ export async function requestJson<T>(
 
   try {
     const payload = (await response.json()) as unknown;
-    return schema.parse(payload);
+    return schema.parse(payload) as z.output<TSchema>;
   } catch (cause) {
     rethrowIfAbort(cause);
     throw createUnexpectedResponseError(response.status, cause);

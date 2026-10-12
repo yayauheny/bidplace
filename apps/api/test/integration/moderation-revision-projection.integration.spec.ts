@@ -3,6 +3,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import type { PrismaClient } from '@bidplace/database';
 
+import { normalizeCatalogName } from '../../src/catalog/catalog-data';
 import { imageKey } from '../../src/core/image-store/image-key';
 import {
   createHttpTestApp,
@@ -10,6 +11,7 @@ import {
   type HttpTestApp,
 } from './http-test-app';
 import {
+  attachAuthorDirection,
   fixturePasswordHash,
   permissionImage,
   resetPermissionFixture,
@@ -18,6 +20,7 @@ import {
   createIntegrationDatabaseContext,
   type IntegrationDatabaseContext,
 } from './test-database';
+import { sellerProfileForm } from './seller-profile-form';
 
 const pendingPhoto = Buffer.from('pending-revision-photo');
 const publishedPhoto = Buffer.from(permissionImage);
@@ -44,18 +47,16 @@ function checksum(bytes: Buffer) {
 }
 
 function applicationForm(fullName: string) {
-  const form = new FormData();
-  form.set('discipline', 'Керамика');
-  form.set('fullName', fullName);
-  form.set('country', 'BY');
-  form.set('city', 'Minsk');
-  form.set('shortDescription', 'Published description');
-  form.set(
-    'profilePhoto',
+  return sellerProfileForm(
+    {
+      discipline: 'Керамика',
+      fullName,
+      country: 'BY',
+      city: 'Minsk',
+      shortDescription: 'Published description',
+    },
     new Blob([publishedPhoto], { type: 'image/png' }),
-    'profile.png',
   );
-  return form;
 }
 
 function imageForm(bytes: Buffer = publishedPhoto) {
@@ -71,7 +72,20 @@ async function postApplication(
   fullName: string,
 ) {
   await prisma.user.update({ where: { id: userId }, data: { slug } });
-  return ownerClient.post('/seller/profile', applicationForm(fullName));
+  const response = await ownerClient.post(
+    '/seller/profile',
+    applicationForm(fullName),
+  );
+  if (response.status === 201) {
+    const profile = await prisma.sellerProfile.findUnique({
+      where: { userId },
+      select: { editingRevisionId: true },
+    });
+    if (profile?.editingRevisionId) {
+      await attachAuthorDirection(prisma, profile.editingRevisionId);
+    }
+  }
+  return response;
 }
 
 async function login(
@@ -197,8 +211,9 @@ describe('moderation revision projection', () => {
       where: { id: submitted!.reviewTarget!.id },
       select: { updatedAt: true },
     });
-    const form = new FormData();
-    form.set('fullName', 'Resubmitted author');
+    const form = sellerProfileForm({
+      fullName: 'Resubmitted author',
+    });
     expect((await ownerClient.patch('/seller/profile', form)).status).toBe(200);
     expect((await ownerClient.post('/author/application/submit')).status).toBe(201);
     const resubmitted = await prisma.sellerProfileRevision.findUniqueOrThrow({
@@ -262,8 +277,9 @@ describe('moderation revision projection', () => {
         })
       ).status,
     ).toBe(200);
-    const edited = new FormData();
-    edited.set('fullName', 'Pending author');
+    const edited = sellerProfileForm({
+      fullName: 'Pending author',
+    });
     expect((await ownerClient.patch('/seller/profile', edited)).status).toBe(200);
     expect((await ownerClient.post('/author/application/submit')).status).toBe(201);
     const review = (await adminSellers(adminClient)).find(
@@ -408,7 +424,7 @@ describe('moderation revision projection', () => {
     ).toEqual({ status: 'PENDING_REVIEW', fullName: 'Unpublished revision' });
   });
 
-  it('keeps a legacy pending seller approvable only through the parent target', async () => {
+  it('rejects approval of a pending seller that has no revision or direction', async () => {
     const admin = await createUser('admin', 'admin');
     const owner = await createUser('user', 'legacy');
     const adminClient = client('10.2.0.9');
@@ -462,13 +478,14 @@ describe('moderation revision projection', () => {
         },
       },
     );
-    expect(approved.status).toBe(200);
+    expect(approved.status).toBe(409);
+    expect(await auditCount('SELLER_PROFILE', legacy.id)).toBe(0);
     expect(
       await prisma.sellerProfile.findUniqueOrThrow({
         where: { id: legacy.id },
         select: { status: true, editingRevisionId: true },
       }),
-    ).toEqual({ status: 'APPROVED', editingRevisionId: null });
+    ).toEqual({ status: 'PENDING_REVIEW', editingRevisionId: null });
 
     const revisionOwner = await createUser('user', 'revision-owner');
     const revisionClient = client('10.2.0.10');
@@ -601,7 +618,11 @@ describe('moderation revision projection', () => {
     expect(Buffer.from(await fallback.arrayBuffer())).toEqual(publishedBytes);
 
     const category = await prisma.category.create({
-      data: { slug: `cat-${randomUUID().slice(0, 8)}`, name: 'Projection' },
+      data: {
+        slug: `cat-${randomUUID().slice(0, 8)}`,
+        name: 'Projection',
+        normalizedName: normalizeCatalogName('Projection'),
+      },
     });
     const created = await ownerClient.post('/products', {
       title: 'Published work',
@@ -715,7 +736,11 @@ describe('moderation revision projection', () => {
       ).status,
     ).toBe(200);
     const category = await prisma.category.create({
-      data: { slug: `works-${randomUUID().slice(0, 8)}`, name: 'Works' },
+      data: {
+        slug: `works-${randomUUID().slice(0, 8)}`,
+        name: 'Works',
+        normalizedName: normalizeCatalogName('Works'),
+      },
     });
     const created = await ownerClient.post('/products', {
       title: 'Published work',

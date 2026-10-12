@@ -28,6 +28,7 @@ describe('CategoriesService', () => {
     const result = await service.listCategories();
 
     expect(prisma.category.findMany).toHaveBeenCalledWith({
+      where: { active: true },
       orderBy: [{ name: 'asc' }, { slug: 'asc' }],
     });
     expect(result.categories).toHaveLength(1);

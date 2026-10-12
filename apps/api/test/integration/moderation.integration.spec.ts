@@ -7,6 +7,7 @@ import {
   type IntegrationDatabaseContext,
 } from './test-database';
 import {
+  attachAuthorDirection,
   createPermissionFixture,
   fixturePasswordHash,
   permissionImage,
@@ -23,6 +24,7 @@ import {
   productModerationRequest,
   sellerModerationRequest,
 } from './admin-status-request';
+import { sellerProfileForm } from './seller-profile-form';
 
 let database: IntegrationDatabaseContext;
 let http: HttpTestApp;
@@ -42,24 +44,20 @@ afterAll(async () => {
 });
 
 function applicationForm(): FormData {
-  const form = new FormData();
-  form.set('discipline', 'Керамика');
-  form.set('fullName', '  Applicant Creator  ');
-  form.set('country', ' BY ');
-  form.set('city', ' Minsk ');
-  form.set('shortDescription', '  Applicant description  ');
-  form.set(
-    'profilePhoto',
+  return sellerProfileForm(
+    {
+      discipline: 'Керамика',
+      fullName: '  Applicant Creator  ',
+      country: ' BY ',
+      city: ' Minsk ',
+      shortDescription: '  Applicant description  ',
+    },
     new Blob([permissionImage], { type: 'image/png' }),
-    'profile.png',
   );
-  return form;
 }
 
 function sellerUpdateForm(fullName: string): FormData {
-  const form = new FormData();
-  form.set('fullName', fullName);
-  return form;
+  return sellerProfileForm({ fullName });
 }
 
 async function createAdmin(
@@ -103,6 +101,11 @@ async function createApplication(
   const body = (await response.json()) as {
     sellerProfile: { id: string; userId: string };
   };
+  const stored = await prisma.sellerProfile.findUniqueOrThrow({
+    where: { id: body.sellerProfile.id },
+    select: { editingRevisionId: true },
+  });
+  await attachAuthorDirection(prisma, stored.editingRevisionId!);
   return body.sellerProfile;
 }
 
@@ -142,7 +145,7 @@ async function adminAndApplicant(fixture: PermissionFixture) {
 }
 
 describe('seller application and moderation audit over HTTP and PostgreSQL', () => {
-  it('rejects approval of a submitted revision without discipline and preserves its unpublished state', async () => {
+  it('rejects approval of a submitted revision without a direction and preserves its unpublished state', async () => {
     const fixture = await createPermissionFixture(prisma);
     const { adminClient, applicantClient } = await adminAndApplicant(fixture);
     const profile = await createApplication(applicantClient, fixture.buyer.id);
@@ -150,9 +153,8 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
     const before = await prisma.sellerProfile.findUniqueOrThrow({
       where: { id: profile.id },
     });
-    await prisma.sellerProfileRevision.update({
-      where: { id: before.editingRevisionId! },
-      data: { discipline: null },
+    await prisma.sellerProfileRevisionDirection.deleteMany({
+      where: { revisionId: before.editingRevisionId! },
     });
     const auditBefore = await auditFor('SELLER_PROFILE', profile.id);
     const rejected = await adminClient.patch(

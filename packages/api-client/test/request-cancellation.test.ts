@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { describe, expect, it } from 'vitest';
 
 import { ApiClientError, createApiClient } from '../src';
@@ -15,7 +16,9 @@ function bodyThatAborts(
     pull(controller) {
       onRead();
       const fail = () => {
-        controller.error(new DOMException('The operation was aborted.', 'AbortError'));
+        controller.error(
+          new DOMException('The operation was aborted.', 'AbortError'),
+        );
       };
       if (signal?.aborted) {
         fail();
@@ -27,7 +30,10 @@ function bodyThatAborts(
 }
 
 function readAfterHeaders(
-  fetchImpl: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>,
+  fetchImpl: (
+    input: RequestInfo | URL,
+    init?: RequestInit,
+  ) => Promise<Response>,
 ) {
   let markRead: () => void = () => undefined;
   const reading = new Promise<void>((resolve) => {
@@ -73,7 +79,9 @@ describe('request cancellation', () => {
       fetchImpl: (_input, init) =>
         new Promise((_resolve, reject) => {
           const abort = () => {
-            reject(new DOMException('The operation was aborted.', 'AbortError'));
+            reject(
+              new DOMException('The operation was aborted.', 'AbortError'),
+            );
           };
           if (init?.signal?.aborted) {
             abort();
@@ -93,14 +101,18 @@ describe('request cancellation', () => {
 
   it('rejects an aborted JSON body after headers without reclassifying AbortError', async () => {
     const controller = new AbortController();
-    const { client, reading } = readAfterHeaders(async () =>
-      new Response(null, {
-        status: 200,
-        headers: { 'content-type': 'application/json' },
-      }),
+    const { client, reading } = readAfterHeaders(
+      async () =>
+        new Response(null, {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        }),
     );
 
-    const pending = client.portfolio.listWorks({ page: 1 }, { signal: controller.signal });
+    const pending = client.portfolio.listWorks(
+      { page: 1 },
+      { signal: controller.signal },
+    );
     await reading;
     controller.abort();
     await expect(pending).rejects.toMatchObject({ name: 'AbortError' });
@@ -109,14 +121,18 @@ describe('request cancellation', () => {
 
   it('rejects an aborted error body after headers without reclassifying AbortError', async () => {
     const controller = new AbortController();
-    const { client, reading } = readAfterHeaders(async () =>
-      new Response(null, {
-        status: 503,
-        headers: { 'content-type': 'application/json' },
-      }),
+    const { client, reading } = readAfterHeaders(
+      async () =>
+        new Response(null, {
+          status: 503,
+          headers: { 'content-type': 'application/json' },
+        }),
     );
 
-    const pending = client.portfolio.listWorks({ page: 1 }, { signal: controller.signal });
+    const pending = client.portfolio.listWorks(
+      { page: 1 },
+      { signal: controller.signal },
+    );
     await reading;
     controller.abort();
     await expect(pending).rejects.toMatchObject({ name: 'AbortError' });
@@ -125,14 +141,17 @@ describe('request cancellation', () => {
 
   it('rejects an aborted image body after headers without reclassifying AbortError', async () => {
     const controller = new AbortController();
-    const { client, reading } = readAfterHeaders(async () =>
-      new Response(null, {
-        status: 200,
-        headers: { 'content-type': 'image/png' },
-      }),
+    const { client, reading } = readAfterHeaders(
+      async () =>
+        new Response(null, {
+          status: 200,
+          headers: { 'content-type': 'image/png' },
+        }),
     );
 
-    const pending = client.admin.getProductImage('image-1', { signal: controller.signal });
+    const pending = client.admin.getProductImage('image-1', {
+      signal: controller.signal,
+    });
     await reading;
     controller.abort();
     await expect(pending).rejects.toMatchObject({ name: 'AbortError' });
@@ -166,7 +185,10 @@ describe('request cancellation', () => {
         ),
     });
 
-    const pending = client.portfolio.listWorks({ page: 1 }, { signal: controller.signal });
+    const pending = client.portfolio.listWorks(
+      { page: 1 },
+      { signal: controller.signal },
+    );
     await reading;
     controller.abort();
     await expect(pending).rejects.toMatchObject({
@@ -185,10 +207,12 @@ describe('request cancellation', () => {
         }),
     });
 
-    await expect(client.portfolio.listWorks({ page: 1 })).rejects.toMatchObject({
-      name: 'ApiClientError',
-      kind: 'unexpected_response',
-    });
+    await expect(client.portfolio.listWorks({ page: 1 })).rejects.toMatchObject(
+      {
+        name: 'ApiClientError',
+        kind: 'unexpected_response',
+      },
+    );
   });
 
   it('keeps a schema validation failure as an unexpected response', async () => {
@@ -201,10 +225,12 @@ describe('request cancellation', () => {
         }),
     });
 
-    await expect(client.portfolio.listWorks({ page: 1 })).rejects.toMatchObject({
-      name: 'ApiClientError',
-      kind: 'unexpected_response',
-    });
+    await expect(client.portfolio.listWorks({ page: 1 })).rejects.toMatchObject(
+      {
+        name: 'ApiClientError',
+        kind: 'unexpected_response',
+      },
+    );
   });
 
   it('keeps an ordinary HTTP error classified by status', async () => {
@@ -212,16 +238,22 @@ describe('request cancellation', () => {
       baseUrl: 'https://api.example.test',
       fetchImpl: async () =>
         new Response(
-          JSON.stringify({ status: 404, code: 'not_found', message: 'missing' }),
+          JSON.stringify({
+            status: 404,
+            code: 'not_found',
+            message: 'missing',
+          }),
           { status: 404, headers: { 'content-type': 'application/json' } },
         ),
     });
 
-    await expect(client.portfolio.listWorks({ page: 1 })).rejects.toMatchObject({
-      name: 'ApiClientError',
-      kind: 'not_found',
-      status: 404,
-    });
+    await expect(client.portfolio.listWorks({ page: 1 })).rejects.toMatchObject(
+      {
+        name: 'ApiClientError',
+        kind: 'not_found',
+        status: 404,
+      },
+    );
   });
 
   it('rejects an aborted image read without classifying it as a network failure', async () => {
@@ -231,7 +263,9 @@ describe('request cancellation', () => {
       fetchImpl: (_input, init) =>
         new Promise((_resolve, reject) => {
           const abort = () => {
-            reject(new DOMException('The operation was aborted.', 'AbortError'));
+            reject(
+              new DOMException('The operation was aborted.', 'AbortError'),
+            );
           };
           if (init?.signal?.aborted) {
             abort();
@@ -277,5 +311,25 @@ describe('request cancellation', () => {
       name: 'ApiClientError',
       kind: 'unexpected_response',
     });
+  });
+});
+
+describe('schema output typing', () => {
+  it('returns transformed values and materialized default arrays', async () => {
+    const client = createApiClient({
+      baseUrl: 'https://api.example.test',
+      fetchImpl: async () => Response.json({ count: '3' }),
+    });
+    const schema = z
+      .object({
+        count: z.string().transform(Number),
+        tags: z.array(z.string()).default([]),
+      })
+      .strict();
+    const result: { count: number; tags: string[] } = await client.request(
+      '/api/demo',
+      schema,
+    );
+    expect(result).toEqual({ count: 3, tags: [] });
   });
 });

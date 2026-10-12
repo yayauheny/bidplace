@@ -10,6 +10,7 @@ import {
   vi,
 } from 'vitest';
 import sharp from 'sharp';
+import { normalizeCatalogName } from '../../src/catalog/catalog-data';
 import { MediaLifecycleService } from '../../src/core/media/media-lifecycle.service';
 import {
   S3MediaObjectStore,
@@ -26,8 +27,12 @@ import {
   createIntegrationDatabaseContext,
   type IntegrationDatabaseContext,
 } from './test-database';
-import { fixturePasswordHash } from './permission-fixtures';
+import {
+  attachAuthorDirection,
+  fixturePasswordHash,
+} from './permission-fixtures';
 import { sellerModerationRequest } from './admin-status-request';
+import { sellerProfileForm } from './seller-profile-form';
 
 let db: IntegrationDatabaseContext;
 let http: HttpTestApp;
@@ -119,17 +124,14 @@ async function user(suffix: string, role: 'user' | 'admin' = 'user') {
 }
 
 function profilePhoto(bytes: Buffer, fields: Record<string, string> = {}) {
-  const form = new FormData();
-  for (const [key, value] of Object.entries(fields)) {
-    if (key === 'slug') continue;
-    form.set(key, value);
-  }
-  form.set(
-    'profilePhoto',
+  const profileFields = Object.fromEntries(
+    Object.entries(fields).filter(([key]) => key !== 'slug'),
+  );
+  return sellerProfileForm(
+    profileFields,
     new Blob([new Uint8Array(bytes)], { type: 'image/png' }),
     'photo.png',
   );
-  return form;
 }
 
 function upload(bytes: Buffer) {
@@ -175,6 +177,11 @@ async function approvedAuthor(suffix: string) {
   );
   expect(created.status).toBe(201);
   const profileId = (await created.json()).sellerProfile.id as string;
+  const application = await db.prisma.sellerProfile.findUniqueOrThrow({
+    where: { id: profileId },
+    select: { editingRevisionId: true },
+  });
+  await attachAuthorDirection(db.prisma, application.editingRevisionId!);
   expect((await author.client.post('/author/application/advance')).status).toBe(
     201,
   );
@@ -194,7 +201,11 @@ async function approvedAuthor(suffix: string) {
   ).toBe(200);
   await runPublish(profileId);
   const category = await db.prisma.category.create({
-    data: { slug: `${suffix}-works`, name: suffix },
+    data: {
+      slug: `${suffix}-works`,
+      name: suffix,
+      normalizedName: normalizeCatalogName(suffix),
+    },
   });
   const workResponse = await author.client.post('/products', {
     title: `${suffix} work`,

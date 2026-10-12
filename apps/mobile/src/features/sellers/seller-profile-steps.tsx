@@ -1,15 +1,31 @@
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode, type RefObject } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useState,
+  type ReactNode,
+  type RefObject,
+} from 'react';
 import { useController, useFormContext, useWatch } from 'react-hook-form';
 import { View } from 'react-native';
 
+import { countryName } from '@bidplace/contracts';
 import { designTokens } from '@bidplace/design-tokens';
 
+import { type FigmaIconName } from '../../components/figma/figma-icon-names';
+import { type FigmaFieldVariant } from '../../components/figma/figma-text-field-style';
 import { AppText, FormSection, TextField } from '../../components/ui';
+import { FigmaSelectField } from '../../components/figma/FigmaSelectField';
+import { FigmaButton } from '../../components/figma/FigmaButton';
+import { FigmaChoiceChip } from '../../components/figma/FigmaChoiceChip';
+import { CountryPickerSheet } from './country-picker-sheet';
 
 export type ProfileFields = {
   slug: string;
   fullName: string;
   discipline: string;
+  directionCategoryIds: string[];
   country: string;
   city: string;
   practice: string;
@@ -21,16 +37,20 @@ export type ProfileFields = {
   shortDescription: string;
 };
 
-export const requiredProfileMessages: Partial<Record<keyof ProfileFields, string>> = {
+export const requiredProfileMessages: Partial<
+  Record<keyof ProfileFields, string>
+> = {
   slug: 'Введите никнейм',
   fullName: 'Введите имя или название',
   country: 'Укажите страну',
-  city: 'Укажите город',
   discipline: 'Укажите направление',
+  directionCategoryIds: 'Выберите хотя бы одно направление',
   shortDescription: 'Добавьте короткое описание о себе',
 };
 
-const ProfileFieldWriteGuardContext = createContext<RefObject<boolean> | null>(null);
+const ProfileFieldWriteGuardContext = createContext<RefObject<boolean> | null>(
+  null,
+);
 
 type RevealedRequirements = Partial<Record<keyof ProfileFields, true>>;
 
@@ -39,7 +59,9 @@ type ProfileRequirements = {
   reveal: (names: readonly (keyof ProfileFields)[]) => void;
 };
 
-const ProfileRequirementContext = createContext<ProfileRequirements | null>(null);
+const ProfileRequirementContext = createContext<ProfileRequirements | null>(
+  null,
+);
 
 export type ProfileRequirementControls = {
   reveal: (names: readonly (keyof ProfileFields)[]) => void;
@@ -79,7 +101,9 @@ export function ProfileRequirementScope({
     [visibleRevealed, reveal],
   );
   return (
-    <ProfileRequirementContext.Provider value={value}>{children}</ProfileRequirementContext.Provider>
+    <ProfileRequirementContext.Provider value={value}>
+      {children}
+    </ProfileRequirementContext.Provider>
   );
 }
 
@@ -104,15 +128,25 @@ function ProfileDraftField({
   autoCapitalize,
   editable,
   required,
+  requiredMarker = true,
   multiline,
+  variant,
+  icon,
+  iconColor,
 }: {
-  name: keyof ProfileFields;
+  name: Exclude<keyof ProfileFields, 'directionCategoryIds'>;
   label: string;
   placeholder?: string;
   autoCapitalize?: 'none' | 'characters';
   editable: boolean;
+  /** Reveals the requirement message on blur. */
   required?: boolean;
+  /** Adds the ` *` label marker. The basic-information step states requirements in its placeholders instead. */
+  requiredMarker?: boolean;
   multiline?: boolean;
+  variant?: FigmaFieldVariant;
+  icon?: FigmaIconName;
+  iconColor?: string;
 }) {
   const guard = useContext(ProfileFieldWriteGuardContext);
   if (!guard) {
@@ -128,12 +162,15 @@ function ProfileDraftField({
   const revealed = requirements.revealed[name] === true;
   const schemaMessage = fieldState.error?.message;
   const requirementMessage =
-    requiredMessage && revealed && !field.value.trim() ? requiredMessage : undefined;
+    requiredMessage && revealed && !field.value.trim()
+      ? requiredMessage
+      : undefined;
   const message = schemaMessage ?? requirementMessage;
   return (
     <TextField
       ref={field.ref}
       label={label}
+      required={required && requiredMarker}
       value={field.value}
       onBlur={() => {
         field.onBlur();
@@ -141,26 +178,268 @@ function ProfileDraftField({
       }}
       onChangeText={(value) => {
         if (guard.current) return;
-        setValue(name, value, { shouldDirty: true, shouldTouch: true, shouldValidate: true });
+        setValue(name, value, {
+          shouldDirty: true,
+          shouldTouch: true,
+          shouldValidate: true,
+        });
         if (requiredMessage && !value.trim()) requirements.reveal([name]);
       }}
       placeholder={placeholder}
       autoCapitalize={autoCapitalize}
       editable={editable}
-      required={required}
       multiline={multiline}
+      variant={variant}
+      icon={icon}
+      iconColor={iconColor}
       error={typeof message === 'string' ? message : undefined}
     />
   );
 }
 
-export function SellerProfileCreationStepSelector({ profileStep }: { profileStep: number }) {
-  return <View accessibilityRole="progressbar" accessibilityValue={{ min: 1, max: 4, now: profileStep }} style={{ alignItems: 'center', gap: designTokens.space.x2 }}>
-    <View style={{ flexDirection: 'row', gap: designTokens.space.x2 }}>
-      {[1, 2, 3, 4].map((step) => <View key={step} style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: step <= profileStep ? designTokens.color.ink : designTokens.color.border }} />)}
+/** Country is chosen from the `GET /countries` directory; the form keeps only the ISO code. */
+function ProfileCountryField({ editable }: { editable: boolean }) {
+  const guard = useContext(ProfileFieldWriteGuardContext);
+  if (!guard) {
+    throw new Error('Profile field write guard is missing');
+  }
+  const requirements = useContext(ProfileRequirementContext);
+  if (!requirements) {
+    throw new Error('Profile requirement scope is missing');
+  }
+  const { control, setValue } = useFormContext<ProfileFields>();
+  const { field, fieldState } = useController({ control, name: 'country' });
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const revealed = requirements.revealed.country === true;
+  const requirementMessage =
+    revealed && !field.value.trim()
+      ? requiredProfileMessages.country
+      : undefined;
+  const message = fieldState.error?.message ?? requirementMessage;
+  return (
+    <>
+      <FigmaSelectField
+        label="Страна"
+        placeholder="Страна (обязательное)"
+        value={field.value ? (countryName(field.value) ?? '') : ''}
+        disabled={!editable}
+        error={typeof message === 'string' ? message : undefined}
+        onPress={() => setPickerOpen(true)}
+      />
+      <CountryPickerSheet
+        open={pickerOpen}
+        selectedCode={field.value}
+        onClose={() => {
+          setPickerOpen(false);
+          if (!field.value.trim()) requirements.reveal(['country']);
+        }}
+        onSelect={(code) => {
+          setPickerOpen(false);
+          if (guard.current) return;
+          setValue('country', code, {
+            shouldDirty: true,
+            shouldTouch: true,
+            shouldValidate: true,
+          });
+        }}
+      />
+    </>
+  );
+}
+
+export function ProfileContactsFields({ editable }: { editable: boolean }) {
+  return (
+    <>
+      <ProfileDraftField
+        name="instagramUrl"
+        label="Instagram"
+        placeholder="Instagram"
+        autoCapitalize="none"
+        editable={editable}
+        variant="authorApplication"
+        icon="at-sign"
+        iconColor={designTokens.color.muted}
+      />
+      <ProfileDraftField
+        name="telegramUrl"
+        label="Telegram"
+        placeholder="Telegram"
+        autoCapitalize="none"
+        editable={editable}
+        variant="authorApplication"
+        icon="at-sign"
+        iconColor={designTokens.color.muted}
+      />
+      <ProfileDraftField
+        name="websiteUrl"
+        label="Сайт"
+        placeholder="Веб-сайт"
+        autoCapitalize="none"
+        editable={editable}
+        variant="authorApplication"
+      />
+      <ProfileDraftField
+        name="publicEmail"
+        label="Почта"
+        placeholder="Почта"
+        autoCapitalize="none"
+        editable={editable}
+        variant="authorApplication"
+      />
+    </>
+  );
+}
+
+export function ProfileAboutFields({ editable }: { editable: boolean }) {
+  return (
+    <>
+      <ProfileDraftField
+        name="shortDescription"
+        label="Коротко о себе"
+        placeholder="Коротко о себе, (обязательное)"
+        editable={editable}
+        required
+        requiredMarker={false}
+        variant="authorApplication"
+      />
+      <ProfileDraftField
+        name="practice"
+        label="Практика"
+        placeholder="Практика и подход"
+        editable={editable}
+        variant="authorApplication"
+      />
+    </>
+  );
+}
+
+/** Basic information of the author application; slug stays read-only after it is assigned. */
+export function ProfileBasicsFields({
+  editable,
+  slugEditable,
+}: {
+  editable: boolean;
+  slugEditable: boolean;
+}) {
+  return (
+    <>
+      <ProfileDraftField
+        name="fullName"
+        label="Имя или название"
+        placeholder="Ваше имя фамилия, (обязательное)"
+        editable={editable}
+        required
+        requiredMarker={false}
+        variant="authorApplication"
+      />
+      <ProfileDraftField
+        name="slug"
+        label="Никнейм"
+        placeholder="Никнейм, (обязательное)"
+        autoCapitalize="none"
+        editable={slugEditable}
+        required
+        requiredMarker={false}
+        variant="authorApplication"
+        icon="at-sign"
+        iconColor={designTokens.color.muted}
+      />
+      <ProfileCountryField editable={editable} />
+      <ProfileDraftField
+        name="city"
+        label="Город"
+        placeholder="Город"
+        editable={editable}
+        variant="authorApplication"
+      />
+    </>
+  );
+}
+
+export function SellerProfileCreationStepSelector({
+  profileStep,
+}: {
+  profileStep: number;
+}) {
+  return (
+    <View
+      accessibilityRole="progressbar"
+      accessibilityLabel={`Шаг ${profileStep} из 4`}
+      accessibilityValue={{ min: 1, max: 4, now: profileStep }}
+      style={{ flexDirection: 'row', gap: designTokens.space.x2 }}
+    >
+      {[1, 2, 3, 4].map((step) => (
+        <View
+          key={step}
+          style={{
+            width: 6,
+            height: 6,
+            borderRadius: 3,
+            backgroundColor:
+              step === profileStep
+                ? designTokens.color.inkStrong
+                : designTokens.color.border,
+          }}
+        />
+      ))}
     </View>
-    <AppText role="metadata" tone="secondary">Шаг {profileStep} из 4</AppText>
-  </View>;
+  );
+}
+
+export function ProfileDirectionsControl({
+  labels,
+  error,
+  editable,
+  onOpen,
+  onRemove,
+}: {
+  labels: readonly { id: string; name: string }[];
+  error?: string;
+  editable: boolean;
+  onOpen: () => void;
+  onRemove?: (id: string) => void;
+}) {
+  return (
+    <View style={{ gap: designTokens.space.x3 }}>
+      <FigmaButton
+        label="Выберите основные направления"
+        variant="muted"
+        size="navigation"
+        contentAlign="navigation"
+        icon="arrow-right-01"
+        iconPosition="right"
+        width="full"
+        disabled={!editable}
+        onPress={onOpen}
+      />
+      {labels.length > 0 ? (
+        <View
+          style={{
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            gap: designTokens.space.authorChipGap,
+          }}
+        >
+          {labels.map((direction) => (
+            <FigmaChoiceChip
+              key={direction.id}
+              label={direction.name}
+              selected
+              removable={onRemove !== undefined}
+              disabled={!editable}
+              onPress={onOpen}
+              onRemove={onRemove ? () => onRemove(direction.id) : undefined}
+            />
+          ))}
+        </View>
+      ) : null}
+      {error ? (
+        <AppText role="bodySmall" tone="danger">
+          {error}
+        </AppText>
+      ) : null}
+    </View>
+  );
 }
 
 export function SellerProfileFormSteps({
@@ -168,42 +447,82 @@ export function SellerProfileFormSteps({
   showAllSteps,
   editable,
   slugEditable,
+  directionLabels,
+  directionsError,
+  onOpenDirections,
 }: {
   profileStep: number;
   showAllSteps: boolean;
   editable: boolean;
   slugEditable: boolean;
+  directionLabels?: readonly { id: string; name: string }[];
+  directionsError?: string;
+  onOpenDirections?: () => void;
 }) {
-  return <>
-    {(showAllSteps || profileStep === 1) && <FormSection title="Основная информация" description="Эти данные увидят посетители после одобрения заявки.">
-      <ProfileDraftField name="slug" label="Никнейм" placeholder="Никнейм" autoCapitalize="none" editable={slugEditable} required />
-      <ProfileDraftField name="fullName" label="Имя или название" placeholder="Иван Иванов" editable={editable} required />
-      <ProfileDraftField name="country" label="Страна" placeholder="BY" autoCapitalize="characters" editable={editable} required />
-      <ProfileDraftField name="city" label="Город" placeholder="Минск" editable={editable} required />
-    </FormSection>}
-    {(showAllSteps || profileStep === 2) && <FormSection title="Контакты" description="Все контакты необязательны и станут публичными только после одобрения.">
-      <ProfileDraftField name="telegramUrl" label="Telegram" placeholder="@username" autoCapitalize="none" editable={editable} />
-      <ProfileDraftField name="instagramUrl" label="Instagram" placeholder="@username" autoCapitalize="none" editable={editable} />
-      <ProfileDraftField name="websiteUrl" label="Сайт" placeholder="https://example.com" autoCapitalize="none" editable={editable} />
-      <ProfileDraftField name="publicEmail" label="Публичный email" placeholder="hello@example.com" autoCapitalize="none" editable={editable} />
-    </FormSection>}
-    {(showAllSteps || profileStep === 3) && <FormSection title="Раскройте себя как автора" description="Расскажите посетителям о вашем направлении и подходе.">
-      <ProfileDraftField name="discipline" label="Дисциплина" placeholder="Керамика, живопись, текстиль" editable={editable} required />
-      <ProfileDraftField name="practice" label="Практика" placeholder="Авторская керамика" editable={editable} />
-      <ProfileDraftField name="shortDescription" label="Короткое описание" placeholder="Расскажите о себе и своих работах" multiline editable={editable} required />
-    </FormSection>}
-  </>;
+  return (
+    <>
+      {(showAllSteps || profileStep === 1) && (
+        <FormSection
+          title="Основная информация"
+          description="Эти данные увидят посетители после одобрения заявки."
+        >
+          <ProfileBasicsFields
+            editable={editable}
+            slugEditable={slugEditable}
+          />
+        </FormSection>
+      )}
+      {(showAllSteps || profileStep === 2) && (
+        <FormSection
+          title="Контакты"
+          description="Все контакты необязательны и станут публичными только после одобрения."
+        >
+          <ProfileContactsFields editable={editable} />
+        </FormSection>
+      )}
+      {(showAllSteps || profileStep === 3) && (
+        <FormSection
+          title="Раскройте себя как автора"
+          description="Расскажите посетителям о вашем направлении и подходе."
+        >
+          <ProfileAboutFields editable={editable} />
+          {onOpenDirections ? (
+            <ProfileDirectionsControl
+              labels={directionLabels ?? []}
+              error={directionsError}
+              editable={editable}
+              onOpen={onOpenDirections}
+            />
+          ) : null}
+        </FormSection>
+      )}
+    </>
+  );
 }
 
 export function SellerProfileVerificationSection() {
-  const [fullName, slug, discipline, country, city] = useWatch<
+  const [fullName, slug, directionCategoryIds, country, city] = useWatch<
     ProfileFields,
-    ['fullName', 'slug', 'discipline', 'country', 'city']
+    ['fullName', 'slug', 'directionCategoryIds', 'country', 'city']
   >({
-    name: ['fullName', 'slug', 'discipline', 'country', 'city'],
+    name: ['fullName', 'slug', 'directionCategoryIds', 'country', 'city'],
   });
-  return <FormSection title="Проверка заявки" description="Проверьте данные перед отправкой на модерацию.">
-    <AppText role="label">{fullName || 'Имя автора'} · @{slug || 'profile-address'}</AppText>
-    <AppText role="bodySmall" tone="secondary">{discipline || 'Дисциплина не заполнена'} · {country || 'Страна не заполнена'}{(city ?? '').trim() ? ` · ${(city ?? '').trim()}` : ''}</AppText>
-  </FormSection>;
+  const directionsSummary =
+    (directionCategoryIds?.length ?? 0) > 0
+      ? `${directionCategoryIds.length} направлений`
+      : 'Направления не выбраны';
+  return (
+    <FormSection
+      title="Проверка заявки"
+      description="Проверьте данные перед отправкой на модерацию."
+    >
+      <AppText role="label">
+        {fullName || 'Имя автора'} · @{slug || 'profile-address'}
+      </AppText>
+      <AppText role="bodySmall" tone="secondary">
+        {directionsSummary} · {country || 'Страна не заполнена'}
+        {(city ?? '').trim() ? ` · ${(city ?? '').trim()}` : ''}
+      </AppText>
+    </FormSection>
+  );
 }

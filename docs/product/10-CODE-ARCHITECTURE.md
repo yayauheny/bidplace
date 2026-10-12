@@ -161,6 +161,7 @@ See [`11-PROJECT-STATUS.md`](11-PROJECT-STATUS.md) for remaining gates.
 - `apps/api/src/products/products.mapper.ts` and `apps/api/src/products/products-catalog.query.ts` own the canonical public catalog selection and CTE/order SQL; `products.service.ts` keeps only use-cases and orchestration. Public portfolio Work hydration uses `portfolioCatalogProductSelect`: product id, public id, `publishedAt`, the public seller profile, and the published revision gallery. Parent product fields and the parent image relation are not part of that read. Owner and moderation reads keep `productSelect`.
 - `packages/contracts` owns runtime HTTP and event shapes; `packages/api-client` validates responses with those schemas and declares `zod` `^3.24.2` for that import. Public catalog reads can pass an optional `AbortSignal` through that client into `fetch`. Mutations stay uncancelled unless a caller passes a signal.
 - `packages/contracts/src/seller-profile.ts` owns the reusable public-link and handoff-contact validation shapes consumed by both seller write contracts and the profile editor; client-side field feedback does not replace server validation. Public `socialLink`, `telegramUrl`, `instagramUrl` and `websiteUrl` use shared `httpsUrlSchema` and accept only `https:` URLs. Telegram/Instagram `@handle` forms stay on the separate handoff schemas.
+- Mobile author application (`apps/mobile/src/features/sellers/seller-profile-screen.tsx`, `author-application-*-step.tsx`, `AuthorApplicationAchievements.tsx`) renders four URL-owned steps against portfolio application reads/writes. Shared Zod in `seller-profile.ts` describes DTO and write payloads (for example `shortDescription: null` clears on PATCH); step UI and local hints are not readiness or stage authority. Server clamp, `applicationStage`, and validation errors remain authoritative. Achievement append/delete are JSON writes validated on the API (`z.output`); Work creation-story media and steps stay on the separate Product path.
 - `packages/database` owns Prisma schema, additive migrations and deterministic local/test seed. Demo seed may run only with `NODE_ENV=development|test`, `APP_ENV=local` and `ALLOW_DESTRUCTIVE_DEMO_SEED=true`; production-like profiles fail before writes. Local seed is the Figma Home catalog (four public authors plus `pixelp`, nine public works including two demo vex works, no Listing/Bid/Order rows). User-facing seed copy is production-quality (`DEC-092`). `CuratorSelection` points at Dali (`daliEstate1` / `pixelp`) with curator `vex` and the Figma `note`. Pre-production amendment of the unreleased `curator_selections` CREATE TABLE (`note TEXT`, `curator_seller_profile_id`, `DEC-090`/`DEC-091`) is the only in-place migration edit; after first production apply, further columns are additive. Seller `biography` is an additive column (`20260914200000_add_seller_biography`). This does not authorize editing commerce/baseline migrations (`DEC-087`). `scripts/ops/commerce-inventory.mjs` is a read-only leftover-listing inventory; it is not a write path and is not a staging/production dry-run unless that environment is the connected target.
 - `packages/config` owns env-file parsing through Node `util.parseEnv`. One leading U+FEFF is removed from the file text before that parse; a later BOM, including one inside a quoted value, stays. A missing file is an empty record. Explicit process env overrides file values. `apps/api/src/core/config/env.ts` validates that merge once and freezes the result. `ServerEnvModule.forRoot` provides that same object as `SERVER_ENV` for one Nest application context. `main.ts` and `apps/api/test/integration/http-test-app.ts` are the bootstrap loaders. Analytics, auth, OTP, password reset, mail, image storage, and rate limits inject the snapshot. `loadServerEnv` still copies unset keys into `process.env`, because `PrismaService` constructs `PrismaClient` without a datasource argument and Prisma reads `DATABASE_URL` from the process environment. A second application context gets its own snapshot through its own `ServerEnvModule.forRoot` call. The provider is the existing Nest dynamic module.
 - `apps/api/src/core/config/env-profile.ts` owns the `NODE_ENV` × `APP_ENV` predicates. `APP_ENV=production` requires `NODE_ENV=production`; `NODE_ENV=production` cannot combine with `APP_ENV=local`. Production SMTP, service rules, password-reset URL, JWT length and test-bypass prohibitions apply when either variable is `production`. Staging keeps its previous requirement shape: production security only when `NODE_ENV=production`.
@@ -177,10 +178,14 @@ See [`11-PROJECT-STATUS.md`](11-PROJECT-STATUS.md) for remaining gates.
 ```text
 SellerProfile
   ├─ SellerProfileRevision[]
-  │    └─ SellerProfileRevisionAchievement[] (text/date + optional image; revision scoped)
+  │    ├─ SellerProfileRevisionAchievement[] (date + description; new writes have no image)
+  │    └─ SellerProfileRevisionDirection[] (Category IDs)
   └─ Product
        ├─ ProductRevision[]
-       │    └─ ProductRevisionImage[]
+       │    ├─ ProductRevisionImage[]
+       │    ├─ ProductRevisionStoryBlock[] / ProductRevisionStoryAsset[]
+       │    ├─ ProductRevisionTerm[] (CatalogTerm MATERIAL | TECHNIQUE)
+       │    └─ CatalogProposal[]
        ├─ ProductImage[] (legacy metadata)
        ├─ CuratorSelection? (home editorial pointer: curator SellerProfile + product + optional note)
        └─ Listing[]
@@ -214,7 +219,8 @@ SellerProfile
 
 - `APPROVED` SellerProfile is the seller capability; `assertApprovedSeller` is the shared write gate for Product, Listing, image and seller writes, while `AdminModerationService` records append-only audit events for moderation transitions;
 - `User.slug` is the only canonical nickname and the public `/authors/:slug` address. `seller_profiles.slug` stays as a copied column. Migration `20261008040000_add_user_slug` requires this order: exclude writes from the old API, wait until writes it already accepted have finished, apply the migration, start this build, compare nicknames, and only then open access. The local gate is `RELEASE_HOLD=closed` in `deploy/cloudflare/src/router.ts`, which returns 503 before cache or `PortfolioApi`. `/_release/stop` and `/_release/state` are listed in `assets.run_worker_first`. An authorized `POST /_release/stop` confirms `getState()` after `stop('SIGTERM')`. Opening reads the published container image from Wrangler; a Worker var does not prove that image. Migration also refuses while another session can still commit. This gate is not deployed; production still serves the previous Worker. Drop the column only in a later migration, after this application is the only writer, every still-null account slug has been copied, every profile slug equals the account slug, and no live query reads the profile column. Profile creation copies the already stored account slug in the same transaction. Publication and moderation do not copy a revision snapshot onto `users.slug` or `seller_profiles.slug`. While the old column exists, a public read uses `users.slug` and falls back to the profile column only when the account slug is still null. Visibility still requires `seller_profiles.status = APPROVED` and `users.status = active`.
-- SellerProfile stores public profile data separately from buyer identity. The current implementation keeps the handoff contact private, persists public `discipline` separately from the coarse seller type, requires `fullName`, a non-blank `city` and a public profile photo on seller application, accepts `socialLink` as null when Telegram/Instagram/website is used, reopens public-field edits for `CHANGES_REQUESTED` and `REJECTED` plus approved-author editing revisions, and snapshots the handoff data into Orders; public seller/catalog views reuse shared visibility predicates and narrow seller selects instead of duplicating checks. `GET /api/authors?sort=added` orders by `seller_profiles.created_at`, not latest work;
+- SellerProfile stores public profile data separately from buyer identity. The current implementation keeps the handoff contact private, persists public `discipline` separately from the coarse seller type, requires `fullName` and a public profile photo on seller application; `city` is optional (`DEC-114`); accepts `socialLink` as null when Telegram/Instagram/website is used, reopens public-field edits for `CHANGES_REQUESTED` and `REJECTED` plus approved-author editing revisions, and snapshots the handoff data into Orders; public seller/catalog views reuse shared visibility predicates and narrow seller selects instead of duplicating checks. `GET /api/authors?sort=added` orders by `seller_profiles.created_at`, not latest work;
+- Seller profile writes (`POST` and `PATCH /api/seller/profile`) accept JSON or `multipart/form-data`. In multipart the profile fields are one JSON `data` part and the optional photo is the `profilePhoto` part (`seller-profile-write-body.ts`). Invalid JSON in `data` returns 400 `data must be a JSON object`; a parsed body that fails the schema returns the usual validation error. On PATCH an absent field keeps the stored value, `null` clears a nullable field (`city`, contacts), and `[]` clears the direction list. One save is one request; the client never sends the string `"null"`.
 - `Product` is the current persistence name for a Work. `ProductRevision` holds
   mutable public Work content and immutable revision-image membership; a Work points
   to its editing and published revisions. A published Work copies its published
@@ -351,6 +357,44 @@ bearer token. `OptionalBearerAuthGuard` accepts that cookie or a bearer token.
 Public and owner projections stay on their existing records.
 
 The active API is an HTTP process. There is no scheduler or Socket.IO adapter on the boot graph. Do not add future sale types, payments, delivery or automatic winner replacement until a product decision requires them. Commerce application code is not restored from leftover Prisma tables; the archive branch is `feature/commerce-runtime-archive` @ `19eb40e`.
+
+## Author story and catalog — 2026-10-11
+
+`DEC-112`–`DEC-114` and `DEC-116` are implemented in the API. Story blocks belong
+to the editing or published `ProductRevision` and reference `MediaAsset`.
+`storyToken` detects a stale save; `ProductRevision.version` stays the edition
+number. `STORY_IMAGE` uploads create a private draft hold and do not add a gallery
+image. Categories stay in `Category` with `active`. Materials and techniques are
+`CatalogTerm` rows. Author directions are Category IDs on the profile revision.
+Country is an ISO alpha-2 code from the same list as `GET /countries`. City is
+optional in readiness and public predicates. Catalog proposals are separate rows;
+confirming one updates the pending revision and does not publish it. A decision
+locks the product row and re-reads the proposal. Re-selecting a proposal keeps
+its status, including `REJECTED`. `Category.normalizedName` and
+`CatalogTerm (role, normalizedName)` are the name identity; slug stays the stable
+key. Bootstrap inserts missing starter rows and does not overwrite admin names
+or visibility. Public story bytes are an IMAGE block on the published revision.
+A story-asset hold retains the file for the editing revision and does not publish
+it. `MediaLifecycleService` publishes, revokes, restores and checks that link.
+Public search and material facets read published term names and story-block text.
+Owner and public materials/technique strings are the selected term names, or
+null when the selection is empty. Owner detail and product writes use the
+editing revision. The owner list, hide/unhide, and the admin product snapshot
+use the published revision when `publishedRevisionId` is set, otherwise the
+editing revision. The stored columns are a freshness side effect
+of `writeTermLabel`, not a read source and not a write contract. Product create
+and update return the editing revision after `syncWorkSelection` in the same
+transaction. Owner, admin, and public author DTOs include selected term,
+category, and direction metadata, including hidden rows. `GET /categories` and
+`GET /catalog/terms` stay active-only. `normalizeCatalogName` is the only name
+identity; writers set `normalizedName`, and the column has no SQL default or
+insert trigger. The mobile and admin clients still speak the previous contracts,
+including the removed free-text materials and technique writes.
+
+Contracts belong to [05-MVP-RFC.md](05-MVP-RFC.md); affected consumers, migration
+and API work are in [the backend plan](../tasks/2026-10-11-author-story-backend/PLAN.md).
+The next sales wave has its own [complete product plan](15-POST-MVP-BACKLOG.md)
+(`DEC-115`), without changing the active boot graph.
 
 Pilot operations are documented in [`docs/ops/00-RELEASE-AND-BACKUP.md`](../ops/00-RELEASE-AND-BACKUP.md):
 

@@ -1,4 +1,4 @@
-import { Link, useIsFocused, useNavigation, useRouter, type Href } from 'expo-router';
+import { useIsFocused, useNavigation, useRouter, type Href } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -286,9 +286,13 @@ export function ForgotPasswordForm({ redirectTo = '/' }: ForgotPasswordFormProps
           loading={form.formState.isSubmitting}
           onPress={submit}
         />
-        <Link href={loginHref(redirectTo)} asChild>
-          <FigmaButton label="Вернуться ко входу" variant="ghost" size="auth" width="full" onPress={() => undefined} />
-        </Link>
+        <FigmaButton
+          label="Вернуться ко входу"
+          variant="ghost"
+          size="auth"
+          width="full"
+          href={loginHref(redirectTo)}
+        />
       </View>
   );
 }

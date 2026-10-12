@@ -238,7 +238,7 @@ cleanup, Google OAuth. Отдельный FULL-generation-on-demand не вво�
 2. Площадка и готовая deployment configuration; реальные buckets/custom domain,
    минимальный внешний SMTP и фактические provider settings. Credentials в чат не нужны.
 3. Минимальные portfolio-only Rules/Privacy и publication controls; текущий
-   [legal manifest](../legal/09-PORTFOLIO-LEGAL-REVIEW-MANIFEST.md) ещё pending.
+   [единый юридический аудит](../legal/00-FINAL-LEGAL-AUDIT.md) перечисляет конкретные условия публикации.
 
 Цель второго прохода — конкретный минимальный scope. Он не даёт основания
 называть R2/CDN `Implemented` до выполнения фаз и live acceptance.

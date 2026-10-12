@@ -4,7 +4,7 @@ import {
   useMutation,
   useQueryClient,
 } from '@tanstack/react-query';
-import { Link, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
@@ -146,33 +146,27 @@ export function AuthorCabinetScreen() {
           ) : null}
         </View>
         <View style={{ gap: designTokens.space.x2 }}>
-          <Link href="/profile" asChild>
-            <SecondaryButton
-              label={
-                capability.status === 'SUSPENDED'
-                  ? 'Открыть профиль'
-                  : 'Редактировать профиль'
-              }
-              width="block"
-              onPress={() => undefined}
-            />
-          </Link>
+          <SecondaryButton
+            label={
+              capability.status === 'SUSPENDED'
+                ? 'Открыть профиль'
+                : 'Редактировать профиль'
+            }
+            width="block"
+            href="/profile"
+          />
           {capability.status === 'APPROVED' ? (
             <>
-              <Link href={`/authors/${capability.profile?.slug}`} asChild>
-                <SecondaryButton
-                  label="Открыть профиль"
-                  width="block"
-                  onPress={() => undefined}
-                />
-              </Link>
-              <Link href="/products/new" asChild>
-                <PrimaryButton
-                  label="Создать работу"
-                  width="block"
-                  onPress={() => undefined}
-                />
-              </Link>
+              <SecondaryButton
+                label="Открыть профиль"
+                width="block"
+                href={`/authors/${capability.profile?.slug}`}
+              />
+              <PrimaryButton
+                label="Создать работу"
+                width="block"
+                href="/products/new"
+              />
             </>
           ) : null}
           <AccountLogoutButton />
@@ -225,17 +219,15 @@ export function AuthorCabinetScreen() {
                   </AppText>
                 ) : null}
               </View>
-              <Link href={`/products/${work.id}`} asChild>
-                <PrimaryButton
-                  label={authorCabinetPrimaryAction({
-                    status: work.status,
-                    editingRevisionStatus: work.editingRevisionStatus,
-                    isSuspended: capability.status === 'SUSPENDED',
-                  })}
-                  width="block"
-                  onPress={() => undefined}
-                />
-              </Link>
+              <PrimaryButton
+                label={authorCabinetPrimaryAction({
+                  status: work.status,
+                  editingRevisionStatus: work.editingRevisionStatus,
+                  isSuspended: capability.status === 'SUSPENDED',
+                })}
+                width="block"
+                href={`/products/${work.id}`}
+              />
               {authorCabinetVisibilityActions({
                 status: work.status,
                 isSuspended: capability.status === 'SUSPENDED',

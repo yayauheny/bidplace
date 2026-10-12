@@ -451,21 +451,16 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
           loading={form.formState.isSubmitting}
           onPress={submit}
         />
-        <Link
+        <FigmaButton
+          label="Регистрация"
+          variant="ghost"
+          size="auth"
+          width="full"
           href={{
             pathname: '/register',
             params: redirectTo !== '/' ? { redirectTo } : undefined,
           }}
-          asChild
-        >
-          <FigmaButton
-            label="Регистрация"
-            variant="ghost"
-            size="auth"
-            width="full"
-            onPress={() => undefined}
-          />
-        </Link>
+        />
         </View>
         <AppText role="authOr" style={{ textAlign: 'center', color: designTokens.color.textSubdued }}>
           или

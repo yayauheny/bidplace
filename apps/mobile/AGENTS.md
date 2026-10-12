@@ -4,4 +4,5 @@
 - Use `ui` for React Native and Expo UI changes.
 - Use `security` for auth, permissions, payments, sensitive data, or any flow that could expose user data.
 - Keep mobile screens thin and reuse shared UI primitives and design tokens.
+- Before adding UI, read the component map in [`src/components/README.md`](src/components/README.md).
 - Verify safe area, keyboard behavior, accessibility, and narrow-screen layout for UI changes.

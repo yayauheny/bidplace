@@ -9,6 +9,7 @@ import { BIDPLACE_MARK_SVG, BIDPLACE_WORDMARK_SVG } from './bidplace-brand-svg';
 export { BIDPLACE_PAGE_LOGO_SIZE };
 
 type DecorativeBrandWebStyle = ViewStyle & {
+  userSelect: 'none';
   WebkitUserSelect: 'none';
 };
 

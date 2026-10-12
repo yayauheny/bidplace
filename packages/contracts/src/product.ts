@@ -1,6 +1,8 @@
 import { publicMediaUrlSchema, mediaDeliverySchema } from './media';
 import { z } from 'zod';
 
+import { workSelectionSchema } from './catalog';
+
 import { type ProductStatus, productStatusSchema } from './enums';
 import { isoDateTimeSchema, uuidSchema } from './primitives';
 
@@ -107,8 +109,6 @@ export const productWriteRequestSchema = z
     categoryId: uuidSchema.nullable().optional(),
     title: z.string().trim().min(1).nullable().optional(),
     story: z.string().trim().min(1).nullable().optional(),
-    technique: z.string().trim().min(1).nullable().optional(),
-    materials: z.string().trim().min(1).nullable().optional(),
     dimensions: z.string().trim().min(1).nullable().optional(),
     weight: z.string().trim().min(1).nullable().optional(),
     year: z
@@ -126,6 +126,7 @@ export const productWriteRequestSchema = z
     deliveryInfo: z.string().trim().min(1).nullable().optional(),
     creationIntro: z.string().trim().min(1).max(5000).nullable().optional(),
   })
+  .merge(workSelectionSchema)
   .strict();
 
 export const creationStepWriteSchema = z

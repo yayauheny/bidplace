@@ -15,6 +15,8 @@ export const designTokens = {
     dialogSurface: '#FFFFFF',
     ink: '#2A2A2A',
     inkSoft: '#2A2A2A',
+    // Figma variable `Black`: media sheet heading and close glyph.
+    inkStrong: '#121212',
     textSecondary: '#8A8A8A',
     textMuted: '#8A8A8A',
     tabInactive: '#565656',
@@ -54,6 +56,10 @@ export const designTokens = {
     fieldLabel: '#999999',
     fieldValue: '#121212',
     fieldIcon: '#858585',
+    // Empty border and placeholder of the `authorApplication` field variant.
+    authorApplicationField: '#999999',
+    // Guide lines drawn over the author photo placeholder (Стать автором 527:16416).
+    photoGuide: '#911E05',
     fieldHoverBorder: '#535353',
     ghostHover: '#F7F7F7',
     mutedFill: '#F3F3F3',
@@ -88,6 +94,7 @@ export const designTokens = {
     chipGap: 4,
     choiceChipX: 10,
     choiceChipY: 8,
+    choiceChipRemovableX: 16,
     buttonX: 16,
     buttonY: 8,
     quietButtonX: 14,
@@ -139,6 +146,26 @@ export const designTokens = {
     socialGroupGap: 12,
     filterOptionY: 9,
     headerIconHitSlop: 9,
+    // Inset of the media sheet heading block (Figma Frame 139 padding).
+    mediaSheetTextInset: 6,
+  },
+  /** Author application steps (Figma 526–746); chrome shared across all four steps. */
+  authorApplication: {
+    // Frame content starts at 84; the captured iOS status bar is 49.78 high.
+    contentTop: 34.22,
+    chromeFrame: 28,
+    chromeGlyph: 18.67,
+    chromeStroke: 1.5,
+    headerBlockGap: 24,
+    titleStackGap: 8,
+    headerToBodyBasics: 33,
+    headerToBodyStep: 40,
+    bodyFieldGap: 12,
+    finalActionGap: 20,
+    directionsHeaderHeight: 43,
+    directionsSearchGap: 19,
+    directionsListGap: 7,
+    directionsContentInset: 1,
   },
   radius: {
     small: 12,
@@ -164,6 +191,7 @@ export const designTokens = {
     social: 30,
     achievement: 20,
     shareSheet: 20,
+    mediaSheet: 32,
     workGallery: 20,
     statusDot: 20,
     filterSort: 14,
@@ -182,7 +210,10 @@ export const designTokens = {
     buttonCompact: 40,
     openingAvatar: 54,
     choiceChip: 38,
+    choiceChipRemovable: 39,
+    choiceChipRemoveIcon: 18,
     buttonIconFrame: 26,
+    mediaSheetClose: 38,
     iconButton: 36,
     header: 48,
     mobileHeader: 48,
@@ -209,6 +240,7 @@ export const designTokens = {
     filterSortBar: 43,
     filterSortPill: 42,
     filterOption: 20,
+    filterOptionCheck: 16,
     filterOptionRow: 38,
   },
   typography: {
@@ -234,6 +266,20 @@ export const designTokens = {
       letterSpacing: -0.72,
       fontWeight: '600' as const,
     },
+    mediaSheetTitle: {
+      fontFamily: 'Inter_600SemiBold',
+      fontSize: 24,
+      lineHeight: 29,
+      letterSpacing: -0.48,
+      fontWeight: '600' as const,
+    },
+    mediaSheetBody: {
+      fontFamily: 'Inter_400Regular',
+      fontSize: 15,
+      lineHeight: 20,
+      letterSpacing: -0.15,
+      fontWeight: '400' as const,
+    },
     cardTitle: {
       fontFamily: 'Inter_500Medium',
       fontSize: 18,
@@ -258,6 +304,14 @@ export const designTokens = {
       fontFamily: 'Inter_500Medium',
       fontSize: 16,
       lineHeight: 26,
+      letterSpacing: -0.32,
+      fontWeight: '500' as const,
+    },
+    // Form block heading above a control group (Figma 578:17481 "Фото профиля").
+    formLabel: {
+      fontFamily: 'Inter_500Medium',
+      fontSize: 16,
+      lineHeight: 19,
       letterSpacing: -0.32,
       fontWeight: '500' as const,
     },
@@ -399,6 +453,28 @@ export const designTokens = {
       lineHeight: 20,
       letterSpacing: -0.28,
       fontWeight: '500' as const,
+    },
+    /** Selected removable direction chip (Figma 3462:15417). */
+    choiceChipSelectedRemovable: {
+      fontFamily: 'Inter_500Medium',
+      fontSize: 15,
+      lineHeight: 22,
+      letterSpacing: -0.3,
+      fontWeight: '500' as const,
+    },
+    directionsOption: {
+      fontFamily: 'Inter_400Regular',
+      fontSize: 16,
+      lineHeight: 19,
+      letterSpacing: -0.16,
+      fontWeight: '400' as const,
+    },
+    directionsSheetTitle: {
+      fontFamily: 'Inter_600SemiBold',
+      fontSize: 17,
+      lineHeight: 21,
+      letterSpacing: -0.34,
+      fontWeight: '600' as const,
     },
     coverTitle: {
       fontFamily: 'Inter_500Medium',
@@ -685,6 +761,8 @@ export const designTokens = {
     exitActionGap: 22,
     exitActionHeight: 55,
     exitActionsGap: 8,
+    /** Source `I746:23099` / `278:4690`: Continue label 86 px + 14.5 px inset per side. */
+    exitConfirmActionMinWidth: 115,
   },
   elevation: {
     floating: {
@@ -709,7 +787,12 @@ export const designTokens = {
   stroke: {
     icon: 1.13,
     iconHeavy: 1.25,
+    /** 18 px author-application field glyphs (at-sign, search, calendar) at 1.3 px physical stroke. */
+    authorApplicationFieldPx: 1.3,
     dockIcon: 1.5,
+    filterOptionCheck: 1.5,
+    // Final rendered px for the media sheet close glyph (not icon-grid units).
+    mediaSheetClosePx: 2,
   },
   // Shared Creator/Work top chrome. Distinct from `size.dock*` bottom nav.
   // controlTop = space.x3, controlSize = size.header, controlInset = space.x5.

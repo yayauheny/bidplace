@@ -9,6 +9,7 @@ import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { AuthAbuseModule } from './auth-abuse/auth-abuse.module';
 import { AuthModule } from './auth/auth.module';
+import { CatalogModule } from './catalog/catalog.module';
 import { CategoriesModule } from './categories/categories.module';
 import { ServerEnvModule, type ServerEnv } from './core/config';
 import { DatabaseModule } from './core/database';
@@ -49,6 +50,7 @@ export class AppModule implements NestModule {
         MediaModule,
         MailModule,
         CategoriesModule,
+        CatalogModule,
         DatabaseModule,
         AuthAbuseModule,
         AuthModule,

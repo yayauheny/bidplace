@@ -29,10 +29,24 @@ export function publicAuthorCte(
     )`);
   }
 
-  if (query.tag) {
+  if (query.directionId) {
+    filters.push(Prisma.sql`EXISTS (
+      SELECT 1
+      FROM "seller_profile_revision_directions" direction
+      WHERE direction."revision_id" = author."published_revision_id"
+        AND direction."category_id" = CAST(${query.directionId} AS uuid)
+    )`);
+  } else if (query.tag) {
     const pattern = `%${escapeLikePattern(query.tag)}%`;
     filters.push(
-      Prisma.sql`author."discipline" ILIKE ${pattern} ESCAPE '\\'`,
+      Prisma.sql`EXISTS (
+        SELECT 1
+        FROM "seller_profile_revision_directions" direction
+        INNER JOIN "categories" direction_category
+          ON direction_category."id" = direction."category_id"
+        WHERE direction."revision_id" = author."published_revision_id"
+          AND direction_category."name" ILIKE ${pattern} ESCAPE '\\'
+      )`,
     );
   }
 
@@ -48,6 +62,7 @@ export function publicAuthorCte(
       author."full_name",
       author."city",
       author."discipline",
+      author."published_revision_id",
       author."created_at"
     FROM "seller_profiles" author
     INNER JOIN "users" author_user ON author_user."id" = author."user_id"

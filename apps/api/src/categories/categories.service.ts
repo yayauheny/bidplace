@@ -8,6 +8,7 @@ type CategoryRecord = {
   slug: string;
   name: string;
   description: string | null;
+  active?: boolean;
 };
 
 export interface CategoriesRepository {
@@ -22,6 +23,7 @@ export class CategoriesService {
 
   async listCategories() {
     const categories = (await this.prisma.category.findMany({
+      where: { active: true },
       orderBy: [{ name: 'asc' }, { slug: 'asc' }],
     })) as CategoryRecord[];
 
@@ -31,6 +33,7 @@ export class CategoriesService {
         slug: category.slug,
         name: category.name,
         description: category.description,
+        active: category.active ?? true,
       })),
     });
   }

@@ -7,6 +7,7 @@ import {
   createElement,
   forwardRef,
   isValidElement,
+  type ComponentProps,
   type ReactElement,
   type ReactNode,
 } from 'react';
@@ -18,7 +19,7 @@ import {
   figmaButtonTokens,
   figmaButtonVariants,
 } from '@bidplace/design-tokens';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, expectTypeOf, it, vi } from 'vitest';
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
@@ -34,6 +35,20 @@ function flattenStyle(style: unknown): Record<string, unknown> {
 const SAMPLE_SHELL_WIDTH = 82.71875;
 const SAMPLE_SHELL_HEIGHT = 43;
 
+function layoutRect(width: number, height: number): DOMRect {
+  return {
+    x: 0,
+    y: 0,
+    top: 0,
+    left: 0,
+    right: width,
+    bottom: height,
+    width,
+    height,
+    toJSON: () => ({}),
+  } as DOMRect;
+}
+
 function attachFractionalLayout(
   node: HTMLElement | null,
   onLayout?: (event: {
@@ -42,10 +57,18 @@ function attachFractionalLayout(
       target: HTMLElement;
     };
   }) => void,
+  visible = true,
 ) {
   if (!node || !onLayout) return;
   node.style.width = `${SAMPLE_SHELL_WIDTH}px`;
   node.style.height = `${SAMPLE_SHELL_HEIGHT}px`;
+  if (visible) {
+    const rect = layoutRect(SAMPLE_SHELL_WIDTH, SAMPLE_SHELL_HEIGHT);
+    node.getBoundingClientRect = () => rect;
+    node.getClientRects = () => [rect] as unknown as DOMRectList;
+  } else {
+    node.getClientRects = () => [] as unknown as DOMRectList;
+  }
   onLayout({
     nativeEvent: {
       layout: { width: 83, height: 43 },
@@ -126,7 +149,9 @@ vi.mock('react-native', () => ({
   Pressable: forwardRef(function Pressable(
     props: {
       style?: unknown;
-      children?: ReactNode | ((state: { pressed: boolean; hovered: boolean }) => ReactNode);
+      children?:
+        | ReactNode
+        | ((state: { pressed: boolean; hovered: boolean }) => ReactNode);
       accessibilityLabel?: string;
       accessibilityHint?: string;
       accessibilityState?: { disabled?: boolean; busy?: boolean };
@@ -147,9 +172,12 @@ vi.mock('react-native', () => ({
     const resolve = (state: { pressed: boolean; hovered: boolean }) =>
       flattenStyle(
         typeof props.style === 'function'
-          ? (props.style as (state: { pressed: boolean; hovered: boolean }) => unknown)(
-              state,
-            )
+          ? (
+              props.style as (state: {
+                pressed: boolean;
+                hovered: boolean;
+              }) => unknown
+            )(state)
           : props.style,
       );
     const flat = resolve({ pressed: false, hovered: false });
@@ -177,7 +205,8 @@ vi.mock('react-native', () => ({
         'data-bg': String(flat.backgroundColor ?? ''),
         'data-opacity': String(flat.opacity ?? ''),
         'data-align-self': String(flat.alignSelf ?? ''),
-        'data-hit-top': props.hitSlop?.top == null ? '' : String(props.hitSlop.top),
+        'data-hit-top':
+          props.hitSlop?.top == null ? '' : String(props.hitSlop.top),
         onClick: () => {
           if (!inactive) props.onPress?.();
         },
@@ -190,13 +219,7 @@ vi.mock('react-native', () => ({
 }));
 
 vi.mock('expo-router', () => ({
-  Link: ({
-    asChild,
-    children,
-  }: {
-    asChild?: boolean;
-    children: ReactNode;
-  }) => {
+  Link: ({ asChild, children }: { asChild?: boolean; children: ReactNode }) => {
     if (!asChild || !isValidElement(children)) return children;
     const rawStyle = (children.props as { style?: unknown }).style;
     const style =
@@ -228,7 +251,8 @@ vi.mock('react-native-svg', () => ({
       },
       children,
     ),
-  Defs: ({ children }: { children?: ReactNode }) => createElement('defs', null, children),
+  Defs: ({ children }: { children?: ReactNode }) =>
+    createElement('defs', null, children),
   LinearGradient: ({
     children,
     x2,
@@ -248,12 +272,18 @@ vi.mock('@hugeicons/react-native', () => ({
 }));
 
 import {
+  type ButtonProps,
+  type TextButtonProps,
   DestructiveButton,
   PrimaryButton,
   SecondaryButton,
   TextButton,
 } from './Button';
-import { FigmaButton, FigmaButtonStatePreview } from '../figma/FigmaButton';
+import {
+  FigmaButton,
+  FigmaButtonStatePreview,
+  type FigmaButtonProps,
+} from '../figma/FigmaButton';
 import { FigmaButtonSurface } from '../figma/FigmaButtonSurface';
 
 afterEach(() => {
@@ -287,15 +317,23 @@ function buttonOf(container: ParentNode) {
   return button;
 }
 
+function interactiveOf(container: ParentNode) {
+  const node = container.querySelector('button');
+  if (!node) throw new Error('expected an interactive control');
+  return node;
+}
+
 function expectMatrixMetrics(button: HTMLButtonElement) {
   expect(button.dataset.padX).toBe(
     String(
-      figmaButtonTokens.metrics.paddingX + figmaButtonTokens.metrics.strokeWidth,
+      figmaButtonTokens.metrics.paddingX +
+        figmaButtonTokens.metrics.strokeWidth,
     ),
   );
   expect(button.dataset.padY).toBe(
     String(
-      figmaButtonTokens.metrics.paddingY + figmaButtonTokens.metrics.strokeWidth,
+      figmaButtonTokens.metrics.paddingY +
+        figmaButtonTokens.metrics.strokeWidth,
     ),
   );
   expect(button.dataset.radius).toBe(String(figmaButtonTokens.metrics.radius));
@@ -346,12 +384,16 @@ describe('shared text button wrappers', () => {
     const primaryButton = buttonOf(primary.container);
     expectMatrixMetrics(primaryButton);
     expect(primaryButton.dataset.bg).toBe('transparent');
-    expect(svgRects(primary.container)[0]?.fill).toBe(figmaButtonTokens.colors.solidIdle);
+    expect(svgRects(primary.container)[0]?.fill).toBe(
+      figmaButtonTokens.colors.solidIdle,
+    );
 
     const secondaryButton = buttonOf(secondary.container);
     expectMatrixMetrics(secondaryButton);
     expect(secondaryButton.dataset.bg).toBe('transparent');
-    expect(svgRects(secondary.container)[0]?.fill).toBe(figmaButtonTokens.colors.canvas);
+    expect(svgRects(secondary.container)[0]?.fill).toBe(
+      figmaButtonTokens.colors.canvas,
+    );
 
     const destructiveButton = buttonOf(destructive.container);
     expectMatrixMetrics(destructiveButton);
@@ -390,18 +432,26 @@ describe('shared text button wrappers', () => {
     expect(authButton.querySelector('span')?.dataset.fontSize).toBe(
       String(figmaButtonTokens.typography.fontSize),
     );
-    expect(svgRects(auth.container)[0]?.fill).toBe(figmaButtonTokens.colors.solidIdle);
+    expect(svgRects(auth.container)[0]?.fill).toBe(
+      figmaButtonTokens.colors.solidIdle,
+    );
     const chipButton = buttonOf(chip.container);
     expect(chipButton.dataset.padX).toBe(
-      String(designTokens.auth.suggestionX + figmaButtonTokens.metrics.strokeWidth),
+      String(
+        designTokens.auth.suggestionX + figmaButtonTokens.metrics.strokeWidth,
+      ),
     );
     expect(chipButton.dataset.padY).toBe(
-      String(designTokens.auth.suggestionY + figmaButtonTokens.metrics.strokeWidth),
+      String(
+        designTokens.auth.suggestionY + figmaButtonTokens.metrics.strokeWidth,
+      ),
     );
     expect(chipButton.querySelector('span')?.dataset.fontSize).toBe(
       String(designTokens.typography.authSuggestion.fontSize),
     );
-    expect(svgRects(chip.container)[0]?.fill).toBe(figmaButtonTokens.colors.canvas);
+    expect(svgRects(chip.container)[0]?.fill).toBe(
+      figmaButtonTokens.colors.canvas,
+    );
     auth.unmount();
     chip.unmount();
   });
@@ -486,6 +536,19 @@ describe('shared text button wrappers', () => {
     view.unmount();
   });
 
+  it('skips SVG paint when border-box layout is zero', async () => {
+    const view = await mount(
+      createElement(FigmaButtonSurface, {
+        variant: 'solid',
+        interaction: 'idle',
+        width: 0,
+        height: 0,
+      }),
+    );
+    expect(view.container.querySelector('svg')).toBeNull();
+    view.unmount();
+  });
+
   it('does not round fractional sample shells to an 83-wide SVG viewport', async () => {
     const view = await mount(
       createElement(FigmaButtonSurface, {
@@ -511,8 +574,162 @@ describe('shared text button wrappers', () => {
     );
     const link = buttonOf(view.container);
     expect(link.dataset.role).toBe('link');
+    expect(link.getAttribute('aria-label')).toBe('Модерация');
     expectMatrixMetrics(link);
     expect(link.dataset.bg).toBe('transparent');
     view.unmount();
+  });
+
+  it('exposes button semantics and label for onPress actions', async () => {
+    const view = await mount(
+      createElement(FigmaButton, {
+        label: 'Сохранить',
+        onPress: () => undefined,
+      }),
+    );
+    const control = buttonOf(view.container);
+    expect(control.dataset.role).toBe('button');
+    expect(control.getAttribute('aria-label')).toBe('Сохранить');
+    view.unmount();
+  });
+
+  it('forwards href through semantic button wrappers with link role', async () => {
+    const cases = [
+      {
+        name: 'primary',
+        node: createElement(PrimaryButton, {
+          label: 'Создать',
+          href: '/products/new',
+          width: 'full',
+        }),
+      },
+      {
+        name: 'secondary',
+        node: createElement(SecondaryButton, {
+          label: 'Профиль',
+          href: '/profile',
+        }),
+      },
+      {
+        name: 'text',
+        node: createElement(TextButton, {
+          label: 'Автор',
+          href: {
+            pathname: '/seller/[slug]',
+            params: { slug: 'demo' },
+          },
+        }),
+      },
+    ] as const;
+
+    for (const caseItem of cases) {
+      const view = await mount(caseItem.node);
+      const control = interactiveOf(view.container);
+      expect(control.dataset.role).toBe('link');
+      expect(control.getAttribute('aria-label')).toBe(
+        caseItem.node.props.label as string,
+      );
+      view.unmount();
+    }
+  });
+
+  it('keeps disabled and loading href controls inert', async () => {
+    const disabled = await mount(
+      createElement(FigmaButton, {
+        label: 'Кабинет',
+        href: '/cabinet',
+        disabled: true,
+      }),
+    );
+    const loading = await mount(
+      createElement(PrimaryButton, {
+        label: 'Дальше',
+        href: '/register',
+        loading: true,
+      }),
+    );
+
+    const disabledControl = buttonOf(disabled.container);
+    const loadingControl = buttonOf(loading.container);
+    expect(disabledControl.disabled).toBe(true);
+    expect(disabledControl.getAttribute('aria-disabled')).toBe('true');
+    expect(loadingControl.disabled).toBe(true);
+    expect(loadingControl.getAttribute('aria-busy')).toBe('true');
+
+    disabled.unmount();
+    loading.unmount();
+  });
+});
+
+describe('button href/onPress type contract', () => {
+  type PrimaryProps = ComponentProps<typeof PrimaryButton>;
+  type SecondaryProps = ComponentProps<typeof SecondaryButton>;
+  type DestructiveProps = ComponentProps<typeof DestructiveButton>;
+
+  const hrefAndOnPress = {
+    label: 'Пример',
+    href: '/cabinet' as const,
+    onPress: () => undefined,
+  };
+
+  const labelOnly = { label: 'Пример' };
+
+  const objectHref = {
+    label: 'Регистрация',
+    href: { pathname: '/register' as const, params: { redirectTo: '/' } },
+  };
+
+  const invalidHref = { label: 'Пример', href: 123 };
+
+  it('FigmaButton accepts onPress, string href, or object href', () => {
+    expectTypeOf<{ label: string; onPress: () => void }>().toMatchTypeOf<
+      FigmaButtonProps
+    >();
+    expectTypeOf<{ label: string; href: '/profile' }>().toMatchTypeOf<
+      FigmaButtonProps
+    >();
+    expectTypeOf(objectHref).toMatchTypeOf<FigmaButtonProps>();
+  });
+
+  it('FigmaButton rejects missing action, both actions, or invalid href', () => {
+    expectTypeOf(labelOnly).not.toMatchTypeOf<FigmaButtonProps>();
+    expectTypeOf(hrefAndOnPress).not.toMatchTypeOf<FigmaButtonProps>();
+    expectTypeOf(invalidHref).not.toMatchTypeOf<FigmaButtonProps>();
+  });
+
+  it('TextButton keeps the href/onPress union on public props', () => {
+    expectTypeOf<{ label: string; onPress: () => void }>().toMatchTypeOf<
+      TextButtonProps
+    >();
+    expectTypeOf<{ label: string; href: '/profile' }>().toMatchTypeOf<
+      TextButtonProps
+    >();
+    expectTypeOf(objectHref).toMatchTypeOf<TextButtonProps>();
+    expectTypeOf(labelOnly).not.toMatchTypeOf<TextButtonProps>();
+    expectTypeOf(hrefAndOnPress).not.toMatchTypeOf<TextButtonProps>();
+    expectTypeOf(invalidHref).not.toMatchTypeOf<TextButtonProps>();
+    expectTypeOf(labelOnly).not.toMatchTypeOf<
+      ComponentProps<typeof TextButton>
+    >();
+    expectTypeOf(hrefAndOnPress).not.toMatchTypeOf<
+      ComponentProps<typeof TextButton>
+    >();
+  });
+
+  it('semantic wrappers share ButtonProps navigation contract', () => {
+    expectTypeOf<{ label: string; onPress: () => void }>().toMatchTypeOf<
+      ButtonProps
+    >();
+    expectTypeOf<{ label: string; href: '/profile' }>().toMatchTypeOf<
+      ButtonProps
+    >();
+    expectTypeOf(objectHref).toMatchTypeOf<ButtonProps>();
+    expectTypeOf(labelOnly).not.toMatchTypeOf<ButtonProps>();
+    expectTypeOf(hrefAndOnPress).not.toMatchTypeOf<ButtonProps>();
+
+    expectTypeOf(hrefAndOnPress).not.toMatchTypeOf<PrimaryProps>();
+    expectTypeOf(hrefAndOnPress).not.toMatchTypeOf<SecondaryProps>();
+    expectTypeOf(hrefAndOnPress).not.toMatchTypeOf<DestructiveProps>();
+    expectTypeOf(labelOnly).not.toMatchTypeOf<PrimaryProps>();
   });
 });

@@ -13,6 +13,7 @@ export default function RegisterScreen() {
       tone="section"
       presentation="screen"
       redirectTo={safeRedirect}
+      protectEnteredData
       exit={{
         title: 'Прервать регистрацию',
         description: 'Аккаунт не создаётся, пока регистрация не завершена.',

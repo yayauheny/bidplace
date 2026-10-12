@@ -1,6 +1,6 @@
 # bidplace — журнал решений
 
-Последнее обновление: 2026-10-07
+Последнее обновление: 2026-10-12
 
 Записи не удаляются. При пересмотре создаётся новая запись со ссылкой на старую.
 
@@ -2640,3 +2640,253 @@ gradients.
 
 Handoff: `design/figma-handoff/buttons/2026-10-10-buttons/`. Read-only portfolio
 library and canonical Pen are unchanged.
+
+## DEC-111 — Entered-data confirmation stays on registration only
+
+Date: 2026-10-11
+Status: Confirmed
+Source: refined designer and founder decision.
+
+Revises the runtime scope of the shared exit confirmation from `DEC-105`.
+The dialog component and its registration copy stay. Login, forgot-password,
+reset-password, and email verification no longer ask before closing, including
+when their fields contain input. Close, Escape, backdrop, and Back/Forward use
+that same policy. Registration explicitly protects entered data: an empty
+registration leaves without asking; a registration with input asks before an
+exit that leaves auth. Continue keeps the current step, values, and focus.
+Interrupt performs the chosen exit. Movement between auth routes still does
+not ask.
+
+An in-flight request still keeps the sheet. Leaving does not abort that
+request, delete an account, or replace a newer session. A late response from
+a login the user already left does not navigate. This decision does not change
+button geometry, Turnstile, auth contracts, or persistence.
+
+## DEC-112 — Portfolio Work story uses revision-owned blocks
+
+Date: 2026-10-11
+Status: Confirmed product decision; implementation planned
+Source: explicit founder answer to the story/MVP scope question.
+
+Revises: the plain-text authoring and automatic gallery-interleaving scope of
+`DEC-092`/`DEC-093`, and the story-builder deferral in `DEC-082` / RFC §10/§15.
+The earlier decision entries remain unchanged as history.
+
+The current portfolio MVP includes optional ordered `HEADING`, `PARAGRAPH`,
+`IMAGE` blocks, with add/delete/up/down and a server-confirmed save. Gallery and
+story have independent order; an image may be referenced in both via the existing
+`MediaAsset`. The selected target binds blocks to `ProductRevision` and reuses
+the existing moderation/publication/media boundaries. Published content remains
+on the last approved revision while a new revision is edited/reviewed.
+
+Video, rich-text/HTML/Markdown, AI fill and commerce screens remain out of this
+MVP. Numeric block/text limits and the migration of existing story data still
+require a bounded implementation plan; the proposed 5/20 limits are not approved
+merely by accepting the block editor.
+
+Contract owner: [05-MVP-RFC.md](05-MVP-RFC.md). Execution plan:
+[author/story backend](../tasks/2026-10-11-author-story-backend/PLAN.md).
+Deferred trade screens and video: [15-POST-MVP-BACKLOG.md](15-POST-MVP-BACKLOG.md).
+
+## DEC-113 — Shared approved classifiers now; user proposals after MVP
+
+Date: 2026-10-11
+Status: Confirmed product decision; implementation planned
+Source: explicit founder answer selecting common dictionaries now and deferring proposals.
+
+Categories, materials/techniques and author directions use shared approved
+dictionaries with stable IDs and a safely bootstrapped initial set. Forms,
+checkboxes/chips and public filters use those same records. No separate copy of
+the list belongs to each screen. The exact initial set and term applicability
+must be checked against the capture and existing data before migration.
+
+User-created suggestions, approval/mapping/rejection, admin proposal queues and
+controlled reclassification are explicitly deferred; their scope is preserved
+in [15-POST-MVP-BACKLOG.md §5](15-POST-MVP-BACKLOG.md#5-медиа-и-creator-profile).
+This does not approve an arbitrary initial category list from an attached proposal.
+
+Contract owner: [05-MVP-RFC.md](05-MVP-RFC.md). Execution plan:
+[author/story backend](../tasks/2026-10-11-author-story-backend/PLAN.md).
+
+## DEC-114 — Country selection hides codes; city is optional
+
+Date: 2026-10-11
+Status: Confirmed product decision; implementation planned
+Source: explicit founder geography answer: popup list/search, country names only.
+
+Revises: mandatory city in RFC §8. Country remains required and is selected
+from a searchable popup. The UI shows a localized country name; the standard
+country code is internal storage/API data. City is one optional text value,
+without a city table, geocoding, multiple locations or delivery geography.
+An approved author is not hidden just because city is absent. Country selection
+does not itself authorize a new launch country.
+
+The change must cover validation, profile/revision writes, submit readiness,
+public author/work projections, search/facets and their consumers together.
+The old country strings need an explicit migration mapping, not silent guessing.
+
+Contract owner: [05-MVP-RFC.md](05-MVP-RFC.md). Execution plan:
+[author/story backend](../tasks/2026-10-11-author-story-backend/PLAN.md).
+
+## DEC-115 — Next wave adds sales; one complete post-MVP plan
+
+Date: 2026-10-11
+Status: Confirmed direction; sales mechanics and implementation remain planned
+Source: explicit founder request to preserve all deferred work and make the next
+wave sales through the platform.
+
+The current launch remains portfolio-only. The next wave introduces sales,
+including the price/auction direction and required complaint/problem handling.
+[15-POST-MVP-BACKLOG.md](15-POST-MVP-BACKLOG.md) is the single product entrypoint
+for the complete future plan. The index routes auction/sales planning there;
+the execution backlog maps work without duplicating the full product contract.
+
+The plan must retain deferred Figma trade screens, classifier proposals, prices,
+auctions, buyer eligibility, Listings/Orders/handoff, double-sale prevention,
+complaints/moderation, notifications, privacy, legal and release gates. It must
+distinguish selected decisions, open mechanics, runtime evidence and later ideas.
+An auction plan cannot omit these boundaries by reducing the work to a price
+field or restoring an archived module.
+
+This direction does not approve unspecified auction timings, offer/second-chance
+rules, new countries, platform custody of money, escrow, fees or shipping services.
+Those require their own decisions before dependent implementation.
+
+## DEC-116 — Eighteen categories, proposals in MVP, story limits
+
+Date: 2026-10-11
+Status: Confirmed; backend implemented, client integration not started
+Source: explicit founder instruction for the author-story backend.
+
+Revises the deferred-proposal part of `DEC-113`. User proposals for a missing
+category, material or technique are in the current MVP. The author selects the
+existing category «Другое» when proposing a category name. A proposal stores the
+raw name, a Unicode/case/space normalized value, status and review result. It is
+not a substitute foreign key. Confirming it writes the real category or term onto
+the pending Work revision and does not publish the Work. Rejecting a still
+selected proposal returns that revision for changes. An old rejected proposal
+that the author has removed no longer blocks resubmission. Published revisions
+are not rewritten. MVP merge means mapping one proposal to an existing record.
+Bulk reassignment of terms already in use stays after MVP.
+
+Confirms the rest of `DEC-113`: one shared Category table, one CatalogTerm
+dictionary with material and technique roles, stable IDs, and idempotent
+bootstrap that does not delete rows or undo an admin rename or hide.
+
+The starting categories are the eighteen named in
+[08-SELLER-AND-ITEM-POLICY.md §5](08-SELLER-AND-ITEM-POLICY.md). Digital art as
+a standalone file is out. Author directions are several of those category IDs,
+not material names. Hiding a category does not hide works already approved with
+it. A category does not waive authorship or the ban on mass resale.
+
+New achievements are a MONTH/DAY date and a description. This flow no longer
+accepts an image. The profile photo stays. City stays optional (`DEC-114`).
+
+Story limits are five images, twenty heading and paragraph blocks together,
+200 / 5000 / 300 characters, the existing 5 MiB file cap, and a separate 20 MiB
+story-photo budget. An empty story and an image-only story are valid.
+
+Contract owner: [05-MVP-RFC.md](05-MVP-RFC.md). Client follow-up:
+[UI-HANDOFF.md](../tasks/2026-10-11-author-story-backend/UI-HANDOFF.md).
+
+---
+
+## DEC-117 — Author basics step copy, country popup and city clearing
+
+Date: 2026-10-12
+Status: Confirmed for the requester's answers in the author-application-figma task; extends `DEC-114` and `DEC-116` without revising them.
+Source: explicit answers recorded during that task on 2026-10-12.
+
+### Decision
+
+Step 1 of the author application uses the subtitle «Город можно не указывать».
+Its placeholders are «Ваше имя фамилия, (обязательное)», «Никнейм, (обязательное)»
+and «Страна (обязательное)», and the city placeholder is «Город». Step 1 shows no
+extra asterisk marks, and the validation does not depend on a visual marker.
+
+Country starts empty. «Продолжить» stays unavailable until a country is chosen, and
+a saved country is not replaced by a default. The popup reuses the shared filter
+sheet with search and radio rows. The shown value is the country name; the stored
+and sent value is the ISO code. City is an optional separate field under the country.
+
+Clearing the city goes in one save. The `PATCH` is `multipart/form-data`: profile
+JSON in the `data` part and the photo in the `profilePhoto` part. An absent field
+keeps the stored value, `null` clears it, and `[]` clears a list. The string `"null"`
+is not used. The shared serializer is unchanged.
+
+The initial photo state has no «Фото обязательно» line. The requirement stays in
+readiness and the server contract. Upload, selection and validation errors use the
+existing mechanisms. The logout action is a ghost «Выйти» below «Продолжить» in the
+normal flow. The field variant `authorApplication` changes only the empty border and
+the placeholder to `#999999`; icons keep their color.
+
+### Alternatives
+
+- A separate clear request or a second save for the city was rejected: it breaks one
+  save per user action.
+- Sending the city as the string `"null"` or an empty string was rejected: it mixes
+  a clear marker with user text.
+
+### Rationale
+
+The Figma copy and shared components stay as they are. City remains optional under
+`DEC-114`, so the wire format needs one explicit clear marker and no new endpoint.
+
+### Revisit when
+
+The step-3 direction control is implemented, or the placeholder or field copy is
+changed by the founder or the assigned designer.
+
+
+## DEC-118 — One legal handoff, DEC-078 registration and target retention
+
+Date: 2026-10-12
+Status: Confirmed product/documentation decisions; analytics legal basis Open
+Source: explicit founder answers in the legal consolidation session and repeated
+handwritten consultation notes identified by the founder as notes, not a transcript.
+
+### Decision
+
+- This task consolidates the audit and prepares legal texts. Connecting pages,
+  cookies/consents to UI/API is a separate task; runtime is not changed here.
+- Reaffirm DEC-078: three separate mandatory registration items (agreement,
+  policy acknowledgement, PD consent for the main service), plus separate 18+.
+  Analytics and marketing as distinct purposes are not silently bundled into them.
+- The first MVP has no auctions, purchases, payments, delivery or reviews. Preserve
+  future terms in an explicitly inactive annex; its presence does not activate a
+  feature or provide advance consent to every future processing purpose.
+- Keep the current immediately enabled analytics. Its legal basis remains open
+  until a specific Belarus lawyer answer addresses the actual persistent ID,
+  events, attribution, account linkage and infrastructure. A policy acknowledgement
+  is not recorded as that answer or as optional consent.
+- IP registration is reported complete. Public contact is `work.evles@gmail.com`;
+  `693460361` is a registration number, not a confirmed UNP. The home address is not
+  published. Full legal name/UNP and correspondence requirements remain factual
+  publication inputs, with public values suitable for GitHub Variables.
+- Neon is reported located in Frankfurt, Germany; R2 provider is Cloudflare.
+  Do not infer R2/backup geography or contract conditions from the provider name.
+- Adopt the retention schedule in the legal audit: main service data for the
+  service duration and removal from working systems within 30 calendar days after
+  a substantiated request; incomplete accounts and expired/used OTP/reset records
+  30 days; security logs 30 days; analytics 90 days; acceptance evidence 3 years
+  after termination, moderation/request evidence 3 years after resolution; backups
+  30 days. Mandatory shorter legal deadlines take precedence. Cleanup/restore
+  reapplication is a separate implementation and release requirement.
+- Restore historical consultation/closed-question evidence in the archive;
+  preserve source text and the new raw notes. Do not reclassify all settled points
+  as unanswered merely because the September manifest used a broad pending status.
+
+### Revises
+
+Reaffirms DEC-077/078 and DEC-082–084. Revises the indefinite retention assumption
+of DEC-047 as a target policy only; actual persistence remains unchanged. Does not
+override mandatory legal rules, close analytics legal review, approve missing
+operator/infrastructure facts or replace the temporary text allowed by DEC-103.
+
+### Ownership and verification
+
+Current legal owner: [final legal audit](../legal/00-FINAL-LEGAL-AUDIT.md).
+Public text owners are under `docs/legal/site`; future terms have one inactive
+annex. No schema, architecture, runtime or design change. See the audit for observed
+boundaries and publication requirements rather than duplicating the schedule here
+in future tasks.

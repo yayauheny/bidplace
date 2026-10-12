@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { figmaIconNames } from './figma-icon-names';
 
 describe('Figma icon registry', () => {
-  it('keeps the Компоненты icon set plus dock extras', () => {
+  it('keeps the Компоненты icon set plus dock and author application extras', () => {
     expect(figmaIconNames).toEqual([
       'filter-horizontal',
       'arrow-up-down',
@@ -33,6 +33,8 @@ describe('Figma icon registry', () => {
       'ai-magic',
       'user',
       'shopping-basket-01',
+      'image-add-02',
+      'check',
     ]);
   });
 });

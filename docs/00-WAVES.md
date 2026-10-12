@@ -1,6 +1,6 @@
 # Волны bidplace
 
-Дата: 2026-09-08
+Последнее обновление: 2026-10-11
 
 ## Волна 1 — First portfolio MVP
 
@@ -11,7 +11,11 @@ security/operations gate. Точный контракт: [`product/05-MVP-RFC.md
 
 ## Волна 2 — улучшение портфолио и commerce
 
-Commerce-код не удаляется, но в первой волне выключен fail-closed. Исследование,
+Следующая волна добавляет продажи через площадку (`DEC-115`): цены, аукционы,
+сделки, жалобы и необходимые торговые экраны. Полная карта и открытые вопросы
+находятся у одного owner — [product/15-POST-MVP-BACKLOG.md](product/15-POST-MVP-BACKLOG.md).
+Текущий runtime остаётся portfolio-only; наличие archive не разрешает его включение.
+Исследование,
 auction/fixed/offer, Orders/handoff, chat/reviews, richer media, subscription, payments,
 quantity, languages и остальные направления сохранены в:
 

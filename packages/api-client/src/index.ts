@@ -4,6 +4,7 @@ import { createAdminClient } from './admin';
 import { createAnalyticsClient } from './analytics';
 import { createAuthClient } from './auth';
 import { createCategoriesClient } from './categories';
+import { createCountriesClient } from './countries';
 export {
   ApiClientError,
   classifyApiError,
@@ -30,9 +31,9 @@ export function createApiClient(options: ApiClientOptions) {
 
   return {
     baseUrl: context.baseUrl,
-    request<T>(
+    request<TSchema extends ZodType>(
       path: string,
-      schema: ZodType<T>,
+      schema: TSchema,
       requestOptions?: RequestOptions,
     ) {
       return requestJson(context, path, schema, requestOptions);
@@ -45,6 +46,7 @@ export function createApiClient(options: ApiClientOptions) {
     sellers: createSellersClient(context),
     admin: createAdminClient(context),
     categories: createCategoriesClient(context),
+    countries: createCountriesClient(context),
   };
 }
 
