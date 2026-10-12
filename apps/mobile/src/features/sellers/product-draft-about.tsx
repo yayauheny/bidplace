@@ -102,6 +102,13 @@ export function ProductDraftAboutStep({
     categoryId,
     title,
   });
+  const rejectedCategoryProposal = selection?.proposals.find(
+    (proposal) =>
+      proposal.kind === 'CATEGORY' &&
+      proposal.selected &&
+      proposal.status === 'REJECTED' &&
+      proposal.normalizedName === normalizeCatalogName(categoryProposal),
+  );
   const yearError = typeof errors.year?.message === 'string' ? errors.year.message : undefined;
   const canSaveStepOne = !requiredErrors.categoryId && !requiredErrors.title && !yearError;
   const titleLabel = isCreationFlow ? 'Сохранить и продолжить' : 'Сохранить изменения';
@@ -174,15 +181,11 @@ export function ProductDraftAboutStep({
                 placeholder="Укажите название, если нужной категории нет"
                 editable={editable}
               />
-              {selection?.proposals.some(
-                (proposal) =>
-                  proposal.kind === 'CATEGORY' &&
-                  proposal.selected &&
-                  proposal.status === 'REJECTED' &&
-                  proposal.normalizedName === normalizeCatalogName(categoryProposal),
-              ) ? (
+              {rejectedCategoryProposal ? (
                 <AppText role="bodySmall" tone="danger">
-                  Предложение категории отклонено модератором. Измените или удалите его.
+                  {rejectedCategoryProposal.rejectionReason
+                    ? `Отклонено: ${rejectedCategoryProposal.rejectionReason}`
+                    : 'Предложение категории отклонено. Измените или удалите его.'}
                 </AppText>
               ) : null}
             </>
