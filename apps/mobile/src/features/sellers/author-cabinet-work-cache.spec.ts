@@ -22,6 +22,26 @@ const harness = vi.hoisted(() => ({
   publicReads: { count: 0 },
 }));
 
+vi.mock('../../components/figma/FigmaSelectField', () => ({
+  FigmaSelectField: ({
+    label,
+    value,
+    onPress,
+  }: {
+    label: string;
+    value: string;
+    onPress: () => void;
+  }) => createElement('button', {
+    type: 'button',
+    'aria-label': label,
+    onClick: onPress,
+  }, value || label),
+}));
+
+vi.mock('./product-catalog-term-sheet', () => ({
+  ProductCatalogTermSheet: () => null,
+}));
+
 vi.mock('react-native', () => ({
   Platform: { OS: 'web' },
   View: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
@@ -53,6 +73,7 @@ vi.mock('../../providers/auth-provider', () => ({
 vi.mock('../../providers/api-provider', () => ({
   useApiClient: () => ({
     categories: { list: harness.listCategories },
+    catalog: { listTerms: async () => ({ terms: [] }) },
     sellers: { getProduct: harness.getProduct, getMyProfile: harness.getMyProfile },
     products: { create: vi.fn(), update: harness.updateProduct, submit: vi.fn() },
     images: { add: vi.fn(), remove: vi.fn(), reorder: vi.fn() },
