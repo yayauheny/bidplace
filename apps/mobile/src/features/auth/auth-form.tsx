@@ -633,6 +633,7 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
     },
   });
   const watched = form.watch();
+  const registrationValuesSnapshot = JSON.stringify(watched);
   const {
     check: checkSlugAvailability,
     invalidate: invalidateSlugAvailability,
@@ -683,10 +684,10 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
     };
   }, []);
   useEffect(() => {
-    if (!registerSnapshot.current || !registerTransport.current) return;
-    const current = JSON.stringify([watched.email, watched.slug, watched.password, watched.agreementAccepted, watched.privacyAcknowledged, watched.dataConsentGiven, watched.age18Confirmed]);
-    if (current !== registerSnapshot.current) registerTransport.current.abort();
-  }, [watched.email, watched.password, watched.slug, watched.agreementAccepted, watched.privacyAcknowledged, watched.dataConsentGiven, watched.age18Confirmed]);
+    if (registerSnapshot.current && registerTransport.current && registrationValuesSnapshot !== registerSnapshot.current) {
+      registerTransport.current.abort();
+    }
+  }, [registrationValuesSnapshot]);
   useEffect(() => {
     const markBlurred = () => {
       focusedRef.current = false;
@@ -791,7 +792,7 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
     registerTransport.current?.abort();
     const controller = new AbortController();
     registerTransport.current = controller;
-    registerSnapshot.current = JSON.stringify([values.email, values.slug, values.password, values.agreementAccepted, values.privacyAcknowledged, values.dataConsentGiven, values.age18Confirmed]);
+    registerSnapshot.current = JSON.stringify(form.getValues());
     const token = proof;
     setProof(null);
     setWidgetGeneration((generation) => generation + 1);

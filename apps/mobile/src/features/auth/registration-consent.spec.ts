@@ -29,12 +29,14 @@ const harness = vi.hoisted(() => ({
   slugAvailability: vi.fn<(slug: string) => Promise<{ available: boolean }>>(),
   replace: vi.fn(),
   identify: vi.fn(),
+  openURL: vi.fn(),
   tick: () => undefined as void,
   client: null as QueryClient | null,
 }));
 
 vi.mock('react-native', () => ({
   Platform: { OS: 'web' },
+  Linking: { openURL: harness.openURL },
   View: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
   Text: ({
     children,
@@ -172,7 +174,7 @@ vi.mock('../../providers/api-provider', () => ({
         return {
           version,
           documents: [
-            { id: 'agreement', title: 'Пользовательское соглашение', version, markdown: '# Соглашение\\n\\nДоговор для портфолио.' },
+            { id: 'agreement', title: 'Пользовательское соглашение', version, markdown: '# Соглашение\n\nДоговор для портфолио.\n\n| Термин | Значение |\n| --- | --- |\n| Сервис | bidplace |\n\nhttps://bid.place/legal' },
             { id: 'privacy', title: 'Политика и cookies', version, markdown: '# Политика\\n\\nДанные.' },
             { id: 'data-consent', title: 'Согласие на обработку данных', version, markdown: '# Согласие\\n\\nОбработка.' },
             { id: 'author-rules', title: 'Правила авторов', version, markdown: '# Правила авторов' },
@@ -420,6 +422,7 @@ afterEach(() => {
   harness.slugAvailability.mockReset();
   harness.replace.mockReset();
   harness.identify.mockReset();
+  harness.openURL.mockReset();
   harness.client = null;
 });
 
@@ -665,6 +668,15 @@ describe('registration consent attempt', () => {
     await until(view.container, 'Редакция документов: portfolio-legal-2026-10-12');
     clickLegalLink(view.container, 'Пользовательское соглашение');
     await until(view.container, 'Договор для портфолио.');
+    const dialog = view.container.querySelector('[role="dialog"]');
+    expect(dialog?.textContent).toContain('Термин: Сервис');
+    expect(dialog?.textContent).toContain('Значение: bidplace');
+    const url = [...(dialog?.querySelectorAll('[role="link"]') ?? [])].find((node) =>
+      node.textContent === 'https://bid.place/legal',
+    );
+    expect(url).toBeDefined();
+    act(() => { if (url instanceof HTMLElement) url.click(); });
+    expect(harness.openURL).toHaveBeenCalledWith('https://bid.place/legal');
     expect(harness.legalReads).toBe(2);
     expect(view.container.querySelector('[aria-label="Электронная почта"]')).toHaveProperty('value', 'a@example.com');
     view.unmount();
@@ -727,6 +739,21 @@ describe('registration consent attempt', () => {
     clickButton(view.container, 'Дальше');
     await flush();
     expect(harness.registers).toBe(1);
+    expect(harness.replace).not.toHaveBeenCalled();
+    view.unmount();
+  });
+
+  it('does not install a registration session after confirmation changes during the request', async () => {
+    harness.holdRegister = true;
+    const view = mount();
+    await reachPassword(view.container);
+    clickButton(view.container, 'Дальше');
+    await until(view.container, () => harness.registers === 1, 'registration request');
+    fill(view.container, 'Подтвердите пароль', 'changed-confirmation');
+    await flush();
+    await act(async () => { harness.releaseRegister?.(); });
+    await flush();
+    expect(view.client.getQueryData<User | null>(authKeys.session)).toBeNull();
     expect(harness.replace).not.toHaveBeenCalled();
     view.unmount();
   });
