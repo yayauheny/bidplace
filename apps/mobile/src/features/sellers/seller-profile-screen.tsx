@@ -60,6 +60,7 @@ import { AuthorApplicationExitConfirm } from './author-application-exit-confirm'
 import { AuthorDirectionsPickerSheet } from './author-directions-picker-sheet';
 import { AuthorIntroDialog } from './AuthorIntroDialog';
 import {
+  emptyProfileDraft,
   profileDraftAllowsSave,
   profileDraftSchema,
 } from './profile-validation';
@@ -88,22 +89,21 @@ import {
 } from './seller-profile-wizard';
 import { persistedFieldOverrides } from './reconcile-saved-fields';
 
-const emptyFields: ProfileFields = {
-  slug: '',
-  fullName: '',
-  discipline: '',
-  directionCategoryIds: [],
-  country: '',
-  city: '',
-  practice: '',
-  socialLink: '',
-  telegramUrl: '',
-  instagramUrl: '',
-  websiteUrl: '',
-  publicEmail: '',
-  shortDescription: '',
-};
 const sellerProfileQueryKey = ['seller', 'profile'] as const;
+const profileFieldOrder = [
+  'slug',
+  'fullName',
+  'country',
+  'city',
+  'telegramUrl',
+  'instagramUrl',
+  'websiteUrl',
+  'publicEmail',
+  'directionCategoryIds',
+  'discipline',
+  'practice',
+  'shortDescription',
+] as const;
 
 type SubmittedAuthorApplication = {
   application: {
@@ -294,25 +294,11 @@ export function SellerProfileScreen() {
   const profile = query.data?.sellerProfile;
   const editingRevision = query.data?.editingRevision;
   const form = useForm<ProfileFields>({
-    defaultValues: emptyFields,
+    defaultValues: emptyProfileDraft,
     resolver: zodResolver(profileDraftSchema),
     mode: 'onChange',
     shouldUnregister: false,
   });
-  const profileFieldOrder = [
-    'slug',
-    'fullName',
-    'country',
-    'city',
-    'telegramUrl',
-    'instagramUrl',
-    'websiteUrl',
-    'publicEmail',
-    'directionCategoryIds',
-    'discipline',
-    'practice',
-    'shortDescription',
-  ] as const;
   const [formAlert, setFormAlert] = useState<string | null>(null);
   const formAlertText = formAlert ? (
     <AppText role="bodySmall" tone="danger" accessibilityLiveRegion="polite">
@@ -396,7 +382,6 @@ export function SellerProfileScreen() {
   const authEpoch = usePrivateCacheEpoch(queryClient);
   const seenAuthEpoch = useRef(authEpoch);
   const forceProfileHydration = useRef(false);
-  const validatedEmptyProfile = useRef(false);
   const draftValidation = useRef({ epoch: 0, running: false });
   const missingProfile =
     query.isError &&
@@ -478,13 +463,7 @@ export function SellerProfileScreen() {
   }, [auth.user?.slug, form, profile]);
 
   useEffect(() => {
-    if (query.isLoading) return;
-    if (!profile) {
-      if (missingProfile && !validatedEmptyProfile.current) {
-        validatedEmptyProfile.current = true;
-      }
-      return;
-    }
+    if (query.isLoading || !profile) return;
     const token = hydrationToken ?? null;
     const forced = forceProfileHydration.current;
     if (!token) return;
@@ -499,7 +478,6 @@ export function SellerProfileScreen() {
     form,
     form.formState.isDirty,
     hydrationToken,
-    missingProfile,
     profile,
     query.isLoading,
     queueProfileDraftValidation,
@@ -608,7 +586,6 @@ export function SellerProfileScreen() {
     setPhotoBlob(null);
     setPhotoUri(null);
     forceProfileHydration.current = true;
-    validatedEmptyProfile.current = false;
   }, [authEpoch]);
   const rememberSavedProfile = (
     saved: SellerProfileResponse,
@@ -823,7 +800,7 @@ export function SellerProfileScreen() {
       }
     }
   };
-  const continueFromStep = async (visibleStep: 2 | 3) => {
+  const continueFromStep = async (visibleStep: 1 | 2 | 3) => {
     if (transitionLock.current || achievementWriteBlocksParent()) return;
     const epoch = currentAuthEpoch(queryClient);
     const operation = sessionOperation.current;
@@ -833,7 +810,10 @@ export function SellerProfileScreen() {
     try {
       const saved = await save('transition');
       if (!saved || !stillOwnsStep()) return;
-      if (shouldAdvanceSellerApplication(saved.sellerProfile, visibleStep)) {
+      if (
+        visibleStep !== 1 &&
+        shouldAdvanceSellerApplication(saved.sellerProfile, visibleStep)
+      ) {
         await advanceMutation.mutateAsync(epoch);
         if (!stillOwnsStep()) return;
       }
@@ -1097,32 +1077,7 @@ export function SellerProfileScreen() {
         inputsLocked ||
         achievementWriteActive
       }
-      onPress={() =>
-        void (async () => {
-          if (transitionLock.current || achievementWriteBlocksParent()) return;
-          const epoch = currentAuthEpoch(queryClient);
-          const operation = sessionOperation.current;
-          try {
-            const saved = await save('transition');
-            if (
-              !saved ||
-              sessionOperation.current !== operation ||
-              !canWritePrivateCache(queryClient, epoch)
-            )
-              return;
-            router.push('/profile?step=2');
-          } catch (error) {
-            reportProfileError(
-              error,
-              'seller-profile-step',
-              undefined,
-              operation,
-            );
-          } finally {
-            if (sessionOperation.current === operation) endLockedTransition();
-          }
-        })()
-      }
+      onPress={() => void continueFromStep(1)}
       label="Продолжить"
       size="auth"
       width="block"
@@ -1639,7 +1594,6 @@ export function SellerProfileScreen() {
                   knownDirections={profile?.directions ?? []}
                   onClose={() => setDirectionsPickerOpen(false)}
                   onApply={(ids) => {
-                    if (transitionLock.current) return;
                     if (!fieldsEditable || transitionLock.current) return;
                     form.setValue('directionCategoryIds', ids, {
                       shouldDirty: true,
