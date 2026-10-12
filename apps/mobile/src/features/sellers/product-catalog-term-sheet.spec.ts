@@ -215,6 +215,18 @@ describe('Work catalog term picker', () => {
     view.unmount();
   });
 
+  it('allows removing a previously selected value even if the directory is offline', () => {
+    const view = mount({
+      error: true,
+      selectedIds: [hiddenCanvas.id],
+      knownTerms: [hiddenCanvas],
+    });
+    click(view.container, 'Очистить');
+    click(view.container, 'Применить');
+    expect(view.onApply).toHaveBeenCalledWith([], []);
+    view.unmount();
+  });
+
   it('disables apply and clear in read-only mode', () => {
     const view = mount({ editable: false, selectedIds: [acrylic.id] });
     expect(view.container.textContent).not.toContain('Очистить');
