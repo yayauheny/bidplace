@@ -865,14 +865,16 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
     setSubmitError(null);
     if (step === 'email') {
       const emailOk = await form.trigger('email');
-      const consentOk = await form.trigger([
-        'agreementAccepted', 'privacyAcknowledged', 'dataConsentGiven', 'age18Confirmed',
-      ]);
-      if (!emailOk || !consentOk) return;
+      // Do not blame the visitor for unchecked controls that were disabled
+      // because the operator has not published the legal documents.
       if (!legalDocuments || legalDocuments.documents.length !== 5) {
         setSubmitError('Юридические документы пока недоступны.');
         return;
       }
+      const consentOk = await form.trigger([
+        'agreementAccepted', 'privacyAcknowledged', 'dataConsentGiven', 'age18Confirmed',
+      ]);
+      if (!emailOk || !consentOk) return;
       setStep('nickname');
       return;
     }
@@ -976,8 +978,10 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
       width="full"
       loading={
         form.formState.isSubmitting ||
-        slugAvailability?.status === 'checking'
+        slugAvailability?.status === 'checking' ||
+        (step === 'email' && registrationLegalPending)
       }
+      disabled={step === 'email' && !legalDocuments}
       onPress={() => void goNext()}
     />
   );

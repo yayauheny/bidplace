@@ -215,10 +215,12 @@ vi.mock('../../components/ui', () => ({
   PrimaryButton: ({
     label,
     onPress,
+    disabled,
   }: {
     label: string;
     onPress?: () => void;
-  }) => createElement('button', { type: 'button', onClick: () => onPress?.() }, label),
+    disabled?: boolean;
+  }) => createElement('button', { type: 'button', disabled, onClick: () => onPress?.() }, label),
   TextButton: ({
     label,
     onPress,
