@@ -636,6 +636,10 @@ export function AdminModerationScreen() {
               {visibleProducts.map((product: AdminProduct) => {
                 const content = displayedProduct(product);
                 const review = product.reviewTarget;
+                const selection = review?.selection;
+                const pendingCatalogProposals = selection?.proposals.some(
+                  (proposal) => proposal.selected && proposal.status === 'PENDING',
+                ) ?? false;
                 const productSellerApproved =
                   product.sellerProfile.status === 'APPROVED';
                 const title = content.title ?? 'Без названия';
@@ -689,9 +693,13 @@ export function AdminModerationScreen() {
                       {content.story ?? 'Описание не указано'}
                     </AppText>
                     <AppText role="bodySmall" tone="secondary">
-                      Категория: {content.categoryId ?? 'не указана'} · Техника:{' '}
-                      {content.technique ?? 'не указана'} · Материалы:{' '}
-                      {content.materials ?? 'не указаны'}
+                      Категория: {selection?.category?.name ?? content.categoryId ?? 'не указана'} · Техника:{' '}
+                      {selection
+                        ? selection.techniqueTerms.map((term) => term.name).join(', ') || 'не указана'
+                        : content.technique ?? 'не указана'} · Материалы:{' '}
+                      {selection
+                        ? selection.materialTerms.map((term) => term.name).join(', ') || 'не указаны'
+                        : content.materials ?? 'не указаны'}
                     </AppText>
                     <AppText role="bodySmall" tone="secondary">
                       Размеры: {content.dimensions ?? 'не указаны'} · Вес:{' '}
@@ -767,11 +775,16 @@ export function AdminModerationScreen() {
                         публикации недоступно.
                       </AppText>
                     ) : null}
+                    {review && pendingRevision(review.status) && pendingCatalogProposals ? (
+                      <AppText role="bodySmall" tone="secondary">
+                        Сначала рассмотрите предложения автора по категории, материалам и техникам.
+                      </AppText>
+                    ) : null}
                     {review && pendingRevision(review.status) ? (
                       <PrimaryButton
                         label="Одобрить"
                         loading={productStatus.isPending}
-                        disabled={!productSellerApproved}
+                        disabled={!productSellerApproved || pendingCatalogProposals}
                         onPress={() =>
                           mutateProductStatus({
                             id: product.id,
