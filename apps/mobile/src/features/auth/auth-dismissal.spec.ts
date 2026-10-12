@@ -203,11 +203,21 @@ describe('registration request', () => {
       confirmPassword: 'password123',
       slug: 'author',
       phone: null,
-    })).toEqual({
+      agreementAccepted: true,
+      privacyAcknowledged: true,
+      dataConsentGiven: true,
+      age18Confirmed: true,
+    }, 'portfolio-legal-2026-10-12')).toEqual({
       email: 'author@example.com',
       password: 'password123',
       slug: 'author',
       phone: null,
+      legal: {
+        agreement: { version: 'portfolio-legal-2026-10-12', confirmed: true },
+        privacy: { version: 'portfolio-legal-2026-10-12', confirmed: true },
+        dataConsent: { version: 'portfolio-legal-2026-10-12', confirmed: true },
+        age18Confirmed: true,
+      },
     });
   });
 });
