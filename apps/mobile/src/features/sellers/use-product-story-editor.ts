@@ -239,11 +239,12 @@ export function useProductStoryEditor({
           });
         }
         return false;
-      } finally {
-        if (outstanding.current === task) outstanding.current = null;
       }
     })();
     outstanding.current = task;
+    void task.finally(() => {
+      if (outstanding.current === task) outstanding.current = null;
+    });
     return task;
   };
 
