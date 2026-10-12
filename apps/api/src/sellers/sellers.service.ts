@@ -884,18 +884,15 @@ export class SellersService {
       return { mimeType: stored.mimeType, data: stored.bytes, isPublic };
     }
     // Load legacy inline bytes only after authorization and a storage miss.
-    const legacy = await this.prisma.sellerProfileRevisionAchievement.findUnique({
-      where: { id: achievementId },
-      select: { data: true },
-    });
+    const legacy =
+      await this.prisma.sellerProfileRevisionAchievement.findUnique({
+        where: { id: achievementId },
+        select: { data: true },
+      });
     if (!legacy?.data?.byteLength) {
       throw new NotFoundException('Achievement image not found');
     }
-    return {
-      mimeType: achievement.mimeType,
-      data: legacy.data,
-      isPublic,
-    };
+    return { mimeType: achievement.mimeType, data: legacy.data, isPublic };
   }
 
   async listProducts(userId: string) {

@@ -220,7 +220,8 @@ describe('author achievement editing revision HTTP contract', () => {
     );
 
     expect(
-      (await owner.delete(`/author/application/achievements/${middle.id}`)).status,
+      (await owner.delete(`/author/application/achievements/${middle.id}`))
+        .status,
     ).toBe(200);
     const readPositions = async () =>
       prisma.sellerProfileRevisionAchievement.findMany({
