@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import {
   productWriteRequestSchema,
+  WORK_CATALOG_LIMITS,
   type Product,
   type ProductWriteRequest,
   type SellerProductDetailResponse,
@@ -18,11 +19,11 @@ export const productDraftFormSchema = z
   .object({
     categoryId: draftTextSchema,
     title: draftTextSchema,
-    materialTermIds: z.array(z.string().uuid()).max(40),
-    techniqueTermIds: z.array(z.string().uuid()).max(40),
-    materialProposals: z.array(z.string().trim().min(1).max(160)).max(20),
-    techniqueProposals: z.array(z.string().trim().min(1).max(160)).max(20),
-    categoryProposal: z.string().max(160),
+    materialTermIds: z.array(z.string().uuid()).max(WORK_CATALOG_LIMITS.termsPerRole),
+    techniqueTermIds: z.array(z.string().uuid()).max(WORK_CATALOG_LIMITS.termsPerRole),
+    materialProposals: z.array(z.string().trim().min(1).max(WORK_CATALOG_LIMITS.nameLength)).max(WORK_CATALOG_LIMITS.proposalsPerRole),
+    techniqueProposals: z.array(z.string().trim().min(1).max(WORK_CATALOG_LIMITS.nameLength)).max(WORK_CATALOG_LIMITS.proposalsPerRole),
+    categoryProposal: z.string().max(WORK_CATALOG_LIMITS.nameLength),
     dimensions: draftTextSchema,
     year: draftYearSchema,
     uniqueness: draftTextSchema,

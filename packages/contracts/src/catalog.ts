@@ -2,6 +2,12 @@ import { z } from 'zod';
 
 import { isoDateTimeSchema, slugSchema, uuidSchema } from './primitives';
 
+export const WORK_CATALOG_LIMITS = {
+  nameLength: 160,
+  termsPerRole: 40,
+  proposalsPerRole: 20,
+} as const;
+
 export const catalogTermRoleSchema = z.enum(['MATERIAL', 'TECHNIQUE']);
 export const catalogProposalKindSchema = z.enum(['CATEGORY', 'MATERIAL', 'TECHNIQUE']);
 export const catalogProposalStatusSchema = z.enum(['PENDING', 'APPROVED', 'REJECTED']);
@@ -11,7 +17,7 @@ export const catalogTermSchema = z
     id: uuidSchema,
     role: catalogTermRoleSchema,
     slug: slugSchema,
-    name: z.string().trim().min(1).max(160),
+    name: z.string().trim().min(1).max(WORK_CATALOG_LIMITS.nameLength),
     active: z.boolean(),
   })
   .strict();
@@ -36,8 +42,8 @@ export const catalogProposalSchema = z
     id: uuidSchema,
     productRevisionId: uuidSchema,
     kind: catalogProposalKindSchema,
-    rawName: z.string().trim().min(1).max(160),
-    normalizedName: z.string().trim().min(1).max(160),
+    rawName: z.string().trim().min(1).max(WORK_CATALOG_LIMITS.nameLength),
+    normalizedName: z.string().trim().min(1).max(WORK_CATALOG_LIMITS.nameLength),
     status: catalogProposalStatusSchema,
     selected: z.boolean(),
     mappedCategoryId: uuidSchema.nullable(),
@@ -47,7 +53,7 @@ export const catalogProposalSchema = z
   })
   .strict();
 
-const catalogNameSchema = z.string().trim().min(1).max(160);
+const catalogNameSchema = z.string().trim().min(1).max(WORK_CATALOG_LIMITS.nameLength);
 
 export const catalogTermWriteSchema = z
   .object({
@@ -114,10 +120,10 @@ export const workSelectionViewSchema = z
 
 export const workSelectionSchema = z
   .object({
-    materialTermIds: z.array(uuidSchema).max(40).optional(),
-    techniqueTermIds: z.array(uuidSchema).max(40).optional(),
-    materialProposals: z.array(catalogNameSchema).max(20).optional(),
-    techniqueProposals: z.array(catalogNameSchema).max(20).optional(),
+    materialTermIds: z.array(uuidSchema).max(WORK_CATALOG_LIMITS.termsPerRole).optional(),
+    techniqueTermIds: z.array(uuidSchema).max(WORK_CATALOG_LIMITS.termsPerRole).optional(),
+    materialProposals: z.array(catalogNameSchema).max(WORK_CATALOG_LIMITS.proposalsPerRole).optional(),
+    techniqueProposals: z.array(catalogNameSchema).max(WORK_CATALOG_LIMITS.proposalsPerRole).optional(),
     categoryProposal: catalogNameSchema.nullable().optional(),
   })
   .strict();

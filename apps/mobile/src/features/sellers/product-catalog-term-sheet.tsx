@@ -3,6 +3,7 @@ import { View } from 'react-native';
 
 import {
   normalizeCatalogName,
+  WORK_CATALOG_LIMITS,
   type SellerProductDetailResponse,
 } from '@bidplace/contracts';
 import { designTokens } from '@bidplace/design-tokens';
@@ -69,12 +70,12 @@ export function ProductCatalogTermSheet({
   const canPropose =
     editable &&
     search.trim().length > 0 &&
-    search.trim().length <= 160 &&
+    search.trim().length <= WORK_CATALOG_LIMITS.nameLength &&
     ![...availableTerms, ...hiddenSelected].some(
       (term) => normalizeCatalogName(term.name) === normalized,
     ) &&
     !draftProposals.some((name) => normalizeCatalogName(name) === normalized) &&
-    draftProposals.length < 20;
+    draftProposals.length < WORK_CATALOG_LIMITS.proposalsPerRole;
   const toggle = (id: string) => {
     if (!editable) return;
     if (draftIds.includes(id)) {
@@ -180,7 +181,7 @@ export function ProductCatalogTermSheet({
                 label={term.name}
                 mode="checkbox"
                 selected={draftIds.includes(term.id)}
-                disabled={!editable || (!draftIds.includes(term.id) && draftIds.length >= 40)}
+                disabled={!editable || (!draftIds.includes(term.id) && draftIds.length >= WORK_CATALOG_LIMITS.termsPerRole)}
                 onPress={() => toggle(term.id)}
               />
             ))}
