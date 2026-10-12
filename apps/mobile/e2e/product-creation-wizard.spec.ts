@@ -50,6 +50,50 @@ async function createEditableProduct(page: Page, title: string) {
   return product;
 }
 
+test.describe('Work catalog browser round-trip', () => {
+  test('saves selected materials and an author proposal, then restores them after reload', async ({
+    browser,
+  }) => {
+    test.setTimeout(120_000);
+    const { seller } = await createSellerFixture();
+    const { context, page } = await authenticatedPage(browser, seller);
+    try {
+      await page.goto('/products/new');
+      await page.getByRole('button', { name: 'E2E art' }).click();
+      await fillControl(page.getByRole('textbox', { name: /Название/ }), `Work catalog ${Date.now()}`);
+
+      await page.getByRole('button', { name: 'Материалы' }).click();
+      await expect(page.getByRole('dialog', { name: 'Материалы' })).toBeVisible();
+      await page.getByRole('button', { name: 'Холст', exact: true }).click();
+      await fillControl(
+        page.getByRole('textbox', { name: 'Поиск или новое значение' }),
+        'Авторский материал E2E',
+      );
+      await page.getByRole('button', { name: 'Предложить «Авторский материал E2E»' }).click();
+      await page.getByRole('button', { name: 'Применить' }).click();
+
+      const save = page.waitForResponse(
+        (response) =>
+          response.url().endsWith('/api/products') &&
+          response.request().method() === 'POST',
+      );
+      await page.getByRole('button', { name: 'Сохранить и продолжить' }).click();
+      const response = await save;
+      expect(response.ok()).toBeTruthy();
+      const { product } = await response.json();
+
+      await page.goto(`/products/${product.id}?flow=creation&step=1`);
+      await expect(page.getByRole('button', { name: 'Материалы' })).toContainText('Холст');
+      await expect(page.getByRole('button', { name: 'Материалы' })).toContainText('Авторский материал E2E');
+      await page.getByRole('button', { name: 'Материалы' }).click();
+      await expect(page.getByRole('button', { name: 'Удалить Холст' })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Удалить Авторский материал E2E' })).toBeVisible();
+    } finally {
+      await context.close();
+    }
+  });
+});
+
 test.describe('product creation wizard navigation', () => {
   test('keeps later steps open after returning to step 1', async ({
     browser,
