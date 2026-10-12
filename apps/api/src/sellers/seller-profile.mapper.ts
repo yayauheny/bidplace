@@ -176,9 +176,9 @@ export function toPortfolioAchievement(
   },
   visibility: 'private' | 'public' = 'private',
 ) {
-  const publicImageUrl =
-    visibility === 'public' && achievement.mediaAsset
-      ? publicVariant(achievement.mediaAsset, 'PREVIEW')?.url
+  const publicPreview =
+    visibility === 'public'
+      ? publicVariant(achievement.mediaAsset, 'PREVIEW')
       : null;
   return {
     id: achievement.id,
@@ -197,10 +197,10 @@ export function toPortfolioAchievement(
       achievement.mimeType && achievement.byteLength && achievement.checksum
         ? {
             url:
-              publicImageUrl ?? `/api/author-achievements/${achievement.id}/image`,
-            mimeType: achievement.mimeType,
-            byteLength: achievement.byteLength,
-            checksum: achievement.checksum,
+              publicPreview?.url ?? `/api/author-achievements/${achievement.id}/image`,
+            mimeType: publicPreview?.mimeType ?? achievement.mimeType,
+            byteLength: publicPreview?.byteLength ?? achievement.byteLength,
+            checksum: publicPreview?.checksum ?? achievement.checksum,
           }
         : null,
   };

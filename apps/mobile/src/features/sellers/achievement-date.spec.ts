@@ -26,6 +26,11 @@ describe('formatAchievementDate', () => {
   });
 });
 
+it('renders undated historical achievements without crashing', () => {
+  expect(formatAchievementDate(null)).toBe('Дата не указана');
+  expect(formatAuthorAchievementLabel(null)).toBe('Дата не указана');
+});
+
 describe('parseAchievementDateInput', () => {
   it.each([
     ['03.2025', { year: 2025, month: 3, day: null }],

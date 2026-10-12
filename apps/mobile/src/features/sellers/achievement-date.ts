@@ -30,7 +30,8 @@ export function parseAchievementDateInput(
       };
 }
 
-export function formatAchievementDate(value: AchievementDate): string {
+export function formatAchievementDate(value: AchievementDate | null): string {
+  if (!value) return 'Дата не указана';
   const date = new Date(0);
   date.setUTCFullYear(value.year, value.month - 1, value.day ?? 1);
   const formatted = new Intl.DateTimeFormat('ru-RU', {
@@ -43,7 +44,8 @@ export function formatAchievementDate(value: AchievementDate): string {
   return `${formatted[0].toUpperCase()}${formatted.slice(1)}, ${year}`;
 }
 
-export function formatAuthorAchievementLabel(value: AchievementDate): string {
+export function formatAuthorAchievementLabel(value: AchievementDate | null): string {
+  if (!value) return 'Дата не указана';
   const month = String(value.month).padStart(2, '0');
   const prefix =
     value.day === null ? '' : `${String(value.day).padStart(2, '0')}.`;

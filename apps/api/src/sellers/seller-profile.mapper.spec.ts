@@ -212,8 +212,8 @@ describe('toPortfolioAchievement legacy image compatibility', () => {
                 variant: 'PREVIEW',
                 publicUrl,
                 mimeType: 'image/webp',
-                byteLength: 3,
-                sha256: 'a'.repeat(64),
+                byteLength: 12,
+                sha256: 'b'.repeat(64),
                 width: 1,
                 height: 1,
               },
@@ -221,7 +221,12 @@ describe('toPortfolioAchievement legacy image compatibility', () => {
           },
         },
         'public',
-      ).image?.url,
-    ).toBe(publicUrl);
+      ).image,
+    ).toEqual({
+      url: publicUrl,
+      mimeType: 'image/webp',
+      byteLength: 12,
+      checksum: 'b'.repeat(64),
+    });
   });
 });
