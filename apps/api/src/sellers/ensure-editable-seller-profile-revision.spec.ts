@@ -142,6 +142,52 @@ describe('ensureEditableEditingRevision', () => {
     });
   });
 
+  it('retains a derived legacy image key while forking a published achievement', async () => {
+    const legacyPublished = publishedRevision();
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ id: 'seller-profile-id' }]),
+      user: { findUnique: vi.fn().mockResolvedValue({ slug: 'account-slug' }) },
+      sellerProfile: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'seller-profile-id',
+          status: 'APPROVED',
+          editingRevisionId: 'published-revision-id',
+          publishedRevisionId: 'published-revision-id',
+          editingRevision: { id: 'published-revision-id', status: 'APPROVED' },
+          publishedRevision: {
+            ...legacyPublished,
+            achievements: legacyPublished.achievements.map((achievement) => ({
+              ...achievement,
+              objectKey: null,
+              data: null,
+            })),
+          },
+        }),
+        update: vi.fn(),
+      },
+      sellerProfileRevision: {
+        create: vi.fn().mockResolvedValue({ id: 'draft-revision-id' }),
+      },
+      sellerProfileRevisionAchievement: {
+        create: vi.fn().mockResolvedValue({ id: 'draft-achievement-id' }),
+      },
+      sellerProfileRevisionDirection: {
+        findMany: vi.fn().mockResolvedValue([]),
+        createMany: vi.fn(),
+      },
+    };
+
+    await ensureEditableEditingRevision(tx as never, 'user-id');
+
+    expect(tx.sellerProfileRevisionAchievement.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        revisionId: 'draft-revision-id',
+        objectKey: 'seller-achievement:published-achievement-id',
+        data: null,
+      }),
+    });
+  });
+
   it('rejects edits while a revision is pending review', async () => {
     const tx = {
       $queryRaw: vi.fn().mockResolvedValue([{ id: 'seller-profile-id' }]),
