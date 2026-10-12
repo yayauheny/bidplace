@@ -191,14 +191,17 @@ vi.mock('./auth-password-field', () => ({
     label,
     value,
     onChangeText,
+    editable = true,
   }: {
     label: string;
     value?: string;
     onChangeText?: (value: string) => void;
+    editable?: boolean;
   }) =>
     createElement('input', {
       'aria-label': label,
       value: value ?? '',
+      disabled: !editable,
       onChange: (event: { target: { value: string } }) => onChangeText?.(event.target.value),
     }),
 }));
@@ -743,18 +746,18 @@ describe('registration consent attempt', () => {
     view.unmount();
   });
 
-  it('does not install a registration session after confirmation changes during the request', async () => {
+  it('locks password editing while registration is in flight, then installs the session', async () => {
     harness.holdRegister = true;
     const view = mount();
     await reachPassword(view.container);
     clickButton(view.container, 'Дальше');
     await until(view.container, () => harness.registers === 1, 'registration request');
-    fill(view.container, 'Подтвердите пароль', 'changed-confirmation');
-    await flush();
+    const confirmation = view.container.querySelector('[aria-label="Подтвердите пароль"]');
+    expect(confirmation).toBeInstanceOf(HTMLInputElement);
+    expect((confirmation as HTMLInputElement).disabled).toBe(true);
     await act(async () => { harness.releaseRegister?.(); });
-    await flush();
-    expect(view.client.getQueryData<User | null>(authKeys.session)).toBeNull();
-    expect(harness.replace).not.toHaveBeenCalled();
+    await until(view.container, () => harness.replace.mock.calls.length === 1, 'navigation');
+    expect(harness.registers).toBe(1);
     view.unmount();
   });
 

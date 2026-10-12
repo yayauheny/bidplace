@@ -1107,6 +1107,7 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
                   onBlur={field.onBlur}
                   autoComplete="new-password"
                   metrics="authScreenPassword"
+                  editable={!form.formState.isSubmitting}
                   error={form.formState.errors.password?.message}
                 />
               )}
@@ -1122,6 +1123,7 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
                   onBlur={field.onBlur}
                   autoComplete="new-password"
                   metrics="authScreenPassword"
+                  editable={!form.formState.isSubmitting}
                   error={form.formState.errors.confirmPassword?.message}
                 />
               )}
