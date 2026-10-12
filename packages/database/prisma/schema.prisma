@@ -535,7 +535,9 @@ model RegistrationLegalEvidence {
   dataConsentVersion      String   @map("data_consent_version") @db.VarChar(80)
   dataConsentedAt         DateTime @map("data_consented_at")
   age18ConfirmedAt        DateTime @map("age_18_confirmed_at")
-  user                    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Prevent account deletion from silently erasing evidence retained after the relationship ends.
+  // A future erasure/retention workflow must explicitly reconcile this ledger.
+  user                    User     @relation(fields: [userId], references: [id], onDelete: Restrict)
 
   @@map("registration_legal_evidence")
 }

@@ -190,6 +190,10 @@ describe('auth HTTP transport', () => {
       dataConsentedAt: expect.any(Date),
       age18ConfirmedAt: expect.any(Date),
     });
+    // Account deletion must not silently cascade into the legal-evidence ledger.
+    await expect(prisma.user.delete({ where: { id: registered.id } })).rejects.toThrow();
+    expect(await prisma.registrationLegalEvidence.count({ where: { userId: registered.id } })).toBe(1);
+
     const me = await client.get('/auth/me');
     expect(me.status).toBe(200);
     expect(((await me.json()) as { user: { id: string } }).user.id).toBe(

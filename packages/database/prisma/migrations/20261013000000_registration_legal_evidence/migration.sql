@@ -12,4 +12,4 @@ CREATE TABLE "registration_legal_evidence" (
 );
 ALTER TABLE "registration_legal_evidence"
     ADD CONSTRAINT "registration_legal_evidence_user_id_fkey"
-    FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+    FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

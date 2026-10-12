@@ -232,6 +232,8 @@ export async function resetPermissionFixture(
   prisma: PrismaClient,
 ): Promise<void> {
   await prisma.auditEvent.deleteMany();
+  // Tests are the only place where the retained legal evidence is intentionally removed.
+  await prisma.registrationLegalEvidence.deleteMany();
   await prisma.termsAcceptance.deleteMany();
   await prisma.emailVerificationCode.deleteMany();
   await prisma.phoneVerificationCode.deleteMany();
