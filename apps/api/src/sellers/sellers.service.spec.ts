@@ -1088,6 +1088,7 @@ describe('SellersService', () => {
     expect(logged).not.toContain(marker);
     loggerWarn.mockRestore();
   });
+
   it.each([0, 1])(
     'compacts remaining achievements after deleting legacy media with %i other references',
     async (remainingReferences) => {
@@ -1124,7 +1125,11 @@ describe('SellersService', () => {
       const media = { enabled: true, enqueueCleanup: vi.fn() };
       const remove = vi.fn();
       const service = new SellersService(
-        { $transaction: vi.fn(async (run: (tx: typeof tx) => Promise<unknown>) => run(tx)) } as never,
+        {
+          $transaction: vi.fn(
+            async (run: (client: typeof tx) => Promise<unknown>) => run(tx),
+          ),
+        } as never,
         { ...imageStore, delete: remove } as never,
         media as never,
       );
@@ -1133,7 +1138,9 @@ describe('SellersService', () => {
         service.deleteAchievement('user-id', 'achievement-id'),
       ).resolves.toEqual({ ok: true });
 
-      expect(update.mock.calls.map(([arg]) => [arg.where.id, arg.data.position])).toEqual([
+      expect(
+        update.mock.calls.map(([arg]) => [arg.where.id, arg.data.position]),
+      ).toEqual([
         ['other-a', 5],
         ['other-b', 6],
         ['other-a', 0],
@@ -1150,5 +1157,4 @@ describe('SellersService', () => {
       expect(remove).not.toHaveBeenCalled();
     },
   );
-
 });

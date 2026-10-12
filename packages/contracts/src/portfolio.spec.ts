@@ -70,8 +70,8 @@ describe('achievement write and historical read contracts', () => {
       },
     };
     expect(portfolioAchievementSchema.parse(achievement)).toEqual(achievement);
-    expect(publicSellerProfileSchema.shape.achievements.parse([achievement])).toEqual([
-      achievement,
-    ]);
+    expect(
+      publicSellerProfileSchema.shape.achievements.parse([achievement]),
+    ).toEqual([achievement]);
   });
 });
