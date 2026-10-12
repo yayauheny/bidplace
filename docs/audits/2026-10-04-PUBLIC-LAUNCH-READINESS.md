@@ -159,7 +159,7 @@ Worker, отдельный процесс, Redis и queue service не ввод�
 | Migration/demo        | Создать buckets/custom domain, provider preflight, inventory/source backup, пяти-owner migration, явно помеченный demo catalog без тестовых логинов, verify и cutover                          |
 | SMTP                  | Выбрать провайдера, подтвердить sender domain, проверить реальные OTP/reset письма и reset URL на production-домене                                                                            |
 | Release verification  | Полный maintained Chromium/WebKit baseline; deploy smoke публичных страниц, авторизации и медиа; restore drill; оставшиеся RFC §16 UI/device/accessibility gates                               |
-| Public documents      | Подтвердить актуальные согласованные portfolio-first тексты и требуемые controls. Текущий [manifest](../legal/09-PORTFOLIO-LEGAL-REVIEW-MANIFEST.md) сообщает `external lawyer review pending` |
+| Public documents      | Подтвердить актуальные согласованные portfolio-first тексты и требуемые controls. Пакет подготовлен; текущие подтверждения, analytics question и условия публикации — в [едином юридическом аудите](../legal/00-FINAL-LEGAL-AUDIT.md) |
 
 Это несколько пакетов. Green локального gate не означает публичный deployment.
 Marketplace, payments, тарифы, Google, HEIC и destructive удаление legacy bytes

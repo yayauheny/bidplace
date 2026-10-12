@@ -16,7 +16,7 @@ abuse-модель и белорусский legal UX research. D04 поздне
 disposable test data очищаются до public pilot. Варианты D01–D03 остаются
 предварительными до Task 10 и отдельного решения основателя. Юридические вопросы
 остаются в
-[`06-OPEN-QUESTIONS-FOR-BELARUS-LAWYER.md`](../legal/06-OPEN-QUESTIONS-FOR-BELARUS-LAWYER.md).
+[итоговый юридический аудит](../legal/00-FINAL-LEGAL-AUDIT.md).
 Развёрнутые технические альтернативы сохранены отдельно в
 [`01-OPEN-ARCHITECTURE-GAPS.md`](../audits/01-OPEN-ARCHITECTURE-GAPS.md).
 

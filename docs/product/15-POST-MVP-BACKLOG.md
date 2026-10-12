@@ -21,7 +21,7 @@ commerce в runtime и не утверждает ещё не выбранные 
 - Проверенная готовность реализации: [11-PROJECT-STATUS.md](11-PROJECT-STATUS.md).
 - Честность торгов и ограничения предметов: [09-TRUST-AND-AUCTION-INTEGRITY.md](09-TRUST-AND-AUCTION-INTEGRITY.md), [08-SELLER-AND-ITEM-POLICY.md](08-SELLER-AND-ITEM-POLICY.md).
 - Application security: [13-APPLICATION-SECURITY.md](13-APPLICATION-SECURITY.md).
-- Legal gate: [документы и checklist](../legal/00-MVP-LAUNCH-CHECKLIST.md).
+- Legal gate: [документы и checklist](../legal/00-FINAL-LEGAL-AUDIT.md).
 
 По `DEC-112`–`DEC-114` и `DEC-116` блочная история, общие справочники, страна
 с необязательным городом и пользовательские предложения категорий/терминов

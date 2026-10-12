@@ -2836,3 +2836,57 @@ The Figma copy and shared components stay as they are. City remains optional und
 
 The step-3 direction control is implemented, or the placeholder or field copy is
 changed by the founder or the assigned designer.
+
+
+## DEC-118 — One legal handoff, DEC-078 registration and target retention
+
+Date: 2026-10-12
+Status: Confirmed product/documentation decisions; analytics legal basis Open
+Source: explicit founder answers in the legal consolidation session and repeated
+handwritten consultation notes identified by the founder as notes, not a transcript.
+
+### Decision
+
+- This task consolidates the audit and prepares legal texts. Connecting pages,
+  cookies/consents to UI/API is a separate task; runtime is not changed here.
+- Reaffirm DEC-078: three separate mandatory registration items (agreement,
+  policy acknowledgement, PD consent for the main service), plus separate 18+.
+  Analytics and marketing as distinct purposes are not silently bundled into them.
+- The first MVP has no auctions, purchases, payments, delivery or reviews. Preserve
+  future terms in an explicitly inactive annex; its presence does not activate a
+  feature or provide advance consent to every future processing purpose.
+- Keep the current immediately enabled analytics. Its legal basis remains open
+  until a specific Belarus lawyer answer addresses the actual persistent ID,
+  events, attribution, account linkage and infrastructure. A policy acknowledgement
+  is not recorded as that answer or as optional consent.
+- IP registration is reported complete. Public contact is `work.evles@gmail.com`;
+  `693460361` is a registration number, not a confirmed UNP. The home address is not
+  published. Full legal name/UNP and correspondence requirements remain factual
+  publication inputs, with public values suitable for GitHub Variables.
+- Neon is reported located in Frankfurt, Germany; R2 provider is Cloudflare.
+  Do not infer R2/backup geography or contract conditions from the provider name.
+- Adopt the retention schedule in the legal audit: main service data for the
+  service duration and removal from working systems within 30 calendar days after
+  a substantiated request; incomplete accounts and expired/used OTP/reset records
+  30 days; security logs 30 days; analytics 90 days; acceptance evidence 3 years
+  after termination, moderation/request evidence 3 years after resolution; backups
+  30 days. Mandatory shorter legal deadlines take precedence. Cleanup/restore
+  reapplication is a separate implementation and release requirement.
+- Restore historical consultation/closed-question evidence in the archive;
+  preserve source text and the new raw notes. Do not reclassify all settled points
+  as unanswered merely because the September manifest used a broad pending status.
+
+### Revises
+
+Reaffirms DEC-077/078 and DEC-082–084. Revises the indefinite retention assumption
+of DEC-047 as a target policy only; actual persistence remains unchanged. Does not
+override mandatory legal rules, close analytics legal review, approve missing
+operator/infrastructure facts or replace the temporary text allowed by DEC-103.
+
+### Ownership and verification
+
+Current legal owner: [final legal audit](../legal/00-FINAL-LEGAL-AUDIT.md).
+Public text owners are under `docs/legal/site`; future terms have one inactive
+annex. No schema, architecture, runtime or design change. See the audit for observed
+boundaries and publication requirements rather than duplicating the schedule here
+in future tasks.

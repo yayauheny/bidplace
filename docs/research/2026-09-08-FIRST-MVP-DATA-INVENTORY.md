@@ -1,5 +1,11 @@
 # First MVP factual data inventory
 
+> Historical snapshot, 2026-09-08. Current provider choices, code-derived data/cookie
+> inventory and target retention are consolidated in the
+> [final legal audit](../legal/00-FINAL-LEGAL-AUDIT.md), §4–7, as of 2026-10-12.
+> `UNKNOWN` below records the earlier state; it is not a new question or current
+> instruction to choose providers again.
+
 Status: implementation evidence, not legal advice. Reviewed 2026-09-08 from Prisma
 schema, server modules and tracked ops scripts only. No environment files, database
 rows, credentials or production-provider dashboards were read.

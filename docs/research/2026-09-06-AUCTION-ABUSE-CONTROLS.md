@@ -31,7 +31,7 @@ logic; absent disclosure is marked `NOT VERIFIED`.
 | Whatnot | [Bid during a show](https://help.whatnot.com/hc/en-us/articles/14932924544141-Bid-on-an-item-during-a-show) | Binding bid policy calls out artificial price increase/shill bidding and possible suspension/removal. |
 | Whatnot | [Counterfeit Policy](https://help.whatnot.com/hc/en-us/articles/360061604031-Counterfeit-Policy-and-Restricted-Branded-Items-Policy) | Claim may need photos; seller can submit authenticity evidence; authentic, inauthentic and inconclusive outcomes are distinguished; repeated inconclusive claims can trigger review. |
 | Whatnot | [Community Guidelines](https://help.whatnot.com/hc/en-us/articles/360061197472-Whatnot-Community-Guidelines) and [IP Policy](https://help.whatnot.com/hc/en-us/articles/4685447890445-IP-Policy) | Prohibits disruptive/fake bidding and unlicensed images/IP; reports and corrective action exist; repeat infringement can cause removal. |
-| Bidbaits | [local source mapping](../legal/08-BIDBAITS-SOURCE-MAPPING-2026-09-06.md) | Provided materials are useful scenario input only. A current public primary policy/mechanism was `NOT VERIFIED`; no control is attributed to Bidbaits here. |
+| Bidbaits | [local source mapping](../legal/archive/2026-09-08/08-BIDBAITS-SOURCE-MAPPING-2026-09-06.md) | Provided materials are useful scenario input only. A current public primary policy/mechanism was `NOT VERIFIED`; no control is attributed to Bidbaits here. |
 
 ## Prevention, detection, response and appeal
 
