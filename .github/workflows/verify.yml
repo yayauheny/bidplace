@@ -70,6 +70,17 @@ jobs:
           pnpm --filter @bidplace/contracts test
           pnpm --filter @bidplace/api-client test
 
+      - name: Work editor regression tests for draft PR
+        if: github.event_name == 'pull_request' && github.event.pull_request.draft == true
+        run: |
+          pnpm --filter @bidplace/mobile exec vitest run \
+            src/features/sellers/product-catalog-term-sheet.spec.ts \
+            src/features/sellers/product-draft-form.spec.ts \
+            src/features/sellers/product-draft-fields.spec.ts \
+            src/features/sellers/product-draft-save-race.spec.ts \
+            src/features/sellers/product-draft-submit-lifecycle.spec.ts \
+            src/features/sellers/product-draft-route-guard.spec.ts
+
       - name: Verify workspace
         if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
         run: pnpm verify
