@@ -651,7 +651,7 @@ export function SellerProfileScreen() {
       if (!auth.user?.slug) {
         const requested = variables.fields.slug.trim();
         const claimed = await api.auth.claimSlug({ slug: requested });
-        if (!screenStillOwns(variables.operation, variables.authEpoch)) {
+        if (!sessionStillOwns(variables.operation, variables.authEpoch)) {
           throw new Error('Session changed');
         }
         if (claimed.slug !== requested) {
