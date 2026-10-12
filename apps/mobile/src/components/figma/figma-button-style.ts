@@ -1,4 +1,5 @@
 import {
+  designTokens,
   figmaButtonMatrixCell,
   figmaButtonSizeMetrics,
   figmaButtonTokens,
@@ -29,12 +30,15 @@ export function figmaButtonStyle(
   return {
     // Inside stroke sits in the frame. Matrix sample «Кнопка» is 83×43.
     paddingHorizontal: sizeMetrics.paddingX + strokeWidth,
+    ...(size === 'navigation' ? { paddingRight: 10.5 } : {}),
     paddingVertical: sizeMetrics.paddingY + strokeWidth,
     borderRadius: cell.borderRadius,
     backgroundColor: 'transparent',
     opacity: cell.controlOpacity,
     justifyContent: 'center' as const,
-    alignItems: 'center' as const,
+    alignItems: (size === 'navigation' ? 'stretch' : 'center') as
+      | 'center'
+      | 'stretch',
   };
 }
 
@@ -45,7 +49,13 @@ export function figmaButtonOverlayColor(
   return figmaButtonMatrixCell(variant, interaction).overlay;
 }
 
-export function figmaButtonLabelColor(variant: FigmaButtonVariant) {
+export function figmaButtonLabelColor(
+  variant: FigmaButtonVariant,
+  size: FigmaButtonSize = 'matrix',
+) {
+  if (size === 'navigation' && variant === 'muted') {
+    return designTokens.color.inkStrong;
+  }
   return figmaButtonMatrixCell(variant, 'idle').labelColor;
 }
 

@@ -34,6 +34,7 @@ describe('Figma icon registry', () => {
       'user',
       'shopping-basket-01',
       'image-add-02',
+      'check',
     ]);
   });
 });

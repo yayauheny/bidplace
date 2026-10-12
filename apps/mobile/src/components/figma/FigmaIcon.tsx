@@ -27,6 +27,7 @@ import {
   QrCode01Icon,
   Search01Icon,
   ShoppingBasket01Icon,
+  ImageAdd02Icon,
   TelegramIcon,
   UserIcon,
   ViewIcon,
@@ -35,9 +36,23 @@ import {
 
 import { figmaTokens } from '@bidplace/design-tokens';
 
-import { ImageAdd02Icon } from './figma-icon-glyphs';
 import { type FigmaIconName, figmaIconNames } from './figma-icon-names';
 import { figmaIconStrokeWidth } from './figma-icon-style';
+
+// Source node: directions fallbacks `001-584_17554.svg` (16-frame check, 24-grid path).
+const checkIcon = [
+  [
+    'path',
+    {
+      d: 'M5.00025 13.26L7.5861 15.957C8.2527 16.653 8.586 17.001 9.0003 17.001C9.41445 17.001 9.7479 16.653 10.4145 15.957L19.0002 7.0005',
+      stroke: 'currentColor',
+      strokeLinecap: 'round',
+      strokeLinejoin: 'round',
+      strokeWidth: '1.5',
+      key: '0',
+    },
+  ],
+] as const satisfies typeof Search01Icon;
 
 const icons = {
   'filter-horizontal': FilterHorizontalIcon,
@@ -69,6 +84,7 @@ const icons = {
   user: UserIcon,
   'shopping-basket-01': ShoppingBasket01Icon,
   'image-add-02': ImageAdd02Icon,
+  check: checkIcon,
 } as const satisfies Record<FigmaIconName, typeof Search01Icon>;
 
 const iconGridSize = 24;

@@ -57,4 +57,5 @@ describe('app dialog host style', () => {
     expect(appDialogHostFlexDirection(undefined)).toBe('column');
     expect(appDialogHostFlexDirection('column')).toBe('column');
   });
+
 });

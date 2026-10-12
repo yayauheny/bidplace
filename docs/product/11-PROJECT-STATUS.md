@@ -1,57 +1,45 @@
 # bidplace — текущий статус проекта
 
-## 2026-10-12 — Author application step 1 (`feature/author-application-figma`)
+## 2026-10-12 — Author application mobile-web (`fix/author-onboarding-figma`)
 
-- `Partial`: the first step of the author application is implemented in the
-  mobile client. The photo block, name, nickname, country popup, optional city,
-  `Продолжить` and ghost `Выйти` are on `AuthorApplicationBasicsStep`
-  (`author-application-basics-step.tsx`), with `ProfileBasicsFields`,
-  `ProfileCountryField` and `CountryPickerSheet` in `seller-profile-steps.tsx`
-  and `country-picker-sheet.tsx`. Country names come from `GET /countries` through
-  `api.countries.list` (`countryListResponseSchema`); the stored and sent value
-  is the ISO code. Country starts empty, and `Продолжить` needs it. The nickname is
-  the account `User.slug` and is not sent by create or update. `profile-validation.ts`
-  has no `directionCategoryIds`.
-- City clearing is one `PATCH /api/seller/profile` request in
-  `multipart/form-data`: JSON in the `data` part and the photo in `profilePhoto`
-  (`seller-profile-write-body.ts`, `sellers.controller.ts`,
-  `packages/api-client/src/sellers.ts`). Wire format is in
-  [10-CODE-ARCHITECTURE.md](10-CODE-ARCHITECTURE.md). The client sends `null` for a
-  blank city. The rule is recorded in `DEC-117`.
-- `Partial` for the author application as a whole. Steps 2–4 still use the older
-  forms. Step 3 has no direction control, and `DEC-116` requires directions as
-  category IDs. The transition `POST /api/author/application/advance` from
-  `ABOUT` to `ACHIEVEMENTS` returns 409 `Author profile is missing required
-  fields` when no directions exist (`sellers.service.ts`
-  `advanceApplicationStage`). The HEAD client never sent `directionCategoryIds`, so
-  this gap was already there. Release gate: the e2e test «city application is
-  approved and appears in the public authors catalog» in
-  `author-application-publication.spec.ts` fails at this transition in Chromium and
-  WebKit. The test was not weakened.
-- Verification in this pass: owner vitest for `src/features/sellers`,
-  `src/features/auth`, `src/components/figma`, `src/components/ui`: 465 passed,
-  26 failed in 5 Work and product-draft files that this change does not touch.
-  `country-picker-sheet.spec.ts` 5/5. ESLint without fix on the changed mobile
-  files: exit 0. Mobile `typecheck`: 7 baseline errors, none new. `@bidplace/api-client`
-  41/41. API `src/sellers` 49/49. API integration
-  `author-application-contract.integration.spec.ts` 6/6 on a separate local database.
-  Isolated e2e (`bidplace_verify_author_step1`, migrate deploy, no reset, no
-  prepare): a temporary step-1 check passed in Chromium and WebKit for render,
-  country search, city and photo in one save, and a 500 on save that keeps the
-  entered data. The `author-application-publication` test without city passed in
-  both browsers.
-- `Needs verification`: keyboard order, zoom, and reduced motion on step 1; the
-  full WebKit suite; the API suites changed by `ae0b3673` other than
-  `author-application-contract`. The step-1 pixel match against the Figma reference
-  was visual, not a pixel diff.
-- Evidence: `author-application-basics-step.tsx`, `country-picker-sheet.tsx`,
-  `seller-profile-steps.tsx`, `seller-profile-screen.tsx`, `profile-validation.ts`,
-  `figma-text-field-style.ts` (`authorApplication`), `packages/design-tokens`
-  (`authorApplicationField`, `photoGuide`, `formLabel`), owner specs
-  `seller-profile-submit.spec.ts`, `seller-profile-fields.spec.ts`,
-  `seller-profile-logout.spec.ts`, `author-application-achievements.spec.ts`,
-  `profile-validation.spec.ts`, `country-picker-sheet.spec.ts`, and the e2e spec
-  `author-application-publication.spec.ts`.
+- `Implemented` for **intro + four URL steps** on **local mobile-web** (Chromium/WebKit
+  publication/geometry E2E and affected Vitest). **Not** production, native iOS/Android,
+  CI, or whole-repo green. Work **creation-story** product UI stays `Partial` and
+  separate from this onboarding scope.
+- UI: `AuthorApplicationStepShell` on all four steps; `author-application-*-step.tsx`;
+  `FigmaSelectField` + `CountryPickerSheet`; `AuthorDirectionsPickerSheet` with
+  `directionCategoryIds` and retained inactive category chips; `AuthorApplicationAchievements`
+  (JSON date/body, no new photo); shared `ExitConfirmDialog` for author exit and auth
+  interrupt paths (`auth-exit-confirm.tsx`, `author-application-exit-confirm.tsx`).
+- Contracts / client / API alignment: `packages/contracts` seller-profile and portfolio
+  shapes; JSON `POST`/`DELETE` achievement writes; directions as category UUIDs across
+  mobile saves, `packages/api-client`, and `apps/api` sellers/portfolio services.
+  `@bidplace/api-client` `requestJson` validates responses with **`z.output`**.
+  Application **read** DTOs no longer treat legacy `discipline` as the gate for a
+  partially saved draft; **submit**, **advance**, and server readiness remain
+  authoritative (`sellers.service.ts`, application stage clamp).
+- Verification (Codex, Node 22.20.0, `EXPO_NO_DOTENV=1`): design-tokens/contracts/
+  api-client/database/API builds; mobile typecheck **0**; changed-file ESLint **0**;
+  affected UI/author/auth Vitest **376/376**; full mobile **702 passed / 30 failed**
+  (established Work/product-draft + **4** category-query-identity — **not** fixed here);
+  contracts **42**, client **42**, API unit **444**, API integration **40/40** on isolated
+  DB; author publication + geometry **8/8** (both browsers); source-geometry sub-checks
+  **2/2**; matrix **10/10**; auth filled-login-dismiss **2/2**. Auth history **2/2** did
+  **not** reach the shared dialog (blocked on Home «Все работы» catalog fixture) — track
+  separately. Clean web export previously passed; **latest final export pending** Codex.
+- Evidence:
+  [`docs/audits/current/evidence/2026-10-12-author-onboarding/README.md`](../audits/current/evidence/2026-10-12-author-onboarding/README.md),
+  `author-application-publication.spec.ts`, owner specs under `apps/mobile/src/features/sellers`
+  and `components/{figma,ui}`.
+
+## 2026-10-12 — Author application step 1 (historical snapshot, superseded)
+
+_Superseded by the section above. Retained for the step-1-only audit trail._
+
+- Step 1 modules: `author-application-basics-step.tsx`, `ProfileBasicsFields`,
+  `ProfileCountryField`, `CountryPickerSheet`, `FigmaSelectField` (not a separate
+  `author-application-picker-field` module). `DEC-117` city optional; `DEC-114` country
+  directory. Earlier claims that steps 2–4 or directions were missing are obsolete.
 
 ## 2026-10-11 — Author story review fixes
 
@@ -207,7 +195,7 @@
   Auth, Home «Смотреть все», admin «Модерация», and exit confirmation use that
   matrix.
 - Node 22 verification (2026-10-10, SVG surface track): design-tokens `tsc
-  --noEmit` and build **0**, `apps/mobile/node_modules/typescript`
+--noEmit` and build **0**, `apps/mobile/node_modules/typescript`
   `tsc --noEmit` **0**, mobile eslint **0**, Vitest **721/721** (121 files),
   `EXPO_NO_DOTENV=1` `expo export` → `/private/tmp/bidplace-buttons-grid/dist`
   **0**, Playwright Chromium+WebKit **10/10** (private
@@ -359,8 +347,7 @@
   `register`; 401/429/500 UI checks use synthetic HTTP responses. Existing
   consent/session/single-register unit coverage stays intact. Native runtime
   and the full database-backed `auth-lifecycle`/history gate are not verified.
-- Local API readiness is 200, but a synthetic unknown-email login returned
-  500. Read-only schema checks found no `users.slug` in `bidplace`,
+- Local API readiness is 200, but a synthetic unknown-email login returned 500. Read-only schema checks found no `users.slug` in `bidplace`,
   `bidplace_e2e` or `bidplace_integration`; a slug-only lookup in the test DB
   returns Prisma `P2022`, column `users.slug`. Both invalid credential branches
   return the same 401 in `AuthService` unit tests; their real local HTTP gate
@@ -385,8 +372,7 @@
   still does. The login sheet is 546 in Chromium and WebKit, down from 547.
   The in-app sheet stays 543.5. Source anatomy is 545.
 - The remaining 2.5px between DPR 1 and DPR 2 is not the field: «Забыли
-  пароль?» is 15 vs 14.5, «или» is 19 vs 18, and the legal line is 30 vs
-  29. Those nodes use `line-height: normal`. This is not 1:1.
+  пароль?» is 15 vs 14.5, «или» is 19 vs 18, and the legal line is 30 vs 29. Those nodes use `line-height: normal`. This is not 1:1.
 
 ## 2026-10-09 — Auth visual check against the current handoff
 
@@ -619,7 +605,7 @@
   `seller_profiles.slug` later only after every pair of nicknames is equal
   and no live query reads the profile column.
 - Local checks on Node 22.20.0: API and mobile typecheck passed. Lint of the
-  touched files passed.   `seller-profile.mapper.spec` (3), `sellers.service.spec` (20), and
+  touched files passed. `seller-profile.mapper.spec` (3), `sellers.service.spec` (20), and
   `seller-profile-submit.spec` (48) passed. Chromium and WebKit
   `auth-layout` and `auth-lifecycle` passed, including registration without
   `redirectTo` and the fullscreen column without Home. One WebKit history
@@ -838,8 +824,7 @@
   `8b9c125e-11f4-4db3-b185-629e563c4a2b`.
 - Live smoke: `https://bid.place/` opened with Home current and «Пока здесь
   тихо». Catalog opened at `/works` with filters and «Пока нет работ».
-  `/login` opened with «Вход на Bidplace». `GET /api/portfolio/home` returned
-  200. `GET /api/health` and `GET /api/health/ready` each returned 200 once.
+  `/login` opened with «Вход на Bidplace». `GET /api/portfolio/home` returned 200. `GET /api/health` and `GET /api/health/ready` each returned 200 once.
   A public home GET sent with a synthetic `X-Request-Id` and query marker
   returned a new server UUID in the response header. The cacheable
   unauthenticated home response still omits that header.
@@ -1172,9 +1157,9 @@
   отдельный API token с Email Sending: Edit. `SMTP_FROM` — адрес на домене,
   подключённом к Email Sending. SDK, email binding и новый adapter не добавлены.
 - Контракт: `deploy/cloudflare/wrangler.jsonc` задаёт host, port `465` и
-`SMTP_SECURE=true` для staging и production. Позже подтверждённый
-`SMTP_FROM` записан как `noreply@bid.place`; см. верхний раздел. Username и
-password остаются Worker secrets.
+  `SMTP_SECURE=true` для staging и production. Позже подтверждённый
+  `SMTP_FROM` записан как `noreply@bid.place`; см. верхний раздел. Username и
+  password остаются Worker secrets.
 - Совместимость: `apps/api/src/core/email/smtp-transport.ts` и
   `smtp-transport.spec.ts`. Runtime не переписывался.
 - `Needs verification`: Email Sending в аккаунте, Workers Paid, DNS домена

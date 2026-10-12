@@ -16,6 +16,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { FormProvider, useForm, type UseFormReturn } from 'react-hook-form';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import '../../testing/author-application-mocks';
+
 import { flush } from '../../testing/dom';
 
 import { profileDraftSchema } from './profile-validation';
@@ -33,6 +35,7 @@ const emptyFields: ProfileFields = {
   slug: '',
   fullName: '',
   discipline: '',
+  directionCategoryIds: [],
   country: '',
   city: '',
   practice: '',
@@ -45,9 +48,15 @@ const emptyFields: ProfileFields = {
 };
 
 vi.mock('react-native', () => ({
-  View: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
-  Pressable: ({ children, disabled }: { children?: ReactNode; disabled?: boolean }) =>
-    createElement('div', { 'data-disabled': Boolean(disabled) }, children),
+  View: ({ children }: { children?: ReactNode }) =>
+    createElement('div', null, children),
+  Pressable: ({
+    children,
+    disabled,
+  }: {
+    children?: ReactNode;
+    disabled?: boolean;
+  }) => createElement('div', { 'data-disabled': Boolean(disabled) }, children),
 }));
 
 vi.mock('./country-picker-sheet', () => ({
@@ -55,8 +64,10 @@ vi.mock('./country-picker-sheet', () => ({
 }));
 
 vi.mock('../../components/ui', () => ({
-  AppText: ({ children }: { children?: ReactNode }) => createElement('span', null, children),
-  FormSection: ({ children }: { children?: ReactNode }) => createElement('section', null, children),
+  AppText: ({ children }: { children?: ReactNode }) =>
+    createElement('span', null, children),
+  FormSection: ({ children }: { children?: ReactNode }) =>
+    createElement('section', null, children),
   TextField: ({
     label,
     value,
@@ -77,7 +88,8 @@ vi.mock('../../components/ui', () => ({
         'aria-label': label,
         value: value ?? '',
         disabled: editable === false,
-        onChange: (event: { target: { value: string } }) => onChangeText?.(event.target.value),
+        onChange: (event: { target: { value: string } }) =>
+          onChangeText?.(event.target.value),
       }),
       error ? createElement('span', null, error) : null,
     ),
@@ -85,7 +97,9 @@ vi.mock('../../components/ui', () => ({
 
 function Harness({ guard }: { guard: RefObject<boolean> }) {
   const [step, setStep] = useState<1 | 2>(1);
-  const requirements = useRef<ProfileRequirementControls>({ reveal: () => undefined });
+  const requirements = useRef<ProfileRequirementControls>({
+    reveal: () => undefined,
+  });
   const form = useForm<ProfileFields>({
     defaultValues: emptyFields,
     resolver: zodResolver(profileDraftSchema),
@@ -106,8 +120,16 @@ function Harness({ guard }: { guard: RefObject<boolean> }) {
       children: createElement(
         'div',
         null,
-        createElement('button', { type: 'button', onClick: () => setStep(1) }, 'Шаг 1'),
-        createElement('button', { type: 'button', onClick: () => setStep(2) }, 'Шаг 2'),
+        createElement(
+          'button',
+          { type: 'button', onClick: () => setStep(1) },
+          'Шаг 1',
+        ),
+        createElement(
+          'button',
+          { type: 'button', onClick: () => setStep(2) },
+          'Шаг 2',
+        ),
         createElement(ProfileFieldWriteGuard, {
           guard,
           children: createElement(SellerProfileFormSteps, {
@@ -148,13 +170,17 @@ function mount() {
 
 function input(container: ParentNode, label: string) {
   const field = container.querySelector(`[aria-label="${label}"]`);
-  if (!(field instanceof HTMLInputElement)) throw new Error(`Missing field ${label}`);
+  if (!(field instanceof HTMLInputElement))
+    throw new Error(`Missing field ${label}`);
   return field;
 }
 
 function setInput(container: ParentNode, label: string, value: string) {
   const field = input(container, label);
-  const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+  const setter = Object.getOwnPropertyDescriptor(
+    HTMLInputElement.prototype,
+    'value',
+  )?.set;
   act(() => {
     setter?.call(field, value);
     field.dispatchEvent(new Event('input', { bubbles: true }));
@@ -174,16 +200,22 @@ describe('seller profile field ownership', () => {
     await flush();
     expect(view.container.textContent).not.toContain('Укажите город');
     act(() => {
-      [...view.container.querySelectorAll('button')].find((button) => button.textContent === 'Шаг 2')?.click();
+      [...view.container.querySelectorAll('button')]
+        .find((button) => button.textContent === 'Шаг 2')
+        ?.click();
     });
     setInput(view.container, 'Telegram', '@maker_art');
     await flush();
     expect(input(view.container, 'Telegram').value).toBe('@maker_art');
-    expect(view.container.textContent).not.toContain('Введите Telegram username или HTTPS-ссылку');
+    expect(view.container.textContent).not.toContain(
+      'Введите Telegram username или HTTPS-ссылку',
+    );
     setInput(view.container, 'Telegram', 'not-a-url');
     await flush();
     expect(input(view.container, 'Telegram').value).toBe('not-a-url');
-    expect(view.container.textContent).toContain('Введите Telegram username или HTTPS-ссылку');
+    expect(view.container.textContent).toContain(
+      'Введите Telegram username или HTTPS-ссылку',
+    );
     view.unmount();
   });
 
@@ -192,11 +224,15 @@ describe('seller profile field ownership', () => {
     await flush();
     setInput(view.container, 'Никнейм', 'maker');
     act(() => {
-      [...view.container.querySelectorAll('button')].find((button) => button.textContent === 'Шаг 2')?.click();
+      [...view.container.querySelectorAll('button')]
+        .find((button) => button.textContent === 'Шаг 2')
+        ?.click();
     });
     expect(view.container.querySelector('[aria-label="Никнейм"]')).toBeNull();
     act(() => {
-      [...view.container.querySelectorAll('button')].find((button) => button.textContent === 'Шаг 1')?.click();
+      [...view.container.querySelectorAll('button')]
+        .find((button) => button.textContent === 'Шаг 1')
+        ?.click();
     });
     expect(input(view.container, 'Никнейм').value).toBe('maker');
     view.guard.current = true;

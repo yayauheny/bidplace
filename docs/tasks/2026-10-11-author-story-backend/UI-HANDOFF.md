@@ -4,6 +4,11 @@ Backend на `fix/author-story-review` уже говорит новыми кон
 `packages/api-client` и экраны mobile/admin их не вызывают. Пока клиенты не
 обновлены, проект не готов к совместному выпуску.
 
+**Author application (intro + four steps)** on mobile-web is implemented and
+locally verified on branch `fix/author-onboarding-figma`; current status:
+[`11-PROJECT-STATUS.md`](../../product/11-PROJECT-STATUS.md) (2026-10-12).
+Work creation-story UI and admin surfaces below remain on this handoff plan.
+
 ## Что сломается у текущего клиента
 
 - Страна профиля — ISO 3166-1 alpha-2 в верхнем регистре (`BY`). Свободная строка

@@ -34,6 +34,20 @@ function flattenStyle(style: unknown): Record<string, unknown> {
 const SAMPLE_SHELL_WIDTH = 82.71875;
 const SAMPLE_SHELL_HEIGHT = 43;
 
+function layoutRect(width: number, height: number): DOMRect {
+  return {
+    x: 0,
+    y: 0,
+    top: 0,
+    left: 0,
+    right: width,
+    bottom: height,
+    width,
+    height,
+    toJSON: () => ({}),
+  } as DOMRect;
+}
+
 function attachFractionalLayout(
   node: HTMLElement | null,
   onLayout?: (event: {
@@ -42,10 +56,19 @@ function attachFractionalLayout(
       target: HTMLElement;
     };
   }) => void,
+  visible = true,
 ) {
   if (!node || !onLayout) return;
   node.style.width = `${SAMPLE_SHELL_WIDTH}px`;
   node.style.height = `${SAMPLE_SHELL_HEIGHT}px`;
+  if (visible) {
+    const rect = layoutRect(SAMPLE_SHELL_WIDTH, SAMPLE_SHELL_HEIGHT);
+    node.getBoundingClientRect = () => rect;
+    node.getClientRects = () =>
+      [rect] as unknown as DOMRectList;
+  } else {
+    node.getClientRects = () => [] as unknown as DOMRectList;
+  }
   onLayout({
     nativeEvent: {
       layout: { width: 83, height: 43 },
@@ -483,6 +506,19 @@ describe('shared text button wrappers', () => {
     expect(base.x).toBe(0);
     expect(base.y).toBe(0);
     expect(base.rx).toBeCloseTo(21, 1);
+    view.unmount();
+  });
+
+  it('skips SVG paint when border-box layout is zero', async () => {
+    const view = await mount(
+      createElement(FigmaButtonSurface, {
+        variant: 'solid',
+        interaction: 'idle',
+        width: 0,
+        height: 0,
+      }),
+    );
+    expect(view.container.querySelector('svg')).toBeNull();
     view.unmount();
   });
 

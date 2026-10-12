@@ -28,6 +28,7 @@ export const figmaIconNames = [
   'user',
   'shopping-basket-01',
   'image-add-02',
+  'check',
 ] as const;
 
 export type FigmaIconName = (typeof figmaIconNames)[number];

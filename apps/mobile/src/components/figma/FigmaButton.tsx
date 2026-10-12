@@ -25,12 +25,15 @@ import {
 import { FigmaButtonSurface } from './FigmaButtonSurface';
 import { useCssBorderBox } from './use-css-border-box';
 
+type FigmaButtonContentAlign = 'center' | 'navigation';
+
 type FigmaButtonVisualContentProps = {
   variant: FigmaButtonVariant;
   interaction: FigmaButtonInteraction;
   label: string;
   layout: { width: number; height: number };
   size?: FigmaButtonSize;
+  contentAlign?: FigmaButtonContentAlign;
   loading?: boolean;
   icon?: FigmaIconName;
   iconNode?: ReactNode;
@@ -44,13 +47,15 @@ function FigmaButtonVisualContent({
   label,
   layout,
   size = 'matrix',
+  contentAlign = 'center',
   loading = false,
   icon,
   iconNode,
   iconPosition = 'left',
   presentational = false,
 }: FigmaButtonVisualContentProps) {
-  const textColor = figmaButtonLabelColor(variant);
+  const textColor = figmaButtonLabelColor(variant, size);
+  const navigation = contentAlign === 'navigation';
   const iconElement = icon ? (
     <View style={styles.iconFrame}>
       <FigmaIcon name={icon} color={textColor} />
@@ -66,13 +71,22 @@ function FigmaButtonVisualContent({
         height={layout.height}
       />
       <View
-        importantForAccessibility={presentational ? 'no-hide-descendants' : undefined}
+        importantForAccessibility={
+          presentational ? 'no-hide-descendants' : undefined
+        }
         accessibilityElementsHidden={presentational ? true : undefined}
         style={{
           flexDirection: 'row',
           alignItems: 'center',
-          justifyContent: 'center',
-          gap: iconNode || icon ? figmaTokens.space.x2 : 0,
+          justifyContent: navigation ? 'space-between' : 'center',
+          alignSelf: navigation ? 'stretch' : undefined,
+          width: navigation ? '100%' : undefined,
+          gap:
+            iconNode || icon
+              ? size === 'event'
+                ? 2
+                : figmaTokens.space.x2
+              : 0,
           opacity: loading ? 0 : 1,
         }}
       >
@@ -82,6 +96,9 @@ function FigmaButtonVisualContent({
           importantForAccessibility={presentational ? 'no' : undefined}
           accessibilityElementsHidden={presentational ? true : undefined}
           style={{
+            flex: navigation ? 1 : undefined,
+            minWidth: navigation ? 0 : undefined,
+            textAlign: navigation ? 'left' : 'center',
             color: textColor,
             ...figmaButtonSizeMetrics(size).typography,
           }}
@@ -112,6 +129,7 @@ type FigmaButtonBaseProps = {
   accessibilityHint?: string;
   width?: 'content' | 'full';
   size?: FigmaButtonSize;
+  contentAlign?: FigmaButtonContentAlign;
   testID?: string;
 };
 
@@ -173,7 +191,9 @@ export function FigmaButtonStatePreview({
   );
 }
 
-export function FigmaButton(props: FigmaButtonPressProps | FigmaButtonLinkProps) {
+export function FigmaButton(
+  props: FigmaButtonPressProps | FigmaButtonLinkProps,
+) {
   const {
     label,
     variant = 'solid',
@@ -185,6 +205,7 @@ export function FigmaButton(props: FigmaButtonPressProps | FigmaButtonLinkProps)
     accessibilityHint,
     width = 'content',
     size = 'matrix',
+    contentAlign = 'center',
     testID,
   } = props;
   const inactive = disabled || loading;
@@ -237,6 +258,7 @@ export function FigmaButton(props: FigmaButtonPressProps | FigmaButtonLinkProps)
             label={label}
             layout={layout}
             size={size}
+            contentAlign={contentAlign}
             loading={loading}
             icon={icon}
             iconNode={iconNode}

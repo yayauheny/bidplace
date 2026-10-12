@@ -7,6 +7,8 @@ import { ApiClientError } from '@bidplace/api-client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import '../../testing/author-application-mocks';
+
 import { flush } from '../../testing/dom';
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
@@ -26,7 +28,8 @@ const harness = vi.hoisted(() => ({
 
 vi.mock('react-native', () => ({
   Platform: { OS: 'web' },
-  View: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
+  View: ({ children }: { children?: ReactNode }) =>
+    createElement('div', null, children),
   Image: () => null,
   Pressable: ({
     children,
@@ -49,6 +52,7 @@ vi.mock('react-native', () => ({
 }));
 
 vi.mock('expo-router', () => ({
+  useIsFocused: () => true,
   useRouter: () => ({
     replace: harness.replace,
     push: harness.push,
@@ -56,7 +60,8 @@ vi.mock('expo-router', () => ({
   }),
   usePathname: () => '/cabinet',
   useLocalSearchParams: () => harness.params,
-  Link: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
+  Link: ({ children }: { children?: ReactNode }) =>
+    createElement('div', null, children),
 }));
 
 vi.mock('expo-image-picker', () => ({
@@ -92,8 +97,10 @@ vi.mock('../../providers/api-provider', () => ({
 }));
 
 vi.mock('../../components/layout', () => ({
-  AppShell: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
-  FormPageShell: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
+  AppShell: ({ children }: { children?: ReactNode }) =>
+    createElement('div', null, children),
+  FormPageShell: ({ children }: { children?: ReactNode }) =>
+    createElement('div', null, children),
   FormPageColumns: ({
     children,
     sidebar,
@@ -124,7 +131,12 @@ vi.mock('./author-application-basics-step', () => ({
   }: {
     closeDisabled: boolean;
     onClose: () => void;
-    photo: { uri: string | null; failed: boolean; disabled: boolean; onChoose: () => void };
+    photo: {
+      uri: string | null;
+      failed: boolean;
+      disabled: boolean;
+      onChoose: () => void;
+    };
     fields: ReactNode;
     formAlert: ReactNode;
     action: ReactNode;
@@ -160,8 +172,20 @@ vi.mock('./author-application-basics-step', () => ({
 }));
 
 vi.mock('./country-picker-sheet', () => ({
-  CountryPickerSheet: ({ open, onSelect }: { open: boolean; onSelect: (code: string) => void }) =>
-    open ? createElement('button', { type: 'button', onClick: () => onSelect('BY') }, 'Беларусь') : null,
+  CountryPickerSheet: ({
+    open,
+    onSelect,
+  }: {
+    open: boolean;
+    onSelect: (code: string) => void;
+  }) =>
+    open
+      ? createElement(
+          'button',
+          { type: 'button', onClick: () => onSelect('BY') },
+          'Беларусь',
+        )
+      : null,
 }));
 
 vi.mock('../../components/ui', () => {
@@ -196,11 +220,21 @@ vi.mock('../../components/ui', () => {
       open: boolean;
       title: string;
       children?: ReactNode;
-    }) => (open ? createElement('div', { role: 'dialog', 'aria-label': title }, children) : null),
-    AppText: ({ children }: { children?: ReactNode }) => createElement('span', null, children),
-    FormSection: ({ children }: { children?: ReactNode }) => createElement('section', null, children),
+    }) =>
+      open
+        ? createElement(
+            'div',
+            { role: 'dialog', 'aria-label': title },
+            children,
+          )
+        : null,
+    AppText: ({ children }: { children?: ReactNode }) =>
+      createElement('span', null, children),
+    FormSection: ({ children }: { children?: ReactNode }) =>
+      createElement('section', null, children),
     ImagePlaceholder: () => null,
-    PageHeader: ({ title }: { title: string }) => createElement('h1', null, title),
+    PageHeader: ({ title }: { title: string }) =>
+      createElement('h1', null, title),
     PrimaryButton: PressButton,
     SecondaryButton: PressButton,
     TextButton: PressButton,
@@ -217,7 +251,8 @@ vi.mock('../../components/ui', () => {
       createElement('input', {
         'aria-label': label,
         value: value ?? '',
-        onChange: (event: { target: { value: string } }) => onChangeText?.(event.target.value),
+        onChange: (event: { target: { value: string } }) =>
+          onChangeText?.(event.target.value),
       }),
   };
 });
@@ -257,7 +292,11 @@ function mount() {
   const root: Root = createRoot(container);
   act(() => {
     root.render(
-      createElement(QueryClientProvider, { client: queryClient }, createElement(SellerProfileScreen)),
+      createElement(
+        QueryClientProvider,
+        { client: queryClient },
+        createElement(SellerProfileScreen),
+      ),
     );
   });
   return {
@@ -272,18 +311,26 @@ function mount() {
   };
 }
 
-async function until(container: HTMLElement, predicate: () => boolean, label: string) {
+async function until(
+  container: HTMLElement,
+  predicate: () => boolean,
+  label: string,
+) {
   for (let attempt = 0; attempt < 12; attempt += 1) {
     if (predicate()) return;
     await flush();
   }
-  throw new Error(`Timed out waiting for ${label}. Body: ${container.textContent}`);
+  throw new Error(
+    `Timed out waiting for ${label}. Body: ${container.textContent}`,
+  );
 }
 
 function findButton(container: ParentNode, label: string) {
   // Matches the accessible name: visible text, or aria-label for icon-only controls.
   return [...container.querySelectorAll('button')].find(
-    (button) => button.textContent === label || button.getAttribute('aria-label') === label,
+    (button) =>
+      button.textContent === label ||
+      button.getAttribute('aria-label') === label,
   );
 }
 
@@ -312,8 +359,12 @@ function dialog(container: ParentNode) {
 
 function setCity(container: ParentNode, value: string) {
   const input = container.querySelector('[aria-label="Город"]');
-  if (!(input instanceof HTMLInputElement)) throw new Error('Missing city field');
-  const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+  if (!(input instanceof HTMLInputElement))
+    throw new Error('Missing city field');
+  const setter = Object.getOwnPropertyDescriptor(
+    HTMLInputElement.prototype,
+    'value',
+  )?.set;
   act(() => {
     setter?.call(input, value);
     input.dispatchEvent(new Event('input', { bubbles: true }));
@@ -332,8 +383,13 @@ beforeEach(() => {
   harness.getAuthorApplicationPhoto.mockReset();
   harness.launchImageLibraryAsync.mockReset();
   harness.logout.mockResolvedValue(undefined);
-  harness.getAuthorApplicationPhoto.mockResolvedValue(new Blob(['png'], { type: 'image/png' }));
-  harness.launchImageLibraryAsync.mockResolvedValue({ canceled: true, assets: [] });
+  harness.getAuthorApplicationPhoto.mockResolvedValue(
+    new Blob(['png'], { type: 'image/png' }),
+  );
+  harness.launchImageLibraryAsync.mockResolvedValue({
+    canceled: true,
+    assets: [],
+  });
   harness.getMyProfile.mockResolvedValue({
     sellerProfile: profile('APPROVED'),
     editingRevision: null,
@@ -348,11 +404,19 @@ afterEach(() => {
 describe('seller profile logout', () => {
   it('does not logout immediately when the profile is dirty and opens the existing exit guard', async () => {
     const view = mount();
-    await until(view.container, () => view.container.querySelector('[aria-label="Город"]') instanceof HTMLInputElement, 'city field');
+    await until(
+      view.container,
+      () =>
+        view.container.querySelector('[aria-label="Город"]') instanceof
+        HTMLInputElement,
+      'city field',
+    );
     setCity(view.container, 'Hrodna');
     click(view.container, 'Выйти');
     expect(harness.logout).not.toHaveBeenCalled();
-    expect(dialog(view.container)?.getAttribute('aria-label')).toBe('Выйти из заявки?');
+    expect(dialog(view.container)?.getAttribute('aria-label')).toBe(
+      'Выйти из заявки?',
+    );
     view.unmount();
   });
 
@@ -368,7 +432,10 @@ describe('seller profile logout', () => {
     const view = mount();
     await until(
       view.container,
-      () => [...view.container.querySelectorAll('button')].some((button) => button.textContent === 'Изменить фото'),
+      () =>
+        [...view.container.querySelectorAll('button')].some(
+          (button) => button.textContent === 'Изменить фото',
+        ),
       'photo button',
     );
     click(view.container, 'Изменить фото');
@@ -376,13 +443,21 @@ describe('seller profile logout', () => {
     await flush();
     click(view.container, 'Выйти');
     expect(harness.logout).not.toHaveBeenCalled();
-    expect(dialog(view.container)?.getAttribute('aria-label')).toBe('Выйти из заявки?');
+    expect(dialog(view.container)?.getAttribute('aria-label')).toBe(
+      'Выйти из заявки?',
+    );
     view.unmount();
   });
 
   it('does not logout when the author continues filling the form', async () => {
     const view = mount();
-    await until(view.container, () => view.container.querySelector('[aria-label="Город"]') instanceof HTMLInputElement, 'city field');
+    await until(
+      view.container,
+      () =>
+        view.container.querySelector('[aria-label="Город"]') instanceof
+        HTMLInputElement,
+      'city field',
+    );
     setCity(view.container, 'Hrodna');
     click(view.container, 'Выйти');
     click(view.container, 'Продолжить заполнение');
@@ -406,7 +481,13 @@ describe('seller profile logout', () => {
       order.push(`replace:${path}`);
     });
     const view = mount();
-    await until(view.container, () => view.container.querySelector('[aria-label="Город"]') instanceof HTMLInputElement, 'city field');
+    await until(
+      view.container,
+      () =>
+        view.container.querySelector('[aria-label="Город"]') instanceof
+        HTMLInputElement,
+      'city field',
+    );
     setCity(view.container, 'Hrodna');
     click(view.container, 'Выйти');
     click(view.container, 'Сохранить и выйти');
@@ -421,7 +502,13 @@ describe('seller profile logout', () => {
   it('stays on the form and does not logout when saving fails', async () => {
     harness.updateProfile.mockRejectedValue(new Error('save failed'));
     const view = mount();
-    await until(view.container, () => view.container.querySelector('[aria-label="Город"]') instanceof HTMLInputElement, 'city field');
+    await until(
+      view.container,
+      () =>
+        view.container.querySelector('[aria-label="Город"]') instanceof
+        HTMLInputElement,
+      'city field',
+    );
     setCity(view.container, 'Hrodna');
     click(view.container, 'Выйти');
     click(view.container, 'Сохранить и выйти');
@@ -429,15 +516,25 @@ describe('seller profile logout', () => {
     await flush();
     expect(harness.logout).not.toHaveBeenCalled();
     expect(harness.replace).not.toHaveBeenCalled();
-    expect(dialog(view.container)?.getAttribute('aria-label')).toBe('Выйти из заявки?');
-    expect(view.container.textContent).toContain('Не удалось сохранить профиль');
+    expect(dialog(view.container)?.getAttribute('aria-label')).toBe(
+      'Выйти из заявки?',
+    );
+    expect(view.container.textContent).toContain(
+      'Не удалось сохранить профиль',
+    );
     expect(view.container.querySelector('[aria-label="Город"]')).not.toBeNull();
     view.unmount();
   });
 
   it('logs out directly when the profile is clean', async () => {
     const view = mount();
-    await until(view.container, () => view.container.querySelector('[aria-label="Город"]') instanceof HTMLInputElement, 'city field');
+    await until(
+      view.container,
+      () =>
+        view.container.querySelector('[aria-label="Город"]') instanceof
+        HTMLInputElement,
+      'city field',
+    );
     click(view.container, 'Выйти');
     await flush();
     expect(dialog(view.container)).toBeNull();
@@ -450,7 +547,10 @@ describe('seller profile logout', () => {
   it('keeps a clean close on the home path without logout', async () => {
     harness.getMyProfile.mockResolvedValue({
       sellerProfile: profile('DRAFT'),
-      editingRevision: { status: 'DRAFT', updatedAt: '2026-09-27T00:00:00.000Z' },
+      editingRevision: {
+        status: 'DRAFT',
+        updatedAt: '2026-09-27T00:00:00.000Z',
+      },
     });
     const view = mount();
     await until(
@@ -466,8 +566,10 @@ describe('seller profile logout', () => {
 
   it('does not logout during a delayed ordinary save or restore the private cache afterwards', async () => {
     let profileLoads = 0;
-    let resolveSave: (value: { sellerProfile: ReturnType<typeof profile>; editingRevision: null }) => void =
-      () => undefined;
+    let resolveSave: (value: {
+      sellerProfile: ReturnType<typeof profile>;
+      editingRevision: null;
+    }) => void = () => undefined;
     const saved = {
       sellerProfile: { ...profile('APPROVED'), city: 'Hrodna' },
       editingRevision: null,
@@ -475,7 +577,10 @@ describe('seller profile logout', () => {
     harness.getMyProfile.mockImplementation(() => {
       profileLoads += 1;
       if (profileLoads === 1) {
-        return Promise.resolve({ sellerProfile: profile('APPROVED'), editingRevision: null });
+        return Promise.resolve({
+          sellerProfile: profile('APPROVED'),
+          editingRevision: null,
+        });
       }
       return new Promise(() => undefined);
     });
@@ -486,10 +591,14 @@ describe('seller profile logout', () => {
         }),
     );
     const view = mount();
-    harness.logout.mockImplementation(() => clearAuthenticatedSession(view.queryClient));
+    harness.logout.mockImplementation(() =>
+      clearAuthenticatedSession(view.queryClient),
+    );
     await until(
       view.container,
-      () => view.container.querySelector('[aria-label="Город"]') instanceof HTMLInputElement,
+      () =>
+        view.container.querySelector('[aria-label="Город"]') instanceof
+        HTMLInputElement,
       'city field',
     );
     expect(view.queryClient.getQueryData(['seller', 'profile'])).toBeDefined();
@@ -515,10 +624,9 @@ describe('seller profile logout', () => {
     await until(
       view.container,
       () => {
-        const current = view.queryClient.getQueryData<{ sellerProfile: { city: string | null } }>([
-          'seller',
-          'profile',
-        ]);
+        const current = view.queryClient.getQueryData<{
+          sellerProfile: { city: string | null };
+        }>(['seller', 'profile']);
         return current?.sellerProfile.city === 'Hrodna';
       },
       'saved profile cache',
@@ -529,9 +637,13 @@ describe('seller profile logout', () => {
       if (pending instanceof Promise) await pending;
     });
     await flush();
-    expect(view.queryClient.getQueryData(['seller', 'profile'])).toBeUndefined();
+    expect(
+      view.queryClient.getQueryData(['seller', 'profile']),
+    ).toBeUndefined();
     await flush();
-    expect(view.queryClient.getQueryData(['seller', 'profile'])).toBeUndefined();
+    expect(
+      view.queryClient.getQueryData(['seller', 'profile']),
+    ).toBeUndefined();
     expect(harness.logout).toHaveBeenCalledTimes(1);
     view.unmount();
   });
@@ -541,7 +653,9 @@ describe('seller profile logout', () => {
     const view = mount();
     await until(
       view.container,
-      () => view.container.querySelector('[aria-label="Город"]') instanceof HTMLInputElement,
+      () =>
+        view.container.querySelector('[aria-label="Город"]') instanceof
+        HTMLInputElement,
       'city field',
     );
     clickInOneTurn(view.container, ['Выйти', 'Сохранить']);
@@ -567,12 +681,18 @@ describe('seller profile logout', () => {
     const view = mount();
     await until(
       view.container,
-      () => view.container.querySelector('[aria-label="Город"]') instanceof HTMLInputElement,
+      () =>
+        view.container.querySelector('[aria-label="Город"]') instanceof
+        HTMLInputElement,
       'city field',
     );
     setCity(view.container, 'Late A');
     click(view.container, 'Сохранить');
-    await until(view.container, () => harness.updateProfile.mock.calls.length === 1, 'save request');
+    await until(
+      view.container,
+      () => harness.updateProfile.mock.calls.length === 1,
+      'save request',
+    );
     harness.getMyProfile.mockImplementation(() => new Promise(() => undefined));
     await act(async () => {
       const retiring = clearAuthenticatedSession(view.queryClient);
@@ -584,9 +704,16 @@ describe('seller profile logout', () => {
       await retiring;
     });
     await flush();
-    expect(view.queryClient.getMutationCache().findAll().some((mutation) => mutation.state.status === 'success')).toBe(true);
+    expect(
+      view.queryClient
+        .getMutationCache()
+        .findAll()
+        .some((mutation) => mutation.state.status === 'success'),
+    ).toBe(true);
     expect(view.queryClient.getQueryData(['user', 'me'])).toBeNull();
-    expect(view.queryClient.getQueryData(['seller', 'profile'])).toBeUndefined();
+    expect(
+      view.queryClient.getQueryData(['seller', 'profile']),
+    ).toBeUndefined();
     view.unmount();
   });
 
@@ -598,12 +725,14 @@ describe('seller profile logout', () => {
     const missing = mount();
     await until(
       missing.container,
-      () => dialog(missing.container)?.getAttribute('aria-label') === 'Стать автором на Bidplace',
+      () =>
+        dialog(missing.container)?.getAttribute('aria-label') ===
+        'Стать автором на Bidplace',
       'intro dialog',
     );
-    const introButtons = [...(dialog(missing.container)?.querySelectorAll('button') ?? [])].map(
-      (button) => button.textContent,
-    );
+    const introButtons = [
+      ...(dialog(missing.container)?.querySelectorAll('button') ?? []),
+    ].map((button) => button.textContent);
     expect(introButtons).toEqual(['Начать']);
     missing.unmount();
 
@@ -611,14 +740,20 @@ describe('seller profile logout', () => {
     const closedIntro = mount();
     await until(
       closedIntro.container,
-      () => [...closedIntro.container.querySelectorAll('button')].some((button) => button.textContent === 'Выйти'),
+      () =>
+        [...closedIntro.container.querySelectorAll('button')].some(
+          (button) => button.textContent === 'Выйти',
+        ),
       'missing profile logout after the intro',
     );
     closedIntro.unmount();
 
     harness.getMyProfile.mockResolvedValue({
       sellerProfile: profile('DRAFT'),
-      editingRevision: { status: 'DRAFT', updatedAt: '2026-09-27T00:00:00.000Z' },
+      editingRevision: {
+        status: 'DRAFT',
+        updatedAt: '2026-09-27T00:00:00.000Z',
+      },
     });
     const draft = mount();
     await until(
@@ -626,7 +761,11 @@ describe('seller profile logout', () => {
       () => findButton(draft.container, 'Закрыть') instanceof HTMLButtonElement,
       'draft logout',
     );
-    expect([...draft.container.querySelectorAll('button')].some((button) => button.textContent === 'Выйти')).toBe(true);
+    expect(
+      [...draft.container.querySelectorAll('button')].some(
+        (button) => button.textContent === 'Выйти',
+      ),
+    ).toBe(true);
     draft.unmount();
 
     harness.getMyProfile.mockResolvedValue({
@@ -636,10 +775,17 @@ describe('seller profile logout', () => {
     const pending = mount();
     await until(
       pending.container,
-      () => pending.container.textContent?.includes('Сейчас профиль нельзя редактировать.') === true,
+      () =>
+        pending.container.textContent?.includes(
+          'Сейчас профиль нельзя редактировать.',
+        ) === true,
       'pending profile',
     );
-    expect([...pending.container.querySelectorAll('button')].some((button) => button.textContent === 'Выйти')).toBe(true);
+    expect(
+      [...pending.container.querySelectorAll('button')].some(
+        (button) => button.textContent === 'Выйти',
+      ),
+    ).toBe(true);
     pending.unmount();
   });
 });

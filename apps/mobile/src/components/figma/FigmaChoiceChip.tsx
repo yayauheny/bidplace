@@ -3,6 +3,7 @@ import { Platform, Text } from 'react-native';
 import { figmaTokens } from '@bidplace/design-tokens';
 
 import { MotionPressable } from '../ui/MotionPressable';
+import { FigmaIcon } from './FigmaIcon';
 import {
   figmaChoiceChipStyle,
   figmaChoiceChipTextColor,
@@ -13,6 +14,8 @@ export function FigmaChoiceChip({
   label,
   selected,
   onPress,
+  onRemove,
+  removable = false,
   disabled = false,
   stretch = false,
   accessibilityRole = 'button',
@@ -20,17 +23,24 @@ export function FigmaChoiceChip({
   label: string;
   selected: boolean;
   onPress: () => void;
+  onRemove?: () => void;
+  removable?: boolean;
   disabled?: boolean;
   stretch?: boolean;
   accessibilityRole?: 'button' | 'tab';
 }) {
+  const showRemove = removable && selected && onRemove !== undefined;
+  const typography = showRemove
+    ? figmaTokens.typography.choiceChipSelectedRemovable
+    : figmaTokens.typography.choiceChip;
+
   return (
     <MotionPressable
       accessibilityRole={accessibilityRole}
-      accessibilityLabel={label}
+      accessibilityLabel={showRemove ? `Удалить ${label}` : label}
       accessibilityState={{ disabled, selected }}
       disabled={disabled}
-      onPress={onPress}
+      onPress={showRemove ? onRemove : onPress}
       preset="button"
       {...(Platform.OS === 'web' && accessibilityRole === 'tab'
         ? ({ 'aria-selected': selected } as object)
@@ -40,21 +50,39 @@ export function FigmaChoiceChip({
         figmaChoiceChipStyle(
           selected,
           resolveInteraction({ disabled, hovered, pressed }),
+          showRemove,
         ),
+        showRemove
+          ? {
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: figmaTokens.space.authorIdentityGap,
+              paddingRight: figmaTokens.space.choiceChipRemovableX,
+            }
+          : null,
       ]}
     >
       <Text
         numberOfLines={1}
         style={[
           {
+            flex: showRemove ? 1 : undefined,
+            minWidth: showRemove ? 0 : undefined,
             color: figmaChoiceChipTextColor(selected),
             textAlign: stretch ? 'center' : 'left',
           },
-          figmaTokens.typography.choiceChip,
+          typography,
         ]}
       >
         {label}
       </Text>
+      {showRemove ? (
+        <FigmaIcon
+          name="x"
+          size={figmaTokens.size.choiceChipRemoveIcon}
+          color={figmaTokens.color.white}
+        />
+      ) : null}
     </MotionPressable>
   );
 }

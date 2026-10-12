@@ -9,18 +9,22 @@ export type FigmaChoiceChipInteraction =
 export function figmaChoiceChipStyle(
   selected: boolean,
   interaction: FigmaChoiceChipInteraction,
+  removable = false,
 ) {
   const active = interaction === 'hover' || interaction === 'pressed';
 
   return {
-    minHeight: figmaTokens.size.choiceChip,
-    paddingHorizontal: figmaTokens.space.choiceChipX,
-    paddingVertical: figmaTokens.space.choiceChipY,
+    height: removable ? figmaTokens.size.choiceChipRemovable : undefined,
+    minHeight: removable
+      ? figmaTokens.size.choiceChipRemovable
+      : figmaTokens.size.choiceChip,
+    paddingHorizontal: removable
+      ? figmaTokens.space.choiceChipRemovableX
+      : figmaTokens.space.choiceChipX,
+    paddingVertical: removable ? 0 : figmaTokens.space.choiceChipY,
     borderRadius: figmaTokens.radius.button,
-    borderWidth: 1,
-    borderColor: selected
-      ? figmaTokens.color.ink
-      : figmaTokens.color.white,
+    borderWidth: removable ? 0.5 : 1,
+    borderColor: selected ? figmaTokens.color.ink : figmaTokens.color.white,
     backgroundColor: selected
       ? active
         ? figmaTokens.color.solidHover

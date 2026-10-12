@@ -33,24 +33,30 @@ import {
 } from '../src';
 
 describe('shared contracts', () => {
-  it.each([2, 3, 20, 21, 121])('validates %i-character new nicknames at every write boundary', (length) => {
-    const slug = 'a'.repeat(length);
-    const valid = length >= 3 && length <= 20;
-    expect(newAccountSlugSchema.safeParse(slug).success).toBe(valid);
-    expect(
-      registerRequestSchema.safeParse({
-        email: 'author@example.com',
-        password: 'password123',
-        slug,
-        turnstileToken: 'synthetic-turnstile-proof',
-      }).success,
-    ).toBe(valid);
-    expect(claimSlugRequestSchema.safeParse({ slug }).success).toBe(valid);
-  });
+  it.each([2, 3, 20, 21, 121])(
+    'validates %i-character new nicknames at every write boundary',
+    (length) => {
+      const slug = 'a'.repeat(length);
+      const valid = length >= 3 && length <= 20;
+      expect(newAccountSlugSchema.safeParse(slug).success).toBe(valid);
+      expect(
+        registerRequestSchema.safeParse({
+          email: 'author@example.com',
+          password: 'password123',
+          slug,
+          turnstileToken: 'synthetic-turnstile-proof',
+        }).success,
+      ).toBe(valid);
+      expect(claimSlugRequestSchema.safeParse({ slug }).success).toBe(valid);
+    },
+  );
 
-  it.each(['ab', 'a'.repeat(120)])('reads a historical nickname %s without applying new-choice limits', (slug) => {
-    expect(claimSlugResponseSchema.parse({ slug })).toEqual({ slug });
-  });
+  it.each(['ab', 'a'.repeat(120)])(
+    'reads a historical nickname %s without applying new-choice limits',
+    (slug) => {
+      expect(claimSlugResponseSchema.parse({ slug })).toEqual({ slug });
+    },
+  );
 
   it('keeps discovery facets strict, non-empty, and normalized', () => {
     expect(
@@ -310,7 +316,7 @@ describe('shared contracts', () => {
     }
   });
 
-  it('allows private partial drafts but keeps submitted applications complete', () => {
+  it('reads partial editing applications independently from the published parent status', () => {
     const draft = {
       application: {
         slug: 'author',
@@ -327,27 +333,54 @@ describe('shared contracts', () => {
       achievements: [],
     };
 
-    expect(portfolioAuthorApplicationResponseSchema.safeParse(draft).success).toBe(true);
+    expect(
+      portfolioAuthorApplicationResponseSchema.safeParse(draft).success,
+    ).toBe(true);
     expect(
       portfolioAuthorApplicationResponseSchema.safeParse({
         ...draft,
-        application: { ...draft.application, status: 'PENDING_REVIEW' },
+        application: { ...draft.application, status: 'APPROVED' },
+        editingRevision: {
+          id: '22222222-2222-4222-8222-222222222222',
+          version: 2,
+          status: 'DRAFT',
+          updatedAt: '2026-10-12T00:00:00.000Z',
+        },
       }).success,
-    ).toBe(false);
+    ).toBe(true);
   });
 
   it('normalizes public email and rejects impossible achievement calendar dates', () => {
     expect(
       sellerProfileCreateRequestSchema.parse({
-        fullName: 'Author', country: 'BY', city: 'Minsk',
+        fullName: 'Author',
+        country: 'BY',
+        city: 'Minsk',
         publicEmail: ' AUTHOR@EXAMPLE.COM ',
       }).publicEmail,
     ).toBe('author@example.com');
     expect(
       portfolioAuthorApplicationResponseSchema.safeParse({
-        application: { slug: 'author', fullName: 'Author', country: 'Belarus', city: 'Minsk', discipline: 'Painting', practice: null, shortDescription: 'Bio', status: 'PENDING_REVIEW', applicationStage: null },
+        application: {
+          slug: 'author',
+          fullName: 'Author',
+          country: 'Belarus',
+          city: 'Minsk',
+          discipline: 'Painting',
+          practice: null,
+          shortDescription: 'Bio',
+          status: 'PENDING_REVIEW',
+          applicationStage: null,
+        },
         editingRevision: null,
-        achievements: [{ id: '0a0d82a1-0317-49eb-904f-a8bc87d311a5', occurredDate: { year: 2025, month: 2, day: 29 }, body: 'Exhibition', image: null }],
+        achievements: [
+          {
+            id: '0a0d82a1-0317-49eb-904f-a8bc87d311a5',
+            occurredDate: { year: 2025, month: 2, day: 29 },
+            body: 'Exhibition',
+            image: null,
+          },
+        ],
       }).success,
     ).toBe(false);
   });
@@ -356,12 +389,12 @@ describe('shared contracts', () => {
     expect(
       productWriteRequestSchema.safeParse({ title: 'Personal item' }).success,
     ).toBe(true);
-    expect(productWriteRequestSchema.safeParse({ materials: 'Clay' }).success).toBe(
-      false,
-    );
-    expect(productWriteRequestSchema.safeParse({ technique: 'Oil' }).success).toBe(
-      false,
-    );
+    expect(
+      productWriteRequestSchema.safeParse({ materials: 'Clay' }).success,
+    ).toBe(false);
+    expect(
+      productWriteRequestSchema.safeParse({ technique: 'Oil' }).success,
+    ).toBe(false);
     expect(normalizeCatalogName('Ⅰ')).toBe(normalizeCatalogName('I'));
     expect(normalizeCatalogName('  ХОЛСТ  ')).toBe('холст');
   });
@@ -617,28 +650,68 @@ const key = 'idem-key-1';
 describe('auth challenge requests', () => {
   it('requires a Turnstile proof and idempotency key on OTP send, OTP verify, and forgot password', () => {
     expect(emailOtpRequestSchema.safeParse({}).success).toBe(false);
-    expect(emailOtpRequestSchema.safeParse({ idempotencyKey: key }).success).toBe(false);
-    expect(emailOtpRequestSchema.safeParse({ turnstileToken: proof }).success).toBe(false);
-    expect(emailOtpRequestSchema.safeParse({ idempotencyKey: 'short', turnstileToken: proof }).success).toBe(false);
-    expect(emailOtpRequestSchema.safeParse({ idempotencyKey: key, turnstileToken: '' }).success).toBe(false);
-    expect(emailOtpRequestSchema.parse({ idempotencyKey: key, turnstileToken: proof })).toEqual({
+    expect(
+      emailOtpRequestSchema.safeParse({ idempotencyKey: key }).success,
+    ).toBe(false);
+    expect(
+      emailOtpRequestSchema.safeParse({ turnstileToken: proof }).success,
+    ).toBe(false);
+    expect(
+      emailOtpRequestSchema.safeParse({
+        idempotencyKey: 'short',
+        turnstileToken: proof,
+      }).success,
+    ).toBe(false);
+    expect(
+      emailOtpRequestSchema.safeParse({
+        idempotencyKey: key,
+        turnstileToken: '',
+      }).success,
+    ).toBe(false);
+    expect(
+      emailOtpRequestSchema.parse({
+        idempotencyKey: key,
+        turnstileToken: proof,
+      }),
+    ).toEqual({
       idempotencyKey: key,
       turnstileToken: proof,
     });
 
-    expect(emailOtpVerifyRequestSchema.safeParse({ code: '123456' }).success).toBe(false);
-    expect(emailOtpVerifyRequestSchema.safeParse({ code: '123456', idempotencyKey: 'short' }).success).toBe(false);
-    expect(emailOtpVerifyRequestSchema.parse({ code: '123456', idempotencyKey: key })).toEqual({
+    expect(
+      emailOtpVerifyRequestSchema.safeParse({ code: '123456' }).success,
+    ).toBe(false);
+    expect(
+      emailOtpVerifyRequestSchema.safeParse({
+        code: '123456',
+        idempotencyKey: 'short',
+      }).success,
+    ).toBe(false);
+    expect(
+      emailOtpVerifyRequestSchema.parse({
+        code: '123456',
+        idempotencyKey: key,
+      }),
+    ).toEqual({
       code: '123456',
       idempotencyKey: key,
     });
 
-    expect(forgotPasswordRequestSchema.safeParse({ email: 'author@example.com' }).success).toBe(false);
     expect(
-      forgotPasswordRequestSchema.safeParse({ email: 'author@example.com', idempotencyKey: key }).success,
+      forgotPasswordRequestSchema.safeParse({ email: 'author@example.com' })
+        .success,
     ).toBe(false);
     expect(
-      forgotPasswordRequestSchema.safeParse({ email: 'author@example.com', turnstileToken: proof }).success,
+      forgotPasswordRequestSchema.safeParse({
+        email: 'author@example.com',
+        idempotencyKey: key,
+      }).success,
+    ).toBe(false);
+    expect(
+      forgotPasswordRequestSchema.safeParse({
+        email: 'author@example.com',
+        turnstileToken: proof,
+      }).success,
     ).toBe(false);
     expect(
       forgotPasswordRequestSchema.parse({
@@ -672,7 +745,12 @@ describe('auth challenge requests', () => {
 
     const login = { email: 'author@example.com', password: 'password123' };
     expect(loginRequestSchema.parse(login)).toEqual(login);
-    expect(loginRequestSchema.parse({ ...login, turnstileToken: proof }).turnstileToken).toBe(proof);
-    expect(loginRequestSchema.safeParse({ ...login, turnstileToken: '' }).success).toBe(false);
+    expect(
+      loginRequestSchema.parse({ ...login, turnstileToken: proof })
+        .turnstileToken,
+    ).toBe(proof);
+    expect(
+      loginRequestSchema.safeParse({ ...login, turnstileToken: '' }).success,
+    ).toBe(false);
   });
 });

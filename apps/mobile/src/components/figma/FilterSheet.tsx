@@ -1,7 +1,11 @@
 import { useId, type ReactNode } from 'react';
 import { Modal, Platform, ScrollView, View } from 'react-native';
 
-import { figmaTokens } from '@bidplace/design-tokens';
+import {
+  designTokens,
+  figmaTokens,
+  type FigmaButtonSize,
+} from '@bidplace/design-tokens';
 
 import { AppText } from '../ui/AppText';
 import { MotionPressable } from '../ui/MotionPressable';
@@ -21,6 +25,7 @@ export function FilterSheet({
   open,
   onClose,
   title,
+  titleVariant = 'default',
   showBack = false,
   onBack,
   onClear,
@@ -32,6 +37,7 @@ export function FilterSheet({
   open: boolean;
   onClose: () => void;
   title: string;
+  titleVariant?: 'default' | 'directions';
   showBack?: boolean;
   onBack?: () => void;
   onClear?: () => void;
@@ -41,6 +47,7 @@ export function FilterSheet({
     onPress: () => void;
     disabled?: boolean;
     loading?: boolean;
+    size?: FigmaButtonSize;
   };
   returnFocusRef?: { current: { focus?: () => void } | null };
   children: ReactNode;
@@ -86,7 +93,17 @@ export function FilterSheet({
             ? ({ role: 'dialog', 'aria-modal': true } as object)
             : {})}
         >
-          <View style={filterSheetHeaderStyle()}>
+          <View
+            style={[
+              filterSheetHeaderStyle(),
+              titleVariant === 'directions'
+                ? {
+                    minHeight:
+                      designTokens.authorApplication.directionsHeaderHeight,
+                  }
+                : null,
+            ]}
+          >
             <MotionPressable
               accessibilityRole="button"
               accessibilityLabel={showBack ? 'Назад' : 'Закрыть'}
@@ -103,13 +120,21 @@ export function FilterSheet({
               <FigmaIcon
                 name={showBack ? 'arrow-left-01' : 'x'}
                 size={figmaTokens.size.buttonIconFrame}
+                strokeWidthPx={
+                  titleVariant === 'directions' && showBack ? 2 : undefined
+                }
               />
             </MotionPressable>
             <AppText
               nativeID={titleId}
               role={showBack ? 'profileHeading' : 'screenTitle'}
               numberOfLines={1}
-              style={filterSheetTitleStyle()}
+              style={[
+                filterSheetTitleStyle(),
+                titleVariant === 'directions'
+                  ? designTokens.typography.directionsSheetTitle
+                  : null,
+              ]}
             >
               {title}
             </AppText>
@@ -124,9 +149,16 @@ export function FilterSheet({
             )}
           </View>
           <ScrollView
-            style={{ flex: 1, marginTop: figmaTokens.space.x2 }}
+            style={{
+              flex: 1,
+              marginTop:
+                titleVariant === 'directions' ? 0 : figmaTokens.space.x2,
+            }}
             contentContainerStyle={{
-              paddingTop: figmaTokens.space.identityGap,
+              paddingTop:
+                titleVariant === 'directions'
+                  ? designTokens.authorApplication.directionsSearchGap
+                  : figmaTokens.space.identityGap,
               paddingBottom: figmaTokens.space.x4,
             }}
             keyboardShouldPersistTaps="handled"
@@ -139,6 +171,8 @@ export function FilterSheet({
               onPrimary={primaryAction.onPress}
               primaryDisabled={primaryAction.disabled}
               primaryLoading={primaryAction.loading}
+              size={primaryAction.size}
+              variant={titleVariant}
             />
           ) : null}
         </View>

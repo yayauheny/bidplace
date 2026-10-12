@@ -1,15 +1,18 @@
 import { FigmaTextField } from './FigmaTextField';
+import { type FigmaFieldVariant } from './figma-text-field-style';
 
 export function FilterSearchField({
   value,
   onChangeText,
   placeholder = 'Поиск',
   autoFocus = false,
+  variant = 'default',
 }: {
   value: string;
   onChangeText: (value: string) => void;
   placeholder?: string;
   autoFocus?: boolean;
+  variant?: FigmaFieldVariant;
 }) {
   return (
     <FigmaTextField
@@ -20,6 +23,7 @@ export function FilterSearchField({
       onChangeText={onChangeText}
       autoFocus={autoFocus}
       autoCorrect={false}
+      variant={variant}
     />
   );
 }

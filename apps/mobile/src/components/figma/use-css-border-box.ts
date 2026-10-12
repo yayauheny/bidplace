@@ -5,14 +5,21 @@ import { Platform, type LayoutChangeEvent } from 'react-native';
 export function useCssBorderBox() {
   const [layout, setLayout] = useState({ width: 0, height: 0 });
   const onLayout = (event: LayoutChangeEvent) => {
-    const target = 'target' in event.nativeEvent ? event.nativeEvent.target : undefined;
+    const target =
+      'target' in event.nativeEvent ? event.nativeEvent.target : undefined;
     const style =
       Platform.OS === 'web' && target instanceof HTMLElement
         ? getComputedStyle(target)
         : null;
-    const measured = style
-      ? { width: Number.parseFloat(style.width), height: Number.parseFloat(style.height) }
-      : event.nativeEvent.layout;
+    const measured =
+      style && target instanceof HTMLElement
+        ? target.getClientRects().length === 0
+          ? { width: 0, height: 0 }
+          : {
+              width: Number.parseFloat(style.width),
+              height: Number.parseFloat(style.height),
+            }
+        : event.nativeEvent.layout;
     const { width, height } = measured;
     setLayout((previous) =>
       previous.width === width && previous.height === height

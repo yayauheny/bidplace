@@ -6,7 +6,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { flush, setInput } from '../../testing/dom';
+import { flush, setInput, waitFor } from '../../testing/dom';
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
@@ -157,7 +157,11 @@ afterEach(() => {
 describe('country picker sheet', () => {
   it('lists the directory names and requests the trimmed search with the abort signal', async () => {
     const view = mount();
-    await flush();
+    await waitFor(() =>
+      expect(radio(view.container, 'Беларусь')).toBeInstanceOf(
+        HTMLButtonElement,
+      ),
+    );
     expect(harness.list).toHaveBeenLastCalledWith(
       '',
       expect.objectContaining({ signal: expect.any(AbortSignal) }),
@@ -176,7 +180,9 @@ describe('country picker sheet', () => {
 
   it('sends the ISO code of the picked country and marks the stored one as selected', async () => {
     const view = mount({ selectedCode: 'PL' });
-    await flush();
+    await waitFor(() =>
+      expect(radio(view.container, 'Польша')).toBeInstanceOf(HTMLButtonElement),
+    );
     expect(radio(view.container, 'Польша').getAttribute('aria-checked')).toBe(
       'true',
     );
@@ -190,17 +196,20 @@ describe('country picker sheet', () => {
   it('shows the empty state when the search matches nothing', async () => {
     harness.list.mockResolvedValue({ countries: [] });
     const view = mount();
-    await flush();
-    expect(view.container.textContent).toContain('Ничего не найдено');
+    await waitFor(() =>
+      expect(view.container.textContent).toContain('Ничего не найдено'),
+    );
     view.unmount();
   });
 
   it('offers a retry after a failed directory request', async () => {
     harness.list.mockRejectedValueOnce(new Error('offline'));
     const view = mount();
-    await flush();
-    await flush();
-    expect(view.container.textContent).toContain('Не удалось загрузить страны');
+    await waitFor(() =>
+      expect(view.container.textContent).toContain(
+        'Не удалось загрузить страны',
+      ),
+    );
     const retry = [...view.container.querySelectorAll('button')].find(
       (button) => button.textContent === 'Повторить',
     );

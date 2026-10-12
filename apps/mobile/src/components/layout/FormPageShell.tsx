@@ -10,11 +10,13 @@ export function FormPageShell({
   bottomAction,
   maxWidth,
   hideDock = false,
+  variant = 'default',
 }: {
   children: ReactNode;
   bottomAction?: ReactNode;
   maxWidth?: number;
   hideDock?: boolean;
+  variant?: 'default' | 'authorApplication';
 }) {
   return (
     <AppShell hideDock={hideDock} bottomAction={bottomAction}>
@@ -24,7 +26,10 @@ export function FormPageShell({
           paddingBottom: hideDock
             ? designTokens.space.x8
             : designTokens.size.dockReserve,
-          paddingTop: designTokens.space.x6,
+          paddingTop:
+            variant === 'authorApplication'
+              ? designTokens.authorApplication.contentTop
+              : designTokens.space.x6,
         }}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"

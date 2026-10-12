@@ -39,6 +39,7 @@ describe('seller profile field validation', () => {
       slug: '',
       fullName: 'Иван',
       discipline: '',
+      directionCategoryIds: [],
       city: '',
       practice: '',
       socialLink: '',
@@ -63,21 +64,32 @@ describe('seller profile field validation', () => {
       publicEmail: '',
     };
     expect(getProfileFieldErrors(valid)).toEqual({});
-    expect(getProfileFieldErrors({ ...valid, telegramUrl: '@abc' }).telegramUrl).toBe(
-      'Введите Telegram username или HTTPS-ссылку',
-    );
-    expect(getProfileFieldErrors({ ...valid, telegramUrl: '@maker_art' }).telegramUrl).toBeUndefined();
-    expect(getProfileFieldErrors({ ...valid, instagramUrl: 'bad handle' }).instagramUrl).toBe(
-      'Введите Instagram username или HTTPS-ссылку',
-    );
-    expect(getProfileFieldErrors({ ...valid, instagramUrl: '@maker.art' }).instagramUrl).toBeUndefined();
-    expect(getProfileFieldErrors({ ...valid, websiteUrl: 'example.com' }).websiteUrl).toBe(
-      'Введите HTTPS-ссылку, начиная с https://',
-    );
-    expect(getProfileFieldErrors({ ...valid, publicEmail: 'not-an-email' }).publicEmail).toBe(
-      'Введите корректный email',
-    );
-    expect(getProfileFieldErrors({ ...valid, publicEmail: 'hello@example.com' }).publicEmail).toBeUndefined();
+    expect(
+      getProfileFieldErrors({ ...valid, telegramUrl: '@abc' }).telegramUrl,
+    ).toBe('Введите Telegram username или HTTPS-ссылку');
+    expect(
+      getProfileFieldErrors({ ...valid, telegramUrl: '@maker_art' })
+        .telegramUrl,
+    ).toBeUndefined();
+    expect(
+      getProfileFieldErrors({ ...valid, instagramUrl: 'bad handle' })
+        .instagramUrl,
+    ).toBe('Введите Instagram username или HTTPS-ссылку');
+    expect(
+      getProfileFieldErrors({ ...valid, instagramUrl: '@maker.art' })
+        .instagramUrl,
+    ).toBeUndefined();
+    expect(
+      getProfileFieldErrors({ ...valid, websiteUrl: 'example.com' }).websiteUrl,
+    ).toBe('Введите HTTPS-ссылку, начиная с https://');
+    expect(
+      getProfileFieldErrors({ ...valid, publicEmail: 'not-an-email' })
+        .publicEmail,
+    ).toBe('Введите корректный email');
+    expect(
+      getProfileFieldErrors({ ...valid, publicEmail: 'hello@example.com' })
+        .publicEmail,
+    ).toBeUndefined();
   });
 
   it('keeps raw draft text when the draft schema accepts it', () => {
@@ -85,6 +97,7 @@ describe('seller profile field validation', () => {
       slug: 'maker',
       fullName: 'Maker',
       discipline: 'Керамика',
+      directionCategoryIds: [],
       country: 'BY',
       city: 'Минск',
       practice: '',
@@ -105,6 +118,7 @@ describe('seller profile field validation', () => {
       slug: 'maker',
       fullName: 'Maker',
       discipline: '',
+      directionCategoryIds: [],
       country: 'BY',
       city: 'Минск',
       practice: '',
@@ -116,9 +130,19 @@ describe('seller profile field validation', () => {
       shortDescription: '',
     };
     expect(profileDraftAllowsSave(draft)).toBe(true);
-    expect(profileDraftAllowsSave({ ...draft, discipline: ' ', shortDescription: ' ' })).toBe(true);
-    expect(profileDraftAllowsSave({ ...draft, telegramUrl: 'bad handle' })).toBe(false);
-    expect(profileDraftAllowsSave({ ...draft, telegramUrl: '@maker_art' })).toBe(true);
+    expect(
+      profileDraftAllowsSave({
+        ...draft,
+        discipline: ' ',
+        shortDescription: ' ',
+      }),
+    ).toBe(true);
+    expect(
+      profileDraftAllowsSave({ ...draft, telegramUrl: 'bad handle' }),
+    ).toBe(false);
+    expect(
+      profileDraftAllowsSave({ ...draft, telegramUrl: '@maker_art' }),
+    ).toBe(true);
     expect(profileDraftAllowsSave({ ...draft, city: '   ' })).toBe(true);
   });
 
@@ -127,6 +151,7 @@ describe('seller profile field validation', () => {
       slug: 'maker',
       fullName: 'Maker',
       discipline: '',
+      directionCategoryIds: [],
       country: 'BY',
       city: 'Минск',
       practice: '',

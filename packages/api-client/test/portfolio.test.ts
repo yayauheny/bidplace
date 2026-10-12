@@ -77,40 +77,51 @@ describe('portfolio client', () => {
       baseUrl: 'https://api.example.test',
       fetchImpl: async (input) => {
         calls.push(input);
-        return new Response(JSON.stringify({
-          application: {
-            ...authorApplication.application,
-            discipline: null,
-            shortDescription: null,
-            status: 'DRAFT',
-            applicationStage: 'ABOUT',
-          },
-          editingRevision: { ...authorApplication.editingRevision, status: 'DRAFT' },
-          achievements: [],
-        }), { headers: { 'content-type': 'application/json' } });
+        return new Response(
+          JSON.stringify({
+            application: {
+              ...authorApplication.application,
+              discipline: null,
+              shortDescription: null,
+              status: 'DRAFT',
+              applicationStage: 'ABOUT',
+            },
+            editingRevision: {
+              ...authorApplication.editingRevision,
+              status: 'DRAFT',
+            },
+            achievements: [],
+          }),
+          { headers: { 'content-type': 'application/json' } },
+        );
       },
     });
 
-    await expect(client.portfolio.advanceAuthorApplication()).resolves.toMatchObject({
+    await expect(
+      client.portfolio.advanceAuthorApplication(),
+    ).resolves.toMatchObject({
       application: { applicationStage: 'ABOUT' },
     });
     expect(String(calls[0])).toContain('/api/author/application/advance');
   });
 
-  it('serializes a structured achievement date for multipart upload', async () => {
-    let formData: FormData | undefined;
+  it('sends an achievement date and description as JSON without a photo part', async () => {
+    let request: RequestInit | undefined;
     const client = createApiClient({
       baseUrl: 'https://api.example.test',
       fetchImpl: async (_input, init) => {
-        formData = init?.body as FormData;
-        return new Response(JSON.stringify({
-          achievement: {
-            id: '0a0d82a1-0317-49eb-904f-a8bc87d311a5',
-            occurredDate: { year: 2025, month: 3, day: null },
-            body: 'Show',
-            image: null,
-          },
-        }), { headers: { 'content-type': 'application/json' } });
+        request = init;
+        return new Response(
+          JSON.stringify({
+            achievement: {
+              id: '0a0d82a1-0317-49eb-904f-a8bc87d311a5',
+              occurredDate: { year: 2025, month: 3, day: null },
+              body: 'Show',
+              image: null,
+            },
+          }),
+          { headers: { 'content-type': 'application/json' } },
+        );
       },
     });
 
@@ -119,8 +130,12 @@ describe('portfolio client', () => {
       body: 'Show',
     });
 
-    expect(formData?.get('occurredDate')).toBe(
-      JSON.stringify({ year: 2025, month: 3, day: null }),
+    expect(new Headers(request?.headers).get('content-type')).toBe(
+      'application/json',
     );
+    expect(JSON.parse(String(request?.body))).toEqual({
+      occurredDate: { year: 2025, month: 3, day: null },
+      body: 'Show',
+    });
   });
 });

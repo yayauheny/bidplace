@@ -8,6 +8,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ApiClientError } from '@bidplace/api-client';
 
+import '../../testing/author-application-mocks';
+
 import { flush, inputValue, setInput } from '../../testing/dom';
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
@@ -29,7 +31,8 @@ const harness = vi.hoisted(() => ({
 
 vi.mock('react-native', () => ({
   Platform: { OS: 'web' },
-  View: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
+  View: ({ children }: { children?: ReactNode }) =>
+    createElement('div', null, children),
   Image: () => null,
   Pressable: ({
     children,
@@ -52,6 +55,7 @@ vi.mock('react-native', () => ({
 }));
 
 vi.mock('expo-router', () => ({
+  useIsFocused: () => true,
   useRouter: () => ({
     replace: harness.replace,
     push: harness.push,
@@ -59,7 +63,8 @@ vi.mock('expo-router', () => ({
   }),
   usePathname: () => '/cabinet',
   useLocalSearchParams: () => harness.params,
-  Link: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
+  Link: ({ children }: { children?: ReactNode }) =>
+    createElement('div', null, children),
 }));
 
 vi.mock('expo-image-picker', () => ({
@@ -94,12 +99,32 @@ vi.mock('../../providers/api-provider', () => ({
       advanceAuthorApplication: vi.fn(),
       submitAuthorApplication: harness.submitAuthorApplication,
     },
+    categories: {
+      list: vi.fn().mockResolvedValue({
+        categories: [
+          {
+            id: '33333333-3333-4333-8333-333333333333',
+            name: 'Керамика',
+            slug: 'ceramics',
+            description: null,
+            active: true,
+          },
+        ],
+      }),
+    },
+    countries: {
+      list: vi.fn().mockResolvedValue({
+        countries: [{ code: 'BY', name: 'Беларусь' }],
+      }),
+    },
   }),
 }));
 
 vi.mock('../../components/layout', () => ({
-  AppShell: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
-  FormPageShell: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
+  AppShell: ({ children }: { children?: ReactNode }) =>
+    createElement('div', null, children),
+  FormPageShell: ({ children }: { children?: ReactNode }) =>
+    createElement('div', null, children),
   FormPageColumns: ({
     children,
     sidebar,
@@ -130,7 +155,12 @@ vi.mock('./author-application-basics-step', () => ({
   }: {
     closeDisabled: boolean;
     onClose: () => void;
-    photo: { uri: string | null; failed: boolean; disabled: boolean; onChoose: () => void };
+    photo: {
+      uri: string | null;
+      failed: boolean;
+      disabled: boolean;
+      onChoose: () => void;
+    };
     fields: ReactNode;
     formAlert: ReactNode;
     action: ReactNode;
@@ -166,8 +196,20 @@ vi.mock('./author-application-basics-step', () => ({
 }));
 
 vi.mock('./country-picker-sheet', () => ({
-  CountryPickerSheet: ({ open, onSelect }: { open: boolean; onSelect: (code: string) => void }) =>
-    open ? createElement('button', { type: 'button', onClick: () => onSelect('BY') }, 'Беларусь') : null,
+  CountryPickerSheet: ({
+    open,
+    onSelect,
+  }: {
+    open: boolean;
+    onSelect: (code: string) => void;
+  }) =>
+    open
+      ? createElement(
+          'button',
+          { type: 'button', onClick: () => onSelect('BY') },
+          'Беларусь',
+        )
+      : null,
 }));
 
 vi.mock('../../components/ui', () => {
@@ -202,8 +244,16 @@ vi.mock('../../components/ui', () => {
       open: boolean;
       title: string;
       children?: ReactNode;
-    }) => (open ? createElement('div', { role: 'dialog', 'aria-label': title }, children) : null),
-    AppText: ({ children }: { children?: ReactNode }) => createElement('span', null, children),
+    }) =>
+      open
+        ? createElement(
+            'div',
+            { role: 'dialog', 'aria-label': title },
+            children,
+          )
+        : null,
+    AppText: ({ children }: { children?: ReactNode }) =>
+      createElement('span', null, children),
     FormSection: ({
       children,
       title,
@@ -212,7 +262,8 @@ vi.mock('../../components/ui', () => {
       title?: string;
     }) => createElement('section', null, title, children),
     ImagePlaceholder: () => null,
-    PageHeader: ({ title }: { title: string }) => createElement('h1', null, title),
+    PageHeader: ({ title }: { title: string }) =>
+      createElement('h1', null, title),
     PrimaryButton: PressButton,
     SecondaryButton: PressButton,
     TextButton: PressButton,
@@ -239,15 +290,22 @@ vi.mock('../../components/ui', () => {
           'aria-label': label,
           value: value ?? '',
           disabled: editable === false,
-          onChange: (event: { target: { value: string } }) => onChangeText?.(event.target.value),
+          onChange: (event: { target: { value: string } }) =>
+            onChangeText?.(event.target.value),
           onBlur: () => onBlur?.(),
         }),
-        error ? createElement('span', { 'data-error-for': label }, error) : null,
+        error
+          ? createElement('span', { 'data-error-for': label }, error)
+          : null,
       ),
   };
 });
 
-import { advanceAuthEpoch, authKeys, clearAuthenticatedSession } from '../../lib/query-cache';
+import {
+  advanceAuthEpoch,
+  authKeys,
+  clearAuthenticatedSession,
+} from '../../lib/query-cache';
 import { SellerProfileScreen } from './seller-profile-screen';
 
 function profile(status: string) {
@@ -265,6 +323,16 @@ function profile(status: string) {
     websiteUrl: null,
     publicEmail: null,
     shortDescription: 'Short description',
+    directionCategoryIds: ['33333333-3333-4333-8333-333333333333'],
+    directions: [
+      {
+        id: '33333333-3333-4333-8333-333333333333',
+        name: 'Керамика',
+        slug: 'ceramics',
+        description: null,
+        active: true,
+      },
+    ],
     status,
     profilePhotoUrl: '/photo.png',
     updatedAt: '2026-09-27T00:00:00.000Z',
@@ -273,10 +341,19 @@ function profile(status: string) {
 }
 
 function revision(status: string, updatedAt = '2026-09-27T00:00:00.000Z') {
-  return { id: '22222222-2222-4222-8222-222222222222', version: 1, status, updatedAt };
+  return {
+    id: '22222222-2222-4222-8222-222222222222',
+    version: 1,
+    status,
+    updatedAt,
+  };
 }
 
-function response(parentStatus: string, revisionStatus: string, updatedAt?: string) {
+function response(
+  parentStatus: string,
+  revisionStatus: string,
+  updatedAt?: string,
+) {
   return {
     sellerProfile: profile(parentStatus),
     editingRevision: revision(revisionStatus, updatedAt),
@@ -298,7 +375,8 @@ function submitResponse(
       practice: null,
       shortDescription: 'Short description',
       status: parentStatus,
-      applicationStage: parentStatus === 'PENDING_REVIEW' ? null : 'ACHIEVEMENTS',
+      applicationStage:
+        parentStatus === 'PENDING_REVIEW' ? null : 'ACHIEVEMENTS',
     },
     editingRevision: revision(revisionStatus, updatedAt),
     achievements: [],
@@ -315,7 +393,11 @@ function mount(sessionId = 'user-a') {
   const root: Root = createRoot(container);
   act(() => {
     root.render(
-      createElement(QueryClientProvider, { client: queryClient }, createElement(SellerProfileScreen)),
+      createElement(
+        QueryClientProvider,
+        { client: queryClient },
+        createElement(SellerProfileScreen),
+      ),
     );
   });
   return {
@@ -330,18 +412,26 @@ function mount(sessionId = 'user-a') {
   };
 }
 
-async function until(container: HTMLElement, predicate: () => boolean, label: string) {
+async function until(
+  container: HTMLElement,
+  predicate: () => boolean,
+  label: string,
+) {
   for (let attempt = 0; attempt < 12; attempt += 1) {
     if (predicate()) return;
     await flush();
   }
-  throw new Error(`Timed out waiting for ${label}. Body: ${container.textContent}`);
+  throw new Error(
+    `Timed out waiting for ${label}. Body: ${container.textContent}`,
+  );
 }
 
 function findButton(container: ParentNode, label: string) {
   // Matches the accessible name: visible text, or aria-label for icon-only controls.
   return [...container.querySelectorAll('button')].find(
-    (button) => button.textContent === label || button.getAttribute('aria-label') === label,
+    (button) =>
+      button.textContent === label ||
+      button.getAttribute('aria-label') === label,
   );
 }
 
@@ -373,13 +463,21 @@ function clickInOneTurn(container: ParentNode, labels: string[]) {
   });
 }
 
-function savedProfile(overrides: { city?: string; fullName?: string; discipline?: string } = {}) {
+function savedProfile(
+  overrides: {
+    city?: string;
+    fullName?: string;
+    discipline?: string;
+    practice?: string;
+  } = {},
+) {
   return {
     sellerProfile: {
       ...profile('APPROVED'),
       city: overrides.city ?? 'Minsk',
       fullName: overrides.fullName ?? 'Author Name',
       discipline: overrides.discipline ?? 'Painting',
+      practice: overrides.practice ?? null,
     },
     editingRevision: revision('DRAFT'),
   };
@@ -387,7 +485,8 @@ function savedProfile(overrides: { city?: string; fullName?: string; discipline?
 
 function blurField(container: ParentNode, label: string) {
   const input = container.querySelector(`[aria-label="${label}"]`);
-  if (!(input instanceof HTMLInputElement)) throw new Error(`Missing field ${label}`);
+  if (!(input instanceof HTMLInputElement))
+    throw new Error(`Missing field ${label}`);
   act(() => {
     input.dispatchEvent(new FocusEvent('focusout', { bubbles: true }));
   });
@@ -403,7 +502,8 @@ function fieldError(container: ParentNode, label: string) {
 
 function buttonDisabled(container: ParentNode, label: string) {
   const target = findButton(container, label);
-  if (!(target instanceof HTMLButtonElement)) throw new Error(`Missing button ${label}`);
+  if (!(target instanceof HTMLButtonElement))
+    throw new Error(`Missing button ${label}`);
   return target.disabled;
 }
 
@@ -421,9 +521,16 @@ beforeEach(() => {
   harness.submitAuthorApplication.mockReset();
   harness.launchImageLibraryAsync.mockReset();
   harness.logout.mockResolvedValue(undefined);
-  harness.getAuthorApplicationPhoto.mockResolvedValue(new Blob(['png'], { type: 'image/png' }));
-  harness.launchImageLibraryAsync.mockResolvedValue({ canceled: true, assets: [] });
-  harness.updateProfile.mockImplementation(async () => response('APPROVED', 'DRAFT'));
+  harness.getAuthorApplicationPhoto.mockResolvedValue(
+    new Blob(['png'], { type: 'image/png' }),
+  );
+  harness.launchImageLibraryAsync.mockResolvedValue({
+    canceled: true,
+    assets: [],
+  });
+  harness.updateProfile.mockImplementation(async () =>
+    response('APPROVED', 'DRAFT'),
+  );
   harness.submitAuthorApplication.mockImplementation(async () =>
     submitResponse('APPROVED', 'PENDING_REVIEW'),
   );
@@ -440,7 +547,9 @@ describe('seller profile revision submit', () => {
     const view = mount();
     await until(
       view.container,
-      () => findButton(view.container, 'Отправить на проверку') instanceof HTMLButtonElement,
+      () =>
+        findButton(view.container, 'Отправить на проверку') instanceof
+        HTMLButtonElement,
       'submit action',
     );
     expect(buttonDisabled(view.container, 'Отправить на проверку')).toBe(false);
@@ -450,7 +559,9 @@ describe('seller profile revision submit', () => {
   });
 
   it('hides submit and disables editing while the revision is pending', async () => {
-    harness.getMyProfile.mockResolvedValue(response('APPROVED', 'PENDING_REVIEW'));
+    harness.getMyProfile.mockResolvedValue(
+      response('APPROVED', 'PENDING_REVIEW'),
+    );
     const view = mount();
     await until(
       view.container,
@@ -469,16 +580,26 @@ describe('seller profile revision submit', () => {
     'keeps submit available after %s',
     async (status) => {
       harness.getMyProfile.mockResolvedValue(response('APPROVED', status));
-      harness.updateProfile.mockImplementation(async () => response('APPROVED', status));
+      harness.updateProfile.mockImplementation(async () =>
+        response('APPROVED', status),
+      );
       const view = mount();
       await until(
         view.container,
-        () => findButton(view.container, 'Отправить на проверку') instanceof HTMLButtonElement,
+        () =>
+          findButton(view.container, 'Отправить на проверку') instanceof
+          HTMLButtonElement,
         'recovery submit',
       );
-      expect(buttonDisabled(view.container, 'Отправить на проверку')).toBe(false);
+      expect(buttonDisabled(view.container, 'Отправить на проверку')).toBe(
+        false,
+      );
       click(view.container, 'Отправить на проверку');
-      await until(view.container, () => harness.submitAuthorApplication.mock.calls.length === 1, 'submit call');
+      await until(
+        view.container,
+        () => harness.submitAuthorApplication.mock.calls.length === 1,
+        'submit call',
+      );
       expect(harness.updateProfile).toHaveBeenCalledTimes(1);
       view.unmount();
     },
@@ -487,7 +608,8 @@ describe('seller profile revision submit', () => {
   it('submits the initial wizard only after save succeeds', async () => {
     harness.params = { step: '4' };
     harness.getMyProfile.mockResolvedValue(response('DRAFT', 'DRAFT'));
-    let resolveSave: (value: ReturnType<typeof response>) => void = () => undefined;
+    let resolveSave: (value: ReturnType<typeof response>) => void = () =>
+      undefined;
     harness.updateProfile.mockImplementation(
       () =>
         new Promise((resolve) => {
@@ -497,10 +619,12 @@ describe('seller profile revision submit', () => {
     const view = mount();
     await until(
       view.container,
-      () => findButton(view.container, 'Отправить на проверку') instanceof HTMLButtonElement,
+      () =>
+        findButton(view.container, 'Сохранить и завершить') instanceof
+        HTMLButtonElement,
       'wizard submit',
     );
-    click(view.container, 'Отправить на проверку');
+    click(view.container, 'Сохранить и завершить');
     await flush();
     expect(harness.updateProfile).toHaveBeenCalledTimes(1);
     expect(harness.submitAuthorApplication).not.toHaveBeenCalled();
@@ -509,7 +633,11 @@ describe('seller profile revision submit', () => {
       resolveSave(response('DRAFT', 'DRAFT'));
       await Promise.resolve();
     });
-    await until(view.container, () => harness.submitAuthorApplication.mock.calls.length === 1, 'wizard submit call');
+    await until(
+      view.container,
+      () => harness.submitAuthorApplication.mock.calls.length === 1,
+      'wizard submit call',
+    );
     view.unmount();
   });
 
@@ -524,22 +652,32 @@ describe('seller profile revision submit', () => {
     const view = mount();
     await until(
       view.container,
-      () => findButton(view.container, 'Отправить на проверку') instanceof HTMLButtonElement,
+      () =>
+        findButton(view.container, 'Отправить на проверку') instanceof
+        HTMLButtonElement,
       'submit action',
     );
     click(view.container, 'Отправить на проверку');
     await until(
       view.container,
-      () => view.container.textContent?.includes('Не удалось сохранить профиль') === true,
+      () =>
+        view.container.textContent?.includes('Не удалось сохранить профиль') ===
+        true,
       'save error',
     );
     expect(harness.submitAuthorApplication).not.toHaveBeenCalled();
     expect(buttonDisabled(view.container, 'Отправить на проверку')).toBe(false);
     click(view.container, 'Отправить на проверку');
-    await until(view.container, () => harness.submitAuthorApplication.mock.calls.length === 1, 'retry submit');
+    await until(
+      view.container,
+      () => harness.submitAuthorApplication.mock.calls.length === 1,
+      'retry submit',
+    );
     expect(harness.updateProfile).toHaveBeenCalledTimes(2);
     await flush();
-    expect(view.container.textContent).not.toContain('Не удалось сохранить профиль');
+    expect(view.container.textContent).not.toContain(
+      'Не удалось сохранить профиль',
+    );
     process.off('unhandledRejection', onUnhandled);
     expect(rejections).toEqual([]);
     view.unmount();
@@ -547,7 +685,8 @@ describe('seller profile revision submit', () => {
 
   it('does not submit or navigate when a save or logout is already in flight', async () => {
     harness.getMyProfile.mockResolvedValue(response('APPROVED', 'DRAFT'));
-    let resolveSave: (value: ReturnType<typeof response>) => void = () => undefined;
+    let resolveSave: (value: ReturnType<typeof response>) => void = () =>
+      undefined;
     harness.updateProfile.mockImplementation(
       () =>
         new Promise((resolve) => {
@@ -557,7 +696,8 @@ describe('seller profile revision submit', () => {
     const saving = mount();
     await until(
       saving.container,
-      () => findButton(saving.container, 'Сохранить') instanceof HTMLButtonElement,
+      () =>
+        findButton(saving.container, 'Сохранить') instanceof HTMLButtonElement,
       'save action',
     );
     clickInOneTurn(saving.container, ['Сохранить', 'Отправить на проверку']);
@@ -578,7 +718,9 @@ describe('seller profile revision submit', () => {
     const leaving = mount();
     await until(
       leaving.container,
-      () => findButton(leaving.container, 'Отправить на проверку') instanceof HTMLButtonElement,
+      () =>
+        findButton(leaving.container, 'Отправить на проверку') instanceof
+        HTMLButtonElement,
       'submit after logout setup',
     );
     clickInOneTurn(leaving.container, ['Выйти', 'Отправить на проверку']);
@@ -593,7 +735,8 @@ describe('seller profile revision submit', () => {
 
   it('runs one save-then-submit operation for two presses in the same turn', async () => {
     harness.getMyProfile.mockResolvedValue(response('APPROVED', 'DRAFT'));
-    let resolveSave: (value: ReturnType<typeof response>) => void = () => undefined;
+    let resolveSave: (value: ReturnType<typeof response>) => void = () =>
+      undefined;
     harness.updateProfile.mockImplementation(
       () =>
         new Promise((resolve) => {
@@ -603,10 +746,15 @@ describe('seller profile revision submit', () => {
     const view = mount();
     await until(
       view.container,
-      () => findButton(view.container, 'Отправить на проверку') instanceof HTMLButtonElement,
+      () =>
+        findButton(view.container, 'Отправить на проверку') instanceof
+        HTMLButtonElement,
       'submit action',
     );
-    clickInOneTurn(view.container, ['Отправить на проверку', 'Отправить на проверку']);
+    clickInOneTurn(view.container, [
+      'Отправить на проверку',
+      'Отправить на проверку',
+    ]);
     await flush();
     expect(harness.updateProfile).toHaveBeenCalledTimes(1);
     expect(harness.submitAuthorApplication).not.toHaveBeenCalled();
@@ -614,7 +762,11 @@ describe('seller profile revision submit', () => {
       resolveSave(response('APPROVED', 'DRAFT'));
       await Promise.resolve();
     });
-    await until(view.container, () => harness.submitAuthorApplication.mock.calls.length === 1, 'single submit');
+    await until(
+      view.container,
+      () => harness.submitAuthorApplication.mock.calls.length === 1,
+      'single submit',
+    );
     expect(harness.updateProfile).toHaveBeenCalledTimes(1);
     view.unmount();
   });
@@ -622,8 +774,11 @@ describe('seller profile revision submit', () => {
   it('blocks save, logout, close, and another submit while submit is still pending', async () => {
     harness.params = { step: '4' };
     harness.getMyProfile.mockResolvedValue(response('DRAFT', 'DRAFT'));
-    let resolveSave: (value: ReturnType<typeof response>) => void = () => undefined;
-    let resolveSubmit: (value: ReturnType<typeof submitResponse>) => void = () => undefined;
+    let resolveSave: (value: ReturnType<typeof response>) => void = () =>
+      undefined;
+    let resolveSubmit: (
+      value: ReturnType<typeof submitResponse>,
+    ) => void = () => undefined;
     harness.updateProfile.mockImplementation(
       () =>
         new Promise((resolve) => {
@@ -640,27 +795,30 @@ describe('seller profile revision submit', () => {
     await until(
       view.container,
       () => {
-        const submit = findButton(view.container, 'Отправить на проверку');
+        const submit = findButton(view.container, 'Сохранить и завершить');
         return submit instanceof HTMLButtonElement && !submit.disabled;
       },
       'enabled wizard submit',
     );
-    click(view.container, 'Отправить на проверку');
+    click(view.container, 'Сохранить и завершить');
     await flush();
     expect(harness.submitAuthorApplication).not.toHaveBeenCalled();
     await act(async () => {
       resolveSave(response('DRAFT', 'DRAFT', '2026-09-27T01:00:00.000Z'));
       await Promise.resolve();
     });
-    await until(view.container, () => harness.submitAuthorApplication.mock.calls.length === 1, 'pending submit');
-    expect(buttonDisabled(view.container, 'Сохранить черновик')).toBe(true);
+    await until(
+      view.container,
+      () => harness.submitAuthorApplication.mock.calls.length === 1,
+      'pending submit',
+    );
+    expect(findButton(view.container, 'Сохранить черновик')).toBeUndefined();
     expect(buttonDisabled(view.container, 'Выйти')).toBe(true);
     expect(buttonDisabled(view.container, 'Закрыть')).toBe(true);
-    expect(buttonDisabled(view.container, 'Отправить на проверку')).toBe(true);
-    click(view.container, 'Сохранить черновик');
+    expect(buttonDisabled(view.container, 'Сохранить и завершить')).toBe(true);
     click(view.container, 'Выйти');
     click(view.container, 'Закрыть');
-    click(view.container, 'Отправить на проверку');
+    click(view.container, 'Сохранить и завершить');
     await flush();
     expect(harness.updateProfile).toHaveBeenCalledTimes(1);
     expect(harness.submitAuthorApplication).toHaveBeenCalledTimes(1);
@@ -668,7 +826,9 @@ describe('seller profile revision submit', () => {
     expect(harness.replace).not.toHaveBeenCalled();
     expect(harness.push).not.toHaveBeenCalled();
 
-    harness.getMyProfile.mockResolvedValue(response('DRAFT', 'PENDING_REVIEW', '2026-09-28T00:00:00.000Z'));
+    harness.getMyProfile.mockResolvedValue(
+      response('DRAFT', 'PENDING_REVIEW', '2026-09-28T00:00:00.000Z'),
+    );
     await act(async () => {
       resolveSubmit(submitResponse('DRAFT', 'PENDING_REVIEW'));
       await Promise.resolve();
@@ -678,7 +838,7 @@ describe('seller profile revision submit', () => {
       () => view.container.textContent?.includes('Заявка на проверке') === true,
       'pending profile',
     );
-    expect(findButton(view.container, 'Отправить на проверку')).toBeUndefined();
+    expect(findButton(view.container, 'Сохранить и завершить')).toBeUndefined();
     expect(buttonDisabled(view.container, 'Закрыть')).toBe(false);
     click(view.container, 'Закрыть');
     expect(harness.replace).toHaveBeenCalledWith('/');
@@ -693,26 +853,38 @@ describe('seller profile revision submit', () => {
       rejections.push(reason);
     };
     process.on('unhandledRejection', onUnhandled);
-    harness.submitAuthorApplication.mockRejectedValueOnce(new Error('submit failed'));
+    harness.submitAuthorApplication.mockRejectedValueOnce(
+      new Error('submit failed'),
+    );
     const view = mount();
     await until(
       view.container,
-      () => findButton(view.container, 'Отправить на проверку') instanceof HTMLButtonElement,
+      () =>
+        findButton(view.container, 'Отправить на проверку') instanceof
+        HTMLButtonElement,
       'submit action',
     );
     click(view.container, 'Отправить на проверку');
     await until(
       view.container,
-      () => view.container.textContent?.includes('Не удалось отправить заявку') === true,
+      () =>
+        view.container.textContent?.includes('Не удалось отправить заявку') ===
+        true,
       'submit error',
     );
     expect(buttonDisabled(view.container, 'Отправить на проверку')).toBe(false);
     expect(buttonDisabled(view.container, 'Сохранить')).toBe(false);
     click(view.container, 'Отправить на проверку');
-    await until(view.container, () => harness.submitAuthorApplication.mock.calls.length === 2, 'submit retry');
+    await until(
+      view.container,
+      () => harness.submitAuthorApplication.mock.calls.length === 2,
+      'submit retry',
+    );
     expect(harness.updateProfile).toHaveBeenCalledTimes(2);
     await flush();
-    expect(view.container.textContent).not.toContain('Не удалось отправить заявку');
+    expect(view.container.textContent).not.toContain(
+      'Не удалось отправить заявку',
+    );
     process.off('unhandledRejection', onUnhandled);
     expect(rejections).toEqual([]);
     view.unmount();
@@ -723,10 +895,14 @@ describe('seller profile revision submit', () => {
     const view = mount();
     await until(
       view.container,
-      () => findButton(view.container, 'Отправить на проверку') instanceof HTMLButtonElement,
+      () =>
+        findButton(view.container, 'Отправить на проверку') instanceof
+        HTMLButtonElement,
       'submit action',
     );
-    harness.getMyProfile.mockResolvedValue(response('APPROVED', 'PENDING_REVIEW', '2026-09-28T00:00:00.000Z'));
+    harness.getMyProfile.mockResolvedValue(
+      response('APPROVED', 'PENDING_REVIEW', '2026-09-28T00:00:00.000Z'),
+    );
     click(view.container, 'Отправить на проверку');
     await until(
       view.container,
@@ -742,7 +918,11 @@ describe('seller profile revision submit', () => {
   });
 
   it('does not reopen submit while the profile refetch is delayed after a successful submit', async () => {
-    const pendingProfile = response('APPROVED', 'PENDING_REVIEW', '2026-09-28T00:00:00.000Z');
+    const pendingProfile = response(
+      'APPROVED',
+      'PENDING_REVIEW',
+      '2026-09-28T00:00:00.000Z',
+    );
     const delayed: Array<(value: ReturnType<typeof response>) => void> = [];
     let profileCalls = 0;
     harness.getMyProfile.mockImplementation(
@@ -759,12 +939,22 @@ describe('seller profile revision submit', () => {
     const view = mount();
     await until(
       view.container,
-      () => findButton(view.container, 'Отправить на проверку') instanceof HTMLButtonElement,
+      () =>
+        findButton(view.container, 'Отправить на проверку') instanceof
+        HTMLButtonElement,
       'submit action',
     );
     click(view.container, 'Отправить на проверку');
-    await until(view.container, () => harness.submitAuthorApplication.mock.calls.length === 1, 'first submit');
-    await until(view.container, () => delayed.length > 0, 'delayed profile refetch');
+    await until(
+      view.container,
+      () => harness.submitAuthorApplication.mock.calls.length === 1,
+      'first submit',
+    );
+    await until(
+      view.container,
+      () => delayed.length > 0,
+      'delayed profile refetch',
+    );
     const submitAgain = findButton(view.container, 'Отправить на проверку');
     const saveAgain = findButton(view.container, 'Сохранить');
     if (submitAgain instanceof HTMLButtonElement && !submitAgain.disabled) {
@@ -778,8 +968,14 @@ describe('seller profile revision submit', () => {
       });
     }
     await flush();
-    expect(submitAgain === undefined || (submitAgain instanceof HTMLButtonElement && submitAgain.disabled)).toBe(true);
-    expect(saveAgain === undefined || (saveAgain instanceof HTMLButtonElement && saveAgain.disabled)).toBe(true);
+    expect(
+      submitAgain === undefined ||
+        (submitAgain instanceof HTMLButtonElement && submitAgain.disabled),
+    ).toBe(true);
+    expect(
+      saveAgain === undefined ||
+        (saveAgain instanceof HTMLButtonElement && saveAgain.disabled),
+    ).toBe(true);
     expect(harness.submitAuthorApplication).toHaveBeenCalledTimes(1);
     expect(harness.updateProfile).toHaveBeenCalledTimes(1);
     expect(view.container.textContent).toContain('Заявка на проверке');
@@ -813,14 +1009,25 @@ describe('seller profile revision submit', () => {
     const view = mount();
     await until(
       view.container,
-      () => findButton(view.container, 'Отправить на проверку') instanceof HTMLButtonElement,
+      () =>
+        findButton(view.container, 'Отправить на проверку') instanceof
+        HTMLButtonElement,
       'submit action',
     );
     click(view.container, 'Отправить на проверку');
-    await until(view.container, () => harness.submitAuthorApplication.mock.calls.length === 1, 'first submit');
-    await until(view.container, () => delayed.length > 0, 'stale profile refetch');
+    await until(
+      view.container,
+      () => harness.submitAuthorApplication.mock.calls.length === 1,
+      'first submit',
+    );
+    await until(
+      view.container,
+      () => delayed.length > 0,
+      'stale profile refetch',
+    );
     await act(async () => {
-      for (const resolve of delayed.splice(0)) resolve(response('APPROVED', 'DRAFT'));
+      for (const resolve of delayed.splice(0))
+        resolve(response('APPROVED', 'DRAFT'));
       await Promise.resolve();
     });
     await flush();
@@ -854,19 +1061,24 @@ describe('seller profile revision submit', () => {
       const view = mount();
       await until(
         view.container,
-        () => findButton(view.container, 'Отправить на проверку') instanceof HTMLButtonElement,
+        () =>
+          findButton(view.container, 'Отправить на проверку') instanceof
+          HTMLButtonElement,
         'submit action',
       );
       click(view.container, 'Отправить на проверку');
       await until(
         view.container,
-        () => view.container.textContent?.includes('Заявка на проверке') === true,
+        () =>
+          view.container.textContent?.includes('Заявка на проверке') === true,
         'confirmed pending',
       );
       await act(async () => {
         for (let pass = 0; pass < 4 && delayed.length > 0; pass += 1) {
           for (const resolve of delayed.splice(0)) {
-            resolve(response('APPROVED', revisionStatus, '2026-09-29T00:00:00.000Z'));
+            resolve(
+              response('APPROVED', revisionStatus, '2026-09-29T00:00:00.000Z'),
+            );
           }
           await Promise.resolve();
         }
@@ -879,9 +1091,13 @@ describe('seller profile revision submit', () => {
       expect(city).toBeInstanceOf(HTMLInputElement);
       expect((city as HTMLInputElement).disabled).toBe(false);
       if (revisionStatus === 'APPROVED') {
-        expect(findButton(view.container, 'Отправить на проверку')).toBeUndefined();
+        expect(
+          findButton(view.container, 'Отправить на проверку'),
+        ).toBeUndefined();
       } else {
-        expect(buttonDisabled(view.container, 'Отправить на проверку')).toBe(false);
+        expect(buttonDisabled(view.container, 'Отправить на проверку')).toBe(
+          false,
+        );
       }
       expect(harness.submitAuthorApplication).toHaveBeenCalledTimes(1);
       expect(harness.updateProfile).toHaveBeenCalledTimes(1);
@@ -893,13 +1109,16 @@ describe('seller profile revision submit', () => {
     let profileCalls = 0;
     harness.getMyProfile.mockImplementation(() => {
       profileCalls += 1;
-      if (profileCalls === 1) return Promise.resolve(response('APPROVED', 'DRAFT'));
+      if (profileCalls === 1)
+        return Promise.resolve(response('APPROVED', 'DRAFT'));
       return Promise.reject(new Error('profile refetch failed'));
     });
     const view = mount();
     await until(
       view.container,
-      () => findButton(view.container, 'Отправить на проверку') instanceof HTMLButtonElement,
+      () =>
+        findButton(view.container, 'Отправить на проверку') instanceof
+        HTMLButtonElement,
       'submit action',
     );
     click(view.container, 'Отправить на проверку');
@@ -921,7 +1140,8 @@ describe('seller profile revision submit', () => {
 
 describe('seller profile save reconciliation', () => {
   it('keeps text entered after the snapshot and normalizes an untouched field', async () => {
-    let resolveSave: (value: ReturnType<typeof savedProfile>) => void = () => undefined;
+    let resolveSave: (value: ReturnType<typeof savedProfile>) => void = () =>
+      undefined;
     harness.getMyProfile.mockResolvedValue(response('APPROVED', 'DRAFT'));
     harness.updateProfile.mockImplementation(
       () =>
@@ -932,19 +1152,20 @@ describe('seller profile save reconciliation', () => {
     const view = mount();
     await until(
       view.container,
-      () => findButton(view.container, 'Сохранить') instanceof HTMLButtonElement,
+      () =>
+        findButton(view.container, 'Сохранить') instanceof HTMLButtonElement,
       'save',
     );
     click(view.container, 'Сохранить');
     await flush();
     setInput(view.container, 'Город', 'Hrodna');
     await act(async () => {
-      resolveSave(savedProfile({ city: 'Minsk', discipline: 'Oil painting' }));
+      resolveSave(savedProfile({ city: 'Minsk', practice: 'Oil painting' }));
       await Promise.resolve();
     });
     await flush();
     expect(inputValue(view.container, 'Город')).toBe('Hrodna');
-    expect(inputValue(view.container, 'Дисциплина')).toBe('Oil painting');
+    expect(inputValue(view.container, 'Практика')).toBe('Oil painting');
     expect(harness.updateProfile.mock.calls[0]?.[0]).toEqual(
       expect.objectContaining({ city: 'Minsk', discipline: 'Painting' }),
     );
@@ -959,7 +1180,8 @@ describe('seller profile save reconciliation', () => {
   });
 
   it('clears a field that was dirty before the profile snapshot was saved', async () => {
-    let resolveSave: (value: ReturnType<typeof savedProfile>) => void = () => undefined;
+    let resolveSave: (value: ReturnType<typeof savedProfile>) => void = () =>
+      undefined;
     harness.getMyProfile.mockResolvedValue(response('APPROVED', 'DRAFT'));
     harness.updateProfile.mockImplementation(
       () =>
@@ -970,26 +1192,28 @@ describe('seller profile save reconciliation', () => {
     const view = mount();
     await until(
       view.container,
-      () => findButton(view.container, 'Сохранить') instanceof HTMLButtonElement,
+      () =>
+        findButton(view.container, 'Сохранить') instanceof HTMLButtonElement,
       'save',
     );
     setInput(view.container, 'Город', 'Hrodna');
     click(view.container, 'Сохранить');
     await flush();
     await act(async () => {
-      resolveSave(savedProfile({ city: 'Hrodna', discipline: 'Oil painting' }));
+      resolveSave(savedProfile({ city: 'Hrodna', practice: 'Oil painting' }));
       await Promise.resolve();
     });
     await flush();
     expect(inputValue(view.container, 'Город')).toBe('Hrodna');
-    expect(inputValue(view.container, 'Дисциплина')).toBe('Oil painting');
+    expect(inputValue(view.container, 'Практика')).toBe('Oil painting');
     click(view.container, 'Выйти');
     expect(harness.logout).toHaveBeenCalledTimes(1);
     view.unmount();
   });
 
   it('keeps a photo chosen during an in-flight profile save', async () => {
-    let resolveSave: (value: ReturnType<typeof savedProfile>) => void = () => undefined;
+    let resolveSave: (value: ReturnType<typeof savedProfile>) => void = () =>
+      undefined;
     const nextPhoto = new Blob(['next'], { type: 'image/png' });
     harness.getMyProfile.mockResolvedValue(response('APPROVED', 'DRAFT'));
     harness.updateProfile.mockImplementation(
@@ -1002,11 +1226,15 @@ describe('seller profile save reconciliation', () => {
       canceled: false,
       assets: [{ uri: 'blob:next-photo' }],
     });
-    vi.stubGlobal('fetch', vi.fn(async () => ({ blob: async () => nextPhoto })));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({ blob: async () => nextPhoto })),
+    );
     const view = mount();
     await until(
       view.container,
-      () => findButton(view.container, 'Сохранить') instanceof HTMLButtonElement,
+      () =>
+        findButton(view.container, 'Сохранить') instanceof HTMLButtonElement,
       'save',
     );
     click(view.container, 'Сохранить');
@@ -1039,14 +1267,19 @@ describe('seller profile save reconciliation', () => {
     const view = mount();
     await until(
       view.container,
-      () => findButton(view.container, 'Отправить на проверку') instanceof HTMLButtonElement,
+      () =>
+        findButton(view.container, 'Отправить на проверку') instanceof
+        HTMLButtonElement,
       'submit',
     );
     click(view.container, 'Отправить на проверку');
     click(view.container, 'Отправить на проверку');
     await flush();
     expect(harness.updateProfile).toHaveBeenCalledTimes(1);
-    expect((view.container.querySelector('[aria-label="Город"]') as HTMLInputElement).disabled).toBe(true);
+    expect(
+      (view.container.querySelector('[aria-label="Город"]') as HTMLInputElement)
+        .disabled,
+    ).toBe(true);
     setInput(view.container, 'Город', 'During submit');
     expect(inputValue(view.container, 'Город')).toBe('Minsk');
     await act(async () => {
@@ -1057,7 +1290,10 @@ describe('seller profile save reconciliation', () => {
     expect(harness.submitAuthorApplication).not.toHaveBeenCalled();
     expect(harness.push).not.toHaveBeenCalled();
     expect(harness.replace).not.toHaveBeenCalled();
-    expect((view.container.querySelector('[aria-label="Город"]') as HTMLInputElement).disabled).toBe(false);
+    expect(
+      (view.container.querySelector('[aria-label="Город"]') as HTMLInputElement)
+        .disabled,
+    ).toBe(false);
     view.unmount();
   });
 
@@ -1066,7 +1302,9 @@ describe('seller profile save reconciliation', () => {
     const view = mount();
     await until(
       view.container,
-      () => view.container.querySelector('[aria-label="Город"]') instanceof HTMLInputElement,
+      () =>
+        view.container.querySelector('[aria-label="Город"]') instanceof
+        HTMLInputElement,
       'city',
     );
     harness.getMyProfile.mockResolvedValueOnce(
@@ -1074,7 +1312,9 @@ describe('seller profile save reconciliation', () => {
     );
     setInput(view.container, 'Город', 'Hrodna');
     await act(async () => {
-      await view.queryClient.invalidateQueries({ queryKey: ['seller', 'profile'] });
+      await view.queryClient.invalidateQueries({
+        queryKey: ['seller', 'profile'],
+      });
     });
     await flush();
     expect(inputValue(view.container, 'Город')).toBe('Hrodna');
@@ -1082,7 +1322,8 @@ describe('seller profile save reconciliation', () => {
   });
 
   it('does not restore the private profile cache after the session is cleared', async () => {
-    let resolveSave: (value: ReturnType<typeof savedProfile>) => void = () => undefined;
+    let resolveSave: (value: ReturnType<typeof savedProfile>) => void = () =>
+      undefined;
     harness.getMyProfile.mockResolvedValue(response('APPROVED', 'DRAFT'));
     harness.updateProfile.mockImplementation(
       () =>
@@ -1093,7 +1334,8 @@ describe('seller profile save reconciliation', () => {
     const view = mount();
     await until(
       view.container,
-      () => findButton(view.container, 'Сохранить') instanceof HTMLButtonElement,
+      () =>
+        findButton(view.container, 'Сохранить') instanceof HTMLButtonElement,
       'save',
     );
     view.queryClient.setQueryData(['user', 'me'], null);
@@ -1102,12 +1344,14 @@ describe('seller profile save reconciliation', () => {
     click(view.container, 'Сохранить');
     await flush();
     await act(async () => {
-      resolveSave(savedProfile({ discipline: 'Oil painting' }));
+      resolveSave(savedProfile({ practice: 'Oil painting' }));
       await Promise.resolve();
     });
     await flush();
     expect(harness.getMyProfile.mock.calls.length).toBe(reads);
-    expect(view.queryClient.getQueryData(['portfolio-works'])).toEqual({ marker: true });
+    expect(view.queryClient.getQueryData(['portfolio-works'])).toEqual({
+      marker: true,
+    });
     view.unmount();
   });
 
@@ -1119,29 +1363,40 @@ describe('seller profile save reconciliation', () => {
     const view = mount();
     await until(
       view.container,
-      () => findButton(view.container, 'Сохранить') instanceof HTMLButtonElement,
+      () =>
+        findButton(view.container, 'Сохранить') instanceof HTMLButtonElement,
       'save',
     );
     setInput(view.container, 'Город', 'Hrodna');
     click(view.container, 'Сохранить');
     await until(
       view.container,
-      () => view.container.textContent?.includes('Не удалось сохранить профиль') === true,
+      () =>
+        view.container.textContent?.includes('Не удалось сохранить профиль') ===
+        true,
       'save error',
     );
     expect(inputValue(view.container, 'Город')).toBe('Hrodna');
     click(view.container, 'Сохранить');
     await flush();
     expect(harness.updateProfile).toHaveBeenCalledTimes(2);
-    expect(harness.updateProfile.mock.calls[1]?.[0]).toEqual(expect.objectContaining({ city: 'Hrodna' }));
+    expect(harness.updateProfile.mock.calls[1]?.[0]).toEqual(
+      expect.objectContaining({ city: 'Hrodna' }),
+    );
     view.unmount();
   });
 
   it('ignores an older photo read after a newer selection', async () => {
     const firstPhoto = new Blob(['first'], { type: 'image/png' });
     const secondPhoto = new Blob(['second'], { type: 'image/png' });
-    let resolveFirst: (value: { canceled: boolean; assets: Array<{ uri: string }> }) => void = () => undefined;
-    let resolveSecond: (value: { canceled: boolean; assets: Array<{ uri: string }> }) => void = () => undefined;
+    let resolveFirst: (value: {
+      canceled: boolean;
+      assets: Array<{ uri: string }>;
+    }) => void = () => undefined;
+    let resolveSecond: (value: {
+      canceled: boolean;
+      assets: Array<{ uri: string }>;
+    }) => void = () => undefined;
     harness.getMyProfile.mockResolvedValue(response('APPROVED', 'DRAFT'));
     harness.updateProfile.mockResolvedValue(savedProfile());
     harness.launchImageLibraryAsync
@@ -1166,7 +1421,9 @@ describe('seller profile save reconciliation', () => {
     const view = mount();
     await until(
       view.container,
-      () => findButton(view.container, 'Изменить фото') instanceof HTMLButtonElement,
+      () =>
+        findButton(view.container, 'Изменить фото') instanceof
+        HTMLButtonElement,
       'photo',
     );
     click(view.container, 'Изменить фото');
@@ -1189,7 +1446,8 @@ describe('seller profile save reconciliation', () => {
   });
 
   it('drops a save from the previous session after logout and login', async () => {
-    let resolveSave: (value: ReturnType<typeof savedProfile>) => void = () => undefined;
+    let resolveSave: (value: ReturnType<typeof savedProfile>) => void = () =>
+      undefined;
     harness.getMyProfile.mockResolvedValue(response('APPROVED', 'DRAFT'));
     harness.updateProfile.mockImplementation(
       () =>
@@ -1200,7 +1458,9 @@ describe('seller profile save reconciliation', () => {
     const view = mount('user-a');
     await until(
       view.container,
-      () => view.container.querySelector<HTMLInputElement>('[aria-label="Город"]')?.value === 'Minsk',
+      () =>
+        view.container.querySelector<HTMLInputElement>('[aria-label="Город"]')
+          ?.value === 'Minsk',
       'profile A',
     );
     click(view.container, 'Сохранить');
@@ -1220,7 +1480,9 @@ describe('seller profile save reconciliation', () => {
       await Promise.resolve();
     });
     await flush();
-    expect(view.queryClient.getQueryData(['seller', 'profile'])).toEqual(profileB);
+    expect(view.queryClient.getQueryData(['seller', 'profile'])).toEqual(
+      profileB,
+    );
     expect(inputValue(view.container, 'Город')).toBe('Hrodna');
     expect(harness.push).not.toHaveBeenCalled();
     expect(harness.replace).not.toHaveBeenCalled();
@@ -1228,7 +1490,8 @@ describe('seller profile save reconciliation', () => {
   });
 
   it('drops a save after the same account logs out and back in', async () => {
-    let resolveSave: (value: ReturnType<typeof savedProfile>) => void = () => undefined;
+    let resolveSave: (value: ReturnType<typeof savedProfile>) => void = () =>
+      undefined;
     harness.getMyProfile.mockResolvedValue(response('APPROVED', 'DRAFT'));
     harness.updateProfile.mockImplementation(
       () =>
@@ -1239,7 +1502,9 @@ describe('seller profile save reconciliation', () => {
     const view = mount('user-a');
     await until(
       view.container,
-      () => view.container.querySelector<HTMLInputElement>('[aria-label="Город"]')?.value === 'Minsk',
+      () =>
+        view.container.querySelector<HTMLInputElement>('[aria-label="Город"]')
+          ?.value === 'Minsk',
       'profile',
     );
     click(view.container, 'Сохранить');
@@ -1259,13 +1524,16 @@ describe('seller profile save reconciliation', () => {
       await Promise.resolve();
     });
     await flush();
-    expect(view.queryClient.getQueryData(['seller', 'profile'])).toEqual(restored);
+    expect(view.queryClient.getQueryData(['seller', 'profile'])).toEqual(
+      restored,
+    );
     expect(inputValue(view.container, 'Город')).toBe('Restored');
     view.unmount();
   });
 
   it('does not continue a profile step after the session changes', async () => {
-    let resolveSave: (value: ReturnType<typeof savedProfile>) => void = () => undefined;
+    let resolveSave: (value: ReturnType<typeof savedProfile>) => void = () =>
+      undefined;
     harness.params = { step: '1' };
     harness.getMyProfile.mockResolvedValue(response('DRAFT', 'DRAFT'));
     harness.updateProfile.mockImplementation(
@@ -1275,7 +1543,12 @@ describe('seller profile save reconciliation', () => {
         }),
     );
     const view = mount('user-a');
-    await until(view.container, () => findButton(view.container, 'Продолжить') instanceof HTMLButtonElement, 'continue');
+    await until(
+      view.container,
+      () =>
+        findButton(view.container, 'Продолжить') instanceof HTMLButtonElement,
+      'continue',
+    );
     click(view.container, 'Продолжить');
     await flush();
     const profileB = response('APPROVED', 'DRAFT', '2026-09-30T00:00:00.000Z');
@@ -1294,7 +1567,9 @@ describe('seller profile save reconciliation', () => {
     });
     await flush();
     expect(harness.push).not.toHaveBeenCalled();
-    expect(view.queryClient.getQueryData(['seller', 'profile'])).toEqual(profileB);
+    expect(view.queryClient.getQueryData(['seller', 'profile'])).toEqual(
+      profileB,
+    );
     expect(inputValue(view.container, 'Город')).toBe('Hrodna');
     view.unmount();
   });
@@ -1302,50 +1577,67 @@ describe('seller profile save reconciliation', () => {
   it.each([
     ['another account', 'user-b'],
     ['the same account', 'user-a'],
-  ] as const)('does not save a photo chosen by the previous session after login of %s', async (_label, nextUserId) => {
-    const photoA = new Blob(['photo-a'], { type: 'image/png' });
-    let resolvePicker: (value: { canceled: boolean; assets: Array<{ uri: string }> }) => void = () => undefined;
-    harness.getMyProfile.mockResolvedValue(response('APPROVED', 'DRAFT'));
-    harness.updateProfile.mockResolvedValue(savedProfile({ city: 'Hrodna' }));
-    harness.launchImageLibraryAsync.mockImplementation(
-      () =>
-        new Promise((resolve) => {
-          resolvePicker = resolve;
-        }),
-    );
-    vi.stubGlobal('fetch', vi.fn(async () => ({ blob: async () => photoA })));
-    const view = mount('user-a');
-    await until(
-      view.container,
-      () => findButton(view.container, 'Изменить фото') instanceof HTMLButtonElement,
-      'photo',
-    );
-    click(view.container, 'Изменить фото');
-    await flush();
-    const profileB = response('APPROVED', 'DRAFT', '2026-09-30T00:00:00.000Z');
-    profileB.sellerProfile = { ...profileB.sellerProfile, city: 'Hrodna' };
-    harness.getMyProfile.mockResolvedValue(profileB);
-    await act(async () => {
-      await clearAuthenticatedSession(view.queryClient);
-      view.queryClient.setQueryData(authKeys.session, { id: nextUserId });
-      view.queryClient.setQueryData(['seller', 'profile'], profileB);
-      advanceAuthEpoch(view.queryClient);
-    });
-    await flush();
-    harness.getMyProfile.mockImplementation(() => new Promise(() => undefined));
-    await act(async () => {
-      resolvePicker({ canceled: false, assets: [{ uri: 'blob:photo-a' }] });
-      await Promise.resolve();
-    });
-    await flush();
-    click(view.container, 'Сохранить');
-    await flush();
-    expect(harness.updateProfile).toHaveBeenCalledTimes(1);
-    expect(harness.updateProfile.mock.calls[0]?.[1]).toBeUndefined();
-    expect(inputValue(view.container, 'Город')).toBe('Hrodna');
-    vi.unstubAllGlobals();
-    view.unmount();
-  });
+  ] as const)(
+    'does not save a photo chosen by the previous session after login of %s',
+    async (_label, nextUserId) => {
+      const photoA = new Blob(['photo-a'], { type: 'image/png' });
+      let resolvePicker: (value: {
+        canceled: boolean;
+        assets: Array<{ uri: string }>;
+      }) => void = () => undefined;
+      harness.getMyProfile.mockResolvedValue(response('APPROVED', 'DRAFT'));
+      harness.updateProfile.mockResolvedValue(savedProfile({ city: 'Hrodna' }));
+      harness.launchImageLibraryAsync.mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            resolvePicker = resolve;
+          }),
+      );
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => ({ blob: async () => photoA })),
+      );
+      const view = mount('user-a');
+      await until(
+        view.container,
+        () =>
+          findButton(view.container, 'Изменить фото') instanceof
+          HTMLButtonElement,
+        'photo',
+      );
+      click(view.container, 'Изменить фото');
+      await flush();
+      const profileB = response(
+        'APPROVED',
+        'DRAFT',
+        '2026-09-30T00:00:00.000Z',
+      );
+      profileB.sellerProfile = { ...profileB.sellerProfile, city: 'Hrodna' };
+      harness.getMyProfile.mockResolvedValue(profileB);
+      await act(async () => {
+        await clearAuthenticatedSession(view.queryClient);
+        view.queryClient.setQueryData(authKeys.session, { id: nextUserId });
+        view.queryClient.setQueryData(['seller', 'profile'], profileB);
+        advanceAuthEpoch(view.queryClient);
+      });
+      await flush();
+      harness.getMyProfile.mockImplementation(
+        () => new Promise(() => undefined),
+      );
+      await act(async () => {
+        resolvePicker({ canceled: false, assets: [{ uri: 'blob:photo-a' }] });
+        await Promise.resolve();
+      });
+      await flush();
+      click(view.container, 'Сохранить');
+      await flush();
+      expect(harness.updateProfile).toHaveBeenCalledTimes(1);
+      expect(harness.updateProfile.mock.calls[0]?.[1]).toBeUndefined();
+      expect(inputValue(view.container, 'Город')).toBe('Hrodna');
+      vi.unstubAllGlobals();
+      view.unmount();
+    },
+  );
 
   it('does not apply a photo blob read that finishes after the session changes', async () => {
     const photoA = new Blob(['photo-a'], { type: 'image/png' });
@@ -1368,7 +1660,9 @@ describe('seller profile save reconciliation', () => {
     const view = mount('user-a');
     await until(
       view.container,
-      () => findButton(view.container, 'Изменить фото') instanceof HTMLButtonElement,
+      () =>
+        findButton(view.container, 'Изменить фото') instanceof
+        HTMLButtonElement,
       'photo',
     );
     click(view.container, 'Изменить фото');
@@ -1403,7 +1697,9 @@ describe('seller profile save reconciliation', () => {
     const view = mount();
     await until(
       view.container,
-      () => view.container.querySelector<HTMLInputElement>('[aria-label="Город"]')?.value === 'Minsk',
+      () =>
+        view.container.querySelector<HTMLInputElement>('[aria-label="Город"]')
+          ?.value === 'Minsk',
       'profile',
     );
     setInput(view.container, 'Telegram', '@maker_art');
@@ -1436,13 +1732,21 @@ describe('seller profile validation freshness', () => {
     };
   }
 
-  function changeAndClick(container: HTMLElement, label: string, value: string, button: string) {
+  function changeAndClick(
+    container: HTMLElement,
+    label: string,
+    value: string,
+    button: string,
+  ) {
     const input = container.querySelector(`[aria-label="${label}"]`);
     const target = findButton(container, button);
     if (!(input instanceof HTMLInputElement) || !target) {
       throw new Error(`Missing ${label} or ${button}`);
     }
-    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+    const setter = Object.getOwnPropertyDescriptor(
+      HTMLInputElement.prototype,
+      'value',
+    )?.set;
     act(() => {
       setter?.call(input, value);
       input.dispatchEvent(new Event('input', { bubbles: true }));
@@ -1456,8 +1760,10 @@ describe('seller profile validation freshness', () => {
     await until(
       view.container,
       () =>
-        view.container.querySelector('[aria-label="Telegram"]') instanceof HTMLInputElement &&
-        inputValue(view.container, 'Telegram') === 'https://t.me/original_author',
+        view.container.querySelector('[aria-label="Telegram"]') instanceof
+          HTMLInputElement &&
+        inputValue(view.container, 'Telegram') ===
+          'https://t.me/original_author',
       'saved telegram',
     );
     expect(buttonDisabled(view.container, 'Сохранить')).toBe(false);
@@ -1479,7 +1785,8 @@ describe('seller profile validation freshness', () => {
     const view = mount();
     await until(
       view.container,
-      () => findButton(view.container, 'Продолжить') instanceof HTMLButtonElement,
+      () =>
+        findButton(view.container, 'Продолжить') instanceof HTMLButtonElement,
       'continue',
     );
     setInput(view.container, 'Telegram', 'bad handle');
@@ -1488,9 +1795,9 @@ describe('seller profile validation freshness', () => {
     setInput(view.container, 'Telegram', '@maker_art');
     expect(buttonDisabled(view.container, 'Продолжить')).toBe(false);
     click(view.container, 'Закрыть');
-    expect(findButton(view.container, 'Сохранить и выйти')).toBeTruthy();
-    expect(findButton(view.container, 'Выйти без сохранения')).toBeUndefined();
-    click(view.container, 'Сохранить и выйти');
+    expect(findButton(view.container, 'Прервать')).toBeTruthy();
+
+    click(view.container, 'Прервать');
     await flush();
     await flush();
     expect(harness.updateProfile).toHaveBeenCalledTimes(1);
@@ -1512,9 +1819,9 @@ describe('seller profile validation freshness', () => {
     );
     setInput(view.container, 'Telegram', 'bad handle');
     click(view.container, 'Закрыть');
-    expect(findButton(view.container, 'Выйти без сохранения')).toBeTruthy();
-    expect(findButton(view.container, 'Сохранить и выйти')).toBeUndefined();
-    click(view.container, 'Выйти без сохранения');
+    expect(findButton(view.container, 'Прервать')).toBeTruthy();
+
+    click(view.container, 'Прервать');
     await flush();
     expect(harness.updateProfile).not.toHaveBeenCalled();
     expect(harness.replace).toHaveBeenCalledWith('/');
@@ -1535,20 +1842,23 @@ describe('seller profile validation freshness', () => {
     await flush();
     setInput(view.container, 'Telegram', '@maker_art');
     click(view.container, 'Закрыть');
-    click(view.container, 'Сохранить и выйти');
+    click(view.container, 'Прервать');
     await flush();
     await flush();
     expect(harness.replace).not.toHaveBeenCalled();
     expect(harness.updateProfile).toHaveBeenCalledTimes(1);
     expect(inputValue(view.container, 'Telegram')).toBe('@maker_art');
-    expect(view.container.textContent).toContain('Не удалось сохранить профиль');
+    expect(view.container.textContent).toContain(
+      'Не удалось сохранить профиль',
+    );
     expect(view.container.querySelector('[role="dialog"]')).not.toBeNull();
     view.unmount();
   });
 
   it('records one profile write when save or exit is repeated', async () => {
     harness.getMyProfile.mockResolvedValue(profileWithTelegram());
-    let resolveSave: (value: ReturnType<typeof response>) => void = () => undefined;
+    let resolveSave: (value: ReturnType<typeof response>) => void = () =>
+      undefined;
     harness.updateProfile.mockImplementation(
       () =>
         new Promise((resolve) => {
@@ -1559,8 +1869,10 @@ describe('seller profile validation freshness', () => {
     await until(
       saving.container,
       () =>
-        saving.container.querySelector('[aria-label="Telegram"]') instanceof HTMLInputElement &&
-        inputValue(saving.container, 'Telegram') === 'https://t.me/original_author',
+        saving.container.querySelector('[aria-label="Telegram"]') instanceof
+          HTMLInputElement &&
+        inputValue(saving.container, 'Telegram') ===
+          'https://t.me/original_author',
       'saved telegram',
     );
     setInput(saving.container, 'Telegram', '@maker_art');
@@ -1589,12 +1901,13 @@ describe('seller profile validation freshness', () => {
     const leaving = mount();
     await until(
       leaving.container,
-      () => findButton(leaving.container, 'Закрыть') instanceof HTMLButtonElement,
+      () =>
+        findButton(leaving.container, 'Закрыть') instanceof HTMLButtonElement,
       'close',
     );
     setInput(leaving.container, 'Telegram', '@maker_art');
     click(leaving.container, 'Закрыть');
-    clickInOneTurn(leaving.container, ['Сохранить и выйти', 'Сохранить и выйти']);
+    clickInOneTurn(leaving.container, ['Прервать', 'Прервать']);
     await flush();
     expect(harness.updateProfile).toHaveBeenCalledTimes(1);
     await act(async () => {
@@ -1608,7 +1921,8 @@ describe('seller profile validation freshness', () => {
   });
 
   it('does not publish a freshness save after the session changes', async () => {
-    let resolveSave: (value: ReturnType<typeof response>) => void = () => undefined;
+    let resolveSave: (value: ReturnType<typeof response>) => void = () =>
+      undefined;
     harness.getMyProfile.mockResolvedValue(profileWithTelegram());
     harness.updateProfile.mockImplementation(
       () =>
@@ -1620,18 +1934,28 @@ describe('seller profile validation freshness', () => {
     await until(
       view.container,
       () =>
-        view.container.querySelector('[aria-label="Telegram"]') instanceof HTMLInputElement &&
-        inputValue(view.container, 'Telegram') === 'https://t.me/original_author',
+        view.container.querySelector('[aria-label="Telegram"]') instanceof
+          HTMLInputElement &&
+        inputValue(view.container, 'Telegram') ===
+          'https://t.me/original_author',
       'saved telegram',
     );
     setInput(view.container, 'Telegram', '@maker_art');
     click(view.container, 'Сохранить');
-    await until(view.container, () => harness.updateProfile.mock.calls.length === 1, 'fresh save');
+    await until(
+      view.container,
+      () => harness.updateProfile.mock.calls.length === 1,
+      'fresh save',
+    );
     expect(harness.updateProfile.mock.calls[0]?.[0]).toEqual(
       expect.objectContaining({ telegramUrl: 'https://t.me/maker_art' }),
     );
     const profileB = response('APPROVED', 'DRAFT', '2026-09-30T00:00:00.000Z');
-    profileB.sellerProfile = { ...profileB.sellerProfile, city: 'Hrodna', telegramUrl: null };
+    profileB.sellerProfile = {
+      ...profileB.sellerProfile,
+      city: 'Hrodna',
+      telegramUrl: null,
+    };
     harness.getMyProfile.mockResolvedValue(profileB);
     await act(async () => {
       await clearAuthenticatedSession(view.queryClient);
@@ -1646,7 +1970,9 @@ describe('seller profile validation freshness', () => {
       await Promise.resolve();
     });
     await flush();
-    expect(view.queryClient.getQueryData(['seller', 'profile'])).toEqual(profileB);
+    expect(view.queryClient.getQueryData(['seller', 'profile'])).toEqual(
+      profileB,
+    );
     expect(inputValue(view.container, 'Город')).toBe('Hrodna');
     expect(harness.replace).not.toHaveBeenCalled();
     expect(harness.push).not.toHaveBeenCalled();
@@ -1660,14 +1986,16 @@ describe('seller profile validation freshness', () => {
     await until(
       view.container,
       () =>
-        view.container.querySelector('[aria-label="Telegram"]') instanceof HTMLInputElement &&
-        inputValue(view.container, 'Telegram') === 'https://t.me/original_author',
+        view.container.querySelector('[aria-label="Telegram"]') instanceof
+          HTMLInputElement &&
+        inputValue(view.container, 'Telegram') ===
+          'https://t.me/original_author',
       'saved telegram',
     );
     setInput(view.container, 'Telegram', '');
     setInput(view.container, 'Instagram', '');
     setInput(view.container, 'Сайт', '');
-    setInput(view.container, 'Публичный email', '');
+    setInput(view.container, 'Почта', '');
     click(view.container, 'Сохранить');
     await flush();
     expect(harness.updateProfile).toHaveBeenCalledTimes(1);
@@ -1684,7 +2012,9 @@ describe('seller profile validation freshness', () => {
     click(view.container, 'Сохранить');
     await flush();
     expect(harness.updateProfile).toHaveBeenCalledTimes(1);
-    expect(harness.updateProfile.mock.calls[0]?.[0]).toEqual(expect.objectContaining({ city: null }));
+    expect(harness.updateProfile.mock.calls[0]?.[0]).toEqual(
+      expect.objectContaining({ city: null }),
+    );
     view.unmount();
   });
 
@@ -1693,7 +2023,11 @@ describe('seller profile validation freshness', () => {
     harness.getMyProfile.mockResolvedValue(response('DRAFT', 'DRAFT'));
     harness.updateProfile.mockResolvedValue(response('DRAFT', 'DRAFT'));
     const view = mount();
-    await until(view.container, () => findButton(view.container, 'Назад') instanceof HTMLButtonElement, 'back');
+    await until(
+      view.container,
+      () => findButton(view.container, 'Назад') instanceof HTMLButtonElement,
+      'back',
+    );
     setInput(view.container, 'Telegram', 'bad handle');
     await flush();
     click(view.container, 'Назад');
@@ -1718,7 +2052,9 @@ describe('seller profile validation freshness', () => {
     const view = mount();
     await until(
       view.container,
-      () => findButton(view.container, 'Продолжить') instanceof HTMLButtonElement && !buttonDisabled(view.container, 'Продолжить'),
+      () =>
+        findButton(view.container, 'Продолжить') instanceof HTMLButtonElement &&
+        !buttonDisabled(view.container, 'Продолжить'),
       'enabled continue',
     );
     click(view.container, 'Продолжить');
@@ -1748,11 +2084,16 @@ describe('seller profile validation freshness', () => {
       canceled: false,
       assets: [{ uri: 'blob:portrait' }],
     });
-    vi.stubGlobal('fetch', vi.fn(async () => ({ blob: async () => photo })));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({ blob: async () => photo })),
+    );
     const view = mount();
     await until(
       view.container,
-      () => view.container.querySelector('[aria-label="Никнейм"]') instanceof HTMLInputElement,
+      () =>
+        view.container.querySelector('[aria-label="Никнейм"]') instanceof
+        HTMLInputElement,
       'nickname',
     );
     setInput(view.container, 'Никнейм', 'БЕ');
@@ -1762,7 +2103,9 @@ describe('seller profile validation freshness', () => {
     click(view.container, 'Загрузить фото');
     await until(
       view.container,
-      () => findButton(view.container, 'Изменить фото') instanceof HTMLButtonElement,
+      () =>
+        findButton(view.container, 'Изменить фото') instanceof
+        HTMLButtonElement,
       'photo kept',
     );
     await until(
@@ -1777,10 +2120,16 @@ describe('seller profile validation freshness', () => {
     click(view.container, 'Продолжить');
     await flush();
     expect(harness.createProfile).not.toHaveBeenCalled();
-    expect(view.container.textContent).not.toContain('Не удалось сохранить профиль');
+    expect(view.container.textContent).not.toContain(
+      'Не удалось сохранить профиль',
+    );
     expect(inputValue(view.container, 'Никнейм')).toBe('БЕ');
-    expect(inputValue(view.container, 'Имя или название')).toBe('Synthetic Author');
-    expect(inputValue(view.container, 'Страна')).toBe('Беларусь');
+    expect(inputValue(view.container, 'Имя или название')).toBe(
+      'Synthetic Author',
+    );
+    expect(
+      view.container.querySelector('[aria-label="Страна"]')?.textContent,
+    ).toBe('Беларусь');
     expect(inputValue(view.container, 'Город')).toBe('Minsk');
     setInput(view.container, 'Никнейм', 'synthetic-author');
     await until(
@@ -1793,8 +2142,14 @@ describe('seller profile validation freshness', () => {
       'continue after correction',
     );
     click(view.container, 'Продолжить');
-    await until(view.container, () => harness.createProfile.mock.calls.length === 1, 'create');
-    expect(harness.claimSlug).toHaveBeenCalledWith({ slug: 'synthetic-author' });
+    await until(
+      view.container,
+      () => harness.createProfile.mock.calls.length === 1,
+      'create',
+    );
+    expect(harness.claimSlug).toHaveBeenCalledWith({
+      slug: 'synthetic-author',
+    });
     expect(harness.createProfile.mock.calls[0]?.[0]).toEqual({
       fullName: 'Synthetic Author',
       country: 'BY',
@@ -1824,11 +2179,16 @@ describe('seller profile validation freshness', () => {
       canceled: false,
       assets: [{ uri: 'blob:portrait' }],
     });
-    vi.stubGlobal('fetch', vi.fn(async () => ({ blob: async () => photo })));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({ blob: async () => photo })),
+    );
     const view = mount('user-a');
     await until(
       view.container,
-      () => view.container.querySelector('[aria-label="Никнейм"]') instanceof HTMLInputElement,
+      () =>
+        view.container.querySelector('[aria-label="Никнейм"]') instanceof
+        HTMLInputElement,
       'nickname',
     );
     setInput(view.container, 'Никнейм', 'synthetic-author');
@@ -1844,7 +2204,11 @@ describe('seller profile validation freshness', () => {
       'continue',
     );
     click(view.container, 'Продолжить');
-    await until(view.container, () => harness.claimSlug.mock.calls.length === 1, 'claim');
+    await until(
+      view.container,
+      () => harness.claimSlug.mock.calls.length === 1,
+      'claim',
+    );
     const profileB = response('APPROVED', 'DRAFT', '2026-09-30T00:00:00.000Z');
     profileB.sellerProfile = {
       ...profileB.sellerProfile,
@@ -1864,7 +2228,9 @@ describe('seller profile validation freshness', () => {
     });
     await flush();
     expect(harness.createProfile).not.toHaveBeenCalled();
-    expect(view.queryClient.getQueryData(['seller', 'profile'])).toEqual(profileB);
+    expect(view.queryClient.getQueryData(['seller', 'profile'])).toEqual(
+      profileB,
+    );
     expect(view.container.textContent).not.toContain('kept-name');
     expect(inputValue(view.container, 'Город')).toBe('Hrodna');
     vi.unstubAllGlobals();
@@ -1876,7 +2242,10 @@ describe('seller profile validation freshness', () => {
     harness.getMyProfile.mockResolvedValue(response('APPROVED', 'DRAFT'));
     harness.updateProfile
       .mockRejectedValueOnce(
-        new ApiClientError('Профиль не найден.', { kind: 'not_found', status: 404 }),
+        new ApiClientError('Профиль не найден.', {
+          kind: 'not_found',
+          status: 404,
+        }),
       )
       .mockRejectedValueOnce(
         new ApiClientError('Недостаточно прав для сохранения профиля.', {
@@ -1891,28 +2260,51 @@ describe('seller profile validation freshness', () => {
           }),
       );
     const view = mount();
-    await until(view.container, () => findButton(view.container, 'Сохранить') instanceof HTMLButtonElement, 'save');
-    expect(findButton(view.container, 'Изменить фото')).toBeInstanceOf(HTMLButtonElement);
-    click(view.container, 'Сохранить');
-    await until(view.container, () => view.container.textContent?.includes('Профиль не найден.') === true, 'first error');
-    expect(inputValue(view.container, 'Город')).toBe('Minsk');
-    expect(findButton(view.container, 'Изменить фото')).toBeInstanceOf(HTMLButtonElement);
+    await until(
+      view.container,
+      () =>
+        findButton(view.container, 'Сохранить') instanceof HTMLButtonElement,
+      'save',
+    );
+    expect(findButton(view.container, 'Изменить фото')).toBeInstanceOf(
+      HTMLButtonElement,
+    );
     click(view.container, 'Сохранить');
     await until(
       view.container,
-      () => view.container.textContent?.includes('Недостаточно прав для сохранения профиля.') === true,
+      () => view.container.textContent?.includes('Профиль не найден.') === true,
+      'first error',
+    );
+    expect(inputValue(view.container, 'Город')).toBe('Minsk');
+    expect(findButton(view.container, 'Изменить фото')).toBeInstanceOf(
+      HTMLButtonElement,
+    );
+    click(view.container, 'Сохранить');
+    await until(
+      view.container,
+      () =>
+        view.container.textContent?.includes(
+          'Недостаточно прав для сохранения профиля.',
+        ) === true,
       'second error',
     );
     expect(view.container.textContent).not.toContain('Профиль не найден.');
     click(view.container, 'Сохранить');
     await flush();
-    expect(view.container.textContent).not.toContain('Недостаточно прав для сохранения профиля.');
+    expect(view.container.textContent).not.toContain(
+      'Недостаточно прав для сохранения профиля.',
+    );
     await act(async () => {
       advanceAuthEpoch(view.queryClient);
     });
     await flush();
     await act(async () => {
-      rejectSave(new ApiClientError('Старая ошибка профиля.', { kind: 'not_found', status: 404 }));
+      rejectSave(
+        new ApiClientError('Старая ошибка профиля.', {
+          kind: 'not_found',
+          status: 404,
+        }),
+      );
       await Promise.resolve();
     });
     await flush();
@@ -1922,8 +2314,9 @@ describe('seller profile validation freshness', () => {
 
   it('shows about-step requirements only after blur or continue, without blocking an incomplete draft save', async () => {
     const draft = response('DRAFT', 'DRAFT');
-    draft.sellerProfile.discipline = '';
     draft.sellerProfile.shortDescription = '';
+    draft.sellerProfile.directionCategoryIds = [];
+    draft.sellerProfile.directions = [];
     draft.sellerProfile.applicationStage = 'ABOUT';
     harness.params = { step: '3' };
     harness.getMyProfile.mockResolvedValue(draft);
@@ -1931,51 +2324,43 @@ describe('seller profile validation freshness', () => {
     await until(
       view.container,
       () =>
-        view.container.querySelector('[aria-label="Дисциплина"]') instanceof HTMLInputElement &&
+        view.container.querySelector('[aria-label="Коротко о себе"]') instanceof
+          HTMLInputElement &&
         findButton(view.container, 'Продолжить') instanceof HTMLButtonElement,
       'about step',
     );
-    expect(inputValue(view.container, 'Дисциплина')).toBe('');
-    expect(view.container.textContent).not.toContain('Укажите направление');
-    expect(view.container.textContent).not.toContain('Добавьте короткое описание о себе');
-    blurField(view.container, 'Дисциплина');
-    expect(fieldError(view.container, 'Дисциплина')).toBe('Укажите направление');
-    expect(view.container.textContent).not.toContain('Добавьте короткое описание о себе');
-    blurField(view.container, 'Короткое описание');
-    expect(fieldError(view.container, 'Короткое описание')).toBe('Добавьте короткое описание о себе');
-    setInput(view.container, 'Дисциплина', 'Керамика');
-    expect(fieldError(view.container, 'Дисциплина')).toBeNull();
-    expect(fieldError(view.container, 'Короткое описание')).toBe('Добавьте короткое описание о себе');
-    setInput(view.container, 'Дисциплина', '');
     click(view.container, 'Продолжить');
-    expect(fieldError(view.container, 'Дисциплина')).toBe('Укажите направление');
-    expect(fieldError(view.container, 'Короткое описание')).toBe('Добавьте короткое описание о себе');
-    expect(harness.updateProfile).not.toHaveBeenCalled();
-    setInput(view.container, 'Дисциплина', 'Керамика');
-    setInput(view.container, 'Короткое описание', 'Авторская практика.');
-    expect(fieldError(view.container, 'Дисциплина')).toBeNull();
-    expect(fieldError(view.container, 'Короткое описание')).toBeNull();
+    expect(view.container.textContent).toContain(
+      'Выберите хотя бы одно направление',
+    );
+    blurField(view.container, 'Коротко о себе');
+    expect(fieldError(view.container, 'Коротко о себе')).toBe(
+      'Добавьте короткое описание о себе',
+    );
+    setInput(view.container, 'Коротко о себе', 'Авторская практика.');
+    click(view.container, 'Выберите основные направления');
+    await flush();
+    await flush();
+    const ceramic = [
+      ...view.container.querySelectorAll<HTMLButtonElement>(
+        'button[role="checkbox"]',
+      ),
+    ].find((button) => button.textContent === 'Керамика');
+    expect(ceramic).toBeInstanceOf(HTMLButtonElement);
+    act(() => {
+      ceramic?.click();
+    });
+    click(view.container, 'Применить');
+    await flush();
     harness.updateProfile.mockResolvedValue(response('DRAFT', 'DRAFT'));
     click(view.container, 'Продолжить');
-    await until(view.container, () => harness.updateProfile.mock.calls.length === 1, 'about save');
-    expect(harness.push).toHaveBeenCalledWith('/profile?step=4');
-
-    harness.params = {};
-    harness.getMyProfile.mockResolvedValue(response('APPROVED', 'DRAFT'));
-    const editor = mount();
-    await until(editor.container, () => findButton(editor.container, 'Сохранить') instanceof HTMLButtonElement, 'profile save');
-    setInput(editor.container, 'Дисциплина', '');
-    setInput(editor.container, 'Короткое описание', '');
-    blurField(editor.container, 'Дисциплина');
-    blurField(editor.container, 'Короткое описание');
-    expect(fieldError(editor.container, 'Дисциплина')).toBe('Укажите направление');
-    click(editor.container, 'Сохранить');
-    await until(editor.container, () => harness.updateProfile.mock.calls.length === 2, 'incomplete draft');
-    expect(harness.updateProfile.mock.calls[1]?.[0]).toEqual(
-      expect.objectContaining({ discipline: undefined, shortDescription: undefined }),
+    await until(
+      view.container,
+      () => harness.updateProfile.mock.calls.length === 1,
+      'about save',
     );
+    expect(harness.push).toHaveBeenCalledWith('/profile?step=4');
     view.unmount();
-    editor.unmount();
   });
 
   async function settleValidation() {
@@ -1985,8 +2370,9 @@ describe('seller profile validation freshness', () => {
 
   async function mountAboutStep() {
     const draft = response('DRAFT', 'DRAFT');
-    draft.sellerProfile.discipline = '';
     draft.sellerProfile.shortDescription = '';
+    draft.sellerProfile.directionCategoryIds = [];
+    draft.sellerProfile.directions = [];
     draft.sellerProfile.applicationStage = 'ABOUT';
     harness.params = { step: '3' };
     harness.getMyProfile.mockResolvedValue(draft);
@@ -1994,7 +2380,8 @@ describe('seller profile validation freshness', () => {
     await until(
       view.container,
       () =>
-        view.container.querySelector('[aria-label="Дисциплина"]') instanceof HTMLInputElement &&
+        view.container.querySelector('[aria-label="Коротко о себе"]') instanceof
+          HTMLInputElement &&
         findButton(view.container, 'Продолжить') instanceof HTMLButtonElement,
       'about step',
     );
@@ -2002,16 +2389,14 @@ describe('seller profile validation freshness', () => {
   }
 
   it.each([
-    ['Дисциплина', 'Укажите направление', 'Керамика'],
-    ['Короткое описание', 'Добавьте короткое описание о себе', 'Авторская практика.'],
+    [
+      'Коротко о себе',
+      'Добавьте короткое описание о себе',
+      'Авторская практика.',
+    ],
   ] as const)(
     'keeps the %s requirement after whitespace once validation settles',
     async (label, message, validValue) => {
-      const otherLabel = label === 'Дисциплина' ? 'Короткое описание' : 'Дисциплина';
-      const otherMessage =
-        label === 'Дисциплина'
-          ? 'Добавьте короткое описание о себе'
-          : 'Укажите направление';
       const view = await mountAboutStep();
       expect(fieldError(view.container, label)).toBeNull();
       blurField(view.container, label);
@@ -2025,14 +2410,12 @@ describe('seller profile validation freshness', () => {
       click(view.container, 'Продолжить');
       await settleValidation();
       expect(fieldError(view.container, label)).toBe(message);
-      expect(fieldError(view.container, otherLabel)).toBe(otherMessage);
+      expect(view.container.textContent).toContain(
+        'Выберите хотя бы одно направление',
+      );
       setInput(view.container, label, validValue);
       await settleValidation();
       expect(fieldError(view.container, label)).toBeNull();
-      expect(fieldError(view.container, otherLabel)).toBe(otherMessage);
-      setInput(view.container, 'Практика', 'Керамика');
-      await settleValidation();
-      expect(fieldError(view.container, otherLabel)).toBe(otherMessage);
       setInput(view.container, label, '');
       await settleValidation();
       expect(fieldError(view.container, label)).toBe(message);
@@ -2043,13 +2426,16 @@ describe('seller profile validation freshness', () => {
 
   it('drops step requirements after a session change and still saves an incomplete draft', async () => {
     const view = await mountAboutStep();
-    blurField(view.container, 'Дисциплина');
-    blurField(view.container, 'Короткое описание');
+    blurField(view.container, 'Коротко о себе');
+    click(view.container, 'Продолжить');
     await settleValidation();
-    expect(fieldError(view.container, 'Дисциплина')).toBe('Укажите направление');
+    expect(fieldError(view.container, 'Коротко о себе')).toBe(
+      'Добавьте короткое описание о себе',
+    );
     const next = response('DRAFT', 'DRAFT', '2026-09-30T00:00:00.000Z');
-    next.sellerProfile.discipline = '';
     next.sellerProfile.shortDescription = '';
+    next.sellerProfile.directionCategoryIds = [];
+    next.sellerProfile.directions = [];
     next.sellerProfile.applicationStage = 'ABOUT';
     harness.getMyProfile.mockResolvedValue(next);
     await act(async () => {
@@ -2059,25 +2445,28 @@ describe('seller profile validation freshness', () => {
       advanceAuthEpoch(view.queryClient);
     });
     await settleValidation();
-    expect(inputValue(view.container, 'Дисциплина')).toBe('');
-    expect(fieldError(view.container, 'Дисциплина')).toBeNull();
-    expect(fieldError(view.container, 'Короткое описание')).toBeNull();
+    expect(inputValue(view.container, 'Коротко о себе')).toBe('');
+    expect(fieldError(view.container, 'Коротко о себе')).toBeNull();
 
     harness.params = {};
     harness.getMyProfile.mockResolvedValue(response('APPROVED', 'DRAFT'));
     const editor = mount();
     await until(
       editor.container,
-      () => findButton(editor.container, 'Сохранить') instanceof HTMLButtonElement,
+      () =>
+        findButton(editor.container, 'Сохранить') instanceof HTMLButtonElement,
       'profile save',
     );
-    setInput(editor.container, 'Дисциплина', ' ');
-    setInput(editor.container, 'Короткое описание', ' ');
+    setInput(editor.container, 'Коротко о себе', ' ');
     await settleValidation();
     click(editor.container, 'Сохранить');
-    await until(editor.container, () => harness.updateProfile.mock.calls.length === 1, 'whitespace draft');
+    await until(
+      editor.container,
+      () => harness.updateProfile.mock.calls.length === 1,
+      'whitespace draft',
+    );
     expect(harness.updateProfile.mock.calls[0]?.[0]).toEqual(
-      expect.objectContaining({ discipline: undefined, shortDescription: undefined }),
+      expect.objectContaining({ shortDescription: null }),
     );
     view.unmount();
     editor.unmount();

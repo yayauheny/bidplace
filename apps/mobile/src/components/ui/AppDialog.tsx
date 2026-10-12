@@ -223,6 +223,8 @@ export function AppDialog({
           alignItems: 'flex-start',
           justifyContent: 'space-between',
           gap: designTokens.space.x4,
+          minWidth: 0,
+          alignSelf: 'stretch',
         }}
       >
         <Dialog.Title asChild>
@@ -242,7 +244,9 @@ export function AppDialog({
           </AppText>
         </Dialog.Description>
       ) : null}
-      <View style={{ gap: designTokens.space.x3 }}>{children}</View>
+      <View style={{ gap: designTokens.space.x3, minWidth: 0, alignSelf: 'stretch' }}>
+        {children}
+      </View>
     </>
   );
   const content = (
@@ -284,7 +288,13 @@ export function AppDialog({
         maxWidth: isSheet
           ? designTokens.layout.phoneWidth
           : designTokens.layout.dialogMaxWidth,
-        maxHeight: Math.max(height - viewportGutter * 2, 0),
+        maxHeight:
+          Platform.OS === 'web'
+            ? '100%'
+            : Math.max(height - viewportGutter * 2, 0),
+        minWidth: 0,
+        flexShrink: Platform.OS === 'web' ? 1 : undefined,
+        ...(Platform.OS === 'web' ? { pointerEvents: 'auto' as const } : {}),
         zIndex: designTokens.layer.modal,
         borderWidth: isMediaSheet ? 0 : 1,
         borderColor: 'rgba(20, 20, 20, 0.08)',
@@ -312,15 +322,22 @@ export function AppDialog({
         keyboardShouldPersistTaps="handled"
         nestedScrollEnabled
         showsVerticalScrollIndicator
+        style={
+          Platform.OS === 'web'
+            ? { flexShrink: 1, minHeight: 0, minWidth: 0, width: '100%' }
+            : { minWidth: 0, width: '100%' }
+        }
         contentContainerStyle={
           isMediaSheet
             ? {
                 gap: designTokens.space.x5,
                 paddingBottom: designTokens.space.x5,
+                minWidth: 0,
               }
             : {
                 gap: designTokens.space.x4,
                 paddingBottom: designTokens.space.x1,
+                minWidth: 0,
               }
         }
       >

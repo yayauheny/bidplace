@@ -603,6 +603,28 @@ empty slot icon. The country picker is `CountryPickerSheet`, a composition of
 `FilterSheet`, `FilterSearchField` and radio `FilterOptionRow`. It adds no renderer
 and no local style.
 
+### Author application shared chrome (mobile)
+
+All four steps compose `AuthorApplicationStepShell` (`author-application-step-shell.tsx`)
+for header chrome, step selector, back/close and footer slot (basics included).
+Picker triggers use `FigmaSelectField` (`FigmaSelectField.tsx`) on the same
+`authorApplication` field variant as text inputs. `FigmaTextField` with that variant
+passes `stroke.authorApplicationFieldPx` into trailing field icons (at-sign, search,
+calendar). Directions use `AuthorDirectionsPickerSheet`: `FilterSheet`
+(`titleVariant="directions"`), `FilterSearchField`, checkbox `FilterOptionRow`
+(`variant="directions"`) and removable `FigmaChoiceChip` for selected category IDs.
+
+`FigmaButton` semantic sizes from `packages/design-tokens` (`figma-button.ts`) own
+step navigation and sheet actions: `navigation` and `event` for 47 px step chrome and
+achievement row actions, `pickerAction` for sheet primary, `exitConfirm` for
+destructive confirm, plus removable direction chips at 39 px height. Exact-source
+exceptions (for example directions checkbox `FigmaIcon` `check` and directions sheet
+back stroke) live in shared figma components, not route-local geometry.
+
+Dismissed dialogs must not intercept clicks: web `app-dialog-host` /
+`app-dialog-layer.web.tsx` keeps `pointerEvents: none` on the host; open
+`Dialog.Content` sets `pointerEvents: auto` on the surface (not the frame).
+
 ## 6.4 Press feedback
 
 `DEC-104`. A pressed `FigmaButton` or `FigmaChoiceChip` keeps its existing

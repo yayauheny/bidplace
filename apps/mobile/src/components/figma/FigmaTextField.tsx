@@ -83,7 +83,15 @@ export const FigmaTextField = forwardRef<TextInput, FigmaTextFieldProps>(functio
       <View style={figmaFieldStyle(status, multiline, metrics, variant)}>
         {icon ? (
           <View style={{ padding: figmaTokens.space.iconPad }}>
-            <FigmaIcon name={icon} color={iconColor} />
+            <FigmaIcon
+              name={icon}
+              color={iconColor}
+              strokeWidthPx={
+                variant === 'authorApplication'
+                  ? figmaTokens.stroke.authorApplicationFieldPx
+                  : undefined
+              }
+            />
           </View>
         ) : null}
         {prefix ? (

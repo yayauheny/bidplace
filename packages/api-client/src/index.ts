@@ -31,9 +31,9 @@ export function createApiClient(options: ApiClientOptions) {
 
   return {
     baseUrl: context.baseUrl,
-    request<T>(
+    request<TSchema extends ZodType>(
       path: string,
-      schema: ZodType<T>,
+      schema: TSchema,
       requestOptions?: RequestOptions,
     ) {
       return requestJson(context, path, schema, requestOptions);

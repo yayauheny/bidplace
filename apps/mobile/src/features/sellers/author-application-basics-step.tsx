@@ -5,18 +5,14 @@ import { Line, Svg } from 'react-native-svg';
 import { designTokens } from '@bidplace/design-tokens';
 
 import { FigmaIcon } from '../../components/figma/FigmaIcon';
-import { MotionPressable } from '../../components/ui/MotionPressable';
 import {
   AppText,
   PrimaryButton,
   ResilientRemoteImage,
 } from '../../components/ui';
-import { SellerProfileCreationStepSelector } from './seller-profile-steps';
+import { AuthorApplicationStepShell } from './author-application-step-shell';
 
 // Geometry of the basic-information frame (Figma 527:16416, 390 px wide). Each value is used by one element only.
-const closeFrameSize = 28;
-const closeGlyphSize = 18.67;
-const closeGlyphStrokePx = 1.5;
 const photoWidth = 135.3;
 const photoHeight = 180.4;
 const photoRadius = 18.12;
@@ -54,68 +50,24 @@ export function AuthorApplicationBasicsStep({
   footer: ReactNode;
 }) {
   return (
-    <View style={{ gap: 33 }}>
-      <View style={{ gap: 24 }}>
-        <View
-          style={{
-            height: closeFrameSize,
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
-          <View style={{ width: closeFrameSize }} />
-          <SellerProfileCreationStepSelector profileStep={1} />
-          <MotionPressable
-            accessibilityRole="button"
-            accessibilityLabel="Закрыть"
-            disabled={closeDisabled}
-            hitSlop={(designTokens.size.touch - closeFrameSize) / 2}
-            onPress={onClose}
-            preset="icon"
-            style={{
-              width: closeFrameSize,
-              height: closeFrameSize,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <FigmaIcon
-              name="x"
-              size={closeGlyphSize}
-              strokeWidthPx={closeGlyphStrokePx}
-              color={designTokens.color.inkStrong}
-            />
-          </MotionPressable>
-        </View>
-        <View style={{ gap: 8 }}>
-          <AppText
-            role="mediaSheetTitle"
-            tone="strong"
-            accessibilityRole="header"
-            style={{ textAlign: 'center' }}
-          >
-            Основная информация
-          </AppText>
-          <AppText
-            role="authCaption"
-            tone="subdued"
-            style={{ textAlign: 'center' }}
-          >
-            Город можно не указывать
-          </AppText>
-        </View>
-      </View>
+    <AuthorApplicationStepShell
+      profileStep={1}
+      closeDisabled={closeDisabled}
+      onClose={onClose}
+      headerToBodyGap={designTokens.authorApplication.headerToBodyBasics}
+      title="Основная информация"
+      subtitle="Город можно не указывать"
+      footer={footer}
+    >
       <View style={{ gap: 32 }}>
         <AuthorPhotoBlock photo={photo} />
-        <View style={{ gap: 12 }}>
+        <View style={{ gap: designTokens.authorApplication.bodyFieldGap }}>
           {fields}
           {formAlert}
           {action}
-          <View style={{ alignItems: 'center' }}>{footer}</View>
         </View>
       </View>
-    </View>
+    </AuthorApplicationStepShell>
   );
 }
 
@@ -178,7 +130,7 @@ function AuthorPhotoBlock({ photo }: { photo: AuthorApplicationPhoto }) {
             onPress={photo.onChoose}
           />
           {hasPhoto ? null : (
-            <AppText role="authLegal" tone="subdued">
+            <AppText role="authLegal" tone="subdued" style={{ lineHeight: 15 }}>
               Разместите ваше лицо в центр линий
             </AppText>
           )}

@@ -8,6 +8,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ApiClientError } from '@bidplace/api-client';
 
+import '../../testing/author-application-mocks';
+
 import { flush, inputValue } from '../../testing/dom';
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
@@ -35,7 +37,8 @@ const harness = vi.hoisted(() => ({
 
 vi.mock('react-native', () => ({
   Platform: { OS: 'web' },
-  View: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
+  View: ({ children }: { children?: ReactNode }) =>
+    createElement('div', null, children),
   Image: () => null,
   Pressable: ({
     children,
@@ -58,6 +61,7 @@ vi.mock('react-native', () => ({
 }));
 
 vi.mock('expo-router', () => ({
+  useIsFocused: () => true,
   useRouter: () => ({
     replace: harness.replace,
     push: harness.push,
@@ -65,7 +69,8 @@ vi.mock('expo-router', () => ({
   }),
   usePathname: () => '/cabinet',
   useLocalSearchParams: () => harness.params,
-  Link: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
+  Link: ({ children }: { children?: ReactNode }) =>
+    createElement('div', null, children),
 }));
 
 vi.mock('expo-image-picker', () => ({
@@ -104,8 +109,10 @@ vi.mock('../../providers/api-provider', () => ({
 }));
 
 vi.mock('../../components/layout', () => ({
-  AppShell: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
-  FormPageShell: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
+  AppShell: ({ children }: { children?: ReactNode }) =>
+    createElement('div', null, children),
+  FormPageShell: ({ children }: { children?: ReactNode }) =>
+    createElement('div', null, children),
   FormPageColumns: ({
     children,
     sidebar,
@@ -121,7 +128,8 @@ vi.mock('../../components/shared/InfrastructurePageStatus', () => ({
 }));
 
 vi.mock('../../components/shared/InfrastructureErrorState', () => ({
-  InfrastructureErrorState: () => createElement('div', null, 'application-error'),
+  InfrastructureErrorState: () =>
+    createElement('div', null, 'application-error'),
 }));
 
 vi.mock('./author-application-basics-step', () => ({
@@ -136,7 +144,12 @@ vi.mock('./author-application-basics-step', () => ({
   }: {
     closeDisabled: boolean;
     onClose: () => void;
-    photo: { uri: string | null; failed: boolean; disabled: boolean; onChoose: () => void };
+    photo: {
+      uri: string | null;
+      failed: boolean;
+      disabled: boolean;
+      onChoose: () => void;
+    };
     fields: ReactNode;
     formAlert: ReactNode;
     action: ReactNode;
@@ -172,8 +185,20 @@ vi.mock('./author-application-basics-step', () => ({
 }));
 
 vi.mock('./country-picker-sheet', () => ({
-  CountryPickerSheet: ({ open, onSelect }: { open: boolean; onSelect: (code: string) => void }) =>
-    open ? createElement('button', { type: 'button', onClick: () => onSelect('BY') }, 'Беларусь') : null,
+  CountryPickerSheet: ({
+    open,
+    onSelect,
+  }: {
+    open: boolean;
+    onSelect: (code: string) => void;
+  }) =>
+    open
+      ? createElement(
+          'button',
+          { type: 'button', onClick: () => onSelect('BY') },
+          'Беларусь',
+        )
+      : null,
 }));
 
 vi.mock('../../components/ui', () => {
@@ -208,8 +233,16 @@ vi.mock('../../components/ui', () => {
       open: boolean;
       title: string;
       children?: ReactNode;
-    }) => (open ? createElement('div', { role: 'dialog', 'aria-label': title }, children) : null),
-    AppText: ({ children }: { children?: ReactNode }) => createElement('span', null, children),
+    }) =>
+      open
+        ? createElement(
+            'div',
+            { role: 'dialog', 'aria-label': title },
+            children,
+          )
+        : null,
+    AppText: ({ children }: { children?: ReactNode }) =>
+      createElement('span', null, children),
     FormSection: ({
       children,
       title,
@@ -218,7 +251,8 @@ vi.mock('../../components/ui', () => {
       title?: string;
     }) => createElement('section', null, title, children),
     ImagePlaceholder: () => null,
-    PageHeader: ({ title }: { title: string }) => createElement('h1', null, title),
+    PageHeader: ({ title }: { title: string }) =>
+      createElement('h1', null, title),
     PrimaryButton: PressButton,
     SecondaryButton: PressButton,
     TextButton: PressButton,
@@ -248,12 +282,18 @@ vi.mock('../../components/ui', () => {
             onChangeText?.(event.target.value);
           },
         }),
-        error ? createElement('span', { 'data-error-for': label }, error) : null,
+        error
+          ? createElement('span', { 'data-error-for': label }, error)
+          : null,
       ),
   };
 });
 
-import { clearAuthenticatedSession, replaceAuthenticatedSession, authKeys } from '../../lib/query-cache';
+import {
+  clearAuthenticatedSession,
+  replaceAuthenticatedSession,
+  authKeys,
+} from '../../lib/query-cache';
 import { SellerProfileScreen } from './seller-profile-screen';
 
 function profileResponse(city = 'Minsk') {
@@ -286,28 +326,15 @@ function profileResponse(city = 'Minsk') {
   };
 }
 
-function revisionSnapshot(status: string, updatedAt: string) {
-  const current = profileResponse();
-  return {
-    ...current,
-    editingRevision: {
-      ...current.editingRevision,
-      status,
-      updatedAt,
-    },
-  };
-}
-
-function publishProfile(view: ReturnType<typeof mount>, snapshot: ReturnType<typeof revisionSnapshot>) {
-  act(() => {
-    view.queryClient.setQueryData(['seller', 'profile'], snapshot);
-  });
-}
-
 function applicationResponse(bodies: string[]) {
   return {
     application: { status: 'APPROVED', applicationStage: 'ACHIEVEMENTS' },
-    editingRevision: { id: '22222222-2222-4222-8222-222222222222', version: 1, status: 'DRAFT', updatedAt: '2026-09-27T00:00:00.000Z' },
+    editingRevision: {
+      id: '22222222-2222-4222-8222-222222222222',
+      version: 1,
+      status: 'DRAFT',
+      updatedAt: '2026-09-27T00:00:00.000Z',
+    },
     achievements: bodies.map((body, index) => ({
       id: `achievement-${index + 1}`,
       body,
@@ -338,7 +365,11 @@ function mount(session: { id: string } = userA) {
   const render = () => {
     act(() => {
       root.render(
-        createElement(QueryClientProvider, { client: queryClient }, createElement(SellerProfileScreen)),
+        createElement(
+          QueryClientProvider,
+          { client: queryClient },
+          createElement(SellerProfileScreen),
+        ),
       );
     });
   };
@@ -357,24 +388,33 @@ function mount(session: { id: string } = userA) {
   };
 }
 
-async function until(container: HTMLElement, predicate: () => boolean, label: string) {
+async function until(
+  container: HTMLElement,
+  predicate: () => boolean,
+  label: string,
+) {
   for (let attempt = 0; attempt < 20; attempt += 1) {
     if (predicate()) return;
     await flush();
   }
-  throw new Error(`Timed out waiting for ${label}. Body: ${container.textContent}`);
+  throw new Error(
+    `Timed out waiting for ${label}. Body: ${container.textContent}`,
+  );
 }
 
 function findButton(container: ParentNode, label: string) {
   // Matches the accessible name: visible text, or aria-label for icon-only controls.
   return [...container.querySelectorAll('button')].find(
-    (button) => button.textContent === label || button.getAttribute('aria-label') === label,
+    (button) =>
+      button.textContent === label ||
+      button.getAttribute('aria-label') === label,
   );
 }
 
 function click(container: ParentNode, label: string) {
   const target = findButton(container, label);
-  if (!(target instanceof HTMLButtonElement)) throw new Error(`Missing button ${label}`);
+  if (!(target instanceof HTMLButtonElement))
+    throw new Error(`Missing button ${label}`);
   act(() => {
     target.click();
   });
@@ -383,7 +423,8 @@ function click(container: ParentNode, label: string) {
 function clickInOneTurn(container: ParentNode, labels: string[]) {
   const targets = labels.map((label) => {
     const target = findButton(container, label);
-    if (!(target instanceof HTMLButtonElement)) throw new Error(`Missing button ${label}`);
+    if (!(target instanceof HTMLButtonElement))
+      throw new Error(`Missing button ${label}`);
     return target;
   });
   act(() => {
@@ -393,8 +434,12 @@ function clickInOneTurn(container: ParentNode, labels: string[]) {
 
 function setInput(container: ParentNode, label: string, value: string) {
   const input = container.querySelector(`[aria-label="${label}"]`);
-  if (!(input instanceof HTMLInputElement)) throw new Error(`Missing field ${label}`);
-  const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+  if (!(input instanceof HTMLInputElement))
+    throw new Error(`Missing field ${label}`);
+  const setter = Object.getOwnPropertyDescriptor(
+    HTMLInputElement.prototype,
+    'value',
+  )?.set;
   act(() => {
     setter?.call(input, value);
     input.dispatchEvent(new Event('input', { bubbles: true }));
@@ -405,7 +450,9 @@ function setInput(container: ParentNode, label: string, value: string) {
 async function openEditor(view: ReturnType<typeof mount>) {
   await until(
     view.container,
-    () => findButton(view.container, 'Сохранить достижение') instanceof HTMLButtonElement,
+    () =>
+      findButton(view.container, 'Добавить событие') instanceof
+      HTMLButtonElement,
     'achievement editor',
   );
 }
@@ -420,8 +467,7 @@ function fieldError(container: ParentNode, label: string) {
 
 function fillAchievement(container: ParentNode, body: string) {
   setInput(container, 'Описание достижения', body);
-  setInput(container, 'Год', '2025');
-  setInput(container, 'Месяц', '3');
+  setInput(container, 'Дата достижения', '03.2025');
 }
 
 function wizardProfile() {
@@ -442,7 +488,7 @@ function savedProfile(city: string, discipline: string) {
     ...saved,
     sellerProfile: {
       ...saved.sellerProfile,
-      discipline,
+      practice: discipline,
       updatedAt: '2026-09-28T00:00:00.000Z',
     },
     editingRevision: {
@@ -452,7 +498,10 @@ function savedProfile(city: string, discipline: string) {
   };
 }
 
-async function switchAccount(view: ReturnType<typeof mount>, user: { id: string }) {
+async function switchAccount(
+  view: ReturnType<typeof mount>,
+  user: { id: string },
+) {
   await act(async () => {
     await replaceAuthenticatedSession(view.queryClient, user);
   });
@@ -479,7 +528,9 @@ describe('Author application achievement lifecycle', () => {
     harness.logout.mockResolvedValue(undefined);
     harness.getMyProfile.mockResolvedValue(profileResponse());
     harness.getAuthorApplication.mockResolvedValue(applicationResponse([]));
-    harness.getAuthorApplicationPhoto.mockResolvedValue(new Blob(['png'], { type: 'image/png' }));
+    harness.getAuthorApplicationPhoto.mockResolvedValue(
+      new Blob(['png'], { type: 'image/png' }),
+    );
     harness.updateProfile.mockResolvedValue(profileResponse());
     harness.submitAuthorApplication.mockResolvedValue({
       application: {
@@ -501,8 +552,13 @@ describe('Author application achievement lifecycle', () => {
       },
       achievements: [],
     });
-    harness.launchImageLibraryAsync.mockResolvedValue({ canceled: true, assets: [] });
-    harness.addAuthorAchievement.mockResolvedValue({ achievement: { id: 'new', body: 'A' } });
+    harness.launchImageLibraryAsync.mockResolvedValue({
+      canceled: true,
+      assets: [],
+    });
+    harness.addAuthorAchievement.mockResolvedValue({
+      achievement: { id: 'new', body: 'A' },
+    });
     harness.deleteAuthorAchievement.mockResolvedValue({ ok: true });
   });
 
@@ -511,17 +567,54 @@ describe('Author application achievement lifecycle', () => {
     document.body.replaceChildren();
   });
 
+  it.each(['Закрыть', 'Назад'])(
+    'protects an unfinished achievement on %s and prevents final submission',
+    async (label) => {
+      harness.params = { step: '4' };
+      harness.getMyProfile.mockResolvedValue(wizardProfile());
+      const view = mount();
+      await openEditor(view);
+      fillAchievement(view.container, 'Недобавленное событие');
+      await flush();
+      expect(
+        findButton(view.container, 'Сохранить и завершить')?.disabled,
+      ).toBe(true);
+      click(view.container, label);
+      await flush();
+      expect(view.container.textContent).toContain(
+        'Недобавленное событие будет потеряно',
+      );
+      expect(harness.replace).not.toHaveBeenCalled();
+      expect(harness.push).not.toHaveBeenCalled();
+      expect(harness.submitAuthorApplication).not.toHaveBeenCalled();
+      click(view.container, 'Продолжить');
+      await flush();
+      expect(inputValue(view.container, 'Описание достижения')).toBe(
+        'Недобавленное событие',
+      );
+      setInput(view.container, 'Описание достижения', '');
+      setInput(view.container, 'Дата достижения', '');
+      await flush();
+      expect(
+        findButton(view.container, 'Сохранить и завершить')?.disabled,
+      ).toBe(false);
+      view.unmount();
+    },
+  );
+
   it('keeps the description unchanged while an achievement add is pending', async () => {
     const pending = deferred<unknown>();
     harness.addAuthorAchievement.mockReturnValue(pending.promise);
     const view = mount();
     await openEditor(view);
     fillAchievement(view.container, 'Alpha');
-    click(view.container, 'Сохранить достижение');
+    click(view.container, 'Добавить событие');
     await flush();
     setInput(view.container, 'Описание достижения', 'Beta');
     expect(inputValue(view.container, 'Описание достижения')).toBe('Alpha');
-    expect(harness.addAuthorAchievement.mock.calls[0]?.[0]).toMatchObject({ body: 'Alpha' });
+    expect(harness.addAuthorAchievement.mock.calls[0]?.[0]).toMatchObject({
+      body: 'Alpha',
+    });
     await act(async () => {
       pending.resolve({ achievement: { id: 'new', body: 'Alpha' } });
       await pending.promise;
@@ -531,45 +624,45 @@ describe('Author application achievement lifecycle', () => {
     view.unmount();
   });
 
-  it('keeps the entered achievement and photo after a failed add, then retries that draft', async () => {
-    const photo = new Blob(['photo'], { type: 'image/png' });
+  it('keeps the entered achievement after a failed add, then retries that draft', async () => {
     const failed = deferred<never>();
-    harness.launchImageLibraryAsync.mockResolvedValue({
-      canceled: false,
-      assets: [{ uri: 'blob:show', fileName: 'show.png' }],
-    });
-    vi.stubGlobal('fetch', vi.fn(async () => ({ blob: async () => photo })));
     harness.addAuthorAchievement.mockReturnValue(failed.promise);
     const view = mount();
     await openEditor(view);
     fillAchievement(view.container, 'Alpha');
-    click(view.container, 'Добавить фото (необязательно)');
-    await until(view.container, () => view.container.textContent?.includes('Фото: show.png') === true, 'photo label');
-    click(view.container, 'Сохранить достижение');
+    click(view.container, 'Добавить событие');
     await act(async () => {
       failed.reject(new Error('offline'));
       await failed.promise.catch(() => undefined);
     });
     await flush();
     expect(inputValue(view.container, 'Описание достижения')).toBe('Alpha');
-    expect(view.container.textContent).toContain('Фото: show.png');
-    expect(view.container.textContent).toContain('Не удалось обновить достижение');
-    const retryButton = findButton(view.container, 'Сохранить достижение');
-    expect(retryButton instanceof HTMLButtonElement && retryButton.disabled).toBe(false);
+    expect(inputValue(view.container, 'Дата достижения')).toBe('03.2025');
+    expect(view.container.textContent).toContain(
+      'Не удалось обновить достижение',
+    );
+    const retryButton = findButton(view.container, 'Добавить событие');
+    expect(
+      retryButton instanceof HTMLButtonElement && retryButton.disabled,
+    ).toBe(false);
     const retried = deferred<{ achievement: { id: string; body: string } }>();
     harness.addAuthorAchievement.mockReturnValue(retried.promise);
-    click(view.container, 'Сохранить достижение');
+    click(view.container, 'Добавить событие');
     await flush();
     expect(harness.addAuthorAchievement).toHaveBeenCalledTimes(2);
-    expect(harness.addAuthorAchievement.mock.calls[1]?.[0]).toMatchObject({ body: 'Alpha' });
-    expect(harness.addAuthorAchievement.mock.calls[1]?.[1]).toBe(photo);
+    expect(harness.addAuthorAchievement.mock.calls[1]?.[0]).toMatchObject({
+      body: 'Alpha',
+    });
+    expect(harness.addAuthorAchievement.mock.calls[1]).toHaveLength(1);
     await act(async () => {
       retried.resolve({ achievement: { id: 'new', body: 'Alpha' } });
       await retried.promise;
     });
     await flush();
     expect(inputValue(view.container, 'Описание достижения')).toBe('');
-    expect(view.container.textContent).toContain('Добавить фото (необязательно)');
+    expect(
+      findButton(view.container, 'Добавить фото (необязательно)'),
+    ).toBeUndefined();
     view.unmount();
   });
 
@@ -579,236 +672,27 @@ describe('Author application achievement lifecycle', () => {
     const view = mount();
     await openEditor(view);
     fillAchievement(view.container, 'Alpha');
-    clickInOneTurn(view.container, ['Сохранить достижение', 'Сохранить достижение']);
+    clickInOneTurn(view.container, ['Добавить событие', 'Добавить событие']);
     await flush();
     expect(harness.addAuthorAchievement).toHaveBeenCalledTimes(1);
     view.unmount();
 
-    harness.getAuthorApplication.mockResolvedValue(applicationResponse(['Listed']));
+    harness.getAuthorApplication.mockResolvedValue(
+      applicationResponse(['Listed']),
+    );
     const pendingDelete = deferred<unknown>();
     harness.deleteAuthorAchievement.mockReturnValue(pendingDelete.promise);
     const listed = mount();
-    await until(listed.container, () => findButton(listed.container, 'Удалить') instanceof HTMLButtonElement, 'delete');
+    await until(
+      listed.container,
+      () =>
+        findButton(listed.container, 'Удалить') instanceof HTMLButtonElement,
+      'delete',
+    );
     clickInOneTurn(listed.container, ['Удалить', 'Удалить']);
     await flush();
     expect(harness.deleteAuthorAchievement).toHaveBeenCalledTimes(1);
     listed.unmount();
-  });
-
-  it('keeps the newer achievement photo when an older picker resolves later', async () => {
-    const pickers: Array<(value: { canceled: boolean; assets: Array<{ uri: string; fileName: string }> }) => void> = [];
-    harness.launchImageLibraryAsync.mockImplementation(
-      () =>
-        new Promise((resolve) => {
-          pickers.push(resolve);
-        }),
-    );
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (uri: string) => ({ blob: async () => new Blob([uri], { type: 'image/png' }) })),
-    );
-    const view = mount();
-    await openEditor(view);
-    click(view.container, 'Добавить фото (необязательно)');
-    await flush();
-    click(view.container, 'Добавить фото (необязательно)');
-    await flush();
-    await act(async () => {
-      pickers[1]?.({ canceled: false, assets: [{ uri: 'blob:second', fileName: 'second.png' }] });
-      await Promise.resolve();
-    });
-    await until(view.container, () => view.container.textContent?.includes('Фото: second.png') === true, 'second photo');
-    await act(async () => {
-      pickers[0]?.({ canceled: false, assets: [{ uri: 'blob:first', fileName: 'first.png' }] });
-      await Promise.resolve();
-    });
-    await flush();
-    expect(view.container.textContent).toContain('Фото: second.png');
-    expect(view.container.textContent).not.toContain('Фото: first.png');
-    view.unmount();
-  });
-
-  it('drops a blob that resolves after the parent save has finished', async () => {
-    let resolvePicker: (value: { canceled: boolean; assets: Array<{ uri: string; fileName: string }> }) => void =
-      () => undefined;
-    let resolveBlob: (value: { blob: () => Promise<Blob> }) => void = () => undefined;
-    const fetchMock = vi.fn(
-      () =>
-        new Promise((resolve) => {
-          resolveBlob = resolve;
-        }),
-    );
-    harness.launchImageLibraryAsync.mockImplementation(
-      () =>
-        new Promise((resolve) => {
-          resolvePicker = resolve;
-        }),
-    );
-    vi.stubGlobal('fetch', fetchMock);
-    const view = mount();
-    await openEditor(view);
-    click(view.container, 'Добавить фото (необязательно)');
-    await flush();
-    await act(async () => {
-      resolvePicker({ canceled: false, assets: [{ uri: 'blob:late', fileName: 'late.png' }] });
-      await Promise.resolve();
-    });
-    await until(view.container, () => fetchMock.mock.calls.length === 1, 'achievement blob read');
-    click(view.container, 'Сохранить');
-    await flush();
-    expect(harness.updateProfile).toHaveBeenCalledTimes(1);
-    await act(async () => {
-      resolveBlob({ blob: async () => new Blob(['late'], { type: 'image/png' }) });
-      await Promise.resolve();
-    });
-    await flush();
-    expect(view.container.textContent).not.toContain('Фото: late.png');
-    view.unmount();
-  });
-
-  it('does not attach an earlier photo to the draft created after an achievement add', async () => {
-    let resolvePicker: (value: { canceled: boolean; assets: Array<{ uri: string; fileName: string }> }) => void =
-      () => undefined;
-    harness.launchImageLibraryAsync.mockImplementation(
-      () =>
-        new Promise((resolve) => {
-          resolvePicker = resolve;
-        }),
-    );
-    vi.stubGlobal('fetch', vi.fn(async () => ({ blob: async () => new Blob(['old'], { type: 'image/png' }) })));
-    const view = mount();
-    await openEditor(view);
-    click(view.container, 'Добавить фото (необязательно)');
-    await flush();
-    fillAchievement(view.container, 'Alpha');
-    click(view.container, 'Сохранить достижение');
-    await flush();
-    fillAchievement(view.container, 'Beta');
-    await act(async () => {
-      resolvePicker({ canceled: false, assets: [{ uri: 'blob:old', fileName: 'old.png' }] });
-      await Promise.resolve();
-    });
-    await flush();
-    expect(inputValue(view.container, 'Описание достижения')).toBe('Beta');
-    expect(view.container.textContent).not.toContain('Фото: old.png');
-    view.unmount();
-  });
-
-  it('drops a blob that finishes after the achievement add that interrupted it', async () => {
-    let resolvePicker: (value: { canceled: boolean; assets: Array<{ uri: string; fileName: string }> }) => void =
-      () => undefined;
-    let resolveBlob: (value: { blob: () => Promise<Blob> }) => void = () => undefined;
-    const fetchMock = vi.fn(
-      () =>
-        new Promise((resolve) => {
-          resolveBlob = resolve;
-        }),
-    );
-    const pendingAdd = deferred<{ achievement: { id: string; body: string } }>();
-    harness.addAuthorAchievement.mockReturnValue(pendingAdd.promise);
-    harness.launchImageLibraryAsync.mockImplementation(
-      () =>
-        new Promise((resolve) => {
-          resolvePicker = resolve;
-        }),
-    );
-    vi.stubGlobal('fetch', fetchMock);
-    const view = mount();
-    await openEditor(view);
-    click(view.container, 'Добавить фото (необязательно)');
-    await flush();
-    await act(async () => {
-      resolvePicker({ canceled: false, assets: [{ uri: 'blob:old', fileName: 'old.png' }] });
-      await Promise.resolve();
-    });
-    await until(view.container, () => fetchMock.mock.calls.length === 1, 'blob read before add');
-    fillAchievement(view.container, 'Alpha');
-    click(view.container, 'Сохранить достижение');
-    await act(async () => {
-      pendingAdd.resolve({ achievement: { id: 'new', body: 'Alpha' } });
-      await pendingAdd.promise;
-    });
-    await flush();
-    fillAchievement(view.container, 'Beta');
-    await act(async () => {
-      resolveBlob({ blob: async () => new Blob(['old'], { type: 'image/png' }) });
-      await Promise.resolve();
-    });
-    await flush();
-    expect(inputValue(view.container, 'Описание достижения')).toBe('Beta');
-    expect(view.container.textContent).not.toContain('Фото: old.png');
-    view.unmount();
-  });
-
-  it('does not revive an old photo after the form locks and unlocks', async () => {
-    let resolvePicker: (value: { canceled: boolean; assets: Array<{ uri: string; fileName: string }> }) => void =
-      () => undefined;
-    let resolveBlob: (value: { blob: () => Promise<Blob> }) => void = () => undefined;
-    const fetchMock = vi.fn(
-      () =>
-        new Promise((resolve) => {
-          resolveBlob = resolve;
-        }),
-    );
-    harness.launchImageLibraryAsync.mockImplementation(
-      () =>
-        new Promise((resolve) => {
-          resolvePicker = resolve;
-        }),
-    );
-    vi.stubGlobal('fetch', fetchMock);
-    harness.params = { step: '4' };
-    harness.getMyProfile.mockResolvedValue(wizardProfile());
-    harness.updateProfile.mockRejectedValueOnce(new Error('save failed'));
-    const view = mount();
-    await openEditor(view);
-    click(view.container, 'Добавить фото (необязательно)');
-    await flush();
-    await act(async () => {
-      resolvePicker({ canceled: false, assets: [{ uri: 'blob:old', fileName: 'old.png' }] });
-      await Promise.resolve();
-    });
-    await until(view.container, () => fetchMock.mock.calls.length === 1, 'blob read before submit');
-    click(view.container, 'Отправить на проверку');
-    await flush();
-    expect(findButton(view.container, 'Отправить на проверку') instanceof HTMLButtonElement).toBe(true);
-    await act(async () => {
-      resolveBlob({ blob: async () => new Blob(['old'], { type: 'image/png' }) });
-      await Promise.resolve();
-    });
-    await flush();
-    expect(view.container.textContent).not.toContain('Фото: old.png');
-    harness.launchImageLibraryAsync.mockResolvedValue({
-      canceled: false,
-      assets: [{ uri: 'blob:new', fileName: 'new.png' }],
-    });
-    fetchMock.mockResolvedValue({ blob: async () => new Blob(['new'], { type: 'image/png' }) });
-    click(view.container, 'Добавить фото (необязательно)');
-    await until(view.container, () => view.container.textContent?.includes('Фото: new.png') === true, 'new photo');
-    view.unmount();
-    harness.params = {};
-  });
-
-  it('reports a failed photo read and ignores a cancelled picker', async () => {
-    harness.launchImageLibraryAsync.mockResolvedValueOnce({ canceled: true, assets: [] });
-    const view = mount();
-    await openEditor(view);
-    click(view.container, 'Добавить фото (необязательно)');
-    await flush();
-    expect(view.container.textContent).not.toContain('Не удалось выбрать фото');
-    harness.launchImageLibraryAsync.mockResolvedValueOnce({
-      canceled: false,
-      assets: [{ uri: 'blob:broken', fileName: 'broken.png' }],
-    });
-    vi.stubGlobal('fetch', vi.fn(async () => Promise.reject(new Error('read failed'))));
-    click(view.container, 'Добавить фото (необязательно)');
-    await until(
-      view.container,
-      () => view.container.textContent?.includes('Не удалось выбрать фото') === true,
-      'picker failure',
-    );
-    expect(findButton(view.container, 'Добавить фото (необязательно)')).toBeTruthy();
-    view.unmount();
   });
 
   it('blocks parent submit, logout, and exit while an achievement write is pending', async () => {
@@ -817,7 +701,11 @@ describe('Author application achievement lifecycle', () => {
     const view = mount();
     await openEditor(view);
     fillAchievement(view.container, 'Alpha');
-    clickInOneTurn(view.container, ['Сохранить достижение', 'Отправить на проверку', 'Выйти']);
+    clickInOneTurn(view.container, [
+      'Добавить событие',
+      'Отправить на проверку',
+      'Выйти',
+    ]);
     await flush();
     expect(harness.addAuthorAchievement).toHaveBeenCalledTimes(1);
     expect(harness.submitAuthorApplication).not.toHaveBeenCalled();
@@ -845,15 +733,22 @@ describe('Author application achievement lifecycle', () => {
     harness.getMyProfile.mockResolvedValue(wizardProfile());
     const pendingDelete = deferred<unknown>();
     harness.deleteAuthorAchievement.mockReturnValue(pendingDelete.promise);
-    harness.getAuthorApplication.mockResolvedValue(applicationResponse(['Listed']));
+    harness.getAuthorApplication.mockResolvedValue(
+      applicationResponse(['Listed']),
+    );
     const wizard = mount();
-    await until(wizard.container, () => findButton(wizard.container, 'Удалить') instanceof HTMLButtonElement, 'wizard delete');
+    await until(
+      wizard.container,
+      () =>
+        findButton(wizard.container, 'Удалить') instanceof HTMLButtonElement,
+      'wizard delete',
+    );
     clickInOneTurn(wizard.container, ['Удалить', 'Закрыть', 'Назад']);
     await flush();
     expect(harness.deleteAuthorAchievement).toHaveBeenCalledTimes(1);
     expect(harness.replace).not.toHaveBeenCalled();
     expect(harness.push).not.toHaveBeenCalled();
-    click(wizard.container, 'Сохранить черновик');
+    click(wizard.container, 'Сохранить и завершить');
     await flush();
     expect(harness.updateProfile).not.toHaveBeenCalled();
     await act(async () => {
@@ -869,16 +764,26 @@ describe('Author application achievement lifecycle', () => {
   it('does not start an achievement write after a parent transition has begun', async () => {
     const pendingSave = deferred<ReturnType<typeof profileResponse>>();
     harness.updateProfile.mockReturnValue(pendingSave.promise);
-    harness.getAuthorApplication.mockResolvedValue(applicationResponse(['Listed']));
+    harness.getAuthorApplication.mockResolvedValue(
+      applicationResponse(['Listed']),
+    );
     const view = mount();
-    await until(view.container, () => findButton(view.container, 'Удалить') instanceof HTMLButtonElement, 'delete');
+    await until(
+      view.container,
+      () => findButton(view.container, 'Удалить') instanceof HTMLButtonElement,
+      'delete',
+    );
     fillAchievement(view.container, 'Alpha');
-    clickInOneTurn(view.container, ['Сохранить', 'Сохранить достижение', 'Удалить']);
+    clickInOneTurn(view.container, [
+      'Сохранить',
+      'Добавить событие',
+      'Удалить',
+    ]);
     await flush();
     expect(harness.updateProfile).toHaveBeenCalledTimes(1);
     expect(harness.addAuthorAchievement).not.toHaveBeenCalled();
     expect(harness.deleteAuthorAchievement).not.toHaveBeenCalled();
-    click(view.container, 'Сохранить достижение');
+    click(view.container, 'Добавить событие');
     click(view.container, 'Удалить');
     await flush();
     expect(harness.addAuthorAchievement).not.toHaveBeenCalled();
@@ -888,7 +793,7 @@ describe('Author application achievement lifecycle', () => {
       await pendingSave.promise;
     });
     await flush();
-    click(view.container, 'Сохранить достижение');
+    click(view.container, 'Добавить событие');
     await flush();
     expect(harness.addAuthorAchievement).toHaveBeenCalledTimes(1);
     view.unmount();
@@ -897,23 +802,64 @@ describe('Author application achievement lifecycle', () => {
     harness.updateProfile.mockReturnValue(pendingSubmit.promise);
     const submitting = mount();
     await openEditor(submitting);
-    fillAchievement(submitting.container, 'Alpha');
-    clickInOneTurn(submitting.container, ['Отправить на проверку', 'Сохранить достижение']);
+    clickInOneTurn(submitting.container, [
+      'Отправить на проверку',
+      'Добавить событие',
+    ]);
     await flush();
     expect(harness.updateProfile).toHaveBeenCalledTimes(2);
     expect(harness.addAuthorAchievement).toHaveBeenCalledTimes(1);
     submitting.unmount();
 
+    harness.updateProfile.mockClear();
     harness.push.mockClear();
-    harness.params = { step: '4' };
+    harness.addAuthorAchievement.mockClear();
+    harness.deleteAuthorAchievement.mockClear();
+    harness.getAuthorApplication.mockResolvedValue(
+      applicationResponse(['Listed']),
+    );
+    const pendingWizardBack = deferred<ReturnType<typeof wizardProfile>>();
+    harness.updateProfile.mockReturnValue(pendingWizardBack.promise);
+    harness.params = { step: '3' };
     harness.getMyProfile.mockResolvedValue(wizardProfile());
     const wizard = mount();
+    await until(
+      wizard.container,
+      () =>
+        findButton(wizard.container, 'Продолжить') instanceof HTMLButtonElement,
+      'about continue',
+    );
+    setInput(wizard.container, 'Практика', 'Dirty practice');
+    await flush();
+    harness.params = { step: '4' };
+    wizard.rerender();
+    await flush();
     await openEditor(wizard);
     fillAchievement(wizard.container, 'Beta');
-    clickInOneTurn(wizard.container, ['Назад', 'Сохранить достижение']);
+    click(wizard.container, 'Назад');
+    await flush();
+    expect(wizard.container.textContent).toContain(
+      'Недобавленное событие будет потеряно',
+    );
+    clickInOneTurn(wizard.container, [
+      'Прервать',
+      'Добавить событие',
+      'Удалить',
+    ]);
+    await flush();
+    expect(harness.updateProfile).toHaveBeenCalledTimes(1);
+    expect(harness.push).not.toHaveBeenCalled();
+    expect(harness.addAuthorAchievement).not.toHaveBeenCalled();
+    expect(harness.deleteAuthorAchievement).not.toHaveBeenCalled();
+    expect(harness.addAuthorAchievement).toHaveBeenCalledTimes(0);
+    expect(harness.deleteAuthorAchievement).toHaveBeenCalledTimes(0);
+    await act(async () => {
+      pendingWizardBack.resolve(wizardProfile());
+      await pendingWizardBack.promise;
+    });
     await flush();
     expect(harness.push).toHaveBeenCalledWith('/profile?step=3');
-    expect(harness.addAuthorAchievement).toHaveBeenCalledTimes(1);
+    expect(harness.push).toHaveBeenCalledTimes(1);
     wizard.unmount();
     harness.params = {};
   });
@@ -924,7 +870,7 @@ describe('Author application achievement lifecycle', () => {
     const view = mount();
     await openEditor(view);
     fillAchievement(view.container, 'Alpha');
-    click(view.container, 'Сохранить достижение');
+    click(view.container, 'Добавить событие');
     await flush();
     click(view.container, 'Сохранить');
     await flush();
@@ -945,7 +891,7 @@ describe('Author application achievement lifecycle', () => {
     const failedView = mount();
     await openEditor(failedView);
     fillAchievement(failedView.container, 'Alpha');
-    click(failedView.container, 'Сохранить достижение');
+    click(failedView.container, 'Добавить событие');
     await act(async () => {
       failed.reject(new Error('offline'));
       await failed.promise.catch(() => undefined);
@@ -962,7 +908,7 @@ describe('Author application achievement lifecycle', () => {
     const abandonedView = mount();
     await openEditor(abandonedView);
     fillAchievement(abandonedView.container, 'Alpha');
-    click(abandonedView.container, 'Сохранить достижение');
+    click(abandonedView.container, 'Добавить событие');
     await flush();
     abandonedView.unmount();
     await act(async () => {
@@ -993,7 +939,7 @@ describe('Author application achievement lifecycle', () => {
     });
     await flush();
     expect(inputValue(view.container, 'Город')).toBe('Hrodna');
-    expect(inputValue(view.container, 'Дисциплина')).toBe('Oil painting');
+    expect(inputValue(view.container, 'Практика')).toBe('Oil painting');
     expect(harness.updateProfile.mock.calls[0]?.[0]).toEqual(
       expect.objectContaining({ city: 'Minsk', discipline: 'Painting' }),
     );
@@ -1001,7 +947,8 @@ describe('Author application achievement lifecycle', () => {
   });
 
   it('does not reopen moderation or the achievement editor from a stale profile response', async () => {
-    const delayed: Array<(value: ReturnType<typeof profileResponse>) => void> = [];
+    const delayed: Array<(value: ReturnType<typeof profileResponse>) => void> =
+      [];
     let profileCalls = 0;
     harness.getMyProfile.mockImplementation(
       () =>
@@ -1017,7 +964,11 @@ describe('Author application achievement lifecycle', () => {
     const view = mount();
     await openEditor(view);
     click(view.container, 'Отправить на проверку');
-    await until(view.container, () => harness.submitAuthorApplication.mock.calls.length === 1, 'submit');
+    await until(
+      view.container,
+      () => harness.submitAuthorApplication.mock.calls.length === 1,
+      'submit',
+    );
     await until(view.container, () => delayed.length > 0, 'stale profile');
     await act(async () => {
       for (const resolve of delayed.splice(0)) resolve(profileResponse());
@@ -1026,13 +977,15 @@ describe('Author application achievement lifecycle', () => {
     await flush();
     expect(view.container.textContent).toContain('Заявка на проверке');
     expect(findButton(view.container, 'Отправить на проверку')).toBeUndefined();
-    expect(findButton(view.container, 'Сохранить достижение')).toBeUndefined();
+    expect(findButton(view.container, 'Добавить событие')).toBeUndefined();
     expect(harness.submitAuthorApplication).toHaveBeenCalledTimes(1);
     view.unmount();
   });
 
-  it('drops a retired session achievement read, write, and photo on the next account', async () => {
-    const reads: Array<(value: ReturnType<typeof applicationResponse>) => void> = [];
+  it('drops retired session achievement reads and writes on the next account', async () => {
+    const reads: Array<
+      (value: ReturnType<typeof applicationResponse>) => void
+    > = [];
     harness.getAuthorApplication.mockImplementation(
       () =>
         new Promise((resolve) => {
@@ -1040,9 +993,17 @@ describe('Author application achievement lifecycle', () => {
         }),
     );
     const view = mount();
-    await until(view.container, () => reads.length === 1, 'first application read');
+    await until(
+      view.container,
+      () => reads.length === 1,
+      'first application read',
+    );
     await switchAccount(view, userB);
-    await until(view.container, () => reads.length >= 2, 'next application read');
+    await until(
+      view.container,
+      () => reads.length >= 2,
+      'next application read',
+    );
     await act(async () => {
       reads[0]?.(applicationResponse(['Secret A']));
       reads[1]?.(applicationResponse(['Visible B']));
@@ -1053,13 +1014,15 @@ describe('Author application achievement lifecycle', () => {
     expect(view.container.textContent).not.toContain('Secret A');
     view.unmount();
 
-    const pendingAdd = deferred<{ achievement: { id: string; body: string } }>();
+    const pendingAdd = deferred<{
+      achievement: { id: string; body: string };
+    }>();
     harness.getAuthorApplication.mockResolvedValue(applicationResponse([]));
     harness.addAuthorAchievement.mockReturnValue(pendingAdd.promise);
     const writing = mount();
     await openEditor(writing);
     fillAchievement(writing.container, 'Alpha');
-    click(writing.container, 'Сохранить достижение');
+    click(writing.container, 'Добавить событие');
     await flush();
     const readsBeforeSwitch = harness.getAuthorApplication.mock.calls.length;
     await switchAccount(writing, userB);
@@ -1072,19 +1035,32 @@ describe('Author application achievement lifecycle', () => {
     });
     await flush();
     expect(inputValue(writing.container, 'Описание достижения')).toBe('Beta');
-    expect(harness.getAuthorApplication.mock.calls.length).toBe(readsAfterSwitch);
+    expect(harness.getAuthorApplication.mock.calls.length).toBe(
+      readsAfterSwitch,
+    );
     expect(readsAfterSwitch).toBeGreaterThan(readsBeforeSwitch);
     writing.unmount();
 
     const pendingDelete = deferred<unknown>();
-    harness.getAuthorApplication.mockResolvedValue(applicationResponse(['Listed']));
+    harness.getAuthorApplication.mockResolvedValue(
+      applicationResponse(['Listed']),
+    );
     harness.deleteAuthorAchievement.mockReturnValue(pendingDelete.promise);
     const deleting = mount();
-    await until(deleting.container, () => findButton(deleting.container, 'Удалить') instanceof HTMLButtonElement, 'delete');
+    await until(
+      deleting.container,
+      () =>
+        findButton(deleting.container, 'Удалить') instanceof HTMLButtonElement,
+      'delete',
+    );
     click(deleting.container, 'Удалить');
     await flush();
     await switchAccount(deleting, userB);
-    await until(deleting.container, () => deleting.container.textContent?.includes('Listed') === true, 'next list');
+    await until(
+      deleting.container,
+      () => deleting.container.textContent?.includes('Listed') === true,
+      'next list',
+    );
     await act(async () => {
       pendingDelete.resolve({ ok: true });
       await pendingDelete.promise;
@@ -1093,43 +1069,18 @@ describe('Author application achievement lifecycle', () => {
     expect(deleting.container.textContent).toContain('Listed');
     expect(harness.deleteAuthorAchievement).toHaveBeenCalledTimes(1);
     deleting.unmount();
-
-    let resolvePicker: (value: { canceled: boolean; assets: Array<{ uri: string; fileName: string }> }) => void =
-      () => undefined;
-    harness.launchImageLibraryAsync.mockImplementation(
-      () =>
-        new Promise((resolve) => {
-          resolvePicker = resolve;
-        }),
-    );
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => ({ blob: async () => new Blob(['late'], { type: 'image/png' }) })),
-    );
-    const picking = mount();
-    await openEditor(picking);
-    click(picking.container, 'Добавить фото (необязательно)');
-    await flush();
-    await switchAccount(picking, userB);
-    await openEditor(picking);
-    await act(async () => {
-      resolvePicker({ canceled: false, assets: [{ uri: 'blob:retired', fileName: 'retired.png' }] });
-      await Promise.resolve();
-    });
-    await flush();
-    expect(picking.container.textContent).not.toContain('Фото: retired.png');
-    expect(findButton(picking.container, 'Добавить фото (необязательно)')).toBeTruthy();
-    picking.unmount();
   });
 
   it('drops the previous session after logout and login of the same account', async () => {
-    const pendingAdd = deferred<{ achievement: { id: string; body: string } }>();
+    const pendingAdd = deferred<{
+      achievement: { id: string; body: string };
+    }>();
     harness.addAuthorAchievement.mockReturnValue(pendingAdd.promise);
     const view = mount();
     await openEditor(view);
     fillAchievement(view.container, 'Alpha');
     setInput(view.container, 'Город', 'Hrodna');
-    click(view.container, 'Сохранить достижение');
+    click(view.container, 'Добавить событие');
     await flush();
     await act(async () => {
       await clearAuthenticatedSession(view.queryClient);
@@ -1146,13 +1097,19 @@ describe('Author application achievement lifecycle', () => {
     await flush();
     expect(inputValue(view.container, 'Описание достижения')).toBe('Beta');
     expect(inputValue(view.container, 'Город')).toBe('Minsk');
-    expect(view.container.textContent).not.toContain('Не удалось обновить достижение');
-    expect(harness.getAuthorApplication.mock.calls.length).toBe(readsAfterLogin);
+    expect(view.container.textContent).not.toContain(
+      'Не удалось обновить достижение',
+    );
+    expect(harness.getAuthorApplication.mock.calls.length).toBe(
+      readsAfterLogin,
+    );
     view.unmount();
   });
 
   it('shows Alpha after the initial empty application read finishes late', async () => {
-    const reads: Array<(value: ReturnType<typeof applicationResponse>) => void> = [];
+    const reads: Array<
+      (value: ReturnType<typeof applicationResponse>) => void
+    > = [];
     harness.getAuthorApplication.mockImplementation(
       () =>
         new Promise((resolve) => {
@@ -1163,7 +1120,7 @@ describe('Author application achievement lifecycle', () => {
     await openEditor(view);
     expect(reads).toHaveLength(1);
     fillAchievement(view.container, 'Alpha');
-    click(view.container, 'Сохранить достижение');
+    click(view.container, 'Добавить событие');
     await flush();
     await flush();
     expect(reads.length).toBeGreaterThan(1);
@@ -1179,21 +1136,37 @@ describe('Author application achievement lifecycle', () => {
   });
 
   it('does not restore a deleted achievement from a read started before the delete', async () => {
-    const reads: Array<ReturnType<typeof deferred<ReturnType<typeof applicationResponse>>>> = [];
+    const reads: Array<
+      ReturnType<typeof deferred<ReturnType<typeof applicationResponse>>>
+    > = [];
     harness.getAuthorApplication.mockImplementation(() => {
       const next = deferred<ReturnType<typeof applicationResponse>>();
       reads.push(next);
       return next.promise;
     });
     const view = mount();
-    await until(view.container, () => reads.length === 1, 'initial application read');
+    await until(
+      view.container,
+      () => reads.length === 1,
+      'initial application read',
+    );
     await act(async () => {
       reads[0]?.resolve(applicationResponse(['Listed']));
       await reads[0]?.promise;
     });
-    await until(view.container, () => findButton(view.container, 'Удалить') instanceof HTMLButtonElement, 'delete');
-    void view.queryClient.refetchQueries({ queryKey: ['seller', 'application'] });
-    await until(view.container, () => reads.length === 2, 'application refetch');
+    await until(
+      view.container,
+      () => findButton(view.container, 'Удалить') instanceof HTMLButtonElement,
+      'delete',
+    );
+    void view.queryClient.refetchQueries({
+      queryKey: ['seller', 'application'],
+    });
+    await until(
+      view.container,
+      () => reads.length === 2,
+      'application refetch',
+    );
     click(view.container, 'Удалить');
     await flush();
     await until(view.container, () => reads.length > 2, 'read after delete');
@@ -1210,7 +1183,9 @@ describe('Author application achievement lifecycle', () => {
   });
 
   it('shows a retry and releases the profile when the read after add fails', async () => {
-    const reads: Array<ReturnType<typeof deferred<ReturnType<typeof applicationResponse>>>> = [];
+    const reads: Array<
+      ReturnType<typeof deferred<ReturnType<typeof applicationResponse>>>
+    > = [];
     harness.getAuthorApplication.mockImplementation(() => {
       const next = deferred<ReturnType<typeof applicationResponse>>();
       reads.push(next);
@@ -1219,7 +1194,7 @@ describe('Author application achievement lifecycle', () => {
     const view = mount();
     await openEditor(view);
     fillAchievement(view.container, 'Alpha');
-    click(view.container, 'Сохранить достижение');
+    click(view.container, 'Добавить событие');
     await until(view.container, () => reads.length > 1, 'read after add');
     await act(async () => {
       reads[1]?.reject(new Error('refresh failed'));
@@ -1236,7 +1211,9 @@ describe('Author application achievement lifecycle', () => {
   });
 
   it('does not publish an achievement refresh into the next session', async () => {
-    const reads: Array<ReturnType<typeof deferred<ReturnType<typeof applicationResponse>>>> = [];
+    const reads: Array<
+      ReturnType<typeof deferred<ReturnType<typeof applicationResponse>>>
+    > = [];
     harness.getAuthorApplication.mockImplementation(() => {
       const next = deferred<ReturnType<typeof applicationResponse>>();
       reads.push(next);
@@ -1245,11 +1222,15 @@ describe('Author application achievement lifecycle', () => {
     const view = mount();
     await openEditor(view);
     fillAchievement(view.container, 'Alpha');
-    click(view.container, 'Сохранить достижение');
+    click(view.container, 'Добавить событие');
     await until(view.container, () => reads.length > 1, 'read after add');
     const refresh = reads.length - 1;
     await switchAccount(view, userB);
-    await until(view.container, () => reads.length > refresh + 1, 'next session read');
+    await until(
+      view.container,
+      () => reads.length > refresh + 1,
+      'next session read',
+    );
     await act(async () => {
       reads[0]?.resolve(applicationResponse([]));
       await reads[0]?.promise.catch(() => undefined);
@@ -1264,206 +1245,45 @@ describe('Author application achievement lifecycle', () => {
     view.unmount();
   });
 
-  it('does not apply a photo chosen before a server lock after the form opens again', async () => {
-    const picker = deferred<{ canceled: boolean; assets: Array<{ uri: string; fileName: string }> }>();
-    harness.launchImageLibraryAsync.mockReturnValueOnce(picker.promise);
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => ({ blob: async () => new Blob(['old'], { type: 'image/png' }) })),
-    );
+  it('rejects invalid dates and preserves month or day precision on save', async () => {
     const view = mount();
     await openEditor(view);
-    click(view.container, 'Добавить фото (необязательно)');
-    await until(view.container, () => harness.launchImageLibraryAsync.mock.calls.length === 1, 'picker opened');
-    publishProfile(view, revisionSnapshot('PENDING_REVIEW', '2026-09-28T00:00:00.000Z'));
-    await until(view.container, () => view.container.textContent?.includes('Заявка на проверке') === true, 'server lock');
-    publishProfile(view, revisionSnapshot('CHANGES_REQUESTED', '2026-09-29T00:00:00.000Z'));
-    await until(view.container, () => findButton(view.container, 'Сохранить достижение') !== undefined, 'server unlock');
-    fillAchievement(view.container, 'Beta');
-    await act(async () => {
-      picker.resolve({ canceled: false, assets: [{ uri: 'file:///old.png', fileName: 'old.png' }] });
-      await picker.promise;
-    });
-    await flush();
-    expect(inputValue(view.container, 'Описание достижения')).toBe('Beta');
-    expect(view.container.textContent).not.toContain('Фото: old.png');
-    expect(harness.updateProfile).not.toHaveBeenCalled();
-    expect(harness.submitAuthorApplication).not.toHaveBeenCalled();
-    view.unmount();
-  });
-
-  it('does not apply a blob that finishes after a server lock and unlock', async () => {
-    const picker = deferred<{ canceled: boolean; assets: Array<{ uri: string; fileName: string }> }>();
-    const blob = deferred<Blob>();
-    harness.launchImageLibraryAsync.mockReturnValueOnce(picker.promise);
-    const fetchMock = vi.fn(() => Promise.resolve({ blob: () => blob.promise }));
-    vi.stubGlobal('fetch', fetchMock);
-    const view = mount();
-    await openEditor(view);
-    click(view.container, 'Добавить фото (необязательно)');
-    await act(async () => {
-      picker.resolve({ canceled: false, assets: [{ uri: 'file:///old.png', fileName: 'old.png' }] });
-      await picker.promise;
-    });
-    await until(view.container, () => fetchMock.mock.calls.length === 1, 'blob requested');
-    publishProfile(view, revisionSnapshot('PENDING_REVIEW', '2026-09-28T00:00:00.000Z'));
-    await until(view.container, () => view.container.textContent?.includes('Заявка на проверке') === true, 'server lock');
-    publishProfile(view, revisionSnapshot('CHANGES_REQUESTED', '2026-09-29T00:00:00.000Z'));
-    await until(view.container, () => findButton(view.container, 'Сохранить достижение') !== undefined, 'server unlock');
-    fillAchievement(view.container, 'Beta');
-    await act(async () => {
-      blob.resolve(new Blob(['old']));
-      await blob.promise;
-    });
-    await flush();
-    expect(inputValue(view.container, 'Описание достижения')).toBe('Beta');
-    expect(view.container.textContent).not.toContain('Фото: old.png');
-    expect(harness.updateProfile).not.toHaveBeenCalled();
-    expect(harness.submitAuthorApplication).not.toHaveBeenCalled();
-    view.unmount();
-  });
-
-  it('does not publish a picker or blob error that arrives after a server lock and unlock', async () => {
-    const picker = deferred<{ canceled: boolean; assets: Array<{ uri: string; fileName: string }> }>();
-    harness.launchImageLibraryAsync.mockReturnValueOnce(picker.promise);
-    const view = mount();
-    await openEditor(view);
-    click(view.container, 'Добавить фото (необязательно)');
-    await until(view.container, () => harness.launchImageLibraryAsync.mock.calls.length === 1, 'picker opened');
-    publishProfile(view, revisionSnapshot('PENDING_REVIEW', '2026-09-28T00:00:00.000Z'));
-    await until(view.container, () => view.container.textContent?.includes('Заявка на проверке') === true, 'server lock');
-    publishProfile(view, revisionSnapshot('CHANGES_REQUESTED', '2026-09-29T00:00:00.000Z'));
-    await until(view.container, () => findButton(view.container, 'Сохранить достижение') !== undefined, 'server unlock');
-    fillAchievement(view.container, 'Beta');
-    await act(async () => {
-      picker.reject(new Error('picker failed'));
-      await picker.promise.catch(() => undefined);
-    });
-    await flush();
-    expect(inputValue(view.container, 'Описание достижения')).toBe('Beta');
-    expect(view.container.textContent).not.toContain('Не удалось выбрать фото');
-
-    const latePicker = deferred<{ canceled: boolean; assets: Array<{ uri: string; fileName: string }> }>();
-    const blob = deferred<Blob>();
-    harness.launchImageLibraryAsync.mockReturnValueOnce(latePicker.promise);
-    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve({ blob: () => blob.promise })));
-    click(view.container, 'Добавить фото (необязательно)');
-    await act(async () => {
-      latePicker.resolve({ canceled: false, assets: [{ uri: 'file:///old.png', fileName: 'old.png' }] });
-      await latePicker.promise;
-    });
-    await until(view.container, () => vi.mocked(fetch).mock.calls.length === 1, 'blob requested');
-    publishProfile(view, revisionSnapshot('PENDING_REVIEW', '2026-09-30T00:00:00.000Z'));
-    await until(view.container, () => view.container.textContent?.includes('Заявка на проверке') === true, 'second server lock');
-    publishProfile(view, revisionSnapshot('CHANGES_REQUESTED', '2026-10-01T00:00:00.000Z'));
-    await until(view.container, () => findButton(view.container, 'Сохранить достижение') !== undefined, 'second server unlock');
-    setInput(view.container, 'Описание достижения', 'Beta');
-    await act(async () => {
-      blob.reject(new Error('blob failed'));
-      await blob.promise.catch(() => undefined);
-    });
-    await flush();
-    expect(inputValue(view.container, 'Описание достижения')).toBe('Beta');
-    expect(view.container.textContent).not.toContain('Не удалось выбрать фото');
-    expect(view.container.textContent).not.toContain('Фото: old.png');
-    expect(harness.updateProfile).not.toHaveBeenCalled();
-    expect(harness.submitAuthorApplication).not.toHaveBeenCalled();
-    view.unmount();
-  });
-
-  it('applies a new photo chosen after a server lock and unlock', async () => {
-    const view = mount();
-    await openEditor(view);
-    publishProfile(view, revisionSnapshot('PENDING_REVIEW', '2026-09-28T00:00:00.000Z'));
-    await until(view.container, () => view.container.textContent?.includes('Заявка на проверке') === true, 'server lock');
-    publishProfile(view, revisionSnapshot('CHANGES_REQUESTED', '2026-09-29T00:00:00.000Z'));
-    await until(view.container, () => findButton(view.container, 'Сохранить достижение') !== undefined, 'server unlock');
-    const picker = deferred<{ canceled: boolean; assets: Array<{ uri: string; fileName: string }> }>();
-    harness.launchImageLibraryAsync.mockReturnValueOnce(picker.promise);
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => ({ blob: async () => new Blob(['new'], { type: 'image/png' }) })),
-    );
-    click(view.container, 'Добавить фото (необязательно)');
-    await act(async () => {
-      picker.resolve({ canceled: false, assets: [{ uri: 'file:///new.png', fileName: 'new.png' }] });
-      await picker.promise;
-    });
-    await flush();
-    expect(view.container.textContent).toContain('Фото: new.png');
-    expect(harness.updateProfile).not.toHaveBeenCalled();
-    expect(harness.submitAuthorApplication).not.toHaveBeenCalled();
-    view.unmount();
-  });
-
-  it('shows date-part errors without sending an invalid achievement', async () => {
-    const view = mount();
-    await openEditor(view);
-    setInput(view.container, 'Год', 'текст');
-    setInput(view.container, 'Месяц', '3');
     setInput(view.container, 'Описание достижения', 'Выставка');
-    click(view.container, 'Сохранить достижение');
-    expect(fieldError(view.container, 'Год')).toBe('Укажите год числом');
-    expect(harness.addAuthorAchievement).not.toHaveBeenCalled();
-
-    setInput(view.container, 'Год', '2024.5');
-    expect(fieldError(view.container, 'Год')).toBeNull();
-    click(view.container, 'Сохранить достижение');
-    expect(fieldError(view.container, 'Год')).toBe('Укажите год целым числом');
-    expect(harness.addAuthorAchievement).not.toHaveBeenCalled();
-
-    setInput(view.container, 'Год', '2024');
-    setInput(view.container, 'Месяц', '13');
-    click(view.container, 'Сохранить достижение');
-    expect(fieldError(view.container, 'Месяц')).toBe('Укажите месяц от 1 до 12');
-    expect(fieldError(view.container, 'Год')).toBeNull();
-
-    setInput(view.container, 'Месяц', '2');
-    setInput(view.container, 'День (необязательно)', '29');
-    setInput(view.container, 'Год', '2023');
-    click(view.container, 'Сохранить достижение');
-    expect(fieldError(view.container, 'День (необязательно)')).toBe('Укажите существующую дату');
-    expect(harness.addAuthorAchievement).not.toHaveBeenCalled();
-
-    setInput(view.container, 'Год', '2024');
-    harness.addAuthorAchievement.mockResolvedValue({ achievement: { id: 'leap', body: 'Выставка' } });
-    click(view.container, 'Сохранить достижение');
-    await until(view.container, () => harness.addAuthorAchievement.mock.calls.length === 1, 'leap day');
+    for (const [value, message] of [
+      ['текст', 'Введите дату в формате'],
+      ['13.2024', 'Укажите месяц от 1 до 12'],
+      ['29.02.2023', 'Укажите существующую дату'],
+    ]) {
+      setInput(view.container, 'Дата достижения', value);
+      click(view.container, 'Добавить событие');
+      expect(fieldError(view.container, 'Дата достижения')).toContain(message);
+      expect(harness.addAuthorAchievement).not.toHaveBeenCalled();
+    }
+    setInput(view.container, 'Дата достижения', '29.02.2024');
+    click(view.container, 'Добавить событие');
+    await until(
+      view.container,
+      () => harness.addAuthorAchievement.mock.calls.length === 1,
+      'leap day',
+    );
     expect(harness.addAuthorAchievement.mock.calls[0]?.[0]).toMatchObject({
       occurredDate: { year: 2024, month: 2, day: 29 },
     });
-
-    setInput(view.container, 'Год', '2025');
-    setInput(view.container, 'Месяц', '3');
-    setInput(view.container, 'День (необязательно)', '');
-    setInput(view.container, 'Описание достижения', 'Публикация');
-    click(view.container, 'Сохранить достижение');
-    await until(view.container, () => harness.addAuthorAchievement.mock.calls.length === 2, 'empty day');
+    await until(
+      view.container,
+      () => inputValue(view.container, 'Дата достижения') === '',
+      'saved date',
+    );
+    fillAchievement(view.container, 'Публикация');
+    click(view.container, 'Добавить событие');
+    await until(
+      view.container,
+      () => harness.addAuthorAchievement.mock.calls.length === 2,
+      'month date',
+    );
     expect(harness.addAuthorAchievement.mock.calls[1]?.[0]).toMatchObject({
       occurredDate: { year: 2025, month: 3, day: null },
     });
-    await until(
-      view.container,
-      () => {
-        const input = view.container.querySelector('[aria-label="Год"]');
-        return input instanceof HTMLInputElement && !input.disabled;
-      },
-      'date editor unlocked',
-    );
-
-    setInput(view.container, 'Описание достижения', 'Выставка');
-    setInput(view.container, 'Год', '1.5');
-    setInput(view.container, 'Месяц', '0');
-    setInput(view.container, 'День (необязательно)', '32');
-    click(view.container, 'Сохранить достижение');
-    expect(fieldError(view.container, 'Год')).toBe('Укажите год целым числом');
-    expect(fieldError(view.container, 'Месяц')).toBe('Укажите месяц от 1 до 12');
-    expect(fieldError(view.container, 'День (необязательно)')).toBe('Укажите день от 1 до 31');
-    expect(harness.addAuthorAchievement).toHaveBeenCalledTimes(2);
-
-    setInput(view.container, 'Год', '2025');
-    expect(fieldError(view.container, 'Год')).toBeNull();
-    expect(fieldError(view.container, 'Месяц')).toBe('Укажите месяц от 1 до 12');
     view.unmount();
   });
 
@@ -1482,15 +1302,17 @@ describe('Author application achievement lifecycle', () => {
     const view = mount();
     await openEditor(view);
     fillAchievement(view.container, 'Выставка');
-    click(view.container, 'Сохранить достижение');
+    click(view.container, 'Добавить событие');
     await until(
       view.container,
-      () => view.container.textContent?.includes('Укажите существующую дату') === true,
+      () =>
+        view.container.textContent?.includes('Укажите существующую дату') ===
+        true,
       'server date',
     );
-    expect(fieldError(view.container, 'Год')).toBeNull();
-    expect(fieldError(view.container, 'Месяц')).toBeNull();
-    expect(fieldError(view.container, 'День (необязательно)')).toBeNull();
+    expect(fieldError(view.container, 'Дата достижения')).toBe(
+      'Укажите существующую дату',
+    );
     view.unmount();
   });
 });

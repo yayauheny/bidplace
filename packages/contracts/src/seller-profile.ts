@@ -177,7 +177,7 @@ export const sellerProfileUpdateRequestSchema = z
     instagramUrl: sellerPublicUrlSchema.nullable().optional(),
     websiteUrl: sellerPublicUrlSchema.nullable().optional(),
     publicEmail: sellerPublicEmailSchema.nullable().optional(),
-    shortDescription: z.string().trim().min(1).optional(),
+    shortDescription: z.string().trim().min(1).nullable().optional(),
     handoffContactType: handoffContactTypeSchema.optional(),
     handoffContactValue: z.string().trim().min(1).optional(),
     handoffInitiator: handoffInitiatorSchema.optional(),

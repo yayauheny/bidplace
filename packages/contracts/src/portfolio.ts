@@ -227,24 +227,7 @@ export const portfolioAuthorApplicationSchema = z
     status: sellerStatusSchema,
     applicationStage: authorApplicationStageSchema.nullable(),
   })
-  .strict()
-  .superRefine((application, context) => {
-    if (application.status === 'DRAFT') return;
-    if (!application.discipline) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['discipline'],
-        message: 'A non-draft application requires a discipline',
-      });
-    }
-    if (!application.shortDescription) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['shortDescription'],
-        message: 'A non-draft application requires a short description',
-      });
-    }
-  });
+  .strict();
 
 export const portfolioAuthorApplicationResponseSchema = z
   .object({

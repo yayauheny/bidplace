@@ -94,6 +94,7 @@ export const designTokens = {
     chipGap: 4,
     choiceChipX: 10,
     choiceChipY: 8,
+    choiceChipRemovableX: 16,
     buttonX: 16,
     buttonY: 8,
     quietButtonX: 14,
@@ -148,6 +149,24 @@ export const designTokens = {
     // Inset of the media sheet heading block (Figma Frame 139 padding).
     mediaSheetTextInset: 6,
   },
+  /** Author application steps (Figma 526–746); chrome shared across all four steps. */
+  authorApplication: {
+    // Frame content starts at 84; the captured iOS status bar is 49.78 high.
+    contentTop: 34.22,
+    chromeFrame: 28,
+    chromeGlyph: 18.67,
+    chromeStroke: 1.5,
+    headerBlockGap: 24,
+    titleStackGap: 8,
+    headerToBodyBasics: 33,
+    headerToBodyStep: 40,
+    bodyFieldGap: 12,
+    finalActionGap: 20,
+    directionsHeaderHeight: 43,
+    directionsSearchGap: 19,
+    directionsListGap: 7,
+    directionsContentInset: 1,
+  },
   radius: {
     small: 12,
     control: 18,
@@ -191,6 +210,8 @@ export const designTokens = {
     buttonCompact: 40,
     openingAvatar: 54,
     choiceChip: 38,
+    choiceChipRemovable: 39,
+    choiceChipRemoveIcon: 18,
     buttonIconFrame: 26,
     mediaSheetClose: 38,
     iconButton: 36,
@@ -219,6 +240,7 @@ export const designTokens = {
     filterSortBar: 43,
     filterSortPill: 42,
     filterOption: 20,
+    filterOptionCheck: 16,
     filterOptionRow: 38,
   },
   typography: {
@@ -431,6 +453,28 @@ export const designTokens = {
       lineHeight: 20,
       letterSpacing: -0.28,
       fontWeight: '500' as const,
+    },
+    /** Selected removable direction chip (Figma 3462:15417). */
+    choiceChipSelectedRemovable: {
+      fontFamily: 'Inter_500Medium',
+      fontSize: 15,
+      lineHeight: 22,
+      letterSpacing: -0.3,
+      fontWeight: '500' as const,
+    },
+    directionsOption: {
+      fontFamily: 'Inter_400Regular',
+      fontSize: 16,
+      lineHeight: 19,
+      letterSpacing: -0.16,
+      fontWeight: '400' as const,
+    },
+    directionsSheetTitle: {
+      fontFamily: 'Inter_600SemiBold',
+      fontSize: 17,
+      lineHeight: 21,
+      letterSpacing: -0.34,
+      fontWeight: '600' as const,
     },
     coverTitle: {
       fontFamily: 'Inter_500Medium',
@@ -717,6 +761,8 @@ export const designTokens = {
     exitActionGap: 22,
     exitActionHeight: 55,
     exitActionsGap: 8,
+    /** Source `I746:23099` / `278:4690`: Continue label 86 px + 14.5 px inset per side. */
+    exitConfirmActionMinWidth: 115,
   },
   elevation: {
     floating: {
@@ -741,7 +787,10 @@ export const designTokens = {
   stroke: {
     icon: 1.13,
     iconHeavy: 1.25,
+    /** 18 px author-application field glyphs (at-sign, search, calendar) at 1.3 px physical stroke. */
+    authorApplicationFieldPx: 1.3,
     dockIcon: 1.5,
+    filterOptionCheck: 1.5,
     // Final rendered px for the media sheet close glyph (not icon-grid units).
     mediaSheetClosePx: 2,
   },
