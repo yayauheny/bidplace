@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@bidplace/database';
 
-import { imageKey } from '../core/image-store';
+import { imageKey } from '../core/image-store/image-key';
 
 import {
   lockSellerProfileRevisionRowForUpdate,
