@@ -251,7 +251,7 @@ describe('product draft field ownership', () => {
     click(view.container, 'Painting');
     await flush();
     expect(input(view.container, 'Название').value).toBe('First work');
-    expect(view.container.textContent).toContain('✓ Painting');
+    expect(view.container.querySelector('button[aria-pressed="true"]')?.textContent).toBe('Painting');
     setInput(view.container, 'Название', '');
     setInput(view.container, 'Год создания', '10000');
     await flush();
@@ -277,7 +277,7 @@ describe('product draft field ownership', () => {
     setInput(view.container, 'Название', 'Other');
     click(view.container, 'Painting');
     expect(input(view.container, 'Название').value).toBe('Kept title');
-    expect(view.container.textContent).not.toContain('✓ Painting');
+    expect(view.container.querySelector('button[aria-pressed="true"]')).toBeNull();
     view.unmount();
   });
 });
