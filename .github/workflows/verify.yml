@@ -92,6 +92,10 @@ jobs:
 
       - name: Build production static assets
         if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+        # Official Cloudflare Turnstile public test site key, verification build only.
+        # Release/deploy workflows must use the real site key for their target.
+        env:
+          TURNSTILE_SITE_KEY: 1x00000000000000000000AA
         run: pnpm build:web
 
       - name: Verify production-like amd64 container
