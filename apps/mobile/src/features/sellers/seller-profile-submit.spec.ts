@@ -17,6 +17,7 @@ Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 const harness = vi.hoisted(() => ({
   params: {} as { intro?: string; step?: string },
   focused: true,
+  authSlug: null as string | null,
   logout: vi.fn<() => Promise<void>>(),
   replace: vi.fn(),
   push: vi.fn(),
@@ -82,6 +83,7 @@ vi.mock('../../providers/auth-provider', () => ({
       email: 'author@example.com',
       emailVerifiedAt: '2026-09-27T00:00:00.000Z',
       role: 'user',
+      slug: harness.authSlug,
     },
   }),
 }));
@@ -515,6 +517,7 @@ function buttonDisabled(container: ParentNode, label: string) {
 beforeEach(() => {
   harness.params = {};
   harness.focused = true;
+  harness.authSlug = null;
   harness.logout.mockReset();
   harness.replace.mockReset();
   harness.push.mockReset();
@@ -1529,6 +1532,25 @@ describe('seller profile save reconciliation', () => {
     await flush();
     expect(harness.updateProfile.mock.calls[0]?.[1]).toBe(secondPhoto);
     vi.unstubAllGlobals();
+    view.unmount();
+  });
+
+  it('preserves the claimed slug when the auth epoch resets the draft', async () => {
+    harness.authSlug = 'claimed-author';
+    harness.getMyProfile.mockRejectedValue(
+      new ApiClientError('missing', { kind: 'not_found', status: 404 }),
+    );
+    const view = mount();
+    await until(
+      view.container,
+      () => inputValue(view.container, 'Никнейм') === 'claimed-author',
+      'claimed slug',
+    );
+    await act(async () => {
+      advanceAuthEpoch(view.queryClient);
+    });
+    await flush();
+    expect(inputValue(view.container, 'Никнейм')).toBe('claimed-author');
     view.unmount();
   });
 

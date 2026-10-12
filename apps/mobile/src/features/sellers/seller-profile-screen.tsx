@@ -590,7 +590,7 @@ export function SellerProfileScreen() {
     setPhotoBlob(null);
     setPhotoUri(null);
     // Do not retain the previous account's draft while the next query loads.
-    form.reset(emptyProfileDraft);
+    form.reset({ ...emptyProfileDraft, slug: auth.user?.slug ?? '' });
     hydratedProfileToken.current = null;
     forceProfileHydration.current = true;
   }, [authEpoch]);
