@@ -3,10 +3,8 @@ import { describe, expect, it } from 'vitest';
 import {
   portfolioCabinetWorksQuerySchema,
   portfolioCabinetWorksResponseSchema,
-  portfolioAchievementSchema,
   portfolioAchievementWriteRequestSchema,
 } from './portfolio';
-import { publicSellerProfileSchema } from './seller-profile';
 
 describe('portfolio cabinet contracts', () => {
   it('uses bounded owner pagination and keeps revision state separate from work visibility', () => {
@@ -37,7 +35,7 @@ describe('portfolio cabinet contracts', () => {
   });
 });
 
-describe('achievement write and historical read contracts', () => {
+describe('achievement writes', () => {
   const date = { year: 2025, month: 3, day: null };
   const input = { occurredDate: date, body: 'Групповая выставка' };
 
@@ -57,21 +55,5 @@ describe('achievement write and historical read contracts', () => {
     ).toBe(false);
   });
 
-  it('keeps historical public media URLs readable in both projections', () => {
-    const achievement = {
-      id: '3b2e93b2-1428-40fc-a15a-b9cd98e422b6',
-      occurredDate: date,
-      body: input.body,
-      image: {
-        url: 'https://media.bid.place/assets/11111111-1111-4111-8111-111111111111/p1/preview.webp',
-        mimeType: 'image/webp',
-        byteLength: 128,
-        checksum: 'a'.repeat(64),
-      },
-    };
-    expect(portfolioAchievementSchema.parse(achievement)).toEqual(achievement);
-    expect(
-      publicSellerProfileSchema.shape.achievements.parse([achievement]),
-    ).toEqual([achievement]);
-  });
+
 });

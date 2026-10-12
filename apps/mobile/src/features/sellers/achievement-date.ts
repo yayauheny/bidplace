@@ -44,7 +44,9 @@ export function formatAchievementDate(value: AchievementDate | null): string {
   return `${formatted[0].toUpperCase()}${formatted.slice(1)}, ${year}`;
 }
 
-export function formatAuthorAchievementLabel(value: AchievementDate | null): string {
+export function formatAuthorAchievementLabel(
+  value: AchievementDate | null,
+): string {
   if (!value) return 'Дата не указана';
   const month = String(value.month).padStart(2, '0');
   const prefix =

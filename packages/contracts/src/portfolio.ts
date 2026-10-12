@@ -20,8 +20,6 @@ import {
 
 const publicText = z.string().trim().min(1);
 
-// Read-only compatibility for achievements created with images before the text-only MVP.
-// New achievement writes intentionally do not accept image fields.
 export const portfolioAchievementImageSchema = z
   .object({
     url: z.union([

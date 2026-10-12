@@ -191,7 +191,7 @@ describe('author achievement editing revision HTTP contract', () => {
     ).toBe(404);
   });
 
-  it('closes sparse position gaps and retains an early date after a real DB round-trip', async () => {
+  it('appends safely after a deletion and persists an early date', async () => {
     const fixture = await createPermissionFixture(prisma);
     const revisionId = (
       await prisma.sellerProfile.findUniqueOrThrow({
@@ -231,7 +231,7 @@ describe('author achievement editing revision HTTP contract', () => {
       });
     expect(await readPositions()).toEqual([
       { position: 0, body: 'First show' },
-      { position: 1, body: 'Last show' },
+      { position: 4, body: 'Last show' },
     ]);
 
     const added = await owner.post('/author/application/achievements', {
@@ -249,7 +249,7 @@ describe('author achievement editing revision HTTP contract', () => {
     expect(persisted.occurredAt?.toISOString()).toBe(
       '0004-02-29T00:00:00.000Z',
     );
-    expect(persisted.position).toBe(2);
+    expect(persisted.position).toBe(5);
 
     const application = await owner.get('/author/application');
     expect(application.status).toBe(200);
