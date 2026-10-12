@@ -1,6 +1,10 @@
+import { randomUUID } from 'node:crypto';
+
+import { PrismaClient } from '../../../packages/database/dist/index.js';
 import { expect, test, type Page } from '@playwright/test';
 
 import { createSellerFixture } from './support/e2e-fixtures';
+import { e2eDatabaseURL } from './support/e2e-env';
 import { authenticatedPage } from './support/auth-session';
 import { fillControl } from './support/fill-control';
 import { productWizardStepOneIncompleteMessage } from '../src/features/sellers/product-draft-wizard';
@@ -56,6 +60,22 @@ test.describe('Work catalog browser round-trip', () => {
   }) => {
     test.setTimeout(120_000);
     const { seller } = await createSellerFixture();
+    const prisma = new PrismaClient({
+      datasources: { db: { url: e2eDatabaseURL } },
+    });
+    const materialName = `Холст E2E ${randomUUID().slice(0, 8)}`;
+    try {
+      await prisma.catalogTerm.create({
+        data: {
+          role: 'MATERIAL',
+          slug: `e2e-canvas-${randomUUID().slice(0, 8)}`,
+          name: materialName,
+          normalizedName: materialName.toLocaleLowerCase('ru'),
+        },
+      });
+    } finally {
+      await prisma.$disconnect();
+    }
     const { context, page } = await authenticatedPage(browser, seller);
     try {
       await page.goto('/products/new');
@@ -64,7 +84,7 @@ test.describe('Work catalog browser round-trip', () => {
 
       await page.getByRole('button', { name: 'Материалы' }).click();
       await expect(page.getByRole('dialog', { name: 'Материалы' })).toBeVisible();
-      await page.getByRole('button', { name: 'Холст', exact: true }).click();
+      await page.getByRole('button', { name: materialName, exact: true }).click();
       await fillControl(
         page.getByRole('textbox', { name: 'Поиск или новое значение' }),
         'Авторский материал E2E',
@@ -83,10 +103,10 @@ test.describe('Work catalog browser round-trip', () => {
       const { product } = await response.json();
 
       await page.goto(`/products/${product.id}?flow=creation&step=1`);
-      await expect(page.getByRole('button', { name: 'Материалы' })).toContainText('Холст');
+      await expect(page.getByRole('button', { name: 'Материалы' })).toContainText(materialName);
       await expect(page.getByRole('button', { name: 'Материалы' })).toContainText('Авторский материал E2E');
       await page.getByRole('button', { name: 'Материалы' }).click();
-      await expect(page.getByRole('button', { name: 'Удалить Холст' })).toBeVisible();
+      await expect(page.getByRole('button', { name: `Удалить ${materialName}` })).toBeVisible();
       await expect(page.getByRole('button', { name: 'Удалить Авторский материал E2E' })).toBeVisible();
     } finally {
       await context.close();
