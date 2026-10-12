@@ -172,8 +172,11 @@ export function createAdminClient(context: RequestContext) {
       );
     },
     createCatalogTerm(input: { role: 'MATERIAL' | 'TECHNIQUE'; name: string }) {
-      return requestJson(context, '/api/admin/catalog/terms',
-        z.object({ term: catalogTermSchema }).strict(), {
+      return requestJson(
+        context,
+        '/api/admin/catalog/terms',
+        z.object({ term: catalogTermSchema }).strict(),
+        {
           method: 'POST',
           body: parseRequest(catalogTermWriteSchema, input),
         },

@@ -1,8 +1,12 @@
 import { useState } from 'react';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { View } from 'react-native';
 
-import { normalizeCatalogName, type AdminProduct } from '@bidplace/contracts';
+import {
+  catalogProposalRejectSchema,
+  normalizeCatalogName,
+  type AdminProduct,
+} from '@bidplace/contracts';
 import { designTokens } from '@bidplace/design-tokens';
 
 import { AppText, DestructiveButton, SecondaryButton, TextField } from '../../components/ui';
@@ -18,6 +22,7 @@ export function AdminWorkCatalogProposals({
   onChanged: () => void;
 }) {
   const api = useApiClient();
+  const queryClient = useQueryClient();
   const pending = proposals.filter((proposal) => proposal.selected && proposal.status === 'PENDING');
   const [activeId, setActiveId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
@@ -65,17 +70,30 @@ export function AdminWorkCatalogProposals({
       setActiveId(null);
       setSearch('');
       setReason('');
+      void queryClient.invalidateQueries({ queryKey: ['catalog', 'terms'] });
+      void queryClient.invalidateQueries({ queryKey: ['categories'] });
       onChanged();
+    },
+    onError: () => {
+      // Creating the term may succeed even if mapping it fails. Refresh the
+      // directory so a retry can map to the existing value instead of
+      // creating a duplicate.
+      void queryClient.invalidateQueries({ queryKey: ['catalog', 'terms'] });
+      void queryClient.invalidateQueries({ queryKey: ['categories'] });
     },
   });
   if (pending.length === 0) return null;
   const selectable = active?.kind === 'CATEGORY'
-    ? (categories.data?.categories ?? []).filter((category) => category.slug !== 'other')
+    ? (categories.data?.categories ?? []).filter((category) => category.active && category.slug !== 'other')
     : (terms.data?.terms ?? []);
   const normalized = normalizeCatalogName(search);
   const options = selectable.filter((option) =>
     !normalized || normalizeCatalogName(option.name).includes(normalized),
   ).slice(0, 12);
+  const existingExactMatch = selectable.some(
+    (option) => normalizeCatalogName(option.name) === normalizeCatalogName(active?.rawName ?? ''),
+  );
+  const validRejectionReason = catalogProposalRejectSchema.safeParse({ reason }).success;
   const loading = active?.kind === 'CATEGORY' ? categories.isPending : terms.isPending;
   const failed = active?.kind === 'CATEGORY' ? categories.isError : terms.isError;
 
@@ -107,7 +125,22 @@ export function AdminWorkCatalogProposals({
             onChangeText={setSearch}
           />
           {loading ? <AppText role="bodySmall" tone="secondary">Загружаем справочник…</AppText> : null}
-          {failed ? <AppText role="bodySmall" tone="danger">Справочник недоступен. Повторите попытку.</AppText> : null}
+          {failed ? (
+            <>
+              <AppText role="bodySmall" tone="danger">Не удалось загрузить справочник.</AppText>
+              <SecondaryButton
+                label="Повторить загрузку"
+                disabled={resolve.isPending}
+                onPress={() => {
+                  if (active.kind === 'CATEGORY') {
+                    void categories.refetch();
+                  } else {
+                    void terms.refetch();
+                  }
+                }}
+              />
+            </>
+          ) : null}
           {!loading && !failed ? (
             <>
               {options.map((option) => (
@@ -118,9 +151,14 @@ export function AdminWorkCatalogProposals({
                   onPress={() => resolve.mutate({ kind: 'map', id: option.id })}
                 />
               ))}
+              {existingExactMatch ? (
+                <AppText role="bodySmall" tone="secondary">
+                  Такое значение уже существует. Используйте «Сопоставить» вместо создания дубликата.
+                </AppText>
+              ) : null}
               <SecondaryButton
                 label={`Создать «${active.rawName}» и сопоставить`}
-                disabled={resolve.isPending}
+                disabled={resolve.isPending || existingExactMatch}
                 onPress={() => resolve.mutate({ kind: 'create' })}
               />
             </>
@@ -130,9 +168,12 @@ export function AdminWorkCatalogProposals({
             value={reason}
             onChangeText={setReason}
           />
+          {reason.trim().length > 2000 ? (
+            <AppText role="bodySmall" tone="danger">Причина слишком длинная (максимум 2000 символов).</AppText>
+          ) : null}
           <DestructiveButton
             label="Отклонить предложение"
-            disabled={resolve.isPending || !reason.trim()}
+            disabled={resolve.isPending || !validRejectionReason}
             onPress={() => resolve.mutate({ kind: 'reject', reason: reason.trim() })}
           />
           <SecondaryButton
