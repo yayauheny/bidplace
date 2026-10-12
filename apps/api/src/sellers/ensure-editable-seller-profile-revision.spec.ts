@@ -100,11 +100,9 @@ describe('ensureEditableEditingRevision', () => {
         create: vi.fn().mockResolvedValue({ id: 'draft-achievement-id' }),
       },
       sellerProfileRevisionDirection: {
-        findMany: vi
-          .fn()
-          .mockResolvedValue([
-            { categoryId: '00000000-0000-4000-8000-000000000001' },
-          ]),
+        findMany: vi.fn().mockResolvedValue([
+          { categoryId: '00000000-0000-4000-8000-000000000001' },
+        ]),
         createMany: vi.fn(),
       },
     };

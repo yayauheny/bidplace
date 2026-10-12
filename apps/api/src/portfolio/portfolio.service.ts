@@ -487,11 +487,7 @@ function toPortfolioAuthor(profile: {
   achievements?:
     | Array<{
         id: string;
-        occurredDate: {
-          year: number;
-          month: number;
-          day: number | null;
-        } | null;
+        occurredDate: { year: number; month: number; day: number | null } | null;
         body: string;
         image?: {
           url: string;

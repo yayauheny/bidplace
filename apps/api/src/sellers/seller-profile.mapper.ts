@@ -247,9 +247,8 @@ export function toPublicSellerProfile(
     throw new Error('Published SellerProfile is missing required fields');
   }
   const directionCategoryIds =
-    sellerProfile.publishedRevision?.directions?.map(
-      (item) => item.categoryId,
-    ) ?? [];
+    sellerProfile.publishedRevision?.directions?.map((item) => item.categoryId) ??
+    [];
   const slug = sellerProfile.user?.slug ?? sellerProfile.slug;
   return {
     id: sellerProfile.id,

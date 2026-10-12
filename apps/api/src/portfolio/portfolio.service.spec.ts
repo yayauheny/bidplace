@@ -133,21 +133,19 @@ describe('PortfolioService', () => {
 
   it('normalizes distinct facet values with the existing locale rules', async () => {
     const products = {
-      listPortfolioMaterialFacets: vi
-        .fn()
-        .mockResolvedValue([
-          ...Array.from({ length: 12 }, () => 'Холст'),
-          ' холст ',
-          'Дерево',
-          'дерево',
-          'Бронза',
-          '',
-          '   ',
-          '\t',
-          '\u00A0',
-          '\u00A0Бронза\u00A0',
-          null,
-        ]),
+      listPortfolioMaterialFacets: vi.fn().mockResolvedValue([
+        ...Array.from({ length: 12 }, () => 'Холст'),
+        ' холст ',
+        'Дерево',
+        'дерево',
+        'Бронза',
+        '',
+        '   ',
+        '\t',
+        '\u00A0',
+        '\u00A0Бронза\u00A0',
+        null,
+      ]),
     };
     const sellers = {
       listPublicFacets: vi.fn().mockResolvedValue({
