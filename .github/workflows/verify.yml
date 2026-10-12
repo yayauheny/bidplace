@@ -80,6 +80,7 @@ jobs:
             src/features/sellers/product-draft-save-race.spec.ts \
             src/features/sellers/product-draft-submit-lifecycle.spec.ts \
             src/features/sellers/product-draft-route-guard.spec.ts
+          pnpm --filter @bidplace/mobile exec vitest run src/features/admin/AdminWorkCatalogProposals.spec.ts
 
       - name: Verify workspace
         if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
