@@ -733,8 +733,25 @@ export class ImagesService {
       if (used > 0) {
         throw new ConflictException('Story image is used by a block');
       }
-      await tx.productRevisionStoryAsset.deleteMany({
-        where: { revisionId, mediaAssetId: assetId },
+      const hold = await tx.productRevisionStoryAsset.findUnique({
+        where: {
+          revisionId_mediaAssetId: { revisionId, mediaAssetId: assetId },
+        },
+      });
+      // A gallery image is also allowed in Story, but it has no story hold.
+      // Never enqueue cleanup for a gallery asset or another revision's hold.
+      if (!hold) return { ok: true as const };
+      const asset = await tx.mediaAsset.findUnique({
+        where: { id: assetId },
+        select: { purpose: true },
+      });
+      if (asset?.purpose !== 'STORY_IMAGE') {
+        throw new ConflictException('Only story-owned images can be released');
+      }
+      await tx.productRevisionStoryAsset.delete({
+        where: {
+          revisionId_mediaAssetId: { revisionId, mediaAssetId: assetId },
+        },
       });
       await media.enqueueCleanup(tx, [assetId]);
       return { ok: true as const };
