@@ -1403,14 +1403,17 @@ describe('seller profile save reconciliation', () => {
     const view = mount();
     await until(
       view.container,
-      () => findButton(view.container, 'Изменить фото') instanceof HTMLButtonElement,
+      () =>
+        findButton(view.container, 'Изменить фото') instanceof
+        HTMLButtonElement,
       'photo',
     );
 
     click(view.container, 'Изменить фото');
     await until(
       view.container,
-      () => view.container.textContent?.includes('Не удалось выбрать фото') === true,
+      () =>
+        view.container.textContent?.includes('Не удалось выбрать фото') === true,
       'photo picker error',
     );
     expect(harness.updateProfile).not.toHaveBeenCalled();
@@ -1418,13 +1421,46 @@ describe('seller profile save reconciliation', () => {
     click(view.container, 'Изменить фото');
     await until(
       view.container,
-      () => view.container.textContent?.includes('Не удалось выбрать фото') !== true,
+      () =>
+        view.container.textContent?.includes('Не удалось выбрать фото') !== true,
       'photo picker retry',
     );
     click(view.container, 'Сохранить');
     await flush();
     expect(harness.updateProfile.mock.calls[0]?.[1]).toBe(replacementPhoto);
     view.unmount();
+  });
+
+  it('ignores a photo picker response after the screen unmounts', async () => {
+    let finishPicker: (result: {
+      canceled: boolean;
+      assets: Array<{ uri: string }>;
+    }) => void = () => undefined;
+    harness.getMyProfile.mockResolvedValue(response('APPROVED', 'DRAFT'));
+    harness.launchImageLibraryAsync.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          finishPicker = resolve;
+        }),
+    );
+    const readBlob = vi.fn();
+    vi.stubGlobal('fetch', readBlob);
+    const view = mount();
+    await until(
+      view.container,
+      () =>
+        findButton(view.container, 'Изменить фото') instanceof
+        HTMLButtonElement,
+      'photo',
+    );
+    click(view.container, 'Изменить фото');
+    view.unmount();
+
+    await act(async () => {
+      finishPicker({ canceled: false, assets: [{ uri: 'blob:late' }] });
+      await Promise.resolve();
+    });
+    expect(readBlob).not.toHaveBeenCalled();
   });
 
   it('ignores an older photo read after a newer selection', async () => {

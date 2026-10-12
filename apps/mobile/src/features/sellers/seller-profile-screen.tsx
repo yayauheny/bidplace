@@ -831,6 +831,7 @@ export function SellerProfileScreen() {
     const selection = photoSelection.current + 1;
     photoSelection.current = selection;
     const stillOwnsPhoto = () =>
+      mountedRef.current &&
       selection === photoSelection.current &&
       !transitionLock.current &&
       sessionOperation.current === operation &&
