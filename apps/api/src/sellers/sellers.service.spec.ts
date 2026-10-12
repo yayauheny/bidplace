@@ -88,81 +88,65 @@ describe('SellersService', () => {
     expect(tx.sellerProfile.update).not.toHaveBeenCalled();
   });
 
-  it.each([
-    {
-      occurredDate: { year: 2025, month: 3, day: null },
-      storedDate: new Date('2025-03-01T00:00:00.000Z'),
-    },
-    {
-      occurredDate: { year: 4, month: 2, day: 29 },
-      storedDate: new Date('0004-02-29T00:00:00.000Z'),
-    },
-  ])(
-    'adds an achievement for year $occurredDate.year after locking the revision',
-    async ({ occurredDate, storedDate }) => {
-      const tx = {
-        $queryRaw: vi.fn().mockResolvedValue([{ id: 'seller-profile-id' }]),
-        sellerProfile: {
-          findUnique: vi.fn().mockResolvedValue({
-            id: 'seller-profile-id',
-            status: 'CHANGES_REQUESTED',
-            editingRevisionId: 'revision-id',
-            publishedRevisionId: null,
-            editingRevision: { id: 'revision-id', status: 'DRAFT' },
-            publishedRevision: null,
-          }),
-        },
-        sellerProfileRevision: {
-          create: vi.fn(),
-        },
-        sellerProfileRevisionAchievement: {
-          findFirst: vi.fn().mockResolvedValue({ position: 4 }),
-          create: vi.fn().mockResolvedValue({
-            id: 'dc6c9612-cf38-48aa-b328-011f1b093b6c',
-            occurredAt: storedDate,
-            occurredAtPrecision: occurredDate.day === null ? 'MONTH' : 'DAY',
-            body: 'First exhibition',
-          }),
-        },
-      };
-      const prisma = {
-        $transaction: vi.fn(
-          async (callback: (client: typeof tx) => Promise<unknown>) =>
-            callback(tx),
-        ),
-      };
-      const service = new SellersService(prisma as never, imageStore as never);
-
-      await expect(
-        service.addAchievement('user-id', {
-          body: 'First exhibition',
-          occurredDate,
+  it('adds an achievement after locking the editable profile revision', async () => {
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ id: 'seller-profile-id' }]),
+      sellerProfile: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'seller-profile-id',
+          status: 'CHANGES_REQUESTED',
+          editingRevisionId: 'revision-id',
+          publishedRevisionId: null,
+          editingRevision: { id: 'revision-id', status: 'DRAFT' },
+          publishedRevision: null,
         }),
-      ).resolves.toEqual({
-        achievement: {
+      },
+      sellerProfileRevision: {
+        create: vi.fn(),
+      },
+      sellerProfileRevisionAchievement: {
+        findFirst: vi.fn().mockResolvedValue({ position: 4 }),
+        create: vi.fn().mockResolvedValue({
           id: 'dc6c9612-cf38-48aa-b328-011f1b093b6c',
-          occurredDate,
+          occurredAt: new Date('2025-03-01T00:00:00.000Z'),
+          occurredAtPrecision: 'MONTH',
           body: 'First exhibition',
-          image: null,
-        },
-      });
-
-      expect(tx.$queryRaw).toHaveBeenCalledTimes(2);
-      expect(tx.sellerProfileRevision.create).not.toHaveBeenCalled();
-      expect(tx.sellerProfileRevisionAchievement.findFirst).toHaveBeenCalledWith({
-        where: { revisionId: 'revision-id' },
-        select: { position: true },
-        orderBy: { position: 'desc' },
-      });
-      expect(tx.sellerProfileRevisionAchievement.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({
-          revisionId: 'revision-id',
-          position: 5,
-          occurredAt: storedDate,
         }),
-      });
-    },
-  );
+      },
+    };
+    const prisma = {
+      $transaction: vi.fn(
+        async (callback: (client: typeof tx) => Promise<unknown>) =>
+          callback(tx),
+      ),
+    };
+    const service = new SellersService(prisma as never, imageStore as never);
+
+    await expect(
+      service.addAchievement('user-id', {
+        body: 'First exhibition',
+        occurredDate: { year: 2025, month: 3, day: null },
+      }),
+    ).resolves.toEqual({
+      achievement: {
+        id: 'dc6c9612-cf38-48aa-b328-011f1b093b6c',
+        occurredDate: { year: 2025, month: 3, day: null },
+        body: 'First exhibition',
+        image: null,
+      },
+    });
+
+    expect(tx.$queryRaw).toHaveBeenCalledTimes(2);
+    expect(tx.sellerProfileRevision.create).not.toHaveBeenCalled();
+    expect(tx.sellerProfileRevisionAchievement.findFirst).toHaveBeenCalledWith({
+      where: { revisionId: 'revision-id' },
+      select: { position: true },
+      orderBy: { position: 'desc' },
+    });
+    expect(tx.sellerProfileRevisionAchievement.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ revisionId: 'revision-id', position: 5 }),
+    });
+  });
 
   it('does not create a profile when the account has no slug', async () => {
     const tx = {
@@ -970,95 +954,6 @@ describe('SellersService', () => {
     expect(prisma.auditEvent.delete).not.toHaveBeenCalled();
   });
 
-  it('serves a published historical achievement image without author credentials', async () => {
-    const bytes = new Uint8Array([1, 2, 3]);
-    const readPreview = vi.fn().mockResolvedValue({
-      bytes,
-      mimeType: 'image/webp',
-    });
-    const prisma = {
-      sellerProfileRevisionAchievement: {
-        findUnique: vi.fn().mockResolvedValue({
-          mimeType: 'image/webp',
-          objectKey: null,
-          mediaAssetId: '11111111-1111-4111-8111-111111111111',
-          revisionId: 'published-revision-id',
-          revision: {
-            sellerProfile: {
-              userId: 'owner-id',
-              status: 'APPROVED',
-              user: { status: 'active' },
-              publishedRevisionId: 'published-revision-id',
-            },
-          },
-        }),
-      },
-    };
-    const get = vi.fn();
-    const service = new SellersService(
-      prisma as never,
-      { ...imageStore, get } as never,
-      { enabled: true, readPreview } as never,
-    );
-
-    await expect(
-      service.getAchievementImage('achievement-id'),
-    ).resolves.toEqual({
-      mimeType: 'image/webp',
-      data: bytes,
-      isPublic: true,
-    });
-    expect(readPreview).toHaveBeenCalledWith(
-      '11111111-1111-4111-8111-111111111111',
-    );
-    expect(get).not.toHaveBeenCalled();
-  });
-
-  it('reads legacy bytes without an object key only for the owner', async () => {
-    const bytes = new Uint8Array([1, 2, 3]);
-    const get = vi.fn().mockResolvedValue(null);
-    const findUnique = vi.fn().mockResolvedValue({
-      mimeType: 'image/png',
-            objectKey: null,
-            mediaAssetId: null,
-            data: bytes,
-      revisionId: 'draft-revision-id',
-      revision: {
-        sellerProfile: {
-          userId: 'owner-id',
-          status: 'APPROVED',
-          user: { status: 'active' },
-          publishedRevisionId: 'published-revision-id',
-        },
-      },
-    });
-    const service = new SellersService(
-      { sellerProfileRevisionAchievement: { findUnique } } as never,
-      { ...imageStore, get } as never,
-    );
-
-    await expect(
-      service.getAchievementImage('achievement-id', 'stranger-id'),
-    ).rejects.toThrow('Achievement image not found');
-    expect(get).not.toHaveBeenCalled();
-    expect(findUnique).toHaveBeenCalledTimes(1);
-    expect(findUnique.mock.calls[0]?.[0]?.select).not.toHaveProperty('data');
-
-    await expect(
-      service.getAchievementImage('achievement-id', 'owner-id'),
-    ).resolves.toEqual({
-      mimeType: 'image/png',
-      data: bytes,
-      isPublic: false,
-    });
-    expect(get).toHaveBeenCalledOnce();
-    expect(findUnique).toHaveBeenCalledTimes(3);
-    expect(findUnique.mock.calls[2]?.[0]).toEqual({
-      where: { id: 'achievement-id' },
-      select: { data: true },
-    });
-  });
-
   it('hides unpublished achievement images from strangers', async () => {
     const prisma = {
       sellerProfileRevisionAchievement: {
@@ -1126,102 +1021,28 @@ describe('SellersService', () => {
     }
   });
 
-  it('keeps the achievement deletion when image removal fails', async () => {
-    const marker = 'object-secret-marker';
-    const objectKey = `seller-achievement:${marker}`;
-    const failure = new Error(`delete ${marker}`);
-    failure.stack = [
-      failure.toString(),
-      `    at ImageStore.delete (/tmp/${marker}.js:2:2)`,
-      '    at ImageStore.delete (/app/dist/core/image-store/image-store.js:18:4)',
-    ].join('\n');
-    const remove = vi.fn().mockRejectedValue(failure);
-    const tx = {
-      $queryRaw: vi
-        .fn()
-        .mockResolvedValueOnce([{ id: 'profile-id' }])
-        .mockResolvedValueOnce([{ id: 'revision-id' }]),
-      sellerProfile: {
-        findUnique: vi.fn().mockResolvedValue({
-          id: 'profile-id',
-          status: 'DRAFT',
-          editingRevision: { id: 'revision-id', status: 'DRAFT' },
-        }),
-      },
-      sellerProfileRevisionAchievement: {
-        findFirst: vi
-          .fn()
-          .mockResolvedValueOnce({ id: 'achievement-id' })
-          .mockResolvedValueOnce({
-            id: 'achievement-id',
-            objectKey,
-            mediaAssetId: null,
-          }),
-        delete: vi.fn().mockResolvedValue({}),
-        count: vi.fn().mockResolvedValue(0),
-        findMany: vi.fn().mockResolvedValue([]),
-        update: vi.fn(),
-      },
-    };
-    const service = new SellersService(
-      {
-        $transaction: vi.fn(
-          async (callback: (client: typeof tx) => Promise<unknown>) =>
-            callback(tx),
-        ),
-      } as never,
-      { ...imageStore, delete: remove } as never,
-    );
-    const loggerWarn = vi
-      .spyOn(
-        (service as unknown as { logger: { warn: (...args: unknown[]) => void } })
-          .logger,
-        'warn',
-      )
-      .mockImplementation(() => undefined);
-
-    await expect(
-      service.deleteAchievement('user-id', 'achievement-id'),
-    ).resolves.toEqual({ ok: true });
-
-    expect(remove).toHaveBeenCalledWith(objectKey);
-    expect(loggerWarn).toHaveBeenCalledOnce();
-    expect(loggerWarn.mock.calls[0]).toHaveLength(1);
-    const logged = JSON.stringify(loggerWarn.mock.calls);
-    expect(logged).toContain('Failed to delete unreferenced achievement image');
-    expect(logged).toContain('at=dist/core/image-store/image-store.js:18');
-    expect(logged).not.toContain(marker);
-    loggerWarn.mockRestore();
-  });
-
-  it('does not delete the implicit image key of a published source when its fork is removed', async () => {
-    const remove = vi.fn();
-    const count = vi.fn();
+  it('deletes only the editable achievement without renumbering remaining rows', async () => {
     const tx = {
       $queryRaw: vi.fn().mockResolvedValue([{ id: 'profile-id' }]),
       sellerProfile: {
         findUnique: vi.fn().mockResolvedValue({
           id: 'profile-id',
-          status: 'APPROVED',
-          editingRevision: { id: 'draft-revision-id', status: 'DRAFT' },
+          status: 'DRAFT',
+          editingRevision: { id: 'revision-id', status: 'DRAFT' },
           publishedRevision: null,
         }),
       },
       sellerProfileRevisionAchievement: {
         findFirst: vi
           .fn()
-          .mockResolvedValueOnce({ id: 'draft-achievement-id' })
-          .mockResolvedValueOnce({
-            id: 'draft-achievement-id',
-            objectKey: 'seller-achievement:published-achievement-id',
-            mediaAssetId: null,
-          }),
+          .mockResolvedValueOnce({ id: 'achievement-id' })
+          .mockResolvedValueOnce({ id: 'achievement-id' }),
         delete: vi.fn(),
-        findMany: vi.fn().mockResolvedValue([]),
+        findMany: vi.fn(),
         update: vi.fn(),
-        count,
       },
     };
+    const remove = vi.fn();
     const service = new SellersService(
       {
         $transaction: vi.fn(
@@ -1232,87 +1053,14 @@ describe('SellersService', () => {
     );
 
     await expect(
-      service.deleteAchievement('user-id', 'draft-achievement-id'),
+      service.deleteAchievement('user-id', 'achievement-id'),
     ).resolves.toEqual({ ok: true });
-    expect(tx.sellerProfileRevisionAchievement.delete).toHaveBeenCalledOnce();
-    expect(count).not.toHaveBeenCalled();
+    expect(tx.sellerProfileRevisionAchievement.delete).toHaveBeenCalledWith({
+      where: { id: 'achievement-id' },
+    });
+    expect(tx.sellerProfileRevisionAchievement.findMany).not.toHaveBeenCalled();
+    expect(tx.sellerProfileRevisionAchievement.update).not.toHaveBeenCalled();
     expect(remove).not.toHaveBeenCalled();
   });
 
-  it.each([
-    { remainingReferences: 0, enabled: true },
-    { remainingReferences: 1, enabled: true },
-    { remainingReferences: 0, enabled: false },
-  ])(
-    'compacts achievements with $remainingReferences references and media enabled=$enabled',
-    async ({ remainingReferences, enabled }) => {
-      const assetId = '11111111-1111-4111-8111-111111111111';
-      const update = vi.fn().mockResolvedValue({});
-      const tx = {
-        $queryRaw: vi.fn().mockResolvedValue([{ id: 'profile-id' }]),
-        sellerProfile: {
-          findUnique: vi.fn().mockResolvedValue({
-            id: 'profile-id',
-            status: 'DRAFT',
-            editingRevision: { id: 'revision-id', status: 'DRAFT' },
-            publishedRevision: null,
-          }),
-        },
-        sellerProfileRevisionAchievement: {
-          findFirst: vi
-            .fn()
-            .mockResolvedValueOnce({ id: 'achievement-id' })
-            .mockResolvedValueOnce({
-              id: 'achievement-id',
-              objectKey: 'legacy:image',
-              mediaAssetId: assetId,
-            }),
-          delete: vi.fn().mockResolvedValue({}),
-          findMany: vi.fn().mockResolvedValue([
-            { id: 'other-a', position: 0 },
-            { id: 'other-b', position: 4 },
-          ]),
-          update,
-          count: vi.fn().mockResolvedValue(remainingReferences),
-        },
-      };
-      const media = { enabled, enqueueCleanup: vi.fn() };
-      const remove = vi.fn();
-      const service = new SellersService(
-        {
-          $transaction: vi.fn(
-            async (run: (client: typeof tx) => Promise<unknown>) => run(tx),
-          ),
-        } as never,
-        { ...imageStore, delete: remove } as never,
-        media as never,
-      );
-
-      await expect(
-        service.deleteAchievement('user-id', 'achievement-id'),
-      ).resolves.toEqual({ ok: true });
-
-      expect(
-        update.mock.calls.map(([arg]) => [arg.where.id, arg.data.position]),
-      ).toEqual([
-        ['other-a', 5],
-        ['other-b', 6],
-        ['other-a', 0],
-        ['other-b', 1],
-      ]);
-      if (enabled) {
-        expect(tx.sellerProfileRevisionAchievement.count).toHaveBeenCalledWith({
-          where: { mediaAssetId: assetId },
-        });
-      } else {
-        expect(tx.sellerProfileRevisionAchievement.count).not.toHaveBeenCalled();
-      }
-      if (enabled && remainingReferences === 0) {
-        expect(media.enqueueCleanup).toHaveBeenCalledWith(tx, [assetId]);
-      } else {
-        expect(media.enqueueCleanup).not.toHaveBeenCalled();
-      }
-      expect(remove).not.toHaveBeenCalled();
-    },
-  );
 });

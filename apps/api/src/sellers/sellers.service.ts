@@ -723,95 +723,25 @@ export class SellersService {
   }
 
   async deleteAchievement(userId: string, achievementId: string) {
-    const objectKeyToDelete = await runReadCommittedTransaction(
-      this.prisma,
-      async (tx) => {
-        const editing = await ensureEditableEditingRevision(tx, userId);
-        const targetAchievementId = await resolveEditingAchievementId(
-          tx,
-          editing,
-          achievementId,
-        );
-        const achievement = await tx.sellerProfileRevisionAchievement.findFirst(
-          {
-            where: {
-              id: targetAchievementId,
-              revisionId: editing.revisionId,
-            },
-            select: { id: true, objectKey: true, mediaAssetId: true },
-          },
-        );
-        if (!achievement) {
-          throw new NotFoundException('Achievement not found');
-        }
-        await tx.sellerProfileRevisionAchievement.delete({
-          where: { id: achievement.id },
-        });
+    return runReadCommittedTransaction(this.prisma, async (tx) => {
+      const editing = await ensureEditableEditingRevision(tx, userId);
+      const targetId = await resolveEditingAchievementId(
+        tx,
+        editing,
+        achievementId,
+      );
+      const achievement = await tx.sellerProfileRevisionAchievement.findFirst({
+        where: { id: targetId, revisionId: editing.revisionId },
+        select: { id: true },
+      });
+      if (!achievement) throw new NotFoundException('Achievement not found');
 
-        // Reindex on every delete, including legacy media-backed achievements.
-        const remaining = await tx.sellerProfileRevisionAchievement.findMany({
-          where: { revisionId: editing.revisionId },
-          select: { id: true, position: true },
-          orderBy: { position: 'asc' },
-        });
-        const temporaryBase = (remaining.at(-1)?.position ?? -1) + 1;
-        await Promise.all(
-          remaining.map((item, index) =>
-            tx.sellerProfileRevisionAchievement.update({
-              where: { id: item.id },
-              data: { position: temporaryBase + index },
-            }),
-          ),
-        );
-        await Promise.all(
-          remaining.map((item, index) =>
-            tx.sellerProfileRevisionAchievement.update({
-              where: { id: item.id },
-              data: { position: index },
-            }),
-          ),
-        );
-
-        if (achievement.mediaAssetId) {
-          // Migrated images must never be deleted through the legacy store.
-          if (this.media?.enabled) {
-            const references = await tx.sellerProfileRevisionAchievement.count({
-              where: { mediaAssetId: achievement.mediaAssetId },
-            });
-            if (references === 0) {
-              await this.media.enqueueCleanup(tx, [achievement.mediaAssetId]);
-            }
-          }
-          return null;
-        }
-        if (!achievement.objectKey) return null;
-        // A fork can point to an earlier row's implicit legacy key. Its
-        // original owner may still reference that key with objectKey = null.
-        if (
-          achievement.objectKey.startsWith('seller-achievement:') &&
-          achievement.objectKey !== imageKey.sellerAchievement(achievement.id)
-        ) {
-          return null;
-        }
-        const references = await tx.sellerProfileRevisionAchievement.count({
-          where: { objectKey: achievement.objectKey },
-        });
-        return references === 0 ? achievement.objectKey : null;
-      },
-    );
-    if (objectKeyToDelete) {
-      try {
-        await this.imageStore.delete(objectKeyToDelete);
-      } catch (error) {
-        const location = safeFailureLocation(error);
-        this.logger.warn(
-          location
-            ? `Failed to delete unreferenced achievement image at=${location}`
-            : 'Failed to delete unreferenced achievement image',
-        );
-      }
-    }
-    return { ok: true as const };
+      // Gaps are safe: new achievements append after the highest position.
+      await tx.sellerProfileRevisionAchievement.delete({
+        where: { id: achievement.id },
+      });
+      return { ok: true as const };
+    });
   }
 
   async getEditingPhoto(userId: string) {
@@ -873,7 +803,7 @@ export class SellersService {
           },
         },
       });
-    if (!achievement?.mimeType) {
+    if (!achievement?.mimeType || !achievement.objectKey) {
       throw new NotFoundException('Achievement image not found');
     }
     const profile = achievement.revision.sellerProfile;
@@ -887,22 +817,11 @@ export class SellersService {
     const stored =
       achievement.mediaAssetId && this.media?.enabled
         ? await this.media.readPreview(achievement.mediaAssetId)
-        : await this.imageStore.get(
-            achievement.objectKey ?? imageKey.sellerAchievement(achievementId),
-          );
-    if (stored) {
-      return { mimeType: stored.mimeType, data: stored.bytes, isPublic };
-    }
-    // Load legacy inline bytes only after authorization and a storage miss.
-    const legacy =
-      await this.prisma.sellerProfileRevisionAchievement.findUnique({
-        where: { id: achievementId },
-        select: { data: true },
-      });
-    if (!legacy?.data?.byteLength) {
+        : await this.imageStore.get(achievement.objectKey);
+    if (!stored) {
       throw new NotFoundException('Achievement image not found');
     }
-    return { mimeType: achievement.mimeType, data: legacy.data, isPublic };
+    return { mimeType: stored.mimeType, data: stored.bytes, isPublic };
   }
 
   async listProducts(userId: string) {
