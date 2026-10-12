@@ -300,7 +300,7 @@ export function ProductDraftStoryStep({
                 : onChooseImage()}
             />
             <FigmaButton
-              label={savePending ? 'Сохраняю' : hasBlocks ? 'Закончить' : 'Пропустить'}
+              label={savePending ? 'Сохраняю' : !isCreationFlow ? 'Сохранить' : hasBlocks ? 'Закончить' : 'Пропустить'}
               variant="solid"
               icon="arrow-right-01"
               iconPosition="right"
