@@ -147,6 +147,7 @@ function Harness({ guard }: { guard: RefObject<boolean> }) {
                 wizardStep: 1,
                 editable: true,
                 categories,
+                onCatalogOpen: () => undefined,
                 catalog: {
                   MATERIAL: { terms: [], loading: false, error: false, onRetry: () => undefined },
                   TECHNIQUE: { terms: [], loading: false, error: false, onRetry: () => undefined },
