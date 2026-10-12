@@ -21,11 +21,30 @@ describe('published legal documents', () => {
 
   it('exposes five documents with their source version', () => {
     const result = readPublishedLegalDocuments();
-    expect(result.version).toBe('portfolio-legal-2026-10-12');
+    expect(result.version).toMatch(/^portfolio-legal-2026-10-12\\+[a-f0-9]{32}$/);
     expect(result.documents.map((doc) => doc.id)).toEqual([
       'agreement', 'privacy', 'data-consent', 'author-rules', 'prohibited',
     ]);
     expect(result.documents.every((doc) => doc.version === result.version)).toBe(true);
+  });
+
+  it('changes the accepted version if any document body changes without edition bump', () => {
+    const oldVersion = readPublishedLegalDocuments().version;
+    fixture.body = (path: string) =>
+      path.endsWith('03-pd-consent.md')
+        ? 'Редакция: `portfolio-legal-2026-10-12`\n\nДополнено.'
+        : 'Редакция: `portfolio-legal-2026-10-12`\n\nДокумент.';
+    expect(readPublishedLegalDocuments().version).not.toBe(oldVersion);
+  });
+
+  it('fails closed if a canonical source contains an unresolved lowercase placeholder', () => {
+    fixture.body = () => 'Редакция: `portfolio-legal-2026-10-12`\n\n[не заполнено]';
+    expect(() => readPublishedLegalDocuments()).toThrow(ServiceUnavailableException);
+  });
+
+  it('fails closed when a source cannot be read after the availability check', () => {
+    fixture.body = () => { throw new Error('ENOENT'); };
+    expect(() => readPublishedLegalDocuments()).toThrow(ServiceUnavailableException);
   });
 
   it('fails closed when no packaged documents are present', () => {

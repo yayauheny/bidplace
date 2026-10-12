@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
@@ -12,8 +13,8 @@ const documents = [
   { id: 'prohibited', filename: '06-prohibited.md', title: 'Запрещённый контент и обращения правообладателей' },
 ] as const;
 
-// Canonical source: docs/legal/site/*.md. Build copies them into dist/auth/legal.
-// A source checkout is supported for local development and tests.
+// docs/legal/site is the canonical source; the API build packages the same files
+// under dist/auth/legal. Do not publish the handoff, drafts or deferred documents.
 const directories = [
   resolve(__dirname, 'legal'),
   resolve(process.cwd(), '../../docs/legal/site'),
@@ -30,17 +31,47 @@ export function readPublishedLegalDocuments(): LegalDocumentsResponse {
   );
   if (!directory) return notPublished();
 
-  const entries = documents.map(({ id, filename, title }) => {
-    const markdown = readFileSync(join(directory, filename), 'utf8');
-    const version = /^Редакция:\s*`([^`]+)`/m.exec(markdown)?.[1];
-    // Never send unresolved operator/provider/analytics placeholders to the public.
-    if (!version || /\[[А-ЯЁ][А-ЯЁ0-9\s,.:/–—-]*\]/u.test(markdown)) {
-      return notPublished();
-    }
-    return { id, version, title, markdown };
-  });
+  try {
+    const entries = documents.map(({ id, filename, title }) => {
+      const markdown = readFileSync(join(directory, filename), 'utf8');
+      const edition = /^Редакция:\s*`([^`]+)`/m.exec(markdown)?.[1];
+      // A missing or unresolved legal entity / transfer / analytics fact
+      // must never be exposed publicly as an actual policy.
+      if (
+        !edition ||
+        !/^portfolio-legal-[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(edition) ||
+        /\[[^\]\r\n]{1,150}\](?!\()/u.test(markdown)
+      ) {
+        return notPublished();
+      }
+      return { id, edition, title, markdown };
+    });
 
-  const version = entries[0]?.version;
-  if (!version || entries.some((entry) => entry.version !== version)) return notPublished();
-  return { version, documents: entries };
+    const edition = entries[0]?.edition;
+    if (!edition || entries.some((entry) => entry.edition !== edition)) return notPublished();
+
+    // A textual edition alone does not prove the exact displayed content.
+    // A deterministic digest changes even when someone edits the Markdown
+    // without updating its human-readable edition. This is stored as evidence.
+    const hash = createHash('sha256');
+    for (const entry of entries) {
+      hash.update(entry.id);
+      hash.update('\0');
+      hash.update(entry.markdown);
+      hash.update('\0');
+    }
+    const version = `${edition}+${hash.digest('hex').slice(0, 32)}`;
+    return {
+      version,
+      documents: entries.map(({ id, title, markdown }) => ({
+        id,
+        title,
+        markdown,
+        version,
+      })),
+    };
+  } catch (error) {
+    if (error instanceof ServiceUnavailableException) throw error;
+    return notPublished();
+  }
 }

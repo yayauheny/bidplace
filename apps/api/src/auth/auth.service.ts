@@ -100,6 +100,7 @@ export class AuthService {
     }
 
     const passwordHash = await this.passwordHasher.hash(input.password);
+    const acceptedAt = new Date();
 
     try {
       const user = await this.prisma.user.create({
@@ -116,12 +117,12 @@ export class AuthService {
           registrationLegalEvidence: {
             create: {
               agreementVersion: agreement.version,
-              agreementAcceptedAt: new Date(),
+              agreementAcceptedAt: acceptedAt,
               privacyVersion: privacy.version,
-              privacyAcknowledgedAt: new Date(),
+              privacyAcknowledgedAt: acceptedAt,
               dataConsentVersion: dataConsent.version,
-              dataConsentedAt: new Date(),
-              age18ConfirmedAt: new Date(),
+              dataConsentedAt: acceptedAt,
+              age18ConfirmedAt: acceptedAt,
             },
           },
         },
