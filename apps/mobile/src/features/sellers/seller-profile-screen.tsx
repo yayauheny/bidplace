@@ -835,20 +835,32 @@ export function SellerProfileScreen() {
       !transitionLock.current &&
       sessionOperation.current === operation &&
       canWritePrivateCache(queryClient, epoch);
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsMultipleSelection: false,
-      quality: 1,
-    });
-    if (!stillOwnsPhoto()) return;
-    if (result.canceled || !result.assets[0]) return;
-    const asset = result.assets[0];
-    const blob = await fetch(asset.uri).then((response) => response.blob());
-    if (!stillOwnsPhoto()) return;
-    photoBlobRef.current = blob;
-    setPhotoUri(asset.uri);
-    setPhotoFailed(false);
-    setPhotoBlob(blob);
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsMultipleSelection: false,
+        quality: 1,
+      });
+      if (!stillOwnsPhoto()) return;
+      if (result.canceled || !result.assets[0]) return;
+      const asset = result.assets[0];
+      const blob = await fetch(asset.uri).then((response) => response.blob());
+      if (!stillOwnsPhoto()) return;
+      photoBlobRef.current = blob;
+      setPhotoUri(asset.uri);
+      setPhotoFailed(false);
+      setPhotoBlob(blob);
+      setFormAlert(null);
+    } catch (error) {
+      if (stillOwnsPhoto()) {
+        reportProfileError(
+          error,
+          'seller-profile-photo',
+          'Не удалось выбрать фото',
+          operation,
+        );
+      }
+    }
   };
   const hasRequiredDetails = Boolean(
     slug.trim() && fullName.trim() && country.trim() && (profile || photoBlob),

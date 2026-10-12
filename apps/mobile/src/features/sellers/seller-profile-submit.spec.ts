@@ -1386,6 +1386,47 @@ describe('seller profile save reconciliation', () => {
     view.unmount();
   });
 
+  it('reports a photo picker failure and accepts a later selection', async () => {
+    const replacementPhoto = new Blob(['replacement'], { type: 'image/png' });
+    harness.getMyProfile.mockResolvedValue(response('APPROVED', 'DRAFT'));
+    harness.updateProfile.mockResolvedValue(savedProfile());
+    harness.launchImageLibraryAsync
+      .mockRejectedValueOnce(new Error('picker unavailable'))
+      .mockResolvedValueOnce({
+        canceled: false,
+        assets: [{ uri: 'blob:replacement' }],
+      });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({ blob: async () => replacementPhoto })),
+    );
+    const view = mount();
+    await until(
+      view.container,
+      () => findButton(view.container, 'Изменить фото') instanceof HTMLButtonElement,
+      'photo',
+    );
+
+    click(view.container, 'Изменить фото');
+    await until(
+      view.container,
+      () => view.container.textContent?.includes('Не удалось выбрать фото') === true,
+      'photo picker error',
+    );
+    expect(harness.updateProfile).not.toHaveBeenCalled();
+
+    click(view.container, 'Изменить фото');
+    await until(
+      view.container,
+      () => view.container.textContent?.includes('Не удалось выбрать фото') !== true,
+      'photo picker retry',
+    );
+    click(view.container, 'Сохранить');
+    await flush();
+    expect(harness.updateProfile.mock.calls[0]?.[1]).toBe(replacementPhoto);
+    view.unmount();
+  });
+
   it('ignores an older photo read after a newer selection', async () => {
     const firstPhoto = new Blob(['first'], { type: 'image/png' });
     const secondPhoto = new Blob(['second'], { type: 'image/png' });
