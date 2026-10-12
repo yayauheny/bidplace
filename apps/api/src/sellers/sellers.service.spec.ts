@@ -985,7 +985,9 @@ describe('SellersService', () => {
       { enabled: true, readPreview } as never,
     );
 
-    await expect(service.getAchievementImage('achievement-id')).resolves.toEqual({
+    await expect(
+      service.getAchievementImage('achievement-id'),
+    ).resolves.toEqual({
       mimeType: 'image/webp',
       data: bytes,
       isPublic: true,
