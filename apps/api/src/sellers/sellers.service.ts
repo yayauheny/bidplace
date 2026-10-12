@@ -783,6 +783,14 @@ export class SellersService {
           return null;
         }
         if (!achievement.objectKey) return null;
+        // A fork can point to an earlier row's implicit legacy key. Its
+        // original owner may still reference that key with objectKey = null.
+        if (
+          achievement.objectKey.startsWith('seller-achievement:') &&
+          achievement.objectKey !== imageKey.sellerAchievement(achievement.id)
+        ) {
+          return null;
+        }
         const references = await tx.sellerProfileRevisionAchievement.count({
           where: { objectKey: achievement.objectKey },
         });
