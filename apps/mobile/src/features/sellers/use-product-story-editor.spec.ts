@@ -93,10 +93,8 @@ describe('revision-backed Work Story editor', () => {
   it('keeps an unsaved block and its revision token after a server conflict', async () => {
     const view = mount();
     view.replaceCreation.mockRejectedValueOnce(new Error('conflict'));
-    act(() => {
-      view.editor.addText('PARAGRAPH');
-      view.editor.editText(view.editor.blocks[0]!.key, 'Сохранить локально');
-    });
+    act(() => view.editor.addText('PARAGRAPH'));
+    act(() => view.editor.editText(view.editor.blocks[0]!.key, 'Сохранить локально'));
     await act(async () => {
       expect(await view.editor.save()).toBe(false);
     });
