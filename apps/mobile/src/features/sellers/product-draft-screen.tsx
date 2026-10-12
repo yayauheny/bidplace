@@ -256,6 +256,9 @@ export function ProductDraftScreen({
   const persistedRevisionUpdatedAt =
     productDetail.data?.editingRevision?.updatedAt;
   const editingRevisionStatus = productDetail.data?.editingRevision?.status;
+  const storyNeedsDraft = (
+    existingProduct?.status === 'APPROVED' || existingProduct?.status === 'ARCHIVED'
+  ) && editingRevisionStatus === 'APPROVED';
   const productStatus = existingProduct?.status;
   const editorStatus =
     productStatus === 'APPROVED' || productStatus === 'ARCHIVED'
@@ -1193,7 +1196,9 @@ export function ProductDraftScreen({
               isCreationFlow={isCreationFlow}
               images={existingProduct.images}
               blocks={storyEditor.blocks}
-              editable={editable && !inputsLocked}
+              storyNeedsDraft={storyNeedsDraft}
+              onStartDraft={() => void persistCurrentForm('ordinary')}
+              editable={editable && !inputsLocked && !storyNeedsDraft}
               savePending={storyEditor.pending || save.isPending}
               saveError={storyEditor.error}
               retryUpload={storyEditor.retryUpload}

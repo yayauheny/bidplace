@@ -24,6 +24,8 @@ type GalleryImage = {
 export type ProductDraftStoryStepProps = {
   productId: string;
   isCreationFlow: boolean;
+  storyNeedsDraft: boolean;
+  onStartDraft: () => void;
   blocks: EditableStoryBlock[];
   images: GalleryImage[];
   editable: boolean;
@@ -45,6 +47,8 @@ export type ProductDraftStoryStepProps = {
 export function ProductDraftStoryStep({
   productId,
   isCreationFlow,
+  storyNeedsDraft,
+  onStartDraft,
   blocks,
   images,
   editable,
@@ -74,6 +78,19 @@ export function ProductDraftStoryStep({
       description="Соберите историю из текста и фотографий. Этот шаг необязательный."
     >
       <View style={{ gap: designTokens.space.x5 }}>
+        {storyNeedsDraft ? (
+          <>
+            <AppText role="bodySmall" tone="secondary">
+              Для изменения опубликованной истории создайте новую редакцию работы.
+              Опубликованная версия останется прежней до модерации.
+            </AppText>
+            <SecondaryButton
+              label="Начать редактирование истории"
+              disabled={savePending}
+              onPress={onStartDraft}
+            />
+          </>
+        ) : null}
         {blocks.map((block, index) => {
           const disabled = !editable || savePending;
           const imageUrl = block.type === 'IMAGE'
