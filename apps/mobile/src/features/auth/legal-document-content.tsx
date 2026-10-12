@@ -19,7 +19,7 @@ export function LegalDocumentContent({ markdown }: { markdown: string }) {
           return (
             <View key={index} style={{ gap: designTokens.space.x3 }}>
               {cells.slice(1).map((row, rowIndex) => (
-                <View key={rowIndex} style={{ gap: designTokens.space.x1, padding: designTokens.space.x3, backgroundColor: designTokens.color.canvas, borderRadius: designTokens.radius.card }}>
+                <View key={rowIndex} style={{ gap: designTokens.space.x1, padding: designTokens.space.x3, backgroundColor: designTokens.color.canvas, borderRadius: designTokens.radius.dialog }}>
                   {row.map((cell, cellIndex) => (
                     <AppText key={cellIndex} role="bodySmall" style={{ lineHeight: 21 }}>
                       {headers[cellIndex] ? headers[cellIndex] + ': ' : ''}{cell.replace(/\*\*/g, '')}

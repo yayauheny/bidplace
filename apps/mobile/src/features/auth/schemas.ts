@@ -28,8 +28,7 @@ export const registerFormSchema = z
   .refine((values) => values.password === values.confirmPassword, {
     message: 'Пароли не совпадают',
     path: ['confirmPassword'],
-  })
-;
+  });
 
 export type LoginFormValues = z.infer<typeof loginFormSchema>;
 export type RegisterFormValues = z.infer<typeof registerFormSchema>;

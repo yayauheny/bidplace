@@ -670,7 +670,7 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
   }, []);
   useEffect(() => {
     if (!registerSnapshot.current || !registerTransport.current) return;
-    const current = `${watched.email}\0${watched.slug}\0${watched.password}\0${watched.agreementAccepted}\0${watched.privacyAcknowledged}\0${watched.dataConsentGiven}\0${watched.age18Confirmed}`;
+    const current = JSON.stringify([watched.email, watched.slug, watched.password, watched.agreementAccepted, watched.privacyAcknowledged, watched.dataConsentGiven, watched.age18Confirmed]);
     if (current !== registerSnapshot.current) registerTransport.current.abort();
   }, [watched.email, watched.password, watched.slug, watched.agreementAccepted, watched.privacyAcknowledged, watched.dataConsentGiven, watched.age18Confirmed]);
   useEffect(() => {
@@ -768,7 +768,7 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
     registerTransport.current?.abort();
     const controller = new AbortController();
     registerTransport.current = controller;
-    registerSnapshot.current = `${values.email}\\0${values.slug}\\0${values.password}\\0${values.agreementAccepted}\\0${values.privacyAcknowledged}\\0${values.dataConsentGiven}\\0${values.age18Confirmed}`.replaceAll('\\0', '\\0');
+    registerSnapshot.current = JSON.stringify([values.email, values.slug, values.password, values.agreementAccepted, values.privacyAcknowledged, values.dataConsentGiven, values.age18Confirmed]);
     const token = proof;
     setProof(null);
     setWidgetGeneration((generation) => generation + 1);
@@ -1099,14 +1099,12 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
                 />
               )}
             />
-            {(
-              <TurnstileWidget
+            <TurnstileWidget
                 key={widgetGeneration}
                 action="register"
                 onToken={onProof}
                 onAvailability={onProofAvailability}
               />
-            )}
           </>
         ) : null}
         {submitFeedback}
@@ -1160,9 +1158,5 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
         )}
       </View>
   );
-}        ) : null}
-        </View>
-        )}
-      </View>
-  );
 }
+
