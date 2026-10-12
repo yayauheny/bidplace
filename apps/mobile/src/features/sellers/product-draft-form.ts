@@ -51,7 +51,11 @@ export function productToDraftFormValues(
   selection?: SellerProductDetailResponse['selection'],
   submitted?: ProductDraftFormValues,
 ): ProductDraftFormValues {
-  const selectedProposals = selection?.proposals.filter((proposal) => proposal.selected);
+  // Approved proposals are represented by catalog IDs after moderator mapping.
+  // Keeping them in draft proposals would display the same value twice.
+  const selectedProposals = selection?.proposals.filter(
+    (proposal) => proposal.selected && proposal.status !== 'APPROVED',
+  );
   return {
     categoryId: product.categoryId ?? '',
     title: product.title ?? '',
