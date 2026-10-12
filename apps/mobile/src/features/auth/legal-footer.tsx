@@ -1,5 +1,5 @@
 import { Link, type Href } from 'expo-router';
-import { View } from 'react-native';
+import { Linking, View } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
 import type { LegalDocumentId } from '@bidplace/contracts';
 
@@ -24,6 +24,16 @@ export function LegalFooter() {
           </MotionPressable>
         </Link>
       ))}
+      <MotionPressable
+        accessibilityRole="link"
+        accessibilityLabel="Связаться с оператором bidplace"
+        preset="button"
+        onPress={() => { void Linking.openURL('mailto:work.evles@gmail.com'); }}
+      >
+        <AppText role="metadata" style={{ color: designTokens.color.textSubdued, textDecorationLine: 'underline' }}>
+          Связаться с оператором
+        </AppText>
+      </MotionPressable>
     </View>
   );
 }

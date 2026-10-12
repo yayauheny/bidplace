@@ -7,6 +7,7 @@ import { designTokens } from '@bidplace/design-tokens';
 import { AppShell } from '../../../components/layout/AppShell';
 import { AppText } from '../../../components/ui';
 import { LegalDocumentContent } from '../../../features/auth/legal-document-content';
+import { LegalFooter } from '../../../features/auth/legal-footer';
 import { useApiClient } from '../../../providers/api-provider';
 
 export default function LegalDocumentRoute() {
@@ -33,6 +34,7 @@ export default function LegalDocumentRoute() {
             {!parsed.success ? 'Неизвестный документ.' : legal.isLoading ? 'Загружаем документ…' : 'Документ пока не опубликован.'}
           </AppText>
         )}
+        <LegalFooter />
       </ScrollView>
     </AppShell>
   );
