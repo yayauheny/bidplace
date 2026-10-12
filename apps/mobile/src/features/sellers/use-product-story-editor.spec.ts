@@ -139,6 +139,22 @@ describe('revision-backed Work Story editor', () => {
     ]);
   });
 
+  it('reuses a gallery media asset without duplicating its upload', async () => {
+    const view = mount();
+    view.replaceCreation.mockResolvedValueOnce({
+      storyToken: 1,
+      blocks: [{ id: blockId, position: 0, type: 'IMAGE', mediaAssetId: assetId, altText: null }],
+    });
+    act(() => view.editor.addGalleryImage(assetId));
+    await act(async () => {
+      expect(await view.editor.save()).toBe(true);
+    });
+    expect(view.addStoryImage).not.toHaveBeenCalled();
+    expect(view.replaceCreation.mock.calls[0]?.[1].blocks).toEqual([
+      { type: 'IMAGE', mediaAssetId: assetId, altText: null },
+    ]);
+  });
+
   it('retries an uncertain image upload with the same idempotency key', async () => {
     const view = mount();
     view.addStoryImage.mockRejectedValueOnce(new Error('connection dropped'));
