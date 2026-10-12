@@ -104,6 +104,7 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
   const [loginLegal, setLoginLegal] = useState<LegalDocumentsResponse | null>(null);
   const [legalError, setLegalError] = useState<string | null>(null);
   const [legalPending, setLegalPending] = useState(false);
+  const legalTransport = useRef<AbortController | null>(null);
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginFormSchema),
     defaultValues: { email: '', password: '' },
@@ -122,6 +123,7 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
     return () => {
       mounted.current = false;
       transport.current?.abort();
+      legalTransport.current?.abort();
     };
   }, []);
   useEffect(() => {
@@ -237,13 +239,24 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
   ]);
   const openLoginLegal = (id: LegalDocumentId) => {
     setLegalOpen(id);
-    if (loginLegal || legalPending) return;
+    if (loginLegal || legalTransport.current) return;
     setLegalError(null);
     setLegalPending(true);
-    void api.auth.getLegalDocuments()
-      .then(setLoginLegal)
-      .catch(() => setLegalError('Юридические документы пока не опубликованы.'))
-      .finally(() => setLegalPending(false));
+    const controller = new AbortController();
+    legalTransport.current = controller;
+    void api.auth.getLegalDocuments({ signal: controller.signal })
+      .then((documents) => {
+        if (!controller.signal.aborted && mounted.current) setLoginLegal(documents);
+      })
+      .catch(() => {
+        if (!controller.signal.aborted && mounted.current) {
+          setLegalError('Юридические документы пока не опубликованы.');
+        }
+      })
+      .finally(() => {
+        if (legalTransport.current === controller) legalTransport.current = null;
+        if (!controller.signal.aborted && mounted.current) setLegalPending(false);
+      });
   };
   const openPolicy = () => openLoginLegal('privacy');
   const openRules = () => openLoginLegal('agreement');
@@ -601,6 +614,7 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
   const [registrationLegalPending, setRegistrationLegalPending] = useState(false);
   const [registrationLegalOpen, setRegistrationLegalOpen] = useState<LegalDocumentId | null>(null);
   const legalRequest = useRef(0);
+  const registrationLegalTransport = useRef<AbortController | null>(null);
   const [suggestions, setSuggestions] = useState<NicknameSuggestions>(() =>
     nicknameSuggestionGenerator.generate(),
   );
@@ -665,6 +679,7 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
     return () => {
       mounted.current = false;
       registerTransport.current?.abort();
+      registrationLegalTransport.current?.abort();
     };
   }, []);
   useEffect(() => {
@@ -725,6 +740,9 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
 
   const loadRegistrationLegal = useCallback(() => {
     const request = ++legalRequest.current;
+    registrationLegalTransport.current?.abort();
+    const controller = new AbortController();
+    registrationLegalTransport.current = controller;
     setLegalDocuments(null);
     // An earlier checkbox click is never treated as acceptance of a newer or unavailable version.
     for (const key of ['agreementAccepted', 'privacyAcknowledged', 'dataConsentGiven', 'age18Confirmed'] as const) {
@@ -732,18 +750,19 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
     }
     setRegistrationLegalPending(true);
     setRegistrationLegalError(null);
-    void api.auth.getLegalDocuments()
+    void api.auth.getLegalDocuments({ signal: controller.signal })
       .then((documents) => {
-        if (!mounted.current || request !== legalRequest.current) return;
+        if (!mounted.current || controller.signal.aborted || request !== legalRequest.current) return;
         setLegalDocuments(documents);
       })
       .catch(() => {
-        if (!mounted.current || request !== legalRequest.current) return;
+        if (!mounted.current || controller.signal.aborted || request !== legalRequest.current) return;
         setLegalDocuments(null);
         setRegistrationLegalError('Юридические документы пока не опубликованы. Регистрация временно недоступна.');
       })
       .finally(() => {
-        if (mounted.current && request === legalRequest.current) setRegistrationLegalPending(false);
+        if (registrationLegalTransport.current === controller) registrationLegalTransport.current = null;
+        if (mounted.current && !controller.signal.aborted && request === legalRequest.current) setRegistrationLegalPending(false);
       });
   }, [api.auth, form]);
   useEffect(() => {

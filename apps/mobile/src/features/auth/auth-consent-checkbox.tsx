@@ -1,5 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { Platform, View } from 'react-native';
+import { View } from 'react-native';
 import { Path, Svg } from 'react-native-svg';
 
 import { designTokens } from '@bidplace/design-tokens';
@@ -32,11 +32,8 @@ export function AuthConsentCheckbox({
   error?: string;
   disabled?: boolean;
 }) {
-  const toggle = () => { if (!disabled) onChange(!checked); };
-  const handleWebKeyDown = (event: { key: string; preventDefault: () => void }) => {
-    if (event.key !== ' ') return;
-    event.preventDefault();
-    toggle();
+  const toggle = () => {
+    if (!disabled) onChange(!checked);
   };
   const borderColors = (
     checked
@@ -55,7 +52,7 @@ export function AuthConsentCheckbox({
           disabled={disabled}
           onPress={toggle}
           preset="button"
-          {...(Platform.OS === 'web' ? ({ onKeyDown: handleWebKeyDown } as object) : {})}
+          hitSlop={8}
         >
           <LinearGradient
             colors={borderColors}

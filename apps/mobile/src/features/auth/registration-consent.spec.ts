@@ -418,6 +418,18 @@ afterEach(() => {
 });
 
 describe('registration consent attempt', () => {
+  it('keeps all confirmations disabled until a published legal pack is loaded', async () => {
+    const view = mount();
+    // The simulated transport is async; once resolved, four unchecked controls are available.
+    await until(view.container, 'Редакция документов: portfolio-legal-2026-10-12');
+    expect([...view.container.querySelectorAll('[role="checkbox"]')]).toHaveLength(4);
+    expect([...view.container.querySelectorAll('[role="checkbox"]')].every(
+      (node) => node.getAttribute('aria-checked') === 'false',
+    )).toBe(true);
+    view.unmount();
+  });
+
+
   it('checks only on Next, blocks duplicate requests, and advances on available', async () => {
     let resolveAvailability: (value: { available: boolean }) => void = () =>
       undefined;
