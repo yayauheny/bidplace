@@ -47,6 +47,7 @@ import {
 import { AccountLogoutButton } from '../auth/AccountLogoutButton';
 import { formatAchievementDate } from '../sellers/achievement-date';
 import { AdminReviewImage, AdminRevisionPhoto } from './AdminRevisionPhoto';
+import { AdminWorkCatalogProposals } from './AdminWorkCatalogProposals';
 import {
   displayedProduct,
   displayedSeller,
@@ -749,6 +750,12 @@ export function AdminModerationScreen() {
                         ) : null}
                       </View>
                     ))}
+                    {review && pendingRevision(review.status) ? (
+                      <AdminWorkCatalogProposals
+                        proposals={review.selection.proposals}
+                        onChanged={refresh}
+                      />
+                    ) : null}
                     {product.lastModerationReason ? (
                       <AppText role="bodySmall" tone="secondary">
                         Последняя причина: {product.lastModerationReason}

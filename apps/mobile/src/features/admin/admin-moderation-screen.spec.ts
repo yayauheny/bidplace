@@ -66,6 +66,10 @@ vi.mock('../auth/AccountLogoutButton', () => ({
   AccountLogoutButton: () => null,
 }));
 
+vi.mock('./AdminWorkCatalogProposals', () => ({
+  AdminWorkCatalogProposals: () => null,
+}));
+
 vi.mock('./AdminUsersPanel', () => ({
   AdminUsersPanel: () => null,
 }));

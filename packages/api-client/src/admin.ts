@@ -1,5 +1,13 @@
+import { z } from 'zod';
+
 import {
   adminAnalyticsOverviewSchema,
+  catalogTermSchema,
+  catalogTermWriteSchema,
+  catalogCategoryWriteSchema,
+  catalogProposalMapSchema,
+  catalogProposalRejectSchema,
+  categorySchema,
   adminAnalyticsQuerySchema,
   adminCuratorSelectionRequestSchema,
   adminCuratorSelectionResponseSchema,
@@ -162,6 +170,36 @@ export function createAdminClient(context: RequestContext) {
           body: parseRequest(adminUserRevokeSessionsRequestSchema, input),
         },
       );
+    },
+    createCatalogTerm(input: { role: 'MATERIAL' | 'TECHNIQUE'; name: string }) {
+      return requestJson(context, '/api/admin/catalog/terms',
+        z.object({ term: catalogTermSchema }).strict(), {
+          method: 'POST',
+          body: parseRequest(catalogTermWriteSchema, input),
+        },
+      );
+    },
+    createCatalogCategory(name: string) {
+      return requestJson(context, '/api/admin/categories', z.object({
+        category: categorySchema,
+      }).strict(), {
+        method: 'POST',
+        body: parseRequest(catalogCategoryWriteSchema, { name }),
+      });
+    },
+    mapCatalogProposal(proposalId: string, input: { categoryId?: string; termId?: string }) {
+      return requestJson(context, `/api/admin/catalog/proposals/${proposalId}/map`,
+        adminOkResponseSchema, {
+          method: 'POST',
+          body: parseRequest(catalogProposalMapSchema, input),
+        });
+    },
+    rejectCatalogProposal(proposalId: string, reason: string) {
+      return requestJson(context, `/api/admin/catalog/proposals/${proposalId}/reject`,
+        adminOkResponseSchema, {
+          method: 'POST',
+          body: parseRequest(catalogProposalRejectSchema, { reason }),
+        });
     },
     setCuratorSelection(
       publicId: string,
