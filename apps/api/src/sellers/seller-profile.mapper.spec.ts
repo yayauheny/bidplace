@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  toPortfolioAchievement,
   toPublicSellerProfile,
   toSellerProfileResponse,
 } from './seller-profile.mapper';
@@ -161,5 +162,64 @@ describe('toPublicSellerProfile', () => {
     });
     expect(profile).not.toHaveProperty('handoffContactType');
     expect(profile).not.toHaveProperty('handoffContactValue');
+  });
+});
+
+describe('toPortfolioAchievement legacy image compatibility', () => {
+  const achievement = {
+    id: '3b2e93b2-1428-40fc-a15a-b9cd98e422b6',
+    occurredAt: new Date('0004-02-29T00:00:00.000Z'),
+    occurredAtPrecision: 'DAY' as const,
+    body: 'Групповая выставка',
+    mimeType: 'image/webp',
+    byteLength: 3,
+    checksum: 'a'.repeat(64),
+    objectKey: null,
+  };
+  const privateUrl =
+    '/api/author-achievements/3b2e93b2-1428-40fc-a15a-b9cd98e422b6/image';
+
+  it('preserves date and image without an object key', () => {
+    expect(toPortfolioAchievement(achievement)).toEqual({
+      id: achievement.id,
+      occurredDate: { year: 4, month: 2, day: 29 },
+      body: achievement.body,
+      image: {
+        url: privateUrl,
+        mimeType: 'image/webp',
+        byteLength: 3,
+        checksum: 'a'.repeat(64),
+      },
+    });
+  });
+
+  it('uses a CDN URL when ready but falls back to the guarded route otherwise', () => {
+    const publicUrl =
+      'https://media.bid.place/assets/11111111-1111-4111-8111-111111111111/p1/preview.webp';
+    expect(
+      toPortfolioAchievement({ ...achievement, mediaAsset: { objects: [] } }, 'public')
+        .image?.url,
+    ).toBe(privateUrl);
+    expect(
+      toPortfolioAchievement(
+        {
+          ...achievement,
+          mediaAsset: {
+            objects: [
+              {
+                variant: 'PREVIEW',
+                publicUrl,
+                mimeType: 'image/webp',
+                byteLength: 3,
+                sha256: 'a'.repeat(64),
+                width: 1,
+                height: 1,
+              },
+            ],
+          },
+        },
+        'public',
+      ).image?.url,
+    ).toBe(publicUrl);
   });
 });

@@ -88,7 +88,18 @@ describe('SellersService', () => {
     expect(tx.sellerProfile.update).not.toHaveBeenCalled();
   });
 
-  it('adds an achievement after locking the editable profile revision', async () => {
+  it.each([
+    {
+      occurredDate: { year: 2025, month: 3, day: null },
+      storedDate: new Date('2025-03-01T00:00:00.000Z'),
+    },
+    {
+      occurredDate: { year: 4, month: 2, day: 29 },
+      storedDate: new Date('0004-02-29T00:00:00.000Z'),
+    },
+  ])(
+    'adds an achievement for year $occurredDate.year after locking the revision',
+    async ({ occurredDate, storedDate }) => {
     const tx = {
       $queryRaw: vi.fn().mockResolvedValue([{ id: 'seller-profile-id' }]),
       sellerProfile: {
@@ -108,8 +119,8 @@ describe('SellersService', () => {
         findFirst: vi.fn().mockResolvedValue({ position: 4 }),
         create: vi.fn().mockResolvedValue({
           id: 'dc6c9612-cf38-48aa-b328-011f1b093b6c',
-          occurredAt: new Date('2025-03-01T00:00:00.000Z'),
-          occurredAtPrecision: 'MONTH',
+          occurredAt: storedDate,
+          occurredAtPrecision: occurredDate.day === null ? 'MONTH' : 'DAY',
           body: 'First exhibition',
         }),
       },
@@ -125,12 +136,12 @@ describe('SellersService', () => {
     await expect(
       service.addAchievement('user-id', {
         body: 'First exhibition',
-        occurredDate: { year: 2025, month: 3, day: null },
+        occurredDate,
       }),
     ).resolves.toEqual({
       achievement: {
         id: 'dc6c9612-cf38-48aa-b328-011f1b093b6c',
-        occurredDate: { year: 2025, month: 3, day: null },
+        occurredDate,
         body: 'First exhibition',
         image: null,
       },
@@ -144,9 +155,14 @@ describe('SellersService', () => {
       orderBy: { position: 'desc' },
     });
     expect(tx.sellerProfileRevisionAchievement.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({ revisionId: 'revision-id', position: 5 }),
+      data: expect.objectContaining({
+        revisionId: 'revision-id',
+        position: 5,
+        occurredAt: storedDate,
+      }),
     });
-  });
+    },
+  );
 
   it('does not create a profile when the account has no slug', async () => {
     const tx = {
@@ -964,7 +980,7 @@ describe('SellersService', () => {
       sellerProfileRevisionAchievement: {
         findUnique: vi.fn().mockResolvedValue({
           mimeType: 'image/webp',
-          objectKey: 'legacy:achievement',
+          objectKey: null,
           mediaAssetId: '11111111-1111-4111-8111-111111111111',
           revisionId: 'published-revision-id',
           revision: {
@@ -996,6 +1012,47 @@ describe('SellersService', () => {
       '11111111-1111-4111-8111-111111111111',
     );
     expect(get).not.toHaveBeenCalled();
+  });
+
+  it('reads legacy bytes without an object key only for the owner', async () => {
+    const bytes = new Uint8Array([1, 2, 3]);
+    const get = vi.fn().mockResolvedValue(null);
+    const service = new SellersService(
+      {
+        sellerProfileRevisionAchievement: {
+          findUnique: vi.fn().mockResolvedValue({
+            mimeType: 'image/png',
+            objectKey: null,
+            mediaAssetId: null,
+            data: bytes,
+            revisionId: 'draft-revision-id',
+            revision: {
+              sellerProfile: {
+                userId: 'owner-id',
+                status: 'APPROVED',
+                user: { status: 'active' },
+                publishedRevisionId: 'published-revision-id',
+              },
+            },
+          }),
+        },
+      } as never,
+      { ...imageStore, get } as never,
+    );
+
+    await expect(
+      service.getAchievementImage('achievement-id', 'stranger-id'),
+    ).rejects.toThrow('Achievement image not found');
+    expect(get).not.toHaveBeenCalled();
+
+    await expect(
+      service.getAchievementImage('achievement-id', 'owner-id'),
+    ).resolves.toEqual({
+      mimeType: 'image/png',
+      data: bytes,
+      isPublic: false,
+    });
+    expect(get).toHaveBeenCalledOnce();
   });
 
   it('hides unpublished achievement images from strangers', async () => {
