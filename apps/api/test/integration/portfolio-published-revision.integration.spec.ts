@@ -246,10 +246,13 @@ describe('portfolio published revision HTTP transport', () => {
     });
     expect(rejectedImage.status).toBe(400);
 
-    const rejectedStringDate = await owner.post('/author/application/achievements', {
-      body: 'Legacy date',
-      occurredDate: '{"year":2025,"month":3,"day":null}',
-    });
+    const rejectedStringDate = await owner.post(
+      '/author/application/achievements',
+      {
+        body: 'Legacy date',
+        occurredDate: '{"year":2025,"month":3,"day":null}',
+      },
+    );
     expect(rejectedStringDate.status).toBe(400);
 
     const created = await owner.post('/author/application/achievements', {

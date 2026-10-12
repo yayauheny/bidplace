@@ -194,9 +194,7 @@ export function toPortfolioAchievement(
       : null,
     body: achievement.body,
     image:
-      achievement.mimeType &&
-      achievement.byteLength &&
-      achievement.checksum
+      achievement.mimeType && achievement.byteLength && achievement.checksum
         ? {
             url:
               publicImageUrl ?? `/api/author-achievements/${achievement.id}/image`,
