@@ -666,6 +666,7 @@ export const designTokens = {
   },
   layout: {
     contentMaxWidth: 390,
+    creatorContentMaxWidth: 600,
     headerMaxWidth: 390,
     discoveryMaxWidth: 390,
     productDetailMaxWidth: 390,
