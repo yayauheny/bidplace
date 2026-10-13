@@ -138,7 +138,6 @@ test.describe('static public creator header', () => {
 
     await page.getByRole('button', { name: 'Поделиться профилем' }).click();
     await expect(page.getByRole('button', { name: 'Копировать ссылку' })).toBeVisible();
-    await page.getByRole('button', { name: 'Назад' }).last().click();
   });
 
   test('scrolls away naturally without resizing and leaves room above the dock', async ({ page }) => {
