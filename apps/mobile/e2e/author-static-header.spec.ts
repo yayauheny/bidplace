@@ -181,7 +181,7 @@ test.describe('static public creator header', () => {
     await mockAuthor(page, 'static-placeholder', 2, 2);
     await page.goto('/seller/static-placeholder');
 
-    await page.getByRole('button', { name: 'Подписаться на автора' }).click();
+    await page.getByRole('button', { name: 'Подписаться', exact: true }).click();
     await expect(page.getByText('Скоро появится')).toBeVisible();
     await page.getByRole('button', { name: 'Понятно' }).click();
 
