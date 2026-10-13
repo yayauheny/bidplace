@@ -45,7 +45,11 @@ export function portfolioCatalogCte(query: PortfolioWorksQuery): Prisma.Sql {
     )`);
   }
 
-  if (query.category) {
+  if (query.categories?.length) {
+    filters.push(Prisma.sql`published."category_id" IN (
+      ${Prisma.join(query.categories.map((id) => Prisma.sql`CAST(${id} AS uuid)`))}
+    )`);
+  } else if (query.category) {
     filters.push(
       Prisma.sql`published."category_id" = CAST(${query.category} AS uuid)`,
     );
