@@ -3,7 +3,7 @@ import { figmaTokens } from '@bidplace/design-tokens';
 export function filterSheetPanelStyle(compact = false) {
   return {
     width: '100%' as const,
-    maxWidth: figmaTokens.layout.phoneWidth,
+    maxWidth: compact ? undefined : figmaTokens.layout.phoneWidth,
     ...(compact ? { borderTopLeftRadius: 32, borderTopRightRadius: 32 } : { height: '100%' as const }),
     paddingHorizontal: compact ? 20 : figmaTokens.space.pageGutter,
     paddingTop: compact ? 8 : figmaTokens.space.x5,
