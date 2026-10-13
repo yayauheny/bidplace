@@ -73,7 +73,6 @@ function CategorySkeleton() {
     >
       <SkeletonTile />
       <SkeletonTile />
-      <SkeletonTile />
     </View>
   );
 }
