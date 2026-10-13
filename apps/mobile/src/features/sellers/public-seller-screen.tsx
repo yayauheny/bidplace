@@ -11,7 +11,7 @@ import { InfrastructureErrorState } from '../../components/shared/Infrastructure
 import { InfrastructurePageStatus } from '../../components/shared/InfrastructurePageStatus';
 import { infrastructurePageFetchStatus } from '../../components/shared/infrastructure-page-status';
 import { AppDialog } from '../../components/ui/AppDialog';
-import { AppText, MotionPressable, PageState, PrimaryButton } from '../../components/ui';
+import { AppText, PageState, PrimaryButton } from '../../components/ui';
 import { useSellerCapability } from '../../hooks/use-seller-capability';
 import { useTrackSellerView } from '../../lib/analytics/use-track-views';
 import { retryTransientPublicQuery } from '../../lib/query-retry';
