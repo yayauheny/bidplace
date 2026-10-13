@@ -194,7 +194,7 @@ export function PublicSellerScreen({
                         router.setParams({ categories: next.length ? next.join(',') : undefined, category: undefined });
                       }}
                     />
-                  ))
+                  ))}
                 </View>
               )
             ) : null}
