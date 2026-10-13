@@ -75,7 +75,13 @@ export function FilterSheet({
       bare
       bottomSpace={compact ? (bottomSpace ?? figmaTokens.space.x5) : undefined}
     >
-      <View style={filterSheetPanelStyle(compact, height)}>
+      <View
+        style={filterSheetPanelStyle(
+          compact,
+          height,
+          primaryAction ? insets.bottom : 0,
+        )}
+      >
         {compact ? (
           <View
             style={{
@@ -180,7 +186,10 @@ export function FilterSheet({
                 : figmaTokens.space.identityGap,
             paddingBottom: compact
               ? 0
-              : appDialogSheetBottomSpace(figmaTokens.space.x4, insets.bottom),
+              : appDialogSheetBottomSpace(
+                  figmaTokens.space.x4,
+                  primaryAction ? 0 : insets.bottom,
+                ),
           }}
           keyboardShouldPersistTaps="handled"
         >

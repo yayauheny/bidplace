@@ -1,8 +1,11 @@
 import { figmaTokens } from '@bidplace/design-tokens';
 
+import { appDialogSheetBottomSpace } from '../ui/app-dialog-host-style';
+
 export function filterSheetPanelStyle(
   compact = false,
   viewportHeight?: number,
+  bottomInset = 0,
 ) {
   return {
     width: '100%' as const,
@@ -11,7 +14,9 @@ export function filterSheetPanelStyle(
       : { height: (viewportHeight ?? '100%') as number | '100%' }),
     paddingHorizontal: compact ? 20 : figmaTokens.space.pageGutter,
     paddingTop: compact ? 8 : figmaTokens.space.x5,
-    paddingBottom: compact ? 0 : figmaTokens.space.x5,
+    paddingBottom: compact
+      ? 0
+      : appDialogSheetBottomSpace(figmaTokens.space.x5, bottomInset),
     backgroundColor: figmaTokens.color.canvas,
   };
 }
