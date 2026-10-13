@@ -81,7 +81,15 @@ function FilterSortBarTrigger({
         preset="icon"
         style={[
           filterSortPillStyle(),
-          iconOnly ? { width: 43, height: 43, paddingHorizontal: 0, paddingVertical: 0, justifyContent: 'center' } : null,
+          iconOnly
+            ? {
+                width: 43,
+                height: 43,
+                paddingHorizontal: 0,
+                paddingVertical: 0,
+                justifyContent: 'center',
+              }
+            : null,
         ]}
       >
         <View
