@@ -171,6 +171,7 @@ export function PublicSellerScreen({
               ) : (
                 <ScrollView
                   horizontal
+                  testID="creator-filter-strip"
                   showsHorizontalScrollIndicator={false}
                   contentContainerStyle={{
                     flexDirection: 'row',
