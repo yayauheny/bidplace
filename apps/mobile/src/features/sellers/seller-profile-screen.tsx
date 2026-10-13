@@ -615,7 +615,7 @@ export function SellerProfileScreen() {
       hydratedProfileToken.current = null;
       forceProfileHydration.current = true;
     }
-  }, [authEpoch, form, queryClient]);
+  }, [authEpoch, form, queryClient, sessionSlug]);
   const rememberSavedProfile = (
     saved: SellerProfileResponse,
     submitted: ProfileFields,
@@ -665,9 +665,10 @@ export function SellerProfileScreen() {
       if (!sessionStillOwns(variables.operation, variables.authEpoch)) {
         throw new Error('Session changed');
       }
-      const installedSlug = queryClient.getQueryData<{
-        slug?: string | null;
-      }>(authKeys.session)?.slug;
+      const installedSlug =
+        queryClient.getQueryData<{ slug?: string | null }>(
+          authKeys.session,
+        )?.slug;
       if (!installedSlug) {
         const requested = variables.fields.slug.trim();
         const claimed = await api.auth.claimSlug({ slug: requested });
@@ -1364,7 +1365,7 @@ export function SellerProfileScreen() {
                       showAllSteps={!isApplicationWizard}
                       editable={fieldsEditable}
                       slugEditable={
-                        fieldsEditable && !profile && !auth.user?.slug
+                        fieldsEditable && !profile && !sessionSlug
                       }
                       directionLabels={directionLabels}
                       directionsError={directionsError}

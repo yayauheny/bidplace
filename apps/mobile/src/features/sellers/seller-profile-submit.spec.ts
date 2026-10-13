@@ -1602,7 +1602,7 @@ describe('seller profile save reconciliation', () => {
     view.unmount();
   });
 
-  it('does not restore the prior account slug when the new session has none', async () => {
+  it('does not restore the old slug and keeps the new account nickname editable', async () => {
     harness.authSlug = 'previous-author';
     harness.getMyProfile.mockRejectedValue(
       new ApiClientError('missing', { kind: 'not_found', status: 404 }),
@@ -1623,45 +1623,21 @@ describe('seller profile save reconciliation', () => {
       });
       advanceAuthEpoch(view.queryClient);
     });
-    await flush();
-    expect(inputValue(view.container, 'Никнейм')).toBe('');
-    view.unmount();
-  });
-
-  it('keeps nickname editable when the new account has no slug', async () => {
-    harness.authSlug = 'previous-author';
-    harness.getMyProfile.mockRejectedValue(
-      new ApiClientError('missing', { kind: 'not_found', status: 404 }),
-    );
-    const view = mount('user-a', 'previous-author');
-    await until(
-      view.container,
-      () =>
-        view.container.querySelector<HTMLInputElement>('[aria-label="Никнейм"]')
-          ?.value === 'previous-author',
-      'old account nickname',
-    );
-    await act(async () => {
-      await clearAuthenticatedSession(view.queryClient);
-      view.queryClient.setQueryData(authKeys.session, {
-        id: 'user-b',
-        slug: null,
-      });
-      advanceAuthEpoch(view.queryClient);
-    });
     await until(
       view.container,
       () => {
         const field = view.container.querySelector<HTMLInputElement>(
           '[aria-label="Никнейм"]',
         );
-        return field instanceof HTMLInputElement && !field.disabled;
+        return field instanceof HTMLInputElement &&
+          field.value === '' &&
+          !field.disabled;
       },
       'new account editable nickname',
     );
-    expect(inputValue(view.container, 'Никнейм')).toBe('');
     view.unmount();
   });
+
 
   it('closes the old account exit dialog when the session changes', async () => {
     harness.params = { step: '2' };
