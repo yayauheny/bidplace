@@ -34,7 +34,11 @@ export function FilterSortSheet({
       compact={compact}
       onClose={onClose}
       title={title}
-      onClear={compact && clearValue !== undefined ? () => setDraftValue(clearValue) : undefined}
+      onClear={
+        compact && clearValue !== undefined
+          ? () => setDraftValue(clearValue)
+          : undefined
+      }
       clearLabel="Очистить"
       primaryAction={{
         label: 'Применить',
