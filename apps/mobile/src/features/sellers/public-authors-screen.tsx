@@ -6,6 +6,7 @@ import { ScrollView, View } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
 
 import { AppShell } from '../../components/layout';
+import { PublicFooter } from '../auth/legal-footer';
 import {
   FigmaButton,
   FilterSortBar,
@@ -129,6 +130,7 @@ export function PublicAuthorsScreen({
           />
         </View>
         {content}
+        <PublicFooter inset />
       </ScrollView>
       <CatalogFilterSheet
         open={filterOpen}

@@ -7,6 +7,7 @@ import { ApiClientError } from '@bidplace/api-client';
 import { designTokens } from '@bidplace/design-tokens';
 
 import { AppShell, navigateBack } from '../../components/layout';
+import { PublicFooter } from '../auth/legal-footer';
 import { InfrastructureErrorState } from '../../components/shared/InfrastructureErrorState';
 import { InfrastructurePageStatus } from '../../components/shared/InfrastructurePageStatus';
 import { infrastructurePageFetchStatus } from '../../components/shared/infrastructure-page-status';
@@ -94,10 +95,7 @@ export function PublicSellerScreen({
         <ScrollView
           testID="creator-scroll"
           contentContainerStyle={{
-            paddingBottom:
-              tab === 'about'
-                ? designTokens.size.dockReserve
-                : designTokens.space.x5,
+            paddingBottom: designTokens.size.dockReserve,
             overflow: 'visible',
           }}
           showsVerticalScrollIndicator={false}
@@ -196,6 +194,7 @@ export function PublicSellerScreen({
               </>
             )}
           </View>
+          <PublicFooter />
         </ScrollView>
       </View>
     </AppShell>
