@@ -9,17 +9,20 @@ vi.mock('react-native', () => ({
 const viewportGutter = designTokens.space.x5;
 let appDialogHostStyle: typeof import('./app-dialog-host-style').appDialogHostStyle;
 let appDialogHostFlexDirection: typeof import('./app-dialog-host-style').appDialogHostFlexDirection;
+let appDialogSheetBottomSpace: typeof import('./app-dialog-host-style').appDialogSheetBottomSpace;
 
 describe('app dialog host style', () => {
   beforeAll(async () => {
-    ({ appDialogHostStyle, appDialogHostFlexDirection } =
-      await import('./app-dialog-host-style'));
+    ({
+      appDialogHostStyle,
+      appDialogHostFlexDirection,
+      appDialogSheetBottomSpace,
+    } = await import('./app-dialog-host-style'));
   });
 
   it('keeps the sheet on a column axis so flex-end docks to the bottom', () => {
     const style = appDialogHostStyle({
       presentation: 'sheet',
-      width: designTokens.layout.phoneWidth,
       viewportGutter,
     });
 
@@ -27,12 +30,15 @@ describe('app dialog host style', () => {
     expect(style.flexDirection).not.toBe('row');
     expect(style.justifyContent).toBe('flex-end');
     expect(style.alignItems).toBe('stretch');
+    expect(style.alignSelf).toBe('center');
+    expect(style.marginLeft).toBeUndefined();
+    expect(style.marginRight).toBeUndefined();
+    expect(style.maxWidth).toBe(designTokens.layout.sheetMax);
   });
 
   it('docks the media sheet to the bottom like the sheet', () => {
     const style = appDialogHostStyle({
       presentation: 'mediaSheet',
-      width: designTokens.layout.phoneWidth,
       viewportGutter,
     });
 
@@ -43,7 +49,6 @@ describe('app dialog host style', () => {
   it('centers a dialog on the same column axis', () => {
     const style = appDialogHostStyle({
       presentation: 'dialog',
-      width: 390,
       viewportGutter,
     });
 
@@ -56,4 +61,18 @@ describe('app dialog host style', () => {
     expect(appDialogHostFlexDirection(undefined)).toBe('column');
     expect(appDialogHostFlexDirection('column')).toBe('column');
   });
+
+  it.each([
+    [16, 0, 16],
+    [16, 34, 34],
+    [20, 0, 20],
+    [20, 34, 34],
+    [40, 0, 40],
+    [40, 34, 40],
+  ] as const)(
+    'keeps sheet bottom space at least %i with inset %i',
+    (space, inset, expected) => {
+      expect(appDialogSheetBottomSpace(space, inset)).toBe(expected);
+    },
+  );
 });

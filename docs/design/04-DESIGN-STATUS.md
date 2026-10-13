@@ -2,6 +2,11 @@
 
 > Entries dated before 2026-10-13 mention Pen / .pen files; the Pen design was removed (DEC-119) — read those mentions as history.
 
+## 2026-10-13 — W1 filter sheet mechanism
+
+- `Partial` (mobile web): compact/full `FilterSheet` uses the shared `AppDialog` portal with `bare` content, one focus-return helper and independent backdrop motion. Compact filters use 40px bottom space; full and existing sheets retain their base spacing with Safe Area. Evidence: `FilterSheet.tsx`, `AppDialog.tsx`, `use-return-focus.ts`, `app-dialog-host-style.spec.ts`, `author-static-header.spec.ts`.
+- `Needs verification`: 390/1024/1440 rendered parity, keyboard and reduced-motion browser checks, and native devices remain open; no claim of complete screen states.
+
 ## 2026-10-12 — Author application intro + four steps (mobile-web)
 
 - `Implemented` **on local mobile-web only** (Chromium/WebKit geometry and owner

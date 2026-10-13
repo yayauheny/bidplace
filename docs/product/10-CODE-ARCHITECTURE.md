@@ -92,8 +92,8 @@ See [`11-PROJECT-STATUS.md`](11-PROJECT-STATUS.md) for remaining gates.
   `SearchOverlayHost` in the root layout. `SearchOverlayProvider` is the only
   owner of Search session state: it is reconstructed from the current route
   (`overlay=search`, `oq`, `otab`; `/search?q=` is the compatibility alias).
-  Overlay focus trap lives
-  in `useOverlayFocusTrap` and is shared with `FilterSheet`. Search reuses
+  Overlay focus trap lives in `useOverlayFocusTrap` for Search; `FilterSheet`
+  uses the shared `AppDialog` focus and dismissal lifecycle. Search reuses
   `GET /api/works`, `GET /api/authors` and `GET /api/categories`.
   There is no `/search` API and no second catalog fetch layer. `/search` is a
   compatibility route that opens the same overlay. On web the overlay host
@@ -156,8 +156,7 @@ See [`11-PROJECT-STATUS.md`](11-PROJECT-STATUS.md) for remaining gates.
   verification reads sampled objects and compares their checksums without logging
   content or credentials.
 - `apps/mobile/src/lib/environment.ts` owns API origin validation and `getApiAssetUrl`, which resolves relative media paths while preserving valid absolute HTTP(S) URLs. Media components own truthful missing/error presentation without changing API visibility rules.
-- `apps/mobile/src/components/layout/OverlayHost.tsx` stays mounted by AppShell. It keeps the relative content child and the absolute `app-overlay-host` layer. It does not portal descendants and does not export positioning helpers.
-- `apps/mobile/src/components/layout/index.ts` exports the shell, auth and form page primitives, `OverlayHost`, and `navigateBack`. Catalog sort and filter use `FilterSheet` through `CatalogFilterSheet`. `header-chrome.ts` and `dismissible-overlay.ts` stay outside that barrel. The unused `FilterMenu` and `focusable-anchor` helpers were removed.
+- `AppShell` owns page Safe Area and `FloatingDock`; `AppDialog` owns sheet portals, backdrop, motion, focus and bottom inset. Catalog sort and filter use `FilterSheet` through `CatalogFilterSheet`. `components/layout/index.ts` exports shell, auth and form page primitives and `navigateBack`; `OverlayHost` was removed. `header-chrome.ts` and `dismissible-overlay.ts` stay outside that barrel.
 - `apps/api/src/products/products.mapper.ts` and `apps/api/src/products/products-catalog.query.ts` own the canonical public catalog selection and CTE/order SQL; `products.service.ts` keeps only use-cases and orchestration. Public portfolio Work hydration uses `portfolioCatalogProductSelect`: product id, public id, `publishedAt`, the public seller profile, and the published revision gallery. Parent product fields and the parent image relation are not part of that read. Owner and moderation reads keep `productSelect`.
 - `packages/contracts` owns runtime HTTP and event shapes; `packages/api-client` validates responses with those schemas and declares `zod` `^3.24.2` for that import. Public catalog reads can pass an optional `AbortSignal` through that client into `fetch`. Mutations stay uncancelled unless a caller passes a signal.
 - `packages/contracts/src/seller-profile.ts` owns the reusable public-link and handoff-contact validation shapes consumed by both seller write contracts and the profile editor; client-side field feedback does not replace server validation. Public `socialLink`, `telegramUrl`, `instagramUrl` and `websiteUrl` use shared `httpsUrlSchema` and accept only `https:` URLs. Telegram/Instagram `@handle` forms stay on the separate handoff schemas.

@@ -165,6 +165,8 @@ Keep one semantic token layer in `packages/design-tokens`, one shared primitive 
 Static Figma frames do not define interactions: implement hover, focus, open/close, blur, sticky transitions and reduced motion from `docs/design/03-DESIGN-SYSTEM.md`.
 Verify visual parity with matched screenshots at 1440, 1024 and 390 px when frames exist for them; where Figma has only 390, state that 1024/1440 are `NEEDS-FIGMA`.
 
+Figma controls visual composition and styling; product owner documents and server contracts continue to control routes, data, permissions, privacy and auction behavior. If a Figma node is missing, ambiguous or conflicts with a product contract, stop the affected implementation and record the required decision.
+
 The sibling worktree `~/projects/bidplace-home-figma-completion` is read-only: never switch to it, commit there or alter its git state.
 
 ### Figma UI Implementation

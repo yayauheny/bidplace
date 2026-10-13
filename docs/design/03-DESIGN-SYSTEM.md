@@ -255,7 +255,9 @@ exposes its expanded state.
 - Dropdown/menu is not a generic select; sort/filter controls use appropriate
   listbox/select semantics.
 - Implementation: catalog sort and filter use `components/figma/FilterSheet.tsx`
-  through `features/discovery/CatalogFilterSheet.tsx`. The unused
+  through `features/discovery/CatalogFilterSheet.tsx`, with `AppDialog` owning
+  the shared sheet backdrop and focus. Compact filters use
+  `max(40, safe-area bottom)` spacing. The unused
   `components/layout/FilterMenu.tsx` dropdown was removed.
 - Status chips are informational unless the contract makes them controls.
 - Loading disables only the action in progress and keeps result/error legible.
@@ -459,6 +461,9 @@ On web AppDialog focuses its close control when opened. A sheet also completes
 initial focus after its entering animation if focus is still outside the dialog;
 it never steals focus already inside. The existing Escape/trap/return-focus
 behavior and motion geometry remain shared with the Work FULL viewer.
+Existing sheet bottom spacing is preserved with `max(base space, safe-area bottom)`;
+compact filters explicitly use `max(40, safe-area bottom)`, while full filters
+own their padding and scroll. Web HTML uses `viewport-fit=cover`.
 
 The web `AppDialogFrame` inner wrapper shares its host flex alignment, so
 limited dialog surfaces center without route-specific offsets. A dialog title

@@ -5,10 +5,9 @@ import { Platform, ScrollView, useWindowDimensions, View } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
 
 import { FigmaButton } from '../figma/FigmaButton';
-import { useDismissibleOverlay } from '../layout/use-dismissible-overlay';
-import { useOverlayFocusTrap } from '../layout/use-overlay-focus-trap';
 import { AppText } from './AppText';
 import { AppDialogFrame, AppDialogOverlay } from './app-dialog-layer';
+import { useReturnFocus } from './use-return-focus';
 
 export type ExitConfirmCopy = {
   title: string;
@@ -44,26 +43,7 @@ export function ExitConfirmDialog({
   const { width } = useWindowDimensions();
   const gutter = designTokens.layout.mobileGutter;
   const blockDismiss = busy || continueDisabled;
-
-  useDismissibleOverlay({
-    open,
-    onClose: (reason) => {
-      if (blockDismiss) return;
-      if (reason === 'escape' || reason === 'pointerdown') {
-        onContinue();
-      }
-    },
-    getSurfaces: () => [
-      Platform.OS === 'web' ? document.getElementById(dialogId) : null,
-    ],
-    restoreFocus: () => returnFocusRef?.current?.focus?.(),
-  });
-  useOverlayFocusTrap({
-    open,
-    surfaceId: dialogId,
-    restoreOnClose: true,
-    returnFocusRef,
-  });
+  const returnFocus = useReturnFocus({ explicitRef: returnFocusRef });
 
   if (!open) return null;
 
@@ -96,6 +76,7 @@ export function ExitConfirmDialog({
         >
           <Dialog.Content
             nativeID={dialogId}
+            {...(Platform.OS === 'web' ? returnFocus : {})}
             style={{
               width: '100%',
               maxWidth: Math.min(

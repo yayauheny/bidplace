@@ -681,6 +681,7 @@ export const designTokens = {
     mobileMenuWidth: 320,
     dialogMaxWidth: 366,
     phoneWidth: 390,
+    sheetMax: 390,
     openingAuthorWidth: 280,
     phoneFoldHeight: 860,
   },

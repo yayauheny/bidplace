@@ -156,6 +156,14 @@ test.describe('static public creator header', () => {
 
     await page.getByRole('button', { name: 'Категория' }).click();
     await expect(page.getByRole('dialog')).toBeVisible();
+    const backdrop = page
+      .locator('#app-dialog-host:not([aria-hidden])')
+      .locator('xpath=preceding-sibling::*[1]');
+    expect(
+      await backdrop.evaluate(
+        (node) => new DOMMatrixReadOnly(getComputedStyle(node).transform).m42,
+      ),
+    ).toBe(0);
     await page.getByRole('checkbox', { name: 'Скульптура' }).click();
     await page.getByRole('checkbox', { name: 'Живопись' }).click();
     await page.getByRole('button', { name: 'Показать работы' }).click();

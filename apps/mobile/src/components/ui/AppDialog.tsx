@@ -2,6 +2,7 @@ import * as Dialog from '@rn-primitives/dialog';
 import type { ElementRef, ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { Platform, ScrollView, useWindowDimensions, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
@@ -17,9 +18,13 @@ import {
 import { FigmaIcon } from '../figma/FigmaIcon';
 import { AppText } from './AppText';
 import { AppIcon } from './AppIcon';
-import { appDialogHostStyle } from './app-dialog-host-style';
+import {
+  appDialogHostStyle,
+  appDialogSheetBottomSpace,
+} from './app-dialog-host-style';
 import { AppDialogFrame, AppDialogOverlay } from './app-dialog-layer';
 import { MotionPressable } from './MotionPressable';
+import { useReturnFocus } from './use-return-focus';
 
 type AppDialogBaseProps = {
   open: boolean;
@@ -27,29 +32,24 @@ type AppDialogBaseProps = {
   description?: string;
   onClose: () => void;
   children: ReactNode;
+  accessibilityLabel?: string;
+  returnFocusRef?: { current: { focus?: () => void } | null };
+  bottomSpace?: 20 | 40;
+  bare?: boolean;
 };
 
 type AppDialogProps = AppDialogBaseProps &
   (
-    | { presentation?: 'dialog' | 'sheet'; media?: never }
+    | {
+        presentation?: 'dialog' | 'sheet';
+        media?: never;
+      }
     | { presentation: 'mediaSheet'; media: ReactNode }
   );
 
 const mediaSheetCloseHitSlop =
   (designTokens.size.touch - designTokens.size.mediaSheetClose) / 2;
 const centeredTextStyle = { textAlign: 'center' } as const;
-
-function connectedDialogOpener(
-  active: Element | null,
-  scope: EventTarget | null,
-) {
-  if (!(active instanceof HTMLElement)) return null;
-  if (scope instanceof Node && scope.contains(active)) return null;
-  if (!active.isConnected) return null;
-  const root = active.ownerDocument;
-  if (active === root.body || active === root.documentElement) return null;
-  return active;
-}
 
 export function AppDialog({
   open,
@@ -59,14 +59,26 @@ export function AppDialog({
   description,
   onClose,
   children,
+  accessibilityLabel,
+  returnFocusRef: explicitReturnFocusRef,
+  bottomSpace,
+  bare = false,
 }: AppDialogProps) {
   const { height, width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const viewportGutter = designTokens.space.x5;
-  const returnFocusRef = useRef<HTMLElement | null>(null);
   const closeButtonRef = useRef<ElementRef<typeof MotionPressable>>(null);
   const openRef = useRef(open);
   const instanceMountedRef = useRef(false);
   openRef.current = open;
+  const returnFocus = useReturnFocus({
+    explicitRef: explicitReturnFocusRef,
+    focusOnOpen: () =>
+      closeButtonRef.current instanceof HTMLElement
+        ? closeButtonRef.current
+        : null,
+    shouldRestore: () => !openRef.current || !instanceMountedRef.current,
+  });
   const focusAfterEnter = useCallback(() => {
     if (
       Platform.OS !== 'web' ||
@@ -156,7 +168,9 @@ export function AppDialog({
       )}
     </MotionPressable>
   );
-  const body = isMediaSheet ? (
+  const body = bare ? (
+    children
+  ) : isMediaSheet ? (
     <>
       <View>
         <View
@@ -259,41 +273,12 @@ export function AppDialog({
     <Dialog.Content
       asChild
       forceMount={isSheet ? true : undefined}
-      {...(Platform.OS === 'web'
-        ? {
-            onOpenAutoFocus: (event: Event) => {
-              if (typeof document === 'undefined') return;
-              const opener = connectedDialogOpener(
-                document.activeElement,
-                event.currentTarget,
-              );
-              if (opener) returnFocusRef.current = opener;
-              const button = closeButtonRef.current;
-              if (!button) return;
-              event.preventDefault();
-              button.focus();
-            },
-            onCloseAutoFocus: (event: Event) => {
-              // The installed dialog focuses its trigger and cancels the
-              // scope's previous-element restore. These dialogs open without
-              // Dialog.Trigger, so return focus stays on this callback.
-              // A deferred close must not steal focus from this same live
-              // instance after it opens again. Unmount leaves `open` true.
-              event.preventDefault();
-              if (openRef.current && instanceMountedRef.current) return;
-              const element = returnFocusRef.current;
-              returnFocusRef.current = null;
-              if (!element?.isConnected) return;
-              element.focus({ preventScroll: true });
-            },
-          }
-        : {})}
+      {...(Platform.OS === 'web' ? returnFocus : {})}
       nativeID="app-dialog-content"
+      accessibilityLabel={accessibilityLabel}
       style={{
         width: '100%',
-        maxWidth: isSheet
-          ? designTokens.layout.phoneWidth
-          : designTokens.layout.dialogMaxWidth,
+        maxWidth: isSheet ? undefined : designTokens.layout.dialogMaxWidth,
         maxHeight:
           Platform.OS === 'web'
             ? '100%'
@@ -302,7 +287,7 @@ export function AppDialog({
         flexShrink: Platform.OS === 'web' ? 1 : undefined,
         ...(Platform.OS === 'web' ? { pointerEvents: 'auto' as const } : {}),
         zIndex: designTokens.layer.modal,
-        borderWidth: isMediaSheet ? 0 : 1,
+        borderWidth: isMediaSheet || bare ? 0 : 1,
         borderColor: 'rgba(20, 20, 20, 0.08)',
         borderRadius: isMediaSheet
           ? designTokens.radius.mediaSheet
@@ -313,47 +298,68 @@ export function AppDialog({
           ? { borderBottomLeftRadius: 0, borderBottomRightRadius: 0 }
           : {}),
         backgroundColor: designTokens.color.dialogSurface,
-        padding: isMediaSheet
-          ? 0
-          : isSheet
-            ? designTokens.space.pageGutter
-            : width >= 600
-              ? designTokens.space.x8
-              : designTokens.space.x5,
-        ...(isMediaSheet ? {} : designTokens.elevation.floating),
+        padding:
+          isMediaSheet || bare
+            ? 0
+            : isSheet
+              ? designTokens.space.pageGutter
+              : width >= 600
+                ? designTokens.space.x8
+                : designTokens.space.x5,
+        ...(isSheet
+          ? {
+              paddingBottom:
+                bare && bottomSpace
+                  ? appDialogSheetBottomSpace(bottomSpace, insets.bottom)
+                  : 0,
+            }
+          : {}),
+        ...(isMediaSheet || bare ? {} : designTokens.elevation.floating),
       }}
     >
-      <ScrollView
-        accessibilityViewIsModal
-        keyboardShouldPersistTaps="handled"
-        nestedScrollEnabled
-        showsVerticalScrollIndicator
-        style={
-          Platform.OS === 'web'
-            ? { flexShrink: 1, minHeight: 0, minWidth: 0, width: '100%' }
-            : { minWidth: 0, width: '100%' }
-        }
-        contentContainerStyle={
-          isMediaSheet
-            ? {
-                gap: designTokens.space.x5,
-                paddingBottom: designTokens.space.x5,
-                minWidth: 0,
-              }
-            : {
-                gap: designTokens.space.x4,
-                paddingBottom: designTokens.space.x1,
-                minWidth: 0,
-              }
-        }
-      >
-        {body}
-      </ScrollView>
+      {bare ? (
+        body
+      ) : (
+        <ScrollView
+          accessibilityViewIsModal
+          keyboardShouldPersistTaps="handled"
+          nestedScrollEnabled
+          showsVerticalScrollIndicator
+          style={
+            Platform.OS === 'web'
+              ? { flexShrink: 1, minHeight: 0, minWidth: 0, width: '100%' }
+              : { minWidth: 0, width: '100%' }
+          }
+          contentContainerStyle={
+            isMediaSheet
+              ? {
+                  gap: designTokens.space.x5,
+                  paddingBottom: appDialogSheetBottomSpace(
+                    bottomSpace ?? designTokens.space.x5,
+                    insets.bottom,
+                  ),
+                  minWidth: 0,
+                }
+              : {
+                  gap: designTokens.space.x4,
+                  paddingBottom: isSheet
+                    ? appDialogSheetBottomSpace(
+                        bottomSpace ??
+                          designTokens.space.pageGutter + designTokens.space.x1,
+                        insets.bottom,
+                      )
+                    : designTokens.space.x1,
+                  minWidth: 0,
+                }
+          }
+        >
+          {body}
+        </ScrollView>
+      )}
     </Dialog.Content>
   );
   const frameStyle = appDialogHostStyle({
     presentation,
-    width,
     viewportGutter,
   });
 

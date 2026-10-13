@@ -2,6 +2,11 @@
 
 > Entries dated before 2026-10-13 mention Pen / .pen files; the Pen design was removed (DEC-119) — read those mentions as history.
 
+## 2026-10-13 — W1 shared sheet mechanism
+
+- `Partial`: `FilterSheet` and `FilterSortSheet` use `AppDialog` with `bare` content and shared focus return; only compact filters request 40px bottom space, while existing sheets retain base spacing with Safe Area. `apps/mobile/public/index.html` enables `viewport-fit=cover` in the SPA export. Evidence: `FilterSheet.tsx`, `AppDialog.tsx`, `use-return-focus.ts`, `app-dialog-host-style.spec.ts`, `author-static-header.spec.ts`.
+- `Needs verification`: native device and browser viewport acceptance remain; no product/API/database contract changed. This matches `05-MVP-RFC.md` discovery behavior and leaves commerce controls inactive.
+
 ## 2026-10-12 — Work Catalog integration (PR #37)
 
 - **Implemented in code:** Work author editor uses catalog term IDs and moderated proposals; materials and techniques use searchable Figma chips, category uses single-select chips. Existing selected terms, rejected proposals and revision hydration are retained.
@@ -49,7 +54,6 @@
   principles and `.pen`. Runtime typecheck/lint/tests/build were not run because
   application/schema behavior is unchanged; this is not a runtime verification claim.
   Architecture and production are unchanged.
-
 
 ## 2026-10-12 — Author application mobile-web (`fix/author-onboarding-figma`)
 

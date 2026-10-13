@@ -41,7 +41,7 @@
 
 | Компонент | Путь | Назначение |
 | --- | --- | --- |
-| **AppDialog** | `ui/AppDialog.tsx` | Модальные подтверждения и формы в диалоге. |
+| **AppDialog** | `ui/AppDialog.tsx` | Диалоги и шторки: общий backdrop, анимация и возврат фокуса; `bare` отдаёт отступы и скролл содержимому, `bottomSpace` задаёт явный отступ с Safe Area. |
 | **ExitConfirmDialog** | `ui/ExitConfirmDialog.tsx` | Выход с несохранёнными изменениями. |
 | **FilterSheet** | `figma/FilterSheet.tsx` | По умолчанию полноэкранный picker; `presentation="compact"` — нижний лист с прокручиваемыми вариантами и закреплённым действием. |
 
@@ -53,7 +53,6 @@
 | --- | --- | --- |
 | **AppShell** | `layout/AppShell.tsx` | Safe area, ширина телефона, `FloatingDock`, слот `bottomAction`. |
 | **FormPageShell** | `layout/FormPageShell.tsx` | Прокручиваемая форма с отступами и опциональным `bottomAction`. |
-| **OverlayHost** | `layout/OverlayHost.tsx` | Порталы оверлеев поверх shell. |
 
 ## Текст, состояния, медиа
 

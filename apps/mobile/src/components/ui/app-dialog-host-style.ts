@@ -5,11 +5,9 @@ import { designTokens } from '@bidplace/design-tokens';
 
 export function appDialogHostStyle({
   presentation,
-  width,
   viewportGutter,
 }: {
   presentation: 'dialog' | 'sheet' | 'mediaSheet';
-  width: number;
   viewportGutter: number;
 }): ViewStyle {
   const isSheet = presentation !== 'dialog';
@@ -20,8 +18,9 @@ export function appDialogHostStyle({
     alignItems: isSheet ? 'stretch' : 'center',
     ...(isSheet
       ? {
-          left: Math.max((width - designTokens.layout.phoneWidth) / 2, 0),
-          right: Math.max((width - designTokens.layout.phoneWidth) / 2, 0),
+          width: '100%',
+          maxWidth: designTokens.layout.sheetMax,
+          alignSelf: 'center',
         }
       : {}),
     justifyContent: isSheet ? 'flex-end' : 'center',
@@ -31,8 +30,15 @@ export function appDialogHostStyle({
   };
 }
 
+export function appDialogSheetBottomSpace(space: number, inset: number) {
+  return Math.max(space, inset);
+}
+
 export function appDialogHostFlexDirection(
-  value: FlexStyle['flexDirection'] | CSSProperties['flexDirection'] | undefined,
+  value:
+    | FlexStyle['flexDirection']
+    | CSSProperties['flexDirection']
+    | undefined,
 ): NonNullable<CSSProperties['flexDirection']> {
   return value ?? 'column';
 }

@@ -88,7 +88,7 @@ export function AuthViewport(props: AuthViewportProps) {
   const navigation = useNavigation();
   const focused = useIsFocused();
   const historyId = useId();
-  const { height, width } = useWindowDimensions();
+  const { height } = useWindowDimensions();
   const [screenContentHeight, setScreenContentHeight] = useState(0);
   const [guard, setGuard] = useState<AuthSheetGuard>({ dirty: false, busy: false });
   const [confirm, setConfirm] = useState(false);
@@ -281,7 +281,6 @@ export function AuthViewport(props: AuthViewportProps) {
   const formGap = tone === 'login' ? designTokens.auth.loginFormGap : designTokens.auth.formGap;
   const frameStyle = appDialogHostStyle({
     presentation: 'sheet',
-    width,
     viewportGutter: designTokens.space.x5,
   });
 
@@ -338,7 +337,7 @@ export function AuthViewport(props: AuthViewportProps) {
                     style={{
                       position: 'relative',
                       width: '100%',
-                      maxWidth: designTokens.layout.phoneWidth,
+                      maxWidth: designTokens.layout.sheetMax,
                       maxHeight: screen ? height : Math.max(height - designTokens.space.x6, designTokens.size.input * 4),
                       minHeight: screen ? height : undefined,
                       overflow: 'hidden',

@@ -2900,7 +2900,7 @@ Source: founder confirmation in chat, 2026-10-13.
 ### Decision
 
 The `.pen` files and the creator-first explorations were deleted (recoverable
-from the local tag `pen-v2-pre-removal` and git history). Live Figma file
+from git history). Live Figma file
 `pAPQo6cADmG5XzVmBX76EE` is the only visual source. `design/figma-handoff` is
 secondary and may be stale; live Figma wins on disagreement. `AGENTS.md` and
 `docs/design/*` were updated accordingly.
