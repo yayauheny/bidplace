@@ -1,8 +1,8 @@
-# bidplace — дизайн-система Pen v2
+# bidplace — дизайн-система
 
 Последнее обновление: 2026-10-10
 
-Статус: **Figma mobile-web 390 tokens and primitives are the production visual layer; Pen measurements remain historical**
+Статус: **Figma mobile-web 390 tokens and primitives are the production visual layer**
 
 ## 1. Архитектура источников
 
@@ -76,7 +76,7 @@ the measured input edge is x=39; slot and glyph dimensions remain exact. The
 prior text `@` prefix is not the source icon.
 
 ```text
-protected Pen masters
+live Figma
         ↓ visual extraction
 code design tokens + shared primitives
         ↓ composition
@@ -85,10 +85,10 @@ shared feature components
 route screens and verified states
 ```
 
-Pen masters не импортируются и не генерируются автоматически в production.
-Точные значения измеряются из `bidplace-web-v2.pen`, документируются в pull
-request и реализуются в существующей архитектуре. Любой exporter работает
-только read-only и не может сохранить изменения в canonical Pen.
+Figma не импортируется и не генерируется автоматически в production. Точные
+значения измеряются из live Figma, документируются в pull request и реализуются
+в существующей архитектуре. Любой exporter работает только read-only и не может
+сохранить изменения в Figma.
 
 ## 2. Token policy
 
@@ -104,13 +104,13 @@ values.
 - typography: display, title, body, label, metadata, numeric/auction;
 - spacing: page gutters, section gaps, component gaps, compact gaps;
 - shape: control, card, media and panel radii;
-- elevation/border: только реально используемые Pen levels;
+- elevation/border: только реально используемые Figma levels;
 - motion: menu, tab, sticky player и loading transitions;
 - layout: content max-width, grid columns, card width and breakpoints.
 
 ### Measured visual baseline
 
-| Role                         | Pen value / evidence                                                                  |
+| Role                         | Figma value / evidence                                                                |
 | ---------------------------- | ------------------------------------------------------------------------------------- |
 | Primary type                 | `Onest` для headings, cards и content; `Inter` для header/navigation и части overlays |
 | Canvas/surfaces              | `#FFFFFF`, `#FBFBF8`, `#F7F7F5`, `#F1F1ED`                                            |
@@ -137,7 +137,7 @@ Exact semantic token names and repeated-value clustering выполняются 
 Card dimensions in the table are canonical screen variants; the reusable
 `k5vYGf` reference below remains 322×456. Implementation selects the measured
 variant by canonical consumer, not by stretching one card with arbitrary CSS.
-Browse Works, Browse Authors, Product and Creator content pages use the Pen
+Browse Works, Browse Authors, Product and Creator content pages use the Figma
 platform contract: `page-content-start-desktop=104`,
 `page-content-width-desktop=1232`, `page-column-gap=40`,
 `page-gutter-tablet=48`, and `page-gutter-mobile=16`. Wizard, application,
@@ -152,7 +152,7 @@ tabs/sort; the unsupported `Тип работы` facet remains intentionally omi
 until its domain field is approved.
 Onest/Inter weights and Cyrillic coverage подтверждены runtime-сборкой.
 `designTokens` в `packages/design-tokens/src/tokens.ts` — единственный runtime
-контракт; визуальным authority остаётся immutable Pen v2.
+контракт; визуальным authority остаётся live Figma.
 
 ## 3. Canonical components
 
@@ -638,5 +638,4 @@ This does not change control size, type, or the field success state.
 `docs/modern-ui` and its design language are retired. Runtime public screens
 use `apps/mobile/src/components/figma` and wrappers in `components/ui`. There
 is no nested Figma token object. Figma is the production visual source for
-mobile-web 390 (`DEC-085`); the protected `.pen` file is historical and unused
-at runtime.
+mobile-web 390 (`DEC-119`).

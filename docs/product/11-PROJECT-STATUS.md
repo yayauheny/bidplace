@@ -1,5 +1,7 @@
 # bidplace — текущий статус проекта
 
+> Entries dated before 2026-10-13 mention Pen / .pen files; the Pen design was removed (DEC-119) — read those mentions as history.
+
 ## 2026-10-12 — Work Catalog integration (PR #37)
 
 - **Implemented in code:** Work author editor uses catalog term IDs and moderated proposals; materials and techniques use searchable Figma chips, category uses single-select chips. Existing selected terms, rejected proposals and revision hydration are retained.

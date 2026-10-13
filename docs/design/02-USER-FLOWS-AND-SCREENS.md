@@ -11,9 +11,9 @@ portfolio-first UI. Его запрещено редактировать, пер
 пересохранять в code-задачах. Screenshots являются review evidence, но точные tokens,
 assets и measurements берутся только из versioned inspect/handoff.
 
-Текущий production visual source на mobile-web 390 — Figma (`DEC-085`). Защищённый
-`.pen` не редактируется и не удаляется. Product owner documents и server
-contracts по-прежнему определяют routes, data, permissions и auction behavior.
+Текущий production visual source на mobile-web 390 — live Figma
+`pAPQo6cADmG5XzVmBX76EE` (`DEC-119`). Product owner documents и server contracts
+по-прежнему определяют routes, data, permissions и auction behavior.
 
 ### Auth presentation — 2026-10-08
 

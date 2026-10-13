@@ -1,5 +1,7 @@
 # bidplace — аудит Pen v2 и план реализации UI
 
+> HISTORICAL: the Pen design this document describes was removed (DEC-119).
+
 Последнее обновление: 2026-08-12
 
 Статус: **Approved runtime scope implemented and audited; automated QA green; external founder/device acceptance pending**

@@ -1,5 +1,7 @@
 # bidplace — статус дизайна
 
+> Entries dated before 2026-10-13 mention Pen / .pen files; the Pen design was removed (DEC-119) — read those mentions as history.
+
 ## 2026-10-12 — Author application intro + four steps (mobile-web)
 
 - `Implemented` **on local mobile-web only** (Chromium/WebKit geometry and owner

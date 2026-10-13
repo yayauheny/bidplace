@@ -1,6 +1,6 @@
 /**
- * Single runtime token layer measured from read-only Figma
- * `uMo04w9bgrchWXXDgO4W62` (Компоненты + phone frames ~390).
+ * Single runtime token layer measured from the live Figma file
+ * `pAPQo6cADmG5XzVmBX76EE`.
  * Screen aliases map Figma values onto one semantic object.
  */
 export const designTokens = {

@@ -1,4 +1,4 @@
-# bidplace — handoff Pen v2 → production code
+# bidplace — handoff Figma → production code
 
 Последнее обновление: 2026-08-12
 
@@ -6,25 +6,17 @@
 
 ## 0. Portfolio-first addendum — 2026-09-08
 
-Для First MVP новый read-only target — Figma `NM63j9lwRMqpo2HvAiYNll`. Workflow этого
-документа применяется с заменой `canonical Pen node` на versioned Figma node/handoff.
-Figma запрещено модифицировать любым tool; production адаптируется к нему. Текущий
-`.pen` остаётся защищённым historical runtime reference и также не меняется/не
-удаляется. Product behavior определяется `05-MVP-RFC.md`, а commerce-композиции Figma
-не реализуются в First MVP.
+Для First MVP visual source — live Figma `pAPQo6cADmG5XzVmBX76EE`. Figma запрещено
+модифицировать любым tool; production адаптируется к нему. Product behavior определяется
+`05-MVP-RFC.md`, а commerce-композиции Figma не реализуются в First MVP.
 
 ## 1. Главный запрет
 
-Canonical source: `design/pen/bidplace-web-v2.pen`.
+Canonical source: live Figma `pAPQo6cADmG5XzVmBX76EE`.
 
-Во время разработки файл открывается только для чтения. Запрещены save,
-auto-layout fixes, rename, move, delete, replace, format, node cleanup,
-component detachment и обратная синхронизация из кода. Если code tooling не
-гарантирует read-only режим, работать по verified exports и node measurements,
-а сам файл не открывать этим tooling.
-
-Изменить Pen можно только в отдельно поставленной design-задаче. Несовпадение
-с кодом исправляется в коде; конфликт с продуктом поднимается как решение.
+Во время разработки Figma открывается только для чтения. Запрещена обратная
+синхронизация из кода. Несовпадение с кодом исправляется в коде; конфликт с
+продуктом поднимается как решение.
 
 ## 2. Входной пакет на экран
 
@@ -38,9 +30,9 @@ component detachment и обратная синхронизация из код�
 - loading, empty, error, missing media и interaction states;
 - motion contract for default/hover/focus/open/pressed/sticky/reduced-motion;
 - asset provenance и права;
-- список deliberate differences от Pen с владельцем решения.
+- список deliberate differences от Figma с владельцем решения.
 
-Если canonical Pen отсутствует, экран не переходит в implementation.
+Если canonical Figma node отсутствует, экран не переходит в implementation.
 
 ## 3. Рабочий процесс
 
@@ -51,7 +43,7 @@ component detachment и обратная синхронизация из код�
 3. Составить CURRENT → TARGET diff по layout, content, states и behavior.
 4. Разделить gaps на visual-only, existing-contract, product decision и backend
    dependency.
-5. Зафиксировать, какие части Pen пока blocked; Pen при этом не менять.
+5. Зафиксировать, какие части Figma пока blocked; Figma при этом не менять.
 
 ### B. Extract
 
@@ -80,8 +72,6 @@ component detachment и обратная синхронизация из код�
 5. Для cards/controls: default, hover, focus-visible, pressed, menu-open,
    sticky и reduced-motion captures без layout shift.
 6. Keyboard, screen reader semantics, zoom, reduced motion и contrast.
-7. `git diff` подтверждает отсутствие изменений любых `.pen` files и совпадение
-   canonical checksum.
 
 ### E. Close
 
@@ -95,8 +85,8 @@ component detachment и обратная синхронизация из код�
 
 ```text
 Screen / route:
-Canonical Pen root:
-Shared Pen masters:
+Figma root:
+Shared Figma masters:
 Production entry files:
 Contracts used:
 Roles:
@@ -105,28 +95,27 @@ Motion states covered:
 1440 / 1024 / 390 evidence:
 Accessibility evidence:
 Deliberate differences:
-Blocked Pen concepts:
+Blocked Figma concepts:
 Checks run:
-Pen diff: none
 ```
 
 ## 5. Правила расхождений
 
-| Ситуация                                   | Действие                                                               |
-| ------------------------------------------ | ---------------------------------------------------------------------- |
-| Pen отличается от текущего CSS             | изменить code/tokens                                                   |
-| Pen требует неподдержанное поле            | остановить поле; открыть product/API decision                          |
-| Pen показывает новый route                 | не создавать route без IA decision                                     |
-| Pen не содержит error/loading state        | вывести состояние из foundation и текущего behavior; согласовать       |
-| Current code лучше покрывает accessibility | сохранить поведение и адаптировать visual implementation               |
-| Asset отсутствует или права неясны         | использовать честный placeholder; не подменять случайным stock asset   |
-| Pen node повреждён/не найден               | заблокировать экран; не ремонтировать canonical file в code task       |
-| Interaction отсутствует в static frame     | использовать `03`/`06`; не выдумывать локальную motion и не менять Pen |
-| Reference содержит wallet/NFT/crypto flow  | брать только visual/motion pattern; не переносить product semantics    |
+| Ситуация                                   | Действие                                                                 |
+| ------------------------------------------ | ------------------------------------------------------------------------ |
+| Figma отличается от текущего CSS           | изменить code/tokens                                                     |
+| Figma требует неподдержанное поле          | остановить поле; открыть product/API decision                            |
+| Figma показывает новый route               | не создавать route без IA decision                                       |
+| Figma не содержит error/loading state      | вывести состояние из foundation и текущего behavior; согласовать         |
+| Current code лучше покрывает accessibility | сохранить поведение и адаптировать visual implementation                 |
+| Asset отсутствует или права неясны         | использовать честный placeholder; не подменять случайным stock asset     |
+| Figma node повреждён/не найден             | заблокировать экран; не ремонтировать Figma в code task                  |
+| Interaction отсутствует в static frame     | использовать `03`/`06`; не выдумывать локальную motion и не менять Figma |
+| Reference содержит wallet/NFT/crypto flow  | брать только visual/motion pattern; не переносить product semantics      |
 
 ## 6. Acceptance checklist
 
-- [x] canonical Pen file доступен и не изменён;
+- [x] canonical Figma node доступен и не изменён;
 - [x] node IDs совпадают с реестром;
 - [x] нет новых неподтверждённых product behaviors;
 - [x] shared component не продублирован по routes;
@@ -140,65 +129,3 @@ Pen diff: none
 - [x] accessibility automated evidence приложено для текущего discovery среза;
 - [x] relevant checks зелёные;
 - [x] design/project statuses обновлены;
-- [x] `git diff --name-only` не содержит `.pen`.
-
-## 7. Текущий runtime handoff — 2026-08-12
-
-- Canonical SHA-256 до и после реализации:
-  `685bc2dee4ca643869e678378bf849ab3189c4072b417670df6c64fa6c3181cf`.
-- Реализованы GlobalHeader с `Аукционы`/`Авторы`/`Создать`, Browse Works, Home,
-  Browse Authors, Search, AuctionCard, Product About/Creation/Bids,
-  AuctionPlayer, URL-backed ProductTabs, related creator works, Creator
-  Profile, auth, seller editors, Activity, Order и moderation.
-- `/api/discovery/home`, `/api/products` и `/api/sellers` используют отдельные
-  server-owned query contracts. Catalog pagination/sort/filter выполняются в
-  PostgreSQL до hydration, а catalog images выбираются без бинарного `data`;
-  account popover переводит клавиатурный focus на первый пункт.
-- Creation process data model и multiple structured social links реализованы;
-  fake routes и controls не создавались. API contract/unit/PostgreSQL coverage,
-  mobile unit/typecheck/lint и полный Chromium E2E acceptance `35/35` зелёные.
-  Founder visual review и physical iOS/Android smoke остаются внешним release
-  gate.
-
-## 8. Runtime handoff addendum — 2026-08-12
-
-- Production UI now targets the current Pen v2 FINAL registry. The creator
-  route uses only `MqUMz` — `FINAL — Desktop Creator / Profile / MVP v1`;
-  `HOXkZ` — `Editorial Refinement v1` is explicitly excluded.
-- The isolated Wave C visual/route matrix passes `4/4` at 1440/1024/390:
-  catalog loading/loaded/failed-media and role states, Product buyer/admin
-  boundaries, author/seller/purchases/order/auth/admin routes, and bid
-  confirmation.
-- The functional acceptance subset passes `16/16`; mobile unit tests pass
-  `115/115`; mobile typecheck, lint, E2E fence and Expo exports pass. Evidence
-  captures are written under `/private/tmp/bidplace-wave-c-screenshots/<commit>`
-  and are disposable runtime artifacts, not Pen sources.
-- The route-matrix harness uses `waitUntil: 'domcontentloaded'` for the
-  client-rendered screens and explicitly opens the admin account menu before
-  focusing the moderation link. Wave B uses the current `Аукционы` discovery
-  label and Home's own `/api/discovery/home` state contract. These are test
-  synchronization updates only; they do not change production behavior.
-- The guarded local seed now exposes eight public products (`SCHEDULED`, `LIVE`,
-  `ENDED` and additional author/price/uniqueness variants) with local product
-  media for H5vf2 density, and eight approved creator profiles for the N4ebBk
-  author density. The Wave C fixture refreshes the four canonical baseline
-  products' `publishedAt` before
-  the shared newest-catalog assertion, keeping real API pagination deterministic
-  after other E2E fixtures have been created; no runtime response is mocked.
-- The Wave 2 target-width evidence now passes `1/1` and captures both Works and
-  Authors at 1440/1024/390. It asserts eight catalog cards, eight author cards,
-  expected 4/3/2 columns and no horizontal overflow; loading handlers use
-  delayed route fallback and the product assertion follows the current
-  server-owned `До завершения` label.
-- The complete Chromium suite now passes `35/35`; mobile typecheck, lint,
-  `115/115` unit tests and the E2E fence also pass. This closes the automated
-  runtime evidence gate; it does not replace matched Pen overlay review or
-  founder/device approval.
-- Browse Works uses confirmed Category, Author, Material, Price and Uniqueness
-  controls backed by the discovery contract and PostgreSQL facets. Pen's
-  `Тип работы` control remains a deliberate omission until the product domain
-  confirms a corresponding field; it is not simulated client-side.
-- Remaining release gates are matched visual overlay review against the
-  canonical Pen, founder approval and physical iOS/Android smoke. The
-  canonical Pen file remains unchanged at SHA-256
-  `685bc2dee4ca643869e678378bf849ab3189c4072b417670df6c64fa6c3181cf`.
