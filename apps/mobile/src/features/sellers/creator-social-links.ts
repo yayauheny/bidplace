@@ -1,15 +1,4 @@
 import type { PortfolioWorkDetailResponse } from '@bidplace/contracts';
-import {
-  findScrollBoundary as findLabeledScrollBoundary,
-  stickyHandoffThresholds,
-  stickyHeaderStateFromScroll,
-  type StickyHeaderState,
-} from '../../lib/sticky-handoff';
-
-export const CREATOR_COMPACT_SOCIAL_LIMIT = 2;
-export const CREATOR_SCROLL_TEST_ID = 'creator-scroll';
-
-export type CreatorHeaderState = StickyHeaderState;
 
 export type PublicSocialLink = {
   key: 'telegram' | 'instagram' | 'website';
@@ -51,24 +40,3 @@ export function listPublicSocialLinks(
   }
   return links;
 }
-
-export function creatorHandoffThresholds(heroHeight: number) {
-  return stickyHandoffThresholds(heroHeight);
-}
-
-export function creatorHeaderStateFromScroll(
-  scrollTop: number,
-  current: CreatorHeaderState,
-  thresholds: { collapseAt: number; expandAt: number },
-): CreatorHeaderState {
-  return stickyHeaderStateFromScroll(scrollTop, current, thresholds);
-}
-
-export function findScrollBoundary(from: Element | null) {
-  return findLabeledScrollBoundary(from, CREATOR_SCROLL_TEST_ID);
-}
-
-export {
-  readCurrentScrollTop,
-  scrollTopFromEvent,
-} from '../../lib/sticky-handoff';

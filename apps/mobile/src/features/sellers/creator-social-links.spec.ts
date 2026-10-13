@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  CREATOR_COMPACT_SOCIAL_LIMIT,
-  listPublicSocialLinks,
-} from './creator-header-motion';
+import { listPublicSocialLinks } from './creator-social-links';
 
 const profile = {
   telegramUrl: 'https://t.me/anna',
@@ -11,9 +8,8 @@ const profile = {
   websiteUrl: 'https://anna.example',
 };
 
-describe('creator header handoff helpers', () => {
-  it('lists public social links in a stable order and caps compact actions', () => {
-    expect(CREATOR_COMPACT_SOCIAL_LIMIT).toBe(2);
+describe('public creator social links', () => {
+  it('lists all available public links in a stable order', () => {
     expect(listPublicSocialLinks(profile).map((link) => link.key)).toEqual([
       'telegram',
       'instagram',

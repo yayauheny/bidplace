@@ -3,7 +3,6 @@ import { designTokens } from '@bidplace/design-tokens';
 
 const PUBLIC_ID = 'daliEstate1';
 const AUTHOR_SLUG = 'tab-reveal-author';
-const ACTION_HEIGHT = designTokens.stickyDock.actionHeight;
 const SECTION_GAP = designTokens.space.sectionGap;
 const TOLERANCE = 3;
 const checksum = 'a'.repeat(64);
@@ -16,7 +15,7 @@ const LONG_STORY = Array.from(
 ).join('\n\n');
 
 const LONG_BIO =
-  'Длинная биография автора для проверки начала вкладки Об авторе после компактной шапки. '.repeat(
+  'Длинная биография автора для проверки начала вкладки Об авторе после переключения вкладки. '.repeat(
     40,
   );
 
@@ -258,14 +257,12 @@ async function workGeometry(page: Page) {
 
 async function creatorGeometry(page: Page) {
   return page.evaluate(() => {
-    const header = document.querySelector('[data-testid="creator-sticky-header"]');
-    const tabs = document.querySelector(
-      '[data-testid="creator-sticky-header"] [role="tablist"]',
-    );
+    const header = document.querySelector('[data-testid="creator-static-header"]');
+    const tabs = header?.querySelector('[role="tablist"]');
     const panel = document.querySelector('[data-testid="author-content"]');
     const avatar = document.querySelector('[data-testid="creator-avatar"]');
     return {
-      state: header?.getAttribute('data-state'),
+      header: header?.getBoundingClientRect().toJSON(),
       tabs: tabs?.getBoundingClientRect().toJSON(),
       panel: panel?.getBoundingClientRect().toJSON(),
       avatar: avatar?.getBoundingClientRect().toJSON(),
@@ -391,52 +388,30 @@ test('short Payment can undock and still starts at Payment', async ({ page }) =>
   expect(payment.panel?.top ?? -1).toBeGreaterThanOrEqual(0);
 });
 
-test('Creator rest switch does not compact; deep switch reveals the new start', async ({
+test('Creator tabs switch normally after scrolling back into view', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 860 });
   await mockAuthor(page, AUTHOR_SLUG, 8);
   await page.goto(`/seller/${AUTHOR_SLUG}`);
-  await expect(page.getByTestId('creator-sticky-header')).toBeVisible();
+  await expect(page.getByTestId('creator-static-header')).toBeVisible();
 
   await page.getByRole('tab', { name: 'Об авторе', exact: true }).click();
   await expect(page.getByText('Биография', { exact: true })).toBeVisible();
   const rest = await waitForCreatorPanelStart(page);
-  expect(rest.state).toBe('expanded');
   expect(rest.avatar?.width ?? 0).toBeGreaterThan(80);
 
   await page.getByRole('tab', { name: /^Работы/ }).click();
-  await expect(page.getByRole('tab', { name: /^Работы/ })).toHaveAttribute(
-    'aria-selected',
-    'true',
-  );
-  await page.evaluate(() => {
-    const labeled = document.querySelector('[data-testid="creator-scroll"]');
-    if (!(labeled instanceof HTMLElement)) {
-      throw new Error('missing creator-scroll');
-    }
-    const spacer = document.createElement('div');
-    spacer.style.height = '2400px';
-    (labeled.lastElementChild ?? labeled).append(spacer);
-  });
-  const handoff = await page.evaluate((stack) => {
-    const hero = document.querySelector('[data-testid="author-header"]');
-    if (!(hero instanceof HTMLElement)) {
-      throw new Error('missing author-header');
-    }
-    return Math.max(0, hero.offsetHeight - stack);
-  }, ACTION_HEIGHT);
-  await scrollLabeled(page, 'creator-scroll', handoff + 240);
-  await expect
-    .poll(async () => (await creatorGeometry(page)).state, { timeout: 4000 })
-    .toBe('compact');
+  await expect(page.getByRole('tab', { name: /^Работы/ }))
+    .toHaveAttribute('aria-selected', 'true');
+  await scrollLabeled(page, 'creator-scroll', 650);
+  const deep = await creatorGeometry(page);
+  expect(deep.header?.y ?? 999).toBeLessThan((rest.header?.y ?? 0) - 100);
+
   await page.getByRole('tab', { name: 'Об авторе', exact: true }).click();
   await expect(page.getByText('Биография', { exact: true })).toBeVisible();
-  const compact = await waitForCreatorPanelStart(page);
-  expect(compact.state).toBe('compact');
-  expect(compact.tabs?.y).toBeCloseTo(ACTION_HEIGHT, 0);
+  await waitForCreatorPanelStart(page);
 
   await page.getByRole('tab', { name: /^Работы/ }).click();
-  const works = await waitForCreatorPanelStart(page);
-  expect(works.state).toBe('compact');
+  await waitForCreatorPanelStart(page);
 });

@@ -13,7 +13,7 @@ export function CreatorHeader({
   panelId,
 }: CreatorHeaderProps) {
   return (
-    <View>
+    <View testID="creator-static-header">
       <CreatorHero
         profile={profile}
         leadingAction={
