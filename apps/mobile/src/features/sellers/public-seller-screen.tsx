@@ -153,6 +153,7 @@ export function PublicSellerScreen({
                     icon="arrow-right-01"
                     iconPosition="right"
                     variant="outline"
+                    disabled={!categories.data}
                     onPress={() => {
                       setDraftCategory(category);
                       setFilterOpen(true);
