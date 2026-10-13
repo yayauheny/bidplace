@@ -52,11 +52,13 @@ export function CatalogFilterSheet({
   const [draftValues, setDraftValues] =
     useState<Record<string, string | undefined>>(committedValues);
   const [activeSectionId, setActiveSectionId] = useState<string>();
+  const [optionSearch, setOptionSearch] = useState('');
 
   useEffect(() => {
     if (!open) return;
     setDraftValues(committedValues);
     setActiveSectionId(undefined);
+    setOptionSearch('');
   }, [committedValues, open]);
 
   const activeSection = sections.find(
@@ -97,6 +99,8 @@ export function CatalogFilterSheet({
         <SectionOptions
           section={activeSection}
           value={draftValues[activeSection.id]}
+          query={optionSearch}
+          onChangeQuery={setOptionSearch}
           onSelect={(value) =>
             setDraftValues((current) => ({
               ...current,
@@ -154,7 +158,10 @@ export function CatalogFilterSheet({
           valuePreview={sectionPreview(section, draftValues[section.id])}
           disabled={section.state !== 'ready'}
           compact
-          onPress={() => setActiveSectionId(section.id)}
+          onPress={() => {
+            setOptionSearch('');
+            setActiveSectionId(section.id);
+          }}
         />
       ))}
     </FilterSheet>
@@ -165,10 +172,14 @@ function SectionOptions({
   section,
   value,
   onSelect,
+  query,
+  onChangeQuery,
 }: {
   section: CatalogFilterSection;
   value?: string;
   onSelect: (value: string) => void;
+  query: string;
+  onChangeQuery: (value: string) => void;
 }) {
   if (section.state !== 'ready') {
     return (
@@ -186,16 +197,41 @@ function SectionOptions({
       </View>
     );
   }
-  return section.options.map((option) => (
-    <FilterOptionRow
-      key={option.value}
-      label={option.label}
-      mode="radio"
-      variant="catalog"
-      selected={option.value === value}
-      onPress={() => onSelect(option.value)}
-    />
-  ));
+  const needle = query.trim().toLocaleLowerCase();
+  const visibleOptions = needle
+    ? section.options.filter((option) =>
+        option.label.toLocaleLowerCase().includes(needle),
+      )
+    : section.options;
+  return (
+    <>
+      {section.options.length > 9 ? (
+        <View style={{ marginBottom: figmaTokens.space.x2 }}>
+          <FilterSearchField
+            value={query}
+            placeholder="Поиск по значениям"
+            onChangeText={onChangeQuery}
+          />
+        </View>
+      ) : null}
+      {visibleOptions.length === 0 ? (
+        <AppText role="body" tone="secondary">
+          Ничего не найдено
+        </AppText>
+      ) : (
+        visibleOptions.map((option) => (
+          <FilterOptionRow
+            key={option.value}
+            label={option.label}
+            mode="radio"
+            variant="catalog"
+            selected={option.value === value}
+            onPress={() => onSelect(option.value)}
+          />
+        ))
+      )}
+    </>
+  );
 }
 
 function sectionPreview(section: CatalogFilterSection, value?: string) {
