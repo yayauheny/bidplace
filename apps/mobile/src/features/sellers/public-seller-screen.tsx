@@ -1,5 +1,5 @@
 import { useId, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { ScrollView, View } from 'react-native';
 
@@ -12,7 +12,7 @@ import { InfrastructurePageStatus } from '../../components/shared/Infrastructure
 import { infrastructurePageFetchStatus } from '../../components/shared/infrastructure-page-status';
 import { AppDialog } from '../../components/ui/AppDialog';
 import { AppText, MotionPressable, PageState, PrimaryButton } from '../../components/ui';
-import { WorkCoverCardGrid } from '../../components/figma/WorkCoverCardGrid';
+import { useSellerCapability } from '../../hooks/use-seller-capability';
 import { useTrackSellerView } from '../../lib/analytics/use-track-views';
 import { retryTransientPublicQuery } from '../../lib/query-retry';
 import { categoryKeys } from '../../lib/query-cache';
@@ -25,6 +25,7 @@ import { FigmaButton } from '../../components/figma/FigmaButton';
 import { FigmaIcon } from '../../components/figma/FigmaIcon';
 
 import { AuthorAbout } from './AuthorAbout';
+import { CreatorWorkCard } from './CreatorWorkCard';
 import { CreatorHeader } from './CreatorHeader';
 
 import { type AuthorPublicTab } from './author-public-tabs';
@@ -40,8 +41,12 @@ export function PublicSellerScreen({
 }) {
   const api = useApiClient();
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const capability = useSellerCapability();
   const panelId = useId();
   const [tab, setTab] = useState<AuthorPublicTab>('works');
+  const [unavailable, setUnavailable] = useState<string | null>(null);
+  const [pendingHide, setPendingHide] = useState<string | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
   const [draftCategory, setDraftCategory] = useState<string | undefined>(category);
   const categories = useQuery({
@@ -60,6 +65,16 @@ export function PublicSellerScreen({
   const sellerProfileId = author?.id;
   const worksPending = authorWorksArePending(query);
   const selectedCategory = categories.data?.categories.find((item) => item.id === category);
+  const isOwner = Boolean(author && capability.profile?.slug === author.slug && capability.status === 'APPROVED');
+  const hideWork = useMutation({
+    mutationFn: (id: string) => api.portfolio.hideWork(id),
+    onSuccess: () => {
+      setPendingHide(null);
+      void queryClient.invalidateQueries({ queryKey: ['public-author', slug] });
+      void queryClient.invalidateQueries({ queryKey: ['portfolio-home'] });
+      void queryClient.invalidateQueries({ queryKey: ['seller', 'works'] });
+    },
+  });
 
   useTrackSellerView({
     sellerProfileId,
@@ -123,6 +138,8 @@ export function PublicSellerScreen({
               setTab(value === 'about' ? 'about' : 'works')
             }
             panelId={panelId}
+            isOwner={isOwner}
+            onUnavailable={setUnavailable}
           />
 
           <View
@@ -193,7 +210,17 @@ export function PublicSellerScreen({
               />
             ) : (
               <>
-                <WorkCoverCardGrid items={works} />
+                <View style={{ width: '100%', gap: designTokens.space.sectionGap }}>
+                  {works.map((item) => (
+                    <CreatorWorkCard
+                      key={item.work.publicId}
+                      item={item}
+                      isOwner={isOwner}
+                      onUnavailable={setUnavailable}
+                      onHide={setPendingHide}
+                    />
+                  ))}
+                </View>
                 {query.hasNextPage ? (
                   <PrimaryButton
                     label="Смотреть все"
@@ -248,6 +275,36 @@ export function PublicSellerScreen({
               }}
             />
           </View>
+        </AppDialog>
+        <AppDialog
+          open={Boolean(unavailable)}
+          title="Скоро появится"
+          onClose={() => setUnavailable(null)}
+        >
+          <AppText role="bodySmall">
+            {unavailable} пока недоступны. Мы добавим эту возможность позже.
+          </AppText>
+          <PrimaryButton label="Понятно" onPress={() => setUnavailable(null)} />
+        </AppDialog>
+        <AppDialog
+          open={Boolean(pendingHide)}
+          title="Скрыть работу?"
+          description="Работа исчезнет из публичного профиля и останется доступна в кабинете."
+          onClose={() => setPendingHide(null)}
+        >
+          {hideWork.isError ? (
+            <AppText role="bodySmall" tone="danger">
+              Не удалось скрыть работу. Повторите попытку.
+            </AppText>
+          ) : null}
+          <PrimaryButton
+            label="Скрыть"
+            loading={hideWork.isPending}
+            disabled={!pendingHide || hideWork.isPending}
+            onPress={() => {
+              if (pendingHide) hideWork.mutate(pendingHide);
+            }}
+          />
         </AppDialog>
       </View>
     </AppShell>
