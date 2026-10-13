@@ -2,6 +2,8 @@ import { View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
+import { useDockInset } from '../layout/use-dock-inset';
+
 import { INFRASTRUCTURE_ERROR_COPY } from '../../errors';
 import { BidplaceMark, BIDPLACE_PAGE_LOGO_SIZE } from '../branding/BidplaceBrand';
 import { AppText, SecondaryButton } from '../ui';
@@ -23,6 +25,7 @@ export function InfrastructurePageStatus({
   onRetry: () => void;
 }) {
   const visual = infrastructurePageVisual(status);
+  const { reserve } = useDockInset();
   const chromeStyle = {
     opacity: visual.showsErrorChrome ? 1 : 0,
     visibility: visual.showsErrorChrome ? 'visible' : 'hidden',
@@ -43,7 +46,7 @@ export function InfrastructurePageStatus({
         flex: 1,
         width: '100%',
         paddingHorizontal: infrastructurePageErrorLayout.padX,
-        paddingBottom: designTokens.size.dockReserve,
+        paddingBottom: reserve,
       }}
     >
       <View

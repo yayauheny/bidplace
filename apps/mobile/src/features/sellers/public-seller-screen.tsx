@@ -7,6 +7,7 @@ import { ApiClientError } from '@bidplace/api-client';
 import { designTokens } from '@bidplace/design-tokens';
 
 import { AppShell, navigateBack } from '../../components/layout';
+import { useDockInset } from '../../components/layout/use-dock-inset';
 import { InfrastructureErrorState } from '../../components/shared/InfrastructureErrorState';
 import { InfrastructurePageStatus } from '../../components/shared/InfrastructurePageStatus';
 import { infrastructurePageFetchStatus } from '../../components/shared/infrastructure-page-status';
@@ -47,6 +48,7 @@ export function PublicSellerScreen({
   categoryIds?: string[];
 }) {
   const api = useApiClient();
+  const { reserve } = useDockInset();
   const router = useRouter();
   const queryClient = useQueryClient();
   const capability = useSellerCapability();
@@ -124,7 +126,7 @@ export function PublicSellerScreen({
         <ScrollView
           testID="creator-scroll"
           contentContainerStyle={{
-            paddingBottom: designTokens.size.dockReserve,
+            paddingBottom: reserve,
             overflow: 'visible',
           }}
           showsVerticalScrollIndicator={false}

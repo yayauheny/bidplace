@@ -7,6 +7,7 @@ import { ScrollView, View } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
 
 import { AppShell } from '../../components/layout';
+import { useDockInset } from '../../components/layout/use-dock-inset';
 import { InfrastructureErrorState } from '../../components/shared/InfrastructureErrorState';
 import { AppText, PageState } from '../../components/ui';
 import {
@@ -45,6 +46,7 @@ export function ProductListScreen({
   title?: string;
 }) {
   const api = useApiClient();
+  const { reserve } = useDockInset();
   const router = useRouter();
   const [filterOpen, setFilterOpen] = useState(false);
   const [sortOpen, setSortOpen] = useState(false);
@@ -136,7 +138,7 @@ export function ProductListScreen({
         contentContainerStyle={{
           paddingHorizontal: designTokens.space.pageGutter,
           paddingTop: designTokens.space.x10,
-          paddingBottom: designTokens.size.dockReserve,
+          paddingBottom: reserve,
           gap: designTokens.space.sectionGap,
         }}
         showsVerticalScrollIndicator={false}

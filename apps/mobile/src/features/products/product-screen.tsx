@@ -5,6 +5,7 @@ import { ScrollView, View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 import { AppShell } from '../../components/layout';
+import { useDockInset } from '../../components/layout/use-dock-inset';
 import { InfrastructurePageStatus } from '../../components/shared/InfrastructurePageStatus';
 import {
   AppText,
@@ -34,6 +35,7 @@ export { PAYMENT_DELIVERY_STUB };
 
 export function ProductScreen({ publicId }: { publicId: string }) {
   const api = useApiClient();
+  const { reserve } = useDockInset();
   const router = useRouter();
   const { tab: requestedTab } = useLocalSearchParams<{ tab?: string }>();
   const panelId = useId();
@@ -96,7 +98,7 @@ export function ProductScreen({ publicId }: { publicId: string }) {
         testID="product-scroll-view"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
-          paddingBottom: designTokens.size.dockReserve,
+          paddingBottom: reserve,
           gap: designTokens.space.sectionGap,
         }}
       >

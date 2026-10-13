@@ -6,6 +6,7 @@ import { designTokens } from '@bidplace/design-tokens';
 
 import { BrandLogo } from '../../components/layout/BrandLogo';
 import { AppShell } from '../../components/layout/AppShell';
+import { useDockInset } from '../../components/layout/use-dock-inset';
 import { InfrastructurePageStatus } from '../../components/shared/InfrastructurePageStatus';
 import { infrastructurePageFetchStatus } from '../../components/shared/infrastructure-page-status';
 import { PageState, PrimaryButton } from '../../components/ui';
@@ -19,6 +20,7 @@ import { homeSectionPlan } from './home-sections';
 export function HomeScreen({ hideDock = false }: { hideDock?: boolean }) {
   const api = useApiClient();
   const router = useRouter();
+  const { reserve } = useDockInset();
   const home = useQuery({
     queryKey: ['portfolio-home'],
     queryFn: ({ signal }) => api.portfolio.home({ signal }),
@@ -44,7 +46,7 @@ export function HomeScreen({ hideDock = false }: { hideDock?: boolean }) {
         contentContainerStyle={{
           paddingHorizontal: designTokens.space.pageGutter,
           paddingTop: designTokens.space.logoTop,
-          paddingBottom: designTokens.size.dockReserve,
+          paddingBottom: hideDock ? designTokens.space.x8 : reserve,
         }}
         showsVerticalScrollIndicator={false}
       >
