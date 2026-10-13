@@ -14,8 +14,8 @@ import { MotionPressable } from '../../components/ui/MotionPressable';
 import { useApiClient } from '../../providers/api-provider';
 import { HomeNewAuthors } from './home-new-authors';
 import { HomeNewWorks } from './home-new-works';
-import { HomeOpening } from './home-opening';
 import { PublicFooter } from '../auth/legal-footer';
+import { HomeOpening } from './home-opening';
 import { homeSectionPlan } from './home-sections';
 
 export function HomeScreen({ hideDock = false }: { hideDock?: boolean }) {
@@ -85,8 +85,14 @@ export function HomeScreen({ hideDock = false }: { hideDock?: boolean }) {
               Для вас
             </AppText>
             <Link href="/followed-authors" asChild>
-              <MotionPressable accessibilityRole="link" accessibilityLabel="Ваши авторы" preset="button">
-                <AppText role="nav" tone="secondary">Ваши авторы</AppText>
+              <MotionPressable
+                accessibilityRole="link"
+                accessibilityLabel="Ваши авторы"
+                preset="button"
+              >
+                <AppText role="nav" tone="secondary">
+                  Ваши авторы
+                </AppText>
               </MotionPressable>
             </Link>
           </View>
@@ -102,39 +108,43 @@ export function HomeScreen({ hideDock = false }: { hideDock?: boolean }) {
                 justifyContent: 'center',
               }}
             >
-              <Bell size={24} color={designTokens.color.inkStrong} strokeWidth={1.8} />
+              <Bell
+                size={24}
+                color={designTokens.color.inkStrong}
+                strokeWidth={1.8}
+              />
             </MotionPressable>
           </Link>
         </View>
         <View style={{ gap: designTokens.space.homeSectionStack, minWidth: 0 }}>
-            {plan.opening ? <HomeOpening selection={plan.opening} /> : null}
-            {plan.showWorks ? <HomeNewWorks works={plan.works} /> : null}
-            {plan.showAuthors ? <HomeNewAuthors authors={plan.authors} /> : null}
-            {plan.showAuthorsLink ? (
+          {plan.opening ? <HomeOpening selection={plan.opening} /> : null}
+          {plan.showWorks ? <HomeNewWorks works={plan.works} /> : null}
+          {plan.showAuthors ? <HomeNewAuthors authors={plan.authors} /> : null}
+          {plan.showAuthorsLink ? (
+            <PrimaryButton
+              label="Все авторы"
+              width="full"
+              href="/authors"
+            />
+          ) : null}
+          {plan.showEmpty ? (
+            <View style={{ gap: designTokens.space.sectionGap }}>
+              <PageState
+                title="Пока здесь тихо"
+                message="Новые работы и авторы появятся после публикации."
+              />
+              <PrimaryButton
+                label="Все работы"
+                width="full"
+                href="/works"
+              />
               <PrimaryButton
                 label="Все авторы"
                 width="full"
                 href="/authors"
               />
-            ) : null}
-            {plan.showEmpty ? (
-              <View style={{ gap: designTokens.space.sectionGap }}>
-                <PageState
-                  title="Пока здесь тихо"
-                  message="Новые работы и авторы появятся после публикации."
-                />
-                <PrimaryButton
-                  label="Все работы"
-                  width="full"
-                  href="/works"
-                />
-                <PrimaryButton
-                  label="Все авторы"
-                  width="full"
-                  href="/authors"
-                />
-              </View>
-            ) : null}
+            </View>
+          ) : null}
         </View>
         <PublicFooter inset />
       </ScrollView>

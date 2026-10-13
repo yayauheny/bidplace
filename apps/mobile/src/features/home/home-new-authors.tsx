@@ -103,11 +103,7 @@ export function HomeNewAuthors({ authors }: { authors: HomeAuthor[] }) {
           );
         })}
       </View>
-      <PrimaryButton
-        label="Смотреть все"
-        width="full"
-        href="/authors"
-      />
+      <PrimaryButton label="Смотреть все" width="full" href="/authors" />
     </View>
   );
 }

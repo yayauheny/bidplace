@@ -27,11 +27,7 @@ export function HomeNewWorks({ works }: { works: HomeWorkItem[] }) {
         <AppText role="sectionTitle" accessibilityRole="header">
           Новые работы
         </AppText>
-        <FigmaButton
-          label="Смотреть все"
-          variant="muted"
-          href="/works"
-        />
+        <FigmaButton label="Смотреть все" variant="muted" href="/works" />
       </View>
       <View
         style={{

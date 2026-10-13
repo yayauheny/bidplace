@@ -3,7 +3,10 @@ import { Linking, useWindowDimensions, View } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
 import type { LegalDocumentId } from '@bidplace/contracts';
 
-import { BidplaceMark, BidplaceWordmark } from '../../components/branding/BidplaceBrand';
+import {
+  BidplaceMark,
+  BidplaceWordmark,
+} from '../../components/branding/BidplaceBrand';
 import { getMobileCreateHref } from '../../components/layout/header-chrome';
 import { useSellerCapability } from '../../hooks/use-seller-capability';
 import { useAuth } from '../../providers/auth-provider';
@@ -41,10 +44,21 @@ function FooterLink({
 }) {
   return (
     <Link href={href} asChild>
-      <MotionPressable accessibilityRole="link" accessibilityLabel={title} preset="button">
+      <MotionPressable
+        accessibilityRole="link"
+        accessibilityLabel={title}
+        preset="button"
+      >
         <AppText
           role={site ? 'nav' : 'metadata'}
-          style={site ? siteLinkStyle : { color: designTokens.color.textSubdued, textDecorationLine: 'underline' }}
+          style={
+            site
+              ? siteLinkStyle
+              : {
+                  color: designTokens.color.textSubdued,
+                  textDecorationLine: 'underline',
+                }
+          }
         >
           {title}
         </AppText>
@@ -59,11 +73,20 @@ function ContactLink({ site = false }: { site?: boolean }) {
       accessibilityRole="link"
       accessibilityLabel="Связаться с оператором bidplace"
       preset="button"
-      onPress={() => { void Linking.openURL('mailto:work.evles@gmail.com'); }}
+      onPress={() => {
+        void Linking.openURL('mailto:work.evles@gmail.com');
+      }}
     >
       <AppText
         role={site ? 'nav' : 'metadata'}
-        style={site ? siteLinkStyle : { color: designTokens.color.textSubdued, textDecorationLine: 'underline' }}
+        style={
+          site
+            ? siteLinkStyle
+            : {
+                color: designTokens.color.textSubdued,
+                textDecorationLine: 'underline',
+              }
+        }
       >
         {site ? 'Поддержка' : 'Связаться с оператором'}
       </AppText>
@@ -72,7 +95,13 @@ function ContactLink({ site = false }: { site?: boolean }) {
 }
 
 /** Single source of legal destinations for auth and the public site footer. */
-export function LegalFooter({ variant = 'inline', createHref }: { variant?: 'inline' | 'site'; createHref?: Href }) {
+export function LegalFooter({
+  variant = 'inline',
+  createHref,
+}: {
+  variant?: 'inline' | 'site';
+  createHref?: Href;
+}) {
   if (variant === 'site') {
     return (
       <View style={{ gap: designTokens.space.x12 }}>
@@ -84,7 +113,9 @@ export function LegalFooter({ variant = 'inline', createHref }: { variant?: 'inl
             {mainLinks.map((link) => (
               <FooterLink key={link.title} {...link} site />
             ))}
-            {createHref ? <FooterLink href={createHref} title="Создать работу" site /> : null}
+            {createHref ? (
+              <FooterLink href={createHref} title="Создать работу" site />
+            ) : null}
           </View>
           <View style={{ flex: 1, minWidth: 0, gap: designTokens.space.x5 }}>
             <AppText role="nav" style={{ color: designTokens.color.gray2 }}>
@@ -110,7 +141,15 @@ export function LegalFooter({ variant = 'inline', createHref }: { variant?: 'inl
   }
 
   return (
-    <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: designTokens.space.x3, paddingVertical: designTokens.space.x4 }}>
+    <View
+      style={{
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        gap: designTokens.space.x3,
+        paddingVertical: designTokens.space.x4,
+      }}
+    >
       {links.map(({ id, title }) => (
         <FooterLink key={id} href={('/legal/' + id) as Href} title={title} />
       ))}
@@ -124,7 +163,9 @@ export function PublicFooter({ inset = false }: { inset?: boolean }) {
   const { width } = useWindowDimensions();
   const auth = useAuth();
   const capability = useSellerCapability();
-  const available = Math.min(width, designTokens.layout.phoneWidth) - designTokens.space.x12;
+  const available =
+    Math.min(width, designTokens.layout.phoneWidth) -
+    designTokens.space.x12;
   // Figma logo group is 345.5 × 66: mark 54, gap 12, wordmark 279.5.
   const scale = Math.max(0, Math.min(1, available / 345.5));
   const createHref = getMobileCreateHref({
@@ -137,7 +178,7 @@ export function PublicFooter({ inset = false }: { inset?: boolean }) {
     <View
       style={{
         marginHorizontal: inset ? -designTokens.space.pageGutter : 0,
-        paddingTop: designTokens.space.x14,
+        paddingTop: 60,
       }}
     >
       <View
