@@ -26,6 +26,7 @@ export function FilterSheet({
   onClose,
   title,
   titleVariant = 'default',
+  compact = false,
   showBack = false,
   onBack,
   onClear,
@@ -38,6 +39,7 @@ export function FilterSheet({
   onClose: () => void;
   title: string;
   titleVariant?: 'default' | 'directions';
+  compact?: boolean;
   showBack?: boolean;
   onBack?: () => void;
   onClear?: () => void;
@@ -81,6 +83,7 @@ export function FilterSheet({
           flex: 1,
           position: 'relative',
           alignItems: 'center',
+          justifyContent: compact ? 'flex-end' : undefined,
         }}
       >
         <OverlayDimmer onPress={onClose} />
@@ -88,14 +91,26 @@ export function FilterSheet({
           nativeID={dialogId}
           accessibilityViewIsModal
           accessibilityLabel={title}
-          style={filterSheetPanelStyle()}
+          style={filterSheetPanelStyle(compact)}
           {...(Platform.OS === 'web'
             ? ({ role: 'dialog', 'aria-modal': true } as object)
             : {})}
         >
+          {compact ? (
+            <View style={{ alignItems: 'center', height: 14 }}>
+              <View
+                style={{
+                  width: 36,
+                  height: 4,
+                  borderRadius: 4,
+                  backgroundColor: figmaTokens.color.muted,
+                }}
+              />
+            </View>
+          ) : null}
           <View
             style={[
-              filterSheetHeaderStyle(),
+              filterSheetHeaderStyle(compact),
               titleVariant === 'directions'
                 ? {
                     minHeight:
@@ -104,7 +119,8 @@ export function FilterSheet({
                 : null,
             ]}
           >
-            <MotionPressable
+            {!compact || showBack ? (
+              <MotionPressable
               accessibilityRole="button"
               accessibilityLabel={showBack ? 'Назад' : 'Закрыть'}
               hitSlop={figmaTokens.space.headerIconHitSlop}
@@ -124,13 +140,15 @@ export function FilterSheet({
                   titleVariant === 'directions' && showBack ? 2 : undefined
                 }
               />
-            </MotionPressable>
+              </MotionPressable>
+            ) : null}
             <AppText
               nativeID={titleId}
-              role={showBack ? 'profileHeading' : 'screenTitle'}
+              role={compact ? 'body' : showBack ? 'profileHeading' : 'screenTitle'}
               numberOfLines={1}
               style={[
                 filterSheetTitleStyle(),
+                compact ? { fontWeight: '600', fontSize: 16 } : null,
                 titleVariant === 'directions'
                   ? designTokens.typography.directionsSheetTitle
                   : null,
@@ -145,21 +163,28 @@ export function FilterSheet({
                 onPress={onClear}
               />
             ) : (
-              <View style={{ width: figmaTokens.size.iconButton }} />
+              compact ? null : (
+                <View style={{ width: figmaTokens.size.iconButton }} />
+              )
             )}
           </View>
           <ScrollView
-            style={{
-              flex: 1,
-              marginTop:
-                titleVariant === 'directions' ? 0 : figmaTokens.space.x2,
-            }}
+            style={
+              compact
+                ? { flexShrink: 1, marginTop: figmaTokens.space.x2 }
+                : {
+                    flex: 1,
+                    marginTop:
+                      titleVariant === 'directions' ? 0 : figmaTokens.space.x2,
+                  }
+            }
             contentContainerStyle={{
-              paddingTop:
-                titleVariant === 'directions'
+              paddingTop: compact
+                ? 0
+                : titleVariant === 'directions'
                   ? designTokens.authorApplication.directionsSearchGap
                   : figmaTokens.space.identityGap,
-              paddingBottom: figmaTokens.space.x4,
+              paddingBottom: compact ? 0 : figmaTokens.space.x4,
             }}
             keyboardShouldPersistTaps="handled"
           >
