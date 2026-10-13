@@ -100,11 +100,7 @@ export function CreatorHero({
         >
           <BrandLogo />
         </View>
-        <CreatorIdentity
-          profile={profile}
-          actions={actions}
-          tags={tagRow}
-        />
+        <CreatorIdentity profile={profile} actions={actions} tags={tagRow} />
       </View>
     </View>
   );
