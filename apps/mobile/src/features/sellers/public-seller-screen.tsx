@@ -161,7 +161,6 @@ export function PublicSellerScreen({
             aria-labelledby={`${panelId}-${tab}`}
             style={{
               backgroundColor: designTokens.color.canvas,
-              paddingHorizontal: designTokens.space.pageGutter,
               paddingTop:
                 tab === 'about'
                   ? designTokens.space.authorHeaderBottom
@@ -184,7 +183,7 @@ export function PublicSellerScreen({
                     flexDirection: 'row',
                     alignItems: 'center',
                     gap: designTokens.space.x2,
-                    paddingRight: designTokens.space.pageGutter,
+                    paddingRight: designTokens.layout.gutter,
                   }}
                 >
                   <FigmaButton

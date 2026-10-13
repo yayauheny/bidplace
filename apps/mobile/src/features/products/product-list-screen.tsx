@@ -136,7 +136,6 @@ export function ProductListScreen({
       <ScrollView
         testID="catalog-scroll-view"
         contentContainerStyle={{
-          paddingHorizontal: designTokens.space.pageGutter,
           paddingTop: designTokens.space.x10,
           paddingBottom: reserve,
           gap: designTokens.space.sectionGap,

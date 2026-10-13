@@ -108,7 +108,6 @@ export function PublicAuthorsScreen({
     <AppShell>
       <ScrollView
         contentContainerStyle={{
-          paddingHorizontal: designTokens.space.pageGutter,
           paddingTop: designTokens.space.x10,
           paddingBottom: reserve,
           gap: designTokens.space.sectionGap,

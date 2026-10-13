@@ -44,7 +44,6 @@ export function HomeScreen({ hideDock = false }: { hideDock?: boolean }) {
       <ScrollView
         testID="home-scroll"
         contentContainerStyle={{
-          paddingHorizontal: designTokens.space.pageGutter,
           paddingTop: designTokens.space.logoTop,
           paddingBottom: hideDock ? designTokens.space.x8 : reserve,
         }}

@@ -28,7 +28,7 @@ export function CreatorIdentity({
         flexDirection: 'row',
         alignItems: 'flex-start',
         gap: designTokens.space.x2,
-        paddingHorizontal: designTokens.space.x4,
+
         paddingBottom: designTokens.space.x5,
       }}
     >

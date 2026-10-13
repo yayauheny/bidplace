@@ -117,7 +117,6 @@ export const designTokens = {
     dockPad: 14,
     dockGap: 20,
     dockIconPad: 6,
-    pageGutter: 12,
     sectionGap: 20,
     // Figma Home Opening `439:4406` bottom (132+401) → Active auctions `439:4478` top 600.
     homeSectionStack: 67,

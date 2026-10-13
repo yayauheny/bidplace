@@ -35,7 +35,7 @@ export function CreatorHeader({
             flexDirection: 'row',
             justifyContent: 'space-between',
             alignItems: 'center',
-            paddingHorizontal: designTokens.space.x4,
+    
             marginBottom: designTokens.space.x5,
           }}
         >

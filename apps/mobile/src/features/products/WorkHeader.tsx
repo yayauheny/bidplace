@@ -31,7 +31,6 @@ export function WorkHeader({
       />
       <View
         style={{
-          paddingHorizontal: designTokens.space.pageGutter,
           paddingTop: designTokens.space.sectionGap,
           gap: designTokens.space.x10,
         }}

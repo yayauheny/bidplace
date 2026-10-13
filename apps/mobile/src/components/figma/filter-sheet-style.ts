@@ -12,7 +12,7 @@ export function filterSheetPanelStyle(
     ...(compact
       ? { borderTopLeftRadius: 32, borderTopRightRadius: 32 }
       : { height: (viewportHeight ?? '100%') as number | '100%' }),
-    paddingHorizontal: compact ? 20 : figmaTokens.space.pageGutter,
+    paddingHorizontal: compact ? 20 : figmaTokens.layout.gutter,
     paddingTop: compact ? 8 : figmaTokens.space.x5,
     paddingBottom: compact
       ? 0

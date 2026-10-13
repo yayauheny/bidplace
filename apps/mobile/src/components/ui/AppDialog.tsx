@@ -193,7 +193,7 @@ export function AppDialog({
       </View>
       <View
         style={{
-          paddingHorizontal: designTokens.space.pageGutter,
+          paddingHorizontal: designTokens.layout.gutter,
           gap: designTokens.space.x4,
         }}
       >
@@ -302,7 +302,7 @@ export function AppDialog({
           isMediaSheet || bare
             ? 0
             : isSheet
-              ? designTokens.space.pageGutter
+              ? designTokens.layout.gutter
               : width >= 600
                 ? designTokens.space.x8
                 : designTokens.space.x5,
@@ -345,7 +345,7 @@ export function AppDialog({
                   paddingBottom: isSheet
                     ? appDialogSheetBottomSpace(
                         bottomSpace ??
-                          designTokens.space.pageGutter + designTokens.space.x1,
+                          designTokens.layout.gutter + designTokens.space.x1,
                         insets.bottom,
                       )
                     : designTokens.space.x1,

@@ -123,7 +123,6 @@ export function ProductScreen({ publicId }: { publicId: string }) {
         >
         <View
           style={{
-            paddingHorizontal: designTokens.space.pageGutter,
             gap: designTokens.space.x10,
           }}
         >
@@ -184,10 +183,10 @@ export function ProductScreen({ publicId }: { publicId: string }) {
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                style={{ marginRight: -designTokens.space.pageGutter }}
+                style={{ marginRight: -designTokens.layout.gutter }}
                 contentContainerStyle={{
                   gap: designTokens.space.x3,
-                  paddingRight: designTokens.space.pageGutter,
+                  paddingRight: designTokens.layout.gutter,
                 }}
               >
                 {related.map((item) => (

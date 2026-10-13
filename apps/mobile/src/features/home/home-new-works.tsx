@@ -24,7 +24,7 @@ export function HomeNewWorks({ works }: { works: HomeWorkItem[] }) {
           flexDirection: 'row',
           alignItems: 'flex-end',
           justifyContent: 'space-between',
-          gap: designTokens.space.pageGutter,
+          gap: designTokens.layout.gutter,
         }}
       >
         <AppText role="sectionTitle" accessibilityRole="header">
@@ -38,7 +38,7 @@ export function HomeNewWorks({ works }: { works: HomeWorkItem[] }) {
       </View>
       <View
         style={{
-          marginHorizontal: -designTokens.space.pageGutter,
+          marginHorizontal: -designTokens.layout.gutter,
           minWidth: 0,
           alignSelf: 'stretch',
           overflow: 'hidden',
@@ -52,8 +52,8 @@ export function HomeNewWorks({ works }: { works: HomeWorkItem[] }) {
           contentContainerStyle={{
             flexDirection: 'row',
             alignItems: 'flex-start',
-            gap: designTokens.space.pageGutter,
-            paddingHorizontal: designTokens.space.pageGutter,
+            gap: designTokens.layout.gutter,
+            paddingHorizontal: designTokens.layout.gutter,
           }}
         >
           {works.map((item) => {
