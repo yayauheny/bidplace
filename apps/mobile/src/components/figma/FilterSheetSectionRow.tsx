@@ -33,7 +33,7 @@ export function FilterSheetSectionRow({
       ]}
     >
       <View style={{ flex: 1, minWidth: 0 }}>
-        <AppText role={compact ? "body" : "profileHeading"} numberOfLines={1}>
+        <AppText role={compact ? 'body' : 'profileHeading'} numberOfLines={1}>
           {label}
         </AppText>
         {valuePreview && !compact ? (
@@ -42,8 +42,13 @@ export function FilterSheetSectionRow({
           </AppText>
         ) : null}
       </View>
-      {compact && valuePreview && valuePreview !== "Не выбрано" ? (
-        <AppText role="caption" tone="secondary" numberOfLines={1} style={{ maxWidth: "38%" }}>
+      {compact && valuePreview && valuePreview !== 'Не выбрано' ? (
+        <AppText
+          role="caption"
+          tone="secondary"
+          numberOfLines={1}
+          style={{ maxWidth: '38%' }}
+        >
           {valuePreview}
         </AppText>
       ) : null}
