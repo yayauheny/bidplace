@@ -1,9 +1,9 @@
 import { Link } from 'expo-router';
-import { Heart, Pencil, Trash2 } from 'lucide-react-native';
 import { View } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
 
 import { WorkCoverCard } from '../../components/figma/WorkCoverCard';
+import { FigmaIcon } from '../../components/figma/FigmaIcon';
 import { MotionPressable } from '../../components/ui';
 
 type Item = {
@@ -67,7 +67,7 @@ export function CreatorWorkCard({
                 preset="icon"
                 style={actionStyle}
               >
-                <Pencil size={21} color={designTokens.color.ink} />
+                <FigmaIcon name="pencil-edit-01" size={20} />
               </MotionPressable>
             </Link>
             <MotionPressable
@@ -77,7 +77,7 @@ export function CreatorWorkCard({
               preset="icon"
               style={[actionStyle, { backgroundColor: designTokens.color.danger }]}
             >
-              <Trash2 size={21} color={designTokens.color.white} />
+              <FigmaIcon name="delete-02" size={20} color={designTokens.color.white} />
             </MotionPressable>
           </>
         ) : null}
@@ -88,7 +88,7 @@ export function CreatorWorkCard({
           preset="icon"
           style={actionStyle}
         >
-          <Heart size={22} color={designTokens.color.ink} />
+          <FigmaIcon name="heart" size={20} strokeWidthPx={1.5} />
         </MotionPressable>
       </View>
     </View>
