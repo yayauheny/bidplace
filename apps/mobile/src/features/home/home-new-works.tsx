@@ -1,4 +1,3 @@
-import { useRouter } from 'expo-router';
 import { ScrollView, View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
@@ -8,8 +7,6 @@ import { AppText } from '../../components/ui';
 import { type HomeWorkItem } from './home-sections';
 
 export function HomeNewWorks({ works }: { works: HomeWorkItem[] }) {
-  const { push } = useRouter();
-
   return (
     <View
       nativeID="home-new-works"
@@ -33,7 +30,7 @@ export function HomeNewWorks({ works }: { works: HomeWorkItem[] }) {
         <FigmaButton
           label="Смотреть все"
           variant="muted"
-          onPress={() => push('/works')}
+          href="/works"
         />
       </View>
       <View

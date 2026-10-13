@@ -1,4 +1,3 @@
-import { useRouter } from 'expo-router';
 import { Platform, ScrollView, View, type TextStyle } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
@@ -19,7 +18,6 @@ const openingBioWebClamp = {
 } as unknown as TextStyle;
 
 export function HomeOpening({ selection }: { selection: HomeCuratorSelection }) {
-  const router = useRouter();
   const image = selection.work.images[0];
   const note = selection.note?.trim() || null;
 
@@ -127,7 +125,7 @@ export function HomeOpening({ selection }: { selection: HomeCuratorSelection }) 
             <FigmaButton
               label="Смотреть профиль"
               variant="muted"
-              onPress={() => router.push(`/seller/${selection.curator.slug}`)}
+              href={`/seller/${selection.curator.slug}`}
             />
           </View>
           <View

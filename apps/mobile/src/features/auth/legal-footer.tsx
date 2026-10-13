@@ -4,6 +4,9 @@ import { designTokens } from '@bidplace/design-tokens';
 import type { LegalDocumentId } from '@bidplace/contracts';
 
 import { BidplaceMark, BidplaceWordmark } from '../../components/branding/BidplaceBrand';
+import { getMobileCreateHref } from '../../components/layout/header-chrome';
+import { useSellerCapability } from '../../hooks/use-seller-capability';
+import { useAuth } from '../../providers/auth-provider';
 import { AppText } from '../../components/ui';
 import { MotionPressable } from '../../components/ui/MotionPressable';
 
@@ -19,12 +22,12 @@ const mainLinks: { href: Href; title: string }[] = [
   { href: '/works', title: 'Все работы' },
   { href: '/authors', title: 'Все авторы' },
   { href: '/profile?intro=1', title: 'Стать автором' },
-  { href: '/products/new', title: 'Создать работу' },
 ];
 
 const siteLinkStyle = {
   color: designTokens.color.inkStrong,
   fontFamily: designTokens.typography.sectionTitle.fontFamily,
+  fontWeight: designTokens.typography.sectionTitle.fontWeight,
 };
 
 function FooterLink({
@@ -69,7 +72,7 @@ function ContactLink({ site = false }: { site?: boolean }) {
 }
 
 /** Single source of legal destinations for auth and the public site footer. */
-export function LegalFooter({ variant = 'inline' }: { variant?: 'inline' | 'site' }) {
+export function LegalFooter({ variant = 'inline', createHref }: { variant?: 'inline' | 'site'; createHref?: Href }) {
   if (variant === 'site') {
     return (
       <View style={{ gap: designTokens.space.x12 }}>
@@ -81,6 +84,7 @@ export function LegalFooter({ variant = 'inline' }: { variant?: 'inline' | 'site
             {mainLinks.map((link) => (
               <FooterLink key={link.title} {...link} site />
             ))}
+            {createHref ? <FooterLink href={createHref} title="Создать работу" site /> : null}
           </View>
           <View style={{ flex: 1, minWidth: 0, gap: designTokens.space.x5 }}>
             <AppText role="nav" style={{ color: designTokens.color.gray2 }}>
@@ -118,9 +122,16 @@ export function LegalFooter({ variant = 'inline' }: { variant?: 'inline' | 'site
 /** Full-width site footer for scrollable public pages only (not auth or editors). */
 export function PublicFooter({ inset = false }: { inset?: boolean }) {
   const { width } = useWindowDimensions();
+  const auth = useAuth();
+  const capability = useSellerCapability();
   const available = Math.min(width, designTokens.layout.phoneWidth) - designTokens.space.x12;
   // Figma logo group is 345.5 × 66: mark 54, gap 12, wordmark 279.5.
-  const scale = Math.min(1, available / 345.5);
+  const scale = Math.max(0, Math.min(1, available / 345.5));
+  const createHref = getMobileCreateHref({
+    isAuthenticated: auth.isAuthenticated,
+    sellerStatus: capability.status,
+    returnPath: '/',
+  });
 
   return (
     <View
@@ -150,7 +161,7 @@ export function PublicFooter({ inset = false }: { inset?: boolean }) {
           <BidplaceMark size={54 * scale} />
           <BidplaceWordmark width={279.5 * scale} height={66 * scale} />
         </View>
-        <LegalFooter variant="site" />
+        <LegalFooter variant="site" createHref={createHref} />
       </View>
     </View>
   );

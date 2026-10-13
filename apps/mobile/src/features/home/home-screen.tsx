@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Link, useRouter } from 'expo-router';
+import { Link } from 'expo-router';
 import { Bell } from 'lucide-react-native';
 import { ScrollView, View } from 'react-native';
 
@@ -20,13 +20,24 @@ import { homeSectionPlan } from './home-sections';
 
 export function HomeScreen({ hideDock = false }: { hideDock?: boolean }) {
   const api = useApiClient();
-  const router = useRouter();
   const home = useQuery({
     queryKey: ['portfolio-home'],
     queryFn: ({ signal }) => api.portfolio.home({ signal }),
   });
   const pageStatus = infrastructurePageFetchStatus(home);
   const plan = homeSectionPlan(home.data);
+
+  // Keep the infrastructure error/loading screen full-height, as before.
+  if (pageStatus !== 'ready') {
+    return (
+      <AppShell hideDock={hideDock}>
+        <InfrastructurePageStatus
+          status={pageStatus}
+          onRetry={() => void home.refetch()}
+        />
+      </AppShell>
+    );
+  }
 
   return (
     <AppShell hideDock={hideDock}>
@@ -68,6 +79,7 @@ export function HomeScreen({ hideDock = false }: { hideDock?: boolean }) {
               style={{
                 color: designTokens.color.inkStrong,
                 fontFamily: designTokens.typography.sectionTitle.fontFamily,
+                fontWeight: designTokens.typography.sectionTitle.fontWeight,
               }}
             >
               Для вас
@@ -94,13 +106,7 @@ export function HomeScreen({ hideDock = false }: { hideDock?: boolean }) {
             </MotionPressable>
           </Link>
         </View>
-        {pageStatus !== 'ready' ? (
-          <InfrastructurePageStatus
-            status={pageStatus}
-            onRetry={() => void home.refetch()}
-          />
-        ) : (
-          <View style={{ gap: designTokens.space.homeSectionStack, minWidth: 0 }}>
+        <View style={{ gap: designTokens.space.homeSectionStack, minWidth: 0 }}>
             {plan.opening ? <HomeOpening selection={plan.opening} /> : null}
             {plan.showWorks ? <HomeNewWorks works={plan.works} /> : null}
             {plan.showAuthors ? <HomeNewAuthors authors={plan.authors} /> : null}
@@ -108,7 +114,7 @@ export function HomeScreen({ hideDock = false }: { hideDock?: boolean }) {
               <PrimaryButton
                 label="Все авторы"
                 width="full"
-                onPress={() => router.push('/authors')}
+                href="/authors"
               />
             ) : null}
             {plan.showEmpty ? (
@@ -120,17 +126,16 @@ export function HomeScreen({ hideDock = false }: { hideDock?: boolean }) {
                 <PrimaryButton
                   label="Все работы"
                   width="full"
-                  onPress={() => router.push('/works')}
+                  href="/works"
                 />
                 <PrimaryButton
                   label="Все авторы"
                   width="full"
-                  onPress={() => router.push('/authors')}
+                  href="/authors"
                 />
               </View>
             ) : null}
-          </View>
-        )}
+        </View>
         <PublicFooter inset />
       </ScrollView>
     </AppShell>
