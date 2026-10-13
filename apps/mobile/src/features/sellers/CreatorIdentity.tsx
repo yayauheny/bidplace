@@ -2,14 +2,16 @@ import { View } from 'react-native';
 import type { PortfolioWorkDetailResponse } from '@bidplace/contracts';
 import { designTokens } from '@bidplace/design-tokens';
 
-import { AppText, ResilientRemoteImage } from '../../components/ui';
+import { AppText, MotionPressable, ResilientRemoteImage } from '../../components/ui';
 import { getApiAssetUrl } from '../../lib/environment';
 import { CreatorSocialActions } from './CreatorSocialActions';
 
 export function CreatorIdentity({
   profile,
+  onSubscribe,
 }: {
   profile: PortfolioWorkDetailResponse['author'];
+  onSubscribe: () => void;
 }) {
   const country = /^[a-z]{2}$/i.test(profile.country)
     ? new Intl.DisplayNames(['ru'], { type: 'region' }).of(
@@ -73,7 +75,27 @@ export function CreatorIdentity({
             </AppText>
           </View>
         </View>
-        <View testID="creator-actions">
+        <View
+          testID="creator-actions"
+          style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: designTokens.space.x1 }}
+        >
+          <MotionPressable
+            accessibilityRole="button"
+            accessibilityLabel="Подписаться на автора"
+            onPress={onSubscribe}
+            preset="button"
+            style={{
+              minHeight: 42,
+              borderRadius: designTokens.radius.pill,
+              paddingHorizontal: designTokens.space.x4,
+              backgroundColor: designTokens.color.solid,
+              justifyContent: 'center',
+            }}
+          >
+            <AppText role="bodySmall" style={{ color: designTokens.color.white }}>
+              Подписаться
+            </AppText>
+          </MotionPressable>
           <CreatorSocialActions profile={profile} />
         </View>
       </View>
