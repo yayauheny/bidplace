@@ -28,7 +28,7 @@ export function CreatorIdentity({
         flexDirection: 'row',
         alignItems: 'flex-start',
         gap: designTokens.space.x2,
-        paddingHorizontal: designTokens.space.pageGutter,
+        paddingHorizontal: designTokens.space.x4,
         paddingBottom: designTokens.space.x5,
       }}
     >
@@ -100,6 +100,7 @@ export function CreatorIdentity({
         <ScrollView
           horizontal
           testID="creator-actions"
+          style={{ width: '100%', minWidth: 0, flexGrow: 0 }}
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingRight: designTokens.space.x3 }}
         >
