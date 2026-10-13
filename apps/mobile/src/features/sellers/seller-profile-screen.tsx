@@ -465,9 +465,12 @@ export function SellerProfileScreen() {
   fieldsEditableSeen.current = fieldsEditable;
 
   useEffect(() => {
-    if (profile || !auth.user?.slug || form.getValues('slug')) return;
-    form.setValue('slug', auth.user.slug, { shouldValidate: true });
-  }, [auth.user?.slug, form, profile]);
+    const sessionSlug = canWritePrivateCache(queryClient, authEpoch)
+      ? queryClient.getQueryData<{ slug?: string | null }>(authKeys.session)?.slug
+      : null;
+    if (profile || !sessionSlug || form.getValues('slug')) return;
+    form.setValue('slug', sessionSlug, { shouldValidate: true });
+  }, [auth.user?.slug, authEpoch, form, profile, queryClient]);
 
   useEffect(() => {
     if (query.isLoading || !profile) return;
@@ -595,11 +598,11 @@ export function SellerProfileScreen() {
     setPhotoBlob(null);
     setPhotoUri(null);
     // Read the installed session, not a possibly stale auth context during handoff.
-    const sessionSlug = canWritePrivateCache(queryClient, authEpoch)
-      ? queryClient.getQueryData<{ slug?: string | null }>(authKeys.session)
-          ?.slug
+    const sessionActive = canWritePrivateCache(queryClient, authEpoch);
+    const sessionSlug = sessionActive
+      ? queryClient.getQueryData<{ slug?: string | null }>(authKeys.session)?.slug
       : null;
-    const cached = canWritePrivateCache(queryClient, authEpoch)
+    const cached = sessionActive
       ? queryClient.getQueryData<SellerProfileResponse>(sellerProfileQueryKey)
       : undefined;
     const cachedProfile = cached?.sellerProfile;
