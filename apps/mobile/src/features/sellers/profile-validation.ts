@@ -99,7 +99,7 @@ export const profileDraftSchema = z
   })
   .strict();
 
-const emptyProfileDraft = {
+export const emptyProfileDraft: z.input<typeof profileDraftSchema> = {
   slug: '',
   fullName: '',
   discipline: '',

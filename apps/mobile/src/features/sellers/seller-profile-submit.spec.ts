@@ -16,6 +16,8 @@ Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
 const harness = vi.hoisted(() => ({
   params: {} as { intro?: string; step?: string },
+  focused: true,
+  authSlug: null as string | null,
   logout: vi.fn<() => Promise<void>>(),
   replace: vi.fn(),
   push: vi.fn(),
@@ -25,6 +27,7 @@ const harness = vi.hoisted(() => ({
   createProfile: vi.fn(),
   claimSlug: vi.fn(),
   getAuthorApplicationPhoto: vi.fn(),
+  advanceAuthorApplication: vi.fn(),
   submitAuthorApplication: vi.fn(),
   launchImageLibraryAsync: vi.fn(),
 }));
@@ -55,7 +58,7 @@ vi.mock('react-native', () => ({
 }));
 
 vi.mock('expo-router', () => ({
-  useIsFocused: () => true,
+  useIsFocused: () => harness.focused,
   useRouter: () => ({
     replace: harness.replace,
     push: harness.push,
@@ -80,6 +83,7 @@ vi.mock('../../providers/auth-provider', () => ({
       email: 'author@example.com',
       emailVerifiedAt: '2026-09-27T00:00:00.000Z',
       role: 'user',
+      slug: harness.authSlug,
     },
   }),
 }));
@@ -96,7 +100,7 @@ vi.mock('../../providers/api-provider', () => ({
     },
     portfolio: {
       getAuthorApplicationPhoto: harness.getAuthorApplicationPhoto,
-      advanceAuthorApplication: vi.fn(),
+      advanceAuthorApplication: harness.advanceAuthorApplication,
       submitAuthorApplication: harness.submitAuthorApplication,
     },
     categories: {
@@ -383,26 +387,32 @@ function submitResponse(
   };
 }
 
-function mount(sessionId = 'user-a') {
+function mount(sessionId = 'user-a', sessionSlug: string | null = null) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
-  queryClient.setQueryData(authKeys.session, { id: sessionId });
+  queryClient.setQueryData(authKeys.session, {
+    id: sessionId,
+    slug: sessionSlug,
+  });
   const container = document.createElement('div');
   document.body.append(container);
   const root: Root = createRoot(container);
-  act(() => {
-    root.render(
-      createElement(
-        QueryClientProvider,
-        { client: queryClient },
-        createElement(SellerProfileScreen),
-      ),
+  const render = () =>
+    createElement(
+      QueryClientProvider,
+      { client: queryClient },
+      createElement(SellerProfileScreen),
     );
+  act(() => {
+    root.render(render());
   });
   return {
     container,
     queryClient,
+    rerender() {
+      act(() => root.render(render()));
+    },
     unmount() {
       act(() => {
         root.unmount();
@@ -509,6 +519,8 @@ function buttonDisabled(container: ParentNode, label: string) {
 
 beforeEach(() => {
   harness.params = {};
+  harness.focused = true;
+  harness.authSlug = null;
   harness.logout.mockReset();
   harness.replace.mockReset();
   harness.push.mockReset();
@@ -518,6 +530,7 @@ beforeEach(() => {
   harness.createProfile.mockReset();
   harness.claimSlug.mockReset();
   harness.getAuthorApplicationPhoto.mockReset();
+  harness.advanceAuthorApplication.mockReset();
   harness.submitAuthorApplication.mockReset();
   harness.launchImageLibraryAsync.mockReset();
   harness.logout.mockResolvedValue(undefined);
@@ -531,6 +544,9 @@ beforeEach(() => {
   harness.updateProfile.mockImplementation(async () =>
     response('APPROVED', 'DRAFT'),
   );
+  harness.advanceAuthorApplication.mockResolvedValue({
+    application: { applicationStage: 'ABOUT' },
+  });
   harness.submitAuthorApplication.mockImplementation(async () =>
     submitResponse('APPROVED', 'PENDING_REVIEW'),
   );
@@ -1386,6 +1402,85 @@ describe('seller profile save reconciliation', () => {
     view.unmount();
   });
 
+  it('reports a photo picker failure and accepts a later selection', async () => {
+    const replacementPhoto = new Blob(['replacement'], { type: 'image/png' });
+    harness.getMyProfile.mockResolvedValue(response('APPROVED', 'DRAFT'));
+    harness.updateProfile.mockResolvedValue(savedProfile());
+    harness.launchImageLibraryAsync
+      .mockRejectedValueOnce(new Error('picker unavailable'))
+      .mockResolvedValueOnce({
+        canceled: false,
+        assets: [{ uri: 'blob:replacement' }],
+      });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({ blob: async () => replacementPhoto })),
+    );
+    const view = mount();
+    await until(
+      view.container,
+      () =>
+        findButton(view.container, 'Изменить фото') instanceof
+        HTMLButtonElement,
+      'photo',
+    );
+
+    click(view.container, 'Изменить фото');
+    await until(
+      view.container,
+      () =>
+        view.container.textContent?.includes('Не удалось выбрать фото') ===
+        true,
+      'photo picker error',
+    );
+    expect(harness.updateProfile).not.toHaveBeenCalled();
+
+    click(view.container, 'Изменить фото');
+    await until(
+      view.container,
+      () =>
+        view.container.textContent?.includes('Не удалось выбрать фото') !==
+        true,
+      'photo picker retry',
+    );
+    click(view.container, 'Сохранить');
+    await flush();
+    expect(harness.updateProfile.mock.calls[0]?.[1]).toBe(replacementPhoto);
+    view.unmount();
+  });
+
+  it('ignores a photo picker response after the screen unmounts', async () => {
+    let finishPicker: (result: {
+      canceled: boolean;
+      assets: Array<{ uri: string }>;
+    }) => void = () => undefined;
+    harness.getMyProfile.mockResolvedValue(response('APPROVED', 'DRAFT'));
+    harness.launchImageLibraryAsync.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          finishPicker = resolve;
+        }),
+    );
+    const readBlob = vi.fn();
+    vi.stubGlobal('fetch', readBlob);
+    const view = mount();
+    await until(
+      view.container,
+      () =>
+        findButton(view.container, 'Изменить фото') instanceof
+        HTMLButtonElement,
+      'photo',
+    );
+    click(view.container, 'Изменить фото');
+    view.unmount();
+
+    await act(async () => {
+      finishPicker({ canceled: false, assets: [{ uri: 'blob:late' }] });
+      await Promise.resolve();
+    });
+    expect(readBlob).not.toHaveBeenCalled();
+  });
+
   it('ignores an older photo read after a newer selection', async () => {
     const firstPhoto = new Blob(['first'], { type: 'image/png' });
     const secondPhoto = new Blob(['second'], { type: 'image/png' });
@@ -1443,6 +1538,370 @@ describe('seller profile save reconciliation', () => {
     expect(harness.updateProfile.mock.calls[0]?.[1]).toBe(secondPhoto);
     vi.unstubAllGlobals();
     view.unmount();
+  });
+
+  it('preserves the claimed slug when the auth epoch resets the draft', async () => {
+    harness.authSlug = 'claimed-author';
+    harness.getMyProfile.mockRejectedValue(
+      new ApiClientError('missing', { kind: 'not_found', status: 404 }),
+    );
+    const view = mount('user-a', 'claimed-author');
+    await until(
+      view.container,
+      () => {
+        const input = view.container.querySelector<HTMLInputElement>(
+          '[aria-label="Никнейм"]',
+        );
+        return (
+          input instanceof HTMLInputElement && input.value === 'claimed-author'
+        );
+      },
+      'claimed slug',
+    );
+    await act(async () => {
+      advanceAuthEpoch(view.queryClient);
+    });
+    await flush();
+    expect(inputValue(view.container, 'Никнейм')).toBe('claimed-author');
+    view.unmount();
+  });
+
+  it('hydrates only the new session slug even if the auth context is stale', async () => {
+    harness.authSlug = 'previous-author';
+    harness.getMyProfile.mockRejectedValue(
+      new ApiClientError('missing', { kind: 'not_found', status: 404 }),
+    );
+    const view = mount('user-a', 'previous-author');
+    await until(
+      view.container,
+      () => {
+        const input = view.container.querySelector<HTMLInputElement>(
+          '[aria-label="Никнейм"]',
+        );
+        return (
+          input instanceof HTMLInputElement && input.value === 'previous-author'
+        );
+      },
+      'previous slug',
+    );
+    await act(async () => {
+      await clearAuthenticatedSession(view.queryClient);
+      view.queryClient.setQueryData(authKeys.session, {
+        id: 'user-b',
+        slug: 'next-author',
+      });
+      advanceAuthEpoch(view.queryClient);
+    });
+    await until(
+      view.container,
+      () =>
+        view.container.querySelector<HTMLInputElement>('[aria-label="Никнейм"]')
+          ?.value === 'next-author',
+      'new session slug',
+    );
+    view.unmount();
+  });
+
+  it('does not restore the old slug and keeps the new account nickname editable', async () => {
+    harness.authSlug = 'previous-author';
+    harness.getMyProfile.mockRejectedValue(
+      new ApiClientError('missing', { kind: 'not_found', status: 404 }),
+    );
+    const view = mount('user-a', 'previous-author');
+    await until(
+      view.container,
+      () =>
+        view.container.querySelector<HTMLInputElement>('[aria-label="Никнейм"]')
+          ?.value === 'previous-author',
+      'previous slug',
+    );
+    await act(async () => {
+      await clearAuthenticatedSession(view.queryClient);
+      view.queryClient.setQueryData(authKeys.session, {
+        id: 'user-b',
+        slug: null,
+      });
+      advanceAuthEpoch(view.queryClient);
+    });
+    await until(
+      view.container,
+      () => {
+        const field = view.container.querySelector<HTMLInputElement>(
+          '[aria-label="Никнейм"]',
+        );
+        return (
+          field instanceof HTMLInputElement &&
+          field.value === '' &&
+          !field.disabled
+        );
+      },
+      'new account editable nickname',
+    );
+    view.unmount();
+  });
+
+  it('closes the old account exit dialog when the session changes', async () => {
+    harness.params = { step: '2' };
+    harness.getMyProfile.mockResolvedValue(response('DRAFT', 'DRAFT'));
+    const view = mount();
+    await until(
+      view.container,
+      () => findButton(view.container, 'Закрыть') instanceof HTMLButtonElement,
+      'close',
+    );
+    setInput(view.container, 'Telegram', '@maker_art');
+    click(view.container, 'Закрыть');
+    expect(findButton(view.container, 'Прервать')).toBeTruthy();
+
+    const nextProfile = response('DRAFT', 'DRAFT');
+    await act(async () => {
+      await clearAuthenticatedSession(view.queryClient);
+      view.queryClient.setQueryData(authKeys.session, { id: 'user-b' });
+      view.queryClient.setQueryData(['seller', 'profile'], nextProfile);
+      advanceAuthEpoch(view.queryClient);
+    });
+    await flush();
+    expect(findButton(view.container, 'Прервать')).toBeUndefined();
+    view.unmount();
+  });
+
+  it('does not rewind an advanced wizard stage when a previous profile refetch resolves late', async () => {
+    const draft = response('DRAFT', 'DRAFT');
+    draft.sellerProfile.applicationStage = 'CONTACTS';
+    const advanced = response('DRAFT', 'DRAFT');
+    advanced.sellerProfile.applicationStage = 'ABOUT';
+    let finishOldRead: (value: typeof draft) => void = () => undefined;
+    harness.params = { step: '2' };
+    harness.getMyProfile
+      .mockResolvedValueOnce(draft)
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            finishOldRead = resolve;
+          }),
+      )
+      .mockResolvedValue(advanced);
+    harness.updateProfile.mockResolvedValue(draft);
+    const view = mount();
+    await until(
+      view.container,
+      () =>
+        findButton(view.container, 'Продолжить') instanceof HTMLButtonElement &&
+        !buttonDisabled(view.container, 'Продолжить'),
+      'continue',
+    );
+    click(view.container, 'Продолжить');
+    await until(
+      view.container,
+      () => harness.getMyProfile.mock.calls.length >= 2,
+      'in-flight stale profile refetch',
+    );
+    await until(
+      view.container,
+      () => harness.advanceAuthorApplication.mock.calls.length === 1,
+      'stage advance',
+    );
+    await until(
+      view.container,
+      () => harness.push.mock.calls.length === 1,
+      'next step',
+    );
+    expect(harness.push).toHaveBeenCalledWith('/profile?step=3');
+    await act(async () => {
+      finishOldRead(draft);
+      await Promise.resolve();
+    });
+    await flush();
+    const current = view.queryClient.getQueryData<ReturnType<typeof response>>([
+      'seller',
+      'profile',
+    ]);
+    expect(current?.sellerProfile.applicationStage).toBe('ABOUT');
+    view.unmount();
+  });
+
+  it('does not navigate after focus leaves and returns during a step save', async () => {
+    let finishSave: (saved: ReturnType<typeof savedProfile>) => void = () =>
+      undefined;
+    const original = response('DRAFT', 'DRAFT');
+    const savedDraft = {
+      ...original,
+      sellerProfile: { ...original.sellerProfile, city: 'Late city' },
+    };
+    harness.params = { step: '1' };
+    harness.getMyProfile
+      .mockResolvedValueOnce(original)
+      .mockResolvedValue(savedDraft);
+    harness.updateProfile.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finishSave = resolve;
+        }),
+    );
+    const view = mount();
+    await until(
+      view.container,
+      () =>
+        findButton(view.container, 'Продолжить') instanceof HTMLButtonElement &&
+        !buttonDisabled(view.container, 'Продолжить'),
+      'continue',
+    );
+    click(view.container, 'Продолжить');
+    await until(
+      view.container,
+      () => harness.updateProfile.mock.calls.length === 1,
+      'pending save',
+    );
+
+    harness.focused = false;
+    view.rerender();
+    harness.focused = true;
+    view.rerender();
+    await act(async () => {
+      finishSave(savedDraft);
+      await Promise.resolve();
+    });
+    await flush();
+    expect(harness.push).not.toHaveBeenCalled();
+    expect(view.queryClient.getQueryData(['seller', 'profile'])).toEqual(
+      savedDraft,
+    );
+
+    harness.updateProfile.mockResolvedValueOnce(response('DRAFT', 'DRAFT'));
+    click(view.container, 'Продолжить');
+    await flush();
+    expect(harness.updateProfile).toHaveBeenCalledTimes(2);
+    expect(harness.push).toHaveBeenCalledWith('/profile?step=2');
+    view.unmount();
+  });
+
+  it('does not navigate or restore a profile after the screen unmounts during a step save', async () => {
+    let finishSave: (saved: ReturnType<typeof savedProfile>) => void = () =>
+      undefined;
+    const original = response('DRAFT', 'DRAFT');
+    harness.params = { step: '1' };
+    harness.getMyProfile.mockResolvedValue(original);
+    harness.updateProfile.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          finishSave = resolve;
+        }),
+    );
+    const view = mount();
+    await until(
+      view.container,
+      () =>
+        findButton(view.container, 'Продолжить') instanceof HTMLButtonElement &&
+        !buttonDisabled(view.container, 'Продолжить'),
+      'continue',
+    );
+    click(view.container, 'Продолжить');
+    await until(
+      view.container,
+      () => harness.updateProfile.mock.calls.length === 1,
+      'pending save',
+    );
+
+    view.unmount();
+    await act(async () => {
+      finishSave(savedProfile({ city: 'Late city' }));
+      await Promise.resolve();
+    });
+    await flush();
+    expect(harness.push).not.toHaveBeenCalled();
+    expect(view.queryClient.getQueryData(['seller', 'profile'])).toEqual(
+      original,
+    );
+  });
+
+  it('keeps a confirmed pending revision when submission completes off-screen', async () => {
+    let finishSubmit: (
+      result: ReturnType<typeof submitResponse>,
+    ) => void = () => undefined;
+    harness.getMyProfile.mockResolvedValue(response('APPROVED', 'DRAFT'));
+    harness.updateProfile.mockResolvedValue(savedProfile());
+    harness.submitAuthorApplication.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          finishSubmit = resolve;
+        }),
+    );
+    const view = mount();
+    await until(
+      view.container,
+      () =>
+        findButton(view.container, 'Отправить на проверку') instanceof
+          HTMLButtonElement &&
+        !buttonDisabled(view.container, 'Отправить на проверку'),
+      'submit',
+    );
+    click(view.container, 'Отправить на проверку');
+    await until(
+      view.container,
+      () => harness.submitAuthorApplication.mock.calls.length === 1,
+      'pending submission',
+    );
+
+    harness.focused = false;
+    view.rerender();
+    await act(async () => {
+      finishSubmit(submitResponse('APPROVED', 'PENDING_REVIEW'));
+      await Promise.resolve();
+    });
+    await until(
+      view.container,
+      () =>
+        view.queryClient.getQueryData<ReturnType<typeof response>>([
+          'seller',
+          'profile',
+        ])?.editingRevision?.status === 'PENDING_REVIEW',
+      'confirmed revision',
+    );
+    harness.focused = true;
+    view.rerender();
+    expect(findButton(view.container, 'Отправить на проверку')).toBeUndefined();
+    view.unmount();
+  });
+
+  it('does not apply a pending submission after the screen unmounts', async () => {
+    let finishSubmit: (
+      result: ReturnType<typeof submitResponse>,
+    ) => void = () => undefined;
+    harness.getMyProfile.mockResolvedValue(response('APPROVED', 'DRAFT'));
+    harness.updateProfile.mockResolvedValue(savedProfile());
+    harness.submitAuthorApplication.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          finishSubmit = resolve;
+        }),
+    );
+    const view = mount();
+    await until(
+      view.container,
+      () =>
+        findButton(view.container, 'Отправить на проверку') instanceof
+          HTMLButtonElement &&
+        !buttonDisabled(view.container, 'Отправить на проверку'),
+      'submit',
+    );
+    click(view.container, 'Отправить на проверку');
+    await until(
+      view.container,
+      () => harness.submitAuthorApplication.mock.calls.length === 1,
+      'pending submit',
+    );
+    const savedAtUnmount = view.queryClient.getQueryData(['seller', 'profile']);
+    view.unmount();
+    await act(async () => {
+      finishSubmit(submitResponse('APPROVED', 'PENDING_REVIEW'));
+      await Promise.resolve();
+    });
+    await flush();
+    expect(view.queryClient.getQueryData(['seller', 'profile'])).toEqual(
+      savedAtUnmount,
+    );
+    expect(harness.push).not.toHaveBeenCalled();
+    expect(harness.replace).not.toHaveBeenCalled();
   });
 
   it('drops a save from the previous session after logout and login', async () => {

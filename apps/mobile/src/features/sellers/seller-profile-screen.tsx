@@ -40,6 +40,7 @@ import {
 } from '../../errors';
 import { getApiAssetUrl } from '../../lib/environment';
 import {
+  authKeys,
   canWritePrivateCache,
   categoryKeys,
   currentAuthEpoch,
@@ -60,6 +61,7 @@ import { AuthorApplicationExitConfirm } from './author-application-exit-confirm'
 import { AuthorDirectionsPickerSheet } from './author-directions-picker-sheet';
 import { AuthorIntroDialog } from './AuthorIntroDialog';
 import {
+  emptyProfileDraft,
   profileDraftAllowsSave,
   profileDraftSchema,
 } from './profile-validation';
@@ -88,22 +90,21 @@ import {
 } from './seller-profile-wizard';
 import { persistedFieldOverrides } from './reconcile-saved-fields';
 
-const emptyFields: ProfileFields = {
-  slug: '',
-  fullName: '',
-  discipline: '',
-  directionCategoryIds: [],
-  country: '',
-  city: '',
-  practice: '',
-  socialLink: '',
-  telegramUrl: '',
-  instagramUrl: '',
-  websiteUrl: '',
-  publicEmail: '',
-  shortDescription: '',
-};
 const sellerProfileQueryKey = ['seller', 'profile'] as const;
+const profileFieldOrder = [
+  'slug',
+  'fullName',
+  'country',
+  'city',
+  'telegramUrl',
+  'instagramUrl',
+  'websiteUrl',
+  'publicEmail',
+  'directionCategoryIds',
+  'discipline',
+  'practice',
+  'shortDescription',
+] as const;
 
 type SubmittedAuthorApplication = {
   application: {
@@ -282,6 +283,12 @@ function useProfileData() {
 
 export function SellerProfileScreen() {
   const isFocused = useIsFocused();
+  const focusedRef = useRef(isFocused);
+  const focusTurn = useRef(0);
+  if (focusedRef.current !== isFocused) {
+    focusedRef.current = isFocused;
+    focusTurn.current += 1;
+  }
   const api = useApiClient();
   const auth = useAuth();
   const queryClient = useQueryClient();
@@ -294,25 +301,11 @@ export function SellerProfileScreen() {
   const profile = query.data?.sellerProfile;
   const editingRevision = query.data?.editingRevision;
   const form = useForm<ProfileFields>({
-    defaultValues: emptyFields,
+    defaultValues: emptyProfileDraft,
     resolver: zodResolver(profileDraftSchema),
     mode: 'onChange',
     shouldUnregister: false,
   });
-  const profileFieldOrder = [
-    'slug',
-    'fullName',
-    'country',
-    'city',
-    'telegramUrl',
-    'instagramUrl',
-    'websiteUrl',
-    'publicEmail',
-    'directionCategoryIds',
-    'discipline',
-    'practice',
-    'shortDescription',
-  ] as const;
   const [formAlert, setFormAlert] = useState<string | null>(null);
   const formAlertText = formAlert ? (
     <AppText role="bodySmall" tone="danger" accessibilityLiveRegion="polite">
@@ -329,7 +322,7 @@ export function SellerProfileScreen() {
     fallback = 'Не удалось сохранить профиль',
     operation = sessionOperation.current,
   ) => {
-    if (sessionOperation.current !== operation) return;
+    if (!focusedRef.current || sessionOperation.current !== operation) return;
     logInfrastructureError(error, surface);
     const failure = readFormFailure(error, profileFieldOrder);
     if (failure.disposition === 'passthrough') {
@@ -394,9 +387,11 @@ export function SellerProfileScreen() {
   const fieldsEditableSeen = useRef<boolean | null>(null);
   const accountLogout = useAccountLogout();
   const authEpoch = usePrivateCacheEpoch(queryClient);
+  const sessionSlug = canWritePrivateCache(queryClient, authEpoch)
+    ? queryClient.getQueryData<{ slug?: string | null }>(authKeys.session)?.slug
+    : null;
   const seenAuthEpoch = useRef(authEpoch);
   const forceProfileHydration = useRef(false);
-  const validatedEmptyProfile = useRef(false);
   const draftValidation = useRef({ epoch: 0, running: false });
   const missingProfile =
     query.isError &&
@@ -473,18 +468,12 @@ export function SellerProfileScreen() {
   fieldsEditableSeen.current = fieldsEditable;
 
   useEffect(() => {
-    if (profile || !auth.user?.slug || form.getValues('slug')) return;
-    form.setValue('slug', auth.user.slug, { shouldValidate: true });
-  }, [auth.user?.slug, form, profile]);
+    if (profile || !sessionSlug || form.getValues('slug')) return;
+    form.setValue('slug', sessionSlug, { shouldValidate: true });
+  }, [sessionSlug, form, profile]);
 
   useEffect(() => {
-    if (query.isLoading) return;
-    if (!profile) {
-      if (missingProfile && !validatedEmptyProfile.current) {
-        validatedEmptyProfile.current = true;
-      }
-      return;
-    }
+    if (query.isLoading || !profile) return;
     const token = hydrationToken ?? null;
     const forced = forceProfileHydration.current;
     if (!token) return;
@@ -499,7 +488,6 @@ export function SellerProfileScreen() {
     form,
     form.formState.isDirty,
     hydrationToken,
-    missingProfile,
     profile,
     query.isLoading,
     queueProfileDraftValidation,
@@ -581,6 +569,8 @@ export function SellerProfileScreen() {
     mountedRef.current = true;
     return () => {
       mountedRef.current = false;
+      // The screen no longer owns pending saves, submissions or navigation.
+      sessionOperation.current += 1;
     };
   }, []);
   useEffect(() => {
@@ -602,14 +592,30 @@ export function SellerProfileScreen() {
     achievementDraftDirtyRef.current = false;
     setAchievementDraftDirty(false);
     setDirectionsPickerOpen(false);
+    setExitOpen(false);
     setDirectionsRequirementRevealed(false);
     setRequirementEpoch((epoch) => epoch + 1);
     photoBlobRef.current = null;
     setPhotoBlob(null);
     setPhotoUri(null);
-    forceProfileHydration.current = true;
-    validatedEmptyProfile.current = false;
-  }, [authEpoch]);
+    setPhotoFailed(false);
+    // Read the installed session, not a possibly stale auth context during handoff.
+    const sessionActive = canWritePrivateCache(queryClient, authEpoch);
+    const cached = sessionActive
+      ? queryClient.getQueryData<SellerProfileResponse>(sellerProfileQueryKey)
+      : undefined;
+    const cachedProfile = cached?.sellerProfile;
+    if (cachedProfile) {
+      form.reset(toFields(cachedProfile));
+      hydratedProfileToken.current =
+        cached.editingRevision?.updatedAt ?? cachedProfile.updatedAt ?? null;
+      forceProfileHydration.current = false;
+    } else {
+      form.reset({ ...emptyProfileDraft, slug: sessionSlug ?? '' });
+      hydratedProfileToken.current = null;
+      forceProfileHydration.current = true;
+    }
+  }, [authEpoch, form, queryClient, sessionSlug]);
   const rememberSavedProfile = (
     saved: SellerProfileResponse,
     submitted: ProfileFields,
@@ -633,9 +639,12 @@ export function SellerProfileScreen() {
     }
     queueProfileDraftValidation();
   };
-  const saveStillOwns = (operation: number, authEpoch: number) =>
+  const sessionStillOwns = (operation: number, authEpoch: number) =>
+    mountedRef.current &&
     sessionOperation.current === operation &&
     canWritePrivateCache(queryClient, authEpoch);
+  const screenStillOwns = (operation: number, authEpoch: number) =>
+    focusedRef.current && sessionStillOwns(operation, authEpoch);
   const saveMutation = useMutation({
     mutationFn: async (
       variables: ProfileSaveVariables,
@@ -653,10 +662,17 @@ export function SellerProfileScreen() {
         };
       }
       if (!variables.photo) throw new Error('Profile photo is required');
-      if (!auth.user?.slug) {
+      if (!sessionStillOwns(variables.operation, variables.authEpoch)) {
+        throw new Error('Session changed');
+      }
+      const installedSlug =
+        queryClient.getQueryData<{ slug?: string | null }>(
+          authKeys.session,
+        )?.slug;
+      if (!installedSlug) {
         const requested = variables.fields.slug.trim();
         const claimed = await api.auth.claimSlug({ slug: requested });
-        if (!saveStillOwns(variables.operation, variables.authEpoch)) {
+        if (!sessionStillOwns(variables.operation, variables.authEpoch)) {
           throw new Error('Session changed');
         }
         if (claimed.slug !== requested) {
@@ -673,7 +689,8 @@ export function SellerProfileScreen() {
     },
     onSuccess: (result, variables) => {
       if (result.outcome !== 'saved') return;
-      if (!saveStillOwns(variables.operation, variables.authEpoch)) return;
+      // A completed write still belongs in the cache after the screen blurs.
+      if (!sessionStillOwns(variables.operation, variables.authEpoch)) return;
       const saved = result.profile;
       rememberSavedProfile(saved, variables.fields);
       if (photoBlobRef.current === variables.photo) {
@@ -687,14 +704,18 @@ export function SellerProfileScreen() {
     },
   });
   const advanceMutation = useMutation({
-    mutationFn: async (epoch: number) => ({
+    mutationFn: async (owner: { epoch: number; operation: number }) => ({
       saved: await api.portfolio.advanceAuthorApplication(),
-      epoch,
+      ...owner,
     }),
-    onSuccess: ({ saved, epoch }) => {
-      if (!canWritePrivateCache(queryClient, epoch)) return;
-      void refreshPrivateQuery(queryClient, ['seller', 'application'], epoch);
-      void queryClient.invalidateQueries({ queryKey: ['seller', 'profile'] });
+    onSuccess: async ({ saved, epoch, operation }) => {
+      if (!sessionStillOwns(operation, epoch)) return;
+      // A profile refetch started by save must not rewind the confirmed stage.
+      await queryClient.cancelQueries(
+        { queryKey: sellerProfileQueryKey },
+        { revert: false },
+      );
+      if (!sessionStillOwns(operation, epoch)) return;
       queryClient.setQueryData(
         sellerProfileQueryKey,
         (current: SellerProfileResponse | undefined) =>
@@ -708,6 +729,8 @@ export function SellerProfileScreen() {
               }
             : current,
       );
+      void refreshPrivateQuery(queryClient, ['seller', 'application'], epoch);
+      void queryClient.invalidateQueries({ queryKey: sellerProfileQueryKey });
     },
   });
   const submitMutation = useMutation({
@@ -716,7 +739,7 @@ export function SellerProfileScreen() {
   resetSaveMutation.current = () => saveMutation.reset();
 
   const save = async (source?: 'revision-submit' | 'transition') => {
-    if (achievementWriteBlocksParent()) return null;
+    if (!focusedRef.current || achievementWriteBlocksParent()) return null;
     if (logoutStarted.current || saveInFlight.current) return null;
     if (revisionSubmitInFlight.current && source !== 'revision-submit')
       return null;
@@ -724,6 +747,7 @@ export function SellerProfileScreen() {
     const fields = form.getValues();
     if (!profileDraftAllowsSave(fields)) return null;
     if (source === 'transition' && !beginLockedTransition()) return null;
+    const startedInFocus = focusTurn.current;
     bumpParentOperation();
     const operation = sessionOperation.current;
     const variables: ProfileSaveVariables = {
@@ -736,7 +760,11 @@ export function SellerProfileScreen() {
     setFormAlert(null);
     try {
       const saved = await saveMutation.mutateAsync(variables);
-      if (!saveStillOwns(operation, variables.authEpoch)) return null;
+      if (
+        !screenStillOwns(operation, variables.authEpoch) ||
+        focusTurn.current !== startedInFocus
+      )
+        return null;
       if (saved.outcome === 'stored-slug') {
         form.setValue('slug', saved.slug, {
           shouldDirty: false,
@@ -748,11 +776,20 @@ export function SellerProfileScreen() {
       setFormAlert(null);
       return saved.profile;
     } catch (error) {
-      if (!saveStillOwns(operation, variables.authEpoch)) return null;
+      if (
+        !screenStillOwns(operation, variables.authEpoch) ||
+        focusTurn.current !== startedInFocus
+      )
+        return null;
       if (source === 'transition') endLockedTransition();
       throw error;
     } finally {
-      if (sessionOperation.current === operation) saveInFlight.current = false;
+      if (sessionOperation.current === operation) {
+        saveInFlight.current = false;
+        if (source === 'transition' && focusTurn.current !== startedInFocus) {
+          endLockedTransition();
+        }
+      }
     }
   };
   const submitRevision = async () => {
@@ -772,11 +809,12 @@ export function SellerProfileScreen() {
     if (!beginLockedTransition()) return;
     const submitEpoch = currentAuthEpoch(queryClient);
     const operation = sessionOperation.current;
+    const startedInFocus = focusTurn.current;
     revisionSubmitInFlight.current = true;
     setRevisionSubmitActive(true);
     const stillOwnsSubmit = () =>
-      sessionOperation.current === operation &&
-      canWritePrivateCache(queryClient, submitEpoch);
+      focusTurn.current === startedInFocus &&
+      screenStillOwns(operation, submitEpoch);
     try {
       let saved;
       try {
@@ -787,12 +825,12 @@ export function SellerProfileScreen() {
       }
       if (!saved || !stillOwnsSubmit()) return;
       const submitted = await submitMutation.mutateAsync();
-      if (!stillOwnsSubmit()) return;
+      if (!sessionStillOwns(operation, submitEpoch)) return;
       await queryClient.cancelQueries(
         { queryKey: sellerProfileQueryKey },
         { revert: false },
       );
-      if (!stillOwnsSubmit()) return;
+      if (!sessionStillOwns(operation, submitEpoch)) return;
       queryClient.setQueryData<SellerProfileResponse>(
         sellerProfileQueryKey,
         (current) => withSubmittedRevision(current, submitted),
@@ -823,18 +861,21 @@ export function SellerProfileScreen() {
       }
     }
   };
-  const continueFromStep = async (visibleStep: 2 | 3) => {
+  const continueFromStep = async (visibleStep: 1 | 2 | 3) => {
     if (transitionLock.current || achievementWriteBlocksParent()) return;
     const epoch = currentAuthEpoch(queryClient);
     const operation = sessionOperation.current;
+    const startedInFocus = focusTurn.current;
     const stillOwnsStep = () =>
-      sessionOperation.current === operation &&
-      canWritePrivateCache(queryClient, epoch);
+      focusTurn.current === startedInFocus && screenStillOwns(operation, epoch);
     try {
       const saved = await save('transition');
       if (!saved || !stillOwnsStep()) return;
-      if (shouldAdvanceSellerApplication(saved.sellerProfile, visibleStep)) {
-        await advanceMutation.mutateAsync(epoch);
+      if (
+        visibleStep !== 1 &&
+        shouldAdvanceSellerApplication(saved.sellerProfile, visibleStep)
+      ) {
+        await advanceMutation.mutateAsync({ epoch, operation });
         if (!stillOwnsStep()) return;
       }
       router.push(`/profile?step=${visibleStep + 1}`);
@@ -848,27 +889,40 @@ export function SellerProfileScreen() {
     if (!fieldsEditable || transitionLock.current) return;
     const epoch = currentAuthEpoch(queryClient);
     const operation = sessionOperation.current;
+    const startedInFocus = focusTurn.current;
     const selection = photoSelection.current + 1;
     photoSelection.current = selection;
     const stillOwnsPhoto = () =>
+      focusTurn.current === startedInFocus &&
       selection === photoSelection.current &&
       !transitionLock.current &&
-      sessionOperation.current === operation &&
-      canWritePrivateCache(queryClient, epoch);
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsMultipleSelection: false,
-      quality: 1,
-    });
-    if (!stillOwnsPhoto()) return;
-    if (result.canceled || !result.assets[0]) return;
-    const asset = result.assets[0];
-    const blob = await fetch(asset.uri).then((response) => response.blob());
-    if (!stillOwnsPhoto()) return;
-    photoBlobRef.current = blob;
-    setPhotoUri(asset.uri);
-    setPhotoFailed(false);
-    setPhotoBlob(blob);
+      screenStillOwns(operation, epoch);
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsMultipleSelection: false,
+        quality: 1,
+      });
+      if (!stillOwnsPhoto()) return;
+      if (result.canceled || !result.assets[0]) return;
+      const asset = result.assets[0];
+      const blob = await fetch(asset.uri).then((response) => response.blob());
+      if (!stillOwnsPhoto()) return;
+      photoBlobRef.current = blob;
+      setPhotoUri(asset.uri);
+      setPhotoFailed(false);
+      setPhotoBlob(blob);
+      setFormAlert(null);
+    } catch (error) {
+      if (stillOwnsPhoto()) {
+        reportProfileError(
+          error,
+          'seller-profile-photo',
+          'Не удалось выбрать фото',
+          operation,
+        );
+      }
+    }
   };
   const hasRequiredDetails = Boolean(
     slug.trim() && fullName.trim() && country.trim() && (profile || photoBlob),
@@ -1097,32 +1151,7 @@ export function SellerProfileScreen() {
         inputsLocked ||
         achievementWriteActive
       }
-      onPress={() =>
-        void (async () => {
-          if (transitionLock.current || achievementWriteBlocksParent()) return;
-          const epoch = currentAuthEpoch(queryClient);
-          const operation = sessionOperation.current;
-          try {
-            const saved = await save('transition');
-            if (
-              !saved ||
-              sessionOperation.current !== operation ||
-              !canWritePrivateCache(queryClient, epoch)
-            )
-              return;
-            router.push('/profile?step=2');
-          } catch (error) {
-            reportProfileError(
-              error,
-              'seller-profile-step',
-              undefined,
-              operation,
-            );
-          } finally {
-            if (sessionOperation.current === operation) endLockedTransition();
-          }
-        })()
-      }
+      onPress={() => void continueFromStep(1)}
       label="Продолжить"
       size="auth"
       width="block"
@@ -1259,7 +1288,7 @@ export function SellerProfileScreen() {
                       <ProfileBasicsFields
                         editable={fieldsEditable}
                         slugEditable={
-                          fieldsEditable && !profile && !auth.user?.slug
+                          fieldsEditable && !profile && !sessionSlug
                         }
                       />
                     }
@@ -1336,7 +1365,7 @@ export function SellerProfileScreen() {
                       showAllSteps={!isApplicationWizard}
                       editable={fieldsEditable}
                       slugEditable={
-                        fieldsEditable && !profile && !auth.user?.slug
+                        fieldsEditable && !profile && !sessionSlug
                       }
                       directionLabels={directionLabels}
                       directionsError={directionsError}
@@ -1639,7 +1668,6 @@ export function SellerProfileScreen() {
                   knownDirections={profile?.directions ?? []}
                   onClose={() => setDirectionsPickerOpen(false)}
                   onApply={(ids) => {
-                    if (transitionLock.current) return;
                     if (!fieldsEditable || transitionLock.current) return;
                     form.setValue('directionCategoryIds', ids, {
                       shouldDirty: true,
