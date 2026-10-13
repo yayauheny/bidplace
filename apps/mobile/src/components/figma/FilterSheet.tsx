@@ -1,5 +1,11 @@
 import { useId, type ReactNode } from 'react';
-import { Modal, Platform, ScrollView, View } from 'react-native';
+import {
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  View,
+} from 'react-native';
 
 import {
   designTokens,
@@ -78,7 +84,8 @@ export function FilterSheet({
       animationType="none"
       onRequestClose={onClose}
     >
-      <View
+      <KeyboardAvoidingView
+        behavior={compact && Platform.OS === 'ios' ? 'padding' : undefined}
         style={{
           flex: 1,
           position: 'relative',
@@ -201,7 +208,7 @@ export function FilterSheet({
             />
           ) : null}
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
