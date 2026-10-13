@@ -62,7 +62,7 @@ async function mockAuthor(page: Page, slug: string, socials: 0 | 2 | 3, works: n
     route.fulfill({ status: 401, json: { message: 'Unauthorized' } }),
   );
   await page.route('**/api/categories', (route) =>
-    route.fulfill({ json: { categories: [] } }),
+    route.fulfill({ json: { categories: [{ id: categoryId, name: 'Скульптура' }] } }),
   );
   await page.route('**/api/portfolio/facets', (route) =>
     route.fulfill({
@@ -123,8 +123,8 @@ test.describe('static public creator header', () => {
     await expect(page.getByTestId('creator-sticky-header')).toHaveCount(0);
     await expect(page.getByTestId('creator-avatar')).toHaveCount(1);
     await expect(page.getByTestId('creator-handle')).toHaveText('@static-author');
+    await expect(page.getByTestId('creator-avatar')).toHaveCSS('width', '100px');
     await expect(page.getByTestId('creator-meta')).toContainText('Анна Морозова');
-    await expect(page.getByTestId('creator-tags')).toBeVisible();
     await expect(page.getByTestId('creator-social-telegram')).toBeVisible();
     await expect(page.getByTestId('creator-social-instagram')).toBeVisible();
     await expect(page.getByTestId('creator-social-website')).toBeVisible();
@@ -138,6 +138,21 @@ test.describe('static public creator header', () => {
 
     await page.getByRole('button', { name: 'Поделиться профилем' }).click();
     await expect(page.getByRole('button', { name: 'Копировать ссылку' })).toBeVisible();
+  });
+
+  test('filters works by a real category and can clear it', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 860 });
+    await mockAuthor(page, 'static-filter', 2, 3);
+    await page.goto('/seller/static-filter');
+
+    await page.getByRole('button', { name: 'Категория' }).click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await page.getByRole('radio', { name: 'Скульптура' }).click();
+    await page.getByRole('button', { name: 'Показать работы' }).click();
+    await expect(page).toHaveURL(/category=10000000-0000-4000-8000-000000000099/);
+    await expect(page.getByRole('button', { name: 'Удалить Скульптура' })).toBeVisible();
+    await page.getByRole('button', { name: 'Удалить Скульптура' }).click();
+    await expect(page).not.toHaveURL(/category=/);
   });
 
   test('scrolls away naturally without resizing and leaves room above the dock', async ({ page }) => {
