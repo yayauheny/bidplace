@@ -1,24 +1,18 @@
 import { useState } from 'react';
 import { Link } from 'expo-router';
-import { Heart, MoreHorizontal, Pencil } from 'lucide-react-native';
 import { View } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
 
+import { FigmaIcon } from '../../components/figma/FigmaIcon';
 import { FigmaIconButton } from '../../components/figma/FigmaIconButton';
 import { FigmaTabs } from '../../components/figma/FigmaTabs';
-import { AppDialog, AppText, MotionPressable, SecondaryButton } from '../../components/ui';
+import { FilterSheet } from '../../components/figma/FilterSheet';
+import { ShareSheet } from '../../components/figma/ShareSheet';
+import { figmaIconButtonStyle } from '../../components/figma/figma-icon-button-style';
+import { AppText, MotionPressable } from '../../components/ui';
 import { AuthorShare } from './AuthorShare';
 import { CreatorIdentity } from './CreatorIdentity';
 import type { CreatorHeaderProps } from './creator-header';
-
-const controlStyle = {
-  width: 42,
-  height: 42,
-  borderRadius: designTokens.radius.pill,
-  backgroundColor: designTokens.color.headerControl,
-  alignItems: 'center' as const,
-  justifyContent: 'center' as const,
-};
 
 export function CreatorHeader({
   profile,
@@ -31,6 +25,7 @@ export function CreatorHeader({
   onUnavailable,
 }: CreatorHeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [qrOpen, setQrOpen] = useState(false);
 
   return (
     <View testID="creator-static-header">
@@ -44,19 +39,17 @@ export function CreatorHeader({
             marginBottom: designTokens.space.x5,
           }}
         >
-          <View testID="author-back" style={controlStyle}>
-            <FigmaIconButton icon="arrow-left-01" label="Назад" onPress={onBack} />
+          <View testID="author-back">
+            <FigmaIconButton icon="arrow-left-01" surface="muted" label="Назад" onPress={onBack} />
           </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: designTokens.space.x1 }}>
-            <MotionPressable
-              accessibilityRole="button"
-              accessibilityLabel="Добавить автора в избранное"
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <FigmaIconButton
+              icon="heart"
+              iconSize={22}
+              surface="muted"
+              label="Добавить автора в избранное"
               onPress={() => onUnavailable('Избранные авторы')}
-              preset="icon"
-              style={controlStyle}
-            >
-              <Heart size={22} color={designTokens.color.ink} />
-            </MotionPressable>
+            />
             <AuthorShare sharePath={profile.sharePath} onUnavailable={onUnavailable} />
             {isOwner ? (
               <Link href="/profile" asChild>
@@ -64,21 +57,19 @@ export function CreatorHeader({
                   accessibilityRole="link"
                   accessibilityLabel="Редактировать профиль автора"
                   preset="icon"
-                  style={controlStyle}
+                  style={({ pressed }) => figmaIconButtonStyle(pressed, 'muted')}
                 >
-                  <Pencil size={21} color={designTokens.color.ink} />
+                  <FigmaIcon name="pencil-edit-01" size={20} />
                 </MotionPressable>
               </Link>
             ) : null}
-            <MotionPressable
-              accessibilityRole="button"
-              accessibilityLabel="Действия с профилем"
+            <FigmaIconButton
+              icon="more-vertical"
+              iconSize={22}
+              surface="muted"
+              label="Действия с профилем"
               onPress={() => setMenuOpen(true)}
-              preset="icon"
-              style={controlStyle}
-            >
-              <MoreHorizontal size={23} color={designTokens.color.ink} />
-            </MotionPressable>
+            />
           </View>
         </View>
         <CreatorIdentity
@@ -94,25 +85,27 @@ export function CreatorHeader({
         panelId={panelId}
         align="center"
       />
-      <AppDialog presentation="sheet" title="Действия" open={menuOpen} onClose={() => setMenuOpen(false)}>
-        <View style={{ gap: designTokens.space.x4 }}>
-          {isOwner ? (
-            <SecondaryButton label="Редактировать профиль" width="full" href="/profile" />
-          ) : null}
-          <MotionPressable
-            accessibilityRole="button"
-            accessibilityLabel="Пожаловаться на автора"
-            onPress={() => {
-              setMenuOpen(false);
-              onUnavailable('Жалобы на профили');
-            }}
-            preset="button"
-            style={{ minHeight: designTokens.size.touch, justifyContent: 'center' }}
-          >
-            <AppText role="bodySmall" tone="danger">Пожаловаться</AppText>
-          </MotionPressable>
-        </View>
-      </AppDialog>
+      <FilterSheet
+        presentation="compact"
+        title="Действия"
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+      >
+        <MotionPressable
+          accessibilityRole="button"
+          accessibilityLabel="QR-код профиля"
+          onPress={() => {
+            setMenuOpen(false);
+            setQrOpen(true);
+          }}
+          preset="button"
+          style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+        >
+          <AppText role="bodySmall">QR-код профиля</AppText>
+          <FigmaIcon name="qr-code-01" size={20} />
+        </MotionPressable>
+      </FilterSheet>
+      <ShareSheet open={qrOpen} onClose={() => setQrOpen(false)} sharePath={profile.sharePath} />
     </View>
   );
 }
