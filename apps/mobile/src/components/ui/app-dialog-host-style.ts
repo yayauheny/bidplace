@@ -20,7 +20,7 @@ export function appDialogHostStyle({
       ? {
           width: '100%',
           maxWidth: designTokens.layout.sheetMax,
-          alignSelf: 'center',
+          marginHorizontal: 'auto',
         }
       : {}),
     justifyContent: isSheet ? 'flex-end' : 'center',

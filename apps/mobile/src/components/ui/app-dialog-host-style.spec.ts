@@ -30,7 +30,8 @@ describe('app dialog host style', () => {
     expect(style.flexDirection).not.toBe('row');
     expect(style.justifyContent).toBe('flex-end');
     expect(style.alignItems).toBe('stretch');
-    expect(style.alignSelf).toBe('center');
+    expect(style.alignSelf).toBeUndefined();
+    expect(style.marginHorizontal).toBe('auto');
     expect(style.marginLeft).toBeUndefined();
     expect(style.marginRight).toBeUndefined();
     expect(style.maxWidth).toBe(designTokens.layout.sheetMax);
