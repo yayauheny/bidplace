@@ -24,7 +24,7 @@ export function FilterOptionRow({
   mode: FilterOptionMode;
   selected: boolean;
   disabled?: boolean;
-  variant?: 'default' | 'directions';
+  variant?: 'default' | 'directions' | 'catalog';
   onPress: () => void;
 }) {
   const handleWebKeyDown = (event: {
@@ -51,8 +51,13 @@ export function FilterOptionRow({
       disabled={disabled}
       onPress={onPress}
       preset="icon"
-      style={[filterOptionRowStyle(), disabled ? { opacity: 0.5 } : null]}
+      style={[
+        filterOptionRowStyle(),
+        variant === 'catalog' ? { minHeight: 44, paddingVertical: 0 } : null,
+        disabled ? { opacity: 0.5 } : null,
+      ]}
     >
+      {variant !== 'catalog' ? (
       <View style={filterOptionControlStyle(mode, selected)}>
         {selected && mode === 'checkbox' && variant === 'directions' ? (
           <FigmaIcon
@@ -86,6 +91,7 @@ export function FilterOptionRow({
           />
         ) : null}
       </View>
+      ) : null}
       <AppText
         role="body"
         numberOfLines={1}
@@ -98,6 +104,13 @@ export function FilterOptionRow({
       >
         {label}
       </AppText>
+      {variant === 'catalog' ? (
+        <View style={{ width: 20, alignItems: 'center' }}>
+          {selected ? (
+            <FigmaIcon name="check" size={figmaTokens.size.filterOptionCheck} />
+          ) : null}
+        </View>
+      ) : null}
     </MotionPressable>
   );
 }
