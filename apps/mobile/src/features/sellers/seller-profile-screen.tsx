@@ -592,11 +592,13 @@ export function SellerProfileScreen() {
     achievementDraftDirtyRef.current = false;
     setAchievementDraftDirty(false);
     setDirectionsPickerOpen(false);
+    setExitOpen(false);
     setDirectionsRequirementRevealed(false);
     setRequirementEpoch((epoch) => epoch + 1);
     photoBlobRef.current = null;
     setPhotoBlob(null);
     setPhotoUri(null);
+    setPhotoFailed(false);
     // Read the installed session, not a possibly stale auth context during handoff.
     const sessionActive = canWritePrivateCache(queryClient, authEpoch);
     const cached = sessionActive

@@ -1663,6 +1663,31 @@ describe('seller profile save reconciliation', () => {
     view.unmount();
   });
 
+  it('closes the old account exit dialog when the session changes', async () => {
+    harness.params = { step: '2' };
+    harness.getMyProfile.mockResolvedValue(response('DRAFT', 'DRAFT'));
+    const view = mount();
+    await until(
+      view.container,
+      () => findButton(view.container, 'Закрыть') instanceof HTMLButtonElement,
+      'close',
+    );
+    setInput(view.container, 'Telegram', '@maker_art');
+    click(view.container, 'Закрыть');
+    expect(findButton(view.container, 'Прервать')).toBeTruthy();
+
+    const nextProfile = response('DRAFT', 'DRAFT');
+    await act(async () => {
+      await clearAuthenticatedSession(view.queryClient);
+      view.queryClient.setQueryData(authKeys.session, { id: 'user-b' });
+      view.queryClient.setQueryData(['seller', 'profile'], nextProfile);
+      advanceAuthEpoch(view.queryClient);
+    });
+    await flush();
+    expect(findButton(view.container, 'Прервать')).toBeUndefined();
+    view.unmount();
+  });
+
   it('does not rewind an advanced wizard stage when a previous profile refetch resolves late', async () => {
     const draft = response('DRAFT', 'DRAFT');
     draft.sellerProfile.applicationStage = 'CONTACTS';
