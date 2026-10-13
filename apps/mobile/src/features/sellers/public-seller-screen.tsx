@@ -34,10 +34,12 @@ export function PublicSellerScreen({
   slug,
   sort = 'newest',
   category,
+  categoryIds,
 }: {
   slug: string;
   sort?: 'newest' | 'oldest';
   category?: string;
+  categoryIds?: string[];
 }) {
   const api = useApiClient();
   const router = useRouter();
@@ -48,7 +50,8 @@ export function PublicSellerScreen({
   const [unavailable, setUnavailable] = useState<string | null>(null);
   const [pendingHide, setPendingHide] = useState<string | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
-  const [draftCategory, setDraftCategory] = useState<string | undefined>(category);
+  const selectedCategories = categoryIds?.length ? categoryIds : category ? [category] : [];
+  const [draftCategories, setDraftCategories] = useState<string[]>(selectedCategories);
   const categories = useQuery({
     queryKey: categoryKeys.all,
     queryFn: ({ signal }) => api.categories.list({ signal }),
@@ -58,13 +61,13 @@ export function PublicSellerScreen({
     slug,
     sort,
     category,
+    categoryIds,
   );
   const firstPage = query.data?.pages[0];
   const works = query.data?.pages.flatMap((page) => page.works) ?? [];
   const author = firstPage?.author;
   const sellerProfileId = author?.id;
   const worksPending = authorWorksArePending(query);
-  const selectedCategory = categories.data?.categories.find((item) => item.id === category);
   const isOwner = Boolean(author && capability.profile?.slug === author.slug && capability.status === 'APPROVED');
   const hideWork = useMutation({
     mutationFn: (id: string) => api.portfolio.hideWork(id),
@@ -172,22 +175,26 @@ export function PublicSellerScreen({
                     variant="outline"
                     disabled={!categories.data}
                     onPress={() => {
-                      setDraftCategory(category);
+                      setDraftCategories(selectedCategories);
                       setFilterOpen(true);
                     }}
                   />
-                  {category ? (
+                  {selectedCategories.map((id) => (
                     <FigmaChoiceChip
-                      label={selectedCategory?.name ?? 'Выбрана'}
+                      key={id}
+                      label={categories.data?.categories.find((item) => item.id === id)?.name ?? 'Категория'}
                       selected
                       removable
                       onPress={() => {
-                        setDraftCategory(category);
+                        setDraftCategories(selectedCategories);
                         setFilterOpen(true);
                       }}
-                      onRemove={() => router.setParams({ category: undefined })}
+                      onRemove={() => {
+                        const next = selectedCategories.filter((current) => current !== id);
+                        router.setParams({ categories: next.length ? next.join(',') : undefined, category: undefined });
+                      }}
                     />
-                  ) : null}
+                  ))
                 </View>
               )
             ) : null}
@@ -203,8 +210,8 @@ export function PublicSellerScreen({
             ) : works.length === 0 ? (
               <PageState
                 title={
-                  category
-                    ? 'В этой категории пока нет работ'
+                  selectedCategories.length
+                    ? 'В выбранных категориях пока нет работ'
                     : 'У автора пока нет опубликованных работ'
                 }
               />
@@ -241,17 +248,18 @@ export function PublicSellerScreen({
         >
           <View style={{ gap: designTokens.space.x2 }}>
             {[
-              { id: '', name: 'Все категории' },
               ...(categories.data?.categories ?? []),
             ].map((item) => {
-              const selected = (draftCategory ?? '') === item.id;
+              const selected = draftCategories.includes(item.id);
               return (
                 <MotionPressable
                   key={item.id}
-                  accessibilityRole="radio"
+                  accessibilityRole="checkbox"
                   accessibilityState={{ checked: selected }}
                   accessibilityLabel={item.name}
-                  onPress={() => setDraftCategory(item.id || undefined)}
+                  onPress={() => setDraftCategories((current) => selected
+                    ? current.filter((id) => id !== item.id)
+                    : current.length < 20 ? [...current, item.id] : current)}
                   preset="button"
                   style={{
                     minHeight: designTokens.size.touch,
@@ -270,7 +278,7 @@ export function PublicSellerScreen({
               label="Показать работы"
               width="full"
               onPress={() => {
-                router.setParams({ category: draftCategory });
+                router.setParams({ categories: draftCategories.length ? draftCategories.join(',') : undefined, category: undefined });
                 setFilterOpen(false);
               }}
             />
