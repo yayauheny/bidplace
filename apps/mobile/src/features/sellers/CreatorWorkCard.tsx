@@ -75,9 +75,9 @@ export function CreatorWorkCard({
               accessibilityLabel={`Скрыть работу ${item.work.title}`}
               onPress={() => onHide(item.work.id)}
               preset="icon"
-              style={actionStyle}
+              style={[actionStyle, { backgroundColor: designTokens.color.danger }]}
             >
-              <Trash2 size={21} color={designTokens.color.danger} />
+              <Trash2 size={21} color={designTokens.color.white} />
             </MotionPressable>
           </>
         ) : null}
