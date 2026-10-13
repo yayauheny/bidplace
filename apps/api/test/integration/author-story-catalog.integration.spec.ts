@@ -219,6 +219,12 @@ describe('author story, catalog, and proposals', () => {
     const canvas = await prisma.catalogTerm.findUniqueOrThrow({
       where: { role_slug: { role: 'MATERIAL', slug: 'canvas' } },
     });
+    const drawing = await prisma.catalogTerm.findUniqueOrThrow({
+      where: { role_slug: { role: 'TECHNIQUE', slug: 'drawing' } },
+    });
+    const modeling = await prisma.catalogTerm.findUniqueOrThrow({
+      where: { role_slug: { role: 'TECHNIQUE', slug: 'modeling' } },
+    });
     const sculpture = await prisma.category.findUniqueOrThrow({
       where: { slug: 'sculpture' },
     });
@@ -240,9 +246,15 @@ describe('author story, catalog, and proposals', () => {
       'Work without canvas',
       painting.id,
     );
-    for (const work of [first, second]) {
+    for (const [index, work] of [first, second].entries()) {
       await prisma.productRevisionTerm.create({
         data: { revisionId: work.revision.id, termId: canvas.id },
+      });
+      await prisma.productRevisionTerm.create({
+        data: {
+          revisionId: work.revision.id,
+          termId: index === 0 ? drawing.id : modeling.id,
+        },
       });
       await prisma.productRevision.update({
         where: { id: work.revision.id },
@@ -314,6 +326,14 @@ describe('author story, catalog, and proposals', () => {
     expect(firstPage.works[0]?.work.publicId).not.toBe(
       secondPage.works[0]?.work.publicId,
     );
+    const byTechnique = await guest.get(`/works?techniqueId=${drawing.id}`);
+    expect(byTechnique.status).toBe(200);
+    expect(
+      ((await byTechnique.json()) as {
+        works: Array<{ work: { publicId: string } }>;
+        pagination: { total: number };
+      }).works.map((item) => item.work.publicId),
+    ).toEqual([first.product.publicId]);
     const wrongRole = await owner.client.patch(`/products/${first.product.id}`, {
       techniqueTermIds: [canvas.id],
     });
