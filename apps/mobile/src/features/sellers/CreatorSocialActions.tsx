@@ -19,8 +19,8 @@ export function CreatorSocialActions({
           key={link.key}
           testID={`creator-social-${link.key}`}
           style={{
-            width: designTokens.size.control,
-            height: designTokens.size.control,
+            width: 42,
+            height: 42,
             borderRadius: designTokens.radius.pill,
             borderWidth: 1,
             borderColor: designTokens.color.divider,
