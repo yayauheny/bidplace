@@ -5,6 +5,10 @@ import { join } from 'node:path';
 import { blockingDatabaseSessionSql } from '../../deploy/cloudflare/src/release-gate.ts';
 import { root } from './config.mjs';
 import { runDirectSql } from './deploy.mjs';
+import {
+  assertStagingDatabaseUrl,
+  assertStagingMigrationStopped,
+} from './staging.mjs';
 
 const target = process.argv[2];
 if (!['staging', 'production'].includes(target)) throw new Error('Choose staging or production');
@@ -21,6 +25,22 @@ if (!['postgres:', 'postgresql:'].includes(database.protocol) ||
 }
 if (database.hostname.split('.')[0].endsWith('-pooler')) {
   throw new Error('Migration requires the direct Neon hostname');
+}
+if (target === 'staging')
+  assertStagingDatabaseUrl(
+    process.env.DATABASE_URL,
+    process.env.STAGING_NEON_ENDPOINT_ID,
+    false,
+  );
+if (target === 'staging') {
+  if (process.argv.includes('--initial-staging')) {
+    runDirectSql(
+      `DO $$ BEGIN IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public') THEN RAISE EXCEPTION 'staging_database_is_not_empty'; END IF; END $$;`,
+      process.env.DATABASE_URL,
+    );
+  } else {
+    await assertStagingMigrationStopped(process.env);
+  }
 }
 runDirectSql(blockingDatabaseSessionSql, process.env.DATABASE_URL);
 const temporary = mkdtempSync(join(tmpdir(), 'bidplace-neon-migrate-'));

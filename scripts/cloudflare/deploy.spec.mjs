@@ -7,7 +7,154 @@ import test from 'node:test';
 import { workerSecrets } from '../../deploy/cloudflare/src/environment.ts';
 import { containerReleaseReady } from '../../deploy/cloudflare/src/release-gate.ts';
 import { root } from './config.mjs';
-import { assertProductionReleaseMode, assertSecretsFile, gateEnvironment, productionWranglerArgs, writeProductionConfig } from './deploy.mjs';
+import { assertProductionReleaseMode, assertSecretsFile, gateEnvironment, productionWranglerArgs, writeProductionConfig,
+  writeStagingConfig,
+} from './deploy.mjs';
+import {
+  assertStagingConfig,
+  assertStagingDatabaseUrl,
+  assertStagingAccess,
+  assertStagingMigrationStopped,
+} from './staging.mjs';
+import {
+  assertStagingAccountsEnvironment,
+  provisionStagingAccounts,
+  stagingAccounts,
+} from './staging-accounts.mjs';
+
+test('staging database guards pin endpoint identity, TLS, database and pooling before writes', () => {
+  const endpoint = 'ep-staging-fixture';
+  for (const pooled of [true, false]) {
+    assertStagingDatabaseUrl(
+      `postgresql://${endpoint}${pooled ? '-pooler' : ''}.eu-central-1.aws.neon.tech/neondb?sslmode=require`,
+      endpoint,
+      pooled,
+    );
+  }
+  for (const [url, expected, pooled] of [
+    [
+      'postgresql://ep-withered-shadow-b230htte.neon.tech/neondb?sslmode=require',
+      'ep-withered-shadow-b230htte',
+      false,
+    ],
+    [
+      'postgresql://ep-other.neon.tech/neondb?sslmode=require',
+      endpoint,
+      false,
+    ],
+    [
+      'postgresql://ep-staging-fixture-pooler.neon.tech/neondb?sslmode=require',
+      endpoint,
+      false,
+    ],
+    [
+      'postgresql://ep-staging-fixture.neon.tech/neondb',
+      endpoint,
+      false,
+    ],
+    [
+      'postgresql://ep-staging-fixture.neon.tech/other?sslmode=require',
+      endpoint,
+      false,
+    ],
+  ])
+    assert.throws(
+      () => assertStagingDatabaseUrl(url, expected, pooled),
+      /approved isolated/,
+    );
+});
+
+test('staging config stamps Worker and image builds without modifying production configuration', () => {
+  const before = readFileSync(
+    join(root, 'deploy/cloudflare/wrangler.jsonc'),
+    'utf8',
+  );
+  const vars = {
+    CLOUDFLARE_ACCOUNT_ID: JSON.parse(before).account_id,
+    SERVICE_RULES_OWNER: 'Fixture operator',
+    SERVICE_RULES_CONTACT: 'fixture@example.test',
+    SERVICE_RULES_TEXT: 'Fixture rules',
+  };
+  const { directory, file } = writeStagingConfig(vars, 'a'.repeat(40));
+  try {
+    const full = JSON.parse(readFileSync(file, 'utf8'));
+    assert.equal(full.env.staging.vars.RELEASE_ID, 'a'.repeat(40));
+    assert.deepEqual(full.env.staging.containers[0].image_vars, {
+      BIDPLACE_RELEASE_SHA: 'a'.repeat(40),
+    });
+    assert.deepEqual(
+      full.env.production.vars,
+      JSON.parse(before).env.production.vars,
+    );
+    assert.equal(
+      readFileSync(join(root, 'deploy/cloudflare/wrangler.jsonc'), 'utf8'),
+      before,
+    );
+    const wrongBuckets = structuredClone(full.env.staging);
+    wrongBuckets.vars.S3_PUBLIC_BUCKET =
+      full.env.production.vars.S3_PUBLIC_BUCKET;
+    assert.throws(() => assertStagingConfig(wrongBuckets), /own Worker/);
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test('Access preflight rejects an unprotected site and unrelated login redirects', async () => {
+  for (const response of [
+    new Response('', { status: 200 }),
+    new Response('', {
+      status: 302,
+      headers: { location: 'https://other.example/login' },
+    }),
+  ]) {
+    await assert.rejects(
+      assertStagingAccess(async () => response),
+      /not protected/,
+    );
+  }
+  await assertStagingAccess(
+    async () =>
+      new Response('', {
+        status: 302,
+        headers: { location: 'https://fixture.cloudflareaccess.com/login' },
+      }),
+  );
+});
+
+test('test account provisioning is fenced to staging and preserves existing account state', async () => {
+  const env = {
+    APP_ENV: 'staging',
+    STAGING_NEON_ENDPOINT_ID: 'ep-staging-fixture',
+    DATABASE_URL:
+      'postgresql://ep-staging-fixture.neon.tech/neondb?sslmode=require',
+    STAGING_TEST_PASSWORD: 'fixture-account-input',
+  };
+  assertStagingAccountsEnvironment(env);
+  assert.throws(
+    () => assertStagingAccountsEnvironment({ ...env, APP_ENV: 'production' }),
+    /only be provisioned in staging/,
+  );
+  assert.throws(
+    () =>
+      assertStagingAccountsEnvironment({ ...env, STAGING_TEST_PASSWORD: '' }),
+    /STAGING_TEST_PASSWORD/,
+  );
+  const writes = [];
+  await provisionStagingAccounts(
+    {
+      $transaction: async (callback) =>
+        callback({ user: { upsert: async (data) => writes.push(data) } }),
+    },
+    'fixture-hash',
+  );
+  assert.equal(writes.length, stagingAccounts.length);
+  for (const write of writes) {
+    assert.deepEqual(write.update, {});
+    assert.ok(write.create.emailVerifiedAt instanceof Date);
+    assert.equal(write.create.passwordHash, 'fixture-hash');
+    assert.ok(write.create.email.endsWith('@bidplace.test'));
+  }
+});
 
 const canary = 'local-secret-canary';
 
@@ -51,14 +198,48 @@ test('gate environment removes runtime and deploy credentials', () => {
     CLOUDFLARE_API_TOKEN: canary, SERVICE_RULES_OWNER: 'bidplace',
     SERVICE_RULES_CONTACT: 'work.evles@gmail.com', SERVICE_RULES_TEXT: 'approved rules',
     SMTP_PASSWORD: canary, RELEASE_CONTROL: canary,
+    CF_ACCESS_CLIENT_ID: canary, CF_ACCESS_CLIENT_SECRET: canary, STAGING_TEST_PASSWORD: canary,
     TURNSTILE_SITE_KEY: 'task-public-site-key', TURNSTILE_SECRET_KEY: canary,
   });
   assert.equal(env.PATH, '/usr/bin');
   assert.equal(env.TURNSTILE_SITE_KEY, 'task-public-site-key');
   assert.equal(env.CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV, 'false');
-  for (const name of [...workerSecrets, 'DATABASE_URL_UNPOOLED', 'NEON_DIRECT_URL', 'CLOUDFLARE_API_TOKEN', 'SERVICE_RULES_OWNER', 'SERVICE_RULES_CONTACT', 'SERVICE_RULES_TEXT']) {
+  for (const name of [...workerSecrets, 'DATABASE_URL_UNPOOLED', 'NEON_DIRECT_URL', 'CLOUDFLARE_API_TOKEN', 'SERVICE_RULES_OWNER', 'SERVICE_RULES_CONTACT', 'SERVICE_RULES_TEXT', 'CF_ACCESS_CLIENT_ID', 'CF_ACCESS_CLIENT_SECRET', 'STAGING_TEST_PASSWORD']) {
     assert.equal(env[name], undefined);
   }
+});
+
+test('staging secret files exclude SMTP while preserving production requirements', () => {
+  const payload = secrets();
+  delete payload.SMTP_USERNAME;
+  delete payload.SMTP_PASSWORD;
+  const fixture = writeSecrets(payload);
+  try {
+    assert.deepEqual(assertSecretsFile(fixture.file, root, 'staging'), payload);
+    assert.throws(() => assertSecretsFile(fixture.file, root), /runtime contract/);
+  } finally { rmSync(fixture.folder, { recursive: true, force: true }); }
+});
+
+test('staging migrations require both a closed API and an authenticated stopped container', async () => {
+  const env = { CF_ACCESS_CLIENT_ID: canary, CF_ACCESS_CLIENT_SECRET: canary, RELEASE_CONTROL: canary };
+  for (const [apiStatus, stateStatus, containerStatus, allowed] of [
+    [503, 200, 'stopped', true], [503, 200, 'stopped_with_code', true],
+    [200, 200, 'stopped', false], [503, 200, 'running', false], [503, 403, 'stopped', false],
+  ]) {
+    const check = assertStagingMigrationStopped(env, async (url, options) => {
+      assert.equal(options.redirect, 'manual');
+      assert.equal(options.headers['CF-Access-Client-Secret'], canary);
+      if (url.endsWith('/api/health')) {
+        assert.equal(options.headers.Authorization, undefined);
+        return new Response(null, { status: apiStatus });
+      }
+      assert.equal(options.headers.Authorization, 'Bearer ' + canary);
+      return Response.json({ status: containerStatus }, { status: stateStatus });
+    });
+    if (allowed) await check;
+    else await assert.rejects(check, /Close and stop/);
+  }
+  await assert.rejects(assertStagingMigrationStopped({}), /service credentials/);
 });
 
 test('secrets file accepts the runtime contract and rejects unsafe files without printing values', () => {

@@ -4,8 +4,15 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { root } from './config.mjs';
+import { assertReleaseSha } from './deploy.mjs';
 
 const image = 'bidplace-cloudflare-verify:local';
+const releaseId = assertReleaseSha(
+  execFileSync('git', ['rev-parse', 'HEAD'], {
+    cwd: root,
+    encoding: 'utf8',
+  }).trim(),
+);
 const suffix = randomUUID().slice(0, 8);
 const network = `bidplace-cf-smoke-${suffix}`;
 const db = `${network}-db`;
@@ -19,7 +26,9 @@ const run = (command, args, options = {}) => {
 };
 
 try {
-  run('docker', ['build', '--platform', 'linux/amd64', '-f', 'apps/api/Dockerfile', '-t', image, '.']);
+  run('docker', ['build', '--platform', 'linux/amd64',
+    '--build-arg',
+    `BIDPLACE_RELEASE_SHA=${releaseId}`, '-f', 'apps/api/Dockerfile', '-t', image, '.']);
   if (docker(['image', 'inspect', image, '--format', '{{.Os}}/{{.Architecture}}']) !== 'linux/amd64') {
     throw new Error('API image must be linux/amd64');
   }
@@ -69,8 +78,8 @@ try {
     DATABASE_URL: `postgresql://smoke:local-smoke-only@${db}:5432/bidplace_cloudflare_smoke?connection_limit=3`,
     JWT_SECRET: 'local-image-smoke-only-not-a-runtime-secret',
     CORS_ORIGIN: 'https://staging.bid.place', TRUST_PROXY: 'true',
-    SMTP_HOST: 'smtp.example.invalid', SMTP_PORT: '587', SMTP_SECURE: 'false', SMTP_AUTH_MODE: 'none',
-    SMTP_FROM: 'smoke@example.invalid', PASSWORD_RESET_URL_BASE: 'https://staging.bid.place',
+    PASSWORD_RESET_URL_BASE: 'https://staging.bid.place',
+    RELEASE_ID: 'b'.repeat(40),
     TURNSTILE_SECRET_KEY: 'local-smoke-only', TURNSTILE_HOSTNAME: 'staging.bid.place',
     SERVICE_RULES_OWNER: 'Local image smoke', SERVICE_RULES_CONTACT: 'smoke@example.invalid',
     SERVICE_RULES_TEXT: 'Local verification only; never deployed.', TEST_EMAIL_BYPASS: 'false',
@@ -98,6 +107,19 @@ try {
     await new Promise((resolve) => setTimeout(resolve, 500));
   }
   if (!ready) throw new Error(`API container did not start within the smoke budget: ${startupResult}`);
+  for (const path of ['/api/health', '/api/health/ready']) {
+    const response = await fetch(origin + path, {
+      signal: AbortSignal.timeout(5000),
+    });
+    if (
+      response.status !== 200 ||
+      (await response.json()).releaseId !== releaseId
+    ) {
+      throw new Error(
+        'API image release id must come from its build, not runtime settings',
+      );
+    }
+  }
   for (const [path, status] of [['/api/health/ready', 200], ['/api/categories', 200],
     ['/api/auth/me', 401], ['/api/no-such-endpoint', 404]]) {
     const response = await fetch(origin + path, { signal: AbortSignal.timeout(5000) });

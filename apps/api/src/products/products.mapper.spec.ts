@@ -228,6 +228,7 @@ describe('portfolioCatalogProductSelect', () => {
         .select,
     ).toEqual({
       mediaAsset: { select: publicMediaAssetSelect },
+      mediaAssetId: true,
       id: true,
       mimeType: true,
       byteLength: true,

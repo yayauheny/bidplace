@@ -39,7 +39,8 @@
     "cloudflare:deploy": "node scripts/cloudflare/deploy.mjs production",
     "cloudflare:deploy:staging": "node scripts/cloudflare/deploy.mjs staging",
     "cloudflare:build:staging": "node scripts/cloudflare/build-web.mjs staging",
-    "cloudflare:migrate": "node scripts/cloudflare/migrate.mjs"
+    "cloudflare:migrate": "node scripts/cloudflare/migrate.mjs",
+    "cloudflare:accounts:staging": "node scripts/cloudflare/staging-accounts.mjs"
   },
   "devDependencies": {
     "@cloudflare/containers": "0.3.7",

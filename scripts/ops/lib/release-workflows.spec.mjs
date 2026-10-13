@@ -5,6 +5,35 @@ import test from 'node:test';
 
 const root = resolve(import.meta.dirname, '../../..');
 
+test('staging validates the approved branch and exact SHA before the isolated secret-bearing job', async () => {
+  const workflow = await readFile(
+    resolve(root, '.github/workflows/staging-deploy.yml'),
+    'utf8',
+  );
+  assert.match(workflow, /workflow_dispatch:/);
+  assert.doesNotMatch(
+    workflow,
+    /pull_request:|pull_request_target:|push:|schedule:/,
+  );
+  const validation = workflow.slice(
+    workflow.indexOf('  validate:'),
+    workflow.indexOf('  deploy:'),
+  );
+  assert.doesNotMatch(validation, /secrets\./);
+  assert.match(validation, /STAGING_DEPLOY_BRANCH/);
+  assert.match(validation, /git merge-base --is-ancestor/);
+  assert.match(workflow, /needs: validate/);
+  assert.match(workflow, /name: staging/);
+  assert.match(workflow, /ref: \$\{\{ needs\.validate\.outputs\.sha \}\}/);
+  assert.match(workflow, /cancel-in-progress: false/);
+  assert.match(workflow, /--initial-staging/);
+  assert.match(workflow, /inputs.operation == 'initialize'/);
+  assert.doesNotMatch(
+    workflow,
+    /secrets\.SMTP_|environment: prod|run: pnpm verify/,
+  );
+});
+
 test('Verify retains general pull request coverage and release branch pushes', async () => {
   const workflow = await readFile(
     resolve(root, '.github/workflows/verify.yml'),

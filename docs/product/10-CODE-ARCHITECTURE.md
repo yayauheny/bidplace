@@ -1,7 +1,29 @@
 # bidplace — архитектура кода
 
-Последнее обновление: 2026-10-10
+Последнее обновление: 2026-10-13
 Статус: Confirmed technical boundaries for the portfolio-first MVP implementation.
+
+## 2026-10-13 — Isolated manual staging (Partial)
+
+`DEC-119` restores staging using the existing Worker/Container/SPA boundary.
+`staging-deploy.yml` validates the approved repository branch and exact candidate
+SHA without deployment secrets, then checks out that SHA in Environment `staging`.
+Production workflow and release gates stay separate. `scripts/cloudflare/staging.mjs`
+pins Worker, origins, R2 pair and approved Neon endpoint before writes. Migrations
+are explicit guarded operations. Account provisioning adds verified fixture users
+without resetting existing state or content. No schema or public product contract
+changes.
+
+Staging `MailModule` uses `DisabledMailTransport`, omits SMTP from Container env,
+and retains other production security requirements. Worker strips Access
+credentials before Nest. Staging version endpoint reports Worker SHA; health
+reports SHA baked into the API image by a public Docker build argument. Runtime
+env cannot relabel an old image. Production health response is unchanged.
+
+Existing deployment and mail modules remain the owners; no reservation service,
+preview platform, flag service, or artifact promotion system. New behavior extends
+these same owners. Resource facts, setup and remaining live checks:
+[staging runbook](../ops/STAGING-DEPLOYMENT.md).
 
 ## 2026-10-05 — Cloudflare application deployment (Partial)
 
@@ -164,7 +186,7 @@ See [`11-PROJECT-STATUS.md`](11-PROJECT-STATUS.md) for remaining gates.
 - Mobile author application (`apps/mobile/src/features/sellers/seller-profile-screen.tsx`, `author-application-*-step.tsx`, `AuthorApplicationAchievements.tsx`) renders four URL-owned steps against portfolio application reads/writes. Shared Zod in `seller-profile.ts` describes DTO and write payloads (for example `shortDescription: null` clears on PATCH); step UI and local hints are not readiness or stage authority. Server clamp, `applicationStage`, and validation errors remain authoritative. Achievement append/delete are JSON writes validated on the API (`z.output`); Work creation-story media and steps stay on the separate Product path.
 - `packages/database` owns Prisma schema, additive migrations and deterministic local/test seed. Demo seed may run only with `NODE_ENV=development|test`, `APP_ENV=local` and `ALLOW_DESTRUCTIVE_DEMO_SEED=true`; production-like profiles fail before writes. Local seed is the Figma Home catalog (four public authors plus `pixelp`, nine public works including two demo vex works, no Listing/Bid/Order rows). User-facing seed copy is production-quality (`DEC-092`). `CuratorSelection` points at Dali (`daliEstate1` / `pixelp`) with curator `vex` and the Figma `note`. Pre-production amendment of the unreleased `curator_selections` CREATE TABLE (`note TEXT`, `curator_seller_profile_id`, `DEC-090`/`DEC-091`) is the only in-place migration edit; after first production apply, further columns are additive. Seller `biography` is an additive column (`20260914200000_add_seller_biography`). This does not authorize editing commerce/baseline migrations (`DEC-087`). `scripts/ops/commerce-inventory.mjs` is a read-only leftover-listing inventory; it is not a write path and is not a staging/production dry-run unless that environment is the connected target.
 - `packages/config` owns env-file parsing through Node `util.parseEnv`. One leading U+FEFF is removed from the file text before that parse; a later BOM, including one inside a quoted value, stays. A missing file is an empty record. Explicit process env overrides file values. `apps/api/src/core/config/env.ts` validates that merge once and freezes the result. `ServerEnvModule.forRoot` provides that same object as `SERVER_ENV` for one Nest application context. `main.ts` and `apps/api/test/integration/http-test-app.ts` are the bootstrap loaders. Analytics, auth, OTP, password reset, mail, image storage, and rate limits inject the snapshot. `loadServerEnv` still copies unset keys into `process.env`, because `PrismaService` constructs `PrismaClient` without a datasource argument and Prisma reads `DATABASE_URL` from the process environment. A second application context gets its own snapshot through its own `ServerEnvModule.forRoot` call. The provider is the existing Nest dynamic module.
-- `apps/api/src/core/config/env-profile.ts` owns the `NODE_ENV` × `APP_ENV` predicates. `APP_ENV=production` requires `NODE_ENV=production`; `NODE_ENV=production` cannot combine with `APP_ENV=local`. Production SMTP, service rules, password-reset URL, JWT length and test-bypass prohibitions apply when either variable is `production`. Staging keeps its previous requirement shape: production security only when `NODE_ENV=production`.
+- `apps/api/src/core/config/env-profile.ts` owns the `NODE_ENV` × `APP_ENV` predicates. `APP_ENV=production` requires `NODE_ENV=production`; `NODE_ENV=production` cannot combine with `APP_ENV=local`. Service rules, password-reset URL, JWT length and test-bypass prohibitions apply when either variable is `production`. Staging uses `NODE_ENV=production` with one exception: SMTP is neither required nor used because delivery is disabled (`DEC-119`).
 - Release automation is deliberately layered: root `pnpm verify` is the local and
   standard automatic CI gate (including mobile unit tests and the E2E database
   fence). Full browser E2E is not run automatically on pull requests or pushes:
@@ -259,7 +281,7 @@ SellerProfile
   interleaves published non-cover `ProductImage` rows between paragraphs.
   `ProductCreationStep` remains owner-only and is not a public History CMS;
 - persisted entities expose `createdAt` and `updatedAt`; append-only audit records retain immutable business facts;
-- buyer accepts a versioned service-rules text; `auth.service.ts` stores the acceptance and `POST /api/auth/rules/accept` returns the canonical `{ user }` auth response. Mobile derives session capability from one React Query `['user', 'me']` record. A structured 401 from any query or mutation clears that record and user/seller/admin caches once; 403 and infrastructure errors preserve the authenticated state. Registration and forgot-password require Turnstile proof; login accepts an optional adaptive Turnstile token after challenge. **Idempotency keys are required only** on email OTP send, OTP verify, and forgot-password (`packages/contracts/src/auth.ts`, `packages/api-client/src/auth.ts`); register/login do not take idempotency keys. Email verification state exposes `serverNow`, `sendStatus`, and deadline fields from the API; mobile `use-email-verification.ts` drives copy and local countdown ticks only and does not auto-send mail. OTP send/verify and password-reset send delegate durable quotas, pauses, operation replay, and SMTP outcome classification to `AuthAbuseService`; cheap per-IP limits stay in `RateLimitService`. Mail still flows through shared `MailTransport` (`SmtpMailTransport` on the production security profile, `LocalMailTransport` otherwise) with a test-only OTP bypass only for `NODE_ENV=test` and `APP_ENV=local`. Unverified email correction and OTP verify share the same user row lock and expiry recheck as reset completion. Policy numbers and SMTP/Turnstile rules are owned by [`13-APPLICATION-SECURITY.md`](13-APPLICATION-SECURITY.md) (**DEC-109**);
+- buyer accepts a versioned service-rules text; `auth.service.ts` stores the acceptance and `POST /api/auth/rules/accept` returns the canonical `{ user }` auth response. Mobile derives session capability from one React Query `['user', 'me']` record. A structured 401 from any query or mutation clears that record and user/seller/admin caches once; 403 and infrastructure errors preserve the authenticated state. Registration and forgot-password require Turnstile proof; login accepts an optional adaptive Turnstile token after challenge. **Idempotency keys are required only** on email OTP send, OTP verify, and forgot-password (`packages/contracts/src/auth.ts`, `packages/api-client/src/auth.ts`); register/login do not take idempotency keys. Email verification state exposes `serverNow`, `sendStatus`, and deadline fields from the API; mobile `use-email-verification.ts` drives copy and local countdown ticks only and does not auto-send mail. OTP send/verify and password-reset send delegate durable quotas, pauses, operation replay, and SMTP outcome classification to `AuthAbuseService`; cheap per-IP limits stay in `RateLimitService`. Mail still flows through shared `MailTransport` (`DisabledMailTransport` on staging, `SmtpMailTransport` on the production security profile, `LocalMailTransport` otherwise) with a test-only OTP bypass only for `NODE_ENV=test` and `APP_ENV=local`. Unverified email correction and OTP verify share the same user row lock and expiry recheck as reset completion. Policy numbers and SMTP/Turnstile rules are owned by [`13-APPLICATION-SECURITY.md`](13-APPLICATION-SECURITY.md) (**DEC-109**);
 - leftover Listing/Bid/Order rows remain in Prisma. Hide/unhide and admin
   seller/product moderation still fail closed when a `SCHEDULED` or `LIVE`
   Listing exists (`hasBlockingListing`). There is no listing/bid/order HTTP,

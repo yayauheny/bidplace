@@ -1,8 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
 import { classifyMailFailure } from './mail-outcome';
+import { MailDeliveryDisabledError } from '../core/mail/mail-transport';
 
 describe('classifyMailFailure', () => {
+  it('classifies disabled staging delivery as rejected rather than spending an unknown mail outcome', () => {
+    expect(
+      classifyMailFailure(
+        new MailDeliveryDisabledError('Email delivery is disabled in staging'),
+      ),
+    ).toBe('rejected');
+  });
   it('treats a local recipient validation error as a guaranteed reject', () => {
     expect(
       classifyMailFailure(new Error('Mail recipient must be a single email address')),

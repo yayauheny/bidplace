@@ -74,6 +74,7 @@
 | `../research/2026-09-06-BELARUS-LEGAL-UX-PATTERNS.md`        | Проверенные правовые опоры, рыночные patterns и legal UX matrix                                           |
 | `../ops/00-RELEASE-AND-BACKUP.md`                            | Deploy, backup, restore drill и `pnpm verify` gate для пилота                                             |
 | `../ops/CLOUDFLARE-DEPLOYMENT.md`                            | Portfolio Cloudflare staging/production: domains, secrets, migrations и smoke                             |
+| `../ops/STAGING-DEPLOYMENT.md`                               | Текущий изолированный staging: ресурсы, GitHub configuration, ручной SHA deploy и приёмка                   |
 | `../audits/00-CURRENT-MVP-READINESS.md`                      | Главный текущий аудит готовности и блокеров                                                               |
 | `../audits/01-OPEN-ARCHITECTURE-GAPS.md`                     | Нерешённые архитектурные пробелы, варианты и зависимости от решений                                       |
 | `../research/README.md`                                      | Правила хранения сырого исследования                                                                      |

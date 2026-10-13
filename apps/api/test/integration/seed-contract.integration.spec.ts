@@ -50,6 +50,62 @@ beforeAll(async () => {
 afterAll(async () => context?.cleanup());
 
 describe('demo seed executable contract', () => {
+  it('provisions staging fixture accounts transactionally without resetting existing users or content', async () => {
+    const buyer = await prisma.user.upsert({
+      where: { email: 'buyer@bidplace.test' },
+      update: { status: 'banned', sessionVersion: 3 },
+      create: {
+        email: 'buyer@bidplace.test',
+        passwordHash: 'non-login-fixture',
+        status: 'banned',
+        sessionVersion: 3,
+      },
+    });
+    const productCount = await prisma.product.count();
+    execFileSync(
+      process.execPath,
+      [
+        '--input-type=module',
+        '-e',
+        `
+      import { createRequire } from 'node:module';
+      import { pathToFileURL } from 'node:url';
+      const require = createRequire(process.env.STAGING_API_PACKAGE);
+      const { PrismaClient } = require('@bidplace/database');
+      const { provisionStagingAccounts } = await import(pathToFileURL(process.env.STAGING_ACCOUNTS_SCRIPT).href);
+      const db = new PrismaClient();
+      try { await provisionStagingAccounts(db, 'non-login-fixture'); }
+      finally { await db.$disconnect(); }
+    `,
+      ],
+      {
+        cwd: repositoryRoot,
+        stdio: 'pipe',
+        env: {
+          ...process.env,
+          DATABASE_URL: context.databaseUrl,
+          STAGING_API_PACKAGE: resolve(repositoryRoot, 'apps/api/package.json'),
+          STAGING_ACCOUNTS_SCRIPT: resolve(
+            repositoryRoot,
+            'scripts/cloudflare/staging-accounts.mjs',
+          ),
+        },
+      },
+    );
+    expect(
+      await prisma.user.findUnique({
+        where: { id: buyer.id },
+        select: { status: true, sessionVersion: true },
+      }),
+    ).toEqual({ status: 'banned', sessionVersion: 3 });
+    const admin = await prisma.user.findUnique({
+      where: { email: 'admin@bidplace.test' },
+      select: { role: true, emailVerifiedAt: true },
+    });
+    expect(admin?.role).toBe('admin');
+    expect(admin?.emailVerifiedAt).toBeInstanceOf(Date);
+    expect(await prisma.product.count()).toBe(productCount);
+  });
   it('creates the Figma local catalog without commerce fixtures', async () => {
     runSeed({ nodeEnv: 'test', appEnv: 'local' });
 

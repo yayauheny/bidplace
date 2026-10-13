@@ -6,7 +6,7 @@ import {
   requiresProductionSecurity,
 } from '../config';
 import { LocalMailTransport } from './local-mail-transport';
-import { MailTransport } from './mail-transport';
+import { DisabledMailTransport, MailTransport } from './mail-transport';
 import { SmtpMailTransport } from './smtp-mail-transport';
 
 @Global()
@@ -15,6 +15,7 @@ import { SmtpMailTransport } from './smtp-mail-transport';
     {
       provide: MailTransport,
       useFactory: (env: ServerEnv) => {
+        if (env.APP_ENV === 'staging') return new DisabledMailTransport();
         if (requiresProductionSecurity(env)) {
           return SmtpMailTransport.create(env);
         }

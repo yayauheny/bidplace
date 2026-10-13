@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   loadServerEnv,
+  parseServerEnv,
   resolveCorsOrigin,
   resolveServerEnvFilePath,
 } from './env';
@@ -70,6 +71,7 @@ describe('resolveServerEnvFilePath', () => {
     expect(
       resolveServerEnvFilePath({
         moduleDir: '/repo/apps/api/src/core/config',
+        envOverride: '',
         fileExists: (filePath) => filePath === envPath,
       }),
     ).toBe(envPath);
@@ -81,6 +83,7 @@ describe('resolveServerEnvFilePath', () => {
     expect(
       resolveServerEnvFilePath({
         moduleDir: '/repo/apps/api/dist/core/config',
+        envOverride: '',
         fileExists: (filePath) => filePath === envPath,
       }),
     ).toBe(envPath);
@@ -88,6 +91,22 @@ describe('resolveServerEnvFilePath', () => {
 });
 
 describe('NODE_ENV × APP_ENV matrix', () => {
+  it('boots staging without SMTP while preserving JWT, Turnstile and no-bypass security', () => {
+    const env: NodeJS.ProcessEnv = {
+      ...productionSecurityEnv,
+      NODE_ENV: 'production',
+      APP_ENV: 'staging',
+    };
+    for (const name of Object.keys(env))
+      if (name.startsWith('SMTP_')) delete env[name];
+    expect(parseServerEnv(env).APP_ENV).toBe('staging');
+    expect(() => parseServerEnv({ ...env, TEST_EMAIL_BYPASS: 'true' })).toThrow(
+      'TEST_EMAIL_BYPASS cannot be enabled',
+    );
+    expect(() => parseServerEnv({ ...env, APP_ENV: 'production' })).toThrow(
+      'SMTP_HOST is required',
+    );
+  });
   it('defaults media storage to the legacy provider outside production', () => {
     stubMissingEnvFile();
 

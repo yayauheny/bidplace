@@ -167,6 +167,7 @@ const serverEnvSchema = z
       ];
 
       for (const key of requiredKeys) {
+        if (env.APP_ENV === 'staging' && key.startsWith('SMTP_')) continue;
         if (env[key] === undefined || env[key] === null) {
           context.addIssue({
             code: z.ZodIssueCode.custom,

@@ -1,7 +1,27 @@
 # bidplace — application security (engineering)
 
-Последнее обновление: 2026-10-10
+Последнее обновление: 2026-10-13
 Статус: Confirmed (engineering owner)
+
+## 2026-10-13 — Staging security profile (Partial)
+
+`DEC-119` enables a separate staging contour protected by Cloudflare Access.
+Anonymous denial and isolated resource metadata are verified; CI service-token
+authentication, live application sessions and uploads still need acceptance.
+Access client headers/assertion are removed before Nest forwarding.
+
+`APP_ENV=staging` selects `DisabledMailTransport` before SMTP/local selection;
+delivery always fails before external effects and is classified as rejected.
+SMTP is omitted from deployment settings and Container secrets. With
+`NODE_ENV=production`, staging still requires strong JWT, Turnstile, S3, service
+rules, secure cookies and no test bypass. Preverified fixture accounts use normal
+Argon2/password/session/role behavior. Provisioning pins the isolated Neon endpoint
+and preserves existing account state; destructive demo seed remains prohibited.
+
+Coverage: `env.spec.ts`, `mail.module.spec.ts`, `mail-outcome.spec.ts`,
+`seed-contract.integration.spec.ts`, Worker routing and deployment/smoke owner
+specs. Provider setup and credential custody:
+[staging runbook](../ops/STAGING-DEPLOYMENT.md).
 
 ## 2026-10-05 — Cloudflare deployment boundary (Partial)
 
@@ -213,12 +233,12 @@ Env parsing rejects inconsistent pairs before bootstrap:
 | `development` | `local` | Allowed local development |
 | `test` | `local` | Allowed tests; `TEST_EMAIL_BYPASS` may be enabled |
 | `production` | `production` | Production security required |
-| `production` | `staging` | Production security required (staging unchanged) |
-| `development` or `test` | `staging` | Allowed; no production SMTP/rules requirement |
+| `production` | `staging` | Production security required except SMTP; all mail disabled |
+| `development` or `test` | `staging` | Allowed; all mail disabled; cloud deploy requires production Node profile |
 | `development` or `test` | `production` | Rejected: `APP_ENV=production requires NODE_ENV=production` |
 | `production` | `local` (including default) | Rejected: `NODE_ENV=production requires APP_ENV=production or APP_ENV=staging` |
 
-Production security (`NODE_ENV=production` or `APP_ENV=production`) requires SMTP, service rules, `PASSWORD_RESET_URL_BASE`, S3 media configuration, and `JWT_SECRET` of at least 32 characters. `TEST_EMAIL_BYPASS` cannot be enabled. Session cookies use `secure` on that profile. Local mail transport and default service-rules text cannot run there.
+Production security (`NODE_ENV=production` or `APP_ENV=production`) requires service rules, `PASSWORD_RESET_URL_BASE`, S3 media configuration, and `JWT_SECRET` of at least 32 characters. SMTP is required except on staging, where delivery is disabled. `TEST_EMAIL_BYPASS` cannot be enabled. Session cookies use `secure` on that profile. Local mail transport and default service-rules text cannot run there.
 
 Destructive demo seed remains `NODE_ENV=development|test`, `APP_ENV=local`, and `ALLOW_DESTRUCTIVE_DEMO_SEED=true` only.
 
@@ -226,7 +246,7 @@ Coverage: `env-profile.spec.ts`, `env.spec.ts` matrix, `rules.spec.ts`, `local-m
 
 **Pros:** `APP_ENV=production` cannot boot with a development/test Node profile; bypass/seed stay local-test-only.
 **Cons:** Compose `app` profile must set `APP_ENV=production`; short JWT secrets fail production parse.
-**Revisit when:** staging gets its own owner rule (SMTP/JWT policy distinct from production).
+**Revisit when:** a staging task needs to verify mail delivery; that requires a new explicit decision.
 
 ## 8. Deferred ops/security (post-pilot)
 

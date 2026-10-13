@@ -3,7 +3,7 @@ import { routeRequest } from './router';
 
 function harness(
   response = () => Response.json({ public: true }),
-  release: { hold?: string; control?: string; image?: string } = {},
+  release: { hold?: string; control?: string; image?: string; appEnv?: string } = {},
 ) {
   const entries = new Map<string, Response>();
   const pending: Promise<unknown>[] = [];
@@ -18,6 +18,7 @@ function harness(
     API: { getByName }, ASSETS: { fetch: assets },
     RELEASE_HOLD: release.hold, RELEASE_CONTROL: release.control,
     RELEASE_ID: 'a'.repeat(40), RELEASE_IMAGE: release.image ?? 'current',
+    APP_ENV: release.appEnv,
   };
   const ctx = { waitUntil: (promise: Promise<unknown>) => { pending.push(promise); } };
   return { cache, fetchApi, getByName, assets, pending,
@@ -25,6 +26,20 @@ function harness(
 }
 
 describe('Cloudflare application boundary', () => {
+  it('exposes the staging Worker SHA without starting Nest and preserves production asset routing', async () => {
+    const staging = harness(undefined, { appEnv: 'staging' });
+    const response = await staging.request('/_release/version');
+    expect(await response.json()).toEqual({ releaseId: 'a'.repeat(40) });
+    expect(response.headers.get('Cache-Control')).toBe('no-store');
+    expect(staging.getByName).not.toHaveBeenCalled();
+    expect(
+      await (
+        await harness(undefined, { appEnv: 'production' }).request(
+          '/_release/version',
+        )
+      ).text(),
+    ).toBe('SPA');
+  });
   it('serves deep links through assets without starting the API', async () => {
     const h = harness();
     expect(await (await h.request('/works/example')).text()).toBe('SPA');
@@ -80,6 +95,8 @@ describe('Cloudflare application boundary', () => {
     await h.request('/api/auth/login', { method: 'POST', body: 'payload', headers: {
       Cookie: 'session=opaque', 'CF-Connecting-IP': '192.0.2.1', 'X-Forwarded-For': 'spoof',
       'X-Forwarded-Proto': 'http', 'X-Real-IP': 'spoof', Forwarded: 'for=spoof',
+      'CF-Access-Client-Id': 'fixture-access-id',
+      'CF-Access-Client-Secret': 'fixture-access-value',
     } });
     const forwarded = h.fetchApi.mock.calls[0][0];
     expect(forwarded.headers.get('Cookie')).toBe('session=opaque');
@@ -87,6 +104,8 @@ describe('Cloudflare application boundary', () => {
     expect(forwarded.headers.get('X-Forwarded-Proto')).toBe('https');
     expect(forwarded.headers.has('Forwarded')).toBe(false);
     expect(forwarded.headers.has('X-Real-IP')).toBe(false);
+    expect(forwarded.headers.has('CF-Access-Client-Id')).toBe(false);
+    expect(forwarded.headers.has('CF-Access-Client-Secret')).toBe(false);
     expect(await forwarded.text()).toBe('payload');
   });
 
