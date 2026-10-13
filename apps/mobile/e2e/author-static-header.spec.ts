@@ -143,7 +143,10 @@ test.describe('static public creator header', () => {
     await page.getByRole('button', { name: 'Поделиться профилем' }).click();
     await expect(page.getByRole('button', { name: 'Ссылка на профиль' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Пожаловаться на автора' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'QR-код профиля' })).toBeVisible();
+    await page.keyboard.press('Escape');
+    await page.getByRole('button', { name: 'Действия с профилем' }).click();
+    await page.getByRole('button', { name: 'QR-код профиля' }).click();
+    await expect(page.getByRole('button', { name: 'Скачать QR' })).toBeVisible();
   });
 
   test('selects, applies and clears multiple author categories', async ({ page }) => {
@@ -158,6 +161,11 @@ test.describe('static public creator header', () => {
     await page.getByRole('button', { name: 'Показать работы' }).click();
     await expect.poll(() => new URL(page.url()).searchParams.get('categories'))
       .toBe(`${categoryId},${secondCategoryId}`);
+    expect(
+      await page.getByTestId('creator-filter-strip').evaluate(
+        (node) => node.scrollWidth > node.clientWidth,
+      ),
+    ).toBe(true);
     await expect(page.getByRole('button', { name: 'Удалить Скульптура' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Удалить Живопись' })).toBeVisible();
     await page.getByRole('button', { name: 'Удалить Скульптура' }).click();
