@@ -152,6 +152,7 @@ export function PublicAuthorsScreen({
       />
       <FilterSortSheet
         compact
+        clearValue="added"
         open={sortOpen}
         value={state.sort}
         options={AUTHOR_SORT_OPTIONS}
