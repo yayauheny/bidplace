@@ -1,24 +1,25 @@
 import { useQuery } from '@tanstack/react-query';
-import { useRouter } from 'expo-router';
+import { Link } from 'expo-router';
+import { Bell } from 'lucide-react-native';
 import { ScrollView, View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
-import { BrandLogo } from '../../components/layout/BrandLogo';
+import { BidplaceMark } from '../../components/branding/BidplaceBrand';
 import { AppShell } from '../../components/layout/AppShell';
 import { InfrastructurePageStatus } from '../../components/shared/InfrastructurePageStatus';
 import { infrastructurePageFetchStatus } from '../../components/shared/infrastructure-page-status';
-import { PageState, PrimaryButton } from '../../components/ui';
+import { AppText, PageState, PrimaryButton } from '../../components/ui';
+import { MotionPressable } from '../../components/ui/MotionPressable';
 import { useApiClient } from '../../providers/api-provider';
 import { HomeNewAuthors } from './home-new-authors';
-import { LegalFooter } from '../auth/legal-footer';
 import { HomeNewWorks } from './home-new-works';
+import { PublicFooter } from '../auth/legal-footer';
 import { HomeOpening } from './home-opening';
 import { homeSectionPlan } from './home-sections';
 
 export function HomeScreen({ hideDock = false }: { hideDock?: boolean }) {
   const api = useApiClient();
-  const router = useRouter();
   const home = useQuery({
     queryKey: ['portfolio-home'],
     queryFn: ({ signal }) => api.portfolio.home({ signal }),
@@ -26,6 +27,7 @@ export function HomeScreen({ hideDock = false }: { hideDock?: boolean }) {
   const pageStatus = infrastructurePageFetchStatus(home);
   const plan = homeSectionPlan(home.data);
 
+  // Keep the infrastructure error/loading screen full-height, as before.
   if (pageStatus !== 'ready') {
     return (
       <AppShell hideDock={hideDock}>
@@ -43,18 +45,77 @@ export function HomeScreen({ hideDock = false }: { hideDock?: boolean }) {
         testID="home-scroll"
         contentContainerStyle={{
           paddingHorizontal: designTokens.space.pageGutter,
-          paddingTop: designTokens.space.logoTop,
-          paddingBottom: designTokens.size.dockReserve,
+          paddingTop: designTokens.space.x3,
+          paddingBottom: hideDock
+            ? designTokens.space.x6
+            : designTokens.size.dockReserve,
         }}
         showsVerticalScrollIndicator={false}
       >
         <View
+          testID="home-header"
           style={{
+            flexDirection: 'row',
             alignItems: 'center',
-            marginBottom: designTokens.space.logoGap,
+            minHeight: designTokens.size.touch,
+            marginBottom: designTokens.space.x10,
           }}
         >
-          <BrandLogo />
+          <View style={{ width: designTokens.size.touch, alignItems: 'center' }}>
+            <BidplaceMark size={32} />
+          </View>
+          <View
+            style={{
+              flex: 1,
+              minWidth: 0,
+              flexDirection: 'row',
+              justifyContent: 'center',
+              alignItems: 'center',
+              gap: designTokens.space.x5,
+            }}
+          >
+            <AppText
+              role="nav"
+              style={{
+                color: designTokens.color.inkStrong,
+                fontFamily: designTokens.typography.sectionTitle.fontFamily,
+                fontWeight: designTokens.typography.sectionTitle.fontWeight,
+              }}
+            >
+              Для вас
+            </AppText>
+            <Link href="/followed-authors" asChild>
+              <MotionPressable
+                accessibilityRole="link"
+                accessibilityLabel="Ваши авторы"
+                preset="button"
+                hitSlop={designTokens.space.x3}
+              >
+                <AppText role="nav" tone="secondary">
+                  Ваши авторы
+                </AppText>
+              </MotionPressable>
+            </Link>
+          </View>
+          <Link href="/notifications" asChild>
+            <MotionPressable
+              accessibilityRole="link"
+              accessibilityLabel="Уведомления"
+              preset="icon"
+              style={{
+                width: designTokens.size.touch,
+                height: designTokens.size.touch,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Bell
+                size={24}
+                color={designTokens.color.inkStrong}
+                strokeWidth={1.8}
+              />
+            </MotionPressable>
+          </Link>
         </View>
         <View style={{ gap: designTokens.space.homeSectionStack, minWidth: 0 }}>
           {plan.opening ? <HomeOpening selection={plan.opening} /> : null}
@@ -64,7 +125,7 @@ export function HomeScreen({ hideDock = false }: { hideDock?: boolean }) {
             <PrimaryButton
               label="Все авторы"
               width="full"
-              onPress={() => router.push('/authors')}
+              href="/authors"
             />
           ) : null}
           {plan.showEmpty ? (
@@ -76,17 +137,17 @@ export function HomeScreen({ hideDock = false }: { hideDock?: boolean }) {
               <PrimaryButton
                 label="Все работы"
                 width="full"
-                onPress={() => router.push('/works')}
+                href="/works"
               />
               <PrimaryButton
                 label="Все авторы"
                 width="full"
-                onPress={() => router.push('/authors')}
+                href="/authors"
               />
             </View>
           ) : null}
         </View>
-        <LegalFooter />
+        <PublicFooter inset />
       </ScrollView>
     </AppShell>
   );

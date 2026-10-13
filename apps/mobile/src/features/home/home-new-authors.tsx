@@ -1,4 +1,3 @@
-import { useRouter } from 'expo-router';
 import { View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
@@ -57,7 +56,6 @@ function fanShadowShellStyle(slot: HomeAuthorFanSlot) {
 }
 
 export function HomeNewAuthors({ authors }: { authors: HomeAuthor[] }) {
-  const { push } = useRouter();
   const slots = homeAuthorFanSlots(authors);
   if (slots.length === 0) return null;
 
@@ -105,11 +103,7 @@ export function HomeNewAuthors({ authors }: { authors: HomeAuthor[] }) {
           );
         })}
       </View>
-      <PrimaryButton
-        label="Смотреть все"
-        width="full"
-        onPress={() => push('/authors')}
-      />
+      <PrimaryButton label="Смотреть все" width="full" href="/authors" />
     </View>
   );
 }

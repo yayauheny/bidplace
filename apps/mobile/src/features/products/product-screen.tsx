@@ -5,6 +5,7 @@ import { ScrollView, View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 import { AppShell } from '../../components/layout';
+import { PublicFooter } from '../auth/legal-footer';
 import { InfrastructurePageStatus } from '../../components/shared/InfrastructurePageStatus';
 import {
   AppText,
@@ -220,6 +221,7 @@ export function ProductScreen({ publicId }: { publicId: string }) {
           ) : null}
         </View>
         </WorkHeader>
+        <PublicFooter />
       </ScrollView>
       <ShareSheet
         open={shareOpen}
