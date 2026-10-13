@@ -1,5 +1,5 @@
 import { useId, type ReactNode } from 'react';
-import { Modal, Platform, ScrollView, View } from 'react-native';
+import { Modal, Platform, ScrollView, useWindowDimensions, View } from 'react-native';
 
 import {
   designTokens,
@@ -26,6 +26,7 @@ export function FilterSheet({
   onClose,
   title,
   titleVariant = 'default',
+  presentation = 'full',
   showBack = false,
   onBack,
   onClear,
@@ -38,6 +39,7 @@ export function FilterSheet({
   onClose: () => void;
   title: string;
   titleVariant?: 'default' | 'directions';
+  presentation?: 'full' | 'compact';
   showBack?: boolean;
   onBack?: () => void;
   onClear?: () => void;
@@ -52,6 +54,8 @@ export function FilterSheet({
   returnFocusRef?: { current: { focus?: () => void } | null };
   children: ReactNode;
 }) {
+  const { height } = useWindowDimensions();
+  const compact = presentation === 'compact';
   const titleId = useId();
   const dialogId = `filter-sheet-${titleId}`;
 
@@ -73,7 +77,7 @@ export function FilterSheet({
     <Modal
       visible={open}
       transparent
-      animationType="none"
+      animationType={compact ? 'slide' : 'none'}
       onRequestClose={onClose}
     >
       <View
@@ -81,6 +85,7 @@ export function FilterSheet({
           flex: 1,
           position: 'relative',
           alignItems: 'center',
+          justifyContent: compact ? 'flex-end' : 'flex-start',
         }}
       >
         <OverlayDimmer onPress={onClose} />
@@ -88,14 +93,17 @@ export function FilterSheet({
           nativeID={dialogId}
           accessibilityViewIsModal
           accessibilityLabel={title}
-          style={filterSheetPanelStyle()}
+          style={[filterSheetPanelStyle(compact), compact ? { maxHeight: height * 0.85 } : null]}
           {...(Platform.OS === 'web'
             ? ({ role: 'dialog', 'aria-modal': true } as object)
             : {})}
         >
+          {compact ? (
+            <View style={{ alignSelf: 'center', width: 36, height: 4, borderRadius: 10, backgroundColor: '#efefef', marginBottom: 16 }} />
+          ) : null}
           <View
             style={[
-              filterSheetHeaderStyle(),
+              compact ? { width: '100%', minHeight: title ? 22 : 0, flexDirection: 'row' as const, alignItems: 'center' as const } : filterSheetHeaderStyle(),
               titleVariant === 'directions'
                 ? {
                     minHeight:
@@ -104,7 +112,7 @@ export function FilterSheet({
                 : null,
             ]}
           >
-            <MotionPressable
+            {!compact ? <MotionPressable
               accessibilityRole="button"
               accessibilityLabel={showBack ? 'Назад' : 'Закрыть'}
               hitSlop={figmaTokens.space.headerIconHitSlop}
@@ -124,42 +132,44 @@ export function FilterSheet({
                   titleVariant === 'directions' && showBack ? 2 : undefined
                 }
               />
-            </MotionPressable>
-            <AppText
+            </MotionPressable> : null}
+            {title ? <AppText
               nativeID={titleId}
-              role={showBack ? 'profileHeading' : 'screenTitle'}
+              role={compact ? 'body' : showBack ? 'profileHeading' : 'screenTitle'}
               numberOfLines={1}
               style={[
-                filterSheetTitleStyle(),
+                compact ? { fontSize: 18, fontWeight: '600' as const } : filterSheetTitleStyle(),
                 titleVariant === 'directions'
                   ? designTokens.typography.directionsSheetTitle
                   : null,
               ]}
             >
               {title}
-            </AppText>
+            </AppText> : null}
             {onClear ? (
               <FigmaButton
                 label={clearLabel}
                 variant="ghost"
                 onPress={onClear}
               />
-            ) : (
+            ) : compact ? null : (
               <View style={{ width: figmaTokens.size.iconButton }} />
             )}
           </View>
           <ScrollView
             style={{
-              flex: 1,
+              flex: compact ? undefined : 1,
+              flexGrow: compact ? 0 : undefined,
+              maxHeight: compact ? Math.max(height * 0.85 - 150, 80) : undefined,
               marginTop:
-                titleVariant === 'directions' ? 0 : figmaTokens.space.x2,
+                compact ? 14 : titleVariant === 'directions' ? 0 : figmaTokens.space.x2,
             }}
             contentContainerStyle={{
               paddingTop:
-                titleVariant === 'directions'
+                compact ? 0 : titleVariant === 'directions'
                   ? designTokens.authorApplication.directionsSearchGap
                   : figmaTokens.space.identityGap,
-              paddingBottom: figmaTokens.space.x4,
+              paddingBottom: compact ? 0 : figmaTokens.space.x4,
             }}
             keyboardShouldPersistTaps="handled"
           >
