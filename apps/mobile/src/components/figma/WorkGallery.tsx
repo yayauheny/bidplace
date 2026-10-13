@@ -33,7 +33,7 @@ export function WorkGallery({
   leadingAction?: ReactNode;
   action?: ReactNode;
 }) {
-  const [width, setWidth] = useState<number>(designTokens.layout.phoneWidth);
+  const [width, setWidth] = useState(0);
   const [active, setActive] = useState(0);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
   const viewerImage =
@@ -80,7 +80,7 @@ export function WorkGallery({
           showsHorizontalScrollIndicator={false}
           scrollEventThrottle={16}
           onScroll={(event) =>
-            setActive(
+            width > 0 && setActive(
               Math.max(
                 0,
                 Math.min(
