@@ -2913,3 +2913,23 @@ The "Pen is canonical / immutable" parts of `DEC-062` and `DEC-063`, and the
 ### Revisit when
 
 A new design tool replaces Figma.
+
+## DEC-120 — Fluid container
+
+Date: 2026-10-13
+Status: Confirmed
+Source: designer decision relayed by the founder, 2026-10-13.
+
+### Decision
+
+Mobile/tablet content is 100% wide with a 12 px horizontal gutter; desktop
+content is centered with max-width 1280 and no extra padding. Wider windows
+no longer keep a 390 column.
+
+### Revises
+
+The layout clause of `DEC-085` only.
+
+### Revisit when
+
+Desktop Figma compositions define different widths.

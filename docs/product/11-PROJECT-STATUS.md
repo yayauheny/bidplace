@@ -2,6 +2,11 @@
 
 > Entries dated before 2026-10-13 mention Pen / .pen files; the Pen design was removed (DEC-119) — read those mentions as history.
 
+## 2026-10-13 — W2 fluid AppShell
+
+- `Partial`: `AppShell` uses the 1280/12 fluid contract (`DEC-120`), shared `useDockInset` replaces eight fixed reserves and `FormPageShell` avoids double reserve with `bottomAction`; `WorkGallery` reads its on-layout width. Evidence: `AppShell.tsx`, `use-dock-inset.ts`, `WorkGallery.tsx`.
+- `Needs verification`: build/typecheck/lint, 390/440/768/1024/1440 layout and native PWA Safe Area; no new commerce features, API, database or routes.
+
 ## 2026-10-13 — W1 shared sheet mechanism
 
 - `Partial`: `FilterSheet` and `FilterSortSheet` use `AppDialog` with `bare` content and shared focus return; only compact filters request 40px bottom space, while existing sheets retain base spacing with Safe Area. `apps/mobile/public/index.html` enables `viewport-fit=cover` in the SPA export. Evidence: `FilterSheet.tsx`, `AppDialog.tsx`, `use-return-focus.ts`, `app-dialog-host-style.spec.ts`, `author-static-header.spec.ts`.

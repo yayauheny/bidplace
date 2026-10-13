@@ -388,8 +388,11 @@ complete if it matches only the 1440 frame.
 Read-only source: Figma inspect copy `uMo04w9bgrchWXXDgO4W62` (`DEC-085`).
 Values live in the only `designTokens` export (`figmaTokens` alias).
 
-`AppShell` is a centered 390 column plus `FloatingDock`. Wide windows keep the
-same column. 1024/1440 compositions are out of this wave.
+`AppShell` owns the fluid column (`DEC-120`): full viewport width, centered,
+`maxWidth: layout.contentMax + 2 * layout.gutter` with 12px horizontal
+padding. Content width is `min(viewport - 24, 1280)`; mobile/tablet are fluid.
+Safe Area is applied by the shell; `useDockInset` supplies the dock offset
+and content reserve. 1024/1440 Figma compositions remain `NEEDS-FIGMA`.
 
 `FloatingDock` is one 232×64 glass capsule: Главная / Поиск / Добавить /
 Профиль. Search is an item inside that capsule. Dock Search opens a fullscreen

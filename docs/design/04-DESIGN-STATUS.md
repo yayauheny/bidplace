@@ -2,6 +2,11 @@
 
 > Entries dated before 2026-10-13 mention Pen / .pen files; the Pen design was removed (DEC-119) — read those mentions as history.
 
+## 2026-10-13 — W2 fluid AppShell and dock inset
+
+- `Partial`: `AppShell` uses centered 1280px fluid content with 12px gutter (`DEC-120`); `useDockInset` replaces fixed `dockReserve` for overlay clearance, and `WorkGallery` measures its container. Evidence: `AppShell.tsx`, `use-dock-inset.ts`, `WorkGallery.tsx`.
+- `Needs verification`: typecheck, lint, formatting, native Safe Area, rendered 390/440/768/1024/1440 parity and horizontal overflow have not been checked in a runtime; desktop compositions remain `NEEDS-FIGMA`.
+
 ## 2026-10-13 — W1 filter sheet mechanism
 
 - `Partial` (mobile web): compact/full `FilterSheet` uses the shared `AppDialog` portal with `bare` content, one focus-return helper and independent backdrop motion. Compact filters use 40px bottom space; full and existing sheets retain their base spacing with Safe Area. Evidence: `FilterSheet.tsx`, `AppDialog.tsx`, `use-return-focus.ts`, `app-dialog-host-style.spec.ts`, `author-static-header.spec.ts`.

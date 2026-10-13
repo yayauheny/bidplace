@@ -51,7 +51,7 @@
 
 | Компонент | Путь | Назначение |
 | --- | --- | --- |
-| **AppShell** | `layout/AppShell.tsx` | Safe area, ширина телефона, `FloatingDock`, слот `bottomAction`. |
+| **AppShell** | `layout/AppShell.tsx` | Единый fluid-контейнер 1280/12, Safe Area, `FloatingDock` и `bottomAction`; нижний резерв — `useDockInset`. |
 | **FormPageShell** | `layout/FormPageShell.tsx` | Прокручиваемая форма с отступами и опциональным `bottomAction`. |
 
 ## Текст, состояния, медиа
