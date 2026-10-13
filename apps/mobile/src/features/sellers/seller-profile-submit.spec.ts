@@ -1629,15 +1629,16 @@ describe('seller profile save reconciliation', () => {
         const field = view.container.querySelector<HTMLInputElement>(
           '[aria-label="Никнейм"]',
         );
-        return field instanceof HTMLInputElement &&
+        return (
+          field instanceof HTMLInputElement &&
           field.value === '' &&
-          !field.disabled;
+          !field.disabled
+        );
       },
       'new account editable nickname',
     );
     view.unmount();
   });
-
 
   it('closes the old account exit dialog when the session changes', async () => {
     harness.params = { step: '2' };
