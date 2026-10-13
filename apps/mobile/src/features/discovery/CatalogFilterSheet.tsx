@@ -62,15 +62,37 @@ export function CatalogFilterSheet({
   const activeSection = sections.find(
     (section) => section.id === activeSectionId,
   );
+  const apply = () =>
+    onApply(
+      Object.fromEntries(
+        Object.entries(draftValues).map(([id, value]) => {
+          const section = sections.find((item) => item.id === id);
+          return [
+            id,
+            section?.state === 'ready' &&
+            value &&
+            !section.options.some((option) => option.value === value)
+              ? undefined
+              : value,
+          ];
+        }),
+      ),
+    );
 
   if (activeSection) {
     return (
       <FilterSheet
         open={open}
+        compact
         onClose={onClose}
         title={activeSection.label}
         showBack
         onBack={() => setActiveSectionId(undefined)}
+        onClear={() =>
+          setDraftValues((current) => ({ ...current, [activeSection.id]: undefined }))
+        }
+        clearLabel="Очистить"
+        primaryAction={{ label: 'Применить', onPress: apply }}
       >
         <SectionOptions
           section={activeSection}
@@ -90,6 +112,7 @@ export function CatalogFilterSheet({
   return (
     <FilterSheet
       open={open}
+      compact
       onClose={onClose}
       title={title}
       onClear={() =>
@@ -103,7 +126,7 @@ export function CatalogFilterSheet({
       clearLabel="Сбросить"
       primaryAction={{
         label: 'Применить',
-        onPress: () => onApply(draftValues),
+        onPress: apply,
       }}
     >
       {search ? (
@@ -130,6 +153,7 @@ export function CatalogFilterSheet({
           label={section.label}
           valuePreview={sectionPreview(section, draftValues[section.id])}
           disabled={section.state !== 'ready'}
+          compact
           onPress={() => setActiveSectionId(section.id)}
         />
       ))}
@@ -167,6 +191,7 @@ function SectionOptions({
       key={option.value}
       label={option.label}
       mode="radio"
+      variant="catalog"
       selected={option.value === value}
       onPress={() => onSelect(option.value)}
     />
