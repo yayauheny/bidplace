@@ -665,6 +665,8 @@ export const designTokens = {
     easing: 'cubic-bezier(0, 0, 0.2, 1)',
   },
   layout: {
+    contentMax: 1280,
+    gutter: 12,
     contentMaxWidth: 390,
     creatorContentMaxWidth: 1280,
     headerMaxWidth: 390,

@@ -99,7 +99,7 @@ export function PublicSellerScreen({
     query.error.kind === 'not_found'
   ) {
     return (
-      <AppShell contentMaxWidth={designTokens.layout.creatorContentMaxWidth}>
+      <AppShell>
         <PageState
           title="Автор не найден"
           message="Профиль больше недоступен."
@@ -109,7 +109,7 @@ export function PublicSellerScreen({
   }
   if (pageStatus !== 'ready' || !firstPage || !author) {
     return (
-      <AppShell contentMaxWidth={designTokens.layout.creatorContentMaxWidth}>
+      <AppShell>
         <InfrastructurePageStatus
           status={pageStatus === 'loading' ? 'loading' : 'error'}
           onRetry={() => void query.refetch()}
@@ -119,7 +119,7 @@ export function PublicSellerScreen({
   }
 
   return (
-    <AppShell contentMaxWidth={designTokens.layout.creatorContentMaxWidth}>
+    <AppShell>
       <View style={{ flex: 1, position: 'relative', overflow: 'visible' }}>
         <ScrollView
           testID="creator-scroll"

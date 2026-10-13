@@ -12,12 +12,10 @@ export function AppShell({
   children,
   bottomAction,
   hideDock = false,
-  contentMaxWidth = designTokens.layout.phoneWidth,
 }: {
   children: ReactNode;
   bottomAction?: ReactNode;
   hideDock?: boolean;
-  contentMaxWidth?: number;
 }) {
   const dockBlurTarget = useRef<View | null>(null);
   const isFocused = useIsFocused();
@@ -36,7 +34,8 @@ export function AppShell({
         style={{
           flex: 1,
           width: '100%',
-          maxWidth: contentMaxWidth,
+          maxWidth: designTokens.layout.contentMax + 2 * designTokens.layout.gutter,
+          paddingHorizontal: designTokens.layout.gutter,
           minWidth: 0,
           alignSelf: 'center',
           overflow: 'visible',
@@ -46,7 +45,6 @@ export function AppShell({
         {bottomAction ? (
           <View
             style={{
-              paddingHorizontal: designTokens.space.pageGutter,
               paddingBottom: hideDock
                 ? designTokens.space.x4
                 : designTokens.size.dockReserve,
