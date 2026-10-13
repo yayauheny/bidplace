@@ -121,30 +121,32 @@ export function FilterSheet({
           >
             {!compact || showBack ? (
               <MotionPressable
-              accessibilityRole="button"
-              accessibilityLabel={showBack ? 'Назад' : 'Закрыть'}
-              hitSlop={figmaTokens.space.headerIconHitSlop}
-              onPress={showBack ? (onBack ?? onClose) : onClose}
-              preset="icon"
-              style={{
-                width: figmaTokens.size.buttonIconFrame,
-                height: figmaTokens.size.buttonIconFrame,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <FigmaIcon
-                name={showBack ? 'arrow-left-01' : 'x'}
-                size={figmaTokens.size.buttonIconFrame}
-                strokeWidthPx={
-                  titleVariant === 'directions' && showBack ? 2 : undefined
-                }
-              />
+                accessibilityRole="button"
+                accessibilityLabel={showBack ? 'Назад' : 'Закрыть'}
+                hitSlop={figmaTokens.space.headerIconHitSlop}
+                onPress={showBack ? (onBack ?? onClose) : onClose}
+                preset="icon"
+                style={{
+                  width: figmaTokens.size.buttonIconFrame,
+                  height: figmaTokens.size.buttonIconFrame,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <FigmaIcon
+                  name={showBack ? 'arrow-left-01' : 'x'}
+                  size={figmaTokens.size.buttonIconFrame}
+                  strokeWidthPx={
+                    titleVariant === 'directions' && showBack ? 2 : undefined
+                  }
+                />
               </MotionPressable>
             ) : null}
             <AppText
               nativeID={titleId}
-              role={compact ? 'body' : showBack ? 'profileHeading' : 'screenTitle'}
+              role={
+                compact ? 'body' : showBack ? 'profileHeading' : 'screenTitle'
+              }
               numberOfLines={1}
               style={[
                 filterSheetTitleStyle(),
@@ -162,10 +164,8 @@ export function FilterSheet({
                 variant="ghost"
                 onPress={onClear}
               />
-            ) : (
-              compact ? null : (
-                <View style={{ width: figmaTokens.size.iconButton }} />
-              )
+            ) : compact ? null : (
+              <View style={{ width: figmaTokens.size.iconButton }} />
             )}
           </View>
           <ScrollView
