@@ -10,7 +10,8 @@ import { AppShell, navigateBack } from '../../components/layout';
 import { InfrastructureErrorState } from '../../components/shared/InfrastructureErrorState';
 import { InfrastructurePageStatus } from '../../components/shared/InfrastructurePageStatus';
 import { infrastructurePageFetchStatus } from '../../components/shared/infrastructure-page-status';
-import { PageState, PrimaryButton } from '../../components/ui';
+import { AppDialog } from '../../components/ui/AppDialog';
+import { AppText, MotionPressable, PageState, PrimaryButton } from '../../components/ui';
 import { WorkCoverCardGrid } from '../../components/figma/WorkCoverCardGrid';
 import { useTrackSellerView } from '../../lib/analytics/use-track-views';
 import { retryTransientPublicQuery } from '../../lib/query-retry';
@@ -20,6 +21,8 @@ import { useApiClient } from '../../providers/api-provider';
 import { useAuthorWorks } from './use-author-works';
 import { authorWorksArePending } from './public-author-works-state';
 import { FigmaChoiceChip } from '../../components/figma/FigmaChoiceChip';
+import { FigmaButton } from '../../components/figma/FigmaButton';
+import { FigmaIcon } from '../../components/figma/FigmaIcon';
 
 import { AuthorAbout } from './AuthorAbout';
 import { CreatorHeader } from './CreatorHeader';
@@ -39,6 +42,8 @@ export function PublicSellerScreen({
   const router = useRouter();
   const panelId = useId();
   const [tab, setTab] = useState<AuthorPublicTab>('works');
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [draftCategory, setDraftCategory] = useState<string | undefined>(category);
   const categories = useQuery({
     queryKey: categoryKeys.all,
     queryFn: ({ signal }) => api.categories.list({ signal }),
@@ -54,6 +59,7 @@ export function PublicSellerScreen({
   const author = firstPage?.author;
   const sellerProfileId = author?.id;
   const worksPending = authorWorksArePending(query);
+  const selectedCategory = categories.data?.categories.find((item) => item.id === category);
 
   useTrackSellerView({
     sellerProfileId,
@@ -141,25 +147,30 @@ export function PublicSellerScreen({
                   onPress={() => void categories.refetch()}
                 />
               ) : (
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={{ gap: designTokens.space.x2 }}
-                >
-                  <FigmaChoiceChip
-                    label="Все"
-                    selected={!category}
-                    onPress={() => router.setParams({ category: undefined })}
+                <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: designTokens.space.x2 }}>
+                  <FigmaButton
+                    label="Категория"
+                    icon="arrow-right-01"
+                    iconPosition="right"
+                    variant="outline"
+                    onPress={() => {
+                      setDraftCategory(category);
+                      setFilterOpen(true);
+                    }}
                   />
-                  {categories.data?.categories.map((item) => (
+                  {category ? (
                     <FigmaChoiceChip
-                      key={item.id}
-                      label={item.name}
-                      selected={category === item.id}
-                      onPress={() => router.setParams({ category: item.id })}
+                      label={selectedCategory?.name ?? 'Выбрана'}
+                      selected
+                      removable
+                      onPress={() => {
+                        setDraftCategory(category);
+                        setFilterOpen(true);
+                      }}
+                      onRemove={() => router.setParams({ category: undefined })}
                     />
-                  ))}
-                </ScrollView>
+                  ) : null}
+                </View>
               )
             ) : null}
             {tab === 'about' ? (
@@ -194,6 +205,49 @@ export function PublicSellerScreen({
             )}
           </View>
         </ScrollView>
+        <AppDialog
+          presentation="sheet"
+          open={filterOpen}
+          onClose={() => setFilterOpen(false)}
+          title="Категория"
+        >
+          <View style={{ gap: designTokens.space.x2 }}>
+            {[
+              { id: '', name: 'Все категории' },
+              ...(categories.data?.categories ?? []),
+            ].map((item) => {
+              const selected = (draftCategory ?? '') === item.id;
+              return (
+                <MotionPressable
+                  key={item.id}
+                  accessibilityRole="radio"
+                  accessibilityState={{ checked: selected }}
+                  accessibilityLabel={item.name}
+                  onPress={() => setDraftCategory(item.id || undefined)}
+                  preset="button"
+                  style={{
+                    minHeight: designTokens.size.touch,
+                    paddingVertical: designTokens.space.x3,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <AppText role="bodySmall">{item.name}</AppText>
+                  {selected ? <FigmaIcon name="check" size={20} /> : null}
+                </MotionPressable>
+              );
+            })}
+            <PrimaryButton
+              label="Показать работы"
+              width="full"
+              onPress={() => {
+                router.setParams({ category: draftCategory });
+                setFilterOpen(false);
+              }}
+            />
+          </View>
+        </AppDialog>
       </View>
     </AppShell>
   );
