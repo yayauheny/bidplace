@@ -4,24 +4,16 @@ import type { PortfolioWorkDetailResponse } from '@bidplace/contracts';
 import { designTokens } from '@bidplace/design-tokens';
 import { FigmaGlassSurface } from '../../components/figma/FigmaGlassSurface';
 import { CreatorSocialLink } from './CreatorSocialLink';
-import {
-  CREATOR_COMPACT_SOCIAL_LIMIT,
-  listPublicSocialLinks,
-} from './creator-header-motion';
+import { listPublicSocialLinks } from './creator-social-links';
 
 export function CreatorSocialActions({
   profile,
   actions,
-  compact = false,
 }: {
   profile: PortfolioWorkDetailResponse['author'];
   actions: ReactNode;
-  compact?: boolean;
 }) {
   const links = listPublicSocialLinks(profile);
-  const visible = compact
-    ? links.slice(0, CREATOR_COMPACT_SOCIAL_LIMIT)
-    : links;
 
   return (
     <View
@@ -30,7 +22,7 @@ export function CreatorSocialActions({
         gap: designTokens.space.socialGroupGap,
       }}
     >
-      {visible.length > 0 ? (
+      {links.length > 0 ? (
         <FigmaGlassSurface
           preset="controlGroup"
           testID="author-social-group"
@@ -44,7 +36,7 @@ export function CreatorSocialActions({
             paddingBottom: designTokens.space.socialGroupY,
           }}
         >
-          {visible.map((link) => (
+          {links.map((link) => (
             <View
               key={link.key}
               testID={`creator-social-${link.key}`}
