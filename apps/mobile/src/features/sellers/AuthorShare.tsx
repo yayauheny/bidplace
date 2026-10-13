@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { View } from 'react-native';
+import { Alert, Platform, Share, View } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
 
 import { FigmaIconButton } from '../../components/figma/FigmaIconButton';
 import { ShareSheet } from '../../components/figma/ShareSheet';
+import { publicShareTarget } from '../../components/figma/public-share';
 
 export function AuthorShare({ sharePath }: { sharePath: string }) {
   const [open, setOpen] = useState(false);
@@ -24,7 +25,17 @@ export function AuthorShare({ sharePath }: { sharePath: string }) {
         <FigmaIconButton
           icon="share-04"
           label="Поделиться профилем"
-          onPress={() => setOpen(true)}
+          onPress={() => {
+            if (Platform.OS === 'web') {
+              setOpen(true);
+              return;
+            }
+            // shortcut: native builds share the production site; update for separate staging app origins.
+            const url = publicShareTarget(sharePath, 'https://bid.place').url;
+            void Share.share({ message: url }).catch(() => {
+              Alert.alert('Не удалось поделиться профилем');
+            });
+          }}
         />
       </View>
       <ShareSheet
