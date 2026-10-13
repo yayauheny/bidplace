@@ -15,27 +15,28 @@ Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
 const harness = vi.hoisted(() => ({
   focused: true,
-  failRulesOnce: false,
+  failLegalOnce: false,
   blurDuringRegister: false,
   holdRegister: false,
   releaseRegister: null as null | (() => void),
   emitBlur: () => undefined as void,
-  rulesReads: 0,
+  legalReads: 0,
   registers: 0,
-  lastRegister: null as null | { turnstileToken?: string },
+  lastRegister: null as null | { turnstileToken?: string; legal?: { agreement: {version: string}; privacy: {version: string}; dataConsent: {version: string}; age18Confirmed: boolean } },
   proof: 'widget-token' as string | null,
   availability: 'ready' as 'ready' | 'unavailable',
   registerError: null as unknown,
   slugAvailability: vi.fn<(slug: string) => Promise<{ available: boolean }>>(),
-  accepts: [] as Array<{ version: string; userId: string | null }>,
   replace: vi.fn(),
   identify: vi.fn(),
+  openURL: vi.fn(),
   tick: () => undefined as void,
   client: null as QueryClient | null,
 }));
 
 vi.mock('react-native', () => ({
   Platform: { OS: 'web' },
+  Linking: { openURL: harness.openURL },
   View: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
   Text: ({
     children,
@@ -63,11 +64,15 @@ vi.mock('react-native', () => ({
     onPress,
     accessibilityRole,
     accessibilityLabel,
+    accessibilityState,
+    disabled,
   }: {
     children?: ReactNode;
     onPress?: () => void;
     accessibilityRole?: string;
     accessibilityLabel?: string;
+    accessibilityState?: { checked?: boolean };
+    disabled?: boolean;
   }) =>
     createElement(
       'button',
@@ -75,6 +80,8 @@ vi.mock('react-native', () => ({
         type: 'button',
         role: accessibilityRole,
         'aria-label': accessibilityLabel,
+        'aria-checked': accessibilityState?.checked,
+        disabled,
         onClick: () => onPress?.(),
       },
       children,
@@ -139,9 +146,6 @@ vi.mock('../../providers/api-provider', () => ({
       me: async () => {
         const current = client().getQueryData<User | null>(authKeys.session);
         if (!current) throw new Error('anonymous');
-        if (current.id === 'user-a' && harness.accepts.length > 1) {
-          return { user: { ...current, acceptedRulesVersion: 'MVP_RULES_V1' } };
-        }
         return { user: current };
       },
       register: (input: { email: string; slug: string; turnstileToken?: string }) => {
@@ -161,29 +165,22 @@ vi.mock('../../providers/api-provider', () => ({
         return Promise.resolve({ user });
       },
       slugAvailability: harness.slugAvailability,
-      getRules: async () => {
-        harness.rulesReads += 1;
-        if (harness.failRulesOnce && harness.rulesReads === 1) {
-          throw new Error('rules down');
+      getLegalDocuments: async () => {
+        harness.legalReads += 1;
+        if (harness.failLegalOnce && harness.legalReads === 1) {
+          throw new Error('legal unavailable');
         }
+        const version = 'portfolio-legal-2026-10-12';
         return {
-          rules: {
-            version: 'MVP_RULES_V1',
-            owner: 'bidplace',
-            contact: 'support@bidplace.test',
-            text: 'Published rules text',
-            updatedAt: null,
-          },
+          version,
+          documents: [
+            { id: 'agreement', title: 'Пользовательское соглашение', version, markdown: '# Соглашение\n\nДоговор для портфолио.\n\n| Термин | Значение |\n| --- | --- |\n| Сервис | bidplace |\n\nhttps://bid.place/legal' },
+            { id: 'privacy', title: 'Политика и cookies', version, markdown: '# Политика\\n\\nДанные.' },
+            { id: 'data-consent', title: 'Согласие на обработку данных', version, markdown: '# Согласие\\n\\nОбработка.' },
+            { id: 'author-rules', title: 'Правила авторов', version, markdown: '# Правила авторов' },
+            { id: 'prohibited', title: 'Запрещённое', version, markdown: '# Запрещённое' },
+          ],
         };
-      },
-      acceptRules: async (input: { rulesVersion: string }) => {
-        const session = client().getQueryData<User | null>(authKeys.session);
-        harness.accepts.push({
-          version: input.rulesVersion,
-          userId: session?.id ?? null,
-        });
-        if (harness.accepts.length === 1) throw new Error('failed');
-        return { user: session };
       },
     },
   }),
@@ -194,14 +191,17 @@ vi.mock('./auth-password-field', () => ({
     label,
     value,
     onChangeText,
+    editable = true,
   }: {
     label: string;
     value?: string;
     onChangeText?: (value: string) => void;
+    editable?: boolean;
   }) =>
     createElement('input', {
       'aria-label': label,
       value: value ?? '',
+      disabled: !editable,
       onChange: (event: { target: { value: string } }) => onChangeText?.(event.target.value),
     }),
 }));
@@ -220,10 +220,12 @@ vi.mock('../../components/ui', () => ({
   PrimaryButton: ({
     label,
     onPress,
+    disabled,
   }: {
     label: string;
     onPress?: () => void;
-  }) => createElement('button', { type: 'button', onClick: () => onPress?.() }, label),
+    disabled?: boolean;
+  }) => createElement('button', { type: 'button', disabled, onClick: () => onPress?.() }, label),
   TextButton: ({
     label,
     onPress,
@@ -333,12 +335,10 @@ function fill(container: ParentNode, label: string, value: string) {
   });
 }
 
-function clickConsent(container: ParentNode) {
-  const box = container.querySelector('[role="checkbox"]');
-  if (!box) throw new Error('Missing checkbox');
-  act(() => {
-    if (box instanceof HTMLElement) box.click();
-  });
+function clickAllConsents(container: ParentNode) {
+  const boxes = [...container.querySelectorAll('[role="checkbox"]')];
+  if (boxes.length !== 4) throw new Error('Expected four distinct legal confirmations');
+  for (const box of boxes) act(() => { if (box instanceof HTMLElement) box.click(); });
 }
 
 function clickButton(container: ParentNode, label: string) {
@@ -379,10 +379,12 @@ async function until(
 async function reachNickname(container: HTMLElement) {
   await until(container, 'Введите вашу почту');
   fill(container, 'Электронная почта', 'a@example.com');
-  clickConsent(container);
-  for (let attempt = 0; attempt < 20 && harness.rulesReads < 1; attempt += 1) {
-    await flush();
-  }
+  await until(container, 'Редакция документов: portfolio-legal-2026-10-12');
+  await until(container, () => {
+    const boxes = [...container.querySelectorAll('[role="checkbox"]')];
+    return boxes.length === 4 && boxes.every((node) => node instanceof HTMLButtonElement && !node.disabled);
+  }, 'four enabled legal checkboxes');
+  clickAllConsents(container);
   clickButton(container, 'Дальше');
   await until(container, 'Выберите имя пользователя');
 }
@@ -410,24 +412,36 @@ beforeEach(() => {
 afterEach(() => {
   document.body.replaceChildren();
   harness.focused = true;
-  harness.failRulesOnce = false;
+  harness.failLegalOnce = false;
   harness.blurDuringRegister = false;
   harness.holdRegister = false;
   harness.releaseRegister = null;
-  harness.rulesReads = 0;
+  harness.legalReads = 0;
   harness.registers = 0;
   harness.lastRegister = null;
   harness.proof = 'widget-token';
   harness.availability = 'ready';
   harness.registerError = null;
   harness.slugAvailability.mockReset();
-  harness.accepts = [];
   harness.replace.mockReset();
   harness.identify.mockReset();
+  harness.openURL.mockReset();
   harness.client = null;
 });
 
 describe('registration consent attempt', () => {
+  it('keeps all confirmations disabled until a published legal pack is loaded', async () => {
+    const view = mount();
+    // The simulated transport is async; once resolved, four unchecked controls are available.
+    await until(view.container, 'Редакция документов: portfolio-legal-2026-10-12');
+    expect([...view.container.querySelectorAll('[role="checkbox"]')]).toHaveLength(4);
+    expect([...view.container.querySelectorAll('[role="checkbox"]')].every(
+      (node) => node.getAttribute('aria-checked') === 'false',
+    )).toBe(true);
+    view.unmount();
+  });
+
+
   it('checks only on Next, blocks duplicate requests, and advances on available', async () => {
     let resolveAvailability: (value: { available: boolean }) => void = () =>
       undefined;
@@ -613,7 +627,6 @@ describe('registration consent attempt', () => {
     await until(view.container, 'Этот никнейм уже занят. Выберите другой.');
     expect(harness.registers).toBe(1);
     expect(harness.lastRegister).toMatchObject({ turnstileToken: 'widget-token' });
-    expect(harness.accepts).toHaveLength(0);
     expect(
       [
         ...view.container.querySelectorAll(
@@ -643,50 +656,55 @@ describe('registration consent attempt', () => {
     view.unmount();
   });
 
-  it('reloads rules without toggling the checkbox', async () => {
-    harness.failRulesOnce = true;
+  it('does not register while legal documents are unavailable and lets the user retry', async () => {
+    harness.failLegalOnce = true;
     const view = mount();
-    await until(view.container, 'Введите вашу почту');
+    await until(view.container, 'Юридические документы пока не опубликованы.');
+    expect([...view.container.querySelectorAll('[role="checkbox"]')].every(
+      (node) => node instanceof HTMLButtonElement && node.disabled,
+    )).toBe(true);
     fill(view.container, 'Электронная почта', 'a@example.com');
-    clickConsent(view.container);
-    await until(view.container, 'Не удалось получить правила.');
-    clickButton(view.container, 'Повторить');
-    for (let attempt = 0; attempt < 20 && harness.rulesReads < 2; attempt += 1) {
-      await flush();
-    }
-    clickLegalLink(view.container, 'правилами сервиса');
-    await until(view.container, 'Published rules text');
-    clickLegalLink(view.container, 'политикой конфиденциальности');
-    await until(view.container, 'Документ готовится');
-    expect(harness.rulesReads).toBe(2);
+    clickButton(view.container, 'Дальше');
+    await flush();
     expect(harness.registers).toBe(0);
+    clickButton(view.container, 'Повторить');
+    await until(view.container, 'Редакция документов: portfolio-legal-2026-10-12');
+    clickLegalLink(view.container, 'Пользовательское соглашение');
+    await until(view.container, 'Договор для портфолио.');
+    const dialog = view.container.querySelector('[role="dialog"]');
+    expect(dialog?.textContent).toContain('Термин: Сервис');
+    expect(dialog?.textContent).toContain('Значение: bidplace');
+    const url = [...(dialog?.querySelectorAll('[role="link"]') ?? [])].find((node) =>
+      node.textContent === 'https://bid.place/legal',
+    );
+    expect(url).toBeDefined();
+    act(() => { if (url instanceof HTMLElement) url.click(); });
+    expect(harness.openURL).toHaveBeenCalledWith('https://bid.place/legal');
+    expect(harness.legalReads).toBe(2);
+    expect(view.container.querySelector('[aria-label="Электронная почта"]')).toHaveProperty('value', 'a@example.com');
     view.unmount();
   });
 
-  it('keeps a failed acceptance on account A and does not send it for account B', async () => {
+  it('resets all confirmations if the server reports a stale legal version', async () => {
+    harness.registerError = new ApiClientError('stale legal', {
+      kind: 'conflict',
+      status: 409,
+      code: ApiErrorCode.CONFLICT,
+      details: { reason: 'legal_version_stale' },
+    });
     const view = mount();
     await reachPassword(view.container);
     clickButton(view.container, 'Дальше');
-    await until(view.container, 'Не удалось сохранить согласие. Повторите принятие правил.');
+    await until(view.container, 'Редакция документов изменилась.');
     expect(harness.registers).toBe(1);
-    expect(harness.accepts).toEqual([{ version: 'MVP_RULES_V1', userId: 'user-a' }]);
-    expect(harness.replace).not.toHaveBeenCalled();
-
-    await act(async () => {
-      await replaceAuthenticatedSession(view.client, account('user-b', 'b@example.com', 'author-b'));
-    });
-    await flush();
-    expect(view.container.textContent).toContain('Сессия изменилась. Согласие не перенесено.');
-    clickButton(view.container, 'Дальше');
-    await flush();
-    expect(harness.registers).toBe(1);
-    expect(harness.accepts).toHaveLength(1);
-    expect(harness.accepts[0]?.userId).toBe('user-a');
-    expect(harness.replace).not.toHaveBeenCalled();
+    expect(view.container.textContent).toContain('Введите вашу почту');
+    const boxes = [...view.container.querySelectorAll('[role="checkbox"]')];
+    expect(boxes).toHaveLength(4);
+    expect(boxes.every((box) => box.getAttribute('aria-checked') !== 'true')).toBe(true);
     view.unmount();
   });
 
-  it('does not accept rules after the route loses focus while staying mounted', async () => {
+  it('does not navigate after the route loses focus during registration', async () => {
     harness.blurDuringRegister = true;
     const view = mount();
     await reachPassword(view.container);
@@ -694,7 +712,6 @@ describe('registration consent attempt', () => {
     await flush();
     await flush();
     expect(harness.registers).toBe(1);
-    expect(harness.accepts).toHaveLength(0);
     expect(harness.replace).not.toHaveBeenCalled();
     expect(view.container.isConnected).toBe(true);
     view.unmount();
@@ -719,19 +736,32 @@ describe('registration consent attempt', () => {
     await flush();
     await flush();
     expect(view.client.getQueryData<User | null>(authKeys.session)?.id).toBe('user-b');
-    expect(harness.accepts).toHaveLength(0);
     expect(harness.replace).not.toHaveBeenCalled();
     expect(harness.registers).toBe(1);
-    expect(view.container.textContent).toContain('Сессия изменилась. Согласие не перенесено.');
+    expect(view.container.textContent).toContain('Сессия изменилась. Повторите регистрацию.');
     clickButton(view.container, 'Дальше');
     await flush();
     expect(harness.registers).toBe(1);
-    expect(harness.accepts).toHaveLength(0);
     expect(harness.replace).not.toHaveBeenCalled();
     view.unmount();
   });
 
-  it('requires a fresh proof before the first register and not on the consent retry', async () => {
+  it('locks password editing while registration is in flight, then installs the session', async () => {
+    harness.holdRegister = true;
+    const view = mount();
+    await reachPassword(view.container);
+    clickButton(view.container, 'Дальше');
+    await until(view.container, () => harness.registers === 1, 'registration request');
+    const confirmation = view.container.querySelector('[aria-label="Подтвердите пароль"]');
+    expect(confirmation).toBeInstanceOf(HTMLInputElement);
+    expect((confirmation as HTMLInputElement).disabled).toBe(true);
+    await act(async () => { harness.releaseRegister?.(); });
+    await until(view.container, () => harness.replace.mock.calls.length === 1, 'navigation');
+    expect(harness.registers).toBe(1);
+    view.unmount();
+  });
+
+  it('requires Turnstile proof for the atomic registration request', async () => {
     harness.proof = null;
     const view = mount();
     await reachPassword(view.container);
@@ -754,17 +784,21 @@ describe('registration consent attempt', () => {
     view.unmount();
   });
 
-  it('navigates once when the same account retries acceptance', async () => {
+  it('registers once with all three document versions and separate 18+ acknowledgment', async () => {
     const view = mount();
     await reachPassword(view.container);
     clickButton(view.container, 'Дальше');
-    await until(view.container, 'Не удалось сохранить согласие. Повторите принятие правил.');
     clickButton(view.container, 'Дальше');
-    for (let attempt = 0; attempt < 20 && harness.replace.mock.calls.length === 0; attempt += 1) {
-      await flush();
-    }
+    await until(view.container, () => harness.replace.mock.calls.length > 0, 'navigation');
     expect(harness.registers).toBe(1);
-    expect(harness.accepts.map((item) => item.userId)).toEqual(['user-a', 'user-a']);
+    expect(harness.lastRegister).toMatchObject({
+      legal: {
+        agreement: { version: 'portfolio-legal-2026-10-12', confirmed: true },
+        privacy: { version: 'portfolio-legal-2026-10-12', confirmed: true },
+        dataConsent: { version: 'portfolio-legal-2026-10-12', confirmed: true },
+        age18Confirmed: true,
+      },
+    });
     expect(harness.replace).toHaveBeenCalledTimes(1);
     view.unmount();
   });

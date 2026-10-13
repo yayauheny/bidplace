@@ -72,6 +72,19 @@ jobs:
           pnpm --filter @bidplace/contracts test
           pnpm --filter @bidplace/api-client test
 
+      - name: Legal registration regression tests for task-3 draft PR
+        if: github.event_name == 'pull_request' && github.event.pull_request.draft == true && github.head_ref == 'feat/portfolio-mvp-legal-ux'
+        run: |
+          pnpm --filter @bidplace/api exec vitest run \
+            src/auth/auth.service.spec.ts \
+            src/auth/auth.controller.spec.ts \
+            src/auth/legal-documents.spec.ts
+          pnpm --filter @bidplace/mobile exec vitest run \
+            src/features/auth/schemas.spec.ts \
+            src/features/auth/auth-dismissal.spec.ts \
+            src/features/auth/registration-consent.spec.ts \
+            src/features/auth/auth-form-submit.spec.ts
+
       - name: Work editor regression tests for draft PR
         if: github.event_name == 'pull_request' && github.event.pull_request.draft == true
         run: |

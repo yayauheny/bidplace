@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { PrismaClient } from '@bidplace/database';
 import { CURRENT_RULES_VERSION } from '@bidplace/contracts';
 
@@ -19,6 +19,30 @@ import {
   type HttpTestApp,
 } from './http-test-app';
 import { idempotencyKey, turnstileToken } from './abuse-request';
+
+const LEGAL_VERSION = 'synthetic-publication-1';
+const legal = {
+  agreement: { version: LEGAL_VERSION, confirmed: true },
+  privacy: { version: LEGAL_VERSION, confirmed: true },
+  dataConsent: { version: LEGAL_VERSION, confirmed: true },
+  age18Confirmed: true,
+};
+
+// This transport suite simulates an approved, published legal pack.
+// The actual docs/legal/site files retain founder blockers and fail closed in runtime.
+vi.mock('../../src/auth/legal-documents', () => ({
+  readPublishedLegalDocuments: () => ({
+    version: 'synthetic-publication-1',
+    documents: [
+      { id: 'agreement', version: 'synthetic-publication-1', title: 'Agreement', markdown: '# Agreement' },
+      { id: 'privacy', version: 'synthetic-publication-1', title: 'Privacy', markdown: '# Privacy' },
+      { id: 'data-consent', version: 'synthetic-publication-1', title: 'Consent', markdown: '# Consent' },
+      { id: 'author-rules', version: 'synthetic-publication-1', title: 'Rules', markdown: '# Rules' },
+      { id: 'prohibited', version: 'synthetic-publication-1', title: 'Prohibited', markdown: '# Prohibited' },
+    ],
+  }),
+}));
+
 
 let database: IntegrationDatabaseContext;
 let http: HttpTestApp;
@@ -123,6 +147,19 @@ describe('auth HTTP transport', () => {
     );
   });
 
+  it('serves the legal document pack anonymously with a no-store response', async () => {
+    const visitor = new HttpTestClient(http.baseUrl, 'http://localhost:8081', '203.0.113.42');
+    const response = await visitor.get('/auth/legal');
+    expect(response.status).toBe(200);
+    expect(response.headers.get('Cache-Control')).toContain('no-store');
+    expect(await response.json()).toMatchObject({
+      version: LEGAL_VERSION,
+      documents: [
+        { id: 'agreement', title: 'Agreement', version: LEGAL_VERSION },
+      ],
+    });
+  });
+
   it('registers over HTTP with normalized identity fields, establishes a session and rejects duplicates without a write', async () => {
     await createPermissionFixture(prisma);
     const client = new HttpTestClient(
@@ -137,6 +174,7 @@ describe('auth HTTP transport', () => {
       slug: 'new-wave-3-user',
       password: 'password123',
       turnstileToken: turnstileToken('register'),
+      legal,
     });
     expect(registration.status).toBe(201);
     expect(registration.headers.getSetCookie()[0]).toContain('HttpOnly');
@@ -152,6 +190,22 @@ describe('auth HTTP transport', () => {
       displayName: null,
       slug: 'new-wave-3-user',
     });
+
+    const evidence = await prisma.registrationLegalEvidence.findUniqueOrThrow({
+      where: { userId: registered.id },
+    });
+    expect(evidence).toMatchObject({
+      agreementVersion: LEGAL_VERSION,
+      privacyVersion: LEGAL_VERSION,
+      dataConsentVersion: LEGAL_VERSION,
+      agreementAcceptedAt: expect.any(Date),
+      privacyAcknowledgedAt: expect.any(Date),
+      dataConsentedAt: expect.any(Date),
+      age18ConfirmedAt: expect.any(Date),
+    });
+    // Account deletion must not silently cascade into the legal-evidence ledger.
+    await expect(prisma.user.delete({ where: { id: registered.id } })).rejects.toThrow();
+    expect(await prisma.registrationLegalEvidence.count({ where: { userId: registered.id } })).toBe(1);
 
     const me = await client.get('/auth/me');
     expect(me.status).toBe(200);
@@ -171,9 +225,34 @@ describe('auth HTTP transport', () => {
       slug: 'another-user',
       password: 'password123',
       turnstileToken: turnstileToken('register'),
+      legal,
     });
     expect(duplicate.status).toBe(409);
     expect(await permissionState(prisma)).toEqual(duplicateBefore);
+  });
+
+  it('rejects missing consent, false age acknowledgment, and stale versions before writing a user', async () => {
+    const client = new HttpTestClient(http.baseUrl, 'http://localhost:8081', '10.0.2.7');
+    const email = 'consent-incomplete@wave3.test';
+    const request = {
+      email,
+      password: 'password123',
+      slug: 'incomplete-consent',
+      turnstileToken: turnstileToken('register'),
+    };
+    const omitted = await client.post('/auth/register', { ...request });
+    expect(omitted.status).toBe(400);
+    const falseAge = await client.post('/auth/register', {
+      ...request,
+      legal: { ...legal, age18Confirmed: false },
+    });
+    expect(falseAge.status).toBe(400);
+    const stale = await client.post('/auth/register', {
+      ...request,
+      legal: { ...legal, privacy: { version: 'stale', confirmed: true } },
+    });
+    expect(stale.status).toBe(409);
+    expect(await prisma.user.findUnique({ where: { email } })).toBeNull();
   });
 
   it('round-trips the session cookie through /me and logout, then rejects the stale session', async () => {
@@ -308,6 +387,7 @@ describe('auth HTTP transport', () => {
       password,
       slug: `fwd${randomUUID().slice(0, 6)}`,
       turnstileToken: turnstileToken('register'),
+      legal,
     });
     expect(registration.status).toBe(201);
 

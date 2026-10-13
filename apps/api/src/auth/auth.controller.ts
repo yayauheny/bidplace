@@ -11,11 +11,13 @@ import {
   slugAvailabilityResponseSchema,
   registerRequestSchema,
   serviceRulesResponseSchema,
+  legalDocumentsResponseSchema,
 } from '@bidplace/contracts';
 import {
   Body,
   Controller,
   Get,
+  Header,
   Inject,
   Post,
   Query,
@@ -71,6 +73,12 @@ export class AuthController {
     private readonly authService: AuthService,
     @Inject(SERVER_ENV) private readonly env: ServerEnv,
   ) {}
+
+  @Header('Cache-Control', 'no-store')
+  @Get('legal')
+  getLegalDocuments() {
+    return legalDocumentsResponseSchema.parse(this.authService.getLegalDocuments());
+  }
 
   @Get('rules')
   async getRules() {

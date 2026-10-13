@@ -5,8 +5,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
 import { View, type ViewStyle } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
-import { ApiErrorCode, newAccountSlugSchema, type User } from '@bidplace/contracts';
-import { AppDialog, AppText, PrimaryButton, TextButton, TextField } from '../../components/ui';
+import { ApiErrorCode, newAccountSlugSchema, type User, type LegalDocumentId, type LegalDocumentsResponse } from '@bidplace/contracts';
+import { AppText, PrimaryButton, TextButton, TextField } from '../../components/ui';
 import { FigmaButton } from '../../components/figma/FigmaButton';
 import { MotionPressable } from '../../components/ui/MotionPressable';
 import { AuthConsentCheckbox } from './auth-consent-checkbox';
@@ -14,11 +14,8 @@ import { AuthPasswordField } from './auth-password-field';
 import { registerSubmission } from './auth-dismissal';
 import { useAuthSheetComplete, useAuthSheetGuard } from './auth-sheet-context';
 import { AuthGoogleIcon } from './auth-google-icon';
-import {
-  AUTH_POLICY_STUB_BODY,
-  AUTH_POLICY_STUB_TITLE,
-  AuthLegalText,
-} from './auth-legal-text';
+import { AuthLegalText } from './auth-legal-text';
+import { LegalDocumentViewer } from './legal-document-viewer';
 import { AuthTelegramIcon } from './auth-telegram-icon';
 import { useAnalytics } from '../../providers/analytics-provider';
 import { useApiClient } from '../../providers/api-provider';
@@ -41,7 +38,6 @@ import {
 } from '../../errors';
 import {
   authKeys,
-  canWritePrivateCache,
   currentAuthEpoch,
   readAuthEpoch,
 } from '../../lib/query-cache';
@@ -104,11 +100,11 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
   const focusedRef = useRef(focused);
   const privateCacheEpoch = usePrivateCacheEpoch(queryClient);
   const [providerNotice, setProviderNotice] = useState<string | null>(null);
-  const [policyOpen, setPolicyOpen] = useState(false);
-  const [rulesOpen, setRulesOpen] = useState(false);
-  const [rulesText, setRulesText] = useState<string | null>(null);
-  const [rulesError, setRulesError] = useState<string | null>(null);
-  const rulesPending = useRef(false);
+  const [legalOpen, setLegalOpen] = useState<LegalDocumentId | null>(null);
+  const [loginLegal, setLoginLegal] = useState<LegalDocumentsResponse | null>(null);
+  const [legalError, setLegalError] = useState<string | null>(null);
+  const [legalPending, setLegalPending] = useState(false);
+  const legalTransport = useRef<AbortController | null>(null);
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginFormSchema),
     defaultValues: { email: '', password: '' },
@@ -127,6 +123,7 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
     return () => {
       mounted.current = false;
       transport.current?.abort();
+      legalTransport.current?.abort();
     };
   }, []);
   useEffect(() => {
@@ -240,28 +237,29 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
     redirectTo,
     router,
   ]);
-  const loadLoginRules = () => {
-    if (rulesPending.current || rulesText) return;
-    rulesPending.current = true;
-    setRulesError(null);
-    void api.auth
-      .getRules()
-      .then((response) => {
-        setRulesText(response.rules.text);
+  const openLoginLegal = (id: LegalDocumentId) => {
+    setLegalOpen(id);
+    if (loginLegal || legalTransport.current) return;
+    setLegalError(null);
+    setLegalPending(true);
+    const controller = new AbortController();
+    legalTransport.current = controller;
+    void api.auth.getLegalDocuments({ signal: controller.signal })
+      .then((documents) => {
+        if (!controller.signal.aborted && mounted.current) setLoginLegal(documents);
       })
       .catch(() => {
-        setRulesText(null);
-        setRulesError('Не удалось получить правила.');
+        if (!controller.signal.aborted && mounted.current) {
+          setLegalError('Юридические документы пока не опубликованы.');
+        }
       })
       .finally(() => {
-        rulesPending.current = false;
+        if (legalTransport.current === controller) legalTransport.current = null;
+        if (!controller.signal.aborted && mounted.current) setLegalPending(false);
       });
   };
-  const openPolicy = () => setPolicyOpen(true);
-  const openRules = () => {
-    setRulesOpen(true);
-    loadLoginRules();
-  };
+  const openPolicy = () => openLoginLegal('privacy');
+  const openRules = () => openLoginLegal('agreement');
   const submitLogin = form.handleSubmit(async (values) => {
     if (challenge && proofAvailability === 'unavailable') {
       setSubmitError(AUTH_TURNSTILE_UNAVAILABLE_COPY);
@@ -489,32 +487,16 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
           onOpenPolicy={openPolicy}
           onOpenRules={openRules}
         />
-        {rulesError ? (
-          <AppText role="bodySmall" tone="danger" accessibilityLiveRegion="polite">
-            {rulesError}
-          </AppText>
+        {legalError ? (
+          <AppText role="bodySmall" tone="danger" accessibilityLiveRegion="polite">{legalError}</AppText>
         ) : null}
         <View pointerEvents="box-none" style={dialogHostStyle}>
-        <AppDialog
-          open={policyOpen}
-          title={AUTH_POLICY_STUB_TITLE}
-          onClose={() => setPolicyOpen(false)}
-        >
-          <AppText role="bodySmall">{AUTH_POLICY_STUB_BODY}</AppText>
-        </AppDialog>
-        <AppDialog
-          open={rulesOpen}
-          title="Правила сервиса"
-          onClose={() => setRulesOpen(false)}
-        >
-          {rulesText ? (
-            <AppText role="bodySmall">{rulesText}</AppText>
-          ) : rulesError ? (
-            <AppText role="bodySmall" tone="danger">{rulesError}</AppText>
-          ) : (
-            <AppText role="bodySmall" tone="secondary">Загружаем правила…</AppText>
-          )}
-        </AppDialog>
+          <LegalDocumentViewer
+            selected={legalOpen}
+            documents={loginLegal}
+            loading={legalPending}
+            onClose={() => setLegalOpen(null)}
+          />
         </View>
       </View>
   );
@@ -607,16 +589,12 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const trackedRegistrationStart = useRef(false);
   const openedAuthenticated = useRef<boolean | null>(null);
-  const rulesVersion = useRef<string | null>(null);
-  const rulesRequest = useRef(0);
-  const rulesPending = useRef(false);
   const sessionOperation = useRef(0);
   const nicknameAdvancePending = useRef(false);
   const nicknameAdvanceOperation = useRef(0);
   const seenAuthEpoch = useRef(authEpoch);
   const mounted = useRef(true);
   const completed = useRef(false);
-  const createdAccountId = useRef<string | null>(null);
   const registerTransport = useRef<AbortController | null>(null);
   const registerSnapshot = useRef<string | null>(null);
   const registerSubmitting = useRef(false);
@@ -631,9 +609,12 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
   const navigation = useNavigation();
   const focusedRef = useRef(focused);
   const wasFocused = useRef(focused);
-  const [rulesText, setRulesText] = useState<string | null>(null);
-  const [rulesOpen, setRulesOpen] = useState(false);
-  const [policyOpen, setPolicyOpen] = useState(false);
+  const [legalDocuments, setLegalDocuments] = useState<LegalDocumentsResponse | null>(null);
+  const [registrationLegalError, setRegistrationLegalError] = useState<string | null>(null);
+  const [registrationLegalPending, setRegistrationLegalPending] = useState(false);
+  const [registrationLegalOpen, setRegistrationLegalOpen] = useState<LegalDocumentId | null>(null);
+  const legalRequest = useRef(0);
+  const registrationLegalTransport = useRef<AbortController | null>(null);
   const [suggestions, setSuggestions] = useState<NicknameSuggestions>(() =>
     nicknameSuggestionGenerator.generate(),
   );
@@ -645,10 +626,14 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
       password: '',
       confirmPassword: '',
       phone: '',
-      rulesAccepted: false,
+      agreementAccepted: false,
+      privacyAcknowledged: false,
+      dataConsentGiven: false,
+      age18Confirmed: false,
     },
   });
   const watched = form.watch();
+  const registrationValuesSnapshot = JSON.stringify(watched);
   const {
     check: checkSlugAvailability,
     invalidate: invalidateSlugAvailability,
@@ -665,19 +650,8 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
     mounted.current && focusedRef.current && sessionOperation.current === operation;
   const anonymousOwns = (operation: number, epoch: number) =>
     routeOwns(operation) &&
-    createdAccountId.current === null &&
     (sessionUser()?.id ?? null) === null &&
     currentAuthEpoch(queryClient) === epoch;
-  const consentOwns = (operation: number, epoch: number) => {
-    const owner = createdAccountId.current;
-    return (
-      routeOwns(operation) &&
-      owner !== null &&
-      (sessionUser()?.id ?? null) === owner &&
-      currentAuthEpoch(queryClient) === epoch &&
-      canWritePrivateCache(queryClient, epoch)
-    );
-  };
   const finishRegistration = (user: User, operation?: number) => {
     if (!mounted.current || !focusedRef.current || completed.current) return;
     if (operation !== undefined && sessionOperation.current !== operation) return;
@@ -694,7 +668,10 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
         watched.email ||
         watched.password ||
         watched.confirmPassword ||
-        watched.rulesAccepted,
+        watched.agreementAccepted ||
+        watched.privacyAcknowledged ||
+        watched.dataConsentGiven ||
+        watched.age18Confirmed,
     ),
     busy: form.formState.isSubmitting,
   });
@@ -703,13 +680,14 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
     return () => {
       mounted.current = false;
       registerTransport.current?.abort();
+      registrationLegalTransport.current?.abort();
     };
   }, []);
   useEffect(() => {
-    if (!registerSnapshot.current || !registerTransport.current) return;
-    const current = `${watched.email}\0${watched.slug}\0${watched.password}`;
-    if (current !== registerSnapshot.current) registerTransport.current.abort();
-  }, [watched.email, watched.password, watched.slug]);
+    if (registerSnapshot.current && registerTransport.current && registrationValuesSnapshot !== registerSnapshot.current) {
+      registerTransport.current.abort();
+    }
+  }, [registrationValuesSnapshot]);
   useEffect(() => {
     const markBlurred = () => {
       focusedRef.current = false;
@@ -749,18 +727,8 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
     nicknameAdvanceOperation.current += 1;
     nicknameAdvancePending.current = false;
     invalidateSlugAvailability();
-    rulesVersion.current = null;
-    if (!mounted.current) return;
-    setRulesText(null);
-    setRulesOpen(false);
-    setPolicyOpen(false);
-    const owner = createdAccountId.current;
-    const sessionId =
-      queryClient.getQueryData<User | null>(authKeys.session)?.id ?? null;
-    if (owner && sessionId !== owner) {
-      form.setValue('rulesAccepted', false);
-      setSubmitError('Сессия изменилась. Согласие не перенесено.');
-    }
+    setRegistrationLegalOpen(null);
+    if (mounted.current) setSubmitError('Сессия изменилась. Повторите регистрацию.');
   }, [authEpoch, form, invalidateSlugAvailability, queryClient]);
 
   useEffect(() => {
@@ -771,163 +739,94 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
     analytics.track('registration_started', {});
   }, [analytics]);
 
-  const clearShownRules = () => {
-    rulesVersion.current = null;
-    setRulesText(null);
-    setRulesOpen(false);
-    setPolicyOpen(false);
-  };
-  const openPolicy = () => setPolicyOpen(true);
-  const openRulesDialog = () => {
-    setRulesOpen(true);
-    if (!rulesText && !rulesPending.current) loadRulesVersion();
-  };
-  const loadRulesVersion = () => {
-    rulesVersion.current = null;
-    setRulesText(null);
-    const request = rulesRequest.current + 1;
-    rulesRequest.current = request;
-    const operation = sessionOperation.current;
-    const epoch = currentAuthEpoch(queryClient);
-    const created = createdAccountId.current;
-    const allowed = created
-      ? consentOwns(operation, epoch)
-      : anonymousOwns(operation, epoch);
-    if (!allowed) return;
-    rulesPending.current = true;
-    void api.auth
-      .getRules()
-      .then((response) => {
-        const stillAllowed = created
-          ? consentOwns(operation, epoch)
-          : anonymousOwns(operation, epoch);
-        if (rulesRequest.current !== request || !stillAllowed) return;
-        rulesVersion.current = response.rules.version;
-        setRulesText(response.rules.text);
-        form.clearErrors('rulesAccepted');
+  const loadRegistrationLegal = () => {
+    const request = ++legalRequest.current;
+    registrationLegalTransport.current?.abort();
+    const controller = new AbortController();
+    registrationLegalTransport.current = controller;
+    setLegalDocuments(null);
+    // An earlier checkbox click is never treated as acceptance of a newer or unavailable version.
+    for (const key of ['agreementAccepted', 'privacyAcknowledged', 'dataConsentGiven', 'age18Confirmed'] as const) {
+      form.setValue(key, false);
+    }
+    setRegistrationLegalPending(true);
+    setRegistrationLegalError(null);
+    void api.auth.getLegalDocuments({ signal: controller.signal })
+      .then((documents) => {
+        if (!mounted.current || controller.signal.aborted || request !== legalRequest.current) return;
+        setLegalDocuments(documents);
+        setRegistrationLegalPending(false);
       })
       .catch(() => {
-        const stillAllowed = created
-          ? consentOwns(operation, epoch)
-          : anonymousOwns(operation, epoch);
-        if (rulesRequest.current !== request || !stillAllowed) return;
-        rulesVersion.current = null;
-        setRulesText(null);
-        form.setError('rulesAccepted', { message: 'Не удалось получить правила.' });
+        if (!mounted.current || controller.signal.aborted || request !== legalRequest.current) return;
+        setLegalDocuments(null);
+        setRegistrationLegalError('Юридические документы пока не опубликованы. Регистрация временно недоступна.');
+        setRegistrationLegalPending(false);
       })
       .finally(() => {
-        if (rulesRequest.current === request) rulesPending.current = false;
+        if (registrationLegalTransport.current === controller) registrationLegalTransport.current = null;
       });
   };
+  useEffect(() => {
+    // Initial fetch only. Manual retries must not reset checks on ordinary re-renders.
+    loadRegistrationLegal();
+  }, []);
+
   const submitRegistration = form.handleSubmit(async (values) => {
     setSubmitError(null);
     const operation = sessionOperation.current;
     const epoch = currentAuthEpoch(queryClient);
-    if (createdAccountId.current) {
-      if ((sessionUser()?.id ?? null) !== createdAccountId.current) {
-        if (!routeOwns(operation)) return;
-        clearShownRules();
-        form.setValue('rulesAccepted', false);
-        setSubmitError('Сессия изменилась. Согласие не перенесено.');
-        return;
-      }
-      if (!consentOwns(operation, epoch)) return;
-    } else if (!anonymousOwns(operation, epoch)) {
+    if (!anonymousOwns(operation, epoch)) return;
+    if (!legalDocuments || legalDocuments.documents.length !== 5) {
+      setSubmitError('Не удалось получить действующие юридические документы.');
       return;
     }
-    const version = rulesVersion.current;
-    if (!version) {
-      setSubmitError('Не удалось получить правила.');
+    if (proofAvailability === 'unavailable') {
+      setSubmitError(AUTH_TURNSTILE_UNAVAILABLE_COPY);
       return;
     }
-    if (!createdAccountId.current) {
-      if (proofAvailability === 'unavailable') {
-        setSubmitError(AUTH_TURNSTILE_UNAVAILABLE_COPY);
-        return;
-      }
-      if (!proof) {
-        setSubmitError(AUTH_TURNSTILE_REQUIRED_COPY);
-        return;
-      }
+    if (!proof) {
+      setSubmitError(AUTH_TURNSTILE_REQUIRED_COPY);
+      return;
     }
-    let consentEpoch = epoch;
     registerTransport.current?.abort();
     const controller = new AbortController();
     registerTransport.current = controller;
-    registerSnapshot.current = `${values.email}\0${values.slug}\0${values.password}`;
+    registerSnapshot.current = JSON.stringify(form.getValues());
+    const token = proof;
+    setProof(null);
+    setWidgetGeneration((generation) => generation + 1);
     try {
-      if (!createdAccountId.current) {
-        const token = proof;
-        if (!token) {
-          setSubmitError(AUTH_TURNSTILE_REQUIRED_COPY);
-          return;
-        }
-        setProof(null);
-        setWidgetGeneration((generation) => generation + 1);
-        const response = await auth.register(
-          { ...registerSubmission(values), turnstileToken: token },
-          { signal: controller.signal },
-        );
-        if (controller.signal.aborted || !mounted.current || !focusedRef.current) return;
-        const sessionId = sessionUser()?.id ?? null;
-        createdAccountId.current = response.user.id;
-        const installedHere = sessionId === response.user.id;
-        if (!installedHere || !routeOwns(operation)) {
-          clearShownRules();
-          if (mounted.current && !installedHere) {
-            form.setValue('rulesAccepted', false);
-            setSubmitError('Сессия изменилась. Согласие не перенесено.');
-          }
-          return;
-        }
-        consentEpoch = currentAuthEpoch(queryClient);
-        analytics.identify(response.user.id, { claimAcquisition: true });
-      }
-      if (!consentOwns(operation, consentEpoch) || rulesVersion.current !== version) return;
-      await api.auth.acceptRules({ rulesVersion: version });
-      if (!consentOwns(operation, consentEpoch) || rulesVersion.current !== version) return;
-      const refreshed = await auth.refreshSession();
-      if (!consentOwns(operation, consentEpoch) || rulesVersion.current !== version) return;
-      if (
-        !refreshed ||
-        refreshed.id !== createdAccountId.current ||
-        refreshed.acceptedRulesVersion !== version
-      ) {
-        setSubmitError('Не удалось сохранить согласие. Повторите принятие правил.');
+      const response = await auth.register(
+        { ...registerSubmission(values, legalDocuments.version), turnstileToken: token },
+        { signal: controller.signal },
+      );
+      if (controller.signal.aborted || !routeOwns(operation)) return;
+      if ((sessionUser()?.id ?? null) !== response.user.id) {
+        setSubmitError('Сессия изменилась. Повторите регистрацию.');
         return;
       }
-      finishRegistration(refreshed, operation);
+      analytics.identify(response.user.id, { claimAcquisition: true });
+      finishRegistration(response.user, operation);
     } catch (error) {
-      if (controller.signal.aborted || aborted(error)) {
-        const sessionId = sessionUser()?.id ?? null;
-        if (
-          mounted.current &&
-          focusedRef.current &&
-          sessionId &&
-          sessionId !== createdAccountId.current
-        ) {
-          clearShownRules();
-          form.setValue('rulesAccepted', false);
-          setSubmitError('Сессия изменилась. Согласие не перенесено.');
-        }
-        return;
-      }
-      if (!createdAccountId.current) {
-        if (!anonymousOwns(operation, epoch)) return;
-      } else if (!consentOwns(operation, consentEpoch)) {
-        return;
-      }
-      if (createdAccountId.current) {
-        if (error instanceof ApiClientError && error.kind === 'conflict') {
-          clearShownRules();
-          form.setValue('rulesAccepted', false);
-          setStep('email');
-          form.setError('rulesAccepted', {
-            message: 'Правила изменились. Подтвердите согласие ещё раз.',
-          });
-          return;
-        }
-        setSubmitError('Не удалось сохранить согласие. Повторите принятие правил.');
+      if (controller.signal.aborted || aborted(error)) return;
+      if (!anonymousOwns(operation, epoch)) return;
+      if (
+        error instanceof ApiClientError &&
+        error.kind === 'conflict' &&
+        typeof error.details === 'object' &&
+        error.details !== null &&
+        'reason' in error.details &&
+        error.details.reason === 'legal_version_stale'
+      ) {
+        setStep('email');
+        setLegalDocuments(null);
+        form.setValue('agreementAccepted', false);
+        form.setValue('privacyAcknowledged', false);
+        form.setValue('dataConsentGiven', false);
+        form.setValue('age18Confirmed', false);
+        loadRegistrationLegal();
+        setSubmitError('Редакция документов изменилась. Ознакомьтесь с ней и подтвердите ещё раз.');
         return;
       }
       const message = authRequestMessage(error);
@@ -964,30 +863,21 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
     });
   };
   const goNext = async () => {
-    if (
-      createdAccountId.current &&
-      (sessionUser()?.id ?? null) !== createdAccountId.current
-    ) {
-      clearShownRules();
-      form.setValue('rulesAccepted', false);
-      setSubmitError('Сессия изменилась. Согласие не перенесено.');
-      return;
-    }
+    if (!mounted.current || !focusedRef.current) return;
     setSubmitError(null);
     if (step === 'email') {
       const emailOk = await form.trigger('email');
-      if (!form.getValues('rulesAccepted')) {
-        form.setError('rulesAccepted', { message: 'Подтвердите согласие с правилами' });
+      // Do not blame the visitor for unchecked controls that were disabled
+      // because the operator has not published the legal documents.
+      if (!legalDocuments || legalDocuments.documents.length !== 5) {
+        setSubmitError('Юридические документы пока недоступны.');
         return;
       }
-      if (!rulesVersion.current) {
-        if (!rulesPending.current) {
-          form.setError('rulesAccepted', { message: 'Не удалось получить правила.' });
-        }
-        return;
-      }
-      form.clearErrors('rulesAccepted');
-      if (emailOk) setStep('nickname');
+      const consentOk = await form.trigger([
+        'agreementAccepted', 'privacyAcknowledged', 'dataConsentGiven', 'age18Confirmed',
+      ]);
+      if (!emailOk || !consentOk) return;
+      setStep('nickname');
       return;
     }
     if (step === 'nickname') {
@@ -1090,8 +980,10 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
       width="full"
       loading={
         form.formState.isSubmitting ||
-        slugAvailability?.status === 'checking'
+        slugAvailability?.status === 'checking' ||
+        (step === 'email' && registrationLegalPending)
       }
+      disabled={step === 'email' && !legalDocuments}
       onPress={() => void goNext()}
     />
   );
@@ -1215,6 +1107,7 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
                   onBlur={field.onBlur}
                   autoComplete="new-password"
                   metrics="authScreenPassword"
+                  editable={!form.formState.isSubmitting}
                   error={form.formState.errors.password?.message}
                 />
               )}
@@ -1230,80 +1123,70 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
                   onBlur={field.onBlur}
                   autoComplete="new-password"
                   metrics="authScreenPassword"
+                  editable={!form.formState.isSubmitting}
                   error={form.formState.errors.confirmPassword?.message}
                 />
               )}
             />
-            {createdAccountId.current ? null : (
-              <TurnstileWidget
+            <TurnstileWidget
                 key={widgetGeneration}
                 action="register"
                 onToken={onProof}
                 onAvailability={onProofAvailability}
               />
-            )}
           </>
         ) : null}
         {submitFeedback}
         {nextAction}
         {step === 'email' ? (
-          <Controller
-            control={form.control}
-            name="rulesAccepted"
-            render={({ field }) => {
-              const rulesError = form.formState.errors.rulesAccepted?.message;
-              return (
-                <>
+          <View style={{ gap: designTokens.space.x3 }}>
+            {([
+              ['agreementAccepted', 'Я принимаю пользовательское соглашение bidplace', 'Пользовательское соглашение', 'agreement'],
+              ['privacyAcknowledged', 'Я ознакомился с политикой персональных данных и cookies', 'Политика и cookies', 'privacy'],
+              ['dataConsentGiven', 'Я даю согласие на обработку данных для основной услуги bidplace', 'Согласие на обработку данных', 'data-consent'],
+              ['age18Confirmed', 'Мне исполнилось 18 лет', '', null],
+            ] as const).map(([name, label, linkLabel, id]) => (
+              <Controller
+                key={name}
+                control={form.control}
+                name={name}
+                render={({ field }) => (
                   <AuthConsentCheckbox
                     checked={field.value}
-                    onOpenPolicy={openPolicy}
-                    onOpenRules={openRulesDialog}
-                    onChange={(checked) => {
-                      field.onChange(checked);
-                      rulesRequest.current += 1;
-                      rulesPending.current = false;
-                      if (!checked) {
-                        clearShownRules();
-                        return;
-                      }
-                      if (!rulesVersion.current) loadRulesVersion();
-                    }}
-                    error={rulesError}
+                    disabled={!legalDocuments || registrationLegalPending}
+                    onChange={field.onChange}
+                    label={label}
+                    linkLabel={linkLabel || undefined}
+                    onOpenDocument={id ? () => setRegistrationLegalOpen(id) : undefined}
+                    error={form.formState.errors[name]?.message}
                   />
-                  {field.value && rulesError === 'Не удалось получить правила.' ? (
-                    <TextButton label="Повторить" onPress={loadRulesVersion} />
-                  ) : null}
-                  <View pointerEvents="box-none" style={dialogHostStyle}>
-                  <AppDialog
-                    open={policyOpen}
-                    title={AUTH_POLICY_STUB_TITLE}
-                    onClose={() => setPolicyOpen(false)}
-                  >
-                    <AppText role="bodySmall">{AUTH_POLICY_STUB_BODY}</AppText>
-                  </AppDialog>
-                  <AppDialog
-                    open={rulesOpen}
-                    title="Правила сервиса"
-                    onClose={() => setRulesOpen(false)}
-                  >
-                    {rulesText ? (
-                      <AppText role="bodySmall">{rulesText}</AppText>
-                    ) : rulesError === 'Не удалось получить правила.' ? (
-                      <AppText role="bodySmall" tone="danger">{rulesError}</AppText>
-                    ) : (
-                      <AppText role="bodySmall" tone="secondary">
-                        Загружаем правила…
-                      </AppText>
-                    )}
-                  </AppDialog>
-                  </View>
-                </>
-              );
-            }}
-          />
+                )}
+              />
+            ))}
+            {registrationLegalPending ? (
+              <AppText role="bodySmall" tone="secondary">Загружаем юридические документы…</AppText>
+            ) : null}
+            {registrationLegalError ? (
+              <>
+                <AppText role="bodySmall" tone="danger">{registrationLegalError}</AppText>
+                <TextButton label="Повторить" onPress={loadRegistrationLegal} />
+              </>
+            ) : legalDocuments ? (
+              <AppText role="metadata">Редакция документов: {legalDocuments.version.split('+')[0]}</AppText>
+            ) : null}
+          </View>
         ) : null}
+        <View pointerEvents="box-none" style={dialogHostStyle}>
+          <LegalDocumentViewer
+            selected={registrationLegalOpen}
+            documents={legalDocuments}
+            loading={registrationLegalPending}
+            onClose={() => setRegistrationLegalOpen(null)}
+          />
+        </View>
         </View>
         )}
       </View>
   );
 }
+

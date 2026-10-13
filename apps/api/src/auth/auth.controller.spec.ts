@@ -29,6 +29,25 @@ describe('AuthController nickname availability', () => {
   });
 });
 
+describe('AuthController public legal reader', () => {
+  it('serves the current published documents without an authenticated user', () => {
+    const documents = {
+      version: 'portfolio-legal-2026-10-12',
+      documents: [{
+        id: 'agreement',
+        title: 'Пользовательское соглашение',
+        version: 'portfolio-legal-2026-10-12',
+        markdown: '# Соглашение',
+      }],
+    };
+    const service = { getLegalDocuments: vi.fn(() => documents) };
+    const controller = new AuthController(service as never, syntheticServerEnv());
+
+    expect(controller.getLegalDocuments()).toEqual(documents);
+    expect(service.getLegalDocuments).toHaveBeenCalledOnce();
+  });
+});
+
 describe('AuthController logout', () => {
   it('clears the cookie without invalidating a server session when auth is absent', async () => {
     const authService = {

@@ -11,6 +11,7 @@ import { infrastructurePageFetchStatus } from '../../components/shared/infrastru
 import { PageState, PrimaryButton } from '../../components/ui';
 import { useApiClient } from '../../providers/api-provider';
 import { HomeNewAuthors } from './home-new-authors';
+import { LegalFooter } from '../auth/legal-footer';
 import { HomeNewWorks } from './home-new-works';
 import { HomeOpening } from './home-opening';
 import { homeSectionPlan } from './home-sections';
@@ -85,6 +86,7 @@ export function HomeScreen({ hideDock = false }: { hideDock?: boolean }) {
             </View>
           ) : null}
         </View>
+        <LegalFooter />
       </ScrollView>
     </AppShell>
   );

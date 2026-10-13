@@ -17,6 +17,7 @@ import {
   registerRequestSchema,
   resetPasswordRequestSchema,
   serviceRulesResponseSchema,
+  legalDocumentsResponseSchema,
   type EmailOtpRequest,
   type EmailOtpVerifyRequest,
   type ForgotPasswordRequest,
@@ -65,6 +66,9 @@ export function createAuthClient(context: RequestContext) {
         method: 'POST',
         body: parseRequest(claimSlugRequestSchema, input),
       });
+    },
+    getLegalDocuments(options?: ReadCallOptions) {
+      return requestJson(context, '/api/auth/legal', legalDocumentsResponseSchema, signalRequestOptions(options));
     },
     getRules() {
       return requestJson(

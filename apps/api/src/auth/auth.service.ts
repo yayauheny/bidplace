@@ -4,6 +4,7 @@ import {
   type AuthResponse,
   type LoginRequest,
   type RegisterRequest,
+  type LegalDocumentsResponse,
   type ServiceRulesResponse,
   authResponseSchema,
   CURRENT_RULES_VERSION,
@@ -35,6 +36,7 @@ import {
 } from '../core/database';
 import { AppException } from '../core/errors';
 import { resolveServiceRules } from '../core/rules';
+import { readPublishedLegalDocuments } from './legal-documents';
 
 function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
@@ -67,6 +69,15 @@ export class AuthService {
   async register(
     input: RegisterRequest & { ip?: string },
   ): Promise<AuthSessionResult> {
+    const published = readPublishedLegalDocuments();
+    const { agreement, privacy, dataConsent } = input.legal;
+    if ([agreement.version, privacy.version, dataConsent.version].some((version) => version !== published.version)) {
+      throw new ConflictException({
+        code: ApiErrorCode.CONFLICT,
+        message: 'Legal document version is stale',
+        details: { reason: 'legal_version_stale' },
+      });
+    }
     const email = normalizeEmail(input.email);
     const phone = normalizePhone(input.phone);
     await this.abuse.assertRegistration({
@@ -89,6 +100,7 @@ export class AuthService {
     }
 
     const passwordHash = await this.passwordHasher.hash(input.password);
+    const acceptedAt = new Date();
 
     try {
       const user = await this.prisma.user.create({
@@ -102,6 +114,17 @@ export class AuthService {
           sessionVersion: 0,
           emailVerifiedAt: null,
           phoneVerifiedAt: null,
+          registrationLegalEvidence: {
+            create: {
+              agreementVersion: agreement.version,
+              agreementAcceptedAt: acceptedAt,
+              privacyVersion: privacy.version,
+              privacyAcknowledgedAt: acceptedAt,
+              dataConsentVersion: dataConsent.version,
+              dataConsentedAt: acceptedAt,
+              age18ConfirmedAt: acceptedAt,
+            },
+          },
         },
         select: authCredentialsSelect,
       });
@@ -226,6 +249,10 @@ export class AuthService {
     }
 
     return toContractUser(user);
+  }
+
+  getLegalDocuments(): LegalDocumentsResponse {
+    return readPublishedLegalDocuments();
   }
 
   async getRules(): Promise<ServiceRulesResponse> {

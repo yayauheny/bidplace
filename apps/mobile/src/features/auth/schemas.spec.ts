@@ -60,7 +60,10 @@ describe('registration form validation', () => {
       password: 'password123',
       confirmPassword: 'password123',
       slug: 'a'.repeat(length),
-      rulesAccepted: true,
+      agreementAccepted: true,
+      privacyAcknowledged: true,
+      dataConsentGiven: true,
+      age18Confirmed: true,
     };
     const valid = length >= 3 && length <= 20;
     const result = registerFormSchema.safeParse(values);
@@ -82,12 +85,15 @@ describe('registration form validation', () => {
       password: 'password123',
       confirmPassword: 'password123',
       slug: 'author',
-      rulesAccepted: true,
+      agreementAccepted: true,
+      privacyAcknowledged: true,
+      dataConsentGiven: true,
+      age18Confirmed: true,
       phone,
     });
 
     expect(registration.phone).toBe(expected);
-    const submission = registerSubmission(registration);
+    const submission = registerSubmission(registration, 'portfolio-legal-2026-10-12');
     expect(submission).not.toHaveProperty('confirmPassword');
     expect(submission).not.toHaveProperty('turnstileToken');
     expect(registerRequestSchema.safeParse(submission).success).toBe(false);
@@ -99,13 +105,35 @@ describe('registration form validation', () => {
     ).toBe(true);
   });
 
+  it.each(['agreementAccepted', 'privacyAcknowledged', 'dataConsentGiven', 'age18Confirmed'] as const)(
+    'requires independent confirmation %s',
+    (field) => {
+      const result = registerFormSchema.safeParse({
+        email: 'author@example.com',
+        password: 'password123',
+        confirmPassword: 'password123',
+        slug: 'author',
+        agreementAccepted: true,
+        privacyAcknowledged: true,
+        dataConsentGiven: true,
+        age18Confirmed: true,
+        [field]: false,
+      });
+      expect(result.success).toBe(false);
+      if (!result.success) expect(result.error.flatten().fieldErrors[field]).toBeTruthy();
+    },
+  );
+
   it('keeps a repeated password in the form and out of the request', () => {
     const mismatch = registerFormSchema.safeParse({
       email: 'author@example.com',
       password: 'password123',
       confirmPassword: 'password1234',
       slug: 'author',
-      rulesAccepted: true,
+      agreementAccepted: true,
+      privacyAcknowledged: true,
+      dataConsentGiven: true,
+      age18Confirmed: true,
     });
     expect(mismatch.success).toBe(false);
   });
