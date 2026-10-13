@@ -180,7 +180,7 @@ export function PublicSellerScreen({
                   }}
                 >
                   <FigmaButton
-                    label="Категория"
+                    label={selectedCategories.length ? `Категория ${selectedCategories.length}` : 'Категория'}
                     icon="arrow-right-01"
                     iconPosition="right"
                     variant="outline"
@@ -258,6 +258,7 @@ export function PublicSellerScreen({
           title="Категория"
           primaryAction={{
             label: 'Показать работы',
+            size: 'pickerAction',
             onPress: () => {
               router.setParams({
                 categories: draftCategories.length ? draftCategories.join(',') : undefined,
@@ -285,16 +286,17 @@ export function PublicSellerScreen({
             />
           ))}
         </FilterSheet>
-        <AppDialog
+        <FilterSheet
+          presentation="compact"
           open={Boolean(unavailable)}
           title="Скоро появится"
           onClose={() => setUnavailable(null)}
+          primaryAction={{ label: 'Понятно', onPress: () => setUnavailable(null) }}
         >
           <AppText role="bodySmall">
             {unavailable} пока недоступны. Мы добавим эту возможность позже.
           </AppText>
-          <PrimaryButton label="Понятно" onPress={() => setUnavailable(null)} />
-        </AppDialog>
+        </FilterSheet>
         <AppDialog
           open={Boolean(pendingHide)}
           title="Скрыть работу?"
