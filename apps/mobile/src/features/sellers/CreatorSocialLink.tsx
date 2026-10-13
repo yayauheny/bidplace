@@ -46,7 +46,7 @@ export function CreatorSocialLink({
                 : 'instagram'
           }
           size={
-            grouped ? figmaTokens.size.socialGroupIcon : figmaTokens.size.icon
+            grouped ? figmaTokens.size.dockIcon : figmaTokens.size.icon
           }
         />
       </MotionPressable>
