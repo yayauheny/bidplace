@@ -1,41 +1,32 @@
 import { useState } from 'react';
+import { View } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
 
-import { MotionPressable } from '../../components/ui';
+import { FigmaIconButton } from '../../components/figma/FigmaIconButton';
 import { ShareSheet } from '../../components/figma/ShareSheet';
-import { FigmaGlassSurface } from '../../components/figma/FigmaGlassSurface';
-import { FigmaIcon } from '../../components/figma/FigmaIcon';
 
 export function AuthorShare({ sharePath }: { sharePath: string }) {
   const [open, setOpen] = useState(false);
+
   return (
     <>
-      <FigmaGlassSurface
-        preset="controlGroup"
+      <View
         testID="author-share-group"
-        contentStyle={{
-          paddingLeft: designTokens.space.identityGap,
-          paddingRight: designTokens.space.identityGap,
-          paddingTop: designTokens.space.socialGroupY,
-          paddingBottom: designTokens.space.socialGroupY,
+        style={{
+          width: 42,
+          height: 42,
+          borderRadius: designTokens.radius.pill,
+          backgroundColor: designTokens.color.headerControl,
+          alignItems: 'center',
+          justifyContent: 'center',
         }}
       >
-        <MotionPressable
-          accessibilityRole="button"
-          accessibilityLabel="Поделиться профилем"
+        <FigmaIconButton
+          icon="share-04"
+          label="Поделиться профилем"
           onPress={() => setOpen(true)}
-          preset="icon"
-          style={{
-            width: designTokens.size.control,
-            height: designTokens.size.control,
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderRadius: designTokens.radius.pill,
-          }}
-        >
-          <FigmaIcon name="share-04" size={designTokens.size.socialGroupIcon} />
-        </MotionPressable>
-      </FigmaGlassSurface>
+        />
+      </View>
       <ShareSheet
         open={open}
         onClose={() => setOpen(false)}
