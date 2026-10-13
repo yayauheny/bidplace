@@ -13,10 +13,12 @@ export function AppShell({
   children,
   bottomAction,
   hideDock = false,
+  contentMaxWidth = designTokens.layout.phoneWidth,
 }: {
   children: ReactNode;
   bottomAction?: ReactNode;
   hideDock?: boolean;
+  contentMaxWidth?: number;
 }) {
   const dockBlurTarget = useRef<View | null>(null);
   const isFocused = useIsFocused();
@@ -36,7 +38,7 @@ export function AppShell({
           style={{
             flex: 1,
             width: '100%',
-            maxWidth: designTokens.layout.phoneWidth,
+            maxWidth: contentMaxWidth,
             minWidth: 0,
             alignSelf: 'center',
             overflow: 'visible',
