@@ -26,6 +26,7 @@ import { FigmaIcon } from '../../components/figma/FigmaIcon';
 
 import { AuthorAbout } from './AuthorAbout';
 import { CreatorWorkCard } from './CreatorWorkCard';
+import { invalidateOwnerWorks } from './owner-work-query';
 import { CreatorHeader } from './CreatorHeader';
 
 import { type AuthorPublicTab } from './author-public-tabs';
@@ -75,7 +76,7 @@ export function PublicSellerScreen({
       setPendingHide(null);
       void queryClient.invalidateQueries({ queryKey: ['public-author', slug] });
       void queryClient.invalidateQueries({ queryKey: ['portfolio-home'] });
-      void queryClient.invalidateQueries({ queryKey: ['seller', 'works'] });
+      void invalidateOwnerWorks(queryClient);
     },
   });
 
