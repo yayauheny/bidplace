@@ -21,7 +21,7 @@
 | **SecondaryButton** | `ui/Button.tsx` | `variant="outline"`. |
 | **DestructiveButton** | `ui/Button.tsx` | Деструктивное действие (тот же solid; стиль задаётся контекстом экрана). |
 | **TextButton** | `ui/Button.tsx` | `variant="ghost"`. |
-| **FigmaIconButton** | `figma/FigmaIconButton.tsx` | Иконка без текста. |
+| **FigmaIconButton** | `figma/FigmaIconButton.tsx` | Иконка без текста: `surface="plain"` по умолчанию, `surface="muted"` для круглых 42px кнопок из Figma. |
 | **MotionPressable** | `ui/MotionPressable.tsx` | Низкоуровневое нажатие с пресетами анимации; для кастомных ячеек, не для типовых CTA. |
 
 `width`: у обёрток допустимо `block` (= `full` у `FigmaButton`).
@@ -43,7 +43,7 @@
 | --- | --- | --- |
 | **AppDialog** | `ui/AppDialog.tsx` | Модальные подтверждения и формы в диалоге. |
 | **ExitConfirmDialog** | `ui/ExitConfirmDialog.tsx` | Выход с несохранёнными изменениями. |
-| **FilterSheet** | `figma/FilterSheet.tsx` | Нижний лист фильтров/сортировки. |
+| **FilterSheet** | `figma/FilterSheet.tsx` | По умолчанию полноэкранный picker; `presentation="compact"` — нижний лист с прокручиваемыми вариантами и закреплённым действием. |
 
 Не дублировать разметку диалога на экранах — расширять props существующих диалогов только по отдельной задаче.
 

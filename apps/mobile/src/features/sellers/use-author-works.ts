@@ -8,7 +8,8 @@ export const publicAuthorKeys = {
     slug: string,
     sort: 'newest' | 'oldest',
     category?: string,
-  ) => ['public-author', slug, { sort, category }] as const,
+    categories?: string[],
+  ) => ['public-author', slug, { sort, category, ...(categories?.length ? { categories } : {}) }] as const,
 };
 
 export function canReusePreviousAuthorData(
@@ -24,10 +25,11 @@ export function useAuthorWorks(
   slug: string,
   sort: 'newest' | 'oldest',
   category?: string,
+  categories?: string[],
 ) {
   const api = useApiClient();
   return useInfiniteQuery({
-    queryKey: publicAuthorKeys.detail(slug, sort, category),
+    queryKey: publicAuthorKeys.detail(slug, sort, category, categories),
     initialPageParam: 1,
     queryFn: ({ pageParam, signal }) =>
       api.portfolio.getAuthor(
@@ -35,6 +37,7 @@ export function useAuthorWorks(
         {
           sort,
           category,
+          categories,
           page: pageParam,
           limit: 20,
         },

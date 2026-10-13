@@ -1,6 +1,6 @@
 import { Link, type Href } from 'expo-router';
 
-import { figmaTokens } from '@bidplace/design-tokens';
+import { designTokens, figmaTokens } from '@bidplace/design-tokens';
 
 import { FigmaIcon } from '../../components/figma/FigmaIcon';
 import { figmaGlassCircleStyle } from '../../components/figma/figma-glass-circle';
@@ -11,6 +11,7 @@ export type CreatorSocialLinkProps = {
   icon: 'send' | 'instagram' | 'globe';
   label: string;
   grouped?: boolean;
+  testID?: string;
 };
 
 export function CreatorSocialLink({
@@ -18,18 +19,23 @@ export function CreatorSocialLink({
   icon,
   label,
   grouped = false,
+  testID,
 }: CreatorSocialLinkProps) {
   return (
     <Link href={href as Href} target="_blank" asChild>
       <MotionPressable
         accessibilityRole="link"
+        testID={testID}
         accessibilityLabel={label}
         preset="icon"
         style={
           grouped
             ? {
-                width: figmaTokens.size.control,
-                height: figmaTokens.size.control,
+                width: 43,
+                height: 43,
+                borderWidth: 0.5,
+                borderColor: designTokens.color.divider,
+                backgroundColor: designTokens.color.white,
                 alignItems: 'center',
                 justifyContent: 'center',
                 borderRadius: figmaTokens.radius.pill,
@@ -46,7 +52,7 @@ export function CreatorSocialLink({
                 : 'instagram'
           }
           size={
-            grouped ? figmaTokens.size.socialGroupIcon : figmaTokens.size.icon
+            grouped ? figmaTokens.size.dockIcon : figmaTokens.size.icon
           }
         />
       </MotionPressable>

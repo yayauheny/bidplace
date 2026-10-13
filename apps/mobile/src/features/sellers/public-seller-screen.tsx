@@ -1,5 +1,5 @@
 import { useId, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { ScrollView, View } from 'react-native';
 
@@ -10,8 +10,9 @@ import { AppShell, navigateBack } from '../../components/layout';
 import { InfrastructureErrorState } from '../../components/shared/InfrastructureErrorState';
 import { InfrastructurePageStatus } from '../../components/shared/InfrastructurePageStatus';
 import { infrastructurePageFetchStatus } from '../../components/shared/infrastructure-page-status';
-import { PageState, PrimaryButton } from '../../components/ui';
-import { WorkCoverCardGrid } from '../../components/figma/WorkCoverCardGrid';
+import { AppDialog } from '../../components/ui/AppDialog';
+import { AppText, PageState, PrimaryButton } from '../../components/ui';
+import { useSellerCapability } from '../../hooks/use-seller-capability';
 import { useTrackSellerView } from '../../lib/analytics/use-track-views';
 import { retryTransientPublicQuery } from '../../lib/query-retry';
 import { categoryKeys } from '../../lib/query-cache';
@@ -20,8 +21,14 @@ import { useApiClient } from '../../providers/api-provider';
 import { useAuthorWorks } from './use-author-works';
 import { authorWorksArePending } from './public-author-works-state';
 import { FigmaChoiceChip } from '../../components/figma/FigmaChoiceChip';
+import { FigmaButton } from '../../components/figma/FigmaButton';
+import { FilterOptionRow } from '../../components/figma/FilterOptionRow';
+import { FilterSheet } from '../../components/figma/FilterSheet';
+import { paddedGridRows } from '../../components/figma/flex-grid-rows';
 
 import { AuthorAbout } from './AuthorAbout';
+import { CreatorWorkCard } from './CreatorWorkCard';
+import { invalidateOwnerWorks } from './owner-work-query';
 import { CreatorHeader } from './CreatorHeader';
 
 import { type AuthorPublicTab } from './author-public-tabs';
@@ -30,15 +37,25 @@ export function PublicSellerScreen({
   slug,
   sort = 'newest',
   category,
+  categoryIds,
 }: {
   slug: string;
   sort?: 'newest' | 'oldest';
   category?: string;
+  categoryIds?: string[];
 }) {
   const api = useApiClient();
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const capability = useSellerCapability();
   const panelId = useId();
   const [tab, setTab] = useState<AuthorPublicTab>('works');
+  const [contentWidth, setContentWidth] = useState(0);
+  const [unavailable, setUnavailable] = useState<string | null>(null);
+  const [pendingHide, setPendingHide] = useState<string | null>(null);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const selectedCategories = categoryIds?.length ? categoryIds : category ? [category] : [];
+  const [draftCategories, setDraftCategories] = useState<string[]>(selectedCategories);
   const categories = useQuery({
     queryKey: categoryKeys.all,
     queryFn: ({ signal }) => api.categories.list({ signal }),
@@ -48,12 +65,23 @@ export function PublicSellerScreen({
     slug,
     sort,
     category,
+    categoryIds,
   );
   const firstPage = query.data?.pages[0];
   const works = query.data?.pages.flatMap((page) => page.works) ?? [];
   const author = firstPage?.author;
   const sellerProfileId = author?.id;
   const worksPending = authorWorksArePending(query);
+  const isOwner = Boolean(author && capability.profile?.slug === author.slug && capability.status === 'APPROVED');
+  const hideWork = useMutation({
+    mutationFn: (id: string) => api.portfolio.hideWork(id),
+    onSuccess: () => {
+      setPendingHide(null);
+      void queryClient.invalidateQueries({ queryKey: ['public-author', slug] });
+      void queryClient.invalidateQueries({ queryKey: ['portfolio-home'] });
+      void invalidateOwnerWorks(queryClient);
+    },
+  });
 
   useTrackSellerView({
     sellerProfileId,
@@ -69,7 +97,7 @@ export function PublicSellerScreen({
     query.error.kind === 'not_found'
   ) {
     return (
-      <AppShell>
+      <AppShell contentMaxWidth={designTokens.layout.creatorContentMaxWidth}>
         <PageState
           title="Автор не найден"
           message="Профиль больше недоступен."
@@ -79,7 +107,7 @@ export function PublicSellerScreen({
   }
   if (pageStatus !== 'ready' || !firstPage || !author) {
     return (
-      <AppShell>
+      <AppShell contentMaxWidth={designTokens.layout.creatorContentMaxWidth}>
         <InfrastructurePageStatus
           status={pageStatus === 'loading' ? 'loading' : 'error'}
           onRetry={() => void query.refetch()}
@@ -89,7 +117,7 @@ export function PublicSellerScreen({
   }
 
   return (
-    <AppShell>
+    <AppShell contentMaxWidth={designTokens.layout.creatorContentMaxWidth}>
       <View style={{ flex: 1, position: 'relative', overflow: 'visible' }}>
         <ScrollView
           testID="creator-scroll"
@@ -117,10 +145,13 @@ export function PublicSellerScreen({
               setTab(value === 'about' ? 'about' : 'works')
             }
             panelId={panelId}
+            isOwner={isOwner}
+            onUnavailable={setUnavailable}
           />
 
           <View
             testID="author-content"
+            onLayout={(event) => setContentWidth(event.nativeEvent.layout.width)}
             nativeID={panelId}
             role="tabpanel"
             aria-labelledby={`${panelId}-${tab}`}
@@ -143,20 +174,40 @@ export function PublicSellerScreen({
               ) : (
                 <ScrollView
                   horizontal
+                  testID="creator-filter-strip"
                   showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={{ gap: designTokens.space.x2 }}
+                  contentContainerStyle={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: designTokens.space.x2,
+                    paddingRight: designTokens.space.pageGutter,
+                  }}
                 >
-                  <FigmaChoiceChip
-                    label="Все"
-                    selected={!category}
-                    onPress={() => router.setParams({ category: undefined })}
+                  <FigmaButton
+                    label={selectedCategories.length ? `Категория ${selectedCategories.length}` : 'Категория'}
+                    icon="arrow-right-01"
+                    iconPosition="right"
+                    variant="outline"
+                    disabled={!categories.data}
+                    onPress={() => {
+                      setDraftCategories(selectedCategories);
+                      setFilterOpen(true);
+                    }}
                   />
-                  {categories.data?.categories.map((item) => (
+                  {selectedCategories.map((id) => (
                     <FigmaChoiceChip
-                      key={item.id}
-                      label={item.name}
-                      selected={category === item.id}
-                      onPress={() => router.setParams({ category: item.id })}
+                      key={id}
+                      label={categories.data?.categories.find((item) => item.id === id)?.name ?? 'Категория'}
+                      selected
+                      removable
+                      onPress={() => {
+                        setDraftCategories(selectedCategories);
+                        setFilterOpen(true);
+                      }}
+                      onRemove={() => {
+                        const next = selectedCategories.filter((current) => current !== id);
+                        router.setParams({ categories: next.length ? next.join(',') : undefined, category: undefined });
+                      }}
                     />
                   ))}
                 </ScrollView>
@@ -174,14 +225,31 @@ export function PublicSellerScreen({
             ) : works.length === 0 ? (
               <PageState
                 title={
-                  category
-                    ? 'В этой категории пока нет работ'
+                  selectedCategories.length
+                    ? 'В выбранных категориях пока нет работ'
                     : 'У автора пока нет опубликованных работ'
                 }
               />
             ) : (
               <>
-                <WorkCoverCardGrid items={works} />
+                <View style={{ width: '100%', gap: designTokens.space.sectionGap }}>
+                  {paddedGridRows(works, contentWidth >= 1000 ? 3 : contentWidth >= 700 ? 2 : 1).map((row, rowIndex) => (
+                    <View key={row.find((item) => item)?.work.publicId ?? rowIndex} style={{ flexDirection: 'row', gap: designTokens.space.x3 }}>
+                      {row.map((item, index) => (
+                        <View key={item?.work.publicId ?? index} style={{ flex: 1, minWidth: 0 }}>
+                          {item ? (
+                            <CreatorWorkCard
+                              item={item}
+                              isOwner={isOwner}
+                              onUnavailable={setUnavailable}
+                              onHide={setPendingHide}
+                            />
+                          ) : null}
+                        </View>
+                      ))}
+                    </View>
+                  ))}
+                </View>
                 {query.hasNextPage ? (
                   <PrimaryButton
                     label="Смотреть все"
@@ -194,6 +262,72 @@ export function PublicSellerScreen({
             )}
           </View>
         </ScrollView>
+        <FilterSheet
+          presentation="compact"
+          open={filterOpen}
+          onClose={() => setFilterOpen(false)}
+          title="Категория"
+          primaryAction={{
+            label: 'Показать работы',
+            size: 'pickerAction',
+            onPress: () => {
+              router.setParams({
+                categories: draftCategories.length ? draftCategories.join(',') : undefined,
+                category: undefined,
+              });
+              setFilterOpen(false);
+            },
+          }}
+        >
+          {(categories.data?.categories ?? []).map((item) => (
+            <FilterOptionRow
+              key={item.id}
+              label={item.name}
+              mode="checkbox"
+              variant="compact"
+              selected={draftCategories.includes(item.id)}
+              disabled={!draftCategories.includes(item.id) && draftCategories.length >= 20}
+              onPress={() =>
+                setDraftCategories((current) =>
+                  current.includes(item.id)
+                    ? current.filter((id) => id !== item.id)
+                    : [...current, item.id],
+                )
+              }
+            />
+          ))}
+        </FilterSheet>
+        <FilterSheet
+          presentation="compact"
+          open={Boolean(unavailable)}
+          title="Скоро появится"
+          onClose={() => setUnavailable(null)}
+          primaryAction={{ label: 'Понятно', onPress: () => setUnavailable(null) }}
+        >
+          <AppText role="bodySmall">
+            {unavailable} пока недоступны. Мы добавим эту возможность позже.
+          </AppText>
+        </FilterSheet>
+        <AppDialog
+          open={Boolean(pendingHide)}
+          title="Скрыть работу?"
+          description="Работа исчезнет из публичного профиля и останется доступна в кабинете."
+          onClose={() => setPendingHide(null)}
+        >
+          {hideWork.isError ? (
+            <AppText role="bodySmall" tone="danger">
+              Не удалось скрыть работу. Повторите попытку.
+            </AppText>
+          ) : null}
+          <PrimaryButton
+            label="Скрыть"
+            loading={hideWork.isPending}
+            disabled={!pendingHide || hideWork.isPending}
+            onPress={() => {
+              if (pendingHide) hideWork.mutate(pendingHide);
+            }}
+          />
+        </AppDialog>
       </View>
     </AppShell>
   );

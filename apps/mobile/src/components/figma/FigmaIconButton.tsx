@@ -15,6 +15,8 @@ export function FigmaIconButton({
   disabled = false,
   selected = false,
   iconSize = figmaTokens.size.icon,
+  strokeWidthPx,
+  surface = 'plain',
 }: {
   icon: FigmaIconName;
   label: string;
@@ -22,6 +24,8 @@ export function FigmaIconButton({
   disabled?: boolean;
   selected?: boolean;
   iconSize?: number;
+  strokeWidthPx?: number;
+  surface?: 'plain' | 'muted';
 }) {
   return (
     <MotionPressable
@@ -32,11 +36,12 @@ export function FigmaIconButton({
       hitSlop={figmaIconButtonHitSlop}
       onPress={onPress}
       preset="icon"
-      style={({ pressed }) => figmaIconButtonStyle(pressed)}
+      style={({ pressed }) => figmaIconButtonStyle(pressed, surface)}
     >
       <FigmaIcon
         name={icon}
         size={iconSize}
+        strokeWidthPx={strokeWidthPx}
         color={selected ? figmaTokens.color.solid : figmaTokens.color.ink}
       />
     </MotionPressable>

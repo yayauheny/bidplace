@@ -24,9 +24,10 @@ export function FilterOptionRow({
   mode: FilterOptionMode;
   selected: boolean;
   disabled?: boolean;
-  variant?: 'default' | 'directions';
+  variant?: 'default' | 'directions' | 'compact';
   onPress: () => void;
 }) {
+  const compact = variant === 'compact';
   const handleWebKeyDown = (event: {
     key: string;
     preventDefault: () => void;
@@ -51,46 +52,68 @@ export function FilterOptionRow({
       disabled={disabled}
       onPress={onPress}
       preset="icon"
-      style={[filterOptionRowStyle(), disabled ? { opacity: 0.5 } : null]}
+      style={[
+        compact
+          ? {
+              width: '100%',
+              minHeight: 44,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              paddingVertical: 12,
+            }
+          : filterOptionRowStyle(),
+        disabled ? { opacity: 0.5 } : null,
+      ]}
     >
-      <View style={filterOptionControlStyle(mode, selected)}>
-        {selected && mode === 'checkbox' && variant === 'directions' ? (
-          <FigmaIcon
-            name="check"
-            size={figmaTokens.size.filterOptionCheck}
-            color={figmaTokens.color.white}
-            strokeWidthPx={figmaTokens.stroke.filterOptionCheck}
-          />
-        ) : null}
-        {selected && mode === 'checkbox' && variant !== 'directions' ? (
-          <View
-            style={{
-              width: 10,
-              height: 6,
-              marginTop: -2,
-              borderLeftWidth: 1.5,
-              borderBottomWidth: 1.5,
-              borderColor: figmaTokens.color.white,
-              transform: [{ rotate: '-45deg' }],
-            }}
-          />
-        ) : null}
-        {selected && mode === 'radio' ? (
-          <View
-            style={{
-              width: 8,
-              height: 8,
-              borderRadius: 4,
-              backgroundColor: figmaTokens.color.white,
-            }}
-          />
-        ) : null}
-      </View>
+      {!compact ? (
+        <View style={filterOptionControlStyle(mode, selected)}>
+          {selected && mode === 'checkbox' && variant === 'directions' ? (
+            <FigmaIcon
+              name="check"
+              size={figmaTokens.size.filterOptionCheck}
+              color={figmaTokens.color.white}
+              strokeWidthPx={figmaTokens.stroke.filterOptionCheck}
+            />
+          ) : null}
+          {selected && mode === 'checkbox' && variant !== 'directions' ? (
+            <View
+              style={{
+                width: 10,
+                height: 6,
+                marginTop: -2,
+                borderLeftWidth: 1.5,
+                borderBottomWidth: 1.5,
+                borderColor: figmaTokens.color.white,
+                transform: [{ rotate: '-45deg' }],
+              }}
+            />
+          ) : null}
+          {selected && mode === 'radio' ? (
+            <View
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: 4,
+                backgroundColor: figmaTokens.color.white,
+              }}
+            />
+          ) : null}
+        </View>
+      ) : null}
       <AppText
         role="body"
         numberOfLines={1}
         style={[
           filterOptionLabelStyle(),
+          compact
+            ? {
+                flex: 0,
+                fontSize: 15,
+                fontWeight: '500' as const,
+                color: figmaTokens.color.ink,
+              }
+            : null,
           variant === 'directions'
             ? designTokens.typography.directionsOption
             : null,
@@ -98,6 +121,20 @@ export function FilterOptionRow({
       >
         {label}
       </AppText>
+      {compact ? (
+        <View
+          style={{
+            width: 20,
+            height: 20,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          {selected ? (
+            <FigmaIcon name="check" size={16} strokeWidthPx={1.5} />
+          ) : null}
+        </View>
+      ) : null}
     </MotionPressable>
   );
 }

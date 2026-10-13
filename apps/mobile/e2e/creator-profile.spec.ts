@@ -83,3 +83,30 @@ test('public creator profile shows only public data and remains responsive', asy
     )
     .toBe(true);
 });
+
+test('approved author can reach editing and sees safe hide confirmation', async ({ browser }) => {
+  const fixture = await createAuctionFixture();
+  const { context, page } = await authenticatedPage(browser, fixture.seller);
+
+  try {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`/seller/${fixture.sellerProfile.slug}`);
+
+    await expect(
+      page.getByRole('link', { name: 'Редактировать профиль автора' }),
+    ).toHaveAttribute('href', '/profile');
+    await expect(
+      page.getByRole('link', { name: `Редактировать работу ${fixture.product.title}` }),
+    ).toHaveAttribute('href', `/products/${fixture.product.id}`);
+
+    await page.getByRole('button', { name: `Скрыть работу ${fixture.product.title}` }).click();
+    await expect(page.getByText('Скрыть работу?')).toBeVisible();
+    await expect(
+      page.getByText('Работа исчезнет из публичного профиля и останется доступна в кабинете.'),
+    ).toBeVisible();
+    await page.getByRole('button', { name: 'Закрыть окно' }).click();
+    await expect(page.getByText('Скрыть работу?')).toHaveCount(0);
+  } finally {
+    await context.close();
+  }
+});
