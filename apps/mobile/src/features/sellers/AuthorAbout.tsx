@@ -69,9 +69,6 @@ function AchievementCard({
     >
       {item.occurredDate ? (
         <View style={{ gap: designTokens.space.x1 }}>
-          <AppText role="achievementDate" style={{ textAlign: 'center' }}>
-            {formatAuthorAchievementLabel(item.occurredDate)}
-          </AppText>
           <View
             aria-hidden
             testID="author-achievement-rail"
@@ -110,6 +107,9 @@ function AchievementCard({
               }}
             />
           </View>
+          <AppText role="achievementDate">
+            {formatAuthorAchievementLabel(item.occurredDate)}
+          </AppText>
         </View>
       ) : null}
       <View style={{ gap: designTokens.space.x3 }}>
