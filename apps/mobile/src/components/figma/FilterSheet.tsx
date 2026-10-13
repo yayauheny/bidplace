@@ -29,6 +29,7 @@ export function FilterSheet({
   accessibilityLabel = title,
   titleVariant = 'default',
   presentation = 'full',
+  bottomSpace,
   showBack = false,
   onBack,
   onClear,
@@ -43,6 +44,7 @@ export function FilterSheet({
   accessibilityLabel?: string;
   titleVariant?: 'default' | 'directions';
   presentation?: 'full' | 'compact';
+  bottomSpace?: 20 | 40;
   showBack?: boolean;
   onBack?: () => void;
   onClear?: () => void;
@@ -71,7 +73,7 @@ export function FilterSheet({
       returnFocusRef={returnFocusRef}
       presentation="sheet"
       bare
-      bottomSpace={compact ? 40 : undefined}
+      bottomSpace={bottomSpace}
     >
       <View style={filterSheetPanelStyle(compact, height)}>
         {compact ? (

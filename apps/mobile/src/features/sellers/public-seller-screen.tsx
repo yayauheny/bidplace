@@ -33,6 +33,8 @@ import { CreatorHeader } from './CreatorHeader';
 
 import { type AuthorPublicTab } from './author-public-tabs';
 
+const categorySheetBottomSpace = 40; // Figma 7008:1756
+
 export function PublicSellerScreen({
   slug,
   sort = 'newest',
@@ -264,6 +266,7 @@ export function PublicSellerScreen({
         </ScrollView>
         <FilterSheet
           presentation="compact"
+          bottomSpace={categorySheetBottomSpace}
           open={filterOpen}
           onClose={() => setFilterOpen(false)}
           title="Категория"
