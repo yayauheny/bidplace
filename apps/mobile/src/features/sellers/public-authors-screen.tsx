@@ -115,7 +115,7 @@ export function PublicAuthorsScreen({
       >
         <View style={{ gap: designTokens.space.x2 }}>
           <AppText role="screenTitle">
-            Креативные и проверенные авторы на Bidplace
+            Авторы на Bidplace
           </AppText>
           <AppText role="bodySmall">{AUTHORS_CATALOG_INTRO}</AppText>
         </View>
