@@ -51,6 +51,7 @@ export function AuthorShare({
         open={open}
         onClose={() => setOpen(false)}
         title=""
+        accessibilityLabel="Поделиться"
       >
         <MotionPressable
           accessibilityRole="button"
