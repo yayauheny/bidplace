@@ -6,7 +6,6 @@ export function filterSheetPanelStyle(
 ) {
   return {
     width: '100%' as const,
-    maxWidth: compact ? undefined : figmaTokens.layout.phoneWidth,
     ...(compact
       ? { borderTopLeftRadius: 32, borderTopRightRadius: 32 }
       : { height: (viewportHeight ?? '100%') as number | '100%' }),
