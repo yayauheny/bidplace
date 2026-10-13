@@ -1628,6 +1628,41 @@ describe('seller profile save reconciliation', () => {
     view.unmount();
   });
 
+  it('keeps nickname editable when the new account has no slug', async () => {
+    harness.authSlug = 'previous-author';
+    harness.getMyProfile.mockRejectedValue(
+      new ApiClientError('missing', { kind: 'not_found', status: 404 }),
+    );
+    const view = mount('user-a', 'previous-author');
+    await until(
+      view.container,
+      () =>
+        view.container.querySelector<HTMLInputElement>('[aria-label="Никнейм"]')
+          ?.value === 'previous-author',
+      'old account nickname',
+    );
+    await act(async () => {
+      await clearAuthenticatedSession(view.queryClient);
+      view.queryClient.setQueryData(authKeys.session, {
+        id: 'user-b',
+        slug: null,
+      });
+      advanceAuthEpoch(view.queryClient);
+    });
+    await until(
+      view.container,
+      () => {
+        const field = view.container.querySelector<HTMLInputElement>(
+          '[aria-label="Никнейм"]',
+        );
+        return field instanceof HTMLInputElement && !field.disabled;
+      },
+      'new account editable nickname',
+    );
+    expect(inputValue(view.container, 'Никнейм')).toBe('');
+    view.unmount();
+  });
+
   it('does not rewind an advanced wizard stage when a previous profile refetch resolves late', async () => {
     const draft = response('DRAFT', 'DRAFT');
     draft.sellerProfile.applicationStage = 'CONTACTS';

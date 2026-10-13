@@ -387,6 +387,9 @@ export function SellerProfileScreen() {
   const fieldsEditableSeen = useRef<boolean | null>(null);
   const accountLogout = useAccountLogout();
   const authEpoch = usePrivateCacheEpoch(queryClient);
+  const sessionSlug = canWritePrivateCache(queryClient, authEpoch)
+    ? queryClient.getQueryData<{ slug?: string | null }>(authKeys.session)?.slug
+    : null;
   const seenAuthEpoch = useRef(authEpoch);
   const forceProfileHydration = useRef(false);
   const draftValidation = useRef({ epoch: 0, running: false });
@@ -465,12 +468,9 @@ export function SellerProfileScreen() {
   fieldsEditableSeen.current = fieldsEditable;
 
   useEffect(() => {
-    const sessionSlug = canWritePrivateCache(queryClient, authEpoch)
-      ? queryClient.getQueryData<{ slug?: string | null }>(authKeys.session)?.slug
-      : null;
     if (profile || !sessionSlug || form.getValues('slug')) return;
     form.setValue('slug', sessionSlug, { shouldValidate: true });
-  }, [auth.user?.slug, authEpoch, form, profile, queryClient]);
+  }, [sessionSlug, form, profile]);
 
   useEffect(() => {
     if (query.isLoading || !profile) return;
@@ -599,9 +599,6 @@ export function SellerProfileScreen() {
     setPhotoUri(null);
     // Read the installed session, not a possibly stale auth context during handoff.
     const sessionActive = canWritePrivateCache(queryClient, authEpoch);
-    const sessionSlug = sessionActive
-      ? queryClient.getQueryData<{ slug?: string | null }>(authKeys.session)?.slug
-      : null;
     const cached = sessionActive
       ? queryClient.getQueryData<SellerProfileResponse>(sellerProfileQueryKey)
       : undefined;
@@ -663,7 +660,13 @@ export function SellerProfileScreen() {
         };
       }
       if (!variables.photo) throw new Error('Profile photo is required');
-      if (!auth.user?.slug) {
+      if (!sessionStillOwns(variables.operation, variables.authEpoch)) {
+        throw new Error('Session changed');
+      }
+      const installedSlug = queryClient.getQueryData<{
+        slug?: string | null;
+      }>(authKeys.session)?.slug;
+      if (!installedSlug) {
         const requested = variables.fields.slug.trim();
         const claimed = await api.auth.claimSlug({ slug: requested });
         if (!sessionStillOwns(variables.operation, variables.authEpoch)) {
@@ -1282,7 +1285,7 @@ export function SellerProfileScreen() {
                       <ProfileBasicsFields
                         editable={fieldsEditable}
                         slugEditable={
-                          fieldsEditable && !profile && !auth.user?.slug
+                          fieldsEditable && !profile && !sessionSlug
                         }
                       />
                     }
