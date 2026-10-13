@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 
 const checksum = 'a'.repeat(64);
 const categoryId = '10000000-0000-4000-8000-000000000099';
+const secondCategoryId = '10000000-0000-4000-8000-000000000098';
 
 function authorFixture(slug: string, socials: 0 | 2 | 3, works: number) {
   const author = {
@@ -62,7 +63,10 @@ async function mockAuthor(page: Page, slug: string, socials: 0 | 2 | 3, works: n
     route.fulfill({ status: 401, json: { message: 'Unauthorized' } }),
   );
   await page.route('**/api/categories', (route) =>
-    route.fulfill({ json: { categories: [{ id: categoryId, name: 'Скульптура' }] } }),
+    route.fulfill({ json: { categories: [
+      { id: categoryId, slug: 'sculpture', name: 'Скульптура', description: null },
+      { id: secondCategoryId, slug: 'painting', name: 'Живопись', description: null },
+    ] } }),
   );
   await page.route('**/api/portfolio/facets', (route) =>
     route.fulfill({
@@ -137,22 +141,45 @@ test.describe('static public creator header', () => {
     ).not.toBe('sticky');
 
     await page.getByRole('button', { name: 'Поделиться профилем' }).click();
-    await expect(page.getByRole('button', { name: 'Копировать ссылку' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Ссылка на профиль' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Пожаловаться на автора' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'QR-код профиля' })).toBeVisible();
   });
 
-  test('filters works by a real category and can clear it', async ({ page }) => {
+  test('selects, applies and clears multiple author categories', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 860 });
     await mockAuthor(page, 'static-filter', 2, 3);
     await page.goto('/seller/static-filter');
 
     await page.getByRole('button', { name: 'Категория' }).click();
     await expect(page.getByRole('dialog')).toBeVisible();
-    await page.getByRole('radio', { name: 'Скульптура' }).click();
+    await page.getByRole('checkbox', { name: 'Скульптура' }).click();
+    await page.getByRole('checkbox', { name: 'Живопись' }).click();
     await page.getByRole('button', { name: 'Показать работы' }).click();
-    await expect(page).toHaveURL(/category=10000000-0000-4000-8000-000000000099/);
+    await expect.poll(() => new URL(page.url()).searchParams.get('categories'))
+      .toBe(`${categoryId},${secondCategoryId}`);
     await expect(page.getByRole('button', { name: 'Удалить Скульптура' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Удалить Живопись' })).toBeVisible();
     await page.getByRole('button', { name: 'Удалить Скульптура' }).click();
-    await expect(page).not.toHaveURL(/category=/);
+    await expect.poll(() => new URL(page.url()).searchParams.get('categories'))
+      .toBe(secondCategoryId);
+    await page.getByRole('button', { name: 'Удалить Живопись' }).click();
+    await expect.poll(() => new URL(page.url()).searchParams.get('categories'))
+      .toBeNull();
+  });
+
+  test('shows honest placeholders for following and liking', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 860 });
+    await mockAuthor(page, 'static-placeholder', 2, 2);
+    await page.goto('/seller/static-placeholder');
+
+    await page.getByRole('button', { name: 'Подписаться на автора' }).click();
+    await expect(page.getByText('Скоро появится')).toBeVisible();
+    await page.getByRole('button', { name: 'Понятно' }).click();
+
+    await page.getByRole('button', { name: /Нравится работа/ }).first().click();
+    await expect(page.getByText('Избранные работы пока недоступны.')).toBeVisible();
+    await expect(page.getByRole('link', { name: /Редактировать работу/ })).toHaveCount(0);
   });
 
   test('scrolls away naturally without resizing and leaves room above the dock', async ({ page }) => {
