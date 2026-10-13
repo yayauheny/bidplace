@@ -63,7 +63,6 @@ describe('product draft form lifecycle', () => {
     expect(productToDraftFormValues(persistedProduct, persistedSelection)).toEqual({
       categoryId: persistedProduct.categoryId,
       title: 'Persisted title',
-      story: 'Persisted story',
       materialTermIds: persistedSelection.materialTermIds,
       techniqueTermIds: persistedSelection.techniqueTermIds,
       materialProposals: ['Ткань'],
@@ -132,14 +131,12 @@ describe('product draft form lifecycle', () => {
     const request = productDraftToWriteRequest({
       ...productToDraftFormValues(persistedProduct, persistedSelection),
       title: '  Current form title  ',
-      story: '',
     });
 
     expect(productWriteRequestSchema.parse(request)).toEqual(request);
     expect(request).toEqual({
       categoryId: persistedProduct.categoryId,
       title: 'Current form title',
-      story: null,
       materialTermIds: persistedSelection.materialTermIds,
       techniqueTermIds: persistedSelection.techniqueTermIds,
       materialProposals: ['Ткань'],

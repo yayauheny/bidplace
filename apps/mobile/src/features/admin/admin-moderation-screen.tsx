@@ -46,6 +46,7 @@ import {
 } from '../../lib/presentation';
 import { AccountLogoutButton } from '../auth/AccountLogoutButton';
 import { formatAchievementDate } from '../sellers/achievement-date';
+import { PrivateStoryImage } from '../../components/shared/PrivateStoryImage';
 import { AdminReviewImage, AdminRevisionPhoto } from './AdminRevisionPhoto';
 import { AdminWorkCatalogProposals } from './AdminWorkCatalogProposals';
 import {
@@ -692,8 +693,7 @@ export function AdminModerationScreen() {
                       }
                     />
                     <AppText role="bodySmall" tone="secondary">
-                      {content.city ?? 'Город не указан'} ·{' '}
-                      {content.story ?? 'Описание не указано'}
+                      {content.city ?? 'Город не указан'}
                     </AppText>
                     <AppText role="bodySmall" tone="secondary">
                       Категория: {selection?.category?.name ?? content.categoryId ?? 'не указана'} · Техника:{' '}
@@ -721,46 +721,39 @@ export function AdminModerationScreen() {
                     <AppText role="bodySmall" tone="secondary">
                       Изображений: {content.images.length}
                     </AppText>
-                    {content.creationIntro ? (
-                      <AppText role="bodySmall" tone="secondary">
-                        История создания: {content.creationIntro}
-                      </AppText>
+                    {review?.story.blocks.length ? (
+                      <View style={{ gap: designTokens.space.x2 }}>
+                        <AppText role="label">История создания (ревизия на проверке)</AppText>
+                        {review.story.blocks.map((block) => (
+                          <View key={block.id} style={{ gap: designTokens.space.x1 }}>
+                            {block.type === 'IMAGE' ? (
+                              <PrivateStoryImage
+                                productId={product.id}
+                                mediaAssetId={block.mediaAssetId}
+                                sessionEpoch={currentAuthEpoch(queryClient)}
+                                label={block.altText ?? 'Фотография истории создания'}
+                                style={{
+                                  width: 120,
+                                  height: 90,
+                                  borderRadius: designTokens.radius.image,
+                                }}
+                              />
+                            ) : (
+                              <AppText
+                                role={block.type === 'HEADING' ? 'label' : 'bodySmall'}
+                                tone="secondary"
+                              >
+                                {block.text}
+                              </AppText>
+                            )}
+                          </View>
+                        ))}
+                      </View>
                     ) : (
                       <AppText role="bodySmall" tone="secondary">
-                        История создания не добавлена — это необязательный
-                        раздел.
+                        История создания не добавлена.
                       </AppText>
                     )}
-                    <AppText role="bodySmall" tone="secondary">
-                      Этапы создания принадлежат работе, не ревизии.
-                    </AppText>
-                    {product.creationSteps.map((step) => (
-                      <View
-                        key={step.id}
-                        style={{ gap: designTokens.space.x1 }}
-                      >
-                        <AppText role="label">
-                          {step.position + 1}. {step.title}
-                        </AppText>
-                        <AppText role="bodySmall" tone="secondary">
-                          {step.body}
-                        </AppText>
-                        {step.image ? (
-                          <ResilientRemoteImage
-                            uri={getApiAssetUrl(step.image.url)}
-                            component="CreationStep"
-                            accessibilityLabel={`Процесс: ${step.title}`}
-                            fallbackLabel={`Фотография этапа недоступна: ${step.title}`}
-                            style={{
-                              width: 120,
-                              height: 90,
-                              borderRadius: designTokens.radius.image,
-                            }}
-                            contentFit="cover"
-                          />
-                        ) : null}
-                      </View>
-                    ))}
                     {review && pendingRevision(review.status) ? (
                       <AdminWorkCatalogProposals
                         proposals={review.selection.proposals}

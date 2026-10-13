@@ -94,8 +94,11 @@ jobs:
             src/features/sellers/product-draft-fields.spec.ts \
             src/features/sellers/product-draft-save-race.spec.ts \
             src/features/sellers/product-draft-submit-lifecycle.spec.ts \
-            src/features/sellers/product-draft-route-guard.spec.ts
+            src/features/sellers/product-draft-route-guard.spec.ts \
+            src/features/sellers/use-product-story-editor.spec.ts \
+            src/components/shared/PrivateStoryImage.spec.ts
           pnpm --filter @bidplace/mobile exec vitest run src/features/admin/AdminWorkCatalogProposals.spec.ts
+          pnpm --filter @bidplace/api exec vitest run src/images/images.service.spec.ts
 
       - name: Build workspace only (no tests)
         if: github.event_name == 'push' && contains(github.event.head_commit.message, '[build-only]')

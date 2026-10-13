@@ -11,6 +11,7 @@ import { publicSellerProfileSelect } from '../sellers/seller-profile.mapper';
 
 export const productImageBlobSelect = {
   mediaAsset: { select: publicMediaAssetSelect },
+  mediaAssetId: true,
   id: true,
   mimeType: true,
   byteLength: true,
@@ -256,6 +257,7 @@ export type ProductRecord = Prisma.ProductGetPayload<{
 
 type GalleryImage = {
   mediaAsset?: PublicMediaAsset | null;
+  mediaAssetId?: string | null;
   id: string;
   position: number;
   mimeType: string;
@@ -275,6 +277,7 @@ type RevisionGallery = {
 export function toImageContracts(
   images: readonly GalleryImage[],
   visibility: 'private' | 'public' = 'private',
+  includeMediaAssetId = false,
 ) {
   return images.map((image) => {
     const preview =
@@ -287,6 +290,7 @@ export function toImageContracts(
       throw new Error('Published media is not delivered');
     return {
       id: image.id,
+      ...(includeMediaAssetId && image.mediaAssetId ? { mediaAssetId: image.mediaAssetId } : {}),
       position: image.position,
       url: `/api/images/${image.id}`,
       mimeType: image.mimeType,
@@ -392,7 +396,7 @@ export function toOwnerContractProduct(
     city: editingRevision.city ?? null,
     packaging: editingRevision.packaging ?? null,
     deliveryInfo: editingRevision.deliveryInfo ?? null,
-    images: editingImages ? toImageContracts(editingImages) : base.images,
+    images: editingImages ? toImageContracts(editingImages, 'private', true) : base.images,
   };
 }
 

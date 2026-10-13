@@ -25,6 +25,7 @@ const optionalText = z.string().trim().min(1).nullable();
 export const productImageSchema = z
   .object({
     id: uuidSchema,
+    mediaAssetId: uuidSchema.nullable().optional(),
     position: z.number().int().nonnegative(),
     full: z
       .object({

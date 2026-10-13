@@ -1,10 +1,9 @@
-import { z } from 'zod';
 import {
   productResponseSchema,
   productWriteRequestSchema,
-  creationStepOrderRequestSchema,
-  creationStoryResponseSchema,
-  creationStoryWriteRequestSchema,
+  storyResponseSchema,
+  storyWriteRequestSchema,
+  type StoryWriteRequest,
   type ProductWriteRequest,
 } from '@bidplace/contracts';
 
@@ -40,25 +39,14 @@ export function createProductsClient(context: RequestContext) {
         },
       );
     },
-    replaceCreation(id: string, input: unknown) {
+    replaceCreation(id: string, input: StoryWriteRequest) {
       return requestJson(
         context,
         `/api/products/${id}/creation`,
-        creationStoryResponseSchema,
+        storyResponseSchema,
         {
           method: 'PUT',
-          body: creationStoryWriteRequestSchema.parse(input),
-        },
-      );
-    },
-    reorderCreation(id: string, stepIds: string[]) {
-      return requestJson(
-        context,
-        `/api/products/${id}/creation/order`,
-        z.object({ ok: z.literal(true) }).strict(),
-        {
-          method: 'PATCH',
-          body: creationStepOrderRequestSchema.parse({ stepIds }),
+          body: parseRequest(storyWriteRequestSchema, input),
         },
       );
     },

@@ -20,8 +20,41 @@ const harness = vi.hoisted(() => ({
   listCategories: vi.fn(),
   getProduct: vi.fn(),
   updateProduct: vi.fn(),
+  replaceCreation: vi.fn(),
   preventRemove: false,
   callback: null as null | ((event: { data: { action: { type: string } } }) => void),
+}));
+
+vi.mock('../../components/figma/FigmaIconButton', () => ({
+  FigmaIconButton: ({ label, onPress, disabled }: {
+    label: string;
+    onPress: () => void;
+    disabled?: boolean;
+  }) => createElement('button', {
+    type: 'button',
+    'aria-label': label,
+    disabled,
+    onClick: onPress,
+  }, label),
+}));
+
+vi.mock('./product-draft-story', () => ({
+  ProductDraftStoryStep: ({
+    blocks,
+    onAddText,
+    onEditText,
+  }: {
+    blocks: Array<{ key: string }>;
+    onAddText: (type: 'PARAGRAPH') => void;
+    onEditText: (key: string, value: string) => void;
+  }) => createElement('div', null,
+    createElement('button', { type: 'button', onClick: () => onAddText('PARAGRAPH') }, 'Добавить абзац истории'),
+    createElement('button', {
+      type: 'button',
+      disabled: blocks.length === 0,
+      onClick: () => blocks[0] && onEditText(blocks[0].key, 'Сохранённая история'),
+    }, 'Заполнить абзац истории'),
+  ),
 }));
 
 vi.mock('../../components/figma/FigmaChoiceChip', () => ({
@@ -102,6 +135,7 @@ vi.mock('../../providers/api-provider', () => ({
     products: {
       create: vi.fn(),
       update: harness.updateProduct,
+      replaceCreation: harness.replaceCreation,
       submit: vi.fn(),
     },
     images: { add: vi.fn(), remove: vi.fn(), reorder: vi.fn() },
@@ -218,6 +252,7 @@ function detail() {
     },
     creationIntro: null,
     creationSteps: [],
+    story: { storyToken: 0, blocks: [] },
     lastModerationReason: null,
   };
 }
@@ -277,6 +312,16 @@ beforeEach(() => {
   harness.listCategories.mockReset();
   harness.getProduct.mockReset();
   harness.updateProduct.mockReset();
+  harness.replaceCreation.mockReset();
+  harness.replaceCreation.mockResolvedValue({
+    storyToken: 1,
+    blocks: [{
+      id: '86666666-6666-4666-8666-666666666666',
+      position: 0,
+      type: 'PARAGRAPH',
+      text: 'Сохранённая история',
+    }],
+  });
   harness.listCategories.mockResolvedValue({
     categories: [{ id: categoryId, slug: 'painting', name: 'Painting' }],
   });
@@ -399,4 +444,44 @@ describe('product draft route removal', () => {
     expect(view.container.querySelector<HTMLInputElement>('[aria-label="Название"]')?.value).toBe('Dirty title');
     view.unmount();
   });
+  it('persists dirty story blocks before allowing route removal', async () => {
+    const view = mount();
+    await until(view.container, () => !!view.container.querySelector('button') && (
+      [...view.container.querySelectorAll('button')].some((button) => button.textContent === 'Добавить абзац истории')
+    ), 'story editor');
+    act(() => [...view.container.querySelectorAll('button')]
+      .find((button) => button.textContent === 'Добавить абзац истории')?.click());
+    act(() => [...view.container.querySelectorAll('button')]
+      .find((button) => button.textContent === 'Заполнить абзац истории')?.click());
+    await flush();
+    expect(harness.preventRemove).toBe(true);
+    expect(emitRouteRemoval()).toBe(true);
+    await until(view.container, () => harness.replaceCreation.mock.calls.length === 1, 'story save');
+    expect(harness.replaceCreation.mock.calls[0]?.[1]).toMatchObject({
+      storyToken: 0,
+      blocks: [{ type: 'PARAGRAPH', text: 'Сохранённая история' }],
+    });
+    await until(view.container, () => harness.dispatch.mock.calls.length === 1, 'route continuation');
+    expect(harness.dispatch).toHaveBeenCalledTimes(1);
+    view.unmount();
+  });
+
+  it('does not navigate or discard dirty story after a failed save', async () => {
+    harness.replaceCreation.mockRejectedValue(new Error('offline'));
+    const view = mount();
+    await until(view.container, () => [...view.container.querySelectorAll('button')]
+      .some((button) => button.textContent === 'Добавить абзац истории'), 'story editor');
+    act(() => [...view.container.querySelectorAll('button')]
+      .find((button) => button.textContent === 'Добавить абзац истории')?.click());
+    act(() => [...view.container.querySelectorAll('button')]
+      .find((button) => button.textContent === 'Заполнить абзац истории')?.click());
+    await flush();
+    expect(emitRouteRemoval()).toBe(true);
+    await until(view.container, () => harness.replaceCreation.mock.calls.length === 1, 'failed story save');
+    await flush();
+    expect(harness.dispatch).not.toHaveBeenCalled();
+    expect(harness.preventRemove).toBe(true);
+    view.unmount();
+  });
+
 });
