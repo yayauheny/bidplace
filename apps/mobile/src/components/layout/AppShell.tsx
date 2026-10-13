@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { designTokens } from '@bidplace/design-tokens';
 
 import { FloatingDock } from '../figma/FloatingDock';
+import { useDockInset } from './use-dock-inset';
 
 export function AppShell({
   children,
@@ -19,6 +20,7 @@ export function AppShell({
 }) {
   const dockBlurTarget = useRef<View | null>(null);
   const isFocused = useIsFocused();
+  const { reserve } = useDockInset();
 
   return (
     <SafeAreaView
@@ -45,9 +47,7 @@ export function AppShell({
         {bottomAction ? (
           <View
             style={{
-              paddingBottom: hideDock
-                ? designTokens.space.x4
-                : designTokens.size.dockReserve,
+              paddingBottom: hideDock ? designTokens.space.x4 : reserve,
             }}
           >
             {bottomAction}
