@@ -8,6 +8,8 @@ import { FilterSheet } from '../../components/figma/FilterSheet';
 import { copyPublicLink, publicShareTarget } from '../../components/figma/public-share';
 import { AppText, MotionPressable } from '../../components/ui';
 
+const reportColor = '#731A06'; // Figma 06: report action, not the destructive-error red.
+
 export function AuthorShare({
   sharePath,
   onUnavailable,
@@ -79,10 +81,10 @@ export function AuthorShare({
           preset="button"
           style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
         >
-          <AppText role="bodySmall" style={{ color: designTokens.color.danger }}>
+          <AppText role="bodySmall" style={{ color: reportColor }}>
             Пожаловаться
           </AppText>
-          <FigmaIcon name="flag-01" size={20} strokeWidthPx={1.5} color={designTokens.color.danger} />
+          <FigmaIcon name="flag-01" size={20} strokeWidthPx={1.5} color={reportColor} />
         </MotionPressable>
       </FilterSheet>
     </>
