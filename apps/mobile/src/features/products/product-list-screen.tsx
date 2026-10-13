@@ -74,7 +74,7 @@ export function ProductListScreen({
     },
     {
       id: 'material',
-      label: 'Материал',
+      label: 'Материалы',
       value: state.material,
       options:
         facets.data?.materials.map((material) => ({
