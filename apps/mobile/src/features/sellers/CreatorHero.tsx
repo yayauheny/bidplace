@@ -11,14 +11,12 @@ export type CreatorHeroProps = {
   profile: PortfolioWorkDetailResponse['author'];
   actions: ReactNode;
   leadingAction?: ReactNode;
-  compact?: boolean;
 };
 
 export function CreatorHero({
   profile,
   actions,
   leadingAction,
-  compact = false,
 }: CreatorHeroProps) {
   const directionTags = (profile.directions ?? []).map(
     (direction) => direction.name,
@@ -57,8 +55,7 @@ export function CreatorHero({
       style={{
         overflow: 'visible',
         position: 'relative',
-        paddingBottom: compact ? 0 : designTokens.space.authorHeaderBottom,
-        height: compact ? '100%' : undefined,
+        paddingBottom: designTokens.space.authorHeaderBottom,
       }}
     >
       <AuthorAtmosphere
@@ -92,7 +89,6 @@ export function CreatorHero({
           paddingHorizontal: designTokens.space.pageGutter,
           paddingTop: designTokens.space.logoTop,
           zIndex: 1,
-          height: compact ? '100%' : undefined,
         }}
       >
         <View
@@ -106,7 +102,6 @@ export function CreatorHero({
         </View>
         <CreatorIdentity
           profile={profile}
-          compact={compact}
           actions={actions}
           tags={tagRow}
         />
