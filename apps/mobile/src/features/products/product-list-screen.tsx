@@ -196,6 +196,7 @@ export function ProductListScreen({
       />
       <FilterSortSheet
         compact
+        clearValue="newest"
         open={sortOpen}
         value={state.sort}
         options={sortOptions}
