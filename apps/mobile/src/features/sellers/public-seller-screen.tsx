@@ -258,7 +258,7 @@ export function PublicSellerScreen({
                   accessibilityRole="checkbox"
                   accessibilityState={{ checked: selected }}
                   accessibilityLabel={item.name}
-                  onPress={() => setDraftCategories((current) => selected
+                  onPress={() => setDraftCategories((current) => current.includes(item.id)
                     ? current.filter((id) => id !== item.id)
                     : current.length < 20 ? [...current, item.id] : current)}
                   preset="button"
