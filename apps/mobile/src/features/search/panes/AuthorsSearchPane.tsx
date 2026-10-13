@@ -23,8 +23,8 @@ export function AuthorsSearchPane({
       isPending={authors.isPending}
       isError={authors.isError}
       onRetry={() => void authors.refetch()}
-      isEmpty={Boolean(query) && authors.items.length === 0}
-      emptyTitle="Авторы не найдены"
+      isEmpty={authors.items.length === 0}
+      emptyTitle={query ? 'Авторы не найдены' : 'Пока нет авторов'}
       loading={<AuthorSkeleton />}
     >
       <View style={{ width: '100%', gap: figmaTokens.space.identityGap }}>
