@@ -1,12 +1,12 @@
 import { figmaTokens } from '@bidplace/design-tokens';
 
-export function filterSheetPanelStyle() {
+export function filterSheetPanelStyle(compact = false) {
   return {
     width: '100%' as const,
     maxWidth: figmaTokens.layout.phoneWidth,
-    height: '100%' as const,
-    paddingHorizontal: figmaTokens.space.pageGutter,
-    paddingTop: figmaTokens.space.x5,
+    ...(compact ? { borderTopLeftRadius: 32, borderTopRightRadius: 32 } : { height: '100%' as const }),
+    paddingHorizontal: compact ? 20 : figmaTokens.space.pageGutter,
+    paddingTop: compact ? 8 : figmaTokens.space.x5,
     paddingBottom: figmaTokens.space.x5,
     backgroundColor: figmaTokens.color.canvas,
   };
