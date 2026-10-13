@@ -7,6 +7,8 @@ import {
   type FigmaButtonSize,
 } from '@bidplace/design-tokens';
 
+import { useDismissibleOverlay } from '../layout/use-dismissible-overlay';
+import { useOverlayFocusTrap } from '../layout/use-overlay-focus-trap';
 import { AppText } from '../ui/AppText';
 import { MotionPressable } from '../ui/MotionPressable';
 import { FigmaButton } from './FigmaButton';
@@ -18,8 +20,6 @@ import {
   filterSheetPanelStyle,
   filterSheetTitleStyle,
 } from './filter-sheet-style';
-import { useDismissibleOverlay } from '../layout/use-dismissible-overlay';
-import { useOverlayFocusTrap } from '../layout/use-overlay-focus-trap';
 
 export function FilterSheet({
   open,
@@ -63,7 +63,7 @@ export function FilterSheet({
 
   useDismissibleOverlay({
     open,
-    onClose: () => onClose(),
+    onClose,
     getSurfaces: () => [
       Platform.OS === 'web' ? document.getElementById(dialogId) : null,
     ],
@@ -95,17 +95,36 @@ export function FilterSheet({
           nativeID={dialogId}
           accessibilityViewIsModal
           accessibilityLabel={accessibilityLabel}
-          style={[filterSheetPanelStyle(compact), compact ? { maxHeight: height * 0.85 } : null]}
+          style={[
+            filterSheetPanelStyle(compact),
+            compact ? { maxHeight: height * 0.85 } : null,
+          ]}
           {...(Platform.OS === 'web'
             ? ({ role: 'dialog', 'aria-modal': true } as object)
             : {})}
         >
           {compact ? (
-            <View style={{ alignSelf: 'center', width: 36, height: 4, borderRadius: 10, backgroundColor: '#efefef', marginBottom: 16 }} />
+            <View
+              style={{
+                alignSelf: 'center',
+                width: 36,
+                height: 4,
+                borderRadius: 10,
+                backgroundColor: '#efefef',
+                marginBottom: 16,
+              }}
+            />
           ) : null}
           <View
             style={[
-              compact ? { width: '100%', minHeight: title ? 22 : 0, flexDirection: 'row' as const, alignItems: 'center' as const } : filterSheetHeaderStyle(),
+              compact
+                ? {
+                    width: '100%',
+                    minHeight: title ? 22 : 0,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                  }
+                : filterSheetHeaderStyle(),
               titleVariant === 'directions'
                 ? {
                     minHeight:
@@ -114,40 +133,52 @@ export function FilterSheet({
                 : null,
             ]}
           >
-            {!compact ? <MotionPressable
-              accessibilityRole="button"
-              accessibilityLabel={showBack ? 'Назад' : 'Закрыть'}
-              hitSlop={figmaTokens.space.headerIconHitSlop}
-              onPress={showBack ? (onBack ?? onClose) : onClose}
-              preset="icon"
-              style={{
-                width: figmaTokens.size.buttonIconFrame,
-                height: figmaTokens.size.buttonIconFrame,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <FigmaIcon
-                name={showBack ? 'arrow-left-01' : 'x'}
-                size={figmaTokens.size.buttonIconFrame}
-                strokeWidthPx={
-                  titleVariant === 'directions' && showBack ? 2 : undefined
+            {!compact ? (
+              <MotionPressable
+                accessibilityRole="button"
+                accessibilityLabel={showBack ? 'Назад' : 'Закрыть'}
+                hitSlop={figmaTokens.space.headerIconHitSlop}
+                onPress={showBack ? (onBack ?? onClose) : onClose}
+                preset="icon"
+                style={{
+                  width: figmaTokens.size.buttonIconFrame,
+                  height: figmaTokens.size.buttonIconFrame,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <FigmaIcon
+                  name={showBack ? 'arrow-left-01' : 'x'}
+                  size={figmaTokens.size.buttonIconFrame}
+                  strokeWidthPx={
+                    titleVariant === 'directions' && showBack ? 2 : undefined
+                  }
+                />
+              </MotionPressable>
+            ) : null}
+            {title ? (
+              <AppText
+                nativeID={titleId}
+                role={
+                  compact
+                    ? 'body'
+                    : showBack
+                      ? 'profileHeading'
+                      : 'screenTitle'
                 }
-              />
-            </MotionPressable> : null}
-            {title ? <AppText
-              nativeID={titleId}
-              role={compact ? 'body' : showBack ? 'profileHeading' : 'screenTitle'}
-              numberOfLines={1}
-              style={[
-                compact ? { fontSize: 18, fontWeight: '600' as const } : filterSheetTitleStyle(),
-                titleVariant === 'directions'
-                  ? designTokens.typography.directionsSheetTitle
-                  : null,
-              ]}
-            >
-              {title}
-            </AppText> : null}
+                numberOfLines={1}
+                style={[
+                  compact
+                    ? { fontSize: 18, fontWeight: '600' as const }
+                    : filterSheetTitleStyle(),
+                  titleVariant === 'directions'
+                    ? designTokens.typography.directionsSheetTitle
+                    : null,
+                ]}
+              >
+                {title}
+              </AppText>
+            ) : null}
             {onClear ? (
               <FigmaButton
                 label={clearLabel}
@@ -163,12 +194,16 @@ export function FilterSheet({
               flex: compact ? undefined : 1,
               flexGrow: compact ? 0 : undefined,
               maxHeight: compact ? Math.max(height * 0.85 - 150, 80) : undefined,
-              marginTop:
-                compact ? 14 : titleVariant === 'directions' ? 0 : figmaTokens.space.x2,
+              marginTop: compact
+                ? 14
+                : titleVariant === 'directions'
+                  ? 0
+                  : figmaTokens.space.x2,
             }}
             contentContainerStyle={{
-              paddingTop:
-                compact ? 0 : titleVariant === 'directions'
+              paddingTop: compact
+                ? 0
+                : titleVariant === 'directions'
                   ? designTokens.authorApplication.directionsSearchGap
                   : figmaTokens.space.identityGap,
               paddingBottom: compact ? 0 : figmaTokens.space.x4,
