@@ -13,6 +13,9 @@ export const requiredSecrets = [
 export const workerOnlySecrets = ['RELEASE_CONTROL'] as const;
 
 export const workerSecrets = [...requiredSecrets, ...workerOnlySecrets] as const;
+export const stagingWorkerSecrets = workerSecrets.filter(
+  (name) => !name.startsWith('SMTP_'),
+);
 
 export const containerVariables = [
   'NODE_ENV', 'APP_ENV', 'API_PORT', 'API_URL', 'CORS_ORIGIN', 'TRUST_PROXY',
@@ -26,14 +29,17 @@ export const containerVariables = [
   'S3_PUBLIC_BUCKET', 'MEDIA_PUBLIC_BASE_URL', 'CLOUDFLARE_ZONE_ID',
 ] as const;
 
-export type RuntimeEnvironment = Record<
-  (typeof requiredSecrets)[number] | (typeof containerVariables)[number],
-  string
+export type RuntimeEnvironment = Partial<
+  Record<
+    (typeof requiredSecrets)[number] | (typeof containerVariables)[number],
+    string
+  >
 >;
 
 export function containerEnvironment(env: RuntimeEnvironment): Record<string, string> {
   const result: Record<string, string> = {};
   for (const name of [...requiredSecrets, ...containerVariables]) {
+    if (env.APP_ENV === 'staging' && name.startsWith('SMTP_')) continue;
     if (typeof env[name] !== 'string' || !env[name].trim()) {
       throw new Error(`Missing Container setting: ${name}`);
     }

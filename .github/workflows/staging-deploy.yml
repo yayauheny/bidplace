@@ -1,0 +1,215 @@
+name: Staging deploy
+run-name: staging ${{ inputs.operation }} ${{ inputs.candidate_sha }} by @${{ github.actor }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: 'Explicit staging operation; deploy never runs migrations'
+        required: true
+        default: deploy
+        type: choice
+        options: [deploy, initialize, close, migrate, accounts]
+      candidate_ref:
+        description: 'Approved repository branch containing the candidate'
+        required: true
+        default: feature/portfolio-mvp-release
+        type: string
+      candidate_sha:
+        description: 'Exact 40-character commit SHA to deploy'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bidplace-staging-deploy
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      sha: ${{ steps.candidate.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Validate the candidate without deployment secrets
+        id: candidate
+        env:
+          CANDIDATE_REF: ${{ inputs.candidate_ref }}
+          CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+          APPROVED_REF: ${{ vars.STAGING_DEPLOY_BRANCH || 'feature/portfolio-mvp-release' }}
+          STAGING_OPERATION: ${{ inputs.operation }}
+        run: |
+          set -euo pipefail
+          case "$STAGING_OPERATION" in
+            deploy|initialize|close|migrate|accounts) ;;
+            *) echo "Unknown staging operation."; exit 1 ;;
+          esac
+          case "$GITHUB_REF" in
+            refs/heads/main|refs/heads/feature/portfolio-mvp-release) ;;
+            *) echo "Run the trusted staging workflow from main or the MVP release branch."; exit 1 ;;
+          esac
+          if [ "$CANDIDATE_REF" != "$APPROVED_REF" ]; then
+            echo "Candidate branch is not approved for staging."; exit 1
+          fi
+          git check-ref-format "refs/heads/$CANDIDATE_REF"
+          if [[ ! "$CANDIDATE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "Candidate must be a full commit SHA."; exit 1
+          fi
+          git fetch --no-tags --filter=blob:none origin "refs/heads/$CANDIDATE_REF:refs/remotes/origin/staging-candidate"
+          git cat-file -e "$CANDIDATE_SHA^{commit}"
+          git merge-base --is-ancestor "$CANDIDATE_SHA" refs/remotes/origin/staging-candidate
+          echo "sha=$CANDIDATE_SHA" >> "$GITHUB_OUTPUT"
+
+  deploy:
+    needs: validate
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+      url: https://staging.bid.place
+    permissions:
+      contents: read
+      deployments: write
+    timeout-minutes: 30
+    steps:
+      - name: Checkout the validated candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.validate.outputs.sha }}
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Record the actual candidate deployment
+        if: inputs.operation == 'deploy'
+        id: deployment
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANDIDATE_SHA: ${{ needs.validate.outputs.sha }}
+        run: |
+          set -euo pipefail
+          node --input-type=module -e 'console.log(JSON.stringify({ref:process.env.CANDIDATE_SHA,environment:"staging",auto_merge:false,required_contexts:[],production_environment:false}))' > "$RUNNER_TEMP/staging-deployment.json"
+          id=$(gh api "repos/$GITHUB_REPOSITORY/deployments" --input "$RUNNER_TEMP/staging-deployment.json" --jq '.id')
+          echo "id=$id" >> "$GITHUB_OUTPUT"
+      - name: Deploy staging
+        if: inputs.operation == 'deploy' || inputs.operation == 'close'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          STAGING_NEON_ENDPOINT_ID: ${{ vars.STAGING_NEON_ENDPOINT_ID }}
+          SERVICE_RULES_OWNER: ${{ vars.SERVICE_RULES_OWNER }}
+          SERVICE_RULES_CONTACT: ${{ vars.SERVICE_RULES_CONTACT }}
+          SERVICE_RULES_TEXT: ${{ vars.SERVICE_RULES_TEXT }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          NEON_DIRECT_URL: ${{ secrets.NEON_DIRECT_URL }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          S3_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY_ID }}
+          S3_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
+          CLOUDFLARE_CACHE_TOKEN: ${{ secrets.CLOUDFLARE_CACHE_TOKEN }}
+          TURNSTILE_SITE_KEY: ${{ vars.TURNSTILE_SITE_KEY }}
+          TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
+          RELEASE_CONTROL: ${{ secrets.RELEASE_CONTROL }}
+          STAGING_OPERATION: ${{ inputs.operation }}
+        run: |
+          set -euo pipefail
+          umask 077
+          staging_dir=$(mktemp -d "$RUNNER_TEMP/bidplace-staging.XXXXXX")
+          trap 'rm -rf "$staging_dir"' EXIT
+          export STAGING_SECRETS_FILE="$staging_dir/secrets.json"
+          node --input-type=module <<'JS'
+          import { writeFileSync } from 'node:fs';
+          import { stagingWorkerSecrets } from './deploy/cloudflare/src/environment.ts';
+          const missing = stagingWorkerSecrets.filter(name => !process.env[name]?.trim());
+          if (missing.length) throw new Error('Missing staging secrets: ' + missing.join(', '));
+          writeFileSync(process.env.STAGING_SECRETS_FILE, JSON.stringify(Object.fromEntries(stagingWorkerSecrets.map(name => [name, process.env[name]]))), { mode: 0o600 });
+          JS
+          args=(staging --secrets-file "$STAGING_SECRETS_FILE")
+          if [ "$STAGING_OPERATION" = "close" ]; then
+            args+=(--release closed --keep-container)
+          fi
+          node scripts/cloudflare/deploy.mjs "${args[@]}"
+      - name: Stop the closed staging API
+        if: inputs.operation == 'close'
+        env:
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+          RELEASE_CONTROL: ${{ secrets.RELEASE_CONTROL }}
+        run: |
+          node --input-type=module <<'JS'
+          const headers = { 'CF-Access-Client-Id': process.env.CF_ACCESS_CLIENT_ID, 'CF-Access-Client-Secret': process.env.CF_ACCESS_CLIENT_SECRET, Authorization: 'Bearer ' + process.env.RELEASE_CONTROL };
+          async function state(path, method) {
+            const response = await fetch('https://staging.bid.place/_release/' + path, { method, headers, redirect: 'manual', signal: AbortSignal.timeout(30000) });
+            if (![200, 409].includes(response.status) || !response.headers.get('content-type')?.includes('application/json')) throw new Error('Staging stop was not authenticated or confirmed');
+            return response.json();
+          }
+          let result = await state('stop', 'POST');
+          for (let attempt = 0; attempt < 20 && !['stopped', 'stopped_with_code'].includes(result.status); attempt++) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+            result = await state('state', 'GET');
+          }
+          if (!['stopped', 'stopped_with_code'].includes(result.status)) throw new Error('Staging API has not stopped');
+          JS
+      - name: Build account provisioning dependencies
+        if: inputs.operation == 'initialize' || inputs.operation == 'accounts'
+        env:
+          EXPO_NO_DOTENV: '1'
+        run: pnpm build:api
+      - name: Apply the explicitly selected staging migration
+        if: inputs.operation == 'initialize' || inputs.operation == 'migrate'
+        env:
+          DATABASE_URL: ${{ secrets.NEON_DIRECT_URL }}
+          STAGING_NEON_ENDPOINT_ID: ${{ vars.STAGING_NEON_ENDPOINT_ID }}
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+          RELEASE_CONTROL: ${{ secrets.RELEASE_CONTROL }}
+          STAGING_OPERATION: ${{ inputs.operation }}
+        run: |
+          set -euo pipefail
+          args=(staging)
+          if [ "$STAGING_OPERATION" = "initialize" ]; then
+            args+=(--initial-staging)
+          fi
+          node scripts/cloudflare/migrate.mjs "${args[@]}"
+      - name: Provision test accounts without resetting content
+        if: inputs.operation == 'initialize' || inputs.operation == 'accounts'
+        env:
+          APP_ENV: staging
+          DATABASE_URL: ${{ secrets.NEON_DIRECT_URL }}
+          STAGING_NEON_ENDPOINT_ID: ${{ vars.STAGING_NEON_ENDPOINT_ID }}
+          STAGING_TEST_PASSWORD: ${{ secrets.STAGING_TEST_PASSWORD }}
+        run: pnpm cloudflare:accounts:staging
+      - name: Verify Access, Worker, API and SPA
+        if: inputs.operation == 'deploy'
+        env:
+          STAGING_API_URL: https://staging.bid.place
+          STAGING_WEB_URL: https://staging.bid.place
+          STAGING_EXPECTED_SHA: ${{ needs.validate.outputs.sha }}
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+        run: pnpm ops:staging-smoke
+      - name: Publish deployment result
+        if: always() && steps.deployment.outputs.id != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DEPLOYMENT_ID: ${{ steps.deployment.outputs.id }}
+          DEPLOYMENT_STATE: ${{ job.status == 'success' && 'success' || 'failure' }}
+          CANDIDATE_SHA: ${{ needs.validate.outputs.sha }}
+        run: |
+          set -euo pipefail
+          gh api --method POST "repos/$GITHUB_REPOSITORY/deployments/$DEPLOYMENT_ID/statuses" -f state="$DEPLOYMENT_STATE" -f environment_url=https://staging.bid.place -f log_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" > /dev/null
+          {
+            echo "Staging: https://staging.bid.place"
+            echo "Candidate: $CANDIDATE_SHA"
+            echo "Result: $DEPLOYMENT_STATE"
+            echo "Acceptance and production release remain separate manual actions."
+          } >> "$GITHUB_STEP_SUMMARY"

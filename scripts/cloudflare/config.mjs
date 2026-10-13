@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { containerVariables, requiredSecrets, workerSecrets } from '../../deploy/cloudflare/src/environment.ts';
+import { containerVariables, requiredSecrets, stagingWorkerSecrets, workerSecrets } from '../../deploy/cloudflare/src/environment.ts';
 
 export const root = fileURLToPath(new URL('../../', import.meta.url));
 export const configPath = resolve(root, 'deploy/cloudflare/wrangler.jsonc');
@@ -23,13 +23,14 @@ export function validateConfig(config) {
   if (workerSecrets.some((name) => Object.hasOwn(config.vars, name))) {
     throw new Error('Runtime secrets must not be stored in Wrangler vars');
   }
-  const missing = containerVariables.filter((name) => !config.vars[name]?.trim());
+  const staging = config.vars.APP_ENV === 'staging';
+  const missing = containerVariables.filter((name) => !(staging && name.startsWith('SMTP_')) && !config.vars[name]?.trim());
   if (missing.length) throw new Error(`Configure Wrangler vars: ${missing.join(', ')}`);
   const secretNames = config.secrets.required;
-  if (JSON.stringify(secretNames) !== JSON.stringify(workerSecrets)) {
+  if (JSON.stringify(secretNames) !== JSON.stringify(staging ? stagingWorkerSecrets : workerSecrets)) {
     throw new Error('Wrangler required secrets differ from the Worker contract');
   }
-  if (requiredSecrets.some((name) => !secretNames.includes(name))) {
+  if (requiredSecrets.some((name) => !(staging && name.startsWith('SMTP_')) && !secretNames.includes(name))) {
     throw new Error('Wrangler required secrets differ from the Container contract');
   }
   if (config.vars.S3_BUCKET === config.vars.S3_PUBLIC_BUCKET) throw new Error('Buckets must differ');

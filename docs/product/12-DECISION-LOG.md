@@ -2890,3 +2890,45 @@ Public text owners are under `docs/legal/site`; future terms have one inactive
 annex. No schema, architecture, runtime or design change. See the audit for observed
 boundaries and publication requirements rather than duplicating the schedule here
 in future tasks.
+
+## DEC-119 — Restore one isolated staging with manual SHA deployments
+
+Date: 2026-10-13. Status: Confirmed.
+Source: explicit founder request to implement from current remote portfolio MVP,
+create provider resources, configure all non-secret infrastructure, use one
+staging for sequential acceptance, and disable all Bidplace email in favour of
+prepared test accounts. Founder approved Access organisation/application scoped
+to staging and `work.evles@gmail.com`; GitHub values are entered by the founder.
+
+### Decision
+
+One permanent `staging.bid.place`, same Worker/Container/Expo architecture,
+isolated Neon/R2/runtime secrets in GitHub Environment `staging`. Manual deploy
+selects a full commit SHA from an explicitly approved repository branch and
+checks its identity before secrets become available. Production remains a
+separate explicit release. No automatic production promotion after acceptance.
+
+Staging disables app mail at the shared transport boundary. Prepared verified
+test accounts use normal auth; no test bypass. Account provisioning preserves
+existing data. Migrations are separate guarded operations; rollback redeploys a
+previous accepted SHA only with a compatible schema.
+
+### Alternatives and rationale
+
+- Selected: one stand with manual acceptance coordination and GitHub Deployments.
+  A reservation service, per-PR preview platform, flag service and image promotion
+  framework are deferred; no current task requires those owners.
+- Selected: a new empty Neon project, rather than a branch copying production
+  records. The connected branch-creation API did not expose schema-only cloning.
+  The schema comes from existing Prisma migrations.
+- Revised: mail allowlist was superseded by the founder's later decision to
+  disable staging mail entirely. Cloudflare Access One-Time PIN is a separate
+  infrastructure login.
+
+### Revises and ownership
+
+Revises the no-staging contour in DEC-102 and staging SMTP in DEC-100.
+DEC-103 production Environment and production gates remain unchanged.
+Architecture: `10-CODE-ARCHITECTURE.md`; security: `13-APPLICATION-SECURITY.md`;
+configuration: [staging runbook](../ops/STAGING-DEPLOYMENT.md);
+implementation and live verification status: `11-PROJECT-STATUS.md`.

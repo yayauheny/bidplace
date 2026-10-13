@@ -1,5 +1,39 @@
 # bidplace — текущий статус проекта
 
+## 2026-10-13 — Manual isolated staging
+
+- `Partial`: `feature/staging-deploy` is based on current remote portfolio MVP
+  `ce8e5f81`. Manual `staging-deploy.yml` validates an approved branch/full SHA
+  before a secret-bearing Environment job; deployment scripts pin Neon/R2/Worker
+  identities, separate migrations and preserve test-account state.
+- `Implemented` in source and local checks: disabled staging mail, normal
+  preverified account login, Worker SHA plus baked API image SHA, Access-aware API
+  and SPA smoke. No product UI, contracts, schema or production workflow changes.
+  The existing mapper spec now includes the already selected `mediaAssetId`;
+  production projection and assertion strictness are unchanged.
+- `Implemented` cloud setup: staging Worker/custom domain with protected 503
+  bootstrap; Access email Allow; separate Turnstile widget; private/public R2 with
+  r2.dev disabled and active public media domain; empty Neon project/role with
+  pooling and idle autosuspend; GitHub Environment and source-branch rules.
+- Verification: API unit **463/463**; targeted PostgreSQL integration **34/34**
+  (account provisioning and auth-abuse owners, disposable local database);
+  API typecheck/lint; Cloudflare typecheck/lint **32 unit + 26 script** checks;
+  ops **37/37**, changed ops ESLint, workflow YAML/bash/embedded JS parsing;
+  staging Expo export; linux/amd64 image native modules, migrated DB,
+  no-dotenv/auth boundary, disabled SMTP, baked SHA and SIGTERM checks passed.
+- `Needs verification`: first GitHub workflow run, authenticated live smoke,
+  real browser Access/session, uploads and visual/user-flow acceptance.
+  Provider secrets, the specific Access service token/policy and workflow
+  registration on main remain operator setup. No production release performed.
+  All resource IDs and exact setup steps have one owner:
+  [staging runbook](../ops/STAGING-DEPLOYMENT.md).
+- Workflow registration PR to main changes only the new staging workflow.
+  Its existing Verify fails `@bidplace/api-client` typecheck because
+  `@bidplace/contracts` is not built. The failing code, build graph and Verify
+  workflow are byte-identical to base main; this baseline issue is outside
+  staging code. The MVP implementation Draft Verify passed before the
+  credential-free endpoint-fixture amendment; final-head checks are tracked in PR.
+
 ## 2026-10-13 — Post-merge catalog filter stabilization
 
 - `Needs verification`: `PortfolioService.listWorks` now forwards the stable

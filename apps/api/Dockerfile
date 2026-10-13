@@ -23,6 +23,9 @@ COPY packages packages
 # Source legal markdown is packaged by the API build; no runtime workspace dependency.
 COPY docs/legal/site docs/legal/site
 
+ARG BIDPLACE_RELEASE_SHA
+RUN node -e "const sha = process.env.BIDPLACE_RELEASE_SHA || null; if (sha && !/^[0-9a-f]{40}$/.test(sha)) throw new Error('Invalid build release SHA'); require('fs').writeFileSync('apps/api/src/core/health/build-release.ts', 'export const buildReleaseId: string | null = ' + JSON.stringify(sha) + ';\\n');"
+
 RUN pnpm db:generate \
   && pnpm --filter @bidplace/api... build \
   && cp packages/database/src/generated/prisma/*.node packages/database/dist/generated/prisma/ \

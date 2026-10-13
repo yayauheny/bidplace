@@ -1,17 +1,22 @@
 # Bidplace: Cloudflare deployment
 
-Дата проверки документации: 2026-10-06. Реального deployment пока нет.
-Текущий путь — один production contour, `DEC-102`. Более ранние staging-шаги
-ниже сохраняют историю и не являются обязательным deployment. Результаты:
+Production path ниже сохраняется. Staging восстановлен по `DEC-119`;
+актуальные ресурсы, secrets и порядок ручного запуска имеют одного владельца:
+[Staging deployment](STAGING-DEPLOYMENT.md). Первый staging CI deploy ещё ожидает
+configuration и приёмки. Историческая проверка 2026-10-06:
 [deployment verification](../audits/current/14-CLOUDFLARE-DEPLOYMENT-VERIFICATION.md).
+
+Ниже сохранены исторические общие setup/build/smoke примеры staging до DEC-119.
+Они не являются актуальной staging инструкцией: SMTP и прежние CLI команды
+на новом стенде не использовать. Для staging следовать только linked runbook.
 
 ## Текущий production path
 
 Один контур: Worker `bidplace-production`, сайт `https://bid.place`, Neon
 project `calm-rain-59989397`, default branch `production`
 `br-polished-haze-b2d6rop9`, database `neondb`. Public media
-`https://media.bid.place`. Staging Neon branch удалена основателем. Оставшиеся
-staging buckets и DNS этой волной не удаляются и в deploy не входят.
+`https://media.bid.place`. Удалённая ранее staging Neon branch не используется;
+новый изолированный staging project описан в staging runbook.
 
 Ручной запуск — `.github/workflows/production-deploy.yml`, только
 `workflow_dispatch`. Push, PR и расписание deploy не запускают. GitHub
@@ -167,7 +172,8 @@ tokens для диагностики/rotation, но ограничение ко�
 `AUTH login`. SDK, Workers email binding и новый mail adapter не добавляются.
 Смена провайдера остаётся заменой конфигурации.
 
-В `env.staging.vars` и `env.production.vars` уже заданы несекретные параметры:
+В `env.production.vars` заданы несекретные параметры. Для staging SMTP удалён
+и mail transport полностью выключен по DEC-119:
 
 - `SMTP_HOST=smtp.mx.cloudflare.net`
 - `SMTP_PORT=465`
@@ -203,14 +209,14 @@ tokens для диагностики/rotation, но ограничение ко�
 
 ### Credentials
 
-1. Создать два API token, каждый только с Email Sending: Edit. Один для staging,
-   один для production. Не использовать Global API Key и не переиспользовать
+1. Для production создать API token только с Email Sending: Edit.
+   Не использовать Global API Key и не переиспользовать
    R2 или cache token.
-2. Для каждого environment:
-   `pnpm exec wrangler secret put SMTP_USERNAME --config deploy/cloudflare/wrangler.jsonc --env <staging|production>`
+2. Для production:
+   `pnpm exec wrangler secret put SMTP_USERNAME --config deploy/cloudflare/wrangler.jsonc --env production`
    и ввести литерал `api_token`.
-3. Тем же способом задать `SMTP_PASSWORD` — сам token. Повторить для второго
-   environment другим token.
+3. Тем же способом задать `SMTP_PASSWORD` — сам token. Staging credentials
+   для email не создавать.
 4. Положить восстанавливаемые копии в зашифрованное хранилище оператора и в его
    резервную копию вне GitHub и Cloudflare. Не рассчитывать прочитать значение
    обратно из GitHub Secrets или из Cloudflare secret.

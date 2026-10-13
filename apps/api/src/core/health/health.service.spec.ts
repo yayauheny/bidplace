@@ -1,8 +1,23 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { HealthService } from './health.service';
+import { syntheticServerEnv, syntheticProductionServerEnv } from '../config/synthetic-server-env';
+
+vi.mock('./build-release', () => ({ buildReleaseId: 'a'.repeat(40) }));
 
 describe('HealthService', () => {
+  it('reports the built staging image SHA even when runtime settings claim another version', async () => {
+    const staging = new HealthService(
+      prisma as never,
+      syntheticProductionServerEnv({
+        APP_ENV: 'staging',
+        RELEASE_ID: 'b'.repeat(40),
+      }),
+    );
+    prisma.$queryRaw.mockResolvedValue([]);
+    expect(staging.getStatus().releaseId).toBe('a'.repeat(40));
+    expect((await staging.getReadyStatus()).releaseId).toBe('a'.repeat(40));
+  });
   const prisma = {
     $queryRaw: vi.fn(),
   };
@@ -11,7 +26,7 @@ describe('HealthService', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    service = new HealthService(prisma as never);
+    service = new HealthService(prisma as never, syntheticServerEnv());
   });
 
   afterEach(() => {

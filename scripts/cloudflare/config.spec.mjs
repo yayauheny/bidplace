@@ -21,11 +21,22 @@ function configured(target) {
 test('confirmed mail settings stay fail-closed without GitHub service rules', () => {
   for (const target of ['staging', 'production']) {
     const config = deploymentConfig(target);
-    assert.equal(config.vars.SMTP_HOST, 'smtp.mx.cloudflare.net');
+    if (target === 'production') {
+      assert.equal(config.vars.SMTP_HOST, 'smtp.mx.cloudflare.net');
     assert.equal(config.vars.SMTP_PORT, '465');
     assert.equal(config.vars.SMTP_SECURE, 'true');
     assert.equal(config.vars.SMTP_AUTH_MODE, 'login');
     assert.equal(config.vars.SMTP_FROM, 'noreply@bid.place');
+    } else {
+      assert.equal(
+        Object.keys(config.vars).some((name) => name.startsWith('SMTP_')),
+        false,
+      );
+      assert.equal(
+        config.secrets.required.some((name) => name.startsWith('SMTP_')),
+        false,
+      );
+    }
     assert.equal(config.vars.TEST_EMAIL_BYPASS, 'false');
     assert.equal(config.vars.AUTH_MAIL_DAILY_BUDGET, '200');
     assert.equal(config.vars.AUTH_MAIL_MONTHLY_BUDGET, '3000');
@@ -33,7 +44,9 @@ test('confirmed mail settings stay fail-closed without GitHub service rules', ()
     assert.equal(Object.hasOwn(config.vars, 'TURNSTILE_SECRET_KEY'), false);
     const emptyFrom = deploymentConfig(target);
     emptyFrom.vars = { ...emptyFrom.vars, SMTP_FROM: '' };
-    assert.throws(() => validateConfig(emptyFrom), /SMTP_FROM/);
+    assert.throws(() => validateConfig(emptyFrom),
+      target === 'production' ? /SMTP_FROM/ : /SERVICE_RULES_TEXT/,
+    );
   }
   const staging = deploymentConfig('staging');
   assert.equal(staging.vars.SERVICE_RULES_OWNER, 'work.evles@gmail.com');
@@ -76,8 +89,7 @@ test('release routes reach the worker before the SPA fallback', async () => {
   assert.equal(full.env.production.assets, undefined);
   assert.equal(full.assets.not_found_handling, 'single-page-application');
   assert.deepEqual(full.assets.run_worker_first.filter((rule) => rule.startsWith('/_release/')), [
-    '/_release/stop', '/_release/state',
-  ]);
+    '/_release/stop', '/_release/state', '/_release/version']);
   const wranglerPackage = realpathSync(new URL('../../node_modules/wrangler/package.json', import.meta.url));
   const { Miniflare } = createRequire(wranglerPackage)('miniflare');
   const directory = mkdtempSync(join(tmpdir(), 'bidplace-assets-'));
