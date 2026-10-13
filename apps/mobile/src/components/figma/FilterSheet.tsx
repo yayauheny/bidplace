@@ -25,6 +25,7 @@ export function FilterSheet({
   open,
   onClose,
   title,
+  accessibilityLabel = title,
   titleVariant = 'default',
   presentation = 'full',
   showBack = false,
@@ -38,6 +39,7 @@ export function FilterSheet({
   open: boolean;
   onClose: () => void;
   title: string;
+  accessibilityLabel?: string;
   titleVariant?: 'default' | 'directions';
   presentation?: 'full' | 'compact';
   showBack?: boolean;
@@ -92,7 +94,7 @@ export function FilterSheet({
         <View
           nativeID={dialogId}
           accessibilityViewIsModal
-          accessibilityLabel={title}
+          accessibilityLabel={accessibilityLabel}
           style={[filterSheetPanelStyle(compact), compact ? { maxHeight: height * 0.85 } : null]}
           {...(Platform.OS === 'web'
             ? ({ role: 'dialog', 'aria-modal': true } as object)
