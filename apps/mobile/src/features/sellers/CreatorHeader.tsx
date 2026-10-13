@@ -45,7 +45,8 @@ export function CreatorHeader({
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <FigmaIconButton
               icon="heart"
-              iconSize={22}
+              iconSize={20}
+              strokeWidthPx={1.5}
               surface="muted"
               label="Добавить автора в избранное"
               onPress={() => onUnavailable('Избранные авторы')}
