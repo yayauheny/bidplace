@@ -7,4 +7,6 @@ export type CreatorHeaderProps = {
   tab: string;
   onTabChange: (value: string) => void;
   panelId: string;
+  isOwner?: boolean;
+  onUnavailable: (feature: string) => void;
 };
