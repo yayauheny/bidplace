@@ -40,7 +40,7 @@ export function CreatorHeader({
           }}
         >
           <View testID="author-back">
-            <FigmaIconButton icon="arrow-left-01" surface="muted" label="Назад" onPress={onBack} />
+            <FigmaIconButton icon="arrow-left-01" iconSize={20} strokeWidthPx={1.5} surface="muted" label="Назад" onPress={onBack} />
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <FigmaIconButton
@@ -66,7 +66,8 @@ export function CreatorHeader({
             ) : null}
             <FigmaIconButton
               icon="more-vertical"
-              iconSize={22}
+              iconSize={20}
+              strokeWidthPx={1.5}
               surface="muted"
               label="Действия с профилем"
               onPress={() => setMenuOpen(true)}
