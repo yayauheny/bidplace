@@ -38,11 +38,13 @@ export function AuthorShare({ sharePath }: { sharePath: string }) {
           }}
         />
       </View>
-      <ShareSheet
-        open={open}
-        onClose={() => setOpen(false)}
-        sharePath={sharePath}
-      />
+      {Platform.OS === 'web' ? (
+        <ShareSheet
+          open={open}
+          onClose={() => setOpen(false)}
+          sharePath={sharePath}
+        />
+      ) : null}
     </>
   );
 }
