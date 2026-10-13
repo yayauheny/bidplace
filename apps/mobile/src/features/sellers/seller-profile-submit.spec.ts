@@ -1429,7 +1429,8 @@ describe('seller profile save reconciliation', () => {
     await until(
       view.container,
       () =>
-        view.container.textContent?.includes('Не удалось выбрать фото') === true,
+        view.container.textContent?.includes('Не удалось выбрать фото') ===
+        true,
       'photo picker error',
     );
     expect(harness.updateProfile).not.toHaveBeenCalled();
@@ -1438,7 +1439,8 @@ describe('seller profile save reconciliation', () => {
     await until(
       view.container,
       () =>
-        view.container.textContent?.includes('Не удалось выбрать фото') !== true,
+        view.container.textContent?.includes('Не удалось выбрать фото') !==
+        true,
       'photo picker retry',
     );
     click(view.container, 'Сохранить');
@@ -1546,7 +1548,14 @@ describe('seller profile save reconciliation', () => {
     const view = mount('user-a', 'claimed-author');
     await until(
       view.container,
-      () => inputValue(view.container, 'Никнейм') === 'claimed-author',
+      () => {
+        const input = view.container.querySelector<HTMLInputElement>(
+          '[aria-label="Никнейм"]',
+        );
+        return (
+          input instanceof HTMLInputElement && input.value === 'claimed-author'
+        );
+      },
       'claimed slug',
     );
     await act(async () => {
@@ -1565,7 +1574,14 @@ describe('seller profile save reconciliation', () => {
     const view = mount('user-a', 'previous-author');
     await until(
       view.container,
-      () => inputValue(view.container, 'Никнейм') === 'previous-author',
+      () => {
+        const input = view.container.querySelector<HTMLInputElement>(
+          '[aria-label="Никнейм"]',
+        );
+        return (
+          input instanceof HTMLInputElement && input.value === 'previous-author'
+        );
+      },
       'previous slug',
     );
     await act(async () => {
@@ -1642,8 +1658,8 @@ describe('seller profile save reconciliation', () => {
   });
 
   it('does not navigate after focus leaves and returns during a step save', async () => {
-    let finishSave: (saved: ReturnType<typeof savedProfile>) => void =
-      () => undefined;
+    let finishSave: (saved: ReturnType<typeof savedProfile>) => void = () =>
+      undefined;
     const original = response('DRAFT', 'DRAFT');
     const savedDraft = {
       ...original,
@@ -1697,8 +1713,8 @@ describe('seller profile save reconciliation', () => {
   });
 
   it('does not navigate or restore a profile after the screen unmounts during a step save', async () => {
-    let finishSave: (saved: ReturnType<typeof savedProfile>) => void =
-      () => undefined;
+    let finishSave: (saved: ReturnType<typeof savedProfile>) => void = () =>
+      undefined;
     const original = response('DRAFT', 'DRAFT');
     harness.params = { step: '1' };
     harness.getMyProfile.mockResolvedValue(original);
@@ -1736,8 +1752,9 @@ describe('seller profile save reconciliation', () => {
   });
 
   it('keeps a confirmed pending revision when submission completes off-screen', async () => {
-    let finishSubmit: (result: ReturnType<typeof submitResponse>) => void =
-      () => undefined;
+    let finishSubmit: (
+      result: ReturnType<typeof submitResponse>,
+    ) => void = () => undefined;
     harness.getMyProfile.mockResolvedValue(response('APPROVED', 'DRAFT'));
     harness.updateProfile.mockResolvedValue(savedProfile());
     harness.submitAuthorApplication.mockImplementation(
@@ -1784,8 +1801,9 @@ describe('seller profile save reconciliation', () => {
   });
 
   it('does not apply a pending submission after the screen unmounts', async () => {
-    let finishSubmit: (result: ReturnType<typeof submitResponse>) => void =
-      () => undefined;
+    let finishSubmit: (
+      result: ReturnType<typeof submitResponse>,
+    ) => void = () => undefined;
     harness.getMyProfile.mockResolvedValue(response('APPROVED', 'DRAFT'));
     harness.updateProfile.mockResolvedValue(savedProfile());
     harness.submitAuthorApplication.mockImplementation(

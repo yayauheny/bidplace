@@ -596,12 +596,24 @@ export function SellerProfileScreen() {
     setPhotoUri(null);
     // Read the installed session, not a possibly stale auth context during handoff.
     const sessionSlug = canWritePrivateCache(queryClient, authEpoch)
-      ? queryClient.getQueryData<{ slug?: string | null }>(authKeys.session)?.slug
+      ? queryClient.getQueryData<{ slug?: string | null }>(authKeys.session)
+          ?.slug
       : null;
-    form.reset({ ...emptyProfileDraft, slug: sessionSlug ?? '' });
-    hydratedProfileToken.current = null;
-    forceProfileHydration.current = true;
-  }, [authEpoch]);
+    const cached = canWritePrivateCache(queryClient, authEpoch)
+      ? queryClient.getQueryData<SellerProfileResponse>(sellerProfileQueryKey)
+      : undefined;
+    const cachedProfile = cached?.sellerProfile;
+    if (cachedProfile) {
+      form.reset(toFields(cachedProfile));
+      hydratedProfileToken.current =
+        cached.editingRevision?.updatedAt ?? cachedProfile.updatedAt ?? null;
+      forceProfileHydration.current = false;
+    } else {
+      form.reset({ ...emptyProfileDraft, slug: sessionSlug ?? '' });
+      hydratedProfileToken.current = null;
+      forceProfileHydration.current = true;
+    }
+  }, [authEpoch, form, queryClient]);
   const rememberSavedProfile = (
     saved: SellerProfileResponse,
     submitted: ProfileFields,
@@ -742,7 +754,8 @@ export function SellerProfileScreen() {
       if (
         !screenStillOwns(operation, variables.authEpoch) ||
         focusTurn.current !== startedInFocus
-      ) return null;
+      )
+        return null;
       if (saved.outcome === 'stored-slug') {
         form.setValue('slug', saved.slug, {
           shouldDirty: false,
@@ -757,7 +770,8 @@ export function SellerProfileScreen() {
       if (
         !screenStillOwns(operation, variables.authEpoch) ||
         focusTurn.current !== startedInFocus
-      ) return null;
+      )
+        return null;
       if (source === 'transition') endLockedTransition();
       throw error;
     } finally {
@@ -844,8 +858,7 @@ export function SellerProfileScreen() {
     const operation = sessionOperation.current;
     const startedInFocus = focusTurn.current;
     const stillOwnsStep = () =>
-      focusTurn.current === startedInFocus &&
-      screenStillOwns(operation, epoch);
+      focusTurn.current === startedInFocus && screenStillOwns(operation, epoch);
     try {
       const saved = await save('transition');
       if (!saved || !stillOwnsStep()) return;
