@@ -38,11 +38,11 @@ export function CategoriesSearchPane({
       emptyTitle="Категории не найдены"
       loading={<CategorySkeleton />}
     >
-      <View style={{ width: '100%', gap: figmaTokens.space.x2 }}>
-        {paddedGridRows(items, 3).map((row, rowIndex) => (
+      <View style={{ width: '100%', gap: figmaTokens.space.x3 }}>
+        {paddedGridRows(items, 2).map((row, rowIndex) => (
           <View
             key={row.find((item) => item)?.id ?? `row-${rowIndex}`}
-            style={{ flexDirection: 'row', gap: figmaTokens.space.x2 }}
+            style={{ flexDirection: 'row', gap: figmaTokens.space.x3 }}
           >
             {row.map((category, cellIndex) => (
               <View
@@ -69,7 +69,7 @@ function CategorySkeleton() {
   return (
     <View
       accessibilityRole="progressbar"
-      style={{ flexDirection: 'row', gap: figmaTokens.space.x2 }}
+      style={{ flexDirection: 'row', gap: figmaTokens.space.x3 }}
     >
       <SkeletonTile />
       <SkeletonTile />
@@ -83,8 +83,8 @@ function SkeletonTile() {
     <View
       style={{
         flex: 1,
-        aspectRatio: 120.67 / 160.89,
-        borderRadius: figmaTokens.radius.small,
+        aspectRatio: 264 / 352,
+        borderRadius: figmaTokens.radius.cover,
         backgroundColor: figmaTokens.color.surfaceMuted,
       }}
     />
