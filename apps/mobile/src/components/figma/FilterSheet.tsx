@@ -73,7 +73,7 @@ export function FilterSheet({
       returnFocusRef={returnFocusRef}
       presentation="sheet"
       bare
-      bottomSpace={bottomSpace}
+      bottomSpace={compact ? (bottomSpace ?? figmaTokens.space.x5) : undefined}
     >
       <View style={filterSheetPanelStyle(compact, height)}>
         {compact ? (
