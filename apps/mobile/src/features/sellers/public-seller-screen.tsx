@@ -24,6 +24,7 @@ import { FigmaChoiceChip } from '../../components/figma/FigmaChoiceChip';
 import { FigmaButton } from '../../components/figma/FigmaButton';
 import { FilterOptionRow } from '../../components/figma/FilterOptionRow';
 import { FilterSheet } from '../../components/figma/FilterSheet';
+import { paddedGridRows } from '../../components/figma/flex-grid-rows';
 
 import { AuthorAbout } from './AuthorAbout';
 import { CreatorWorkCard } from './CreatorWorkCard';
@@ -49,6 +50,7 @@ export function PublicSellerScreen({
   const capability = useSellerCapability();
   const panelId = useId();
   const [tab, setTab] = useState<AuthorPublicTab>('works');
+  const [contentWidth, setContentWidth] = useState(0);
   const [unavailable, setUnavailable] = useState<string | null>(null);
   const [pendingHide, setPendingHide] = useState<string | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
@@ -149,6 +151,7 @@ export function PublicSellerScreen({
 
           <View
             testID="author-content"
+            onLayout={(event) => setContentWidth(event.nativeEvent.layout.width)}
             nativeID={panelId}
             role="tabpanel"
             aria-labelledby={`${panelId}-${tab}`}
@@ -230,14 +233,21 @@ export function PublicSellerScreen({
             ) : (
               <>
                 <View style={{ width: '100%', gap: designTokens.space.sectionGap }}>
-                  {works.map((item) => (
-                    <CreatorWorkCard
-                      key={item.work.publicId}
-                      item={item}
-                      isOwner={isOwner}
-                      onUnavailable={setUnavailable}
-                      onHide={setPendingHide}
-                    />
+                  {paddedGridRows(works, contentWidth >= 1000 ? 3 : contentWidth >= 700 ? 2 : 1).map((row, rowIndex) => (
+                    <View key={row.find((item) => item)?.work.publicId ?? rowIndex} style={{ flexDirection: 'row', gap: designTokens.space.x3 }}>
+                      {row.map((item, index) => (
+                        <View key={item?.work.publicId ?? index} style={{ flex: 1, minWidth: 0 }}>
+                          {item ? (
+                            <CreatorWorkCard
+                              item={item}
+                              isOwner={isOwner}
+                              onUnavailable={setUnavailable}
+                              onHide={setPendingHide}
+                            />
+                          ) : null}
+                        </View>
+                      ))}
+                    </View>
                   ))}
                 </View>
                 {query.hasNextPage ? (
