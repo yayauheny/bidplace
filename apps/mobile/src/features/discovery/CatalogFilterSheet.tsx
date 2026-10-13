@@ -91,7 +91,10 @@ export function CatalogFilterSheet({
         showBack
         onBack={() => setActiveSectionId(undefined)}
         onClear={() =>
-          setDraftValues((current) => ({ ...current, [activeSection.id]: undefined }))
+          setDraftValues((current) => ({
+            ...current,
+            [activeSection.id]: undefined,
+          }))
         }
         clearLabel="Очистить"
         primaryAction={{ label: 'Применить', onPress: apply }}
