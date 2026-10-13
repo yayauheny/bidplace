@@ -41,6 +41,8 @@ export function AuthorShare({
     <>
       <FigmaIconButton
         icon="share-03"
+        iconSize={20}
+        strokeWidthPx={1.5}
         surface="muted"
         label="Поделиться профилем"
         onPress={() => {
