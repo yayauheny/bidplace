@@ -34,8 +34,8 @@ export function CategoriesSearchPane({
       isPending={categories.isPending}
       isError={categories.isError}
       onRetry={() => void categories.refetch()}
-      isEmpty={Boolean(requestQuery) && items.length === 0}
-      emptyTitle="Категории не найдены"
+      isEmpty={items.length === 0}
+      emptyTitle={requestQuery ? 'Категории не найдены' : 'Пока нет категорий'}
       loading={<CategorySkeleton />}
     >
       <View style={{ width: '100%', gap: figmaTokens.space.x3 }}>
