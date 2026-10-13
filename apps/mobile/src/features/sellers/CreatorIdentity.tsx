@@ -1,8 +1,11 @@
-import { View } from 'react-native';
+import { Platform, ScrollView, View } from 'react-native';
 import type { PortfolioWorkDetailResponse } from '@bidplace/contracts';
 import { designTokens } from '@bidplace/design-tokens';
 
-import { AppText, MotionPressable, ResilientRemoteImage } from '../../components/ui';
+import { FigmaButton } from '../../components/figma/FigmaButton';
+import { webFilterBlur } from '../../components/figma/web-backdrop';
+
+import { AppText, ResilientRemoteImage } from '../../components/ui';
 import { getApiAssetUrl } from '../../lib/environment';
 import { CreatorSocialActions } from './CreatorSocialActions';
 
@@ -31,19 +34,38 @@ export function CreatorIdentity({
     >
       <View
         testID="creator-avatar"
-        style={{
-          width: 100,
-          height: 100,
-          borderRadius: designTokens.radius.pill,
-          overflow: 'hidden',
-        }}
+        style={{ width: 100, height: 100, borderRadius: 56 }}
       >
+        <View
+          aria-hidden
+          accessible={false}
+          style={{
+            position: 'absolute',
+            width: 100,
+            height: 100,
+            borderRadius: 56,
+            opacity: 0.5,
+            pointerEvents: 'none',
+            ...(Platform.OS === 'web' ? webFilterBlur(15) : {}),
+          }}
+        >
+          <ResilientRemoteImage
+            uri={getApiAssetUrl(profile.profilePhotoUrl)}
+            component="AuthorPhoto"
+            accessibilityLabel=""
+            fallbackLabel=""
+            blurRadius={Platform.OS === 'web' ? undefined : 15}
+            style={{ width: 100, height: 100, borderRadius: 56 }}
+            contentFit="cover"
+            contentPosition="top"
+          />
+        </View>
         <ResilientRemoteImage
           uri={getApiAssetUrl(profile.profilePhotoUrl)}
           component="AuthorPhoto"
           accessibilityLabel={`Фото автора ${profile.fullName}`}
           fallbackLabel={`Фото автора недоступно: ${profile.fullName}`}
-          style={{ width: '100%', height: '100%' }}
+          style={{ width: '100%', height: '100%', borderRadius: 56 }}
           contentFit="cover"
           contentPosition="top"
         />
@@ -75,29 +97,15 @@ export function CreatorIdentity({
             </AppText>
           </View>
         </View>
-        <View
+        <ScrollView
+          horizontal
           testID="creator-actions"
-          style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: designTokens.space.x1 }}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingRight: designTokens.space.x3 }}
         >
-          <MotionPressable
-            accessibilityRole="button"
-            accessibilityLabel="Подписаться на автора"
-            onPress={onSubscribe}
-            preset="button"
-            style={{
-              minHeight: 42,
-              borderRadius: designTokens.radius.pill,
-              paddingHorizontal: designTokens.space.x4,
-              backgroundColor: designTokens.color.solid,
-              justifyContent: 'center',
-            }}
-          >
-            <AppText role="bodySmall" style={{ color: designTokens.color.white }}>
-              Подписаться
-            </AppText>
-          </MotionPressable>
+          <FigmaButton label="Подписаться" variant="solid" onPress={onSubscribe} />
           <CreatorSocialActions profile={profile} />
-        </View>
+        </ScrollView>
       </View>
     </View>
   );
