@@ -71,7 +71,7 @@ export function CatalogFilterSheet({
           const section = sections.find((item) => item.id === id);
           return [
             id,
-            section?.state === 'ready' &&
+            (section?.state === 'ready' || section?.state === 'empty') &&
             value &&
             !section.options.some((option) => option.value === value)
               ? undefined
@@ -159,7 +159,7 @@ export function CatalogFilterSheet({
           key={section.id}
           label={section.label}
           valuePreview={sectionPreview(section, draftValues[section.id])}
-          disabled={section.state !== 'ready'}
+          disabled={section.state === 'loading' || section.state === 'empty'}
           compact
           onPress={() => {
             setOptionSearch('');
