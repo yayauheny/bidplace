@@ -94,10 +94,7 @@ export function PublicSellerScreen({
         <ScrollView
           testID="creator-scroll"
           contentContainerStyle={{
-            paddingBottom:
-              tab === 'about'
-                ? designTokens.size.dockReserve
-                : designTokens.space.x5,
+            paddingBottom: designTokens.size.dockReserve,
             overflow: 'visible',
           }}
           showsVerticalScrollIndicator={false}
