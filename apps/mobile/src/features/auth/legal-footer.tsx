@@ -48,6 +48,7 @@ function FooterLink({
         accessibilityRole="link"
         accessibilityLabel={title}
         preset="button"
+        hitSlop={site ? designTokens.space.x3 : undefined}
       >
         <AppText
           role={site ? 'nav' : 'metadata'}
@@ -73,6 +74,7 @@ function ContactLink({ site = false }: { site?: boolean }) {
       accessibilityRole="link"
       accessibilityLabel="Связаться с оператором bidplace"
       preset="button"
+      hitSlop={site ? designTokens.space.x3 : undefined}
       onPress={() => {
         void Linking.openURL('mailto:work.evles@gmail.com');
       }}

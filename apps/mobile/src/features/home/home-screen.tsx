@@ -89,6 +89,7 @@ export function HomeScreen({ hideDock = false }: { hideDock?: boolean }) {
                 accessibilityRole="link"
                 accessibilityLabel="Ваши авторы"
                 preset="button"
+                hitSlop={designTokens.space.x3}
               >
                 <AppText role="nav" tone="secondary">
                   Ваши авторы

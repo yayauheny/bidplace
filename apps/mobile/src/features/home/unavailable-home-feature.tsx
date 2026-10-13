@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { View } from 'react-native';
+import { ScrollView } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
@@ -18,9 +18,9 @@ export function UnavailableHomeFeature({
 
   return (
     <AppShell>
-      <View
-        style={{
-          flex: 1,
+      <ScrollView
+        contentContainerStyle={{
+          flexGrow: 1,
           paddingHorizontal: designTokens.space.pageGutter,
           paddingTop: designTokens.space.x8,
           paddingBottom: designTokens.size.dockReserve,
@@ -35,7 +35,7 @@ export function UnavailableHomeFeature({
         />
         <PageHeader title={title} />
         <PageState title="Пока недоступно" message={message} />
-      </View>
+      </ScrollView>
     </AppShell>
   );
 }
