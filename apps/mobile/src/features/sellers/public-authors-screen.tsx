@@ -122,6 +122,7 @@ export function PublicAuthorsScreen({
         <View>
           <FilterSortBar
             filterLabel={activeFilterLabel(state)}
+            compactFilter
             filterActive={Boolean(state.q || state.tag || state.city)}
             sortActive={state.sort !== 'added'}
             onPressFilter={() => setFilterOpen(true)}
@@ -150,6 +151,7 @@ export function PublicAuthorsScreen({
         }}
       />
       <FilterSortSheet
+        compact
         open={sortOpen}
         value={state.sort}
         options={AUTHOR_SORT_OPTIONS}
