@@ -24,6 +24,21 @@ describe('public author route state', () => {
     ).toEqual({ sort: 'newest' });
   });
 
+  it('keeps two valid category IDs and rejects invalid lists', () => {
+    const first = 'dc4be8c7-bf43-4c1f-94a3-81802ca0cbbb';
+    const second = 'aedd3848-8f62-44b2-8cf8-977c78d0f96b';
+    expect(toPublicAuthorRouteState({ categories: `${first},${second},${first}` }))
+      .toEqual({ sort: 'newest', categories: [first, second] });
+    expect(toPublicAuthorRouteState({ categories: `${first},invalid` }))
+      .toEqual({ sort: 'newest' });
+    expect(publicAuthorKeys.detail('anna', 'newest', undefined, [first, second]))
+      .toEqual(['public-author', 'anna', {
+        sort: 'newest',
+        category: undefined,
+        categories: [first, second],
+      }]);
+  });
+
   it('keeps category in the one public author query identity', () => {
     expect(
       publicAuthorKeys.detail(
