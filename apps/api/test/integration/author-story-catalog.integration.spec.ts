@@ -234,6 +234,12 @@ describe('author story, catalog, and proposals', () => {
       'Second work',
       painting.id,
     );
+    const excluded = await draftWork(
+      owner.id,
+      profile.id,
+      'Work without canvas',
+      painting.id,
+    );
     for (const work of [first, second]) {
       await prisma.productRevisionTerm.create({
         data: { revisionId: work.revision.id, termId: canvas.id },
@@ -251,6 +257,18 @@ describe('author story, catalog, and proposals', () => {
         },
       });
     }
+    await prisma.productRevision.update({
+      where: { id: excluded.revision.id },
+      data: { status: 'APPROVED' },
+    });
+    await prisma.product.update({
+      where: { id: excluded.product.id },
+      data: {
+        status: 'APPROVED',
+        publishedAt: new Date(),
+        publishedRevisionId: excluded.revision.id,
+      },
+    });
     const guest = new HttpTestClient(http.baseUrl);
     const author = await guest.get(`/authors/${profile.slug}`);
     expect(author.status).toBe(200);

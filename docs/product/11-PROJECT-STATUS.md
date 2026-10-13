@@ -1,5 +1,17 @@
 # bidplace — текущий статус проекта
 
+## 2026-10-13 — Post-merge catalog filter stabilization
+
+- `Needs verification`: `PortfolioService.listWorks` now forwards the stable
+  `materialId` and `techniqueId` filters from `portfolioWorksQuerySchema` to
+  `ProductsService.listPortfolio`, preserving server-side filtering and
+  pagination. `author-story-catalog.integration.spec.ts` now includes a
+  published Work without the selected material so `/works?materialId=…` must
+  exclude it. API typecheck and focused unit specs pass on Node 22.20.0. The
+  disposable PostgreSQL integration run is blocked locally because no server
+  listens on `127.0.0.1:5432`; no shared, staging, or production database was
+  used.
+
 ## 2026-10-12 — Work Catalog integration (PR #37)
 
 - **Implemented in code:** Work author editor uses catalog term IDs and moderated proposals; materials and techniques use searchable Figma chips, category uses single-select chips. Existing selected terms, rejected proposals and revision hydration are retained.
