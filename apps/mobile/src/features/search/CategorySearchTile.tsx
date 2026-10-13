@@ -32,16 +32,15 @@ export function CategorySearchTile({
         {...interactiveHitDataset()}
         style={({ hovered, pressed }) => ({
           width: '100%',
-          gap: figmaTokens.space.x2,
-          borderRadius: figmaTokens.radius.small,
+          borderRadius: figmaTokens.radius.cover,
           ...interactiveHitFallbackStyle({ hovered, pressed }),
         })}
       >
         <View
           style={{
             width: '100%',
-            aspectRatio: 120.67 / 121.89,
-            borderRadius: figmaTokens.radius.small,
+            aspectRatio: 264 / 352,
+            borderRadius: figmaTokens.radius.cover,
             overflow: 'hidden',
             backgroundColor: figmaTokens.color.mutedFill,
             alignItems: 'center',
@@ -55,10 +54,25 @@ export function CategorySearchTile({
           >
             <ImagePlaceholder />
           </View>
+          <View
+            style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              padding: figmaTokens.space.x2,
+              backgroundColor: 'rgba(41, 41, 41, 0.45)',
+            }}
+          >
+            <AppText
+              role="bodySmall"
+              numberOfLines={2}
+              style={{ color: figmaTokens.color.white }}
+            >
+              {name}
+            </AppText>
+          </View>
         </View>
-        <AppText role="bodySmall" numberOfLines={2}>
-          {name}
-        </AppText>
       </MotionPressable>
     </Link>
   );
