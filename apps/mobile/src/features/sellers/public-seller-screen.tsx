@@ -22,7 +22,8 @@ import { useAuthorWorks } from './use-author-works';
 import { authorWorksArePending } from './public-author-works-state';
 import { FigmaChoiceChip } from '../../components/figma/FigmaChoiceChip';
 import { FigmaButton } from '../../components/figma/FigmaButton';
-import { FigmaIcon } from '../../components/figma/FigmaIcon';
+import { FilterOptionRow } from '../../components/figma/FilterOptionRow';
+import { FilterSheet } from '../../components/figma/FilterSheet';
 
 import { AuthorAbout } from './AuthorAbout';
 import { CreatorWorkCard } from './CreatorWorkCard';
@@ -168,7 +169,16 @@ export function PublicSellerScreen({
                   onPress={() => void categories.refetch()}
                 />
               ) : (
-                <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: designTokens.space.x2 }}>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: designTokens.space.x2,
+                    paddingRight: designTokens.space.pageGutter,
+                  }}
+                >
                   <FigmaButton
                     label="Категория"
                     icon="arrow-right-01"
@@ -196,7 +206,7 @@ export function PublicSellerScreen({
                       }}
                     />
                   ))}
-                </View>
+                </ScrollView>
               )
             ) : null}
             {tab === 'about' ? (
@@ -241,50 +251,40 @@ export function PublicSellerScreen({
             )}
           </View>
         </ScrollView>
-        <AppDialog
-          presentation="sheet"
+        <FilterSheet
+          presentation="compact"
           open={filterOpen}
           onClose={() => setFilterOpen(false)}
           title="Категория"
+          primaryAction={{
+            label: 'Показать работы',
+            onPress: () => {
+              router.setParams({
+                categories: draftCategories.length ? draftCategories.join(',') : undefined,
+                category: undefined,
+              });
+              setFilterOpen(false);
+            },
+          }}
         >
-          <View style={{ gap: designTokens.space.x2 }}>
-            {[
-              ...(categories.data?.categories ?? []),
-            ].map((item) => {
-              const selected = draftCategories.includes(item.id);
-              return (
-                <MotionPressable
-                  key={item.id}
-                  accessibilityRole="checkbox"
-                  accessibilityState={{ checked: selected }}
-                  accessibilityLabel={item.name}
-                  onPress={() => setDraftCategories((current) => current.includes(item.id)
+          {(categories.data?.categories ?? []).map((item) => (
+            <FilterOptionRow
+              key={item.id}
+              label={item.name}
+              mode="checkbox"
+              variant="compact"
+              selected={draftCategories.includes(item.id)}
+              disabled={!draftCategories.includes(item.id) && draftCategories.length >= 20}
+              onPress={() =>
+                setDraftCategories((current) =>
+                  current.includes(item.id)
                     ? current.filter((id) => id !== item.id)
-                    : current.length < 20 ? [...current, item.id] : current)}
-                  preset="button"
-                  style={{
-                    minHeight: designTokens.size.touch,
-                    paddingVertical: designTokens.space.x3,
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                  }}
-                >
-                  <AppText role="bodySmall">{item.name}</AppText>
-                  {selected ? <FigmaIcon name="check" size={20} /> : null}
-                </MotionPressable>
-              );
-            })}
-            <PrimaryButton
-              label="Показать работы"
-              width="full"
-              onPress={() => {
-                router.setParams({ categories: draftCategories.length ? draftCategories.join(',') : undefined, category: undefined });
-                setFilterOpen(false);
-              }}
+                    : [...current, item.id],
+                )
+              }
             />
-          </View>
-        </AppDialog>
+          ))}
+        </FilterSheet>
         <AppDialog
           open={Boolean(unavailable)}
           title="Скоро появится"
