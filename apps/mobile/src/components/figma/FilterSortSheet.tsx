@@ -11,6 +11,7 @@ export function FilterSortSheet({
   onClose,
   title = 'Сортировка',
   compact = false,
+  clearValue,
 }: {
   open: boolean;
   value: string;
@@ -19,6 +20,7 @@ export function FilterSortSheet({
   onClose: () => void;
   title?: string;
   compact?: boolean;
+  clearValue?: string;
 }) {
   const [draftValue, setDraftValue] = useState(value);
 
@@ -32,6 +34,8 @@ export function FilterSortSheet({
       compact={compact}
       onClose={onClose}
       title={title}
+      onClear={compact && clearValue !== undefined ? () => setDraftValue(clearValue) : undefined}
+      clearLabel="Очистить"
       primaryAction={{
         label: 'Применить',
         onPress: () => {
@@ -45,7 +49,7 @@ export function FilterSortSheet({
           key={option.value}
           label={option.label}
           mode="radio"
-          variant={compact ? 'catalog' : 'default'}
+          variant={compact ? 'catalog-sort' : 'default'}
           selected={option.value === draftValue}
           onPress={() => setDraftValue(option.value)}
         />
