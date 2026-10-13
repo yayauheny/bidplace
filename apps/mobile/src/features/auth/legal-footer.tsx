@@ -1,8 +1,9 @@
 import { Link, type Href } from 'expo-router';
-import { Linking, View } from 'react-native';
+import { Linking, useWindowDimensions, View } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
 import type { LegalDocumentId } from '@bidplace/contracts';
 
+import { BidplaceMark, BidplaceWordmark } from '../../components/branding/BidplaceBrand';
 import { AppText } from '../../components/ui';
 import { MotionPressable } from '../../components/ui/MotionPressable';
 
@@ -14,26 +15,143 @@ const links: { id: LegalDocumentId; title: string }[] = [
   { id: 'prohibited', title: 'Запрещённое и правообладателям' },
 ];
 
-export function LegalFooter() {
+const mainLinks: { href: Href; title: string }[] = [
+  { href: '/works', title: 'Все работы' },
+  { href: '/authors', title: 'Все авторы' },
+  { href: '/profile?intro=1', title: 'Стать автором' },
+  { href: '/products/new', title: 'Создать работу' },
+];
+
+const siteLinkStyle = {
+  color: designTokens.color.inkStrong,
+  fontFamily: designTokens.typography.sectionTitle.fontFamily,
+};
+
+function FooterLink({
+  href,
+  title,
+  site = false,
+}: {
+  href: Href;
+  title: string;
+  site?: boolean;
+}) {
+  return (
+    <Link href={href} asChild>
+      <MotionPressable accessibilityRole="link" accessibilityLabel={title} preset="button">
+        <AppText
+          role={site ? 'nav' : 'metadata'}
+          style={site ? siteLinkStyle : { color: designTokens.color.textSubdued, textDecorationLine: 'underline' }}
+        >
+          {title}
+        </AppText>
+      </MotionPressable>
+    </Link>
+  );
+}
+
+function ContactLink({ site = false }: { site?: boolean }) {
+  return (
+    <MotionPressable
+      accessibilityRole="link"
+      accessibilityLabel="Связаться с оператором bidplace"
+      preset="button"
+      onPress={() => { void Linking.openURL('mailto:work.evles@gmail.com'); }}
+    >
+      <AppText
+        role={site ? 'nav' : 'metadata'}
+        style={site ? siteLinkStyle : { color: designTokens.color.textSubdued, textDecorationLine: 'underline' }}
+      >
+        {site ? 'Поддержка' : 'Связаться с оператором'}
+      </AppText>
+    </MotionPressable>
+  );
+}
+
+/** Single source of legal destinations for auth and the public site footer. */
+export function LegalFooter({ variant = 'inline' }: { variant?: 'inline' | 'site' }) {
+  if (variant === 'site') {
+    return (
+      <View style={{ gap: designTokens.space.x12 }}>
+        <View style={{ flexDirection: 'row', gap: designTokens.space.x7 }}>
+          <View style={{ flex: 1, minWidth: 0, gap: designTokens.space.x5 }}>
+            <AppText role="nav" style={{ color: designTokens.color.gray2 }}>
+              Основное
+            </AppText>
+            {mainLinks.map((link) => (
+              <FooterLink key={link.title} {...link} site />
+            ))}
+          </View>
+          <View style={{ flex: 1, minWidth: 0, gap: designTokens.space.x5 }}>
+            <AppText role="nav" style={{ color: designTokens.color.gray2 }}>
+              Поддержка
+            </AppText>
+            {links.filter((item) => item.id !== 'privacy').map(({ id, title }) => (
+              <FooterLink
+                key={id}
+                href={('/legal/' + id) as Href}
+                title={id === 'agreement' ? 'Правила сервиса' : title}
+                site
+              />
+            ))}
+            <ContactLink site />
+          </View>
+        </View>
+        <FooterLink
+          href="/legal/privacy"
+          title="Политика конфиденциальности и cookies"
+        />
+      </View>
+    );
+  }
+
   return (
     <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: designTokens.space.x3, paddingVertical: designTokens.space.x4 }}>
       {links.map(({ id, title }) => (
-        <Link key={id} href={('/legal/' + id) as Href} asChild>
-          <MotionPressable accessibilityRole="link" accessibilityLabel={title} preset="button">
-            <AppText role="metadata" style={{ color: designTokens.color.textSubdued, textDecorationLine: 'underline' }}>{title}</AppText>
-          </MotionPressable>
-        </Link>
+        <FooterLink key={id} href={('/legal/' + id) as Href} title={title} />
       ))}
-      <MotionPressable
-        accessibilityRole="link"
-        accessibilityLabel="Связаться с оператором bidplace"
-        preset="button"
-        onPress={() => { void Linking.openURL('mailto:work.evles@gmail.com'); }}
+      <ContactLink />
+    </View>
+  );
+}
+
+/** Full-width site footer for scrollable public pages only (not auth or editors). */
+export function PublicFooter({ inset = false }: { inset?: boolean }) {
+  const { width } = useWindowDimensions();
+  const available = Math.min(width, designTokens.layout.phoneWidth) - designTokens.space.x12;
+  // Figma logo group is 345.5 × 66: mark 54, gap 12, wordmark 279.5.
+  const scale = Math.min(1, available / 345.5);
+
+  return (
+    <View
+      style={{
+        marginHorizontal: inset ? -designTokens.space.pageGutter : 0,
+        paddingTop: designTokens.space.x14,
+      }}
+    >
+      <View
+        style={{
+          backgroundColor: designTokens.color.surfaceMuted,
+          paddingHorizontal: designTokens.space.x6,
+          paddingVertical: designTokens.space.x10,
+          gap: designTokens.space.x10,
+        }}
       >
-        <AppText role="metadata" style={{ color: designTokens.color.textSubdued, textDecorationLine: 'underline' }}>
-          Связаться с оператором
-        </AppText>
-      </MotionPressable>
+        <View
+          accessibilityLabel="bidplace"
+          accessibilityRole="image"
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'center',
+            alignItems: 'center',
+            gap: 12 * scale,
+          }}
+        >
+          <BidplaceMark size={54 * scale} />
+          <BidplaceWordmark width={279.5 * scale} height={66 * scale} />
+        </View>
+        <LegalFooter variant="site" />
+      </View>
     </View>
   );
 }

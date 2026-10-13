@@ -15,6 +15,7 @@ import { useApiClient } from '../../providers/api-provider';
 import { HomeNewAuthors } from './home-new-authors';
 import { HomeNewWorks } from './home-new-works';
 import { HomeOpening } from './home-opening';
+import { PublicFooter } from '../auth/legal-footer';
 import { homeSectionPlan } from './home-sections';
 
 export function HomeScreen({ hideDock = false }: { hideDock?: boolean }) {
@@ -130,6 +131,7 @@ export function HomeScreen({ hideDock = false }: { hideDock?: boolean }) {
             ) : null}
           </View>
         )}
+        <PublicFooter inset />
       </ScrollView>
     </AppShell>
   );
