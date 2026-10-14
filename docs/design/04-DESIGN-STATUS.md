@@ -2,6 +2,14 @@
 
 > Entries dated before 2026-10-13 mention Pen / .pen files; the Pen design was removed (DEC-119) — read those mentions as history.
 
+## 2026-10-14 — W5 screen splits (Wave 3)
+
+- `Implemented`: `seller-profile-screen.tsx` 1693 → 1249 строк; чистые хелперы и `useProfileData` перенесены без изменений в `seller-profile-data.ts`; JSX визарда — в `seller-profile-application-steps.tsx`; кабинетный JSX (фото-колонка, шаги формы, кнопки) — в `seller-profile-cabinet-form.tsx`. Логика сессий/гонок не тронута. Удалены два мёртвых ветвления (селектор шага и «Назад» визарда: в визарде всегда ровно один флаг шага, условие недостижимо).
+- `Implemented`: `product-draft-screen.tsx` 1345 → 1222 строки; инлайн-хром рендера (шапка визарда, story-бар, заголовок, delivery/moderation-нотисы, секция статуса, locked-копия) — в `product-draft-screen-chrome.tsx`. JSX перенесён дословно (у story-бара отдельный disabled-набор, у кнопки закрытия — свой). Тело экрана (~800 строк: рефы гонок, мутации, browser-back гард) переплетено и механически не делится — оставлено под отдельный рефактор с сеткой race-спек; шаги и delete-диалог на месте.
+- `Implemented`: characterization-контракты **до** рефакторинга (протокол ревьюера): `seller-profile-screen.characterization.spec.ts` (8 тестов: loading / wizard 1–4 / clamp ?step / approved cabinet / pending lock) и `product-draft-screen.characterization.spec.ts` (7 тестов: loading / error / not-found / creation chrome / edit flow / pending lock / story step). Поведение не дублируется — глубокое остаётся в submit/lifecycle/save-race спеках.
+- Критерии волны: characterization зелёные до и после; полный vitest **807 passed + 1 known fail** (админ «Описание не указано» — вскрытый дефект, бэклог В4) + `author-cabinet-work-cache.spec` по-прежнему не грузится (CJS/ESM, В4); typecheck и eslint чистые. e2e: `product-creation-wizard` 8/11 — три фейла **воспроизводятся на базе до среза** (`bf16aade`, бандл проверен по маркеру `ProductDraftScreenChrome`), предсуществующие, не регрессия В3; `author-cabinet` 1/1 зелёный.
+- Дифф волны: +1028/−795 без спек (+1988/−795 с двумя characterization-спеками). Файлы стали меньше на 444 и 123 строк; визуал и поведение не менялись (перенос механический, guarded).
+
 ## 2026-10-14 — W4 component dedup (Wave 2)
 
 - `Implemented`: единая `BackButton` (`components/figma/BackButton.tsx`) с тремя выточенными вариантами: `glass` (страница работы), `muted` (шапка автора), `chrome` (визард заявки). Заменены три ручные реализации (WorkActions, CreatorHeader, author-application-step-shell); размеры/штрихи на местах вызова не менялись. Текстовые «Назад» уже были общим `SecondaryButton`; `FilterSheet` back/close-хром — отдельный контроль, не тронут.

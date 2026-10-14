@@ -2,6 +2,14 @@
 
 > Entries dated before 2026-10-13 mention Pen / .pen files; the Pen design was removed (DEC-119) — read those mentions as history.
 
+## 2026-10-14 — W5 screen splits (Wave 3)
+
+- `Implemented`: сплиты двух «экранов-монстров» по протоколу (characterization до рефакторинга, механический перенос, один срез на экран). `seller-profile-screen.tsx` 1693 → 1249: `seller-profile-data.ts` (хелперы + `useProfileData`), `seller-profile-application-steps.tsx` (JSX визарда), `seller-profile-cabinet-form.tsx` (кабинет). `product-draft-screen.tsx` 1345 → 1222: `product-draft-screen-chrome.tsx` (хром рендера). Два мёртвых ветвления в визарде профиля удалены. Детали — в `04-DESIGN-STATUS.md`.
+- Характеризация: 8 + 7 тестов DOM-контракта по состояниям; 807 passed + 1 known (админ «Описание не указано» — вскрытый дефект, В4) + негрузящийся `author-cabinet-work-cache.spec` (CJS/ESM, В4). typecheck/eslint чистые.
+- e2e: `author-cabinet` зелёный; `product-creation-wizard` 8/11 — три фейла подтверждены **предсуществующими** (воспроизводятся на `bf16aade` до среза product-draft) — в бэклог В4 рядом с `catalog-pagination`/`creator-profile`/`search-overlay`.
+- Не тронуто (защищено): визуал кнопок/дока/размытия, логика гонок сохранения и навигации (browser-back гард product-draft остался в экране целиком), auth-экраны.
+- Осталось под будущие волны: тело `product-draft-screen` (~800 строк переплетённых рефов/эффектов/мутаций) — отдельный рефактор под сеткой race-спек; пороги 700/1000 колонок → clamp (критерий В5); `expo-router/build` deep-import в product-draft не расширен, снятие с allowlist — В4.
+
 ## 2026-10-14 — W4 component dedup (Wave 2)
 
 - `Implemented`: дедуп-коммит-срез плана. `BackButton` (3 варианта) вместо 3 ручных реализаций; одна RN `FigmaTabs` (`.web.tsx` удалён, паттерн `fill`, клавиатурная a11y сохранена); `PaddedGrid` вместо трёх инлайн-сеток; `DestructiveButton` удалён (дубликат `PrimaryButton`); `AppIcon` + `lucide-react-native` вычищены; галка `FilterOptionRow` — `FigmaIcon check`; `WorkGallery` — `onMomentumScrollEnd`. Детали — в `04-DESIGN-STATUS.md`.
