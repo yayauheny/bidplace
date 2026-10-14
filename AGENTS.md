@@ -35,6 +35,7 @@ Use the most specific skill for the task:
 - `code-review-best-practices` for the project checklist; `review` for generic review workflow.
 - `security` for auth, permissions, payments, purchases, bids, balances, webhooks, files, external APIs, admin actions, or sensitive data.
 - `ui` for React, React Native, and Expo UI work.
+- `bidplace-ui` for any UI work in `apps/mobile` (layout, tokens, shared components, sheets/dialogs, tabs/grid, Safe Area, Figma match); `bidplace-ui-review` to review UI diffs and worker results.
 - `nest` for NestJS backend logic, persistence, jobs, events, and integrations.
 - `grilling` for unresolved material choices during planning or review; preserve settled decisions.
 - `2step-work` for planning/execution handoffs; `vercel-react-native-skills` for selective platform guidance.
