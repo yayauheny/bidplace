@@ -2,6 +2,11 @@
 
 > Entries dated before 2026-10-13 mention Pen / .pen files; the Pen design was removed (DEC-119) — read those mentions as history.
 
+## 2026-10-15 — W5 grid clamp (остаток В2)
+
+- `Implemented`: колонки сеток — из измеренной ширины по формуле clamp (`gridColumnsFromWidth`, `components/figma/grid-columns.ts`, re-export из `PaddedGrid`; 5 тестов). `public-seller-screen`: пороги 700/1000 удалены (minCard 320, gap x3, max 3 — поведение на 390/700/1000 прежнее). `CategoriesSearchPane`: фикс-3 → clamp по onLayout (minCard 120, gap x2, max 3; при 390 — три в ряд как в дизайне). Проверки: vitest 816/816 (132 файла), typecheck/eslint/prettier чисто. На В5 остаётся `WorksSearchPane` и прочие work-card-потребители.
+- Детали — в `04-DESIGN-STATUS.md`. Далее по плану: Волна 5 (эталонный публичный профиль 390, pixel-приёмка).
+
 ## 2026-10-15 — Wave 4: тестовый gate визарда восстановлен + review-blocker fix
 
 - `Implemented`: восстановлен тестовый gate визарда (W4 по тестам). Срезы: `author-cabinet-work-cache.spec` восстановлен в vitest-гейте (моки react-native-svg / @hugeicons / StyleSheet; root-cause SyntaxError «Unexpected token typeof» — Flow `import typeof` react-native при нативном require экстернализованных CJS-депов, паттерн мока на уровне спеки) — `0f7d63bb`. Админ-фейл «Описание не указано»: legacy plain-text story мёртв по контракту блок-ревизии (RFC §10), assertion заменён на «История создания не добавлена.» + закреплено, что опубликованный текст не подмешивается — `2f8e87aa`. E2E `product-creation-wizard` доведён до 11/11: финальные коммиты `9fc01f1d` (гард — любая неудача `persistAll('transition')` останавливает смену шага, 02 §9) и `1ad60b20` (story-шаг без step-табов по Figma 7008:27134, навигация — «Назад к изображениям»); промежуточные `57b030b5` и `cfd1f472` в соответствующей части отменены. Нюанс, вскрытый e2e: draft-схема допускает пустое название («Черновик можно сохранить неполным»), поэтому gate срабатывает на реальную ошибку persist, а не на валидацию; #316 проверяет и 500-ответ, и видимую ошибку.

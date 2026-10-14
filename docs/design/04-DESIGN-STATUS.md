@@ -2,6 +2,12 @@
 
 > Entries dated before 2026-10-13 mention Pen / .pen files; the Pen design was removed (DEC-119) — read those mentions as history.
 
+## 2026-10-15 — W5 grid clamp (остаток В2)
+
+- `Implemented`: `gridColumnsFromWidth(width, {minCardWidth, gap, max}) = clamp(floor((width + gap) / (minCardWidth + gap)), 1, max)` — чистая функция в `components/figma/grid-columns.ts` (re-export из `PaddedGrid`), спек `grid-columns.spec.ts` (5 тестов). Брейкпоинты 700/1000 в `public-seller-screen.tsx` удалены → clamp по измеренной ширине (minCard 320, gap `space.x3`=12, max 3): 390 → 1 колонка (карточка 366), 700 → 2, 1000 → 3 — визуал 390 не изменён. `CategoriesSearchPane`: фиксированные `columns={3}` → clamp по onLayout-ширине (minCard 120 = тайл из дизайна, gap `space.x2`, max 3); при 390 по-прежнему три в ряд, на узких (<360) перестраивается в 2.
+- Проверки: mobile vitest **816/816** (132 файла; +5 новых), typecheck/eslint/prettier чисто.
+- Остаётся на В5 (по протоколу ревьюера): `WorksSearchPane` (`columns={2}`, work cards в discovery) и прочие `WorkCoverCardGrid`-потребители — список в отчёте волны.
+
 ## 2026-10-15 — Figma 7008:27134 verification + тестовый gate визарда
 
 - `Confirmed` по live Figma `7008:27134` (секция 14 «История создания работы · Mobile», четыре состояния: пустой холст / ввод текста / активный блок / заполненный): экран — top-bar со стрелкой назад, точками прогресса и закрытием, заголовок «История создания», нижний тулбар `H T изображение Закончить` (в пустом состоянии — «Пропустить»). **Step-табов визарда на story-шаге в дизайне нет** — итоговый коммит `1ad60b20` (промежуточный `cfd1f472` отменён); навигация со story-шага — «Назад к изображениям» (→ шаг 2), далее таб-лист шагов 1/2/4 как раньше. Tab-list на не-story шагах и экстракция `stepTabs` не тронуты.
