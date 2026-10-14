@@ -1197,7 +1197,6 @@ export function SellerProfileScreen() {
                     directionsError={directionsError}
                     onOpenDirections={openDirectionsPicker}
                     editable={editable}
-                    revisionPending={editingRevision?.status === 'PENDING_REVIEW'}
                     achievements={achievements}
                     achievementsVisible={achievementsVisible}
                     savePending={saveMutation.isPending || revisionSubmitActive}
@@ -1215,6 +1214,13 @@ export function SellerProfileScreen() {
                     onSubmit={() => void submitRevision()}
                     showCreate={profile?.status === 'APPROVED'}
                   />
+                ) : null}
+                {!editable ? (
+                  <AppText role="bodySmall" tone="secondary">
+                    {editingRevision?.status === 'PENDING_REVIEW'
+                      ? 'Заявка на проверке. Редактирование откроется, если модератор запросит правки.'
+                      : 'Сейчас профиль нельзя редактировать.'}
+                  </AppText>
                 ) : null}
                 {wizardStep === null ? formAlertText : null}
                 <AuthorDirectionsPickerSheet

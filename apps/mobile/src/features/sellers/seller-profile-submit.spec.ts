@@ -592,6 +592,23 @@ describe('seller profile revision submit', () => {
     view.unmount();
   });
 
+  it('keeps the pending lock copy visible in the wizard for a draft with a pending revision', async () => {
+    harness.getMyProfile.mockResolvedValue(
+      response('DRAFT', 'PENDING_REVIEW'),
+    );
+    const view = mount();
+    await until(
+      view.container,
+      () =>
+        view.container.textContent?.includes(
+          'Заявка на проверке. Редактирование откроется',
+        ) === true,
+      'wizard pending lock copy',
+    );
+    expect(findButton(view.container, 'Сохранить и завершить')).toBeUndefined();
+    view.unmount();
+  });
+
   it.each(['CHANGES_REQUESTED', 'REJECTED'] as const)(
     'keeps submit available after %s',
     async (status) => {

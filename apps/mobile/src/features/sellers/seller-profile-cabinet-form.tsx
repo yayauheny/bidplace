@@ -8,7 +8,6 @@ import {
   FormPageColumns,
 } from '../../components/layout';
 import {
-  AppText,
   FormSection,
   ImagePlaceholder,
   PrimaryButton,
@@ -27,7 +26,6 @@ export function SellerProfileCabinetForm({
   directionsError,
   onOpenDirections,
   editable,
-  revisionPending,
   achievements,
   achievementsVisible,
   savePending,
@@ -54,7 +52,6 @@ export function SellerProfileCabinetForm({
   directionsError: string | undefined;
   onOpenDirections: () => void;
   editable: boolean;
-  revisionPending: boolean;
   achievements: ReactNode;
   achievementsVisible: boolean;
   savePending: boolean;
@@ -128,13 +125,6 @@ export function SellerProfileCabinetForm({
         />
       </FormPageColumns>
       {achievementsVisible ? achievements : null}
-      {!editable ? (
-        <AppText role="bodySmall" tone="secondary">
-          {revisionPending
-            ? 'Заявка на проверке. Редактирование откроется, если модератор запросит правки.'
-            : 'Сейчас профиль нельзя редактировать.'}
-        </AppText>
-      ) : null}
       {editable ? (
         <PrimaryButton
           loading={savePending}
