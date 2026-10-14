@@ -15,6 +15,19 @@ const draftYearSchema = z.string().refine((value) => {
   return Number.isInteger(year) && year >= 0 && year <= 9999;
 }, 'Введите год числом от 0 до 9999');
 
+export const productDraftFieldOrder = [
+  'categoryId',
+  'title',
+  'materialTermIds',
+  'techniqueTermIds',
+  'materialProposals',
+  'techniqueProposals',
+  'categoryProposal',
+  'dimensions',
+  'year',
+  'uniqueness',
+] as const;
+
 export const productDraftFormSchema = z
   .object({
     categoryId: draftTextSchema,

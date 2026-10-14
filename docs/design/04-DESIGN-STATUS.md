@@ -2,6 +2,13 @@
 
 > Entries dated before 2026-10-13 mention Pen / .pen files; the Pen design was removed (DEC-119) — read those mentions as history.
 
+## 2026-10-15 — ProductDraftScreen: завершение структурного сплита (Wave 3, экран 2 из 2)
+
+- `Implemented`: критерий «тонкие экраны-композиции» достигнут для `product-draft-screen.tsx` (1302 → ~350 строк; JSX и визуальные пропы шагов перенесены дословно, визуал не изменён). Тело разделено по владению состоянием: `product-draft-save.ts` (сессия сохранения), `product-draft-data.ts` (запросы/гидратация/модерационный hold), `product-draft-browser-guard.ts` (web Back/Forward + beforeunload), `product-draft-navigation.ts` (route guard, шаги визарда), `product-draft-image-actions.ts` (медиа-действия). Устранены 3 копии блока «дождаться save перед мутацией в APPROVED» и 2 копии разбора ошибок формы. Существующие form/state/wizard/story/about/images/review/chrome модули переиспользованы без дубликатов.
+- Проверки: characterization + save-race + route-guard + submit-lifecycle (43 теста) и полный mobile vitest 816/816; typecheck 13/13; eslint чисто. E2E `product-creation-wizard`: WebKit 11/11; Chromium 10/11 с одним предсуществующим фейлом (воспроизводится на `4bc0c788`).
+- Замечание к записи W3 2026-10-14 ниже: утверждение «тела экранов механически не делятся» для product-draft снято этим срезом; для `seller-profile-screen` сплит логики по-прежнему отложен по скорректированному плану.
+- Private import `expo-router/build` (`usePreventRemove` в `product-draft-navigation.ts` и `AuthViewport.tsx`) не расширен; снятие с allowlist — отдельная задача (кандидат: публичный экспорт в Expo SDK 58).
+
 ## 2026-10-15 — W5 grid clamp (остаток В2)
 
 - `Implemented`: `gridColumnsFromWidth(width, {minCardWidth, gap, max}) = clamp(floor((width + gap) / (minCardWidth + gap)), 1, max)` — чистая функция в `components/figma/grid-columns.ts` (re-export из `PaddedGrid`), спек `grid-columns.spec.ts` (5 тестов). Брейкпоинты 700/1000 в `public-seller-screen.tsx` удалены → clamp по измеренной ширине (minCard 320, gap `space.x3`=12, max 3): 390 → 1 колонка (карточка 366), 700 → 2, 1000 → 3 — визуал 390 не изменён. `CategoriesSearchPane`: фиксированные `columns={3}` → clamp по onLayout-ширине. Сверка с вёрсткой (по правке ревьюера): реальный контейнер шторки при 390 — 366 (390 − 2×12 `layout.gutter`), тайл (366 − 2×8)/3 ≈ 116.67; значение 120.67 из `CategorySearchTile` измерено при контейнере 378 и при текущих отступах три раза не помещается → minCard 116. Закреплено: helper-spec на ширине 366; e2e «Search categories keep three tiles per row at 390» (один top у первых трёх тайлов, ширина тайла 111–123; скриншот `categories-tiles-390.png`); на узких (<360) перестраивается в 2.
