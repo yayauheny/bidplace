@@ -465,10 +465,9 @@ export function SellerProfileScreen() {
       if (!sessionStillOwns(variables.operation, variables.authEpoch)) {
         throw new Error('Session changed');
       }
-      const installedSlug =
-        queryClient.getQueryData<{ slug?: string | null }>(
-          authKeys.session,
-        )?.slug;
+      const installedSlug = queryClient.getQueryData<{ slug?: string | null }>(
+        authKeys.session,
+      )?.slug;
       if (!installedSlug) {
         const requested = variables.fields.slug.trim();
         const claimed = await api.auth.claimSlug({ slug: requested });
@@ -1182,7 +1181,9 @@ export function SellerProfileScreen() {
                   achievementsVisible={achievementsVisible}
                   editable={editable}
                   canSubmitRevision={canSubmitRevision}
-                  submitPending={submitMutation.isPending || revisionSubmitActive}
+                  submitPending={
+                    submitMutation.isPending || revisionSubmitActive
+                  }
                   submitDisabled={wizardSubmitDisabled}
                   onSubmit={() => void submitRevision()}
                   achievementDraftDirty={achievementDraftDirty}
@@ -1209,7 +1210,9 @@ export function SellerProfileScreen() {
                     }
                     onSave={requestSave}
                     canSubmitRevision={canSubmitRevision}
-                    submitPending={submitMutation.isPending || revisionSubmitActive}
+                    submitPending={
+                      submitMutation.isPending || revisionSubmitActive
+                    }
                     submitDisabled={cabinetSubmitDisabled}
                     onSubmit={() => void submitRevision()}
                     showCreate={profile?.status === 'APPROVED'}

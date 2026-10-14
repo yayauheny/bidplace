@@ -593,9 +593,7 @@ describe('seller profile revision submit', () => {
   });
 
   it('keeps the pending lock copy visible in the wizard for a draft with a pending revision', async () => {
-    harness.getMyProfile.mockResolvedValue(
-      response('DRAFT', 'PENDING_REVIEW'),
-    );
+    harness.getMyProfile.mockResolvedValue(response('DRAFT', 'PENDING_REVIEW'));
     const view = mount();
     await until(
       view.container,

@@ -4,9 +4,7 @@ import { Link } from 'expo-router';
 
 import { designTokens } from '@bidplace/design-tokens';
 
-import {
-  FormPageColumns,
-} from '../../components/layout';
+import { FormPageColumns } from '../../components/layout';
 import {
   FormSection,
   ImagePlaceholder,
