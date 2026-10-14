@@ -3,6 +3,8 @@ import { View } from 'react-native';
 
 import { paddedGridRows } from './flex-grid-rows';
 
+export { gridColumnsFromWidth } from './grid-columns';
+
 /**
  * Построчная flex-сетка: последний неполный ряд добивается пустыми
  * ячейками, чтобы карточки не растягивались на всю ширину.
@@ -31,7 +33,9 @@ export function PaddedGrid<T>({
           >
             {row.map((item, cellIndex) => (
               <View
-                key={item ? keyExtractor(item) : `spacer-${rowIndex}-${cellIndex}`}
+                key={
+                  item ? keyExtractor(item) : `spacer-${rowIndex}-${cellIndex}`
+                }
                 style={{ flex: 1, minWidth: 0 }}
               >
                 {item ? renderItem(item) : null}

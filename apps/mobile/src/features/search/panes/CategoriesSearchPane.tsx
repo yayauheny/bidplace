@@ -1,9 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
 import { View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
-import { PaddedGrid } from '../../../components/figma/PaddedGrid';
+import {
+  PaddedGrid,
+  gridColumnsFromWidth,
+} from '../../../components/figma/PaddedGrid';
 import { retryTransientPublicQuery } from '../../../lib/query-retry';
 import { categoryKeys } from '../../../lib/query-cache';
 import { useApiClient } from '../../../providers/api-provider';
@@ -12,11 +16,7 @@ import { filterCategoriesByQuery } from '../filter-categories';
 import { searchRequestQuery } from '../search-query';
 import { SearchPaneStatus } from './search-pane-status';
 
-export function CategoriesSearchPane({
-  query,
-}: {
-  query: string;
-}) {
+export function CategoriesSearchPane({ query }: { query: string }) {
   const api = useApiClient();
   const categories = useQuery({
     queryKey: categoryKeys.all,
@@ -28,6 +28,7 @@ export function CategoriesSearchPane({
     query,
   );
   const requestQuery = searchRequestQuery(query);
+  const [contentWidth, setContentWidth] = useState(0);
 
   return (
     <SearchPaneStatus
@@ -38,10 +39,18 @@ export function CategoriesSearchPane({
       emptyTitle="Категории не найдены"
       loading={<CategorySkeleton />}
     >
-      <View style={{ width: '100%', gap: designTokens.space.x2 }}>
+      <View
+        style={{ width: '100%', gap: designTokens.space.x2 }}
+        onLayout={(event) => setContentWidth(event.nativeEvent.layout.width)}
+      >
         <PaddedGrid
           items={items}
-          columns={3}
+          columns={gridColumnsFromWidth(contentWidth, {
+            // Тайл категории 120.67 в дизайне (Figma); при 390 — три в ряд.
+            minCardWidth: 120,
+            gap: designTokens.space.x2,
+            max: 3,
+          })}
           gap={designTokens.space.x2}
           keyExtractor={(category) => category.id}
           renderItem={(category) => (

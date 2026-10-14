@@ -25,7 +25,10 @@ import { FigmaChoiceChip } from '../../components/figma/FigmaChoiceChip';
 import { FigmaButton } from '../../components/figma/FigmaButton';
 import { FilterOptionRow } from '../../components/figma/FilterOptionRow';
 import { FilterSheet } from '../../components/figma/FilterSheet';
-import { PaddedGrid } from '../../components/figma/PaddedGrid';
+import {
+  PaddedGrid,
+  gridColumnsFromWidth,
+} from '../../components/figma/PaddedGrid';
 
 import { AuthorAbout } from './AuthorAbout';
 import { CreatorWorkCard } from './CreatorWorkCard';
@@ -58,25 +61,29 @@ export function PublicSellerScreen({
   const [unavailable, setUnavailable] = useState<string | null>(null);
   const [pendingHide, setPendingHide] = useState<string | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
-  const selectedCategories = categoryIds?.length ? categoryIds : category ? [category] : [];
-  const [draftCategories, setDraftCategories] = useState<string[]>(selectedCategories);
+  const selectedCategories = categoryIds?.length
+    ? categoryIds
+    : category
+      ? [category]
+      : [];
+  const [draftCategories, setDraftCategories] =
+    useState<string[]>(selectedCategories);
   const categories = useQuery({
     queryKey: categoryKeys.all,
     queryFn: ({ signal }) => api.categories.list({ signal }),
     retry: retryTransientPublicQuery,
   });
-  const query = useAuthorWorks(
-    slug,
-    sort,
-    category,
-    categoryIds,
-  );
+  const query = useAuthorWorks(slug, sort, category, categoryIds);
   const firstPage = query.data?.pages[0];
   const works = query.data?.pages.flatMap((page) => page.works) ?? [];
   const author = firstPage?.author;
   const sellerProfileId = author?.id;
   const worksPending = authorWorksArePending(query);
-  const isOwner = Boolean(author && capability.profile?.slug === author.slug && capability.status === 'APPROVED');
+  const isOwner = Boolean(
+    author &&
+    capability.profile?.slug === author.slug &&
+    capability.status === 'APPROVED',
+  );
   const hideWork = useMutation({
     mutationFn: (id: string) => api.portfolio.hideWork(id),
     onSuccess: () => {
@@ -155,7 +162,9 @@ export function PublicSellerScreen({
 
           <View
             testID="author-content"
-            onLayout={(event) => setContentWidth(event.nativeEvent.layout.width)}
+            onLayout={(event) =>
+              setContentWidth(event.nativeEvent.layout.width)
+            }
             nativeID={panelId}
             role="tabpanel"
             aria-labelledby={`${panelId}-${tab}`}
@@ -187,7 +196,11 @@ export function PublicSellerScreen({
                   }}
                 >
                   <FigmaButton
-                    label={selectedCategories.length ? `Категория ${selectedCategories.length}` : 'Категория'}
+                    label={
+                      selectedCategories.length
+                        ? `Категория ${selectedCategories.length}`
+                        : 'Категория'
+                    }
                     icon="arrow-right-01"
                     iconPosition="right"
                     variant="outline"
@@ -200,7 +213,11 @@ export function PublicSellerScreen({
                   {selectedCategories.map((id) => (
                     <FigmaChoiceChip
                       key={id}
-                      label={categories.data?.categories.find((item) => item.id === id)?.name ?? 'Категория'}
+                      label={
+                        categories.data?.categories.find(
+                          (item) => item.id === id,
+                        )?.name ?? 'Категория'
+                      }
                       selected
                       removable
                       onPress={() => {
@@ -208,8 +225,13 @@ export function PublicSellerScreen({
                         setFilterOpen(true);
                       }}
                       onRemove={() => {
-                        const next = selectedCategories.filter((current) => current !== id);
-                        router.setParams({ categories: next.length ? next.join(',') : undefined, category: undefined });
+                        const next = selectedCategories.filter(
+                          (current) => current !== id,
+                        );
+                        router.setParams({
+                          categories: next.length ? next.join(',') : undefined,
+                          category: undefined,
+                        });
                       }}
                     />
                   ))}
@@ -235,10 +257,16 @@ export function PublicSellerScreen({
               />
             ) : (
               <>
-                <View style={{ width: '100%', gap: designTokens.space.sectionGap }}>
+                <View
+                  style={{ width: '100%', gap: designTokens.space.sectionGap }}
+                >
                   <PaddedGrid
                     items={works}
-                    columns={contentWidth >= 1000 ? 3 : contentWidth >= 700 ? 2 : 1}
+                    columns={gridColumnsFromWidth(contentWidth, {
+                      minCardWidth: 320,
+                      gap: designTokens.space.x3,
+                      max: 3,
+                    })}
                     gap={designTokens.space.x3}
                     keyExtractor={(item) => item.work.publicId}
                     renderItem={(item) => (
@@ -274,7 +302,9 @@ export function PublicSellerScreen({
             size: 'pickerAction',
             onPress: () => {
               router.setParams({
-                categories: draftCategories.length ? draftCategories.join(',') : undefined,
+                categories: draftCategories.length
+                  ? draftCategories.join(',')
+                  : undefined,
                 category: undefined,
               });
               setFilterOpen(false);
@@ -288,7 +318,10 @@ export function PublicSellerScreen({
               mode="checkbox"
               variant="compact"
               selected={draftCategories.includes(item.id)}
-              disabled={!draftCategories.includes(item.id) && draftCategories.length >= 20}
+              disabled={
+                !draftCategories.includes(item.id) &&
+                draftCategories.length >= 20
+              }
               onPress={() =>
                 setDraftCategories((current) =>
                   current.includes(item.id)
@@ -304,7 +337,10 @@ export function PublicSellerScreen({
           open={Boolean(unavailable)}
           title="Скоро появится"
           onClose={() => setUnavailable(null)}
-          primaryAction={{ label: 'Понятно', onPress: () => setUnavailable(null) }}
+          primaryAction={{
+            label: 'Понятно',
+            onPress: () => setUnavailable(null),
+          }}
         >
           <AppText role="bodySmall">
             {unavailable} пока недоступны. Мы добавим эту возможность позже.
