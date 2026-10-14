@@ -1,4 +1,4 @@
-import { figmaTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 export function overlayDimmerStyle() {
   return {
@@ -7,6 +7,6 @@ export function overlayDimmerStyle() {
     right: 0,
     bottom: 0,
     left: 0,
-    backgroundColor: figmaTokens.color.modalDimmer,
+    backgroundColor: designTokens.color.modalDimmer,
   };
 }

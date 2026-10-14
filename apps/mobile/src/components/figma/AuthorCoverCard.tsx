@@ -1,7 +1,7 @@
 import { Link } from 'expo-router';
 import { Text, View } from 'react-native';
 
-import { figmaTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import { getApiAssetUrl } from '../../lib/environment';
 import { useReducedMotion } from '../../lib/reduced-motion';
@@ -86,10 +86,10 @@ export function AuthorCoverCard({
                   numberOfLines={1}
                   style={[
                     {
-                      color: figmaTokens.color.white,
+                      color: designTokens.color.white,
                       textAlign: 'center',
                     },
-                    figmaTokens.typography.authorName,
+                    designTokens.typography.authorName,
                   ]}
                 >
                   {content.fullName}
@@ -102,8 +102,8 @@ export function AuthorCoverCard({
                 <Text
                   numberOfLines={1}
                   style={[
-                    { color: figmaTokens.color.white },
-                    figmaTokens.typography.authorHandle,
+                    { color: designTokens.color.white },
+                    designTokens.typography.authorHandle,
                   ]}
                 >
                   {content.handle}

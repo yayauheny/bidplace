@@ -1,7 +1,7 @@
 import { Link } from 'expo-router';
 import { View } from 'react-native';
 
-import { figmaTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import { AppText } from '../../components/ui/AppText';
 import {
@@ -41,11 +41,11 @@ export function AuthorSearchRow({
         <View style={authorSearchRowStyle()}>
           <View
             style={{
-              width: figmaTokens.size.touch,
-              height: figmaTokens.size.touch,
-              borderRadius: figmaTokens.radius.avatar,
+              width: designTokens.size.touch,
+              height: designTokens.size.touch,
+              borderRadius: designTokens.radius.avatar,
               overflow: 'hidden',
-              backgroundColor: figmaTokens.color.mutedFill,
+              backgroundColor: designTokens.color.mutedFill,
               flexShrink: 0,
             }}
           >
@@ -59,7 +59,7 @@ export function AuthorSearchRow({
             />
           </View>
           <View
-            style={{ flex: 1, minWidth: 0, gap: figmaTokens.space.authorRowGap }}
+            style={{ flex: 1, minWidth: 0, gap: designTokens.space.authorRowGap }}
           >
             <AppText
               role="body"

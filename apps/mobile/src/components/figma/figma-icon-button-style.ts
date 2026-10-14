@@ -1,17 +1,17 @@
-import { designTokens, figmaTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 export function figmaIconButtonStyle(pressed: boolean, surface: 'plain' | 'muted' = 'plain') {
   return {
-    width: surface === 'muted' ? 42 : figmaTokens.size.iconButton,
-    height: surface === 'muted' ? 42 : figmaTokens.size.iconButton,
+    width: surface === 'muted' ? 42 : designTokens.size.iconButton,
+    height: surface === 'muted' ? 42 : designTokens.size.iconButton,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
-    borderRadius: figmaTokens.radius.pill,
+    borderRadius: designTokens.radius.pill,
     backgroundColor: pressed
-      ? figmaTokens.color.ghostHover
+      ? designTokens.color.ghostHover
       : surface === 'muted' ? designTokens.color.headerControl : 'transparent',
   };
 }
 
 export const figmaIconButtonHitSlop =
-  (figmaTokens.size.touch - figmaTokens.size.iconButton) / 2;
+  (designTokens.size.touch - designTokens.size.iconButton) / 2;

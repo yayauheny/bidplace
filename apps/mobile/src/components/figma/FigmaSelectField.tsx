@@ -1,7 +1,7 @@
 import { forwardRef, useId, useState, type ComponentRef } from 'react';
 import { Platform, Text, View } from 'react-native';
 
-import { figmaTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import { MotionPressable } from '../ui/MotionPressable';
 import {
@@ -91,7 +91,7 @@ export const FigmaSelectField = forwardRef<
             color: displayIsPlaceholder
               ? figmaFieldPlaceholderColor(status, variant)
               : valueColor,
-            ...figmaTokens.typography.field,
+            ...designTokens.typography.field,
           }}
         >
           {displayText}
@@ -101,16 +101,16 @@ export const FigmaSelectField = forwardRef<
             pointerEvents="none"
             style={{
               position: 'absolute',
-              left: figmaTokens.space.fieldLabelX,
-              top: figmaTokens.space.fieldLabelY,
+              left: designTokens.space.fieldLabelX,
+              top: designTokens.space.fieldLabelY,
               paddingHorizontal: 4,
-              backgroundColor: figmaTokens.color.canvas,
+              backgroundColor: designTokens.color.canvas,
             }}
           >
             <Text
               style={{
-                color: figmaTokens.color.fieldLabel,
-                ...figmaTokens.typography.fieldLabel,
+                color: designTokens.color.fieldLabel,
+                ...designTokens.typography.fieldLabel,
               }}
             >
               {label}
@@ -123,11 +123,11 @@ export const FigmaSelectField = forwardRef<
           nativeID={errorId}
           accessibilityLiveRegion="polite"
           style={{
-            marginTop: figmaTokens.space.fieldErrorGap,
-            marginLeft: figmaTokens.space.fieldErrorX,
-            marginRight: figmaTokens.space.fieldX,
-            color: figmaTokens.color.error,
-            ...figmaTokens.typography.fieldError,
+            marginTop: designTokens.space.fieldErrorGap,
+            marginLeft: designTokens.space.fieldErrorX,
+            marginRight: designTokens.space.fieldX,
+            color: designTokens.color.error,
+            ...designTokens.typography.fieldError,
           }}
         >
           {error}

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { designTokens, figmaTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import {
   figmaIconButtonHitSlop,
@@ -15,7 +15,7 @@ describe('Figma icon button styles', () => {
       backgroundColor: 'transparent',
     });
     expect(figmaIconButtonHitSlop).toBe(4);
-    expect(36 + figmaIconButtonHitSlop * 2).toBe(figmaTokens.size.touch);
+    expect(36 + figmaIconButtonHitSlop * 2).toBe(designTokens.size.touch);
   });
 
   it('provides the captured 42px muted circular control without changing plain buttons', () => {
@@ -28,7 +28,7 @@ describe('Figma icon button styles', () => {
 
   it('shows feedback without adding a permanent white plate', () => {
     expect(figmaIconButtonStyle(true).backgroundColor).toBe(
-      figmaTokens.color.ghostHover,
+      designTokens.color.ghostHover,
     );
   });
 });

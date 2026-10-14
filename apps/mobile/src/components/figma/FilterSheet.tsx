@@ -5,7 +5,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   designTokens,
-  figmaTokens,
   type FigmaButtonSize,
 } from '@bidplace/design-tokens';
 
@@ -73,7 +72,7 @@ export function FilterSheet({
       returnFocusRef={returnFocusRef}
       presentation="sheet"
       bare
-      bottomSpace={compact ? (bottomSpace ?? figmaTokens.space.x5) : undefined}
+      bottomSpace={compact ? (bottomSpace ?? designTokens.space.x5) : undefined}
     >
       <View
         style={filterSheetPanelStyle(
@@ -116,19 +115,19 @@ export function FilterSheet({
             <MotionPressable
               accessibilityRole="button"
               accessibilityLabel={showBack ? 'Назад' : 'Закрыть'}
-              hitSlop={figmaTokens.space.headerIconHitSlop}
+              hitSlop={designTokens.space.headerIconHitSlop}
               onPress={showBack ? (onBack ?? onClose) : onClose}
               preset="icon"
               style={{
-                width: figmaTokens.size.buttonIconFrame,
-                height: figmaTokens.size.buttonIconFrame,
+                width: designTokens.size.buttonIconFrame,
+                height: designTokens.size.buttonIconFrame,
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
             >
               <FigmaIcon
                 name={showBack ? 'arrow-left-01' : 'x'}
-                size={figmaTokens.size.buttonIconFrame}
+                size={designTokens.size.buttonIconFrame}
                 strokeWidthPx={
                   titleVariant === 'directions' && showBack ? 2 : undefined
                 }
@@ -165,7 +164,7 @@ export function FilterSheet({
           {onClear ? (
             <FigmaButton label={clearLabel} variant="ghost" onPress={onClear} />
           ) : compact ? null : (
-            <View style={{ width: figmaTokens.size.iconButton }} />
+            <View style={{ width: designTokens.size.iconButton }} />
           )}
         </View>
         <ScrollView
@@ -176,18 +175,18 @@ export function FilterSheet({
               ? 14
               : titleVariant === 'directions'
                 ? 0
-                : figmaTokens.space.x2,
+                : designTokens.space.x2,
           }}
           contentContainerStyle={{
             paddingTop: compact
               ? 0
               : titleVariant === 'directions'
                 ? designTokens.authorApplication.directionsSearchGap
-                : figmaTokens.space.identityGap,
+                : designTokens.space.identityGap,
             paddingBottom: compact
               ? 0
               : appDialogSheetBottomSpace(
-                  figmaTokens.space.x4,
+                  designTokens.space.x4,
                   primaryAction ? 0 : insets.bottom,
                 ),
           }}

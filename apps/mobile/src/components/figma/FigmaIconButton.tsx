@@ -1,4 +1,4 @@
-import { figmaTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import { MotionPressable } from '../ui/MotionPressable';
 import { FigmaIcon } from './FigmaIcon';
@@ -14,7 +14,7 @@ export function FigmaIconButton({
   onPress,
   disabled = false,
   selected = false,
-  iconSize = figmaTokens.size.icon,
+  iconSize = designTokens.size.icon,
   strokeWidthPx,
   surface = 'plain',
 }: {
@@ -42,7 +42,7 @@ export function FigmaIconButton({
         name={icon}
         size={iconSize}
         strokeWidthPx={strokeWidthPx}
-        color={selected ? figmaTokens.color.solid : figmaTokens.color.ink}
+        color={selected ? designTokens.color.solid : designTokens.color.ink}
       />
     </MotionPressable>
   );

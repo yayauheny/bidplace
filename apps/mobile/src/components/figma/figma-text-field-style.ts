@@ -1,4 +1,4 @@
-import { figmaTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 export type FigmaFieldStatus =
   | 'empty'
@@ -49,30 +49,30 @@ export function figmaFieldStyle(
   const password = metrics === 'authPassword' || metrics === 'authScreenPassword';
   const passwordHeight =
     metrics === 'authScreenPassword'
-      ? figmaTokens.auth.screenPasswordHeight
-      : figmaTokens.auth.passwordHeight;
+      ? designTokens.auth.screenPasswordHeight
+      : designTokens.auth.passwordHeight;
   return {
     width: '100%' as const,
     // A single-line shell has a fixed outer height. At devicePixelRatio 1 the
     // 0.5 border paints as 1px; minHeight alone then lets padding and the
     // line box grow the border box. Multiline fields keep only minHeight.
     ...(multiline
-      ? { minHeight: figmaTokens.size.input }
+      ? { minHeight: designTokens.size.input }
       : password
         ? { height: passwordHeight, minHeight: passwordHeight }
-        : { height: figmaTokens.size.input, minHeight: figmaTokens.size.input }),
-    paddingHorizontal: figmaTokens.space.fieldX,
-    paddingVertical: password ? 0 : figmaTokens.space.fieldY,
-    borderRadius: figmaTokens.radius.field,
+        : { height: designTokens.size.input, minHeight: designTokens.size.input }),
+    paddingHorizontal: designTokens.space.fieldX,
+    paddingVertical: password ? 0 : designTokens.space.fieldY,
+    borderRadius: designTokens.radius.field,
     borderWidth:
       metrics === 'authScreenPassword'
-        ? figmaTokens.auth.passwordBorder
-        : figmaTokens.size.fieldBorder,
+        ? designTokens.auth.passwordBorder
+        : designTokens.size.fieldBorder,
     borderColor: fieldBorder(status, variant),
     backgroundColor: fieldFill(status),
     flexDirection: 'row' as const,
     alignItems: multiline ? ('flex-start' as const) : ('center' as const),
-    gap: figmaTokens.space.fieldGap,
+    gap: designTokens.space.fieldGap,
   };
 }
 
@@ -84,9 +84,9 @@ export const figmaFieldNativeOutlineStyle = {
 
 export function figmaFieldValueColor(status: FigmaFieldStatus) {
   if (status === 'empty' || status === 'hoverEmpty') {
-    return figmaTokens.color.muted;
+    return designTokens.color.muted;
   }
-  return figmaTokens.color.fieldValue;
+  return designTokens.color.fieldValue;
 }
 
 /** Placeholder text is drawn only while the label is not floating, i.e. for `empty`. */
@@ -95,41 +95,41 @@ export function figmaFieldPlaceholderColor(
   variant: FigmaFieldVariant = 'default',
 ) {
   return variant === 'authorApplication' && status === 'empty'
-    ? figmaTokens.color.authorApplicationField
-    : figmaTokens.color.muted;
+    ? designTokens.color.authorApplicationField
+    : designTokens.color.muted;
 }
 
 function fieldBorder(status: FigmaFieldStatus, variant: FigmaFieldVariant) {
   switch (status) {
     case 'empty':
       return variant === 'authorApplication'
-        ? figmaTokens.color.authorApplicationField
-        : figmaTokens.color.muted;
+        ? designTokens.color.authorApplicationField
+        : designTokens.color.muted;
     case 'disabled':
-      return figmaTokens.color.muted;
+      return designTokens.color.muted;
     case 'hoverEmpty':
-      return figmaTokens.color.fieldHoverBorder;
+      return designTokens.color.fieldHoverBorder;
     case 'filled':
-      return figmaTokens.color.ink;
+      return designTokens.color.ink;
     case 'hoverFilled':
-      return figmaTokens.color.solidHover;
+      return designTokens.color.solidHover;
     case 'focus':
-      return figmaTokens.color.focus;
+      return designTokens.color.focus;
     case 'error':
-      return figmaTokens.color.error;
+      return designTokens.color.error;
     case 'success':
-      return figmaTokens.color.success;
+      return designTokens.color.success;
   }
 }
 
 function fieldFill(status: FigmaFieldStatus) {
   switch (status) {
     case 'disabled':
-      return figmaTokens.color.mutedFill;
+      return designTokens.color.mutedFill;
     case 'hoverEmpty':
     case 'hoverFilled':
-      return figmaTokens.color.fieldHoverFill;
+      return designTokens.color.fieldHoverFill;
     default:
-      return figmaTokens.color.canvas;
+      return designTokens.color.canvas;
   }
 }

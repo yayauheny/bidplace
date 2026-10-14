@@ -14,7 +14,7 @@ import {
   type TextInputProps,
 } from 'react-native';
 
-import { figmaTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import { FigmaIcon } from './FigmaIcon';
 import { type FigmaIconName } from './figma-icon-names';
@@ -59,7 +59,7 @@ export const FigmaTextField = forwardRef<TextInput, FigmaTextFieldProps>(
       success = false,
       disabled = false,
       icon,
-      iconColor = figmaTokens.color.fieldValue,
+      iconColor = designTokens.color.fieldValue,
       prefix,
       metrics = 'default',
       variant = 'default',
@@ -99,13 +99,13 @@ export const FigmaTextField = forwardRef<TextInput, FigmaTextFieldProps>(
       <View style={{ width: '100%' }}>
         <View style={figmaFieldStyle(status, multiline, metrics, variant)}>
           {icon ? (
-            <View style={{ padding: figmaTokens.space.iconPad }}>
+            <View style={{ padding: designTokens.space.iconPad }}>
               <FigmaIcon
                 name={icon}
                 color={iconColor}
                 strokeWidthPx={
                   variant === 'authorApplication'
-                    ? figmaTokens.stroke.authorApplicationFieldPx
+                    ? designTokens.stroke.authorApplicationFieldPx
                     : undefined
                 }
               />
@@ -116,8 +116,8 @@ export const FigmaTextField = forwardRef<TextInput, FigmaTextFieldProps>(
               accessibilityElementsHidden
               importantForAccessibility="no"
               style={{
-                color: figmaTokens.color.fieldValue,
-                ...figmaTokens.typography.field,
+                color: designTokens.color.fieldValue,
+                ...designTokens.typography.field,
               }}
             >
               {prefix}
@@ -163,8 +163,8 @@ export const FigmaTextField = forwardRef<TextInput, FigmaTextFieldProps>(
                 textAlignVertical: multiline ? 'top' : 'center',
                 ...(metrics === 'authPassword' ||
                 metrics === 'authScreenPassword'
-                  ? figmaTokens.typography.authPassword
-                  : figmaTokens.typography.field),
+                  ? designTokens.typography.authPassword
+                  : designTokens.typography.field),
                 ...(Platform.OS === 'web'
                   ? (figmaFieldNativeOutlineStyle as object)
                   : null),
@@ -178,16 +178,16 @@ export const FigmaTextField = forwardRef<TextInput, FigmaTextFieldProps>(
               pointerEvents="none"
               style={{
                 position: 'absolute',
-                left: figmaTokens.space.fieldLabelX,
-                top: figmaTokens.space.fieldLabelY,
+                left: designTokens.space.fieldLabelX,
+                top: designTokens.space.fieldLabelY,
                 paddingHorizontal: 4,
-                backgroundColor: figmaTokens.color.canvas,
+                backgroundColor: designTokens.color.canvas,
               }}
             >
               <Text
                 style={{
-                  color: figmaTokens.color.fieldLabel,
-                  ...figmaTokens.typography.fieldLabel,
+                  color: designTokens.color.fieldLabel,
+                  ...designTokens.typography.fieldLabel,
                 }}
               >
                 {label}
@@ -200,11 +200,11 @@ export const FigmaTextField = forwardRef<TextInput, FigmaTextFieldProps>(
             nativeID={errorId}
             accessibilityLiveRegion="polite"
             style={{
-              marginTop: figmaTokens.space.fieldErrorGap,
-              marginLeft: figmaTokens.space.fieldErrorX,
-              marginRight: figmaTokens.space.fieldX,
-              color: figmaTokens.color.error,
-              ...figmaTokens.typography.fieldError,
+              marginTop: designTokens.space.fieldErrorGap,
+              marginLeft: designTokens.space.fieldErrorX,
+              marginRight: designTokens.space.fieldX,
+              color: designTokens.color.error,
+              ...designTokens.typography.fieldError,
             }}
           >
             {error}

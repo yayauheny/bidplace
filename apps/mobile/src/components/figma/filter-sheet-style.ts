@@ -1,4 +1,4 @@
-import { figmaTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import { appDialogSheetBottomSpace } from '../ui/app-dialog-host-style';
 
@@ -12,22 +12,22 @@ export function filterSheetPanelStyle(
     ...(compact
       ? { borderTopLeftRadius: 32, borderTopRightRadius: 32 }
       : { height: (viewportHeight ?? '100%') as number | '100%' }),
-    paddingHorizontal: compact ? 20 : figmaTokens.layout.gutter,
-    paddingTop: compact ? 8 : figmaTokens.space.x5,
+    paddingHorizontal: compact ? 20 : designTokens.layout.gutter,
+    paddingTop: compact ? 8 : designTokens.space.x5,
     paddingBottom: compact
       ? 0
-      : appDialogSheetBottomSpace(figmaTokens.space.x5, bottomInset),
-    backgroundColor: figmaTokens.color.canvas,
+      : appDialogSheetBottomSpace(designTokens.space.x5, bottomInset),
+    backgroundColor: designTokens.color.canvas,
   };
 }
 
 export function filterSheetHeaderStyle() {
   return {
     width: '100%' as const,
-    minHeight: figmaTokens.size.touch,
+    minHeight: designTokens.size.touch,
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
-    gap: figmaTokens.space.x1,
+    gap: designTokens.space.x1,
   };
 }
 
@@ -41,10 +41,10 @@ export function filterSheetTitleStyle() {
 export function filterSheetSectionRowStyle() {
   return {
     width: '100%' as const,
-    minHeight: figmaTokens.size.input,
+    minHeight: designTokens.size.input,
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
-    gap: figmaTokens.space.identityGap,
-    paddingBottom: figmaTokens.space.x3,
+    gap: designTokens.space.identityGap,
+    paddingBottom: designTokens.space.x3,
   };
 }

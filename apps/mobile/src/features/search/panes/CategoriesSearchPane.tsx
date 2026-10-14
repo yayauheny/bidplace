@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { View } from 'react-native';
 
-import { figmaTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import { paddedGridRows } from '../../../components/figma/flex-grid-rows';
 import { retryTransientPublicQuery } from '../../../lib/query-retry';
@@ -38,11 +38,11 @@ export function CategoriesSearchPane({
       emptyTitle="Категории не найдены"
       loading={<CategorySkeleton />}
     >
-      <View style={{ width: '100%', gap: figmaTokens.space.x2 }}>
+      <View style={{ width: '100%', gap: designTokens.space.x2 }}>
         {paddedGridRows(items, 3).map((row, rowIndex) => (
           <View
             key={row.find((item) => item)?.id ?? `row-${rowIndex}`}
-            style={{ flexDirection: 'row', gap: figmaTokens.space.x2 }}
+            style={{ flexDirection: 'row', gap: designTokens.space.x2 }}
           >
             {row.map((category, cellIndex) => (
               <View
@@ -69,7 +69,7 @@ function CategorySkeleton() {
   return (
     <View
       accessibilityRole="progressbar"
-      style={{ flexDirection: 'row', gap: figmaTokens.space.x2 }}
+      style={{ flexDirection: 'row', gap: designTokens.space.x2 }}
     >
       <SkeletonTile />
       <SkeletonTile />
@@ -84,8 +84,8 @@ function SkeletonTile() {
       style={{
         flex: 1,
         aspectRatio: 120.67 / 160.89,
-        borderRadius: figmaTokens.radius.small,
-        backgroundColor: figmaTokens.color.surfaceMuted,
+        borderRadius: designTokens.radius.small,
+        backgroundColor: designTokens.color.surfaceMuted,
       }}
     />
   );

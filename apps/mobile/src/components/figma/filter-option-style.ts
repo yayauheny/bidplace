@@ -1,15 +1,15 @@
-import { figmaTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 export type FilterOptionMode = 'radio' | 'checkbox';
 
 export function filterOptionRowStyle() {
   return {
     width: '100%' as const,
-    minHeight: figmaTokens.size.filterOptionRow,
+    minHeight: designTokens.size.filterOptionRow,
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
-    gap: figmaTokens.space.authorIdentityGap,
-    paddingVertical: figmaTokens.space.filterOptionY,
+    gap: designTokens.space.authorIdentityGap,
+    paddingVertical: designTokens.space.filterOptionY,
   };
 }
 
@@ -18,18 +18,18 @@ export function filterOptionControlStyle(
   selected: boolean,
 ) {
   return {
-    width: figmaTokens.size.filterOption,
-    height: figmaTokens.size.filterOption,
+    width: designTokens.size.filterOption,
+    height: designTokens.size.filterOption,
     flexShrink: 0,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
     borderWidth: 1,
-    borderColor: figmaTokens.color.ink,
+    borderColor: designTokens.color.ink,
     borderRadius:
       mode === 'radio'
-        ? figmaTokens.radius.filterRadio
-        : figmaTokens.radius.filterCheckbox,
-    backgroundColor: selected ? figmaTokens.color.ink : 'transparent',
+        ? designTokens.radius.filterRadio
+        : designTokens.radius.filterCheckbox,
+    backgroundColor: selected ? designTokens.color.ink : 'transparent',
   };
 }
 

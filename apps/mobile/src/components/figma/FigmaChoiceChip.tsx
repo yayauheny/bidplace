@@ -1,6 +1,6 @@
 import { Platform, Text } from 'react-native';
 
-import { figmaTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import { MotionPressable } from '../ui/MotionPressable';
 import { FigmaIcon } from './FigmaIcon';
@@ -31,8 +31,8 @@ export function FigmaChoiceChip({
 }) {
   const showRemove = removable && selected && onRemove !== undefined;
   const typography = showRemove
-    ? figmaTokens.typography.choiceChipSelectedRemovable
-    : figmaTokens.typography.choiceChip;
+    ? designTokens.typography.choiceChipSelectedRemovable
+    : designTokens.typography.choiceChip;
 
   return (
     <MotionPressable
@@ -56,8 +56,8 @@ export function FigmaChoiceChip({
           ? {
               flexDirection: 'row',
               alignItems: 'center',
-              gap: figmaTokens.space.authorIdentityGap,
-              paddingRight: figmaTokens.space.choiceChipRemovableX,
+              gap: designTokens.space.authorIdentityGap,
+              paddingRight: designTokens.space.choiceChipRemovableX,
             }
           : null,
       ]}
@@ -79,8 +79,8 @@ export function FigmaChoiceChip({
       {showRemove ? (
         <FigmaIcon
           name="x"
-          size={figmaTokens.size.choiceChipRemoveIcon}
-          color={figmaTokens.color.white}
+          size={designTokens.size.choiceChipRemoveIcon}
+          color={designTokens.color.white}
         />
       ) : null}
     </MotionPressable>

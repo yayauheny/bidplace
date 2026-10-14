@@ -1,6 +1,6 @@
 import { View } from 'react-native';
 
-import { figmaTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import { AppText } from '../ui/AppText';
 import { MotionPressable } from '../ui/MotionPressable';
@@ -39,8 +39,8 @@ export function FilterSheetSectionRow({
       </View>
       <FigmaIcon
         name="arrow-right-01"
-        size={figmaTokens.size.dockIcon}
-        color={figmaTokens.color.ink}
+        size={designTokens.size.dockIcon}
+        color={designTokens.color.ink}
       />
     </MotionPressable>
   );

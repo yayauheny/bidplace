@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 
-import { figmaTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 vi.mock('react-native', () => ({
   Platform: { OS: 'web' },
@@ -19,8 +19,8 @@ describe('coverCardFrameStyle', () => {
   it('keeps the default author card on the shared cover aspect ratio', () => {
     expect(coverCardFrameStyle('author')).toMatchObject({
       width: '100%',
-      aspectRatio: figmaTokens.size.coverWidth / figmaTokens.size.coverHeight,
-      borderRadius: figmaTokens.radius.authorCover,
+      aspectRatio: designTokens.size.coverWidth / designTokens.size.coverHeight,
+      borderRadius: designTokens.radius.authorCover,
     });
   });
 
@@ -30,7 +30,7 @@ describe('coverCardFrameStyle', () => {
     ).toMatchObject({
       width: 322,
       height: 430,
-      borderRadius: figmaTokens.radius.authorCover,
+      borderRadius: designTokens.radius.authorCover,
     });
     expect(
       coverCardFrameStyle('author', { width: 322, height: 430 }).aspectRatio,
@@ -47,7 +47,7 @@ describe('coverCardFrameStyle', () => {
       overflow: 'hidden',
     });
     expect(coverCardFrameStyle('author').borderRadius).toBe(
-      figmaTokens.radius.authorCover,
+      designTokens.radius.authorCover,
     );
   });
 

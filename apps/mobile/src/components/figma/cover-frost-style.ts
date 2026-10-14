@@ -1,4 +1,4 @@
-import { figmaTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 export type CoverFrostPlacement = 'workBottom' | 'authorBottom' | 'authorTop';
 
@@ -11,14 +11,14 @@ export function coverFrostSpec(placement: CoverFrostPlacement) {
   return {
     top,
     runtimeBlur: top
-      ? figmaTokens.blur.authorTopOverlay
-      : figmaTokens.blur.overlay,
+      ? designTokens.blur.authorTopOverlay
+      : designTokens.blur.overlay,
     gradientStart: 'rgba(0, 0, 0, 0)',
     gradientEnd: top
-      ? figmaTokens.color.overlayScrim
-      : figmaTokens.color.overlay,
+      ? designTokens.color.overlayScrim
+      : designTokens.color.overlay,
     artworkAspectRatio:
-      figmaTokens.size.coverWidth / figmaTokens.size.coverHeight,
+      designTokens.size.coverWidth / designTokens.size.coverHeight,
   };
 }
 

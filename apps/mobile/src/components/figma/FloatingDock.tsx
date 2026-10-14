@@ -2,7 +2,7 @@ import type { RefObject } from 'react';
 import { Link, type Href, usePathname, useRouter } from 'expo-router';
 import { Platform, type View, type ViewStyle } from 'react-native';
 
-import { figmaTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import {
   authorProfileDestination,
@@ -25,7 +25,7 @@ import {
 } from './floating-dock';
 
 const dockItemHitSlop =
-  (figmaTokens.size.dockIconHit - figmaTokens.size.control) / 2;
+  (designTokens.size.dockIconHit - designTokens.size.control) / 2;
 
 export function FloatingDock({
   blurTarget,
@@ -137,10 +137,10 @@ function DockItem({
       preset="dock"
       hitSlop={dockItemHitSlop}
       style={{
-        width: figmaTokens.size.control,
-        height: figmaTokens.size.control,
-        padding: figmaTokens.space.dockIconPad,
-        borderRadius: figmaTokens.radius.pill,
+        width: designTokens.size.control,
+        height: designTokens.size.control,
+        padding: designTokens.space.dockIconPad,
+        borderRadius: designTokens.radius.pill,
         alignItems: 'center',
         justifyContent: 'center',
         ...(Platform.OS === 'web'
@@ -153,8 +153,8 @@ function DockItem({
       ) : (
         <FigmaIcon
           name={item.icon}
-          size={figmaTokens.size.dockIcon}
-          color={figmaTokens.color.ink}
+          size={designTokens.size.dockIcon}
+          color={designTokens.color.ink}
         />
       )}
     </MotionPressable>

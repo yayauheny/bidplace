@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { figmaTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import { authorAchievementRailSpec } from './author-achievement-rail';
 
@@ -17,7 +17,7 @@ describe('Author achievement rail', () => {
       markerPad: 3,
       markerRadius: 21,
       markerFill: '#565656',
-      markerHoleFill: figmaTokens.color.white,
+      markerHoleFill: designTokens.color.white,
       lineHeight: 2,
       lineColor: '#565656',
       lineRadius: 6,

@@ -1,17 +1,17 @@
-import { figmaTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import { webBackdropBlur } from './web-backdrop';
 
 export function figmaGlassCircleStyle() {
   return {
-    width: figmaTokens.size.social,
-    height: figmaTokens.size.social,
+    width: designTokens.size.social,
+    height: designTokens.size.social,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
-    borderRadius: figmaTokens.radius.social,
-    backgroundColor: figmaTokens.color.glassChip,
+    borderRadius: designTokens.radius.social,
+    backgroundColor: designTokens.color.glassChip,
     borderWidth: 1,
-    borderColor: figmaTokens.color.white,
-    ...webBackdropBlur(figmaTokens.blur.dock),
+    borderColor: designTokens.color.white,
+    ...webBackdropBlur(designTokens.blur.dock),
   };
 }

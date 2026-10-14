@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { figmaTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import {
   figmaChoiceChipStyle,
@@ -13,36 +13,36 @@ describe('Figma choice chip styles', () => {
       minHeight: 38,
       paddingHorizontal: 10,
       paddingVertical: 8,
-      borderColor: figmaTokens.color.ink,
-      backgroundColor: figmaTokens.color.solid,
+      borderColor: designTokens.color.ink,
+      backgroundColor: designTokens.color.solid,
     });
-    expect(figmaChoiceChipTextColor(true)).toBe(figmaTokens.color.white);
+    expect(figmaChoiceChipTextColor(true)).toBe(designTokens.color.white);
   });
 
   it('matches the unselected gray chip and its hover fill', () => {
     expect(figmaChoiceChipStyle(false, 'idle')).toMatchObject({
-      borderColor: figmaTokens.color.white,
-      backgroundColor: figmaTokens.color.mutedFill,
+      borderColor: designTokens.color.white,
+      backgroundColor: designTokens.color.mutedFill,
     });
     expect(figmaChoiceChipStyle(false, 'hover').backgroundColor).toBe(
-      figmaTokens.color.mutedHover,
+      designTokens.color.mutedHover,
     );
-    expect(figmaChoiceChipTextColor(false)).toBe(figmaTokens.color.ink);
+    expect(figmaChoiceChipTextColor(false)).toBe(designTokens.color.ink);
   });
 
   it('exposes pressed and disabled feedback without changing geometry', () => {
     expect(figmaChoiceChipStyle(false, 'pressed')).toMatchObject({
-      minHeight: figmaTokens.size.choiceChip,
-      backgroundColor: figmaTokens.color.mutedHover,
+      minHeight: designTokens.size.choiceChip,
+      backgroundColor: designTokens.color.mutedHover,
     });
     expect(figmaChoiceChipStyle(false, 'pressed')).not.toHaveProperty(
       'boxShadow',
     );
     expect(figmaChoiceChipStyle(true, 'pressed').backgroundColor).toBe(
-      figmaTokens.color.solidHover,
+      designTokens.color.solidHover,
     );
     expect(figmaChoiceChipStyle(false, 'disabled').opacity).toBe(
-      figmaTokens.opacity.disabled,
+      designTokens.opacity.disabled,
     );
   });
 });

@@ -2,7 +2,7 @@ import { type ReactNode } from 'react';
 import { BlurView } from 'expo-blur';
 import { Platform, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
-import { figmaTokens, searchChromeTokens, type SearchChromeKind } from '@bidplace/design-tokens';
+import { designTokens, searchChromeTokens, type SearchChromeKind } from '@bidplace/design-tokens';
 
 import { FigmaSearchChromeStroke } from './FigmaSearchChromeStroke';
 import { useCssBorderBox } from './use-css-border-box';
@@ -39,10 +39,10 @@ export function FigmaSearchGlass({
       {blurred ? (
         <BlurView
           pointerEvents="none"
-          intensity={figmaTokens.blur.dockNativeIntensity}
+          intensity={designTokens.blur.dockNativeIntensity}
           tint="default"
           blurMethod={Platform.OS === 'android' ? 'dimezisBlurView' : undefined}
-          blurReductionFactor={figmaTokens.blur.dockAndroidReductionFactor}
+          blurReductionFactor={designTokens.blur.dockAndroidReductionFactor}
           style={[StyleSheet.absoluteFill, { borderRadius: shape.radius }]}
         />
       ) : null}

@@ -10,7 +10,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 
-import { figmaTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import {
   figmaGlassSurfaceSpec,
@@ -56,7 +56,7 @@ export function FigmaGlassSurface({
         importantForAccessibility="no-hide-descendants"
         blurTarget={blurTarget}
         blurMethod={Platform.OS === 'android' ? 'dimezisBlurView' : undefined}
-        blurReductionFactor={figmaTokens.blur.dockAndroidReductionFactor}
+        blurReductionFactor={designTokens.blur.dockAndroidReductionFactor}
         intensity={spec.nativeIntensity}
         tint="default"
         style={[

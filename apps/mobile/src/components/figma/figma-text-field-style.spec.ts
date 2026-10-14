@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { figmaTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import {
   figmaFieldNativeOutlineStyle,
@@ -61,8 +61,8 @@ describe('Figma text field states', () => {
 
     for (const item of cases) {
       expect(figmaFieldStyle(item.status)).toMatchObject({
-        height: 51,
-        minHeight: 51,
+        height: 50,
+        minHeight: 50,
         borderWidth: 0.5,
         borderRadius: 18,
         borderColor: item.border,
@@ -74,17 +74,17 @@ describe('Figma text field states', () => {
       expect(figmaFieldShowsFloatingLabel(item.status)).toBe(item.label);
     }
 
-    expect(figmaTokens.typography.field).toMatchObject({ fontSize: 14, lineHeight: 24, fontWeight: '400' });
-    expect(figmaTokens.typography.fieldLabel).toMatchObject({ fontSize: 12, fontWeight: '400' });
-    expect(figmaTokens.typography.fieldLabel).not.toHaveProperty('lineHeight');
-    expect(figmaTokens.typography.fieldError).toMatchObject({ fontSize: 12, fontWeight: '400' });
-    expect(figmaTokens.typography.fieldError).not.toHaveProperty('lineHeight');
-    expect(figmaTokens.color.fieldLabel).toBe('#999999');
-    expect(figmaTokens.color.fieldValue).toBe('#121212');
-    expect(figmaTokens.color.ink).toBe('#2A2A2A');
-    expect(figmaTokens.space.fieldLabelY).toBe(-8);
-    expect(figmaTokens.space.fieldErrorGap).toBe(4);
-    expect(figmaTokens.space.fieldErrorX).toBe(13);
+    expect(designTokens.typography.field).toMatchObject({ fontSize: 14, lineHeight: 24, fontWeight: '400' });
+    expect(designTokens.typography.fieldLabel).toMatchObject({ fontSize: 12, fontWeight: '400' });
+    expect(designTokens.typography.fieldLabel).not.toHaveProperty('lineHeight');
+    expect(designTokens.typography.fieldError).toMatchObject({ fontSize: 12, fontWeight: '400' });
+    expect(designTokens.typography.fieldError).not.toHaveProperty('lineHeight');
+    expect(designTokens.color.fieldLabel).toBe('#999999');
+    expect(designTokens.color.fieldValue).toBe('#121212');
+    expect(designTokens.color.ink).toBe('#2A2A2A');
+    expect(designTokens.space.fieldLabelY).toBe(-8);
+    expect(designTokens.space.fieldErrorGap).toBe(4);
+    expect(designTokens.space.fieldErrorX).toBe(13);
   });
 
   it('uses separate password heights without letting content grow the shell', () => {
@@ -128,7 +128,7 @@ describe('Figma text field states', () => {
   it('top-aligns multiline content while preserving the captured field minimum', () => {
     const multiline = figmaFieldStyle('filled', true);
     expect(multiline).toMatchObject({
-      minHeight: figmaTokens.size.input,
+      minHeight: designTokens.size.input,
       alignItems: 'flex-start',
     });
     expect(multiline).not.toHaveProperty('height');

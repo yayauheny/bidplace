@@ -1,18 +1,18 @@
 import type { ViewStyle } from 'react-native';
 
-import { figmaTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 export function authorSearchRowStyle(): ViewStyle {
   return {
     display: 'flex',
     width: '100%',
-    minHeight: figmaTokens.size.touch,
+    minHeight: designTokens.size.touch,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: figmaTokens.space.x3,
-    paddingVertical: figmaTokens.space.x1,
-    paddingHorizontal: figmaTokens.space.x2,
-    marginHorizontal: -figmaTokens.space.x2,
-    borderRadius: figmaTokens.radius.small,
+    gap: designTokens.space.x3,
+    paddingVertical: designTokens.space.x1,
+    paddingHorizontal: designTokens.space.x2,
+    marginHorizontal: -designTokens.space.x2,
+    borderRadius: designTokens.radius.small,
   };
 }

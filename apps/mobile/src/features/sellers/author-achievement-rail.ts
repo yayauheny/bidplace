@@ -1,4 +1,4 @@
-import { figmaTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 export function authorAchievementRailSpec() {
   return {
@@ -11,10 +11,10 @@ export function authorAchievementRailSpec() {
     markerHole: 10,
     markerPad: 3,
     markerRadius: 21,
-    markerFill: figmaTokens.color.tabInactive,
-    markerHoleFill: figmaTokens.color.white,
+    markerFill: designTokens.color.tabInactive,
+    markerHoleFill: designTokens.color.white,
     lineHeight: 2,
-    lineColor: figmaTokens.color.tabInactive,
+    lineColor: designTokens.color.tabInactive,
     lineRadius: 6,
     imageRadius: 18.82,
     imageAspect: 3 / 4,

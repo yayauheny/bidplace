@@ -40,7 +40,7 @@ import {
   ViewOffIcon,
 } from '@hugeicons/core-free-icons';
 
-import { figmaTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import { type FigmaIconName, figmaIconNames } from './figma-icon-names';
 import { figmaIconStrokeWidth } from './figma-icon-style';
@@ -103,8 +103,8 @@ const iconGridSize = 24;
 
 export function FigmaIcon({
   name,
-  size = figmaTokens.size.icon,
-  color = figmaTokens.color.ink,
+  size = designTokens.size.icon,
+  color = designTokens.color.ink,
   label,
   strokeWidthPx,
 }: {

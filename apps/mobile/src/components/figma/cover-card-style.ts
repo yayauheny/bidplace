@@ -1,6 +1,6 @@
 import { Platform, type ViewStyle } from 'react-native';
 
-import { figmaTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 export const coverArtworkScale = 1.05;
 
@@ -19,15 +19,15 @@ export function coverCardFrameStyle(
     ...(size
       ? { height: size.height }
       : {
-          aspectRatio: figmaTokens.size.coverWidth / figmaTokens.size.coverHeight,
+          aspectRatio: designTokens.size.coverWidth / designTokens.size.coverHeight,
         }),
     overflow: 'hidden',
     borderRadius:
       frameRadius ??
       (kind === 'author'
-        ? figmaTokens.radius.authorCover
-        : figmaTokens.radius.cover),
-    backgroundColor: figmaTokens.color.mutedFill,
+        ? designTokens.radius.authorCover
+        : designTokens.radius.cover),
+    backgroundColor: designTokens.color.mutedFill,
   };
 }
 
@@ -38,9 +38,9 @@ export function coverArtworkFrameStyle(
   const webTransition =
     Platform.OS === 'web'
       ? ({
-          transitionDuration: `${figmaTokens.motion.media}ms`,
+          transitionDuration: `${designTokens.motion.media}ms`,
           transitionProperty: 'transform',
-          transitionTimingFunction: figmaTokens.motion.easing,
+          transitionTimingFunction: designTokens.motion.easing,
         } as ViewStyle)
       : undefined;
 
@@ -63,7 +63,7 @@ export function coverChipRowStyle(): ViewStyle {
     flexDirection: 'row',
     flexWrap: 'nowrap',
     alignItems: 'center',
-    gap: figmaTokens.space.chipGap,
+    gap: designTokens.space.chipGap,
     overflow: 'hidden',
   };
 }
@@ -79,16 +79,16 @@ export function coverFrostZoneStyle(): ViewStyle {
 // Figma `874:5541`: 20/12/12 padding around the 24px name = 56 total.
 export function authorCoverNameZoneStyle(): ViewStyle {
   return {
-    paddingTop: figmaTokens.space.x5,
-    paddingBottom: figmaTokens.space.coverPad,
-    paddingHorizontal: figmaTokens.space.coverPad,
+    paddingTop: designTokens.space.x5,
+    paddingBottom: designTokens.space.coverPad,
+    paddingHorizontal: designTokens.space.coverPad,
     alignItems: 'center',
   };
 }
 
 export function coverOverlayPadStyle(): ViewStyle {
   return {
-    padding: figmaTokens.space.coverPad,
-    gap: figmaTokens.space.coverGap,
+    padding: designTokens.space.coverPad,
+    gap: designTokens.space.coverGap,
   };
 }

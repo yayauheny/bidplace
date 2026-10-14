@@ -1,4 +1,4 @@
-import { figmaTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 export const figmaGlassSurfacePresets = [
   'navigation',
@@ -12,21 +12,21 @@ export type FigmaGlassSurfacePreset =
 export function figmaGlassSurfaceSpec(preset: FigmaGlassSurfacePreset) {
   const filterControl = preset === 'filterControl';
   return {
-    blur: figmaTokens.blur.dock,
-    nativeIntensity: figmaTokens.blur.dockNativeIntensity,
+    blur: designTokens.blur.dock,
+    nativeIntensity: designTokens.blur.dockNativeIntensity,
     borderWidth: 0.5,
     borderRadius: filterControl
-      ? figmaTokens.radius.filterSort
-      : figmaTokens.radius.dock,
+      ? designTokens.radius.filterSort
+      : designTokens.radius.dock,
     background:
       preset === 'navigation'
-        ? figmaTokens.color.glass
-        : figmaTokens.color.glassStrong,
+        ? designTokens.color.glass
+        : designTokens.color.glassStrong,
     borderStart: filterControl
-      ? figmaTokens.color.divider
-      : figmaTokens.color.glassBorder,
+      ? designTokens.color.divider
+      : designTokens.color.glassBorder,
     borderEnd: filterControl
-      ? figmaTokens.color.divider
-      : figmaTokens.color.glassBorderEnd,
+      ? designTokens.color.divider
+      : designTokens.color.glassBorderEnd,
   } as const;
 }

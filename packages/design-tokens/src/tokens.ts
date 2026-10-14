@@ -201,7 +201,7 @@ export const designTokens = {
     achievementWidth: 266,
     shareQr: 164,
     touch: 44,
-    input: 51,
+    input: 50,
     fieldBorder: 0.5,
     control: 36,
     button: 44,
@@ -681,7 +681,6 @@ export const designTokens = {
     productPortrait: 264 / 352,
     auctionCardMedia: 264 / 352,
   },
-  productHeroWide: 366,
   auth: {
     sheetRadius: 32,
     paddingTop: 8,
@@ -753,7 +752,6 @@ export const designTokens = {
     },
   },
   layer: { content: 0, chrome: 10, popover: 20, modal: 50 },
-  focus: { width: 2, offset: 2 },
   blur: {
     dock: 6,
     dockNativeIntensity: 30,
@@ -791,10 +789,8 @@ export const designTokens = {
   },
 } as const;
 
-export const figmaTokens = designTokens;
-
 export type TextRole = keyof typeof designTokens.typography;
-export type FigmaTokens = typeof designTokens;
+export type DesignTokens = typeof designTokens;
 
 type TypographyRole = (typeof designTokens.typography)[TextRole];
 

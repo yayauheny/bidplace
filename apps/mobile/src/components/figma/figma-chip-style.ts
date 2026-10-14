@@ -1,4 +1,4 @@
-import { figmaTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 // `tinted`: the cover chip fill with ink text on a light surface (`874:5596`).
 export type FigmaChipTone = 'onLight' | 'onDark' | 'onGlass' | 'tinted';
@@ -22,8 +22,8 @@ export function figmaChipGradientPlacement(tone: FigmaChipTone) {
 export function figmaChipGradientColors(tone: FigmaChipTone) {
   if (tone === 'onGlass') {
     return {
-      start: figmaTokens.color.glassBorder,
-      end: figmaTokens.color.glassBorderEnd,
+      start: designTokens.color.glassBorder,
+      end: designTokens.color.glassBorderEnd,
     } as const;
   }
   return figmaChipGradientStroke;
@@ -62,7 +62,7 @@ export function figmaChipOutsideGradientRingStyle(colors: {
     bottom: -1,
     left: -1,
     padding: 1,
-    borderRadius: figmaTokens.radius.chip + 1,
+    borderRadius: designTokens.radius.chip + 1,
     pointerEvents: 'none',
     boxSizing: 'border-box',
     backgroundImage: `linear-gradient(180deg, ${colors.start}, ${colors.end})`,
@@ -76,12 +76,12 @@ export function figmaChipOutsideGradientRingStyle(colors: {
 export function figmaChipStyle(tone: FigmaChipTone = 'onLight') {
   if (tone === 'onGlass') {
     return {
-      paddingHorizontal: figmaTokens.space.chipX,
-      paddingVertical: figmaTokens.space.chipY,
-      borderRadius: figmaTokens.radius.chip,
-      backgroundColor: figmaTokens.color.glassStrong,
+      paddingHorizontal: designTokens.space.chipX,
+      paddingVertical: designTokens.space.chipY,
+      borderRadius: designTokens.radius.chip,
+      backgroundColor: designTokens.color.glassStrong,
       borderWidth: 1,
-      borderColor: figmaTokens.color.glassBorder,
+      borderColor: designTokens.color.glassBorder,
       justifyContent: 'center' as const,
       alignItems: 'center' as const,
     };
@@ -89,24 +89,24 @@ export function figmaChipStyle(tone: FigmaChipTone = 'onLight') {
 
   if (tone === 'onDark' || tone === 'tinted') {
     return {
-      paddingHorizontal: figmaTokens.space.chipX,
-      paddingVertical: figmaTokens.space.chipY,
-      borderRadius: figmaTokens.radius.chip,
-      backgroundColor: figmaTokens.color.chip,
+      paddingHorizontal: designTokens.space.chipX,
+      paddingVertical: designTokens.space.chipY,
+      borderRadius: designTokens.radius.chip,
+      backgroundColor: designTokens.color.chip,
       borderWidth: 1,
-      borderColor: figmaTokens.color.chipOutline,
+      borderColor: designTokens.color.chipOutline,
       justifyContent: 'center' as const,
       alignItems: 'center' as const,
     };
   }
 
   return {
-    paddingHorizontal: figmaTokens.space.chipX,
-    paddingVertical: figmaTokens.space.chipY,
-    borderRadius: figmaTokens.radius.chip,
-    backgroundColor: figmaTokens.color.mutedFill,
+    paddingHorizontal: designTokens.space.chipX,
+    paddingVertical: designTokens.space.chipY,
+    borderRadius: designTokens.radius.chip,
+    backgroundColor: designTokens.color.mutedFill,
     borderWidth: 1,
-    borderColor: figmaTokens.color.border,
+    borderColor: designTokens.color.border,
     justifyContent: 'center' as const,
     alignItems: 'center' as const,
   };
@@ -115,30 +115,30 @@ export function figmaChipStyle(tone: FigmaChipTone = 'onLight') {
 export function figmaChipSizeStyle(size: FigmaChipSize) {
   if (size === 'profile') {
     return {
-      paddingHorizontal: figmaTokens.space.authorChipX,
-      paddingVertical: figmaTokens.space.authorChipY,
+      paddingHorizontal: designTokens.space.authorChipX,
+      paddingVertical: designTokens.space.authorChipY,
     };
   }
   if (size === 'work') {
     return {
-      paddingHorizontal: figmaTokens.space.workChipX,
-      paddingVertical: figmaTokens.space.workChipY,
+      paddingHorizontal: designTokens.space.workChipX,
+      paddingVertical: designTokens.space.workChipY,
     };
   }
   return {};
 }
 
 export function figmaChipTypography(size: FigmaChipSize) {
-  if (size === 'profile') return figmaTokens.typography.profileChip;
-  if (size === 'work') return figmaTokens.typography.workChip;
-  return figmaTokens.typography.chip;
+  if (size === 'profile') return designTokens.typography.profileChip;
+  if (size === 'work') return designTokens.typography.workChip;
+  return designTokens.typography.chip;
 }
 
 export function figmaChipTextColor(
   tone: FigmaChipTone,
   size: FigmaChipSize = 'compact',
 ) {
-  if (tone === 'onDark') return figmaTokens.color.white;
-  if (size === 'work') return figmaTokens.color.textSubdued;
-  return figmaTokens.color.ink;
+  if (tone === 'onDark') return designTokens.color.white;
+  if (size === 'work') return designTokens.color.textSubdued;
+  return designTokens.color.ink;
 }

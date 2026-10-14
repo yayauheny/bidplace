@@ -1,4 +1,4 @@
-import { figmaTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 export type FigmaTab = { value: string; label: string; count?: number };
 export type FigmaTabsProps = {
@@ -12,5 +12,5 @@ export type FigmaTabsProps = {
 };
 
 export function figmaTabLabelColor(selected: boolean) {
-  return selected ? figmaTokens.color.ink : figmaTokens.color.tabInactive;
+  return selected ? designTokens.color.ink : designTokens.color.tabInactive;
 }

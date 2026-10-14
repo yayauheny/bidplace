@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { figmaTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import {
   coverFrostBlur,
@@ -10,9 +10,9 @@ import {
 
 describe('Cover frost', () => {
   it.each([
-    ['workBottom', 30, false, figmaTokens.color.overlay],
-    ['authorBottom', 30, false, figmaTokens.color.overlay],
-    ['authorTop', 20, true, figmaTokens.color.overlayScrim],
+    ['workBottom', 30, false, designTokens.color.overlay],
+    ['authorBottom', 30, false, designTokens.color.overlay],
+    ['authorTop', 20, true, designTokens.color.overlayScrim],
   ] as const)(
     'fills the text-hugging overlay zone for %s without a fixed height',
     (placement, blur, top, gradientEnd) => {
@@ -37,8 +37,8 @@ describe('Cover frost', () => {
   });
 
   it('keeps the documented runtime blur in px', () => {
-    expect(coverFrostBlur(figmaTokens.blur.overlay)).toBe('blur(30px)');
-    expect(coverFrostBlur(figmaTokens.blur.authorTopOverlay)).toBe(
+    expect(coverFrostBlur(designTokens.blur.overlay)).toBe('blur(30px)');
+    expect(coverFrostBlur(designTokens.blur.authorTopOverlay)).toBe(
       'blur(20px)',
     );
   });

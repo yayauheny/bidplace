@@ -1,7 +1,7 @@
 import { Link } from 'expo-router';
 import { Text, View } from 'react-native';
 
-import { figmaTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import { getApiAssetUrl } from '../../lib/environment';
 import { useReducedMotion } from '../../lib/reduced-motion';
@@ -83,9 +83,9 @@ export function WorkCoverCard({
                     numberOfLines={2}
                     style={[
                       {
-                        color: figmaTokens.color.white,
+                        color: designTokens.color.white,
                       },
-                      figmaTokens.typography.coverTitle,
+                      designTokens.typography.coverTitle,
                     ]}
                   >
                     {overlay.title}

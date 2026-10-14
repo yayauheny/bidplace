@@ -1,7 +1,7 @@
 import { Link } from 'expo-router';
 import { View } from 'react-native';
 
-import { figmaTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import { AppText } from '../../components/ui/AppText';
 import { ImagePlaceholder } from '../../components/ui/ImagePlaceholder';
@@ -32,8 +32,8 @@ export function CategorySearchTile({
         {...interactiveHitDataset()}
         style={({ hovered, pressed }) => ({
           width: '100%',
-          gap: figmaTokens.space.x2,
-          borderRadius: figmaTokens.radius.small,
+          gap: designTokens.space.x2,
+          borderRadius: designTokens.radius.small,
           ...interactiveHitFallbackStyle({ hovered, pressed }),
         })}
       >
@@ -41,9 +41,9 @@ export function CategorySearchTile({
           style={{
             width: '100%',
             aspectRatio: 120.67 / 121.89,
-            borderRadius: figmaTokens.radius.small,
+            borderRadius: designTokens.radius.small,
             overflow: 'hidden',
-            backgroundColor: figmaTokens.color.mutedFill,
+            backgroundColor: designTokens.color.mutedFill,
             alignItems: 'center',
             justifyContent: 'center',
           }}

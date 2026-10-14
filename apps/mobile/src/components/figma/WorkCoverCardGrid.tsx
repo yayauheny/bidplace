@@ -1,6 +1,6 @@
 import { View } from 'react-native';
 
-import { figmaTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import { paddedGridRows } from './flex-grid-rows';
 import { WorkCoverCard } from './WorkCoverCard';
@@ -27,7 +27,7 @@ export function WorkCoverCardGrid({
 }) {
   if (columns === 1) {
     return (
-      <View style={{ width: '100%', gap: figmaTokens.space.sectionGap }}>
+      <View style={{ width: '100%', gap: designTokens.space.sectionGap }}>
         {items.map((item) => (
           <WorkCoverGridCard
             key={item.work.publicId}
@@ -40,11 +40,11 @@ export function WorkCoverCardGrid({
   }
 
   return (
-    <View style={{ width: '100%', gap: figmaTokens.space.x2 }}>
+    <View style={{ width: '100%', gap: designTokens.space.x2 }}>
       {paddedGridRows(items, columns).map((row, rowIndex) => (
         <View
           key={row.find((item) => item)?.work.publicId ?? `row-${rowIndex}`}
-          style={{ flexDirection: 'row', gap: figmaTokens.space.x2 }}
+          style={{ flexDirection: 'row', gap: designTokens.space.x2 }}
         >
           {row.map((item, cellIndex) => (
             <View

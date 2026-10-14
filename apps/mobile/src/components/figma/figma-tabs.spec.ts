@@ -5,7 +5,7 @@ import { act, createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { designTokens, figmaTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import { figmaTabLabelColor } from './figma-tabs';
 import { FigmaTabs } from './FigmaTabs.web';
@@ -54,7 +54,7 @@ afterEach(() => {
 
 describe('Figma tabs', () => {
   it('uses the author-page inactive ink from 621:19524', () => {
-    expect(figmaTabLabelColor(true)).toBe(figmaTokens.color.ink);
+    expect(figmaTabLabelColor(true)).toBe(designTokens.color.ink);
     expect(figmaTabLabelColor(false)).toBe('#565656');
   });
 

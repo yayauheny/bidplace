@@ -1,7 +1,7 @@
 import { G, Path, Svg, type NumberProp } from 'react-native-svg';
 import { Platform } from 'react-native';
 
-import { figmaTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import {
   figmaImagePlaceholderPath,
@@ -11,7 +11,7 @@ import {
 export function FigmaImagePlaceholder({
   width = figmaImagePlaceholderSpec.width,
   height = figmaImagePlaceholderSpec.height,
-  color = figmaTokens.color.ink,
+  color = designTokens.color.ink,
   label,
 }: {
   width?: NumberProp;

@@ -1,6 +1,6 @@
 import { Platform, View } from 'react-native';
 
-import { designTokens, figmaTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import { AppText } from '../ui/AppText';
 import { MotionPressable } from '../ui/MotionPressable';
@@ -71,9 +71,9 @@ export function FilterOptionRow({
           {selected && mode === 'checkbox' && variant === 'directions' ? (
             <FigmaIcon
               name="check"
-              size={figmaTokens.size.filterOptionCheck}
-              color={figmaTokens.color.white}
-              strokeWidthPx={figmaTokens.stroke.filterOptionCheck}
+              size={designTokens.size.filterOptionCheck}
+              color={designTokens.color.white}
+              strokeWidthPx={designTokens.stroke.filterOptionCheck}
             />
           ) : null}
           {selected && mode === 'checkbox' && variant !== 'directions' ? (
@@ -84,7 +84,7 @@ export function FilterOptionRow({
                 marginTop: -2,
                 borderLeftWidth: 1.5,
                 borderBottomWidth: 1.5,
-                borderColor: figmaTokens.color.white,
+                borderColor: designTokens.color.white,
                 transform: [{ rotate: '-45deg' }],
               }}
             />
@@ -95,7 +95,7 @@ export function FilterOptionRow({
                 width: 8,
                 height: 8,
                 borderRadius: 4,
-                backgroundColor: figmaTokens.color.white,
+                backgroundColor: designTokens.color.white,
               }}
             />
           ) : null}
@@ -111,7 +111,7 @@ export function FilterOptionRow({
                 flex: 0,
                 fontSize: 15,
                 fontWeight: '500' as const,
-                color: figmaTokens.color.ink,
+                color: designTokens.color.ink,
               }
             : null,
           variant === 'directions'

@@ -7,7 +7,7 @@ import {
   figmaButtonHitSlop,
   figmaButtonSizeMetrics,
   figmaButtonTokens,
-  figmaTokens,
+  designTokens,
   resolveFigmaButtonInteraction,
   type FigmaButtonSize,
 } from '@bidplace/design-tokens';
@@ -85,7 +85,7 @@ function FigmaButtonVisualContent({
             iconNode || icon
               ? size === 'event'
                 ? 2
-                : figmaTokens.space.x2
+                : designTokens.space.x2
               : 0,
           opacity: loading ? 0 : 1,
         }}
@@ -286,9 +286,9 @@ export function FigmaButton(
 
 const styles = StyleSheet.create({
   iconFrame: {
-    width: figmaTokens.size.buttonIconFrame,
-    height: figmaTokens.size.buttonIconFrame,
-    padding: figmaTokens.space.buttonIconPad,
+    width: designTokens.size.buttonIconFrame,
+    height: designTokens.size.buttonIconFrame,
+    padding: designTokens.space.buttonIconPad,
     alignItems: 'center',
     justifyContent: 'center',
   },

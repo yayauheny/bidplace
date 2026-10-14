@@ -1,6 +1,6 @@
 import { Link, type Href } from 'expo-router';
 
-import { designTokens, figmaTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import { FigmaIcon } from '../../components/figma/FigmaIcon';
 import { figmaGlassCircleStyle } from '../../components/figma/figma-glass-circle';
@@ -38,7 +38,7 @@ export function CreatorSocialLink({
                 backgroundColor: designTokens.color.white,
                 alignItems: 'center',
                 justifyContent: 'center',
-                borderRadius: figmaTokens.radius.pill,
+                borderRadius: designTokens.radius.pill,
               }
             : figmaGlassCircleStyle()
         }
@@ -52,7 +52,7 @@ export function CreatorSocialLink({
                 : 'instagram'
           }
           size={
-            grouped ? figmaTokens.size.dockIcon : figmaTokens.size.icon
+            grouped ? designTokens.size.dockIcon : designTokens.size.icon
           }
         />
       </MotionPressable>

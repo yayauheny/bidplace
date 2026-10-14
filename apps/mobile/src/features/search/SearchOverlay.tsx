@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { Platform, ScrollView } from 'react-native';
 
-import { figmaTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import { useDismissibleOverlay } from '../../components/layout/use-dismissible-overlay';
 import { useOverlayFocusTrap } from '../../components/layout/use-overlay-focus-trap';
@@ -75,10 +75,10 @@ export function SearchOverlay({
       />
       <ScrollView
         nativeID={searchOverlayTabPanelId(tab)}
-        style={{ flex: 1, marginTop: figmaTokens.space.x4 }}
+        style={{ flex: 1, marginTop: designTokens.space.x4 }}
         contentContainerStyle={{
-          paddingBottom: figmaTokens.space.x5,
-          gap: figmaTokens.space.x3,
+          paddingBottom: designTokens.space.x5,
+          gap: designTokens.space.x3,
         }}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
