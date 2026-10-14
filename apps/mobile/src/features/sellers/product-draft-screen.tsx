@@ -190,7 +190,9 @@ export function ProductDraftScreen({
     queryKey: categoryKeys.all,
     queryFn: ({ signal }) => api.categories.list({ signal }),
   });
-  const [catalogOpenRole, setCatalogOpenRole] = useState<'MATERIAL' | 'TECHNIQUE' | null>(null);
+  const [catalogOpenRole, setCatalogOpenRole] = useState<
+    'MATERIAL' | 'TECHNIQUE' | null
+  >(null);
   const materialsCatalog = useQuery({
     queryKey: ['catalog', 'terms', 'MATERIAL'],
     queryFn: ({ signal }) => api.catalog.listTerms('MATERIAL', { signal }),
@@ -241,9 +243,12 @@ export function ProductDraftScreen({
       if (!productId || !canWritePrivateCache(queryClient, authEpoch)) return;
       queryClient.setQueryData<SellerProductDetailResponse>(
         ownerWorkQueryKeys.detail(productId),
-        (current) => current && current.editingRevision?.id === productDetail.data?.editingRevision?.id
-          ? { ...current, story: savedStory }
-          : current,
+        (current) =>
+          current &&
+          current.editingRevision?.id ===
+            productDetail.data?.editingRevision?.id
+            ? { ...current, story: savedStory }
+            : current,
       );
     },
   });
@@ -251,9 +256,10 @@ export function ProductDraftScreen({
   const persistedRevisionUpdatedAt =
     productDetail.data?.editingRevision?.updatedAt;
   const editingRevisionStatus = productDetail.data?.editingRevision?.status;
-  const storyNeedsDraft = (
-    existingProduct?.status === 'APPROVED' || existingProduct?.status === 'ARCHIVED'
-  ) && editingRevisionStatus === 'APPROVED';
+  const storyNeedsDraft =
+    (existingProduct?.status === 'APPROVED' ||
+      existingProduct?.status === 'ARCHIVED') &&
+    editingRevisionStatus === 'APPROVED';
   const productStatus = existingProduct?.status;
   const editorStatus =
     productStatus === 'APPROVED' || productStatus === 'ARCHIVED'
@@ -295,7 +301,9 @@ export function ProductDraftScreen({
     ) {
       return;
     }
-    form.reset(productToDraftFormValues(existingProduct, productDetail.data?.selection));
+    form.reset(
+      productToDraftFormValues(existingProduct, productDetail.data?.selection),
+    );
     hydratedProductId.current = existingProduct.id;
     hydratedUpdatedAt.current =
       persistedRevisionUpdatedAt ?? existingProduct.updatedAt;
@@ -310,7 +318,8 @@ export function ProductDraftScreen({
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const warnBeforeUnload = (event: BeforeUnloadEvent) => {
-      if (!form.formState.isDirty && !storyEditor.dirty && !storyEditor.pending) return;
+      if (!form.formState.isDirty && !storyEditor.dirty && !storyEditor.pending)
+        return;
       event.preventDefault();
       event.returnValue = '';
     };
@@ -319,12 +328,24 @@ export function ProductDraftScreen({
   }, [form.formState.isDirty, storyEditor.dirty, storyEditor.pending]);
 
   useEffect(() => {
-    if (form.formState.isDirty || storyEditor.dirty || storyEditor.pending || inputsLocked || !pendingNavigation.current)
+    if (
+      form.formState.isDirty ||
+      storyEditor.dirty ||
+      storyEditor.pending ||
+      inputsLocked ||
+      !pendingNavigation.current
+    )
       return;
     const navigate = pendingNavigation.current;
     pendingNavigation.current = null;
     navigate();
-  }, [form.formState.isDirty, storyEditor.dirty, storyEditor.pending, inputsLocked, pendingNavigationVersion]);
+  }, [
+    form.formState.isDirty,
+    storyEditor.dirty,
+    storyEditor.pending,
+    inputsLocked,
+    pendingNavigationVersion,
+  ]);
 
   const beginLockedTransition = () => {
     if (transitionLock.current) return false;
@@ -580,7 +601,12 @@ export function ProductDraftScreen({
           if (stillOwnsSave()) {
             const failure = readFormFailure(error, productFieldOrder);
             if (failure.disposition === 'passthrough') {
-              setFormAlert(getUserFacingErrorMessage(error, 'Не удалось сохранить предмет'));
+              setFormAlert(
+                getUserFacingErrorMessage(
+                  error,
+                  'Не удалось сохранить предмет',
+                ),
+              );
             } else {
               applyFormFailure(form, failure, productFieldOrder);
               setFormAlert(failure.formMessage);
@@ -599,14 +625,17 @@ export function ProductDraftScreen({
   );
   const persistAll = async (mode: 'ordinary' | 'transition' = 'ordinary') => {
     // Never release a route guard while another transition or save is in flight.
-    if (transitionLock.current || saveInFlight.current || storyEditor.pending) return false;
+    if (transitionLock.current || saveInFlight.current || storyEditor.pending)
+      return false;
     if (form.formState.isDirty) {
       if (!(await persistCurrentForm(mode))) return false;
     } else if (storyEditor.dirty && mode === 'transition') {
       if (!beginLockedTransition()) return false;
     }
     if (storyEditor.dirty && !(await storyEditor.save())) {
-      setFormAlert('Не удалось сохранить историю создания. Проверьте блоки и повторите сохранение.');
+      setFormAlert(
+        'Не удалось сохранить историю создания. Проверьте блоки и повторите сохранение.',
+      );
       if (mode === 'transition') endLockedTransition();
       return false;
     }
@@ -619,16 +648,26 @@ export function ProductDraftScreen({
     setPendingNavigationVersion((version) => version + 1);
   }, []);
 
-  usePreventRemove(form.formState.isDirty || storyEditor.dirty || storyEditor.pending || inputsLocked, ({ data }) => {
-    const operation = sessionOperation.current;
-    void persistAll('transition').then((persisted) => {
-      if (sessionOperation.current !== operation || !persisted) return;
-      navigateAfterPersist(() => navigation.dispatch(data.action));
-      endLockedTransition();
-    });
-  });
+  usePreventRemove(
+    form.formState.isDirty ||
+      storyEditor.dirty ||
+      storyEditor.pending ||
+      inputsLocked,
+    ({ data }) => {
+      const operation = sessionOperation.current;
+      void persistAll('transition').then((persisted) => {
+        if (sessionOperation.current !== operation || !persisted) return;
+        navigateAfterPersist(() => navigation.dispatch(data.action));
+        endLockedTransition();
+      });
+    },
+  );
   useEffect(() => {
-    if (typeof window === 'undefined' || (!form.formState.isDirty && !storyEditor.dirty && !storyEditor.pending)) return;
+    if (
+      typeof window === 'undefined' ||
+      (!form.formState.isDirty && !storyEditor.dirty && !storyEditor.pending)
+    )
+      return;
 
     const guard = {
       id: `${productId ?? 'new'}:${Date.now()}`,
@@ -680,7 +719,12 @@ export function ProductDraftScreen({
         browserNavigation.current = null;
       }
     };
-  }, [form.formState.isDirty, storyEditor.dirty, storyEditor.pending, productId]);
+  }, [
+    form.formState.isDirty,
+    storyEditor.dirty,
+    storyEditor.pending,
+    productId,
+  ]);
 
   useEffect(() => {
     if (!moderationHold || !trustedRevision) return;
@@ -722,8 +766,14 @@ export function ProductDraftScreen({
     if (!canOpenProductWizardStep(nextStep, wizardDraft)) return;
     if (nextStep === wizardStep) return;
     const operation = sessionOperation.current;
-    if ((form.formState.isDirty || storyEditor.dirty) && !(await persistAll('transition')))
-      return;
+    if (form.formState.isDirty || storyEditor.dirty) {
+      const persisted = await persistAll('transition');
+      // A validation/save failure must not lock step tabs: the form stays
+      // mounted, so unsaved values survive the switch and only the explicit
+      // save/close actions gate on persistence.
+      if (!persisted && (transitionLock.current || saveInFlight.current))
+        return;
+    }
     if (sessionOperation.current !== operation) return;
     router.setParams({ flow: 'creation', step: String(nextStep) });
     endLockedTransition();
@@ -767,7 +817,8 @@ export function ProductDraftScreen({
   };
 
   const saveAndClose = async () => {
-    if (transitionLock.current || saveInFlight.current || storyEditor.pending) return;
+    if (transitionLock.current || saveInFlight.current || storyEditor.pending)
+      return;
     const operation = sessionOperation.current;
     if (form.formState.isDirty || storyEditor.dirty) {
       if (!(await persistAll('transition'))) return;
@@ -780,7 +831,8 @@ export function ProductDraftScreen({
   };
 
   const submitCurrentForm = async () => {
-    if (saveInFlight.current || storyEditor.pending || !beginLockedTransition()) return;
+    if (saveInFlight.current || storyEditor.pending || !beginLockedTransition())
+      return;
     const generation = saveGeneration.current + 1;
     saveGeneration.current = generation;
     saveInFlight.current = true;
@@ -805,7 +857,9 @@ export function ProductDraftScreen({
       setFormAlert(null);
       if (storyEditor.dirty && !(await storyEditor.save())) {
         if (sessionOperation.current === operation) {
-          setFormAlert('История создания не сохранена. Исправьте ошибки и повторите отправку.');
+          setFormAlert(
+            'История создания не сохранена. Исправьте ошибки и повторите отправку.',
+          );
         }
         return;
       }
@@ -816,14 +870,25 @@ export function ProductDraftScreen({
         authEpoch: authEpochAtSubmit,
         generation,
       });
-      if (sessionOperation.current === operation && saveGeneration.current === generation) {
+      if (
+        sessionOperation.current === operation &&
+        saveGeneration.current === generation
+      ) {
         setFormAlert(null);
       }
     } catch (error) {
-      if (sessionOperation.current === operation && saveGeneration.current === generation) {
+      if (
+        sessionOperation.current === operation &&
+        saveGeneration.current === generation
+      ) {
         const failure = readFormFailure(error, productFieldOrder);
         if (failure.disposition === 'passthrough') {
-          setFormAlert(getUserFacingErrorMessage(error, 'Не удалось сохранить и отправить предмет на модерацию.'));
+          setFormAlert(
+            getUserFacingErrorMessage(
+              error,
+              'Не удалось сохранить и отправить предмет на модерацию.',
+            ),
+          );
         } else {
           applyFormFailure(form, failure, productFieldOrder);
           setFormAlert(failure.formMessage);
@@ -838,7 +903,8 @@ export function ProductDraftScreen({
   };
 
   const chooseStoryImage = async () => {
-    if (transitionLock.current || storyEditor.pending || !existingProduct) return;
+    if (transitionLock.current || storyEditor.pending || !existingProduct)
+      return;
     const operation = sessionOperation.current;
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -853,7 +919,9 @@ export function ProductDraftScreen({
       await storyEditor.addImage(blob);
     } catch {
       if (sessionOperation.current === operation) {
-        storyEditor.reportError('Не удалось прочитать выбранное фото. Выберите файл ещё раз.');
+        storyEditor.reportError(
+          'Не удалось прочитать выбранное фото. Выберите файл ещё раз.',
+        );
       }
     }
   };
@@ -981,7 +1049,8 @@ export function ProductDraftScreen({
     reorderImages.mutate(ids);
   };
 
-  const storyWizardView = isCreationFlow && wizardStep === productWizardStep.story;
+  const storyWizardView =
+    isCreationFlow && wizardStep === productWizardStep.story;
 
   return (
     <FormProvider {...form}>
@@ -1006,7 +1075,9 @@ export function ProductDraftScreen({
                 : 'Закрыть'
             }
             closeLoading={save.isPending || storyEditor.pending}
-            closeDisabled={submit.isPending || storyEditor.pending || inputsLocked}
+            closeDisabled={
+              submit.isPending || storyEditor.pending || inputsLocked
+            }
             onClose={() => void saveAndClose()}
             delivery={productDetail.data?.publication}
             moderationNotice={moderationNotice}
@@ -1084,8 +1155,11 @@ export function ProductDraftScreen({
               uploadError={upload.isError}
               uploadMessage={
                 upload.error
-                  ? readFormFailure(upload.error, []).formMessage ??
-                    getUserFacingErrorMessage(upload.error, 'Не удалось загрузить изображения.')
+                  ? (readFormFailure(upload.error, []).formMessage ??
+                    getUserFacingErrorMessage(
+                      upload.error,
+                      'Не удалось загрузить изображения.',
+                    ))
                   : null
               }
               imageSelectionError={imageSelectionError}
@@ -1121,7 +1195,9 @@ export function ProductDraftScreen({
               images={existingProduct.images}
               blocks={storyEditor.blocks}
               storyNeedsDraft={storyNeedsDraft}
-              onStartDraft={editable ? () => void persistCurrentForm('ordinary') : undefined}
+              onStartDraft={
+                editable ? () => void persistCurrentForm('ordinary') : undefined
+              }
               editable={editable && !inputsLocked && !storyNeedsDraft}
               savePending={storyEditor.pending || save.isPending}
               saveError={storyEditor.error}
@@ -1134,18 +1210,23 @@ export function ProductDraftScreen({
               onMove={storyEditor.move}
               onChooseImage={() => void chooseStoryImage()}
               onRetryUpload={() => void storyEditor.addImage()}
-              onBackToImages={() => void moveToWizardStep(productWizardStep.images)}
-              onSaveAndContinue={() => void (async () => {
-                if (transitionLock.current || storyEditor.pending) return;
-                const operation = sessionOperation.current;
-                if (!(await persistAll('transition'))) return;
-                if (sessionOperation.current !== operation) return;
-                if (isCreationFlow) router.setParams({
-                  flow: 'creation',
-                  step: String(productWizardStep.review),
-                });
-                endLockedTransition();
-              })()}
+              onBackToImages={() =>
+                void moveToWizardStep(productWizardStep.images)
+              }
+              onSaveAndContinue={() =>
+                void (async () => {
+                  if (transitionLock.current || storyEditor.pending) return;
+                  const operation = sessionOperation.current;
+                  if (!(await persistAll('transition'))) return;
+                  if (sessionOperation.current !== operation) return;
+                  if (isCreationFlow)
+                    router.setParams({
+                      flow: 'creation',
+                      step: String(productWizardStep.review),
+                    });
+                  endLockedTransition();
+                })()
+              }
             />
           ) : null}
 
@@ -1158,7 +1239,9 @@ export function ProductDraftScreen({
               submitLabel={submitLabel}
               hasStory={storyEditor.blocks.length > 0}
               wizardSubmitted={wizardSubmitted}
-              submitPending={submit.isPending || save.isPending || storyEditor.pending}
+              submitPending={
+                submit.isPending || save.isPending || storyEditor.pending
+              }
               submitError={submit.isError}
               onSubmitPress={() => void submitCurrentForm()}
               onBackToStory={() =>
