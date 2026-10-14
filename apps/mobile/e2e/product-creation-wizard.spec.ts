@@ -80,16 +80,25 @@ test.describe('Work catalog browser round-trip', () => {
     try {
       await page.goto('/products/new');
       await page.getByRole('button', { name: 'E2E art' }).click();
-      await fillControl(page.getByRole('textbox', { name: /Название/ }), `Work catalog ${Date.now()}`);
+      await fillControl(
+        page.getByRole('textbox', { name: /Название/ }),
+        `Work catalog ${Date.now()}`,
+      );
 
       await page.getByRole('button', { name: 'Материалы' }).click();
-      await expect(page.getByRole('dialog', { name: 'Материалы' })).toBeVisible();
-      await page.getByRole('button', { name: materialName, exact: true }).click();
+      await expect(
+        page.getByRole('dialog', { name: 'Материалы' }),
+      ).toBeVisible();
+      await page
+        .getByRole('button', { name: materialName, exact: true })
+        .click();
       await fillControl(
         page.getByRole('textbox', { name: 'Поиск или новое значение' }),
         'Авторский материал E2E',
       );
-      await page.getByRole('button', { name: 'Предложить «Авторский материал E2E»' }).click();
+      await page
+        .getByRole('button', { name: 'Предложить «Авторский материал E2E»' })
+        .click();
       await page.getByRole('button', { name: 'Применить' }).click();
 
       const save = page.waitForResponse(
@@ -97,17 +106,27 @@ test.describe('Work catalog browser round-trip', () => {
           response.url().endsWith('/api/products') &&
           response.request().method() === 'POST',
       );
-      await page.getByRole('button', { name: 'Сохранить и продолжить' }).click();
+      await page
+        .getByRole('button', { name: 'Сохранить и продолжить' })
+        .click();
       const response = await save;
       expect(response.ok()).toBeTruthy();
       const { product } = await response.json();
 
       await page.goto(`/products/${product.id}?flow=creation&step=1`);
-      await expect(page.getByRole('button', { name: 'Материалы' })).toContainText(materialName);
-      await expect(page.getByRole('button', { name: 'Материалы' })).toContainText('Авторский материал E2E');
+      await expect(
+        page.getByRole('button', { name: 'Материалы' }),
+      ).toContainText(materialName);
+      await expect(
+        page.getByRole('button', { name: 'Материалы' }),
+      ).toContainText('Авторский материал E2E');
       await page.getByRole('button', { name: 'Материалы' }).click();
-      await expect(page.getByRole('button', { name: `Удалить ${materialName}` })).toBeVisible();
-      await expect(page.getByRole('button', { name: 'Удалить Авторский материал E2E' })).toBeVisible();
+      await expect(
+        page.getByRole('button', { name: `Удалить ${materialName}` }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole('button', { name: 'Удалить Авторский материал E2E' }),
+      ).toBeVisible();
     } finally {
       await context.close();
     }
@@ -145,13 +164,12 @@ test.describe('product creation wizard navigation', () => {
         .getByRole('button', { name: 'Продолжить к истории создания' })
         .click();
       await expect(page).toHaveURL(/flow=creation&step=3$/);
+      await page.getByRole('button', { name: 'Добавить текст' }).click();
       await fillControl(
-        page.getByRole('textbox', { name: 'История создания' }),
+        page.getByRole('textbox', { name: 'Текст истории' }),
         'Wizard regression draft.',
       );
-      await page
-        .getByRole('button', { name: 'Сохранить и перейти к проверке' })
-        .click();
+      await page.getByRole('button', { name: 'Закончить' }).click();
       await expect(page).toHaveURL(/flow=creation&step=4$/);
 
       await page.getByRole('button', { name: '1. О работе' }).click();
@@ -331,7 +349,11 @@ test.describe('product creation wizard navigation', () => {
         .click();
       await page.getByRole('button', { name: '1. О работе' }).click();
 
-      await page.getByLabel('Название').fill('');
+      await expect(page.getByLabel('Название')).toHaveValue(title);
+      const nameField = page.getByLabel('Название');
+      await nameField.click();
+      await nameField.press('ControlOrMeta+a');
+      await nameField.press('Delete');
       await page
         .getByRole('button', { name: 'Сохранить и продолжить' })
         .click();
