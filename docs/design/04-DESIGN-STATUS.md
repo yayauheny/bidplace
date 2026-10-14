@@ -2,6 +2,17 @@
 
 > Entries dated before 2026-10-13 mention Pen / .pen files; the Pen design was removed (DEC-119) — read those mentions as history.
 
+## 2026-10-14 — W3 token diet (Wave 1 + W1.1 review fixes)
+
+- `Implemented` (accepted with amendments): `figmaTokens` → `designTokens` mechanical rename in 61 files; alias removed; three zero-reader tokens deleted (`productHeroWide`, `focus.width`, `focus.offset`); `size.input` 51→50 per Q5 rule «Figma − 1». Guarded by `design-tokens-coverage.spec` (no dead leaves; even space/size/radius values) and eslint ratchet (`no-restricted-imports`, hex `no-restricted-syntax` with brand-SVG/spec/probe exceptions).
+- `Implemented`: dock web layer reads `zIndex` from `designTokens.layer.dock` (40); `global.css z-index: 40` is a pre-hydration fallback only.
+- Grandfathered odd values (allowlist in `design-tokens-coverage.spec`), Figma-node status:
+  - `space.chipX/chipY` (9/3) — Figma 10/4 with inside 1px stroke; border adds the last pixel (node known, intentional).
+  - `space.homeSectionStack` (67) — Figma Home Opening `439:4406` bottom → `439:4478` top (derived from capture).
+  - `space.fieldY` (13), `space.fieldLabelX` (15), `space.fieldErrorX` (13), `space.filterOptionY` (9), `space.headerIconHitSlop` (9), `radius.pill` (999), `size.fieldBorder` (0.5), `size.choiceChipRemovable` (39), `size.authorAtmosphere` (485), `size.filterSortBar` (43) — no Figma node on file; чётность фиксируется при ближайшей правке по касанию.
+- Unreferenced brand assets removed (`brand-mark.png` + stale README, `splash-icon.png`, `favicon.png`); no live imports (verified).
+- Known pre-existing, not Wave 1 regressions: `tab-switch-reveal` 4 e2e failures at base; 2 vitest import failures (`__DEV__` in admin-moderation, `typeof` syntax in author-cabinet). Both scheduled for investigation/fix in Wave 4.
+
 ## 2026-10-13 — W2 fluid AppShell and dock inset
 
 - `Partial` (mobile web accepted): `navigation.spec.ts` passes in Chromium and WebKit at 390/440/768/1024/1440 for Home, Authors, Works, Work, public author and Search. It asserts the 1280/12 content contract and no horizontal overflow for the five AppShell routes, 390px Work Gallery, and the separate full-viewport Search overlay contract; 18 screenshots are in `/tmp/w2-shots`.

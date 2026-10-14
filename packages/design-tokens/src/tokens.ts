@@ -751,7 +751,7 @@ export const designTokens = {
       boxShadow: '0 10px 24px rgba(17, 17, 17, 0.12)',
     },
   },
-  layer: { content: 0, chrome: 10, popover: 20, modal: 50 },
+  layer: { content: 0, chrome: 10, popover: 20, dock: 40, modal: 50 },
   blur: {
     dock: 6,
     dockNativeIntensity: 30,

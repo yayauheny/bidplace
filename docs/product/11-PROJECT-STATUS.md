@@ -2,6 +2,12 @@
 
 > Entries dated before 2026-10-13 mention Pen / .pen files; the Pen design was removed (DEC-119) — read those mentions as history.
 
+## 2026-10-14 — W3 token diet (Wave 1 + W1.1)
+
+- `Implemented`: единый источник токенов — `designTokens` (rename 61 файла, алиас удалён), 3 мёртвых токена удалены, `size.input` 51→50 (Q5). Ограждения: eslint храповик (deep-imports, lucide, RN Modal/Touchable, hex-литералы) + спека покрытия токенов. Dock z-index из токена `layer.dock`. Детали и 13 grandfathered нечётных значений — в `04-DESIGN-STATUS.md`.
+- Проверки: typecheck, lint, полный vitest 770/770 (после пересборки токенов). Pre-existing не блокирует: `tab-switch-reveal` 4 падения e2e (root-cause — первый шаг Волны 2), 2 файловых падения vitest (Волна 4).
+- Не тронуто (защищено): FigmaButton-метрики, dock 232×64, frost, AppDialog, Safe Area, `BidplaceBrand`, auth-экраны.
+
 ## 2026-10-13 — W2 fluid AppShell
 
 - `Partial` (mobile web accepted): `navigation.spec.ts` passes in Chromium and WebKit for Home, Authors, Works, Work, public author and Search at 390/440/768/1024/1440. It verifies the 1280/12 content contract and no horizontal overflow for AppShell routes, 390px Work Gallery, and the separate full-viewport Search overlay contract; screenshots are in `/tmp/w2-shots`.

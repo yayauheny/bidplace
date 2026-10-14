@@ -37,6 +37,7 @@ export function FloatingDockFrame({
 
   const layerStyle: DockLayerStyle = {
     bottom,
+    zIndex: designTokens.layer.dock,
     '--figma-dock-gap': `${designTokens.space.dockGap}px`,
     '--figma-dock-padding': `${designTokens.space.dockPad}px`,
   };
