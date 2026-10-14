@@ -74,6 +74,29 @@ export function ProductDraftScreenChrome({
   submitErrorVisible: boolean;
   lockedVisible: boolean;
 }) {
+  const stepTabs = isCreationFlow ? (
+    <View
+      accessibilityRole="tablist"
+      style={{
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: designTokens.space.x2,
+      }}
+    >
+      {WIZARD_STEP_LABELS.map((label, index) => {
+        const currentStep = index + 1;
+        return (
+          <SecondaryButton
+            key={label}
+            label={`${currentStep}. ${label}`}
+            disabled={wizardSubmitted || !canOpenStep(currentStep)}
+            onPress={() => onStepPress(currentStep)}
+          />
+        );
+      })}
+    </View>
+  ) : null;
+
   return (
     <>
       {isCreationFlow && !storyWizardView ? (
@@ -85,26 +108,7 @@ export function ProductDraftScreenChrome({
               : 'Заполните предмет по шагам, сохраните промежуточные изменения и проверьте публикацию перед отправкой.'
           }
         >
-          <View
-            accessibilityRole="tablist"
-            style={{
-              flexDirection: 'row',
-              flexWrap: 'wrap',
-              gap: designTokens.space.x2,
-            }}
-          >
-            {WIZARD_STEP_LABELS.map((label, index) => {
-              const currentStep = index + 1;
-              return (
-                <SecondaryButton
-                  key={label}
-                  label={`${currentStep}. ${label}`}
-                  disabled={wizardSubmitted || !canOpenStep(currentStep)}
-                  onPress={() => onStepPress(currentStep)}
-                />
-              );
-            })}
-          </View>
+          {stepTabs}
           {hasExistingProduct ? (
             <AppText role="metadata" tone="secondary">
               Шаг {wizardStep} из 4 · {draftTitle.trim() || 'Без названия'}
@@ -162,6 +166,10 @@ export function ProductDraftScreenChrome({
         </View>
       ) : null}
 
+      {isCreationFlow && storyWizardView ? (
+        <View style={{ paddingBottom: designTokens.space.x2 }}>{stepTabs}</View>
+      ) : null}
+
       {!storyWizardView ? (
         <View style={{ gap: designTokens.space.x2 }}>
           <AppText role="screenTitle">
@@ -204,10 +212,7 @@ export function ProductDraftScreenChrome({
                 )
               : null}
           </AppText>
-          <SecondaryButton
-            label="Обновить"
-            onPress={onRefreshStatus}
-          />
+          <SecondaryButton label="Обновить" onPress={onRefreshStatus} />
           {editable ? (
             <PrimaryButton
               label={submitLabel}
