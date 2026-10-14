@@ -67,6 +67,23 @@ function workFixture(related: number) {
     ],
     publishedAt: '2026-09-16T00:00:00.000Z',
     sharePath: `/works/${PUBLIC_ID}`,
+    creationStory: {
+      storyToken: 0,
+      blocks: [
+        {
+          id: '40000000-0000-4000-8000-0000000000b1',
+          type: 'HEADING',
+          text: 'История работы',
+          position: 0,
+        },
+        {
+          id: '40000000-0000-4000-8000-0000000000b2',
+          type: 'PARAGRAPH',
+          text: LONG_STORY,
+          position: 1,
+        },
+      ],
+    },
   };
   return {
     work,
@@ -79,6 +96,7 @@ function workFixture(related: number) {
         title: `Другая работа ${index + 1}`,
         story: null,
         sharePath: `/works/motionWork${index + 1}`,
+        creationStory: undefined,
         images: [image(`30000000-0000-4000-8000-0000000000a${index + 3}`, 0)],
       },
       author,
