@@ -4,11 +4,11 @@
 
 ## 2026-10-14 — W5 screen splits (Wave 3)
 
-- `Implemented`: сплиты двух «экранов-монстров» по протоколу (characterization до рефакторинга, механический перенос, один срез на экран). `seller-profile-screen.tsx` 1693 → 1249: `seller-profile-data.ts` (хелперы + `useProfileData`), `seller-profile-application-steps.tsx` (JSX визарда), `seller-profile-cabinet-form.tsx` (кабинет). `product-draft-screen.tsx` 1345 → 1222: `product-draft-screen-chrome.tsx` (хром рендера). Два мёртвых ветвления в визарде профиля удалены. Детали — в `04-DESIGN-STATUS.md`.
+- `Partial` (этап 1 из 2; вердикт ревьюера: завершённой не принимается — критерий «тонкие экраны-композиции» не достигнут, тела экранов остались на месте). Сплиты по протоколу (characterization до рефакторинга, механический перенос, один срез на экран): `seller-profile-screen.tsx` 1693 → 1249: `seller-profile-data.ts` (хелперы + `useProfileData`), `seller-profile-application-steps.tsx` (JSX визарда), `seller-profile-cabinet-form.tsx` (кабинет). `product-draft-screen.tsx` 1345 → 1222: `product-draft-screen-chrome.tsx` (хром рендера). Два мёртвых ветвления в визарде профиля удалены. `Fix` по ревью: locked-копия возвращена вне кабинетного гейта, случай DRAFT + PENDING_REVIEW закреплён тестом (`abbb1b3b`). Детали — в `04-DESIGN-STATUS.md`.
 - Характеризация: 8 + 7 тестов DOM-контракта по состояниям; 807 passed + 1 known (админ «Описание не указано» — вскрытый дефект, В4) + негрузящийся `author-cabinet-work-cache.spec` (CJS/ESM, В4). typecheck/eslint чистые.
 - e2e: `author-cabinet` зелёный; `product-creation-wizard` 8/11 — три фейла подтверждены **предсуществующими** (воспроизводятся на `bf16aade` до среза product-draft) — в бэклог В4 рядом с `catalog-pagination`/`creator-profile`/`search-overlay`.
 - Не тронуто (защищено): визуал кнопок/дока/размытия, логика гонок сохранения и навигации (browser-back гард product-draft остался в экране целиком), auth-экраны.
-- Осталось под будущие волны: тело `product-draft-screen` (~800 строк переплетённых рефов/эффектов/мутаций) — отдельный рефактор под сеткой race-спек; пороги 700/1000 колонок → clamp (критерий В5); `expo-router/build` deep-import в product-draft не расширен, снятие с allowlist — В4.
+- План скорректирован (оценка ревьюера): завершение сплита личных экранов отложено — возобновить перед конкретными изменениями этих потоков. Порядок: Волна 4 (тестовый gate: `author-cabinet-work-cache`, админ-фейл, три e2e визарда) → остаток сетки Волны 2 (пороги 700/1000 → clamp в публичном профиле) → Волна 5 (эталонный публичный профиль). `expo-router/build` deep-import в product-draft не расширен, снятие с allowlist — В4.
 
 ## 2026-10-14 — W4 component dedup (Wave 2)
 
