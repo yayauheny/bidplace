@@ -767,12 +767,9 @@ export function ProductDraftScreen({
     if (nextStep === wizardStep) return;
     const operation = sessionOperation.current;
     if (form.formState.isDirty || storyEditor.dirty) {
-      const persisted = await persistAll('transition');
-      // A validation/save failure must not lock step tabs: the form stays
-      // mounted, so unsaved values survive the switch and only the explicit
-      // save/close actions gate on persistence.
-      if (!persisted && (transitionLock.current || saveInFlight.current))
-        return;
+      // Save failure оставляет автора на текущем шаге (02 §9): переход только
+      // после успешной записи dirty values.
+      if (!(await persistAll('transition'))) return;
     }
     if (sessionOperation.current !== operation) return;
     router.setParams({ flow: 'creation', step: String(nextStep) });
