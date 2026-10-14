@@ -4,13 +4,13 @@
 
 ## 2026-10-13 — W2 fluid AppShell and dock inset
 
-- `Partial`: `AppShell` uses centered 1280px fluid content with 12px gutter (`DEC-120`); Work media escapes that gutter while its body remains aligned, and `useDockInset` owns the bottom Safe Area once for dock clearance. Evidence: `AppShell.tsx`, `use-dock-inset.ts`, `WorkHeader.tsx`, `WorkHeader.web.tsx`, `use-dock-inset.spec.ts`.
-- `Needs verification`: 390/440/768/1024/1440 rendered parity, horizontal overflow, browser keyboard/reduced-motion behavior and native Safe Area remain open; desktop compositions remain `NEEDS-FIGMA`.
+- `Partial` (mobile web accepted): `navigation.spec.ts` passes in Chromium and WebKit at 390/440/768/1024/1440 for Home, Authors, Works, Work, public author and Search. It asserts the 1280/12 content contract and no horizontal overflow for the five AppShell routes, 390px Work Gallery, and the separate full-viewport Search overlay contract; 18 screenshots are in `/tmp/w2-shots`.
+- `Needs verification`: native Safe Area remains open; desktop compositions remain `NEEDS-FIGMA`. Dock intentionally remains the existing 232×64 capsule: W2 does not change its visual geometry despite the separate 358×64 audit reference.
 
 ## 2026-10-13 — W1 filter sheet mechanism
 
-- `Partial` (mobile web): compact/full `FilterSheet` uses the shared `AppDialog` portal with `bare` content, one focus-return helper and independent backdrop motion. Compact filters use 40px bottom space; full and existing sheets retain their base spacing with Safe Area. Evidence: `FilterSheet.tsx`, `AppDialog.tsx`, `use-return-focus.ts`, `app-dialog-host-style.spec.ts`, `author-static-header.spec.ts`.
-- `Needs verification`: 390/1024/1440 rendered parity, keyboard and reduced-motion browser checks, and native devices remain open; no claim of complete screen states.
+- `Partial` (mobile web): `author-static-header.spec.ts` and `discovery-launch.spec.ts` pass in Chromium and WebKit for compact 390/1440 and full 390 sheets. They cover Escape, explicit close, actual compact-backdrop dismissal, and focus restoration; screenshots are in `/tmp/w1-fix-shots`.
+- `Needs verification`: the base-to-HEAD four-sheet spacing measurement still needs a reliable common browser probe before W1 can be accepted. Native devices remain open; full sheets fill the viewport and therefore have no exposed backdrop area.
 
 ## 2026-10-12 — Author application intro + four steps (mobile-web)
 

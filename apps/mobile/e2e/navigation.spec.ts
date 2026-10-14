@@ -1,10 +1,17 @@
-import { expect, test } from '@playwright/test';
+import { mkdirSync } from 'node:fs';
+import { resolve } from 'node:path';
+
+import { expect, test, type Page } from '@playwright/test';
 
 import { authenticatedPage } from './support/auth-session';
 import {
   createAdminModerationFixture,
   createSellerFixture,
 } from './support/e2e-fixtures';
+
+const w2EvidenceDir = '/tmp/w2-shots';
+mkdirSync(w2EvidenceDir, { recursive: true });
+const apiBaseURL = `http://localhost:${process.env.E2E_API_PORT ?? '3001'}`;
 
 const dockLabels = ['Главная', 'Поиск', 'Добавить', 'Профиль'] as const;
 
@@ -65,7 +72,10 @@ test('pending seller plus opens the application profile, not create-work', async
   try {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/');
-    await page.getByTestId('figma-floating-dock').getByLabel('Добавить').click();
+    await page
+      .getByTestId('figma-floating-dock')
+      .getByLabel('Добавить')
+      .click();
     await expect(page).toHaveURL(/\/profile/);
     await expect(page).not.toHaveURL(/\/products\/new/);
   } finally {
@@ -82,7 +92,10 @@ test('approved seller plus opens the existing create-work flow', async ({
   try {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/');
-    await page.getByTestId('figma-floating-dock').getByLabel('Добавить').click();
+    await page
+      .getByTestId('figma-floating-dock')
+      .getByLabel('Добавить')
+      .click();
     await expect(page).toHaveURL(/\/products\/new/);
   } finally {
     await context.close();
@@ -109,3 +122,135 @@ test('admin dock hides plus and opens admin from profile', async ({
     await context.close();
   }
 });
+
+test('public shell stays fluid without horizontal overflow across accepted W2 viewports', async ({
+  page,
+  request,
+}) => {
+  test.setTimeout(180_000);
+  const [worksResponse, authorsResponse] = await Promise.all([
+    request.get(`${apiBaseURL}/api/works?limit=1`),
+    request.get(`${apiBaseURL}/api/authors?limit=1`),
+  ]);
+  const works = (await worksResponse.json()) as {
+    works: Array<{ work: { publicId: string } }>;
+  };
+  const authors = (await authorsResponse.json()) as {
+    authors: Array<{ author: { slug: string } }>;
+  };
+  const work = works.works[0]?.work;
+  const author = authors.authors[0]?.author;
+  expect(work).toBeDefined();
+  expect(author).toBeDefined();
+
+  const routes = [
+    {
+      name: 'home',
+      path: '/',
+      ready: (page: Page) => page.getByTestId('home-scroll'),
+    },
+    {
+      name: 'authors',
+      path: '/authors',
+      ready: (page: Page) =>
+        page.getByText('Креативные и проверенные авторы на Bidplace'),
+    },
+    {
+      name: 'works',
+      path: '/works',
+      ready: (page: Page) => page.getByTestId('catalog-scroll-view'),
+    },
+    {
+      name: 'work',
+      path: `/product/${work!.publicId}`,
+      ready: (page: Page) => page.getByTestId('work-gallery'),
+    },
+    {
+      name: 'author',
+      path: `/seller/${author!.slug}`,
+      ready: (page: Page) => page.getByTestId('creator-static-header'),
+    },
+  ] as const;
+  const viewports = [390, 440, 768, 1024, 1440] as const;
+  const screenshotWidths = new Set([390, 1024, 1440]);
+
+  for (const width of viewports) {
+    await page.setViewportSize({ width, height: 844 });
+    const expectedContentWidth = Math.min(width - 24, 1280);
+    for (const route of routes) {
+      await page.goto(route.path);
+      await expect(route.ready(page)).toBeVisible();
+      await expectFluidShell(page, expectedContentWidth);
+      if (route.name === 'work' && width === 390) {
+        await expect(page.getByTestId('work-gallery')).toHaveJSProperty(
+          'clientWidth',
+          390,
+        );
+      }
+      if (screenshotWidths.has(width)) {
+        await page.screenshot({
+          path: resolve(w2EvidenceDir, `${route.name}-${width}.png`),
+          fullPage: true,
+        });
+      }
+    }
+
+    await page.goto('/');
+    await page.getByTestId('figma-floating-dock').getByLabel('Поиск').click();
+    await expectSearchOverlay(page, width);
+    if (screenshotWidths.has(width)) {
+      await page.screenshot({
+        path: resolve(w2EvidenceDir, `search-${width}.png`),
+        fullPage: true,
+      });
+    }
+  }
+});
+
+async function expectFluidShell(page: Page, expectedContentWidth: number) {
+  await expect
+    .poll(() =>
+      page
+        .getByTestId('app-shell-content')
+        .first()
+        .evaluate((node) => {
+          const style = getComputedStyle(node);
+          return (
+            node.getBoundingClientRect().width -
+            Number.parseFloat(style.paddingLeft) -
+            Number.parseFloat(style.paddingRight)
+          );
+        }),
+    )
+    .toBe(expectedContentWidth);
+  await expect
+    .poll(() =>
+      page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+    )
+    .toBe(true);
+}
+
+async function expectSearchOverlay(page: Page, expectedViewportWidth: number) {
+  const overlay = page.getByTestId('search-overlay');
+  await expect(overlay).toBeVisible();
+  await expect
+    .poll(() =>
+      overlay.evaluate((node) => {
+        const box = node.getBoundingClientRect();
+        return {
+          width: box.width,
+          height: box.height,
+          scrollWidth: document.documentElement.scrollWidth,
+          viewportWidth: innerWidth,
+          viewportHeight: innerHeight,
+        };
+      }),
+    )
+    .toEqual({
+      width: expectedViewportWidth,
+      height: 844,
+      scrollWidth: expectedViewportWidth,
+      viewportWidth: expectedViewportWidth,
+      viewportHeight: 844,
+    });
+}

@@ -4,13 +4,13 @@
 
 ## 2026-10-13 — W2 fluid AppShell
 
-- `Partial`: `AppShell` uses the 1280/12 fluid contract (`DEC-120`), shared `useDockInset` replaces eight fixed reserves and `FormPageShell` avoids double reserve with `bottomAction`. Work media alone escapes the shared gutter, so its 390px Figma geometry and Back/Share inset remain intact; the bottom Safe Area is counted once. Evidence: `AppShell.tsx`, `use-dock-inset.ts`, `use-dock-inset.spec.ts`, `WorkHeader.tsx`, `WorkHeader.web.tsx`.
-- `Needs verification`: 390/440/768/1024/1440 rendered layout, native PWA Safe Area and browser acceptance remain; typecheck, lint, focused tests and formatting are checked locally. No new commerce features, API, database or routes.
+- `Partial` (mobile web accepted): `navigation.spec.ts` passes in Chromium and WebKit for Home, Authors, Works, Work, public author and Search at 390/440/768/1024/1440. It verifies the 1280/12 content contract and no horizontal overflow for AppShell routes, 390px Work Gallery, and the separate full-viewport Search overlay contract; screenshots are in `/tmp/w2-shots`.
+- `Needs verification`: native PWA Safe Area. The Dock deliberately remains the existing 232×64 capsule because W2 does not authorize a visual Dock change, even though the audit cites a separate 358×64 reference. No API, database or route changed.
 
 ## 2026-10-13 — W1 shared sheet mechanism
 
-- `Partial`: `FilterSheet` and `FilterSortSheet` use `AppDialog` with `bare` content and shared focus return; only compact filters request 40px bottom space, while existing sheets retain base spacing with Safe Area. `apps/mobile/public/index.html` enables `viewport-fit=cover` in the SPA export. Evidence: `FilterSheet.tsx`, `AppDialog.tsx`, `use-return-focus.ts`, `app-dialog-host-style.spec.ts`, `author-static-header.spec.ts`.
-- `Needs verification`: native device and browser viewport acceptance remain; no product/API/database contract changed. This matches `05-MVP-RFC.md` discovery behavior and leaves commerce controls inactive.
+- `Partial`: Chromium and WebKit owner specs now exercise compact 390/1440 and full 390 sheets, including Escape, explicit close, compact-backdrop dismissal and focus return. Evidence and screenshots are in `author-static-header.spec.ts`, `discovery-launch.spec.ts`, and `/tmp/w1-fix-shots`.
+- `Needs verification`: record a reliable base-to-HEAD comparison for compact/full/share/media bottom spacing before accepting W1. Native devices remain open; no product/API/database contract changed. This matches `05-MVP-RFC.md` discovery behavior and leaves commerce controls inactive.
 
 ## 2026-10-12 — Work Catalog integration (PR #37)
 
