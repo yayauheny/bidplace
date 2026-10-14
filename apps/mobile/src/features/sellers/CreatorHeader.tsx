@@ -3,6 +3,7 @@ import { Link } from 'expo-router';
 import { View } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
 
+import { BackButton } from '../../components/figma/BackButton';
 import { FigmaIcon } from '../../components/figma/FigmaIcon';
 import { FigmaIconButton } from '../../components/figma/FigmaIconButton';
 import { FigmaTabs } from '../../components/figma/FigmaTabs';
@@ -43,14 +44,7 @@ export function CreatorHeader({
           }}
         >
           <View testID="author-back">
-            <FigmaIconButton
-              icon="arrow-left-01"
-              iconSize={20}
-              strokeWidthPx={1.5}
-              surface="muted"
-              label="Назад"
-              onPress={onBack}
-            />
+            <BackButton variant="muted" onPress={onBack} />
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <FigmaIconButton

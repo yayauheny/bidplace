@@ -3,6 +3,7 @@ import { View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
+import { BackButton } from '../../components/figma/BackButton';
 import { FigmaIcon } from '../../components/figma/FigmaIcon';
 import { MotionPressable } from '../../components/ui/MotionPressable';
 import { AppText } from '../../components/ui';
@@ -47,27 +48,11 @@ export function AuthorApplicationStepShell({
           }}
         >
           {showBack ? (
-            <MotionPressable
-              accessibilityRole="button"
-              accessibilityLabel="Назад"
+            <BackButton
+              variant="chrome"
               disabled={backDisabled || onBack === undefined}
-              hitSlop={(designTokens.size.touch - chrome.chromeFrame) / 2}
               onPress={() => onBack?.()}
-              preset="icon"
-              style={{
-                width: chrome.chromeFrame,
-                height: chrome.chromeFrame,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <FigmaIcon
-                name="arrow-left-01"
-                size={chrome.chromeGlyph}
-                strokeWidthPx={chrome.chromeStroke}
-                color={designTokens.color.inkStrong}
-              />
-            </MotionPressable>
+            />
           ) : (
             <View style={{ width: chrome.chromeFrame }} />
           )}
