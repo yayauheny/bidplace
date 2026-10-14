@@ -179,7 +179,13 @@ test.describe('product creation wizard navigation', () => {
       ).toBeEnabled();
       await page.getByRole('button', { name: '3. История создания' }).click();
       await expect(page).toHaveURL(/flow=creation&step=3$/);
-      await page.getByRole('button', { name: '2. Изображения' }).click();
+      // The story step follows Figma 7008:27134 — no step tabs there;
+      // back to images goes through the top-bar icon button (the story
+      // toolbar renders a second button with the same label further down).
+      await page
+        .getByRole('button', { name: 'Назад к изображениям' })
+        .first()
+        .click();
       await expect(page).toHaveURL(/flow=creation&step=2$/);
       await page.getByRole('button', { name: '4. Проверка' }).click();
       await expect(page).toHaveURL(/flow=creation&step=4$/);
@@ -202,6 +208,13 @@ test.describe('product creation wizard navigation', () => {
 
       await page.goto(`/products/${product.id}?flow=creation&step=3`);
       await expect(page).toHaveURL(/flow=creation&step=3$/);
+      // Step 3 renders the story chrome without step tabs (Figma 7008:27134);
+      // reach the review step through the images step.
+      await page
+        .getByRole('button', { name: 'Назад к изображениям' })
+        .first()
+        .click();
+      await expect(page).toHaveURL(/flow=creation&step=2$/);
       await expect(
         page.getByRole('button', { name: '4. Проверка' }),
       ).toBeEnabled();
@@ -226,6 +239,13 @@ test.describe('product creation wizard navigation', () => {
       await page
         .getByRole('button', { name: 'Продолжить к истории создания' })
         .click();
+      // The story step has no step tabs (Figma 7008:27134): go back to the
+      // images step first, then open step 1 from its tab list.
+      await page
+        .getByRole('button', { name: 'Назад к изображениям' })
+        .first()
+        .click();
+      await expect(page).toHaveURL(/flow=creation&step=2$/);
       await page.getByRole('button', { name: '1. О работе' }).click();
 
       await page.getByLabel('Название').fill(`${title} edited`);
@@ -331,7 +351,7 @@ test.describe('product creation wizard navigation', () => {
     }
   });
 
-  test('shows step 1 validation without locking later tabs', async ({
+  test('shows step 1 validation and blocks the step change until the draft persists', async ({
     browser,
   }) => {
     test.setTimeout(120_000);
@@ -342,11 +362,18 @@ test.describe('product creation wizard navigation', () => {
     try {
       await page.goto('/products/new');
       await fillProductStepOne(page, title);
-      await createDraftThroughStepOne(page);
+      const product = await createDraftThroughStepOne(page);
       await uploadFirstProductImage(page);
       await page
         .getByRole('button', { name: 'Продолжить к истории создания' })
         .click();
+      // The story step has no step tabs (Figma 7008:27134): go back to the
+      // images step first, then open step 1 from its tab list.
+      await page
+        .getByRole('button', { name: 'Назад к изображениям' })
+        .first()
+        .click();
+      await expect(page).toHaveURL(/flow=creation&step=2$/);
       await page.getByRole('button', { name: '1. О работе' }).click();
 
       await expect(page.getByLabel('Название')).toHaveValue(title);
@@ -366,6 +393,23 @@ test.describe('product creation wizard navigation', () => {
       await expect(
         page.getByRole('button', { name: '2. Изображения' }),
       ).toBeEnabled();
+      // Save failure keeps the author on step 1 (02-USER-FLOWS §9): the tab
+      // stays reachable, but the transition waits for a successful persist.
+      // The draft schema itself allows an empty title, so force a real
+      // persistence failure instead of relying on validation.
+      await page.route(`**/api/products/${product.id}`, (route) => {
+        if (route.request().method() !== 'PATCH') return route.continue();
+        return route.fulfill({
+          status: 500,
+          contentType: 'application/json',
+          body: JSON.stringify({ code: 'internal_error' }),
+        });
+      });
+      await page.getByRole('button', { name: '2. Изображения' }).click();
+      await expect(page).toHaveURL(/flow=creation&step=1$/);
+      await expect(page.getByLabel('Название')).toHaveValue('');
+      await page.unroute(`**/api/products/${product.id}`);
+      await fillControl(page.getByRole('textbox', { name: /Название/ }), title);
       await page.getByRole('button', { name: '2. Изображения' }).click();
       await expect(page).toHaveURL(/flow=creation&step=2$/);
     } finally {
