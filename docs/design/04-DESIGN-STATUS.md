@@ -9,8 +9,8 @@
 - `Implemented`: `PaddedGrid` — единая построчная flex-сетка; инлайн-дубли удалены из `WorkCoverCardGrid`, `CategoriesSearchPane`, `public-seller-screen`.
 - `Implemented`: `DestructiveButton` удалён (был точной копией `PrimaryButton`, danger-варианта в дизайн-системе нет); `AppIcon` + зависимость `lucide-react-native` вычищены (закрытие в `AppDialog`/`AuthViewport` — канонический `FigmaIcon x`); галка `FilterOptionRow` — только `FigmaIcon check` (ручной rotate(-45deg) ящик удалён); `WorkGallery` — активная страница по `onMomentumScrollEnd` вместо `onScroll` на каждый кадр.
 - `Implemented`: root-cause гейта — `tab-switch-reveal` падал из-за отсутствия `creationStory` в e2e-фикстуре (`portfolioWorkDetailResponseSchema` strict); фикстура дополнена, 5/5 e2e зелёные.
-- Критерии волны: typecheck/eslint чистые; vitest 770/770; rg пусто по `lucide|AppIcon|DestructiveButton`; нетто −100 строк; e2e `tab-switch-reveal`, `author-static-header`, `search-overlay` зелёные.
-- Known pre-existing (на базе 7f0e53ec, не регрессии В2): e2e `catalog-pagination` ×2 (фикстуры данных), `creator-profile:11` (filechooser), `search-overlay:35` (dimmer history); vitest `author-cabinet-work-cache.spec` не грузится (разрешение react-native-svg CJS ↔ react-native ESM; воркер-окружение). `admin-moderation-screen.spec` после починки загрузки (мок `expo-image`): 22/23, 1 предсуществующий фейл проекции ревизии («Описание не указано») — в бэклог В4.
+- Критерии волны: typecheck/eslint чистые; vitest 792 passed + 1 known; rg пусто по `lucide|AppIcon|DestructiveButton` — вне `*.spec` (в `author-cabinet-work-cache.spec` мёртвый мок, в В4); нетто по диффу +443/−398 = +45 (+10 без спек/доков/e2e/lockfile — принято ревьюером, см. `11-PROJECT-STATUS`); e2e `tab-switch-reveal`, `author-static-header`, `search-overlay` зелёные.
+- Known pre-existing (на базе 7f0e53ec, не регрессии В2): e2e `catalog-pagination` ×2 (фикстуры данных), `creator-profile:11` (filechooser), `search-overlay:35` (dimmer history); vitest `author-cabinet-work-cache.spec` не грузится (разрешение react-native-svg CJS ↔ react-native ESM; воркер-окружение). `admin-moderation-screen.spec` после починки загрузки (мок `expo-image`): 22/23; фейл «Описание не указано» — **вскрытый починкой загрузки дефект** теста/экрана (с диффом В2 не связан, экран волной не менялся) — в бэклог В4.
 
 ## 2026-10-14 — W3 token diet (Wave 1 + W1.1 review fixes)
 
@@ -21,7 +21,7 @@
   - `space.homeSectionStack` (67) — Figma Home Opening `439:4406` bottom → `439:4478` top (derived from capture).
   - `space.fieldY` (13), `space.fieldLabelX` (15), `space.fieldErrorX` (13), `space.filterOptionY` (9), `space.headerIconHitSlop` (9), `radius.pill` (999), `size.fieldBorder` (0.5), `size.choiceChipRemovable` (39), `size.authorAtmosphere` (485), `size.filterSortBar` (43) — no Figma node on file; чётность фиксируется при ближайшей правке по касанию.
 - Unreferenced brand assets removed (`brand-mark.png` + stale README, `splash-icon.png`, `favicon.png`); no live imports (verified).
-- Known pre-existing, not Wave 1 regressions: `tab-switch-reveal` 4 e2e failures at base (root-caused and fixed in Wave 2 gate, commit `47fa54b7`); vitest import failures — `admin-moderation-screen.spec` load fixed in Wave 2 (мок `expo-image`), остаётся 1 предсуществующий фейл проекции ревизии; `author-cabinet-work-cache.spec` по-прежнему не грузится (CJS/ESM resolution react-native-svg ↔ react-native). Оба — в бэклог Wave 4.
+- Known pre-existing, not Wave 1 regressions: `tab-switch-reveal` 4 e2e failures at base (root-caused and fixed in Wave 2 gate, commit `47fa54b7`); vitest import failures — `admin-moderation-screen.spec` load fixed in Wave 2 (мок `expo-image`), вскрытый им дефект проекции ревизии («Описание не указано») — в бэклог Wave 4; `author-cabinet-work-cache.spec` по-прежнему не грузится (CJS/ESM resolution react-native-svg ↔ react-native) — тоже Wave 4.
 
 ## 2026-10-13 — W2 fluid AppShell and dock inset
 

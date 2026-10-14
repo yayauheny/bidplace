@@ -77,7 +77,6 @@ module.exports = {
         'src/features/sellers/product-draft-save-race.spec.ts',
         'src/features/sellers/product-draft-route-guard.spec.ts',
         'src/features/sellers/product-draft-screen.tsx',
-        'src/components/ui/AppIcon.tsx',
         'src/features/search/search-overlay-surface.tsx',
       ],
       rules: { 'no-restricted-imports': 'off' },
