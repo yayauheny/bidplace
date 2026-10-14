@@ -166,10 +166,6 @@ export function ProductDraftScreenChrome({
         </View>
       ) : null}
 
-      {isCreationFlow && storyWizardView ? (
-        <View style={{ paddingBottom: designTokens.space.x2 }}>{stepTabs}</View>
-      ) : null}
-
       {!storyWizardView ? (
         <View style={{ gap: designTokens.space.x2 }}>
           <AppText role="screenTitle">
