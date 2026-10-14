@@ -2,6 +2,13 @@
 
 > Entries dated before 2026-10-13 mention Pen / .pen files; the Pen design was removed (DEC-119) — read those mentions as history.
 
+## 2026-10-15 — SellerProfileScreen: завершение структурного сплита (этап 2 W5)
+
+- `Implemented`: продолжение записи 2026-10-14 (была `Partial`, критерий «тонкие экраны-композиции» не достигнут). Тело `seller-profile-screen.tsx` 1249 → 755 строк; состояние разнесено по владельцам — `seller-profile-operation-guard.ts`, `seller-profile-form.tsx`, `seller-profile-photo.ts`, `seller-profile-directions.ts`, `seller-profile-submission.ts`; экран — композиция + exit-флоу + render. Визуал, копии, токены, отступы и состояния (loading / визард 1–4 / clamp `?step` / approved cabinet / pending lock, включая locked-копию «Заявка на проверке. Редактирование откроется…» вне кабинетного гейта при DRAFT + PENDING_REVIEW) не изменены: characterization-контракт 8/8 зелёный до и после, JSX перенесён без правок значений.
+- Дубли disabled-наборов сведены: `wizardSubmitDisabled = submitDisabled || achievementDraftDirty` (кабинетный набор — без этого члена, различие зафиксировано явно); busy-связки `saveMutation.isPending || accountLogout.busy || revisionSubmitActive` больше не собираются в трёх местах отдельно.
+- Проверки: mobile vitest **816/816** (132 файла); typecheck/eslint/prettier чисто; e2e `author-cabinet` 2/2 зелёный, `author-revision-flow`/`author-application-slug:112` — предсуществующие фейлы (воспроизводятся на `4bc0c788`, идентичный набор под Node 24 и Node 22.20.0).
+- Дизайн не менялся; Figma и серии скриншотов для этого рефакторинга не запускались (код-онли перенос, DOM-контракт закреплён characterization-спекой).
+
 ## 2026-10-15 — W5 grid clamp (остаток В2)
 
 - `Implemented`: `gridColumnsFromWidth(width, {minCardWidth, gap, max}) = clamp(floor((width + gap) / (minCardWidth + gap)), 1, max)` — чистая функция в `components/figma/grid-columns.ts` (re-export из `PaddedGrid`), спек `grid-columns.spec.ts` (5 тестов). Брейкпоинты 700/1000 в `public-seller-screen.tsx` удалены → clamp по измеренной ширине (minCard 320, gap `space.x3`=12, max 3): 390 → 1 колонка (карточка 366), 700 → 2, 1000 → 3 — визуал 390 не изменён. `CategoriesSearchPane`: фиксированные `columns={3}` → clamp по onLayout-ширине. Сверка с вёрсткой (по правке ревьюера): реальный контейнер шторки при 390 — 366 (390 − 2×12 `layout.gutter`), тайл (366 − 2×8)/3 ≈ 116.67; значение 120.67 из `CategorySearchTile` измерено при контейнере 378 и при текущих отступах три раза не помещается → minCard 116. Закреплено: helper-spec на ширине 366; e2e «Search categories keep three tiles per row at 390» (один top у первых трёх тайлов, ширина тайла 111–123; скриншот `categories-tiles-390.png`); на узких (<360) перестраивается в 2.
