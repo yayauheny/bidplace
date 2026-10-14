@@ -4,7 +4,7 @@
 
 ## 2026-10-15 — W5 grid clamp (остаток В2)
 
-- `Implemented`: колонки сеток — из измеренной ширины по формуле clamp (`gridColumnsFromWidth`, `components/figma/grid-columns.ts`, re-export из `PaddedGrid`; 5 тестов). `public-seller-screen`: пороги 700/1000 удалены (minCard 320, gap x3, max 3 — поведение на 390/700/1000 прежнее). `CategoriesSearchPane`: фикс-3 → clamp по onLayout (minCard 120, gap x2, max 3; при 390 — три в ряд как в дизайне). Проверки: vitest 816/816 (132 файла), typecheck/eslint/prettier чисто. На В5 остаётся `WorksSearchPane` и прочие work-card-потребители.
+- `Implemented`: колонки сеток — из измеренной ширины по формуле clamp (`gridColumnsFromWidth`, `components/figma/grid-columns.ts`, re-export из `PaddedGrid`; 5 тестов). `public-seller-screen`: пороги 700/1000 удалены (minCard 320, gap x3, max 3 — поведение на 390/700/1000 прежнее). `CategoriesSearchPane`: фикс-3 → clamp по onLayout; minCard 116 — из реальной вёрстки (контейнер 366 при 390 из-за gutter 12, тайл ≈116.67; 120.67 при текущих отступах три раза не помещается), закреплено helper-spec (366→3) и e2e «three tiles per row at 390» со скриншотом. Проверки: vitest 816/816 (132 файла), search-overlay.spec 16 passed + 2 предсуществующих фейла (dimmer history — известен; detail Back — воспроизводится на чистом HEAD), typecheck/eslint/prettier чисто. На В5 остаётся `WorksSearchPane` и прочие work-card-потребители.
 - Детали — в `04-DESIGN-STATUS.md`. Далее по плану: Волна 5 (эталонный публичный профиль 390, pixel-приёмка).
 
 ## 2026-10-15 — Wave 4: тестовый gate визарда восстановлен + review-blocker fix
