@@ -3,33 +3,21 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { FormProvider, useForm, useWatch } from 'react-hook-form';
 import * as ImagePicker from 'expo-image-picker';
-import {
-  Link,
-  useIsFocused,
-  useLocalSearchParams,
-  useRouter,
-} from 'expo-router';
-import { Image as LocalPreviewImage, View } from 'react-native';
+import { useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
+import { View } from 'react-native';
 
 import { ApiClientError } from '@bidplace/api-client';
 import type { SellerProfileResponse } from '@bidplace/contracts';
 import { designTokens } from '@bidplace/design-tokens';
-import {
-  AppShell,
-  FormPageColumns,
-  FormPageShell,
-} from '../../components/layout';
+import { AppShell, FormPageShell } from '../../components/layout';
 import { MediaDeliveryNotice } from '../../components/shared/MediaDeliveryNotice';
 import { InfrastructurePageStatus } from '../../components/shared/InfrastructurePageStatus';
 import { infrastructurePageFetchStatus } from '../../components/shared/infrastructure-page-status';
 import {
   AppDialog,
   AppText,
-  FormSection,
-  ImagePlaceholder,
   PageHeader,
   PrimaryButton,
-  ResilientRemoteImage,
   SecondaryButton,
 } from '../../components/ui';
 import {
@@ -53,32 +41,33 @@ import { useAccountLogout } from '../auth/account-logout';
 import { useApiClient } from '../../providers/api-provider';
 import { useAuth } from '../../providers/auth-provider';
 import { AuthorApplicationAchievements } from './AuthorApplicationAchievements';
-import { AuthorApplicationAboutStep } from './author-application-about-step';
-import { AuthorApplicationStepShell } from './author-application-step-shell';
-import { AuthorApplicationBasicsStep } from './author-application-basics-step';
-import { AuthorApplicationContactsStep } from './author-application-contacts-step';
 import { AuthorApplicationExitConfirm } from './author-application-exit-confirm';
 import { AuthorDirectionsPickerSheet } from './author-directions-picker-sheet';
 import { AuthorIntroDialog } from './AuthorIntroDialog';
+import {
+  sellerProfileQueryKey,
+  profileFieldOrder,
+  toFields,
+  withSubmittedRevision,
+  profileFieldsToUpdate,
+  profileFieldsToCreate,
+  useProfileData,
+  type ProfileSaveVariables,
+  type ProfileSaveResult,
+} from './seller-profile-data';
 import {
   emptyProfileDraft,
   profileDraftAllowsSave,
   profileDraftSchema,
 } from './profile-validation';
-import { normalizeInstagram, normalizeTelegram } from './contact-normalization';
 import {
   canSubmitSellerProfileRevision,
   isSellerProfileFormEditable,
 } from './seller-profile-editable';
 import {
-  ProfileAboutFields,
-  ProfileBasicsFields,
-  ProfileContactsFields,
   ProfileFieldWriteGuard,
   ProfileRequirementScope,
   type ProfileRequirementControls,
-  SellerProfileCreationStepSelector,
-  SellerProfileFormSteps,
   type ProfileFields,
 } from './seller-profile-steps';
 import {
@@ -89,197 +78,8 @@ import {
   shouldShowSellerProfileAchievements,
 } from './seller-profile-wizard';
 import { persistedFieldOverrides } from './reconcile-saved-fields';
-
-const sellerProfileQueryKey = ['seller', 'profile'] as const;
-const profileFieldOrder = [
-  'slug',
-  'fullName',
-  'country',
-  'city',
-  'telegramUrl',
-  'instagramUrl',
-  'websiteUrl',
-  'publicEmail',
-  'directionCategoryIds',
-  'discipline',
-  'practice',
-  'shortDescription',
-] as const;
-
-type SubmittedAuthorApplication = {
-  application: {
-    slug: string;
-    fullName: string;
-    country: string;
-    city: string | null;
-    discipline: string | null;
-    practice: string | null;
-    shortDescription: string | null;
-    status: SellerProfileResponse['sellerProfile']['status'];
-    applicationStage: SellerProfileResponse['sellerProfile']['applicationStage'];
-  };
-  editingRevision: {
-    id: string;
-    version: number;
-    status: string;
-    updatedAt: string;
-  } | null;
-};
-
-function withSubmittedRevision(
-  current: SellerProfileResponse | undefined,
-  submitted: SubmittedAuthorApplication,
-): SellerProfileResponse | undefined {
-  const revision = submitted.editingRevision;
-  if (
-    !current?.sellerProfile ||
-    !revision ||
-    revision.status !== 'PENDING_REVIEW'
-  ) {
-    return current;
-  }
-  return {
-    sellerProfile: {
-      ...current.sellerProfile,
-      slug: submitted.application.slug,
-      fullName: submitted.application.fullName,
-      country: submitted.application.country,
-      city: submitted.application.city,
-      discipline: submitted.application.discipline,
-      practice: submitted.application.practice,
-      shortDescription: submitted.application.shortDescription,
-      status: submitted.application.status,
-      applicationStage: submitted.application.applicationStage,
-    },
-    editingRevision: {
-      id: revision.id,
-      version: revision.version,
-      status: 'PENDING_REVIEW',
-      updatedAt: revision.updatedAt,
-    },
-  };
-}
-
-function isSellerProfileResponse(
-  value: unknown,
-): value is SellerProfileResponse {
-  if (!value || typeof value !== 'object') return false;
-  return 'sellerProfile' in value && 'editingRevision' in value;
-}
-
-function keepConfirmedPendingProfile(
-  previous: unknown,
-  next: unknown,
-): unknown {
-  if (
-    !isSellerProfileResponse(previous) ||
-    previous.editingRevision?.status !== 'PENDING_REVIEW'
-  ) {
-    return next;
-  }
-  if (!isSellerProfileResponse(next) || !next.editingRevision) return previous;
-  const confirmedAt = Date.parse(previous.editingRevision.updatedAt);
-  const incomingAt = Date.parse(next.editingRevision.updatedAt);
-  if (!Number.isFinite(incomingAt) || incomingAt < confirmedAt) return previous;
-  if (
-    next.editingRevision.id === previous.editingRevision.id &&
-    next.editingRevision.status !== 'PENDING_REVIEW' &&
-    incomingAt <= confirmedAt
-  ) {
-    return previous;
-  }
-  return next;
-}
-
-function toFields(profile: {
-  slug: string;
-  fullName: string;
-  discipline: string | null;
-  country: string;
-  city: string | null;
-  practice: string | null;
-  socialLink: string | null;
-  telegramUrl: string | null;
-  instagramUrl: string | null;
-  websiteUrl: string | null;
-  publicEmail?: string | null;
-  shortDescription: string | null;
-  directionCategoryIds: string[];
-}): ProfileFields {
-  return {
-    slug: profile.slug,
-    fullName: profile.fullName,
-    discipline: profile.discipline ?? '',
-    directionCategoryIds: profile.directionCategoryIds ?? [],
-    country: profile.country,
-    city: profile.city ?? '',
-    practice: profile.practice ?? '',
-    socialLink: profile.socialLink ?? '',
-    telegramUrl: profile.telegramUrl ?? '',
-    instagramUrl: profile.instagramUrl ?? '',
-    websiteUrl: profile.websiteUrl ?? '',
-    publicEmail: profile.publicEmail ?? '',
-    shortDescription: profile.shortDescription ?? '',
-  };
-}
-
-function profileFieldsToUpdate(fields: ProfileFields) {
-  return {
-    fullName: fields.fullName,
-    discipline: fields.discipline.trim() || undefined,
-    directionCategoryIds: fields.directionCategoryIds,
-    country: fields.country,
-    city: fields.city.trim() || null,
-    practice: fields.practice.trim() || null,
-    socialLink: fields.socialLink.trim() || null,
-    telegramUrl: normalizeTelegram(fields.telegramUrl) ?? null,
-    instagramUrl: normalizeInstagram(fields.instagramUrl) ?? null,
-    websiteUrl: fields.websiteUrl.trim() || null,
-    publicEmail: fields.publicEmail.trim() || null,
-    shortDescription: fields.shortDescription.trim() || null,
-  };
-}
-
-function profileFieldsToCreate(fields: ProfileFields) {
-  return {
-    fullName: fields.fullName,
-    country: fields.country,
-    city: fields.city.trim() || null,
-  };
-}
-
-type ProfileSaveVariables = {
-  fields: ProfileFields;
-  photo: Blob | null;
-  authEpoch: number;
-  operation: number;
-};
-
-type ProfileSaveResult =
-  | { outcome: 'saved'; profile: SellerProfileResponse }
-  | { outcome: 'stored-slug'; slug: string };
-
-function useProfileData() {
-  const api = useApiClient();
-  const queryClient = useQueryClient();
-  return useQuery({
-    queryKey: sellerProfileQueryKey,
-    queryFn: async () => {
-      const epoch = currentAuthEpoch(queryClient);
-      const result = await api.sellers.getMyProfile();
-      if (!canWritePrivateCache(queryClient, epoch)) {
-        const current = queryClient.getQueryData<SellerProfileResponse>(
-          sellerProfileQueryKey,
-        );
-        if (current) return current;
-        throw new Error('Private cache is closed');
-      }
-      return result;
-    },
-    retry: false,
-    structuralSharing: keepConfirmedPendingProfile,
-  });
-}
+import { SellerProfileApplicationSteps } from './seller-profile-application-steps';
+import { SellerProfileCabinetForm } from './seller-profile-cabinet-form';
 
 export function SellerProfileScreen() {
   const isFocused = useIsFocused();
@@ -1140,6 +940,13 @@ export function SellerProfileScreen() {
       </AppShell>
     );
 
+  const stepBusy = {
+    savePending: saveMutation.isPending,
+    accountBusy: accountLogout.busy,
+    revisionSubmitActive,
+    inputsLocked,
+    achievementWriteActive,
+  };
   const basicsAction = (
     <PrimaryButton
       loading={saveMutation.isPending}
@@ -1157,6 +964,123 @@ export function SellerProfileScreen() {
       width="block"
     />
   );
+  const contactsAction = (
+    <PrimaryButton
+      loading={saveMutation.isPending || advanceMutation.isPending}
+      disabled={
+        !canSave ||
+        accountLogout.busy ||
+        revisionSubmitActive ||
+        inputsLocked ||
+        achievementWriteActive
+      }
+      onPress={() => void continueFromStep(2)}
+      label="Продолжить"
+      size="auth"
+      width="block"
+    />
+  );
+  const aboutAction = (
+    <PrimaryButton
+      loading={saveMutation.isPending || advanceMutation.isPending}
+      disabled={
+        !canSave ||
+        accountLogout.busy ||
+        revisionSubmitActive ||
+        inputsLocked ||
+        achievementWriteActive
+      }
+      onPress={() => {
+        const missing: Array<'shortDescription'> = [];
+        if (!shortDescription.trim()) missing.push('shortDescription');
+        if ((directionCategoryIds?.length ?? 0) === 0) {
+          setDirectionsRequirementRevealed(true);
+        }
+        if (missing.length > 0) {
+          requirementControls.current.reveal(missing);
+          return;
+        }
+        if ((directionCategoryIds?.length ?? 0) === 0) return;
+        void continueFromStep(3);
+      }}
+      label="Продолжить"
+      size="auth"
+      width="block"
+    />
+  );
+  const achievements = (
+    <AuthorApplicationAchievements
+      editable={fieldsEditable}
+      parentBusy={parentBlocksAchievement}
+      parentOperation={currentParentOperation}
+      onChildWrite={setAchievementWrite}
+      onDraftChange={rememberAchievementDraft}
+    />
+  );
+  const achievementsVisible = shouldShowSellerProfileAchievements(
+    Boolean(profile),
+    isApplicationWizard,
+    profileStep,
+  );
+  const wizardStep = isApplicationWizard
+    ? basicsStep
+      ? ('basics' as const)
+      : contactsStep
+        ? ('contacts' as const)
+        : aboutStep
+          ? ('about' as const)
+          : achievementsStep
+            ? ('achievements' as const)
+            : null
+    : null;
+  const slugEditable = fieldsEditable && !profile && !sessionSlug;
+  const stepPhoto = {
+    uri: preview,
+    local: photoBlob !== null,
+    failed: photoFailed,
+    disabled: !fieldsEditable,
+    onChoose: () => void choosePhoto(),
+    onFailed: () => setPhotoFailed(true),
+  };
+  const removeDirection = (id: string) => {
+    if (!fieldsEditable || transitionLock.current) return;
+    form.setValue(
+      'directionCategoryIds',
+      directionCategoryIds.filter((value) => value !== id),
+      {
+        shouldDirty: true,
+        shouldTouch: true,
+        shouldValidate: true,
+      },
+    );
+    setDirectionsRequirementRevealed(true);
+  };
+  const openDirectionsPicker = () => {
+    if (fieldsEditable) setDirectionsPickerOpen(true);
+  };
+  const requestSave = () => {
+    const operation = sessionOperation.current;
+    void save().catch((error) =>
+      reportProfileError(error, 'seller-profile-save', undefined, operation),
+    );
+  };
+  const wizardSubmitDisabled =
+    revisionSubmitActive ||
+    saveMutation.isPending ||
+    submitMutation.isPending ||
+    !canSave ||
+    accountLogout.busy ||
+    inputsLocked ||
+    achievementWriteActive ||
+    achievementDraftDirty;
+  const cabinetSubmitDisabled =
+    revisionSubmitActive ||
+    saveMutation.isPending ||
+    submitMutation.isPending ||
+    !canSave ||
+    accountLogout.busy ||
+    inputsLocked ||
+    achievementWriteActive;
 
   return (
     <View style={{ flex: 1, display: isFocused ? 'flex' : 'none' }}>
@@ -1171,10 +1095,7 @@ export function SellerProfileScreen() {
               variant={isApplicationWizard ? 'authorApplication' : 'default'}
             >
               <View style={{ gap: designTokens.space.x5 }}>
-                {basicsStep ||
-                contactsStep ||
-                aboutStep ||
-                achievementsStep ? null : (
+                {wizardStep !== null ? null : (
                   <View
                     style={{
                       flexDirection: 'row',
@@ -1234,433 +1155,68 @@ export function SellerProfileScreen() {
                     ) : null}
                   </View>
                 )}
-                {isApplicationWizard &&
-                !basicsStep &&
-                !contactsStep &&
-                !aboutStep &&
-                !achievementsStep ? (
-                  <SellerProfileCreationStepSelector
-                    profileStep={profileStep}
-                  />
-                ) : null}
                 <MediaDeliveryNotice delivery={query.data?.publication} />
                 {editingRevision?.status === 'PENDING_REVIEW' ? (
                   <AppText role="bodySmall" tone="secondary">
                     Заявка на проверке
                   </AppText>
                 ) : null}
-                {isApplicationWizard &&
-                profileStep > 1 &&
-                !contactsStep &&
-                !aboutStep &&
-                !achievementsStep ? (
-                  <SecondaryButton
-                    label="Назад"
-                    width="block"
-                    loading={saveMutation.isPending}
-                    disabled={
-                      saveMutation.isPending ||
-                      accountLogout.busy ||
-                      revisionSubmitActive ||
-                      inputsLocked ||
-                      achievementWriteActive
-                    }
-                    onPress={() => void goToPreviousStep()}
-                  />
-                ) : null}
-                {basicsStep ? (
-                  <AuthorApplicationBasicsStep
-                    closeDisabled={
-                      revisionSubmitActive ||
-                      inputsLocked ||
-                      achievementWriteActive
-                    }
-                    onClose={() => requestExit('home')}
-                    photo={{
-                      uri: preview,
-                      local: photoBlob !== null,
-                      failed: photoFailed,
-                      disabled: !fieldsEditable,
-                      onChoose: () => void choosePhoto(),
-                      onFailed: () => setPhotoFailed(true),
-                    }}
-                    fields={
-                      <ProfileBasicsFields
-                        editable={fieldsEditable}
-                        slugEditable={
-                          fieldsEditable && !profile && !sessionSlug
-                        }
-                      />
-                    }
-                    formAlert={formAlertText}
-                    action={basicsAction}
-                    footer={
-                      introOpen ? null : (
-                        <AccountLogoutButton
-                          variant="ghost"
-                          width="content"
-                          pending={
-                            saveMutation.isPending ||
-                            accountLogout.busy ||
-                            revisionSubmitActive
-                          }
-                          onPress={() => requestExit('logout')}
-                        />
-                      )
-                    }
-                  />
-                ) : null}
+                <SellerProfileApplicationSteps
+                  step={wizardStep}
+                  busy={stepBusy}
+                  introOpen={introOpen}
+                  requestExit={requestExit}
+                  goToPreviousStep={() => void goToPreviousStep()}
+                  fieldsEditable={fieldsEditable}
+                  slugEditable={slugEditable}
+                  photo={stepPhoto}
+                  formAlert={formAlertText}
+                  basicsAction={basicsAction}
+                  contactsAction={contactsAction}
+                  aboutAction={aboutAction}
+                  directionLabels={directionLabels}
+                  directionsError={directionsError}
+                  onRemoveDirection={removeDirection}
+                  onOpenDirections={openDirectionsPicker}
+                  achievements={achievements}
+                  achievementsVisible={achievementsVisible}
+                  editable={editable}
+                  canSubmitRevision={canSubmitRevision}
+                  submitPending={submitMutation.isPending || revisionSubmitActive}
+                  submitDisabled={wizardSubmitDisabled}
+                  onSubmit={() => void submitRevision()}
+                  achievementDraftDirty={achievementDraftDirty}
+                />
                 {!isApplicationWizard ? (
-                  <FormPageColumns
-                    sidebarFirstOnCompact
-                    sidebar={
-                      <FormSection
-                        title="Фото профиля"
-                        description="Квадратный портрет или логотип автора."
-                      >
-                        {preview && !photoFailed ? (
-                          photoBlob ? (
-                            <LocalPreviewImage
-                              source={{ uri: preview }}
-                              resizeMode="cover"
-                              style={{
-                                width: '100%',
-                                aspectRatio: 1,
-                                borderRadius: designTokens.radius.image,
-                              }}
-                              onError={() => setPhotoFailed(true)}
-                            />
-                          ) : (
-                            <ResilientRemoteImage
-                              uri={preview}
-                              component="AuthorPhoto"
-                              accessibilityLabel="Фото профиля"
-                              fallbackLabel="Фото профиля недоступно"
-                              style={{
-                                width: '100%',
-                                aspectRatio: 1,
-                                borderRadius: designTokens.radius.image,
-                              }}
-                              contentFit="cover"
-                            />
-                          )
-                        ) : (
-                          <ImagePlaceholder
-                            ratio={1}
-                            label="Фото профиля недоступно или не выбрано"
-                            style={{ width: '100%', aspectRatio: 1 }}
-                          />
-                        )}
-                        <SecondaryButton
-                          label={preview ? 'Изменить фото' : 'Добавить фото'}
-                          disabled={!fieldsEditable}
-                          width="block"
-                          onPress={() => void choosePhoto()}
-                        />
-                      </FormSection>
-                    }
-                  >
-                    <SellerProfileFormSteps
-                      profileStep={profileStep}
-                      showAllSteps={!isApplicationWizard}
-                      editable={fieldsEditable}
-                      slugEditable={
-                        fieldsEditable && !profile && !sessionSlug
-                      }
-                      directionLabels={directionLabels}
-                      directionsError={directionsError}
-                      onOpenDirections={() => {
-                        if (fieldsEditable) setDirectionsPickerOpen(true);
-                      }}
-                    />
-                  </FormPageColumns>
-                ) : null}
-                {contactsStep ? (
-                  <AuthorApplicationContactsStep
-                    onBack={() => void goToPreviousStep()}
-                    backDisabled={
-                      saveMutation.isPending ||
-                      accountLogout.busy ||
-                      revisionSubmitActive ||
-                      inputsLocked ||
-                      achievementWriteActive
-                    }
-                    closeDisabled={
-                      revisionSubmitActive ||
-                      inputsLocked ||
-                      achievementWriteActive
-                    }
-                    onClose={() => requestExit('home')}
-                    fields={<ProfileContactsFields editable={fieldsEditable} />}
-                    formAlert={formAlertText}
-                    action={
-                      <PrimaryButton
-                        loading={
-                          saveMutation.isPending || advanceMutation.isPending
-                        }
-                        disabled={
-                          !canSave ||
-                          accountLogout.busy ||
-                          revisionSubmitActive ||
-                          inputsLocked ||
-                          achievementWriteActive
-                        }
-                        onPress={() => void continueFromStep(2)}
-                        label="Продолжить"
-                        size="auth"
-                        width="block"
-                      />
-                    }
-                    footer={
-                      <AccountLogoutButton
-                        variant="ghost"
-                        width="content"
-                        pending={
-                          saveMutation.isPending ||
-                          accountLogout.busy ||
-                          revisionSubmitActive
-                        }
-                        onPress={() => requestExit('logout')}
-                      />
-                    }
-                  />
-                ) : null}
-                {aboutStep ? (
-                  <AuthorApplicationAboutStep
-                    onBack={() => void goToPreviousStep()}
-                    backDisabled={
-                      saveMutation.isPending ||
-                      accountLogout.busy ||
-                      revisionSubmitActive ||
-                      inputsLocked ||
-                      achievementWriteActive
-                    }
-                    closeDisabled={
-                      revisionSubmitActive ||
-                      inputsLocked ||
-                      achievementWriteActive
-                    }
-                    onClose={() => requestExit('home')}
-                    fields={<ProfileAboutFields editable={fieldsEditable} />}
+                  <SellerProfileCabinetForm
+                    photo={stepPhoto}
+                    fieldsEditable={fieldsEditable}
+                    slugEditable={slugEditable}
+                    profileStep={profileStep}
                     directionLabels={directionLabels}
                     directionsError={directionsError}
-                    directionsDisabled={!fieldsEditable}
-                    onRemoveDirection={(id) => {
-                      if (!fieldsEditable || transitionLock.current) return;
-                      form.setValue(
-                        'directionCategoryIds',
-                        directionCategoryIds.filter((value) => value !== id),
-                        {
-                          shouldDirty: true,
-                          shouldTouch: true,
-                          shouldValidate: true,
-                        },
-                      );
-                      setDirectionsRequirementRevealed(true);
-                    }}
-                    onOpenDirections={() => setDirectionsPickerOpen(true)}
-                    formAlert={formAlertText}
-                    action={
-                      <PrimaryButton
-                        loading={
-                          saveMutation.isPending || advanceMutation.isPending
-                        }
-                        disabled={
-                          !canSave ||
-                          accountLogout.busy ||
-                          revisionSubmitActive ||
-                          inputsLocked ||
-                          achievementWriteActive
-                        }
-                        onPress={() => {
-                          const missing: Array<'shortDescription'> = [];
-                          if (!shortDescription.trim())
-                            missing.push('shortDescription');
-                          if ((directionCategoryIds?.length ?? 0) === 0) {
-                            setDirectionsRequirementRevealed(true);
-                          }
-                          if (missing.length > 0) {
-                            requirementControls.current.reveal(missing);
-                            return;
-                          }
-                          if ((directionCategoryIds?.length ?? 0) === 0) return;
-                          void continueFromStep(3);
-                        }}
-                        label="Продолжить"
-                        size="auth"
-                        width="block"
-                      />
-                    }
-                    footer={
-                      <AccountLogoutButton
-                        variant="ghost"
-                        width="content"
-                        pending={
-                          saveMutation.isPending ||
-                          accountLogout.busy ||
-                          revisionSubmitActive
-                        }
-                        onPress={() => requestExit('logout')}
-                      />
-                    }
-                  />
-                ) : null}
-                {achievementsStep ? (
-                  <AuthorApplicationStepShell
-                    onBack={() => void goToPreviousStep()}
-                    backDisabled={
-                      saveMutation.isPending ||
-                      accountLogout.busy ||
-                      revisionSubmitActive ||
-                      inputsLocked ||
-                      achievementWriteActive
-                    }
-                    profileStep={4}
-                    closeDisabled={
-                      revisionSubmitActive ||
-                      inputsLocked ||
-                      achievementWriteActive
-                    }
-                    onClose={() => requestExit('home')}
-                    title="Биография и достижения"
-                    subtitle="Напишите ваши большие достижения, выставки и расскажите о себе в годах"
-                    footer={
-                      <AccountLogoutButton
-                        variant="ghost"
-                        width="content"
-                        pending={
-                          saveMutation.isPending ||
-                          accountLogout.busy ||
-                          revisionSubmitActive
-                        }
-                        onPress={() => requestExit('logout')}
-                      />
-                    }
-                  >
-                    <View
-                      style={{
-                        gap: designTokens.authorApplication.finalActionGap,
-                      }}
-                    >
-                      {shouldShowSellerProfileAchievements(
-                        Boolean(profile),
-                        isApplicationWizard,
-                        profileStep,
-                      ) ? (
-                        <AuthorApplicationAchievements
-                          editable={fieldsEditable}
-                          parentBusy={parentBlocksAchievement}
-                          parentOperation={currentParentOperation}
-                          onChildWrite={setAchievementWrite}
-                          onDraftChange={rememberAchievementDraft}
-                        />
-                      ) : null}
-                      {formAlertText}
-                      {editable && canSubmitRevision ? (
-                        <PrimaryButton
-                          loading={
-                            submitMutation.isPending || revisionSubmitActive
-                          }
-                          disabled={
-                            revisionSubmitActive ||
-                            saveMutation.isPending ||
-                            submitMutation.isPending ||
-                            !canSave ||
-                            accountLogout.busy ||
-                            inputsLocked ||
-                            achievementWriteActive ||
-                            achievementDraftDirty
-                          }
-                          onPress={() => void submitRevision()}
-                          label="Сохранить и завершить"
-                          size="auth"
-                          width="block"
-                        />
-                      ) : null}
-                      {achievementDraftDirty ? (
-                        <AppText role="bodySmall" tone="secondary">
-                          Добавьте событие или очистите его поля, чтобы
-                          завершить заявку.
-                        </AppText>
-                      ) : null}
-                    </View>
-                  </AuthorApplicationStepShell>
-                ) : null}
-                {!isApplicationWizard &&
-                shouldShowSellerProfileAchievements(
-                  Boolean(profile),
-                  isApplicationWizard,
-                  profileStep,
-                ) ? (
-                  <AuthorApplicationAchievements
-                    editable={fieldsEditable}
-                    parentBusy={parentBlocksAchievement}
-                    parentOperation={currentParentOperation}
-                    onChildWrite={setAchievementWrite}
-                    onDraftChange={rememberAchievementDraft}
-                  />
-                ) : null}
-                {!editable ? (
-                  <AppText role="bodySmall" tone="secondary">
-                    {editingRevision?.status === 'PENDING_REVIEW'
-                      ? 'Заявка на проверке. Редактирование откроется, если модератор запросит правки.'
-                      : 'Сейчас профиль нельзя редактировать.'}
-                  </AppText>
-                ) : null}
-                {!isApplicationWizard && editable ? (
-                  <PrimaryButton
-                    loading={saveMutation.isPending || revisionSubmitActive}
-                    disabled={
+                    onOpenDirections={openDirectionsPicker}
+                    editable={editable}
+                    revisionPending={editingRevision?.status === 'PENDING_REVIEW'}
+                    achievements={achievements}
+                    achievementsVisible={achievementsVisible}
+                    savePending={saveMutation.isPending || revisionSubmitActive}
+                    saveDisabled={
                       !canSave ||
                       accountLogout.busy ||
                       revisionSubmitActive ||
                       inputsLocked ||
                       achievementWriteActive
                     }
-                    onPress={() => {
-                      const operation = sessionOperation.current;
-                      void save().catch((error) =>
-                        reportProfileError(
-                          error,
-                          'seller-profile-save',
-                          undefined,
-                          operation,
-                        ),
-                      );
-                    }}
-                    label="Сохранить"
-                    width="block"
+                    onSave={requestSave}
+                    canSubmitRevision={canSubmitRevision}
+                    submitPending={submitMutation.isPending || revisionSubmitActive}
+                    submitDisabled={cabinetSubmitDisabled}
+                    onSubmit={() => void submitRevision()}
+                    showCreate={profile?.status === 'APPROVED'}
                   />
                 ) : null}
-                {!isApplicationWizard && canSubmitRevision ? (
-                  <PrimaryButton
-                    loading={submitMutation.isPending || revisionSubmitActive}
-                    disabled={
-                      revisionSubmitActive ||
-                      saveMutation.isPending ||
-                      submitMutation.isPending ||
-                      !canSave ||
-                      accountLogout.busy ||
-                      inputsLocked ||
-                      achievementWriteActive
-                    }
-                    onPress={() => void submitRevision()}
-                    label="Отправить на проверку"
-                    width="block"
-                  />
-                ) : null}
-                {profile?.status === 'APPROVED' ? (
-                  <Link href="/products/new" asChild>
-                    <PrimaryButton
-                      label="Создать предмет"
-                      width="block"
-                      onPress={() => undefined}
-                    />
-                  </Link>
-                ) : null}
-                {basicsStep || contactsStep || aboutStep || achievementsStep
-                  ? null
-                  : formAlertText}
+                {wizardStep === null ? formAlertText : null}
                 <AuthorDirectionsPickerSheet
                   open={directionsPickerOpen}
                   disabled={!fieldsEditable}
