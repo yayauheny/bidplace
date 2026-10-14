@@ -405,7 +405,19 @@ test.describe('product creation wizard navigation', () => {
           body: JSON.stringify({ code: 'internal_error' }),
         });
       });
+      const failedPatch = page.waitForResponse(
+        (response) =>
+          response.url().endsWith(`/api/products/${product.id}`) &&
+          response.request().method() === 'PATCH',
+      );
       await page.getByRole('button', { name: '2. Изображения' }).click();
+      // The transition must actually fire the PATCH and surface its failure;
+      // a no-op click would wrongly pass the URL assertion below. A 500 maps
+      // to the canonical infrastructure copy.
+      expect((await failedPatch).status()).toBe(500);
+      await expect(
+        page.getByText('Проверьте соединение и попробуйте ещё раз.'),
+      ).toBeVisible();
       await expect(page).toHaveURL(/flow=creation&step=1$/);
       await expect(page.getByLabel('Название')).toHaveValue('');
       await page.unroute(`**/api/products/${product.id}`);
