@@ -42,7 +42,9 @@ test('Search dimmer click consumes exactly one history step', async ({
   await expect(page).toHaveURL(/\/$/);
   await expect(page).not.toHaveURL(/\/works/);
   await openSearchOverlay(page);
-  await page.getByTestId('overlay-dimmer').click({ position: { x: 8, y: 200 } });
+  await page
+    .getByTestId('overlay-dimmer')
+    .click({ position: { x: 8, y: 200 } });
   await expectSearchClosed(page);
   await expect(page).toHaveURL(/\/$/);
   await expect(page).not.toHaveURL(/overlay=search/);
@@ -151,11 +153,17 @@ test('typed empty results and active-tab inline retry stay in the overlay', asyn
   });
 
   await overlay.getByRole('button', { name: 'Закрыть поиск' }).click();
-  await page.route('**/api/authors?**', (route) => route.abort('connectionrefused'));
+  await page.route('**/api/authors?**', (route) =>
+    route.abort('connectionrefused'),
+  );
   const failed = await openSearchOverlay(page);
   await failed.getByRole('tab', { name: 'Авторы' }).click();
-  await expect(failed.getByTestId('infrastructure-error-state-inline')).toBeVisible();
-  await expect(page.getByTestId('infrastructure-error-state-page')).toHaveCount(0);
+  await expect(
+    failed.getByTestId('infrastructure-error-state-inline'),
+  ).toBeVisible();
+  await expect(page.getByTestId('infrastructure-error-state-page')).toHaveCount(
+    0,
+  );
   await expect(failed.getByRole('tab', { name: 'Категории' })).toBeVisible();
   await expect(failed.getByTestId('search-overlay-query')).toBeVisible();
   await page.screenshot({
@@ -164,9 +172,9 @@ test('typed empty results and active-tab inline retry stay in the overlay', asyn
 
   await page.unroute('**/api/authors?**');
   await failed.getByRole('button', { name: 'Повторить', exact: true }).click();
-  await expect(failed.getByTestId('infrastructure-error-state-inline')).toHaveCount(
-    0,
-  );
+  await expect(
+    failed.getByTestId('infrastructure-error-state-inline'),
+  ).toHaveCount(0);
   await expect(failed.locator('a[href^="/seller/"]').first()).toBeVisible();
 });
 
@@ -232,7 +240,9 @@ test('client-side Back from Search returns the underlying route, not Home', asyn
   await expectSearchClosed(page);
 });
 
-test('query and tab edits replace the current Search entry', async ({ page }) => {
+test('query and tab edits replace the current Search entry', async ({
+  page,
+}) => {
   await page.goto('/');
   const overlay = await openSearchOverlay(page);
   await overlay.getByRole('tab', { name: 'Авторы' }).click();
@@ -256,7 +266,10 @@ test('Back from Author and Work restores the Search session', async ({
   await overlay.getByRole('tab', { name: 'Авторы' }).click();
   await overlay.getByTestId('search-overlay-query').fill(author.slug);
   await expect.poll(() => page.url()).toMatch(new RegExp(`oq=${author.slug}`));
-  await overlay.getByRole('link', { name: `@${author.slug}` }).first().click();
+  await overlay
+    .getByRole('link', { name: `@${author.slug}` })
+    .first()
+    .click();
   await expect(page).toHaveURL(new RegExp(`/seller/${author.slug}`));
   await expectSearchClosed(page);
   await page.getByRole('button', { name: 'Назад' }).click();
@@ -266,7 +279,9 @@ test('Back from Author and Work restores the Search session', async ({
     'aria-selected',
     'true',
   );
-  await expect(restored.getByTestId('search-overlay-query')).toHaveValue(author.slug);
+  await expect(restored.getByTestId('search-overlay-query')).toHaveValue(
+    author.slug,
+  );
 
   await restored.getByRole('tab', { name: 'Работы' }).click();
   await restored.getByTestId('search-overlay-query').fill(work.title);
@@ -279,7 +294,9 @@ test('Back from Author and Work restores the Search session', async ({
   await expect(
     page.getByTestId('search-overlay').getByRole('tab', { name: 'Работы' }),
   ).toHaveAttribute('aria-selected', 'true');
-  await expect(page.getByTestId('search-overlay-query')).toHaveValue(work.title);
+  await expect(page.getByTestId('search-overlay-query')).toHaveValue(
+    work.title,
+  );
 });
 
 test('Back from a Category result restores Search, then keeps Works filters', async ({
@@ -295,13 +312,15 @@ test('Back from a Category result restores Search, then keeps Works filters', as
   await expect(page).toHaveURL(new RegExp(`category=${category.id}`));
   await expect(page).toHaveURL(/\/works/);
   await expect(page.getByTestId('works-back')).toBeVisible();
-  await page.getByTestId('works-back').getByRole('button', { name: 'Назад' }).click();
+  await page
+    .getByTestId('works-back')
+    .getByRole('button', { name: 'Назад' })
+    .click();
   const restored = page.getByTestId('search-overlay');
   await expect(restored).toBeVisible();
-  await expect(restored.getByRole('tab', { name: 'Категории' })).toHaveAttribute(
-    'aria-selected',
-    'true',
-  );
+  await expect(
+    restored.getByRole('tab', { name: 'Категории' }),
+  ).toHaveAttribute('aria-selected', 'true');
 
   await restored.getByRole('link', { name: category.name }).click();
   await expect(page).toHaveURL(new RegExp(`category=${category.id}`));
@@ -363,7 +382,10 @@ test('browser Forward after Search → Author does not corrupt Search', async ({
   await page.goto('/');
   const overlay = await openSearchOverlay(page);
   await overlay.getByRole('tab', { name: 'Авторы' }).click();
-  await overlay.getByRole('link', { name: `@${author.slug}` }).first().click();
+  await overlay
+    .getByRole('link', { name: `@${author.slug}` })
+    .first()
+    .click();
   await expect(page).toHaveURL(new RegExp(`/seller/${author.slug}`));
   await page.goBack();
   await expect(page.getByTestId('search-overlay')).toBeVisible();
@@ -381,7 +403,9 @@ test('Search overlay focuses the field, traps Tab, and restores dock focus', asy
   page,
 }) => {
   await page.goto('/');
-  const dockSearch = page.getByTestId('figma-floating-dock').getByLabel('Поиск');
+  const dockSearch = page
+    .getByTestId('figma-floating-dock')
+    .getByLabel('Поиск');
   await dockSearch.click();
   const overlay = page.getByTestId('search-overlay');
   await expect(overlay).toBeVisible();
@@ -399,6 +423,31 @@ test('Search overlay focuses the field, traps Tab, and restores dock focus', asy
   await page.keyboard.press('Escape');
   await expectSearchClosed(page);
   await expect(dockSearch).toBeFocused();
+});
+
+test('Search categories keep three tiles per row at 390', async ({ page }) => {
+  await page.goto('/');
+  const overlay = await openSearchOverlay(page);
+  const tiles = overlay.getByTestId('category-search-tile');
+  await expect(tiles.nth(2)).toBeVisible();
+  const boxes = await tiles.evaluateAll((nodes) =>
+    nodes.slice(0, 3).map((node) => {
+      const rect = node.getBoundingClientRect();
+      return { top: rect.top, left: rect.left, width: rect.width };
+    }),
+  );
+  // Один ряд: одинаковый top, тайлы слева направо. Контейнер 366
+  // (390 − 2×12 gutter), тайл ≈ (366 − 2×8) / 3 ≈ 116.7.
+  expect(new Set(boxes.map((box) => Math.round(box.top))).size).toBe(1);
+  expect(boxes[1]!.left).toBeGreaterThan(boxes[0]!.left);
+  expect(boxes[2]!.left).toBeGreaterThan(boxes[1]!.left);
+  for (const box of boxes) {
+    expect(box.width).toBeGreaterThan(110);
+    expect(box.width).toBeLessThan(124);
+  }
+  await page.screenshot({
+    path: resolve(e2eEvidenceDir, 'search-overlay/categories-tiles-390.png'),
+  });
 });
 
 test('Search overlay does not overflow at phone widths', async ({ page }) => {
@@ -426,7 +475,9 @@ test('desktop pointer hover marks Author, Category, and Work hits', async ({
   const overlay = await openSearchOverlay(page);
   const category = overlay.getByTestId('category-search-tile').first();
   await category.hover();
-  await expect.poll(async () => hoverFill(category)).not.toBe('rgba(0, 0, 0, 0)');
+  await expect
+    .poll(async () => hoverFill(category))
+    .not.toBe('rgba(0, 0, 0, 0)');
   await overlay.getByTestId('search-overlay-query').hover();
   await expect.poll(async () => hoverFill(category)).toBe('rgba(0, 0, 0, 0)');
 
@@ -436,7 +487,8 @@ test('desktop pointer hover marks Author, Category, and Work hits', async ({
     .poll(async () =>
       author.evaluate((node) => {
         const row = node.firstElementChild;
-        if (!(row instanceof HTMLElement)) return { display: 'none', direction: 'none' };
+        if (!(row instanceof HTMLElement))
+          return { display: 'none', direction: 'none' };
         const style = getComputedStyle(row);
         return {
           display: style.display,
@@ -456,7 +508,9 @@ test('desktop pointer hover marks Author, Category, and Work hits', async ({
   for (let step = 0; step < 12; step += 1) {
     await page.keyboard.press('Tab');
     authorFocused = await author.evaluate(
-      (node) => node === document.activeElement || node.contains(document.activeElement),
+      (node) =>
+        node === document.activeElement ||
+        node.contains(document.activeElement),
     );
     if (authorFocused) break;
   }
@@ -465,9 +519,7 @@ test('desktop pointer hover marks Author, Category, and Work hits', async ({
     .poll(async () =>
       author.evaluate((node) => {
         const focused =
-          node === document.activeElement
-            ? node
-            : node.querySelector(':focus');
+          node === document.activeElement ? node : node.querySelector(':focus');
         return focused ? getComputedStyle(focused).outlineStyle : 'none';
       }),
     )
@@ -497,11 +549,9 @@ async function expectSearchClosed(page: Page) {
   await expect(page.getByTestId('search-overlay')).toHaveCount(0);
 }
 
-async function publicSearchFixtures(
-  request: {
-    get: (url: string) => Promise<{ json: () => Promise<unknown> }>;
-  },
-) {
+async function publicSearchFixtures(request: {
+  get: (url: string) => Promise<{ json: () => Promise<unknown> }>;
+}) {
   const worksPayload = (await (
     await request.get(`${apiBaseURL}/api/works?limit=1`)
   ).json()) as {
@@ -520,13 +570,16 @@ async function publicSearchFixtures(
     categories: Array<{ id: string; name: string }>;
   };
   const work = worksPayload.works[0]?.work;
-  if (!work) throw new Error('Expected at least one published work for Search E2E');
+  if (!work)
+    throw new Error('Expected at least one published work for Search E2E');
 
   const category = categoriesPayload.categories.find(
     (candidate) => candidate.id === work.categoryId,
   );
   if (!category) {
-    throw new Error(`Expected category ${work.categoryId} for Search E2E work ${work.publicId}`);
+    throw new Error(
+      `Expected category ${work.categoryId} for Search E2E work ${work.publicId}`,
+    );
   }
 
   return {
@@ -555,6 +608,8 @@ async function expectNoHorizontalOverflow(page: Page) {
     .toBe(true);
 }
 
-function hoverFill(locator: { evaluate: (fn: (node: Element) => string) => Promise<string> }) {
+function hoverFill(locator: {
+  evaluate: (fn: (node: Element) => string) => Promise<string>;
+}) {
   return locator.evaluate((node) => getComputedStyle(node).backgroundColor);
 }

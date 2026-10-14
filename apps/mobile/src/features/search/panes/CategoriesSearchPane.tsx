@@ -46,8 +46,11 @@ export function CategoriesSearchPane({ query }: { query: string }) {
         <PaddedGrid
           items={items}
           columns={gridColumnsFromWidth(contentWidth, {
-            // Тайл категории 120.67 в дизайне (Figma); при 390 — три в ряд.
-            minCardWidth: 120,
+            // Дизайн: 3 тайла в ряд при 390. Реальный контейнер шторки —
+            // 390 − 2×12 (layout.gutter) = 366, тайл (366 − 2×8)/3 ≈ 116.67.
+            // Значение 120.67 в CategorySearchTile измерено при контейнере
+            // 378 и при текущих отступах три раза не помещается.
+            minCardWidth: 116,
             gap: designTokens.space.x2,
             max: 3,
           })}

@@ -25,9 +25,10 @@ describe('gridColumnsFromWidth', () => {
     expect(gridColumnsFromWidth(0, authorGrid)).toBe(1);
   });
 
-  it('supports narrow tiles at three across', () => {
-    const categoryGrid = { minCardWidth: 120, gap: 8, max: 3 as const };
-    expect(gridColumnsFromWidth(390, categoryGrid)).toBe(3);
+  it('keeps three category tiles across at the real 390 container', () => {
+    // Контейнер шторки 390 − 2×12 = 366; (366 + 8) / (116 + 8) = 3.01.
+    const categoryGrid = { minCardWidth: 116, gap: 8, max: 3 as const };
+    expect(gridColumnsFromWidth(366, categoryGrid)).toBe(3);
     expect(gridColumnsFromWidth(320, categoryGrid)).toBe(2);
   });
 });
