@@ -86,7 +86,9 @@ export function CreatorIdentity({
             <AppText role="bodySmall" tone="secondary">
               {profile.city || country}
             </AppText>
-            <AppText role="bodySmall" tone="secondary">·</AppText>
+            <AppText role="bodySmall" tone="secondary">
+              ·
+            </AppText>
             <AppText
               testID="creator-handle"
               role="bodySmall"
@@ -102,9 +104,18 @@ export function CreatorIdentity({
           testID="creator-actions"
           style={{ width: '100%', minWidth: 0, flexGrow: 0 }}
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingRight: designTokens.space.x3 }}
+          contentContainerStyle={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 4,
+            paddingRight: designTokens.space.x3,
+          }}
         >
-          <FigmaButton label="Подписаться" variant="solid" onPress={onSubscribe} />
+          <FigmaButton
+            label="Подписаться"
+            variant="solid"
+            onPress={onSubscribe}
+          />
           <CreatorSocialActions profile={profile} />
         </ScrollView>
       </View>

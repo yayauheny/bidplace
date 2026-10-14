@@ -317,7 +317,7 @@ the shared navigation glass (`FigmaGlassSurface preset="navigation"`,
 `borderRadius: 0`, `motion.control`, `cubic-bezier(0.2, 0, 0, 1)`,
 `ReduceMotion.System`). Creator compact uses the same material behind
 identity and tabs. Docked tabs set `surface="transparent"` so they do not
-paint a second canvas. Tab labels use `contentInset={space.pageGutter}`;
+paint a second canvas. Tab labels use `contentInset={layout.gutter}`;
 the tablist divider stays full-bleed. Gallery and identity scroll away
 naturally. Native Work stays expanded-only.
 
@@ -391,8 +391,10 @@ Values live in the only `designTokens` export (`figmaTokens` alias).
 `AppShell` owns the fluid column (`DEC-120`): full viewport width, centered,
 `maxWidth: layout.contentMax + 2 * layout.gutter` with 12px horizontal
 padding. Content width is `min(viewport - 24, 1280)`; mobile/tablet are fluid.
-Safe Area is applied by the shell; `useDockInset` supplies the dock offset
-and content reserve. 1024/1440 Figma compositions remain `NEEDS-FIGMA`.
+The Work gallery is the local full-bleed exception: it escapes that gutter,
+while its identity, tabs and body reapply it. `AppShell` applies top and side
+Safe Area; `useDockInset` owns the bottom inset once for both dock position and
+content reserve. 1024/1440 Figma compositions remain `NEEDS-FIGMA`.
 
 `FloatingDock` is one 232×64 glass capsule: Главная / Поиск / Добавить /
 Профиль. Search is an item inside that capsule. Dock Search opens a fullscreen

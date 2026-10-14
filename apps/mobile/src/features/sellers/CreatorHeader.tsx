@@ -29,18 +29,28 @@ export function CreatorHeader({
 
   return (
     <View testID="creator-static-header">
-      <View testID="author-header" style={{ paddingTop: designTokens.space.x3 }}>
+      <View
+        testID="author-header"
+        style={{ paddingTop: designTokens.space.x3 }}
+      >
         <View
           style={{
             flexDirection: 'row',
             justifyContent: 'space-between',
             alignItems: 'center',
-    
+
             marginBottom: designTokens.space.x5,
           }}
         >
           <View testID="author-back">
-            <FigmaIconButton icon="arrow-left-01" iconSize={20} strokeWidthPx={1.5} surface="muted" label="Назад" onPress={onBack} />
+            <FigmaIconButton
+              icon="arrow-left-01"
+              iconSize={20}
+              strokeWidthPx={1.5}
+              surface="muted"
+              label="Назад"
+              onPress={onBack}
+            />
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <FigmaIconButton
@@ -51,14 +61,19 @@ export function CreatorHeader({
               label="Добавить автора в избранное"
               onPress={() => onUnavailable('Избранные авторы')}
             />
-            <AuthorShare sharePath={profile.sharePath} onUnavailable={onUnavailable} />
+            <AuthorShare
+              sharePath={profile.sharePath}
+              onUnavailable={onUnavailable}
+            />
             {isOwner ? (
               <Link href="/profile" asChild>
                 <MotionPressable
                   accessibilityRole="link"
                   accessibilityLabel="Редактировать профиль автора"
                   preset="icon"
-                  style={({ pressed }) => figmaIconButtonStyle(pressed, 'muted')}
+                  style={({ pressed }) =>
+                    figmaIconButtonStyle(pressed, 'muted')
+                  }
                 >
                   <FigmaIcon name="pencil-edit-01" size={20} />
                 </MotionPressable>
@@ -101,13 +116,22 @@ export function CreatorHeader({
             setQrOpen(true);
           }}
           preset="button"
-          style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+          style={{
+            minHeight: 44,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
         >
           <AppText role="bodySmall">QR-код профиля</AppText>
           <FigmaIcon name="qr-code-01" size={20} />
         </MotionPressable>
       </FilterSheet>
-      <ShareSheet open={qrOpen} onClose={() => setQrOpen(false)} sharePath={profile.sharePath} />
+      <ShareSheet
+        open={qrOpen}
+        onClose={() => setQrOpen(false)}
+        sharePath={profile.sharePath}
+      />
     </View>
   );
 }

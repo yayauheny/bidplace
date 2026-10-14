@@ -53,7 +53,6 @@ describe('Figma semantic token contract', () => {
     expect(designTokens.size.coverWidth).toBe(264);
     expect(designTokens.blur.authorTopOverlay).toBe(20);
     expect(designTokens.size.icon).toBe(18);
-    expect(designTokens.layout.phoneWidth).toBe(390);
     expect(designTokens.opacity.disabled).toBe(0.5);
     expect(designTokens.opacity.atmosphere).toBe(0.5);
     expect(designTokens.blur.overlay).toBe(30);
@@ -72,10 +71,10 @@ describe('Figma semantic token contract', () => {
     expect(designTokens.color.atmosphereWash).toBe('rgba(255, 255, 255, 0.40)');
   });
 
-  it('keeps one phone column instead of desktop header chrome', () => {
+  it('uses the fluid shell token contract', () => {
     expect(designTokens.size.touch).toBe(44);
-    expect(designTokens.breakpoint.desktopShell).toBe(99999);
-    expect(designTokens.layout.contentMaxWidth).toBe(390);
+    expect(designTokens.layout.contentMax).toBe(1280);
+    expect(designTokens.layout.gutter).toBe(12);
   });
 
   it('uses Inter for the runtime type stack', () => {
@@ -176,12 +175,9 @@ describe('Figma semantic token contract', () => {
         1,
     );
     expect(designTokens.stickyDock.fullHeight).toBe(
-      designTokens.stickyDock.actionHeight +
-        designTokens.stickyDock.tabsHeight,
+      designTokens.stickyDock.actionHeight + designTokens.stickyDock.tabsHeight,
     );
-    expect(designTokens.stickyDock.controlInset).not.toBe(
-      designTokens.space.pageGutter,
-    );
+    expect(designTokens.stickyDock.controlInset).toBe(designTokens.space.x5);
   });
 
   it('uses the measured media interaction timing', () => {

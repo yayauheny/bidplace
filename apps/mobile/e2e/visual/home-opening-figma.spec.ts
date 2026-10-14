@@ -16,14 +16,11 @@ const coverPath = resolve(
   process.cwd(),
   '../../packages/database/prisma/fixtures/product-images/dali-estate.png',
 );
-const goldenPath = resolve(
-  visualDir,
-  'references/home-opening-figma-390.png',
-);
+const goldenPath = resolve(visualDir, 'references/home-opening-figma-390.png');
 const actualDir = resolve(visualDir, '../../test-results/home-opening');
 
 const openingViewport = {
-  width: designTokens.layout.phoneWidth,
+  width: 390,
   height: designTokens.layout.phoneFoldHeight,
 } as const;
 
@@ -54,16 +51,23 @@ test('Home Opening author column matches first-fold 390×860 capture', async ({
   await installOpeningMock(page, { body, avatar, cover });
 
   await page.goto('/');
-  await expect(page.getByText('Открытие недели', { exact: true })).toBeVisible();
+  await expect(
+    page.getByText('Открытие недели', { exact: true }),
+  ).toBeVisible();
   const author = page.locator('#home-opening-author');
   await expect(author.getByText('@vex', { exact: true })).toBeVisible();
   await expect(page.getByText('Выбор куратора')).toHaveCount(1);
   await expect(page.getByText('Активные торги')).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Смотреть профиль' })).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Смотреть профиль' }),
+  ).toBeVisible();
   await page.evaluate(() => document.fonts.ready);
   const authorBox = await author.boundingBox();
   expect(authorBox).not.toBeNull();
-  expect(authorBox?.width).toBeCloseTo(designTokens.layout.openingAuthorWidth, 1);
+  expect(authorBox?.width).toBeCloseTo(
+    designTokens.layout.openingAuthorWidth,
+    1,
+  );
 
   await assertOpeningType(page);
   await assertQuietPill(page);
@@ -78,7 +82,10 @@ test('Home Opening author column matches first-fold 390×860 capture', async ({
     clip,
     path: resolve(actualDir, 'author-actual.png'),
   });
-  await writeFile(resolve(actualDir, 'fold-actual.png'), await page.screenshot());
+  await writeFile(
+    resolve(actualDir, 'fold-actual.png'),
+    await page.screenshot(),
+  );
 
   const diff = await compareAuthorColumn(page, {
     actualPng: actualAuthor,
@@ -103,8 +110,7 @@ async function installOpeningMock(
   const cors = (route: {
     request: () => { headers: () => Record<string, string> };
   }) => {
-    const origin =
-      route.request().headers().origin ?? 'http://localhost:8091';
+    const origin = route.request().headers().origin ?? 'http://localhost:8091';
     return {
       'access-control-allow-origin': origin,
       'access-control-allow-credentials': 'true',
@@ -206,7 +212,9 @@ async function assertQuietPill(page: Page) {
   expect(chrome.paddingLeft).toBe('14px');
   expect(chrome.paddingRight).toBe('14px');
   expect(chrome.borderTopLeftRadius).toBe('28px');
-  const label = await computed(button.getByText('Смотреть профиль', { exact: true }));
+  const label = await computed(
+    button.getByText('Смотреть профиль', { exact: true }),
+  );
   expect(label.fontSize).toBe('13px');
   expect(label.lineHeight).toBe('18px');
   expect(label.fontWeight).toBe('500');
@@ -217,7 +225,9 @@ async function assertQuietPill(page: Page) {
   expect(box?.height).toBeLessThan(44);
 }
 
-async function computed(locator: ReturnType<Page['locator']> | ReturnType<Page['getByText']>) {
+async function computed(
+  locator: ReturnType<Page['locator']> | ReturnType<Page['getByText']>,
+) {
   return locator.evaluate((node) => {
     const style = getComputedStyle(node);
     return {
@@ -269,17 +279,7 @@ async function compareAuthorColumn(
       canvas.height = height;
       const ctx = canvas.getContext('2d');
       if (!ctx) throw new Error('canvas');
-      ctx.drawImage(
-        golden,
-        crop.x,
-        crop.y,
-        width,
-        height,
-        0,
-        0,
-        width,
-        height,
-      );
+      ctx.drawImage(golden, crop.x, crop.y, width, height, 0, 0, width, height);
       const goldenCropPng = canvas.toDataURL('image/png').split(',')[1] ?? '';
       const goldenData = ctx.getImageData(0, 0, width, height).data;
       ctx.clearRect(0, 0, width, height);

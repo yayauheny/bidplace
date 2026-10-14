@@ -4,8 +4,8 @@
 
 ## 2026-10-13 — W2 fluid AppShell
 
-- `Partial`: `AppShell` uses the 1280/12 fluid contract (`DEC-120`), shared `useDockInset` replaces eight fixed reserves and `FormPageShell` avoids double reserve with `bottomAction`; `WorkGallery` reads its on-layout width. Evidence: `AppShell.tsx`, `use-dock-inset.ts`, `WorkGallery.tsx`.
-- `Needs verification`: build/typecheck/lint, 390/440/768/1024/1440 layout and native PWA Safe Area; no new commerce features, API, database or routes.
+- `Partial`: `AppShell` uses the 1280/12 fluid contract (`DEC-120`), shared `useDockInset` replaces eight fixed reserves and `FormPageShell` avoids double reserve with `bottomAction`. Work media alone escapes the shared gutter, so its 390px Figma geometry and Back/Share inset remain intact; the bottom Safe Area is counted once. Evidence: `AppShell.tsx`, `use-dock-inset.ts`, `use-dock-inset.spec.ts`, `WorkHeader.tsx`, `WorkHeader.web.tsx`.
+- `Needs verification`: 390/440/768/1024/1440 rendered layout, native PWA Safe Area and browser acceptance remain; typecheck, lint, focused tests and formatting are checked locally. No new commerce features, API, database or routes.
 
 ## 2026-10-13 — W1 shared sheet mechanism
 

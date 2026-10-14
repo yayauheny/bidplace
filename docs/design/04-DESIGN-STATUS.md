@@ -4,8 +4,8 @@
 
 ## 2026-10-13 — W2 fluid AppShell and dock inset
 
-- `Partial`: `AppShell` uses centered 1280px fluid content with 12px gutter (`DEC-120`); `useDockInset` replaces fixed `dockReserve` for overlay clearance, and `WorkGallery` measures its container. Evidence: `AppShell.tsx`, `use-dock-inset.ts`, `WorkGallery.tsx`.
-- `Needs verification`: typecheck, lint, formatting, native Safe Area, rendered 390/440/768/1024/1440 parity and horizontal overflow have not been checked in a runtime; desktop compositions remain `NEEDS-FIGMA`.
+- `Partial`: `AppShell` uses centered 1280px fluid content with 12px gutter (`DEC-120`); Work media escapes that gutter while its body remains aligned, and `useDockInset` owns the bottom Safe Area once for dock clearance. Evidence: `AppShell.tsx`, `use-dock-inset.ts`, `WorkHeader.tsx`, `WorkHeader.web.tsx`, `use-dock-inset.spec.ts`.
+- `Needs verification`: 390/440/768/1024/1440 rendered parity, horizontal overflow, browser keyboard/reduced-motion behavior and native Safe Area remain open; desktop compositions remain `NEEDS-FIGMA`.
 
 ## 2026-10-13 — W1 filter sheet mechanism
 

@@ -24,6 +24,7 @@ export function AppShell({
 
   return (
     <SafeAreaView
+      edges={hideDock ? undefined : ['top', 'left', 'right']}
       style={{
         flex: 1,
         backgroundColor: designTokens.color.canvas,
@@ -36,7 +37,8 @@ export function AppShell({
         style={{
           flex: 1,
           width: '100%',
-          maxWidth: designTokens.layout.contentMax + 2 * designTokens.layout.gutter,
+          maxWidth:
+            designTokens.layout.contentMax + 2 * designTokens.layout.gutter,
           paddingHorizontal: designTokens.layout.gutter,
           minWidth: 0,
           alignSelf: 'center',
