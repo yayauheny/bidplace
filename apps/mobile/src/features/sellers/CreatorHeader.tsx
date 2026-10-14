@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'expo-router';
-import { View } from 'react-native';
+import { Platform, View } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
 
 import { BackButton } from '../../components/figma/BackButton';
@@ -95,6 +95,7 @@ export function CreatorHeader({
         label="Профиль автора"
         panelId={panelId}
         align="center"
+        fill={Platform.OS === 'web'}
       />
       <FilterSheet
         presentation="compact"

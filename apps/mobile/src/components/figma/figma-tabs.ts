@@ -9,6 +9,8 @@ export type FigmaTabsProps = {
   panelId: string;
   align?: 'start' | 'center';
   contentInset?: number;
+  /** Таб-бар с фоном canvas и разделителем (веб-шапка). */
+  fill?: boolean;
 };
 
 export function figmaTabLabelColor(selected: boolean) {

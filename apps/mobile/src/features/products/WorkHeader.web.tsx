@@ -147,6 +147,7 @@ export function WorkHeader({
             label="Информация о работе"
             panelId={panelId}
             contentInset={designTokens.layout.gutter}
+            fill
           />
         </div>
         <div
