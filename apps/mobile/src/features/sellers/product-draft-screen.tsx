@@ -5,17 +5,14 @@ import * as ImagePicker from 'expo-image-picker';
 import { FormProvider, useForm, useWatch } from 'react-hook-form';
 import { useNavigation, useRouter } from 'expo-router';
 import { usePreventRemove } from 'expo-router/build/react-navigation/core';
-import { View } from 'react-native';
 
 import type {
   Product,
   ProductStatus,
   SellerProductDetailResponse,
 } from '@bidplace/contracts';
-import { designTokens } from '@bidplace/design-tokens';
 
 import { AppShell, FormPageShell } from '../../components/layout';
-import { MediaDeliveryNotice } from '../../components/shared/MediaDeliveryNotice';
 import { InfrastructurePageStatus } from '../../components/shared/InfrastructurePageStatus';
 import {
   combineInfrastructurePageStatus,
@@ -23,8 +20,6 @@ import {
 } from '../../components/shared/infrastructure-page-status';
 import {
   AppDialog,
-  AppText,
-  FormSection,
   PageState,
   PrimaryButton,
   SecondaryButton,
@@ -36,7 +31,6 @@ import {
   isNotFoundError,
   readFormFailure,
 } from '../../errors';
-import { presentEnum, productStatusLabels } from '../../lib/presentation';
 import { useApiClient } from '../../providers/api-provider';
 import {
   canWritePrivateCache,
@@ -69,7 +63,7 @@ import {
   type ProductRevisionIdentity,
 } from './product-draft-state';
 import { ProductDraftStoryStep } from './product-draft-story';
-import { FigmaIconButton } from '../../components/figma/FigmaIconButton';
+import { ProductDraftScreenChrome } from './product-draft-screen-chrome';
 import { useProductStoryEditor } from './use-product-story-editor';
 import {
   canOpenProductWizardStep,
@@ -993,164 +987,47 @@ export function ProductDraftScreen({
     <FormProvider {...form}>
       <ProductDraftWriteGuard guard={transitionLock}>
         <FormPageShell hideDock>
-          {isCreationFlow && !storyWizardView ? (
-            <FormSection
-              title={
-                wizardSubmitted ? 'Предмет отправлен' : 'Создание предмета'
-              }
-              description={
-                wizardSubmitted
-                  ? 'Черновик отправлен на модерацию. Дальше команда проверит его содержание и изображения.'
-                  : 'Заполните предмет по шагам, сохраните промежуточные изменения и проверьте публикацию перед отправкой.'
-              }
-            >
-              <View
-                accessibilityRole="tablist"
-                style={{
-                  flexDirection: 'row',
-                  flexWrap: 'wrap',
-                  gap: designTokens.space.x2,
-                }}
-              >
-                {[
-                  'О работе',
-                  'Изображения',
-                  'История создания',
-                  'Проверка',
-                ].map((label, index) => {
-                  const currentStep = index + 1;
-                  return (
-                    <SecondaryButton
-                      key={label}
-                      label={`${currentStep}. ${label}`}
-                      disabled={
-                        wizardSubmitted ||
-                        !canOpenProductWizardStep(currentStep, wizardDraft)
-                      }
-                      onPress={() => void moveToWizardStep(currentStep)}
-                    />
-                  );
-                })}
-              </View>
-              {existingProduct ? (
-                <AppText role="metadata" tone="secondary">
-                  Шаг {wizardStep} из 4 · {draftTitle.trim() || 'Без названия'}
-                </AppText>
-              ) : null}
-              <SecondaryButton
-                label={
-                  form.formState.isDirty || storyEditor.dirty ? 'Сохранить и закрыть' : 'Закрыть'
-                }
-                loading={save.isPending || storyEditor.pending}
-                disabled={submit.isPending || storyEditor.pending || inputsLocked}
-                onPress={() => void saveAndClose()}
-              />
-            </FormSection>
-          ) : null}
-
-          {storyWizardView ? (
-            <View style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              paddingVertical: designTokens.space.x2,
-            }}>
-              <FigmaIconButton
-                icon="arrow-left-01"
-                label="Назад к изображениям"
-                disabled={storyEditor.pending || inputsLocked}
-                onPress={() => void moveToWizardStep(productWizardStep.images)}
-              />
-              <View accessibilityLabel="Шаг 3 из 4" style={{ flexDirection: 'row', gap: designTokens.space.x2 }}>
-                {[1, 2, 3, 4].map((index) => (
-                  <View key={index} style={{
-                    width: 6,
-                    height: 6,
-                    borderRadius: 6,
-                    backgroundColor: index === 2 ? designTokens.color.inkStrong : designTokens.color.border,
-                  }} />
-                ))}
-              </View>
-              <FigmaIconButton
-                icon="x"
-                label="Сохранить и закрыть"
-                disabled={storyEditor.pending || inputsLocked}
-                onPress={() => void saveAndClose()}
-              />
-            </View>
-          ) : null}
-
-          {!storyWizardView ? (
-            <View style={{ gap: designTokens.space.x2 }}>
-              <AppText role="screenTitle">
-              {existingProduct ? 'Редактировать предмет' : 'Новый предмет'}
-            </AppText>
-            <AppText role="bodySmall" tone="secondary">
-              Черновик можно сохранить неполным. Для модерации нужны название,
-              категория и хотя бы одно изображение.
-            </AppText>
-            </View>
-          ) : null}
-
-          <MediaDeliveryNotice delivery={productDetail.data?.publication} />
-          {moderationNotice ? (
-            <FormSection title={moderationNotice.title}>
-              <AppText role="bodySmall" tone="danger">
-                {moderationNotice.body}
-              </AppText>
-            </FormSection>
-          ) : null}
-
-          {existingProduct && !isCreationFlow ? (
-            <FormSection title="Статус предмета">
-              <AppText
-                role="bodySmall"
-                tone={
-                  editorStatus === 'APPROVED'
-                    ? 'success'
-                    : editorStatus === 'CHANGES_REQUESTED' ||
-                        editorStatus === 'REJECTED'
-                      ? 'danger'
-                      : 'secondary'
-                }
-              >
-                {editorStatus
-                  ? presentEnum(
-                      editorStatus,
-                      productStatusLabels,
-                      'Неизвестный статус предмета',
-                    )
-                  : null}
-              </AppText>
-              <SecondaryButton
-                label="Обновить"
-                onPress={() => void productDetail.refetch()}
-              />
-              {editable ? (
-                <PrimaryButton
-                  label={submitLabel}
-                  loading={submit.isPending}
-                  disabled={
-                    existingProduct.images.length < 1 ||
-                    save.isPending ||
-                    inputsLocked
-                  }
-                  onPress={() => void submitCurrentForm()}
-                />
-              ) : null}
-              {submit.isError ? (
-                <AppText role="bodySmall" tone="danger">
-                  Не удалось сохранить и отправить предмет на модерацию.
-                </AppText>
-              ) : null}
-            </FormSection>
-          ) : null}
-
-          {existingProduct && !editable && !isCreationFlow ? (
-            <AppText role="bodySmall" tone="danger">
-              Предмет уже нельзя редактировать или изменять его изображения.
-            </AppText>
-          ) : null}
+          <ProductDraftScreenChrome
+            isCreationFlow={isCreationFlow}
+            storyWizardView={storyWizardView}
+            wizardSubmitted={wizardSubmitted}
+            wizardStep={wizardStep}
+            draftTitle={draftTitle}
+            hasExistingProduct={Boolean(existingProduct)}
+            canOpenStep={(step) => canOpenProductWizardStep(step, wizardDraft)}
+            onStepPress={(step) => void moveToWizardStep(step)}
+            onBackToImages={() =>
+              void moveToWizardStep(productWizardStep.images)
+            }
+            storyBarDisabled={storyEditor.pending || inputsLocked}
+            closeLabel={
+              form.formState.isDirty || storyEditor.dirty
+                ? 'Сохранить и закрыть'
+                : 'Закрыть'
+            }
+            closeLoading={save.isPending || storyEditor.pending}
+            closeDisabled={submit.isPending || storyEditor.pending || inputsLocked}
+            onClose={() => void saveAndClose()}
+            delivery={productDetail.data?.publication}
+            moderationNotice={moderationNotice}
+            editorStatus={editorStatus}
+            onRefreshStatus={() => void productDetail.refetch()}
+            editable={editable}
+            submitLabel={submitLabel}
+            submitPending={submit.isPending}
+            submitDisabled={
+              existingProduct
+                ? existingProduct.images.length < 1 ||
+                  save.isPending ||
+                  inputsLocked
+                : false
+            }
+            onSubmit={() => void submitCurrentForm()}
+            submitErrorVisible={Boolean(submit.isError)}
+            lockedVisible={
+              Boolean(existingProduct) && !editable && !isCreationFlow
+            }
+          />
 
           {!isCreationFlow || wizardStep === productWizardStep.about ? (
             <ProductDraftAboutStep
