@@ -356,7 +356,6 @@ export function useProductDraftSaveSession({
     transitionLock,
     inputsLocked,
     formAlert,
-    setFormAlert,
     save,
     submit,
     persistCurrentForm,

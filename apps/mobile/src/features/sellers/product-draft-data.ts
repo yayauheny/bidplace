@@ -255,13 +255,11 @@ export function useProductDraftData({
 
   return {
     categories,
-    catalogOpenRole,
     setCatalogOpenRole,
     materialsCatalog,
     techniquesCatalog,
     productDetail,
     existingProduct,
-    persistedRevisionUpdatedAt,
     editingRevisionStatus,
     editorStatus,
     storyNeedsDraft,
