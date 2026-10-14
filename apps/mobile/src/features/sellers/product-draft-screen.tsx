@@ -24,7 +24,6 @@ import {
 import {
   AppDialog,
   AppText,
-  DestructiveButton,
   FormSection,
   PageState,
   PrimaryButton,
@@ -1297,7 +1296,7 @@ export function ProductDraftScreen({
             description="Изображение будет удалено из предмета. Это действие нельзя отменить."
             onClose={() => setImagePendingDelete(null)}
           >
-            <DestructiveButton
+            <PrimaryButton
               label="Удалить изображение"
               loading={deleteConfirmLocked || removeImage.isPending}
               onPress={() => {

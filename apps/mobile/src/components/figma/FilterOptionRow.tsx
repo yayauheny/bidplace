@@ -68,25 +68,12 @@ export function FilterOptionRow({
     >
       {!compact ? (
         <View style={filterOptionControlStyle(mode, selected)}>
-          {selected && mode === 'checkbox' && variant === 'directions' ? (
+          {selected && mode === 'checkbox' ? (
             <FigmaIcon
               name="check"
               size={designTokens.size.filterOptionCheck}
               color={designTokens.color.white}
               strokeWidthPx={designTokens.stroke.filterOptionCheck}
-            />
-          ) : null}
-          {selected && mode === 'checkbox' && variant !== 'directions' ? (
-            <View
-              style={{
-                width: 10,
-                height: 6,
-                marginTop: -2,
-                borderLeftWidth: 1.5,
-                borderBottomWidth: 1.5,
-                borderColor: designTokens.color.white,
-                transform: [{ rotate: '-45deg' }],
-              }}
             />
           ) : null}
           {selected && mode === 'radio' ? (

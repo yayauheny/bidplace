@@ -170,11 +170,10 @@ vi.mock('../../components/ui', () => {
   return {
     AppDialog: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
     AppText: ({ children }: { children?: ReactNode }) => createElement('span', null, children),
-    DestructiveButton: PressButton,
+    PrimaryButton: PressButton,
     FormSection: ({ children }: { children?: ReactNode }) => createElement('section', null, children),
     PageState: () => null,
-    PrimaryButton: PressButton,
-    SecondaryButton: PressButton,
+        SecondaryButton: PressButton,
     TextButton: PressButton,
     ResilientRemoteImage: () => null,
     TextField: ({

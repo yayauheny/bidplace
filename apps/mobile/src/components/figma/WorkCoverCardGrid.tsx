@@ -2,7 +2,7 @@ import { View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
-import { paddedGridRows } from './flex-grid-rows';
+import { PaddedGrid } from './PaddedGrid';
 import { WorkCoverCard } from './WorkCoverCard';
 
 export type WorkCoverCardGridItem = {
@@ -41,23 +41,15 @@ export function WorkCoverCardGrid({
 
   return (
     <View style={{ width: '100%', gap: designTokens.space.x2 }}>
-      {paddedGridRows(items, columns).map((row, rowIndex) => (
-        <View
-          key={row.find((item) => item)?.work.publicId ?? `row-${rowIndex}`}
-          style={{ flexDirection: 'row', gap: designTokens.space.x2 }}
-        >
-          {row.map((item, cellIndex) => (
-            <View
-              key={item?.work.publicId ?? `spacer-${rowIndex}-${cellIndex}`}
-              style={{ flex: 1, minWidth: 0 }}
-            >
-              {item ? (
-                <WorkCoverGridCard item={item} onItemPress={onItemPress} />
-              ) : null}
-            </View>
-          ))}
-        </View>
-      ))}
+      <PaddedGrid
+        items={items}
+        columns={columns}
+        gap={designTokens.space.x2}
+        keyExtractor={(item) => item.work.publicId}
+        renderItem={(item) => (
+          <WorkCoverGridCard item={item} onItemPress={onItemPress} />
+        )}
+      />
     </View>
   );
 }

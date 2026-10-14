@@ -78,8 +78,7 @@ export function WorkGallery({
           horizontal
           pagingEnabled
           showsHorizontalScrollIndicator={false}
-          scrollEventThrottle={16}
-          onScroll={(event) =>
+          onMomentumScrollEnd={(event) =>
             width > 0 && setActive(
               Math.max(
                 0,

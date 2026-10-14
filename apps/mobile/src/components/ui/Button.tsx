@@ -71,23 +71,6 @@ export function SecondaryButton({
   );
 }
 
-export function DestructiveButton({
-  width = 'content',
-  alignSelf,
-  ...props
-}: ButtonProps) {
-  const resolvedWidth = resolvedButtonWidth(width);
-  return (
-    <View
-      style={{
-        alignSelf: alignSelf ?? (resolvedWidth === 'full' ? 'stretch' : 'flex-start'),
-      }}
-    >
-      <FigmaButton {...props} variant="solid" width={resolvedWidth} />
-    </View>
-  );
-}
-
 export function TextButton({ width, ...props }: TextButtonProps) {
   return (
     <FigmaButton

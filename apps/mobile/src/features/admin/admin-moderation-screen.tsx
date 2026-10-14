@@ -26,7 +26,6 @@ import { infrastructurePageFetchStatus } from '../../components/shared/infrastru
 import {
   AppDialog,
   AppText,
-  DestructiveButton,
   FormSection,
   PageHeader,
   PrimaryButton,
@@ -548,7 +547,7 @@ export function AdminModerationScreen() {
                             })
                           }
                         />
-                        <DestructiveButton
+                        <PrimaryButton
                           label="Запросить изменения"
                           loading={sellerStatus.isPending}
                           onPress={() =>
@@ -559,7 +558,7 @@ export function AdminModerationScreen() {
                             })
                           }
                         />
-                        <DestructiveButton
+                        <PrimaryButton
                           label="Отклонить"
                           loading={sellerStatus.isPending}
                           onPress={() =>
@@ -585,7 +584,7 @@ export function AdminModerationScreen() {
                         }
                       />
                     ) : null}
-                    <DestructiveButton
+                    <PrimaryButton
                       disabled={
                         seller.parentStatus === 'SUSPENDED' ||
                         seller.hasBlockingListing
@@ -801,7 +800,7 @@ export function AdminModerationScreen() {
                     ) : null}
                     {review && pendingRevision(review.status) ? (
                       <>
-                        <DestructiveButton
+                        <PrimaryButton
                           label="Запросить изменения"
                           loading={productStatus.isPending}
                           onPress={() =>
@@ -812,7 +811,7 @@ export function AdminModerationScreen() {
                             })
                           }
                         />
-                        <DestructiveButton
+                        <PrimaryButton
                           label="Отклонить"
                           loading={productStatus.isPending}
                           onPress={() =>
@@ -878,7 +877,7 @@ export function AdminModerationScreen() {
               error={reasonError ?? undefined}
             />
           ) : null}
-          <DestructiveButton
+          <PrimaryButton
             label={confirmationText[confirmation.kind].label}
             loading={confirming}
             disabled={!moderationReason.trim()}

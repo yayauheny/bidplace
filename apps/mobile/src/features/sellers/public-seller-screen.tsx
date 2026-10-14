@@ -25,7 +25,7 @@ import { FigmaChoiceChip } from '../../components/figma/FigmaChoiceChip';
 import { FigmaButton } from '../../components/figma/FigmaButton';
 import { FilterOptionRow } from '../../components/figma/FilterOptionRow';
 import { FilterSheet } from '../../components/figma/FilterSheet';
-import { paddedGridRows } from '../../components/figma/flex-grid-rows';
+import { PaddedGrid } from '../../components/figma/PaddedGrid';
 
 import { AuthorAbout } from './AuthorAbout';
 import { CreatorWorkCard } from './CreatorWorkCard';
@@ -236,22 +236,20 @@ export function PublicSellerScreen({
             ) : (
               <>
                 <View style={{ width: '100%', gap: designTokens.space.sectionGap }}>
-                  {paddedGridRows(works, contentWidth >= 1000 ? 3 : contentWidth >= 700 ? 2 : 1).map((row, rowIndex) => (
-                    <View key={row.find((item) => item)?.work.publicId ?? rowIndex} style={{ flexDirection: 'row', gap: designTokens.space.x3 }}>
-                      {row.map((item, index) => (
-                        <View key={item?.work.publicId ?? index} style={{ flex: 1, minWidth: 0 }}>
-                          {item ? (
-                            <CreatorWorkCard
-                              item={item}
-                              isOwner={isOwner}
-                              onUnavailable={setUnavailable}
-                              onHide={setPendingHide}
-                            />
-                          ) : null}
-                        </View>
-                      ))}
-                    </View>
-                  ))}
+                  <PaddedGrid
+                    items={works}
+                    columns={contentWidth >= 1000 ? 3 : contentWidth >= 700 ? 2 : 1}
+                    gap={designTokens.space.x3}
+                    keyExtractor={(item) => item.work.publicId}
+                    renderItem={(item) => (
+                      <CreatorWorkCard
+                        item={item}
+                        isOwner={isOwner}
+                        onUnavailable={setUnavailable}
+                        onHide={setPendingHide}
+                      />
+                    )}
+                  />
                 </View>
                 {query.hasNextPage ? (
                   <PrimaryButton

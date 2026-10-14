@@ -33,7 +33,7 @@ import {
 } from '../../lib/layout-transition';
 import { BidplaceMark, BidplaceWordmark } from '../branding/BidplaceBrand';
 import { AppText } from '../ui';
-import { AppIcon } from '../ui/AppIcon';
+import { FigmaIcon } from '../figma/FigmaIcon';
 import { AppDialogFrame, AppDialogOverlay } from '../ui/app-dialog-layer';
 import { appDialogHostStyle } from '../ui/app-dialog-host-style';
 import { MotionPressable } from '../ui/MotionPressable';
@@ -450,7 +450,7 @@ export function AuthViewport(props: AuthViewportProps) {
                               preset="icon"
                               style={{ position: 'absolute', right: 0, top: (designTokens.typography.authSheetTitle.lineHeight - 32) / 2, width: 32, height: 32, alignItems: 'center', justifyContent: 'center' }}
                             >
-                              <AppIcon name="x" size={22} />
+                              <FigmaIcon name="x" size={22} />
                             </MotionPressable>
                           </View>
                         </View>

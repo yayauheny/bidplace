@@ -3,7 +3,7 @@ import { View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
-import { paddedGridRows } from '../../../components/figma/flex-grid-rows';
+import { PaddedGrid } from '../../../components/figma/PaddedGrid';
 import { retryTransientPublicQuery } from '../../../lib/query-retry';
 import { categoryKeys } from '../../../lib/query-cache';
 import { useApiClient } from '../../../providers/api-provider';
@@ -39,27 +39,19 @@ export function CategoriesSearchPane({
       loading={<CategorySkeleton />}
     >
       <View style={{ width: '100%', gap: designTokens.space.x2 }}>
-        {paddedGridRows(items, 3).map((row, rowIndex) => (
-          <View
-            key={row.find((item) => item)?.id ?? `row-${rowIndex}`}
-            style={{ flexDirection: 'row', gap: designTokens.space.x2 }}
-          >
-            {row.map((category, cellIndex) => (
-              <View
-                key={category?.id ?? `spacer-${rowIndex}-${cellIndex}`}
-                style={{ flex: 1, minWidth: 0 }}
-              >
-                {category ? (
-                  <CategorySearchTile
-                    id={category.id}
-                    slug={category.slug}
-                    name={category.name}
-                  />
-                ) : null}
-              </View>
-            ))}
-          </View>
-        ))}
+        <PaddedGrid
+          items={items}
+          columns={3}
+          gap={designTokens.space.x2}
+          keyExtractor={(category) => category.id}
+          renderItem={(category) => (
+            <CategorySearchTile
+              id={category.id}
+              slug={category.slug}
+              name={category.name}
+            />
+          )}
+        />
       </View>
     </SearchPaneStatus>
   );

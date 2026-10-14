@@ -2,6 +2,12 @@
 
 > Entries dated before 2026-10-13 mention Pen / .pen files; the Pen design was removed (DEC-119) — read those mentions as history.
 
+## 2026-10-14 — W4 component dedup (Wave 2)
+
+- `Implemented`: дедуп-коммит-срез плана. `BackButton` (3 варианта) вместо 3 ручных реализаций; одна RN `FigmaTabs` (`.web.tsx` удалён, паттерн `fill`, клавиатурная a11y сохранена); `PaddedGrid` вместо трёх инлайн-сеток; `DestructiveButton` удалён (дубликат `PrimaryButton`); `AppIcon` + `lucide-react-native` вычищены; галка `FilterOptionRow` — `FigmaIcon check`; `WorkGallery` — `onMomentumScrollEnd`. Нетто −100 строк. Детали — в `04-DESIGN-STATUS.md`.
+- Проверки: typecheck, lint, vitest 770/770; e2e `tab-switch-reveal` 5/5 (root-cause гейта: `creationStory` в фикстуре), `author-static-header`, `search-overlay` зелёные. Pre-existing (проверено на базе 7f0e53ec): 2 e2e каталога (данные), `creator-profile:11`, `search-overlay:35`, загрузка `author-cabinet-work-cache.spec`, 1 фейл `admin-moderation-screen.spec` — всё в бэклог В4.
+- Не тронуто (защищено): FigmaButton-метрики, dock 232×64, frost, AppDialog (только источник glyph закрытия), Safe Area, `BidplaceBrand`, auth-экраны, значения токенов.
+
 ## 2026-10-14 — W3 token diet (Wave 1 + W1.1)
 
 - `Implemented`: единый источник токенов — `designTokens` (rename 61 файла, алиас удалён), 3 мёртвых токена удалены, `size.input` 51→50 (Q5). Ограждения: eslint храповик (deep-imports, lucide, RN Modal/Touchable, hex-литералы) + спека покрытия токенов. Dock z-index из токена `layer.dock`. Детали и 13 grandfathered нечётных значений — в `04-DESIGN-STATUS.md`.

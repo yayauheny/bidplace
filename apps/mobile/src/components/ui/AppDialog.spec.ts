@@ -32,9 +32,6 @@ vi.mock('../figma/FigmaIcon', () => ({
   FigmaIcon: () => null,
 }));
 
-vi.mock('lucide-react-native', () => ({
-  X: () => null,
-}));
 
 vi.mock('react-native-reanimated', () => {
   const ReduceMotion = { System: 'system' };

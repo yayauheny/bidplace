@@ -274,7 +274,6 @@ vi.mock('@hugeicons/react-native', () => ({
 import {
   type ButtonProps,
   type TextButtonProps,
-  DestructiveButton,
   PrimaryButton,
   SecondaryButton,
   TextButton,
@@ -355,7 +354,7 @@ function svgRects(container: ParentNode) {
 }
 
 describe('shared text button wrappers', () => {
-  it('renders primary, secondary, destructive, and ghost through FigmaButton metrics', async () => {
+  it('renders primary, secondary, and ghost through FigmaButton metrics', async () => {
     const primary = await mount(
       createElement(PrimaryButton, {
         label: 'Одобрить',
@@ -365,12 +364,6 @@ describe('shared text button wrappers', () => {
     const secondary = await mount(
       createElement(SecondaryButton, {
         label: 'Закрыть',
-        onPress: () => undefined,
-      }),
-    );
-    const destructive = await mount(
-      createElement(DestructiveButton, {
-        label: 'Удалить',
         onPress: () => undefined,
       }),
     );
@@ -395,17 +388,12 @@ describe('shared text button wrappers', () => {
       figmaButtonTokens.colors.canvas,
     );
 
-    const destructiveButton = buttonOf(destructive.container);
-    expectMatrixMetrics(destructiveButton);
-    expect(destructiveButton.dataset.bg).toBe('transparent');
-
     const ghostButton = buttonOf(ghost.container);
     expectMatrixMetrics(ghostButton);
     expect(ghostButton.dataset.bg).toBe('transparent');
 
     primary.unmount();
     secondary.unmount();
-    destructive.unmount();
     ghost.unmount();
   });
 
@@ -467,7 +455,7 @@ describe('shared text button wrappers', () => {
       }),
     );
     const loading = await mount(
-      createElement(DestructiveButton, {
+      createElement(PrimaryButton, {
         loading: true,
         label: 'Отклонить',
         onPress,
@@ -664,7 +652,6 @@ describe('shared text button wrappers', () => {
 describe('button href/onPress type contract', () => {
   type PrimaryProps = ComponentProps<typeof PrimaryButton>;
   type SecondaryProps = ComponentProps<typeof SecondaryButton>;
-  type DestructiveProps = ComponentProps<typeof DestructiveButton>;
 
   const hrefAndOnPress = {
     label: 'Пример',
@@ -729,7 +716,6 @@ describe('button href/onPress type contract', () => {
 
     expectTypeOf(hrefAndOnPress).not.toMatchTypeOf<PrimaryProps>();
     expectTypeOf(hrefAndOnPress).not.toMatchTypeOf<SecondaryProps>();
-    expectTypeOf(hrefAndOnPress).not.toMatchTypeOf<DestructiveProps>();
     expectTypeOf(labelOnly).not.toMatchTypeOf<PrimaryProps>();
   });
 });

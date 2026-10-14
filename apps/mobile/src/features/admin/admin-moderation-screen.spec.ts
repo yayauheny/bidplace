@@ -32,6 +32,10 @@ vi.mock('react-native', () => ({
     createElement('div', null, children),
 }));
 
+vi.mock('expo-image', () => ({
+  Image: () => null,
+}));
+
 vi.mock('expo-router', () => ({
   useRouter: () => ({ push: harness.push, replace: vi.fn() }),
   Link: ({ children }: { children?: ReactNode }) =>
@@ -130,7 +134,7 @@ vi.mock('../../components/ui', () => {
       open ? createElement('div', { role: 'dialog' }, title, children) : null,
     AppText: ({ children }: { children?: ReactNode }) =>
       createElement('span', null, children),
-    DestructiveButton: PressButton,
+    PrimaryButton: PressButton,
     FormSection: ({
       title,
       children,
@@ -140,8 +144,7 @@ vi.mock('../../components/ui', () => {
     }) => createElement('section', null, title, children),
     PageHeader: ({ title }: { title: string }) =>
       createElement('h1', null, title),
-    PrimaryButton: PressButton,
-    ResilientRemoteImage: ({
+        ResilientRemoteImage: ({
       uri,
       accessibilityLabel,
     }: {

@@ -9,7 +9,7 @@ import {
 } from '@bidplace/contracts';
 import { designTokens } from '@bidplace/design-tokens';
 
-import { AppText, DestructiveButton, SecondaryButton, TextField } from '../../components/ui';
+import { AppText, PrimaryButton, SecondaryButton, TextField } from '../../components/ui';
 import { useApiClient } from '../../providers/api-provider';
 
 type Proposal = NonNullable<AdminProduct['reviewTarget']>['selection']['proposals'][number];
@@ -173,7 +173,7 @@ export function AdminWorkCatalogProposals({
               Причина отклонения не соответствует ограничениям формы.
             </AppText>
           ) : null}
-          <DestructiveButton
+          <PrimaryButton
             label="Отклонить предложение"
             disabled={resolve.isPending || !validRejectionReason}
             onPress={() => resolve.mutate({ kind: 'reject', reason: reason.trim() })}

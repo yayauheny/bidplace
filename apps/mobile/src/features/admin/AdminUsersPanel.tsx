@@ -6,7 +6,6 @@ import { designTokens } from '@bidplace/design-tokens';
 
 import {
   AppText,
-  DestructiveButton,
   FormSection,
   PrimaryButton,
   SecondaryButton,
@@ -162,7 +161,7 @@ export function AdminUsersPanel() {
               error={reasonError ?? undefined}
             />
             {user.status === 'active' ? (
-              <DestructiveButton
+              <PrimaryButton
                 label="Заблокировать"
                 loading={updateStatus.isPending}
                 disabled={reasonMissing || pending}

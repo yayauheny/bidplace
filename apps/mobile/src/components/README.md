@@ -19,7 +19,6 @@
 | **FigmaButton** | `figma/FigmaButton.tsx` | Каноническая кнопка Figma: `solid` / `outline` / `ghost`, размеры, иконки, `loading`, навигация через **`href`** или **`onPress`**. |
 | **PrimaryButton** | `ui/Button.tsx` | Семантическая обёртка: `variant="solid"`. |
 | **SecondaryButton** | `ui/Button.tsx` | `variant="outline"`. |
-| **DestructiveButton** | `ui/Button.tsx` | Деструктивное действие (тот же solid; стиль задаётся контекстом экрана). |
 | **TextButton** | `ui/Button.tsx` | `variant="ghost"`. |
 | **FigmaIconButton** | `figma/FigmaIconButton.tsx` | Иконка без текста: `surface="plain"` по умолчанию, `surface="muted"` для круглых 42px кнопок из Figma. |
 | **MotionPressable** | `ui/MotionPressable.tsx` | Низкоуровневое нажатие с пресетами анимации; для кастомных ячеек, не для типовых CTA. |

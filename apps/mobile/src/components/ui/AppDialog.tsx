@@ -17,7 +17,6 @@ import {
 
 import { FigmaIcon } from '../figma/FigmaIcon';
 import { AppText } from './AppText';
-import { AppIcon } from './AppIcon';
 import {
   appDialogHostStyle,
   appDialogSheetBottomSpace,
@@ -164,7 +163,7 @@ export function AppDialog({
           strokeWidthPx={designTokens.stroke.mediaSheetClosePx}
         />
       ) : (
-        <AppIcon name="x" size={22} />
+        <FigmaIcon name="x" size={22} />
       )}
     </MotionPressable>
   );
