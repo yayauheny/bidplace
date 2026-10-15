@@ -1,5 +1,12 @@
 import type { RefObject } from 'react';
-import { Link, type Href, usePathname, useRouter } from 'expo-router';
+import {
+  Link,
+  type Href,
+  useGlobalSearchParams,
+  usePathname,
+  useRouter,
+  useSegments,
+} from 'expo-router';
 import { Platform, type View, type ViewStyle } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
@@ -9,6 +16,7 @@ import {
   useSellerCapability,
 } from '../../hooks/use-seller-capability';
 import { useAuth } from '../../providers/auth-provider';
+import { getRouteSearchRedirect } from '../../features/auth/auth-redirect';
 import { useSearchOverlay } from '../../features/search/search-overlay-provider';
 import { BidplaceMark } from '../branding/BidplaceBrand';
 import { getMobileCreateHref } from '../layout/header-chrome';
@@ -34,10 +42,13 @@ export function FloatingDock({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const params = useGlobalSearchParams();
+  const segments = useSegments();
   const auth = useAuth();
   const search = useSearchOverlay();
   const capability = useSellerCapability();
   const { bottom } = useDockInset();
+  const returnPath = getRouteSearchRedirect(pathname, segments, params);
   const items = auth.isAdmin
     ? figmaDockItems.filter((item) => item.id !== 'plus')
     : figmaDockItems;
@@ -65,7 +76,7 @@ export function FloatingDock({
                   getMobileCreateHref({
                     isAuthenticated: auth.isAuthenticated,
                     sellerStatus: capability.status,
-                    returnPath: pathname || '/',
+                    returnPath,
                   }),
                 )
             : undefined

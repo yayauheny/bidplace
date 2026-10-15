@@ -64,3 +64,21 @@ export function getProtectedRedirect(
   const suffix = serializedSearch ? `?${serializedSearch}` : '';
   return getSafeRedirect(`${pathname}${suffix}`);
 }
+
+/**
+ * Current-location redirect for "come back after auth" links: keeps the
+ * pathname and non-dynamic query params; dynamic path segments ([slug])
+ * are not duplicated into the query string.
+ */
+export function getRouteSearchRedirect(
+  pathname: string,
+  segments: readonly (string | undefined)[],
+  params: SearchParams,
+): SafeRedirect {
+  const dynamicParamNames = segments.flatMap((segment) => {
+    if (typeof segment !== 'string') return [];
+    const match = /^\[\.\.\.(.+)\]$|^\[(.+)\]$/.exec(segment);
+    return match ? [match[1] ?? match[2]!] : [];
+  });
+  return getProtectedRedirect(pathname, params, dynamicParamNames);
+}
