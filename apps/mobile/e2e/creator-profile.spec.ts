@@ -73,7 +73,7 @@ test('four-step creator application validates public links before submit', async
     await expect(page).toHaveURL(/\/profile\?step=4/);
     const submitted = page.waitForResponse(
       (response) =>
-        response.url().includes('/api/author/application') &&
+        response.url().endsWith('/api/author/application/submit') &&
         response.request().method() === 'POST',
     );
     await page.getByRole('button', { name: 'Сохранить и завершить' }).click();

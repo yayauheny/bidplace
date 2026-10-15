@@ -147,11 +147,30 @@ test('global input focus ring stays available outside FigmaTextField', async ({
     page.getByRole('textbox', { name: 'Электронная почта', exact: true }),
   ).toBeVisible();
   // The login form lives in a trapped Radix focus scope since 99d22056, so page focus
-  // cannot leave the auth sheet; assert the native ring on a plain in-sheet control instead.
-  const forgot = page.getByRole('link', { name: 'Забыли пароль?' });
-  await forgot.focus();
-  await expect(forgot).toBeFocused();
-  const chrome = await fieldChrome(forgot);
+  // cannot leave the auth sheet; park a plain probe input inside the sheet instead.
+  await page.evaluate(() => {
+    const probe = document.createElement('input');
+    probe.type = 'text';
+    probe.setAttribute('aria-label', 'Глобальный контур');
+    document.querySelector('[role="dialog"]')?.prepend(probe);
+  });
+  const probe = page.getByRole('textbox', { name: 'Глобальный контур' });
+  // The sheet mount may park focus on the scope container; walk forward until the
+  // probe takes focus, then verify the native ring arrived from the keyboard.
+  for (let step = 0; step < 6; step += 1) {
+    if (await probe.evaluate((node) => node === document.activeElement)) break;
+    await page.keyboard.press('Tab');
+  }
+  await expect(probe).toBeFocused();
+  let chrome = await fieldChrome(probe);
+  expect(chrome.outlineStyle).not.toBe('none');
+  expect(chrome.outlineWidth).toBe('2px');
+  // Same contract on the way back: keyboard-only, no scripted focus.
+  await page.keyboard.press('Tab');
+  await expect(page.getByRole('button', { name: 'Закрыть' })).toBeFocused();
+  await page.keyboard.press('Shift+Tab');
+  await expect(probe).toBeFocused();
+  chrome = await fieldChrome(probe);
   expect(chrome.outlineStyle).not.toBe('none');
   expect(chrome.outlineWidth).toBe('2px');
 });
