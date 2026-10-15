@@ -32,8 +32,9 @@ import { AuthorApplicationAchievements } from './AuthorApplicationAchievements';
 import { AuthorApplicationExitConfirm } from './author-application-exit-confirm';
 import { AuthorDirectionsPickerSheet } from './author-directions-picker-sheet';
 import { AuthorIntroDialog } from './AuthorIntroDialog';
-import { useProfileData } from './seller-profile-data';
-import { profileDraftAllowsSave } from './profile-validation';
+import { useProfileData, toFields } from './seller-profile-data';
+import { profileDraftAllowsSave, profileDraftSchema } from './profile-validation';
+import { useLocalFormRestore } from './local-form-restore';
 import {
   canSubmitSellerProfileRevision,
   isSellerProfileFormEditable,
@@ -182,6 +183,19 @@ export function SellerProfileScreen() {
   };
   const achievementWriteBlocksParent = () =>
     achievementWriteToken.current !== 0;
+  const accountId = canWritePrivateCache(queryClient, authEpoch)
+    ? (auth.user?.id ?? null)
+    : null;
+  const restore = useLocalFormRestore({
+    form,
+    accountId,
+    scope: 'seller-application',
+    entityId: profile?.id ?? 'new',
+    baseToken: hydrationToken ?? null,
+    serverValues: profile ? toFields(profile) : null,
+    canWrite: () => canWritePrivateCache(queryClient, authEpoch),
+    schema: profileDraftSchema,
+  });
   const submission = useProfileSubmission({
     api,
     queryClient,
@@ -197,6 +211,7 @@ export function SellerProfileScreen() {
       busy: () =>
         leaving.current || logoutStarted.current || accountLogout.busy,
     },
+    onSubmitted: () => restore.clearDraft(),
   });
   const parentBlocksAchievement = () =>
     guard.transitionLock.current ||

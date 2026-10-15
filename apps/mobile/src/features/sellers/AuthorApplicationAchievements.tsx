@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { View } from 'react-native';
+import { z } from 'zod';
 
 import { designTokens } from '@bidplace/design-tokens';
 
@@ -15,12 +16,21 @@ import {
 import { getUserFacingErrorMessage, readFormFailure } from '../../errors';
 import { getApiAssetUrl } from '../../lib/environment';
 import {
+  authKeys,
   canWritePrivateCache,
   currentAuthEpoch,
   refreshPrivateQuery,
 } from '../../lib/query-cache';
+import {
+  clearFormDraft,
+  createDraftWriter,
+  formDraftKey,
+  readFormDraft,
+  writeFormDraft,
+} from '../../lib/local-form-draft';
 import { usePrivateCacheEpoch } from '../../lib/use-private-cache-epoch';
 import { useApiClient } from '../../providers/api-provider';
+import type { User } from '@bidplace/contracts';
 import {
   parseAchievementDateInput,
   formatAchievementDate,
@@ -33,6 +43,11 @@ function nextChildWriteToken() {
   childWriteSequence += 1;
   return childWriteSequence;
 }
+
+const achievementDraftSchema = z.object({
+  body: z.string(),
+  dateInput: z.string(),
+});
 
 type AchievementDraft = {
   token: number;
@@ -63,6 +78,14 @@ export function AuthorApplicationAchievements({
   const api = useApiClient();
   const queryClient = useQueryClient();
   const authEpoch = usePrivateCacheEpoch(queryClient);
+  const draftWriter = useRef(createDraftWriter());
+  const restoredAccount = useRef<string | null>(null);
+  const accountId = canWritePrivateCache(queryClient, authEpoch)
+    ? (queryClient.getQueryData<User | null>(authKeys.session)?.id ?? null)
+    : null;
+  const draftKey = accountId
+    ? formDraftKey(accountId, 'seller-achievements', 'new')
+    : null;
   const seenAuthEpoch = useRef(authEpoch);
   const sessionOperation = useRef(0);
   const writeToken = useRef(0);
@@ -169,6 +192,7 @@ export function AuthorApplicationAchievements({
   useEffect(() => {
     if (seenAuthEpoch.current === authEpoch) return;
     seenAuthEpoch.current = authEpoch;
+    restoredAccount.current = null;
     sessionOperation.current += 1;
     const token = writeToken.current;
     writeToken.current = 0;
@@ -181,6 +205,37 @@ export function AuthorApplicationAchievements({
     addAchievement.reset();
     deleteAchievement.reset();
   }, [addAchievement, authEpoch, deleteAchievement]);
+
+  // Restore the unfinished achievement (runs after the epoch reset above).
+  useEffect(() => {
+    const restoreMark = `${authEpoch}:${accountId ?? ''}`;
+    if (restoredAccount.current === restoreMark) return;
+    restoredAccount.current = restoreMark;
+    if (!draftKey || !accountId) return;
+    const stored = readFormDraft(draftKey, achievementDraftSchema);
+    if (!stored || (!stored.body && !stored.dateInput)) return;
+    setBody((current) => current || stored.body);
+    setDateInput((current) => current || stored.dateInput);
+  }, [accountId, authEpoch, draftKey]);
+
+  // Persist while typing; an empty draft means the local copy is dropped.
+  useEffect(() => {
+    if (!draftKey) return;
+    if (!body && !dateInput) {
+      draftWriter.current.cancel();
+      clearFormDraft(draftKey);
+      return;
+    }
+    draftWriter.current.schedule(() => {
+      writeFormDraft(draftKey, { body, dateInput });
+    });
+  }, [body, dateInput, draftKey]);
+
+  useEffect(() => {
+    return () => {
+      draftWriter.current.flush();
+    };
+  }, []);
 
   const beginWrite = () => {
     if (

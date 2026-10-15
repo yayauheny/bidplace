@@ -326,6 +326,7 @@ function formIsDirty() {
 }
 
 beforeEach(() => {
+  window.localStorage.clear();
   window.history.replaceState({}, '');
   vi.spyOn(window.history, 'back').mockImplementation(() => {
     window.history.replaceState({}, '');

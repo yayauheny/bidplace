@@ -3,7 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
 import { FormProvider, useForm, useWatch } from 'react-hook-form';
 
-import type { SellerProductDetailResponse } from '@bidplace/contracts';
+import type { SellerProductDetailResponse, User } from '@bidplace/contracts';
 
 import { AppShell, FormPageShell } from '../../components/layout';
 import { InfrastructurePageStatus } from '../../components/shared/InfrastructurePageStatus';
@@ -23,14 +23,22 @@ import {
   readFormFailure,
 } from '../../errors';
 import { useApiClient } from '../../providers/api-provider';
-import { canWritePrivateCache } from '../../lib/query-cache';
+import { canWritePrivateCache, authKeys } from '../../lib/query-cache';
+import {
+  clearFormDraft,
+  formDraftKey,
+  readFormDraft,
+  writeFormDraft,
+} from '../../lib/local-form-draft';
 import { usePrivateCacheEpoch } from '../../lib/use-private-cache-epoch';
 import { ownerWorkQueryKeys } from './owner-work-query';
+import { useLocalFormRestore } from './local-form-restore';
 import { ProductDraftAboutStep } from './product-draft-about';
 import { ProductDraftWriteGuard } from './product-draft-fields';
 import {
   emptyProductDraftFormValues,
   productDraftFormSchema,
+  productToDraftFormValues,
 } from './product-draft-form';
 import { ProductDraftImagesStep } from './product-draft-images';
 import { ProductDraftReviewStep } from './product-draft-review';
@@ -49,6 +57,7 @@ import { useProductDraftImageActions } from './product-draft-image-actions';
 import { useProductDraftNavigation } from './product-draft-navigation';
 import {
   useProductStoryEditor,
+  storyLocalDraftSchema,
   type ProductStoryEditor,
 } from './use-product-story-editor';
 import {
@@ -89,6 +98,12 @@ export function ProductDraftScreen({
   const { productDetail, existingProduct, editorStatus, storyNeedsDraft } =
     data;
 
+  // Read the installed session (not an auth context) so the owner specs can
+  // mount the screen with only a query cache, like the rest of the save flow.
+  const accountId = canWritePrivateCache(queryClient, authEpoch)
+    ? (queryClient.getQueryData<User | null>(authKeys.session)?.id ?? null)
+    : null;
+
   const session = useProductDraftSaveSession({
     api,
     queryClient,
@@ -97,9 +112,36 @@ export function ProductDraftScreen({
     authEpoch,
     storyEditorSlot,
     retireGuardSlot,
-    onSavedProduct: (product) => data.notePersisted(product),
-    onSubmittedProduct: (product, isCurrent) =>
-      data.noteSubmitted(product, isCurrent),
+    onSavedProduct: (product) => {
+      data.notePersisted(product);
+      if (!productId) {
+        restore.noteEntityCreated(product.id, product.updatedAt);
+        migrateStoryDraft(accountId, product.id);
+      }
+    },
+    onSubmittedProduct: (product, isCurrent) => {
+      if (isCurrent()) restore.clearDraft();
+      if (accountId) {
+        clearFormDraft(formDraftKey(accountId, 'product-story', product.id));
+      }
+      return data.noteSubmitted(product, isCurrent);
+    },
+  });
+
+  const restore = useLocalFormRestore({
+    form,
+    accountId,
+    scope: 'product-draft',
+    entityId: session.persistedProductId() ?? 'new',
+    baseToken: existingProduct
+      ? (productDetail.data?.editingRevision?.updatedAt ??
+        existingProduct.updatedAt)
+      : null,
+    serverValues: existingProduct
+      ? productToDraftFormValues(existingProduct, productDetail.data?.selection)
+      : null,
+    canWrite: () => canWritePrivateCache(queryClient, authEpoch),
+    schema: productDraftFormSchema,
   });
 
   const storyEditor = useProductStoryEditor({
@@ -107,6 +149,7 @@ export function ProductDraftScreen({
     productId,
     revisionId: productDetail.data?.editingRevision?.id,
     authEpoch,
+    accountId,
     canChange: () => !session.transitionLock.current,
     story: productDetail.data?.story,
     onSaved: (savedStory) => {
@@ -433,4 +476,14 @@ export function ProductDraftScreen({
       </ProductDraftWriteGuard>
     </FormProvider>
   );
+}
+
+/** After the first create the story draft moves from the "new" key to the product id. */
+function migrateStoryDraft(accountId: string | null, productId: string) {
+  if (!accountId) return;
+  const previousKey = formDraftKey(accountId, 'product-story', 'new');
+  const stored = readFormDraft(previousKey, storyLocalDraftSchema);
+  if (!stored) return;
+  writeFormDraft(formDraftKey(accountId, 'product-story', productId), stored);
+  clearFormDraft(previousKey);
 }

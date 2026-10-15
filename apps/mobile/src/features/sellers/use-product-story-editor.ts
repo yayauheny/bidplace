@@ -1,10 +1,51 @@
 import { useEffect, useRef, useState } from 'react';
 import type { StoryBlock, StoryWriteRequest } from '@bidplace/contracts';
 import { STORY_LIMITS, storyWriteRequestSchema } from '@bidplace/contracts';
+import { z } from 'zod';
 
 import type { ApiClient } from '@bidplace/api-client';
 
+import {
+  clearFormDraft,
+  createDraftWriter,
+  formDraftKey,
+  readFormDraft,
+  writeFormDraft,
+} from '../../lib/local-form-draft';
+
 export type EditableStoryBlock = StoryWriteRequest['blocks'][number] & { key: string };
+
+/**
+ * Local restore covers unfinished text blocks only; uploaded images stay
+ * server-side and are re-added from the gallery after a reload.
+ */
+const storyTextBlockSchema = z.object({
+  key: z.string(),
+  type: z.enum(['HEADING', 'PARAGRAPH']),
+  text: z.string(),
+});
+
+export const storyLocalDraftSchema = z.object({
+  token: z.number(),
+  blocks: z.array(storyTextBlockSchema),
+});
+
+export type StoryLocalDraft = z.infer<typeof storyLocalDraftSchema>;
+
+function storyDraftKey(accountId: string | null, productId: string | undefined) {
+  if (!accountId) return null;
+  return formDraftKey(accountId, 'product-story', productId ?? 'new');
+}
+
+function textBlocksOf(blocks: readonly EditableStoryBlock[]) {
+  return blocks
+    .filter((block) => block.type !== 'IMAGE')
+    .map((block) => ({
+      key: block.key,
+      type: block.type as 'HEADING' | 'PARAGRAPH',
+      text: block.text,
+    }));
+}
 
 type StorySnapshot = { storyToken: number; blocks: StoryBlock[] };
 type DraftState = {
@@ -67,6 +108,7 @@ export function useProductStoryEditor({
   productId,
   revisionId,
   authEpoch,
+  accountId,
   story,
   onSaved,
   canChange,
@@ -75,6 +117,7 @@ export function useProductStoryEditor({
   productId?: string;
   revisionId?: string;
   authEpoch: number;
+  accountId: string | null;
   story?: StorySnapshot;
   onSaved?: (story: StorySnapshot) => void;
   canChange?: () => boolean;
@@ -86,6 +129,11 @@ export function useProductStoryEditor({
   const retry = useRef<{ snapshot: string; key: string } | null>(null);
   const pendingImage = useRef<{ image: Blob; key: string } | null>(null);
   const uploaded = useRef<Set<string>>(new Set());
+  const writer = useRef(createDraftWriter());
+  const accountRef = useRef(accountId);
+  const productRef = useRef(productId);
+  accountRef.current = accountId;
+  productRef.current = productId;
   const persistedAssets = useRef<Set<string>>(new Set(
     (story?.blocks ?? []).flatMap((block) => block.type === 'IMAGE' ? [block.mediaAssetId] : []),
   ));
@@ -95,9 +143,59 @@ export function useProductStoryEditor({
     setState(next);
   };
 
+  const persistDraft = () => {
+    const key = storyDraftKey(accountRef.current, productRef.current);
+    if (!key) return;
+    writer.current.schedule(() => {
+      const draft: StoryLocalDraft = {
+        token: current.current.token,
+        blocks: textBlocksOf(current.current.blocks),
+      };
+      writeFormDraft(key, draft);
+    });
+  };
+
+  const restoreDraft = (identityNow: string, storySnapshot?: StorySnapshot): DraftState => {
+    const key = storyDraftKey(accountRef.current, productRef.current);
+    const base = fromServer(identityNow, storySnapshot);
+    if (!key) return base;
+    const stored = readFormDraft(key, storyLocalDraftSchema);
+    if (!stored) return base;
+    const serverToken = storySnapshot?.storyToken ?? 0;
+    if (stored.token < serverToken) {
+      // A newer server story exists; the last server save wins.
+      clearFormDraft(key);
+      return base;
+    }
+    if (stored.blocks.length === 0) return base;
+    const serverKeys = new Set(base.blocks.map((block) => block.key));
+    const fresh = stored.blocks.filter((block) => !serverKeys.has(block.key));
+    if (fresh.length === 0) return base;
+    return {
+      ...base,
+      blocks: [...base.blocks, ...fresh],
+      dirty: true,
+    };
+  };
+
+  const clearLocalDraft = () => {
+    writer.current.cancel();
+    const key = storyDraftKey(accountRef.current, productRef.current);
+    if (key) clearFormDraft(key);
+  };
+
+  useEffect(() => {
+    return () => {
+      // Persist the last text edits on unmount. A closed session already had
+      // its pending write cancelled by the identity change above.
+      writer.current.flush();
+    };
+  }, []);
+
   useEffect(() => {
     const previous = current.current;
     if (previous.identity !== identity) {
+      writer.current.cancel();
       uploaded.current = new Set();
       persistedAssets.current = new Set(
         (story?.blocks ?? []).flatMap((block) => block.type === 'IMAGE' ? [block.mediaAssetId] : []),
@@ -105,7 +203,7 @@ export function useProductStoryEditor({
       outstanding.current = null;
       pendingImage.current = null;
       retry.current = null;
-      replace(fromServer(identity, story));
+      replace(restoreDraft(identity, story));
     } else if (
       story &&
       !previous.dirty &&
@@ -124,6 +222,7 @@ export function useProductStoryEditor({
     if (previous.identity !== identity || previous.pending || canChange?.() === false) return;
     replace({ ...previous, blocks: update(previous.blocks), dirty: true, error: null });
     retry.current = null;
+    persistDraft();
   };
 
   const addText = (type: 'HEADING' | 'PARAGRAPH') => {
@@ -201,6 +300,7 @@ export function useProductStoryEditor({
           altText: null,
         }],
       });
+      persistDraft();
       return true;
     } catch {
       if (current.current.identity === identity) {
@@ -253,6 +353,13 @@ export function useProductStoryEditor({
           result.blocks.flatMap((block) => block.type === 'IMAGE' ? [block.mediaAssetId] : []),
         );
         replace({ ...current.current, token: result.storyToken, blocks: saved, dirty: false, pending: false });
+        // The server holds the saved blocks; drop the local copy unless the
+        // user typed further edits while the request was in flight.
+        if (JSON.stringify(writeBlocks(current.current.blocks)) === snapshot) {
+          clearLocalDraft();
+        } else {
+          writer.current.flush();
+        }
         onSaved?.(result);
         for (const assetId of removedAssets) {
           try {

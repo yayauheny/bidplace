@@ -41,6 +41,7 @@ export function useProfileSubmission({
   photo,
   achievementGate,
   exitGate,
+  onSubmitted,
 }: {
   api: ReturnType<typeof useApiClient>;
   queryClient: QueryClient;
@@ -55,6 +56,7 @@ export function useProfileSubmission({
     logoutStarted: () => boolean;
     busy: () => boolean;
   };
+  onSubmitted?: () => void;
 }) {
   const router = useRouter();
   const { form, reportError, rememberSaved } = profileForm;
@@ -265,6 +267,7 @@ export function useProfileSubmission({
       if (submitted.editingRevision) {
         profileForm.noteHydratedToken(submitted.editingRevision.updatedAt);
       }
+      onSubmitted?.();
       void queryClient.invalidateQueries({
         queryKey: ['seller', 'application-photo'],
       });

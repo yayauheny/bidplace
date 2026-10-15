@@ -305,6 +305,7 @@ async function until(container: HTMLElement, predicate: () => boolean, label: st
 }
 
 beforeEach(() => {
+  window.localStorage.clear();
   harness.dispatch.mockReset();
   harness.preventRemove = false;
   harness.callback = null;

@@ -38,6 +38,7 @@ function mount() {
       productId: workId,
       revisionId,
       authEpoch,
+      accountId: null,
       story: emptyStory,
     });
     return null;

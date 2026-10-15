@@ -510,6 +510,7 @@ async function switchAccount(
 
 describe('Author application achievement lifecycle', () => {
   beforeEach(() => {
+  window.localStorage.clear();
     harness.params = {};
     harness.logout.mockReset();
     harness.replace.mockReset();
@@ -858,7 +859,7 @@ describe('Author application achievement lifecycle', () => {
       await pendingWizardBack.promise;
     });
     await flush();
-    expect(harness.push).toHaveBeenCalledWith('/profile?step=3');
+    expect(harness.push).toHaveBeenCalledWith({ pathname: '/profile', params: { step: '3' } });
     expect(harness.push).toHaveBeenCalledTimes(1);
     wizard.unmount();
     harness.params = {};
@@ -921,7 +922,8 @@ describe('Author application achievement lifecycle', () => {
     click(next.container, 'Сохранить');
     await flush();
     expect(harness.updateProfile).toHaveBeenCalledTimes(1);
-    expect(inputValue(next.container, 'Описание достижения')).toBe('');
+    // Abandoned input is restored from the local draft (owner contract: local restore of the form).
+    expect(inputValue(next.container, 'Описание достижения')).toBe('Alpha');
     next.unmount();
   });
 
