@@ -20,7 +20,11 @@ test('approved author replaces a published achievement without publishing the dr
 
   try {
     await page.goto('/profile');
-    await expect(page.getByText('Выставки и достижения')).toBeVisible();
+    // Section heading and the photo upload were removed in 3d9b4a87 (onboarding fix);
+    // anchor on the achievements block contract instead.
+    await expect(
+      page.getByRole('button', { name: 'Добавить событие', exact: true }),
+    ).toBeVisible();
     await expect(page.getByText(author.achievement.body)).toBeVisible();
     await page.getByRole('button', { name: 'Удалить' }).click();
     await expect(page.getByText(author.achievement.body)).toHaveCount(0);
@@ -40,13 +44,9 @@ test('approved author replaces a published achievement without publishing the dr
     );
     expect(publishedImage.status()).toBe(200);
 
-    const achievementPhoto = page.getByRole('button', { name: 'Добавить фото (необязательно)' });
-    await expect(achievementPhoto).toBeEnabled();
-    const chooserPromise = page.waitForEvent('filechooser');
-    await achievementPhoto.click();
-    await (await chooserPromise).setFiles('e2e/fixtures/profile-photo.png');
-    await fillControl(page.getByLabel('Год'), '2026');
-    await fillControl(page.getByLabel('Месяц'), '4');
+    // The write contract is { occurredDate, body } since 3d9b4a87 — achievement
+    // photos no longer upload through the application form.
+    await fillControl(page.getByLabel('Дата достижения'), '04.2026');
     await fillControl(page.getByLabel('Описание достижения'), draftBody);
     const [savedResponse] = await Promise.all([
       page.waitForResponse(
@@ -55,9 +55,15 @@ test('approved author replaces a published achievement without publishing the dr
           response.url() ===
             `${e2eApiBaseURL}/api/author/application/achievements`,
       ),
-      page.getByRole('button', { name: 'Сохранить достижение' }).click(),
+      page
+        .getByRole('button', { name: 'Добавить событие', exact: true })
+        .click(),
     ]);
     expect(savedResponse.ok()).toBeTruthy();
+    expect(savedResponse.request().postDataJSON()).toMatchObject({
+      occurredDate: { year: 2026, month: 4, day: null },
+      body: draftBody,
+    });
     await expect(page.getByLabel('Описание достижения')).toHaveValue('');
     await expect(page.getByText(draftBody, { exact: true })).toBeVisible();
 
@@ -66,22 +72,23 @@ test('approved author replaces a published achievement without publishing the dr
     );
     expect(application.ok()).toBeTruthy();
     const draft = (await application.json()) as {
-      achievements: Array<{ id: string; body: string; image: { url: string } | null }>;
+      achievements: Array<{ id: string; body: string }>;
     };
-    const pending = draft.achievements.find((item) => item.body === draftBody);
-    expect(pending?.image?.url).toBeTruthy();
-    const pendingImage = await guest.request.get(
-      `${e2eApiBaseURL}${pending?.image?.url}`,
-    );
-    expect(pendingImage.status()).toBe(404);
+    expect(
+      draft.achievements.some((item) => item.body === draftBody),
+    ).toBeTruthy();
     await guest.reload();
     await guest.getByRole('tab', { name: 'Об авторе' }).click();
     await expect(guest.getByText(author.achievement.body)).toBeVisible();
     await expect(guest.getByText(draftBody)).toHaveCount(0);
     await guest.close();
 
-    await page.getByRole('button', { name: 'Отправить на проверку', exact: true }).click();
-    await expect(page.getByText('Заявка на проверке')).toBeVisible();
+    await page
+      .getByRole('button', { name: 'Отправить на проверку', exact: true })
+      .click();
+    await expect(
+      page.getByText('Заявка на проверке', { exact: true }),
+    ).toBeVisible();
     await expect(
       page.getByRole('button', { name: 'Отправить на проверку', exact: true }),
     ).toHaveCount(0);
@@ -96,12 +103,6 @@ test('approved author replaces a published achievement without publishing the dr
     await page.getByRole('tab', { name: 'Об авторе' }).click();
     await expect(page.getByText(draftBody)).toBeVisible();
     await expect(page.getByText(author.achievement.body)).toHaveCount(0);
-    const reader = await browser.newPage();
-    const publishedDraftImage = await reader.request.get(
-      `${e2eApiBaseURL}${pending?.image?.url}`,
-    );
-    expect(publishedDraftImage.status()).toBe(200);
-    await reader.close();
   } finally {
     await context.close();
   }
