@@ -21,7 +21,10 @@ import {
   type ProfileSaveResult,
 } from './seller-profile-data';
 import { profileDraftAllowsSave } from './profile-validation';
-import { shouldAdvanceSellerApplication } from './seller-profile-wizard';
+import {
+  createSellerProfileHref,
+  shouldAdvanceSellerApplication,
+} from './seller-profile-wizard';
 import type { ProfileOperationGuard } from './seller-profile-operation-guard';
 import type { SellerProfileForm } from './seller-profile-form';
 import type { ProfilePhoto } from './seller-profile-photo';
@@ -304,7 +307,7 @@ export function useProfileSubmission({
         });
         if (!attempt.stillOwnsScreen()) return;
       }
-      router.push(`/profile?step=${visibleStep + 1}`);
+      router.push(createSellerProfileHref(visibleStep + 1));
     } catch (error) {
       reportError(error, 'seller-profile-step', undefined, attempt.operation);
     } finally {

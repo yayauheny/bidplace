@@ -43,6 +43,7 @@ import {
   ProfileRequirementScope,
 } from './seller-profile-steps';
 import {
+  createSellerProfileHref,
   previousSellerProfileStep,
   resolveSellerProfileStep,
   shouldSaveBeforeSellerProfileBack,
@@ -291,7 +292,9 @@ export function SellerProfileScreen() {
       return;
     }
     if (exitIntent === 'back') {
-      router.push(`/profile?step=${previousSellerProfileStep(profileStep)}`);
+      router.push(
+        createSellerProfileHref(previousSellerProfileStep(profileStep)),
+      );
       setExitOpen(false);
       leaving.current = false;
     } else {
@@ -339,13 +342,17 @@ export function SellerProfileScreen() {
         return;
       }
       if (guard.currentOperation() !== operation) return;
-      router.push(`/profile?step=${previousSellerProfileStep(profileStep)}`);
+      router.push(
+        createSellerProfileHref(previousSellerProfileStep(profileStep)),
+      );
       guard.endLockedTransition();
       return;
     }
     if (!guard.beginLockedTransition()) return;
     if (guard.currentOperation() !== operation) return;
-    router.push(`/profile?step=${previousSellerProfileStep(profileStep)}`);
+    router.push(
+      createSellerProfileHref(previousSellerProfileStep(profileStep)),
+    );
     guard.releaseTransitionAfterTurn(operation);
   };
   const requestExit = (intent: 'home' | 'logout') => {
@@ -741,7 +748,7 @@ export function SellerProfileScreen() {
                 />
                 <AuthorIntroDialog
                   open={introOpen}
-                  onStart={() => router.replace('/profile?step=1')}
+                  onStart={() => router.replace(createSellerProfileHref(1))}
                   onClose={() => router.replace('/profile')}
                 />
                 {exitDialog}

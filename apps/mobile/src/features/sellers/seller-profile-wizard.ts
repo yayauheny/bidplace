@@ -28,6 +28,13 @@ export function previousSellerProfileStep(
   return Math.max(1, step - 1) as 1 | 2 | 3;
 }
 
+export function createSellerProfileHref(step: number): {
+  pathname: '/profile';
+  params: { step: string };
+} {
+  return { pathname: '/profile', params: { step: String(step) } };
+}
+
 export function shouldSaveBeforeSellerProfileBack(
   isDirty: boolean,
   hasPhotoChange: boolean,
