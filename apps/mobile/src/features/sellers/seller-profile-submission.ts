@@ -42,6 +42,7 @@ export function useProfileSubmission({
   achievementGate,
   exitGate,
   onSubmitted,
+  onCreated,
 }: {
   api: ReturnType<typeof useApiClient>;
   queryClient: QueryClient;
@@ -57,6 +58,7 @@ export function useProfileSubmission({
     busy: () => boolean;
   };
   onSubmitted?: () => void;
+  onCreated?: (saved: SellerProfileResponse) => void;
 }) {
   const router = useRouter();
   const { form, reportError, rememberSaved } = profileForm;
@@ -110,6 +112,7 @@ export function useProfileSubmission({
       }
       return {
         outcome: 'saved',
+        created: true,
         profile: await api.sellers.createProfile(
           profileFieldsToCreate(variables.fields),
           variables.photo,
@@ -125,6 +128,11 @@ export function useProfileSubmission({
       rememberSaved(saved, variables.fields);
       photo.clearIfCurrent(variables.photo);
       queryClient.setQueryData(sellerProfileQueryKey, saved);
+      if (result.created) {
+        // Migrate the pre-creation local draft off the 'new' key so a later
+        // visit cannot apply the stale empty snapshot over server values.
+        onCreated?.(saved);
+      }
       invalidate();
     },
   });

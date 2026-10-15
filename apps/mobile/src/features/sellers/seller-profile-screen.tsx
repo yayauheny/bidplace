@@ -212,6 +212,11 @@ export function SellerProfileScreen() {
         leaving.current || logoutStarted.current || accountLogout.busy,
     },
     onSubmitted: () => restore.clearDraft(),
+    onCreated: (saved) =>
+      restore.noteEntityCreated(
+        saved.sellerProfile.id,
+        saved.editingRevision?.updatedAt ?? saved.sellerProfile.updatedAt,
+      ),
   });
   const parentBlocksAchievement = () =>
     guard.transitionLock.current ||

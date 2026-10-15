@@ -174,7 +174,7 @@ export type ProfileSaveVariables = {
 };
 
 export type ProfileSaveResult =
-  | { outcome: 'saved'; profile: SellerProfileResponse }
+  | { outcome: 'saved'; profile: SellerProfileResponse; created?: boolean }
   | { outcome: 'stored-slug'; slug: string };
 
 export function useProfileData() {
