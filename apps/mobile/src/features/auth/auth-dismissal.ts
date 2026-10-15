@@ -10,7 +10,7 @@ const AUTH_ROUTES = new Set([
   'verify-email',
 ]);
 
-const PUBLIC_PREFIXES = ['/works', '/authors', '/search', '/product'];
+const PUBLIC_PREFIXES = ['/works', '/authors', '/search', '/product', '/seller'];
 
 export type AuthDismissal = 'allow' | 'confirm' | 'keep';
 

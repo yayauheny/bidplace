@@ -105,6 +105,10 @@ describe('auth sheet dismissal', () => {
 
   it('returns only a public page when the saved destination is protected', () => {
     expect(authLeaveDestination('/works/public-work')).toBe('/works/public-work');
+    expect(authLeaveDestination('/seller/vex')).toBe('/seller/vex');
+    expect(authLeaveDestination('/authors/vex?sort=popular')).toBe(
+      '/authors/vex?sort=popular',
+    );
     expect(authLeaveDestination('/profile')).toBe('/');
   });
 });
