@@ -184,6 +184,81 @@ test('browser back leaves a filled login without the Navigation API', async ({ p
   await expectAuthBrowserHistory(page, false);
 });
 
+test('after aborting a filled registration the next Back and Forward walk real history', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await expect(page.getByTestId('app-shell-content')).toBeVisible();
+  await openWorksCatalog(page);
+  await page.getByRole('link', { name: 'Профиль', exact: true }).click();
+  await expect(page).toHaveURL(/\/login$/);
+  await page.route('**/api/auth/legal', (route) =>
+    route.fulfill({
+      json: {
+        version: 'history-test',
+        documents: [
+          { id: 'agreement', title: 'Пользовательское соглашение', markdown: 'Текст соглашения.', version: 'history-test' },
+          { id: 'privacy', title: 'Политика персональных данных и cookies', markdown: 'Текст политики.', version: 'history-test' },
+          { id: 'data-consent', title: 'Согласие на обработку персональных данных', markdown: 'Текст согласия.', version: 'history-test' },
+          { id: 'author-rules', title: 'Правила авторов', markdown: 'Текст правил.', version: 'history-test' },
+          { id: 'prohibited', title: 'Запрещённый контент', markdown: 'Текст.', version: 'history-test' },
+        ],
+      },
+    }),
+  );
+  await page.route('**/api/auth/rules', (route) =>
+    route.fulfill({
+      json: {
+        rules: {
+          version: 'history-test',
+          owner: 'Synthetic',
+          contact: 'test@example.com',
+          text: 'Synthetic layout fixture',
+        },
+      },
+    }),
+  );
+  await page.getByRole('link', { name: 'Регистрация', exact: true }).click();
+  await expect(page).toHaveURL(/\/register$/);
+  const registerEmail = page.getByPlaceholder('example@gmail.com');
+  await registerEmail.fill(`history-${Date.now()}@example.com`);
+  for (const label of [
+    'Я принимаю пользовательское соглашение bidplace',
+    'Я ознакомился с политикой персональных данных и cookies',
+    'Я даю согласие на обработку данных для основной услуги bidplace',
+    'Мне исполнилось 18 лет',
+  ]) {
+    await page.getByRole('checkbox', { name: label, exact: true }).check();
+  }
+  await page.getByRole('button', { name: 'Дальше', exact: true }).click();
+  const nickname = page.getByLabel('Никнейм', { exact: true });
+  await expect(nickname).toBeVisible();
+  await nickname.fill('historyauthor');
+
+  // Multi-step Back lands on the remembered screen and asks to abort.
+  await historyStep(page, -2);
+  await expect(page.getByText('Прервать регистрацию', { exact: true })).toBeVisible();
+  await expect(page).toHaveURL(/\/register$/);
+  await page.getByRole('button', { name: 'Прервать', exact: true }).click();
+  await expect(page).toHaveURL(/\/works$/);
+
+  // Back walks the real entries (login, then the original works entry) and
+  // never resurrects the aborted registration form.
+  const registerStep = page.getByText('Выберите имя пользователя', { exact: true });
+  await historyStep(page, -1);
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(registerStep).toHaveCount(0);
+  await historyStep(page, -1);
+  await expect(page).toHaveURL(/\/works$/);
+  await expect(registerStep).toHaveCount(0);
+  await historyStep(page, 1);
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(registerStep).toHaveCount(0);
+  await historyStep(page, 1);
+  await expect(page).toHaveURL(/\/works$/);
+  await expect(registerStep).toHaveCount(0);
+});
+
 test('history position stays one number per entry', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByTestId('app-shell-content')).toBeVisible();
