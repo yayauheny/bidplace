@@ -303,3 +303,5 @@ export function useProductStoryEditor({
     save,
   };
 }
+
+export type ProductStoryEditor = ReturnType<typeof useProductStoryEditor>;
