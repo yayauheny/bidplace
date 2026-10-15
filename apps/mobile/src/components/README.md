@@ -14,54 +14,67 @@
 
 ## Кнопки
 
-| Компонент | Путь | Назначение |
-| --- | --- | --- |
-| **FigmaButton** | `figma/FigmaButton.tsx` | Каноническая кнопка Figma: `solid` / `outline` / `ghost`, размеры, иконки, `loading`, навигация через **`href`** или **`onPress`**. |
-| **PrimaryButton** | `ui/Button.tsx` | Семантическая обёртка: `variant="solid"`. |
-| **SecondaryButton** | `ui/Button.tsx` | `variant="outline"`. |
-| **TextButton** | `ui/Button.tsx` | `variant="ghost"`. |
-| **FigmaIconButton** | `figma/FigmaIconButton.tsx` | Иконка без текста: `surface="plain"` по умолчанию, `surface="muted"` для круглых 42px кнопок из Figma. |
-| **MotionPressable** | `ui/MotionPressable.tsx` | Низкоуровневое нажатие с пресетами анимации; для кастомных ячеек, не для типовых CTA. |
+| Компонент           | Путь                        | Назначение                                                                                                                          |
+| ------------------- | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| **FigmaButton**     | `figma/FigmaButton.tsx`     | Каноническая кнопка Figma: `solid` / `outline` / `ghost`, размеры, иконки, `loading`, навигация через **`href`** или **`onPress`**. |
+| **PrimaryButton**   | `ui/Button.tsx`             | Семантическая обёртка: `variant="solid"`.                                                                                           |
+| **SecondaryButton** | `ui/Button.tsx`             | `variant="outline"`.                                                                                                                |
+| **TextButton**      | `ui/Button.tsx`             | `variant="ghost"`.                                                                                                                  |
+| **FigmaIconButton** | `figma/FigmaIconButton.tsx` | Иконка без текста: `surface="plain"` по умолчанию, `surface="muted"` для круглых 42px кнопок из Figma.                              |
+| **BackButton**      | `figma/BackButton.tsx`      | Единая кнопка «Назад»: варианты `glass` (страница работы), `muted` (шапка автора), `chrome` (визард).                               |
+| **MotionPressable** | `ui/MotionPressable.tsx`    | Низкоуровневое нажатие с пресетами анимации; для кастомных ячеек, не для типовых CTA.                                               |
 
 `width`: у обёрток допустимо `block` (= `full` у `FigmaButton`).
 
 ## Поля
 
-| Компонент | Путь | Назначение |
-| --- | --- | --- |
-| **FigmaTextField** | `figma/FigmaTextField.tsx` | Визуал поля, floating label, состояния focus/error. |
-| **TextField** | `ui/TextField.tsx` | Форма: hint, `required`, обёртка над `FigmaTextField`. |
-| **FigmaSelectField** | `figma/FigmaSelectField.tsx` | Выбор из списка с тем же визуалом поля. |
-| **AuthPasswordField** | `features/auth/auth-password-field.tsx` | Пароль в auth-потоках (метрики, показ/скрытие). |
+| Компонент             | Путь                                    | Назначение                                             |
+| --------------------- | --------------------------------------- | ------------------------------------------------------ |
+| **FigmaTextField**    | `figma/FigmaTextField.tsx`              | Визуал поля, floating label, состояния focus/error.    |
+| **TextField**         | `ui/TextField.tsx`                      | Форма: hint, `required`, обёртка над `FigmaTextField`. |
+| **FigmaSelectField**  | `figma/FigmaSelectField.tsx`            | Выбор из списка с тем же визуалом поля.                |
+| **AuthPasswordField** | `features/auth/auth-password-field.tsx` | Пароль в auth-потоках (метрики, показ/скрытие).        |
 
 В формах предпочитайте **TextField**, а не прямой `FigmaTextField`, если нужны hint/required.
 
 ## Диалоги и листы
 
-| Компонент | Путь | Назначение |
-| --- | --- | --- |
-| **AppDialog** | `ui/AppDialog.tsx` | Диалоги и шторки: общий backdrop, анимация и возврат фокуса; `bare` отдаёт отступы и скролл содержимому, `bottomSpace` задаёт явный отступ с Safe Area. |
-| **ExitConfirmDialog** | `ui/ExitConfirmDialog.tsx` | Выход с несохранёнными изменениями. |
-| **FilterSheet** | `figma/FilterSheet.tsx` | По умолчанию полноэкранный picker; `presentation="compact"` — нижний лист с прокручиваемыми вариантами и закреплённым действием. |
+| Компонент             | Путь                          | Назначение                                                                                                                                              |
+| --------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| **AppDialog**         | `ui/AppDialog.tsx`            | Диалоги и шторки: общий backdrop, анимация и возврат фокуса; `bare` отдаёт отступы и скролл содержимому, `bottomSpace` задаёт явный отступ с Safe Area. |
+| **ExitConfirmDialog** | `ui/ExitConfirmDialog.tsx`    | Выход с несохранёнными изменениями.                                                                                                                     |
+| **FilterSheet**       | `figma/FilterSheet.tsx`       | По умолчанию полноэкранный picker; `presentation="compact"` — нижний лист с прокручиваемыми вариантами и закреплённым действием.                        |
+| **FilterOptionRow**   | `figma/FilterOptionRow.tsx`   | Строка-опция picker-листов (`mode="radio"                                                                                                               | "checkbox"`). |
+| **FilterSearchField** | `figma/FilterSearchField.tsx` | Поисковое поле внутри picker-листов.                                                                                                                    |
+| **FigmaChoiceChip**   | `figma/FigmaChoiceChip.tsx`   | Выбранные значения с удалением (направления, фильтры).                                                                                                  |
 
 Не дублировать разметку диалога на экранах — расширять props существующих диалогов только по отдельной задаче.
 
 ## Layout
 
-| Компонент | Путь | Назначение |
-| --- | --- | --- |
-| **AppShell** | `layout/AppShell.tsx` | Единый fluid-контейнер 1280/12, Safe Area, `FloatingDock` и `bottomAction`; нижний резерв — `useDockInset`. |
-| **FormPageShell** | `layout/FormPageShell.tsx` | Прокручиваемая форма с отступами и опциональным `bottomAction`. |
+| Компонент         | Путь                       | Назначение                                                                                                                                         |
+| ----------------- | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **AppShell**      | `layout/AppShell.tsx`      | Единый fluid-контейнер 1280/12, Safe Area, `FloatingDock` и `bottomAction`; нижний резерв — `useDockInset`.                                        |
+| **FormPageShell** | `layout/FormPageShell.tsx` | Прокручиваемая форма с отступами и опциональным `bottomAction`.                                                                                    |
+| **PaddedGrid**    | `figma/PaddedGrid.tsx`     | Построчная flex-сетка с гаттером; `gridColumnsFromWidth(width, {minCardWidth, gap, max})` — колонки из измеренной ширины, без device-брейкпоинтов. |
+| **FigmaTabs**     | `figma/FigmaTabs.tsx`      | Единый таб-бар (RN-реализация на обеих платформах); `fill` — равные колонки.                                                                       |
+
+## Карточки работ
+
+| Компонент             | Путь                          | Назначение                                                                                                                                                                                        |
+| --------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **WorkCoverCard**     | `figma/WorkCoverCard.tsx`     | Обложка работы с навигацией на `/product/:id`.                                                                                                                                                    |
+| **WorkCoverCardGrid** | `figma/WorkCoverCardGrid.tsx` | Сетка cover-карточек: `columns` 1 (построчно) или 2 (через `PaddedGrid`). Публичный профиль собирает `CreatorWorkCard` через `PaddedGrid` + `gridColumnsFromWidth` (другая роль: owner-действия). |
 
 ## Текст, состояния, медиа
 
-| Компонент | Путь | Назначение |
-| --- | --- | --- |
-| **AppText** | `ui/AppText.tsx` | Типографика по ролям (`role`, `tone`). |
-| **PageState** / **PageHeader** | `ui/` | Пустые/ошибочные состояния и заголовки страниц. |
-| **ResilientRemoteImage** | `ui/ResilientRemoteImage.tsx` | Удалённые изображения с retry. |
-| **ImagePlaceholder** | `ui/ImagePlaceholder.tsx` | Заглушка в product/layout UI. |
-| **FigmaImagePlaceholder** | `figma/FigmaImagePlaceholder.tsx` | Заглушка в Figma-карточках и поиске. |
+| Компонент                      | Путь                              | Назначение                                      |
+| ------------------------------ | --------------------------------- | ----------------------------------------------- |
+| **AppText**                    | `ui/AppText.tsx`                  | Типографика по ролям (`role`, `tone`).          |
+| **PageState** / **PageHeader** | `ui/`                             | Пустые/ошибочные состояния и заголовки страниц. |
+| **ResilientRemoteImage**       | `ui/ResilientRemoteImage.tsx`     | Удалённые изображения с retry.                  |
+| **ImagePlaceholder**           | `ui/ImagePlaceholder.tsx`         | Заглушка в product/layout UI.                   |
+| **FigmaImagePlaceholder**      | `figma/FigmaImagePlaceholder.tsx` | Заглушка в Figma-карточках и поиске.            |
 
 ## Figma-специфичное
 

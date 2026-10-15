@@ -15,10 +15,10 @@ Review the real diff, not the report. Rules live in `bidplace-ui`, `AGENTS.md`, 
 
 ## 2. Mechanism check (one way per job)
 
-For each of: container/width, Safe Area, sheet/dialog, tabs, card grid, button, icon, text field:
+For each of: container/width, Safe Area, sheet/dialog, tabs, back button, card grid, button, icon, text field:
 
-- Does the diff use the existing owner (`AppShell`, `AppDialog`, `FigmaTabs`, `WorkCoverCardGrid`, shared Button, `FigmaIcon`, `TextField`)?
-- Did it add a second mechanism, a route-local copy, or a legacy pattern (`OverlayHost`, `AppIcon`/lucide, `DestructiveButton`, RN `Modal`)? → blocker.
+- Does the diff use the existing owner (`AppShell`, `AppDialog`, `FigmaTabs`, `BackButton`, `PaddedGrid`/`gridColumnsFromWidth` or `WorkCoverCardGrid`, shared Button, `FigmaIcon`, `TextField`)?
+- Did it add a second mechanism, a route-local copy, or a banned pattern (RN `Modal`, lucide, hand-assembled grid where `PaddedGrid`/`WorkCoverCardGrid` fits)? → blocker. Do not reintroduce removed legacy (`OverlayHost`, `AppIcon`, `DestructiveButton`).
 - Was the superseded code/token deleted, or left "for later"? Leftover = finding.
 
 ## 3. Tokens and values
