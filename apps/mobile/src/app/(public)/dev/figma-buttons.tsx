@@ -157,6 +157,13 @@ function FigmaButtonStateMatrix() {
 }
 
 export default function FigmaButtonsDevStand() {
+  // Dev-only stand: production web builds set EXPO_PUBLIC_APP_ENV (scripts/cloudflare/build-web.mjs).
+  if (
+    process.env.EXPO_PUBLIC_APP_ENV === 'production' ||
+    process.env.EXPO_PUBLIC_APP_ENV === 'staging'
+  ) {
+    return null;
+  }
   return (
     <ScrollView
       nativeID="figma-button-matrix-stand"
