@@ -168,8 +168,23 @@ export function useProductStoryEditor({
       return base;
     }
     if (stored.blocks.length === 0) return base;
-    const serverKeys = new Set(base.blocks.map((block) => block.key));
-    const fresh = stored.blocks.filter((block) => !serverKeys.has(block.key));
+    // Stored keys are client-side; after a remount the server blocks carry
+    // server ids, so dedup by content with occurrence counting.
+    const serverCounts = new Map<string, number>();
+    for (const block of base.blocks) {
+      if (block.type === 'IMAGE') continue;
+      const contentKey = `${block.type}:${block.text}`;
+      serverCounts.set(contentKey, (serverCounts.get(contentKey) ?? 0) + 1);
+    }
+    const fresh = stored.blocks.filter((block) => {
+      const contentKey = `${block.type}:${block.text}`;
+      const count = serverCounts.get(contentKey) ?? 0;
+      if (count > 0) {
+        serverCounts.set(contentKey, count - 1);
+        return false;
+      }
+      return true;
+    });
     if (fresh.length === 0) return base;
     return {
       ...base,
@@ -197,12 +212,24 @@ export function useProductStoryEditor({
     if (previous.identity !== identity) {
       writer.current.cancel();
       uploaded.current = new Set();
-      persistedAssets.current = new Set(
-        (story?.blocks ?? []).flatMap((block) => block.type === 'IMAGE' ? [block.mediaAssetId] : []),
-      );
       outstanding.current = null;
       pendingImage.current = null;
       retry.current = null;
+      // Own save moved the story to a new revision: the same product stays,
+      // so keep the saved blocks instead of restoring a stale snapshot.
+      const sameProduct =
+        previous.identity.split(':').slice(0, 2).join(':') ===
+        identity.split(':').slice(0, 2).join(':');
+      if (sameProduct && !previous.dirty && !previous.pending) {
+        persistedAssets.current = new Set(
+          previous.blocks.flatMap((block) => block.type === 'IMAGE' ? [block.mediaAssetId] : []),
+        );
+        replace({ ...previous, identity });
+        return;
+      }
+      persistedAssets.current = new Set(
+        (story?.blocks ?? []).flatMap((block) => block.type === 'IMAGE' ? [block.mediaAssetId] : []),
+      );
       replace(restoreDraft(identity, story));
     } else if (
       story &&
@@ -331,7 +358,7 @@ export function useProductStoryEditor({
       });
       return false;
     }
-    const snapshot = JSON.stringify(parsed.data);
+    const snapshot = JSON.stringify(parsed.data.blocks);
     if (!retry.current || retry.current.snapshot !== snapshot) {
       retry.current = { snapshot, key: crypto.randomUUID() };
     }
@@ -354,8 +381,21 @@ export function useProductStoryEditor({
         );
         replace({ ...current.current, token: result.storyToken, blocks: saved, dirty: false, pending: false });
         // The server holds the saved blocks; drop the local copy unless the
-        // user typed further edits while the request was in flight.
-        if (JSON.stringify(writeBlocks(current.current.blocks)) === snapshot) {
+        // user typed further edits while the request was in flight. Server
+        // responses add block ids, so compare content without them.
+        const savedBlocks = writeBlocks(current.current.blocks);
+        const sameBlocks =
+          savedBlocks.length === parsed.data.blocks.length &&
+          savedBlocks.every((block, index) => {
+            const stripId = (value: Record<string, unknown>) => {
+              const rest = { ...value };
+              delete rest.id;
+              return JSON.stringify(rest);
+            };
+            return stripId(block as Record<string, unknown>) ===
+              stripId(parsed.data.blocks[index] as Record<string, unknown>);
+          });
+        if (sameBlocks) {
           clearLocalDraft();
         } else {
           writer.current.flush();
@@ -399,6 +439,9 @@ export function useProductStoryEditor({
     pending: state.pending,
     error: state.error,
     retryUpload: pendingImage.current !== null,
+    // Synchronous read for guard effects: rendered dirty/pending can lag one
+    // commit behind when a save response lands before the effect phase.
+    isEffectivelyClean: () => !current.current.dirty && !current.current.pending,
     addText,
     addGalleryImage,
     editText,

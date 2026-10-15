@@ -189,7 +189,8 @@ export function useProductDraftNavigation({
   const saveStoryAndContinue = async () => {
     if (session.transitionLock.current || storyEditor.pending) return;
     const operation = session.snapshotOperation();
-    if (!(await session.persistAll('transition'))) return;
+    const persisted = await session.persistAll('transition');
+    if (!persisted) return;
     if (!session.isCurrentOperation(operation)) return;
     if (isCreationFlow)
       router.setParams({

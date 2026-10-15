@@ -171,6 +171,8 @@ export function ProductDraftScreen({
     isDirty: form.formState.isDirty,
     storyDirty: storyEditor.dirty,
     storyPending: storyEditor.pending,
+    draftEffectivelyClean: () =>
+      !form.formState.isDirty && storyEditor.isEffectivelyClean(),
     productId,
     session,
   });

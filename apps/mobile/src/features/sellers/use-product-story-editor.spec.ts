@@ -4,6 +4,7 @@
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import type { ApiClient } from '@bidplace/api-client';
+import type { StoryBlock } from '@bidplace/contracts';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { useProductStoryEditor } from './use-product-story-editor';
@@ -14,10 +15,13 @@ const workId = '81111111-1111-4111-8111-111111111111';
 const revisionId = '82222222-2222-4222-8222-222222222222';
 const blockId = '83333333-3333-4333-8333-333333333333';
 const assetId = '84444444-4444-4444-8444-444444444444';
-const emptyStory = { storyToken: 0, blocks: [] };
+const emptyStory: { storyToken: number; blocks: StoryBlock[] } = { storyToken: 0, blocks: [] };
 const cases: Array<() => void> = [];
 
-function mount() {
+function mount(
+  accountId: string | null = null,
+  story: { storyToken: number; blocks: StoryBlock[] } = emptyStory,
+) {
   const replaceCreation = vi.fn().mockResolvedValue({
     storyToken: 1,
     blocks: [{ id: blockId, position: 0, type: 'PARAGRAPH', text: 'Текст' }],
@@ -32,19 +36,19 @@ function mount() {
   let editor!: ReturnType<typeof useProductStoryEditor>;
   const container = document.createElement('div');
   const root = createRoot(container);
-  function Probe({ authEpoch }: { authEpoch: number }) {
+  function Probe({ authEpoch, revisionId: revision }: { authEpoch: number; revisionId?: string }) {
     editor = useProductStoryEditor({
       api,
       productId: workId,
-      revisionId,
+      revisionId: revision ?? revisionId,
       authEpoch,
-      accountId: null,
-      story: emptyStory,
+      accountId,
+      story,
     });
     return null;
   }
-  const render = (authEpoch: number) => {
-    act(() => root.render(createElement(Probe, { authEpoch })));
+  const render = (authEpoch: number, nextRevisionId?: string) => {
+    act(() => root.render(createElement(Probe, { authEpoch, revisionId: nextRevisionId })));
   };
   render(1);
   cases.push(() => act(() => root.unmount()));
@@ -53,9 +57,66 @@ function mount() {
 
 afterEach(() => {
   cases.splice(0).forEach((cleanup) => cleanup());
+  window.localStorage.clear();
 });
 
 describe('revision-backed Work Story editor', () => {
+  it('clears the local draft after the server holds the saved blocks', async () => {
+    const view = mount('user-a');
+    const draftKey = `bidplace:draft:user-a:product-story:${workId}`;
+    act(() => view.editor.addText('PARAGRAPH'));
+    act(() => view.editor.editText(view.editor.blocks[0]!.key, 'Текст'));
+    // A stale draft with the same content must not survive the save.
+    window.localStorage.setItem(draftKey, JSON.stringify({
+      token: 0,
+      blocks: [{ key: 'stale-key', type: 'PARAGRAPH', text: 'Текст' }],
+    }));
+    await act(async () => {
+      expect(await view.editor.save()).toBe(true);
+    });
+    expect(window.localStorage.getItem(draftKey)).toBeNull();
+  });
+
+  it('keeps saved blocks when the story moves to a new revision', async () => {
+    const view = mount('user-a');
+    act(() => view.editor.addText('PARAGRAPH'));
+    act(() => view.editor.editText(view.editor.blocks[0]!.key, 'Текст'));
+    await act(async () => {
+      expect(await view.editor.save()).toBe(true);
+    });
+    // The product detail refetch lands as a new editingRevision id while the
+    // story prop still carries the pre-save snapshot.
+    view.render(1, '92222222-2222-4222-8222-222222222222');
+    const texts = view.editor.blocks.map((block) =>
+      block.type === 'IMAGE' ? '' : block.text,
+    );
+    expect(texts).toEqual(['Текст']);
+    expect(view.editor.dirty).toBe(false);
+  });
+
+  it('restores only the text the server does not have yet', () => {
+    const serverStory = {
+      storyToken: 1,
+      blocks: [{ id: blockId, position: 0, type: 'PARAGRAPH' as const, text: 'Серверный абзац' }],
+    };
+    const view = mount('user-a', serverStory);    const draftKey = `bidplace:draft:user-a:product-story:${workId}`;
+    window.localStorage.setItem(draftKey, JSON.stringify({
+      token: 1,
+      blocks: [
+        // Saved earlier from a client session: same content, client-side key.
+        { key: 'client-key', type: 'PARAGRAPH', text: 'Серверный абзац' },
+        { key: 'client-key-2', type: 'PARAGRAPH', text: 'Новый абзац' },
+      ],
+    }));
+    // An auth-epoch bump re-runs the restore against the same story.
+    view.render(2);
+    const texts = view.editor.blocks.map((block) =>
+      block.type === 'IMAGE' ? '' : block.text,
+    );
+    expect(texts).toEqual(['Серверный абзац', 'Новый абзац']);
+    expect(view.editor.dirty).toBe(true);
+  });
+
   it('saves blocks with a token and retains the server block identity', async () => {
     const view = mount();
     act(() => view.editor.addText('PARAGRAPH'));

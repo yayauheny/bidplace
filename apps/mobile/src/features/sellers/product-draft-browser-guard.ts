@@ -13,12 +13,14 @@ export function useProductDraftBrowserHistoryGuard({
   isDirty,
   storyDirty,
   storyPending,
+  draftEffectivelyClean,
   productId,
   session,
 }: {
   isDirty: boolean;
   storyDirty: boolean;
   storyPending: boolean;
+  draftEffectivelyClean?: () => boolean;
   productId?: string;
   session: ProductDraftSaveSession;
 }) {
@@ -60,7 +62,13 @@ export function useProductDraftBrowserHistoryGuard({
       persisting: false,
       allow: false,
     };
+    // The rendered flags can be one commit stale: a save response may have
+    // landed between render and this effect. Arming on stale dirty state
+    // pushes a sentinel whose retirement popstate then triggers the
+    // persist-and-continue path (history corruption).
+    if (draftEffectivelyClean?.()) return;
     browserNavigation.current = guard;
+    const armedUrl = window.location.href;
     window.history.pushState(
       {
         ...(window.history.state ?? {}),
@@ -123,14 +131,24 @@ export function useProductDraftBrowserHistoryGuard({
         browserNavigation.current = null;
       }
       // Retire a sentinel the user never consumed (dirty cleared by save or
-      // revert): left in place it eats one Back as an empty step on the same URL.
-      if (
-        !guard.allow &&
-        !guard.restoring &&
-        window.history.state?.[productDraftHistoryGuardKey] === guard.id
-      ) {
+      // revert): left in place, the next Back pops it invisibly — React
+      // Navigation ignores the pop on the identical URL and the user stays.
+      // Defer the decision: this cleanup runs after the whole save chain, so
+      // an in-flight step navigation may not have applied its URL yet — the
+      // pop would tear the app off the draft screen mid-transition.
+      setTimeout(() => {
+        if (
+          guard.allow ||
+          guard.restoring ||
+          browserNavigation.current !== null ||
+          window.location.href !== armedUrl ||
+          sessionSlot.current.transitionLock.current ||
+          window.history.state?.[productDraftHistoryGuardKey] !== guard.id
+        )
+          return;
+        guard.allow = true;
         window.history.back();
-      }
+      }, 0);
     };
   }, [isDirty, storyDirty, storyPending, productId]);
 
