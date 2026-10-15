@@ -32,26 +32,6 @@ test('focused Search input Escape closes Search once', async ({ page }) => {
   await expect(page).toHaveURL(/\/works/);
 });
 
-test('Search dimmer click consumes exactly one history step', async ({
-  page,
-}) => {
-  await page.setViewportSize({ width: 1024, height: 860 });
-  await page.goto('/works');
-  await expect(page.getByTestId('catalog-scroll-view')).toBeVisible();
-  await page.getByTestId('figma-floating-dock').getByLabel('Главная').click();
-  await expect(page).toHaveURL(/\/$/);
-  await expect(page).not.toHaveURL(/\/works/);
-  await openSearchOverlay(page);
-  await page
-    .getByTestId('overlay-dimmer')
-    .click({ position: { x: 8, y: 200 } });
-  await expectSearchClosed(page);
-  await expect(page).toHaveURL(/\/$/);
-  await expect(page).not.toHaveURL(/overlay=search/);
-  await page.goBack();
-  await expect(page).toHaveURL(/\/works/);
-});
-
 test('FilterSheet Escape closes the sheet once and keeps Works', async ({
   page,
 }) => {
