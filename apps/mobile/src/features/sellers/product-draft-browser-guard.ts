@@ -56,6 +56,8 @@ export function useProductDraftBrowserHistoryGuard({
     const guard = {
       id: `${productId ?? 'new'}:${Date.now()}`,
       restoring: false,
+      rearming: false,
+      persisting: false,
       allow: false,
     };
     browserNavigation.current = guard;
@@ -70,10 +72,12 @@ export function useProductDraftBrowserHistoryGuard({
 
     const persistAndContinueBrowserBack = () => {
       guard.allow = true;
+      guard.persisting = true;
       const operation = sessionSlot.current.snapshotOperation();
       void sessionSlot.current.persistForTransitionRef
         .current?.()
         .then((persisted) => {
+          guard.persisting = false;
           if (
             !sessionSlot.current.isCurrentOperation(operation) ||
             !persisted
@@ -87,6 +91,12 @@ export function useProductDraftBrowserHistoryGuard({
     };
     const onPopState = (event: PopStateEvent) => {
       if (event.state?.[productDraftHistoryGuardKey] === guard.id) {
+        if (guard.rearming) {
+          // Second Back during the in-flight persist: stay on the sentinel so
+          // the pending go(-2) lands on the actual previous screen.
+          guard.rearming = false;
+          return;
+        }
         if (guard.restoring) {
           guard.restoring = false;
           persistAndContinueBrowserBack();
@@ -94,7 +104,12 @@ export function useProductDraftBrowserHistoryGuard({
         return;
       }
       if (guard.allow) {
-        guard.allow = false;
+        if (guard.persisting) {
+          guard.rearming = true;
+          window.history.go(1);
+        } else {
+          guard.allow = false;
+        }
         return;
       }
       guard.restoring = true;
@@ -106,6 +121,15 @@ export function useProductDraftBrowserHistoryGuard({
       window.removeEventListener('popstate', onPopState);
       if (browserNavigation.current === guard) {
         browserNavigation.current = null;
+      }
+      // Retire a sentinel the user never consumed (dirty cleared by save or
+      // revert): left in place it eats one Back as an empty step on the same URL.
+      if (
+        !guard.allow &&
+        !guard.restoring &&
+        window.history.state?.[productDraftHistoryGuardKey] === guard.id
+      ) {
+        window.history.back();
       }
     };
   }, [isDirty, storyDirty, storyPending, productId]);
