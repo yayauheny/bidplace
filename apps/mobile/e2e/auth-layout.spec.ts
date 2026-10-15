@@ -1125,9 +1125,11 @@ async function historyStep(page: Page, delta: number) {
 }
 
 async function worksCatalogButton(page: Page) {
+  // Feed may still load: either the populated-state or the empty-state button wins.
   const populated = page.getByRole('button', { name: 'Смотреть все' });
-  if ((await populated.count()) > 0) return populated.first();
-  return page.getByRole('button', { name: 'Все работы', exact: true });
+  const empty = page.getByRole('button', { name: 'Все работы', exact: true });
+  await expect(populated.or(empty).first()).toBeVisible();
+  return (await populated.count()) > 0 ? populated.first() : empty;
 }
 
 async function openWorksCatalog(page: Page) {
