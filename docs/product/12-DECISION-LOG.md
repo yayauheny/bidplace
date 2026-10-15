@@ -1,6 +1,6 @@
 # bidplace — журнал решений
 
-Последнее обновление: 2026-10-12
+Последнее обновление: 2026-10-15
 
 Записи не удаляются. При пересмотре создаётся новая запись со ссылкой на старую.
 
@@ -2933,3 +2933,35 @@ The layout clause of `DEC-085` only.
 ### Revisit when
 
 Desktop Figma compositions define different widths.
+
+## DEC-121 — Local browser-only draft restore; no sync
+
+Date: 2026-10-15
+Status: Confirmed
+Source: founder-approved task boundaries (задание «восстановление ввода и
+исправление маршрутов MVP», 2026-10-15).
+
+### Decision
+
+Restore of in-progress input (Work creation and author application) is local
+to the browser only: `localStorage` keyed by account + entity, throttled
+writes, Zod-checked payload that tolerates an incomplete first step. No new
+backend endpoints, tables, server autosaves, offline queues, live-sync or
+cross-device conflict UI. Uploaded media stays server-side; not-yet-uploaded
+files are re-selected. Drafts clear on logout/session change, confirmed
+submit, and successful save without edits after the request snapshot; after
+the first confirmed create the `…:new` key migrates to the confirmed id.
+Simultaneous editing from several devices resolves to the last successful
+server save (server revision token decides whether a stored draft still
+applies).
+
+### Revisit when
+
+Cross-device editing or offline-first requirements appear, or a future SDK
+upgrade changes what the local browser layer must cover.
+
+### Implementation
+
+`apps/mobile/src/lib/local-form-draft.ts`,
+`apps/mobile/src/features/sellers/local-form-restore.ts`; branch
+`fix/draft-routing` (2026-10-15).

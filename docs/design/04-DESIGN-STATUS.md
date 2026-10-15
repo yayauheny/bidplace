@@ -2,6 +2,12 @@
 
 > Entries dated before 2026-10-13 mention Pen / .pen files; the Pen design was removed (DEC-119) — read those mentions as history.
 
+## 2026-10-15 — Восстановление ввода и маршрутов (ветка `fix/draft-routing`) — код-онли
+
+- `Implemented`: дизайн, копии, токены, визуальные состояния и навигационный chrome (step-табы визарда, dock, auth-шторка) не изменены; Figma-сверка и серии скриншотов не запускались. Изменилось поведение восстановления: локальные черновики форм Work и заявки автора (browser-only, см. `11-PROJECT-STATUS.md` запись Э1–Э4 и DEC-121).
+- Маршруты: публичные адреса и направление aliases не менялись; исправлено только сохранение допустимых query при входе через dock и при проходе через alias-редиректы (`sort/category/categories`, `tab`). Дизайн экранов не затронут.
+- E2E-покрытие восстановления: `draft-browser-sentinel` 5/5 и `product-creation-wizard` 11/11 (Chromium + WebKit) — навигационные контракты (Back/Forward, возврат на поздние шаги) зелёные. Единственные красные — предсуществующие на базе `3bf80951`: геометрия onboarding (51 vs 50) и legal-503 (плейсхолдеры ИП в юртексте); подробности — в `11-PROJECT-STATUS.md`.
+
 ## 2026-10-15 — Integration: объединение сплитов seller-profile + product-draft (технические этапы W4/W5)
 
 - `Implemented`: ветка `fix/product-draft-structure` влита в `fix/seller-profile-structure` (merge `849965a4`), конфликты — только статус-доки. Проверки на объединении: typecheck 13/13, lint чисто, mobile vitest 816/816 (132 файла), production web build зелёный, e2e 30/30 (Chromium + WebKit: product-creation-wizard, author-revision-flow, author-application-slug, author-cabinet). Единственное красное — предсуществующий фейл `apps/api products.mapper.spec.ts` (`mediaAssetId` в select маппера отсутствует в ожиданиях спеки), воспроизводится на базе `4bc0c788`, apps/api у обоих родителей идентичен; в бэклог.

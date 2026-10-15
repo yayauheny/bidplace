@@ -204,6 +204,26 @@ SellerProfile
   1–120 character `accountSlugSchema` read contract. Future write endpoints
   must reuse the write schema; narrowing a response schema would reject
   historical accounts. This introduces no new persistence owner or migration.
+- `apps/mobile/src/lib/local-form-draft.ts` is the browser-only form-draft
+  boundary (DEC-121). Keys are `bidplace:draft:<accountId>:<scope>:<entityId>`
+  in `localStorage` — scoped to the account and to one Work or one seller
+  application, never shared across accounts or entities; the analytics
+  AsyncStorage is not used. A draft payload passes a Zod schema that allows an
+  incomplete first step (strict submit validation does not apply), and corrupt
+  JSON or unavailable storage yields `null`, never a form crash. Writing is
+  throttled (~400 ms) during editing and does not depend on `beforeunload`.
+  `features/sellers/local-form-restore.ts` adapts the two form owners: a stored
+  draft applies only while its `baseToken` (server revision token) matches the
+  loaded server state — the server revision wins on mismatch, so simultaneous
+  editing from several devices resolves to the last successful server save and
+  no sync/conflict UI exists. Restored values hydrate the form as dirty and go
+  into the next ordinary save; server hydration/refetch does not clear them.
+  Drafts are cleared on logout/session change (`account-logout`), on a
+  confirmed submit, and on a successful save with no edits after the request
+  snapshot. After the first confirmed create, the `…:new` key is migrated to
+  the confirmed entity id (`noteEntityCreated`) so a revisit cannot re-create
+  the entity. Passwords, OTP, tokens, registration/auth forms, blob URLs and
+  file bytes are never stored.
 - `apps/mobile/src/features/auth/nickname-suggestion-generator.ts` is the
   replaceable synchronous nickname-generation boundary. Its sole current
   adapter confines `unique-names-generator` and curated bundled dictionaries to
