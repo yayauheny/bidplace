@@ -1,7 +1,4 @@
-import {
-  DefaultTheme,
-  ThemeProvider as NavigationThemeProvider,
-} from '@react-navigation/native';
+import { DefaultTheme, ThemeProvider as NavigationThemeProvider } from 'expo-router';
 import { type ReactNode } from 'react';
 
 import { designTokens } from '@bidplace/design-tokens';
