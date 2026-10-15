@@ -371,6 +371,9 @@ export async function createApprovedAuthorFixture(): Promise<{
   const fullName = `Опубликованный автор ${suffix}`;
   const achievementId = randomUUID();
   const achievementBody = `Первая выставка ${suffix}`;
+  const category = await prisma.category.findUniqueOrThrow({
+    where: { slug: 'e2e-art' },
+  });
   const profile = await prisma.sellerProfile.create({
     data: {
       userId: author.id,
@@ -420,6 +423,10 @@ export async function createApprovedAuthorFixture(): Promise<{
       objectKey: `seller-achievement:${achievementId}`,
       data: photo,
     },
+  });
+  // The submit contract requires at least one direction on the revision.
+  await prisma.sellerProfileRevisionDirection.create({
+    data: { revisionId: revision.id, categoryId: category.id, position: 0 },
   });
   await prisma.sellerProfile.update({
     where: { id: profile.id },
@@ -561,7 +568,9 @@ async function deleteSellerProfiles(
   userIds: string[],
 ) {
   if (profileIds.length > 0) {
-    await prisma.sellerProfile.deleteMany({ where: { id: { in: profileIds } } });
+    await prisma.sellerProfile.deleteMany({
+      where: { id: { in: profileIds } },
+    });
   }
   if (userIds.length > 0) {
     await prisma.user.deleteMany({ where: { id: { in: userIds } } });
@@ -608,7 +617,9 @@ export async function createIsolatedWorksPaginationFixture(): Promise<{
           await prisma.productImage.deleteMany({
             where: { productId: { in: productIds } },
           });
-          await prisma.product.deleteMany({ where: { id: { in: productIds } } });
+          await prisma.product.deleteMany({
+            where: { id: { in: productIds } },
+          });
         }
       }
       await deleteSellerProfiles(prisma, profileIds, userIds);
@@ -672,7 +683,9 @@ export async function createIsolatedWorksPaginationFixture(): Promise<{
           story: 'Isolated catalog page fixture.',
           materials: material,
           status: 'APPROVED',
-          publishedAt: new Date(catalogPageEpoch.getTime() + (12 - index) * 1000),
+          publishedAt: new Date(
+            catalogPageEpoch.getTime() + (12 - index) * 1000,
+          ),
           images: {
             create: {
               position: 0,
