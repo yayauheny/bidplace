@@ -96,27 +96,27 @@ export const FigmaSelectField = forwardRef<
         >
           {displayText}
         </Text>
-        {showLabel ? (
-          <View
-            pointerEvents="none"
+        {/* shortcut: label stays mounted with display none — unmounting it during blur re-triggers the radix FocusScope mutation observer and steals focus to the dialog container */}
+        <View
+          pointerEvents="none"
+          style={{
+            position: 'absolute',
+            left: designTokens.space.fieldLabelX,
+            top: designTokens.space.fieldLabelY,
+            paddingHorizontal: 4,
+            backgroundColor: designTokens.color.canvas,
+            display: showLabel ? undefined : 'none',
+          }}
+        >
+          <Text
             style={{
-              position: 'absolute',
-              left: designTokens.space.fieldLabelX,
-              top: designTokens.space.fieldLabelY,
-              paddingHorizontal: 4,
-              backgroundColor: designTokens.color.canvas,
+              color: designTokens.color.fieldLabel,
+              ...designTokens.typography.fieldLabel,
             }}
           >
-            <Text
-              style={{
-                color: designTokens.color.fieldLabel,
-                ...designTokens.typography.fieldLabel,
-              }}
-            >
-              {label}
-            </Text>
-          </View>
-        ) : null}
+            {label}
+          </Text>
+        </View>
       </MotionPressable>
       {error ? (
         <Text
