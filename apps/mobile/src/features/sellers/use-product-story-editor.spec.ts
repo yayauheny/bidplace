@@ -283,6 +283,27 @@ describe('revision-backed Work Story editor', () => {
     expect(view.editor.dirty).toBe(false);
   });
 
+  it('does not apply repeated snapshots from another revision', () => {
+    const view = mount('user-a');
+    const next = '92222222-2222-4222-8222-222222222222';
+    // The refetch pipeline momentarily returns the previous revision's
+    // snapshot; a later update of that same foreign snapshot must not hydrate.
+    view.render(1, next, { storyToken: 0, blocks: [] }, revisionId);
+    view.render(
+      1,
+      next,
+      {
+        storyToken: 1,
+        blocks: [
+          { id: blockId, position: 0, type: 'PARAGRAPH' as const, text: 'WRONG REVISION' },
+        ],
+      },
+      revisionId,
+    );
+    expect(view.editor.blocks).toEqual([]);
+    expect(view.editor.dirty).toBe(false);
+  });
+
   it('keeps a recovered other-revision copy across editing and a confirmed save', async () => {
     vi.useFakeTimers();
     // A copy left over from another revision sits under the legacy key.
@@ -409,6 +430,59 @@ describe('revision-backed Work Story editor', () => {
       'Старый черновик',
     );
     expect(view.editor.recoveryText).toContain('Старый черновик');
+  });
+
+  it('keeps active input when a legacy copy also exists', () => {
+    const payload = (text: string) =>
+      JSON.stringify({
+        v: 2,
+        revisionId,
+        token: 0,
+        blocks: [{ key: 'local', type: 'PARAGRAPH', text }],
+      });
+    window.localStorage.setItem(activeStoryKey, payload('NEW ACTIVE'));
+    window.localStorage.setItem(legacyStoryKey, payload('OLD LEGACY'));
+    const view = mount('user-a');
+    expect(
+      view.editor.blocks.map((block) =>
+        block.type === 'IMAGE' ? '' : block.text,
+      ),
+    ).toEqual(['NEW ACTIVE']);
+    // The differing legacy copy is preserved, not dropped: remounting finds it
+    // again and still keeps the active draft authoritative.
+    const legacyNow = window.localStorage.getItem(legacyStoryKey);
+    const recoveryNow = window.localStorage.getItem(recoveryStoryKey);
+    expect(
+      legacyNow ?? recoveryNow ?? '',
+    ).toContain('OLD LEGACY');
+    const again = mount('user-a');
+    expect(
+      again.editor.blocks.map((block) =>
+        block.type === 'IMAGE' ? '' : block.text,
+      ),
+    ).toEqual(['NEW ACTIVE']);
+  });
+
+  it('offers the recovery source even when its migration cannot write', () => {
+    window.localStorage.setItem(
+      legacyStoryKey,
+      JSON.stringify({
+        v: 2,
+        revisionId: 'old',
+        token: 0,
+        blocks: [{ key: 'local', type: 'PARAGRAPH', text: 'RECOVERY TEXT' }],
+      }),
+    );
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new DOMException('quota', 'QuotaExceededError');
+    });
+    const view = mount('user-a');
+    // The source copy survives the failed write; the notice offers its text.
+    expect(window.localStorage.getItem(legacyStoryKey)).toContain(
+      'RECOVERY TEXT',
+    );
+    expect(view.editor.recoveryText).toBe('RECOVERY TEXT');
+    expect(view.editor.storageError).toBeTruthy();
   });
 
   it('restores only the text the server does not have yet', () => {

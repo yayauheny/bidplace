@@ -316,13 +316,30 @@ export function useProductStoryEditor({
 
   /**
    * Moves a stored draft between keys: copy → confirm the write → delete the
-   * source. A failed write leaves the source untouched, so a migration can
-   * never destroy the only copy (quota/denied).
+   * source. A failed write or a destination already holding a different copy
+   * leaves the source untouched, so a migration can never destroy the only
+   * copy (quota/denied) nor overwrite a newer draft (A-01).
    */
-  const moveStoredDraft = (fromKey: string, toKey: string): void => {
+  const moveStoredDraft = (
+    fromKey: string,
+    toKey: string,
+  ): 'moved' | 'kept-source' | 'nothing' => {
     const stored = readFormDraft(fromKey, storyLocalDraftSchema);
-    if (!stored) return; // nothing parseable there; leave it as is
-    if (writeFormDraft(toKey, stored) === 'ok') clearFormDraft(fromKey);
+    if (!stored) return 'nothing'; // nothing parseable there; leave it as is
+    const existing = readFormDraft(toKey, storyLocalDraftSchema);
+    if (existing) {
+      if (JSON.stringify(existing) === JSON.stringify(stored)) {
+        // Identical copies collapse into the destination; no write needed.
+        clearFormDraft(fromKey);
+        return 'moved';
+      }
+      return 'kept-source'; // occupied by a different copy; never overwrite
+    }
+    if (writeFormDraft(toKey, stored) === 'ok') {
+      clearFormDraft(fromKey);
+      return 'moved';
+    }
+    return 'kept-source';
   };
 
   const withRecoveryNotice = (
@@ -330,16 +347,20 @@ export function useProductStoryEditor({
     account: string,
     productId: string | undefined,
     revisionId: string | undefined,
+    // Text of a copy that could not move to the recovery key; offered from
+    // its surviving source so recovery never depends on free quota (A-04).
+    recoverySourceText?: string | null,
   ): DraftState => {
     const recovery = readFormDraft(
       storyDraftRecoveryKey(account, productId, revisionId),
       storyLocalDraftSchema,
     );
-    if (!recovery) return state;
+    const text = recovery ? draftTextOf(recovery) : (recoverySourceText ?? null);
+    if (!text) return state;
     return {
       ...state,
       storageError: state.storageError ?? RECOVERY_NOTICE,
-      recoveryText: state.recoveryText ?? draftTextOf(recovery),
+      recoveryText: state.recoveryText ?? text,
     };
   };
 
@@ -356,16 +377,32 @@ export function useProductStoryEditor({
 
     // The revision-less legacy key (written before drafts were scoped per
     // revision) is never applied as-is: a copy of this revision moves to the
-    // active key, anything else to the recovery namespace.
+    // active key only when that key does not already hold a different draft;
+    // anything else goes to the recovery namespace, and an occupied or
+    // unwritable destination keeps the source where it is. Without a revision
+    // identity (owner query still loading) nothing is moved: a copy migrated
+    // into an undefined-revision namespace would be invisible to the loaded
+    // revision's restore pass, so a foreign copy is offered from its source
+    // in place and migrates once the revision is known.
     const legacyKey = storyDraftLegacyKey(account, productId);
-    if (legacyKey !== activeKey) {
+    let recoverySourceText: string | null = null;
+    if (revision) {
+      if (legacyKey !== activeKey) {
+        const legacy = readFormDraft(legacyKey, storyLocalDraftSchema);
+        if (legacy) {
+          const target =
+            legacy.revisionId != null && legacy.revisionId === revision
+              ? activeKey
+              : storyDraftRecoveryKey(account, productId, revision);
+          if (moveStoredDraft(legacyKey, target) === 'kept-source') {
+            recoverySourceText = draftTextOf(legacy);
+          }
+        }
+      }
+    } else {
       const legacy = readFormDraft(legacyKey, storyLocalDraftSchema);
-      if (legacy) {
-        const target =
-          legacy.revisionId != null && legacy.revisionId === revision
-            ? activeKey
-            : storyDraftRecoveryKey(account, productId, revision);
-        moveStoredDraft(legacyKey, target);
+      if (legacy && legacy.revisionId != null) {
+        recoverySourceText = draftTextOf(legacy);
       }
     }
 
@@ -373,10 +410,18 @@ export function useProductStoryEditor({
     if (stored && stored.revisionId !== revision) {
       // Cross-tab race: another revision's draft under this revision's key.
       // Keep it as a recovery copy instead of applying or destroying it.
-      moveStoredDraft(
-        activeKey,
-        storyDraftRecoveryKey(account, productId, revision),
-      );
+      if (revision) {
+        if (
+          moveStoredDraft(
+            activeKey,
+            storyDraftRecoveryKey(account, productId, revision),
+          ) === 'kept-source'
+        ) {
+          recoverySourceText ??= draftTextOf(stored);
+        }
+      } else if (stored.revisionId != null) {
+        recoverySourceText ??= draftTextOf(stored);
+      }
     } else if (stored) {
       const serverToken = storySnapshot?.storyToken ?? 0;
       if (stored.token >= serverToken) {
@@ -386,13 +431,25 @@ export function useProductStoryEditor({
           stored.v === 2
             ? restoreV2(base, stored)
             : restoreLegacy(base, stored);
-        return withRecoveryNotice(restored, account, productId, revision);
+        return withRecoveryNotice(
+          restored,
+          account,
+          productId,
+          revision,
+          recoverySourceText,
+        );
       }
       // A newer server story exists within this revision; the last server
       // save wins.
       clearFormDraft(activeKey);
     }
-    return withRecoveryNotice(base, account, productId, revision);
+    return withRecoveryNotice(
+      base,
+      account,
+      productId,
+      revision,
+      recoverySourceText,
+    );
   };
 
   // v2: blocks match server blocks by stable key, so identity, edits,
@@ -494,6 +551,16 @@ export function useProductStoryEditor({
 
   useEffect(() => {
     const previous = current.current;
+    // The snapshot may only become this revision's baseline when the owner
+    // query says it belongs to this revision. A snapshot without a revision
+    // attribution (loading state) or with another revision's attribution is
+    // held, never presented as this revision's story; an absent snapshot
+    // imposes no ownership claim, so the local draft restore still runs.
+    const snapshotBelongs =
+      story === undefined ||
+      (revisionId !== undefined &&
+        storyRevisionId !== undefined &&
+        storyRevisionId === revisionId);
     if (previous.identity !== identity) {
       writer.current.cancel();
       uploaded.current = new Set();
@@ -503,15 +570,6 @@ export function useProductStoryEditor({
       const revisionChanged = lastEffectRevision.current !== revisionId;
       lastEffectRevision.current = revisionId;
       const confirmed = confirmedSave.current;
-      // The snapshot may only become this revision's baseline when the owner
-      // query says it belongs to this revision. A snapshot without a revision
-      // attribution (loading state) is held, never presented as this
-      // revision's story.
-      const snapshotBelongs =
-        story === undefined ||
-        revisionId === undefined ||
-        storyRevisionId === undefined ||
-        storyRevisionId === revisionId;
       if (
         revisionChanged &&
         confirmed &&
@@ -558,10 +616,16 @@ export function useProductStoryEditor({
         });
       }
     } else if (restoredFor.current !== identity) {
+      if (story && !snapshotBelongs) {
+        // The owner still serves another revision's snapshot: stay in the
+        // held waiting state instead of hydrating a foreign baseline.
+        return;
+      }
       restoredFor.current = identity;
       replace(restoreDraft(identity, story));
     } else if (
       story &&
+      snapshotBelongs &&
       !previous.dirty &&
       !previous.pending &&
       story.storyToken > previous.token
