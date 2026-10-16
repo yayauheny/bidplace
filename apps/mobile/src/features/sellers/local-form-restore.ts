@@ -16,14 +16,36 @@ import {
  * a draft is applied on top of the server values only when it was typed on
  * top of the same server revision that was just hydrated — a newer server
  * state wins, matching the accepted multi-device rule.
+ *
+ * The stored payload is validated as data, not as a submittable form: the
+ * envelope is schema-checked, each field is accepted only when its JSON
+ * shape matches the form's own default for that field, and unfinished
+ * intermediate values (a half-typed email or year) restore fine. Business
+ * validation stays with the server save/submit path.
  */
 
-export function localDraftPayloadSchema<T extends z.ZodType>(values: T) {
-  return z.object({
-    base: z.string().nullable(),
-    values,
-  });
+// Shape of the defaults captured on first render — the type oracle for
+// per-field storage checks.
+type FieldShape = Record<string, unknown>;
+
+function sameStorageShape(stored: unknown, reference: unknown): boolean {
+  if (Array.isArray(reference)) {
+    if (!Array.isArray(stored)) return false;
+    if (stored.length === 0 || reference.length === 0) return true;
+    return sameStorageShape(stored[0], reference[0]);
+  }
+  if (reference !== null && typeof reference === 'object') {
+    return stored !== null && typeof stored === 'object';
+  }
+  return typeof stored === typeof reference;
 }
+
+const storedDraftEnvelopeSchema = z.object({
+  base: z.string().nullable(),
+  values: z.record(z.string(), z.unknown()),
+});
+
+type StoredDraftEnvelope = z.infer<typeof storedDraftEnvelopeSchema>;
 
 type RestoreInput<TValues extends Record<string, unknown>> = {
   form: UseFormReturn<TValues>;
@@ -35,7 +57,6 @@ type RestoreInput<TValues extends Record<string, unknown>> = {
   /** Server values the form was last reset from; null for a new entity. */
   serverValues: TValues | null;
   canWrite: () => boolean;
-  schema: z.ZodType<TValues>;
 };
 
 export function useLocalFormRestore<TValues extends Record<string, unknown>>({
@@ -46,7 +67,6 @@ export function useLocalFormRestore<TValues extends Record<string, unknown>>({
   baseToken,
   serverValues,
   canWrite,
-  schema,
 }: RestoreInput<TValues>) {
   const writerRef = useRef(createDraftWriter());
   const accountRef = useRef(accountId);
@@ -57,6 +77,13 @@ export function useLocalFormRestore<TValues extends Record<string, unknown>>({
   entityRef.current = entityId;
   baseRef.current = baseToken;
   canWriteRef.current = canWrite;
+
+  // Defaults captured before any hydration reset: they tell a string field
+  // from an array field without copying the business schema.
+  const fieldShapes = useRef<FieldShape | null>(null);
+  if (fieldShapes.current === null) {
+    fieldShapes.current = form.getValues() as FieldShape;
+  }
 
   const currentKey = useCallback(
     () =>
@@ -92,7 +119,7 @@ export function useLocalFormRestore<TValues extends Record<string, unknown>>({
   useEffect(() => {
     const key = currentKey();
     if (!key) return;
-    const stored = readFormDraft(key, localDraftPayloadSchema(schema));
+    const stored = readFormDraft<StoredDraftEnvelope>(key, storedDraftEnvelopeSchema);
     if (!stored) return;
     const expectedBase = entityRef.current === 'new' ? null : baseToken;
     if (entityRef.current !== 'new' && expectedBase === null) return;
@@ -102,14 +129,16 @@ export function useLocalFormRestore<TValues extends Record<string, unknown>>({
       clearFormDraft(key);
       return;
     }
-    const current = form.getValues() as Record<string, unknown>;
-    const server = serverSnapshot ? (JSON.parse(serverSnapshot) as Record<string, unknown>) : null;
+    const current = form.getValues() as FieldShape;
+    const server = serverSnapshot ? (JSON.parse(serverSnapshot) as FieldShape) : null;
     const matchesServer = server
       ? JSON.stringify(current) === serverSnapshot
       : !form.formState.isDirty;
     if (!matchesServer || !stored.values) return;
+    const shapes = fieldShapes.current ?? {};
     for (const [field, value] of Object.entries(stored.values)) {
       if (!(field in current)) continue;
+      if (!sameStorageShape(value, shapes[field])) continue;
       if (JSON.stringify(current[field]) === JSON.stringify(value)) continue;
       form.setValue(field as never, value as never, {
         shouldDirty: true,
@@ -118,7 +147,7 @@ export function useLocalFormRestore<TValues extends Record<string, unknown>>({
       });
     }
     // The watch subscription persists the restored draft under the same key.
-  }, [currentKey, baseToken, entityId, form, schema, serverSnapshot]);
+  }, [currentKey, baseToken, entityId, form, serverSnapshot]);
 
   const noteEntityCreated = useCallback(
     (newEntityId: string, newBaseToken: string | null) => {

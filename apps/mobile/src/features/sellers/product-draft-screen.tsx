@@ -141,7 +141,6 @@ export function ProductDraftScreen({
       ? productToDraftFormValues(existingProduct, productDetail.data?.selection)
       : null,
     canWrite: () => canWritePrivateCache(queryClient, authEpoch),
-    schema: productDraftFormSchema,
   });
 
   const storyEditor = useProductStoryEditor({

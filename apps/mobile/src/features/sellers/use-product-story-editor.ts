@@ -187,32 +187,38 @@ export function useProductStoryEditor({
       clearFormDraft(key);
       return base;
     }
-    if (stored.v === 2) return restoreV2(base, key, stored);
-    return restoreLegacy(base, key, stored);
+    if (stored.v === 2) return restoreV2(base, stored);
+    return restoreLegacy(base, stored);
   };
 
   // v2: blocks match server blocks by stable key, so identity, edits,
   // deletions and reordering restore exactly; server media keeps its id.
-  const restoreV2 = (
-    base: DraftState,
-    key: string,
-    stored: StoryLocalDraft,
-  ): DraftState => {
+  const restoreV2 = (base: DraftState, stored: StoryLocalDraft): DraftState => {
     const serverByKey = new Map(base.blocks.map((block) => [block.key, block]));
-    const blocks: EditableStoryBlock[] = stored.blocks.flatMap((block) => {
+    const blocks: EditableStoryBlock[] = [];
+    for (const block of stored.blocks) {
       const match = serverByKey.get(block.key);
       if (block.type === 'IMAGE') {
-        if (match?.type === 'IMAGE') {
-          return [{ ...match, altText: block.altText ?? null }];
-        }
-        return [{ key: block.key, type: 'IMAGE', mediaAssetId: block.mediaAssetId, altText: block.altText ?? null }];
+        blocks.push(
+          match?.type === 'IMAGE'
+            ? { ...match, altText: block.altText ?? null }
+            : {
+                key: block.key,
+                type: 'IMAGE',
+                mediaAssetId: block.mediaAssetId,
+                altText: block.altText ?? null,
+              },
+        );
+        continue;
       }
       if (match && match.type !== 'IMAGE') {
-        return [{ ...match, text: block.text }];
+        blocks.push({ ...match, text: block.text });
+        continue;
       }
-      return [{ key: block.key, type: block.type, text: block.text }];
-    });
-    const same = JSON.stringify(writeBlocks(blocks)) === JSON.stringify(writeBlocks(base.blocks));
+      blocks.push({ key: block.key, type: block.type, text: block.text });
+    }
+    const same =
+      JSON.stringify(writeBlocks(blocks)) === JSON.stringify(writeBlocks(base.blocks));
     if (same) return base;
     return { ...base, blocks, dirty: true };
   };
@@ -220,19 +226,18 @@ export function useProductStoryEditor({
   // Legacy text-only payloads cannot record deletions/reordering/images, so
   // they keep the old content-merge semantics; the ambiguity is documented
   // in the wave report rather than guessed.
-  const restoreLegacy = (
-    base: DraftState,
-    key: string,
-    stored: StoryLocalDraft,
-  ): DraftState => {
-    if (stored.blocks.length === 0) return base;
+  const restoreLegacy = (base: DraftState, stored: StoryLocalDraft): DraftState => {
+    const storedTexts = stored.blocks.filter(
+      (block): block is z.infer<typeof storyTextBlockSchema> => block.type !== 'IMAGE',
+    );
+    if (storedTexts.length === 0) return base;
     const serverCounts = new Map<string, number>();
     for (const block of base.blocks) {
       if (block.type === 'IMAGE') continue;
       const contentKey = `${block.type}:${block.text}`;
       serverCounts.set(contentKey, (serverCounts.get(contentKey) ?? 0) + 1);
     }
-    const fresh = stored.blocks.filter((block) => {
+    const fresh = storedTexts.filter((block) => {
       const contentKey = `${block.type}:${block.text}`;
       const count = serverCounts.get(contentKey) ?? 0;
       if (count > 0) {

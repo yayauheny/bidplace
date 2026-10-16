@@ -33,7 +33,7 @@ import { AuthorApplicationExitConfirm } from './author-application-exit-confirm'
 import { AuthorDirectionsPickerSheet } from './author-directions-picker-sheet';
 import { AuthorIntroDialog } from './AuthorIntroDialog';
 import { useProfileData, toFields } from './seller-profile-data';
-import { profileDraftAllowsSave, profileDraftSchema } from './profile-validation';
+import { profileDraftAllowsSave } from './profile-validation';
 import { useLocalFormRestore } from './local-form-restore';
 import {
   canSubmitSellerProfileRevision,
@@ -194,7 +194,6 @@ export function SellerProfileScreen() {
     baseToken: hydrationToken ?? null,
     serverValues: profile ? toFields(profile) : null,
     canWrite: () => canWritePrivateCache(queryClient, authEpoch),
-    schema: profileDraftSchema,
   });
   const submission = useProfileSubmission({
     api,
