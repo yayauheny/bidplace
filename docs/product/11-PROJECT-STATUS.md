@@ -2,6 +2,14 @@
 
 > Entries dated before 2026-10-13 mention Pen / .pen files; the Pen design was removed (DEC-119) — read those mentions as history.
 
+## 2026-10-16 — Draft-restore волна 10: AR-02 — карта owner/variant, один renderer на роль (Partial, NEEDS-FIGMA)
+
+- `Partial`: применимая часть AR-02 закрыта — карта ролей согласована с кодом; полный AR-02 остаётся открытым до миграции экранного слоя (AR-01 остаток) и приёмки по live Figma.
+- `Implemented` (TZ п.1): `docs/product/16-COMPONENT-OWNERS.md` — таблица button/field(text+select)/text/icon/dialog/tab/card/shell/chip → фактический renderer, variant API, тонкие wrapper'ы, живые consumers по `features/*`. Роли привязаны к коду (grep-verified на HEAD волны).
+- `Verified` (TZ п.2/п.4): один renderer на роль — `ui/Button.tsx` (Primary/Secondary/TextButton) и `ui/TextField.tsx` делегируют в `FigmaButton`/`FigmaTextField`, не добавляют размеров/палитры; `FilterSearchField` и OTP `auth-code-field` повторно используют field-owner стили; копий button/field style в consumers нет (сweep `features/*`); состояния hover/focus/pressed/disabled/loading — в renderer'е (`MotionPressable` + matrix). Уникальная экранная геометрия (строки шитов `minHeight: 44`, toolbar product-draft-story) осознанно не централизована по AR-02.
+- `Gate`: смена семантического цвета отражается на consumers без правок экранов — `theme.spec.ts` (текст, иконка, navigation, CSS-focus, поле, кнопочная матрица black, тот же DOM-узел); новых регрессий нет, owner specs не расширялись.
+- Проверки: vitest **866/866**, tsc/eslint/prettier чисто (код не менялся, docs-only волна).
+
 ## 2026-10-16 — Draft-restore волна 9: AR-01 (часть 3) — style-owner helpers на палитре (Partial, NEEDS-FIGMA)
 
 - `Partial`: весь компонентный/owner-слой общих примитивов мигрирован на semantic palette; AR-01 всё ещё **не закрыта** — остались экранный слой `features/*` (включая auth-токены `tokens.auth.available/taken/*Border*`, уедут вместе с auth-экранами) и бренд-ассеты. Готовность темы не заявляется; black-палитра остаётся тестовой (NEEDS-FIGMA).
