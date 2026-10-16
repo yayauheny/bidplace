@@ -3,12 +3,13 @@ import type { UseFormReturn } from 'react-hook-form';
 import { z } from 'zod';
 
 import {
+  DRAFT_STORAGE_ERROR_MESSAGE,
   accountDraftEpoch,
   clearFormDraft,
   createDraftWriter,
   formDraftKey,
+  probeDraftStorage,
   readFormDraft,
-  storageWritable,
   writeFormDraft,
 } from '../../lib/local-form-draft';
 
@@ -20,27 +21,13 @@ import {
  * state wins, matching the accepted multi-device rule.
  *
  * The stored payload is validated as data, not as a submittable form: the
- * envelope is schema-checked, each field is accepted only when its JSON
- * shape matches the form's own default for that field, and unfinished
- * intermediate values (a half-typed email or year) restore fine. Business
- * validation stays with the server save/submit path.
+ * envelope is schema-checked, each field is accepted only when it parses
+ * against the field owner's raw storage schema (plain strings/arrays — no
+ * business limits), so unfinished intermediate values (a half-typed email or
+ * year) restore fine while a corrupt element drops just that field and its
+ * valid neighbours still restore. Business validation stays with the server
+ * save/submit path.
  */
-
-// Shape of the defaults captured on first render — the type oracle for
-// per-field storage checks.
-type FieldShape = Record<string, unknown>;
-
-function sameStorageShape(stored: unknown, reference: unknown): boolean {
-  if (Array.isArray(reference)) {
-    if (!Array.isArray(stored)) return false;
-    if (stored.length === 0 || reference.length === 0) return true;
-    return sameStorageShape(stored[0], reference[0]);
-  }
-  if (reference !== null && typeof reference === 'object') {
-    return stored !== null && typeof stored === 'object';
-  }
-  return typeof stored === typeof reference;
-}
 
 const storedDraftEnvelopeSchema = z.object({
   base: z.string().nullable(),
@@ -49,9 +36,8 @@ const storedDraftEnvelopeSchema = z.object({
 
 type StoredDraftEnvelope = z.infer<typeof storedDraftEnvelopeSchema>;
 
-// Shown where the form renders when local drafts cannot be stored at all.
-const STORAGE_ERROR_MESSAGE =
-  'Не удалось сохранить черновик на устройстве. Введённый текст может не восстановиться.';
+// Raw per-field parsers owned by the form modules (JSON shapes only).
+export type DraftFieldsSchema = z.ZodObject<Record<string, z.ZodTypeAny>>;
 
 type RestoreInput<TValues extends Record<string, unknown>> = {
   form: UseFormReturn<TValues>;
@@ -62,6 +48,8 @@ type RestoreInput<TValues extends Record<string, unknown>> = {
   baseToken: string | null;
   /** Server values the form was last reset from; null for a new entity. */
   serverValues: TValues | null;
+  /** Raw storage-level field parsers from the form owner module. */
+  fields: DraftFieldsSchema;
   canWrite: () => boolean;
 };
 
@@ -72,6 +60,7 @@ export function useLocalFormRestore<TValues extends Record<string, unknown>>({
   entityId,
   baseToken,
   serverValues,
+  fields,
   canWrite,
 }: RestoreInput<TValues>) {
   const writerRef = useRef(createDraftWriter());
@@ -79,17 +68,12 @@ export function useLocalFormRestore<TValues extends Record<string, unknown>>({
   const entityRef = useRef(entityId);
   const baseRef = useRef<string | null>(baseToken);
   const canWriteRef = useRef(canWrite);
+  const fieldsRef = useRef(fields);
   accountRef.current = accountId;
   entityRef.current = entityId;
   baseRef.current = baseToken;
   canWriteRef.current = canWrite;
-
-  // Defaults captured before any hydration reset: they tell a string field
-  // from an array field without copying the business schema.
-  const fieldShapes = useRef<FieldShape | null>(null);
-  if (fieldShapes.current === null) {
-    fieldShapes.current = form.getValues() as FieldShape;
-  }
+  fieldsRef.current = fields;
 
   const currentKey = useCallback(
     () =>
@@ -102,9 +86,11 @@ export function useLocalFormRestore<TValues extends Record<string, unknown>>({
   // Live write-through of edits while typing.
   const [storageError, setStorageError] = useState<string | null>(null);
 
-  // Unusable storage means neither restore nor write can work; say so once.
+  // Broken storage (quota/denied) means writes fail; a runtime without Web
+  // Storage (native) simply has no drafts — no warning needed there.
   useEffect(() => {
-    if (!storageWritable()) setStorageError(STORAGE_ERROR_MESSAGE);
+    if (probeDraftStorage() === 'failed')
+      setStorageError(DRAFT_STORAGE_ERROR_MESSAGE);
   }, []);
 
   useEffect(() => {
@@ -127,7 +113,7 @@ export function useLocalFormRestore<TValues extends Record<string, unknown>>({
           base: baseRef.current,
           values: form.getValues(),
         });
-        setStorageError(written ? null : STORAGE_ERROR_MESSAGE);
+        setStorageError(written === 'ok' ? null : DRAFT_STORAGE_ERROR_MESSAGE);
       });
     });
     return () => {
@@ -156,20 +142,24 @@ export function useLocalFormRestore<TValues extends Record<string, unknown>>({
       clearFormDraft(key);
       return;
     }
-    const current = form.getValues() as FieldShape;
+    const current = form.getValues() as Record<string, unknown>;
     const server = serverSnapshot
-      ? (JSON.parse(serverSnapshot) as FieldShape)
+      ? (JSON.parse(serverSnapshot) as Record<string, unknown>)
       : null;
     const matchesServer = server
       ? JSON.stringify(current) === serverSnapshot
       : !form.formState.isDirty;
     if (!matchesServer || !stored.values) return;
-    const shapes = fieldShapes.current ?? {};
     for (const [field, value] of Object.entries(stored.values)) {
-      if (!(field in current)) continue;
-      if (!sameStorageShape(value, shapes[field])) continue;
-      if (JSON.stringify(current[field]) === JSON.stringify(value)) continue;
-      form.setValue(field as never, value as never, {
+      const fieldSchema = fieldsRef.current.shape[field];
+      if (!fieldSchema) continue;
+      // A field that fails its raw parser is dropped whole; its valid
+      // neighbours still restore.
+      const parsed = fieldSchema.safeParse(value);
+      if (!parsed.success) continue;
+      if (JSON.stringify(current[field]) === JSON.stringify(parsed.data))
+        continue;
+      form.setValue(field as never, parsed.data as never, {
         shouldDirty: true,
         shouldTouch: true,
         shouldValidate: false,
@@ -184,11 +174,17 @@ export function useLocalFormRestore<TValues extends Record<string, unknown>>({
       const key = currentKey();
       writer.flush();
       if (key && canWriteRef.current()) {
-        writeFormDraft(formDraftKey(accountRef.current!, scope, newEntityId), {
-          base: newBaseToken,
-          values: form.getValues(),
-        });
-        clearFormDraft(key);
+        const written = writeFormDraft(
+          formDraftKey(accountRef.current!, scope, newEntityId),
+          {
+            base: newBaseToken,
+            values: form.getValues(),
+          },
+        );
+        // The old 'new' draft goes away only when the copy under the real id
+        // landed; otherwise the only snapshot would be destroyed.
+        if (written === 'ok') clearFormDraft(key);
+        else setStorageError(DRAFT_STORAGE_ERROR_MESSAGE);
       }
       entityRef.current = newEntityId;
       baseRef.current = newBaseToken;

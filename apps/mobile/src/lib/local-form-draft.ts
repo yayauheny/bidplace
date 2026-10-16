@@ -39,17 +39,28 @@ export function accountDraftEpoch(accountId: string): number {
   return accountDraftEpochs.get(accountId) ?? 0;
 }
 
-/** True when a small probe write succeeds — storage is usable for drafts. */
-export function storageWritable(): boolean {
+/**
+ * Result of a draft write: 'unsupported' when the runtime has no Web Storage
+ * at all (native), 'failed' when the API exists but the operation threw
+ * (quota/denied). Only the latter is worth a user-facing warning.
+ */
+export type DraftWriteResult = 'unsupported' | 'ok' | 'failed';
+
+// Shown where the form renders when local drafts cannot be stored at all.
+export const DRAFT_STORAGE_ERROR_MESSAGE =
+  'Не удалось сохранить черновик на устройстве. Введённый текст может не восстановиться.';
+
+/** Probes storage once: usable ('ok'), absent ('unsupported'), or broken ('failed'). */
+export function probeDraftStorage(): DraftWriteResult {
   const store = storage();
-  if (!store) return false;
+  if (!store) return 'unsupported';
   try {
     const probe = `${FORM_DRAFT_PREFIX}probe`;
     store.setItem(probe, '1');
     store.removeItem(probe);
-    return true;
+    return 'ok';
   } catch {
-    return false;
+    return 'failed';
   }
 }
 
@@ -74,16 +85,16 @@ export function readFormDraft<T>(key: string, schema: ZodType<T>): T | null {
   }
 }
 
-/** Persists the draft. Returns false when storage is unavailable or fails. */
-export function writeFormDraft(key: string, value: unknown): boolean {
+/** Persists the draft. 'unsupported'/'failed' explain why nothing was written. */
+export function writeFormDraft(key: string, value: unknown): DraftWriteResult {
   const store = storage();
-  if (!store) return false;
+  if (!store) return 'unsupported';
   try {
     store.setItem(key, JSON.stringify(value));
-    return true;
+    return 'ok';
   } catch (error) {
     logInfrastructureError(error, 'local-form-draft:write');
-    return false;
+    return 'failed';
   }
 }
 

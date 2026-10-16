@@ -34,7 +34,7 @@ describe('local form draft storage', () => {
     expect(key).toBe(`${FORM_DRAFT_PREFIX}user-a:product-draft:work-1`);
     expect(
       writeFormDraft(key, { base: null, values: { title: 'Черновик' } }),
-    ).toBe(true);
+    ).toBe('ok');
     expect(readFormDraft(key, schema)).toEqual({
       base: null,
       values: { title: 'Черновик' },
@@ -74,6 +74,18 @@ describe('local form draft storage', () => {
     expect(
       readFormDraft(formDraftKey('user-b', 'product-draft'), schema),
     ).not.toBeNull();
+  });
+
+  it('reports a failed write when storage throws', () => {
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new DOMException('quota exceeded', 'QuotaExceededError');
+    });
+    expect(
+      writeFormDraft(formDraftKey('user-a', 'product-draft'), {
+        base: null,
+        values: {},
+      }),
+    ).toBe('failed');
   });
 
   it('bumps the account draft epoch so delayed writers can detect retirement', () => {

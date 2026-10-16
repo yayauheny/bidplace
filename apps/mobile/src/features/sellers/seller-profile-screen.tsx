@@ -33,7 +33,10 @@ import { AuthorApplicationExitConfirm } from './author-application-exit-confirm'
 import { AuthorDirectionsPickerSheet } from './author-directions-picker-sheet';
 import { AuthorIntroDialog } from './AuthorIntroDialog';
 import { useProfileData, toFields } from './seller-profile-data';
-import { profileDraftAllowsSave } from './profile-validation';
+import {
+  profileDraftAllowsSave,
+  profileDraftFieldsSchema,
+} from './profile-validation';
 import { useLocalFormRestore } from './local-form-restore';
 import {
   canSubmitSellerProfileRevision,
@@ -121,6 +124,9 @@ export function SellerProfileScreen() {
   const logoutStarted = useRef(false);
   const achievementWriteToken = useRef(0);
   const [achievementWriteActive, setAchievementWriteActive] = useState(false);
+  const [achievementStorageError, setAchievementStorageError] = useState<
+    string | null
+  >(null);
   const seenAuthEpoch = useRef(authEpoch);
   const missingProfile =
     query.isError &&
@@ -193,6 +199,7 @@ export function SellerProfileScreen() {
     entityId: profile?.id ?? 'new',
     baseToken: hydrationToken ?? null,
     serverValues: profile ? toFields(profile) : null,
+    fields: profileDraftFieldsSchema,
     canWrite: () => canWritePrivateCache(queryClient, authEpoch),
   });
   const submission = useProfileSubmission({
@@ -557,6 +564,7 @@ export function SellerProfileScreen() {
       parentOperation={guard.currentParentOperation}
       onChildWrite={setAchievementWrite}
       onDraftChange={rememberAchievementDraft}
+      onStorageError={setAchievementStorageError}
     />
   );
   const achievementsVisible = shouldShowSellerProfileAchievements(
@@ -620,9 +628,9 @@ export function SellerProfileScreen() {
               variant={isApplicationWizard ? 'authorApplication' : 'default'}
             >
               <View style={{ gap: designTokens.space.x5 }}>
-                {restore.storageError ? (
+                {(restore.storageError ?? achievementStorageError) ? (
                   <AppText role="bodySmall" tone="danger">
-                    {restore.storageError}
+                    {restore.storageError ?? achievementStorageError}
                   </AppText>
                 ) : null}
                 {wizardStep !== null ? null : (

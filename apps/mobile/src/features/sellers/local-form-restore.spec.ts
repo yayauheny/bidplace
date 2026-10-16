@@ -8,8 +8,14 @@ import type { UseFormReturn } from 'react-hook-form';
 import { afterEach, expect, it, vi } from 'vitest';
 
 import { clearAccountFormDrafts } from '../../lib/local-form-draft';
-import { emptyProductDraftFormValues } from './product-draft-form';
-import { emptyProfileDraft } from './profile-validation';
+import {
+  emptyProductDraftFormValues,
+  productDraftFieldsSchema,
+} from './product-draft-form';
+import {
+  emptyProfileDraft,
+  profileDraftFieldsSchema,
+} from './profile-validation';
 import { useLocalFormRestore } from './local-form-restore';
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
@@ -39,6 +45,7 @@ function mountProfile(
       baseToken,
       serverValues:
         serverValues ?? (entityId === 'new' ? null : emptyProfileDraft),
+      fields: profileDraftFieldsSchema,
       canWrite: () => true,
     });
     return null;
@@ -80,6 +87,7 @@ function mountProduct(
       serverValues:
         serverValues ??
         (entityId === 'new' ? null : emptyProductDraftFormValues),
+      fields: productDraftFieldsSchema,
       canWrite: () => true,
     });
     return null;
@@ -135,6 +143,51 @@ it('restores all Work input when the year is temporarily invalid', () => {
   );
   const view = mountProduct();
   expect(view.form.getValues()).toEqual(values);
+});
+
+it('drops a stored array mixing strings with non-strings and restores its neighbours', () => {
+  const values = {
+    ...emptyProductDraftFormValues,
+    title: 'Несохранённое название',
+    materialProposals: ['ok', {}] as unknown as string[],
+  };
+  window.localStorage.setItem(
+    'bidplace:draft:user-a:product-draft:new',
+    JSON.stringify({ base: null, values }),
+  );
+  const view = mountProduct();
+  expect(view.form.getValues('materialProposals')).toEqual([]);
+  expect(view.form.getValues('title')).toBe('Несохранённое название');
+});
+
+it('drops a stored ID array that mixes a string with a number', () => {
+  const values = {
+    ...emptyProductDraftFormValues,
+    title: 'Несохранённое название',
+    materialTermIds: ['a', 42] as unknown as string[],
+  };
+  window.localStorage.setItem(
+    'bidplace:draft:user-a:product-draft:new',
+    JSON.stringify({ base: null, values }),
+  );
+  const view = mountProduct();
+  expect(view.form.getValues('materialTermIds')).toEqual([]);
+  expect(view.form.getValues('title')).toBe('Несохранённое название');
+});
+
+it('does not pass unknown stored fields into the form', () => {
+  const values = {
+    ...emptyProfileDraft,
+    fullName: 'Автор текста',
+    hackerField: 'стороннее значение',
+  };
+  window.localStorage.setItem(
+    'bidplace:draft:user-a:seller-application:new',
+    JSON.stringify({ base: null, values }),
+  );
+  const view = mountProfile();
+  expect(view.form.getValues('fullName')).toBe('Автор текста');
+  expect('hackerField' in view.form.getValues()).toBe(false);
 });
 
 it('drops a stored field whose JSON shape does not match the form', () => {
@@ -212,6 +265,26 @@ it('drops a delayed write scheduled before the account drafts were cleared', () 
   clearAccountFormDrafts('user-a');
   act(() => vi.advanceTimersByTime(500));
   expect(window.localStorage.getItem(key)).toBeNull();
+});
+
+it('keeps the draft at the old key when the entity-created copy fails to write', () => {
+  vi.useFakeTimers();
+  const newKey = 'bidplace:draft:user-a:product-draft:new';
+  const view = mountProduct();
+  act(() =>
+    view.form.setValue('title', 'Несохранённое название', {
+      shouldDirty: true,
+    }),
+  );
+  act(() => vi.advanceTimersByTime(500));
+  expect(window.localStorage.getItem(newKey)).not.toBeNull();
+  vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+    throw new DOMException('quota exceeded', 'QuotaExceededError');
+  });
+  act(() => view.restore.noteEntityCreated('work-1', 'revision-t1'));
+  // The only snapshot must survive a failed copy to the real id.
+  expect(window.localStorage.getItem(newKey)).not.toBeNull();
+  expect(view.restore.storageError).toBeTruthy();
 });
 
 it('reports when the local draft storage rejects writes', () => {

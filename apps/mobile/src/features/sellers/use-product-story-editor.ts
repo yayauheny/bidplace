@@ -6,6 +6,7 @@ import { z } from 'zod';
 import type { ApiClient } from '@bidplace/api-client';
 
 import {
+  DRAFT_STORAGE_ERROR_MESSAGE,
   accountDraftEpoch,
   clearFormDraft,
   createDraftWriter,
@@ -95,7 +96,8 @@ type DraftState = {
   /**
    * Set when a stored draft was skipped because it belongs to a different
    * server revision (or has no revision id): the record is kept untouched
-   * for manual recovery but is never applied to this revision.
+   * for manual recovery but is never applied to this revision. Also set when
+   * a local write fails, with the generic storage message.
    */
   storageError: string | null;
 };
@@ -219,7 +221,15 @@ export function useProductStoryEditor({
         token: current.current.token,
         blocks: storedBlocksOf(current.current.blocks),
       };
-      writeFormDraft(key, draft);
+      const written = writeFormDraft(key, draft);
+      const state = current.current;
+      if (state.identity === identity) {
+        // A failed write loses the local copy; a successful one confirms it.
+        replace({
+          ...state,
+          storageError: written === 'ok' ? null : DRAFT_STORAGE_ERROR_MESSAGE,
+        });
+      }
     });
   };
 

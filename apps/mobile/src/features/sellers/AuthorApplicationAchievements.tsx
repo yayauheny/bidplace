@@ -22,6 +22,7 @@ import {
   refreshPrivateQuery,
 } from '../../lib/query-cache';
 import {
+  DRAFT_STORAGE_ERROR_MESSAGE,
   accountDraftEpoch,
   clearFormDraft,
   createDraftWriter,
@@ -69,12 +70,14 @@ export function AuthorApplicationAchievements({
   parentOperation,
   onChildWrite,
   onDraftChange,
+  onStorageError,
 }: {
   editable: boolean;
   parentBusy: () => boolean;
   parentOperation: () => number;
   onChildWrite: (token: number, active: boolean) => void;
   onDraftChange?: (epoch: number, dirty: boolean) => void;
+  onStorageError?: (message: string | null) => void;
 }) {
   const api = useApiClient();
   const queryClient = useQueryClient();
@@ -94,11 +97,13 @@ export function AuthorApplicationAchievements({
   const parentOperationRef = useRef(parentOperation);
   const onChildWriteRef = useRef(onChildWrite);
   const onDraftChangeRef = useRef(onDraftChange);
+  const onStorageErrorRef = useRef(onStorageError);
   const editableRef = useRef(editable);
   parentBusyRef.current = parentBusy;
   parentOperationRef.current = parentOperation;
   onChildWriteRef.current = onChildWrite;
   onDraftChangeRef.current = onDraftChange;
+  onStorageErrorRef.current = onStorageError;
   editableRef.current = editable;
 
   const [body, setBody] = useState('');
@@ -232,7 +237,11 @@ export function AuthorApplicationAchievements({
     draftWriter.current.schedule(() => {
       // A logout cleared this account's drafts while the write was pending.
       if (account === null || accountDraftEpoch(account) !== epoch) return;
-      writeFormDraft(draftKey, { body, dateInput });
+      const written = writeFormDraft(draftKey, { body, dateInput });
+      // A successful write clears only this writer's error, not the form's.
+      onStorageErrorRef.current?.(
+        written === 'ok' ? null : DRAFT_STORAGE_ERROR_MESSAGE,
+      );
     });
   }, [accountId, body, dateInput, draftKey]);
 

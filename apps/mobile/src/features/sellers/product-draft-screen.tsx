@@ -38,6 +38,7 @@ import { ProductDraftAboutStep } from './product-draft-about';
 import { ProductDraftWriteGuard } from './product-draft-fields';
 import {
   emptyProductDraftFormValues,
+  productDraftFieldsSchema,
   productDraftFormSchema,
   productToDraftFormValues,
 } from './product-draft-form';
@@ -141,6 +142,7 @@ export function ProductDraftScreen({
     serverValues: existingProduct
       ? productToDraftFormValues(existingProduct, productDetail.data?.selection)
       : null,
+    fields: productDraftFieldsSchema,
     canWrite: () => canWritePrivateCache(queryClient, authEpoch),
   });
 
@@ -493,6 +495,10 @@ function migrateStoryDraft(accountId: string | null, productId: string) {
   const previousKey = formDraftKey(accountId, 'product-story', 'new');
   const stored = readFormDraft(previousKey, storyLocalDraftSchema);
   if (!stored) return;
-  writeFormDraft(formDraftKey(accountId, 'product-story', productId), stored);
-  clearFormDraft(previousKey);
+  // The old "new" copy goes away only when the migrated copy landed.
+  const written = writeFormDraft(
+    formDraftKey(accountId, 'product-story', productId),
+    stored,
+  );
+  if (written === 'ok') clearFormDraft(previousKey);
 }

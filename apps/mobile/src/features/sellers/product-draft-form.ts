@@ -28,18 +28,38 @@ export const productDraftFieldOrder = [
   'uniqueness',
 ] as const;
 
-export const productDraftFormSchema = z
+export const productDraftFieldsSchema = z
   .object({
     categoryId: draftTextSchema,
     title: draftTextSchema,
-    materialTermIds: z.array(z.string().uuid()).max(WORK_CATALOG_LIMITS.termsPerRole),
-    techniqueTermIds: z.array(z.string().uuid()).max(WORK_CATALOG_LIMITS.termsPerRole),
-    materialProposals: z.array(z.string().trim().min(1).max(WORK_CATALOG_LIMITS.nameLength)).max(WORK_CATALOG_LIMITS.proposalsPerRole),
-    techniqueProposals: z.array(z.string().trim().min(1).max(WORK_CATALOG_LIMITS.nameLength)).max(WORK_CATALOG_LIMITS.proposalsPerRole),
-    categoryProposal: z.string().max(WORK_CATALOG_LIMITS.nameLength),
+    materialTermIds: z.array(z.string()),
+    techniqueTermIds: z.array(z.string()),
+    materialProposals: z.array(z.string()),
+    techniqueProposals: z.array(z.string()),
+    categoryProposal: draftTextSchema,
     dimensions: draftTextSchema,
-    year: draftYearSchema,
+    year: draftTextSchema,
     uniqueness: draftTextSchema,
+  })
+  .strict();
+
+// Storage-level shape only; the submittable schema adds the business limits.
+export const productDraftFormSchema = productDraftFieldsSchema
+  .extend({
+    materialTermIds: z
+      .array(z.string().uuid())
+      .max(WORK_CATALOG_LIMITS.termsPerRole),
+    techniqueTermIds: z
+      .array(z.string().uuid())
+      .max(WORK_CATALOG_LIMITS.termsPerRole),
+    materialProposals: z
+      .array(z.string().trim().min(1).max(WORK_CATALOG_LIMITS.nameLength))
+      .max(WORK_CATALOG_LIMITS.proposalsPerRole),
+    techniqueProposals: z
+      .array(z.string().trim().min(1).max(WORK_CATALOG_LIMITS.nameLength))
+      .max(WORK_CATALOG_LIMITS.proposalsPerRole),
+    categoryProposal: z.string().max(WORK_CATALOG_LIMITS.nameLength),
+    year: draftYearSchema,
   })
   .strict();
 
@@ -71,16 +91,23 @@ export function productToDraftFormValues(
   return {
     categoryId: product.categoryId ?? '',
     title: product.title ?? '',
-    materialTermIds: selection?.materialTermIds ?? submitted?.materialTermIds ?? [],
-    techniqueTermIds: selection?.techniqueTermIds ?? submitted?.techniqueTermIds ?? [],
+    materialTermIds:
+      selection?.materialTermIds ?? submitted?.materialTermIds ?? [],
+    techniqueTermIds:
+      selection?.techniqueTermIds ?? submitted?.techniqueTermIds ?? [],
     materialProposals: selectedProposals
-      ? selectedProposals.filter((proposal) => proposal.kind === 'MATERIAL').map((proposal) => proposal.rawName)
+      ? selectedProposals
+          .filter((proposal) => proposal.kind === 'MATERIAL')
+          .map((proposal) => proposal.rawName)
       : (submitted?.materialProposals ?? []),
     techniqueProposals: selectedProposals
-      ? selectedProposals.filter((proposal) => proposal.kind === 'TECHNIQUE').map((proposal) => proposal.rawName)
+      ? selectedProposals
+          .filter((proposal) => proposal.kind === 'TECHNIQUE')
+          .map((proposal) => proposal.rawName)
       : (submitted?.techniqueProposals ?? []),
     categoryProposal: selectedProposals
-      ? (selectedProposals.find((proposal) => proposal.kind === 'CATEGORY')?.rawName ?? '')
+      ? (selectedProposals.find((proposal) => proposal.kind === 'CATEGORY')
+          ?.rawName ?? '')
       : (submitted?.categoryProposal ?? ''),
     dimensions: product.dimensions ?? '',
     year: product.year?.toString() ?? '',

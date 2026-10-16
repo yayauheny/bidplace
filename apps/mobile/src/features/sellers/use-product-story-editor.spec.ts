@@ -92,9 +92,22 @@ afterEach(() => {
   cases.splice(0).forEach((cleanup) => cleanup());
   window.localStorage.clear();
   vi.useRealTimers();
+  vi.restoreAllMocks();
 });
 
 describe('revision-backed Work Story editor', () => {
+  it('surfaces a storage error when the draft write fails', () => {
+    vi.useFakeTimers();
+    const view = mount('user-a');
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new DOMException('quota exceeded', 'QuotaExceededError');
+    });
+    act(() => view.editor.addText('PARAGRAPH'));
+    act(() => view.editor.editText(view.editor.blocks[0]!.key, 'Текст'));
+    act(() => vi.advanceTimersByTime(500));
+    expect(view.editor.storageError).toContain('устройстве');
+  });
+
   it('does not resurrect a cleared story draft after logout', () => {
     vi.useFakeTimers();
     const view = mount('user-a');

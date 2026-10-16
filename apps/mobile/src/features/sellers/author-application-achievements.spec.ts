@@ -566,6 +566,7 @@ describe('Author application achievement lifecycle', () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.restoreAllMocks();
     document.body.replaceChildren();
   });
 
@@ -665,6 +666,18 @@ describe('Author application achievement lifecycle', () => {
     expect(
       findButton(view.container, 'Добавить фото (необязательно)'),
     ).toBeUndefined();
+    view.unmount();
+  });
+
+  it('shows a storage warning when the achievement draft write fails', async () => {
+    const view = mount();
+    await openEditor(view);
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new DOMException('quota exceeded', 'QuotaExceededError');
+    });
+    fillAchievement(view.container, 'Alpha');
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    expect(view.container.textContent).toContain('черновик на устройстве');
     view.unmount();
   });
 
