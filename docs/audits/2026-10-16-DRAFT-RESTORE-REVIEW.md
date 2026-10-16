@@ -56,3 +56,43 @@
 - Риск развития: **средний** — отсутствие capability смешано с отказом операции.
 - Целевое решение: явно разделить `unsupported` и `failed` в storage capability; web warning только при ошибке поддерживаемого browser storage. Не расширять продукт до native persistence ради подавления сообщения.
 - Проверка: native/unsupported без предупреждения; browser SecurityError/QuotaExceededError с предупреждением.
+
+## Срез 2 — сохранение, logout и browser history
+
+### DR-04 — P2: ошибка storage видима только для основных полей
+
+- Источники: `use-product-story-editor.ts:204`, `AuthorApplicationAchievements.tsx:235` игнорируют boolean от `writeFormDraft`; `local-form-restore.ts` показывает только собственную ошибку.
+- Сценарий: storage доступен при mount; затем запись истории превышает quota (или storage перестаёт работать), основные поля не меняются. Введённая история остаётся лишь в памяти, предупреждения нет. Изолированная проверка story-only write с QuotaExceededError падает: editor.error/storageError пусты. Achievements имеют тот же необработанный результат по исходнику, отдельный runtime-тест не выполнялся.
+- Пользователь сейчас: незавершённый текст может исчезнуть после закрытия без обещанного предупреждения. Probe из одного байта на mount не проверяет последующие записи.
+- Риск развития: **средний/высокий** — три владельца записи расходятся по error/clear/session semantics.
+- Целевое решение: общий узкий storage-result contract (`unsupported / ok / failed`) и единый способ передать состояние каждого локального writer в существующую область уведомления формы. Не смешивать storage error с серверной validation error, не запрещать серверное сохранение. Успех основной формы не должен скрывать продолжающуюся ошибку story/achievement.
+- Проверка: quota после mount отдельно для основных полей, story и достижения; повторная успешная запись снимает соответствующую ошибку. Не нужен новый универсальный form engine.
+
+### DR-05 — P2, архитектурный риск R5: epoch отменяет старую запись, но не закрывает владельца
+
+- Исправленный сценарий edit → clearAccountFormDrafts → old timer действительно покрыт и проходит. Эту часть R5 принимаю.
+- Новая проверка owner hook: clear → новый edit до завершения logout → timer. Ключ появляется снова: schedule захватывает уже увеличенный accountDraftEpoch. Тест красный. Это проверка границы writer, не полный browser logout.
+- Источники: `local-form-draft.ts:32` (отдельный Map), `local-form-restore.ts:113`, `use-product-story-editor.ts:195`, `AuthorApplicationAchievements.tsx:231`; `account-logout.ts:57`; `auth-provider.ts:304` закрывает private session после ответа logout, `beginAuthWrite` сам write gate не закрывает.
+- В seller owner `fieldsEditable = editable && !guard.inputsLocked`; после подтверждённого выхода вызывается endLockedTransition перед сетевым logout; canWrite local restore учитывает private cache, но не logoutStarted. Поэтому session boundary нельзя доказывать только тестом таймера, созданного до clear. Полный UI-сценарий позднего ввода не прогонялся; не утверждаю воспроизведённую браузерную утечку.
+- Пользователь сейчас: потенциальное сохранение приватного локального ввода после команды logout; same-account повторный login может восстановить его. Другому аккаунту ключ напрямую не отдаётся.
+- Риск развития: **высокий** — auth epoch, account draft epoch и owner locks образуют разные определения «сессия закрыта». Handoff ошибочно пишет «второй механизм сессий не вводился»: новый Map именно дополнительный механизм retirement локальных writers.
+- Целевое решение: один явный owner завершения клиентской сессии должен закрывать все private writers на logout intent и освобождать storage; запрет действует до следующей разрешённой сессии, а не только для ранее scheduled callbacks. Использовать существующие session leases/epoch там, где они покрывают это правило; не разносить очередные checks по трём editors. Отдельно описать replacement без logout (сейчас принят как оставшееся ограничение, не переобъявлять исправленным).
+- Проверка до закрытия: delayed logout + ввод/reset/поздний callback после начала выхода → ни один из трёх ключей не создаётся; повторный вход нового пользователя; logout failure. Не менять server logout semantics.
+
+### Принятые части волн 2–4 и ограничения
+
+- **R8:** clean-save больше не пишет снимок снова; targeted regression прошла, поздний ввод сохраняется через существующий persistedFieldOverrides. Сериализация всего значения и dirty owner остаются в одном hook.
+- **R9:** confirmSavedProduct действительно общий для ordinary save и update-success/submit-failure, generation/private-cache guards сохранены. Штатная owner regression прошла. На этом срезе подтверждённого нового дефекта R9 нет. Возможное последующее упрощение: передавать подтверждение update через локальную operation, не плодить ещё refs; не назначать рефакторинг без пользовательской причины.
+- **R6:** независимо выполнен реальный Chromium и WebKit с текущим browser guard, синтетическими history entries и stub persist (без backend): clean → dirty → pending → clean не добавляет второй sentinel; один Back возвращает `/profile`. Это подтверждает первоначальную flag-chain регрессию, но не заменяет полную интеграцию Expo wizard.
+- **R7:** исходники обоих Redirect сохраняют overlay/oq/otab и прежние параметры через typed href; исправление соответствует находке. App E2E в этом ревью повторно не запускалось.
+- **R10:** `rememberLeave` передаёт delta, commitLeave выполняет обратный traversal вместо replace. Код исправляет описанную причину. Только сообщённый исполнителем app-E2E; независимого full AuthViewport/browser прогона нет. Отсутствие unit само по себе не дефект, если покрыта реальная браузерная последовательность.
+- **O1:** лишний sameBlocks удалён; pending-блокировка осталась, identity guard и очистка после успешного save сохранены.
+- **Архитектура history:** сохраняются глобальный monkeypatch pushState/replaceState, обработчик popstate с stopImmediatePropagation, sentinel владельца Work и Expo Router. Риск высокий для новых способов навигации; исправленные отдельные сценарии не доказывают отсутствие конфликтов. Цель — роутер владеет маршрутами/URL, один ограниченный web-adapter владеет только отсутствующей в SDK защитой unsaved traversal. Перед заменой нужна матрица deep-link/reload/Back/Forward/двойной Back/save failure/auth dismiss и проверка возможностей установленного SDK; миграцию/private imports не делать механически. Этот architecture gate не означает глобальное переписывание сейчас.
+
+### Собственные проверки на этом срезе
+
+- Полный mobile Vitest: **845/845, 135 файлов**, 14.91 s, Node 22, EXPO_NO_DOTENV=1. Запущен до просьбы экономить прогоны; больше не повторяется.
+- `tsc --noEmit`: PASS. `git diff --check cc611483..10cb5a33`: PASS. Target worktree чистое.
+- Дополнительные 2 assertions story storage/logout: FAIL, как описано DR-04/05; вместе с предыдущими probes 6 красных проверок. Они не входят в штатные 845 и не являются подтверждением full UI для logout.
+- Chromium/WebKit isolated R6: PASS. Первоначально sandbox блокировал запуск процесса, после разрешённого запуска проверка завершилась; это не app failure.
+- Production build, полный E2E, API/DB, native device и Figma visual parity в этом ревью не повторялись.
