@@ -22,16 +22,42 @@ test('login sheet matches the 7008:20543 contract at reference and stays robust'
 }) => {
   await mkdir(artifactDir, { recursive: true });
   const engine = test.info().project.name;
+  // Dev-only Expo fast-refresh indicator (@expo/log-box, fixed z-9999 bolt
+  // button) overlaps captured regions after bundle reloads; it is dev chrome,
+  // not app content, and re-mounts on refresh events. Must register before
+  // the first navigation to apply to the initial load.
+  await page.addInitScript(() => {
+    const style = document.createElement('style');
+    style.textContent =
+      '[class*="__expo_fast_refresh"] { display: none !important; }';
+    const install = () => {
+      if (!style.isConnected) document.documentElement.append(style);
+    };
+    install();
+    new MutationObserver(install).observe(document.documentElement, {
+      childList: true,
+      subtree: true,
+    });
+  });
+  const hideDevOverlays = () =>
+    page.evaluate(() => {
+      document
+        .querySelectorAll('[class*="__expo_fast_refresh"]')
+        .forEach((node) => ((node as HTMLElement).style.display = 'none'));
+    });
   await page.setViewportSize({ width: 390, height: 874 });
   await page.goto('/login');
   const sheet = page.locator('#auth-sheet');
+
   await expect(sheet).toBeVisible();
   const email = page.getByLabel('Электронная почта');
   await expect(email).toBeVisible();
 
+  await hideDevOverlays();
   await page.screenshot({
     path: resolve(artifactDir, `${engine}-login-sheet-390x874.png`),
   });
+  await hideDevOverlays();
   await sheet.screenshot({
     path: resolve(artifactDir, `${engine}-login-sheet-only-390.png`),
   });
@@ -69,6 +95,7 @@ test('login sheet matches the 7008:20543 contract at reference and stays robust'
   await email.fill('not-an-email');
   await page.getByRole('button', { name: 'Войти', exact: true }).click();
   await expect(page.getByText('Введите корректный email')).toBeVisible();
+  await hideDevOverlays();
   await sheet.screenshot({
     path: resolve(artifactDir, `${engine}-login-sheet-error-390.png`),
   });
@@ -87,6 +114,7 @@ test('login sheet matches the 7008:20543 contract at reference and stays robust'
         () => document.documentElement.scrollWidth <= window.innerWidth,
       ),
     ).toBe(true);
+    await hideDevOverlays();
     await page.screenshot({
       path: resolve(
         artifactDir,
@@ -95,8 +123,9 @@ test('login sheet matches the 7008:20543 contract at reference and stays robust'
     });
   }
 
-  // 200% zoom: sheet reflows without page overflow; primary action stays
-  // reachable without horizontal scrolling.
+  // CSS zoom reflow (NOT browser zoom — see W11-01 note in the evidence
+  // README): the sheet reflows without page overflow; the primary action
+  // stays reachable without horizontal scrolling.
   await page.setViewportSize({ width: 390, height: 874 });
   await page.evaluate(() => {
     document.documentElement.style.zoom = '2';
@@ -111,4 +140,88 @@ test('login sheet matches the 7008:20543 contract at reference and stays robust'
   await page.evaluate(() => {
     document.documentElement.style.zoom = '';
   });
+
+  // Short viewport: content taller than the sheet must stay reachable by
+  // scrolling inside the sheet's scroll owner; legal links included.
+  await page.setViewportSize({ width: 390, height: 400 });
+  const hasScrollOwner = await page.evaluate(() => {
+    const sheetEl = document.querySelector('#auth-sheet');
+    if (!sheetEl) return false;
+    const candidates = [
+      sheetEl,
+      ...sheetEl.querySelectorAll<HTMLElement>('*'),
+      ...[...(sheetEl.parentElement?.children ?? [])].flatMap((node) =>
+        node instanceof HTMLElement ? [node] : [],
+      ),
+    ];
+    return candidates.some((node) => node.scrollHeight > node.clientHeight + 1);
+  });
+  expect(hasScrollOwner).toBe(true);
+  for (const target of [
+    page.getByLabel('Электронная почта'),
+    page.getByLabel('Пароль', { exact: true }),
+    page.getByRole('button', { name: 'Войти', exact: true }),
+    page.getByRole('button', { name: 'Войти с Google', exact: true }),
+    page.getByRole('link', {
+      name: 'политикой персональных данных и cookies',
+      exact: true,
+    }),
+    page.getByRole('link', {
+      name: 'пользовательским соглашением',
+      exact: true,
+    }),
+  ]) {
+    await target.scrollIntoViewIfNeeded();
+    await expect(target).toBeInViewport();
+    await expect(target).toBeVisible();
+  }
+
+  // Keyboard walk: Tab can reach every interactive control inside the
+  // sheet (legal links included) and Shift+Tab walks back — two-way keyboard
+  // access. The Radix focus scope may park initial focus on the container,
+  // so walk forward until the first field takes focus, then keep strict
+  // DOM order from there.
+  await page.setViewportSize({ width: 390, height: 874 });
+  await page.goto('/login');
+  await expect(sheet).toBeVisible();
+  const visitOrder = [
+    page.getByLabel('Электронная почта'),
+    page.getByLabel('Пароль', { exact: true }),
+    page.getByRole('button', { name: 'Показать пароль', exact: true }),
+    page.getByRole('link', { name: 'Забыли пароль?', exact: true }),
+    page.getByRole('button', { name: 'Войти', exact: true }),
+    page.getByRole('link', { name: 'Регистрация', exact: true }),
+    page.getByRole('button', { name: 'Войти с Telegram', exact: true }),
+    page.getByRole('button', { name: 'Войти с Google', exact: true }),
+    page.getByRole('link', {
+      name: 'политикой персональных данных и cookies',
+      exact: true,
+    }),
+    page.getByRole('link', {
+      name: 'пользовательским соглашением',
+      exact: true,
+    }),
+  ];
+  for (
+    let step = 0;
+    step < 12 &&
+    !(await visitOrder[0].evaluate((node) => node === document.activeElement));
+    step += 1
+  ) {
+    await page.keyboard.press('Tab');
+  }
+  await expect(visitOrder[0]).toBeFocused();
+  for (const target of visitOrder.slice(1)) {
+    await page.keyboard.press('Tab');
+    await expect(target).toBeFocused();
+  }
+  for (
+    let step = 0;
+    step < 12 &&
+    !(await visitOrder[8].evaluate((node) => node === document.activeElement));
+    step += 1
+  ) {
+    await page.keyboard.press('Shift+Tab');
+  }
+  await expect(visitOrder[8]).toBeFocused();
 });
