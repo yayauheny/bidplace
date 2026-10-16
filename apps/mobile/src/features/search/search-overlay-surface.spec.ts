@@ -10,6 +10,20 @@ import { SearchOverlaySurface as WebSearchOverlaySurface } from './search-overla
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
+vi.mock('expo-router', () => ({
+  DefaultTheme: {
+    colors: {
+      background: '',
+      card: '',
+      primary: '',
+      border: '',
+      text: '',
+      notification: '',
+    },
+  },
+  ThemeProvider: ({ children }: { children?: unknown }) => children,
+}));
+
 const modalBoundary = vi.hoisted(() => {
   const state: {
     latest: {
@@ -22,18 +36,24 @@ const modalBoundary = vi.hoisted(() => {
   return state;
 });
 
-vi.mock('./search-overlay-surface', () => import('./search-overlay-surface.web'));
+vi.mock(
+  './search-overlay-surface',
+  () => import('./search-overlay-surface.web'),
+);
 
 vi.mock('./panes/CategoriesSearchPane', () => ({
-  CategoriesSearchPane: () => createElement('div', { 'data-marker': 'categories-pane' }, 'categories'),
+  CategoriesSearchPane: () =>
+    createElement('div', { 'data-marker': 'categories-pane' }, 'categories'),
 }));
 
 vi.mock('./panes/AuthorsSearchPane', () => ({
-  AuthorsSearchPane: () => createElement('div', { 'data-marker': 'authors-pane' }, 'authors'),
+  AuthorsSearchPane: () =>
+    createElement('div', { 'data-marker': 'authors-pane' }, 'authors'),
 }));
 
 vi.mock('./panes/WorksSearchPane', () => ({
-  WorksSearchPane: () => createElement('div', { 'data-marker': 'works-pane' }, 'works'),
+  WorksSearchPane: () =>
+    createElement('div', { 'data-marker': 'works-pane' }, 'works'),
 }));
 
 vi.mock('react-native', () => {
@@ -52,9 +72,12 @@ vi.mock('react-native', () => {
     };
   }
   return {
-    Platform: { OS: 'web', select: (options: { web?: unknown }) => options.web },
+    Platform: {
+      OS: 'web',
+      select: (options: { web?: unknown }) => options.web,
+    },
     StyleSheet: {
-      create: <T,>(styles: T) => styles,
+      create: <T>(styles: T) => styles,
       flatten: (style: unknown) => style,
       absoluteFill: {},
       hairlineWidth: 1,
@@ -76,8 +99,10 @@ vi.mock('react-native', () => {
     ) {
       return createElement('div', { ...host(props), ref }, props.children);
     }),
-    ScrollView: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
-    Text: ({ children }: { children?: ReactNode }) => createElement('span', null, children),
+    ScrollView: ({ children }: { children?: ReactNode }) =>
+      createElement('div', null, children),
+    Text: ({ children }: { children?: ReactNode }) =>
+      createElement('span', null, children),
     TextInput: forwardRef(function TextInput(
       props: {
         accessibilityLabel?: string;
@@ -96,7 +121,13 @@ vi.mock('react-native', () => {
     }),
     Pressable: forwardRef(function Pressable(
       props: {
-        children?: ReactNode | ((state: { pressed: boolean; hovered: boolean; focused: boolean }) => ReactNode);
+        children?:
+          | ReactNode
+          | ((state: {
+              pressed: boolean;
+              hovered: boolean;
+              focused: boolean;
+            }) => ReactNode);
         onPress?: () => void;
         accessibilityRole?: string;
         accessibilityLabel?: string;
@@ -132,18 +163,27 @@ vi.mock('react-native', () => {
       animationType?: string;
       onRequestClose?: () => void;
     }) => {
-      modalBoundary.latest = { visible, transparent, animationType, onRequestClose };
-      return visible ? createElement('div', { 'data-testid': 'native-modal' }, children) : null;
+      modalBoundary.latest = {
+        visible,
+        transparent,
+        animationType,
+        onRequestClose,
+      };
+      return visible
+        ? createElement('div', { 'data-testid': 'native-modal' }, children)
+        : null;
     },
   };
 });
 
 vi.mock('expo-blur', () => ({
-  BlurView: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
+  BlurView: ({ children }: { children?: ReactNode }) =>
+    createElement('div', null, children),
 }));
 
 vi.mock('react-native-svg', () => {
-  const shape = ({ children }: { children?: ReactNode }) => createElement('svg', null, children);
+  const shape = ({ children }: { children?: ReactNode }) =>
+    createElement('svg', null, children);
   return {
     default: shape,
     Svg: shape,
@@ -246,7 +286,9 @@ describe('Search overlay surface', () => {
       }),
     );
     const dialog = document.querySelector<HTMLElement>('[role="dialog"]');
-    const dimmer = document.querySelector<HTMLElement>('[data-testid="overlay-dimmer"]');
+    const dimmer = document.querySelector<HTMLElement>(
+      '[data-testid="overlay-dimmer"]',
+    );
     expect(dialog?.id).toBeTruthy();
     expect(view.host.contains(dialog)).toBe(false);
     expect(dimmer).toBeTruthy();
@@ -265,7 +307,9 @@ describe('Search overlay surface', () => {
 
     view.unmount();
     act(() => {
-      document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+      document.body.dispatchEvent(
+        new PointerEvent('pointerdown', { bubbles: true }),
+      );
     });
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });

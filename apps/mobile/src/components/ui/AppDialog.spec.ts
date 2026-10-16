@@ -1,12 +1,31 @@
 /**
  * @vitest-environment jsdom
  */
-import { act, createElement, forwardRef, useState, type ReactNode } from 'react';
+import {
+  act,
+  createElement,
+  forwardRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
+vi.mock('expo-router', () => ({
+  DefaultTheme: {
+    colors: {
+      background: '',
+      card: '',
+      primary: '',
+      border: '',
+      text: '',
+      notification: '',
+    },
+  },
+  ThemeProvider: ({ children }: { children?: unknown }) => children,
+}));
 
 function flattenStyle(style: unknown): Record<string, unknown> {
   if (!style) return {};
@@ -19,7 +38,8 @@ function flattenStyle(style: unknown): Record<string, unknown> {
 
 vi.mock(
   '@rn-primitives/dialog',
-  () => import('../../../node_modules/@rn-primitives/dialog/dist/dialog.web.mjs'),
+  () =>
+    import('../../../node_modules/@rn-primitives/dialog/dist/dialog.web.mjs'),
 );
 
 if (typeof Element !== 'undefined') {
@@ -31,7 +51,6 @@ vi.mock('./app-dialog-layer', () => import('./app-dialog-layer.web'));
 vi.mock('../figma/FigmaIcon', () => ({
   FigmaIcon: () => null,
 }));
-
 
 vi.mock('react-native-reanimated', () => {
   const ReduceMotion = { System: 'system' };
@@ -48,7 +67,9 @@ vi.mock('react-native-reanimated', () => {
         record.reduceMotion = mode;
         return api;
       },
-      withCallback() { return api; },
+      withCallback() {
+        return api;
+      },
       record,
     };
     return api;
@@ -92,18 +113,21 @@ vi.mock('react-native', () => ({
     flatten: flattenStyle,
     absoluteFill: {},
   },
-  useWindowDimensions: () => ({ width: 390, height: 844, scale: 1, fontScale: 1 }),
+  useWindowDimensions: () => ({
+    width: 390,
+    height: 844,
+    scale: 1,
+    fontScale: 1,
+  }),
   AccessibilityInfo: {
     isReduceMotionEnabled: () => Promise.resolve(false),
     addEventListener: () => ({ remove() {} }),
   },
-  View: forwardRef(function View(
-    { children }: { children?: ReactNode },
-    ref,
-  ) {
+  View: forwardRef(function View({ children }: { children?: ReactNode }, ref) {
     return createElement('div', { ref }, children);
   }),
-  Text: ({ children }: { children?: ReactNode }) => createElement('span', null, children),
+  Text: ({ children }: { children?: ReactNode }) =>
+    createElement('span', null, children),
   ScrollView: forwardRef(function ScrollView(
     { children }: { children?: ReactNode },
     ref,
@@ -112,7 +136,9 @@ vi.mock('react-native', () => ({
   }),
   Pressable: forwardRef(function Pressable(
     props: {
-      children?: ReactNode | ((state: { pressed: boolean; hovered: boolean }) => ReactNode);
+      children?:
+        | ReactNode
+        | ((state: { pressed: boolean; hovered: boolean }) => ReactNode);
       accessibilityLabel?: string;
       accessibilityRole?: string;
       disabled?: boolean;
@@ -195,7 +221,8 @@ function closeButton(dialog: Element) {
 
 function dialogField(dialog: Element, label: string) {
   const field = [...dialog.querySelectorAll('input, button')].find(
-    (node) => node.getAttribute('aria-label') === label || node.textContent === label,
+    (node) =>
+      node.getAttribute('aria-label') === label || node.textContent === label,
   );
   if (!(field instanceof HTMLElement)) throw new Error(`missing ${label}`);
   return field;
@@ -328,14 +355,20 @@ describe('AppDialog web focus lifecycle', () => {
     document.body.append(opener);
     opener.focus();
     const escapeCloses = { count: 0 };
-    const escapeView = mount(createElement(ClosableDialog, { closes: escapeCloses, title: 'Escape' }));
+    const escapeView = mount(
+      createElement(ClosableDialog, { closes: escapeCloses, title: 'Escape' }),
+    );
     await flush();
     const escapeDialog = dialogByTitle('Escape');
     if (!escapeDialog) throw new Error('missing dialog');
 
     act(() => {
       escapeDialog.dispatchEvent(
-        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+        new KeyboardEvent('keydown', {
+          key: 'Escape',
+          bubbles: true,
+          cancelable: true,
+        }),
       );
     });
     await flush();
@@ -345,15 +378,24 @@ describe('AppDialog web focus lifecycle', () => {
 
     const outsideCloses = { count: 0 };
     const outsideView = mount(
-      createElement(ClosableDialog, { closes: outsideCloses, title: 'Outside' }),
+      createElement(ClosableDialog, {
+        closes: outsideCloses,
+        title: 'Outside',
+      }),
     );
     await flush();
     opener.focus();
     act(() => {
       opener.dispatchEvent(
-        new PointerEvent('pointerdown', { bubbles: true, cancelable: true, button: 0 }),
+        new PointerEvent('pointerdown', {
+          bubbles: true,
+          cancelable: true,
+          button: 0,
+        }),
       );
-      opener.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, button: 0 }));
+      opener.dispatchEvent(
+        new MouseEvent('click', { bubbles: true, cancelable: true, button: 0 }),
+      );
     });
     await flush();
     expect(outsideCloses.count).toBe(1);
@@ -393,7 +435,8 @@ describe('AppDialog web focus lifecycle', () => {
     const again = [...document.querySelectorAll('button')].find(
       (node) => node.textContent === 'Снова',
     );
-    if (!(again instanceof HTMLButtonElement)) throw new Error('missing reopen');
+    if (!(again instanceof HTMLButtonElement))
+      throw new Error('missing reopen');
 
     act(() => {
       closeButton(dialogBefore).click();
@@ -445,7 +488,8 @@ describe('AppDialog web focus lifecycle', () => {
     const openSecond = [...document.querySelectorAll('button')].find(
       (node) => node.textContent === 'Открыть второй',
     );
-    if (!(openSecond instanceof HTMLButtonElement)) throw new Error('missing second opener');
+    if (!(openSecond instanceof HTMLButtonElement))
+      throw new Error('missing second opener');
     act(() => {
       openSecond.click();
     });
@@ -462,9 +506,10 @@ describe('AppDialog web focus lifecycle', () => {
     await flush();
     expect(dialogByTitle('Второй')).toBeUndefined();
     expect(dialogByTitle('Первый')?.isConnected).toBe(true);
-    expect(document.activeElement === null || document.body.contains(document.activeElement)).toBe(
-      true,
-    );
+    expect(
+      document.activeElement === null ||
+        document.body.contains(document.activeElement),
+    ).toBe(true);
     view.unmount();
   });
 
@@ -473,7 +518,9 @@ describe('AppDialog web focus lifecycle', () => {
     document.body.append(opener);
     opener.focus();
     const closes = { count: 0 };
-    const view = mount(createElement(ClosableDialog, { closes, title: 'Снятый' }));
+    const view = mount(
+      createElement(ClosableDialog, { closes, title: 'Снятый' }),
+    );
     await flush();
     opener.remove();
     const focus = vi.spyOn(opener, 'focus');
@@ -506,7 +553,11 @@ describe('AppDialog web focus lifecycle', () => {
 
     act(() => {
       dialog.dispatchEvent(
-        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+        new KeyboardEvent('keydown', {
+          key: 'Escape',
+          bubbles: true,
+          cancelable: true,
+        }),
       );
     });
     await flush();
@@ -525,7 +576,11 @@ describe('AppDialog web focus lifecycle', () => {
     opener.focus();
     const closes = { count: 0 };
     const view = mount(
-      createElement(ClosableDialog, { closes, presentation: 'sheet', title: 'Лист' }),
+      createElement(ClosableDialog, {
+        closes,
+        presentation: 'sheet',
+        title: 'Лист',
+      }),
     );
     await flush();
 

@@ -1,5 +1,15 @@
+/*
+ * Focus ring: the single source is the token color map (`focus` role in
+ * lightColorMap/blackColorMap). ThemeProvider mirrors the active value onto
+ * :root at runtime and sets data-bidplace-theme; the initial values below
+ * keep the ring correct before hydration. One role, no manual palette.
+ */
 :root {
-  --bidplace-focus: #2457e6;
+  --bidplace-focus: #004dff;
+}
+
+:root[data-bidplace-theme='black'] {
+  --bidplace-focus: #7aa2ff;
 }
 
 /*
