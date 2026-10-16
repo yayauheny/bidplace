@@ -2,6 +2,34 @@
 
 > Entries dated before 2026-10-13 mention Pen / .pen files; the Pen design was removed (DEC-119) — read those mentions as history.
 
+## 2026-10-16 — Повторное ревью волн 5–11: исправления A/B/C (Partial)
+
+Аудит `docs/audits/2026-10-16-WAVES-5-11-REVIEW.md` (ветка `fix/waves-5-11-audit`),
+резолюции `docs/audits/2026-10-16-WAVES-5-11-RESOLUTIONS.md` — все шесть
+замечаний обработаны на `fix/draft-restore`.
+
+- **A (данные) — Implemented:** W5-01 (baseline снапшота принадлежит целевой
+  revision, гидрация новой чужой revision после собственного save), W5-02
+  (recovery-копия в namespace по revision, переживает ввод и save), W6-01
+  (предупреждение о потере только при реальном failed-write; unsupported
+  storage — не ошибка). Код `e5f246ef`, docs `117bd4b4`; 875/875 unit.
+- **B (общая основа) — Implemented:** W9-01 (стопы chip-градиента — роли
+  палитры), W10-01 (mounted-smoke темы на том же DOM-узле + computed-focus
+  e2e; заявления карты приведены к доказанным), PLAN-01 (очередь
+  06-NEXT-REVIEWS на live Figma/dated fallback, безусловное RESOLVED снято).
+  Код `708844b3`, docs `500cdfc2`.
+- **C (приёмка login) — Partial:** W11-03 (владелец «молнии» — dev-overlay
+  Expo fast-refresh; evidence переснято чистым), W11-02 (таблица
+  expected/actual/delta: геометрия ±1px, три стилевых расхождения честно
+  записаны в NEEDS-FIGMA), W11-01 (css-zoom переименован; скролл- и
+  клавиатурная доступность зелёные; реальный browser zoom и увеличение
+  текста — Needs verification, ручная инструкция в README evidence).
+  Тест `339fe9b1`, docs/evidence `d119e23f`; спека 2/2 обоих движков.
+- **Не закрыто до конца:** E2E-перезапуск пакета A в браузере (контракт
+  обновлён в спеке, прогон outstanding); ручные zoom/text-scale проверки;
+  три стилевых расхождения и копия legal — на product/NEEDS-FIGMA.
+- Push/merge/deploy не выполнялись.
+
 ## 2026-10-16 — Draft-restore волна 11: эталонный экран входа, Figma 7008:20543 — приёмка (Partial, NEEDS-FIGMA)
 
 - `Partial`: приёмка по эталонному экрану входа выполнена и зелёная, но против **dated fallback** — ZIP-снимка макета (capturedAt 2026-10-16T10:34Z), live Figma MCP в момент проверки недоступен. Сверка против актуального макета и решения по расхождениям — NEEDS-FIGMA. Код приложения не менялся.
