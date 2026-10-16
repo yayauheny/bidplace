@@ -73,3 +73,62 @@
   prettier чисто.
 - **Оставшийся риск**: состояние denied проверяется unit-уровнем (jsdom-геттер);
   реальный sandboxed-iframe не воспроизводился.
+
+## Пакет B — общие компоненты и очередь (W9-01, W10-01, PLAN-01)
+
+SHA кода и доков — в заголовках коммитов ниже; проверки фиксируются по
+состоянию на момент коммита.
+
+### W9-01 — видимые стопы chip-градиента не были в палитре
+
+- **Исправление**: в `SemanticColorMap` добавлены роли
+  `chipBorderGradientStart/End` (light — verbatim бывшие литералы
+  `rgba(255,255,255,0.16)` / `rgba(153,153,153,0.16)`; black — provisional
+  `rgba(255,255,255,0.22)` / `rgba(150,150,150,0.22)`). `figma-chip-style.ts`
+  читает оба стопа из палитры для onDark/tinted (onGlass — как раньше
+  glassBorder); экспорт `figmaChipGradientStroke` удалён. Ограниченный
+  поиск видимых литералов: `FilterSheet` handle `#efefef` → `palette.quietFill`;
+  `cover-frost-style` gradientStart 'rgba(0,0,0,0)' — тема-независимый
+  технический цвет, оставлен с комментарием. Технические цвета mask в токены
+  не выносились.
+- **Доказательство**: «other-палитра меняет оба стопа» — новый тест в
+  `figma-chip-style.spec.ts`; 9/9 спека, обе темы.
+- **Проверки**: полный vitest 875/875, tsc/eslint/prettier чисто.
+- **Оставшийся риск**: black-стопы — экспертная оценка (provisional), до
+  black-дизайна не верифицируются; реестр намеренно постоянных media/brand
+  цветов не заводился (вне скоупа замечания).
+
+### W10-01 — завышенные гарантии theme-gate в карте владельцев
+
+- **Исправление**: в `theme.spec.ts` добавлен mounted-smoke light→black на том
+  же DOM-узле: FigmaButton (label/icon через палитру; surface — SVG, в jsdom
+  замокан и честно не покрывается), FigmaIcon, FigmaChip (shell + оба стопа
+  градиента рамки). В `AppDialog.spec.ts` — mounted-smoke поверхности диалога
+  (моки View/ScrollView научены передавать flatten-style; стиль приходит через
+  `Dialog.Content asChild` на ScrollView). Computed-цепочка CSS-focus
+  (`--bidplace-focus` → outline) в jsdom не резолвится (проверено пробой) —
+  вынесена в браузер: новый `e2e/theme-computed-focus.spec.ts` читает
+  `getComputedStyle().outlineColor` при зеркалировании light/black ровно так,
+  как это делает ThemeProvider (attribute + inline var). `16-COMPONENT-OWNERS.md`
+  переписан: заявлены только доказанные гарантии с указанием файлов гейтов;
+  black-палитра помечена тестовой (provisional).
+- **Доказательство**: theme.spec 5/5, AppDialog.spec 13/13 (включая новый
+  no-remount тест), e2e 2/2 (chromium + webkit).
+- **Проверки**: полный vitest 875/875, tsc/eslint/prettier чисто.
+- **Оставшийся риск**: FigmaButtonSurface (SVG-градиент кнопки) проверяется
+  unit-спеками стиля, не mounted-DOM; до браузерного гейта графики кнопок
+  гарантия ограничена.
+
+### PLAN-01 — очередь следующей работы противоречила итогам аудита
+
+- **Исправление**: `docs/audits/current/06-NEXT-REVIEWS.md` — шапка с
+  entry point на актуальный аудит/резолюции и легендой статусов
+  (implemented/verified/needs-design); секция 4: безусловное RESOLVED снято —
+  зафиксированы W5-01/W5-02/W6-01 и коммит фикса, E2E-перезапуск outstanding;
+  секция 10: источник сверки — live Figma с dated-ZIP fallback (по образцу
+  приёмки login), canonical Pen как источник снят. Исторические отчёты не
+  тронуты; механические gates (строки/чётность/число consumers) не переносились.
+- **Доказательство**: diff файла — только три названные секции.
+- **Проверки**: не требуются (документ).
+- **Оставшийся риск**: файл остаётся очередью областей; закрытие PL-01/PL-02
+  прежнего аудита частично (карта есть, реестр постоянных цветов нет).

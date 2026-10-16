@@ -25,9 +25,15 @@
   consumers меняют props, не копируют style.
 - Изменение variant/size отражается на всех consumers автоматически — один
   renderer на роль, вторых renderer'ов с собственной палитрой/размерами нет.
-- Смена семантического цвета (light↔black) распространяется без правок экранов:
-  gate `theme.spec.ts` (текст, иконка, navigation, CSS-focus, поле, кнопочная
-  матрица — тот же DOM-узел).
+- Смена семантического цвета (light↔black) распространяется без правок экранов.
+  Что реально доказано gates (без завышений): mounted-smoke light→black на том же
+  DOM-узле — `theme.spec.ts` (AppText-узел, FigmaTextField input, FigmaButton
+  label/icon, FigmaIcon, FigmaChip shell + оба стопа градиента рамки) и
+  `AppDialog.spec.ts` (поверхность диалога); графика кнопок (FigmaButtonSurface,
+  SVG) в jsdom замокана и этими гейтами не покрывается. Computed-цепочка
+  CSS-focus (`--bidplace-focus` → outline) резолвится только в реальном
+  браузере: `e2e/theme-computed-focus.spec.ts` (Chromium + WebKit). Black —
+  тестовая палитра (provisional), пользователям не выключена и не включена.
 - Уникальная экранная геометрия НЕ централизуется (AR-02): строки шитов
   `minHeight: 44` (AuthorShare, CreatorHeader QR-ряд), toolbar-константы
   product-draft-story — остаются на экране до их доводки по Figma.
