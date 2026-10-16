@@ -215,13 +215,10 @@ test('login sheet matches the 7008:20543 contract at reference and stays robust'
     await page.keyboard.press('Tab');
     await expect(target).toBeFocused();
   }
-  for (
-    let step = 0;
-    step < 12 &&
-    !(await visitOrder[8].evaluate((node) => node === document.activeElement));
-    step += 1
-  ) {
+  // Walk the whole route back: one Shift+Tab per step, strict focus on every
+  // intermediate target. A skipped target fails here instead of passing by.
+  for (const target of visitOrder.slice(0, -1).reverse()) {
     await page.keyboard.press('Shift+Tab');
+    await expect(target).toBeFocused();
   }
-  await expect(visitOrder[8]).toBeFocused();
 });
