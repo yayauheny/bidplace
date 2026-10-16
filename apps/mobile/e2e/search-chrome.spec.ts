@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
 
 import {
+  lightColorMap,
   searchChromeScaledPaint,
   searchChromeStrokeViewport,
   searchChromeTokens,
@@ -45,7 +46,9 @@ test('search popup matches the 456:8298 stroke, tabs, and interactions', async (
   await page.evaluate(() => {
     document.documentElement.style.zoom = '2';
   });
-  await expect(page.getByTestId('search-overlay-field').locator('svg:has(linearGradient)')).toBeVisible();
+  await expect(
+    page.getByTestId('search-overlay-field').locator('svg:has(linearGradient)'),
+  ).toBeVisible();
   const tabEdges = await page.getByRole('tab').evaluateAll((nodes) =>
     nodes.map((node) => {
       const box = node.getBoundingClientRect();
@@ -53,7 +56,9 @@ test('search popup matches the 456:8298 stroke, tabs, and interactions', async (
     }),
   );
   for (let index = 1; index < tabEdges.length; index += 1) {
-    expect(tabEdges[index]!.left).toBeGreaterThanOrEqual(tabEdges[index - 1]!.right - 1);
+    expect(tabEdges[index]!.left).toBeGreaterThanOrEqual(
+      tabEdges[index - 1]!.right - 1,
+    );
   }
   await page.screenshot({
     path: join(evidence, `${testInfo.project.name}-zoom-200.png`),
@@ -65,9 +70,9 @@ test('search popup matches the 456:8298 stroke, tabs, and interactions', async (
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.reload();
   await expect(page.getByTestId('search-overlay-query')).toBeVisible();
-  const duration = await page.getByLabel('Закрыть поиск').evaluate((node) =>
-    getComputedStyle(node).transitionDuration,
-  );
+  const duration = await page
+    .getByLabel('Закрыть поиск')
+    .evaluate((node) => getComputedStyle(node).transitionDuration);
   expect(duration === '0s' || duration === '0ms').toBe(true);
 
   const query = page.getByTestId('search-overlay-query');
@@ -99,9 +104,9 @@ test('search tabs keep capture fills under hover and keyboard focus', async ({
   await page.setViewportSize({ width: 390, height: 874 });
   const authors = page.getByRole('tab', { name: 'Авторы' });
   await authors.click();
-  await expect.poll(async () => (await tabPaint(authors)).fill).toBe(
-    'rgb(243, 243, 243)',
-  );
+  await expect
+    .poll(async () => (await tabPaint(authors)).fill)
+    .toBe('rgb(243, 243, 243)');
   await authors.hover();
   expect((await tabPaint(authors)).fill).toBe('rgb(243, 243, 243)');
 
@@ -116,7 +121,11 @@ test('search tabs keep capture fills under hover and keyboard focus', async ({
   expect(focusedOutline).toContain('36, 87, 230');
 
   await page.screenshot({
-    path: join(e2eEvidenceDir, 'search-chrome', `${testInfo.project.name}-focus.png`),
+    path: join(
+      e2eEvidenceDir,
+      'search-chrome',
+      `${testInfo.project.name}-focus.png`,
+    ),
   });
   const close = page.getByLabel('Закрыть поиск');
   const box = await close.boundingBox();
@@ -147,14 +156,33 @@ async function expectChrome(page: Page) {
   expect(railBox!.height).toBeCloseTo(50, 0);
   expect(closeBox!.x - (fieldBox!.x + fieldBox!.width)).toBeCloseTo(12, 0);
 
-  const fieldId = await expectGradient(field, 'field', fieldSize.width, fieldSize.height);
-  const closeId = await expectGradient(close, 'close', closeSize.width, closeSize.height);
-  const railId = await expectGradient(rail, 'rail', railSize.width, railSize.height);
+  const fieldId = await expectGradient(
+    field,
+    'field',
+    fieldSize.width,
+    fieldSize.height,
+  );
+  const closeId = await expectGradient(
+    close,
+    'close',
+    closeSize.width,
+    closeSize.height,
+  );
+  const railId = await expectGradient(
+    rail,
+    'rail',
+    railSize.width,
+    railSize.height,
+  );
   expect(new Set([fieldId, closeId, railId]).size).toBe(3);
 
-  const blur = await field.evaluate((node) => getComputedStyle(node).backdropFilter);
+  const blur = await field.evaluate(
+    (node) => getComputedStyle(node).backdropFilter,
+  );
   expect(blur).toContain('blur(6px)');
-  const fill = await field.evaluate((node) => getComputedStyle(node).backgroundColor);
+  const fill = await field.evaluate(
+    (node) => getComputedStyle(node).backgroundColor,
+  );
   expect(fill).toBe('rgba(255, 255, 255, 0.6)');
 
   const tab = page.getByRole('tab', { name: 'Категории' });
@@ -182,7 +210,9 @@ async function expectChrome(page: Page) {
     expect(item.shellWidth).toBeCloseTo(share, 1);
     expect(item.svgWidth).toBeCloseTo(item.shellWidth, 2);
     expect(item.svgHeight).toBeCloseTo(item.shellHeight, 2);
-    expect(Math.abs(item.shellWidth - Math.round(item.shellWidth))).toBeGreaterThan(0.05);
+    expect(
+      Math.abs(item.shellWidth - Math.round(item.shellWidth)),
+    ).toBeGreaterThan(0.05);
     expect(item.svgWidth).not.toBe(Math.round(item.shellWidth));
   }
   const tabWidths = measuredTabs.map((item) => item.shellWidth);
@@ -209,35 +239,43 @@ async function expectGradient(
   width: number,
   height: number,
 ) {
-  const paint = searchChromeScaledPaint(kind, width, height);
-  const frame = searchChromeStrokeViewport(kind, width, height);
+  const paint = searchChromeScaledPaint(kind, width, height, lightColorMap);
+  const frame = searchChromeStrokeViewport(kind, width, height, lightColorMap);
   const half = searchChromeTokens.strokeWidth / 2;
-  const measured = await locator.locator('svg:has(linearGradient)').evaluate((node) => {
-    const gradient = node.querySelector('linearGradient');
-    const rect = node.querySelector('rect');
-    const stops = [...(gradient?.querySelectorAll('stop') ?? [])].map((stop) =>
-      stop.getAttribute('stop-color'),
-    );
-    return {
-      id: gradient?.id ?? '',
-      x1: Number(gradient?.getAttribute('x1')),
-      y1: Number(gradient?.getAttribute('y1')),
-      x2: Number(gradient?.getAttribute('x2')),
-      y2: Number(gradient?.getAttribute('y2')),
-      stops,
-      rx: Number(rect?.getAttribute('rx')),
-      ry: Number(rect?.getAttribute('ry')),
-      rectX: Number(rect?.getAttribute('x')),
-      rectY: Number(rect?.getAttribute('y')),
-      rectWidth: Number(rect?.getAttribute('width')),
-      rectHeight: Number(rect?.getAttribute('height')),
-      svgWidth: Number(node.getAttribute('width')),
-      svgHeight: Number(node.getAttribute('height')),
-    };
-  });
+  const measured = await locator
+    .locator('svg:has(linearGradient)')
+    .evaluate((node) => {
+      const gradient = node.querySelector('linearGradient');
+      const rect = node.querySelector('rect');
+      const stops = [...(gradient?.querySelectorAll('stop') ?? [])].map(
+        (stop) => stop.getAttribute('stop-color'),
+      );
+      return {
+        id: gradient?.id ?? '',
+        x1: Number(gradient?.getAttribute('x1')),
+        y1: Number(gradient?.getAttribute('y1')),
+        x2: Number(gradient?.getAttribute('x2')),
+        y2: Number(gradient?.getAttribute('y2')),
+        stops,
+        rx: Number(rect?.getAttribute('rx')),
+        ry: Number(rect?.getAttribute('ry')),
+        rectX: Number(rect?.getAttribute('x')),
+        rectY: Number(rect?.getAttribute('y')),
+        rectWidth: Number(rect?.getAttribute('width')),
+        rectHeight: Number(rect?.getAttribute('height')),
+        svgWidth: Number(node.getAttribute('width')),
+        svgHeight: Number(node.getAttribute('height')),
+      };
+    });
   expect(measured.stops).toEqual(['#D1D1D1', '#EBEBEB']);
-  expect(measured.x2 - measured.x1).toBeCloseTo(paint.axis.x2 - paint.axis.x1, 1);
-  expect(measured.y2 - measured.y1).toBeCloseTo(paint.axis.y2 - paint.axis.y1, 1);
+  expect(measured.x2 - measured.x1).toBeCloseTo(
+    paint.axis.x2 - paint.axis.x1,
+    1,
+  );
+  expect(measured.y2 - measured.y1).toBeCloseTo(
+    paint.axis.y2 - paint.axis.y1,
+    1,
+  );
   expect(measured.x1).toBeCloseTo(frame.axis.x1, 1);
   expect(measured.y1).toBeCloseTo(frame.axis.y1, 1);
   expect(measured.rx).toBeCloseTo(paint.rx, 1);
@@ -246,7 +284,9 @@ async function expectGradient(
   expect(measured.rectHeight).toBeCloseTo(paint.height, 1);
   expect(measured.rectX - half).toBeGreaterThanOrEqual(-0.01);
   expect(measured.rectY - half).toBeGreaterThanOrEqual(-0.01);
-  expect(measured.rectX + measured.rectWidth + half).toBeLessThanOrEqual(measured.svgWidth + 0.01);
+  expect(measured.rectX + measured.rectWidth + half).toBeLessThanOrEqual(
+    measured.svgWidth + 0.01,
+  );
   expect(measured.rectY + measured.rectHeight + half).toBeLessThanOrEqual(
     measured.svgHeight + 0.01,
   );
