@@ -223,7 +223,17 @@ SellerProfile
   snapshot. After the first confirmed create, the `…:new` key is migrated to
   the confirmed entity id (`noteEntityCreated`) so a revisit cannot re-create
   the entity. Passwords, OTP, tokens, registration/auth forms, blob URLs and
-  file bytes are never stored.
+  file bytes are never stored. Stored form payloads are validated as data, not
+  as submittable forms: the envelope is schema-checked and each field is
+  accepted only when its JSON shape matches the form's own default, so an
+  unfinished intermediate value (half-typed email or year) never rejects the
+  other fields; business validation stays with the server save/submit path.
+  The story draft (`use-product-story-editor.ts`) is versioned: v2 blocks carry
+  stable keys (`server block id ?? client key`) and IMAGE placeholders
+  (mediaAssetId + altText), so edits, deletions, reordering and duplicate
+  texts restore exactly by block identity; pre-v2 text-only payloads keep the
+  legacy content-merge semantics, which cannot record deletions or image
+  positions and is not migrated.
 - `apps/mobile/src/features/auth/nickname-suggestion-generator.ts` is the
   replaceable synchronous nickname-generation boundary. Its sole current
   adapter confines `unique-names-generator` and curated bundled dictionaries to
