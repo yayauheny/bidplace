@@ -39,6 +39,16 @@
 - Целевое решение: единый явный snapshot `{accountId, productId, revisionId, storyToken}` для local/base/save; восстанавливать только совместимый snapshot после готовности server owner. Переход на другую revision гидратирует её данные; исключение собственного save разрешать только по подтверждённой операции, не через эвристику sameProduct+clean. Старый неоднозначный payload не применять к иной ревизии; совместимость документировать. Сохранить существующий тест wizard own-save/refetch.
 - Проверка: два описанных unit-сценария + опубликованная Work → новая editing revision → reload/save в обоих браузерах; сохранение порядка/IMAGE/поздних шагов. R1/R2/R4 нельзя считать полностью принятыми только по happy path. Retag/token assumptions существовали раньше, волна исправила отдельные проявления, но не закрыла требуемую isolation-границу.
 
+
+**ТЗ исполнителю — выбранный способ: явная привязка к server revision, без эвристического merge.**
+
+1. Работать в `use-product-story-editor.ts` и существующей owner-spec; callers — `product-draft-screen.tsx`, миграция `new → productId` и текущий save response. Сначала добавить две красные регрессии выше. Не менять API/contracts/backend.
+2. В новом локальном envelope хранить `revisionId` вместе с `storyToken`; account/product остаются в ключе. Пока owner не получил account/product/server snapshot, не применять product-story к случайному token0. Для ещё не созданного продукта оставить отдельный `new` lifecycle; переносить его только при подтверждённом create, не при любом появлении id.
+3. Убрать правило «sameProduct + clean означает own-save». Новый server revision принимается как новый baseline. Подтверждённый собственный save учитывать через сохранённый результат конкретной операции и его identity; последующий refetch согласовывается с этим результатом. Не сохранять старые block ids/token, если сервер уже вернул новую revision. Не угадывать идентичность по равенству текста.
+4. Не применять legacy/v2 snapshot без revisionId к новой неизвестной revision. Старый неоднозначный payload не делать dirty и не отправлять автоматически. Выбранная политика совместимости: сохранить исходную локальную запись нетронутой до явного действия/завершения потока и показать существующей областью ошибки, что её нельзя автоматически восстановить; не создавать migration framework. Это сознательное ограничение совместимости, указать в отчёте. Если потребуется новая пользовательская механика восстановления — отдельное согласование, не придумывать UI.
+5. Для совместимой revision применять точный упорядоченный snapshot с исходными block keys, включая пустой список и IMAGE refs. Никаких Blob/base64. Новый server token той же revision побеждает stale local согласно принятому правилу; failed save не очищает local.
+6. Gate: owner-spec с cold/cache mount, r1→r2, stale storage, own-save/refetch, IMAGE и delete-all; один адресный browser сценарий опубликованной Work → новая revision → reload в Chromium/WebKit. Сравнить late wizard steps до/после. **Не Done**, если исправлен reload, но собственный save возвращает визард назад.
+
 ### DR-02 — P2: shape-проверка не проверяет элементы массивов
 
 - Источник: `local-form-restore.ts:33`, `sameStorageShape`; defaults массивов Work пустые.
@@ -48,6 +58,14 @@
 - Целевое решение: loose storage schema у владельцев полей (string/string[] без email/year business refinements), по возможности базовая структурная схема + refinement для submit. Общий restore получает schema/parser, а не угадывает тип по примеру. Проверять все элементы, сохранять остальные корректные поля; не копировать бизнес-правила и не строить универсальный recursive validator.
 - Проверка: mixed массивы, пустые массивы, незавершённый email/year, неизвестные поля и корректные выборы. R3 happy path исправлен, заявленная проверка структуры неполна.
 
+
+**ТЗ исполнителю — выбранный способ: базовые структурные Zod-схемы у владельцев.**
+
+1. В `product-draft-form.ts` выделить raw shape: все скалярные поля — string; `materialTermIds`, `techniqueTermIds`, `materialProposals`, `techniqueProposals` — string[]. В `profile-validation.ts` raw shape: string-поля и `directionCategoryIds: string[]`. Никаких trim/email/URL/year/UUID refinements на restore.
+2. Existing save schemas построить на этих shapes с прежними refinements/transforms; не менять их поведение (в частности нормализацию country и ограничения catalog). Типы defaults выводить из raw shape, не из примеров значений.
+3. В `local-form-restore.ts` удалить `sameStorageShape` и `fieldShapes`. Передавать из двух screen owners raw field parsers. Разбирать известные поля по schema.shape; неверное поле пропустить целиком, корректные соседние поля восстановить. Для массива валидировать каждый элемент. Unknown fields не передавать RHF. Не добавлять `any`, `as never` вместо валидации, JSON recursive inference или fallback «принять всё».
+4. Gate: `[validString, {}]` не проходит; пустой string[] проходит; title сохраняется при невалидном соседнем поле; email `unfinished@` и year `20-` сохраняются дословно. Existing validation/save tests должны подтвердить, что запись на сервер не стала мягче. Проверить два caller после смены сигнатуры, typecheck и changed-file lint.
+
 ### DR-03 — P2: web-only storage warning показывается вне browser runtime
 
 - Источники: `local-form-restore.ts:108`, `storageWritable`; оба owner-screen выводят `restore.storageError` без platform gate.
@@ -56,6 +74,13 @@
 - Риск развития: **средний** — отсутствие capability смешано с отказом операции.
 - Целевое решение: явно разделить `unsupported` и `failed` в storage capability; web warning только при ошибке поддерживаемого browser storage. Не расширять продукт до native persistence ради подавления сообщения.
 - Проверка: native/unsupported без предупреждения; browser SecurityError/QuotaExceededError с предупреждением.
+
+
+**ТЗ исполнителю — выбранный способ: capability gate перед browser storage.**
+
+1. В `local-form-draft.ts` отделить неподдерживаемую платформу от отказа web storage; web с заблокированным localStorage — failed, native без Web API — unsupported. Проверки одной лишь `typeof localStorage` недостаточно, чтобы отличить эти случаи.
+2. `local-form-restore.ts` не запускает probe и не ставит warning для unsupported. Оба owner-screen продолжают использовать существующее место вывода сообщения; отдельные platform-if по JSX не плодить. Совместить result contract с DR-04.
+3. Gate: тест с native platform и отсутствующим localStorage даёт пустое предупреждение; web getter SecurityError и web quota дают сообщение. Нет AsyncStorage/new dependency и нет обещания native draft recovery.
 
 ## Срез 2 — сохранение, logout и browser history
 
@@ -68,6 +93,15 @@
 - Целевое решение: общий узкий storage-result contract (`unsupported / ok / failed`) и единый способ передать состояние каждого локального writer в существующую область уведомления формы. Не смешивать storage error с серверной validation error, не запрещать серверное сохранение. Успех основной формы не должен скрывать продолжающуюся ошибку story/achievement.
 - Проверка: quota после mount отдельно для основных полей, story и достижения; повторная успешная запись снимает соответствующую ошибку. Не нужен новый универсальный form engine.
 
+
+**ТЗ исполнителю — выбранный способ: каждый writer сообщает свой результат, форма агрегирует.**
+
+1. Сохранить storage read/write в `local-form-draft.ts`; определить один тип результата и общий текст ошибки, не вводить глобальный event bus.
+2. `useLocalFormRestore` и `useProductStoryEditor` возвращают локальное `storageError`; `AuthorApplicationAchievements` передаёт своё состояние parent через небольшой callback, аналогично существующему onDraftChange. Не подменять story.error, который уже обслуживает серверное сохранение/загрузку.
+3. В `product-draft-screen.tsx` агрегировать form/story storage error, в `seller-profile-screen.tsx` — form/achievement. Одно сообщение в существующем alert-area, пока хотя бы один источник failed. Успех writer A снимает только ошибку A. При unmount/смене identity дочерний источник сбрасывается.
+4. Проверить также `noteEntityCreated`: failed write под новым id не должен удалять единственную ещё существующую копию под `new`. Перенос `new → id` считать успешным только после успешной записи destination; сообщение обязательно при ошибке. Это проверка необходимой смежной границы, runtime-дефект migration в данном аудите отдельно не воспроизводился.
+5. Gate: mount probe успешен, затем quota только story/achievement; пользователь видит warning, ввод остаётся, server save доступен. После успешного retry сообщение исчезает только для восстановившегося writer. Unit owner tests достаточны для ошибок; один screen integration проверяет сборку сообщения.
+
 ### DR-05 — P2, архитектурный риск R5: epoch отменяет старую запись, но не закрывает владельца
 
 - Исправленный сценарий edit → clearAccountFormDrafts → old timer действительно покрыт и проходит. Эту часть R5 принимаю.
@@ -79,6 +113,15 @@
 - Целевое решение: один явный owner завершения клиентской сессии должен закрывать все private writers на logout intent и освобождать storage; запрет действует до следующей разрешённой сессии, а не только для ранее scheduled callbacks. Использовать существующие session leases/epoch там, где они покрывают это правило; не разносить очередные checks по трём editors. Отдельно описать replacement без logout (сейчас принят как оставшееся ограничение, не переобъявлять исправленным).
 - Проверка до закрытия: delayed logout + ввод/reset/поздний callback после начала выхода → ни один из трёх ключей не создаётся; повторный вход нового пользователя; logout failure. Не менять server logout semantics.
 
+
+**ТЗ исполнителю — выбранный способ: session-scoped разрешение записи, не schedule-scoped epoch.**
+
+1. Сначала воспроизвести на реальном owner: seller form → начать logout с deferred API → попытка ввода/поздний reset после начала → закончить logout → storage пуст. Добавить вариант callback после logout. Если UI запрещает все такие события, сохранить красный lower-level test и документировать архитектурный риск без выдуманного UI-bug.
+2. Владелец разрешения записи — клиентская auth/session boundary (`auth-provider.tsx` и существующие query-cache session utilities), а не AccountLogoutButton. Все три draft writers получают разрешение/lease текущей сессии от этого owner; каждый отложенный write проверяет ту же lease при выполнении. Logout закрывает lease до сети, новый login/install выдаёт новую. Нельзя получить разрешение просто повторным schedule после clear.
+3. Удалять дополнительный accountDraftEpoch Map и его проверки только после подключения всех трёх writers и миграции `new → id` к единому правилу. Не добавлять четвёртый номер версии в screen. Local storage cleanup и отмена pending writers должны происходить на одной boundary; публичный query cache при этом не очищать.
+4. Существующую конкуренцию auth operations, abort и canWritePrivateCache не переписать походя. Если переиспользование текущей retirement-функции меняет порядок auth API/UI — остановить эту часть и представить конкретную разницу; не выбирать silent fallback. Backend/logout endpoint неизменен.
+5. Gate: pending logout, logout failure, повторный login того же account, другой account и поздний callback. Проверить, что новые разрешённые черновики после login пишутся, а старые callbacks не получили новую lease. Session replacement без logout явно описать; расширение обещанного очищения не маскировать под найденный баг.
+
 ### Принятые части волн 2–4 и ограничения
 
 - **R8:** clean-save больше не пишет снимок снова; targeted regression прошла, поздний ввод сохраняется через существующий persistedFieldOverrides. Сериализация всего значения и dirty owner остаются в одном hook.
@@ -88,6 +131,9 @@
 - **R10:** `rememberLeave` передаёт delta, commitLeave выполняет обратный traversal вместо replace. Код исправляет описанную причину. Только сообщённый исполнителем app-E2E; независимого full AuthViewport/browser прогона нет. Отсутствие unit само по себе не дефект, если покрыта реальная браузерная последовательность.
 - **O1:** лишний sameBlocks удалён; pending-блокировка осталась, identity guard и очистка после успешного save сохранены.
 - **Архитектура history:** сохраняются глобальный monkeypatch pushState/replaceState, обработчик popstate с stopImmediatePropagation, sentinel владельца Work и Expo Router. Риск высокий для новых способов навигации; исправленные отдельные сценарии не доказывают отсутствие конфликтов. Цель — роутер владеет маршрутами/URL, один ограниченный web-adapter владеет только отсутствующей в SDK защитой unsaved traversal. Перед заменой нужна матрица deep-link/reload/Back/Forward/двойной Back/save failure/auth dismiss и проверка возможностей установленного SDK; миграцию/private imports не делать механически. Этот architecture gate не означает глобальное переписывание сейчас.
+
+**ТЗ для отдельного history review:** owners — `auth-browser-history.ts`, `AuthViewport.tsx`, `product-draft-browser-guard.ts`, `product-draft-navigation.ts`; не начинать с удаления guards. Составить таблицу, кто меняет index/URL/entries, кто блокирует pop и кто завершает traversal. В installed Expo Router 57 проверить публичные возможности по exports/source; public usePreventRemove не предполагать. Целевой контракт adapter: одна операция request/confirm/cancel/complete traversal и один lifecycle регистрации; экран не вычисляет собственный history delta. Router остаётся владельцем URL/step. **Done для review:** доказанная карта и сравнённый вариант router-only против необходимого web adapter с конкретными непокрываемыми сценариями; **Done для будущей реализации:** browser matrix проходит и старые monkeypatch/listeners удалены после переключения consumers. Если штатный Router текущей версии не покрывает поведение, документировать точную границу адаптера; не обещать его удаление без доказательства.
+
 
 ### Собственные проверки на этом срезе
 
@@ -111,6 +157,20 @@
 - Компонентные спецификации (`button`, `field`, `search`) могут сохранять собственные состояния/геометрию, но их цвета ссылаются на семантические роли общей темы. Удаляется независимая палитра, а не полезная матрица состояний кнопки. Не объединять роли лишь потому, что сегодня они имеют одинаковый hex: surface поля, карточки и overlay могут различаться в black.
 - Минимальный gate архитектуры: смена theme обновляет AppText, Button/Icon, TextField, Sheet/Dialog, search, navigation и focus без remount экрана; нет дублирующей ручной CSS-палитры; light не меняет согласованный вид. Реальные значения black и contrast states — по live Figma/решению дизайнера (`NEEDS-FIGMA` до проверки); не объявлять тему готовой по наличию provider.
 
+
+**ТЗ исполнителю — выбранная архитектура: semantic color maps + один React theme owner.**
+
+1. `packages/design-tokens/src/tokens.ts`: оставить общий owner метрик/типографики; выделить полный набор семантических цветовых ролей. Карты `light`/`black` имеют один TypeScript key contract со строковыми значениями (не literal-type только light hex). Сохранить осмысленные нынешние имена, не устраивать массовое переименование ради красивого API. Цвета/градиенты/shadow colors тоже принадлежат теме; geometry/blur/opacity не менять автоматически при смене темы.
+2. `packages/design-tokens/src/figma-button.ts`: удалить независимые значения `colors` и gradient endpoints, связать `figmaButtonMatrixCell` с переданной semantic palette. Состояния и metrics оставить здесь. Если роли нет, добавить её в общий контракт (например onAction/actionDisabled/borderGradient), а не fallback hex. `search-chrome.ts`: убрать независимые fill/gradient/field.typography.color/tab fill/label; связать их с теми же тематическими ролями. Различные роли могут иметь одинаковое light значение.
+3. `apps/mobile/src/providers/theme-provider.tsx`: сделать владельцем активной карты приложения через React context и `useAppTheme`; внутри него вычислять navigation theme из этой же карты. Подключение уже есть в `providers/app-providers.tsx`, второй root provider не добавлять. На первом этапе default остаётся light; не добавлять пользовательский переключатель, auto/system или persistent preference без запроса. Для acceptance использовать управляющий prop/test harness с light/black.
+4. `components/ui/AppText.tsx`: tone→role mapping может быть статическим, но role→color разрешается внутри render по `useAppTheme`, не через нынешний module-level toneColors. `FigmaIcon.tsx` default color также из theme; явный caller color сохраняется. `TextField.tsx`, `FigmaTextField.tsx`, `FigmaSelectField.tsx`, `AppDialog.tsx` и `AuthViewport.tsx` — заменить статические theme-dependent цвета, сохранить размеры/focus/ARIA.
+5. Цепочка кнопки: `FigmaButton.tsx`/`FigmaButtonSurface.tsx` читают active palette; чистые функции `figma-button-style.ts` и token matrix получают palette явным аргументом. Не вызывать hook из helper и не держать импортированный mutable theme singleton. `ui/Button.tsx` продолжает делегировать этому renderer.
+6. Поиск: обновить `FigmaSearchGlass.tsx`, `FigmaSearchGlass.web.tsx`, `FigmaSearchChromeStroke.tsx`, `features/search/SearchOverlayTabs.tsx`, `search-overlay-header-style.ts`. В последнем module-level destructuring допустим для metrics, но не для color. SVG gradients и CSS glass должны читать активные роли, иначе часть поиска останется светлой.
+7. Web CSS: `global.css` использует `--bidplace-focus`, без собственного hex. Выбранный способ связи — генерировать статические light/black CSS variable blocks из того же token package на build/dev preparation и выбирать их root theme attribute из ThemeProvider. Initial root default — light; portaled overlays наследуют root variables. Не вручную копировать значения и не создавать CSS-only dark palette. Если сборочный pipeline уже умеет такую генерацию — расширить его вместо второго скрипта. Проверить `src/app/_layout.tsx` импорт global.css и scripts запуска/build до подключения.
+8. Перед завершением выполнить consumer inventory по `designTokens.color`, `figmaButtonTokens`, `searchChromeTokens`, `StyleSheet.create`, `elevation` и CSS/SVG color literals в production src. Каждый остаток классифицировать: динамический consumer / постоянный asset color / ещё не мигрирован. Не заявлять готовность всей темы, если оставшиеся экраны всё ещё импортируют static light. Все live theme consumers должны войти в тот же план миграции; список выше — проверенное начало, не исчерпывающий список.
+9. Black значения требуют live Figma/дизайнерского решения. До их получения можно завершить wiring и проверить его тестовой контрастной палитрой, но ставить `Needs verification`, не выдавать тестовую палитру за дизайн. Не выбирать #000 автоматически для каждой surface.
+10. **Done:** смена theme без remount обновляет текст/иконку/кнопку/поле/sheet/search/navigation/CSS-focus; нет лишних literal palettes; typecheck ловит пропущенную роль black; light screenshots не изменились; keyboard focus/disabled/error/overlay контраст проверен на согласованных палитрах. Достаточно общей component gallery и одного representative экрана на первом gate; все screens visual acceptance — следующая волна. Тест на наличие строки/импорта не заменяет эту проверку.
+
 ### AR-02 — P2: централизация компонентов нужна по роли, не по папке
 
 - `components/ui/Button.tsx` уже делегирует rendering в `FigmaButton`: это полезный общий owner, не два разных renderer только из-за двух каталогов. `FigmaButton` → button-style/surface → token matrix нужно сохранить как прозрачную цепочку.
@@ -118,11 +178,27 @@
 - Screen содержит композицию и уникальную геометрию, подтверждённую Figma. Повторяющиеся отступы, цвета, высоты controls, шрифтовые роли — централизованы. Не заставлять любую уникальную координату становиться глобальной переменной: это создаёт свалку одноразовых токенов вместо системы.
 - Выигрыш: изменение роли/темы распространяется на consumers; новый экран не копирует реализацию контрола. Gate: карта роли → owner → consumers, отсутствие второго независимого renderer для одной обязанности, проверка light/black состояний общих primitives.
 
+
+**ТЗ исполнителю — выбранный способ: consolidation через существующих owners.**
+
+1. Составить таблицу живых consumers для `AppText`, `ui/Button`→`FigmaButton`, `TextField/FigmaTextField/FigmaSelectField`, `FigmaTabs`, `AppDialog`, `WorkCoverCardGrid`, `AppShell`; каждую роль привязать к фактическому renderer и variant API. Не объявлять любой wrapper дублем автоматически.
+2. Начать с кнопок/полей: вынести повторяющийся набор размеров/типографики/состояний в существующий variant owner. Consumers меняют props, а не свои копии style. Figma-specific вариант сохранять, если геометрия реально отличается; не подгонять под ближайший размер.
+3. Theme миграцию выполнять по AR-01. Затем удалять только реально заменённые implementation/styles/exports после проверки импортов и динамических consumers. Rename каталогов, массовое дробление экранов и новый UI framework не требуются.
+4. **Done:** карта owner/variant согласована с кодом; изменение одного variant отражается во всех его consumers; preserved href/disabled/loading/a11y; native/web различия остаются явными; нет потери focus/pointer behavior. Новые регрессии добавлять в owner specs, не по одному файлу на каждую косметическую находку.
+
 ### PL-01 — P2: «current» план содержит устаревшие источники и неподтверждённые закрытия
 
 - `docs/audits/current/06-NEXT-REVIEWS.md` §10 всё ещё называет Pen каноническим, хотя действуют Figma и DEC-119. §4 Application draft persistence помечен RESOLVED без привязки к проверяемому SHA и новой local-storage границе. `UI-CLEANUP-PHASE-1-CLOSURE.md` с отдельным старым cabinet E2E blocker нельзя использовать как текущую сводку принятия `10cb5a33`.
 - `00-EXECUTION-ROADMAP.md` хранит полезную историю и множество статусов 2026-09/10; ID R01–R35 не те же, что R1–R10 draft-routing. Нельзя закрывать архитектурный R25 только потому, что исправлен draft R6/R10.
 - Целевое решение: одна актуальная короткая очередь с namespace ID (`draft/…`, `architecture/…`, `ui/…`), base/HEAD, owner, доказательством и следующим gate. Историю оставить append-only; активные строки перепроверить по ancestry/consumers. Заменить Pen в активных инструкциях, а не переписывать архивную историю. В owner-status вернуть Partial для неполной restore/storage границы после принятия замечаний; этим аудитом owner-доки не редактировались.
+
+
+**ТЗ исполнителю — выбранный способ: актуальная сводка поверх сохранённой истории.**
+
+1. В `docs/audits/current/06-NEXT-REVIEWS.md` исправить активный source на live Figma; заменить недоказанное RESOLVED по local draft на ссылку к DR-01…05 и точный проверяемый SHA. Не удалять старые evidence records.
+2. В `00-EXECUTION-ROADMAP.md` добавить сверху короткую актуальную карту очереди; явно отделить старые R01–R35 от draft/R1–R10. Сверять наличие коммитов через ancestry, не по названию ветки. Не считать прочтение отчёта новой проверкой.
+3. `11-PROJECT-STATUS.md` — итог Partially implemented/`Partial` для незакрытых restore/storage границ; закрытые R8/R9/O1 остаются закрытыми. `04-DESIGN-STATUS.md` — только фактическое поведение, без утверждения новой visual acceptance. Никакого нового DEC за исправление ошибки без нового продуктового решения.
+4. **Done:** следующий исполнитель из одной актуальной очереди понимает owner, base, открытые ID и gate; нет активной инструкции применять Pen; каждый Implemented/Verified имеет source evidence и scope; отсутствуют противоречия «всё закрыто» и открытых DR.
 
 ### PL-02 — P2: старые количественные критерии не равны архитектурному качеству
 
@@ -130,6 +206,14 @@
 - С black-темой single-use semantic role может быть необходима; две роли одинакового цвета могут расходиться. Запрет нечётности не должен перекрывать подтверждённую геометрию, hairline и web border-box. Figma-specific отступы не исправляют арифметикой только ради метрики.
 - Целевое решение: принимать ownership/reuse/theme propagation и реальные сценарии; объём diff/длина экрана — повод посмотреть, не формальный запрет. Новый helper должен убирать текущую дублирующую ответственность. Не дробить screen на wrappers ради лимита и не считать grep/токен-тест визуальной приёмкой.
 - План §10 с «read-only reviews first» полезен. Порядок поправить: корректность восстановления → theme/token ownership и базовые primitives → массовая доводка экранов. Старые backend/release scopes не объявлять закрытыми по frontend tests.
+
+
+**ТЗ исполнителю — выбранный способ: принимать ответственность и поведение, не объём.**
+
+1. Не переписывать исторический аудит 2026-10-13; в активном плане явно переопределить gates ≤200 строк, отрицательный diff и token usage count как диагностические подсказки.
+2. Заменить их на проверяемые условия: один owner обязанности; нет дублированной палитры; state/lifecycle contracts сохранены; live Figma geometry и themed states подтверждены.
+3. Удаление токена допустимо только после всех dynamic consumers и Figma роли; single-use семантические роли для black не удалять. No-hex check должен различать theme roles и разрешённые постоянные asset colors.
+4. **Done:** маленький экран с копией save logic не проходит приёмку, большой чисто композиционный экран не отклоняется только за длину; checklists не позволяют закрыть визуал по grep/unit вместо рендера.
 
 ## Итог приёмки четырёх волн
 
@@ -187,3 +271,13 @@
 - Полный auth-layout, production build, независимый app-E2E всех волн, API/DB suites, настоящие native устройства, live Figma и визуальные скриншоты не проверены в этом ревью. Их прежние результаты не выдаются за мои.
 - Не проводился exhaustive поиск всех token literals/dead code; перечислены проверенные архитектурные примеры. Оставшиеся backend/архивные debt IDs не объявлены закрытыми.
 - Аудит коммитится по срезам локально; push/merge/deploy не выполнялись. Рекомендации являются заданиями будущему исполнителю, не уже сделанными исправлениями.
+
+## Простыми словами: что осталось до работы преимущественно над UI
+
+**По текущим замечаниям.** Основной механизм уже работает. Нужно закончить его края: не подставлять старую историю в новую редакцию товара; строго проверять типы локальных полей, сохраняя незавершённый текст; показывать ошибку записи для истории и достижений; доказать, что после выхода никакой запоздалый ввод не воскресит черновик. Это один пакет «сохранность ввода и сессия», который разумно разбить на 2 небольших изменения: revision/restore и storage/logout. Браузерный Back с первоначальной проблемой исправлен; всё переписывать заново не требуется.
+
+**По оставшимся волнам.** Следующий обязательный фундамент — единая тема/токены и общие компоненты. Сейчас цвета централизованы лишь частично: общая палитра есть, но кнопки/поиск/CSS и статические чтения её обходят. Сначала провести одну настройку темы через общие элементы, затем доводить экраны на этих элементах. Отдельно обновить активный план, чтобы старые статусы и Pen не уводили исполнителя в сторону. Широкое переустройство history/SDK и старые backend/commerce долги не включать автоматически в этот этап; они требуют своих доказательств и приоритетов.
+
+**На пальцах по объёму.** До безопасной массовой UI-доводки осталось примерно **два инженерных пакета и одна короткая приёмка**: (1) данные/черновики/сессия, (2) theme/token/component foundation, (3) адресные проверки, light visual regression и актуальная очередь. Это ориентир **3–5 небольших PR**, а не обещание срока: theme consumer inventory может увеличить объём. Править дизайн отдельных экранов и готовить Figma можно уже параллельно; массово раскрашивать/копировать controls до общей темы невыгодно.
+
+Оценка перехода сейчас **6/10**, цель после этих gates — **около 8/10**: достаточно, чтобы UI стал основной работой, а оставшийся техдолг исправлялся по конкретным сценариям. Это не обещание «весь репозиторий без долгов». Для готовой black-темы дополнительно нужны согласованные дизайн-значения и контраст; её технический каркас можно подготовить раньше, не выдумывая внешний вид.
