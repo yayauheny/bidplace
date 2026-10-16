@@ -1,52 +1,32 @@
 ---
 name: bidplace-ui-review
-description: Review a Bidplace UI diff (apps/mobile, packages/design-tokens) against the design-system contract and Figma. Use when reviewing UI PRs, worker results, or your own UI changes before completion.
+description: Review a Bidplace UI implementation against verified Figma, responsive behavior, shared component ownership and theme tokens. Use for a UI diff, returned implementation or visual acceptance; report measured evidence and verification gaps.
 ---
 
-# bidplace-ui-review
+# Bidplace UI review
 
-Review the real diff, not the report. Rules live in `bidplace-ui`, `AGENTS.md`, and `docs/design/*`; this file is the order of checks and the evidence required. Combine with `code-review-best-practices` for non-visual concerns.
+Review code and rendered output, not the implementation report. Apply bidplace-ui, repository owners and [workflow](../../../docs/design/FIGMA-TO-CODE-WORKFLOW.md); combine code-review-best-practices for state/API changes. No implementation unless requested.
 
-## 1. Scope and source
+## Source and completeness
 
-- Is every changed visual value traceable to a Figma node (id in PR/comment)? Nearest-existing-variant substitution for a visually different Figma style is a finding.
-- Does the design conflict with `DEC-083`/`DEC-087` or another product contract? If yes and not reported → blocker.
-- No `.pen`/`design/` asset changes; no edits to protected docs without a founder decision.
+Record SHA, exact node/capture and visual scope. Compare visible content/ordering/assets against the reference and relevant design subtree. Distinguish app chrome from OS chrome, behind-overlay content, clipped/hidden layers and missing design. Product rules outrank sample auction/social-auth content. Unreported source conflicts are blockers; absent desktop/black designs remain NEEDS-FIGMA.
 
-## 2. Mechanism check (one way per job)
+## Ownership and theme
 
-For each of: container/width, Safe Area, sheet/dialog, tabs, card grid, button, icon, text field:
+For container, Safe Area, dialog/sheet, field, button, tabs, back, grid, text and icon: identify the existing renderer and variants. Flag route-local copies and conflicting owners, not folder names or legitimate semantic wrappers. Check affected consumers before recommending deletion.
 
-- Does the diff use the existing owner (`AppShell`, `AppDialog`, `FigmaTabs`, `WorkCoverCardGrid`, shared Button, `FigmaIcon`, `TextField`)?
-- Did it add a second mechanism, a route-local copy, or a legacy pattern (`OverlayHost`, `AppIcon`/lucide, `DestructiveButton`, RN `Modal`)? → blocker.
-- Was the superseded code/token deleted, or left "for later"? Leftover = finding.
+Trace theme colors through tokens → active provider → component/state/CSS/SVG. A central file of constants alone is not runtime theming. Inspect module-level computed colors, button/search sub-palettes and gradients/shadows. Equal colors can be different roles. Unique geometry needs provenance; repeatable styles need shared tokens/variants. No blanket even-number, minus-one stroke, line-count, boolean-count or net-negative-diff gates.
 
-## 3. Tokens and values
+## Rendered checks
 
-- New literal size/color/font in a component? Repeatable pattern → token/variant; unique geometry → named local constant with node id.
-- Token names semantic; no breakpoint/device/screen names; no duplicate token for an existing role.
-- Even integers; control height follows the −1 stroke rule; explicit `height` from token.
-- Every new prop is a role (`variant`, `tone`, `fill`), not a screen name; ≤2 boolean flags per component. Props that overlap (e.g. two ways to say "full height") → collapse.
+- At exact reference viewport: compare section order, relative alignment, widths/heights, padding/gaps, typography/wrapping, assets, stroke, overlay and controls. Capture app and reference at matched viewport, fonts, state and scale. Use side-by-side or overlay; investigate geometry before antialiasing.
+- Representative mobile widths: 320, reference 390, 414 and 440 CSS px; short height around 568 and normal height; 1024/1440 for layout robustness where no approved desktop frame exists. These are test cases, not device-specific production constants. Narrow the matrix for isolated component-only changes with a stated reason.
+- No unintended page-level horizontal overflow, clipped controls or inaccessible scroll regions; allow intended carousels. Check long text, errors, loading, missing images and the relevant owner/visitor states.
+- Web 200% browser zoom and enlarged text; reflow at 320 CSS px (or equivalent 400% zoom from 1280) for relevant full-page acceptance. Do not count a changed viewport alone as proof of real zoom. Native fontScale/keyboard/Safe Area require emulator/device evidence when native is in scope; browser emulation is not such evidence.
+- Keyboard focus/Tab/Shift+Tab/Escape and dialog focus return; touch targets per project contract, reduced motion. Theme changes, when in scope, update existing mounted controls including portals and gradients.
 
-## 4. Layout and Safe Area
+Use Chromium for iteration; add WebKit on touched typography/viewport/overlay/focus flows. Shared component changes require representative consumers, not whole-repo E2E by default. Maintain scenario/assertion meaning; never bless unexplained screenshot differences or loosen tolerances to turn green. Pixel-perfect RGBA equality across Figma and browsers is not a realistic universal gate.
 
-- No widths passed from screens; no `useWindowDimensions` for columns; no proportional scaling.
-- Insets applied once; sheet bottom spacing = `max(bottomSpace, inset)`; **measure** base-vs-now spacing for every existing consumer of a changed sheet/shell (table in the PR).
-- One centering mechanism and one `maxWidth` per host, not stacked.
+## Report
 
-## 5. Behavior and accessibility
-
-- Focus: trap while open, return to trigger on close (one shared helper, no copies). Escape/backdrop/back dismissal; blocked-dismiss paths keep working.
-- Roles, labels, visible focus, keyboard path, 44px targets, 200% zoom, reduced motion.
-- Loading, empty, error, long text, missing image states exist where the screen needs them.
-
-## 6. Evidence (require, do not assume)
-
-- `typecheck`, `lint` (no auto-fix), affected vitest, affected e2e. A failing test must be compared with the base commit: pass-on-base + fail-now = regression, fix it; fail-on-both = report as baseline, do not relax.
-- Screenshots at 1440 / 1024 / 390 beside the Figma reference (note `NEEDS-FIGMA` where no frame exists). Every consumer of a changed shared component: a screenshot or a named test.
-- Size: code-only additions should not exceed deletions without a stated reason.
-- Docs: `04-DESIGN-STATUS.md`, `11-PROJECT-STATUS.md` updated with honest status (`Partial` until all required checks pass); `03`/`02` if shared parts or flows changed.
-
-## Output
-
-Verdict (accept / accept with fixes / reject), then findings ordered by severity, each with file:line, the rule, and the smallest fix. List what was not verified.
+Give accept / fixes required / not verified, ordered findings with source+file, user impact, maintenance risk, chosen correction and acceptance check. Attach viewport/state/browser evidence, distinguish visual parity from robustness checks and list unrun checks. Pass typecheck/lint/relevant owner tests, but do not claim visual Done without rendered evidence. Required status docs must reflect actual acceptance. Stop when the bounded requested scope is verified; unrelated debt stays a separate finding.
