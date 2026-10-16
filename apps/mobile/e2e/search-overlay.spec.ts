@@ -517,6 +517,41 @@ test('desktop pointer hover marks Author, Category, and Work hits', async ({
     .not.toMatch(/inset/);
 });
 
+test('search overlay state survives the shared-link aliases', async ({
+  page,
+  request,
+}) => {
+  const { work, author } = await publicSearchFixtures(request);
+
+  await page.goto(
+    `/works/${work.publicId}?overlay=search&oq=${encodeURIComponent(work.title)}&otab=works`,
+  );
+  await expect(page).toHaveURL(new RegExp(`/product/${work.publicId}[?#]`));
+  const workUrl = new URL(page.url());
+  expect(workUrl.searchParams.get('overlay')).toBe('search');
+  expect(workUrl.searchParams.get('oq')).toBe(work.title);
+  expect(workUrl.searchParams.get('otab')).toBe('works');
+  const workOverlay = page.getByTestId('search-overlay');
+  await expect(workOverlay).toBeVisible();
+  await expect(workOverlay.getByTestId('search-overlay-query')).toHaveValue(
+    work.title,
+  );
+
+  await page.goto(
+    `/authors/${author.slug}?overlay=search&oq=${encodeURIComponent(author.slug)}&otab=authors`,
+  );
+  await expect(page).toHaveURL(new RegExp(`/seller/${author.slug}[?#]`));
+  const authorUrl = new URL(page.url());
+  expect(authorUrl.searchParams.get('overlay')).toBe('search');
+  expect(authorUrl.searchParams.get('oq')).toBe(author.slug);
+  expect(authorUrl.searchParams.get('otab')).toBe('authors');
+  const authorOverlay = page.getByTestId('search-overlay');
+  await expect(authorOverlay).toBeVisible();
+  await expect(authorOverlay.getByTestId('search-overlay-query')).toHaveValue(
+    author.slug,
+  );
+});
+
 async function openSearchOverlay(page: Page) {
   await page.getByTestId('figma-floating-dock').getByLabel('Поиск').click();
   const overlay = page.getByTestId('search-overlay');
