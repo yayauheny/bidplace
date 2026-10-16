@@ -13,6 +13,7 @@ import {
 } from '../../components/shared/infrastructure-page-status';
 import {
   AppDialog,
+  AppText,
   PageState,
   PrimaryButton,
   SecondaryButton,
@@ -309,6 +310,12 @@ export function ProductDraftScreen({
               Boolean(existingProduct) && !editable && !isCreationFlow
             }
           />
+
+          {restore.storageError ? (
+            <AppText role="bodySmall" tone="danger">
+              {restore.storageError}
+            </AppText>
+          ) : null}
 
           {!isCreationFlow || wizardStep === productWizardStep.about ? (
             <ProductDraftAboutStep

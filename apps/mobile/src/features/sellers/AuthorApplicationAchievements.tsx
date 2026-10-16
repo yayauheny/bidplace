@@ -22,6 +22,7 @@ import {
   refreshPrivateQuery,
 } from '../../lib/query-cache';
 import {
+  accountDraftEpoch,
   clearFormDraft,
   createDraftWriter,
   formDraftKey,
@@ -226,10 +227,14 @@ export function AuthorApplicationAchievements({
       clearFormDraft(draftKey);
       return;
     }
+    const account = accountId;
+    const epoch = account ? accountDraftEpoch(account) : null;
     draftWriter.current.schedule(() => {
+      // A logout cleared this account's drafts while the write was pending.
+      if (account === null || accountDraftEpoch(account) !== epoch) return;
       writeFormDraft(draftKey, { body, dateInput });
     });
-  }, [body, dateInput, draftKey]);
+  }, [accountId, body, dateInput, draftKey]);
 
   useEffect(() => {
     return () => {

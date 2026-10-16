@@ -620,6 +620,11 @@ export function SellerProfileScreen() {
               variant={isApplicationWizard ? 'authorApplication' : 'default'}
             >
               <View style={{ gap: designTokens.space.x5 }}>
+                {restore.storageError ? (
+                  <AppText role="bodySmall" tone="danger">
+                    {restore.storageError}
+                  </AppText>
+                ) : null}
                 {wizardStep !== null ? null : (
                   <View
                     style={{

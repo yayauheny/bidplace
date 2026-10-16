@@ -1,12 +1,14 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 import { z } from 'zod';
 
 import {
+  accountDraftEpoch,
   clearFormDraft,
   createDraftWriter,
   formDraftKey,
   readFormDraft,
+  storageWritable,
   writeFormDraft,
 } from '../../lib/local-form-draft';
 
@@ -46,6 +48,10 @@ const storedDraftEnvelopeSchema = z.object({
 });
 
 type StoredDraftEnvelope = z.infer<typeof storedDraftEnvelopeSchema>;
+
+// Shown where the form renders when local drafts cannot be stored at all.
+const STORAGE_ERROR_MESSAGE =
+  'Не удалось сохранить черновик на устройстве. Введённый текст может не восстановиться.';
 
 type RestoreInput<TValues extends Record<string, unknown>> = {
   form: UseFormReturn<TValues>;
@@ -94,16 +100,34 @@ export function useLocalFormRestore<TValues extends Record<string, unknown>>({
   );
 
   // Live write-through of edits while typing.
+  const [storageError, setStorageError] = useState<string | null>(null);
+
+  // Unusable storage means neither restore nor write can work; say so once.
+  useEffect(() => {
+    if (!storageWritable()) setStorageError(STORAGE_ERROR_MESSAGE);
+  }, []);
+
   useEffect(() => {
     const writer = writerRef.current;
     const subscription = form.watch(() => {
+      const account = accountRef.current;
+      const epoch = account ? accountDraftEpoch(account) : null;
       writer.schedule(() => {
+        // A logout cleared this account's drafts while the write was pending.
+        if (account === null || accountDraftEpoch(account) !== epoch) return;
         const key = currentKey();
         if (!key || !canWriteRef.current()) return;
-        writeFormDraft(key, {
+        if (!form.formState.isDirty) {
+          // Clean form: nothing unsaved remains, so the local copy goes away
+          // instead of being repersisted after a confirmed save.
+          clearFormDraft(key);
+          return;
+        }
+        const written = writeFormDraft(key, {
           base: baseRef.current,
           values: form.getValues(),
         });
+        setStorageError(written ? null : STORAGE_ERROR_MESSAGE);
       });
     });
     return () => {
@@ -178,5 +202,5 @@ export function useLocalFormRestore<TValues extends Record<string, unknown>>({
     if (key) clearFormDraft(key);
   }, [currentKey]);
 
-  return { noteEntityCreated, clearDraft };
+  return { noteEntityCreated, clearDraft, storageError };
 }

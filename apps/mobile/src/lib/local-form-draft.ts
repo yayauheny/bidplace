@@ -28,6 +28,31 @@ function storage(): Storage | null {
   }
 }
 
+/**
+ * Per-account write epoch. `clearAccountFormDrafts` (logout) bumps it;
+ * delayed writers compare the epoch captured at schedule time with the
+ * current one and drop the write after retirement.
+ */
+const accountDraftEpochs = new Map<string, number>();
+
+export function accountDraftEpoch(accountId: string): number {
+  return accountDraftEpochs.get(accountId) ?? 0;
+}
+
+/** True when a small probe write succeeds — storage is usable for drafts. */
+export function storageWritable(): boolean {
+  const store = storage();
+  if (!store) return false;
+  try {
+    const probe = `${FORM_DRAFT_PREFIX}probe`;
+    store.setItem(probe, '1');
+    store.removeItem(probe);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** Returns the parsed draft, or null when absent, invalid, or unreadable. */
 export function readFormDraft<T>(key: string, schema: ZodType<T>): T | null {
   const store = storage();
@@ -74,6 +99,12 @@ export function clearFormDraft(key: string): void {
 
 /** Removes every draft belonging to the account (logout boundary). */
 export function clearAccountFormDrafts(accountId: string): void {
+  // Bump the write epoch first so writers debounced before the clear drop
+  // their pending write instead of resurrecting the private draft.
+  accountDraftEpochs.set(
+    accountId,
+    (accountDraftEpochs.get(accountId) ?? 0) + 1,
+  );
   const store = storage();
   if (!store) return;
   const prefix = `${FORM_DRAFT_PREFIX}${accountId}:`;

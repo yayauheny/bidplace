@@ -6,6 +6,7 @@ import { z } from 'zod';
 import type { ApiClient } from '@bidplace/api-client';
 
 import {
+  accountDraftEpoch,
   clearFormDraft,
   createDraftWriter,
   formDraftKey,
@@ -188,9 +189,13 @@ export function useProductStoryEditor({
   };
 
   const persistDraft = () => {
-    const key = storyDraftKey(accountRef.current, productRef.current);
-    if (!key) return;
+    const account = accountRef.current;
+    const key = storyDraftKey(account, productRef.current);
+    if (!account || !key) return;
+    const epoch = accountDraftEpoch(account);
     writer.current.schedule(() => {
+      // A logout cleared this account's drafts while the write was pending.
+      if (accountDraftEpoch(account) !== epoch) return;
       const draft: StoryLocalDraft = {
         v: 2,
         token: current.current.token,

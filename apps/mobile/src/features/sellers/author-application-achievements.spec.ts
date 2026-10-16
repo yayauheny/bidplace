@@ -294,6 +294,7 @@ import {
   replaceAuthenticatedSession,
   authKeys,
 } from '../../lib/query-cache';
+import { clearAccountFormDrafts } from '../../lib/local-form-draft';
 import { SellerProfileScreen } from './seller-profile-screen';
 
 function profileResponse(city = 'Minsk') {
@@ -510,7 +511,7 @@ async function switchAccount(
 
 describe('Author application achievement lifecycle', () => {
   beforeEach(() => {
-  window.localStorage.clear();
+    window.localStorage.clear();
     harness.params = {};
     harness.logout.mockReset();
     harness.replace.mockReset();
@@ -664,6 +665,21 @@ describe('Author application achievement lifecycle', () => {
     expect(
       findButton(view.container, 'Добавить фото (необязательно)'),
     ).toBeUndefined();
+    view.unmount();
+  });
+
+  it('does not resurrect a cleared achievement draft after logout', async () => {
+    const view = mount();
+    await openEditor(view);
+    fillAchievement(view.container, 'Приватное событие');
+    // Logout clears the account drafts while the debounced write is pending.
+    clearAccountFormDrafts('user-a');
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    expect(
+      window.localStorage.getItem(
+        'bidplace:draft:user-a:seller-achievements:new',
+      ),
+    ).toBeNull();
     view.unmount();
   });
 
@@ -859,7 +875,10 @@ describe('Author application achievement lifecycle', () => {
       await pendingWizardBack.promise;
     });
     await flush();
-    expect(harness.push).toHaveBeenCalledWith({ pathname: '/profile', params: { step: '3' } });
+    expect(harness.push).toHaveBeenCalledWith({
+      pathname: '/profile',
+      params: { step: '3' },
+    });
     expect(harness.push).toHaveBeenCalledTimes(1);
     wizard.unmount();
     harness.params = {};

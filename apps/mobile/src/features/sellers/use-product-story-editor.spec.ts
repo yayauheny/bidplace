@@ -8,6 +8,7 @@ import type { StoryBlock } from '@bidplace/contracts';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { useProductStoryEditor } from './use-product-story-editor';
+import { clearAccountFormDrafts } from '../../lib/local-form-draft';
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
@@ -90,9 +91,22 @@ function mount(
 afterEach(() => {
   cases.splice(0).forEach((cleanup) => cleanup());
   window.localStorage.clear();
+  vi.useRealTimers();
 });
 
 describe('revision-backed Work Story editor', () => {
+  it('does not resurrect a cleared story draft after logout', () => {
+    vi.useFakeTimers();
+    const view = mount('user-a');
+    const draftKey = `bidplace:draft:user-a:product-story:${workId}`;
+    act(() => view.editor.addText('PARAGRAPH'));
+    act(() => view.editor.editText(view.editor.blocks[0]!.key, 'Текст'));
+    // Logout clears the account drafts while the debounced write is pending.
+    clearAccountFormDrafts('user-a');
+    act(() => vi.advanceTimersByTime(500));
+    expect(window.localStorage.getItem(draftKey)).toBeNull();
+  });
+
   it('clears the local draft after the server holds the saved blocks', async () => {
     const view = mount('user-a');
     const draftKey = `bidplace:draft:user-a:product-story:${workId}`;
