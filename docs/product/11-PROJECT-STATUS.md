@@ -2,6 +2,14 @@
 
 > Entries dated before 2026-10-13 mention Pen / .pen files; the Pen design was removed (DEC-119) — read those mentions as history.
 
+## 2026-10-16 — Draft-restore волна 9: AR-01 (часть 3) — style-owner helpers на палитре (Partial, NEEDS-FIGMA)
+
+- `Partial`: весь компонентный/owner-слой общих примитивов мигрирован на semantic palette; AR-01 всё ещё **не закрыта** — остались экранный слой `features/*` (включая auth-токены `tokens.auth.available/taken/*Border*`, уедут вместе с auth-экранами) и бренд-ассеты. Готовность темы не заявляется; black-палитра остаётся тестовой (NEEDS-FIGMA).
+- `Implemented` (TZ п.2/п.8, механика без изменения внешнего вида): чистые style-функции получили обязательный `palette: SemanticColorMap` последним аргументом (обязательный — без static fallback по TZ); компоненты читают `useAppTheme()`. Мигрированы: figma-chip-style, figma-choice-chip-style, figma-icon-button-style, figma-tabs, filter-sort-bar-style, filter-sheet-style (`filterSheetPanelStyle`), filter-option-style, figma-glass-surface-style, figma-glass-circle, cover-frost-style, cover-card-style, author-atmosphere-style, overlay-dimmer, sticky-dock-surface-style.web, work-gallery-chrome, interactive-hit-style, product-media-style + компоненты FigmaChip(.web), FigmaChoiceChip, FigmaIconButton, FigmaTabs, FilterSortBar, FilterSheet(+SectionRow+search-overlay-layer), FilterOptionRow, FigmaGlassSurface(.web), CoverFrost(.web), WorkCoverCard, AuthorCoverCard, AuthorIdentity, FigmaImagePlaceholder, ShareSheet, FloatingDock, BackButton, ExitConfirmDialog, AppShell, AuthorSearchRow, CategorySearchTile, CreatorHeader, CreatorSocialLink + screen-level вызовы owner'ов (product-screen, product-draft-story). Спеки переведены на `designTokens.color` как аргумент палитры; значения light не менялись.
+- `Осознанно оставлено`: root layout `app/_layout.tsx` splash-экран до монтирования провайдеров читает `designTokens.color.canvas` напрямую (inventory: layout-остаток, единственный pre-provider read); `product-draft-story.tsx` экранные чтения `toolbarColors` — часть экранного слоя; бренд-глифы auth-провайдеров — no-hex allowlist.
+- `Тестовая инфраструктура`: три спеки, чей граф впервые дошёл до theme-provider → expo-router (WorkGallery, figma-tabs, FigmaGlassSurface.web), получили `vi.mock('expo-router')` по образцу волны 8a (DefaultTheme + ThemeProvider).
+- Проверки: vitest **866/866** (136 файлов), tsc --noEmit чисто, eslint чисто, prettier чисто, `build:web` с TURNSTILE-dummy — ок. E2E и визуальная сверка не запускались (визуал не менялся: light-значения verbatim).
+
 ## 2026-10-16 — Draft-restore волна 8b: AR-01 (часть 2) — цепочки кнопок/search/полей/диалог на палитре (Partial, NEEDS-FIGMA)
 
 - `Partial`: проверенные в AR-01 цепочки мигрированы на semantic palette; AR-01 в целом **не закрыта** — экранный слой и часть style-owner helpers всё ещё читают static light (inventory ниже). Готовность темы не заявляется.
