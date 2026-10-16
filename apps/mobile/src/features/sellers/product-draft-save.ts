@@ -80,6 +80,12 @@ export function useProductDraftSaveSession({
   const saveGeneration = useRef(0);
   const sessionOperation = useRef(0);
   const resetSaveMutation = useRef<() => void>(() => undefined);
+  // Field save already accepted by the server inside the submit path while
+  // the following submit call is still undecided.
+  const pendingFieldSave = useRef<{
+    product: Product;
+    values: ProductDraftFormValues;
+  } | null>(null);
   const [inputsLocked, setInputsLocked] = useState(false);
   const [formAlert, setFormAlert] = useState<string | null>(null);
   const persistForTransitionRef = useRef<() => Promise<boolean>>(
@@ -137,6 +143,24 @@ export function useProductDraftSaveSession({
   const invalidateSavedProduct = (savedProductId: string) =>
     invalidateOwnerWorks(queryClient, savedProductId);
 
+  // Single confirmation of a successful field save, shared by the ordinary
+  // save and the update leg of the submit path.
+  const confirmSavedProduct = async (
+    product: Product,
+    values: ProductDraftFormValues,
+    generation: number,
+    requestEpoch: number,
+  ) => {
+    if (generation !== saveGeneration.current) return;
+    if (!canWritePrivateCache(queryClient, requestEpoch)) return;
+    await retireGuardSlot.current();
+    if (generation !== saveGeneration.current) return;
+    if (!canWritePrivateCache(queryClient, requestEpoch)) return;
+    applyPersistedForm(product, values);
+    onSavedProduct?.(product);
+    void invalidateSavedProduct(product.id);
+  };
+
   const save = useMutation({
     mutationFn: ({ values }: ProductSaveRequest) => {
       const id = persistedProductId.current;
@@ -144,14 +168,12 @@ export function useProductDraftSaveSession({
       return id ? api.products.update(id, body) : api.products.create(body);
     },
     onSuccess: async ({ product }, request) => {
-      if (request.generation !== saveGeneration.current) return;
-      if (!canWritePrivateCache(queryClient, request.authEpoch)) return;
-      await retireGuardSlot.current();
-      if (request.generation !== saveGeneration.current) return;
-      if (!canWritePrivateCache(queryClient, request.authEpoch)) return;
-      applyPersistedForm(product, request.values);
-      onSavedProduct?.(product);
-      void invalidateSavedProduct(product.id);
+      await confirmSavedProduct(
+        product,
+        request.values,
+        request.generation,
+        request.authEpoch,
+      );
     },
   });
   resetSaveMutation.current = () => save.reset();
@@ -162,16 +184,24 @@ export function useProductDraftSaveSession({
       authEpoch: requestEpoch,
       generation,
     }: ProductSubmitRequest) => {
-      await api.products.update(id, productDraftToWriteRequest(currentValues));
+      const updated = await api.products.update(
+        id,
+        productDraftToWriteRequest(currentValues),
+      );
       if (
         generation !== saveGeneration.current ||
         !canWritePrivateCache(queryClient, requestEpoch)
       ) {
         return null;
       }
+      pendingFieldSave.current = {
+        product: updated.product,
+        values: currentValues,
+      };
       return api.products.submit(id);
     },
     onSuccess: async (result, request) => {
+      pendingFieldSave.current = null;
       if (!result) return;
       if (request.generation !== saveGeneration.current) return;
       if (!canWritePrivateCache(queryClient, request.authEpoch)) return;
@@ -339,6 +369,18 @@ export function useProductDraftSaveSession({
         sessionOperation.current === operation &&
         saveGeneration.current === generation
       ) {
+        // The field update inside the submit already succeeded on the server:
+        // confirm that snapshot so the form, base and draft do not stay stale.
+        const confirmedFieldSave = pendingFieldSave.current;
+        pendingFieldSave.current = null;
+        if (confirmedFieldSave) {
+          await confirmSavedProduct(
+            confirmedFieldSave.product,
+            confirmedFieldSave.values,
+            generation,
+            authEpochAtSubmit,
+          );
+        }
         reportFailure(
           error,
           'Не удалось сохранить и отправить предмет на модерацию.',
