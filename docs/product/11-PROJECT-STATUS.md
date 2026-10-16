@@ -2,6 +2,14 @@
 
 > Entries dated before 2026-10-13 mention Pen / .pen files; the Pen design was removed (DEC-119) — read those mentions as history.
 
+## 2026-10-16 — Draft-restore волна 11: эталонный экран входа, Figma 7008:20543 — приёмка (Partial, NEEDS-FIGMA)
+
+- `Partial`: приёмка по эталонному экрану входа выполнена и зелёная, но против **dated fallback** — ZIP-снимка макета (capturedAt 2026-10-16T10:34Z), live Figma MCP в момент проверки недоступен. Сверка против актуального макета и решения по расхождениям — NEEDS-FIGMA. Код приложения не менялся.
+- `Implemented`: acceptance-проба `apps/mobile/e2e/login-figma-acceptance.spec.ts` — скриншоты `#auth-sheet` 390×874 + error-state, overflow-проверка на 320/414/440×874 и 390×400 (short sheet), zoom 200% (a11y reflow). Отчёт + evidence: `docs/audits/current/evidence/2026-10-16-login-sheet/` (README со mapping узел→компонент, layout-контрактом, таблицей расхождений и NEEDS-FIGMA-списком).
+- `Verified` (визуальное сравнение со снимком): шторка приложения ровно 390×545, структура 1:1 (граббер, заголовок, 2 поля, «Забыли пароль?», «Войти» pill, «Регистрация», «или», Telegram/Google, legal); посторонних глифов нет. Токены (`designTokens.auth`, `figma-button.ts`) совпадают с макетом численно (sheetRadius 32, loginGap 14, pad 8/20/20, auth-кнопка 51px).
+- Осознанно не исправлялись (зафиксированы в отчёте): кнопка «×» в шапке шторки и «Показать пароль» есть у приложения, в макете нет (dismissal/a11y); legal-копия приложения ≠ макету (владелец — product/legal) — всё NEEDS-FIGMA.
+- Проверки: проба 2/2 (Chromium + WebKit); vitest **866/866** (136 файлов); eslint/prettier по новой спеке чисто; `build:web` с TURNSTILE-dummy — ок. Код приложения и owner-компоненты волну не трогали.
+
 ## 2026-10-16 — Draft-restore волна 10: AR-02 — карта owner/variant, один renderer на роль (Partial, NEEDS-FIGMA)
 
 - `Partial`: применимая часть AR-02 закрыта — карта ролей согласована с кодом; полный AR-02 остаётся открытым до миграции экранного слоя (AR-01 остаток) и приёмки по live Figma.
