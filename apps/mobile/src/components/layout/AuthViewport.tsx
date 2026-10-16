@@ -1,7 +1,15 @@
 import * as Dialog from '@rn-primitives/dialog';
 import { useIsFocused, useNavigation, useRouter, type Href } from 'expo-router';
 import { usePreventRemove } from 'expo-router/build/react-navigation/core';
-import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import { Platform, ScrollView, useWindowDimensions, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
@@ -19,7 +27,10 @@ import {
   authNavigationDismissal,
   authNavigationTarget,
 } from '../../features/auth/auth-dismissal';
-import { AuthExitConfirm, type AuthExitCopy } from '../../features/auth/auth-exit-confirm';
+import {
+  AuthExitConfirm,
+  type AuthExitCopy,
+} from '../../features/auth/auth-exit-confirm';
 import {
   AuthSheetGuardProvider,
   type AuthSheetGuard,
@@ -90,12 +101,19 @@ export function AuthViewport(props: AuthViewportProps) {
   const historyId = useId();
   const { height } = useWindowDimensions();
   const [screenContentHeight, setScreenContentHeight] = useState(0);
-  const [guard, setGuard] = useState<AuthSheetGuard>({ dirty: false, busy: false });
+  const [guard, setGuard] = useState<AuthSheetGuard>({
+    dirty: false,
+    busy: false,
+  });
   const [confirm, setConfirm] = useState(false);
   const [released, setReleased] = useState(false);
   const screenScrollRef = useRef<ScrollView>(null);
   const pendingAction = useRef<NavigationAction | null>(null);
   const browserLeavePath = useRef<string | null>(null);
+  // Browser Back/Forward traversal that was intercepted while asking to
+  // abort: completing the leave must finish that same traversal (restore
+  // moved history back to the form), not replace the entry with a copy.
+  const browserLeaveTraversal = useRef<{ delta: number } | null>(null);
   const returnFocus = useRef<HTMLElement | null>(null);
   const releasedRef = useRef(false);
   const completionRef = useRef<SafeRedirect | null>(null);
@@ -108,13 +126,18 @@ export function AuthViewport(props: AuthViewportProps) {
 
   const onGuard = useCallback((next: AuthSheetGuard) => {
     setGuard((current) =>
-      current.dirty === next.dirty && current.busy === next.busy ? current : next,
+      current.dirty === next.dirty && current.busy === next.busy
+        ? current
+        : next,
     );
   }, []);
   const destination = authLeaveDestination(redirectTo);
 
   const openConfirm = useCallback(() => {
-    if (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
+    if (
+      typeof document !== 'undefined' &&
+      document.activeElement instanceof HTMLElement
+    ) {
       if (document.activeElement.closest('#auth-sheet')) {
         returnFocus.current = document.activeElement;
       }
@@ -131,8 +154,9 @@ export function AuthViewport(props: AuthViewportProps) {
         released: () => releasedRef.current,
         completed: () => completionRef.current !== null,
         confirm: openConfirm,
-        rememberLeave: (path) => {
+        rememberLeave: (path, traversal) => {
           browserLeavePath.current = path;
+          browserLeaveTraversal.current = traversal;
           pendingAction.current = null;
         },
       });
@@ -141,29 +165,42 @@ export function AuthViewport(props: AuthViewportProps) {
     }
   }
 
-  const complete = useCallback((next: SafeRedirect) => {
-    if (!focusedRef.current || completionRef.current || releasedRef.current) return;
-    completionRef.current = next;
-    releasedRef.current = true;
-    browserLeavePath.current = null;
-    pendingAction.current = null;
-    setReleased(true);
-    setConfirm(false);
-    router.replace(next as Href);
-  }, [router]);
+  const complete = useCallback(
+    (next: SafeRedirect) => {
+      if (!focusedRef.current || completionRef.current || releasedRef.current)
+        return;
+      completionRef.current = next;
+      releasedRef.current = true;
+      browserLeavePath.current = null;
+      browserLeaveTraversal.current = null;
+      pendingAction.current = null;
+      setReleased(true);
+      setConfirm(false);
+      router.replace(next as Href);
+    },
+    [router],
+  );
 
   const commitLeave = useCallback(() => {
     if (releasedRef.current) return;
     const action = pendingAction.current;
     const left = browserLeavePath.current;
+    const traversal = browserLeaveTraversal.current;
     pendingAction.current = null;
     browserLeavePath.current = null;
+    browserLeaveTraversal.current = null;
     releasedRef.current = true;
     setReleased(true);
     setConfirm(false);
     const commit = authLeaveCommit({ hasNavigationAction: action !== null });
     if (commit === 'dispatch' && action) {
       navigation.dispatch(action as never);
+      return;
+    }
+    if (traversal && typeof window !== 'undefined') {
+      // Finish the interrupted Back/Forward: history already holds the
+      // original entries, so replay the same delta instead of pushing a copy.
+      window.history.go(-traversal.delta);
       return;
     }
     router.replace((left ? authBrowserLeaveTarget(left) : destination) as Href);
@@ -179,6 +216,7 @@ export function AuthViewport(props: AuthViewportProps) {
       released: false,
     });
     browserLeavePath.current = null;
+    browserLeaveTraversal.current = null;
     pendingAction.current = null;
     if (decision === 'keep') return;
     if (decision === 'allow') {
@@ -214,6 +252,7 @@ export function AuthViewport(props: AuthViewportProps) {
       if (decision === 'keep') return;
       pendingAction.current = action;
       browserLeavePath.current = null;
+      browserLeaveTraversal.current = null;
       openConfirm();
     },
   );
@@ -230,7 +269,8 @@ export function AuthViewport(props: AuthViewportProps) {
   }, [height, presentation]);
 
   useEffect(() => {
-    if (Platform.OS !== 'web' || typeof document === 'undefined' || !focused) return;
+    if (Platform.OS !== 'web' || typeof document === 'undefined' || !focused)
+      return;
     const onFocusIn = (event: FocusEvent) => {
       const target = event.target;
       if (!(target instanceof HTMLElement)) return;
@@ -243,6 +283,7 @@ export function AuthViewport(props: AuthViewportProps) {
   const continueForm = () => {
     pendingAction.current = null;
     browserLeavePath.current = null;
+    browserLeaveTraversal.current = null;
     setConfirm(false);
     const element = returnFocus.current;
     if (Platform.OS === 'web') {
@@ -278,7 +319,10 @@ export function AuthViewport(props: AuthViewportProps) {
     : tone === 'login'
       ? designTokens.auth.loginGap
       : designTokens.auth.sectionGap;
-  const formGap = tone === 'login' ? designTokens.auth.loginFormGap : designTokens.auth.formGap;
+  const formGap =
+    tone === 'login'
+      ? designTokens.auth.loginFormGap
+      : designTokens.auth.formGap;
   const frameStyle = appDialogHostStyle({
     presentation: 'sheet',
     viewportGutter: designTokens.space.x5,
@@ -309,16 +353,27 @@ export function AuthViewport(props: AuthViewportProps) {
             <View
               pointerEvents={focused ? 'box-none' : 'none'}
               accessibilityElementsHidden={!focused}
-              importantForAccessibility={focused ? 'auto' : 'no-hide-descendants'}
+              importantForAccessibility={
+                focused ? 'auto' : 'no-hide-descendants'
+              }
               style={
                 focused
-                  ? { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }
+                  ? {
+                      position: 'absolute',
+                      top: 0,
+                      right: 0,
+                      bottom: 0,
+                      left: 0,
+                    }
                   : { display: 'none' }
               }
               {...(Platform.OS === 'web' && !focused ? { inert: true } : {})}
             >
               {screen ? null : (
-                <Animated.View entering={sheetBackdropEnter} exiting={sheetBackdropExit}>
+                <Animated.View
+                  entering={sheetBackdropEnter}
+                  exiting={sheetBackdropExit}
+                >
                   <AppDialogOverlay
                     style={{
                       inset: 0,
@@ -329,7 +384,11 @@ export function AuthViewport(props: AuthViewportProps) {
                 </Animated.View>
               )}
               <AppDialogFrame style={frameStyle}>
-                <Animated.View entering={entering} exiting={sheetExit} style={{ width: '100%' }}>
+                <Animated.View
+                  entering={entering}
+                  exiting={sheetExit}
+                  style={{ width: '100%' }}
+                >
                   <Dialog.Content
                     forceMount={Platform.OS === 'web' ? true : undefined}
                     nativeID={focused ? 'auth-sheet' : undefined}
@@ -338,17 +397,32 @@ export function AuthViewport(props: AuthViewportProps) {
                       position: 'relative',
                       width: '100%',
                       maxWidth: designTokens.layout.sheetMax,
-                      maxHeight: screen ? height : Math.max(height - designTokens.space.x6, designTokens.size.input * 4),
+                      maxHeight: screen
+                        ? height
+                        : Math.max(
+                            height - designTokens.space.x6,
+                            designTokens.size.input * 4,
+                          ),
                       minHeight: screen ? height : undefined,
                       overflow: 'hidden',
-                      borderTopLeftRadius: screen ? 0 : designTokens.auth.sheetRadius,
-                      borderTopRightRadius: screen ? 0 : designTokens.auth.sheetRadius,
+                      borderTopLeftRadius: screen
+                        ? 0
+                        : designTokens.auth.sheetRadius,
+                      borderTopRightRadius: screen
+                        ? 0
+                        : designTokens.auth.sheetRadius,
                       borderBottomLeftRadius: 0,
                       borderBottomRightRadius: 0,
                       backgroundColor: designTokens.color.canvas,
-                      paddingTop: screen ? designTokens.auth.screenPaddingTop : designTokens.auth.paddingTop,
-                      paddingHorizontal: screen ? designTokens.auth.screenPaddingX : designTokens.auth.paddingX,
-                      paddingBottom: screen ? designTokens.auth.screenPaddingBottom : designTokens.auth.paddingBottom,
+                      paddingTop: screen
+                        ? designTokens.auth.screenPaddingTop
+                        : designTokens.auth.paddingTop,
+                      paddingHorizontal: screen
+                        ? designTokens.auth.screenPaddingX
+                        : designTokens.auth.paddingX,
+                      paddingBottom: screen
+                        ? designTokens.auth.screenPaddingBottom
+                        : designTokens.auth.paddingBottom,
                       zIndex: designTokens.layer.modal,
                       justifyContent: screen ? 'flex-start' : undefined,
                     }}
@@ -360,7 +434,9 @@ export function AuthViewport(props: AuthViewportProps) {
                         importantForAccessibility="no-hide-descendants"
                         style={{
                           position: 'absolute',
-                          top: designTokens.auth.markTop + designTokens.auth.screenPaddingTop,
+                          top:
+                            designTokens.auth.markTop +
+                            designTokens.auth.screenPaddingTop,
                           left: 0,
                           right: 0,
                           height: designTokens.auth.markSlotHeight,
@@ -392,7 +468,9 @@ export function AuthViewport(props: AuthViewportProps) {
                         importantForAccessibility="no-hide-descendants"
                         style={{
                           position: 'absolute',
-                          bottom: designTokens.auth.wordmarkBottom + designTokens.auth.screenPaddingBottom,
+                          bottom:
+                            designTokens.auth.wordmarkBottom +
+                            designTokens.auth.screenPaddingBottom,
                           left: 0,
                           right: 0,
                           alignItems: 'center',
@@ -406,26 +484,62 @@ export function AuthViewport(props: AuthViewportProps) {
                       keyboardShouldPersistTaps="handled"
                       keyboardDismissMode="on-drag"
                       showsVerticalScrollIndicator={false}
-                      style={screen ? {
-                        flex: 1,
-                        marginTop: screenCentered ? 0 : brandInset.markClearance,
-                        marginBottom: screenCentered ? 0 : brandInset.wordmarkClearance,
-                      } : { maxHeight: Math.max(height - designTokens.space.x6 - designTokens.auth.paddingTop - designTokens.auth.paddingBottom, designTokens.size.input * 4) }}
+                      style={
+                        screen
+                          ? {
+                              flex: 1,
+                              marginTop: screenCentered
+                                ? 0
+                                : brandInset.markClearance,
+                              marginBottom: screenCentered
+                                ? 0
+                                : brandInset.wordmarkClearance,
+                            }
+                          : {
+                              maxHeight: Math.max(
+                                height -
+                                  designTokens.space.x6 -
+                                  designTokens.auth.paddingTop -
+                                  designTokens.auth.paddingBottom,
+                                designTokens.size.input * 4,
+                              ),
+                            }
+                      }
                       contentContainerStyle={{
                         gap: screen ? 0 : contentGap,
                         flexGrow: screen ? 1 : undefined,
-                        justifyContent: screen && screenCentered ? 'center' : undefined,
+                        justifyContent:
+                          screen && screenCentered ? 'center' : undefined,
                       }}
                     >
                       {screen ? (
                         <Dialog.Title asChild>
-                          <AppText role="sectionTitle" style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden' }}>
+                          <AppText
+                            role="sectionTitle"
+                            style={{
+                              position: 'absolute',
+                              width: 1,
+                              height: 1,
+                              overflow: 'hidden',
+                            }}
+                          >
                             {title}
                           </AppText>
                         </Dialog.Title>
                       ) : (
-                        <View style={{ height: designTokens.auth.headerHeight, gap: designTokens.auth.titleGap }}>
-                          <View style={{ height: designTokens.auth.handleSlot, alignItems: 'center', justifyContent: 'center' }}>
+                        <View
+                          style={{
+                            height: designTokens.auth.headerHeight,
+                            gap: designTokens.auth.titleGap,
+                          }}
+                        >
+                          <View
+                            style={{
+                              height: designTokens.auth.handleSlot,
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}
+                          >
                             <View
                               accessibilityElementsHidden
                               importantForAccessibility="no"
@@ -437,9 +551,23 @@ export function AuthViewport(props: AuthViewportProps) {
                               }}
                             />
                           </View>
-                          <View style={{ height: designTokens.typography.authSheetTitle.lineHeight, justifyContent: 'center' }}>
+                          <View
+                            style={{
+                              height:
+                                designTokens.typography.authSheetTitle
+                                  .lineHeight,
+                              justifyContent: 'center',
+                            }}
+                          >
                             <Dialog.Title asChild>
-                              <AppText role="sectionTitle" style={{ color: designTokens.color.fieldValue, ...designTokens.typography.authSheetTitle, paddingRight: 36 }}>
+                              <AppText
+                                role="sectionTitle"
+                                style={{
+                                  color: designTokens.color.fieldValue,
+                                  ...designTokens.typography.authSheetTitle,
+                                  paddingRight: 36,
+                                }}
+                              >
                                 {title}
                               </AppText>
                             </Dialog.Title>
@@ -448,7 +576,19 @@ export function AuthViewport(props: AuthViewportProps) {
                               accessibilityLabel="Закрыть"
                               onPress={requestDismiss}
                               preset="icon"
-                              style={{ position: 'absolute', right: 0, top: (designTokens.typography.authSheetTitle.lineHeight - 32) / 2, width: 32, height: 32, alignItems: 'center', justifyContent: 'center' }}
+                              style={{
+                                position: 'absolute',
+                                right: 0,
+                                top:
+                                  (designTokens.typography.authSheetTitle
+                                    .lineHeight -
+                                    32) /
+                                  2,
+                                width: 32,
+                                height: 32,
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                              }}
                             >
                               <FigmaIcon name="x" size={22} />
                             </MotionPressable>
@@ -459,9 +599,16 @@ export function AuthViewport(props: AuthViewportProps) {
                         onLayout={(event) => {
                           if (!screen) return;
                           const next = event.nativeEvent.layout.height;
-                          setScreenContentHeight((current) => (current === next ? current : next));
+                          setScreenContentHeight((current) =>
+                            current === next ? current : next,
+                          );
                         }}
-                        style={{ gap: screen ? 0 : formGap, width: '100%', maxWidth: 350, alignSelf: 'center' }}
+                        style={{
+                          gap: screen ? 0 : formGap,
+                          width: '100%',
+                          maxWidth: 350,
+                          alignSelf: 'center',
+                        }}
                       >
                         {children}
                       </View>
@@ -474,7 +621,12 @@ export function AuthViewport(props: AuthViewportProps) {
         </Dialog.Root>
       </AuthSheetGuardProvider>
       {focused && exit ? (
-        <AuthExitConfirm open={confirm} copy={exit} onLeave={commitLeave} onContinue={continueForm} />
+        <AuthExitConfirm
+          open={confirm}
+          copy={exit}
+          onLeave={commitLeave}
+          onContinue={continueForm}
+        />
       ) : null}
     </View>
   );
