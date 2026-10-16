@@ -116,6 +116,7 @@ describe('revision-backed Work Story editor', () => {
     window.localStorage.setItem(
       draftKey,
       JSON.stringify({
+        revisionId,
         token: 0,
         blocks: [{ key: 'stale-key', type: 'PARAGRAPH', text: 'Текст' }],
       }),
@@ -143,6 +144,103 @@ describe('revision-backed Work Story editor', () => {
     expect(view.editor.dirty).toBe(false);
   });
 
+  it('hydrates a new server revision instead of keeping the old revision text', () => {
+    const storyR1 = {
+      storyToken: 4,
+      blocks: [
+        {
+          id: blockId,
+          position: 0,
+          type: 'PARAGRAPH' as const,
+          text: 'Old',
+        },
+      ],
+    };
+    const view = mount('user-a', storyR1);
+    const storyR2 = {
+      storyToken: 0,
+      blocks: [
+        {
+          id: '89999999-9999-4999-8999-999999999999',
+          position: 0,
+          type: 'PARAGRAPH' as const,
+          text: 'New revision',
+        },
+      ],
+    };
+    // The product moved to a new editing revision (created outside this
+    // editor). No own save is in flight, so the server baseline wins.
+    view.render(1, '92222222-2222-4222-8222-222222222222', storyR2);
+    const texts = view.editor.blocks.map((block) =>
+      block.type === 'IMAGE' ? '' : block.text,
+    );
+    expect(texts).toEqual(['New revision']);
+    expect(view.editor.dirty).toBe(false);
+  });
+
+  it('does not apply a stored draft that belongs to a different revision', () => {
+    const storyR2 = {
+      storyToken: 0,
+      blocks: [
+        {
+          id: '89999999-9999-4999-8999-999999999999',
+          position: 0,
+          type: 'PARAGRAPH' as const,
+          text: 'New revision',
+        },
+      ],
+    };
+    const draftKey = `bidplace:draft:user-a:product-story:${workId}`;
+    const stored = JSON.stringify({
+      v: 2,
+      revisionId: '92222222-2222-4222-8222-222222222222',
+      token: 4,
+      blocks: [{ key: 'old-key', type: 'PARAGRAPH', text: 'Old local draft' }],
+    });
+    window.localStorage.setItem(draftKey, stored);
+    const view = mount('user-a', storyR2);
+    const texts = view.editor.blocks.map((block) =>
+      block.type === 'IMAGE' ? '' : block.text,
+    );
+    expect(texts).toEqual(['New revision']);
+    expect(view.editor.dirty).toBe(false);
+    // The incompatible record stays untouched for manual recovery…
+    expect(window.localStorage.getItem(draftKey)).toBe(stored);
+    // …and the author sees why the local copy was not applied.
+    expect(view.editor.storageError).toContain('другой редакции');
+  });
+
+  it('does not apply a legacy stored draft without a revision id', () => {
+    const serverStory = {
+      storyToken: 1,
+      blocks: [
+        {
+          id: blockId,
+          position: 0,
+          type: 'PARAGRAPH' as const,
+          text: 'Серверный абзац',
+        },
+      ],
+    };
+    const draftKey = `bidplace:draft:user-a:product-story:${workId}`;
+    const stored = JSON.stringify({
+      v: 2,
+      token: 1,
+      blocks: [
+        { key: 'legacy-key', type: 'PARAGRAPH', text: 'Старый черновик' },
+      ],
+    });
+    window.localStorage.setItem(draftKey, stored);
+    const view = mount('user-a', serverStory);
+    const texts = view.editor.blocks.map((block) =>
+      block.type === 'IMAGE' ? '' : block.text,
+    );
+    expect(texts).toEqual(['Серверный абзац']);
+    expect(view.editor.dirty).toBe(false);
+    expect(view.editor.storageError).toContain('другой редакции');
+    expect(window.localStorage.getItem(draftKey)).toBe(stored);
+  });
+
   it('restores only the text the server does not have yet', () => {
     const serverStory = {
       storyToken: 1,
@@ -160,6 +258,7 @@ describe('revision-backed Work Story editor', () => {
     window.localStorage.setItem(
       draftKey,
       JSON.stringify({
+        revisionId,
         token: 1,
         blocks: [
           // Saved earlier from a client session: same content, client-side key.
@@ -169,7 +268,7 @@ describe('revision-backed Work Story editor', () => {
       }),
     );
     // An auth-epoch bump re-runs the restore against the same story.
-    view.render(2);
+    view.render(2, revisionId);
     const texts = view.editor.blocks.map((block) =>
       block.type === 'IMAGE' ? '' : block.text,
     );
@@ -200,6 +299,7 @@ describe('revision-backed Work Story editor', () => {
       draftKey,
       JSON.stringify({
         v: 2,
+        revisionId,
         token: 0,
         blocks: [
           { key: 'local-1', type: 'PARAGRAPH', text: 'Незавершённый абзац' },
@@ -254,12 +354,13 @@ describe('revision-backed Work Story editor', () => {
       draftKey,
       JSON.stringify({
         v: 2,
+        revisionId,
         token: 1,
         blocks: [{ key: blockId, type: 'PARAGRAPH', text: 'Edited' }],
       }),
     );
     const view = mount('user-a', serverStory);
-    view.render(2);
+    view.render(2, revisionId);
     expect(view.editor.blocks).toHaveLength(1);
     expect(view.editor.blocks[0]).toMatchObject({
       id: blockId,
@@ -292,6 +393,7 @@ describe('revision-backed Work Story editor', () => {
       draftKey,
       JSON.stringify({
         v: 2,
+        revisionId,
         token: 1,
         // Второй переставлен наверх; третий (локальный) удалён; первый переименован.
         blocks: [
@@ -301,7 +403,7 @@ describe('revision-backed Work Story editor', () => {
       }),
     );
     const view = mount('user-a', serverStory);
-    view.render(2);
+    view.render(2, revisionId);
     expect(
       view.editor.blocks.map((block) =>
         block.type === 'IMAGE' ? '' : block.text,
@@ -334,6 +436,7 @@ describe('revision-backed Work Story editor', () => {
       draftKey,
       JSON.stringify({
         v: 2,
+        revisionId,
         token: 1,
         blocks: [
           { key: blockId, type: 'PARAGRAPH', text: 'Одинаковый' },
@@ -343,7 +446,7 @@ describe('revision-backed Work Story editor', () => {
       }),
     );
     const view = mount('user-a', serverStory);
-    view.render(2);
+    view.render(2, revisionId);
     expect(view.editor.blocks).toHaveLength(3);
     expect(
       view.editor.blocks.map((block) =>
@@ -367,10 +470,10 @@ describe('revision-backed Work Story editor', () => {
     const draftKey = `bidplace:draft:user-a:product-story:${workId}`;
     window.localStorage.setItem(
       draftKey,
-      JSON.stringify({ v: 2, token: 1, blocks: [] }),
+      JSON.stringify({ v: 2, revisionId, token: 1, blocks: [] }),
     );
     const view = mount('user-a', serverStory);
-    view.render(2);
+    view.render(2, revisionId);
     expect(view.editor.blocks).toEqual([]);
     expect(view.editor.dirty).toBe(true);
   });
@@ -401,6 +504,7 @@ describe('revision-backed Work Story editor', () => {
       draftKey,
       JSON.stringify({
         v: 2,
+        revisionId,
         token: 1,
         blocks: [
           { key: blockId, type: 'PARAGRAPH', text: 'До изменено' },
@@ -414,7 +518,7 @@ describe('revision-backed Work Story editor', () => {
       }),
     );
     const view = mount('user-a', serverStory);
-    view.render(2);
+    view.render(2, revisionId);
     expect(view.editor.blocks).toMatchObject([
       { id: blockId, type: 'PARAGRAPH', text: 'До изменено' },
       {

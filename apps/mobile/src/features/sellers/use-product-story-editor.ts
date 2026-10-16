@@ -44,6 +44,10 @@ const storyStoredBlockSchema = z.discriminatedUnion('type', [
 
 export const storyLocalDraftSchema = z.object({
   v: z.literal(2).optional(),
+  // The server revision this draft belongs to. A draft without a revision id
+  // is ambiguous (written before revision tracking) and must never be applied
+  // to a concrete revision.
+  revisionId: z.string().optional(),
   token: z.number(),
   blocks: z.array(storyStoredBlockSchema),
 });
@@ -88,6 +92,12 @@ type DraftState = {
   error: string | null;
   /** True once this state incorporates a real server story snapshot. */
   serverHydrated: boolean;
+  /**
+   * Set when a stored draft was skipped because it belongs to a different
+   * server revision (or has no revision id): the record is kept untouched
+   * for manual recovery but is never applied to this revision.
+   */
+  storageError: string | null;
 };
 
 function editableBlock(
@@ -119,6 +129,7 @@ function fromServer(identity: string, story?: StorySnapshot): DraftState {
     pending: false,
     error: null,
     serverHydrated: story !== undefined,
+    storageError: null,
   };
 }
 
@@ -173,8 +184,14 @@ export function useProductStoryEditor({
   const writer = useRef(createDraftWriter());
   const accountRef = useRef(accountId);
   const productRef = useRef(productId);
+  const revisionRef = useRef(revisionId);
   accountRef.current = accountId;
   productRef.current = productId;
+  revisionRef.current = revisionId;
+  // Result of the last confirmed own save. Only this specific operation may
+  // reconcile a later refetch against the editor state — never a heuristic.
+  const confirmedSave = useRef<{ storyToken: number } | null>(null);
+  const lastEffectRevision = useRef(revisionId);
   const persistedAssets = useRef<Set<string>>(
     new Set(
       (story?.blocks ?? []).flatMap((block) =>
@@ -198,6 +215,7 @@ export function useProductStoryEditor({
       if (accountDraftEpoch(account) !== epoch) return;
       const draft: StoryLocalDraft = {
         v: 2,
+        revisionId: revisionRef.current,
         token: current.current.token,
         blocks: storedBlocksOf(current.current.blocks),
       };
@@ -214,9 +232,21 @@ export function useProductStoryEditor({
     if (!key) return base;
     const stored = readFormDraft(key, storyLocalDraftSchema);
     if (!stored) return base;
+    if (stored.revisionId !== revisionRef.current) {
+      // A draft from another revision (or written before revision tracking)
+      // must not overwrite this revision's story. Keep the record untouched
+      // for manual recovery and surface a notice instead of applying it.
+      if (stored.blocks.length === 0 && stored.token === 0) return base;
+      return {
+        ...base,
+        storageError:
+          'Локальная копия истории относится к другой редакции работы и не может быть восстановлена автоматически.',
+      };
+    }
     const serverToken = storySnapshot?.storyToken ?? 0;
     if (stored.token < serverToken) {
-      // A newer server story exists; the last server save wins.
+      // A newer server story exists within this revision; the last server
+      // save wins. (Tokens are only comparable inside one revision.)
       clearFormDraft(key);
       return base;
     }
@@ -325,19 +355,23 @@ export function useProductStoryEditor({
       outstanding.current = null;
       pendingImage.current = null;
       retry.current = null;
-      // Own save moved the story to a new revision: the same product stays,
-      // so keep the saved blocks instead of restoring a stale snapshot. Only
-      // a state that already holds a server snapshot may be retagged — a
-      // pre-hydration empty state must hydrate normally (cold server read).
-      const sameProduct =
-        previous.identity.split(':').slice(0, 2).join(':') ===
-        identity.split(':').slice(0, 2).join(':');
+      const revisionChanged = lastEffectRevision.current !== revisionId;
+      lastEffectRevision.current = revisionId;
+      const confirmed = confirmedSave.current;
       if (
-        sameProduct &&
+        revisionChanged &&
+        confirmed &&
         !previous.dirty &&
         !previous.pending &&
-        previous.serverHydrated
+        previous.serverHydrated &&
+        (story?.storyToken ?? 0) <= confirmed.storyToken
       ) {
+        // Own save confirmed by the server, then the product moved to a new
+        // editing revision whose snapshot still predates that save (the
+        // response carries the pre-save story). The server creates the new
+        // revision as a copy of the published one, which already holds the
+        // confirmed blocks, so keep them instead of regressing the wizard.
+        confirmedSave.current = null;
         persistedAssets.current = new Set(
           previous.blocks.flatMap((block) =>
             block.type === 'IMAGE' ? [block.mediaAssetId] : [],
@@ -347,6 +381,7 @@ export function useProductStoryEditor({
         replace({ ...previous, identity });
         return;
       }
+      confirmedSave.current = null;
       persistedAssets.current = new Set(
         (story?.blocks ?? []).flatMap((block) =>
           block.type === 'IMAGE' ? [block.mediaAssetId] : [],
@@ -363,6 +398,8 @@ export function useProductStoryEditor({
       !previous.pending &&
       story.storyToken > previous.token
     ) {
+      // A newer token within the same revision is an external save; it wins.
+      confirmedSave.current = null;
       persistedAssets.current = new Set(
         story.blocks.flatMap((block) =>
           block.type === 'IMAGE' ? [block.mediaAssetId] : [],
@@ -370,7 +407,7 @@ export function useProductStoryEditor({
       );
       replace(fromServer(identity, story));
     }
-  }, [identity, story?.storyToken]);
+  }, [identity, revisionId, story?.storyToken]);
 
   const change = (
     update: (blocks: EditableStoryBlock[]) => EditableStoryBlock[],
@@ -389,6 +426,7 @@ export function useProductStoryEditor({
       error: null,
     });
     retry.current = null;
+    confirmedSave.current = null;
     persistDraft();
   };
 
@@ -580,6 +618,7 @@ export function useProductStoryEditor({
           dirty: false,
           pending: false,
         });
+        confirmedSave.current = { storyToken: result.storyToken };
         // change() blocks input while pending, so the confirmed response is
         // the whole local operation — drop the stored copy for this identity.
         clearLocalDraft();
@@ -622,6 +661,7 @@ export function useProductStoryEditor({
     dirty: state.dirty,
     pending: state.pending,
     error: state.error,
+    storageError: state.storageError,
     retryUpload: pendingImage.current !== null,
     // Synchronous read for guard effects: rendered dirty/pending can lag one
     // commit behind when a save response lands before the effect phase.

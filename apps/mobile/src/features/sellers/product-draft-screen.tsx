@@ -312,9 +312,9 @@ export function ProductDraftScreen({
             }
           />
 
-          {restore.storageError ? (
+          {restore.storageError || storyEditor.storageError ? (
             <AppText role="bodySmall" tone="danger">
-              {restore.storageError}
+              {restore.storageError ?? storyEditor.storageError}
             </AppText>
           ) : null}
 
