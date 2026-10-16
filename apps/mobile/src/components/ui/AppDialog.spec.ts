@@ -10,6 +10,7 @@ import {
 } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { ThemeProvider } from '../../providers/theme-provider';
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
@@ -123,16 +124,41 @@ vi.mock('react-native', () => ({
     isReduceMotionEnabled: () => Promise.resolve(false),
     addEventListener: () => ({ remove() {} }),
   },
-  View: forwardRef(function View({ children }: { children?: ReactNode }, ref) {
-    return createElement('div', { ref }, children);
+  View: forwardRef(function View(
+    { children, style }: { children?: ReactNode; style?: unknown },
+    ref,
+  ) {
+    return createElement(
+      'div',
+      { ref, style: flattenStyle(style) as React.CSSProperties },
+      children,
+    );
   }),
   Text: ({ children }: { children?: ReactNode }) =>
     createElement('span', null, children),
   ScrollView: forwardRef(function ScrollView(
-    { children }: { children?: ReactNode },
+    {
+      children,
+      style,
+      contentContainerStyle,
+    }: {
+      children?: ReactNode;
+      style?: unknown;
+      contentContainerStyle?: unknown;
+    },
     ref,
   ) {
-    return createElement('div', { ref }, children);
+    return createElement(
+      'div',
+      { ref, style: flattenStyle(style) as React.CSSProperties },
+      createElement(
+        'div',
+        {
+          style: flattenStyle(contentContainerStyle) as React.CSSProperties,
+        },
+        children,
+      ),
+    );
   }),
   Pressable: forwardRef(function Pressable(
     props: {
@@ -726,6 +752,50 @@ describe('AppDialog web focus lifecycle', () => {
     expect(document.activeElement).not.toBe(first);
     expect(secondFocus).toHaveBeenCalledTimes(1);
     expect(secondFocus).toHaveBeenCalledWith({ preventScroll: true });
+    view.unmount();
+  });
+
+  it('re-themes the mounted dialog surface without remounting', async () => {
+    const rgbOf = (hex: string) => {
+      const value = hex.replace('#', '');
+      const channels = [0, 2, 4].map((offset) =>
+        parseInt(value.slice(offset, offset + 2), 16),
+      );
+      return `rgb(${channels.join(', ')})`;
+    };
+    function Themed({ theme }: { theme: 'light' | 'black' }) {
+      return createElement(ThemeProvider, {
+        theme,
+        children: createElement(AppDialog, {
+          open: true,
+          title: 'Тема',
+          onClose: () => undefined,
+          children: dialogChildren(),
+        }),
+      });
+    }
+    const view = mount(createElement(Themed, { theme: 'light' }));
+    await flush();
+
+    const dialog = dialogByTitle('Тема');
+    if (!dialog) throw new Error('missing dialog');
+    const surfaceOf = (root: Element) =>
+      [...root.querySelectorAll('div')].find(
+        (node) =>
+          (node as HTMLElement).style.backgroundColor === rgbOf('#FFFFFF'),
+      ) as HTMLElement | undefined;
+    const lightSurface = surfaceOf(dialog);
+    if (!lightSurface) throw new Error('missing light dialog surface');
+
+    view.render(createElement(Themed, { theme: 'black' }));
+    await flush();
+
+    const blackSurface = [...dialog.querySelectorAll('div')].find(
+      (node) =>
+        (node as HTMLElement).style.backgroundColor === rgbOf('#1C1C1C'),
+    ) as HTMLElement | undefined;
+    expect(blackSurface).toBe(lightSurface);
+    expect(lightSurface.style.backgroundColor).toBe(rgbOf('#1C1C1C'));
     view.unmount();
   });
 });

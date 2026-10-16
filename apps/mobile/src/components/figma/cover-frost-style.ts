@@ -16,6 +16,8 @@ export function coverFrostSpec(
     runtimeBlur: top
       ? designTokens.blur.authorTopOverlay
       : designTokens.blur.overlay,
+    // Fully transparent anchor of the scrim ramp: theme-independent by
+    // definition (like the CSS mask #000 literals), so not a palette role.
     gradientStart: 'rgba(0, 0, 0, 0)',
     gradientEnd: top ? palette.overlayScrim : palette.overlay,
     artworkAspectRatio:

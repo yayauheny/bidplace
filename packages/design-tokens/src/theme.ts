@@ -36,6 +36,10 @@ export const lightColorMap = {
   divider: '#E2E2E2',
   chip: 'rgba(0, 0, 0, 0.15)',
   chipOutline: 'rgba(255, 255, 255, 0.16)',
+  // Gradient stroke stops of onDark/tinted chips (light values verbatim from
+  // the former literal in figma-chip-style).
+  chipBorderGradientStart: 'rgba(255, 255, 255, 0.16)',
+  chipBorderGradientEnd: 'rgba(153, 153, 153, 0.16)',
   placeholder: '#8A8A8A',
   action: '#292929',
   actionHover: '#000000',
@@ -127,6 +131,9 @@ export const blackColorMap: SemanticColorMap = {
   divider: '#2C2C2C',
   chip: 'rgba(255, 255, 255, 0.18)',
   chipOutline: 'rgba(0, 0, 0, 0.35)',
+  // Provisional black gradient stops for the chip stroke — NEEDS-FIGMA.
+  chipBorderGradientStart: 'rgba(255, 255, 255, 0.22)',
+  chipBorderGradientEnd: 'rgba(150, 150, 150, 0.22)',
   placeholder: '#8F8F8F',
   action: '#F2F2F2',
   actionHover: '#FFFFFF',

@@ -88,7 +88,7 @@ export function FilterSheet({
               width: 36,
               height: 4,
               borderRadius: 10,
-              backgroundColor: '#efefef',
+              backgroundColor: palette.quietFill,
               marginBottom: 16,
             }}
           />

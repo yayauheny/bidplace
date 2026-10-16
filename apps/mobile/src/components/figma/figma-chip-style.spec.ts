@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { designTokens } from '@bidplace/design-tokens';
+import { designTokens, type SemanticColorMap } from '@bidplace/design-tokens';
 
 import {
   figmaChipGradientColors,
@@ -70,6 +70,32 @@ describe('Figma chip styles', () => {
       paddingVertical: designTokens.space.authorChipY,
     });
     expect(designTokens.space.authorChipY).toBe(6);
+  });
+
+  it('reads both onDark/tinted gradient stops from the palette', () => {
+    // Light values are verbatim the former owner-helper literals.
+    expect(figmaChipGradientColors('onDark', designTokens.color)).toEqual({
+      start: designTokens.color.chipBorderGradientStart,
+      end: designTokens.color.chipBorderGradientEnd,
+    });
+    expect(figmaChipGradientColors('tinted', designTokens.color)).toEqual({
+      start: 'rgba(255, 255, 255, 0.16)',
+      end: 'rgba(153, 153, 153, 0.16)',
+    });
+    // A differing palette must change both stops — no static fallback.
+    const other: SemanticColorMap = {
+      ...designTokens.color,
+      chipBorderGradientStart: 'rgba(1, 2, 3, 0.5)',
+      chipBorderGradientEnd: 'rgba(4, 5, 6, 0.7)',
+    };
+    expect(figmaChipGradientColors('onDark', other)).toEqual({
+      start: 'rgba(1, 2, 3, 0.5)',
+      end: 'rgba(4, 5, 6, 0.7)',
+    });
+    expect(figmaChipGradientColors('tinted', other)).toEqual({
+      start: 'rgba(1, 2, 3, 0.5)',
+      end: 'rgba(4, 5, 6, 0.7)',
+    });
   });
 
   it('renders work chips with subdued text and work paddings', () => {
