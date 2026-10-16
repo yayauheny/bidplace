@@ -1,6 +1,9 @@
 import { expect, test, type Page } from '@playwright/test';
 
-import { createBuyerFixture, createSellerFixture } from './support/e2e-fixtures';
+import {
+  createBuyerFixture,
+  createSellerFixture,
+} from './support/e2e-fixtures';
 import { authenticatedPage } from './support/auth-session';
 import { fillControl } from './support/fill-control';
 
@@ -89,7 +92,9 @@ test.describe('local draft restore in a real browser', () => {
       await fillControl(await titleInput(page), 'Восстановленное название');
       await page.waitForTimeout(DRAFT_WRITE_WAIT_MS);
       await page.reload();
-      await expect(await titleInput(page)).toHaveValue('Восстановленное название');
+      await expect(await titleInput(page)).toHaveValue(
+        'Восстановленное название',
+      );
 
       const patchPromise = page.waitForResponse(
         (response) =>
@@ -101,7 +106,9 @@ test.describe('local draft restore in a real browser', () => {
       // The restored draft is persisted on the saved entity; no second create.
       expect(creates).toEqual([]);
       await page.goto(`/products/${product.id}`);
-      await expect(await titleInput(page)).toHaveValue('Восстановленное название');
+      await expect(await titleInput(page)).toHaveValue(
+        'Восстановленное название',
+      );
     } finally {
       await context.close();
     }

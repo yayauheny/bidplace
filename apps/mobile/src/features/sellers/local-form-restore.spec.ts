@@ -51,7 +51,9 @@ function mountProduct(entityId = 'new', base: string | null = null) {
   let form!: UseFormReturn<ProductValues>;
   const root = createRoot(document.createElement('div'));
   function Harness({ baseToken }: { baseToken: string | null }) {
-    form = useForm<ProductValues>({ defaultValues: emptyProductDraftFormValues });
+    form = useForm<ProductValues>({
+      defaultValues: emptyProductDraftFormValues,
+    });
     void form.formState.isDirty;
     useLocalFormRestore({
       form,
@@ -131,9 +133,15 @@ it('drops a cached draft written for a different server revision', () => {
   vi.useFakeTimers();
   const key = 'bidplace:draft:user-a:product-draft:work-1';
   const view = mountProduct('work-1', 'revision-t1');
-  act(() => view.form.setValue('title', 'Несохранённое название', { shouldDirty: true }));
+  act(() =>
+    view.form.setValue('title', 'Несохранённое название', {
+      shouldDirty: true,
+    }),
+  );
   act(() => vi.advanceTimersByTime(500));
-  expect(JSON.parse(window.localStorage.getItem(key)!).values.title).toBe('Несохранённое название');
+  expect(JSON.parse(window.localStorage.getItem(key)!).values.title).toBe(
+    'Несохранённое название',
+  );
   view.rerender('revision-t2');
   act(() => vi.advanceTimersByTime(500));
   expect(view.form.getValues('title')).toBe('Несохранённое название');

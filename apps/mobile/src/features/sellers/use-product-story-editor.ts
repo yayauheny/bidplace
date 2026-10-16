@@ -13,7 +13,9 @@ import {
   writeFormDraft,
 } from '../../lib/local-form-draft';
 
-export type EditableStoryBlock = StoryWriteRequest['blocks'][number] & { key: string };
+export type EditableStoryBlock = StoryWriteRequest['blocks'][number] & {
+  key: string;
+};
 
 /**
  * Local restore covers unfinished story state; uploaded images stay
@@ -47,7 +49,10 @@ export const storyLocalDraftSchema = z.object({
 
 export type StoryLocalDraft = z.infer<typeof storyLocalDraftSchema>;
 
-function storyDraftKey(accountId: string | null, productId: string | undefined) {
+function storyDraftKey(
+  accountId: string | null,
+  productId: string | undefined,
+) {
   if (!accountId) return null;
   return formDraftKey(accountId, 'product-story', productId ?? 'new');
 }
@@ -57,9 +62,18 @@ function storedBlocksOf(blocks: readonly EditableStoryBlock[]) {
     // Server ids survive a remount; client keys identify not-yet-saved blocks.
     const key = block.id ?? block.key;
     if (block.type === 'IMAGE') {
-      return { key, type: 'IMAGE' as const, mediaAssetId: block.mediaAssetId, altText: block.altText ?? null };
+      return {
+        key,
+        type: 'IMAGE' as const,
+        mediaAssetId: block.mediaAssetId,
+        altText: block.altText ?? null,
+      };
     }
-    return { key, type: block.type as 'HEADING' | 'PARAGRAPH', text: block.text };
+    return {
+      key,
+      type: block.type as 'HEADING' | 'PARAGRAPH',
+      text: block.text,
+    };
   });
 }
 
@@ -75,7 +89,10 @@ type DraftState = {
   serverHydrated: boolean;
 };
 
-function editableBlock(block: StoryBlock, key: string = block.id): EditableStoryBlock {
+function editableBlock(
+  block: StoryBlock,
+  key: string = block.id,
+): EditableStoryBlock {
   switch (block.type) {
     case 'HEADING':
       return { id: block.id, key, type: block.type, text: block.text };
@@ -104,7 +121,9 @@ function fromServer(identity: string, story?: StorySnapshot): DraftState {
   };
 }
 
-function writeBlocks(blocks: readonly EditableStoryBlock[]): StoryWriteRequest['blocks'] {
+function writeBlocks(
+  blocks: readonly EditableStoryBlock[],
+): StoryWriteRequest['blocks'] {
   return blocks.map((block) => {
     if (block.type === 'IMAGE') {
       return {
@@ -142,7 +161,9 @@ export function useProductStoryEditor({
   canChange?: () => boolean;
 }) {
   const identity = `${authEpoch}:${productId ?? ''}:${revisionId ?? ''}`;
-  const [state, setState] = useState<DraftState>(() => fromServer(identity, story));
+  const [state, setState] = useState<DraftState>(() =>
+    fromServer(identity, story),
+  );
   const current = useRef(state);
   const outstanding = useRef<Promise<boolean> | null>(null);
   const retry = useRef<{ snapshot: string; key: string } | null>(null);
@@ -153,9 +174,13 @@ export function useProductStoryEditor({
   const productRef = useRef(productId);
   accountRef.current = accountId;
   productRef.current = productId;
-  const persistedAssets = useRef<Set<string>>(new Set(
-    (story?.blocks ?? []).flatMap((block) => block.type === 'IMAGE' ? [block.mediaAssetId] : []),
-  ));
+  const persistedAssets = useRef<Set<string>>(
+    new Set(
+      (story?.blocks ?? []).flatMap((block) =>
+        block.type === 'IMAGE' ? [block.mediaAssetId] : [],
+      ),
+    ),
+  );
 
   const replace = (next: DraftState) => {
     current.current = next;
@@ -175,7 +200,10 @@ export function useProductStoryEditor({
     });
   };
 
-  const restoreDraft = (identityNow: string, storySnapshot?: StorySnapshot): DraftState => {
+  const restoreDraft = (
+    identityNow: string,
+    storySnapshot?: StorySnapshot,
+  ): DraftState => {
     const key = storyDraftKey(accountRef.current, productRef.current);
     const base = fromServer(identityNow, storySnapshot);
     if (!key) return base;
@@ -218,7 +246,8 @@ export function useProductStoryEditor({
       blocks.push({ key: block.key, type: block.type, text: block.text });
     }
     const same =
-      JSON.stringify(writeBlocks(blocks)) === JSON.stringify(writeBlocks(base.blocks));
+      JSON.stringify(writeBlocks(blocks)) ===
+      JSON.stringify(writeBlocks(base.blocks));
     if (same) return base;
     return { ...base, blocks, dirty: true };
   };
@@ -226,9 +255,13 @@ export function useProductStoryEditor({
   // Legacy text-only payloads cannot record deletions/reordering/images, so
   // they keep the old content-merge semantics; the ambiguity is documented
   // in the wave report rather than guessed.
-  const restoreLegacy = (base: DraftState, stored: StoryLocalDraft): DraftState => {
+  const restoreLegacy = (
+    base: DraftState,
+    stored: StoryLocalDraft,
+  ): DraftState => {
     const storedTexts = stored.blocks.filter(
-      (block): block is z.infer<typeof storyTextBlockSchema> => block.type !== 'IMAGE',
+      (block): block is z.infer<typeof storyTextBlockSchema> =>
+        block.type !== 'IMAGE',
     );
     if (storedTexts.length === 0) return base;
     const serverCounts = new Map<string, number>();
@@ -251,7 +284,11 @@ export function useProductStoryEditor({
       ...base,
       blocks: [
         ...base.blocks,
-        ...fresh.map((block) => ({ key: block.key, type: block.type, text: block.text })),
+        ...fresh.map((block) => ({
+          key: block.key,
+          type: block.type,
+          text: block.text,
+        })),
       ],
       dirty: true,
     };
@@ -297,14 +334,18 @@ export function useProductStoryEditor({
         previous.serverHydrated
       ) {
         persistedAssets.current = new Set(
-          previous.blocks.flatMap((block) => block.type === 'IMAGE' ? [block.mediaAssetId] : []),
+          previous.blocks.flatMap((block) =>
+            block.type === 'IMAGE' ? [block.mediaAssetId] : [],
+          ),
         );
         restoredFor.current = identity;
         replace({ ...previous, identity });
         return;
       }
       persistedAssets.current = new Set(
-        (story?.blocks ?? []).flatMap((block) => block.type === 'IMAGE' ? [block.mediaAssetId] : []),
+        (story?.blocks ?? []).flatMap((block) =>
+          block.type === 'IMAGE' ? [block.mediaAssetId] : [],
+        ),
       );
       restoredFor.current = identity;
       replace(restoreDraft(identity, story));
@@ -318,81 +359,137 @@ export function useProductStoryEditor({
       story.storyToken > previous.token
     ) {
       persistedAssets.current = new Set(
-        story.blocks.flatMap((block) => block.type === 'IMAGE' ? [block.mediaAssetId] : []),
+        story.blocks.flatMap((block) =>
+          block.type === 'IMAGE' ? [block.mediaAssetId] : [],
+        ),
       );
       replace(fromServer(identity, story));
     }
   }, [identity, story?.storyToken]);
 
-  const change = (update: (blocks: EditableStoryBlock[]) => EditableStoryBlock[]) => {
+  const change = (
+    update: (blocks: EditableStoryBlock[]) => EditableStoryBlock[],
+  ) => {
     const previous = current.current;
-    if (previous.identity !== identity || previous.pending || canChange?.() === false) return;
-    replace({ ...previous, blocks: update(previous.blocks), dirty: true, error: null });
+    if (
+      previous.identity !== identity ||
+      previous.pending ||
+      canChange?.() === false
+    )
+      return;
+    replace({
+      ...previous,
+      blocks: update(previous.blocks),
+      dirty: true,
+      error: null,
+    });
     retry.current = null;
     persistDraft();
   };
 
   const addText = (type: 'HEADING' | 'PARAGRAPH') => {
-    const count = current.current.blocks.filter((block) => block.type !== 'IMAGE').length;
+    const count = current.current.blocks.filter(
+      (block) => block.type !== 'IMAGE',
+    ).length;
     if (count >= STORY_LIMITS.maxTextBlocks) return;
-    change((blocks) => [...blocks, { key: crypto.randomUUID(), type, text: '' }]);
+    change((blocks) => [
+      ...blocks,
+      { key: crypto.randomUUID(), type, text: '' },
+    ]);
   };
 
   const addGalleryImage = (mediaAssetId: string) => {
-    const count = current.current.blocks.filter((block) => block.type === 'IMAGE').length;
+    const count = current.current.blocks.filter(
+      (block) => block.type === 'IMAGE',
+    ).length;
     if (count >= STORY_LIMITS.maxImages) return;
-    change((blocks) => [...blocks, {
-      key: crypto.randomUUID(),
-      type: 'IMAGE',
-      mediaAssetId,
-      altText: null,
-    }]);
+    change((blocks) => [
+      ...blocks,
+      {
+        key: crypto.randomUUID(),
+        type: 'IMAGE',
+        mediaAssetId,
+        altText: null,
+      },
+    ]);
   };
 
   const editText = (key: string, text: string) =>
-    change((blocks) => blocks.map((block) =>
-      block.key === key && block.type !== 'IMAGE' ? { ...block, text } : block,
-    ));
+    change((blocks) =>
+      blocks.map((block) =>
+        block.key === key && block.type !== 'IMAGE'
+          ? { ...block, text }
+          : block,
+      ),
+    );
 
   const editAlt = (key: string, altText: string) =>
-    change((blocks) => blocks.map((block) =>
-      block.key === key && block.type === 'IMAGE' ? { ...block, altText: altText || null } : block,
-    ));
+    change((blocks) =>
+      blocks.map((block) =>
+        block.key === key && block.type === 'IMAGE'
+          ? { ...block, altText: altText || null }
+          : block,
+      ),
+    );
 
-  const remove = (key: string) => change((blocks) => blocks.filter((block) => block.key !== key));
+  const remove = (key: string) =>
+    change((blocks) => blocks.filter((block) => block.key !== key));
 
-  const move = (key: string, direction: -1 | 1) => change((blocks) => {
-    const index = blocks.findIndex((block) => block.key === key);
-    const target = index + direction;
-    if (index < 0 || target < 0 || target >= blocks.length) return blocks;
-    const next = [...blocks];
-    [next[index], next[target]] = [next[target]!, next[index]!];
-    return next;
-  });
+  const move = (key: string, direction: -1 | 1) =>
+    change((blocks) => {
+      const index = blocks.findIndex((block) => block.key === key);
+      const target = index + direction;
+      if (index < 0 || target < 0 || target >= blocks.length) return blocks;
+      const next = [...blocks];
+      [next[index], next[target]] = [next[target]!, next[index]!];
+      return next;
+    });
 
   const addImage = async (image?: Blob): Promise<boolean> => {
-    if (!productId || current.current.pending || current.current.identity !== identity || canChange?.() === false) return false;
-    if (current.current.blocks.filter((block) => block.type === 'IMAGE').length >= STORY_LIMITS.maxImages) {
-      replace({ ...current.current, error: 'Достигнут лимит изображений истории.' });
+    if (
+      !productId ||
+      current.current.pending ||
+      current.current.identity !== identity ||
+      canChange?.() === false
+    )
+      return false;
+    if (
+      current.current.blocks.filter((block) => block.type === 'IMAGE').length >=
+      STORY_LIMITS.maxImages
+    ) {
+      replace({
+        ...current.current,
+        error: 'Достигнут лимит изображений истории.',
+      });
       return false;
     }
     if (image && image.size > STORY_LIMITS.maxFileBytes) {
-      replace({ ...current.current, error: 'Фото истории должно быть не больше 5 МиБ.' });
+      replace({
+        ...current.current,
+        error: 'Фото истории должно быть не больше 5 МиБ.',
+      });
       return false;
     }
     if (image && pendingImage.current) {
-      replace({ ...current.current, error: 'Сначала повторите предыдущую загрузку.' });
+      replace({
+        ...current.current,
+        error: 'Сначала повторите предыдущую загрузку.',
+      });
       return false;
     }
-    const pending = pendingImage.current ?? (image
-      ? { image, key: crypto.randomUUID() }
-      : null);
+    const pending =
+      pendingImage.current ??
+      (image ? { image, key: crypto.randomUUID() } : null);
     if (!pending) return false;
     pendingImage.current = pending;
     const previous = current.current;
     replace({ ...previous, pending: true, error: null });
     try {
-      const result = await api.images.addStoryImage(productId, pending.image, pending.key);
+      const result = await api.images.addStoryImage(
+        productId,
+        pending.image,
+        pending.key,
+      );
       if (current.current.identity !== identity) return false;
       pendingImage.current = null;
       uploaded.current.add(result.mediaAssetId);
@@ -400,12 +497,15 @@ export function useProductStoryEditor({
         ...current.current,
         pending: false,
         dirty: true,
-        blocks: [...current.current.blocks, {
-          key: crypto.randomUUID(),
-          type: 'IMAGE',
-          mediaAssetId: result.mediaAssetId,
-          altText: null,
-        }],
+        blocks: [
+          ...current.current.blocks,
+          {
+            key: crypto.randomUUID(),
+            type: 'IMAGE',
+            mediaAssetId: result.mediaAssetId,
+            altText: null,
+          },
+        ],
       });
       persistDraft();
       return true;
@@ -414,7 +514,8 @@ export function useProductStoryEditor({
         replace({
           ...current.current,
           pending: false,
-          error: 'Не удалось загрузить фото. Повторите загрузку без повторного выбора файла.',
+          error:
+            'Не удалось загрузить фото. Повторите загрузку без повторного выбора файла.',
         });
       }
       return false;
@@ -423,7 +524,8 @@ export function useProductStoryEditor({
 
   const save = async (): Promise<boolean> => {
     const before = current.current;
-    if (before.identity !== identity || before.pending || !productId) return false;
+    if (before.identity !== identity || before.pending || !productId)
+      return false;
     if (!before.dirty) return true;
     if (outstanding.current) return false;
     const blocks = writeBlocks(before.blocks);
@@ -434,7 +536,8 @@ export function useProductStoryEditor({
     if (!parsed.success) {
       replace({
         ...before,
-        error: 'Проверьте текст и ограничения блоков истории перед сохранением.',
+        error:
+          'Проверьте текст и ограничения блоков истории перед сохранением.',
       });
       return false;
     }
@@ -452,14 +555,26 @@ export function useProductStoryEditor({
         const saved = result.blocks.map((block, index) =>
           editableBlock(block, before.blocks[index]?.key ?? block.id),
         );
-        const removedAssets = [...new Set([
-          ...persistedAssets.current,
-          ...uploaded.current,
-        ])].filter((id) => !result.blocks.some((block) => block.type === 'IMAGE' && block.mediaAssetId === id));
-        persistedAssets.current = new Set(
-          result.blocks.flatMap((block) => block.type === 'IMAGE' ? [block.mediaAssetId] : []),
+        const removedAssets = [
+          ...new Set([...persistedAssets.current, ...uploaded.current]),
+        ].filter(
+          (id) =>
+            !result.blocks.some(
+              (block) => block.type === 'IMAGE' && block.mediaAssetId === id,
+            ),
         );
-        replace({ ...current.current, token: result.storyToken, blocks: saved, dirty: false, pending: false });
+        persistedAssets.current = new Set(
+          result.blocks.flatMap((block) =>
+            block.type === 'IMAGE' ? [block.mediaAssetId] : [],
+          ),
+        );
+        replace({
+          ...current.current,
+          token: result.storyToken,
+          blocks: saved,
+          dirty: false,
+          pending: false,
+        });
         // change() blocks input while pending, so the confirmed response is
         // the whole local operation — drop the stored copy for this identity.
         clearLocalDraft();
@@ -478,7 +593,8 @@ export function useProductStoryEditor({
           replace({
             ...current.current,
             pending: false,
-            error: 'История не сохранена. При конфликте с другой вкладкой сохраните текст и обновите страницу.',
+            error:
+              'История не сохранена. При конфликте с другой вкладкой сохраните текст и обновите страницу.',
           });
         }
         return false;
@@ -504,7 +620,8 @@ export function useProductStoryEditor({
     retryUpload: pendingImage.current !== null,
     // Synchronous read for guard effects: rendered dirty/pending can lag one
     // commit behind when a save response lands before the effect phase.
-    isEffectivelyClean: () => !current.current.dirty && !current.current.pending,
+    isEffectivelyClean: () =>
+      !current.current.dirty && !current.current.pending,
     addText,
     addGalleryImage,
     editText,

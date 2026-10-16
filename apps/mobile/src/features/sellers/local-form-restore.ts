@@ -119,7 +119,10 @@ export function useLocalFormRestore<TValues extends Record<string, unknown>>({
   useEffect(() => {
     const key = currentKey();
     if (!key) return;
-    const stored = readFormDraft<StoredDraftEnvelope>(key, storedDraftEnvelopeSchema);
+    const stored = readFormDraft<StoredDraftEnvelope>(
+      key,
+      storedDraftEnvelopeSchema,
+    );
     if (!stored) return;
     const expectedBase = entityRef.current === 'new' ? null : baseToken;
     if (entityRef.current !== 'new' && expectedBase === null) return;
@@ -130,7 +133,9 @@ export function useLocalFormRestore<TValues extends Record<string, unknown>>({
       return;
     }
     const current = form.getValues() as FieldShape;
-    const server = serverSnapshot ? (JSON.parse(serverSnapshot) as FieldShape) : null;
+    const server = serverSnapshot
+      ? (JSON.parse(serverSnapshot) as FieldShape)
+      : null;
     const matchesServer = server
       ? JSON.stringify(current) === serverSnapshot
       : !form.formState.isDirty;

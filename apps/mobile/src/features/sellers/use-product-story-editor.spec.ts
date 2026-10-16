@@ -15,12 +15,18 @@ const workId = '81111111-1111-4111-8111-111111111111';
 const revisionId = '82222222-2222-4222-8222-222222222222';
 const blockId = '83333333-3333-4333-8333-333333333333';
 const assetId = '84444444-4444-4444-8444-444444444444';
-const emptyStory: { storyToken: number; blocks: StoryBlock[] } = { storyToken: 0, blocks: [] };
+const emptyStory: { storyToken: number; blocks: StoryBlock[] } = {
+  storyToken: 0,
+  blocks: [],
+};
 const cases: Array<() => void> = [];
 
 type StorySnapshot = { storyToken: number; blocks: StoryBlock[] };
 
-function mount(accountId: string | null = null, story: StorySnapshot | null = emptyStory) {
+function mount(
+  accountId: string | null = null,
+  story: StorySnapshot | null = emptyStory,
+) {
   const replaceCreation = vi.fn().mockResolvedValue({
     storyToken: 1,
     blocks: [{ id: blockId, position: 0, type: 'PARAGRAPH', text: 'Текст' }],
@@ -54,7 +60,11 @@ function mount(accountId: string | null = null, story: StorySnapshot | null = em
     });
     return null;
   }
-  const render = (authEpoch: number, nextRevisionId?: string, nextStory?: StorySnapshot | null) => {
+  const render = (
+    authEpoch: number,
+    nextRevisionId?: string,
+    nextStory?: StorySnapshot | null,
+  ) => {
     act(() =>
       root.render(
         createElement(Probe, {
@@ -67,7 +77,14 @@ function mount(accountId: string | null = null, story: StorySnapshot | null = em
   };
   render(1, revisionId, story);
   cases.push(() => act(() => root.unmount()));
-  return { get editor() { return editor; }, render, replaceCreation, addStoryImage };
+  return {
+    get editor() {
+      return editor;
+    },
+    render,
+    replaceCreation,
+    addStoryImage,
+  };
 }
 
 afterEach(() => {
@@ -82,10 +99,13 @@ describe('revision-backed Work Story editor', () => {
     act(() => view.editor.addText('PARAGRAPH'));
     act(() => view.editor.editText(view.editor.blocks[0]!.key, 'Текст'));
     // A stale draft with the same content must not survive the save.
-    window.localStorage.setItem(draftKey, JSON.stringify({
-      token: 0,
-      blocks: [{ key: 'stale-key', type: 'PARAGRAPH', text: 'Текст' }],
-    }));
+    window.localStorage.setItem(
+      draftKey,
+      JSON.stringify({
+        token: 0,
+        blocks: [{ key: 'stale-key', type: 'PARAGRAPH', text: 'Текст' }],
+      }),
+    );
     await act(async () => {
       expect(await view.editor.save()).toBe(true);
     });
@@ -112,18 +132,28 @@ describe('revision-backed Work Story editor', () => {
   it('restores only the text the server does not have yet', () => {
     const serverStory = {
       storyToken: 1,
-      blocks: [{ id: blockId, position: 0, type: 'PARAGRAPH' as const, text: 'Серверный абзац' }],
+      blocks: [
+        {
+          id: blockId,
+          position: 0,
+          type: 'PARAGRAPH' as const,
+          text: 'Серверный абзац',
+        },
+      ],
     };
     const view = mount('user-a', serverStory);
     const draftKey = `bidplace:draft:user-a:product-story:${workId}`;
-    window.localStorage.setItem(draftKey, JSON.stringify({
-      token: 1,
-      blocks: [
-        // Saved earlier from a client session: same content, client-side key.
-        { key: 'client-key', type: 'PARAGRAPH', text: 'Серверный абзац' },
-        { key: 'client-key-2', type: 'PARAGRAPH', text: 'Новый абзац' },
-      ],
-    }));
+    window.localStorage.setItem(
+      draftKey,
+      JSON.stringify({
+        token: 1,
+        blocks: [
+          // Saved earlier from a client session: same content, client-side key.
+          { key: 'client-key', type: 'PARAGRAPH', text: 'Серверный абзац' },
+          { key: 'client-key-2', type: 'PARAGRAPH', text: 'Новый абзац' },
+        ],
+      }),
+    );
     // An auth-epoch bump re-runs the restore against the same story.
     view.render(2);
     const texts = view.editor.blocks.map((block) =>
@@ -152,15 +182,22 @@ describe('revision-backed Work Story editor', () => {
 
   it('restores unfinished text blocks on a plain mount', () => {
     const draftKey = `bidplace:draft:user-a:product-story:${workId}`;
-    window.localStorage.setItem(draftKey, JSON.stringify({
-      v: 2,
-      token: 0,
-      blocks: [{ key: 'local-1', type: 'PARAGRAPH', text: 'Незавершённый абзац' }],
-    }));
+    window.localStorage.setItem(
+      draftKey,
+      JSON.stringify({
+        v: 2,
+        token: 0,
+        blocks: [
+          { key: 'local-1', type: 'PARAGRAPH', text: 'Незавершённый абзац' },
+        ],
+      }),
+    );
     const view = mount('user-a');
-    expect(view.editor.blocks.map((block) => block.type === 'IMAGE' ? '' : block.text)).toEqual([
-      'Незавершённый абзац',
-    ]);
+    expect(
+      view.editor.blocks.map((block) =>
+        block.type === 'IMAGE' ? '' : block.text,
+      ),
+    ).toEqual(['Незавершённый абзац']);
     expect(view.editor.dirty).toBe(true);
   });
 
@@ -169,29 +206,51 @@ describe('revision-backed Work Story editor', () => {
     expect(view.editor.blocks).toEqual([]);
     view.render(1, '92222222-2222-4222-8222-222222222222', {
       storyToken: 3,
-      blocks: [{ id: blockId, position: 0, type: 'PARAGRAPH', text: 'Сохранённая история' }],
+      blocks: [
+        {
+          id: blockId,
+          position: 0,
+          type: 'PARAGRAPH',
+          text: 'Сохранённая история',
+        },
+      ],
     });
-    expect(view.editor.blocks.map((block) => block.type === 'IMAGE' ? '' : block.text)).toEqual([
-      'Сохранённая история',
-    ]);
+    expect(
+      view.editor.blocks.map((block) =>
+        block.type === 'IMAGE' ? '' : block.text,
+      ),
+    ).toEqual(['Сохранённая история']);
     expect(view.editor.dirty).toBe(false);
   });
 
   it('restores an edited persisted block in place instead of duplicating it', () => {
     const serverStory = {
       storyToken: 1,
-      blocks: [{ id: blockId, position: 0, type: 'PARAGRAPH' as const, text: 'Original' }],
+      blocks: [
+        {
+          id: blockId,
+          position: 0,
+          type: 'PARAGRAPH' as const,
+          text: 'Original',
+        },
+      ],
     };
     const draftKey = `bidplace:draft:user-a:product-story:${workId}`;
-    window.localStorage.setItem(draftKey, JSON.stringify({
-      v: 2,
-      token: 1,
-      blocks: [{ key: blockId, type: 'PARAGRAPH', text: 'Edited' }],
-    }));
+    window.localStorage.setItem(
+      draftKey,
+      JSON.stringify({
+        v: 2,
+        token: 1,
+        blocks: [{ key: blockId, type: 'PARAGRAPH', text: 'Edited' }],
+      }),
+    );
     const view = mount('user-a', serverStory);
     view.render(2);
     expect(view.editor.blocks).toHaveLength(1);
-    expect(view.editor.blocks[0]).toMatchObject({ id: blockId, text: 'Edited' });
+    expect(view.editor.blocks[0]).toMatchObject({
+      id: blockId,
+      text: 'Edited',
+    });
     expect(view.editor.dirty).toBe(true);
   });
 
@@ -200,26 +259,40 @@ describe('revision-backed Work Story editor', () => {
     const serverStory = {
       storyToken: 1,
       blocks: [
-        { id: blockId, position: 0, type: 'PARAGRAPH' as const, text: 'Первый' },
-        { id: secondBlockId, position: 1, type: 'PARAGRAPH' as const, text: 'Второй' },
+        {
+          id: blockId,
+          position: 0,
+          type: 'PARAGRAPH' as const,
+          text: 'Первый',
+        },
+        {
+          id: secondBlockId,
+          position: 1,
+          type: 'PARAGRAPH' as const,
+          text: 'Второй',
+        },
       ],
     };
     const draftKey = `bidplace:draft:user-a:product-story:${workId}`;
-    window.localStorage.setItem(draftKey, JSON.stringify({
-      v: 2,
-      token: 1,
-      // Второй переставлен наверх; третий (локальный) удалён; первый переименован.
-      blocks: [
-        { key: secondBlockId, type: 'PARAGRAPH', text: 'Второй' },
-        { key: blockId, type: 'PARAGRAPH', text: 'Первый изменённый' },
-      ],
-    }));
+    window.localStorage.setItem(
+      draftKey,
+      JSON.stringify({
+        v: 2,
+        token: 1,
+        // Второй переставлен наверх; третий (локальный) удалён; первый переименован.
+        blocks: [
+          { key: secondBlockId, type: 'PARAGRAPH', text: 'Второй' },
+          { key: blockId, type: 'PARAGRAPH', text: 'Первый изменённый' },
+        ],
+      }),
+    );
     const view = mount('user-a', serverStory);
     view.render(2);
-    expect(view.editor.blocks.map((block) => block.type === 'IMAGE' ? '' : block.text)).toEqual([
-      'Второй',
-      'Первый изменённый',
-    ]);
+    expect(
+      view.editor.blocks.map((block) =>
+        block.type === 'IMAGE' ? '' : block.text,
+      ),
+    ).toEqual(['Второй', 'Первый изменённый']);
     expect(view.editor.dirty).toBe(true);
   });
 
@@ -228,37 +301,60 @@ describe('revision-backed Work Story editor', () => {
     const serverStory = {
       storyToken: 1,
       blocks: [
-        { id: blockId, position: 0, type: 'PARAGRAPH' as const, text: 'Одинаковый' },
-        { id: secondBlockId, position: 1, type: 'PARAGRAPH' as const, text: 'Одинаковый' },
+        {
+          id: blockId,
+          position: 0,
+          type: 'PARAGRAPH' as const,
+          text: 'Одинаковый',
+        },
+        {
+          id: secondBlockId,
+          position: 1,
+          type: 'PARAGRAPH' as const,
+          text: 'Одинаковый',
+        },
       ],
     };
     const draftKey = `bidplace:draft:user-a:product-story:${workId}`;
-    window.localStorage.setItem(draftKey, JSON.stringify({
-      v: 2,
-      token: 1,
-      blocks: [
-        { key: blockId, type: 'PARAGRAPH', text: 'Одинаковый' },
-        { key: secondBlockId, type: 'PARAGRAPH', text: 'Одинаковый' },
-        { key: 'local-1', type: 'PARAGRAPH', text: 'Одинаковый' },
-      ],
-    }));
+    window.localStorage.setItem(
+      draftKey,
+      JSON.stringify({
+        v: 2,
+        token: 1,
+        blocks: [
+          { key: blockId, type: 'PARAGRAPH', text: 'Одинаковый' },
+          { key: secondBlockId, type: 'PARAGRAPH', text: 'Одинаковый' },
+          { key: 'local-1', type: 'PARAGRAPH', text: 'Одинаковый' },
+        ],
+      }),
+    );
     const view = mount('user-a', serverStory);
     view.render(2);
     expect(view.editor.blocks).toHaveLength(3);
-    expect(view.editor.blocks.map((block) => block.type === 'IMAGE' ? '' : block.text)).toEqual([
-      'Одинаковый',
-      'Одинаковый',
-      'Одинаковый',
-    ]);
+    expect(
+      view.editor.blocks.map((block) =>
+        block.type === 'IMAGE' ? '' : block.text,
+      ),
+    ).toEqual(['Одинаковый', 'Одинаковый', 'Одинаковый']);
   });
 
   it('restores the deletion of every text block', () => {
     const serverStory = {
       storyToken: 1,
-      blocks: [{ id: blockId, position: 0, type: 'PARAGRAPH' as const, text: 'Единственный' }],
+      blocks: [
+        {
+          id: blockId,
+          position: 0,
+          type: 'PARAGRAPH' as const,
+          text: 'Единственный',
+        },
+      ],
     };
     const draftKey = `bidplace:draft:user-a:product-story:${workId}`;
-    window.localStorage.setItem(draftKey, JSON.stringify({ v: 2, token: 1, blocks: [] }));
+    window.localStorage.setItem(
+      draftKey,
+      JSON.stringify({ v: 2, token: 1, blocks: [] }),
+    );
     const view = mount('user-a', serverStory);
     view.render(2);
     expect(view.editor.blocks).toEqual([]);
@@ -271,24 +367,48 @@ describe('revision-backed Work Story editor', () => {
       storyToken: 1,
       blocks: [
         { id: blockId, position: 0, type: 'PARAGRAPH' as const, text: 'До' },
-        { id: imageBlockId, position: 1, type: 'IMAGE' as const, mediaAssetId: assetId, altText: null },
-        { id: '87777777-7777-4777-8777-777777777777', position: 2, type: 'PARAGRAPH' as const, text: 'После' },
+        {
+          id: imageBlockId,
+          position: 1,
+          type: 'IMAGE' as const,
+          mediaAssetId: assetId,
+          altText: null,
+        },
+        {
+          id: '87777777-7777-4777-8777-777777777777',
+          position: 2,
+          type: 'PARAGRAPH' as const,
+          text: 'После',
+        },
       ],
     };
     const draftKey = `bidplace:draft:user-a:product-story:${workId}`;
-    window.localStorage.setItem(draftKey, JSON.stringify({
-      v: 2,
-      token: 1,
-      blocks: [
-        { key: blockId, type: 'PARAGRAPH', text: 'До изменено' },
-        { key: imageBlockId, type: 'IMAGE', mediaAssetId: assetId, altText: 'Подпись' },
-      ],
-    }));
+    window.localStorage.setItem(
+      draftKey,
+      JSON.stringify({
+        v: 2,
+        token: 1,
+        blocks: [
+          { key: blockId, type: 'PARAGRAPH', text: 'До изменено' },
+          {
+            key: imageBlockId,
+            type: 'IMAGE',
+            mediaAssetId: assetId,
+            altText: 'Подпись',
+          },
+        ],
+      }),
+    );
     const view = mount('user-a', serverStory);
     view.render(2);
     expect(view.editor.blocks).toMatchObject([
       { id: blockId, type: 'PARAGRAPH', text: 'До изменено' },
-      { id: imageBlockId, type: 'IMAGE', mediaAssetId: assetId, altText: 'Подпись' },
+      {
+        id: imageBlockId,
+        type: 'IMAGE',
+        mediaAssetId: assetId,
+        altText: 'Подпись',
+      },
     ]);
     expect(view.editor.blocks).toHaveLength(2);
     expect(view.editor.dirty).toBe(true);
@@ -316,7 +436,9 @@ describe('revision-backed Work Story editor', () => {
     const view = mount();
     view.replaceCreation.mockRejectedValueOnce(new Error('conflict'));
     act(() => view.editor.addText('PARAGRAPH'));
-    act(() => view.editor.editText(view.editor.blocks[0]!.key, 'Сохранить локально'));
+    act(() =>
+      view.editor.editText(view.editor.blocks[0]!.key, 'Сохранить локально'),
+    );
     await act(async () => {
       expect(await view.editor.save()).toBe(false);
     });
@@ -331,11 +453,13 @@ describe('revision-backed Work Story editor', () => {
     const secondId = '85555555-5555-4555-8555-555555555555';
     view.replaceCreation.mockImplementationOnce(async (_id, request) => ({
       storyToken: 1,
-      blocks: request.blocks.map((block: Record<string, unknown>, index: number) => ({
-        ...block,
-        id: index === 0 ? blockId : secondId,
-        position: index,
-      })),
+      blocks: request.blocks.map(
+        (block: Record<string, unknown>, index: number) => ({
+          ...block,
+          id: index === 0 ? blockId : secondId,
+          position: index,
+        }),
+      ),
     }));
     act(() => {
       view.editor.addText('PARAGRAPH');
@@ -365,7 +489,15 @@ describe('revision-backed Work Story editor', () => {
     const view = mount();
     view.replaceCreation.mockResolvedValueOnce({
       storyToken: 1,
-      blocks: [{ id: blockId, position: 0, type: 'IMAGE', mediaAssetId: assetId, altText: null }],
+      blocks: [
+        {
+          id: blockId,
+          position: 0,
+          type: 'IMAGE',
+          mediaAssetId: assetId,
+          altText: null,
+        },
+      ],
     });
     act(() => view.editor.addGalleryImage(assetId));
     await act(async () => {
@@ -388,19 +520,28 @@ describe('revision-backed Work Story editor', () => {
     await act(async () => {
       expect(await view.editor.addImage()).toBe(true);
     });
-    expect(view.addStoryImage.mock.calls[0]?.[2]).toBe(view.addStoryImage.mock.calls[1]?.[2]);
-    expect(view.editor.blocks).toMatchObject([{ type: 'IMAGE', mediaAssetId: assetId }]);
+    expect(view.addStoryImage.mock.calls[0]?.[2]).toBe(
+      view.addStoryImage.mock.calls[1]?.[2],
+    );
+    expect(view.editor.blocks).toMatchObject([
+      { type: 'IMAGE', mediaAssetId: assetId },
+    ]);
   });
 
   it('does not add a completed upload from a previous authentication epoch', async () => {
     const view = mount();
     let deliver!: (response: { mediaAssetId: string }) => void;
-    view.addStoryImage.mockImplementationOnce(() => new Promise((resolve) => {
-      deliver = resolve;
-    }));
+    view.addStoryImage.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          deliver = resolve;
+        }),
+    );
     let uploaded!: Promise<boolean>;
     act(() => {
-      uploaded = view.editor.addImage(new Blob(['image'], { type: 'image/png' }));
+      uploaded = view.editor.addImage(
+        new Blob(['image'], { type: 'image/png' }),
+      );
     });
     view.render(2);
     await act(async () => {
