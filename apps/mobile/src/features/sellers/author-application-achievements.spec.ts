@@ -683,6 +683,22 @@ describe('Author application achievement lifecycle', () => {
     view.unmount();
   });
 
+  it('does not warn when the runtime has no Web Storage', async () => {
+    vi.stubGlobal('localStorage', undefined);
+    try {
+      const view = mount();
+      await openEditor(view);
+      fillAchievement(view.container, 'Alpha');
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      expect(view.container.textContent).not.toContain(
+        'черновик на устройстве',
+      );
+      view.unmount();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('does not resurrect a cleared achievement draft after logout', async () => {
     const view = mount();
     await openEditor(view);

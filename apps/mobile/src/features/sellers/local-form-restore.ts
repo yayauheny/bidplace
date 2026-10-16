@@ -7,6 +7,7 @@ import {
   DRAFT_STORAGE_ERROR_MESSAGE,
   clearFormDraft,
   createDraftWriter,
+  draftWriteNeedsWarning,
   formDraftKey,
   probeDraftStorage,
   readFormDraft,
@@ -121,7 +122,11 @@ export function useLocalFormRestore<TValues extends Record<string, unknown>>({
           base: baseRef.current,
           values: form.getValues(),
         });
-        setStorageError(written === 'ok' ? null : DRAFT_STORAGE_ERROR_MESSAGE);
+        // Only a failing storage API warns; a runtime without Web Storage
+        // simply has no browser drafts to promise.
+        setStorageError(
+          draftWriteNeedsWarning(written) ? DRAFT_STORAGE_ERROR_MESSAGE : null,
+        );
       });
     });
     return () => {
@@ -196,7 +201,8 @@ export function useLocalFormRestore<TValues extends Record<string, unknown>>({
         // The old 'new' draft goes away only when the copy under the real id
         // landed; otherwise the only snapshot would be destroyed.
         if (written === 'ok') clearFormDraft(key);
-        else setStorageError(DRAFT_STORAGE_ERROR_MESSAGE);
+        else if (draftWriteNeedsWarning(written))
+          setStorageError(DRAFT_STORAGE_ERROR_MESSAGE);
       }
       entityRef.current = newEntityId;
       baseRef.current = newBaseToken;

@@ -20,11 +20,25 @@ export function formDraftKey(
   return `${FORM_DRAFT_PREFIX}${accountId}:${scope}:${entityId}`;
 }
 
-function storage(): Storage | null {
+/**
+ * Storage access: 'ok' with the store, 'unsupported' when the runtime has no
+ * Web Storage (native), 'denied' when the API exists but access itself throws
+ * (e.g. the localStorage getter raising SecurityError in a sandboxed frame).
+ * Denied is a broken storage, not a missing one — writers report 'failed'.
+ */
+type StorageAccess =
+  | { kind: 'ok'; store: Storage }
+  | { kind: 'unsupported' }
+  | { kind: 'denied' };
+
+function storage(): StorageAccess {
+  // Note: `typeof localStorage` also invokes an accessor getter, so the
+  // missing-API guard must live inside the same try/catch as the access.
   try {
-    return typeof localStorage === 'undefined' ? null : localStorage;
+    if (typeof localStorage === 'undefined') return { kind: 'unsupported' };
+    return { kind: 'ok', store: localStorage };
   } catch {
-    return null;
+    return { kind: 'denied' };
   }
 }
 
@@ -35,18 +49,25 @@ function storage(): Storage | null {
  */
 export type DraftWriteResult = 'unsupported' | 'ok' | 'failed';
 
+/** Only a failing storage API deserves a user-facing warning; a runtime
+ * without Web Storage simply has no browser drafts to promise. */
+export function draftWriteNeedsWarning(result: DraftWriteResult): boolean {
+  return result === 'failed';
+}
+
 // Shown where the form renders when local drafts cannot be stored at all.
 export const DRAFT_STORAGE_ERROR_MESSAGE =
   'Не удалось сохранить черновик на устройстве. Введённый текст может не восстановиться.';
 
 /** Probes storage once: usable ('ok'), absent ('unsupported'), or broken ('failed'). */
 export function probeDraftStorage(): DraftWriteResult {
-  const store = storage();
-  if (!store) return 'unsupported';
+  const access = storage();
+  if (access.kind === 'unsupported') return 'unsupported';
+  if (access.kind === 'denied') return 'failed';
   try {
     const probe = `${FORM_DRAFT_PREFIX}probe`;
-    store.setItem(probe, '1');
-    store.removeItem(probe);
+    access.store.setItem(probe, '1');
+    access.store.removeItem(probe);
     return 'ok';
   } catch {
     return 'failed';
@@ -55,11 +76,11 @@ export function probeDraftStorage(): DraftWriteResult {
 
 /** Returns the parsed draft, or null when absent, invalid, or unreadable. */
 export function readFormDraft<T>(key: string, schema: ZodType<T>): T | null {
-  const store = storage();
-  if (!store) return null;
+  const access = storage();
+  if (access.kind !== 'ok') return null;
   let raw: string | null;
   try {
-    raw = store.getItem(key);
+    raw = access.store.getItem(key);
   } catch (error) {
     logInfrastructureError(error, 'local-form-draft:read');
     return null;
@@ -76,10 +97,11 @@ export function readFormDraft<T>(key: string, schema: ZodType<T>): T | null {
 
 /** Persists the draft. 'unsupported'/'failed' explain why nothing was written. */
 export function writeFormDraft(key: string, value: unknown): DraftWriteResult {
-  const store = storage();
-  if (!store) return 'unsupported';
+  const access = storage();
+  if (access.kind === 'unsupported') return 'unsupported';
+  if (access.kind === 'denied') return 'failed';
   try {
-    store.setItem(key, JSON.stringify(value));
+    access.store.setItem(key, JSON.stringify(value));
     return 'ok';
   } catch (error) {
     logInfrastructureError(error, 'local-form-draft:write');
@@ -88,12 +110,28 @@ export function writeFormDraft(key: string, value: unknown): DraftWriteResult {
 }
 
 export function clearFormDraft(key: string): void {
-  const store = storage();
-  if (!store) return;
+  const access = storage();
+  if (access.kind !== 'ok') return;
   try {
-    store.removeItem(key);
+    access.store.removeItem(key);
   } catch (error) {
     logInfrastructureError(error, 'local-form-draft:clear');
+  }
+}
+
+/** Removes every draft whose key starts with the prefix (entity boundary). */
+export function clearFormDraftsByPrefix(prefix: string): void {
+  const access = storage();
+  if (access.kind !== 'ok') return;
+  const stale: string[] = [];
+  try {
+    for (let index = 0; index < access.store.length; index += 1) {
+      const key = access.store.key(index);
+      if (key?.startsWith(prefix)) stale.push(key);
+    }
+    for (const key of stale) access.store.removeItem(key);
+  } catch (error) {
+    logInfrastructureError(error, 'local-form-draft:clear-prefix');
   }
 }
 
@@ -101,19 +139,7 @@ export function clearFormDraft(key: string): void {
 export function clearAccountFormDrafts(accountId: string): void {
   // Writers gated by the session-scoped draft write lease (query-cache) drop
   // their pending write once logout retires it; this cleans the keys.
-  const store = storage();
-  if (!store) return;
-  const prefix = `${FORM_DRAFT_PREFIX}${accountId}:`;
-  const stale: string[] = [];
-  try {
-    for (let index = 0; index < store.length; index += 1) {
-      const key = store.key(index);
-      if (key?.startsWith(prefix)) stale.push(key);
-    }
-    for (const key of stale) store.removeItem(key);
-  } catch (error) {
-    logInfrastructureError(error, 'local-form-draft:clear-account');
-  }
+  clearFormDraftsByPrefix(`${FORM_DRAFT_PREFIX}${accountId}:`);
 }
 
 /**

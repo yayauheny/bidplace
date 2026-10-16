@@ -124,8 +124,9 @@ test('published work → new editing revision keeps the story; a stale draft is 
     await expect(page.getByText('На модерации')).toBeVisible();
 
     // A stale draft left over from the previous revision must not overwrite
-    // the new revision's story, stays untouched in storage, and is explained
-    // in the existing warning area.
+    // the new revision's story; it moves to the recovery namespace (copy →
+    // confirm → delete source), stays preserved there, and is explained in
+    // the existing warning area.
     const draftKey = `bidplace:draft:${seller.id}:product-story:${product.id}`;
     const staleDraft = JSON.stringify({
       v: 2,
@@ -145,9 +146,21 @@ test('published work → new editing revision keeps the story; a stale draft is 
       page.getByRole('textbox', { name: 'Текст истории' }),
     ).toHaveValue('История редакции один');
     await expect(page.getByText(/другой редакции/)).toBeVisible();
+    // The legacy key is consumed; the only copy lives under a recovery key.
     expect(
       await page.evaluate((key) => window.localStorage.getItem(key), draftKey),
-    ).toBe(staleDraft);
+    ).toBeNull();
+    expect(
+      await page.evaluate(() => {
+        for (let index = 0; index < window.localStorage.length; index += 1) {
+          const key = window.localStorage.key(index);
+          const value = key && window.localStorage.getItem(key);
+          if (key?.includes('~recovery') && value?.includes('Устаревший'))
+            return true;
+        }
+        return false;
+      }),
+    ).toBe(true);
 
     // Late wizard steps still work on the new revision.
     await page.goto(`/products/${product.id}?flow=creation&step=2`);

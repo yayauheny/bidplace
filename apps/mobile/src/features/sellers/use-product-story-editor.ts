@@ -10,6 +10,7 @@ import {
   DRAFT_STORAGE_ERROR_MESSAGE,
   clearFormDraft,
   createDraftWriter,
+  draftWriteNeedsWarning,
   formDraftKey,
   readFormDraft,
   writeFormDraft,
@@ -59,12 +60,51 @@ export const storyLocalDraftSchema = z.object({
 
 export type StoryLocalDraft = z.infer<typeof storyLocalDraftSchema>;
 
+function storyDraftEntityId(
+  productId: string | undefined,
+  revisionId: string | undefined,
+): string {
+  // The creation flow has no product/revision yet: it keeps the single
+  // revision-less 'new' surface that migrateStoryDraft moves after create.
+  if (!productId) return 'new';
+  // A product draft always belongs to one editing revision; the revision-less
+  // plain product key stays the legacy surface that is migrated on read.
+  return revisionId ? `${productId}@${revisionId}` : productId;
+}
+
 function storyDraftKey(
   accountId: string | null,
   productId: string | undefined,
+  revisionId: string | undefined,
 ) {
   if (!accountId) return null;
+  return formDraftKey(
+    accountId,
+    'product-story',
+    storyDraftEntityId(productId, revisionId),
+  );
+}
+
+/** Revision-less key written before drafts were scoped per revision. */
+function storyDraftLegacyKey(
+  accountId: string,
+  productId: string | undefined,
+): string {
   return formDraftKey(accountId, 'product-story', productId ?? 'new');
+}
+
+/**
+ * A draft that must never be applied automatically (another revision's copy,
+ * or one written before revision tracking) is kept here, one per revision
+ * scope, so live writes and confirmed saves cannot destroy the only copy.
+ * Logout clears it with the account prefix; the notice offers the text.
+ */
+function storyDraftRecoveryKey(
+  accountId: string,
+  productId: string | undefined,
+  revisionId: string | undefined,
+): string {
+  return `${storyDraftKey(accountId, productId, revisionId)}~recovery`;
 }
 
 function storedBlocksOf(blocks: readonly EditableStoryBlock[]) {
@@ -98,13 +138,29 @@ type DraftState = {
   /** True once this state incorporates a real server story snapshot. */
   serverHydrated: boolean;
   /**
-   * Set when a stored draft was skipped because it belongs to a different
-   * server revision (or has no revision id): the record is kept untouched
-   * for manual recovery but is never applied to this revision. Also set when
-   * a local write fails, with the generic storage message.
+   * Set when a stored draft was moved to the recovery namespace because it
+   * belongs to a different server revision (or has no revision id): it is
+   * never applied to this revision. Also set when a local write fails, with
+   * the generic storage message.
    */
   storageError: string | null;
+  /**
+   * Plain text of the recovered copy behind the storageError notice, so the
+   * author can copy it out without DevTools. Null when nothing was kept.
+   */
+  recoveryText: string | null;
 };
+
+const RECOVERY_NOTICE =
+  'Локальная копия истории относится к другой редакции работы и не может быть восстановлена автоматически.';
+
+function draftTextOf(stored: StoryLocalDraft): string | null {
+  const text = stored.blocks
+    .map((block) => (block.type === 'IMAGE' ? '' : block.text))
+    .filter(Boolean)
+    .join('\n\n');
+  return text || null;
+}
 
 function editableBlock(
   block: StoryBlock,
@@ -136,6 +192,7 @@ function fromServer(identity: string, story?: StorySnapshot): DraftState {
     error: null,
     serverHydrated: story !== undefined,
     storageError: null,
+    recoveryText: null,
   };
 }
 
@@ -163,6 +220,7 @@ export function useProductStoryEditor({
   api,
   productId,
   revisionId,
+  storyRevisionId,
   authEpoch,
   accountId,
   queryClient,
@@ -173,6 +231,13 @@ export function useProductStoryEditor({
   api: ApiClient;
   productId?: string;
   revisionId?: string;
+  /**
+   * The revision the current `story` snapshot belongs to, as served by the
+   * owner query. The hook must not present a snapshot of another revision as
+   * this revision's baseline; when the owner has not caught up yet, the
+   * snapshot is held, not applied.
+   */
+  storyRevisionId?: string;
   authEpoch: number;
   accountId: string | null;
   /** Session boundary: owns the local draft write lease (logout/login). */
@@ -197,9 +262,13 @@ export function useProductStoryEditor({
   accountRef.current = accountId;
   productRef.current = productId;
   revisionRef.current = revisionId;
-  // Result of the last confirmed own save. Only this specific operation may
-  // reconcile a later refetch against the editor state — never a heuristic.
-  const confirmedSave = useRef<{ storyToken: number } | null>(null);
+  // Result of the last confirmed own save, tagged with the revision it was
+  // applied to. Only this specific operation may reconcile a later refetch
+  // against the editor state — never a token comparison across revisions.
+  const confirmedSave = useRef<{
+    revisionId: string | null;
+    storyToken: number;
+  } | null>(null);
   const lastEffectRevision = useRef(revisionId);
   const persistedAssets = useRef<Set<string>>(
     new Set(
@@ -216,7 +285,7 @@ export function useProductStoryEditor({
 
   const persistDraft = () => {
     const account = accountRef.current;
-    const key = storyDraftKey(account, productRef.current);
+    const key = storyDraftKey(account, productRef.current, revisionRef.current);
     if (!account || !key) return;
     const lease = captureDraftWriteLease(queryClient);
     writer.current.schedule(() => {
@@ -233,44 +302,97 @@ export function useProductStoryEditor({
       const written = writeFormDraft(key, draft);
       const state = current.current;
       if (state.identity === identity) {
-        // A failed write loses the local copy; a successful one confirms it.
+        // Only a failing storage API warns; a runtime without Web Storage
+        // simply has no browser drafts to promise.
         replace({
           ...state,
-          storageError: written === 'ok' ? null : DRAFT_STORAGE_ERROR_MESSAGE,
+          storageError: draftWriteNeedsWarning(written)
+            ? DRAFT_STORAGE_ERROR_MESSAGE
+            : null,
         });
       }
     });
+  };
+
+  /**
+   * Moves a stored draft between keys: copy → confirm the write → delete the
+   * source. A failed write leaves the source untouched, so a migration can
+   * never destroy the only copy (quota/denied).
+   */
+  const moveStoredDraft = (fromKey: string, toKey: string): void => {
+    const stored = readFormDraft(fromKey, storyLocalDraftSchema);
+    if (!stored) return; // nothing parseable there; leave it as is
+    if (writeFormDraft(toKey, stored) === 'ok') clearFormDraft(fromKey);
+  };
+
+  const withRecoveryNotice = (
+    state: DraftState,
+    account: string,
+    productId: string | undefined,
+    revisionId: string | undefined,
+  ): DraftState => {
+    const recovery = readFormDraft(
+      storyDraftRecoveryKey(account, productId, revisionId),
+      storyLocalDraftSchema,
+    );
+    if (!recovery) return state;
+    return {
+      ...state,
+      storageError: state.storageError ?? RECOVERY_NOTICE,
+      recoveryText: state.recoveryText ?? draftTextOf(recovery),
+    };
   };
 
   const restoreDraft = (
     identityNow: string,
     storySnapshot?: StorySnapshot,
   ): DraftState => {
-    const key = storyDraftKey(accountRef.current, productRef.current);
+    const account = accountRef.current;
+    const productId = productRef.current;
+    const revision = revisionRef.current;
+    const activeKey = storyDraftKey(account, productId, revision);
     const base = fromServer(identityNow, storySnapshot);
-    if (!key) return base;
-    const stored = readFormDraft(key, storyLocalDraftSchema);
-    if (!stored) return base;
-    if (stored.revisionId !== revisionRef.current) {
-      // A draft from another revision (or written before revision tracking)
-      // must not overwrite this revision's story. Keep the record untouched
-      // for manual recovery and surface a notice instead of applying it.
-      if (stored.blocks.length === 0 && stored.token === 0) return base;
-      return {
-        ...base,
-        storageError:
-          'Локальная копия истории относится к другой редакции работы и не может быть восстановлена автоматически.',
-      };
+    if (!account || !activeKey) return base;
+
+    // The revision-less legacy key (written before drafts were scoped per
+    // revision) is never applied as-is: a copy of this revision moves to the
+    // active key, anything else to the recovery namespace.
+    const legacyKey = storyDraftLegacyKey(account, productId);
+    if (legacyKey !== activeKey) {
+      const legacy = readFormDraft(legacyKey, storyLocalDraftSchema);
+      if (legacy) {
+        const target =
+          legacy.revisionId != null && legacy.revisionId === revision
+            ? activeKey
+            : storyDraftRecoveryKey(account, productId, revision);
+        moveStoredDraft(legacyKey, target);
+      }
     }
-    const serverToken = storySnapshot?.storyToken ?? 0;
-    if (stored.token < serverToken) {
+
+    const stored = readFormDraft(activeKey, storyLocalDraftSchema);
+    if (stored && stored.revisionId !== revision) {
+      // Cross-tab race: another revision's draft under this revision's key.
+      // Keep it as a recovery copy instead of applying or destroying it.
+      moveStoredDraft(
+        activeKey,
+        storyDraftRecoveryKey(account, productId, revision),
+      );
+    } else if (stored) {
+      const serverToken = storySnapshot?.storyToken ?? 0;
+      if (stored.token >= serverToken) {
+        // The stored draft belongs to this revision and does not predate the
+        // server story. (Tokens are only comparable inside one revision.)
+        const restored =
+          stored.v === 2
+            ? restoreV2(base, stored)
+            : restoreLegacy(base, stored);
+        return withRecoveryNotice(restored, account, productId, revision);
+      }
       // A newer server story exists within this revision; the last server
-      // save wins. (Tokens are only comparable inside one revision.)
-      clearFormDraft(key);
-      return base;
+      // save wins.
+      clearFormDraft(activeKey);
     }
-    if (stored.v === 2) return restoreV2(base, stored);
-    return restoreLegacy(base, stored);
+    return withRecoveryNotice(base, account, productId, revision);
   };
 
   // v2: blocks match server blocks by stable key, so identity, edits,
@@ -350,7 +472,11 @@ export function useProductStoryEditor({
 
   const clearLocalDraft = () => {
     writer.current.cancel();
-    const key = storyDraftKey(accountRef.current, productRef.current);
+    const key = storyDraftKey(
+      accountRef.current,
+      productRef.current,
+      revisionRef.current,
+    );
     if (key) clearFormDraft(key);
   };
 
@@ -377,37 +503,60 @@ export function useProductStoryEditor({
       const revisionChanged = lastEffectRevision.current !== revisionId;
       lastEffectRevision.current = revisionId;
       const confirmed = confirmedSave.current;
+      // The snapshot may only become this revision's baseline when the owner
+      // query says it belongs to this revision. A snapshot without a revision
+      // attribution (loading state) is held, never presented as this
+      // revision's story.
+      const snapshotBelongs =
+        story === undefined ||
+        revisionId === undefined ||
+        storyRevisionId === undefined ||
+        storyRevisionId === revisionId;
       if (
         revisionChanged &&
         confirmed &&
         !previous.dirty &&
         !previous.pending &&
         previous.serverHydrated &&
-        (story?.storyToken ?? 0) <= confirmed.storyToken
+        !snapshotBelongs
       ) {
-        // Own save confirmed by the server, then the product moved to a new
-        // editing revision whose snapshot still predates that save (the
-        // response carries the pre-save story). The server creates the new
-        // revision as a copy of the published one, which already holds the
-        // confirmed blocks, so keep them instead of regressing the wizard.
+        // The owner query still serves a snapshot of another (usually the
+        // previous) revision — e.g. one that predates the confirmed save. It
+        // must not be presented as the new revision's story: keep the
+        // confirmed blocks until the owner's data for this revision arrives.
+        // Belonging is decided by revisionId, never by comparing tokens
+        // across revisions.
         confirmedSave.current = null;
         persistedAssets.current = new Set(
           previous.blocks.flatMap((block) =>
             block.type === 'IMAGE' ? [block.mediaAssetId] : [],
           ),
         );
-        restoredFor.current = identity;
         replace({ ...previous, identity });
+        // restoredFor intentionally stays on the old identity: when a
+        // snapshot that belongs to this revision arrives, the restore below
+        // hydrates it.
         return;
       }
       confirmedSave.current = null;
       persistedAssets.current = new Set(
-        (story?.blocks ?? []).flatMap((block) =>
+        (snapshotBelongs ? (story?.blocks ?? []) : []).flatMap((block) =>
           block.type === 'IMAGE' ? [block.mediaAssetId] : [],
         ),
       );
-      restoredFor.current = identity;
-      replace(restoreDraft(identity, story));
+      if (snapshotBelongs) {
+        restoredFor.current = identity;
+        replace(restoreDraft(identity, story));
+      } else {
+        // The owner does not serve this revision yet: hold an empty,
+        // not-yet-hydrated baseline instead of adopting another revision's
+        // story. The recovery notice survives the identity change.
+        replace({
+          ...fromServer(identity, undefined),
+          storageError: previous.storageError,
+          recoveryText: previous.recoveryText,
+        });
+      }
     } else if (restoredFor.current !== identity) {
       restoredFor.current = identity;
       replace(restoreDraft(identity, story));
@@ -425,8 +574,19 @@ export function useProductStoryEditor({
         ),
       );
       replace(fromServer(identity, story));
+    } else if (
+      story &&
+      !previous.dirty &&
+      !previous.pending &&
+      confirmedSave.current &&
+      confirmedSave.current.revisionId === revisionId &&
+      story.storyToken === previous.token
+    ) {
+      // The owner refetch carries exactly the confirmed save: the owner has
+      // caught up, so the confirmation is spent. (Same-revision comparison.)
+      confirmedSave.current = null;
     }
-  }, [identity, revisionId, story?.storyToken]);
+  }, [identity, revisionId, storyRevisionId, story?.storyToken]);
 
   const change = (
     update: (blocks: EditableStoryBlock[]) => EditableStoryBlock[],
@@ -637,7 +797,10 @@ export function useProductStoryEditor({
           dirty: false,
           pending: false,
         });
-        confirmedSave.current = { storyToken: result.storyToken };
+        confirmedSave.current = {
+          revisionId: revisionRef.current ?? null,
+          storyToken: result.storyToken,
+        };
         // change() blocks input while pending, so the confirmed response is
         // the whole local operation — drop the stored copy for this identity.
         clearLocalDraft();
@@ -681,6 +844,7 @@ export function useProductStoryEditor({
     pending: state.pending,
     error: state.error,
     storageError: state.storageError,
+    recoveryText: state.recoveryText,
     retryUpload: pendingImage.current !== null,
     // Synchronous read for guard effects: rendered dirty/pending can lag one
     // commit behind when a save response lands before the effect phase.

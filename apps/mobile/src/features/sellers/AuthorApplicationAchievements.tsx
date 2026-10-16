@@ -27,6 +27,7 @@ import {
   DRAFT_STORAGE_ERROR_MESSAGE,
   clearFormDraft,
   createDraftWriter,
+  draftWriteNeedsWarning,
   formDraftKey,
   readFormDraft,
   writeFormDraft,
@@ -242,9 +243,10 @@ export function AuthorApplicationAchievements({
       if (account === null || !draftWriteLeaseIsValid(queryClient, lease))
         return;
       const written = writeFormDraft(draftKey, { body, dateInput });
-      // A successful write clears only this writer's error, not the form's.
+      // Only a failing storage API warns; a successful write clears only this
+      // writer's error, not the form's.
       onStorageErrorRef.current?.(
-        written === 'ok' ? null : DRAFT_STORAGE_ERROR_MESSAGE,
+        draftWriteNeedsWarning(written) ? DRAFT_STORAGE_ERROR_MESSAGE : null,
       );
     });
   }, [accountId, body, dateInput, draftKey]);

@@ -341,3 +341,18 @@ it('reports when local draft storage is unavailable on load', () => {
   const view = mountProduct();
   expect(view.restore.storageError).toBeTruthy();
 });
+
+it('does not warn when the runtime has no Web Storage', () => {
+  vi.useFakeTimers();
+  vi.stubGlobal('localStorage', undefined);
+  try {
+    const view = mountProduct();
+    // The probe alone is not enough — the warning rule must hold for typed
+    // input and the debounced flush too.
+    act(() => view.form.setValue('title', 'Текст', { shouldDirty: true }));
+    act(() => vi.advanceTimersByTime(500));
+    expect(view.restore.storageError).toBeNull();
+  } finally {
+    vi.unstubAllGlobals();
+  }
+});

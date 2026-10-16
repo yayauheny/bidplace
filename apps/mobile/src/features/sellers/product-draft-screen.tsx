@@ -1,4 +1,5 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
+import { Pressable } from 'react-native';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
 import { FormProvider, useForm, useWatch } from 'react-hook-form';
@@ -26,7 +27,9 @@ import {
 import { useApiClient } from '../../providers/api-provider';
 import { canWritePrivateCache, authKeys } from '../../lib/query-cache';
 import {
+  FORM_DRAFT_PREFIX,
   clearFormDraft,
+  clearFormDraftsByPrefix,
   formDraftKey,
   readFormDraft,
   writeFormDraft,
@@ -99,6 +102,7 @@ export function ProductDraftScreen({
   });
   const { productDetail, existingProduct, editorStatus, storyNeedsDraft } =
     data;
+  const [recoveryCopied, setRecoveryCopied] = useState(false);
 
   // Read the installed session (not an auth context) so the owner specs can
   // mount the screen with only a query cache, like the rest of the save flow.
@@ -124,7 +128,12 @@ export function ProductDraftScreen({
     onSubmittedProduct: (product, isCurrent) => {
       if (isCurrent()) restore.clearDraft();
       if (accountId) {
-        clearFormDraft(formDraftKey(accountId, 'product-story', product.id));
+        // Submit retires every story draft of this product — the current
+        // revision's active copy, older revision copies and recovery copies
+        // share the product key prefix.
+        clearFormDraftsByPrefix(
+          `${FORM_DRAFT_PREFIX}${accountId}:product-story:${product.id}`,
+        );
       }
       return data.noteSubmitted(product, isCurrent);
     },
@@ -151,6 +160,9 @@ export function ProductDraftScreen({
     api,
     productId,
     revisionId: productDetail.data?.editingRevision?.id,
+    // The snapshot's owner revision, from the same response: the hook must
+    // never present another revision's snapshot as this revision's baseline.
+    storyRevisionId: productDetail.data?.editingRevision?.id,
     authEpoch,
     accountId,
     queryClient,
@@ -320,6 +332,28 @@ export function ProductDraftScreen({
             <AppText role="bodySmall" tone="danger">
               {restore.storageError ?? storyEditor.storageError}
             </AppText>
+          ) : null}
+          {storyEditor.recoveryText ? (
+            // The recovered copy of another revision's draft cannot be
+            // applied automatically; copying it out is the honest action.
+            <Pressable
+              key={storyEditor.recoveryText}
+              accessibilityRole="button"
+              accessibilityLabel="Скопировать сохранённый текст"
+              hitSlop={8}
+              onPress={() => {
+                void navigator.clipboard
+                  ?.writeText(storyEditor.recoveryText!)
+                  .then(() => setRecoveryCopied(true))
+                  .catch(() => setRecoveryCopied(false));
+              }}
+            >
+              <AppText role="bodySmall" tone="accent">
+                {recoveryCopied
+                  ? 'Скопировано'
+                  : 'Скопировать сохранённый текст'}
+              </AppText>
+            </Pressable>
           ) : null}
 
           {!isCreationFlow || wizardStep === productWizardStep.about ? (

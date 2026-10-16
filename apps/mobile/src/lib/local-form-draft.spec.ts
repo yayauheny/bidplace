@@ -87,6 +87,40 @@ describe('local form draft storage', () => {
     ).toBe('failed');
   });
 
+  it('distinguishes a missing API from a denied one', () => {
+    vi.stubGlobal('localStorage', undefined);
+    try {
+      expect(
+        writeFormDraft(formDraftKey('user-a', 'product-draft'), {
+          base: null,
+          values: {},
+        }),
+      ).toBe('unsupported');
+    } finally {
+      vi.unstubAllGlobals();
+    }
+    const original = Object.getOwnPropertyDescriptor(window, 'localStorage');
+    Object.defineProperty(window, 'localStorage', {
+      configurable: true,
+      get() {
+        throw new DOMException('denied', 'SecurityError');
+      },
+    });
+    try {
+      // The API exists but access itself throws: a broken storage, so the
+      // write reports 'failed' and callers show the warning.
+      expect(
+        writeFormDraft(formDraftKey('user-a', 'product-draft'), {
+          base: null,
+          values: {},
+        }),
+      ).toBe('failed');
+    } finally {
+      if (original) Object.defineProperty(window, 'localStorage', original);
+      else delete (window as { localStorage?: Storage }).localStorage;
+    }
+  });
+
   it('debounces writes and flushes the latest value only', () => {
     vi.useFakeTimers();
     const writer = createDraftWriter(400);

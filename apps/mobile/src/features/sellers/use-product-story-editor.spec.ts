@@ -25,6 +25,11 @@ const emptyStory: { storyToken: number; blocks: StoryBlock[] } = {
   storyToken: 0,
   blocks: [],
 };
+// Active story drafts are scoped per revision; the plain product key is the
+// legacy surface that is migrated on read, foreign copies land in recovery.
+const legacyStoryKey = `bidplace:draft:user-a:product-story:${workId}`;
+const activeStoryKey = `${legacyStoryKey}@${revisionId}`;
+const recoveryStoryKey = `${activeStoryKey}~recovery`;
 const cases: Array<() => void> = [];
 
 type StorySnapshot = { storyToken: number; blocks: StoryBlock[] };
@@ -52,15 +57,18 @@ function mount(
     authEpoch,
     revisionId: revision,
     liveStory,
+    liveStoryRevisionId,
   }: {
     authEpoch: number;
     revisionId?: string;
     liveStory: StorySnapshot | null;
+    liveStoryRevisionId?: string;
   }) {
     editor = useProductStoryEditor({
       api,
       productId: workId,
       revisionId: revision,
+      storyRevisionId: liveStoryRevisionId,
       authEpoch,
       accountId,
       queryClient,
@@ -72,13 +80,20 @@ function mount(
     authEpoch: number,
     nextRevisionId?: string,
     nextStory?: StorySnapshot | null,
+    storyRevisionId?: string,
   ) => {
+    // A passed snapshot belongs to the rendered revision unless the test says
+    // otherwise; the default (mount) snapshot keeps its initial revision, like
+    // an owner query that has not caught up with a revision change.
+    const defaultStoryRevisionId =
+      nextStory === undefined ? revisionId : nextRevisionId;
     act(() =>
       root.render(
         createElement(Probe, {
           authEpoch,
           revisionId: nextRevisionId,
           liveStory: nextStory === undefined ? story : nextStory,
+          liveStoryRevisionId: storyRevisionId ?? defaultStoryRevisionId,
         }),
       ),
     );
@@ -119,7 +134,7 @@ describe('revision-backed Work Story editor', () => {
   it('drops a pending story write when the session lease retires mid-logout', () => {
     vi.useFakeTimers();
     const view = mount('user-a');
-    const draftKey = `bidplace:draft:user-a:product-story:${workId}`;
+    const draftKey = activeStoryKey;
     act(() => view.editor.addText('PARAGRAPH'));
     act(() => view.editor.editText(view.editor.blocks[0]!.key, 'Текст'));
     // Logout clears the account drafts and retires the session lease while
@@ -133,7 +148,7 @@ describe('revision-backed Work Story editor', () => {
   it('does not re-arm story writes until a new session lease is issued', () => {
     vi.useFakeTimers();
     const view = mount('user-a');
-    const draftKey = `bidplace:draft:user-a:product-story:${workId}`;
+    const draftKey = activeStoryKey;
     clearAccountFormDrafts('user-a');
     retireDraftWriteLease(view.queryClient);
     act(() => view.editor.addText('PARAGRAPH'));
@@ -148,7 +163,7 @@ describe('revision-backed Work Story editor', () => {
   it('does not resurrect a cleared story draft after logout', () => {
     vi.useFakeTimers();
     const view = mount('user-a');
-    const draftKey = `bidplace:draft:user-a:product-story:${workId}`;
+    const draftKey = activeStoryKey;
     act(() => view.editor.addText('PARAGRAPH'));
     act(() => view.editor.editText(view.editor.blocks[0]!.key, 'Текст'));
     // Logout clears the account drafts and retires the session lease while
@@ -160,23 +175,26 @@ describe('revision-backed Work Story editor', () => {
   });
 
   it('clears the local draft after the server holds the saved blocks', async () => {
-    const view = mount('user-a');
-    const draftKey = `bidplace:draft:user-a:product-story:${workId}`;
-    act(() => view.editor.addText('PARAGRAPH'));
-    act(() => view.editor.editText(view.editor.blocks[0]!.key, 'Текст'));
     // A stale draft with the same content must not survive the save.
     window.localStorage.setItem(
-      draftKey,
+      legacyStoryKey,
       JSON.stringify({
         revisionId,
         token: 0,
         blocks: [{ key: 'stale-key', type: 'PARAGRAPH', text: 'Текст' }],
       }),
     );
+    const view = mount('user-a');
+    // The restored legacy block is edited and saved: the local copy must not
+    // survive once the server holds the blocks.
+    act(() => view.editor.editText(view.editor.blocks[0]!.key, 'Текст'));
     await act(async () => {
       expect(await view.editor.save()).toBe(true);
     });
-    expect(window.localStorage.getItem(draftKey)).toBeNull();
+    // The mount migrates the legacy copy to the active key; the confirmed
+    // save then clears it. No stale copy of this content may survive.
+    expect(window.localStorage.getItem(activeStoryKey)).toBeNull();
+    expect(window.localStorage.getItem(legacyStoryKey)).toBeNull();
   });
 
   it('keeps saved blocks when the story moves to a new revision', async () => {
@@ -230,6 +248,95 @@ describe('revision-backed Work Story editor', () => {
     expect(view.editor.dirty).toBe(false);
   });
 
+  it('hydrates an external new revision even after an own save was confirmed', async () => {
+    const view = mount('user-a');
+    act(() => view.editor.addText('PARAGRAPH'));
+    act(() => view.editor.editText(view.editor.blocks[0]!.key, 'Текст'));
+    await act(async () => {
+      expect(await view.editor.save()).toBe(true);
+    });
+    // The same-revision refetch carries the confirmed save (token 1).
+    view.render(1, revisionId, {
+      storyToken: 1,
+      blocks: [
+        { id: blockId, position: 0, type: 'PARAGRAPH' as const, text: 'Текст' },
+      ],
+    });
+    // The product then moves to a new editing revision created outside this
+    // editor. Revision identity decides the baseline — the saved token of the
+    // old revision must not be compared against the new revision's token.
+    view.render(1, '92222222-2222-4222-8222-222222222222', {
+      storyToken: 0,
+      blocks: [
+        {
+          id: '89999999-9999-4999-8999-999999999999',
+          position: 0,
+          type: 'PARAGRAPH' as const,
+          text: 'External revision',
+        },
+      ],
+    });
+    const texts = view.editor.blocks.map((block) =>
+      block.type === 'IMAGE' ? '' : block.text,
+    );
+    expect(texts).toEqual(['External revision']);
+    expect(view.editor.dirty).toBe(false);
+  });
+
+  it('keeps a recovered other-revision copy across editing and a confirmed save', async () => {
+    vi.useFakeTimers();
+    // A copy left over from another revision sits under the legacy key.
+    const legacyKey = `bidplace:draft:user-a:product-story:${workId}`;
+    window.localStorage.setItem(
+      legacyKey,
+      JSON.stringify({
+        revisionId: '92222222-2222-4222-8222-222222222222',
+        token: 2,
+        blocks: [
+          { key: 'recovery-key', type: 'PARAGRAPH', text: 'RECOVERY TEXT' },
+        ],
+      }),
+    );
+    const view = mount('user-a');
+    expect(view.editor.storageError).toContain('другой редакции');
+    act(() => view.editor.addText('PARAGRAPH'));
+    act(() => view.editor.editText(view.editor.blocks[0]!.key, 'Новый текст'));
+    act(() => vi.advanceTimersByTime(500));
+    const recoveryStillStored = () => {
+      for (let index = 0; index < window.localStorage.length; index += 1) {
+        const key = window.localStorage.key(index);
+        const value = key && window.localStorage.getItem(key);
+        if (value?.includes('RECOVERY TEXT')) return true;
+      }
+      return false;
+    };
+    // Typing persists the current revision's draft but must not destroy the
+    // recovered copy of the other revision.
+    expect(recoveryStillStored()).toBe(true);
+    vi.useRealTimers();
+    await act(async () => {
+      expect(await view.editor.save()).toBe(true);
+    });
+    // A confirmed save clears only this revision's active draft.
+    expect(recoveryStillStored()).toBe(true);
+  });
+
+  it('does not warn when the runtime has no Web Storage', () => {
+    vi.useFakeTimers();
+    vi.stubGlobal('localStorage', undefined);
+    try {
+      const view = mount('user-a');
+      act(() => view.editor.addText('PARAGRAPH'));
+      act(() => view.editor.editText(view.editor.blocks[0]!.key, 'Текст'));
+      act(() => vi.advanceTimersByTime(500));
+      // Without Web Storage there are no browser drafts to promise; only a
+      // failing storage API deserves the warning.
+      expect(view.editor.storageError).toBeNull();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('does not apply a stored draft that belongs to a different revision', () => {
     const storyR2 = {
       storyToken: 0,
@@ -242,24 +349,30 @@ describe('revision-backed Work Story editor', () => {
         },
       ],
     };
-    const draftKey = `bidplace:draft:user-a:product-story:${workId}`;
     const stored = JSON.stringify({
       v: 2,
       revisionId: '92222222-2222-4222-8222-222222222222',
       token: 4,
       blocks: [{ key: 'old-key', type: 'PARAGRAPH', text: 'Old local draft' }],
     });
-    window.localStorage.setItem(draftKey, stored);
+    window.localStorage.setItem(legacyStoryKey, stored);
     const view = mount('user-a', storyR2);
     const texts = view.editor.blocks.map((block) =>
       block.type === 'IMAGE' ? '' : block.text,
     );
     expect(texts).toEqual(['New revision']);
     expect(view.editor.dirty).toBe(false);
-    // The incompatible record stays untouched for manual recovery…
-    expect(window.localStorage.getItem(draftKey)).toBe(stored);
-    // …and the author sees why the local copy was not applied.
+    // The incompatible record is not applied; it moves to the recovery
+    // namespace (copy → confirm → delete source), so later writes cannot
+    // destroy the only copy…
+    expect(window.localStorage.getItem(legacyStoryKey)).toBeNull();
+    expect(window.localStorage.getItem(recoveryStoryKey)).toContain(
+      'Old local draft',
+    );
+    // …the author sees why the local copy was not applied and can copy the
+    // preserved text out without DevTools.
     expect(view.editor.storageError).toContain('другой редакции');
+    expect(view.editor.recoveryText).toContain('Old local draft');
   });
 
   it('does not apply a legacy stored draft without a revision id', () => {
@@ -274,7 +387,6 @@ describe('revision-backed Work Story editor', () => {
         },
       ],
     };
-    const draftKey = `bidplace:draft:user-a:product-story:${workId}`;
     const stored = JSON.stringify({
       v: 2,
       token: 1,
@@ -282,7 +394,7 @@ describe('revision-backed Work Story editor', () => {
         { key: 'legacy-key', type: 'PARAGRAPH', text: 'Старый черновик' },
       ],
     });
-    window.localStorage.setItem(draftKey, stored);
+    window.localStorage.setItem(legacyStoryKey, stored);
     const view = mount('user-a', serverStory);
     const texts = view.editor.blocks.map((block) =>
       block.type === 'IMAGE' ? '' : block.text,
@@ -290,7 +402,13 @@ describe('revision-backed Work Story editor', () => {
     expect(texts).toEqual(['Серверный абзац']);
     expect(view.editor.dirty).toBe(false);
     expect(view.editor.storageError).toContain('другой редакции');
-    expect(window.localStorage.getItem(draftKey)).toBe(stored);
+    // A record without a revision id is ambiguous: never applied, preserved
+    // in the recovery namespace.
+    expect(window.localStorage.getItem(legacyStoryKey)).toBeNull();
+    expect(window.localStorage.getItem(recoveryStoryKey)).toContain(
+      'Старый черновик',
+    );
+    expect(view.editor.recoveryText).toContain('Старый черновик');
   });
 
   it('restores only the text the server does not have yet', () => {
