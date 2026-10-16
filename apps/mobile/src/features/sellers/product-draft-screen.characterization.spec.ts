@@ -19,7 +19,7 @@ import { ApiClientError } from '@bidplace/api-client';
 import '../../testing/author-application-mocks';
 
 import { flush } from '../../testing/dom';
-import { authKeys } from '../../lib/query-cache';
+import { advanceAuthEpoch, authKeys } from '../../lib/query-cache';
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
@@ -148,7 +148,26 @@ vi.mock('../../components/ui', () => {
     );
   }
   return {
-    AppDialog: () => null,
+    AppDialog: ({
+      open,
+      title,
+      description,
+      children,
+    }: {
+      open: boolean;
+      title?: string;
+      description?: string;
+      children?: ReactNode;
+    }) =>
+      open
+        ? createElement(
+            'div',
+            { 'data-testid': 'app-dialog' },
+            title,
+            description,
+            children,
+          )
+        : null,
     AppText: ({ children }: { children?: ReactNode }) =>
       createElement('span', null, children),
     PrimaryButton: PressButton,
@@ -264,6 +283,7 @@ function mount(props: { productId?: string; flow?: string; stepParam?: string } 
   });
   return {
     container,
+    queryClient,
     unmount() {
       act(() => root.unmount());
       container.remove();
@@ -418,5 +438,118 @@ describe('ProductDraftScreen render contract', () => {
     );
     expect(container.textContent).not.toContain('Редактировать предмет');
     expect(container.textContent).not.toContain('Создание предмета');
+  });
+});
+
+describe('ProductDraftScreen recovered story copy', () => {
+  const revisionId = '22222222-2222-4222-8222-222222222222';
+  const legacyKey = `bidplace:draft:user-a:product-story:${productId}`;
+  const recoveryKey = `${legacyKey}@${revisionId}~recovery`;
+  const copyLabel = 'Скопировать сохранённый текст';
+
+  const seedLegacyCopy = (text: string) => {
+    window.localStorage.setItem(
+      legacyKey,
+      JSON.stringify({
+        v: 2,
+        revisionId: '99999999-9999-4999-8999-999999999999',
+        token: 0,
+        blocks: [{ key: 'local', type: 'PARAGRAPH', text }],
+      }),
+    );
+  };
+
+  const setClipboard = (clipboard: { writeText: unknown } | undefined) => {
+    Object.defineProperty(globalThis.navigator, 'clipboard', {
+      value: clipboard,
+      configurable: true,
+      writable: true,
+    });
+  };
+
+  const clickRecoveryCopy = async (container: HTMLElement) => {
+    await until(container, () => hasButton(container, copyLabel), copyLabel);
+    const button = [...container.querySelectorAll('button')].find(
+      (node) => node.textContent === copyLabel,
+    )!;
+    await act(async () => {
+      button.click();
+      await flush();
+    });
+  };
+
+  afterEach(() => {
+    setClipboard(undefined);
+    window.localStorage.clear();
+  });
+
+  it('copies the recovered text and confirms only that payload', async () => {
+    seedLegacyCopy('RECOVERY TEXT');
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    setClipboard({ writeText });
+    const { container } = mount();
+    await clickRecoveryCopy(container);
+    expect(writeText).toHaveBeenCalledWith('RECOVERY TEXT');
+    await until(container, () => hasButton(container, 'Скопировано'), 'copied status');
+  });
+
+  it('offers the text for manual selection when the clipboard write rejects', async () => {
+    seedLegacyCopy('RECOVERY TEXT');
+    setClipboard({
+      writeText: vi.fn().mockRejectedValue(new Error('denied')),
+    });
+    const { container } = mount();
+    await clickRecoveryCopy(container);
+    const dialog = await (async () => {
+      await until(
+        container,
+        () => Boolean(container.querySelector('[data-testid="app-dialog"]')),
+        'manual copy dialog',
+      );
+      return container.querySelector('[data-testid="app-dialog"]')!;
+    })();
+    expect(dialog.textContent).toContain('RECOVERY TEXT');
+    // The text is honestly not copied: no copied status is claimed.
+    expect(hasButton(container, 'Скопировано')).toBe(false);
+  });
+
+  it('offers the text for manual selection when the Clipboard API is absent', async () => {
+    seedLegacyCopy('RECOVERY TEXT');
+    setClipboard(undefined);
+    const { container } = mount();
+    await clickRecoveryCopy(container);
+    await until(
+      container,
+      () => Boolean(container.querySelector('[data-testid="app-dialog"]')),
+      'manual copy dialog',
+    );
+    expect(
+      container.querySelector('[data-testid="app-dialog"]')!.textContent,
+    ).toContain('RECOVERY TEXT');
+  });
+
+  it('drops the copied status when the recovered text changes', async () => {
+    seedLegacyCopy('RECOVERY TEXT');
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    setClipboard({ writeText });
+    const { container, queryClient } = mount();
+    await clickRecoveryCopy(container);
+    await until(container, () => hasButton(container, 'Скопировано'), 'copied status');
+    // Another recovery copy arrives for the same revision; the stale
+    // "copied" label must not stick to the new payload.
+    window.localStorage.setItem(
+      recoveryKey,
+      JSON.stringify({
+        v: 2,
+        revisionId: '99999999-9999-4999-8999-999999999999',
+        token: 0,
+        blocks: [{ key: 'local-2', type: 'PARAGRAPH', text: 'NEWER TEXT' }],
+      }),
+    );
+    act(() => {
+      advanceAuthEpoch(queryClient);
+    });
+    await until(container, () => hasButton(container, copyLabel), 'reset status');
+    expect(hasButton(container, 'Скопировано')).toBe(false);
   });
 });

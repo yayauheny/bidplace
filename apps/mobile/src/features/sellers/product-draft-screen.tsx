@@ -1,5 +1,4 @@
 import { useRef, useState } from 'react';
-import { Pressable } from 'react-native';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
 import { FormProvider, useForm, useWatch } from 'react-hook-form';
@@ -18,6 +17,7 @@ import {
   PageState,
   PrimaryButton,
   SecondaryButton,
+  TextButton,
 } from '../../components/ui';
 import {
   getUserFacingErrorMessage,
@@ -102,7 +102,8 @@ export function ProductDraftScreen({
   });
   const { productDetail, existingProduct, editorStatus, storyNeedsDraft } =
     data;
-  const [recoveryCopied, setRecoveryCopied] = useState(false);
+  const [copiedRecovery, setCopiedRecovery] = useState<string | null>(null);
+  const [recoveryManualVisible, setRecoveryManualVisible] = useState(false);
 
   // Read the installed session (not an auth context) so the owner specs can
   // mount the screen with only a query cache, like the rest of the save flow.
@@ -336,24 +337,27 @@ export function ProductDraftScreen({
           {storyEditor.recoveryText ? (
             // The recovered copy of another revision's draft cannot be
             // applied automatically; copying it out is the honest action.
-            <Pressable
-              key={storyEditor.recoveryText}
-              accessibilityRole="button"
-              accessibilityLabel="Скопировать сохранённый текст"
-              hitSlop={8}
-              onPress={() => {
-                void navigator.clipboard
-                  ?.writeText(storyEditor.recoveryText!)
-                  .then(() => setRecoveryCopied(true))
-                  .catch(() => setRecoveryCopied(false));
-              }}
-            >
-              <AppText role="bodySmall" tone="accent">
-                {recoveryCopied
+            // The copied status belongs to one payload only: a new recovered
+            // text must not keep claiming it is already copied.
+            <TextButton
+              label={
+                copiedRecovery === storyEditor.recoveryText
                   ? 'Скопировано'
-                  : 'Скопировать сохранённый текст'}
-              </AppText>
-            </Pressable>
+                  : 'Скопировать сохранённый текст'
+              }
+              onPress={() => {
+                const text = storyEditor.recoveryText!;
+                const clipboard = navigator.clipboard;
+                if (!clipboard?.writeText) {
+                  setRecoveryManualVisible(true);
+                  return;
+                }
+                void clipboard.writeText(text).then(
+                  () => setCopiedRecovery(text),
+                  () => setRecoveryManualVisible(true),
+                );
+              }}
+            />
           ) : null}
 
           {!isCreationFlow || wizardStep === productWizardStep.about ? (
@@ -495,6 +499,21 @@ export function ProductDraftScreen({
               }
             />
           ) : null}
+
+          <AppDialog
+            open={recoveryManualVisible}
+            title="Автоматическое копирование недоступно"
+            description="Выделите и скопируйте сохранённый текст вручную."
+            onClose={() => setRecoveryManualVisible(false)}
+          >
+            <AppText role="bodySmall" selectable>
+              {storyEditor.recoveryText}
+            </AppText>
+            <SecondaryButton
+              label="Закрыть"
+              onPress={() => setRecoveryManualVisible(false)}
+            />
+          </AppDialog>
 
           <AppDialog
             open={imageActions.imagePendingDelete !== null}
