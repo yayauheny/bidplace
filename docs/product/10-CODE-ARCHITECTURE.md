@@ -223,7 +223,15 @@ SellerProfile
   snapshot. After the first confirmed create, the `…:new` key is migrated to
   the confirmed entity id (`noteEntityCreated`) so a revisit cannot re-create
   the entity. Passwords, OTP, tokens, registration/auth forms, blob URLs and
-  file bytes are never stored. Stored form payloads are validated as data, not
+  file bytes are never stored. Account-wide clear (logout) also bumps a
+  per-account write epoch: delayed writers capture it at schedule time and
+  drop the write after retirement, so a debounced write pending at logout
+  cannot resurrect the cleared private draft. The live writer persists only
+  unsaved input — a clean form (e.g. after `reset(persisted)` following a
+  confirmed save) clears the local snapshot instead of repersisting it, while
+  edits made after the request stay. Unavailable or failing storage surfaces a
+  visible message through the owners' existing danger-text pattern (restore
+  hook `storageError`); it never breaks the form. Stored form payloads are validated as data, not
   as submittable forms: the envelope is schema-checked and each field is
   accepted only when its JSON shape matches the form's own default, so an
   unfinished intermediate value (half-typed email or year) never rejects the
