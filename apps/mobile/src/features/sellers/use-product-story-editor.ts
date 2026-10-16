@@ -16,8 +16,10 @@ import {
 export type EditableStoryBlock = StoryWriteRequest['blocks'][number] & { key: string };
 
 /**
- * Local restore covers unfinished text blocks only; uploaded images stay
- * server-side and are re-added from the gallery after a reload.
+ * Local restore covers unfinished story state; uploaded images stay
+ * server-side — the draft keeps only their ids and order, never bytes.
+ * v2 blocks carry stable keys (server block id when persisted, client key
+ * otherwise) so restore matches by identity and order, not by content.
  */
 const storyTextBlockSchema = z.object({
   key: z.string(),
@@ -25,9 +27,22 @@ const storyTextBlockSchema = z.object({
   text: z.string(),
 });
 
+const storyImageBlockSchema = z.object({
+  key: z.string(),
+  type: z.literal('IMAGE'),
+  mediaAssetId: z.string(),
+  altText: z.string().nullable(),
+});
+
+const storyStoredBlockSchema = z.discriminatedUnion('type', [
+  storyTextBlockSchema,
+  storyImageBlockSchema,
+]);
+
 export const storyLocalDraftSchema = z.object({
+  v: z.literal(2).optional(),
   token: z.number(),
-  blocks: z.array(storyTextBlockSchema),
+  blocks: z.array(storyStoredBlockSchema),
 });
 
 export type StoryLocalDraft = z.infer<typeof storyLocalDraftSchema>;
@@ -37,14 +52,15 @@ function storyDraftKey(accountId: string | null, productId: string | undefined) 
   return formDraftKey(accountId, 'product-story', productId ?? 'new');
 }
 
-function textBlocksOf(blocks: readonly EditableStoryBlock[]) {
-  return blocks
-    .filter((block) => block.type !== 'IMAGE')
-    .map((block) => ({
-      key: block.key,
-      type: block.type as 'HEADING' | 'PARAGRAPH',
-      text: block.text,
-    }));
+function storedBlocksOf(blocks: readonly EditableStoryBlock[]) {
+  return blocks.map((block) => {
+    // Server ids survive a remount; client keys identify not-yet-saved blocks.
+    const key = block.id ?? block.key;
+    if (block.type === 'IMAGE') {
+      return { key, type: 'IMAGE' as const, mediaAssetId: block.mediaAssetId, altText: block.altText ?? null };
+    }
+    return { key, type: block.type as 'HEADING' | 'PARAGRAPH', text: block.text };
+  });
 }
 
 type StorySnapshot = { storyToken: number; blocks: StoryBlock[] };
@@ -55,6 +71,8 @@ type DraftState = {
   dirty: boolean;
   pending: boolean;
   error: string | null;
+  /** True once this state incorporates a real server story snapshot. */
+  serverHydrated: boolean;
 };
 
 function editableBlock(block: StoryBlock, key: string = block.id): EditableStoryBlock {
@@ -82,6 +100,7 @@ function fromServer(identity: string, story?: StorySnapshot): DraftState {
     dirty: false,
     pending: false,
     error: null,
+    serverHydrated: story !== undefined,
   };
 }
 
@@ -148,8 +167,9 @@ export function useProductStoryEditor({
     if (!key) return;
     writer.current.schedule(() => {
       const draft: StoryLocalDraft = {
+        v: 2,
         token: current.current.token,
-        blocks: textBlocksOf(current.current.blocks),
+        blocks: storedBlocksOf(current.current.blocks),
       };
       writeFormDraft(key, draft);
     });
@@ -167,9 +187,45 @@ export function useProductStoryEditor({
       clearFormDraft(key);
       return base;
     }
+    if (stored.v === 2) return restoreV2(base, key, stored);
+    return restoreLegacy(base, key, stored);
+  };
+
+  // v2: blocks match server blocks by stable key, so identity, edits,
+  // deletions and reordering restore exactly; server media keeps its id.
+  const restoreV2 = (
+    base: DraftState,
+    key: string,
+    stored: StoryLocalDraft,
+  ): DraftState => {
+    const serverByKey = new Map(base.blocks.map((block) => [block.key, block]));
+    const blocks: EditableStoryBlock[] = stored.blocks.flatMap((block) => {
+      const match = serverByKey.get(block.key);
+      if (block.type === 'IMAGE') {
+        if (match?.type === 'IMAGE') {
+          return [{ ...match, altText: block.altText ?? null }];
+        }
+        return [{ key: block.key, type: 'IMAGE', mediaAssetId: block.mediaAssetId, altText: block.altText ?? null }];
+      }
+      if (match && match.type !== 'IMAGE') {
+        return [{ ...match, text: block.text }];
+      }
+      return [{ key: block.key, type: block.type, text: block.text }];
+    });
+    const same = JSON.stringify(writeBlocks(blocks)) === JSON.stringify(writeBlocks(base.blocks));
+    if (same) return base;
+    return { ...base, blocks, dirty: true };
+  };
+
+  // Legacy text-only payloads cannot record deletions/reordering/images, so
+  // they keep the old content-merge semantics; the ambiguity is documented
+  // in the wave report rather than guessed.
+  const restoreLegacy = (
+    base: DraftState,
+    key: string,
+    stored: StoryLocalDraft,
+  ): DraftState => {
     if (stored.blocks.length === 0) return base;
-    // Stored keys are client-side; after a remount the server blocks carry
-    // server ids, so dedup by content with occurrence counting.
     const serverCounts = new Map<string, number>();
     for (const block of base.blocks) {
       if (block.type === 'IMAGE') continue;
@@ -188,7 +244,10 @@ export function useProductStoryEditor({
     if (fresh.length === 0) return base;
     return {
       ...base,
-      blocks: [...base.blocks, ...fresh],
+      blocks: [
+        ...base.blocks,
+        ...fresh.map((block) => ({ key: block.key, type: block.type, text: block.text })),
+      ],
       dirty: true,
     };
   };
@@ -207,6 +266,10 @@ export function useProductStoryEditor({
     };
   }, []);
 
+  // One restore attempt per identity, including a plain mount with stable
+  // identity (cached server data): otherwise a stored draft is never read.
+  const restoredFor = useRef<string | null>(null);
+
   useEffect(() => {
     const previous = current.current;
     if (previous.identity !== identity) {
@@ -216,20 +279,32 @@ export function useProductStoryEditor({
       pendingImage.current = null;
       retry.current = null;
       // Own save moved the story to a new revision: the same product stays,
-      // so keep the saved blocks instead of restoring a stale snapshot.
+      // so keep the saved blocks instead of restoring a stale snapshot. Only
+      // a state that already holds a server snapshot may be retagged — a
+      // pre-hydration empty state must hydrate normally (cold server read).
       const sameProduct =
         previous.identity.split(':').slice(0, 2).join(':') ===
         identity.split(':').slice(0, 2).join(':');
-      if (sameProduct && !previous.dirty && !previous.pending) {
+      if (
+        sameProduct &&
+        !previous.dirty &&
+        !previous.pending &&
+        previous.serverHydrated
+      ) {
         persistedAssets.current = new Set(
           previous.blocks.flatMap((block) => block.type === 'IMAGE' ? [block.mediaAssetId] : []),
         );
+        restoredFor.current = identity;
         replace({ ...previous, identity });
         return;
       }
       persistedAssets.current = new Set(
         (story?.blocks ?? []).flatMap((block) => block.type === 'IMAGE' ? [block.mediaAssetId] : []),
       );
+      restoredFor.current = identity;
+      replace(restoreDraft(identity, story));
+    } else if (restoredFor.current !== identity) {
+      restoredFor.current = identity;
       replace(restoreDraft(identity, story));
     } else if (
       story &&
@@ -380,26 +455,9 @@ export function useProductStoryEditor({
           result.blocks.flatMap((block) => block.type === 'IMAGE' ? [block.mediaAssetId] : []),
         );
         replace({ ...current.current, token: result.storyToken, blocks: saved, dirty: false, pending: false });
-        // The server holds the saved blocks; drop the local copy unless the
-        // user typed further edits while the request was in flight. Server
-        // responses add block ids, so compare content without them.
-        const savedBlocks = writeBlocks(current.current.blocks);
-        const sameBlocks =
-          savedBlocks.length === parsed.data.blocks.length &&
-          savedBlocks.every((block, index) => {
-            const stripId = (value: Record<string, unknown>) => {
-              const rest = { ...value };
-              delete rest.id;
-              return JSON.stringify(rest);
-            };
-            return stripId(block as Record<string, unknown>) ===
-              stripId(parsed.data.blocks[index] as Record<string, unknown>);
-          });
-        if (sameBlocks) {
-          clearLocalDraft();
-        } else {
-          writer.current.flush();
-        }
+        // change() blocks input while pending, so the confirmed response is
+        // the whole local operation — drop the stored copy for this identity.
+        clearLocalDraft();
         onSaved?.(result);
         for (const assetId of removedAssets) {
           try {
