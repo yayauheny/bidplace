@@ -31,6 +31,11 @@ export function useProductDraftBrowserHistoryGuard({
   } | null>(null);
   const sessionSlot = useRef(session);
   sessionSlot.current = session;
+  // One sentinel per dirty episode: flag chains like story dirty → pending
+  // never pass through an all-clean moment, so arming must not re-run on each
+  // individual toggle while the guard is already up.
+  const guardArmed = useRef(false);
+  const needsGuard = isDirty || storyDirty || storyPending;
 
   const retireBrowserGuard = async () => {
     const guard = browserNavigation.current;
@@ -49,10 +54,7 @@ export function useProductDraftBrowserHistoryGuard({
   };
 
   useEffect(() => {
-    if (
-      typeof window === 'undefined' ||
-      (!isDirty && !storyDirty && !storyPending)
-    )
+    if (typeof window === 'undefined' || !needsGuard || guardArmed.current)
       return;
 
     const guard = {
@@ -67,6 +69,7 @@ export function useProductDraftBrowserHistoryGuard({
     // pushes a sentinel whose retirement popstate then triggers the
     // persist-and-continue path (history corruption).
     if (draftEffectivelyClean?.()) return;
+    guardArmed.current = true;
     browserNavigation.current = guard;
     const armedUrl = window.location.href;
     window.history.pushState(
@@ -127,6 +130,7 @@ export function useProductDraftBrowserHistoryGuard({
     window.addEventListener('popstate', onPopState);
     return () => {
       window.removeEventListener('popstate', onPopState);
+      guardArmed.current = false;
       if (browserNavigation.current === guard) {
         browserNavigation.current = null;
       }
@@ -150,7 +154,7 @@ export function useProductDraftBrowserHistoryGuard({
         window.history.back();
       }, 0);
     };
-  }, [isDirty, storyDirty, storyPending, productId]);
+  }, [needsGuard, productId]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;

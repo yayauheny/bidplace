@@ -37,6 +37,7 @@ export function useProductDraftNavigation({
   form,
   storyEditor,
   session,
+  retireGuard,
 }: {
   productId?: string;
   stepParam?: ProductWizardStepParam;
@@ -46,6 +47,10 @@ export function useProductDraftNavigation({
   form: UseFormReturn<ProductDraftFormValues>;
   storyEditor: ProductStoryEditor;
   session: ProductDraftSaveSession;
+  // Retire the browser sentinel before a saved step change replaces the URL:
+  // the guard's own cleanup bails once the URL moved, which would leak the
+  // sentinel into history.
+  retireGuard: () => Promise<void>;
 }) {
   const router = useRouter();
   const navigation = useNavigation();
@@ -123,6 +128,7 @@ export function useProductDraftNavigation({
       if (!(await session.persistAll('transition'))) return;
     }
     if (!session.isCurrentOperation(operation)) return;
+    await retireGuard();
     router.setParams({ flow: 'creation', step: String(nextStep) });
     session.endLockedTransition();
   };
@@ -161,6 +167,7 @@ export function useProductDraftNavigation({
       session.endLockedTransition();
       return;
     }
+    await retireGuard();
     router.setParams({
       flow: 'creation',
       step: String(productWizardStep.images),
@@ -192,6 +199,7 @@ export function useProductDraftNavigation({
     const persisted = await session.persistAll('transition');
     if (!persisted) return;
     if (!session.isCurrentOperation(operation)) return;
+    await retireGuard();
     if (isCreationFlow)
       router.setParams({
         flow: 'creation',

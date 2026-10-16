@@ -199,6 +199,7 @@ export function ProductDraftScreen({
     form,
     storyEditor,
     session,
+    retireGuard: () => retireGuardSlot.current(),
   });
   const { wizardDraft, wizardStep, stepOneAttempted } = wizardNavigation;
 
