@@ -6,7 +6,6 @@ import { z } from 'zod';
 
 import {
   FORM_DRAFT_PREFIX,
-  accountDraftEpoch,
   clearAccountFormDrafts,
   clearFormDraft,
   createDraftWriter,
@@ -86,13 +85,6 @@ describe('local form draft storage', () => {
         values: {},
       }),
     ).toBe('failed');
-  });
-
-  it('bumps the account draft epoch so delayed writers can detect retirement', () => {
-    const before = accountDraftEpoch('user-a');
-    clearAccountFormDrafts('user-a');
-    expect(accountDraftEpoch('user-a')).toBe(before + 1);
-    expect(accountDraftEpoch('user-b')).toBe(0);
   });
 
   it('debounces writes and flushes the latest value only', () => {

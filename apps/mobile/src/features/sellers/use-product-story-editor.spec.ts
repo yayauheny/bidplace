@@ -3,12 +3,17 @@
  */
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
+import { QueryClient } from '@tanstack/react-query';
 import type { ApiClient } from '@bidplace/api-client';
 import type { StoryBlock } from '@bidplace/contracts';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { useProductStoryEditor } from './use-product-story-editor';
 import { clearAccountFormDrafts } from '../../lib/local-form-draft';
+import {
+  issueDraftWriteLease,
+  retireDraftWriteLease,
+} from '../../lib/query-cache';
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
@@ -40,6 +45,7 @@ function mount(
   } as unknown as ApiClient;
 
   let editor!: ReturnType<typeof useProductStoryEditor>;
+  const queryClient = new QueryClient();
   const container = document.createElement('div');
   const root = createRoot(container);
   function Probe({
@@ -57,6 +63,7 @@ function mount(
       revisionId: revision,
       authEpoch,
       accountId,
+      queryClient,
       story: liveStory ?? undefined,
     });
     return null;
@@ -79,6 +86,7 @@ function mount(
   render(1, revisionId, story);
   cases.push(() => act(() => root.unmount()));
   return {
+    queryClient,
     get editor() {
       return editor;
     },
@@ -108,14 +116,45 @@ describe('revision-backed Work Story editor', () => {
     expect(view.editor.storageError).toContain('устройстве');
   });
 
+  it('drops a pending story write when the session lease retires mid-logout', () => {
+    vi.useFakeTimers();
+    const view = mount('user-a');
+    const draftKey = `bidplace:draft:user-a:product-story:${workId}`;
+    act(() => view.editor.addText('PARAGRAPH'));
+    act(() => view.editor.editText(view.editor.blocks[0]!.key, 'Текст'));
+    // Logout clears the account drafts and retires the session lease while
+    // the debounced write is pending.
+    clearAccountFormDrafts('user-a');
+    retireDraftWriteLease(view.queryClient);
+    act(() => vi.advanceTimersByTime(500));
+    expect(window.localStorage.getItem(draftKey)).toBeNull();
+  });
+
+  it('does not re-arm story writes until a new session lease is issued', () => {
+    vi.useFakeTimers();
+    const view = mount('user-a');
+    const draftKey = `bidplace:draft:user-a:product-story:${workId}`;
+    clearAccountFormDrafts('user-a');
+    retireDraftWriteLease(view.queryClient);
+    act(() => view.editor.addText('PARAGRAPH'));
+    act(() => vi.advanceTimersByTime(500));
+    expect(window.localStorage.getItem(draftKey)).toBeNull();
+    issueDraftWriteLease(view.queryClient);
+    act(() => view.editor.editText(view.editor.blocks[0]!.key, 'Новый текст'));
+    act(() => vi.advanceTimersByTime(500));
+    expect(window.localStorage.getItem(draftKey)).not.toBeNull();
+  });
+
   it('does not resurrect a cleared story draft after logout', () => {
     vi.useFakeTimers();
     const view = mount('user-a');
     const draftKey = `bidplace:draft:user-a:product-story:${workId}`;
     act(() => view.editor.addText('PARAGRAPH'));
     act(() => view.editor.editText(view.editor.blocks[0]!.key, 'Текст'));
-    // Logout clears the account drafts while the debounced write is pending.
+    // Logout clears the account drafts and retires the session lease while
+    // the debounced write is pending.
     clearAccountFormDrafts('user-a');
+    retireDraftWriteLease(view.queryClient);
     act(() => vi.advanceTimersByTime(500));
     expect(window.localStorage.getItem(draftKey)).toBeNull();
   });

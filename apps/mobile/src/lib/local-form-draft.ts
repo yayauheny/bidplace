@@ -29,17 +29,6 @@ function storage(): Storage | null {
 }
 
 /**
- * Per-account write epoch. `clearAccountFormDrafts` (logout) bumps it;
- * delayed writers compare the epoch captured at schedule time with the
- * current one and drop the write after retirement.
- */
-const accountDraftEpochs = new Map<string, number>();
-
-export function accountDraftEpoch(accountId: string): number {
-  return accountDraftEpochs.get(accountId) ?? 0;
-}
-
-/**
  * Result of a draft write: 'unsupported' when the runtime has no Web Storage
  * at all (native), 'failed' when the API exists but the operation threw
  * (quota/denied). Only the latter is worth a user-facing warning.
@@ -110,12 +99,8 @@ export function clearFormDraft(key: string): void {
 
 /** Removes every draft belonging to the account (logout boundary). */
 export function clearAccountFormDrafts(accountId: string): void {
-  // Bump the write epoch first so writers debounced before the clear drop
-  // their pending write instead of resurrecting the private draft.
-  accountDraftEpochs.set(
-    accountId,
-    (accountDraftEpochs.get(accountId) ?? 0) + 1,
-  );
+  // Writers gated by the session-scoped draft write lease (query-cache) drop
+  // their pending write once logout retires it; this cleans the keys.
   const store = storage();
   if (!store) return;
   const prefix = `${FORM_DRAFT_PREFIX}${accountId}:`;

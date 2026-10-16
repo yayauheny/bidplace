@@ -18,12 +18,13 @@ import { getApiAssetUrl } from '../../lib/environment';
 import {
   authKeys,
   canWritePrivateCache,
+  captureDraftWriteLease,
   currentAuthEpoch,
+  draftWriteLeaseIsValid,
   refreshPrivateQuery,
 } from '../../lib/query-cache';
 import {
   DRAFT_STORAGE_ERROR_MESSAGE,
-  accountDraftEpoch,
   clearFormDraft,
   createDraftWriter,
   formDraftKey,
@@ -233,10 +234,13 @@ export function AuthorApplicationAchievements({
       return;
     }
     const account = accountId;
-    const epoch = account ? accountDraftEpoch(account) : null;
+    const lease = captureDraftWriteLease(queryClient);
     draftWriter.current.schedule(() => {
-      // A logout cleared this account's drafts while the write was pending.
-      if (account === null || accountDraftEpoch(account) !== epoch) return;
+      // The session lease (captured at schedule time) is retired when logout
+      // begins and reissued only by the next session; a pending write cannot
+      // be re-armed by re-scheduling before that.
+      if (account === null || !draftWriteLeaseIsValid(queryClient, lease))
+        return;
       const written = writeFormDraft(draftKey, { body, dateInput });
       // A successful write clears only this writer's error, not the form's.
       onStorageErrorRef.current?.(

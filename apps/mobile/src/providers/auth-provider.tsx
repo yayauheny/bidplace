@@ -14,7 +14,11 @@ import type {
   RegisterRequest,
   User,
 } from '@bidplace/contracts';
-import { useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
+import {
+  useQuery,
+  useQueryClient,
+  type QueryClient,
+} from '@tanstack/react-query';
 
 import { shouldClearSessionForError } from '../errors';
 import { useApiClient } from './api-provider';
@@ -25,6 +29,7 @@ import {
   currentAuthEpoch,
   readAuthEpoch,
   replaceAuthenticatedSession,
+  retireDraftWriteLease,
   subscribeAuthEpoch,
 } from '../lib/query-cache';
 
@@ -40,8 +45,14 @@ type AuthContextValue = {
   readonly isAuthenticated: boolean;
   readonly isAdmin: boolean;
   readonly canModerate: boolean;
-  readonly login: (input: LoginRequest, options?: AuthCallOptions) => Promise<AuthResponse>;
-  readonly register: (input: RegisterRequest, options?: AuthCallOptions) => Promise<AuthResponse>;
+  readonly login: (
+    input: LoginRequest,
+    options?: AuthCallOptions,
+  ) => Promise<AuthResponse>;
+  readonly register: (
+    input: RegisterRequest,
+    options?: AuthCallOptions,
+  ) => Promise<AuthResponse>;
   readonly logout: () => Promise<void>;
   readonly refreshSession: () => Promise<User | null>;
   readonly clearSession: () => void;
@@ -64,8 +75,10 @@ export function registerSessionChangeIsOwn(
   const state = readAuthEpoch(queryClient);
   const retirement = active.startEpoch + 1;
   const finished = active.startEpoch + 2;
-  if (epoch === retirement && state.id === retirement && !state.writesOpen) return true;
-  if (epoch === finished && state.id === finished && state.writesOpen) return true;
+  if (epoch === retirement && state.id === retirement && !state.writesOpen)
+    return true;
+  if (epoch === finished && state.id === finished && state.writesOpen)
+    return true;
   return epoch === retirement && state.id === finished && state.writesOpen;
 }
 
@@ -126,7 +139,10 @@ function beginAuthWrite(
   return flight;
 }
 
-function trackInstall(flight: AuthWrite, work: () => Promise<void>): Promise<void> {
+function trackInstall(
+  flight: AuthWrite,
+  work: () => Promise<void>,
+): Promise<void> {
   flight.installing = true;
   const run = work().finally(() => {
     flight.installing = false;
@@ -152,7 +168,10 @@ function ownEpochSettled(
   );
 }
 
-function releaseAuthWrite(owner: { current: AuthWrite | null }, flight: AuthWrite) {
+function releaseAuthWrite(
+  owner: { current: AuthWrite | null },
+  flight: AuthWrite,
+) {
   flight.detach();
   if (owner.current === flight) owner.current = null;
 }
@@ -221,7 +240,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const flight = beginAuthWrite(authWrite, queryClient);
     try {
       if (flight.waits) await flight.ready;
-      if (authWrite.current !== flight || flight.controller.signal.aborted) return;
+      if (authWrite.current !== flight || flight.controller.signal.aborted)
+        return;
       await trackInstall(flight, () => clearAuthenticatedSession(queryClient));
     } finally {
       releaseAuthWrite(authWrite, flight);
@@ -249,13 +269,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
           if (flight.waits) {
             await flight.ready;
-            if (authWrite.current !== flight || flight.controller.signal.aborted) throw abortError();
+            if (
+              authWrite.current !== flight ||
+              flight.controller.signal.aborted
+            )
+              throw abortError();
           }
-          const response = await api.auth.login(input, { signal: flight.controller.signal });
+          const response = await api.auth.login(input, {
+            signal: flight.controller.signal,
+          });
           assertAuthWriteCurrent(authWrite, flight, queryClient);
-          await trackInstall(flight, () => setAuthenticatedSession(response.user));
-          const installed = queryClient.getQueryData<User | null>(authKeys.session) ?? null;
-          if (!ownEpochSettled(authWrite, flight, queryClient) || installed?.id !== response.user.id) {
+          await trackInstall(flight, () =>
+            setAuthenticatedSession(response.user),
+          );
+          const installed =
+            queryClient.getQueryData<User | null>(authKeys.session) ?? null;
+          if (
+            !ownEpochSettled(authWrite, flight, queryClient) ||
+            installed?.id !== response.user.id
+          ) {
             throw abortError();
           }
           return response;
@@ -268,14 +300,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
           if (flight.waits) {
             await flight.ready;
-            if (authWrite.current !== flight || flight.controller.signal.aborted) throw abortError();
+            if (
+              authWrite.current !== flight ||
+              flight.controller.signal.aborted
+            )
+              throw abortError();
           }
-          const response = await api.auth.register(input, { signal: flight.controller.signal });
+          const response = await api.auth.register(input, {
+            signal: flight.controller.signal,
+          });
           assertAuthWriteCurrent(authWrite, flight, queryClient);
           const startEpoch = flight.epoch;
           activeRegisterInstall.set(queryClient, { startEpoch });
           try {
-            await trackInstall(flight, () => setAuthenticatedSession(response.user));
+            await trackInstall(flight, () =>
+              setAuthenticatedSession(response.user),
+            );
             const installed =
               queryClient.getQueryData<User | null>(authKeys.session) ?? null;
             const done = currentAuthEpoch(queryClient);
@@ -284,7 +324,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               installed?.id === response.user.id &&
               done === startEpoch + 2
             ) {
-              const epochs = registerInstalledEpochs.get(queryClient) ?? new Set<number>();
+              const epochs =
+                registerInstalledEpochs.get(queryClient) ?? new Set<number>();
               epochs.add(startEpoch + 1);
               epochs.add(done);
               registerInstalledEpochs.set(queryClient, epochs);
@@ -292,8 +333,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           } finally {
             activeRegisterInstall.delete(queryClient);
           }
-          const installed = queryClient.getQueryData<User | null>(authKeys.session) ?? null;
-          if (!ownEpochSettled(authWrite, flight, queryClient) || installed?.id !== response.user.id) {
+          const installed =
+            queryClient.getQueryData<User | null>(authKeys.session) ?? null;
+          if (
+            !ownEpochSettled(authWrite, flight, queryClient) ||
+            installed?.id !== response.user.id
+          ) {
             throw abortError();
           }
           return response;
@@ -302,11 +347,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       },
       logout: async () => {
+        // Local draft writes belong to the session being left: retire their
+        // lease before any network work so a write scheduled or executed
+        // during the logout cannot land in storage. The next session issues
+        // a fresh lease when it installs (replaceAuthenticatedSession).
+        retireDraftWriteLease(queryClient);
         const flight = beginAuthWrite(authWrite, queryClient);
         try {
           if (flight.waits) {
             await flight.ready;
-            if (authWrite.current !== flight || flight.controller.signal.aborted) throw abortError();
+            if (
+              authWrite.current !== flight ||
+              flight.controller.signal.aborted
+            )
+              throw abortError();
           }
           let failure: unknown;
           try {
@@ -315,10 +369,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             failure = error;
           }
           if (!authWriteIsCurrent(authWrite, flight, queryClient)) {
-            if (failure instanceof Error && failure.name === 'AbortError') throw failure;
+            if (failure instanceof Error && failure.name === 'AbortError')
+              throw failure;
             throw abortError();
           }
-          await trackInstall(flight, () => clearAuthenticatedSession(queryClient));
+          await trackInstall(flight, () =>
+            clearAuthenticatedSession(queryClient),
+          );
           const cleared =
             ownEpochSettled(authWrite, flight, queryClient) &&
             queryClient.getQueryData(authKeys.session) == null;
@@ -333,7 +390,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
           const next = (await api.auth.me()).user;
           if (currentAuthEpoch(queryClient) !== epoch) {
-            return queryClient.getQueryData<User | null>(authKeys.session) ?? null;
+            return (
+              queryClient.getQueryData<User | null>(authKeys.session) ?? null
+            );
           }
           const current =
             queryClient.getQueryData<User | null>(authKeys.session) ?? null;
@@ -345,7 +404,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return next;
         } catch (error) {
           if (currentAuthEpoch(queryClient) !== epoch) {
-            return queryClient.getQueryData<User | null>(authKeys.session) ?? null;
+            return (
+              queryClient.getQueryData<User | null>(authKeys.session) ?? null
+            );
           }
           if (shouldClearSessionForError(error)) {
             await clearAuthenticatedSession(queryClient);

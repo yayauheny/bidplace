@@ -3,11 +3,16 @@
  */
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
+import { QueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import type { UseFormReturn } from 'react-hook-form';
 import { afterEach, expect, it, vi } from 'vitest';
 
 import { clearAccountFormDrafts } from '../../lib/local-form-draft';
+import {
+  issueDraftWriteLease,
+  retireDraftWriteLease,
+} from '../../lib/query-cache';
 import {
   emptyProductDraftFormValues,
   productDraftFieldsSchema,
@@ -33,6 +38,7 @@ function mountProfile(
 ) {
   let form!: UseFormReturn<ProfileValues>;
   let restore!: RestoreHook;
+  const queryClient = new QueryClient();
   const root = createRoot(document.createElement('div'));
   function Harness({ baseToken }: { baseToken: string | null }) {
     form = useForm<ProfileValues>({ defaultValues: emptyProfileDraft });
@@ -46,6 +52,7 @@ function mountProfile(
       serverValues:
         serverValues ?? (entityId === 'new' ? null : emptyProfileDraft),
       fields: profileDraftFieldsSchema,
+      queryClient,
       canWrite: () => true,
     });
     return null;
@@ -53,6 +60,7 @@ function mountProfile(
   act(() => root.render(createElement(Harness, { baseToken: base })));
   cases.push(() => act(() => root.unmount()));
   return {
+    queryClient,
     get form() {
       return form;
     },
@@ -72,6 +80,7 @@ function mountProduct(
 ) {
   let form!: UseFormReturn<ProductValues>;
   let restore!: RestoreHook;
+  const queryClient = new QueryClient();
   const root = createRoot(document.createElement('div'));
   function Harness({ baseToken }: { baseToken: string | null }) {
     form = useForm<ProductValues>({
@@ -88,6 +97,7 @@ function mountProduct(
         serverValues ??
         (entityId === 'new' ? null : emptyProductDraftFormValues),
       fields: productDraftFieldsSchema,
+      queryClient,
       canWrite: () => true,
     });
     return null;
@@ -95,6 +105,7 @@ function mountProduct(
   act(() => root.render(createElement(Harness, { baseToken: base })));
   cases.push(() => act(() => root.unmount()));
   return {
+    queryClient,
     get form() {
       return form;
     },
@@ -254,17 +265,42 @@ it('removes a fully saved local snapshot instead of repersisting a clean form', 
   expect(window.localStorage.getItem(key)).toBeNull();
 });
 
-it('drops a delayed write scheduled before the account drafts were cleared', () => {
+it('drops a delayed write scheduled before the session lease was retired', () => {
   vi.useFakeTimers();
   const key = 'bidplace:draft:user-a:product-draft:work-1';
   const view = mountProduct('work-1', 'revision-t1');
   act(() =>
     view.form.setValue('title', 'Приватный ввод', { shouldDirty: true }),
   );
-  // Logout clears the account drafts while the debounced write is pending.
+  // Logout clears the account drafts and retires the session lease while
+  // the debounced write is pending.
   clearAccountFormDrafts('user-a');
+  retireDraftWriteLease(view.queryClient);
   act(() => vi.advanceTimersByTime(500));
   expect(window.localStorage.getItem(key)).toBeNull();
+});
+
+it('does not re-arm writes after the drafts were cleared until a new session lease', () => {
+  vi.useFakeTimers();
+  const key = 'bidplace:draft:user-a:product-draft:new';
+  const view = mountProduct();
+  act(() => view.form.setValue('title', 'Первый ввод', { shouldDirty: true }));
+  act(() => vi.advanceTimersByTime(500));
+  expect(window.localStorage.getItem(key)).not.toBeNull();
+  // Logout completes locally; typing resumes before the next login installs
+  // a new lease — nothing may be written in between.
+  clearAccountFormDrafts('user-a');
+  retireDraftWriteLease(view.queryClient);
+  act(() => view.form.setValue('title', 'Поздний ввод', { shouldDirty: true }));
+  act(() => vi.advanceTimersByTime(500));
+  expect(window.localStorage.getItem(key)).toBeNull();
+  // The next login issues a fresh lease and drafts persist again.
+  issueDraftWriteLease(view.queryClient);
+  act(() => view.form.setValue('title', 'Новый ввод', { shouldDirty: true }));
+  act(() => vi.advanceTimersByTime(500));
+  expect(JSON.parse(window.localStorage.getItem(key)!).values.title).toBe(
+    'Новый ввод',
+  );
 });
 
 it('keeps the draft at the old key when the entity-created copy fails to write', () => {

@@ -143,6 +143,7 @@ export function ProductDraftScreen({
       ? productToDraftFormValues(existingProduct, productDetail.data?.selection)
       : null,
     fields: productDraftFieldsSchema,
+    queryClient,
     canWrite: () => canWritePrivateCache(queryClient, authEpoch),
   });
 
@@ -152,6 +153,7 @@ export function ProductDraftScreen({
     revisionId: productDetail.data?.editingRevision?.id,
     authEpoch,
     accountId,
+    queryClient,
     canChange: () => !session.transitionLock.current,
     story: productDetail.data?.story,
     onSaved: (savedStory) => {

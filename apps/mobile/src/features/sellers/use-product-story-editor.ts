@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import type { QueryClient } from '@tanstack/react-query';
 import type { StoryBlock, StoryWriteRequest } from '@bidplace/contracts';
 import { STORY_LIMITS, storyWriteRequestSchema } from '@bidplace/contracts';
 import { z } from 'zod';
@@ -7,13 +8,16 @@ import type { ApiClient } from '@bidplace/api-client';
 
 import {
   DRAFT_STORAGE_ERROR_MESSAGE,
-  accountDraftEpoch,
   clearFormDraft,
   createDraftWriter,
   formDraftKey,
   readFormDraft,
   writeFormDraft,
 } from '../../lib/local-form-draft';
+import {
+  captureDraftWriteLease,
+  draftWriteLeaseIsValid,
+} from '../../lib/query-cache';
 
 export type EditableStoryBlock = StoryWriteRequest['blocks'][number] & {
   key: string;
@@ -161,6 +165,7 @@ export function useProductStoryEditor({
   revisionId,
   authEpoch,
   accountId,
+  queryClient,
   story,
   onSaved,
   canChange,
@@ -170,6 +175,8 @@ export function useProductStoryEditor({
   revisionId?: string;
   authEpoch: number;
   accountId: string | null;
+  /** Session boundary: owns the local draft write lease (logout/login). */
+  queryClient: QueryClient;
   story?: StorySnapshot;
   onSaved?: (story: StorySnapshot) => void;
   canChange?: () => boolean;
@@ -211,10 +218,12 @@ export function useProductStoryEditor({
     const account = accountRef.current;
     const key = storyDraftKey(account, productRef.current);
     if (!account || !key) return;
-    const epoch = accountDraftEpoch(account);
+    const lease = captureDraftWriteLease(queryClient);
     writer.current.schedule(() => {
-      // A logout cleared this account's drafts while the write was pending.
-      if (accountDraftEpoch(account) !== epoch) return;
+      // The session lease (captured at schedule time) is retired when logout
+      // begins and reissued only by the next session; a pending write cannot
+      // be re-armed by re-scheduling before that.
+      if (!draftWriteLeaseIsValid(queryClient, lease)) return;
       const draft: StoryLocalDraft = {
         v: 2,
         revisionId: revisionRef.current,

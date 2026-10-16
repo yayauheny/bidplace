@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import type { QueryClient } from '@tanstack/react-query';
 import type { UseFormReturn } from 'react-hook-form';
 import { z } from 'zod';
 
 import {
   DRAFT_STORAGE_ERROR_MESSAGE,
-  accountDraftEpoch,
   clearFormDraft,
   createDraftWriter,
   formDraftKey,
@@ -12,6 +12,10 @@ import {
   readFormDraft,
   writeFormDraft,
 } from '../../lib/local-form-draft';
+import {
+  captureDraftWriteLease,
+  draftWriteLeaseIsValid,
+} from '../../lib/query-cache';
 
 /**
  * Local draft restore for the two owner forms (product draft, seller
@@ -50,6 +54,8 @@ type RestoreInput<TValues extends Record<string, unknown>> = {
   serverValues: TValues | null;
   /** Raw storage-level field parsers from the form owner module. */
   fields: DraftFieldsSchema;
+  /** Session boundary: owns the local draft write lease (logout/login). */
+  queryClient: QueryClient;
   canWrite: () => boolean;
 };
 
@@ -61,6 +67,7 @@ export function useLocalFormRestore<TValues extends Record<string, unknown>>({
   baseToken,
   serverValues,
   fields,
+  queryClient,
   canWrite,
 }: RestoreInput<TValues>) {
   const writerRef = useRef(createDraftWriter());
@@ -96,11 +103,12 @@ export function useLocalFormRestore<TValues extends Record<string, unknown>>({
   useEffect(() => {
     const writer = writerRef.current;
     const subscription = form.watch(() => {
-      const account = accountRef.current;
-      const epoch = account ? accountDraftEpoch(account) : null;
+      const lease = captureDraftWriteLease(queryClient);
       writer.schedule(() => {
-        // A logout cleared this account's drafts while the write was pending.
-        if (account === null || accountDraftEpoch(account) !== epoch) return;
+        // The session lease (captured at schedule time) is retired when
+        // logout begins and reissued only by the next session, so a write
+        // pending across the boundary drops and cannot be re-armed.
+        if (!draftWriteLeaseIsValid(queryClient, lease)) return;
         const key = currentKey();
         if (!key || !canWriteRef.current()) return;
         if (!form.formState.isDirty) {
@@ -122,7 +130,7 @@ export function useLocalFormRestore<TValues extends Record<string, unknown>>({
       else writer.cancel();
       subscription.unsubscribe();
     };
-  }, [form, currentKey]);
+  }, [form, currentKey, queryClient]);
 
   // Restore: only when the draft was typed on top of the hydrated revision.
   const serverSnapshot = serverValues ? JSON.stringify(serverValues) : null;
@@ -173,7 +181,11 @@ export function useLocalFormRestore<TValues extends Record<string, unknown>>({
       const writer = writerRef.current;
       const key = currentKey();
       writer.flush();
-      if (key && canWriteRef.current()) {
+      if (
+        key &&
+        canWriteRef.current() &&
+        captureDraftWriteLease(queryClient) !== null
+      ) {
         const written = writeFormDraft(
           formDraftKey(accountRef.current!, scope, newEntityId),
           {
@@ -189,7 +201,7 @@ export function useLocalFormRestore<TValues extends Record<string, unknown>>({
       entityRef.current = newEntityId;
       baseRef.current = newBaseToken;
     },
-    [currentKey, form, scope],
+    [currentKey, form, queryClient, scope],
   );
 
   const clearDraft = useCallback(() => {

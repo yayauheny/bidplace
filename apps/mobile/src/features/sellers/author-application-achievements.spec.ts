@@ -291,7 +291,9 @@ vi.mock('../../components/ui', () => {
 
 import {
   clearAuthenticatedSession,
+  issueDraftWriteLease,
   replaceAuthenticatedSession,
+  retireDraftWriteLease,
   authKeys,
 } from '../../lib/query-cache';
 import { clearAccountFormDrafts } from '../../lib/local-form-draft';
@@ -685,14 +687,32 @@ describe('Author application achievement lifecycle', () => {
     const view = mount();
     await openEditor(view);
     fillAchievement(view.container, 'Приватное событие');
-    // Logout clears the account drafts while the debounced write is pending.
+    // Logout clears the account drafts and retires the session lease while
+    // the debounced write is pending.
     clearAccountFormDrafts('user-a');
+    retireDraftWriteLease(view.queryClient);
     await new Promise((resolve) => setTimeout(resolve, 500));
     expect(
       window.localStorage.getItem(
         'bidplace:draft:user-a:seller-achievements:new',
       ),
     ).toBeNull();
+    view.unmount();
+  });
+
+  it('does not re-arm achievement writes until a new session lease is issued', async () => {
+    const view = mount();
+    await openEditor(view);
+    clearAccountFormDrafts('user-a');
+    retireDraftWriteLease(view.queryClient);
+    fillAchievement(view.container, 'Позднее событие');
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    const key = 'bidplace:draft:user-a:seller-achievements:new';
+    expect(window.localStorage.getItem(key)).toBeNull();
+    issueDraftWriteLease(view.queryClient);
+    fillAchievement(view.container, 'Новое событие');
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    expect(window.localStorage.getItem(key)).not.toBeNull();
     view.unmount();
   });
 

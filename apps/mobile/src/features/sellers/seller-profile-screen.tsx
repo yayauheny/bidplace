@@ -200,6 +200,7 @@ export function SellerProfileScreen() {
     baseToken: hydrationToken ?? null,
     serverValues: profile ? toFields(profile) : null,
     fields: profileDraftFieldsSchema,
+    queryClient,
     canWrite: () => canWritePrivateCache(queryClient, authEpoch),
   });
   const submission = useProfileSubmission({
