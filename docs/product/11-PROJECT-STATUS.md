@@ -2,6 +2,33 @@
 
 > Entries dated before 2026-10-13 mention Pen / .pen files; the Pen design was removed (DEC-119) — read those mentions as history.
 
+## 2026-10-17 — Повторный аудит пакетов A/B/C: A-01/A-02/A-03/A-04 + C-01 (Partial)
+
+Аудит `docs/audits/2026-10-17-PACKAGES-ABC-REVIEW.md` (`fix/packages-abc-audit`,
+`41503488`); резолюции `docs/audits/2026-10-17-PACKAGES-ABC-RESOLUTIONS.md`.
+Пакет B принят в заявленных границах, не переписывался.
+
+- **A-01/A-04 (сохранность черновиков) — Implemented:** безопасная миграция
+  (занятое назначение не перезаписывается, дедуп совпадающих копий,
+  failed-write оставляет источник), recovery-текст доступен из оставшегося
+  источника при quota; исправлен двухфазный mount, закапывавший копию в
+  recovery-ключ без revision. Код `4ac852f5`.
+- **A-02 (ownership guard) — Implemented:** один strict predicate на все
+  пути гидратации; чужой/без attribution snapshot удерживается, waiting
+  state нельзя сохранить. Код `4ac852f5`.
+- **A-03 (recovery UI) — Implemented:** общая TextButton, при
+  reject/отсутствии clipboard — AppDialog с ручным выделением, статус
+  «Скопировано» привязан к payload. Код `52b9601c`.
+- **C-01 (login acceptance) — Implemented:** полный обратный Shift+Tab
+  маршрут со строгим toBeFocused. Код `1e855741`, спека зелёная в обоих
+  движках.
+- **Проверки:** 882/882 unit, tsc/eslint чист, login acceptance и
+  product-story-revision 2/2 в Chromium/WebKit.
+- **Остаётся Needs verification:** реальный browser zoom и увеличение
+  текста (ручная инструкция в evidence README); три стилевых расхождения
+  и legal-копия — на live Figma сверку (dated ZIP эталон). Push/merge/deploy
+  не выполнялись.
+
 ## 2026-10-16 — Повторное ревью волн 5–11: исправления A/B/C (Partial)
 
 Аудит `docs/audits/2026-10-16-WAVES-5-11-REVIEW.md` (ветка `fix/waves-5-11-audit`),
