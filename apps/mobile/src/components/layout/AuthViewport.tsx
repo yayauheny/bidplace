@@ -45,6 +45,7 @@ import {
 import { BidplaceMark, BidplaceWordmark } from '../branding/BidplaceBrand';
 import { AppText } from '../ui';
 import { FigmaIcon } from '../figma/FigmaIcon';
+import { useAppTheme } from '../../providers/theme-provider';
 import { AppDialogFrame, AppDialogOverlay } from '../ui/app-dialog-layer';
 import { appDialogHostStyle } from '../ui/app-dialog-host-style';
 import { MotionPressable } from '../ui/MotionPressable';
@@ -95,6 +96,7 @@ export function AuthViewport(props: AuthViewportProps) {
   } = props;
   const protectEnteredData = props.protectEnteredData === true;
   const exit = protectEnteredData ? props.exit : undefined;
+  const palette = useAppTheme();
   const router = useRouter();
   const navigation = useNavigation();
   const focused = useIsFocused();
@@ -329,7 +331,7 @@ export function AuthViewport(props: AuthViewportProps) {
   });
 
   return (
-    <View style={{ flex: 1, backgroundColor: designTokens.color.canvas }}>
+    <View style={{ flex: 1, backgroundColor: palette.canvas }}>
       {focused && !screen ? (
         <View
           pointerEvents="none"
@@ -377,7 +379,7 @@ export function AuthViewport(props: AuthViewportProps) {
                   <AppDialogOverlay
                     style={{
                       inset: 0,
-                      backgroundColor: designTokens.color.modalDimmer,
+                      backgroundColor: palette.modalDimmer,
                       zIndex: designTokens.layer.modal,
                     }}
                   />
@@ -413,7 +415,7 @@ export function AuthViewport(props: AuthViewportProps) {
                         : designTokens.auth.sheetRadius,
                       borderBottomLeftRadius: 0,
                       borderBottomRightRadius: 0,
-                      backgroundColor: designTokens.color.canvas,
+                      backgroundColor: palette.canvas,
                       paddingTop: screen
                         ? designTokens.auth.screenPaddingTop
                         : designTokens.auth.paddingTop,
@@ -547,7 +549,7 @@ export function AuthViewport(props: AuthViewportProps) {
                                 width: designTokens.auth.handleWidth,
                                 height: designTokens.auth.handleHeight,
                                 borderRadius: designTokens.radius.pill,
-                                backgroundColor: designTokens.color.quietFill,
+                                backgroundColor: palette.quietFill,
                               }}
                             />
                           </View>
@@ -563,7 +565,7 @@ export function AuthViewport(props: AuthViewportProps) {
                               <AppText
                                 role="sectionTitle"
                                 style={{
-                                  color: designTokens.color.fieldValue,
+                                  color: palette.fieldValue,
                                   ...designTokens.typography.authSheetTitle,
                                   paddingRight: 36,
                                 }}

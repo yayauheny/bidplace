@@ -81,6 +81,20 @@ export const lightColorMap = {
   saleLive: '#E9401A',
   saleAnnounce: '#51E91A',
   white: '#FFFFFF',
+  // Button-only roles (former figmaButtonTokens palette; light values verbatim).
+  onAction: '#FFFFFF',
+  mutedStroke: '#F3F3F3',
+  solidBorderGradientStart: '#2A2A2A',
+  solidBorderGradientEnd: '#585858',
+  outlineBorderGradientStart: '#D1D1D1',
+  outlineBorderGradientEnd: '#EBEBEB',
+  searchChromeGradientStart: '#D1D1D1',
+  searchChromeGradientEnd: '#EBEBEB',
+  dialogBorder: 'rgba(20, 20, 20, 0.08)',
+  overlayOnSolid: 'rgba(255, 255, 255, 0.15)',
+  overlayOnLight: 'rgba(0, 0, 0, 0.05)',
+  overlayOnMuted: 'rgba(0, 0, 0, 0.06)',
+  floatingShadow: '0 10px 24px rgba(17, 17, 17, 0.12)',
 } as const;
 
 export type SemanticColorRole = keyof typeof lightColorMap;
@@ -156,6 +170,20 @@ export const blackColorMap: SemanticColorMap = {
   saleLive: '#FF5A36',
   saleAnnounce: '#6FE93B',
   white: '#FFFFFF',
+  // Provisional black values for the button roles — NEEDS-FIGMA.
+  onAction: '#121212',
+  mutedStroke: '#2E2E2E',
+  solidBorderGradientStart: '#4A4A4A',
+  solidBorderGradientEnd: '#6E6E6E',
+  outlineBorderGradientStart: '#4A4A4A',
+  outlineBorderGradientEnd: '#333333',
+  searchChromeGradientStart: '#4A4A4A',
+  searchChromeGradientEnd: '#333333',
+  dialogBorder: 'rgba(255, 255, 255, 0.14)',
+  overlayOnSolid: 'rgba(0, 0, 0, 0.18)',
+  overlayOnLight: 'rgba(255, 255, 255, 0.08)',
+  overlayOnMuted: 'rgba(255, 255, 255, 0.10)',
+  floatingShadow: '0 10px 24px rgba(0, 0, 0, 0.5)',
 };
 
 export const appColorMaps: Record<AppThemeName, SemanticColorMap> = {

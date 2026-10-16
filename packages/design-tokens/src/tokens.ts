@@ -680,11 +680,6 @@ export const designTokens = {
     /** Source `I746:23099` / `278:4690`: Continue label 86 px + 14.5 px inset per side. */
     exitConfirmActionMinWidth: 115,
   },
-  elevation: {
-    floating: {
-      boxShadow: '0 10px 24px rgba(17, 17, 17, 0.12)',
-    },
-  },
   layer: { content: 0, chrome: 10, popover: 20, dock: 40, modal: 50 },
   blur: {
     dock: 6,

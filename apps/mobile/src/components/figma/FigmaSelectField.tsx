@@ -3,6 +3,7 @@ import { Platform, Text, View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
+import { useAppTheme } from '../../providers/theme-provider';
 import { MotionPressable } from '../ui/MotionPressable';
 import {
   figmaFieldPlaceholderColor,
@@ -36,6 +37,7 @@ export const FigmaSelectField = forwardRef<
   },
   ref,
 ) {
+  const palette = useAppTheme();
   const errorId = useId();
   const valueId = useId();
   const [focused, setFocused] = useState(false);
@@ -50,7 +52,7 @@ export const FigmaSelectField = forwardRef<
     filled: filled || focused,
   });
   const showLabel = figmaFieldShowsFloatingLabel(status);
-  const valueColor = figmaFieldValueColor(status);
+  const valueColor = figmaFieldValueColor(status, palette);
   const displayText = filled ? value : placeholder;
   const displayIsPlaceholder = !filled && !focused;
 
@@ -78,7 +80,7 @@ export const FigmaSelectField = forwardRef<
               'aria-haspopup': 'dialog',
             } as object)
           : {})}
-        style={figmaFieldStyle(status, false, 'default', variant)}
+        style={figmaFieldStyle(status, false, 'default', variant, palette)}
       >
         <Text
           nativeID={valueId}
@@ -89,7 +91,7 @@ export const FigmaSelectField = forwardRef<
             flex: 1,
             minWidth: 0,
             color: displayIsPlaceholder
-              ? figmaFieldPlaceholderColor(status, variant)
+              ? figmaFieldPlaceholderColor(status, variant, palette)
               : valueColor,
             ...designTokens.typography.field,
           }}
@@ -104,13 +106,13 @@ export const FigmaSelectField = forwardRef<
             left: designTokens.space.fieldLabelX,
             top: designTokens.space.fieldLabelY,
             paddingHorizontal: 4,
-            backgroundColor: designTokens.color.canvas,
+            backgroundColor: palette.canvas,
             display: showLabel ? undefined : 'none',
           }}
         >
           <Text
             style={{
-              color: designTokens.color.fieldLabel,
+              color: palette.fieldLabel,
               ...designTokens.typography.fieldLabel,
             }}
           >
@@ -126,7 +128,7 @@ export const FigmaSelectField = forwardRef<
             marginTop: designTokens.space.fieldErrorGap,
             marginLeft: designTokens.space.fieldErrorX,
             marginRight: designTokens.space.fieldX,
-            color: designTokens.color.error,
+            color: palette.error,
             ...designTokens.typography.fieldError,
           }}
         >

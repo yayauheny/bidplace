@@ -16,6 +16,7 @@ import {
 } from '../../lib/layout-transition';
 
 import { FigmaIcon } from '../figma/FigmaIcon';
+import { useAppTheme } from '../../providers/theme-provider';
 import { AppText } from './AppText';
 import {
   appDialogHostStyle,
@@ -65,6 +66,7 @@ export function AppDialog({
 }: AppDialogProps) {
   const { height, width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
+  const palette = useAppTheme();
   const viewportGutter = designTokens.space.x5;
   const closeButtonRef = useRef<ElementRef<typeof MotionPressable>>(null);
   const openRef = useRef(open);
@@ -113,9 +115,7 @@ export function AppDialog({
       forceMount={isSheet ? true : undefined}
       style={{
         inset: 0,
-        backgroundColor: isSheet
-          ? designTokens.color.modalDimmer
-          : designTokens.color.overlay,
+        backgroundColor: isSheet ? palette.modalDimmer : palette.overlay,
         zIndex: designTokens.layer.modal,
       }}
     />
@@ -149,9 +149,9 @@ export function AppDialog({
       interactionStyle={({ hovered, pressed }) => ({
         backgroundColor:
           hovered || pressed
-            ? designTokens.color.surfaceStrong
+            ? palette.surfaceStrong
             : isMediaSheet
-              ? designTokens.color.dialogSurface
+              ? palette.dialogSurface
               : 'transparent',
       })}
     >
@@ -159,7 +159,7 @@ export function AppDialog({
         <FigmaIcon
           name="x"
           size={designTokens.size.buttonIconFrame}
-          color={designTokens.color.inkStrong}
+          color={palette.inkStrong}
           strokeWidthPx={designTokens.stroke.mediaSheetClosePx}
         />
       ) : (
@@ -287,7 +287,7 @@ export function AppDialog({
         ...(Platform.OS === 'web' ? { pointerEvents: 'auto' as const } : {}),
         zIndex: designTokens.layer.modal,
         borderWidth: isMediaSheet || bare ? 0 : 1,
-        borderColor: 'rgba(20, 20, 20, 0.08)',
+        borderColor: palette.dialogBorder,
         borderRadius: isMediaSheet
           ? designTokens.radius.mediaSheet
           : isSheet
@@ -296,7 +296,7 @@ export function AppDialog({
         ...(isSheet
           ? { borderBottomLeftRadius: 0, borderBottomRightRadius: 0 }
           : {}),
-        backgroundColor: designTokens.color.dialogSurface,
+        backgroundColor: palette.dialogSurface,
         padding:
           isMediaSheet || bare
             ? 0
@@ -313,7 +313,7 @@ export function AppDialog({
                   : 0,
             }
           : {}),
-        ...(isMediaSheet || bare ? {} : designTokens.elevation.floating),
+        ...(isMediaSheet || bare ? {} : { boxShadow: palette.floatingShadow }),
       }}
     >
       {bare ? (

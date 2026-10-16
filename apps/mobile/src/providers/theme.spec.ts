@@ -51,9 +51,48 @@ vi.mock('react-native', () => ({
       children,
     );
   },
+  View: ({ children, style }: { children?: ReactNode; style?: unknown }) => {
+    const flat: Record<string, unknown> = {};
+    for (const item of Array.isArray(style) ? style : [style]) {
+      if (item && typeof item === 'object') Object.assign(flat, item);
+    }
+    return createElement(
+      'div',
+      { style: flat as React.CSSProperties },
+      children,
+    );
+  },
+  TextInput: ({ value, style }: { value?: string; style?: unknown }) => {
+    const flat: Record<string, unknown> = {};
+    for (const item of Array.isArray(style) ? style : [style]) {
+      if (item && typeof item === 'object') Object.assign(flat, item);
+    }
+    return createElement('input', {
+      value,
+      style: flat as React.CSSProperties,
+      readOnly: true,
+    });
+  },
+}));
+
+vi.mock('react-native-svg', () => ({
+  Svg: ({ children }: { children?: ReactNode }) =>
+    createElement('svg', null, children),
+  Circle: () => null,
+  Ellipse: () => null,
+  Path: () => null,
+  Defs: () => null,
+  LinearGradient: () => null,
+  Rect: () => null,
+  Stop: () => null,
+}));
+
+vi.mock('@hugeicons/react-native', () => ({
+  HugeiconsIcon: () => null,
 }));
 
 import { AppText } from '../components/ui/AppText';
+import { FigmaTextField } from '../components/figma/FigmaTextField';
 import { ThemeProvider, useAppTheme } from './theme-provider';
 
 let captured: SemanticColorMap | null = null;
@@ -118,6 +157,31 @@ describe('app theme owner', () => {
       blackColorMap.canvas,
     );
     expect(navigationThemes.at(-1)?.colors.text).toBe(blackColorMap.ink);
+
+    act(() => root.unmount());
+    container.remove();
+  });
+
+  it('re-themes a field input without remount when the theme switches', () => {
+    const container = document.createElement('div');
+    document.body.append(container);
+    const root = createRoot(container);
+    function FieldGallery({ theme }: { theme: 'light' | 'black' }) {
+      return createElement(ThemeProvider, {
+        theme,
+        children: createElement(FigmaTextField, {
+          label: 'Email',
+          value: 'a@bidplace.ru',
+        }),
+      });
+    }
+    act(() => root.render(createElement(FieldGallery, { theme: 'light' })));
+    const input = container.querySelector('input')!;
+    expect(input.style.color).toBe('rgb(18, 18, 18)');
+
+    act(() => root.render(createElement(FieldGallery, { theme: 'black' })));
+    expect(container.querySelector('input')).toBe(input);
+    expect(input.style.color).toBe('rgb(245, 245, 245)');
 
     act(() => root.unmount());
     container.remove();
