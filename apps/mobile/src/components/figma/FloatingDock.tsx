@@ -16,6 +16,7 @@ import {
   useSellerCapability,
 } from '../../hooks/use-seller-capability';
 import { useAuth } from '../../providers/auth-provider';
+import { useAppTheme } from '../../providers/theme-provider';
 import { getRouteSearchRedirect } from '../../features/auth/auth-redirect';
 import { useSearchOverlay } from '../../features/search/search-overlay-provider';
 import { BidplaceMark } from '../branding/BidplaceBrand';
@@ -128,6 +129,7 @@ function DockItem({
   onPress?: () => void;
 }) {
   const itemAccessibility = dockItemAccessibility(item.id, selected);
+  const palette = useAppTheme();
   const content = (
     <MotionPressable
       {...(item.id === 'search'
@@ -165,7 +167,7 @@ function DockItem({
         <FigmaIcon
           name={item.icon}
           size={designTokens.size.dockIcon}
-          color={designTokens.color.ink}
+          color={palette.ink}
         />
       )}
     </MotionPressable>

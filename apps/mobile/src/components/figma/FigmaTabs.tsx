@@ -1,5 +1,6 @@
 import { Platform, ScrollView, View } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
+import { useAppTheme } from '../../providers/theme-provider';
 import { AppText, MotionPressable } from '../ui';
 import type { FigmaTabsProps } from './figma-tabs';
 
@@ -20,6 +21,7 @@ export function FigmaTabs({
   contentInset = 0,
   fill = false,
 }: FigmaTabsProps) {
+  const palette = useAppTheme();
   const select = (index: number) => {
     onChange(tabs[index].value);
     if (Platform.OS === 'web') {
@@ -50,9 +52,9 @@ export function FigmaTabs({
       style={
         fill
           ? {
-              backgroundColor: designTokens.color.canvas,
+              backgroundColor: palette.canvas,
               borderBottomWidth: 1,
-              borderBottomColor: designTokens.color.divider,
+              borderBottomColor: palette.divider,
             }
           : null
       }
@@ -90,7 +92,7 @@ export function FigmaTabs({
               paddingBottom: designTokens.space.x1,
               borderBottomWidth: 2,
               borderBottomColor:
-                value === tab.value ? designTokens.color.ink : 'transparent',
+                value === tab.value ? palette.ink : 'transparent',
             }}
           >
             <AppText

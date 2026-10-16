@@ -13,6 +13,7 @@ import { MotionPressable } from '../../components/ui/MotionPressable';
 import { FigmaButton } from '../../components/figma/FigmaButton';
 import { FigmaIcon } from '../../components/figma/FigmaIcon';
 import { PrivateStoryImage } from '../../components/shared/PrivateStoryImage';
+import { useAppTheme } from '../../providers/theme-provider';
 import type { EditableStoryBlock } from './use-product-story-editor';
 
 type GalleryImage = {
@@ -44,7 +45,6 @@ export type ProductDraftStoryStepProps = {
   onBackToImages: () => void;
   onSaveAndContinue: () => void;
 };
-
 
 const toolbarIconSize = 43;
 const toolbarColors = designTokens.color;
@@ -79,7 +79,10 @@ function StoryTool({
       {glyph === 'image' ? (
         <FigmaIcon name="image-01" size={18} color={toolbarColors.inkStrong} />
       ) : (
-        <AppText role="body" style={{ fontSize: 18, color: toolbarColors.inkStrong }}>
+        <AppText
+          role="body"
+          style={{ fontSize: 18, color: toolbarColors.inkStrong }}
+        >
           {glyph}
         </AppText>
       )}
@@ -114,10 +117,13 @@ export function ProductDraftStoryStep({
   const [galleryOpen, setGalleryOpen] = useState(false);
   const textCount = blocks.filter((block) => block.type !== 'IMAGE').length;
   const imageCount = blocks.length - textCount;
-  const canAddText = editable && !savePending && textCount < STORY_LIMITS.maxTextBlocks;
-  const canAddImage = editable && !savePending && imageCount < STORY_LIMITS.maxImages;
+  const canAddText =
+    editable && !savePending && textCount < STORY_LIMITS.maxTextBlocks;
+  const canAddImage =
+    editable && !savePending && imageCount < STORY_LIMITS.maxImages;
   const availableGallery = images.filter((image) => image.mediaAssetId);
   const hasBlocks = blocks.length > 0;
+  const palette = useAppTheme();
 
   return (
     <View style={{ gap: designTokens.space.x10 }}>
@@ -151,16 +157,27 @@ export function ProductDraftStoryStep({
         </View>
       ) : null}
 
-      <View style={{ gap: designTokens.space.x5, minHeight: hasBlocks ? undefined : 220, justifyContent: hasBlocks ? 'flex-start' : 'center' }}>
+      <View
+        style={{
+          gap: designTokens.space.x5,
+          minHeight: hasBlocks ? undefined : 220,
+          justifyContent: hasBlocks ? 'flex-start' : 'center',
+        }}
+      >
         {blocks.map((block, index) => {
           const disabled = !editable || savePending;
           const active = menuKey === block.key;
-          const galleryImageId = block.type === 'IMAGE'
-            ? availableGallery.find((item) => item.mediaAssetId === block.mediaAssetId)?.id
-            : undefined;
+          const galleryImageId =
+            block.type === 'IMAGE'
+              ? availableGallery.find(
+                  (item) => item.mediaAssetId === block.mediaAssetId,
+                )?.id
+              : undefined;
           return (
             <View key={block.key} style={{ gap: designTokens.space.x2 }}>
-              <View style={{ position: 'relative', gap: designTokens.space.x1 }}>
+              <View
+                style={{ position: 'relative', gap: designTokens.space.x1 }}
+              >
                 {block.type === 'IMAGE' ? (
                   <PrivateStoryImage
                     productId={productId}
@@ -168,27 +185,41 @@ export function ProductDraftStoryStep({
                     galleryImageId={galleryImageId}
                     sessionEpoch={sessionEpoch}
                     label={block.altText ?? 'Фото истории работы'}
-                    style={{ ...productMediaStyle(), borderRadius: 0 }}
+                    style={{
+                      ...productMediaStyle('100%', palette),
+                      borderRadius: 0,
+                    }}
                   />
                 ) : (
                   <TextInput
-                    accessibilityLabel={block.type === 'HEADING' ? 'Заголовок истории' : 'Текст истории'}
-                    placeholder={block.type === 'HEADING' ? 'Начните писать здесь' : 'Ваш текст'}
+                    accessibilityLabel={
+                      block.type === 'HEADING'
+                        ? 'Заголовок истории'
+                        : 'Текст истории'
+                    }
+                    placeholder={
+                      block.type === 'HEADING'
+                        ? 'Начните писать здесь'
+                        : 'Ваш текст'
+                    }
                     placeholderTextColor={toolbarColors.fieldLabel}
                     value={block.text}
                     onChangeText={(value) => onEditText(block.key, value)}
                     onFocus={() => setMenuKey(block.key)}
                     editable={!disabled}
                     multiline
-                    maxLength={block.type === 'HEADING'
-                      ? STORY_LIMITS.headingMaxLength
-                      : STORY_LIMITS.paragraphMaxLength}
+                    maxLength={
+                      block.type === 'HEADING'
+                        ? STORY_LIMITS.headingMaxLength
+                        : STORY_LIMITS.paragraphMaxLength
+                    }
                     textAlignVertical="top"
                     style={{
                       ...designTokens.typography.bodySmall,
-                      fontFamily: block.type === 'HEADING'
-                        ? designTokens.typography.mediaSheetTitle.fontFamily
-                        : designTokens.typography.bodySmall.fontFamily,
+                      fontFamily:
+                        block.type === 'HEADING'
+                          ? designTokens.typography.mediaSheetTitle.fontFamily
+                          : designTokens.typography.bodySmall.fontFamily,
                       fontWeight: block.type === 'HEADING' ? '600' : '400',
                       fontSize: block.type === 'HEADING' ? 15 : 14,
                       lineHeight: block.type === 'HEADING' ? 24 : 20,
@@ -219,31 +250,50 @@ export function ProductDraftStoryStep({
                       justifyContent: 'center',
                     }}
                   >
-                    <AppText role="body" style={{ color: toolbarColors.inkStrong, fontSize: 22 }}>
+                    <AppText
+                      role="body"
+                      style={{ color: toolbarColors.inkStrong, fontSize: 22 }}
+                    >
                       ⋮
                     </AppText>
                   </MotionPressable>
                 ) : null}
               </View>
               {active && editable ? (
-                <View style={{ alignSelf: 'flex-end', flexDirection: 'row', flexWrap: 'wrap', gap: designTokens.space.x2 }}>
+                <View
+                  style={{
+                    alignSelf: 'flex-end',
+                    flexDirection: 'row',
+                    flexWrap: 'wrap',
+                    gap: designTokens.space.x2,
+                  }}
+                >
                   <SecondaryButton
                     label="Выше"
                     icon="arrow-up-01"
                     disabled={disabled || index === 0}
-                    onPress={() => { onMove(block.key, -1); setMenuKey(null); }}
+                    onPress={() => {
+                      onMove(block.key, -1);
+                      setMenuKey(null);
+                    }}
                   />
                   <SecondaryButton
                     label="Ниже"
                     icon="arrow-down-01"
                     disabled={disabled || index === blocks.length - 1}
-                    onPress={() => { onMove(block.key, 1); setMenuKey(null); }}
+                    onPress={() => {
+                      onMove(block.key, 1);
+                      setMenuKey(null);
+                    }}
                   />
                   <SecondaryButton
                     label="Удалить"
                     icon="delete-02"
                     disabled={disabled}
-                    onPress={() => { onRemove(block.key); setMenuKey(null); }}
+                    onPress={() => {
+                      onRemove(block.key);
+                      setMenuKey(null);
+                    }}
                   />
                 </View>
               ) : null}
@@ -269,17 +319,19 @@ export function ProductDraftStoryStep({
         })}
 
         {editable ? (
-          <View style={{
-            alignSelf: 'center',
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: designTokens.space.x1,
-            backgroundColor: toolbarColors.surface,
-            borderColor: '#D1D1D1',
-            borderWidth: 0.5,
-            borderRadius: 31,
-            padding: 4,
-          }}>
+          <View
+            style={{
+              alignSelf: 'center',
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: designTokens.space.x1,
+              backgroundColor: toolbarColors.surface,
+              borderColor: '#D1D1D1',
+              borderWidth: 0.5,
+              borderRadius: 31,
+              padding: 4,
+            }}
+          >
             <StoryTool
               label="Добавить заголовок"
               glyph="H"
@@ -296,12 +348,22 @@ export function ProductDraftStoryStep({
               label="Добавить изображение"
               glyph="image"
               disabled={!canAddImage || retryUpload}
-              onPress={() => availableGallery.length
-                ? setGalleryOpen((open) => !open)
-                : onChooseImage()}
+              onPress={() =>
+                availableGallery.length
+                  ? setGalleryOpen((open) => !open)
+                  : onChooseImage()
+              }
             />
             <FigmaButton
-              label={savePending ? 'Сохраняю' : !isCreationFlow ? 'Сохранить' : hasBlocks ? 'Закончить' : 'Пропустить'}
+              label={
+                savePending
+                  ? 'Сохраняю'
+                  : !isCreationFlow
+                    ? 'Сохранить'
+                    : hasBlocks
+                      ? 'Закончить'
+                      : 'Пропустить'
+              }
               variant="solid"
               icon="arrow-right-01"
               iconPosition="right"
@@ -312,13 +374,20 @@ export function ProductDraftStoryStep({
           </View>
         ) : null}
         {!hasBlocks && editable ? (
-          <AppText role="bodySmall" tone="subdued" style={{ textAlign: 'center' }}>
+          <AppText
+            role="bodySmall"
+            tone="subdued"
+            style={{ textAlign: 'center' }}
+          >
             Начните создавать тут
           </AppText>
         ) : null}
         {galleryOpen && canAddImage ? (
           <View style={{ gap: designTokens.space.x2 }}>
-            <SecondaryButton label="Загрузить новое фото" onPress={onChooseImage} />
+            <SecondaryButton
+              label="Загрузить новое фото"
+              onPress={onChooseImage}
+            />
             {availableGallery.map((image, index) => (
               <SecondaryButton
                 key={image.id}
@@ -339,7 +408,9 @@ export function ProductDraftStoryStep({
           />
         ) : null}
         {saveError ? (
-          <AppText role="bodySmall" tone="danger">{saveError}</AppText>
+          <AppText role="bodySmall" tone="danger">
+            {saveError}
+          </AppText>
         ) : null}
         {isCreationFlow ? (
           <SecondaryButton

@@ -1,17 +1,17 @@
-import { designTokens } from '@bidplace/design-tokens';
+import { designTokens, type SemanticColorMap } from '@bidplace/design-tokens';
 
 import { webBackdropBlur } from './web-backdrop';
 
-export function figmaGlassCircleStyle() {
+export function figmaGlassCircleStyle(palette: SemanticColorMap) {
   return {
     width: designTokens.size.social,
     height: designTokens.size.social,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
     borderRadius: designTokens.radius.social,
-    backgroundColor: designTokens.color.glassChip,
+    backgroundColor: palette.glassChip,
     borderWidth: 1,
-    borderColor: designTokens.color.white,
+    borderColor: palette.white,
     ...webBackdropBlur(designTokens.blur.dock),
   };
 }

@@ -5,6 +5,7 @@ import { designTokens } from '@bidplace/design-tokens';
 import { FigmaIcon } from '../../components/figma/FigmaIcon';
 import { figmaGlassCircleStyle } from '../../components/figma/figma-glass-circle';
 import { MotionPressable } from '../../components/ui';
+import { useAppTheme } from '../../providers/theme-provider';
 
 export type CreatorSocialLinkProps = {
   href: string;
@@ -21,6 +22,7 @@ export function CreatorSocialLink({
   grouped = false,
   testID,
 }: CreatorSocialLinkProps) {
+  const palette = useAppTheme();
   return (
     <Link href={href as Href} target="_blank" asChild>
       <MotionPressable
@@ -34,13 +36,13 @@ export function CreatorSocialLink({
                 width: 43,
                 height: 43,
                 borderWidth: 0.5,
-                borderColor: designTokens.color.divider,
-                backgroundColor: designTokens.color.white,
+                borderColor: palette.divider,
+                backgroundColor: palette.white,
                 alignItems: 'center',
                 justifyContent: 'center',
                 borderRadius: designTokens.radius.pill,
               }
-            : figmaGlassCircleStyle()
+            : figmaGlassCircleStyle(palette)
         }
       >
         <FigmaIcon
@@ -51,9 +53,7 @@ export function CreatorSocialLink({
                 ? 'internet'
                 : 'instagram'
           }
-          size={
-            grouped ? designTokens.size.dockIcon : designTokens.size.icon
-          }
+          size={grouped ? designTokens.size.dockIcon : designTokens.size.icon}
         />
       </MotionPressable>
     </Link>

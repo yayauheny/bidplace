@@ -1,4 +1,4 @@
-import { designTokens } from '@bidplace/design-tokens';
+import { designTokens, type SemanticColorMap } from '@bidplace/design-tokens';
 
 export type FilterOptionMode = 'radio' | 'checkbox';
 
@@ -16,6 +16,7 @@ export function filterOptionRowStyle() {
 export function filterOptionControlStyle(
   mode: FilterOptionMode,
   selected: boolean,
+  palette: SemanticColorMap,
 ) {
   return {
     width: designTokens.size.filterOption,
@@ -24,12 +25,12 @@ export function filterOptionControlStyle(
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
     borderWidth: 1,
-    borderColor: designTokens.color.ink,
+    borderColor: palette.ink,
     borderRadius:
       mode === 'radio'
         ? designTokens.radius.filterRadio
         : designTokens.radius.filterCheckbox,
-    backgroundColor: selected ? designTokens.color.ink : 'transparent',
+    backgroundColor: selected ? palette.ink : 'transparent',
   };
 }
 

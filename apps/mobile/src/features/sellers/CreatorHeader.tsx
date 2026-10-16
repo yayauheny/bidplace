@@ -11,6 +11,7 @@ import { FilterSheet } from '../../components/figma/FilterSheet';
 import { ShareSheet } from '../../components/figma/ShareSheet';
 import { figmaIconButtonStyle } from '../../components/figma/figma-icon-button-style';
 import { AppText, MotionPressable } from '../../components/ui';
+import { useAppTheme } from '../../providers/theme-provider';
 import { AuthorShare } from './AuthorShare';
 import { CreatorIdentity } from './CreatorIdentity';
 import type { CreatorHeaderProps } from './creator-header';
@@ -27,6 +28,7 @@ export function CreatorHeader({
 }: CreatorHeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [qrOpen, setQrOpen] = useState(false);
+  const palette = useAppTheme();
 
   return (
     <View testID="creator-static-header">
@@ -66,7 +68,7 @@ export function CreatorHeader({
                   accessibilityLabel="Редактировать профиль автора"
                   preset="icon"
                   style={({ pressed }) =>
-                    figmaIconButtonStyle(pressed, 'muted')
+                    figmaIconButtonStyle(pressed, 'muted', palette)
                   }
                 >
                   <FigmaIcon name="pencil-edit-01" size={20} />

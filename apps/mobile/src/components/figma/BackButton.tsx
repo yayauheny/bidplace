@@ -1,6 +1,7 @@
 import { designTokens } from '@bidplace/design-tokens';
 
 import { MotionPressable } from '../ui/MotionPressable';
+import { useAppTheme } from '../../providers/theme-provider';
 import { FigmaGlassSurface } from './FigmaGlassSurface';
 import { FigmaIcon } from './FigmaIcon';
 import { FigmaIconButton } from './FigmaIconButton';
@@ -22,6 +23,7 @@ export function BackButton({
   variant: 'glass' | 'muted' | 'chrome';
   disabled?: boolean;
 }) {
+  const palette = useAppTheme();
   if (variant === 'glass') {
     return (
       <FigmaGlassSurface
@@ -69,7 +71,7 @@ export function BackButton({
         name="arrow-left-01"
         size={chrome.chromeGlyph}
         strokeWidthPx={chrome.chromeStroke}
-        color={designTokens.color.inkStrong}
+        color={palette.inkStrong}
       />
     </MotionPressable>
   );

@@ -1,4 +1,4 @@
-import { designTokens } from '@bidplace/design-tokens';
+import { designTokens, type SemanticColorMap } from '@bidplace/design-tokens';
 
 export function filterSortBarStyle() {
   return {
@@ -21,8 +21,8 @@ export function filterSortPillStyle() {
   };
 }
 
-export function filterSortPillLabelStyle() {
+export function filterSortPillLabelStyle(palette: SemanticColorMap) {
   return {
-    color: designTokens.color.ink,
+    color: palette.ink,
   };
 }

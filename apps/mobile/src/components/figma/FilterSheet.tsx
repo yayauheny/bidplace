@@ -3,15 +3,13 @@ import * as Dialog from '@rn-primitives/dialog';
 import { ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import {
-  designTokens,
-  type FigmaButtonSize,
-} from '@bidplace/design-tokens';
+import { designTokens, type FigmaButtonSize } from '@bidplace/design-tokens';
 
 import { AppDialog } from '../ui/AppDialog';
 import { appDialogSheetBottomSpace } from '../ui/app-dialog-host-style';
 import { AppText } from '../ui/AppText';
 import { MotionPressable } from '../ui/MotionPressable';
+import { useAppTheme } from '../../providers/theme-provider';
 import { FigmaButton } from './FigmaButton';
 import { FigmaIcon } from './FigmaIcon';
 import { FilterSheetActionRow } from './FilterSheetActionRow';
@@ -62,6 +60,7 @@ export function FilterSheet({
   const { height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const titleId = useId();
+  const palette = useAppTheme();
 
   return (
     <AppDialog
@@ -79,6 +78,7 @@ export function FilterSheet({
           compact,
           height,
           primaryAction ? insets.bottom : 0,
+          palette,
         )}
       >
         {compact ? (

@@ -1,8 +1,7 @@
 import { G, Path, Svg, type NumberProp } from 'react-native-svg';
 import { Platform } from 'react-native';
 
-import { designTokens } from '@bidplace/design-tokens';
-
+import { useAppTheme } from '../../providers/theme-provider';
 import {
   figmaImagePlaceholderPath,
   figmaImagePlaceholderSpec,
@@ -11,7 +10,7 @@ import {
 export function FigmaImagePlaceholder({
   width = figmaImagePlaceholderSpec.width,
   height = figmaImagePlaceholderSpec.height,
-  color = designTokens.color.ink,
+  color,
   label,
 }: {
   width?: NumberProp;
@@ -19,6 +18,7 @@ export function FigmaImagePlaceholder({
   color?: string;
   label?: string;
 }) {
+  const palette = useAppTheme();
   const transform = `rotate(${figmaImagePlaceholderSpec.rotation} ${figmaImagePlaceholderSpec.rotationOriginX} ${figmaImagePlaceholderSpec.rotationOriginY})`;
 
   return (
@@ -39,7 +39,7 @@ export function FigmaImagePlaceholder({
       <G transform={transform}>
         <Path
           d={figmaImagePlaceholderPath}
-          fill={color}
+          fill={color ?? palette.ink}
           fillRule="nonzero"
         />
       </G>

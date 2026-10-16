@@ -5,6 +5,7 @@ import { designTokens } from '@bidplace/design-tokens';
 
 import { getApiAssetUrl } from '../../lib/environment';
 import { useReducedMotion } from '../../lib/reduced-motion';
+import { useAppTheme } from '../../providers/theme-provider';
 import { coverHitDataset } from '../ui/interactive-hit-style';
 import { MotionPressable } from '../ui/MotionPressable';
 import { ResilientRemoteImage } from '../ui/ResilientRemoteImage';
@@ -41,8 +42,8 @@ export function AuthorCoverCard({
 }) {
   const content = getAuthorCoverContent({ fullName, slug, tags });
   const reducedMotion = useReducedMotion();
-  const emphasizeArtwork =
-    interaction !== 'static' && !reducedMotion;
+  const palette = useAppTheme();
+  const emphasizeArtwork = interaction !== 'static' && !reducedMotion;
 
   return (
     <Link href={`/seller/${slug}`} asChild>
@@ -52,7 +53,7 @@ export function AuthorCoverCard({
         preset="card"
         {...coverHitDataset()}
         style={{
-          ...coverCardFrameStyle('author', size, frameRadius),
+          ...coverCardFrameStyle('author', size, frameRadius, palette),
           justifyContent: 'space-between',
         }}
       >
@@ -86,7 +87,7 @@ export function AuthorCoverCard({
                   numberOfLines={1}
                   style={[
                     {
-                      color: designTokens.color.white,
+                      color: palette.white,
                       textAlign: 'center',
                     },
                     designTokens.typography.authorName,
@@ -102,7 +103,7 @@ export function AuthorCoverCard({
                 <Text
                   numberOfLines={1}
                   style={[
-                    { color: designTokens.color.white },
+                    { color: palette.white },
                     designTokens.typography.authorHandle,
                   ]}
                 >

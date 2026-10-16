@@ -1,6 +1,10 @@
-import { designTokens } from '@bidplace/design-tokens';
+import { designTokens, type SemanticColorMap } from '@bidplace/design-tokens';
 
-export function figmaIconButtonStyle(pressed: boolean, surface: 'plain' | 'muted' = 'plain') {
+export function figmaIconButtonStyle(
+  pressed: boolean,
+  surface: 'plain' | 'muted' = 'plain',
+  palette: SemanticColorMap,
+) {
   return {
     width: surface === 'muted' ? 42 : designTokens.size.iconButton,
     height: surface === 'muted' ? 42 : designTokens.size.iconButton,
@@ -8,8 +12,10 @@ export function figmaIconButtonStyle(pressed: boolean, surface: 'plain' | 'muted
     justifyContent: 'center' as const,
     borderRadius: designTokens.radius.pill,
     backgroundColor: pressed
-      ? designTokens.color.ghostHover
-      : surface === 'muted' ? designTokens.color.headerControl : 'transparent',
+      ? palette.ghostHover
+      : surface === 'muted'
+        ? palette.headerControl
+        : 'transparent',
   };
 }
 

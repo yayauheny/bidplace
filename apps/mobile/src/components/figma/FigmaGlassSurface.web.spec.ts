@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 
+vi.mock('expo-router', () => ({
+  DefaultTheme: { colors: {} },
+  ThemeProvider: ({ children }: { children?: unknown }) => children,
+}));
+
 vi.mock('react-native', () => ({
   StyleSheet: {
     flatten: (style: unknown) => {

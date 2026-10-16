@@ -1,4 +1,4 @@
-import { designTokens } from '@bidplace/design-tokens';
+import type { SemanticColorMap } from '@bidplace/design-tokens';
 
 export type FigmaTab = { value: string; label: string; count?: number };
 export type FigmaTabsProps = {
@@ -13,6 +13,9 @@ export type FigmaTabsProps = {
   fill?: boolean;
 };
 
-export function figmaTabLabelColor(selected: boolean) {
-  return selected ? designTokens.color.ink : designTokens.color.tabInactive;
+export function figmaTabLabelColor(
+  selected: boolean,
+  palette: SemanticColorMap,
+) {
+  return selected ? palette.ink : palette.tabInactive;
 }

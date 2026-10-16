@@ -4,6 +4,7 @@ import { designTokens } from '@bidplace/design-tokens';
 
 import { AppText } from '../ui/AppText';
 import { MotionPressable } from '../ui/MotionPressable';
+import { useAppTheme } from '../../providers/theme-provider';
 import { FigmaIcon } from './FigmaIcon';
 import { filterSheetSectionRowStyle } from './filter-sheet-style';
 
@@ -18,6 +19,7 @@ export function FilterSheetSectionRow({
   onPress: () => void;
   disabled?: boolean;
 }) {
+  const palette = useAppTheme();
   return (
     <MotionPressable
       accessibilityRole="button"
@@ -40,7 +42,7 @@ export function FilterSheetSectionRow({
       <FigmaIcon
         name="arrow-right-01"
         size={designTokens.size.dockIcon}
-        color={designTokens.color.ink}
+        color={palette.ink}
       />
     </MotionPressable>
   );

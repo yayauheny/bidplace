@@ -5,6 +5,7 @@ import { designTokens } from '@bidplace/design-tokens';
 
 import { getApiAssetUrl } from '../../lib/environment';
 import { useReducedMotion } from '../../lib/reduced-motion';
+import { useAppTheme } from '../../providers/theme-provider';
 import { coverHitDataset } from '../ui/interactive-hit-style';
 import { MotionPressable } from '../ui/MotionPressable';
 import { ResilientRemoteImage } from '../ui/ResilientRemoteImage';
@@ -39,6 +40,7 @@ export function WorkCoverCard({
 }) {
   const overlay = getWorkCoverOverlay({ title, authorSlug });
   const reducedMotion = useReducedMotion();
+  const palette = useAppTheme();
 
   return (
     <Link href={href} asChild>
@@ -48,7 +50,7 @@ export function WorkCoverCard({
         preset="card"
         onPress={onPress}
         {...coverHitDataset()}
-        style={coverCardFrameStyle('work')}
+        style={coverCardFrameStyle('work', undefined, undefined, palette)}
       >
         {({ hovered, focused }) => (
           <>
@@ -83,7 +85,7 @@ export function WorkCoverCard({
                     numberOfLines={2}
                     style={[
                       {
-                        color: designTokens.color.white,
+                        color: palette.white,
                       },
                       designTokens.typography.coverTitle,
                     ]}

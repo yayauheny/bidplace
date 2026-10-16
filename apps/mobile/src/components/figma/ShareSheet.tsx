@@ -7,6 +7,7 @@ import { designTokens } from '@bidplace/design-tokens';
 
 import { AppDialog } from '../ui/AppDialog';
 import { AppText, PrimaryButton, SecondaryButton } from '../ui';
+import { useAppTheme } from '../../providers/theme-provider';
 import { FigmaButton } from './FigmaButton';
 import {
   copyPublicLink,
@@ -14,8 +15,7 @@ import {
   publicShareTarget,
 } from './public-share';
 
-const shareContentGap =
-  designTokens.space.x3 + designTokens.space.x1 / 2; // Figma 597:19045 — 14px.
+const shareContentGap = designTokens.space.x3 + designTokens.space.x1 / 2; // Figma 597:19045 — 14px.
 
 export function ShareSheet({
   open,
@@ -43,6 +43,7 @@ function ShareContent({ sharePath }: { sharePath: string }) {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [attempt, setAttempt] = useState(0);
+  const palette = useAppTheme();
   let target: ReturnType<typeof publicShareTarget> | undefined;
   try {
     if (Platform.OS === 'web')
@@ -106,7 +107,7 @@ function ShareContent({ sharePath }: { sharePath: string }) {
           justifyContent: 'center',
           overflow: 'hidden',
           borderRadius: designTokens.radius.shareSheet,
-          backgroundColor: designTokens.color.surfaceMuted,
+          backgroundColor: palette.surfaceMuted,
         }}
       >
         {qr ? (

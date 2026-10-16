@@ -5,6 +5,7 @@ import { Platform, ScrollView, useWindowDimensions, View } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
 
 import { FigmaButton } from '../figma/FigmaButton';
+import { useAppTheme } from '../../providers/theme-provider';
 import { AppText } from './AppText';
 import { AppDialogFrame, AppDialogOverlay } from './app-dialog-layer';
 import { useReturnFocus } from './use-return-focus';
@@ -44,6 +45,7 @@ export function ExitConfirmDialog({
   const gutter = designTokens.layout.mobileGutter;
   const blockDismiss = busy || continueDisabled;
   const returnFocus = useReturnFocus({ explicitRef: returnFocusRef });
+  const palette = useAppTheme();
 
   if (!open) return null;
 
@@ -59,7 +61,7 @@ export function ExitConfirmDialog({
         <AppDialogOverlay
           style={{
             inset: 0,
-            backgroundColor: designTokens.color.modalDimmer,
+            backgroundColor: palette.modalDimmer,
             zIndex: designTokens.layer.modal + 1,
           }}
         />
@@ -90,7 +92,7 @@ export function ExitConfirmDialog({
                 ? { pointerEvents: 'auto' as const }
                 : {}),
               borderRadius: designTokens.auth.exitRadius,
-              backgroundColor: designTokens.color.dialogSurface,
+              backgroundColor: palette.dialogSurface,
               overflow: 'hidden',
             }}
           >
@@ -127,7 +129,7 @@ export function ExitConfirmDialog({
                       textAlign: 'center',
                       alignSelf: 'stretch',
                       minWidth: 0,
-                      color: designTokens.color.fieldValue,
+                      color: palette.fieldValue,
                       ...designTokens.typography.sectionTitle,
                       fontSize: 22,
                       lineHeight: 27,
@@ -144,7 +146,7 @@ export function ExitConfirmDialog({
                       textAlign: 'center',
                       alignSelf: 'stretch',
                       minWidth: 0,
-                      color: designTokens.color.fieldValue,
+                      color: palette.fieldValue,
                       fontSize: 15,
                       lineHeight: 20,
                       letterSpacing: -0.3,

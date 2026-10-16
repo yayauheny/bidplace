@@ -1,6 +1,7 @@
 import { designTokens } from '@bidplace/design-tokens';
 
 import { MotionPressable } from '../ui/MotionPressable';
+import { useAppTheme } from '../../providers/theme-provider';
 import { FigmaIcon } from './FigmaIcon';
 import { type FigmaIconName } from './figma-icon-names';
 import {
@@ -27,6 +28,7 @@ export function FigmaIconButton({
   strokeWidthPx?: number;
   surface?: 'plain' | 'muted';
 }) {
+  const palette = useAppTheme();
   return (
     <MotionPressable
       accessibilityRole="button"
@@ -36,13 +38,13 @@ export function FigmaIconButton({
       hitSlop={figmaIconButtonHitSlop}
       onPress={onPress}
       preset="icon"
-      style={({ pressed }) => figmaIconButtonStyle(pressed, surface)}
+      style={({ pressed }) => figmaIconButtonStyle(pressed, surface, palette)}
     >
       <FigmaIcon
         name={icon}
         size={iconSize}
         strokeWidthPx={strokeWidthPx}
-        color={selected ? designTokens.color.solid : designTokens.color.ink}
+        color={selected ? palette.solid : palette.ink}
       />
     </MotionPressable>
   );

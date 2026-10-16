@@ -3,6 +3,7 @@ import { Text, View } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
 
 import { getApiAssetUrl } from '../../lib/environment';
+import { useAppTheme } from '../../providers/theme-provider';
 import { ResilientRemoteImage } from '../ui/ResilientRemoteImage';
 import { FigmaChip } from './FigmaChip';
 import { coverChipRowStyle } from './cover-card-style';
@@ -18,6 +19,7 @@ export function AuthorIdentity({
   imageUrl,
 }: AuthorCoverInput & { imageUrl: string }) {
   const content = getAuthorCoverContent({ fullName, slug, tags });
+  const palette = useAppTheme();
   const identityWidth =
     designTokens.size.identityAvatar + designTokens.size.coverWidth;
 
@@ -55,7 +57,7 @@ export function AuthorIdentity({
         <Text
           numberOfLines={1}
           style={[
-            { color: designTokens.color.ink },
+            { color: palette.ink },
             designTokens.typography.identityRowHandle,
           ]}
         >
