@@ -55,6 +55,16 @@ push/merge/deploy не выполнялись.
   воспроизводятся). Очередь экранной миграции токенов зафиксирована в
   `docs/audits/2026-10-18-SCREEN-MIGRATION-QUEUE.md` (12 файлов «профиль
   автора», затем поиск/каталог/admin).
+- **Экранная миграция, волна 2 — «профиль автора» закрыта
+  (`b5288183`):** все 12 файлов пакета `src/features/sellers/` на
+  `useAppTheme()`; helper'ы (`authorAchievementRailSpec`, action-стили
+  CreatorWorkCard) получают palette аргументом; mounted-тест в
+  `theme.spec.ts` перекрашивает seller work-card actions light→black без
+  remount; мок `expo-router` добавлен в `seller-profile-fields.spec.ts`
+  (theme-provider вошёл в граф импорта; реальный expo-router не парсится
+  в jsdom — предсуществующее ограничение). Проверки: tsc, eslint, vitest
+  891/891. Остаток очереди: пакеты 2 (поиск, 3 файла), 3 (каталог, 2),
+  4 (admin, 2).
 
 ## 2026-10-17 — Повторный аудит пакетов A/B/C: A-01/A-02/A-03/A-04 + C-01 (Partial)
 

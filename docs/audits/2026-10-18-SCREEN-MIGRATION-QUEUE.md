@@ -15,22 +15,20 @@ geometry (`designTokens.auth.*Size/Radius/Width/Height`, `space`, `radius`,
 
 ## Очередь по экранам (порядок — по пользовательскому приоритету)
 
-### 1. Профиль автора / кабинет (предлагаемый следующий экран)
+### 1. Профиль автора / кабинет — выполнен (SHA `b5288183`, волна 2026-10-18)
 
-| Файл | Строки | Что читает |
-| --- | --- | --- |
-| `src/features/sellers/seller-profile-steps.tsx` | 261, 271, 345, 380–381 | `iconColor={muted}`, `inkStrong` (шаги профиля) |
-| `src/features/sellers/author-application-basics-step.tsx` | 89, 120, 157, 168 | `backgroundColor`, `color={inkStrong}`, `stroke={photoGuide}` |
-| `src/features/sellers/author-application-step-shell.tsx` | 78 | `color={inkStrong}` |
-| `src/features/sellers/author-achievement-rail.ts` | 14–17 | `markerFill`, `markerHoleFill`, `lineColor` (SVG-маркеры) |
-| `src/features/sellers/CreatorWorkCard.tsx` | 23, 78–80 | `backgroundColor`, action-стили, `color={white}` для иконки delete |
-| `src/features/sellers/AuthorAbout.tsx` | 136 | `backgroundColor` |
-| `src/features/sellers/AuthorApplicationAchievements.tsx` | 390 | `iconColor={muted}` |
-| `src/features/sellers/AuthorShare.tsx` | 75 | background у слота шаринга |
-| `src/features/sellers/public-seller-screen.tsx` | 172 | `backgroundColor` |
-| `src/features/sellers/author-cabinet-screen.tsx` | 187 | `borderColor` |
-| `src/features/sellers/product-draft-images.tsx` | 42 | `backgroundColor` |
-| `src/features/sellers/product-draft-screen-chrome.tsx` | 154–155 | `inkStrong` |
+Все 12 файлов пакета переведены на `useAppTheme()`: чтения
+`designTokens.color` заменены на роли палитры (`muted`, `inkStrong`,
+`border`, `mutedFill`, `photoGuide`, `white`, `danger`, `surfaceMuted`,
+`divider`, `canvas`, `placeholder`, `tabInactive`); helper'ы получают
+palette аргументом (`authorAchievementRailSpec(palette)`,
+`actionStyle(palette)`); добавлен mounted-тест в `theme.spec.ts`
+(seller work-card actions перекрашиваются light→black без remount).
+В `seller-profile-fields.spec.ts` добавлен мок `expo-router` —
+theme-provider вошёл в граф импорта, а реальный expo-router не
+парсится в jsdom-окружении (pre-existing ограничение, не регрессия
+волны). Проверки: tsc, eslint затронутых файлов, vitest 891/891.
+Light-скриншоты не менялись (роли дублируют прежние hex).
 
 Gate на экран: mounted-проверка видимых цветов/SVG при тестовой смене
 palette без remount (паттерн `theme.spec.ts`), light-скриншоты не меняются,
