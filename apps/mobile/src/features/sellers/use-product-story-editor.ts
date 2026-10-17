@@ -128,6 +128,25 @@ function storedBlocksOf(blocks: readonly EditableStoryBlock[]) {
 }
 
 type StorySnapshot = { storyToken: number; blocks: StoryBlock[] };
+
+/**
+ * Belonging of a server snapshot to the active revision. 'absent' means there
+ * is nothing to adopt yet (a new work before its first server save): input
+ * stays open. 'foreign' means a snapshot exists but its attribution is
+ * missing or names another revision: the editor waits for the owner's data
+ * and refuses edits, uploads and saves. One predicate for the initial
+ * baseline, every hydrate/refetch branch and the change/save/upload guards.
+ */
+function snapshotOwnership(
+  story: StorySnapshot | undefined,
+  revisionId: string | undefined,
+  storyRevisionId: string | undefined,
+): 'absent' | 'foreign' | 'belongs' {
+  if (!story) return 'absent';
+  if (revisionId === undefined || storyRevisionId === undefined) return 'foreign';
+  return storyRevisionId === revisionId ? 'belongs' : 'foreign';
+}
+
 type DraftState = {
   identity: string;
   token: number;
@@ -137,6 +156,13 @@ type DraftState = {
   error: string | null;
   /** True once this state incorporates a real server story snapshot. */
   serverHydrated: boolean;
+  /**
+   * True while a server snapshot exists but does not belong to the active
+   * revision (owner query has not caught up): change/save/upload are
+   * refused until the matching snapshot arrives. Distinct from a new work
+   * before its first server save, where input stays open.
+   */
+  awaitingOwnerSnapshot: boolean;
   /**
    * Set when a stored draft was moved to the recovery namespace because it
    * belongs to a different server revision (or has no revision id): it is
@@ -191,6 +217,7 @@ function fromServer(identity: string, story?: StorySnapshot): DraftState {
     pending: false,
     error: null,
     serverHydrated: story !== undefined,
+    awaitingOwnerSnapshot: false,
     storageError: null,
     recoveryText: null,
   };
@@ -247,9 +274,14 @@ export function useProductStoryEditor({
   canChange?: () => boolean;
 }) {
   const identity = `${authEpoch}:${productId ?? ''}:${revisionId ?? ''}`;
-  const [state, setState] = useState<DraftState>(() =>
-    fromServer(identity, story),
-  );
+  // The baseline is held before mount when the served snapshot does not
+  // belong to the active revision: a cold mount must not flash another
+  // revision's blocks. A new work without any snapshot is not waiting.
+  const initialOwnership = snapshotOwnership(story, revisionId, storyRevisionId);
+  const [state, setState] = useState<DraftState>(() => ({
+    ...fromServer(identity, initialOwnership === 'belongs' ? story : undefined),
+    awaitingOwnerSnapshot: initialOwnership === 'foreign',
+  }));
   const current = useRef(state);
   const outstanding = useRef<Promise<boolean> | null>(null);
   const retry = useRef<{ snapshot: string; key: string } | null>(null);
@@ -555,12 +587,10 @@ export function useProductStoryEditor({
     // query says it belongs to this revision. A snapshot without a revision
     // attribution (loading state) or with another revision's attribution is
     // held, never presented as this revision's story; an absent snapshot
-    // imposes no ownership claim, so the local draft restore still runs.
-    const snapshotBelongs =
-      story === undefined ||
-      (revisionId !== undefined &&
-        storyRevisionId !== undefined &&
-        storyRevisionId === revisionId);
+    // imposes no ownership claim, so the local draft restore still runs and
+    // a new work stays editable.
+    const ownership = snapshotOwnership(story, revisionId, storyRevisionId);
+    const snapshotBelongs = ownership !== 'foreign';
     if (previous.identity !== identity) {
       writer.current.cancel();
       uploaded.current = new Set();
@@ -608,11 +638,13 @@ export function useProductStoryEditor({
       } else {
         // The owner does not serve this revision yet: hold an empty,
         // not-yet-hydrated baseline instead of adopting another revision's
-        // story. The recovery notice survives the identity change.
+        // story, and refuse edits/uploads/saves until the matching snapshot
+        // arrives. The recovery notice survives the identity change.
         replace({
           ...fromServer(identity, undefined),
           storageError: previous.storageError,
           recoveryText: previous.recoveryText,
+          awaitingOwnerSnapshot: true,
         });
       }
     } else if (restoredFor.current !== identity) {
@@ -659,6 +691,7 @@ export function useProductStoryEditor({
     if (
       previous.identity !== identity ||
       previous.pending ||
+      previous.awaitingOwnerSnapshot ||
       canChange?.() === false
     )
       return;
@@ -736,6 +769,7 @@ export function useProductStoryEditor({
       !productId ||
       current.current.pending ||
       current.current.identity !== identity ||
+      current.current.awaitingOwnerSnapshot ||
       canChange?.() === false
     )
       return false;
@@ -812,6 +846,9 @@ export function useProductStoryEditor({
     const before = current.current;
     if (before.identity !== identity || before.pending || !productId)
       return false;
+    // Waiting for the owner's snapshot of this revision: nothing here may
+    // reach the API, even if a dirty draft predates the identity change.
+    if (before.awaitingOwnerSnapshot) return false;
     if (!before.dirty) return true;
     if (outstanding.current) return false;
     const blocks = writeBlocks(before.blocks);

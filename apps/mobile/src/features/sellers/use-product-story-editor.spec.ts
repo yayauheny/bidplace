@@ -37,6 +37,7 @@ type StorySnapshot = { storyToken: number; blocks: StoryBlock[] };
 function mount(
   accountId: string | null = null,
   story: StorySnapshot | null = emptyStory,
+  initialStoryRevisionId: string | undefined = revisionId,
 ) {
   const replaceCreation = vi.fn().mockResolvedValue({
     storyToken: 1,
@@ -98,7 +99,7 @@ function mount(
       ),
     );
   };
-  render(1, revisionId, story);
+  render(1, revisionId, story, initialStoryRevisionId);
   cases.push(() => act(() => root.unmount()));
   return {
     queryClient,
@@ -302,6 +303,93 @@ describe('revision-backed Work Story editor', () => {
     );
     expect(view.editor.blocks).toEqual([]);
     expect(view.editor.dirty).toBe(false);
+  });
+
+  it('does not present a foreign snapshot on a cold mount', () => {
+    const view = mount(
+      'user-a',
+      {
+        storyToken: 0,
+        blocks: [
+          { id: blockId, position: 0, type: 'PARAGRAPH' as const, text: 'FOREIGN' },
+        ],
+      },
+      'another-revision',
+    );
+    expect(view.editor.blocks).toEqual([]);
+    expect(view.editor.dirty).toBe(false);
+  });
+
+  it('ignores edits while waiting for the owner snapshot', () => {
+    const view = mount('user-a');
+    const next = '92222222-2222-4222-8222-222222222222';
+    view.render(1, next, { storyToken: 0, blocks: [] }, revisionId);
+    act(() => view.editor.addText('PARAGRAPH'));
+    act(() => view.editor.editText('missing', 'ignored'));
+    expect(view.editor.blocks).toEqual([]);
+    expect(view.editor.dirty).toBe(false);
+  });
+
+  it('does not call the save or upload API while waiting for the owner snapshot', async () => {
+    const view = mount('user-a');
+    act(() => view.editor.addText('PARAGRAPH'));
+    act(() => view.editor.editText(view.editor.blocks[0]!.key, 'Черновик'));
+    // The revision moves; the owner still serves the previous revision's
+    // snapshot. The dirty draft must not reach the API from waiting state.
+    view.render(
+      1,
+      '92222222-2222-4222-8222-222222222222',
+      { storyToken: 0, blocks: [] },
+      revisionId,
+    );
+    await act(async () => {
+      expect(await view.editor.save()).toBe(false);
+    });
+    expect(view.replaceCreation).not.toHaveBeenCalled();
+    await act(async () => {
+      expect(await view.editor.addImage(new Blob(['x']))).toBe(false);
+    });
+    expect(view.addStoryImage).not.toHaveBeenCalled();
+  });
+
+  it('unblocks editing when the matching snapshot arrives at the same token', () => {
+    const view = mount('user-a');
+    const next = '92222222-2222-4222-8222-222222222222';
+    view.render(1, next, { storyToken: 0, blocks: [] }, revisionId);
+    act(() => view.editor.addText('PARAGRAPH'));
+    expect(view.editor.blocks).toEqual([]);
+    view.render(1, next, {
+      storyToken: 0,
+      blocks: [
+        {
+          id: '89999999-9999-4999-8999-999999999999',
+          position: 0,
+          type: 'PARAGRAPH' as const,
+          text: 'New revision',
+        },
+      ],
+    });
+    expect(
+      view.editor.blocks.map((block) =>
+        block.type === 'IMAGE' ? '' : block.text,
+      ),
+    ).toEqual(['New revision']);
+    act(() => view.editor.addText('PARAGRAPH'));
+    expect(view.editor.blocks).toHaveLength(2);
+  });
+
+  it('accepts input for a new work before its first server save', () => {
+    // No server snapshot exists yet (creation flow): the absent baseline is
+    // not a waiting state, input and local draft restore stay open.
+    const view = mount('user-a', null);
+    act(() => view.editor.addText('PARAGRAPH'));
+    act(() => view.editor.editText(view.editor.blocks[0]!.key, 'Новая работа'));
+    expect(
+      view.editor.blocks.map((block) =>
+        block.type === 'IMAGE' ? '' : block.text,
+      ),
+    ).toEqual(['Новая работа']);
+    expect(view.editor.dirty).toBe(true);
   });
 
   it('keeps a recovered other-revision copy across editing and a confirmed save', async () => {
