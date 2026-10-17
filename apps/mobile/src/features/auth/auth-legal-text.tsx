@@ -2,9 +2,8 @@ import { useRef } from 'react';
 import type { TextStyle } from 'react-native';
 import { Platform, Text } from 'react-native';
 
-import { designTokens } from '@bidplace/design-tokens';
-
 import { appTextRoleStyle } from '../../components/ui/app-text-role-style';
+import { useAppTheme } from '../../providers/theme-provider';
 
 type AuthLegalTextProps = {
   variant: 'consent' | 'login';
@@ -12,14 +11,6 @@ type AuthLegalTextProps = {
   onOpenRules: () => void;
   textAlign?: TextStyle['textAlign'];
 };
-
-const linkStyle = {
-  color: designTokens.color.fieldValue,
-} as const;
-
-const mutedStyle = {
-  color: designTokens.color.gray2,
-} as const;
 
 function focusLegalLink(node: unknown) {
   if (Platform.OS !== 'web' || !(node instanceof HTMLElement)) return;
@@ -33,6 +24,7 @@ function LegalLink({
   label: string;
   onPress: () => void;
 }) {
+  const palette = useAppTheme();
   const hostRef = useRef<unknown>(null);
   const activate = () => {
     focusLegalLink(hostRef.current);
@@ -52,7 +44,7 @@ function LegalLink({
       accessibilityRole="link"
       onPress={activate}
       {...(Platform.OS === 'web' ? ({ onKeyDown: handleKeyDown, tabIndex: 0 } as object) : {})}
-      style={linkStyle}
+      style={{ color: palette.fieldValue }}
     >
       {label}
     </Text>
@@ -66,13 +58,13 @@ export function AuthLegalText({
   textAlign = 'left',
 }: AuthLegalTextProps) {
   const role = variant === 'consent' ? 'authConsent' : 'authLegal';
+  const palette = useAppTheme();
 
   return (
     <Text
       style={[
         appTextRoleStyle(role, Platform.OS) as TextStyle,
-        mutedStyle,
-        { textAlign, flex: 1 },
+        { color: palette.gray2, textAlign, flex: 1 },
       ]}
     >
       {variant === 'consent' ? (

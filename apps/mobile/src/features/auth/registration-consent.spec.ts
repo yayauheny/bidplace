@@ -10,6 +10,9 @@ import { flush } from '../../testing/dom';
 import { authKeys, replaceAuthenticatedSession } from '../../lib/query-cache';
 import { ApiErrorCode, type User } from '@bidplace/contracts';
 import { ApiClientError } from '@bidplace/api-client';
+import { blackColorMap, lightColorMap } from '@bidplace/design-tokens';
+
+import { ThemeProvider } from '../../providers/theme-provider';
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
@@ -42,10 +45,12 @@ vi.mock('react-native', () => ({
     children,
     onPress,
     accessibilityRole,
+    style,
   }: {
     children?: ReactNode;
     onPress?: () => void;
     accessibilityRole?: string;
+    style?: unknown;
   }) =>
     onPress
       ? createElement(
@@ -57,7 +62,17 @@ vi.mock('react-native', () => ({
           },
           children,
         )
-      : createElement('span', null, children),
+      : (() => {
+          const flat: Record<string, unknown> = {};
+          for (const item of Array.isArray(style) ? style : [style]) {
+            if (item && typeof item === 'object') Object.assign(flat, item);
+          }
+          return createElement(
+            'span',
+            { style: flat as React.CSSProperties },
+            children,
+          );
+        })(),
   ScrollView: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
   Pressable: ({
     children,
@@ -131,6 +146,18 @@ vi.mock('expo-router', () => ({
     },
   }),
   Link: ({ children }: { children?: ReactNode }) => createElement('a', null, children),
+  DefaultTheme: {
+    colors: {
+      background: 'default',
+      card: 'default',
+      primary: 'default',
+      border: 'default',
+      text: 'default',
+      notification: 'default',
+    },
+  },
+  ThemeProvider: ({ children }: { children?: ReactNode }) =>
+    createElement('div', null, children),
 }));
 
 vi.mock('../../providers/analytics-provider', () => ({
@@ -216,7 +243,13 @@ vi.mock('../../components/ui', () => ({
     title: string;
     children?: ReactNode;
   }) => (open ? createElement('div', { role: 'dialog' }, title, children) : null),
-  AppText: ({ children }: { children?: ReactNode }) => createElement('span', null, children),
+  AppText: ({ children, style }: { children?: ReactNode; style?: unknown }) => {
+    const flat: Record<string, unknown> = {};
+    for (const item of Array.isArray(style) ? style : [style]) {
+      if (item && typeof item === 'object') Object.assign(flat, item);
+    }
+    return createElement('span', { style: flat as React.CSSProperties }, children);
+  },
   PrimaryButton: ({
     label,
     onPress,
@@ -801,5 +834,62 @@ describe('registration consent attempt', () => {
     });
     expect(harness.replace).toHaveBeenCalledTimes(1);
     view.unmount();
+  });
+
+  it('re-themes the nickname availability status without remounting when the theme switches', async () => {
+    // A taken nickname keeps the status on the nickname step; an available
+    // one advances immediately and unmounts the status node.
+    harness.slugAvailability.mockResolvedValueOnce({ available: false });
+    const rgbOf = (hex: string) => {
+      const value = hex.replace('#', '');
+      const channels = [0, 2, 4].map((offset) =>
+        parseInt(value.slice(offset, offset + 2), 16),
+      );
+      return `rgb(${channels.join(', ')})`;
+    };
+    const statusNode = () =>
+      [...container.querySelectorAll('span')].find((node) =>
+        node.textContent?.startsWith('@theme-author'),
+      ) as HTMLElement | undefined;
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    queryClient.setQueryData(authKeys.session, null);
+    harness.client = queryClient;
+    const container = document.createElement('div');
+    document.body.append(container);
+    const root = createRoot(container);
+    const themed = (theme: 'light' | 'black') =>
+      createElement(
+        QueryClientProvider,
+        { client: queryClient },
+        createElement(ThemeProvider, {
+          theme,
+          children: createElement(Host),
+        }),
+      );
+    act(() => {
+      root.render(themed('light'));
+    });
+
+    await reachNickname(container);
+    fill(container, 'Никнейм', 'theme-author');
+    clickButton(container, 'Дальше');
+    await until(container, () => Boolean(statusNode()), 'nickname status');
+    const status = statusNode()!;
+    expect(status.textContent).toBe('@theme-author недоступен');
+    expect(status.style.color).toBe(rgbOf(lightColorMap.usernameTaken));
+
+    act(() => {
+      root.render(themed('black'));
+    });
+    expect(statusNode()).toBe(status);
+    expect(status.style.color).toBe(rgbOf(blackColorMap.usernameTaken));
+
+    act(() => {
+      root.unmount();
+    });
+    container.remove();
   });
 });

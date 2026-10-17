@@ -6,6 +6,7 @@ import { designTokens } from '@bidplace/design-tokens';
 
 import { AppText } from '../../components/ui';
 import { MotionPressable } from '../../components/ui/MotionPressable';
+import { useAppTheme } from '../../providers/theme-provider';
 
 const CHECK_PATH =
   'M 0 4.172800263061526 L 1.7238869251900724 5.971200591939304 C 2.168333638395593 6.43486729152363 2.3905535379287204 6.6666669845581055 2.666693551201596 6.6666669845581055 C 2.9428335644744714 6.6666669845581055 3.1650601794647013 6.43486729152363 3.6095335558164674 5.971200591939304 L 9.333333969116211 0';
@@ -32,13 +33,14 @@ export function AuthConsentCheckbox({
   error?: string;
   disabled?: boolean;
 }) {
+  const palette = useAppTheme();
   const toggle = () => {
     if (!disabled) onChange(!checked);
   };
   const borderColors = (
     checked
-      ? [designTokens.auth.checkboxBorderDarkStart, designTokens.auth.checkboxBorderDarkEnd]
-      : [designTokens.auth.checkboxBorderLightStart, designTokens.auth.checkboxBorderLightEnd]
+      ? [palette.solidBorderGradientStart, palette.solidBorderGradientEnd]
+      : [palette.outlineBorderGradientStart, palette.outlineBorderGradientEnd]
   ) as [string, string];
 
   return (
@@ -65,11 +67,11 @@ export function AuthConsentCheckbox({
               borderRadius: innerRadius,
               alignItems: 'center',
               justifyContent: 'center',
-              backgroundColor: checked ? designTokens.color.fieldValue : designTokens.color.canvas,
+              backgroundColor: checked ? palette.fieldValue : palette.canvas,
             }}>
               {checked ? (
                 <Svg width={9.33} height={6.67} viewBox="0 0 9.333334 6.666667">
-                  <Path d={CHECK_PATH} stroke={designTokens.color.canvas} strokeWidth={1.5} fill="none" />
+                  <Path d={CHECK_PATH} stroke={palette.canvas} strokeWidth={1.5} fill="none" />
                 </Svg>
               ) : null}
             </View>
@@ -85,7 +87,7 @@ export function AuthConsentCheckbox({
               preset="button"
               style={{ alignSelf: 'flex-start' }}
             >
-              <AppText role="authConsent" style={{ color: designTokens.color.fieldValue, textDecorationLine: 'underline' }}>
+              <AppText role="authConsent" style={{ color: palette.fieldValue, textDecorationLine: 'underline' }}>
                 {linkLabel}
               </AppText>
             </MotionPressable>

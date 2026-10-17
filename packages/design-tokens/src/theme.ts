@@ -71,6 +71,9 @@ export const lightColorMap = {
   fieldIcon: '#858585',
   // Empty border and placeholder of the `authorApplication` field variant.
   authorApplicationField: '#999999',
+  // Username availability status on the registration nickname step.
+  usernameAvailable: '#267B07',
+  usernameTaken: '#731A06',
   // Guide lines drawn over the author photo placeholder (Стать автором 527:16416).
   photoGuide: '#911E05',
   fieldHoverBorder: '#535353',
@@ -164,6 +167,9 @@ export const blackColorMap: SemanticColorMap = {
   fieldValue: '#F5F5F5',
   fieldIcon: '#8F8F8F',
   authorApplicationField: '#8F8F8F',
+  // Provisional black availability colors — NEEDS-FIGMA.
+  usernameAvailable: '#4CC26B',
+  usernameTaken: '#FF7A5C',
   photoGuide: '#FF6A4A',
   fieldHoverBorder: '#8A8A8A',
   ghostHover: '#232323',

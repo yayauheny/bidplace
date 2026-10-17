@@ -1,6 +1,6 @@
 import { G, Path, Svg } from 'react-native-svg';
 
-import { designTokens } from '@bidplace/design-tokens';
+import { useAppTheme } from '../../providers/theme-provider';
 
 /** Figma `521:10381` in 18×18 slot (16×16 glyph, 1px inset). */
 const GOOGLE_RING =
@@ -10,11 +10,12 @@ const GOOGLE_GLYPH =
   'M7.72375 3.54625 L7.72375 3.54625 C3.14924 3.93533 1.99173 9.83064 5.94318 11.9638 C7.76604 12.9478 10.1066 12.4397 11.4228 10.8657 C12.004 10.1742 12.3594 9.32129 12.4411 8.4217 C12.4697 8.10621 12.4671 7.75986 12.4646 7.43152 C12.4642 7.37083 12.4637 7.31076 12.4635 7.2516 L8.22097 7.24786 L8.00132 7.25065 L8.00214 8.74414 L10.8869 8.74632 C10.6158 9.59174 10.1689 10.2325 9.35871 10.6492 C8.65555 11.0086 7.8384 11.074 7.08704 10.8309 C6.33312 10.5887 5.70738 10.055 5.34917 9.34877 C4.99236 8.65261 4.92669 7.84324 5.16661 7.09866 C5.41041 6.33202 5.95436 5.69684 6.67437 5.338 C7.82905 4.76011 9.17665 5.00982 10.102 5.89144 C10.2804 5.7196 10.4551 5.54394 10.6295 5.36847 C10.8059 5.1911 10.982 5.01391 11.1619 4.84085 C10.1482 3.92889 9.15893 3.49721 7.75996 3.54125 C7.74951 3.54158 7.73412 3.54437 7.72375 3.54625 Z';
 
 export function AuthGoogleIcon() {
+  const palette = useAppTheme();
   return (
     <Svg width={18} height={18} viewBox="0 0 18 18">
       <G transform="translate(1 1)">
-        <Path d={GOOGLE_RING} fill={designTokens.color.fieldValue} fillRule="evenodd" />
-        <Path d={GOOGLE_GLYPH} fill={designTokens.color.canvas} />
+        <Path d={GOOGLE_RING} fill={palette.fieldValue} fillRule="evenodd" />
+        <Path d={GOOGLE_GLYPH} fill={palette.canvas} />
       </G>
     </Svg>
   );

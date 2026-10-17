@@ -117,12 +117,69 @@ vi.mock('react-native-svg', () => ({
     createElement('svg', null, children),
   Circle: () => null,
   Ellipse: () => null,
-  Path: () => null,
+  G: ({ children }: { children?: ReactNode }) =>
+    createElement('g', null, children),
+  Path: ({ d, fill }: { d?: string; fill?: string }) =>
+    createElement('path', { d, fill }),
   Defs: () => null,
   LinearGradient: () => null,
   Rect: () => null,
   Stop: () => null,
 }));
+
+vi.mock('expo-linear-gradient', () => ({
+  LinearGradient: ({
+    colors,
+    children,
+  }: {
+    colors: string[];
+    children?: ReactNode;
+  }) =>
+    createElement(
+      'div',
+      { 'data-gradient-colors': colors.join('|') },
+      children,
+    ),
+}));
+
+vi.mock('expo-image', () => ({
+  Image: () => null,
+}));
+
+// Vitest resolves reanimated through Node ESM, which rejects its internal
+// directory imports; the AppDialog owner spec uses the same stand-in.
+vi.mock('react-native-reanimated', () => {
+  function chain() {
+    const api = {
+      duration() {
+        return api;
+      },
+      easing() {
+        return api;
+      },
+      reduceMotion() {
+        return api;
+      },
+      withCallback() {
+        return api;
+      },
+    };
+    return api;
+  }
+  return {
+    default: {
+      View: ({ children }: { children?: ReactNode }) =>
+        createElement('div', null, children),
+    },
+    Easing: { bezier: () => 'bezier' },
+    FadeIn: chain(),
+    FadeOut: chain(),
+    LinearTransition: chain(),
+    ReduceMotion: { System: 'system' },
+    SlideInDown: chain(),
+    SlideOutDown: chain(),
+  };
+});
 
 vi.mock('@hugeicons/react-native', () => ({
   // DOM evidence for the icon color wiring: Hugeicons internals are out of
@@ -140,6 +197,10 @@ import { FigmaButton } from '../components/figma/FigmaButton';
 import { FigmaIcon } from '../components/figma/FigmaIcon';
 import { FigmaChip } from '../components/figma/FigmaChip.web';
 import { figmaButtonLabelColor } from '../components/figma/figma-button-style';
+import { AuthConsentCheckbox } from '../features/auth/auth-consent-checkbox';
+import { AuthGoogleIcon } from '../features/auth/auth-google-icon';
+import { AuthLegalText } from '../features/auth/auth-legal-text';
+import { ProductDraftStoryStep } from '../features/sellers/product-draft-story';
 import { ThemeProvider, useAppTheme } from './theme-provider';
 
 let captured: SemanticColorMap | null = null;
@@ -321,6 +382,116 @@ describe('app theme owner', () => {
     const root = createRoot(container);
     act(() => root.render(createElement(Probe)));
     expect(captured).toBe(lightColorMap);
+    act(() => root.unmount());
+    container.remove();
+  });
+
+  it('re-themes mounted login controls and the story toolbar without remounting', () => {
+    const container = document.createElement('div');
+    document.body.append(container);
+    const root = createRoot(container);
+    const rgbOf = (hex: string) => {
+      const value = hex.replace('#', '');
+      const channels = [0, 2, 4].map((offset) =>
+        parseInt(value.slice(offset, offset + 2), 16),
+      );
+      return `rgb(${channels.join(', ')})`;
+    };
+    function Controls({ theme }: { theme: 'light' | 'black' }) {
+      return createElement(ThemeProvider, {
+        theme,
+        children: [
+          createElement(AuthLegalText, {
+            key: 'legal',
+            variant: 'login',
+            onOpenPolicy: () => undefined,
+            onOpenRules: () => undefined,
+          }),
+          createElement(AuthConsentCheckbox, {
+            key: 'consent',
+            checked: false,
+            onChange: () => undefined,
+            label: 'Мне есть 18 лет',
+            linkLabel: 'условия',
+            onOpenDocument: () => undefined,
+          }),
+          createElement(AuthGoogleIcon, { key: 'google' }),
+          createElement(ProductDraftStoryStep, {
+            key: 'story',
+            productId: 'p1',
+            sessionEpoch: 1,
+            isCreationFlow: false,
+            storyNeedsDraft: false,
+            blocks: [],
+            images: [],
+            editable: true,
+            savePending: false,
+            saveError: null,
+            retryUpload: false,
+            onAddText: () => undefined,
+            onAddGalleryImage: () => undefined,
+            onEditText: () => undefined,
+            onEditAlt: () => undefined,
+            onRemove: () => undefined,
+            onMove: () => undefined,
+            onChooseImage: () => undefined,
+            onRetryUpload: () => undefined,
+            onBackToImages: () => undefined,
+            onSaveAndContinue: () => undefined,
+          }),
+        ],
+      });
+    }
+    act(() => root.render(createElement(Controls, { theme: 'light' })));
+
+    const spanByText = (text: string) =>
+      [...container.querySelectorAll('span')].find(
+        (node) => node.textContent === text,
+      ) as HTMLElement;
+    const legalLink = spanByText(
+      'политикой персональных данных и cookies',
+    );
+    const consentLink = spanByText('условия');
+    const gradient = container.querySelector(
+      '[data-gradient-colors]',
+    ) as HTMLElement;
+    const googlePath = container.querySelector('path') as unknown as HTMLElement;
+    const tool = container.querySelector(
+      '[aria-label="Добавить заголовок"]',
+    ) as HTMLElement;
+    const imageTool = container.querySelector(
+      '[aria-label="Добавить изображение"]',
+    ) as HTMLElement;
+
+    for (const theme of ['light', 'black'] as const) {
+      const palette = theme === 'light' ? lightColorMap : blackColorMap;
+      expect(legalLink.style.color).toBe(rgbOf(palette.fieldValue));
+      expect(consentLink.style.color).toBe(rgbOf(palette.fieldValue));
+      expect(gradient.dataset.gradientColors).toBe(
+        `${palette.outlineBorderGradientStart}|${palette.outlineBorderGradientEnd}`,
+      );
+      expect(googlePath.getAttribute('fill')).toBe(palette.fieldValue);
+      expect(tool.style.backgroundColor).toBe(rgbOf(palette.surfaceMuted));
+      expect(
+        (tool.querySelector('span') as HTMLElement).style.color,
+      ).toBe(rgbOf(palette.inkStrong));
+      expect(
+        (imageTool.querySelector('[data-figma-icon]') as HTMLElement).style
+          .color,
+      ).toBe(rgbOf(palette.inkStrong));
+      if (theme === 'light') {
+        act(() => root.render(createElement(Controls, { theme: 'black' })));
+        // Same DOM nodes: the palette switch re-paints consumers in place.
+        expect(
+          container.querySelector('[aria-label="Добавить заголовок"]'),
+        ).toBe(tool);
+        expect(container.querySelector('path')).toBe(googlePath);
+        expect(container.querySelector('[data-gradient-colors]')).toBe(
+          gradient,
+        );
+      }
+    }
+
     act(() => root.unmount());
     container.remove();
   });

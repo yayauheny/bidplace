@@ -641,8 +641,6 @@ export const designTokens = {
     wordmarkWidth: 93,
     wordmarkHeight: 22,
     wordmarkBottom: 39,
-    available: '#267B07',
-    taken: '#731A06',
     screenPaddingTop: 8,
     screenPaddingX: 20,
     screenPaddingBottom: 20,
@@ -655,16 +653,9 @@ export const designTokens = {
     suggestionHeight: 37,
     suggestionX: 13,
     suggestionY: 8,
-    primaryBorderStart: '#2A2A2A',
-    primaryBorderEnd: '#585858',
-    providerBorderStart: '#D1D1D1',
-    providerBorderEnd: '#EBEBEB',
-    suggestionBorderStart: '#D1D1D1',
-    suggestionBorderEnd: '#EBEBEB',
-    checkboxBorderDarkStart: '#2A2A2A',
-    checkboxBorderDarkEnd: '#585858',
-    checkboxBorderLightStart: '#D1D1D1',
-    checkboxBorderLightEnd: '#EBEBEB',
+    // Username availability colors and gradient border stops moved to the
+    // semantic theme roles `usernameAvailable/usernameTaken` and
+    // `solid/outlineBorderGradientStart/End` (F-03); geometry stays here.
     checkboxBorderWidth: 1,
     checkboxSize: 20,
     checkboxRadius: 6,

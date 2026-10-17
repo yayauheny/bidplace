@@ -18,6 +18,7 @@ import { AuthLegalText } from './auth-legal-text';
 import { LegalDocumentViewer } from './legal-document-viewer';
 import { AuthTelegramIcon } from './auth-telegram-icon';
 import { useAnalytics } from '../../providers/analytics-provider';
+import { useAppTheme } from '../../providers/theme-provider';
 import { useApiClient } from '../../providers/api-provider';
 import { registerSessionChangeIsOwn, useAuth } from '../../providers/auth-provider';
 import {
@@ -82,6 +83,7 @@ const dialogHostStyle: ViewStyle = {
 };
 type AuthFormProps = { redirectTo?: SafeRedirect };
 export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
+  const palette = useAppTheme();
   const auth = useAuth();
   const api = useApiClient();
   const router = useRouter();
@@ -414,7 +416,7 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
               onPress={() => undefined}
               style={{ alignSelf: 'flex-end' }}
             >
-              <AppText role="fieldError" style={{ color: designTokens.color.textSubdued, fontSize: 12 }}>
+              <AppText role="fieldError" style={{ color: palette.textSubdued, fontSize: 12 }}>
                 Забыли пароль?
               </AppText>
             </MotionPressable>
@@ -460,7 +462,7 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
           }}
         />
         </View>
-        <AppText role="authOr" style={{ textAlign: 'center', color: designTokens.color.textSubdued }}>
+        <AppText role="authOr" style={{ textAlign: 'center', color: palette.textSubdued }}>
           или
         </AppText>
         <View style={{ gap: designTokens.auth.loginFormGap }}>
@@ -540,6 +542,7 @@ function NicknameSuggestionList({
   suggestions: NicknameSuggestions;
   onSelect: (suggestion: string) => void;
 }) {
+  const palette = useAppTheme();
   return (
     <View
       nativeID="nickname-suggestions"
@@ -548,7 +551,7 @@ function NicknameSuggestionList({
       <AppText
         role="metadata"
         style={{
-          color: designTokens.color.fieldLabel,
+          color: palette.fieldLabel,
           textAlign: 'center',
           ...designTokens.typography.authSuggestionLabel,
         }}
@@ -579,6 +582,7 @@ function NicknameSuggestionList({
 }
 
 export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
+  const palette = useAppTheme();
   const auth = useAuth();
   const api = useApiClient();
   const analytics = useAnalytics();
@@ -955,21 +959,21 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
     step === 'nickname' && slugAvailability
       ? slugAvailability.status === 'checking'
         ? {
-            color: designTokens.color.textSubdued,
+            color: palette.textSubdued,
             text: 'Проверяем никнейм…',
           }
         : slugAvailability.status === 'available'
           ? {
-              color: designTokens.auth.available,
+              color: palette.usernameAvailable,
               text: `@${slugAvailability.slug} доступен`,
             }
           : slugAvailability.status === 'taken'
             ? {
-                color: designTokens.auth.taken,
+                color: palette.usernameTaken,
                 text: `@${slugAvailability.slug} недоступен`,
               }
             : {
-                color: designTokens.auth.taken,
+                color: palette.usernameTaken,
                 text: nicknameAvailabilityError(slugAvailability.error),
               }
       : null;
@@ -999,10 +1003,10 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
   return (
       <View style={{ gap: designTokens.auth.screenGap, width: '100%' }}>
         <View style={{ gap: designTokens.auth.titleGap }}>
-          <AppText role="sectionTitle" style={{ textAlign: 'center', color: designTokens.color.fieldValue, ...designTokens.typography.authScreenTitle }}>
+          <AppText role="sectionTitle" style={{ textAlign: 'center', color: palette.fieldValue, ...designTokens.typography.authScreenTitle }}>
             {copy.title}
           </AppText>
-          <AppText role="bodySmall" style={{ textAlign: 'center', color: designTokens.color.textSubdued, ...designTokens.typography.authCaption, letterSpacing: 0 }}>
+          <AppText role="bodySmall" style={{ textAlign: 'center', color: palette.textSubdued, ...designTokens.typography.authCaption, letterSpacing: 0 }}>
             {copy.caption}
           </AppText>
           {step === 'nickname' ? (
@@ -1040,7 +1044,7 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
                   <TextField ref={field.ref}
                     label="Никнейм"
                     icon="at-sign"
-                    iconColor={designTokens.color.fieldIcon}
+                    iconColor={palette.fieldIcon}
                     value={field.value}
                     onChangeText={(value) => {
                       nicknameAdvanceOperation.current += 1;

@@ -47,7 +47,6 @@ export type ProductDraftStoryStepProps = {
 };
 
 const toolbarIconSize = 43;
-const toolbarColors = designTokens.color;
 
 function StoryTool({
   label,
@@ -60,6 +59,7 @@ function StoryTool({
   disabled: boolean;
   onPress: () => void;
 }) {
+  const palette = useAppTheme();
   return (
     <MotionPressable
       preset="icon"
@@ -71,17 +71,17 @@ function StoryTool({
         height: toolbarIconSize,
         width: toolbarIconSize,
         borderRadius: designTokens.radius.button,
-        backgroundColor: toolbarColors.surfaceMuted,
+        backgroundColor: palette.surfaceMuted,
         alignItems: 'center',
         justifyContent: 'center',
       }}
     >
       {glyph === 'image' ? (
-        <FigmaIcon name="image-01" size={18} color={toolbarColors.inkStrong} />
+        <FigmaIcon name="image-01" size={18} color={palette.inkStrong} />
       ) : (
         <AppText
           role="body"
-          style={{ fontSize: 18, color: toolbarColors.inkStrong }}
+          style={{ fontSize: 18, color: palette.inkStrong }}
         >
           {glyph}
         </AppText>
@@ -202,7 +202,7 @@ export function ProductDraftStoryStep({
                         ? 'Начните писать здесь'
                         : 'Ваш текст'
                     }
-                    placeholderTextColor={toolbarColors.fieldLabel}
+                    placeholderTextColor={palette.fieldLabel}
                     value={block.text}
                     onChangeText={(value) => onEditText(block.key, value)}
                     onFocus={() => setMenuKey(block.key)}
@@ -224,7 +224,7 @@ export function ProductDraftStoryStep({
                       fontSize: block.type === 'HEADING' ? 15 : 14,
                       lineHeight: block.type === 'HEADING' ? 24 : 20,
                       letterSpacing: -0.15,
-                      color: toolbarColors.inkStrong,
+                      color: palette.inkStrong,
                       padding: 0,
                       minHeight: 24,
                       paddingRight: 36,
@@ -245,14 +245,14 @@ export function ProductDraftStoryStep({
                       height: 43,
                       width: 43,
                       borderRadius: 80,
-                      backgroundColor: toolbarColors.surfaceMuted,
+                      backgroundColor: palette.surfaceMuted,
                       alignItems: 'center',
                       justifyContent: 'center',
                     }}
                   >
                     <AppText
                       role="body"
-                      style={{ color: toolbarColors.inkStrong, fontSize: 22 }}
+                      style={{ color: palette.inkStrong, fontSize: 22 }}
                     >
                       ⋮
                     </AppText>
@@ -301,14 +301,14 @@ export function ProductDraftStoryStep({
                 <TextInput
                   accessibilityLabel="Описание фото"
                   placeholder="Описание фото (необязательно)"
-                  placeholderTextColor={toolbarColors.fieldLabel}
+                  placeholderTextColor={palette.fieldLabel}
                   value={block.altText ?? ''}
                   onChangeText={(value) => onEditAlt(block.key, value)}
                   maxLength={STORY_LIMITS.altTextMaxLength}
                   editable={!disabled}
                   style={{
                     ...designTokens.typography.bodySmall,
-                    color: toolbarColors.inkStrong,
+                    color: palette.inkStrong,
                     padding: 0,
                     minHeight: 24,
                   }}
@@ -325,7 +325,7 @@ export function ProductDraftStoryStep({
               flexDirection: 'row',
               alignItems: 'center',
               gap: designTokens.space.x1,
-              backgroundColor: toolbarColors.surface,
+              backgroundColor: palette.surface,
               borderColor: '#D1D1D1',
               borderWidth: 0.5,
               borderRadius: 31,
