@@ -34,6 +34,7 @@ import {
 } from '../../lib/local-form-draft';
 import { usePrivateCacheEpoch } from '../../lib/use-private-cache-epoch';
 import { useApiClient } from '../../providers/api-provider';
+import { useAppTheme } from '../../providers/theme-provider';
 import type { User } from '@bidplace/contracts';
 import {
   parseAchievementDateInput,
@@ -81,6 +82,7 @@ export function AuthorApplicationAchievements({
   onDraftChange?: (epoch: number, dirty: boolean) => void;
   onStorageError?: (message: string | null) => void;
 }) {
+  const palette = useAppTheme();
   const api = useApiClient();
   const queryClient = useQueryClient();
   const authEpoch = usePrivateCacheEpoch(queryClient);
@@ -387,7 +389,7 @@ export function AuthorApplicationAchievements({
             error={dateGroupError ?? savedDateError ?? undefined}
             variant="authorApplication"
             icon="calendar-01"
-            iconColor={designTokens.color.muted}
+            iconColor={palette.muted}
           />
           <TextField
             label="Описание достижения"

@@ -5,6 +5,7 @@ import { designTokens } from '@bidplace/design-tokens';
 
 import { AppText, ResilientRemoteImage } from '../../components/ui';
 import { getApiAssetUrl } from '../../lib/environment';
+import { useAppTheme } from '../../providers/theme-provider';
 import { formatAuthorAchievementLabel } from './achievement-date';
 import { authorAchievementRailSpec } from './author-achievement-rail';
 
@@ -57,7 +58,8 @@ function AchievementCard({
 }: {
   item: PortfolioWorkDetailResponse['author']['achievements'][number];
 }) {
-  const rail = authorAchievementRailSpec();
+  const palette = useAppTheme();
+  const rail = authorAchievementRailSpec(palette);
 
   return (
     <View
@@ -133,7 +135,7 @@ function AchievementCard({
                 (designTokens.size.achievementWidth * 4) / 3,
               padding: designTokens.space.x3,
               borderRadius: rail.imageRadius,
-              backgroundColor: designTokens.color.surfaceMuted,
+              backgroundColor: palette.surfaceMuted,
               justifyContent: 'center',
             }}
           >

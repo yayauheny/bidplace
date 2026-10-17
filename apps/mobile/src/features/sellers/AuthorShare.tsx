@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { Alert, Platform, Share, View } from 'react-native';
-import { designTokens } from '@bidplace/design-tokens';
 
 import { FigmaIconButton } from '../../components/figma/FigmaIconButton';
 import { FigmaIcon } from '../../components/figma/FigmaIcon';
 import { FilterSheet } from '../../components/figma/FilterSheet';
 import { copyPublicLink, publicShareTarget } from '../../components/figma/public-share';
 import { AppText, MotionPressable } from '../../components/ui';
+import { useAppTheme } from '../../providers/theme-provider';
 
 const reportColor = '#731A06'; // Figma 06: report action, not the destructive-error red.
 
@@ -17,6 +17,7 @@ export function AuthorShare({
   sharePath: string;
   onUnavailable: (feature: string) => void;
 }) {
+  const palette = useAppTheme();
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState('');
 
@@ -72,7 +73,7 @@ export function AuthorShare({
             {message}
           </AppText>
         ) : null}
-        <View style={{ height: 1, backgroundColor: designTokens.color.divider }} />
+        <View style={{ height: 1, backgroundColor: palette.divider }} />
         <MotionPressable
           accessibilityRole="button"
           accessibilityLabel="Пожаловаться на автора"

@@ -7,6 +7,7 @@ import { BackButton } from '../../components/figma/BackButton';
 import { FigmaIcon } from '../../components/figma/FigmaIcon';
 import { MotionPressable } from '../../components/ui/MotionPressable';
 import { AppText } from '../../components/ui';
+import { useAppTheme } from '../../providers/theme-provider';
 import { SellerProfileCreationStepSelector } from './seller-profile-steps';
 
 const chrome = designTokens.authorApplication;
@@ -34,6 +35,7 @@ export function AuthorApplicationStepShell({
   children: ReactNode;
   footer?: ReactNode;
 }) {
+  const palette = useAppTheme();
   const showBack = profileStep > 1;
 
   return (
@@ -75,7 +77,7 @@ export function AuthorApplicationStepShell({
               name="x"
               size={chrome.chromeGlyph}
               strokeWidthPx={chrome.chromeStroke}
-              color={designTokens.color.inkStrong}
+              color={palette.inkStrong}
             />
           </MotionPressable>
         </View>

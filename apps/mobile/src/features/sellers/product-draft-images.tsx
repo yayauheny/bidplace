@@ -11,6 +11,7 @@ import {
   TextButton,
 } from '../../components/ui';
 import { getApiAssetUrl } from '../../lib/environment';
+import { useAppTheme } from '../../providers/theme-provider';
 
 import { productWizardStep } from './product-draft-wizard';
 
@@ -35,11 +36,12 @@ export function DraftImageRow({
   onMove,
   onDelete,
 }: DraftImageRowProps) {
+  const palette = useAppTheme();
   const mediaStyle = {
     width: 160,
     height: 200,
     borderRadius: designTokens.radius.image,
-    backgroundColor: designTokens.color.placeholder,
+    backgroundColor: palette.placeholder,
   };
 
   return (

@@ -36,6 +36,8 @@ vi.mock('expo-router', () => ({
     navigationThemes.push(value);
     return createElement('div', null, children);
   },
+  Link: ({ children }: { children?: ReactNode }) =>
+    createElement('a', null, children),
 }));
 
 vi.mock('react-native', () => ({
@@ -146,6 +148,12 @@ vi.mock('expo-image', () => ({
   Image: () => null,
 }));
 
+// The card cover is a separate figma owner; this wave checks the seller
+// chrome actions that received the semantic palette.
+vi.mock('../components/figma/WorkCoverCard', () => ({
+  WorkCoverCard: () => createElement('div', { 'data-cover': '' }),
+}));
+
 // Vitest resolves reanimated through Node ESM, which rejects its internal
 // directory imports; the AppDialog owner spec uses the same stand-in.
 vi.mock('react-native-reanimated', () => {
@@ -200,6 +208,7 @@ import { figmaButtonLabelColor } from '../components/figma/figma-button-style';
 import { AuthConsentCheckbox } from '../features/auth/auth-consent-checkbox';
 import { AuthGoogleIcon } from '../features/auth/auth-google-icon';
 import { AuthLegalText } from '../features/auth/auth-legal-text';
+import { CreatorWorkCard } from '../features/sellers/CreatorWorkCard';
 import { ProductDraftStoryStep } from '../features/sellers/product-draft-story';
 import { ThemeProvider, useAppTheme } from './theme-provider';
 
@@ -489,6 +498,67 @@ describe('app theme owner', () => {
         expect(container.querySelector('[data-gradient-colors]')).toBe(
           gradient,
         );
+      }
+    }
+
+    act(() => root.unmount());
+    container.remove();
+  });
+
+  it('re-themes mounted seller chrome actions without remounting', () => {
+    const container = document.createElement('div');
+    document.body.append(container);
+    const root = createRoot(container);
+    const rgbOf = (hex: string) => {
+      const value = hex.replace('#', '');
+      const channels = [0, 2, 4].map((offset) =>
+        parseInt(value.slice(offset, offset + 2), 16),
+      );
+      return `rgb(${channels.join(', ')})`;
+    };
+    const item = {
+      work: {
+        id: 'w1',
+        publicId: 'pub1',
+        title: 'Натюрморт',
+        images: [{ url: '/x.webp' }],
+      },
+      author: { slug: 'author-a' },
+    };
+    function Card({ theme }: { theme: 'light' | 'black' }) {
+      return createElement(ThemeProvider, {
+        theme,
+        children: createElement(CreatorWorkCard, {
+          item,
+          isOwner: true,
+          onUnavailable: () => undefined,
+          onHide: () => undefined,
+        }),
+      });
+    }
+    act(() => root.render(createElement(Card, { theme: 'light' })));
+
+    const like = container.querySelector(
+      '[aria-label="Нравится работа Натюрморт"]',
+    ) as HTMLElement;
+    const hide = container.querySelector(
+      '[aria-label="Скрыть работу Натюрморт"]',
+    ) as HTMLElement;
+    const hideIcon = hide.querySelector('[data-figma-icon]') as HTMLElement;
+
+    for (const theme of ['light', 'black'] as const) {
+      const palette = theme === 'light' ? lightColorMap : blackColorMap;
+      expect(like.style.backgroundColor).toBe(rgbOf(palette.white));
+      expect(hide.style.backgroundColor).toBe(rgbOf(palette.danger));
+      expect(hideIcon.style.color).toBe(rgbOf(palette.white));
+      if (theme === 'light') {
+        act(() => root.render(createElement(Card, { theme: 'black' })));
+        expect(
+          container.querySelector('[aria-label="Нравится работа Натюрморт"]'),
+        ).toBe(like);
+        expect(
+          container.querySelector('[aria-label="Скрыть работу Натюрморт"]'),
+        ).toBe(hide);
       }
     }
 

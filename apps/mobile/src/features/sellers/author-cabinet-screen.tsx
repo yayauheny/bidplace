@@ -28,6 +28,7 @@ import {
   useSellerCapability,
 } from '../../hooks/use-seller-capability';
 import { useApiClient } from '../../providers/api-provider';
+import { useAppTheme } from '../../providers/theme-provider';
 import { AccountLogoutButton } from '../auth/AccountLogoutButton';
 import {
   AUTHOR_CABINET_PAGE_SIZE,
@@ -39,6 +40,7 @@ import {
 import { invalidateOwnerWorks, ownerWorkQueryKeys } from './owner-work-query';
 
 export function AuthorCabinetScreen() {
+  const palette = useAppTheme();
   const api = useApiClient();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -184,7 +186,7 @@ export function AuthorCabinetScreen() {
                 gap: designTokens.space.x3,
                 padding: designTokens.space.x4,
                 borderWidth: 1,
-                borderColor: designTokens.color.border,
+                borderColor: palette.border,
                 borderRadius: designTokens.radius.card,
               }}
             >

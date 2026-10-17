@@ -13,6 +13,7 @@ import {
 } from '../../components/ui';
 import { presentEnum, productStatusLabels } from '../../lib/presentation';
 import { FigmaIconButton } from '../../components/figma/FigmaIconButton';
+import { useAppTheme } from '../../providers/theme-provider';
 
 const WIZARD_STEP_LABELS = [
   'О работе',
@@ -74,6 +75,7 @@ export function ProductDraftScreenChrome({
   submitErrorVisible: boolean;
   lockedVisible: boolean;
 }) {
+  const palette = useAppTheme();
   const stepTabs = isCreationFlow ? (
     <View
       accessibilityRole="tablist"
@@ -151,8 +153,8 @@ export function ProductDraftScreenChrome({
                   borderRadius: 6,
                   backgroundColor:
                     index === 2
-                      ? designTokens.color.inkStrong
-                      : designTokens.color.border,
+                      ? palette.inkStrong
+                      : palette.border,
                 }}
               />
             ))}
