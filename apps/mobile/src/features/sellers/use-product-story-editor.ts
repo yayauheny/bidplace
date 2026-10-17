@@ -613,14 +613,15 @@ export function useProductStoryEditor({
         // must not be presented as the new revision's story: keep the
         // confirmed blocks until the owner's data for this revision arrives.
         // Belonging is decided by revisionId, never by comparing tokens
-        // across revisions.
+        // across revisions. The blocks stay visible but waiting: they must
+        // not be edited or sent under the new revision's identity.
         confirmedSave.current = null;
         persistedAssets.current = new Set(
           previous.blocks.flatMap((block) =>
             block.type === 'IMAGE' ? [block.mediaAssetId] : [],
           ),
         );
-        replace({ ...previous, identity });
+        replace({ ...previous, identity, awaitingOwnerSnapshot: true });
         // restoredFor intentionally stays on the old identity: when a
         // snapshot that belongs to this revision arrives, the restore below
         // hydrates it.

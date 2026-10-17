@@ -249,6 +249,40 @@ describe('revision-backed Work Story editor', () => {
     expect(view.editor.dirty).toBe(false);
   });
 
+  it('refuses edits and saves after an own save while the owner still serves the old snapshot', async () => {
+    const view = mount('user-a');
+    const next = '92222222-2222-4222-8222-222222222222';
+    act(() => view.editor.addText('PARAGRAPH'));
+    act(() => view.editor.editText(view.editor.blocks[0]!.key, 'Текст'));
+    await act(async () => {
+      expect(await view.editor.save()).toBe(true);
+    });
+    view.replaceCreation.mockClear();
+    // The refetch names a new editing revision while the snapshot still
+    // belongs to the previous one: the confirmed blocks stay visible, but
+    // they are another revision's attribution until the owner catches up.
+    view.render(1, next, { storyToken: 1, blocks: [] }, revisionId);
+    act(() => view.editor.editText(view.editor.blocks[0]!.key, 'Изменено'));
+    expect(
+      view.editor.blocks.map((block) =>
+        block.type === 'IMAGE' ? '' : block.text,
+      ),
+    ).toEqual(['Текст']);
+    await act(async () => {
+      expect(await view.editor.save()).toBe(false);
+    });
+    expect(view.replaceCreation).not.toHaveBeenCalled();
+    // The matching snapshot at the same token unblocks editing.
+    view.render(1, next, {
+      storyToken: 1,
+      blocks: [
+        { id: blockId, position: 0, type: 'PARAGRAPH' as const, text: 'Текст' },
+      ],
+    });
+    act(() => view.editor.addText('PARAGRAPH'));
+    expect(view.editor.blocks).toHaveLength(2);
+  });
+
   it('hydrates an external new revision even after an own save was confirmed', async () => {
     const view = mount('user-a');
     act(() => view.editor.addText('PARAGRAPH'));
