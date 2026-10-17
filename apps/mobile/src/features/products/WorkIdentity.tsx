@@ -5,6 +5,7 @@ import { designTokens } from '@bidplace/design-tokens';
 import { AppText, MotionPressable } from '../../components/ui';
 import { FigmaChip } from '../../components/figma/FigmaChip';
 import { FigmaIcon } from '../../components/figma/FigmaIcon';
+import { useAppTheme } from '../../providers/theme-provider';
 import type { WorkHeaderProps } from './work-header';
 
 export function WorkIdentity({
@@ -13,6 +14,7 @@ export function WorkIdentity({
   authorHref,
   chips,
 }: Pick<WorkHeaderProps, 'title' | 'authorName' | 'authorHref' | 'chips'>) {
+  const palette = useAppTheme();
   return (
     <View testID="work-identity" style={{ gap: designTokens.space.x3 }}>
       <View style={{ gap: designTokens.space.x2 }}>
@@ -38,7 +40,7 @@ export function WorkIdentity({
             </AppText>
             <FigmaIcon
               name="arrow-right-01"
-              color={designTokens.color.textSubdued}
+              color={palette.textSubdued}
             />
           </MotionPressable>
         </Link>
