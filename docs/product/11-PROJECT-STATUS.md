@@ -75,6 +75,21 @@ push/merge/deploy не выполнялись.
   Проверки на итоговом SHA: tsc, eslint затронутых файлов, full vitest
   891/891. Остаются по плану: статичная геометрия, provisional
   black-палитра (NEEDS-FIGMA, не включена), live-Figma сверка.
+- **Финальное ревью волн 2–5 (`982a0e00..9201ddb3`) — замечаний нет,
+  gate закрыт:** блокеров не найдено; заявленные значения ролей
+  совпадают с `designTokens.color` по определению (`tokens.ts`:
+  `designTokens.color === lightColorMap`, та же ссылка), визуальных
+  изменений в light нет. Затронутые E2E в Chromium (creator-profile,
+  author-cabinet, search-chrome, catalog-pagination,
+  admin-revision-moderation, author-application-slug): 6 passed, 5
+  failed — все 5 сравнены с base `982a0e00` и падают там же
+  (admin-revision-moderation ×2, catalog-pagination ×2 — изоляция
+  сидов; search-chrome fill `#2457E6` vs `#004DFF` — расхождение
+  brand-заливки, pre-existing) — baseline, не регрессия волн,
+  assertions не ослаблялись. Production web build на `9201ddb3` чист
+  (export 18M, JS-бандл на месте). Optional (не блокер): мок
+  `expo-router` продублирован в двух jsdom-спеках — вынос в
+  `src/testing/` не делался по ponytail.
 
 ## 2026-10-17 — Повторный аудит пакетов A/B/C: A-01/A-02/A-03/A-04 + C-01 (Partial)
 
