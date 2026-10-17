@@ -278,10 +278,7 @@ export function AppDialog({
       style={{
         width: '100%',
         maxWidth: isSheet ? undefined : designTokens.layout.dialogMaxWidth,
-        maxHeight:
-          Platform.OS === 'web'
-            ? '100%'
-            : Math.max(height - viewportGutter * 2, 0),
+        maxHeight: Math.max(height - viewportGutter * 2, 0),
         minWidth: 0,
         flexShrink: Platform.OS === 'web' ? 1 : undefined,
         ...(Platform.OS === 'web' ? { pointerEvents: 'auto' as const } : {}),
