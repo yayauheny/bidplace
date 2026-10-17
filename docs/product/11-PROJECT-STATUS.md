@@ -44,6 +44,17 @@ push/merge/deploy не выполнялись.
   production web build чист. Эталон по-прежнему **Partial**: Needs
   verification — browser zoom, увеличение текста, live-Figma сверка
   (dated ZIP), три стилевых расхождения и legal-копия — на NEEDS-FIGMA.
+- **Хвосты плана (закрыты 2026-10-18, `5fb3f1d9`):** Select All/Delete
+  проверен на plain input и реальном TextField шторки логина (production
+  bundle, Chromium) — дефект не воспроизводится, гипотеза не блокер;
+  splash `_layout` читает `canvas` из `useAppTheme`; устаревший
+  `work-media-lifecycle.spec.ts` приведён к контракту multipart `data`-part
+  (+ направление из сида `e2e-art`, submit требует ≥1) — спека 2/2 в обоих
+  движках; `search-overlay.spec.ts` 18/18 в обоих движках (два
+  предсуществующих фейла dimmer-history/detail-Back на текущем SHA не
+  воспроизводятся). Очередь экранной миграции токенов зафиксирована в
+  `docs/audits/2026-10-18-SCREEN-MIGRATION-QUEUE.md` (12 файлов «профиль
+  автора», затем поиск/каталог/admin).
 
 ## 2026-10-17 — Повторный аудит пакетов A/B/C: A-01/A-02/A-03/A-04 + C-01 (Partial)
 
