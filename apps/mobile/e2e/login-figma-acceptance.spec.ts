@@ -101,11 +101,16 @@ test('login sheet matches the 7008:20543 contract at reference and stays robust'
   });
 
   // Robustness widths: no page-level horizontal overflow, sheet reachable.
+  // Desktop widths are composition evidence only — the sheetMax layout is a
+  // NEEDS-FIGMA decision, so here we only record that nothing overflows and
+  // the sheet stays usable.
   for (const viewport of [
     { width: 320, height: 874 },
     { width: 414, height: 874 },
     { width: 440, height: 956 },
     { width: 390, height: 400 },
+    { width: 1024, height: 720 },
+    { width: 1440, height: 900 },
   ] as const) {
     await page.setViewportSize(viewport);
     await expect(sheet).toBeVisible();
@@ -114,6 +119,9 @@ test('login sheet matches the 7008:20543 contract at reference and stays robust'
         () => document.documentElement.scrollWidth <= window.innerWidth,
       ),
     ).toBe(true);
+    await expect(
+      page.getByRole('button', { name: 'Войти', exact: true }),
+    ).toBeVisible();
     await hideDevOverlays();
     await page.screenshot({
       path: resolve(

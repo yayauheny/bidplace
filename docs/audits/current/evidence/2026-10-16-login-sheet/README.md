@@ -115,9 +115,26 @@ values (getBoundingClientRect/getComputedStyle) на Chromium 390×874,
   инструкция: открыть `expo start --web`, на `/login` нажать Ctrl/⌘ «+» до
   200%, убедиться, что шторка рефлоится без горизонтальной прокрутки и
   «Войти» reachable; записать движок и масштаб.
+- **Попытка 2026-10-18 (production-сборка, реальный браузер)**: `expo export
+  --platform web --clear` с `EXPO_PUBLIC_API_URL` (без `--clear` Metro-кэш
+  удерживает прежний инлайн env — две первые сборки экспортировались без URL
+  и падали на `EXPO_PUBLIC_API_URL is required in production`; это
+  особенность кэша, не дефект кода). Сборка отдана статическим сервером
+  (`node /tmp/serve-bidplace-dist.mjs`, порт 7899) и открыта в браузере
+  пользователя через WebBridge (вкладка «Login zoom-приёмка», групповая).
+  Шторка рендерится в production bundle (sheet: true, контролы на месте; API
+  в пробе не поднят — баннер «Проверьте соединение», на контракт шторки не
+  влияет). Browser zoom через CDP `Input.dispatchKeyEvent` (⌘+, ⌘⇧=, ⌘=,
+  Ctrl=) **не применяется**: браузерный chrome игнорирует синтезированные
+  shortcuts при подключённом debugger, `innerWidth`/visualViewport не
+  менялись. Системный уровень (AppleScript-keystroke) не использован: требует
+  automation-доступа и перехвата фокуса пользователя. Baseline-снимок
+  `real-browser-zoom-100pct.png` (Chromium, production). Статус по-прежнему
+  **Needs verification**; вкладка оставлена открытой на `/login`
+  (production) для ручного ⌘+ до 200%.
 - **Увеличение текста** (настройка размера шрифта браузера): автоматической
-  эмуляции нет. Статус: **Needs verification**, ручная инструкция: в
-  настройках Chromium «Очень крупный» шрифт, повторить те же наблюдения.
+  эмуляции нет; Firefox «zoom text only» в пробе недоступен. Статус: **Needs
+  verification** (без изменений, см. ручную инструкцию ниже).
 - **Скролл-доступность на короткой области** (390×400): у шторки есть
   scroll-owner (`scrollHeight > clientHeight`); email, пароль, «Войти»,
   «Войти с Google» и обе legal-ссылки достижимы прокруткой — каждая цель
@@ -133,13 +150,15 @@ values (getBoundingClientRect/getComputedStyle) на Chromium 390×874,
 
 | Check                                                                                | Actual result                                                                                                   |
 | ------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
-| Acceptance probe `apps/mobile/e2e/login-figma-acceptance.spec.ts`, Chromium + WebKit | 2 passed (первичный прогон и пересъёмка после W11-03; расширенный прогон W11-01 — 2/2)                          |
+| Acceptance probe `apps/mobile/e2e/login-figma-acceptance.spec.ts`, Chromium + WebKit | 2 passed (первичный прогон и пересъёмка после W11-03; расширенный прогон W11-01 — 2/2; прогон 2026-10-18 с desktop-вьюпортами — 2/2) |
 | Скриншоты #auth-sheet 390×874 + error-state, оба движка                              | 14 PNG в папке (пересняты 2026-10-16, dev-overlay подавлен)                                                     |
 | Overflow-проверка 320/414/440 ×874 и 390×400 (short sheet)                           | нет горизонтального overflow на уровне страницы, шторка видима                                                  |
+| Desktop-вьюпорты 1024×720 и 1440×900, оба движка (2026-10-18)                        | нет горизонтального overflow, шторка видима, «Войти» видим; 4 PNG (`*-login-sheet-1024x720.png`, `*-1440x900.png`); композиция > sheetMax — NEEDS-FIGMA дизайнера, фиксация только evidence |
 | CSS zoom 200% (css-zoom-reflow)                                                      | шторка рефлоится без горизонтального overflow, «Войти» в вьюпорте                                               |
 | Скролл-доступность 390×400                                                           | все контролы и обе legal-ссылки reachable через scroll-owner                                                    |
 | Клавиатурный обход Tab/Shift+Tab                                                     | весь интерактивный порядок шторки доступен в обе стороны                                                        |
-| Реальный browser zoom 200% и увеличение текста                                       | Needs verification — ручная инструкция выше; автоматической эмуляции нет                                        |
+| Production web build открыт в реальном браузере (2026-10-18)                          | шторка и контролы рендерятся в exported bundle (снимок `real-browser-zoom-100pct.png`); zoom-шорткаты через CDP не применяются — см. W11-01 |
+| Реальный browser zoom 200% и увеличение текста                                       | Needs verification — попытка 2026-10-18 задокументирована в W11-01; вкладка «Login zoom-приёмка» открыта на production `/login` для ручного ⌘+ |
 | Полное сравнение со скриншотом reference (чтение кропов)                             | структура 1:1; единственный посторонний глиф — dev-overlay Expo, владелец установлен (W11-03), из снимков убран |
 
 Команда: `cd apps/mobile && corepack pnpm exec playwright test

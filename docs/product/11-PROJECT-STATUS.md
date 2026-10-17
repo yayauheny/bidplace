@@ -2,6 +2,49 @@
 
 > Entries dated before 2026-10-13 mention Pen / .pen files; the Pen design was removed (DEC-119) — read those mentions as history.
 
+## 2026-10-18 — Итоговое закрытие фронтенд-плана: F-01/F-02/F-03 + приёмка (Partial)
+
+План `docs/audits/2026-10-17-FRONTEND-CLOSURE-PLAN.md` (`fix/frontend-closure-plan`,
+`1e0784ef`). Работа на `fix/draft-restore`, итоговый SHA — см. коммиты волны
+ниже. Сервер/SDK/history не трогали, остальные экраны не переносили,
+push/merge/deploy не выполнялись.
+
+- **F-01 (ownership после собственного save) — Implemented:** в ветке
+  confirmed-save переход в ожидание чужого snapshot теперь удерживает
+  `awaitingOwnerSnapshot: true` через spread previous; повторный save при
+  отстающем владельце не вызывает API, корректный snapshot с тем же token
+  разблокирует редактор, ввод новой работы до первого save не затронут.
+  Код `af29918a`, owner-спека 36/36.
+- **F-02 (общий AppDialog) — Implemented:** web-высота диалога ограничена
+  вьюпортом (`maxHeight = height − 2×viewportGutter` вместо процентов от
+  auto-высоты родителя) — длинный recovery-текст прокручивается, последнее
+  содержимое и выделение доступны, закрытие и возврат фокуса сохранены.
+  Новая приёмочная спека: длинный recovery-диалог + короткий диалог и sheet
+  на 390×400 с resize, 2/2 в Chromium/WebKit; owner-спеки AppDialog 66/66.
+  Код `5d47884a`.
+- **F-03 (семантическая палитра) — Implemented:** экранные static-light
+  токены auth/legal/consent/toolbar переведены на `useAppTheme()`; добавлены
+  роли `usernameAvailable`/`usernameTaken` (black-значения provisional,
+  NEEDS-FIGMA); мёртвые ключи `designTokens.auth.*Border*/available/taken`
+  удалены, геометрия сохранена. Mounted-проверки: login-контролы и story
+  toolbar перекрашиваются без remount (theme.spec + nickname-статус в
+  registration-consent). Light-значения не менялись. Код `bfaec4cb`.
+- **Приёмка эталона:** desktop-вьюпорты 1024×720 и 1440×900 добавлены в
+  login-acceptance пробу (нет h-overflow, шторка и «Войти» видимы, 4 новых
+  PNG, оба движка); production web build (`expo export --platform web
+  --clear` с `EXPO_PUBLIC_API_URL`) открыт в реальном браузере — шторка
+  рендерится в exported bundle. Реальный browser zoom через CDP-шорткаты не
+  применяется (debugger игнорирует), системный keystroke не использован
+  (permissions/focus) — статус по-прежнему **Needs verification** с
+  открытой вкладкой «Login zoom-приёмка»; увеличение текста — Needs
+  verification (Firefox недоступен). Подробности и baseline-снимок в
+  `docs/audits/current/evidence/2026-10-16-login-sheet/README.md`.
+- **Проверки:** unit **890/890** (136 файлов), mobile tsc чист, eslint
+  затронутых файлов чист, login acceptance 2/2 (Chromium+WebKit),
+  production web build чист. Эталон по-прежнему **Partial**: Needs
+  verification — browser zoom, увеличение текста, live-Figma сверка
+  (dated ZIP), три стилевых расхождения и legal-копия — на NEEDS-FIGMA.
+
 ## 2026-10-17 — Повторный аудит пакетов A/B/C: A-01/A-02/A-03/A-04 + C-01 (Partial)
 
 Аудит `docs/audits/2026-10-17-PACKAGES-ABC-REVIEW.md` (`fix/packages-abc-audit`,
