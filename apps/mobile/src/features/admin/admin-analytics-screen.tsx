@@ -21,6 +21,7 @@ import {
 } from '../../components/ui';
 import { FigmaButton } from '../../components/figma/FigmaButton';
 import { useApiClient } from '../../providers/api-provider';
+import { useAppTheme } from '../../providers/theme-provider';
 
 type PeriodOption = Exclude<AdminAnalyticsQuery['period'], 'custom'>;
 type Drilldown = NonNullable<AdminAnalyticsQuery['drilldown']>;
@@ -43,6 +44,7 @@ function MetricCard({
   definition: string;
   onPress?: () => void;
 }) {
+  const palette = useAppTheme();
   const content = (
     <View
       style={{
@@ -53,8 +55,8 @@ function MetricCard({
         gap: designTokens.space.x1,
         padding: designTokens.space.x4,
         borderWidth: 1,
-        borderColor: designTokens.color.border,
-        backgroundColor: designTokens.color.surface,
+        borderColor: palette.border,
+        backgroundColor: palette.surface,
       }}
     >
       <AppText role="label" tone="secondary">
@@ -95,6 +97,7 @@ function GrowthBars({
 }: {
   growth: AdminAnalyticsOverview['growth'];
 }) {
+  const palette = useAppTheme();
   const max = Math.max(
     1,
     ...growth.map(
@@ -127,7 +130,7 @@ function GrowthBars({
             <View
               style={{
                 height: 8,
-                backgroundColor: designTokens.color.border,
+                backgroundColor: palette.border,
                 overflow: 'hidden',
               }}
             >
@@ -135,7 +138,7 @@ function GrowthBars({
                 style={{
                   width: `${widthPercent}%`,
                   height: '100%',
-                  backgroundColor: designTokens.color.ink,
+                  backgroundColor: palette.ink,
                 }}
               />
             </View>
@@ -153,6 +156,7 @@ function RecentList({
   title: string;
   items: Array<{ id: string; label: string; meta?: string; href?: string }>;
 }) {
+  const palette = useAppTheme();
   return (
     <FormSection title={title}>
       {items.length === 0 ? (
@@ -168,7 +172,7 @@ function RecentList({
                   gap: designTokens.space.x1,
                   paddingVertical: designTokens.space.x2,
                   borderBottomWidth: 1,
-                  borderBottomColor: designTokens.color.border,
+                  borderBottomColor: palette.border,
                 }}
               >
                 <AppText role="label">{item.label}</AppText>

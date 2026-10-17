@@ -5,6 +5,7 @@ import { View } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
 
 import { AppText } from '../../components/ui';
+import { useAppTheme } from '../../providers/theme-provider';
 
 export function ModerationCard({
   title,
@@ -19,12 +20,13 @@ export function ModerationCard({
   legacy?: boolean;
   children: ReactNode;
 }) {
+  const palette = useAppTheme();
   return (
     <View
       style={{
         gap: designTokens.space.x2,
         borderBottomWidth: 1,
-        borderBottomColor: designTokens.color.border,
+        borderBottomColor: palette.border,
         paddingBottom: designTokens.space.x4,
       }}
     >
