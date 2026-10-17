@@ -34,27 +34,32 @@ Gate на экран: mounted-проверка видимых цветов/SVG �
 palette без remount (паттерн `theme.spec.ts`), light-скриншоты не меняются,
 адресные owner specs зелёные.
 
-### 2. Поиск (overlay и панели)
+### 2. Поиск (overlay и панели) — выполнен (SHA `b5259d51`, волна 2026-10-18)
 
-| Файл | Строки | Что читает |
-| --- | --- | --- |
-| `src/features/search/panes/WorksSearchPane.tsx` | 65 | `backgroundColor` |
-| `src/features/search/panes/CategoriesSearchPane.tsx` | 92 | `backgroundColor` |
-| `src/features/search/panes/AuthorsSearchPane.tsx` | 72 | `backgroundColor` |
+Skeleton-заливки трёх панелей (`WorksSearchPane`, `CategoriesSearchPane`,
+`AuthorsSearchPane`) читают `surfaceMuted` из `useAppTheme()`; геометрия
+осталась статической по плану. Мок `expo-router` добавлен в
+`search-panes.spec.ts` (та же причина, что в волне 2). Проверки: tsc,
+eslint, search specs 28/28.
 
-### 3. Каталог / карточки работ
+### 3. Каталог / карточки работ — выполнен (SHA `b272e71f`, волна 2026-10-18)
 
-| Файл | Строки | Что читает |
-| --- | --- | --- |
-| `src/features/products/WorkIdentity.tsx` | 41 | `color={textSubdued}` |
-| `src/features/products/CatalogCardSkeleton.tsx` | 14 | `backgroundColor` (skeleton-заливка) |
+`WorkIdentity` (стрелка автора, роль `textSubdued`) и
+`CatalogCardSkeleton` (заливка `surfaceMuted`) на `useAppTheme()`.
+Проверки: tsc, eslint, full vitest 891/891.
 
-### 4. Admin (внутренний экран)
+### 4. Admin (внутренний экран) — выполнен (SHA `4f643f45`, волна 2026-10-18)
 
-| Файл | Строки | Что читает |
-| --- | --- | --- |
-| `src/features/admin/admin-analytics-screen.tsx` | 56–57, 130, 138, 171 | `borderColor`, `backgroundColor` ×3, `borderBottomColor` |
-| `src/features/admin/ModerationCard.tsx` | 27 | `borderBottomColor` |
+`admin-analytics-screen` (MetricCard `border`/`surface`, GrowthBars
+`border`/`ink`, RecentList `border`) и `ModerationCard` (`border`) на
+`useAppTheme()`. Проверки: tsc, eslint, full vitest 891/891.
+
+**Очередь исчерпана.** По `grep -rn "designTokens.color" apps/mobile/src`
+(без spec-файлов) чтений не осталось: все видимые цвета приложения
+резолвятся через `useAppTheme()` / SemanticColorMap. Остаются по плану:
+geometry-токены статичны, black-палитра provisional (NEEDS-FIGMA,
+пользователям не включена), геометрия экранов и live-Figma сверка —
+отдельные продуктовые этапы.
 
 ## Правила миграции (из плана, без изменений)
 

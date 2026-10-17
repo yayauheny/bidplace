@@ -63,8 +63,18 @@ push/merge/deploy не выполнялись.
   remount; мок `expo-router` добавлен в `seller-profile-fields.spec.ts`
   (theme-provider вошёл в граф импорта; реальный expo-router не парсится
   в jsdom — предсуществующее ограничение). Проверки: tsc, eslint, vitest
-  891/891. Остаток очереди: пакеты 2 (поиск, 3 файла), 3 (каталог, 2),
-  4 (admin, 2).
+  891/891.
+- **Экранная миграция, волны 3–5 — поиск, каталог, admin закрыты
+  (`b5259d51`, `b272e71f`, `4f643f45`):** skeleton-заливки панелей поиска,
+  стрелка автора и skeleton каталога, admin-метрики/графики/списки и
+  ModerationCard переведены на `useAppTheme()`; мок `expo-router`
+  добавлен в `search-panes.spec.ts`. Полная очередь
+  `docs/audits/2026-10-18-SCREEN-MIGRATION-QUEUE.md` исчерпана: вне
+  spec-файлов не осталось ни одного чтения `designTokens.color` —
+  все видимые цвета резолвятся через единый `useAppTheme()`.
+  Проверки на итоговом SHA: tsc, eslint затронутых файлов, full vitest
+  891/891. Остаются по плану: статичная геометрия, provisional
+  black-палитра (NEEDS-FIGMA, не включена), live-Figma сверка.
 
 ## 2026-10-17 — Повторный аудит пакетов A/B/C: A-01/A-02/A-03/A-04 + C-01 (Partial)
 
