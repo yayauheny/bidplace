@@ -2,6 +2,7 @@ import { View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
+import { useAppTheme } from '../../../providers/theme-provider';
 import { usePortfolioAuthors } from '../../sellers/use-portfolio-authors';
 import { AuthorSearchRow } from '../AuthorSearchRow';
 import { FigmaButton } from '../../../components/figma/FigmaButton';
@@ -64,12 +65,13 @@ function AuthorSkeleton() {
 }
 
 function SkeletonRow() {
+  const palette = useAppTheme();
   return (
     <View
       style={{
         height: designTokens.size.touch,
         borderRadius: designTokens.radius.small,
-        backgroundColor: designTokens.color.surfaceMuted,
+        backgroundColor: palette.surfaceMuted,
       }}
     />
   );

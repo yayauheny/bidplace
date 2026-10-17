@@ -7,6 +7,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
+// theme-provider imports expo-router, which is not importable in jsdom tests.
+vi.mock('expo-router', () => ({
+  DefaultTheme: { colors: {} },
+  ThemeProvider: ({ children }: { children?: ReactNode }) =>
+    createElement('div', null, children),
+}));
+
 type WorkItem = { work: { id: string; title: string } };
 type AuthorItem = {
   author: {
