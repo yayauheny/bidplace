@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 
 type FocusRef = { current: { focus?: () => void } | null };
 
@@ -17,12 +17,39 @@ export function useReturnFocus({
   explicitRef,
   focusOnOpen,
   shouldRestore,
+  open,
 }: {
+  open?: boolean;
   explicitRef?: FocusRef;
   focusOnOpen?: () => HTMLElement | null;
   shouldRestore?: () => boolean;
 } = {}) {
   const openerRef = useRef<HTMLElement | null>(null);
+
+  const restoreFocus = () => {
+    if (typeof document === 'undefined' || (shouldRestore && !shouldRestore()))
+      return;
+    const explicit = explicitRef?.current;
+    const opener = openerRef.current;
+    if (explicit) explicit.focus?.();
+    else if (opener?.isConnected) opener.focus({ preventScroll: true });
+    openerRef.current = null;
+  };
+
+  const restoreRef = useRef(restoreFocus);
+  restoreRef.current = restoreFocus;
+  const wasOpen = useRef(open);
+  useEffect(() => {
+    // Restore after the closed focus scope commits; cancel a rapid reopen.
+    const frame =
+      wasOpen.current === true && open === false
+        ? requestAnimationFrame(() => restoreRef.current())
+        : null;
+    wasOpen.current = open;
+    return () => {
+      if (frame !== null) cancelAnimationFrame(frame);
+    };
+  }, [open]);
 
   return {
     onOpenAutoFocus: (event: Event) => {
@@ -39,15 +66,7 @@ export function useReturnFocus({
     },
     onCloseAutoFocus: (event: Event) => {
       event.preventDefault();
-      if (shouldRestore && !shouldRestore()) return;
-      const explicit = explicitRef?.current;
-      const opener = openerRef.current;
-      openerRef.current = null;
-      if (explicit) {
-        explicit.focus?.();
-      } else if (opener?.isConnected) {
-        opener.focus({ preventScroll: true });
-      }
+      restoreFocus();
     },
   };
 }

@@ -18,6 +18,7 @@ import {
 import { FigmaIcon } from '../figma/FigmaIcon';
 import { useAppTheme } from '../../providers/theme-provider';
 import { AppText } from './AppText';
+import { SheetDragSurface, SheetDragHandle } from './SheetDragSurface';
 import {
   appDialogHostStyle,
   appDialogSheetBottomSpace,
@@ -73,6 +74,7 @@ export function AppDialog({
   const instanceMountedRef = useRef(false);
   openRef.current = open;
   const returnFocus = useReturnFocus({
+    open: presentation !== 'dialog' ? open : undefined,
     explicitRef: explicitReturnFocusRef,
     focusOnOpen: () =>
       closeButtonRef.current instanceof HTMLElement
@@ -178,7 +180,7 @@ export function AppDialog({
             overflow: 'hidden',
           }}
         >
-          {media}
+          <SheetDragHandle>{media}</SheetDragHandle>
         </View>
         <View
           style={{
@@ -230,26 +232,28 @@ export function AppDialog({
     </>
   ) : (
     <>
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'flex-start',
-          justifyContent: 'space-between',
-          gap: designTokens.space.x4,
-          minWidth: 0,
-          alignSelf: 'stretch',
-        }}
-      >
-        <Dialog.Title asChild>
-          <AppText
-            role={isSheet ? 'profileHeading' : 'sectionTitle'}
-            style={{ flex: 1, minWidth: 0 }}
-          >
-            {title}
-          </AppText>
-        </Dialog.Title>
-        {closeButton}
-      </View>
+      <SheetDragHandle>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'flex-start',
+            justifyContent: 'space-between',
+            gap: designTokens.space.x4,
+            minWidth: 0,
+            alignSelf: 'stretch',
+          }}
+        >
+          <Dialog.Title asChild>
+            <AppText
+              role={isSheet ? 'profileHeading' : 'sectionTitle'}
+              style={{ flex: 1, minWidth: 0 }}
+            >
+              {title}
+            </AppText>
+          </Dialog.Title>
+          {closeButton}
+        </View>
+      </SheetDragHandle>
       {description ? (
         <Dialog.Description asChild>
           <AppText role="bodySmall" tone="secondary">
@@ -383,7 +387,9 @@ export function AppDialog({
                 exiting={sheetExit}
                 style={{ width: '100%' }}
               >
-                {content}
+                <SheetDragSurface enabled={open} onRequestClose={onClose}>
+                  {content}
+                </SheetDragSurface>
               </Animated.View>
             ) : null}
           </AppDialogFrame>

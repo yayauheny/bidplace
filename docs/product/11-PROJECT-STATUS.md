@@ -2,6 +2,20 @@
 
 > Entries dated before 2026-10-13 mention Pen / .pen files; the Pen design was removed (DEC-119) — read those mentions as history.
 
+## 2026-10-18 — Фон auth и общий свайп шторок (DEC-122)
+
+**Implemented (web)**: AuthViewport не создаёт вторую Home; Expo Router сохраняет
+текущую страницу под прозрачным auth stack, закрытие использует dismissTo.
+FloatingDock сохраняет публичный return path/query. SheetDragSurface централизует
+жест верхней области для auth/AppDialog/FilterSheet; busy/dirty guards сохранены,
+закрытие force-mounted sheet возвращает фокус.
+
+Проверки: 53/53 адресных unit, 12/12 Chromium + WebKit, production export,
+mobile tsc, lint/format затронутых файлов. **Needs verification:** физический iPhone
+и native. Большой legal/auth case остался красным на старом locator текста;
+полный auth-suite не заявляется зелёным. Отчёт и evidence:
+[приёмка](../audits/2026-10-18-SHEET-FIX-ACCEPTANCE.md). API/БД не менялись.
+
 ## 2026-10-18 — TC-final: TCF-01 закрыт, TC-02 Needs verification (Partial), техчистка остановлена
 
 Аудит `docs/audits/2026-10-18-TC-FINAL-REVIEW.md` (`fix/tc-final-review`,

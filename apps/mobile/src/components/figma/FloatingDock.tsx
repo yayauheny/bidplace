@@ -63,7 +63,7 @@ export function FloatingDock({
           : !search.isOpen && isFigmaDockItemSelected(item.id, pathname)
       }
       href={dockHref(item, {
-        pathname,
+        returnPath,
         isAuthenticated: auth.isAuthenticated,
         isAdmin: auth.isAdmin,
         sellerStatus: capability.status,
@@ -95,7 +95,7 @@ export function FloatingDock({
 function dockHref(
   item: FigmaDockItem,
   context: {
-    pathname: string;
+    returnPath: string;
     isAuthenticated: boolean;
     isAdmin: boolean;
     sellerStatus: ReturnType<typeof useSellerCapability>['status'];
@@ -111,7 +111,9 @@ function dockHref(
       if (context.isAuthenticated) {
         return authorProfileDestination(context.sellerStatus) as Href;
       }
-      return '/login';
+      return context.returnPath === '/'
+        ? '/login'
+        : { pathname: '/login', params: { redirectTo: context.returnPath } };
     case 'plus':
       return undefined;
   }

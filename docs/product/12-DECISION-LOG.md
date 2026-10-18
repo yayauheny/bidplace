@@ -2965,3 +2965,21 @@ upgrade changes what the local browser layer must cover.
 `apps/mobile/src/lib/local-form-draft.ts`,
 `apps/mobile/src/features/sellers/local-form-restore.ts`; branch
 `fix/draft-routing` (2026-10-15).
+
+
+## DEC-122 — Auth over the current page; sheets dismiss from their header
+
+Date: 2026-10-18. Status: Confirmed by founder in this task.
+
+Login opened from Home, a profile or a catalog keeps that current page and its
+scroll position underneath. A direct auth URL uses Home as its fallback anchor.
+Do not mount a second Home inside auth to imitate a background.
+
+Sheet dismissal starts with a downward drag from the handle/header. Content
+scrolling does not dismiss it. Existing dirty-state confirmation and busy-save
+blocking apply to this gesture through the same close owner as the cross button.
+Centered confirmation dialogs and full-screen registration are not draggable sheets.
+
+Owner: Expo Router root/auth presentation + AuthViewport; shared interaction:
+SheetDragSurface used by AuthViewport/AppDialog/FilterSheet. Server contracts,
+permissions, draft persistence and visual geometry are unchanged.

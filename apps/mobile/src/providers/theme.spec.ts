@@ -13,6 +13,11 @@ import {
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
+vi.mock(
+  '../components/ui/SheetDragSurface',
+  () => import('../components/ui/SheetDragSurface.web'),
+);
+
 const navigationThemes: Array<{ colors: Record<string, string> }> = [];
 
 vi.mock('expo-router', () => ({
@@ -116,7 +121,13 @@ vi.mock('react-native', () => ({
       readOnly: true,
     });
   },
-  ScrollView: ({ children, style }: { children?: ReactNode; style?: unknown }) => {
+  ScrollView: ({
+    children,
+    style,
+  }: {
+    children?: ReactNode;
+    style?: unknown;
+  }) => {
     const flat: Record<string, unknown> = {};
     for (const item of Array.isArray(style) ? style : [style]) {
       if (item && typeof item === 'object') Object.assign(flat, item);
@@ -484,14 +495,14 @@ describe('app theme owner', () => {
       [...container.querySelectorAll('span')].find(
         (node) => node.textContent === text,
       ) as HTMLElement;
-    const legalLink = spanByText(
-      'политикой персональных данных и cookies',
-    );
+    const legalLink = spanByText('политикой персональных данных и cookies');
     const consentLink = spanByText('условия');
     const gradient = container.querySelector(
       '[data-gradient-colors]',
     ) as HTMLElement;
-    const googlePath = container.querySelector('path') as unknown as HTMLElement;
+    const googlePath = container.querySelector(
+      'path',
+    ) as unknown as HTMLElement;
     const tool = container.querySelector(
       '[aria-label="Добавить заголовок"]',
     ) as HTMLElement;
@@ -508,9 +519,9 @@ describe('app theme owner', () => {
       );
       expect(googlePath.getAttribute('fill')).toBe(palette.fieldValue);
       expect(tool.style.backgroundColor).toBe(rgbOf(palette.surfaceMuted));
-      expect(
-        (tool.querySelector('span') as HTMLElement).style.color,
-      ).toBe(rgbOf(palette.inkStrong));
+      expect((tool.querySelector('span') as HTMLElement).style.color).toBe(
+        rgbOf(palette.inkStrong),
+      );
       expect(
         (imageTool.querySelector('[data-figma-icon]') as HTMLElement).style
           .color,

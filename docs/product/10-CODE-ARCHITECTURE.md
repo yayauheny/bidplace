@@ -470,3 +470,15 @@ imported rows as complete historical quota truth.
 
 Automated verification counts and browser evidence for this branch are owned by
 `11-PROJECT-STATUS.md`.
+
+
+### Auth background and shared sheet interaction (2026-10-18, DEC-122)
+
+Expo Router root anchor `index` and transparent auth presentation preserve the
+existing background screen. AuthViewport owns auth close guards and dismisses to
+its return target; it no longer renders HomeScreen as a second background.
+SheetDragSurface owns only gesture detection/translation, with web Pointer Events
+and a native PanResponder adapter. AppDialog, FilterSheet and AuthViewport declare
+the draggable header and supply the existing close callback. This avoids separate
+route-local gesture implementations; persistence, auth service, API and database
+boundaries are unchanged. useReturnFocus handles force-mounted sheet close cycles.

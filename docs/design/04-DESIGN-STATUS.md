@@ -2,6 +2,17 @@
 
 > Entries dated before 2026-10-13 mention Pen / .pen files; the Pen design was removed (DEC-119) — read those mentions as history.
 
+## 2026-10-18 — Auth background и свайп шторок (DEC-122)
+
+**Implemented (web interaction)**: вход остаётся поверх текущей страницы без
+повторного монтажа Home. Верхняя ручка/header запрашивает закрытие через общий
+SheetDragSurface; тело скроллится отдельно, guards, Cross/Escape и возврат фокуса
+сохранены. Цвета/геометрия не менялись. Проверены Home/profile/share/filter в
+Chromium и WebKit; 12/12 адресных browser cases, 53/53 unit, build/tsc/lint чисто.
+**Needs verification:** физический iPhone/native, прежние zoom/text enlargement
+и live-Figma acceptance остаются открытыми. Полный auth/legal suite не закрыт.
+[Evidence и ограничения](../audits/2026-10-18-SHEET-FIX-ACCEPTANCE.md).
+
 ## 2026-10-16 — Draft-restore волна 1 (ветка `fix/draft-restore`) — код-онли
 
 - `Implemented` для R1–R4 + O1: дизайн, копии, геометрия и навигационный chrome не изменены. Поведение восстановления истории стало точным: порядок и удаление текстовых блоков, дублирующиеся тексты и подписи серверных изображений восстанавливаются как есть (формат v2, подробности — `11-PROJECT-STATUS.md`). Визуальный дизайн не затронут.

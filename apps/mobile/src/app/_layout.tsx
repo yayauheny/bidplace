@@ -16,6 +16,8 @@ import '../../global.css';
 
 ensureAuthBrowserHistory();
 
+export const unstable_settings = { anchor: 'index' };
+
 export default function RootLayout() {
   // Falls back to the light palette while providers are not mounted yet.
   const palette = useAppTheme();
@@ -26,9 +28,7 @@ export default function RootLayout() {
   });
 
   if (!fontsLoaded) {
-    return (
-      <View style={{ flex: 1, backgroundColor: palette.canvas }} />
-    );
+    return <View style={{ flex: 1, backgroundColor: palette.canvas }} />;
   }
 
   return (
@@ -40,6 +40,10 @@ export default function RootLayout() {
           contentStyle: { backgroundColor: 'transparent' },
         }}
       >
+        <Stack.Screen
+          name="(auth)"
+          options={{ presentation: 'transparentModal', animation: 'none' }}
+        />
         <Stack.Screen name="(seller)" />
         <Stack.Screen name="(admin)" />
       </Stack>

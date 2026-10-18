@@ -1,10 +1,13 @@
-import { useState } from 'react';
+import { useRef, useState, type ElementRef } from 'react';
 import { Alert, Platform, Share, View } from 'react-native';
 
 import { FigmaIconButton } from '../../components/figma/FigmaIconButton';
 import { FigmaIcon } from '../../components/figma/FigmaIcon';
 import { FilterSheet } from '../../components/figma/FilterSheet';
-import { copyPublicLink, publicShareTarget } from '../../components/figma/public-share';
+import {
+  copyPublicLink,
+  publicShareTarget,
+} from '../../components/figma/public-share';
 import { AppText, MotionPressable } from '../../components/ui';
 import { useAppTheme } from '../../providers/theme-provider';
 
@@ -19,12 +22,14 @@ export function AuthorShare({
   onUnavailable: (feature: string) => void;
 }) {
   const palette = useAppTheme();
+  const triggerRef = useRef<ElementRef<typeof MotionPressable>>(null);
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState('');
 
   const shareLink = async () => {
     try {
-      const origin = Platform.OS === 'web' ? window.location.origin : 'https://bid.place';
+      const origin =
+        Platform.OS === 'web' ? window.location.origin : 'https://bid.place';
       const url = publicShareTarget(sharePath, origin).url;
       if (Platform.OS === 'web') {
         await copyPublicLink(url);
@@ -42,6 +47,7 @@ export function AuthorShare({
   return (
     <>
       <FigmaIconButton
+        ref={triggerRef}
         icon="share-03"
         iconSize={20}
         strokeWidthPx={1.5}
@@ -53,6 +59,7 @@ export function AuthorShare({
         }}
       />
       <FilterSheet
+        returnFocusRef={triggerRef}
         presentation="compact"
         open={open}
         onClose={() => setOpen(false)}
@@ -64,7 +71,12 @@ export function AuthorShare({
           accessibilityLabel="Ссылка на профиль"
           onPress={() => void shareLink()}
           preset="button"
-          style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+          style={{
+            minHeight: 44,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
         >
           <AppText role="bodySmall">Ссылка на профиль</AppText>
           <FigmaIcon name="link-01" size={20} strokeWidthPx={1.5} />
@@ -83,12 +95,22 @@ export function AuthorShare({
             onUnavailable('Жалобы на профили');
           }}
           preset="button"
-          style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+          style={{
+            minHeight: 44,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
         >
           <AppText role="bodySmall" style={{ color: palette.report }}>
             Пожаловаться
           </AppText>
-          <FigmaIcon name="flag-01" size={20} strokeWidthPx={1.5} color={palette.report} />
+          <FigmaIcon
+            name="flag-01"
+            size={20}
+            strokeWidthPx={1.5}
+            color={palette.report}
+          />
         </MotionPressable>
       </FilterSheet>
     </>

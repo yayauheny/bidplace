@@ -445,3 +445,12 @@ Packaging, delivery, condition, provenance, город продажи, weight и
 - 390 mobile, 1024 tablet and 1440 desktop;
 - safe-area/keyboard behavior for fixed or floating controls;
 - direct URL access to disabled commerce surfaces fails safely.
+
+
+## 2026-10-18 — Auth sheet background and close contract (DEC-122)
+
+Opening login from a public page retains that page, loaded images and scroll
+under the dimmer. Closing returns to that existing page; a direct login URL has
+Home as its fallback. The upper handle/header can be pulled down to request the
+same close action as the cross. Body scrolling cannot close the sheet. Busy-save
+blocking and dirty registration confirmation remain with AuthViewport.

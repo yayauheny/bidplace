@@ -298,7 +298,7 @@ test('after aborting a filled registration the next Back and Forward walk real h
   await expect(page.getByTestId('app-shell-content')).toBeVisible();
   await openWorksCatalog(page);
   await page.getByRole('link', { name: 'Профиль', exact: true }).click();
-  await expect(page).toHaveURL(/\/login$/);
+  await expect(page).toHaveURL(/\/login\?redirectTo=%2Fworks$/);
   await page.route('**/api/auth/legal', (route) =>
     route.fulfill({
       json: {
@@ -351,7 +351,7 @@ test('after aborting a filled registration the next Back and Forward walk real h
     }),
   );
   await page.getByRole('link', { name: 'Регистрация', exact: true }).click();
-  await expect(page).toHaveURL(/\/register$/);
+  await expect(page).toHaveURL(/\/register\?redirectTo=%2Fworks$/);
   const registerEmail = page.getByPlaceholder('example@gmail.com');
   await registerEmail.fill(`history-${Date.now()}@example.com`);
   for (const label of [
@@ -372,7 +372,7 @@ test('after aborting a filled registration the next Back and Forward walk real h
   await expect(
     page.getByText('Прервать регистрацию', { exact: true }),
   ).toBeVisible();
-  await expect(page).toHaveURL(/\/register$/);
+  await expect(page).toHaveURL(/\/register\?redirectTo=%2Fworks$/);
   await page.getByRole('button', { name: 'Прервать', exact: true }).click();
   await expect(page).toHaveURL(/\/works$/);
 
@@ -389,7 +389,7 @@ test('after aborting a filled registration the next Back and Forward walk real h
   await expect(page).toHaveURL(/\/works$/);
   await expect(registerStep).toHaveCount(0);
   await historyStep(page, 1);
-  await expect(page).toHaveURL(/\/login$/);
+  await expect(page).toHaveURL(/\/login\?redirectTo=%2Fworks$/);
   await expect(registerStep).toHaveCount(0);
   await historyStep(page, 1);
   await expect(
@@ -568,9 +568,9 @@ async function expectAuthBrowserHistory(page: Page, navigationApi: boolean) {
   await page.goto('/');
   await openWorksCatalog(page);
   await page.getByRole('link', { name: 'Профиль', exact: true }).click();
-  await expect(page).toHaveURL(/\/login$/);
+  await expect(page).toHaveURL(/\/login\?redirectTo=%2Fworks$/);
   await page.getByRole('link', { name: 'Регистрация', exact: true }).click();
-  await expect(page).toHaveURL(/\/register$/);
+  await expect(page).toHaveURL(/\/register\?redirectTo=%2Fworks$/);
   await historyStep(page, -2);
   await expect(
     page.getByText('Прервать регистрацию', { exact: true }),
@@ -581,9 +581,9 @@ async function expectAuthBrowserHistory(page: Page, navigationApi: boolean) {
   await page.goto('/');
   await openWorksCatalog(page);
   await page.getByRole('link', { name: 'Профиль', exact: true }).click();
-  await expect(page).toHaveURL(/\/login$/);
+  await expect(page).toHaveURL(/\/login\?redirectTo=%2Fworks$/);
   await page.getByRole('link', { name: 'Регистрация', exact: true }).click();
-  await expect(page).toHaveURL(/\/register$/);
+  await expect(page).toHaveURL(/\/register\?redirectTo=%2Fworks$/);
   const registerEmail = page.getByPlaceholder('example@gmail.com');
   await registerEmail.fill('kept@example.com');
   const rulesReady = page.waitForResponse(
@@ -600,7 +600,7 @@ async function expectAuthBrowserHistory(page: Page, navigationApi: boolean) {
     exact: true,
   });
   await expect(registrationExit).toBeVisible();
-  await expect(page).toHaveURL(/\/register$/);
+  await expect(page).toHaveURL(/\/register\?redirectTo=%2Fworks$/);
   await expect(
     page.getByText('Выберите имя пользователя', { exact: true }),
   ).toBeVisible();
@@ -612,7 +612,7 @@ async function expectAuthBrowserHistory(page: Page, navigationApi: boolean) {
   expect(panelBox!.width).toBeCloseTo(366, 0);
   expect(panelBox!.x).toBeCloseTo((390 - panelBox!.width) / 2, 0);
   await page.getByRole('button', { name: 'Продолжить', exact: true }).click();
-  await expect(page).toHaveURL(/\/register$/);
+  await expect(page).toHaveURL(/\/register\?redirectTo=%2Fworks$/);
   await expect(
     page.getByText('Выберите имя пользователя', { exact: true }),
   ).toBeVisible();
@@ -630,9 +630,9 @@ async function expectAuthBrowserHistory(page: Page, navigationApi: boolean) {
   await openWorksCatalog(page);
   await page.getByRole('link', { name: 'Профиль', exact: true }).click();
   await page.getByRole('link', { name: 'Регистрация', exact: true }).click();
-  await expect(page).toHaveURL(/\/register$/);
+  await expect(page).toHaveURL(/\/register\?redirectTo=%2Fworks$/);
   await page.reload();
-  await expect(page).toHaveURL(/\/register$/);
+  await expect(page).toHaveURL(/\/register\?redirectTo=%2Fworks$/);
   await expect(
     page.getByText('Введите вашу почту', { exact: true }),
   ).toBeVisible();
@@ -642,13 +642,13 @@ async function expectAuthBrowserHistory(page: Page, navigationApi: boolean) {
   await expect(
     page.getByText('Прервать регистрацию', { exact: true }),
   ).toBeVisible();
-  await expect(page).toHaveURL(/\/register$/);
+  await expect(page).toHaveURL(/\/register\?redirectTo=%2Fworks$/);
   await expect(
     page.getByText('Введите вашу почту', { exact: true }),
   ).toBeVisible();
   await expect(reloadedEmail).toHaveValue('reloaded@example.com');
   await page.getByRole('button', { name: 'Продолжить', exact: true }).click();
-  await expect(page).toHaveURL(/\/register$/);
+  await expect(page).toHaveURL(/\/register\?redirectTo=%2Fworks$/);
   await expect(reloadedEmail).toHaveValue('reloaded@example.com');
   await expect(reloadedEmail).toBeFocused();
   await historyStep(page, -2);
@@ -658,7 +658,7 @@ async function expectAuthBrowserHistory(page: Page, navigationApi: boolean) {
   await page.goto('/');
   await openWorksCatalog(page);
   await page.getByRole('link', { name: 'Профиль', exact: true }).click();
-  await expect(page).toHaveURL(/\/login$/);
+  await expect(page).toHaveURL(/\/login\?redirectTo=%2Fworks$/);
   await expect(loginTitle).toBeVisible();
   await email.fill('b');
   await password.fill('visual-password-123');

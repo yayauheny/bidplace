@@ -462,6 +462,13 @@ from below, exits downward, and the backdrop fades (`motion.control`,
 `cubic-bezier(0.2, 0, 0, 1)`, reduced motion). Geometry is unchanged. The
 native branch is a stub.
 
+`SheetDragSurface` owns downward header/handle dragging for AppDialog sheets,
+FilterSheet (including compact bare headers) and the auth sheet. The content body
+keeps its normal scroll behavior. A short drag springs back; a committed drag calls
+the existing close owner, preserving busy and dirty guards. Cross, Escape and focus
+return remain available. Reduced motion removes the return transition. Centered
+confirmations and full-screen registration have no drag affordance (DEC-122).
+
 On web AppDialog focuses its close control when opened. A sheet also completes
 initial focus after its entering animation if focus is still outside the dialog;
 it never steals focus already inside. The existing Escape/trap/return-focus

@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { designTokens, type FigmaButtonSize } from '@bidplace/design-tokens';
 
 import { AppDialog } from '../ui/AppDialog';
+import { SheetDragHandle } from '../ui/SheetDragSurface';
 import { appDialogSheetBottomSpace } from '../ui/app-dialog-host-style';
 import { AppText } from '../ui/AppText';
 import { MotionPressable } from '../ui/MotionPressable';
@@ -81,92 +82,102 @@ export function FilterSheet({
           palette,
         )}
       >
-        {compact ? (
-          <View
-            style={{
-              alignSelf: 'center',
-              width: 36,
-              height: 4,
-              borderRadius: 10,
-              backgroundColor: palette.quietFill,
-              marginBottom: 16,
-            }}
-          />
-        ) : null}
-        <View
-          style={[
-            compact
-              ? {
-                  width: '100%',
-                  minHeight: title ? 22 : 0,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                }
-              : filterSheetHeaderStyle(),
-            titleVariant === 'directions'
-              ? {
-                  minHeight:
-                    designTokens.authorApplication.directionsHeaderHeight,
-                }
-              : null,
-          ]}
-        >
-          {!compact ? (
-            <MotionPressable
-              accessibilityRole="button"
-              accessibilityLabel={showBack ? 'Назад' : 'Закрыть'}
-              hitSlop={designTokens.space.headerIconHitSlop}
-              onPress={showBack ? (onBack ?? onClose) : onClose}
-              preset="icon"
+        <SheetDragHandle>
+          {compact ? (
+            <View
               style={{
-                width: designTokens.size.buttonIconFrame,
-                height: designTokens.size.buttonIconFrame,
-                alignItems: 'center',
-                justifyContent: 'center',
+                alignSelf: 'center',
+                width: 36,
+                height: 4,
+                borderRadius: 10,
+                backgroundColor: palette.quietFill,
+                marginBottom: 16,
               }}
-            >
-              <FigmaIcon
-                name={showBack ? 'arrow-left-01' : 'x'}
-                size={designTokens.size.buttonIconFrame}
-                strokeWidthPx={
-                  titleVariant === 'directions' && showBack ? 2 : undefined
-                }
-              />
-            </MotionPressable>
+            />
           ) : null}
-          {title ? (
-            <Dialog.Title asChild>
-              <AppText
-                nativeID={titleId}
-                role={
-                  compact ? 'body' : showBack ? 'profileHeading' : 'screenTitle'
-                }
-                numberOfLines={1}
-                style={[
-                  compact
-                    ? { fontSize: 18, fontWeight: '600' as const }
-                    : filterSheetTitleStyle(),
-                  titleVariant === 'directions'
-                    ? designTokens.typography.directionsSheetTitle
-                    : null,
-                ]}
+          <View
+            style={[
+              compact
+                ? {
+                    width: '100%',
+                    minHeight: title ? 22 : 0,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                  }
+                : filterSheetHeaderStyle(),
+              titleVariant === 'directions'
+                ? {
+                    minHeight:
+                      designTokens.authorApplication.directionsHeaderHeight,
+                  }
+                : null,
+            ]}
+          >
+            {!compact ? (
+              <MotionPressable
+                accessibilityRole="button"
+                accessibilityLabel={showBack ? 'Назад' : 'Закрыть'}
+                hitSlop={designTokens.space.headerIconHitSlop}
+                onPress={showBack ? (onBack ?? onClose) : onClose}
+                preset="icon"
+                style={{
+                  width: designTokens.size.buttonIconFrame,
+                  height: designTokens.size.buttonIconFrame,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
               >
-                {title}
-              </AppText>
-            </Dialog.Title>
-          ) : (
-            <Dialog.Title asChild>
-              <AppText style={{ position: 'absolute', opacity: 0 }}>
-                {accessibilityLabel}
-              </AppText>
-            </Dialog.Title>
-          )}
-          {onClear ? (
-            <FigmaButton label={clearLabel} variant="ghost" onPress={onClear} />
-          ) : compact ? null : (
-            <View style={{ width: designTokens.size.iconButton }} />
-          )}
-        </View>
+                <FigmaIcon
+                  name={showBack ? 'arrow-left-01' : 'x'}
+                  size={designTokens.size.buttonIconFrame}
+                  strokeWidthPx={
+                    titleVariant === 'directions' && showBack ? 2 : undefined
+                  }
+                />
+              </MotionPressable>
+            ) : null}
+            {title ? (
+              <Dialog.Title asChild>
+                <AppText
+                  nativeID={titleId}
+                  role={
+                    compact
+                      ? 'body'
+                      : showBack
+                        ? 'profileHeading'
+                        : 'screenTitle'
+                  }
+                  numberOfLines={1}
+                  style={[
+                    compact
+                      ? { fontSize: 18, fontWeight: '600' as const }
+                      : filterSheetTitleStyle(),
+                    titleVariant === 'directions'
+                      ? designTokens.typography.directionsSheetTitle
+                      : null,
+                  ]}
+                >
+                  {title}
+                </AppText>
+              </Dialog.Title>
+            ) : (
+              <Dialog.Title asChild>
+                <AppText style={{ position: 'absolute', opacity: 0 }}>
+                  {accessibilityLabel}
+                </AppText>
+              </Dialog.Title>
+            )}
+            {onClear ? (
+              <FigmaButton
+                label={clearLabel}
+                variant="ghost"
+                onPress={onClear}
+              />
+            ) : compact ? null : (
+              <View style={{ width: designTokens.size.iconButton }} />
+            )}
+          </View>
+        </SheetDragHandle>
         <ScrollView
           style={{
             flex: compact ? undefined : 1,

@@ -1,3 +1,4 @@
+import type { ElementRef, Ref } from 'react';
 import { designTokens } from '@bidplace/design-tokens';
 
 import { MotionPressable } from '../ui/MotionPressable';
@@ -10,6 +11,7 @@ import {
 } from './figma-icon-button-style';
 
 export function FigmaIconButton({
+  ref,
   icon,
   label,
   onPress,
@@ -19,6 +21,7 @@ export function FigmaIconButton({
   strokeWidthPx,
   surface = 'plain',
 }: {
+  ref?: Ref<ElementRef<typeof MotionPressable>>;
   icon: FigmaIconName;
   label: string;
   onPress: () => void;
@@ -31,6 +34,7 @@ export function FigmaIconButton({
   const palette = useAppTheme();
   return (
     <MotionPressable
+      ref={ref}
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ disabled, selected }}

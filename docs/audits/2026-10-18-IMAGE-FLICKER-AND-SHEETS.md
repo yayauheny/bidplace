@@ -70,3 +70,59 @@
 Собственные: текущие source + dependency source (`expo-image@57`, RNW Pressable), graph coverage (для ResilientRemoteImage/MotionPressable metadata match, AuthViewport изменён — прочитан source); два WebKit lifecycle прогона с синтетическими Home/media и реальными Expo components, 1/1 + 1/1 (17.1s первичный/3.8s warm). Счётчики доказывают дерево, а не готовое pixel-исправление. API/DB/секреты не использовались, route fixtures синтетические.
 
 Нет production-изменений. Отдельный worktree создан на 386d1b7d, зависимости установлены offline. Собственный Expo diagnostic server на localhost:8095; это не пользовательский LAN server 7899. Временный probe/config удаляются после фиксации результатов. Полные suites/build не запускались. Утверждения об отсутствии остальных причин не делаются: physical iPhone compositing и полноценный profile/works flow ещё требуют проверки.
+
+
+## Реализация после решения владельца (18 октября)
+
+Пользователь подтвердил текущую страницу с сохранённой прокруткой под входом и
+свайп за верхнюю область шторки. Затем явно поручил исправление и браузерную проверку.
+
+Выбран durable fix: Expo Router сохраняет нижний экран, `AuthViewport` больше не
+создаёт вторую Home; auth-stack прозрачен, root anchor — `index` (Home).
+При обычном закрытии используется `dismissTo`, а не создание новой страницы через replace.
+Существующие guards и завершение успешной авторизации остаются у владельца auth.
+
+Общий `SheetDragSurface` обслуживает AuthViewport, AppDialog и FilterSheet:
+жест начинается в header/handle, проходит через существующий onClose/requestDismiss,
+короткое движение возвращает шторку назад. Контент продолжает прокручиваться.
+Кнопки закрытия и клавиатурное управление сохранены. Возврат фокуса учитывает
+закрытие force-mounted шторки, а не только её unmount.
+
+Отдельная GPU-причина мигания при обычной навигации не доказана. Проверенные
+Home → профиль / works / authors / Back работают; графические хаки не добавлены.
+
+### Проверки — дополняется по результатам
+
+- Production export прошёл, свежая статика размещена на localhost:7899.
+- Предыдущий полный адресный browser gate: 10/10 Chromium + WebKit.
+- Abort регистрации → Back/Forward: 2/2.
+- Старый большой auth-layout case: 2 failures на устаревшем locator
+  «политику конфиденциальности»; реальный текст — «политикой персональных данных и cookies».
+  До этой точки закрытие заполненного login прошло; legal case не считается зелёным.
+- Физический iPhone и native-приложение не проверены.
+
+Итоговые проверки и ограничения: [SHEET-FIX-ACCEPTANCE](2026-10-18-SHEET-FIX-ACCEPTANCE.md).
+
+
+### Дополнительные находки при приёмке
+
+1. **Dock guest profile link терял return path.** При исходном `/seller/vex`
+   фон сохранялся, но dismissTo получал `/`. Владелец FloatingDock теперь
+   использует уже существующий getRouteSearchRedirect и typed login href с
+   redirectTo; `/` оставляет прежний `/login`. Позднее закрытие возвращает
+   существующий профиль, включая допустимые query. Проверка встроена в live case.
+2. **Busy swipe мог отложить запрос закрытия до завершения API.** Авторизация
+   блокирует начало жеста по guard.busy; общий web-адаптер игнорирует move/up,
+   если жест отключён. Существующий requestDismiss остаётся финальным guard.
+3. **Тесты жеста должны ждать стабильную шапку.** Используется Playwright trial
+   action перед измерением bounding box, без sleeps/retries/увеличения timeout.
+4. Auth-layout history assertions теперь требуют точный `redirectTo=%2Fworks`
+   у login/register, открытых с works; проверки Back/Forward сохранены.
+
+
+### Итог
+
+Свежий финальный production bundle: **12/12** адресных browser cases,
+**53/53** unit, mobile tsc, eslint изменённых файлов, prettier и diff-check
+прошли. Обычный Home → login сохраняет прежний URL `/login`; прочие публичные
+страницы передают return path. Подробности и сохранённые PNG — в приёмке.
