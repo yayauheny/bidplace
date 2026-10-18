@@ -2,6 +2,34 @@
 
 > Entries dated before 2026-10-13 mention Pen / .pen files; the Pen design was removed (DEC-119) — read those mentions as history.
 
+## 2026-10-18 — Theme closure: TC-01 закрыт, TC-03 закрыт, TC-02 Needs verification (Partial)
+
+Аудит `docs/audits/2026-10-18-THEME-CLOSURE-REVIEW.md` (`fix/theme-closure-review`,
+`a2d69475`); резолюция `docs/audits/2026-10-18-THEME-CLOSURE-RESOLUTION.md`.
+Работа на `fix/draft-restore`. Push/merge/deploy не выполнялись.
+
+- **TC-01 (закрыт, `8e362913`)**: последние видимые literals переведены в
+  семантический контракт — `report` (AuthorShare), `toolbarBorder` (бордюр
+  тулбара story), `fanShadow` (home-new-authors). Light byte-identical;
+  black-значения трёх ролей provisional до Figma. Design-tokens пересобран.
+- **TC-03 (закрыт, `b37937ba`)**: все пять baseline failures были fail-on-both
+  на `982a0e00` — устаревшие фикстины/ожидания против действующего контракта,
+  не регрессии. Исправлены: direction ≥1 для одобрения ревизии +
+  `pendingCategoryName` (admin-revision-moderation ×2); published-ревизии +
+  MATERIAL terms / direction-категории с name = tag (catalog-pagination ×2);
+  stroke `#2457E6` → `#004DFF` по семантической роли focus (search-chrome ×1).
+  Assertions не ослаблялись, код приложения не тронут.
+- **TC-02 (Needs verification)**: реальный browser zoom через CDP в этом
+  окружении недоступен (`Page.setZoomFactor` — «wasn't found», подтверждено
+  дважды). Ручные шаги для zoom 200% и увеличения текста — в резолюции.
+  Эталон не считается полностью принятым до их результата.
+
+Проверки на финальном SHA (`b37937ba`): mobile typecheck чисто; eslint
+затронутых файлов чисто; full vitest 892/892 (136 файлов); адресные Chromium
+E2E admin-revision-moderation + catalog-pagination + search-chrome — 6/6;
+production web build (`build:web`) чист. Полный E2E-suite целиком не
+перегонялся (по инструкции аудита).
+
 ## 2026-10-18 — Итоговое закрытие фронтенд-плана: F-01/F-02/F-03 + приёмка (Partial)
 
 План `docs/audits/2026-10-17-FRONTEND-CLOSURE-PLAN.md` (`fix/frontend-closure-plan`,
