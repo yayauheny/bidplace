@@ -20,11 +20,17 @@
 
 Остаток: black-значения трёх ролей provisional до Figma; визуальная сверка не выполнялась (дизайн не менялся).
 
-## TC-02 — настоящая приёмка zoom / text enlargement — NEEDS VERIFICATION (автоматически не закрывается)
+## TC-02 — настоящая приёмка zoom / text enlargement — NEEDS VERIFICATION (ручная)
 
-Реальный browser zoom через CDP в этом окружении недоступен: `Page.setZoomFactor` возвращает ошибку «wasn't found» (проверено дважды, в т.ч. повторно на живом статическом сервере `localhost:7899`). CSS zoom не использовался как замена.
+Последовательно опробованы и отвергнуты все автоматические пути:
 
-Ручные шаги (вкладка «Login zoom-приёмка», dev-логин):
+1. CDP `Page.setZoomFactor` — метода не существует (ошибка «wasn't found», подтверждено дважды).
+2. Клавиатурные акселераторы (`Control+=`, `Meta+=`) через Playwright — в headless и headed Chromium синтетические CDP-события не доходят до UI-слоя браузера, `innerWidth` не меняется (zoom factor 1.000).
+3. Per-host zoom через профиль Chrome (`partition.per_host_zoom_levels`, оба формата ключа) — Chromium zoom не применяет при старте.
+
+CSS zoom и `Emulation.setPageScaleFactor` не использовались как замена.
+
+Ручные шаги (вкладка «Login zoom-приёмка», dev-логин на `localhost:7899`):
 
 1. Открыть dev-логин; ⌘+ до ровно 200% по индикатору масштаба Chrome. Проверить: нет горизонтальной прокрутки; кнопка входа, поля, ошибки валидации и legal-ссылки доступны и видны; фокус с клавиатуры видим.
 2. ⌘0 (сброс), затем увеличение только текста: Chrome → Настройки → Внешний вид → Размер шрифта «Очень большой» (либо Firefox: View → Zoom → Zoom Text Only, 200%). В DevTools сверить computed `font-size` поля ввода с базовым.
@@ -45,6 +51,12 @@
 Assertions не ослаблялись, golden не менялся. Правки — только фикстины и одно ожидание по подтверждённому контракту; код приложения не тронут.
 
 Проверки: `playwright test admin-revision-moderation catalog-pagination search-chrome --project=chromium` → **6/6 passed**; `tsc --noEmit` чисто; eslint затронутых файлов чисто.
+
+## TCF-01 — точность regression test — ЗАКРЫТ
+
+Фикстина возвращает `publishedCategoryName` (seeded `art.name`) рядом с `pendingCategoryName`; имена различаются по построению (suffixed pending name). В `admin-revision-moderation.spec.ts` обе проверки привязаны к конкретной карточке работы (локатор карточки поднят выше asserts): `pendingCategoryName` виден в карточке, `publishedCategoryName` в ней отсутствует — старый глобальный assert по UUID заменён, т.к. пропускал бы показ имени старой категории. Production-код не менялся.
+
+Критерий аудита соблюдён структурно: assert карточки красный, если в ней появляется published name. Проверка: `playwright test admin-revision-moderation -g "without exposing its gallery publicly" --project=chromium` → 1 passed; tsc чисто.
 
 ## Итог по волне
 

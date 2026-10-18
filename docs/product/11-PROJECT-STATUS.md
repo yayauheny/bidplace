@@ -2,6 +2,29 @@
 
 > Entries dated before 2026-10-13 mention Pen / .pen files; the Pen design was removed (DEC-119) — read those mentions as history.
 
+## 2026-10-18 — TC-final: TCF-01 закрыт, TC-02 Needs verification (Partial), техчистка остановлена
+
+Аудит `docs/audits/2026-10-18-TC-FINAL-REVIEW.md` (`fix/tc-final-review`,
+`9f215a6d`); резолюция обновлена
+(`docs/audits/2026-10-18-THEME-CLOSURE-RESOLUTION.md`). Работа на
+`fix/draft-restore`. Push/merge/deploy не выполнялись.
+
+- **TCF-01 (закрыт)**: фикстина модерации возвращает `publishedCategoryName`;
+  в product-revision case обе проверки категории привязаны к конкретной
+  карточке работы — pending name виден, published name отсутствует. Production
+  код не менялся. Адресный запуск зелёный, tsc чисто.
+- **TC-02 (Needs verification)**: автоматически не закрывается — CDP
+  `Page.setZoomFactor` отсутствует, клавиатурные акселераторы (headless и
+  headed) до UI-слоя Chromium не доходят, per-host zoom из профиля не
+  применяется. Точные ручные шаги (zoom 200%, отдельно увеличение текста) — в
+  резолюции; эталон не считается полностью принятым до их результата.
+- Общая техническая чистка на этом завершена. Следующий этап — один экран по
+  exact Figma node (intake → mapping → responsive contract → реализация →
+  измеренные screenshots); provisional black пользователям не включается.
+
+Проверки: адресный moderation case (chromium) 1/1; mobile tsc чисто. Полные
+suites/build не повторялись — runtime-код волны не менялся.
+
 ## 2026-10-18 — Theme closure: TC-01 закрыт, TC-03 закрыт, TC-02 Needs verification (Partial)
 
 Аудит `docs/audits/2026-10-18-THEME-CLOSURE-REVIEW.md` (`fix/theme-closure-review`,
