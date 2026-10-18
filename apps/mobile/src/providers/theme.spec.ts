@@ -38,6 +38,7 @@ vi.mock('expo-router', () => ({
   },
   Link: ({ children }: { children?: ReactNode }) =>
     createElement('a', null, children),
+  useRouter: () => ({ push: () => undefined, back: () => undefined }),
 }));
 
 vi.mock('react-native', () => ({
@@ -49,6 +50,7 @@ vi.mock('react-native', () => ({
     style,
     accessibilityLabel,
     accessibilityRole,
+    onPress,
   }: {
     children?:
       | ReactNode
@@ -58,6 +60,7 @@ vi.mock('react-native', () => ({
       | ((state: { pressed: boolean; hovered: boolean }) => unknown);
     accessibilityLabel?: string;
     accessibilityRole?: string;
+    onPress?: () => void;
   }) => {
     const state = { pressed: false, hovered: false };
     const resolved = typeof style === 'function' ? style(state) : style;
@@ -75,6 +78,7 @@ vi.mock('react-native', () => ({
         role: accessibilityRole ?? 'button',
         'aria-label': accessibilityLabel,
         style: flat as React.CSSProperties,
+        onClick: onPress,
       },
       content,
     );
@@ -112,6 +116,20 @@ vi.mock('react-native', () => ({
       readOnly: true,
     });
   },
+  ScrollView: ({ children, style }: { children?: ReactNode; style?: unknown }) => {
+    const flat: Record<string, unknown> = {};
+    for (const item of Array.isArray(style) ? style : [style]) {
+      if (item && typeof item === 'object') Object.assign(flat, item);
+    }
+    return createElement(
+      'div',
+      { style: flat as React.CSSProperties },
+      children,
+    );
+  },
+  useWindowDimensions: () => ({ width: 390, height: 844 }),
+  Share: { share: async () => ({ action: 'sharedAction' }) },
+  Alert: { alert: () => undefined },
 }));
 
 vi.mock('react-native-svg', () => ({
@@ -142,6 +160,13 @@ vi.mock('expo-linear-gradient', () => ({
       { 'data-gradient-colors': colors.join('|') },
       children,
     ),
+}));
+
+// The figma barrel re-exports glass surfaces built on expo-blur; the blur
+// itself is a separate owner and only needs to render children here.
+vi.mock('expo-blur', () => ({
+  BlurView: ({ children }: { children?: ReactNode }) =>
+    createElement('div', null, children),
 }));
 
 vi.mock('expo-image', () => ({
@@ -208,6 +233,8 @@ import { figmaButtonLabelColor } from '../components/figma/figma-button-style';
 import { AuthConsentCheckbox } from '../features/auth/auth-consent-checkbox';
 import { AuthGoogleIcon } from '../features/auth/auth-google-icon';
 import { AuthLegalText } from '../features/auth/auth-legal-text';
+import { HomeNewAuthors } from '../features/home/home-new-authors';
+import { AuthorShare } from '../features/sellers/AuthorShare';
 import { CreatorWorkCard } from '../features/sellers/CreatorWorkCard';
 import { ProductDraftStoryStep } from '../features/sellers/product-draft-story';
 import { ThemeProvider, useAppTheme } from './theme-provider';
@@ -559,6 +586,111 @@ describe('app theme owner', () => {
         expect(
           container.querySelector('[aria-label="Скрыть работу Натюрморт"]'),
         ).toBe(hide);
+      }
+    }
+
+    act(() => root.unmount());
+    container.remove();
+  });
+
+  it('re-themes the remaining literal accents without remounting', () => {
+    const container = document.createElement('div');
+    document.body.append(container);
+    const root = createRoot(container);
+    const rgbOf = (hex: string) => {
+      const value = hex.replace('#', '');
+      const channels = [0, 2, 4].map((offset) =>
+        parseInt(value.slice(offset, offset + 2), 16),
+      );
+      return `rgb(${channels.join(', ')})`;
+    };
+    const noop = () => undefined;
+    const authors = [
+      {
+        slug: 'vex',
+        fullName: 'Илья Васильев',
+        profilePhotoUrl: '/api/sellers/vex/photo',
+      },
+    ];
+    function RemainingAccents({ theme }: { theme: 'light' | 'black' }) {
+      return createElement(ThemeProvider, {
+        theme,
+        children: createElement(
+          'div',
+          null,
+          createElement(AuthorShare, {
+            sharePath: '/s/vex',
+            onUnavailable: noop,
+          }),
+          createElement(HomeNewAuthors, { authors }),
+          createElement(ProductDraftStoryStep, {
+            productId: 'p1',
+            sessionEpoch: 1,
+            isCreationFlow: true,
+            storyNeedsDraft: false,
+            blocks: [],
+            images: [],
+            editable: true,
+            savePending: false,
+            saveError: null,
+            retryUpload: false,
+            onAddText: noop,
+            onAddGalleryImage: noop,
+            onEditText: noop,
+            onEditAlt: noop,
+            onRemove: noop,
+            onMove: noop,
+            onChooseImage: noop,
+            onRetryUpload: noop,
+            onBackToImages: noop,
+            onSaveAndContinue: noop,
+          }),
+        ),
+      });
+    }
+    act(() => root.render(createElement(RemainingAccents, { theme: 'light' })));
+    // The report row renders inside the share sheet; open it like a user.
+    act(() => {
+      (
+        container.querySelector(
+          '[aria-label="Поделиться профилем"]',
+        ) as HTMLElement
+      ).dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+
+    const reportRow = container.querySelector(
+      '[aria-label="Пожаловаться на автора"]',
+    ) as HTMLElement;
+    const reportLabel = Array.from(reportRow.querySelectorAll('span')).find(
+      (el) => el.textContent === 'Пожаловаться',
+    ) as HTMLElement;
+    const reportIcon = reportRow.querySelector(
+      '[data-figma-icon]',
+    ) as HTMLElement;
+    const toolbar = Array.from(container.querySelectorAll('div')).find(
+      (el) =>
+        el.style.borderRadius === '31px' && el.style.borderWidth === '0.5px',
+    ) as HTMLElement;
+    const frontShell = Array.from(container.querySelectorAll('div')).find(
+      (el) =>
+        el.style.boxShadow !== '' &&
+        (el.style.width === '322px' || el.style.width === '322'),
+    ) as HTMLElement;
+
+    for (const theme of ['light', 'black'] as const) {
+      const palette = theme === 'light' ? lightColorMap : blackColorMap;
+      expect(reportLabel.style.color).toBe(rgbOf(palette.report));
+      expect(reportIcon.style.color).toBe(rgbOf(palette.report));
+      expect(toolbar.style.borderColor).toBe(rgbOf(palette.toolbarBorder));
+      expect(frontShell.style.boxShadow).toBe(palette.fanShadow);
+      if (theme === 'light') {
+        act(() =>
+          root.render(createElement(RemainingAccents, { theme: 'black' })),
+        );
+        expect(
+          container.querySelector('[aria-label="Пожаловаться на автора"]'),
+        ).toBe(reportRow);
+        expect(frontShell.isConnected).toBe(true);
       }
     }
 

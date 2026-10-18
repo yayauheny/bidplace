@@ -326,7 +326,7 @@ export function ProductDraftStoryStep({
               alignItems: 'center',
               gap: designTokens.space.x1,
               backgroundColor: palette.surface,
-              borderColor: '#D1D1D1',
+              borderColor: palette.toolbarBorder,
               borderWidth: 0.5,
               borderRadius: 31,
               padding: 4,

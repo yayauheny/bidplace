@@ -8,7 +8,8 @@ import { copyPublicLink, publicShareTarget } from '../../components/figma/public
 import { AppText, MotionPressable } from '../../components/ui';
 import { useAppTheme } from '../../providers/theme-provider';
 
-const reportColor = '#731A06'; // Figma 06: report action, not the destructive-error red.
+// Report action color (Figma 06) lives in the semantic palette as `report`;
+// it is not the destructive-error red.
 
 export function AuthorShare({
   sharePath,
@@ -84,10 +85,10 @@ export function AuthorShare({
           preset="button"
           style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
         >
-          <AppText role="bodySmall" style={{ color: reportColor }}>
+          <AppText role="bodySmall" style={{ color: palette.report }}>
             Пожаловаться
           </AppText>
-          <FigmaIcon name="flag-01" size={20} strokeWidthPx={1.5} color={reportColor} />
+          <FigmaIcon name="flag-01" size={20} strokeWidthPx={1.5} color={palette.report} />
         </MotionPressable>
       </FilterSheet>
     </>

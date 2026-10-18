@@ -74,6 +74,13 @@ export const lightColorMap = {
   // Username availability status on the registration nickname step.
   usernameAvailable: '#267B07',
   usernameTaken: '#731A06',
+  // Report action on the author share sheet (Figma 06). Own role on purpose:
+  // same light hex as usernameTaken, different meaning — do not merge.
+  report: '#731A06',
+  // Hairline border of the story editor tool pill.
+  toolbarBorder: '#D1D1D1',
+  // Front card elevation of the home author fan (Frame 47 geometry).
+  fanShadow: '0 6px 20px rgba(58, 58, 58, 0.40)',
   // Guide lines drawn over the author photo placeholder (Стать автором 527:16416).
   photoGuide: '#911E05',
   fieldHoverBorder: '#535353',
@@ -170,6 +177,10 @@ export const blackColorMap: SemanticColorMap = {
   // Provisional black availability colors — NEEDS-FIGMA.
   usernameAvailable: '#4CC26B',
   usernameTaken: '#FF7A5C',
+  // Provisional black — NEEDS-FIGMA.
+  report: '#FF7A5C',
+  toolbarBorder: '#4A4A4A',
+  fanShadow: '0 6px 20px rgba(0, 0, 0, 0.55)',
   photoGuide: '#FF6A4A',
   fieldHoverBorder: '#8A8A8A',
   ghostHover: '#232323',
