@@ -39,6 +39,7 @@ export type RevisionModerationFixture = {
   publishedTitle: string;
   pendingTitle: string;
   publishedCategoryId: string;
+  pendingCategoryName: string;
   pendingCategoryId: string;
   publishedImageId: string;
   pendingImageId: string;
@@ -246,6 +247,11 @@ export async function createRevisionModerationFixture(): Promise<RevisionModerat
         profilePhotoData: pendingPhoto.bytes,
       },
     });
+    // Approval requires at least one direction on the editing revision
+    // (admin-moderation.service: "does not meet approval requirements").
+    await prisma.sellerProfileRevisionDirection.create({
+      data: { revisionId: editingRevision.id, categoryId: art.id, position: 0 },
+    });
     await prisma.sellerProfile.update({
       where: { id: profile.id },
       data: {
@@ -374,6 +380,7 @@ export async function createRevisionModerationFixture(): Promise<RevisionModerat
       pendingTitle,
       publishedCategoryId: art.id,
       pendingCategoryId: other.id,
+      pendingCategoryName: pendingCategory,
       publishedImageId: product.images[0]!.id,
       pendingImageId: product.images[1]!.id,
       pendingOnlyImageId: product.images[2]!.id,

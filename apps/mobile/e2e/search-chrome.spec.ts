@@ -118,7 +118,11 @@ test('search tabs keep capture fills under hover and keyboard focus', async ({
     if (!node) return '';
     return getComputedStyle(node).outlineColor;
   });
-  expect(focusedOutline).toContain('36, 87, 230');
+  // Contract: the global focus ring mirrors the semantic `focus` role
+  // (#004DFF, rgb(0, 77, 255)) — the same value theme-computed-focus and
+  // figma-text-field-focus assert. The former #2457E6 here came from a
+  // superseded pen token and has no owner anymore.
+  expect(focusedOutline).toContain('0, 77, 255');
 
   await page.screenshot({
     path: join(

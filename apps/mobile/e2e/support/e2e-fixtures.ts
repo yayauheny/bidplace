@@ -83,7 +83,7 @@ async function attachPublishedProductRevision(
     deliveryInfo: string | null;
     images: Array<{ id: string }>;
   },
-): Promise<void> {
+): Promise<string> {
   const revision = await prisma.productRevision.create({
     data: {
       productId: product.id,
@@ -117,6 +117,55 @@ async function attachPublishedProductRevision(
       publishedRevisionId: revision.id,
     },
   });
+  return revision.id;
+}
+
+// Public catalog reads seller content from the published revision; a bare
+// APPROVED profile without one is invisible (draft-restore contract).
+async function attachPublishedSellerProfileRevision(
+  prisma: PrismaClient,
+  profile: {
+    id: string;
+    slug: string;
+    fullName: string;
+    // Prisma read-back types optional profile fields as null; fixtures always
+    // set them, so the revision create asserts non-null below.
+    discipline: string | null;
+    country: string;
+    city: string | null;
+    shortDescription: string | null;
+    profilePhotoMimeType: string | null;
+    profilePhotoByteLength: number | null;
+    profilePhotoChecksum: string | null;
+    profilePhotoData: Uint8Array | null;
+  },
+): Promise<string> {
+  const revision = await prisma.sellerProfileRevision.create({
+    data: {
+      sellerProfileId: profile.id,
+      version: 1,
+      status: 'APPROVED',
+      slug: profile.slug,
+      discipline: profile.discipline!,
+      fullName: profile.fullName,
+      country: profile.country,
+      city: profile.city!,
+      shortDescription: profile.shortDescription!,
+      profilePhotoMimeType: profile.profilePhotoMimeType!,
+      profilePhotoByteLength: profile.profilePhotoByteLength!,
+      profilePhotoChecksum: profile.profilePhotoChecksum!,
+      profilePhotoObjectKey: `seller-photo:${profile.id}`,
+      profilePhotoData: profile.profilePhotoData! as Uint8Array<ArrayBuffer>,
+    },
+  });
+  await prisma.sellerProfile.update({
+    where: { id: profile.id },
+    data: {
+      publishedRevisionId: revision.id,
+      editingRevisionId: revision.id,
+    },
+  });
+  return revision.id;
 }
 
 async function createUser(
@@ -592,6 +641,7 @@ export async function createIsolatedWorksPaginationFixture(): Promise<{
   const profileIds: string[] = [];
   const userIds: string[] = [];
   let categoryId = '';
+  let materialTermId = '';
   let closed = false;
   const cleanup = async () => {
     if (closed) return;
@@ -623,6 +673,9 @@ export async function createIsolatedWorksPaginationFixture(): Promise<{
         }
       }
       await deleteSellerProfiles(prisma, profileIds, userIds);
+      if (materialTermId) {
+        await prisma.catalogTerm.delete({ where: { id: materialTermId } });
+      }
       if (categoryId) {
         await prisma.category.delete({ where: { id: categoryId } });
       }
@@ -651,6 +704,21 @@ export async function createIsolatedWorksPaginationFixture(): Promise<{
       },
     });
     categoryId = category.id;
+    // The materials catalog filter matches MATERIAL revision terms, not the
+    // legacy materials string (draft-restore catalog contract).
+    const materialTerm = await prisma.catalogTerm.create({
+      data: {
+        role: 'MATERIAL',
+        slug: `e2e-page2-material-${suffix}`,
+        name: material,
+        normalizedName: material
+          .normalize('NFKC')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .toLocaleLowerCase('ru'),
+      },
+    });
+    materialTermId = materialTerm.id;
     const profile = await prisma.sellerProfile.create({
       data: {
         userId: seller.id,
@@ -669,6 +737,7 @@ export async function createIsolatedWorksPaginationFixture(): Promise<{
       },
     });
     profileIds.push(profile.id);
+    await attachPublishedSellerProfileRevision(prisma, profile);
     const publicIds: string[] = [];
     for (let index = 0; index < 13; index += 1) {
       const publicId = `p${String(index).padStart(2, '0')}${suffix}`;
@@ -698,7 +767,10 @@ export async function createIsolatedWorksPaginationFixture(): Promise<{
         },
         include: { images: { orderBy: { position: 'asc' } } },
       });
-      await attachPublishedProductRevision(prisma, product);
+      const revisionId = await attachPublishedProductRevision(prisma, product);
+      await prisma.productRevisionTerm.create({
+        data: { revisionId, termId: materialTerm.id },
+      });
     }
     return {
       categoryId,
@@ -730,12 +802,16 @@ export async function createIsolatedAuthorsPaginationFixture(): Promise<{
   });
   const profileIds: string[] = [];
   const userIds: string[] = [];
+  let directionCategoryId = '';
   let closed = false;
   const cleanup = async () => {
     if (closed) return;
     closed = true;
     try {
       await deleteSellerProfiles(prisma, profileIds, userIds);
+      if (directionCategoryId) {
+        await prisma.category.delete({ where: { id: directionCategoryId } });
+      }
     } finally {
       await prisma.$disconnect();
     }
@@ -743,6 +819,20 @@ export async function createIsolatedAuthorsPaginationFixture(): Promise<{
 
   try {
     const { photo, checksum } = catalogPhoto();
+    // The author tag catalog filter matches direction category names, not the
+    // legacy discipline string (draft-restore catalog contract).
+    const directionCategory = await prisma.category.create({
+      data: {
+        slug: `e2e-page2-tag-${suffix}`,
+        name: tag,
+        normalizedName: tag
+          .normalize('NFKC')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .toLocaleLowerCase('ru'),
+      },
+    });
+    directionCategoryId = directionCategory.id;
     const slugs: string[] = [];
     for (let index = 0; index < 9; index += 1) {
       const author = await createUser(
@@ -772,6 +862,13 @@ export async function createIsolatedAuthorsPaginationFixture(): Promise<{
         },
       });
       profileIds.push(profile.id);
+      const revisionId = await attachPublishedSellerProfileRevision(
+        prisma,
+        profile,
+      );
+      await prisma.sellerProfileRevisionDirection.create({
+        data: { revisionId, categoryId: directionCategory.id, position: 0 },
+      });
     }
     return {
       tag,

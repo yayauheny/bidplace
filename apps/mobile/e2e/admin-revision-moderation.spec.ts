@@ -197,7 +197,9 @@ test('admin reviews a pending product revision without exposing its gallery publ
   await page.getByRole('button', { name: 'Работы' }).click();
   await page.getByLabel('Найти работу').fill(fixture.pendingTitle);
   await expect(page.getByText(fixture.pendingTitle).first()).toBeVisible();
-  await expect(page.getByText(fixture.pendingCategoryId).first()).toBeVisible();
+  // The moderation card renders the resolved category name (owner contract:
+  // selection?.category?.name ?? content.categoryId), not the raw id.
+  await expect(page.getByText(fixture.pendingCategoryName).first()).toBeVisible();
   await expect(page.getByText(fixture.publishedCategoryId)).toHaveCount(0);
   await expect(page.getByText(fixture.publishedTitle)).toHaveCount(0);
   await expect(
