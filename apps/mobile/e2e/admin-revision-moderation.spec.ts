@@ -197,10 +197,18 @@ test('admin reviews a pending product revision without exposing its gallery publ
   await page.getByRole('button', { name: 'Работы' }).click();
   await page.getByLabel('Найти работу').fill(fixture.pendingTitle);
   await expect(page.getByText(fixture.pendingTitle).first()).toBeVisible();
+  const card = page
+    .locator('div')
+    .filter({ hasText: fixture.pendingTitle })
+    .filter({ has: page.getByRole('button', { name: 'Одобрить' }) })
+    .last();
   // The moderation card renders the resolved category name (owner contract:
-  // selection?.category?.name ?? content.categoryId), not the raw id.
-  await expect(page.getByText(fixture.pendingCategoryName).first()).toBeVisible();
-  await expect(page.getByText(fixture.publishedCategoryId)).toHaveCount(0);
+  // selection?.category?.name ?? content.categoryId), not the raw id. Both
+  // checks are scoped to this card: the published category name must not
+  // appear in the pending card even though it exists elsewhere on /admin
+  // (filters), and the names differ by construction (TCF-01).
+  await expect(card.getByText(fixture.pendingCategoryName)).toBeVisible();
+  await expect(card.getByText(fixture.publishedCategoryName)).toHaveCount(0);
   await expect(page.getByText(fixture.publishedTitle)).toHaveCount(0);
   await expect(
     page.getByText(`Изображение недоступно: ${fixture.pendingTitle}`),
@@ -224,11 +232,6 @@ test('admin reviews a pending product revision without exposing its gallery publ
     fixture.pendingGallery[0].bytes,
   );
 
-  const card = page
-    .locator('div')
-    .filter({ hasText: fixture.pendingTitle })
-    .filter({ has: page.getByRole('button', { name: 'Одобрить' }) })
-    .last();
   await card.getByRole('button', { name: 'Одобрить' }).click();
   await expect(page.getByText(fixture.pendingTitle)).toHaveCount(0);
 

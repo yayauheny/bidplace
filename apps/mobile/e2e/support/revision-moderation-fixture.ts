@@ -39,6 +39,7 @@ export type RevisionModerationFixture = {
   publishedTitle: string;
   pendingTitle: string;
   publishedCategoryId: string;
+  publishedCategoryName: string;
   pendingCategoryName: string;
   pendingCategoryId: string;
   publishedImageId: string;
@@ -379,6 +380,9 @@ export async function createRevisionModerationFixture(): Promise<RevisionModerat
       publishedTitle,
       pendingTitle,
       publishedCategoryId: art.id,
+      // Distinct from pendingCategoryName (seeded art name vs suffixed
+      // pending name), so the card assertions cannot pass vacuously.
+      publishedCategoryName: art.name,
       pendingCategoryId: other.id,
       pendingCategoryName: pendingCategory,
       publishedImageId: product.images[0]!.id,
