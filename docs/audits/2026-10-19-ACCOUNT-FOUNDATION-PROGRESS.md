@@ -357,3 +357,20 @@ ratio.ownerCardMedia 179/236; space.settingsSurfacePadX 14, coverCaptionGap 10.
 
 - tsc --noEmit и eslint затронутых файлов чисто.
 - Runtime/browser-приёмка не выполнялась — этап 4 (Needs verification).
+
+## Волна 3D — план удаления (docs-only, без кодинга)
+
+- План: docs/tasks/2026-10-19-account-ui/DELETE-BACKEND-PLAN.md.
+- Прочитаны products/portfolio/media/admin reads + transactions,
+  schema (Product/Listing/ProductImage/CuratorSelection), suspended guards,
+  public-visibility централизация, Cache-Control точки.
+- Ключевые решения плана: tombstone `Product.deletedAt` (ARCHIVED не
+  переиспользуется); DELETE 204 идемпотентен; чужое/несуществующее → 404;
+  гонки через runReadCommittedTransaction + FOR UPDATE; listing live → 409;
+  CuratorSelection снимается в той же tx; media revoke через media-lifecycle,
+  физические байты не удаляются; suspended → 403 (рекомендация, на review);
+  минимальный owner/integration набор тестов; ограничение закэшированных
+  публичных media зафиксировано честно.
+- Открытые вопросы на review: uniform 404 vs Forbidden для чужого id,
+  suspended policy, видимость удалённых в admin moderation.
+- Код не писался; UI delete CTA не добавлялся (запрещено без рабочего API).
