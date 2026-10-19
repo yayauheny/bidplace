@@ -2,6 +2,16 @@
 
 > Entries dated before 2026-10-13 mention Pen / .pen files; the Pen design was removed (DEC-119) — read those mentions as history.
 
+## 2026-10-19 — Auth → forgot-password: постоянное затемнение
+
+**Implemented (web).** Отдельные FadeIn/FadeOut каждого
+AuthViewport давали кадры с alpha=0 при смене login/forgot. Визуальное затемнение
+перенесено в постоянный auth-layout; прозрачный overlay формы сохраняет прежние
+закрытие, focus и guards. Маршруты, формы, API/БД и визуальные значения не менялись.
+Финальный browser gate: 14/14 Chromium + WebKit (включая покадровые переходы);
+unit 22/22, build/tsc/lint passed. Физический iPhone/native — Needs verification.
+[Аудит и итоговая приёмка](../audits/2026-10-19-AUTH-TRANSITION-FLICKER.md).
+
 ## 2026-10-18 — Auth background и свайп шторок (DEC-122)
 
 **Implemented (web interaction)**: вход остаётся поверх текущей страницы без

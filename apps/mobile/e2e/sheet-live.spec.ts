@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
+import { lightColorMap } from '@bidplace/design-tokens';
 
 async function pull(page: Page, handle: Locator, distance: number) {
   await handle.click({ trial: true });
@@ -144,4 +145,121 @@ test('live catalog, Back and author navigation stay usable', async ({
     .nth(1)
     .click();
   await expect(page).toHaveURL(/\/authors/);
+});
+
+test('auth sheet transitions keep background dimming constant in both directions', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 874 });
+  await page.goto('/');
+  const home = page.getByTestId('home-scroll');
+  await expect(
+    page.getByText('Открытие недели', { exact: true }),
+  ).toBeVisible();
+  await home.evaluate((node) => {
+    node.scrollTop = 120;
+  });
+  await page
+    .getByTestId('figma-floating-dock')
+    .getByLabel('Профиль', { exact: true })
+    .click();
+  await page
+    .locator('#auth-sheet [data-sheet-drag-handle]')
+    .click({ trial: true });
+  await page.evaluate(() => {
+    window.__images = [...document.images].filter(
+      (image) => image.complete && image.naturalWidth > 0,
+    );
+  });
+  const scrollTop = await home.evaluate((node) => node.scrollTop);
+  for (const direction of ['forgot', 'login'] as const) {
+    const frames = page.evaluate(async (color) => {
+      const probe = document.createElement('div');
+      probe.style.backgroundColor = color;
+      const normalized = probe.style.backgroundColor;
+      const samples: number[] = [];
+      for (let frame = 0; frame < 30; frame++) {
+        await new Promise<void>((resolve) =>
+          requestAnimationFrame(() => resolve()),
+        );
+        let transmission = 1;
+        for (const element of document.querySelectorAll('div')) {
+          const style = getComputedStyle(element);
+          if (style.backgroundColor !== normalized) continue;
+          const rect = element.getBoundingClientRect();
+          if (
+            rect.left > 2 ||
+            rect.top > 2 ||
+            rect.right <= 2 ||
+            rect.bottom <= 2
+          )
+            continue;
+          let opacity = Number(style.opacity);
+          for (
+            let parent = element.parentElement;
+            parent;
+            parent = parent.parentElement
+          ) {
+            const parentStyle = getComputedStyle(parent);
+            opacity *= Number(parentStyle.opacity);
+            if (
+              parentStyle.display === 'none' ||
+              parentStyle.visibility === 'hidden'
+            )
+              opacity = 0;
+          }
+          transmission *= 1 - 0.5 * opacity;
+        }
+        samples.push(1 - transmission);
+      }
+      return samples;
+    }, lightColorMap.modalDimmer);
+    if (direction === 'forgot') {
+      await page
+        .getByRole('link', { name: 'Забыли пароль?', exact: true })
+        .click();
+      await expect(
+        page.getByText('Восстановление пароля', { exact: true }),
+      ).toBeVisible();
+    } else {
+      await page
+        .getByRole('link', { name: 'Вернуться ко входу', exact: true })
+        .click();
+      await expect(
+        page
+          .locator('#auth-sheet')
+          .getByText('Вход на Bidplace', { exact: true }),
+      ).toBeVisible();
+    }
+    const samples = await frames;
+    if (direction === 'forgot')
+      await page.screenshot({
+        path: test.info().outputPath('auth-transition-forgot.png'),
+      });
+    expect(
+      Math.min(...samples),
+      `${direction}: minimum dimming`,
+    ).toBeGreaterThanOrEqual(0.49);
+    expect(
+      Math.max(...samples),
+      `${direction}: maximum dimming`,
+    ).toBeLessThanOrEqual(0.51);
+    await expect(home).toBeAttached();
+    expect(await home.evaluate((node) => node.scrollTop)).toBe(scrollTop);
+    expect(
+      await page.evaluate(() =>
+        window.__images.every((image) => image.isConnected),
+      ),
+    ).toBe(true);
+    await test.info().attach(`${direction}-dimming-frames`, {
+      body: JSON.stringify(samples),
+      contentType: 'application/json',
+    });
+  }
+  await page
+    .locator('#auth-sheet [data-sheet-drag-handle]')
+    .click({ trial: true });
+  await page.screenshot({
+    path: test.info().outputPath('auth-transition-settled.png'),
+  });
 });

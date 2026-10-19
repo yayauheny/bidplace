@@ -35,12 +35,7 @@ import {
   type AuthSheetGuard,
 } from '../../features/auth/auth-sheet-context';
 import type { SafeRedirect } from '../../features/auth/auth-redirect';
-import {
-  sheetBackdropEnter,
-  sheetBackdropExit,
-  sheetEnter,
-  sheetExit,
-} from '../../lib/layout-transition';
+import { sheetEnter, sheetExit } from '../../lib/layout-transition';
 import { BidplaceMark, BidplaceWordmark } from '../branding/BidplaceBrand';
 import { AppText } from '../ui';
 import { SheetDragSurface, SheetDragHandle } from '../ui/SheetDragSurface';
@@ -368,18 +363,13 @@ export function AuthViewport(props: AuthViewportProps) {
               {...(Platform.OS === 'web' && !focused ? { inert: true } : {})}
             >
               {screen ? null : (
-                <Animated.View
-                  entering={sheetBackdropEnter}
-                  exiting={sheetBackdropExit}
-                >
-                  <AppDialogOverlay
-                    style={{
-                      inset: 0,
-                      backgroundColor: palette.modalDimmer,
-                      zIndex: designTokens.layer.modal,
-                    }}
-                  />
-                </Animated.View>
+                <AppDialogOverlay
+                  style={{
+                    inset: 0,
+                    backgroundColor: 'transparent',
+                    zIndex: designTokens.layer.modal,
+                  }}
+                />
               )}
               <AppDialogFrame style={frameStyle}>
                 <Animated.View

@@ -475,7 +475,9 @@ Automated verification counts and browser evidence for this branch are owned by
 ### Auth background and shared sheet interaction (2026-10-18, DEC-122)
 
 Expo Router root anchor `index` and transparent auth presentation preserve the
-existing background screen. AuthViewport owns auth close guards and dismisses to
+existing background screen. The auth layout also owns one persistent visual dimmer;
+AuthViewport retains only the transparent dismissal overlay, so child auth routes
+do not tear down and restart background dimming (2026-10-19). AuthViewport owns auth close guards and dismisses to
 its return target; it no longer renders HomeScreen as a second background.
 SheetDragSurface owns only gesture detection/translation, with web Pointer Events
 and a native PanResponder adapter. AppDialog, FilterSheet and AuthViewport declare

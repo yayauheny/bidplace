@@ -462,6 +462,12 @@ from below, exits downward, and the backdrop fades (`motion.control`,
 `cubic-bezier(0.2, 0, 0, 1)`, reduced motion). Geometry is unchanged. The
 native branch is a stub.
 
+Auth's visual dimmer is owned by the persistent `(auth)/_layout`, so changing
+between login, forgot-password and reset-password does not replay its fade.
+AuthViewport keeps the transparent dismissal hit layer and its existing guards;
+full-screen registration covers the dimmer with its opaque canvas. Shared modal
+color/motion values are unchanged (2026-10-19 auth-transition regression).
+
 `SheetDragSurface` owns downward header/handle dragging for AppDialog sheets,
 FilterSheet (including compact bare headers) and the auth sheet. The content body
 keeps its normal scroll behavior. A short drag springs back; a committed drag calls
