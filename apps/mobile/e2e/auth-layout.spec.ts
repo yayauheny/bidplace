@@ -72,9 +72,10 @@ test('filled login closes without confirmation and providers stay unavailable', 
   await password.fill('visual-password-123');
   const sheet = page.locator('#auth-sheet');
   await expect(sheet).toBeVisible();
-  // Settle the enter slide before measuring: a box captured mid-animation
-  // sends the "backdrop" click into the sheet as it slides up under the point.
-  await page.waitForTimeout(400);
+  // Actionability probe: trial click waits for a stable bounding box (same box
+  // across two animation frames) without dispatching the click, so the
+  // measured sheet is at rest and the point above it is real backdrop.
+  await sheet.click({ trial: true });
   const sheetBox = await sheet.boundingBox();
   expect(sheetBox).not.toBeNull();
   await page.mouse.click(
