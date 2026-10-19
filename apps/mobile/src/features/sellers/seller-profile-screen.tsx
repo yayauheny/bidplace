@@ -4,7 +4,6 @@ import { FormProvider, useWatch } from 'react-hook-form';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { View } from 'react-native';
 
-import { ApiClientError } from '@bidplace/api-client';
 import { designTokens } from '@bidplace/design-tokens';
 import { AppShell, FormPageShell } from '../../components/layout';
 import { MediaDeliveryNotice } from '../../components/shared/MediaDeliveryNotice';
@@ -32,7 +31,7 @@ import { AuthorApplicationAchievements } from './AuthorApplicationAchievements';
 import { AuthorApplicationExitConfirm } from './author-application-exit-confirm';
 import { AuthorDirectionsPickerSheet } from './author-directions-picker-sheet';
 import { AuthorIntroDialog } from './AuthorIntroDialog';
-import { useProfileData, toFields } from './seller-profile-data';
+import { useProfileData, toFields, classifySellerProfileQuery } from './seller-profile-data';
 import {
   profileDraftAllowsSave,
   profileDraftFieldsSchema,
@@ -128,14 +127,9 @@ export function SellerProfileScreen() {
     string | null
   >(null);
   const seenAuthEpoch = useRef(authEpoch);
-  // Known absence is delivered as cached null data by fetchSellerProfile; the
-  // not_found error branch covers the session-switch race where the cache
-  // refused the null write. Other errors stay errors.
-  const missingProfile =
-    query.data === null ||
-    (query.isError &&
-      query.error instanceof ApiClientError &&
-      query.error.kind === 'not_found');
+  // Shared classification: a current error outranks a stale cached null, and
+  // only a real not_found (or a successful null) reads as "profile absent".
+  const { absent: missingProfile } = classifySellerProfileQuery(query);
   const requestedStep = resolveSellerProfileStep(step, profile);
   const isApplicationWizard =
     !profile ||

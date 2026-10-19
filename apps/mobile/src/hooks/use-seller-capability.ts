@@ -1,8 +1,9 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { ApiClientError, type ApiClient } from '@bidplace/api-client';
+import type { ApiClient } from '@bidplace/api-client';
 
 import {
+  classifySellerProfileQuery,
   fetchSellerProfile,
   sellerProfileGcMs,
   sellerProfileQueryKey,
@@ -41,17 +42,13 @@ export function useSellerCapability() {
     gcTime: sellerProfileGcMs,
   });
   const profile: SellerProfile | null = query.data?.sellerProfile ?? null;
-  const absent =
-    query.data === null ||
-    (query.isError &&
-      query.error instanceof ApiClientError &&
-      query.error.kind === 'not_found');
+  const { absent, isError } = classifySellerProfileQuery(query);
 
   return {
     profile,
     status: profile?.status ?? null,
     isLoading: query.isLoading,
-    isError: query.isError && !absent,
+    isError,
     isAbsent: absent || (!query.isLoading && !query.data && !query.isError),
   };
 }

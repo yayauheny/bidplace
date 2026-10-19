@@ -6,6 +6,7 @@ import type { SellerProfileResponse } from '@bidplace/contracts';
 
 import { authKeys } from '../../lib/query-cache';
 import {
+  classifySellerProfileQuery,
   fetchSellerProfile,
   sellerProfileGcMs,
   sellerProfileQueryKey,
@@ -118,5 +119,62 @@ describe('fetchSellerProfile', () => {
       queryClient.fetchQuery(queryOptions(api, queryClient)),
     ).rejects.toThrow('Private cache is closed');
     expect(queryClient.getQueryData(sellerProfileQueryKey)).toBeUndefined();
+  });
+});
+
+describe('classifySellerProfileQuery', () => {
+  const networkError = new ApiClientError('network down', {
+    kind: 'network',
+    status: 0,
+  });
+  const unauthorizedError = new ApiClientError('unauthorized', {
+    kind: 'unauthorized',
+    status: 401,
+  });
+  const notFoundError = new ApiClientError('missing', {
+    kind: 'not_found',
+    status: 404,
+  });
+
+  it('reads a successful null as absence', () => {
+    expect(
+      classifySellerProfileQuery({ data: null, isError: false, error: null }),
+    ).toEqual({ absent: true, isError: false });
+  });
+
+  it('reads cached data as present', () => {
+    expect(
+      classifySellerProfileQuery({
+        data: profileResponse,
+        isError: false,
+        error: null,
+      }),
+    ).toEqual({ absent: false, isError: false });
+  });
+
+  it('lets a current network error outrank the stale cached null', () => {
+    expect(
+      classifySellerProfileQuery({ data: null, isError: true, error: networkError }),
+    ).toEqual({ absent: false, isError: true });
+  });
+
+  it('lets a current 401 outrank the stale cached null', () => {
+    expect(
+      classifySellerProfileQuery({
+        data: null,
+        isError: true,
+        error: unauthorizedError,
+      }),
+    ).toEqual({ absent: false, isError: true });
+  });
+
+  it('reads an actual not_found error as absence, not error', () => {
+    expect(
+      classifySellerProfileQuery({
+        data: undefined,
+        isError: true,
+        error: notFoundError,
+      }),
+    ).toEqual({ absent: true, isError: false });
   });
 });

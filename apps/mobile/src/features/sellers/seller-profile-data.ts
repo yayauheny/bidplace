@@ -54,6 +54,22 @@ export async function fetchSellerProfile(
   return result;
 }
 
+// Single classification of the shared query state: a current error outranks a
+// stale cached null. Absence is a successful null or an actual not_found —
+// never null on top of another error (network, 5xx, 401).
+export function classifySellerProfileQuery(query: {
+  data: SellerProfileResponse | null | undefined;
+  isError: boolean;
+  error: unknown;
+}): { absent: boolean; isError: boolean } {
+  const notFound =
+    query.isError &&
+    query.error instanceof ApiClientError &&
+    query.error.kind === 'not_found';
+  if (query.isError) return { absent: notFound, isError: !notFound };
+  return { absent: query.data === null, isError: false };
+}
+
 export const profileFieldOrder = [
   'slug',
   'fullName',
