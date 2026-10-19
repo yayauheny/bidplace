@@ -17,15 +17,18 @@ export function SettingsGroup({
   label,
   children,
 }: {
-  label: string;
+  /** Group caption above the surface; omit for a bare surface (logout). */
+  label?: string;
   children: React.ReactNode;
 }) {
   const palette = useAppTheme();
   return (
     <View style={{ gap: designTokens.space.quietButtonGap }}>
-      <AppText role="settingsSection" tone="secondary">
-        {label}
-      </AppText>
+      {label ? (
+        <AppText role="settingsSection" tone="secondary">
+          {label}
+        </AppText>
+      ) : null}
       <View
         style={{
           backgroundColor: palette.settingsSurface,
@@ -45,12 +48,17 @@ export function SettingsRow({
   label,
   onPress,
   divided = false,
+  trailingArrow = false,
+  busy = false,
 }: {
   icon: FigmaIconName;
   label: string;
   onPress: () => void;
   /** Render the hairline divider above this row (all rows but the first). */
   divided?: boolean;
+  /** Navigational rows show the chevron (Figma settings rows). */
+  trailingArrow?: boolean;
+  busy?: boolean;
 }) {
   const palette = useAppTheme();
   return (
@@ -66,22 +74,41 @@ export function SettingsRow({
       <MotionPressable
         accessibilityRole="button"
         accessibilityLabel={label}
+        accessibilityState={{ busy }}
+        disabled={busy}
         onPress={onPress}
         preset="icon"
         style={{
           minHeight: designTokens.size.touch,
           flexDirection: 'row',
           alignItems: 'center',
+          justifyContent: 'space-between',
           gap: designTokens.space.x2,
           paddingVertical: designTokens.space.x3,
         }}
       >
-        <FigmaIcon
-          name={icon}
-          size={designTokens.size.settingsRowIcon}
-          color={palette.inkStrong}
-        />
-        <AppText role="settingsRow">{label}</AppText>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: designTokens.space.x2,
+            minWidth: 0,
+          }}
+        >
+          <FigmaIcon
+            name={icon}
+            size={designTokens.size.settingsRowIcon}
+            color={palette.inkStrong}
+          />
+          <AppText role="settingsRow">{label}</AppText>
+        </View>
+        {trailingArrow ? (
+          <FigmaIcon
+            name="arrow-right-01"
+            size={designTokens.size.settingsRowIcon}
+            color={palette.fieldIcon}
+          />
+        ) : null}
       </MotionPressable>
     </View>
   );

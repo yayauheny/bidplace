@@ -336,3 +336,24 @@ ratio.ownerCardMedia 179/236; space.settingsSurfacePadX 14, coverCaptionGap 10.
 - E2E-аудит: существующие specs кликают profile dock только для guest
   (→/login) и admin (→/admin) — оба поведения не изменены; /cabinet
   deep-link сохранён.
+
+## Волна 3C — /account/settings
+
+- Реальные строки среза: «Публичный профиль» → существующий /profile
+  (verified-email guard и intro решают прежние владельцы, editor не переписан)
+  и «Выйти» через useAccountLogout (очистка drafts/cache, replace '/').
+- hideDock=true; шапка по capture: Back settings | «Настройки» settingsTitle |
+  «Закрыть» (x, = router.back).
+- Группа «Главное» (label 12/16 gray-2, поверхность #FBFBFB r26): row user →
+  «Публичный профиль» со trailing arrow-right; отдельная поверхность без label:
+  log-out → «Выйти» (busy guard).
+- Не включены: email/password change, language/currency, support/community,
+  Premium/adult/favorites — пустые группы не показываются.
+- SettingsGroup label стал опциональным, SettingsRow получил trailingArrow/busy
+  (default-поведение прежних потребителей не изменено — других потребителей нет).
+- Иконки сверены с capture: «Публичный профиль» = user, «Выйти» = log-out.
+
+### Проверки 3C
+
+- tsc --noEmit и eslint затронутых файлов чисто.
+- Runtime/browser-приёмка не выполнялась — этап 4 (Needs verification).
