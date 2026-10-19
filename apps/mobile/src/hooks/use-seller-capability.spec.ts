@@ -42,6 +42,12 @@ function CapabilityProbe({
   return null;
 }
 
+const mounted: {
+  root: Root;
+  container: HTMLElement;
+  queryClient: QueryClient;
+}[] = [];
+
 function mount(onResult: (capability: SellerCapability) => void) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -59,12 +65,8 @@ function mount(onResult: (capability: SellerCapability) => void) {
       ),
     );
   });
-  return { queryClient, unmount() {
-    act(() => {
-      root.unmount();
-    });
-    container.remove();
-  } };
+  mounted.push({ root, container, queryClient });
+  return { queryClient };
 }
 
 async function until(
@@ -88,6 +90,15 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  // DOM removal alone leaves the React root, query observers and the
+  // QueryClient alive; unmount and clear each mounted probe.
+  for (const fixture of mounted.splice(0)) {
+    act(() => {
+      fixture.root.unmount();
+    });
+    fixture.queryClient.clear();
+    fixture.container.remove();
+  }
   document.body.replaceChildren();
 });
 
