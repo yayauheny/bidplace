@@ -170,6 +170,58 @@ staleTime 60с, gcTime 5мин для общего запроса; отсутс�
   update APPROVED → fork ревизии). Большой integration suite ради формулировки
   не запускался.
 
+## Разбор 6 падений auth-layout (после AR-gate)
+
+Gate конфига sheet-local давал 12 failed = 6 уникальных × Chromium/WebKit. Разбор:
+ни одно падение не является «environmental» — у каждого установлена конкретная причина.
+Production UI не менялся; исправлены только тесты и добавлен изолированный стаб.
+
+1. «filled login closes… providers stay unavailable» — timeout на link
+   'политику конфиденциальности'. Контракт логина: «Ознакомьтесь с
+   [политикой персональных данных и cookies] и [пользовательским соглашением]»
+   (auth-legal-text.tsx, variant='login'); заголовки диалогов — реальные названия
+   документов. Причина: устаревшие имена ссылок/заголовков прежней legal-копии.
+   Контент диалога гейтится GET /api/auth/legal, который на стенде намеренно 503
+   (см. ниже) → тест получил изолированный стаб legal (page.route).
+2. «browser back leaves a filled login and confirms a filled registration» —
+   timeout waitForResponse('**/api/auth/rules') + несуществующий checkbox
+   /соглашаюсь/. Контракт регистрации: гейт GET /api/auth/legal (5 документов) +
+   4 именованных consent-чекбокса (auth-form.tsx:1147-1180). Причина: устаревший
+   тест под снятый контракт rules+единое согласие. Тот же дефект в общем хелпере
+   expectAuthBrowserHistory (тест «without the Navigation API»).
+3. «register email title layout is stable across viewport resize» — poll
+   y∈[319;321.5] ложный (факт 161 без фикстуры legal / 200.5 с ней: состав шторки
+   изменился) + «Дальше» disabled без legal-документов. Причина: устаревшие
+   захардкоженные координаты и отсутствие legal-гейта в тесте. Обновлено до
+   измеренного baseline 199.25–201.75; добавлен стаб legal.
+4. «auth composition is stacked in the S4 phone column» — expectS4Register ждал
+   текст 'Я соглашаюсь с политикой конфиденциальности и правилами сервиса'
+   (однострочное согласие снятого контракта). Причина: устаревший helper. Заменён
+   на проверку 4 consent-чекбоксов; rules-стаб → legal-стаб. Далее в том же тесте
+   обнаружено: register — presentation='screen', хост диалога по политике волны 1
+   ≤600 во всю ширину (host: appDialogHostStyle) — проверка brand-mark переведена
+   в скоуп диалога (марк домашней страницы позади полностью перекрыт).
+5. «nickname suggestions check availability only on explicit Next» —
+   checkbox /соглашаюсь/ не найден + rules-стаб. Причина: тот же снятый контракт.
+   Плюс устаревшие геометрические константы никнейм-шага (shell 51→50 по токену
+   size.input=50; Y-координаты ±0.5px) — обновлены по замерам обоих браузеров.
+   mark/wordmark замеряются в скоупе диалога.
+
+Латентные находки по ходу разбора (не правились, вне скоупа):
+- GET /api/auth/legal на стенде 503 НАМЕРЕННО: все 5 опубликованных документов
+  содержат незаполненный плейсхолдер юрлица «[ПОЛНОЕ НАИМЕНОВАНИЕ ИП]», а
+  legal-documents.ts отказывает в публикации при незаполненных юрфактах. Регистрация
+  против реального API заблокирована до решения по юрлицу; в тестах это закрыто
+  изолированным стабом (page.route), БД и production-guard не тронуты.
+- Легкий флейк backdrop-close: boundingBox шторки, снятый до конца enter-анимации,
+  отправлял клик в подползший под точку лист; добавлен settle 400ms (тот же приём,
+  что в wave-1 acceptance).
+- WebKit при CSS zoom 1.5 округляет дробную ширину вверх (scrollWidth 256 vs
+  clientWidth 255) без переполнения — допуск 1px в конкретной проверке zoom.
+
+Gate после исправлений: playwright sheet-local 52/52 (Chromium + WebKit),
+auth-layout 16/16. eslint чисто. Production-код приложения не изменён.
+
 ## Открытые вопросы
 
 - (волна 3) Figma intake /account и /account/settings — ждёт отдельного пакета.

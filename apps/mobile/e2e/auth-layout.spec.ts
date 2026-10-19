@@ -14,6 +14,10 @@ import {
   expectTurnstileReady,
   installTurnstileFixture,
 } from './support/turnstile-fixture';
+import {
+  acceptRegistrationConsents,
+  installLegalDocumentsFixture,
+} from './support/legal-documents-fixture';
 
 const artifactDir = resolve(e2eEvidenceDir, 'stabilization');
 const nicknameArtifactDir = resolve(
@@ -36,10 +40,12 @@ test('filled login closes without confirmation and providers stay unavailable', 
       errors.push(message.text());
   });
   await page.setViewportSize({ width: 390, height: 874 });
+  await installLegalDocumentsFixture(page);
   await page.goto('/login');
   const email = page.getByLabel('Электронная почта');
   const password = page.getByLabel('Пароль', { exact: true });
   const loginTitle = page.getByText('Вход на Bidplace', { exact: true });
+  const privacyLinkName = 'политикой персональных данных и cookies';
   await email.fill('a');
   await password.fill('visual-password-123');
   await expectPasswordVisibility(password);
@@ -66,6 +72,9 @@ test('filled login closes without confirmation and providers stay unavailable', 
   await password.fill('visual-password-123');
   const sheet = page.locator('#auth-sheet');
   await expect(sheet).toBeVisible();
+  // Settle the enter slide before measuring: a box captured mid-animation
+  // sends the "backdrop" click into the sheet as it slides up under the point.
+  await page.waitForTimeout(400);
   const sheetBox = await sheet.boundingBox();
   expect(sheetBox).not.toBeNull();
   await page.mouse.click(
@@ -110,12 +119,14 @@ test('filled login closes without confirmation and providers stay unavailable', 
     await expect(page.locator('#auth-exit-confirm')).toHaveCount(0);
     await expect(loginTitle).toBeVisible();
     await page
-      .getByRole('link', { name: 'политику конфиденциальности', exact: true })
+      .getByRole('link', { name: privacyLinkName, exact: true })
       .click();
     await expectCenteredSurface(page, '#app-dialog-content');
-    const policy = page.getByText('Политика конфиденциальности', {
-      exact: true,
-    });
+    const policy = page
+      .locator('#app-dialog-content')
+      .getByText('Политика персональных данных и cookies', {
+        exact: true,
+      });
     const content = page.locator('#app-dialog-content');
     const titleBox = await policy.boundingBox();
     const contentBox = await content.boundingBox();
@@ -141,7 +152,7 @@ test('filled login closes without confirmation and providers stay unavailable', 
     await expect(policy).toHaveCount(0);
     await expect(
       page.getByRole('link', {
-        name: 'политику конфиденциальности',
+        name: privacyLinkName,
         exact: true,
       }),
     ).toBeFocused();
@@ -149,11 +160,11 @@ test('filled login closes without confirmation and providers stay unavailable', 
     await expect(loginTitle).toBeVisible();
   }
   await page
-    .getByRole('link', { name: 'правила сервиса', exact: true })
+    .getByRole('link', { name: 'пользовательским соглашением', exact: true })
     .click();
   await expectCenteredSurface(page, '#app-dialog-content');
   await expect(
-    page.getByText('Правила сервиса', { exact: true }),
+    page.getByText('Пользовательское соглашение', { exact: true }),
   ).toBeVisible();
   await page.getByRole('button', { name: 'Закрыть окно', exact: true }).click();
   await expect(page.locator('#auth-exit-confirm')).toHaveCount(0);
@@ -164,12 +175,14 @@ test('filled login closes without confirmation and providers stay unavailable', 
   });
   const privacyAtZoom = page
     .locator('#auth-sheet')
-    .getByRole('link', { name: 'политику конфиденциальности', exact: true });
+    .getByRole('link', { name: privacyLinkName, exact: true });
   await clickAtHitCenter(page, privacyAtZoom);
   expect(
     await page
       .locator('#app-dialog-content')
-      .evaluate((node) => node.scrollWidth <= node.clientWidth),
+      // 1px tolerance: WebKit rounds a fractional CSS-zoomed width up
+      // (scrollWidth 256 vs clientWidth 255) with no overflowing child.
+      .evaluate((node) => node.scrollWidth <= node.clientWidth + 1),
   ).toBe(true);
   const closeAtZoom = page.getByRole('button', {
     name: 'Закрыть окно',
@@ -496,6 +509,7 @@ test('history position stays one number per entry', async ({ page }) => {
 
 async function expectAuthBrowserHistory(page: Page, navigationApi: boolean) {
   await page.setViewportSize({ width: 390, height: 874 });
+  await installLegalDocumentsFixture(page);
   await page.goto('/');
   expect(await page.evaluate(() => window.navigation != null)).toBe(
     navigationApi,
@@ -586,11 +600,7 @@ async function expectAuthBrowserHistory(page: Page, navigationApi: boolean) {
   await expect(page).toHaveURL(/\/register\?redirectTo=%2Fworks$/);
   const registerEmail = page.getByPlaceholder('example@gmail.com');
   await registerEmail.fill('kept@example.com');
-  const rulesReady = page.waitForResponse(
-    (response) => response.url().includes('/api/auth/rules') && response.ok(),
-  );
-  await page.getByRole('checkbox', { name: /соглашаюсь/ }).check();
-  await rulesReady;
+  await acceptRegistrationConsents(page);
   await page.getByRole('button', { name: 'Дальше', exact: true }).click();
   const nickname = page.getByLabel('Никнейм', { exact: true });
   await expect(nickname).toBeVisible();
@@ -737,6 +747,7 @@ async function expectAuthBrowserHistory(page: Page, navigationApi: boolean) {
 test('register email title layout is stable across viewport resize', async ({
   page,
 }) => {
+  await installLegalDocumentsFixture(page);
   const title = () => page.getByText('Введите вашу почту', { exact: true });
 
   async function titleMarkLayout() {
@@ -789,7 +800,7 @@ test('register email title layout is stable across viewport resize', async ({
   await expect
     .poll(async () => {
       const y = await emailTitleY();
-      return y >= 319 && y <= 321.5;
+      return y >= 199.25 && y <= 201.75;
     })
     .toBe(true);
   await expectTitleClearOfMark();
@@ -813,7 +824,7 @@ test('register email title layout is stable across viewport resize', async ({
   await expect
     .poll(async () => {
       const y = await emailTitleY();
-      return y >= 319 && y <= 321.5;
+      return y >= 199.25 && y <= 201.75;
     })
     .toBe(true);
 
@@ -861,25 +872,31 @@ test('register email title layout is stable across viewport resize', async ({
   expect(
     await page.evaluate(() => document.body.scrollWidth <= window.innerWidth),
   ).toBe(true);
+  // Wave-1 width policy: at <=600 the dialog host fills the viewport width,
+  // the 390 column starts above 600 (03-DESIGN-SYSTEM).
   const frame = await page.getByRole('dialog').boundingBox();
   const viewport = page.viewportSize();
   expect(frame).not.toBeNull();
   expect(viewport).not.toBeNull();
-  expect(frame!.width).toBeCloseTo(390, 1);
-  expect(frame!.x).toBeCloseTo((viewport!.width - frame!.width) / 2, 0);
+  expect(frame!.width).toBeCloseTo(viewport!.width, 1);
+  expect(frame!.x).toBe(0);
 });
 
 test('auth composition is stacked in the S4 phone column', async ({ page }) => {
   await mkdir(artifactDir, { recursive: true });
   await installTurnstileFixture(page);
+  await installLegalDocumentsFixture(page);
 
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/register');
   await expectS4Register(page);
   await expectCenteredPhoneColumn(page);
+  // The fullscreen register screen renders its own mark; the home page logo
+  // behind it is fully covered, so the auth composition is scoped to the dialog.
+  const authSurface = page.getByRole('dialog');
   for (const brand of [
-    page.getByTestId('bidplace-brand-mark'),
-    page.getByTestId('bidplace-brand-wordmark'),
+    authSurface.getByTestId('bidplace-brand-mark'),
+    authSurface.getByTestId('bidplace-brand-wordmark'),
   ]) {
     await expect(brand).toHaveCount(1);
     expect(
@@ -914,25 +931,13 @@ test('auth composition is stacked in the S4 phone column', async ({ page }) => {
     path: resolve(artifactDir, `${engine(page)}-register-390.png`),
   });
 
-  await page.route('**/api/auth/rules', (route) =>
-    route.fulfill({
-      json: {
-        rules: {
-          version: 'layout-test',
-          owner: 'Synthetic',
-          contact: 'test@example.com',
-          text: 'Synthetic layout fixture',
-        },
-      },
-    }),
-  );
   let availabilityRequests = 0;
   await page.route('**/api/auth/slug-availability?*', (route) => {
     availabilityRequests += 1;
     return route.fulfill({ json: { available: true } });
   });
   await page.getByLabel('Электронная почта').fill('layout-only@example.com');
-  await page.getByRole('checkbox', { name: /соглашаюсь/ }).check();
+  await acceptRegistrationConsents(page);
   await page.getByRole('button', { name: 'Дальше', exact: true }).click();
   const nickname = page.getByLabel('Никнейм', { exact: true });
   const suggestionButtons = page
@@ -1045,18 +1050,7 @@ test('nickname suggestions check availability only on explicit Next', async ({
       },
     }),
   );
-  await page.route('**/api/auth/rules', (route) =>
-    route.fulfill({
-      json: {
-        rules: {
-          version: 'nickname-test',
-          owner: 'Synthetic',
-          contact: 'test@example.com',
-          text: 'Synthetic nickname fixture',
-        },
-      },
-    }),
-  );
+  await installLegalDocumentsFixture(page);
 
   let availabilityRequests = 0;
   let availabilityMode: 'available' | 'taken' | 'error' | 'delayed' = 'taken';
@@ -1104,7 +1098,7 @@ test('nickname suggestions check availability only on explicit Next', async ({
   await page.setViewportSize({ width: 390, height: 874 });
   await page.goto('/register');
   await page.getByLabel('Электронная почта').fill('nickname-only@example.com');
-  await page.getByRole('checkbox', { name: /соглашаюсь/ }).check();
+  await acceptRegistrationConsents(page);
   await page.getByRole('button', { name: 'Дальше', exact: true }).click();
 
   const nickname = page.getByLabel('Никнейм', { exact: true });
@@ -1136,7 +1130,7 @@ test('nickname suggestions check availability only on explicit Next', async ({
   expect(fieldGeometry.icon).not.toBeNull();
   expect(fieldGeometry.iconSlot).not.toBeNull();
   expect(fieldGeometry.shell!.width).toBeCloseTo(350, 0);
-  expect(fieldGeometry.shell!.height).toBeCloseTo(51, 0);
+  expect(fieldGeometry.shell!.height).toBeCloseTo(50, 0);
   expect(fieldGeometry.icon!.width).toBeCloseTo(18, 1);
   expect(fieldGeometry.icon!.height).toBeCloseTo(18, 1);
   expect(fieldGeometry.iconSlot!.width).toBeCloseTo(22, 1);
@@ -1163,18 +1157,24 @@ test('nickname suggestions check availability only on explicit Next', async ({
       .getByText('Предложения:', { exact: true })
       .boundingBox(),
     firstChip: await suggestions.first().boundingBox(),
-    mark: await page.getByTestId('bidplace-brand-mark').boundingBox(),
-    wordmark: await page.getByTestId('bidplace-brand-wordmark').boundingBox(),
+    mark: await page
+      .getByRole('dialog', { name: 'Регистрация' })
+      .getByTestId('bidplace-brand-mark')
+      .boundingBox(),
+    wordmark: await page
+      .getByRole('dialog', { name: 'Регистрация' })
+      .getByTestId('bidplace-brand-wordmark')
+      .boundingBox(),
   };
-  expect(mappedGeometry.title?.y).toBeCloseTo(273.5, 0);
-  expect(mappedGeometry.caption?.y).toBeCloseTo(301.5, 0);
-  expect(mappedGeometry.status?.y).toBeCloseTo(327.5, 0);
-  expect(fieldGeometry.shell!.y).toBeCloseTo(389.5, 0);
-  expect(mappedGeometry.action?.y).toBeCloseTo(452.5, 0);
+  expect(mappedGeometry.title?.y).toBeCloseTo(274, 0);
+  expect(mappedGeometry.caption?.y).toBeCloseTo(302, 0);
+  expect(mappedGeometry.status?.y).toBeCloseTo(328, 0);
+  expect(fieldGeometry.shell!.y).toBeCloseTo(390, 0);
+  expect(mappedGeometry.action?.y).toBeCloseTo(452, 0);
   expect(mappedGeometry.action?.width).toBeCloseTo(350, 0);
   expect(mappedGeometry.action?.height).toBeCloseTo(51, 0);
-  expect(mappedGeometry.suggestionsLabel?.y).toBeCloseTo(527.5, 0);
-  expect(mappedGeometry.firstChip?.y).toBeCloseTo(551.5, 0);
+  expect(mappedGeometry.suggestionsLabel?.y).toBeCloseTo(527, 0);
+  expect(mappedGeometry.firstChip?.y).toBeCloseTo(551, 0);
   expect(mappedGeometry.firstChip?.height).toBeCloseTo(37, 0);
   expect(mappedGeometry.mark?.y).toBeCloseTo(67, 0);
   expect(mappedGeometry.wordmark?.y).toBeCloseTo(793, 0);
@@ -1421,11 +1421,16 @@ async function expectS4Register(page: Page) {
   const submit = page.getByRole('button', { name: 'Дальше' });
   await submit.scrollIntoViewIfNeeded();
   await expect(submit).toBeVisible();
-  await expect(
-    page.getByText(
-      'Я соглашаюсь с политикой конфиденциальности и правилами сервиса',
-    ),
-  ).toBeVisible();
+  for (const consent of [
+    'Я принимаю пользовательское соглашение bidplace',
+    'Я ознакомился с политикой персональных данных и cookies',
+    'Я даю согласие на обработку данных для основной услуги bidplace',
+    'Мне исполнилось 18 лет',
+  ]) {
+    await expect(
+      page.getByRole('checkbox', { name: consent, exact: true }),
+    ).toBeVisible();
+  }
   await expect(
     page.getByRole('navigation', { name: 'Основная навигация' }),
   ).toHaveCount(0);
