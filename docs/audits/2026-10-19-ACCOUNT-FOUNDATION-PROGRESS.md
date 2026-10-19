@@ -48,9 +48,13 @@ staleTime 60с, gcTime 5мин для общего запроса; отсутс�
     — через `enqueuePublication`; fork новой editing-ревизии копирует published-фото
     в неё (sellers.service.spec «copies approved achievements…»).
 - [x] сценарий published A → editing B → public A → approve → public B подтверждён
-  кодом и закреплён адресной регрессией в admin-moderation.service.spec
-  (approve-запись несёт `seller-photo:editing-b`, не сохраняет `published-a`),
-  43/43 в admin-moderation.service.spec + sellers.service.spec.
+  трассировкой кода и закреплён адресной регрессией в admin-moderation.service.spec
+  (approve-запись несёт `seller-photo:editing-b`, не сохраняет `published-a`).
+  Предел гарантии теста: это approve mapping с мокнутой записью
+  `tx.sellerProfile.update`, НЕ end-to-end цепочка чтения фото и не media-asset
+  ветка; read-сторона покрыта отдельно существующими спеками (sellers.controller.spec:
+  getPhoto отдаёт байты базового профиля; sellers.service.spec: update APPROVED
+  форкает ревизию). 43/43 в admin-moderation.service.spec + sellers.service.spec.
 - [x] решение для /account (PROJECTION-GAP-01 закрыт, API НЕ расширял): прежний
   «пробел» исчез после корректной трассировки — опубликованная идентичность
   достаётся существующим контрактом: публичная проекция автора по slug
@@ -93,7 +97,8 @@ staleTime 60с, gcTime 5мин для общего запроса; отсутс�
 ### AF-03 — проекция фото
 
 - [x] трассировка и адресная регрессия — см. «фактическая проекция» выше;
-  коммит `d14734e6`. Сценарий A→B→approve→public B подтверждён.
+  коммит `d14734e6` доказывает approve mapping (мок записи), а не всю цепочку
+  чтения фото; остаток чит-стороны покрыт существующими спеками, см. там же.
 
 ### AF-02 — production build + браузерная приёмка ширин
 
@@ -119,9 +124,8 @@ staleTime 60с, gcTime 5мин для общего запроса; отсутс�
 - [x] finding: после Escape фокус = BODY. Причина: FloatingDock полностью
   размонтируется пока auth sheet открыт и пересоздаёт триггер при закрытии —
   восстановить фокус на тот же узел невозможно; pointer-click триггеру фокус не
-  даёт (RN-web mousedown preventDefault). Предшествующее поведение, волнами 1–2
-  (ширина only) не затронуто; share/report диалоги фокус возвращают (gate
-  sheet-live зелёный). Оставлено как отдельный finding, не блокирует волны 1–2.
+  даёт (RN-web mousedown preventDefault). ЗАКРЫТО корректирующим проходом AR-01
+  ниже (фокус восстанавливается на новый экземпляр открывшего пункта dock).
 - [x] evidence: `docs/audits/current/evidence/2026-10-19-sheet-widths/`
   (screenshots + measurements.json, 33 записи).
 
@@ -129,6 +133,42 @@ staleTime 60с, gcTime 5мин для общего запроса; отсутс�
 
 - [x] 11-PROJECT-STATUS.md, 04-DESIGN-STATUS.md — записи 2026-10-19 account
   foundation; shared width policy добавлена в 03-DESIGN-SYSTEM.md.
+
+## Корректирующий проход AR-01…AR-03 (повторное ревью)
+
+### AR-01 — восстановление фокуса после auth-close у общего владельца
+
+- [x] решение: pending opener. `use-return-focus.ts`: `rememberPendingOpener(selector)`
+  (consume-on-read), selector = aria-label в скоупе `[data-testid="figma-floating-dock"]`;
+  restore = живой element → свежий узел по selector (guard: не внутри диалога) →
+  fallback. `FloatingDock.tsx`: перед навигацией на auth-маршруты запоминает opener
+  (только web + гость). `AuthViewport.tsx`: `onOpenAutoFocus/onCloseAutoFocus`
+  на Dialog.Content; restore активируется только `commitLeave` (успешный вход фокус
+  не забирает), focus-on-open — первый input шторки, только если фокус ещё вне неё.
+  Без timeout-подгонки и фокуса на случайную первую кнопку.
+- [x] gate: новая спека `e2e/auth-focus-restore.spec.ts` (6 тестов × Chromium/WebKit:
+  Escape/крест/свайп для «Профиль» и «Добавить» после keyboard-open из dock,
+  login↔forgot, dirty-confirm на /register) + регистрация в playwright.sheet-local.
+  Прогон конфига: 40 passed, 12 failed — все 12 это ровно 6 пред-редов auth-layout
+  × 2 браузера; воспроизведены на base-сборке той же ветки (сигнатура
+  environmental: стенд bidplace_dev без чекбокса и копии «политику
+  конфиденциальности»), к AR-01 не относятся.
+- [x] коммит `012c3e33`.
+
+### AR-03 — cleanup capability spec
+
+- [x] `use-seller-capability.spec.ts`: afterEach корректно размонтирует React root
+  через act, очищает QueryClient и лишь затем удаляет контейнер; mounted-фикстуры
+  ведутся mount()'ем. Удаления DOM недостаточно — устранена утечка mount'ов.
+- [x] проверки: vitest 3/3, eslint чисто. Коммит `dcef9124`.
+
+### AR-02 — формулировки о покрытии AF-03
+
+- [x] прогресс-файл и 11-PROJECT-STATUS приведены к реальному охвату: тест d14734e6
+  доказывает approve mapping с мокнутой записью, а не end-to-end цепочку чтения фото;
+  read-сторона покрыта существующими спеками (getPhoto → базовый профиль;
+  update APPROVED → fork ревизии). Большой integration suite ради формулировки
+  не запускался.
 
 ## Открытые вопросы
 
