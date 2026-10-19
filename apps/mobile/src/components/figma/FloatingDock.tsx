@@ -11,10 +11,7 @@ import { Platform, type View, type ViewStyle } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
-import {
-  authorProfileDestination,
-  useSellerCapability,
-} from '../../hooks/use-seller-capability';
+import { useSellerCapability } from '../../hooks/use-seller-capability';
 import { useAuth } from '../../providers/auth-provider';
 import { useAppTheme } from '../../providers/theme-provider';
 import { getRouteSearchRedirect } from '../../features/auth/auth-redirect';
@@ -123,9 +120,7 @@ function dockHref(
       return undefined;
     case 'profile':
       if (context.isAdmin) return '/admin';
-      if (context.isAuthenticated) {
-        return authorProfileDestination(context.sellerStatus) as Href;
-      }
+      if (context.isAuthenticated) return '/account';
       return context.returnPath === '/'
         ? '/login'
         : { pathname: '/login', params: { redirectTo: context.returnPath } };

@@ -297,3 +297,42 @@ ratio.ownerCardMedia 179/236; space.settingsSurfacePadX 14, coverCaptionGap 10.
 - Открытый вопрос ревьюеру: reuse gray2 для accountMeta и отдельная роль
   settingsDivider при hex-близнеце quietFill — трактовка правила
   «exact semantic-equivalent», может быть переопределена.
+
+## Волна 3B — /account
+
+- Группа `(account)`: ProtectedRoute БЕЗ requireVerifiedEmail (verified guard
+  остаётся только у (seller)); root Stack регистрирует группу по паттерну.
+- Единый cabinet controller `use-author-cabinet` (works infinite query +
+  visibility mutation + invalidate): им пользуются и /cabinet (screen
+  ужат до того же контроллера, ключ тот же — запросы не дублируются).
+- Dock profile: guest → login с return URL (прежнее), admin → /admin
+  (прежнее), signed-in non-admin → /account (новое). «Добавить» не тронут.
+- Identity: APPROVED — published fullName/photo из owner profile (AF-03,
+  editing revision не смешивается); остальные состояния — серый placeholder,
+  displayName/@slug из сессии; legacy null slug → Share открывает объяснение
+  и claim-flow через /profile, /authors/null не конструируется.
+- Public identity: `use-account-public-identity` — тот же cache/key/shape,
+  что публичный экран автора (author первой страницы, без fetchNextPage),
+  enabled только APPROVED+slug, staleTime60s/gcTime5min общие константы.
+  Ошибка публичного DTO не блочит экран: share fallback — typed
+  `/authors/<slug>` из общего `authorSharePath`.
+- AuthorShare: флаг `owner` скрывает «Пожаловаться» (default прежний).
+- Работы: заголовок «Работы», PaddedGrid + gridColumnsFromWidth
+  (min179/gap8/max3, onLayout-замер), OwnerWorkCard = caption-карточка +
+  статус/модерация + primary/hide/restore как siblings вне Link карточки;
+  primary action по authorCabinetPrimaryAction (locked/moderation → «Открыть»);
+  hide через AppDialog confirm; empty owner state прежний.
+- Состояния: loading/error InfrastructurePageStatus + доступный logout;
+  SUSPENDED read-only (без create/hide/restore), статус «Профиль ограничен»;
+  CTA: Стать автором/Продолжить заявку/Посмотреть заявку/Создать работу.
+
+### Проверки 3B
+
+- mobile tsc --noEmit чисто; eslint затронутых файлов чисто.
+- Unit: author-profile-destination 8, ResilientRemoteImage 9,
+  account-logout 7+4 — 28/28.
+- E2E/runtime-приёмка НЕ выполнялась (по intake — отдельный этап 4);
+  навигация dock → /account и экран в целом Needs verification в браузере.
+- E2E-аудит: существующие specs кликают profile dock только для guest
+  (→/login) и admin (→/admin) — оба поведения не изменены; /cabinet
+  deep-link сохранён.

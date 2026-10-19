@@ -19,7 +19,7 @@ export function AccountIdentity({
   imageLabel,
 }: {
   name: string;
-  handle: string;
+  handle: string | null;
   photoUrl: string | null;
   imageLabel: string;
 }) {
@@ -53,10 +53,12 @@ export function AccountIdentity({
         <AppText role="accountName" tone="strong">
           {name}
         </AppText>
-        <AppText
-          role="accountHandle"
-          style={{ color: palette.gray2 }}
-        >{`@${handle}`}</AppText>
+        {handle ? (
+          <AppText
+            role="accountHandle"
+            style={{ color: palette.gray2 }}
+          >{`@${handle}`}</AppText>
+        ) : null}
       </View>
     </View>
   );

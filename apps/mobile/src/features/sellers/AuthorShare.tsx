@@ -17,9 +17,12 @@ import { useAppTheme } from '../../providers/theme-provider';
 export function AuthorShare({
   sharePath,
   onUnavailable,
+  owner = false,
 }: {
   sharePath: string;
   onUnavailable: (feature: string) => void;
+  /** Owner account share: the public "Пожаловаться" action does not apply. */
+  owner?: boolean;
 }) {
   const palette = useAppTheme();
   const triggerRef = useRef<ElementRef<typeof MotionPressable>>(null);
@@ -86,32 +89,36 @@ export function AuthorShare({
             {message}
           </AppText>
         ) : null}
-        <View style={{ height: 1, backgroundColor: palette.divider }} />
-        <MotionPressable
-          accessibilityRole="button"
-          accessibilityLabel="Пожаловаться на автора"
-          onPress={() => {
-            setOpen(false);
-            onUnavailable('Жалобы на профили');
-          }}
-          preset="button"
-          style={{
-            minHeight: 44,
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
-          <AppText role="bodySmall" style={{ color: palette.report }}>
-            Пожаловаться
-          </AppText>
-          <FigmaIcon
-            name="flag-01"
-            size={20}
-            strokeWidthPx={1.5}
-            color={palette.report}
-          />
-        </MotionPressable>
+        {owner ? null : (
+          <>
+            <View style={{ height: 1, backgroundColor: palette.divider }} />
+            <MotionPressable
+              accessibilityRole="button"
+              accessibilityLabel="Пожаловаться на автора"
+              onPress={() => {
+                setOpen(false);
+                onUnavailable('Жалобы на профили');
+              }}
+              preset="button"
+              style={{
+                minHeight: 44,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <AppText role="bodySmall" style={{ color: palette.report }}>
+                Пожаловаться
+              </AppText>
+              <FigmaIcon
+                name="flag-01"
+                size={20}
+                strokeWidthPx={1.5}
+                color={palette.report}
+              />
+            </MotionPressable>
+          </>
+        )}
       </FilterSheet>
     </>
   );

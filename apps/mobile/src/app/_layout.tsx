@@ -45,6 +45,7 @@ export default function RootLayout() {
           options={{ presentation: 'transparentModal', animation: 'none' }}
         />
         <Stack.Screen name="(seller)" />
+        <Stack.Screen name="(account)" />
         <Stack.Screen name="(admin)" />
       </Stack>
       <SearchOverlayHost />
