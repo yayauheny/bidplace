@@ -2,6 +2,20 @@
 
 > Entries dated before 2026-10-13 mention Pen / .pen files; the Pen design was removed (DEC-119) — read those mentions as history.
 
+## 2026-10-19 — Общая проверка переходов: dimmer handoff и focus
+
+**Implemented (общий web-механизм).** SheetBackdropProvider централизует только
+визуальное затемнение обычных AppDialog sheets; FilterSheet/ShareSheet и другие
+consumers наследуют исправление. Две красные цепочки (actions → QR, share → report)
+больше не дают светлой вспышки. useReturnFocus возвращает фокус к живому opener
+после удаления предыдущей шторки, сохраняя nested-parent поведение.
+
+Проверки: 26/26 Chromium/WebKit, 36/36 owner unit, build/tsc/lint/format.
+Матрица, исходные consumers и ограничения:
+[аудит](../audits/2026-10-19-TRANSITION-MATRIX.md).
+Физический iPhone/native и отдельная browser-приёмка всех внутренних форм —
+Needs verification; API/БД и серверные контракты не менялись.
+
 ## 2026-10-19 — Auth → forgot-password: постоянное затемнение
 
 **Implemented (web).** Отдельные FadeIn/FadeOut каждого

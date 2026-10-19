@@ -462,6 +462,15 @@ from below, exits downward, and the backdrop fades (`motion.control`,
 `cubic-bezier(0.2, 0, 0, 1)`, reduced motion). Geometry is unchanged. The
 native branch is a stub.
 
+Ordinary web AppDialog sheets share one visual `SheetBackdropProvider` installed
+under ThemeProvider in AppProviders. FilterSheet/ShareSheet/mediaSheet inherit it;
+A → B handoffs retain the same dimmer while each dialog keeps its dismissal,
+content and focus owner. The transparent hit layer stays below the panel.
+Last close/unmount removes the dimmer; native and standalone previews keep their
+existing per-dialog layer. Centered confirmations retain their separate level.
+Return-focus follows the opener ancestry only when the immediate opener was
+removed, preserving focus within a still-open parent (2026-10-19 transition matrix).
+
 Auth's visual dimmer is owned by the persistent `(auth)/_layout`, so changing
 between login, forgot-password and reset-password does not replay its fade.
 AuthViewport keeps the transparent dismissal hit layer and its existing guards;

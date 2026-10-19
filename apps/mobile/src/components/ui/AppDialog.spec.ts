@@ -11,10 +11,12 @@ import {
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ThemeProvider } from '../../providers/theme-provider';
+import { SheetBackdropProvider } from './sheet-backdrop';
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
 vi.mock('./SheetDragSurface', () => import('./SheetDragSurface.web'));
+vi.mock('./sheet-backdrop-layer', () => import('./sheet-backdrop-layer.web'));
 
 vi.mock('expo-router', () => ({
   DefaultTheme: {
@@ -808,4 +810,92 @@ describe('AppDialog web focus lifecycle', () => {
     expect(lightSurface.style.backgroundColor).toBe(rgbOf('#1C1C1C'));
     view.unmount();
   });
+});
+
+describe('shared sheet backdrop lifecycle', () => {
+  it('keeps one dimmer through handoff and removes it after the last sheet closes', async () => {
+    const flow = (active: 'first' | 'second' | null) =>
+      createElement(
+        SheetBackdropProvider,
+        null,
+        ...(['first', 'second'] as const).map((id) =>
+          createElement(AppDialog, {
+            key: id,
+            presentation: 'sheet',
+            open: active === id,
+            title: id,
+            onClose: () => undefined,
+            children: dialogChildren(),
+          }),
+        ),
+      );
+    const view = mount(flow('first'));
+    await flush();
+    const dimmer = document.querySelector('#sheet-backdrop > [data-animated]');
+    expect(dimmer).not.toBeNull();
+    view.render(flow('second'));
+    await flush();
+    expect(document.querySelector('#sheet-backdrop > [data-animated]')).toBe(
+      dimmer,
+    );
+    view.render(flow(null));
+    await flush();
+    expect(document.querySelector('#sheet-backdrop')?.childElementCount).toBe(
+      0,
+    );
+    view.render(flow('first'));
+    await flush();
+    expect(
+      document.querySelector('#sheet-backdrop > [data-animated]'),
+    ).not.toBeNull();
+    view.unmount();
+    expect(document.querySelector('#sheet-backdrop')).toBeNull();
+  });
+});
+
+it('returns focus inside a still-open parent dialog instead of its outer trigger', async () => {
+  const outer = document.createElement('button');
+  document.body.append(outer);
+  outer.focus();
+  function NestedDialogs() {
+    const [childOpen, setChildOpen] = useState(false);
+    return createElement(
+      'div',
+      null,
+      createElement(AppDialog, {
+        open: true,
+        title: 'Родитель',
+        onClose: () => undefined,
+        children: createElement(
+          'button',
+          { type: 'button', onClick: () => setChildOpen(true) },
+          'Открыть вложенный',
+        ),
+      }),
+      createElement(AppDialog, {
+        open: childOpen,
+        title: 'Вложенный',
+        onClose: () => setChildOpen(false),
+        children: dialogChildren(),
+      }),
+    );
+  }
+  const view = mount(createElement(NestedDialogs));
+  await flush();
+  const opener = [
+    ...(dialogByTitle('Родитель')?.querySelectorAll('button') ?? []),
+  ].find((node) => node.textContent === 'Открыть вложенный');
+  if (!(opener instanceof HTMLButtonElement))
+    throw new Error('missing child opener');
+  act(() => {
+    opener.focus();
+    opener.click();
+  });
+  await flush();
+  const child = dialogByTitle('Вложенный');
+  if (!child) throw new Error('missing nested dialog');
+  act(() => closeButton(child).click());
+  await flush();
+  expect(document.activeElement).toBe(opener);
+  view.unmount();
 });

@@ -484,3 +484,15 @@ and a native PanResponder adapter. AppDialog, FilterSheet and AuthViewport decla
 the draggable header and supply the existing close callback. This avoids separate
 route-local gesture implementations; persistence, auth service, API and database
 boundaries are unchanged. useReturnFocus handles force-mounted sheet close cycles.
+
+
+### Shared web sheet backdrop (2026-10-19)
+
+AppProviders mounts SheetBackdropProvider under the semantic theme owner.
+AppDialog registers ordinary sheet/mediaSheet open lifetimes; one visual portal
+stays mounted across handoffs. This owner does not manage content, route history,
+focus traps, save state or permissions. Dialog.Overlay remains the dismissal hit
+layer below panels. Native/isolated rendering retains its existing per-dialog
+implementation; centered confirmations, auth and Search keep their flow layers.
+useReturnFocus records weak opener ancestry for handoffs without retaining closed
+DOM scopes. See audits/2026-10-19-TRANSITION-MATRIX.md for coverage and limits.

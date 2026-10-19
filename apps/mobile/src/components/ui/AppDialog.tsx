@@ -19,6 +19,7 @@ import { FigmaIcon } from '../figma/FigmaIcon';
 import { useAppTheme } from '../../providers/theme-provider';
 import { AppText } from './AppText';
 import { SheetDragSurface, SheetDragHandle } from './SheetDragSurface';
+import { useSharedSheetBackdrop } from './sheet-backdrop';
 import {
   appDialogHostStyle,
   appDialogSheetBottomSpace,
@@ -111,14 +112,23 @@ export function AppDialog({
   }, []);
 
   const isSheet = presentation !== 'dialog';
+  const sharedBackdrop = useSharedSheetBackdrop(open && isSheet);
   const isMediaSheet = presentation === 'mediaSheet';
   const overlay = (
     <AppDialogOverlay
       forceMount={isSheet ? true : undefined}
       style={{
         inset: 0,
-        backgroundColor: isSheet ? palette.modalDimmer : palette.overlay,
-        zIndex: designTokens.layer.modal,
+        backgroundColor:
+          sharedBackdrop && isSheet
+            ? 'transparent'
+            : isSheet
+              ? palette.modalDimmer
+              : palette.overlay,
+        zIndex:
+          sharedBackdrop && isSheet
+            ? designTokens.layer.modal - 1
+            : designTokens.layer.modal,
       }}
     />
   );
@@ -373,12 +383,16 @@ export function AppDialog({
       {isSheet ? (
         <Dialog.Portal forceMount>
           {open ? (
-            <Animated.View
-              entering={sheetBackdropEnter}
-              exiting={sheetBackdropExit}
-            >
-              {overlay}
-            </Animated.View>
+            sharedBackdrop ? (
+              overlay
+            ) : (
+              <Animated.View
+                entering={sheetBackdropEnter}
+                exiting={sheetBackdropExit}
+              >
+                {overlay}
+              </Animated.View>
+            )
           ) : null}
           <AppDialogFrame style={frameStyle}>
             {open ? (

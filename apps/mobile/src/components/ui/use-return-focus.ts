@@ -2,6 +2,8 @@ import { useEffect, useRef } from 'react';
 
 type FocusRef = { current: { focus?: () => void } | null };
 
+const dialogOpeners = new WeakMap<HTMLElement, readonly HTMLElement[]>();
+
 function connectedOpener(active: Element | null, scope: EventTarget | null) {
   if (!(active instanceof HTMLElement) || !active.isConnected) return null;
   if (scope instanceof Node && scope.contains(active)) return null;
@@ -24,16 +26,16 @@ export function useReturnFocus({
   focusOnOpen?: () => HTMLElement | null;
   shouldRestore?: () => boolean;
 } = {}) {
-  const openerRef = useRef<HTMLElement | null>(null);
+  const openerRef = useRef<readonly HTMLElement[]>([]);
 
   const restoreFocus = () => {
     if (typeof document === 'undefined' || (shouldRestore && !shouldRestore()))
       return;
     const explicit = explicitRef?.current;
-    const opener = openerRef.current;
+    const opener = openerRef.current.find((element) => element.isConnected);
     if (explicit) explicit.focus?.();
     else if (opener?.isConnected) opener.focus({ preventScroll: true });
-    openerRef.current = null;
+    openerRef.current = [];
   };
 
   const restoreRef = useRef(restoreFocus);
@@ -58,7 +60,15 @@ export function useReturnFocus({
         document.activeElement,
         event.currentTarget,
       );
-      if (opener) openerRef.current = opener;
+      if (opener) {
+        const parent = opener.closest<HTMLElement>('[role="dialog"]');
+        openerRef.current = [
+          opener,
+          ...(parent ? (dialogOpeners.get(parent) ?? []) : []),
+        ];
+      }
+      if (event.currentTarget instanceof HTMLElement)
+        dialogOpeners.set(event.currentTarget, openerRef.current);
       const target = focusOnOpen?.();
       if (!target) return;
       event.preventDefault();
