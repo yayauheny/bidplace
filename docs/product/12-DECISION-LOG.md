@@ -2983,3 +2983,34 @@ Centered confirmation dialogs and full-screen registration are not draggable she
 Owner: Expo Router root/auth presentation + AuthViewport; shared interaction:
 SheetDragSurface used by AuthViewport/AppDialog/FilterSheet. Server contracts,
 permissions, draft persistence and visual geometry are unchanged.
+
+## DEC-123 — Личный аккаунт, Share до одобрения и удаление Work
+
+Дата: 2026-10-19. Статус продукта: Confirmed — прямые ответы основателя в задаче личного профиля.
+Статус кода: Not implemented для новых account/settings и удаления; наличие intake не означает реализованную функцию.
+
+Личный аккаунт объединяет вход пользователя и автора; автору доступен кабинет
+своих работ. До одобрения фото остаётся серым placeholder; у одобренного автора
+используется опубликованная identity, не редактируемая ревизия.
+
+Настройки и Share доступны также до публикации. Публичная ссылка недоступного
+профиля показывает нейтральный not-found: существование аккаунта/заявки, её
+поля и статус проверки не становятся публичными.
+
+Избранное остаётся после MVP, не входит в текущий UI-срез и не имитируется
+фиктивными controls. Его владелец — [post-MVP backlog](15-POST-MVP-BACKLOG.md).
+Смена email и authenticated-смена пароля — отдельная будущая волна.
+
+Основатель разрешил удаление собственных работ в любом статусе отдельной волной:
+после подтверждения работа исчезает из кабинета и публичного доступа, технически
+помечается удалённой для сохранения связности данных. Удаление не равно
+обратимому hide/restore и не означает каскадного удаления истории/файлов.
+Endpoint, конкуренция с модерацией, suspended policy, media/cache и legacy
+relations требуют отдельного backend/security-плана перед реализацией.
+
+Граница этой задачи не включает возвращение торгов, цен, корзины, Premium,
+валют, локализации или избранного из старых Figma frames.
+Не менять server permissions ради визуального сходства.
+
+Дизайн/implementation handoff:
+[2026-10-19-account-ui](../tasks/2026-10-19-account-ui/README.md).
