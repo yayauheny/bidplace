@@ -12,6 +12,7 @@ import {
 } from 'react';
 import { Platform, ScrollView, useWindowDimensions, View } from 'react-native';
 import Animated from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
 
 import { designTokens } from '@bidplace/design-tokens';
 
@@ -47,6 +48,7 @@ import {
   sheetWidthConstraint,
 } from '../ui/app-dialog-host-style';
 import { MotionPressable } from '../ui/MotionPressable';
+import { useReturnFocus } from '../ui/use-return-focus';
 
 function screenBrandInset() {
   return {
@@ -117,6 +119,25 @@ export function AuthViewport(props: AuthViewportProps) {
   const returnFocus = useRef<HTMLElement | null>(null);
   const releasedRef = useRef(false);
   const completionRef = useRef<SafeRedirect | null>(null);
+  // Focus restoration on close is only allowed for a dismissal back to the
+  // originating page; completing auth navigates to a new target and must not
+  // steal focus there.
+  const allowRestoreRef = useRef(false);
+  const sheetReturnFocus = useReturnFocus({
+    shouldRestore: () => allowRestoreRef.current,
+    // Landing on the primary form field (not the first button) keeps keyboard
+    // users inside the active form across login/forgot/reset transitions.
+    focusOnOpen: () =>
+      typeof document === 'undefined'
+        ? null
+        : document.querySelector<HTMLElement>('#auth-sheet input'),
+    fallback: () =>
+      typeof document === 'undefined'
+        ? null
+        : document.querySelector<HTMLElement>(
+            '[data-testid="figma-floating-dock"] a[href], [data-testid="figma-floating-dock"] [role="button"]',
+          ),
+  });
   const focusedRef = useRef(focused);
   const guardRef = useRef(guard);
   const protectEnteredDataRef = useRef(protectEnteredData);
@@ -171,6 +192,7 @@ export function AuthViewport(props: AuthViewportProps) {
         return;
       completionRef.current = next;
       releasedRef.current = true;
+      allowRestoreRef.current = false;
       browserLeavePath.current = null;
       browserLeaveTraversal.current = null;
       pendingAction.current = null;
@@ -183,6 +205,7 @@ export function AuthViewport(props: AuthViewportProps) {
 
   const commitLeave = useCallback(() => {
     if (releasedRef.current) return;
+    allowRestoreRef.current = true;
     const action = pendingAction.current;
     const left = browserLeavePath.current;
     const traversal = browserLeaveTraversal.current;
@@ -295,7 +318,28 @@ export function AuthViewport(props: AuthViewportProps) {
     }
   };
 
-  const entering = useMemo(() => sheetEnter(() => undefined), []);
+  // Same contract as AppDialog: once the entering animation finishes, land
+  // keyboard focus on the primary form field if it is not inside the sheet
+  // yet. Never steals focus already in the sheet (login↔forgot transitions).
+  const focusAfterEnter = useCallback(() => {
+    if (Platform.OS !== 'web' || typeof document === 'undefined') return;
+    if (!focusedRef.current || releasedRef.current) return;
+    const sheet = document.getElementById('auth-sheet');
+    if (!sheet) return;
+    if (sheet.contains(document.activeElement)) return;
+    sheet
+      .querySelector<HTMLElement>('input')
+      ?.focus({ preventScroll: true });
+  }, []);
+
+  const entering = useMemo(
+    () =>
+      sheetEnter((finished) => {
+        'worklet';
+        if (finished) scheduleOnRN(focusAfterEnter);
+      }),
+    [focusAfterEnter],
+  );
   const screen = presentation === 'screen';
   const brandInset = screenBrandInset();
   const screenBandHeight = screen
@@ -389,6 +433,8 @@ export function AuthViewport(props: AuthViewportProps) {
                       forceMount={Platform.OS === 'web' ? true : undefined}
                       nativeID={focused ? 'auth-sheet' : undefined}
                       aria-modal={focused}
+                      onOpenAutoFocus={sheetReturnFocus.onOpenAutoFocus}
+                      onCloseAutoFocus={sheetReturnFocus.onCloseAutoFocus}
                       style={{
                         position: 'relative',
                         width: '100%',

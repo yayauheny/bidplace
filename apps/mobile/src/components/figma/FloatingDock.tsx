@@ -23,6 +23,7 @@ import { BidplaceMark } from '../branding/BidplaceBrand';
 import { getMobileCreateHref } from '../layout/header-chrome';
 import { useDockInset } from '../layout/use-dock-inset';
 import { MotionPressable } from '../ui/MotionPressable';
+import { rememberPendingOpener } from '../ui/use-return-focus';
 import { FigmaIcon } from './FigmaIcon';
 import { FloatingDockFrame } from './FloatingDockFrame';
 import {
@@ -53,6 +54,16 @@ export function FloatingDock({
   const items = auth.isAdmin
     ? figmaDockItems.filter((item) => item.id !== 'plus')
     : figmaDockItems;
+  // The dock unmounts under the auth sheet; remember the opener semantically
+  // so the shared focus owner can restore it on close. Only guest items that
+  // actually open the auth sheet qualify.
+  const rememberAuthOpener = (label: string) =>
+    Platform.OS === 'web' && !auth.isAuthenticated && !auth.isAdmin
+      ? () =>
+          rememberPendingOpener(
+            `[data-testid="figma-floating-dock"] [aria-label="${CSS.escape(label)}"]`,
+          )
+      : undefined;
   const buttons = items.map((item) => (
     <DockItem
       key={item.id}
@@ -72,15 +83,19 @@ export function FloatingDock({
         item.id === 'search'
           ? () => search.open()
           : item.id === 'plus'
-            ? () =>
+            ? () => {
+                rememberAuthOpener(item.label)?.();
                 router.push(
                   getMobileCreateHref({
                     isAuthenticated: auth.isAuthenticated,
                     sellerStatus: capability.status,
                     returnPath,
                   }),
-                )
-            : undefined
+                );
+              }
+            : item.id === 'profile'
+              ? rememberAuthOpener(item.label)
+              : undefined
       }
     />
   ));
