@@ -94,3 +94,21 @@ export function coverOverlayPadStyle(): ViewStyle {
     gap: designTokens.space.coverGap,
   };
 }
+
+// Caption-variant card (account cabinet grid): media 179/236, caption below.
+export function coverCaptionCardFrameStyle(palette: SemanticColorMap): ViewStyle {
+  return {
+    width: '100%',
+    aspectRatio: designTokens.ratio.ownerCardMedia,
+    overflow: 'hidden',
+    borderRadius: designTokens.radius.ownerCard,
+    backgroundColor: palette.mutedFill,
+  };
+}
+
+export function coverCaptionBlockStyle(): ViewStyle {
+  return {
+    paddingTop: designTokens.space.coverCaptionGap,
+    gap: designTokens.space.x1,
+  };
+}

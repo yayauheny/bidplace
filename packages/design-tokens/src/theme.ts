@@ -88,6 +88,9 @@ export const lightColorMap = {
   mutedFill: '#F3F3F3',
   mutedHover: '#E8E8E8',
   quietFill: '#EFEFEF',
+  // Settings list divider — same light hex as quietFill, different purpose
+  // (hairline separator, not fill); do not merge.
+  settingsDivider: '#EFEFEF',
   quietBorderStart: '#FFFFFF',
   quietBorderEnd: '#999999',
   textSubtle: '#6F6F6F',
@@ -109,6 +112,10 @@ export const lightColorMap = {
   overlayOnLight: 'rgba(0, 0, 0, 0.05)',
   overlayOnMuted: 'rgba(0, 0, 0, 0.06)',
   floatingShadow: '0 10px 24px rgba(17, 17, 17, 0.12)',
+  // Account avatar placeholder disc (Figma account screen).
+  accountAvatarPlaceholder: '#E0E0E0',
+  // Settings group surface (Figma #FBFBFB, radius radius.sheet).
+  settingsSurface: '#FBFBFB',
 } as const;
 
 export type SemanticColorRole = keyof typeof lightColorMap;
@@ -187,6 +194,7 @@ export const blackColorMap: SemanticColorMap = {
   mutedFill: '#242424',
   mutedHover: '#2E2E2E',
   quietFill: '#202020',
+  settingsDivider: '#2C2C2C',
   quietBorderStart: '#161616',
   quietBorderEnd: '#8F8F8F',
   textSubtle: '#9A9A9A',
@@ -208,6 +216,8 @@ export const blackColorMap: SemanticColorMap = {
   overlayOnLight: 'rgba(255, 255, 255, 0.08)',
   overlayOnMuted: 'rgba(255, 255, 255, 0.10)',
   floatingShadow: '0 10px 24px rgba(0, 0, 0, 0.5)',
+  accountAvatarPlaceholder: '#2E2E2E',
+  settingsSurface: '#1E1E1E',
 };
 
 export const appColorMaps: Record<AppThemeName, SemanticColorMap> = {

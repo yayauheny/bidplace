@@ -243,3 +243,57 @@ auth-layout 16/16. eslint чисто. Production-код приложения н�
 - Локальный стенд 7899/3001 сейчас отдаёт старую сборку (fix/draft-restore); для
   кликабельной проверки волны 1 нужен rebuild web + перезапуск (не выполнялся —
   вне скоупа волн).
+
+## Волна 3A — account primitives (tokens + компоненты)
+
+Intake: docs/tasks/2026-10-19-account-ui (README §4/§6, HANDOFF). Экраны не
+строились — только примитивы и токены; 3B/3C отдельными коммитами.
+
+### Mapping ролей (зафиксирован до кода, как требует intake)
+
+Типографика (designTokens.typography):
+- accountName 20/26 Inter600 −0.4; accountHandle 14/20 Inter500 −0.14;
+- settingsTitle 18/22 Inter600 −0.18 (source line-height `normal` — 22 разумный,
+  rendered-baseline проверка в приёмке экрана);
+- settingsSection 12/16 Inter500 −0.12; settingsRow 14/20 Inter500 −0.28 (source
+  `normal`);
+- coverCaptionAuthor 14/17 Inter600 −0.14 (tracking не зафиксирован в intake,
+  взят по аналогии workChip — на ревью).
+
+Семантика (theme.ts, обе палитры; black provisional):
+- accountMeta #858585 → НЕ добавлял, reuse `gray2` (точный semantic-эквивалент);
+- settingsDivider #EFEFEF → новая роль (hex-близнец quietFill, но purpose —
+  hairline-разделитель ≠ fill; комментарий в коде);
+- accountAvatarPlaceholder #E0E0E0 / black #2E2E2E (близнеца нет);
+- settingsSurface #FBFBFB / black #1E1E1E (близнеца нет);
+- destructive #D22F0B — НЕ добавлял, роль только с волной удаления 3D.
+
+Метрики: size.accountAvatar 100, size.settingsRowIcon 20,
+size.settingsHeaderGlyph 28; radius.ownerCard 16, radius.settingsSurface 26;
+ratio.ownerCardMedia 179/236; space.settingsSurfacePadX 14, coverCaptionGap 10.
+Существующие avatar112/card24/sheetMax НЕ тронуты; light сохранён.
+
+### Расширения компонентов (shortlist)
+
+- WorkCoverCard: named-вариант `variant="caption"` (media 179/236 radius 16,
+  caption ниже: author coverCaptionAuthor + title authorRowBio, без frost).
+  Default variant и потребители не изменены; href расширен до
+  `/product/... | /products/...` типизированно.
+- BackButton: четвёртый вариант `settings` (plain glyph 28, touch 44).
+- ResilientRemoteImage: опциональный `retryable` (default true — поведение
+  существующих потребителей не меняется); для аватара без retry-цикла.
+- FigmaIcon: иконки `setting-07` (Setting07Icon) и `log-out` (LogOutIcon,
+  точное совпадение data-name из capture).
+- Новые: AccountIdentity (100px round avatar + name/handle; НЕ CreatorIdentity),
+  SettingsGroup/SettingsRow (single-purpose под settings-экран).
+
+### Проверки 3A
+
+- design-tokens build (tsc) — чисто; eslint изменённых файлов — чисто;
+  mobile tsc --noEmit — чисто.
+- Runtime/визуальная приёмка НЕ выполнялась (примитивы без экранов);
+  rendered-baseline settingsTitle/settingsRow и tracking coverCaptionAuthor —
+  Needs verification в приёмке экранов.
+- Открытый вопрос ревьюеру: reuse gray2 для accountMeta и отдельная роль
+  settingsDivider при hex-близнеце quietFill — трактовка правила
+  «exact semantic-equivalent», может быть переопределена.

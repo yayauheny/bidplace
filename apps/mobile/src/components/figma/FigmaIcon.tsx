@@ -28,10 +28,12 @@ import {
   InstagramIcon,
   InternetIcon,
   LockKeyholeIcon,
+  LogOutIcon,
   MinusSignIcon,
   PlusSignIcon,
   QrCode01Icon,
   Search01Icon,
+  Setting07Icon,
   ShoppingBasket01Icon,
   ImageAdd02Icon,
   TelegramIcon,
@@ -98,6 +100,8 @@ const icons = {
   'shopping-basket-01': ShoppingBasket01Icon,
   'image-add-02': ImageAdd02Icon,
   check: checkIcon,
+  'setting-07': Setting07Icon,
+  'log-out': LogOutIcon,
 } as const satisfies Record<FigmaIconName, typeof Search01Icon>;
 
 const iconGridSize = 24;

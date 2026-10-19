@@ -37,7 +37,8 @@ export type ResilientRemoteImageComponent =
   | 'AuthorCoverCard'
   | 'AuthorIdentity'
   | 'AuthorAtmosphere'
-  | 'AuthorSearchRow';
+  | 'AuthorSearchRow'
+  | 'AccountIdentity';
 
 type ResilientRemoteImageProps = {
   uri: string;
@@ -50,6 +51,8 @@ type ResilientRemoteImageProps = {
   transition?: ImageProps['transition'];
   recyclingKey?: string;
   blurRadius?: number;
+  /** Show the manual «Повторить» action after automatic retries exhaust. Default true. */
+  retryable?: boolean;
 };
 
 export function ResilientRemoteImage(props: ResilientRemoteImageProps) {
@@ -67,6 +70,7 @@ function RemoteImageLifetime({
   transition,
   recyclingKey,
   blurRadius,
+  retryable = true,
 }: ResilientRemoteImageProps) {
   const [recovery, setRecovery] = useState(() => createMediaRecoveryState(uri));
   const recoveryRef = useRef(recovery);
@@ -159,7 +163,7 @@ function RemoteImageLifetime({
           label={fallbackLabel}
           style={StyleSheet.absoluteFill}
         />
-        {recovery.exhausted ? (
+        {retryable && recovery.exhausted ? (
           <View style={{ position: 'absolute', bottom: designTokens.space.x2 }}>
             <SecondaryButton label="Повторить" onPress={handleManualRetry} />
           </View>

@@ -81,6 +81,10 @@ export const designTokens = {
     headerIconHitSlop: 9,
     // Inset of the media sheet heading block (Figma Frame 139 padding).
     mediaSheetTextInset: 6,
+    // Settings surface horizontal padding (Figma settings screen).
+    settingsSurfacePadX: 14,
+    // Caption-variant cover card: gap between media and caption block.
+    coverCaptionGap: 10,
   },
   /** Author application steps (Figma 526–746); chrome shared across all four steps. */
   authorApplication: {
@@ -130,6 +134,10 @@ export const designTokens = {
     filterSort: 14,
     filterCheckbox: 6,
     filterRadio: 20,
+    // Account header avatar (Figma account screen 100×100 round).
+    ownerCard: 16,
+    // Settings group surface (Figma settings screen).
+    settingsSurface: 26,
   },
   size: {
     achievementWidth: 266,
@@ -173,6 +181,12 @@ export const designTokens = {
     filterOption: 20,
     filterOptionCheck: 16,
     filterOptionRow: 38,
+    // Account header avatar 100×100 (Figma account screen).
+    accountAvatar: 100,
+    // Settings row leading icon 20 px.
+    settingsRowIcon: 20,
+    // Settings header back glyph 28 px.
+    settingsHeaderGlyph: 28,
   },
   typography: {
     display: {
@@ -584,6 +598,55 @@ export const designTokens = {
       letterSpacing: -0.24,
       fontWeight: '600' as const,
     },
+    // Account header identity (Figma account screen): name 20/26 semibold.
+    accountName: {
+      fontFamily: 'Inter_600SemiBold',
+      fontSize: 20,
+      lineHeight: 26,
+      letterSpacing: -0.4,
+      fontWeight: '600' as const,
+    },
+    // Account @handle 14/20 medium.
+    accountHandle: {
+      fontFamily: 'Inter_500Medium',
+      fontSize: 14,
+      lineHeight: 20,
+      letterSpacing: -0.14,
+      fontWeight: '500' as const,
+    },
+    // Settings header title 18 semibold; Figma line-height `normal`.
+    settingsTitle: {
+      fontFamily: 'Inter_600SemiBold',
+      fontSize: 18,
+      lineHeight: 22,
+      letterSpacing: -0.18,
+      fontWeight: '600' as const,
+    },
+    // Settings group label 12/16 medium.
+    settingsSection: {
+      fontFamily: 'Inter_500Medium',
+      fontSize: 12,
+      lineHeight: 16,
+      letterSpacing: -0.12,
+      fontWeight: '500' as const,
+    },
+    // Settings row label 14 medium; Figma line-height `normal` (render check pending).
+    settingsRow: {
+      fontFamily: 'Inter_500Medium',
+      fontSize: 14,
+      lineHeight: 20,
+      letterSpacing: -0.28,
+      fontWeight: '500' as const,
+    },
+    // Caption-variant cover card author line 14/17 semibold. Tracking not
+    // captured in the intake; -0.14 mirrors workChip pending review.
+    coverCaptionAuthor: {
+      fontFamily: 'Inter_600SemiBold',
+      fontSize: 14,
+      lineHeight: 17,
+      letterSpacing: -0.14,
+      fontWeight: '600' as const,
+    },
   },
   motion: {
     instant: 80,
@@ -617,6 +680,8 @@ export const designTokens = {
   ratio: {
     productPortrait: 264 / 352,
     auctionCardMedia: 264 / 352,
+    // Caption-variant cover card media (Figma 179×236).
+    ownerCardMedia: 179 / 236,
   },
   auth: {
     sheetRadius: 32,

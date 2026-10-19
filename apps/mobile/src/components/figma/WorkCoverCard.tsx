@@ -13,6 +13,8 @@ import { FigmaChip } from './FigmaChip';
 import { CoverFrost } from './CoverFrost';
 import {
   coverArtworkFrameStyle,
+  coverCaptionBlockStyle,
+  coverCaptionCardFrameStyle,
   coverCardFrameStyle,
   coverChipRowStyle,
   coverFrostZoneStyle,
@@ -29,18 +31,84 @@ export function WorkCoverCard({
   imageLabel,
   title,
   authorSlug,
+  variant = 'overlay',
   onPress,
 }: {
-  href: `/product/${string}`;
+  href: `/product/${string}` | `/products/${string}`;
   imageUrl: string;
   imageLabel: string;
   title: string;
   authorSlug: string;
+  variant?: 'overlay' | 'caption';
   onPress?: () => void;
 }) {
   const overlay = getWorkCoverOverlay({ title, authorSlug });
   const reducedMotion = useReducedMotion();
   const palette = useAppTheme();
+
+  if (variant === 'caption') {
+    return (
+      <Link href={href} asChild>
+        <MotionPressable
+          accessibilityRole="link"
+          accessibilityLabel={workCoverAccessibilityLabel(overlay)}
+          preset="card"
+          onPress={onPress}
+          {...coverHitDataset()}
+        >
+          {({ hovered, focused }) => (
+            <>
+              <View
+                style={coverCaptionCardFrameStyle(palette)}
+              >
+                <View
+                  style={coverArtworkFrameStyle(
+                    !reducedMotion && (hovered || focused),
+                    designTokens.radius.ownerCard,
+                  )}
+                >
+                  <ResilientRemoteImage
+                    uri={getApiAssetUrl(imageUrl)}
+                    component="WorkCoverCard"
+                    accessibilityLabel={imageLabel}
+                    fallbackLabel={`Изображение недоступно: ${overlay.title}`}
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      right: 0,
+                      bottom: 0,
+                      left: 0,
+                    }}
+                    contentFit="cover"
+                  />
+                </View>
+              </View>
+              <View style={coverCaptionBlockStyle()}>
+                <Text
+                  numberOfLines={1}
+                  style={[
+                    { color: palette.ink },
+                    designTokens.typography.coverCaptionAuthor,
+                  ]}
+                >
+                  {overlay.authorSlug}
+                </Text>
+                <Text
+                  numberOfLines={1}
+                  style={[
+                    { color: palette.gray2 },
+                    designTokens.typography.authorRowBio,
+                  ]}
+                >
+                  {overlay.title}
+                </Text>
+              </View>
+            </>
+          )}
+        </MotionPressable>
+      </Link>
+    );
+  }
 
   return (
     <Link href={href} asChild>

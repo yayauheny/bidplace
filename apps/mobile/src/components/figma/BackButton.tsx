@@ -7,10 +7,11 @@ import { FigmaIcon } from './FigmaIcon';
 import { FigmaIconButton } from './FigmaIconButton';
 
 /**
- * Единая кнопка «Назад». Три визуальных варианта, выточенные под фигму:
+ * Единая кнопка «Назад». Четыре визуальных варианта, выточенные под фигму:
  * - glass — страница работы (стеклянная плашка поверх медиа);
  * - muted — шапка автора (приглушённая поверхность);
- * - chrome — визард заявки автора (сырой глиф в квадрате chromeFrame).
+ * - chrome — визард заявки автора (сырой глиф в квадрате chromeFrame);
+ * - settings — шапка настроек (сырой глиф 28, touch 44).
  */
 export function BackButton({
   onPress,
@@ -20,7 +21,7 @@ export function BackButton({
 }: {
   onPress: () => void;
   label?: string;
-  variant: 'glass' | 'muted' | 'chrome';
+  variant: 'glass' | 'muted' | 'chrome' | 'settings';
   disabled?: boolean;
 }) {
   const palette = useAppTheme();
@@ -49,6 +50,30 @@ export function BackButton({
         label={label}
         onPress={onPress}
       />
+    );
+  }
+  if (variant === 'settings') {
+    // Settings header: plain glyph, no surface; 44px touch target.
+    return (
+      <MotionPressable
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        disabled={disabled}
+        onPress={onPress}
+        preset="icon"
+        style={{
+          width: designTokens.size.touch,
+          height: designTokens.size.touch,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <FigmaIcon
+          name="arrow-left-01"
+          size={designTokens.size.settingsHeaderGlyph}
+          color={palette.inkStrong}
+        />
+      </MotionPressable>
     );
   }
   const chrome = designTokens.authorApplication;
