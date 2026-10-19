@@ -42,7 +42,10 @@ import { SheetDragSurface, SheetDragHandle } from '../ui/SheetDragSurface';
 import { FigmaIcon } from '../figma/FigmaIcon';
 import { useAppTheme } from '../../providers/theme-provider';
 import { AppDialogFrame, AppDialogOverlay } from '../ui/app-dialog-layer';
-import { appDialogHostStyle } from '../ui/app-dialog-host-style';
+import {
+  appDialogHostStyle,
+  sheetWidthConstraint,
+} from '../ui/app-dialog-host-style';
 import { MotionPressable } from '../ui/MotionPressable';
 
 function screenBrandInset() {
@@ -96,7 +99,7 @@ export function AuthViewport(props: AuthViewportProps) {
   const navigation = useNavigation();
   const focused = useIsFocused();
   const historyId = useId();
-  const { height } = useWindowDimensions();
+  const { height, width } = useWindowDimensions();
   const [screenContentHeight, setScreenContentHeight] = useState(0);
   const [guard, setGuard] = useState<AuthSheetGuard>({
     dirty: false,
@@ -325,6 +328,7 @@ export function AuthViewport(props: AuthViewportProps) {
   const frameStyle = appDialogHostStyle({
     presentation: 'sheet',
     viewportGutter: designTokens.space.x5,
+    viewportWidth: width,
   });
 
   return (
@@ -388,7 +392,12 @@ export function AuthViewport(props: AuthViewportProps) {
                       style={{
                         position: 'relative',
                         width: '100%',
-                        maxWidth: designTokens.layout.sheetMax,
+                        // Fullscreen registration keeps its own geometry; the
+                        // sheet follows the shared width policy (full width at
+                        // <=600 viewport, sheetMax column above).
+                        maxWidth: screen
+                          ? designTokens.layout.sheetMax
+                          : sheetWidthConstraint(width),
                         maxHeight: screen
                           ? height
                           : Math.max(
@@ -600,7 +609,14 @@ export function AuthViewport(props: AuthViewportProps) {
                           style={{
                             gap: screen ? 0 : formGap,
                             width: '100%',
-                            maxWidth: 350,
+                            // The sheet form fills the available inner width at
+                            // <=600 viewports; fullscreen registration and the
+                            // wide desktop sheet keep the measured 350 column.
+                            maxWidth:
+                              screen ||
+                              width > designTokens.layout.sheetFillViewportMax
+                                ? 350
+                                : undefined,
                             alignSelf: 'center',
                           }}
                         >

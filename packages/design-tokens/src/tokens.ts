@@ -608,6 +608,9 @@ export const designTokens = {
     mobileMenuWidth: 320,
     dialogMaxWidth: 366,
     sheetMax: 390,
+    // Sheets fill the viewport width up to this CSS-px viewport; wider
+    // viewports keep the measured sheetMax column.
+    sheetFillViewportMax: 600,
     openingAuthorWidth: 280,
     phoneFoldHeight: 860,
   },

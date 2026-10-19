@@ -371,6 +371,7 @@ export function AppDialog({
   const frameStyle = appDialogHostStyle({
     presentation,
     viewportGutter,
+    viewportWidth: width,
   });
 
   return (
