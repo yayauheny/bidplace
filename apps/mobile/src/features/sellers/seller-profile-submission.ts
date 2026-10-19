@@ -81,7 +81,7 @@ export function useProfileSubmission({
     mutationFn: async (
       variables: ProfileSaveVariables,
     ): Promise<ProfileSaveResult> => {
-      const current = queryClient.getQueryData<SellerProfileResponse>(
+      const current = queryClient.getQueryData<SellerProfileResponse | null>(
         sellerProfileQueryKey,
       );
       if (current?.sellerProfile) {
@@ -152,7 +152,7 @@ export function useProfileSubmission({
       if (!guard.sessionStillOwns(operation, epoch)) return;
       queryClient.setQueryData(
         sellerProfileQueryKey,
-        (current: SellerProfileResponse | undefined) =>
+        (current: SellerProfileResponse | null | undefined) =>
           current
             ? {
                 ...current,
@@ -268,7 +268,7 @@ export function useProfileSubmission({
         { revert: false },
       );
       if (!guard.sessionStillOwns(operation, submitEpoch)) return;
-      queryClient.setQueryData<SellerProfileResponse>(
+      queryClient.setQueryData<SellerProfileResponse | null>(
         sellerProfileQueryKey,
         (current) => withSubmittedRevision(current, submitted),
       );

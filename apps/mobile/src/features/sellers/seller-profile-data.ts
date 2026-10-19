@@ -1,6 +1,8 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-
+import { ApiClientError } from '@bidplace/api-client';
 import type { SellerProfileResponse } from '@bidplace/contracts';
+
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import type { QueryClient } from '@tanstack/react-query';
 
 import { canWritePrivateCache, currentAuthEpoch } from '../../lib/query-cache';
 import { useApiClient } from '../../providers/api-provider';
@@ -8,6 +10,49 @@ import { normalizeInstagram, normalizeTelegram } from './contact-normalization';
 import type { ProfileFields } from './seller-profile-steps';
 
 export const sellerProfileQueryKey = ['seller', 'profile'] as const;
+
+// One shared option set for every ['seller', 'profile'] consumer, so dock,
+// account, cabinet and the editor deduplicate on a single request.
+export const sellerProfileStaleMs = 60_000;
+export const sellerProfileGcMs = 5 * 60_000;
+
+export async function fetchSellerProfile(
+  api: { getMyProfile(): Promise<SellerProfileResponse> },
+  queryClient: QueryClient,
+): Promise<SellerProfileResponse | null> {
+  const epoch = currentAuthEpoch(queryClient);
+  let result: SellerProfileResponse | null;
+  try {
+    result = await api.getMyProfile();
+  } catch (error) {
+    // Known absence is cached as null so remounting consumers do not refetch
+    // on every open; network errors and 401 stay errors and never read as
+    // "the author profile is absent".
+    if (error instanceof ApiClientError && error.kind === 'not_found') {
+      result = null;
+    } else {
+      throw error;
+    }
+  }
+  if (!canWritePrivateCache(queryClient, epoch)) {
+    const current = queryClient.getQueryData<SellerProfileResponse | null>(
+      sellerProfileQueryKey,
+    );
+    if (current !== undefined) return current;
+    // Absence carries no private payload: when the cache refuses the write
+    // (session switched mid-flight), keep the not_found semantics so
+    // consumers read "absent" instead of a broken screen. Payload races
+    // still throw below and never populate the cache.
+    if (result === null) {
+      throw new ApiClientError('Seller profile not found', {
+        kind: 'not_found',
+        status: 404,
+      });
+    }
+    throw new Error('Private cache is closed');
+  }
+  return result;
+}
 
 export const profileFieldOrder = [
   'slug',
@@ -45,9 +90,9 @@ export type SubmittedAuthorApplication = {
 };
 
 export function withSubmittedRevision(
-  current: SellerProfileResponse | undefined,
+  current: SellerProfileResponse | null | undefined,
   submitted: SubmittedAuthorApplication,
-): SellerProfileResponse | undefined {
+): SellerProfileResponse | null | undefined {
   const revision = submitted.editingRevision;
   if (
     !current?.sellerProfile ||
@@ -182,19 +227,10 @@ export function useProfileData() {
   const queryClient = useQueryClient();
   return useQuery({
     queryKey: sellerProfileQueryKey,
-    queryFn: async () => {
-      const epoch = currentAuthEpoch(queryClient);
-      const result = await api.sellers.getMyProfile();
-      if (!canWritePrivateCache(queryClient, epoch)) {
-        const current = queryClient.getQueryData<SellerProfileResponse>(
-          sellerProfileQueryKey,
-        );
-        if (current) return current;
-        throw new Error('Private cache is closed');
-      }
-      return result;
-    },
+    queryFn: () => fetchSellerProfile(api.sellers, queryClient),
     retry: false,
+    staleTime: sellerProfileStaleMs,
+    gcTime: sellerProfileGcMs,
     structuralSharing: keepConfirmedPendingProfile,
   });
 }

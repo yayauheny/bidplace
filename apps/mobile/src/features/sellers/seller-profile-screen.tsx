@@ -128,10 +128,14 @@ export function SellerProfileScreen() {
     string | null
   >(null);
   const seenAuthEpoch = useRef(authEpoch);
+  // Known absence is delivered as cached null data by fetchSellerProfile; the
+  // not_found error branch covers the session-switch race where the cache
+  // refused the null write. Other errors stay errors.
   const missingProfile =
-    query.isError &&
-    query.error instanceof ApiClientError &&
-    query.error.kind === 'not_found';
+    query.data === null ||
+    (query.isError &&
+      query.error instanceof ApiClientError &&
+      query.error.kind === 'not_found');
   const requestedStep = resolveSellerProfileStep(step, profile);
   const isApplicationWizard =
     !profile ||

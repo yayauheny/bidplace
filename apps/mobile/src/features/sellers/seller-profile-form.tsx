@@ -158,7 +158,9 @@ export function useSellerProfileForm({
     // Read the installed session, not a possibly stale auth context during handoff.
     const sessionActive = canWritePrivateCache(queryClient, guard.authEpoch);
     const cached = sessionActive
-      ? queryClient.getQueryData<SellerProfileResponse>(sellerProfileQueryKey)
+      ? queryClient.getQueryData<SellerProfileResponse | null>(
+          sellerProfileQueryKey,
+        )
       : undefined;
     const cachedProfile = cached?.sellerProfile;
     if (cachedProfile) {
