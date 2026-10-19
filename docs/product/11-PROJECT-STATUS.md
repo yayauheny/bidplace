@@ -2,6 +2,38 @@
 
 > Entries dated before 2026-10-13 mention Pen / .pen files; the Pen design was removed (DEC-119) — read those mentions as history.
 
+## 2026-10-19 — Account foundation: общая ширина шторок, общий seller-profile query
+
+**Implemented (волны 1–2, ветка `fix/account-foundation`).** Единая политика
+ширины для AuthViewport и общего AppDialog: viewport ≤600 CSS px — sheet во всю
+ширину; >600 — ограничение 390; центрированные диалоги сохранены; fullscreen-
+регистрация держит измеренную колонку 350. Общий `fetchSellerProfile` с одним
+query key, staleTime 60s/gcTime 5min, кэшированным отсутствием (404 → null) и
+guard'ом auth epoch; общий `classifySellerProfileQuery`: текущая ошибка
+(network/5xx/401) приоритетнее кэшированного null, отсутствие = успешный null
+или актуальная not_found. Трассировка фото подтвердила: `getPhoto` отдаёт
+базовое (опубликованное) фото, editing-фото — `getEditingPhoto`; approve копирует
+фото ревизии в базовый профиль (сценарий A→B→approve→public B закреплён тестом).
+API не расширялся; опубликованная идентичность для /account берётся из
+существующего публичного контракта (`/api/authors/:slug` + `/api/sellers/:slug/photo`).
+
+Production web build на Node 22; браузерная приёмка Chromium + WebKit: 320/390/414/440/600 —
+шторки во всю ширину, 601/1024 — 390, поля заполняют внутреннюю ширину;
+fullscreen-регистрация 350; centered exit-confirm 366 (центровка delta 0);
+короткая высота 390×500 — шторка в пределах вьюпорта со свайпом; login↔forgot без
+изменения ширины; свайп закрывает, URL стабилен. Evidence и измерения:
+`docs/audits/current/evidence/2026-10-19-sheet-widths/`.
+Адресные тесты: 32/32 (mobile owner specs AF-01), 43/43 (API moderation/sellers),
+tsc/eslint чисто. Коммиты `ba00fb37`, `2eed81dd`, `6e89f8b9`, `d14734e6`.
+
+Известный остаток: возврат фокуса после закрытия auth-шторки не попадает на
+триггер dock — FloatingDock полностью размонтируется пока шторка открыта
+(предшествующее поведение, волнами 1–2 не затронуто); share/report диалоги фокус
+возвращают (pinned gate). Browser zoom 200% / увеличение текста — Needs
+verification (ручные шаги переданы ранее). Волна 3 (/account) не начата — ждёт
+Figma intake. Push/merge/deploy не выполнялись.
+[Файл выполнения](../audits/2026-10-19-ACCOUNT-FOUNDATION-PROGRESS.md).
+
 ## 2026-10-19 — Общая проверка переходов: dimmer handoff и focus
 
 **Implemented (общий web-механизм).** SheetBackdropProvider централизует только

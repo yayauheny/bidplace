@@ -484,6 +484,14 @@ the existing close owner, preserving busy and dirty guards. Cross, Escape and fo
 return remain available. Reduced motion removes the return transition. Centered
 confirmations and full-screen registration have no drag affordance (DEC-122).
 
+Shared sheet width policy (2026-10-19, account foundation): for viewports up to
+`layout.sheetFillViewportMax` (600 CSS px) an auth/AppDialog sheet spans the full
+viewport width; above 600 it is capped at `layout.sheetMax` (390). Inner fields fill
+the sheet's inner width with the existing paddings. Full-screen registration keeps
+its measured 350 column, centered dialogs are not stretched. The rule lives in
+`sheetWidthConstraint()` (app-dialog-host-style) and AuthViewport; verified in
+production build, Chromium + WebKit, 320–1024 (`docs/audits/current/evidence/2026-10-19-sheet-widths/`).
+
 On web AppDialog focuses its close control when opened. A sheet also completes
 initial focus after its entering animation if focus is still outside the dialog;
 it never steals focus already inside. The existing Escape/trap/return-focus

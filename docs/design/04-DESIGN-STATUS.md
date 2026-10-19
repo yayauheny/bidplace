@@ -2,6 +2,21 @@
 
 > Entries dated before 2026-10-13 mention Pen / .pen files; the Pen design was removed (DEC-119) — read those mentions as history.
 
+## 2026-10-19 — Account foundation: общая ширина шторок (волны 1–2)
+
+**Implemented.** Единая политика ширины auth/AppDialog sheets: ≤600 CSS px — во всю
+ширину; >600 — 390; поля заполняют внутреннюю ширину; fullscreen-регистрация —
+350; центрированные диалоги не растягиваются. Правило зафиксировано в
+[03-DESIGN-SYSTEM](03-DESIGN-SYSTEM.md). Production build (Node 22), Chromium +
+WebKit: измерения 320/390/414/440/600/601/1024, fullscreen register, centered
+exit-confirm (366, центровка delta 0), короткая высота, login↔forgot, свайп —
+[evidence](../audits/current/evidence/2026-10-19-sheet-widths/). Визуальные цвета
+не менялись. Остаток: возврат фокуса на триггер dock после закрытия auth-шторки —
+предшествующий архитектурный гэп (dock размонтируется под шторкой), не волны 1–2;
+browser zoom/text enlargement — Needs verification. Волна 3 (/account) — после
+Figma intake.
+[Файл выполнения](../audits/2026-10-19-ACCOUNT-FOUNDATION-PROGRESS.md).
+
 ## 2026-10-19 — Общая проверка переходов: dimmer handoff и focus
 
 **Implemented (общий web-механизм).** SheetBackdropProvider централизует только
