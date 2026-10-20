@@ -6,7 +6,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { View, type ViewStyle } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
 import { ApiErrorCode, newAccountSlugSchema, type User, type LegalDocumentId, type LegalDocumentsResponse } from '@bidplace/contracts';
-import { AppText, PrimaryButton, TextButton, TextField } from '../../components/ui';
+import { AppText, PrimaryButton, TextField } from '../../components/ui';
 import { FigmaButton } from '../../components/figma/FigmaButton';
 import { MotionPressable } from '../../components/ui/MotionPressable';
 import { AuthConsentCheckbox } from './auth-consent-checkbox';
@@ -989,7 +989,7 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
       : null;
   const nextAction = (
     <PrimaryButton
-      label="Дальше"
+      label={step === 'email' && registrationLegalError ? 'Повторить загрузку' : 'Дальше'}
       size="auth"
       width="full"
       loading={
@@ -997,8 +997,11 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
         slugAvailability?.status === 'checking' ||
         (step === 'email' && registrationLegalPending)
       }
-      disabled={step === 'email' && !legalDocuments}
-      onPress={() => void goNext()}
+      disabled={step === 'email' && !legalDocuments && !registrationLegalError}
+      onPress={() => {
+        if (step === 'email' && registrationLegalError) loadRegistrationLegal();
+        else void goNext();
+      }}
     />
   );
   const submitFeedback = submitError ? (
@@ -1174,15 +1177,7 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
             >
               <RegistrationLegalText onOpenDocument={setRegistrationLegalOpen} />
             </AuthConsentCheckbox>
-            {registrationLegalPending ? (
-              <AppText role="bodySmall" tone="secondary">Загружаем юридические документы…</AppText>
-            ) : null}
-            {registrationLegalError ? (
-              <>
-                <AppText role="bodySmall" tone="danger">{registrationLegalError}</AppText>
-                <TextButton label="Повторить" onPress={loadRegistrationLegal} />
-              </>
-            ) : null}
+
           </View>
         ) : null}
         <View pointerEvents="box-none" style={dialogHostStyle}>

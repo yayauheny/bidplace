@@ -2,6 +2,18 @@
 
 > Entries dated before 2026-10-13 mention Pen / .pen files; the Pen design was removed (DEC-119) — read those mentions as history.
 
+## 2026-10-20 — Регистрация: состояние загрузки без отдельного error-блока
+
+**Implemented.** Удалены красный текст недоступности legal-пакета, отдельная
+кнопка «Повторить» и дублирующий loading-caption под формой. Состояние и retry
+принадлежат существующей primary-кнопке: «Дальше» → при сбое «Повторить загрузку»;
+во время загрузки штатный loading. Повтор не отправляет регистрацию, сохраняет
+email и не отмечает согласие. Без пакета checkbox остаётся disabled.
+API/серверный legal gate не менялись.
+
+Проверки: registration-consent17/17, mobile tsc, lint/diff-check, production export,
+адресные Chromium/WebKit (centered initial +503→retry→ready), без full suite.
+
 ## 2026-10-20 — Регистрация: центрирование и один consent control
 
 **Implemented (web UI).** Fullscreen AuthViewport больше не ограничен sheetMax390;

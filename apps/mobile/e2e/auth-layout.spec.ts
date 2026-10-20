@@ -1481,3 +1481,25 @@ test('registration email stays centered with one inline legal confirmation', asy
   await page.getByRole('button', { name: 'Дальше', exact: true }).click();
   await expect(page.getByText('Выберите имя пользователя', { exact: true })).toBeVisible();
 });
+
+test('registration retries unavailable documents through its primary action', async ({ page }) => {
+  await page.route('**/api/auth/legal', (route) => route.fulfill({
+    status: 503, json: { message: 'legal not published' },
+  }));
+  await page.setViewportSize({ width: 390, height: 874 });
+  await page.goto('/register');
+  const retry = page.getByRole('button', { name: 'Повторить загрузку', exact: true });
+  await expect(retry).toBeVisible();
+  await expect(page.getByText(/Юридические документы пока не опубликованы/)).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Повторить', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('checkbox')).toBeDisabled();
+  const email = page.getByRole('textbox', { name: 'Электронная почта' });
+  await email.fill('retry@example.com');
+  await page.unroute('**/api/auth/legal');
+  await installLegalDocumentsFixture(page);
+  await retry.click();
+  await expect(page.getByRole('button', { name: 'Дальше', exact: true })).toBeVisible();
+  await expect(page.getByRole('checkbox')).toBeEnabled();
+  await expect(page.getByRole('checkbox')).not.toBeChecked();
+  await expect(email).toHaveValue('retry@example.com');
+});

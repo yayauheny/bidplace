@@ -718,15 +718,15 @@ describe('registration consent attempt', () => {
   it('does not register while legal documents are unavailable and lets the user retry', async () => {
     harness.failLegalOnce = true;
     const view = mount();
-    await until(view.container, 'Юридические документы пока не опубликованы.');
+    await until(view.container, 'Повторить загрузку');
+    expect(view.container.textContent).not.toContain('Юридические документы пока не опубликованы.');
     expect([...view.container.querySelectorAll('[role="checkbox"]')].every(
       (node) => node instanceof HTMLButtonElement && node.disabled,
     )).toBe(true);
     fill(view.container, 'Электронная почта', 'a@example.com');
-    clickButton(view.container, 'Дальше');
     await flush();
     expect(harness.registers).toBe(0);
-    clickButton(view.container, 'Повторить');
+    clickButton(view.container, 'Повторить загрузку');
     await until(view.container, () => { const box = view.container.querySelector('[role="checkbox"]'); return box instanceof HTMLButtonElement && !box.disabled; });
     clickLegalLink(view.container, 'пользовательское соглашение');
     await until(view.container, 'Договор для портфолио.');
