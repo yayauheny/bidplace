@@ -782,3 +782,10 @@ radius.small; постоянная геометрия передаётся ст�
 error/disabled состояния и доступность не меняются. ThemeProvider зеркалирует
 роль в CSS; начальные CSS-значения соответствуют токену до hydration. Black-тема
 в целом остаётся provisional и не включается пользователям этим решением.
+
+### 2026-10-21 — Responsive auth composition
+
+AuthViewport owns mobile sheet/desktop dialog composition at768 CSS px, dialog cap420.
+Shared field metric `auth` is51; default fields unchanged. Button size `authDialog`
+uses47 geometry and current master typography. Login informational links use
+semantic `legalLink`; registration link meaning/color and DEC-124/125 are unchanged.

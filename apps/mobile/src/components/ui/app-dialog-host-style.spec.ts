@@ -1,3 +1,4 @@
+import { isAuthDialog } from '../layout/auth-viewport-layout';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { designTokens } from '@bidplace/design-tokens';
@@ -104,4 +105,16 @@ describe('app dialog host style', () => {
       expect(appDialogSheetBottomSpace(space, inset)).toBe(expected);
     },
   );
+});
+
+it.each([
+  [320, false],
+  [390, false],
+  [440, false],
+  [767, false],
+  [768, true],
+  [1024, true],
+  [1440, true],
+])('auth composition at %i px is desktop=%s', (width, desktop) => {
+  expect(isAuthDialog(width as number)).toBe(desktop);
 });

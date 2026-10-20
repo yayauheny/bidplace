@@ -14,7 +14,7 @@ export type TextFieldProps = TextInputProps & {
   error?: string;
   /** Adds the ` *` marker to the label. Validation is owned by the form, not by this prop. */
   required?: boolean;
-  metrics?: 'default' | 'authPassword' | 'authScreenPassword';
+  metrics?: 'default' | 'auth' | 'authPassword' | 'authScreenPassword';
   variant?: FigmaFieldVariant;
   icon?: FigmaIconName;
   iconColor?: string;

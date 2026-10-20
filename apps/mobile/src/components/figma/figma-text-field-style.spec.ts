@@ -220,3 +220,12 @@ describe('Figma text field states', () => {
     ).toBe('#F3F3F3');
   });
 });
+
+it('uses the auth field height without changing default field geometry', () => {
+  expect(figmaFieldStyle('empty', false, 'auth', 'default', light).minHeight).toBe(
+    51,
+  );
+  expect(
+    figmaFieldStyle('empty', false, 'default', 'default', light).minHeight,
+  ).toBe(designTokens.size.input);
+});

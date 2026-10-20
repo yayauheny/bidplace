@@ -257,6 +257,7 @@ export function ForgotPasswordForm({ redirectTo = '/' }: ForgotPasswordFormProps
           name="email"
           render={({ field }) => (
             <TextField ref={field.ref}
+              metrics="auth"
               label="Электронная почта"
               value={field.value ?? ''}
               onChangeText={field.onChange}

@@ -5100,3 +5100,12 @@ remaining product boundaries still apply.
 - `corepack pnpm format:check` failed with repo-wide Prettier warnings across 162 files.
 
 See `10-CODE-ARCHITECTURE.md` for boundaries and `05-MVP-RFC.md` for product contract gaps.
+
+## 2026-10-21 — Auth responsive review
+
+Implemented in AuthViewport/auth-form and shared field/button roles: one responsive
+form, bounded short viewport, keyboard close and focus return. Production export,
+mobile typecheck,62 owner tests and20/20 Chromium/WebKit acceptance passed. Current
+registration remains one checkbox recording four confirmations (DEC-124/125), lazy
+document reading never blocks registration. Older four-checkbox notes are historical.
+Physical iPhone/real browser zoom remain Needs verification. See current login audit.

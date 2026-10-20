@@ -308,6 +308,13 @@ export const designTokens = {
       letterSpacing: -0.18,
       fontWeight: '600' as const,
     },
+    authDialogTitle: {
+      fontFamily: 'Inter_600SemiBold',
+      fontSize: 17,
+      lineHeight: 21,
+      letterSpacing: -0.34,
+      fontWeight: '600' as const,
+    },
     authScreenTitle: {
       fontFamily: 'Inter_600SemiBold',
       fontSize: 20,
@@ -692,6 +699,12 @@ export const designTokens = {
   },
   auth: {
     sheetRadius: 32,
+    dialogMinWidth: 768,
+    dialogMaxWidth: 420,
+    dialogRadius: 34,
+    dialogSectionGap: 40,
+    dialogActionY: 10,
+    fieldHeight: 51,
     paddingTop: 8,
     paddingX: 20,
     paddingBottom: 20,

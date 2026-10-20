@@ -18,7 +18,15 @@ function focusLegalLink(node: unknown) {
   node.focus({ preventScroll: true });
 }
 
-function LegalLink({ label, onPress }: { label: string; onPress: () => void }) {
+function LegalLink({
+  label,
+  onPress,
+  tone = 'default',
+}: {
+  label: string;
+  onPress: () => void;
+  tone?: 'default' | 'legal';
+}) {
   const palette = useAppTheme();
   const hostRef = useRef<unknown>(null);
   const activate = () => {
@@ -44,7 +52,9 @@ function LegalLink({ label, onPress }: { label: string; onPress: () => void }) {
       {...(Platform.OS === 'web'
         ? ({ onKeyDown: handleKeyDown, tabIndex: 0 } as object)
         : {})}
-      style={{ color: palette.fieldValue }}
+      style={{
+        color: tone === 'legal' ? palette.legalLink : palette.fieldValue,
+      }}
     >
       {label}
     </Text>
@@ -64,7 +74,11 @@ export function AuthLegalText({
     <Text
       style={[
         appTextRoleStyle(role, Platform.OS) as TextStyle,
-        { color: palette.legalText, textAlign, flex: 1 },
+        {
+          color: variant === 'login' ? palette.textSubdued : palette.legalText,
+          textAlign,
+          flex: 1,
+        },
       ]}
     >
       {variant === 'consent' ? (
@@ -81,11 +95,13 @@ export function AuthLegalText({
           Ознакомьтесь с{' '}
           <LegalLink
             label="политикой персональных данных и cookies"
+            tone="legal"
             onPress={onOpenPolicy}
           />{' '}
           и{' '}
           <LegalLink
             label="пользовательским соглашением"
+            tone="legal"
             onPress={onOpenRules}
           />
         </>

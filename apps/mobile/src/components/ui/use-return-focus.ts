@@ -92,7 +92,7 @@ export function useReturnFocus({
     }
     // The trigger is gone for good: land on the page's existing navigation
     // point instead of leaving focus on body.
-    if (entries.length > 0) fallback?.()?.focus?.({ preventScroll: true });
+    fallback?.()?.focus?.({ preventScroll: true });
   };
 
   const restoreRef = useRef(restoreFocus);

@@ -1816,3 +1816,11 @@ mapping or a desktop screenshot is insufficient.
   at 1440/1024/390 for composition, overflow and responsive action ownership.
 - `Needs verification`: formal matched Pen overlay, native-device behavior,
   physical screen-reader QA and founder approval remain open.
+
+## 2026-10-21 — Login Sheet review
+
+Implemented responsive AuthViewport: full-width sheet below768, centered420 dialog
+from768, shared auth field/button metrics, legalLink semantic role; single form
+preserves input and errors. Browser acceptance20/20 Chromium/WebKit; owner checks62/62,
+typecheck/export clean. Evidence/audit: `docs/audits/current/2026-10-20-LOGIN-SHEET-REVIEW.md`.
+Physical iPhone keyboard, actual200% zoom and device motion remain Needs verification.
