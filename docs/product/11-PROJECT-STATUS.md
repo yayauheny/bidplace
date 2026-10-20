@@ -2,6 +2,19 @@
 
 > Entries dated before 2026-10-13 mention Pen / .pen files; the Pen design was removed (DEC-119) — read those mentions as history.
 
+## 2026-10-20 — Домик в общем floating dock
+
+**Implemented (код).** Главная использует `home-01` из общего FigmaIcon вместо
+отдельного BidplaceMark. SVG path установленного Home01Icon точно совпал с
+live Figma node 7008:16942 (источник 7008:16896). Состав меню и маршруты
+не менялись: корзина из reference остаётся вне MVP. Убрана неиспользуемая
+ветка logo. Общий registry spec также приведён к уже существующим
+setting-07/log-out. Адресные unit5/5, mobile typecheck, lint/diff-check и production export чисто.
+Rendered Chromium/WebKit: path, href, selected state и видимость на320/390/440
+проверены; evidence /tmp/bidplace-home-icon-{chromium,webkit}.png.
+Календарь — отдельная незавершённая часть: выбирается web/native реализация;
+поведение дат и API в этом коммите не меняется.
+
 ## 2026-10-20 — Регистрация: компактный слот статуса никнейма
 
 **Implemented (ветка `fix/registration-nickname-step`, от `6379fcf0`).** Шаг

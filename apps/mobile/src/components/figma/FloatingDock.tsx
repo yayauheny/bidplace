@@ -16,7 +16,6 @@ import { useAuth } from '../../providers/auth-provider';
 import { useAppTheme } from '../../providers/theme-provider';
 import { getRouteSearchRedirect } from '../../features/auth/auth-redirect';
 import { useSearchOverlay } from '../../features/search/search-overlay-provider';
-import { BidplaceMark } from '../branding/BidplaceBrand';
 import { getMobileCreateHref } from '../layout/header-chrome';
 import { useDockInset } from '../layout/use-dock-inset';
 import { MotionPressable } from '../ui/MotionPressable';
@@ -173,15 +172,11 @@ function DockItem({
           : null),
       }}
     >
-      {item.icon === 'logo' ? (
-        <BidplaceMark size={18} />
-      ) : (
-        <FigmaIcon
-          name={item.icon}
-          size={designTokens.size.dockIcon}
-          color={palette.ink}
-        />
-      )}
+      <FigmaIcon
+        name={item.icon}
+        size={designTokens.size.dockIcon}
+        color={palette.ink}
+      />
     </MotionPressable>
   );
 

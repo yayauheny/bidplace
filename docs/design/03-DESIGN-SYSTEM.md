@@ -730,3 +730,10 @@ AuthConsentCheckbox принимает текстовый children-slot; Registr
 Роль применяется ко всему AuthLegalText, без новых локальных цветов.
 Fullscreen AuthViewport заполняет viewport; sheetWidthConstraint относится только
 к шторкам. Форма внутри fullscreen сохраняет центрирование и maxWidth350.
+
+### Floating dock home icon — 2026-10-20
+
+Главная использует общий FigmaIcon `home-01` (Hugeicons Home01Icon), а не
+брендовый знак. Path совпадает с live node 7008:16942; размер, stroke, цвет
+и hit area остаются у существующих владельцев dock/FigmaIcon/tokens.
+Состав MVP dock остаётся Home/Search/Add/Profile без корзины.

@@ -7,11 +7,11 @@ export type FigmaDockItemId = (typeof figmaDockItemIds)[number];
 export type FigmaDockItem = {
   id: FigmaDockItemId;
   label: string;
-  icon: 'logo' | 'search-01' | 'plus' | 'user';
+  icon: 'home-01' | 'search-01' | 'plus' | 'user';
 };
 
 export const figmaDockItems: readonly FigmaDockItem[] = [
-  { id: 'home', label: 'Главная', icon: 'logo' },
+  { id: 'home', label: 'Главная', icon: 'home-01' },
   { id: 'search', label: 'Поиск', icon: 'search-01' },
   { id: 'plus', label: 'Добавить', icon: 'plus' },
   { id: 'profile', label: 'Профиль', icon: 'user' },

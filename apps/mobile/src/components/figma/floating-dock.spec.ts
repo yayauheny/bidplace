@@ -11,7 +11,7 @@ describe('Figma floating dock', () => {
   it('uses Home Search Add Profile and no cart', () => {
     expect(figmaDockItemIds).toEqual(['home', 'search', 'plus', 'profile']);
     expect(figmaDockItems.map((item) => item.icon)).toEqual([
-      'logo',
+      'home-01',
       'search-01',
       'plus',
       'user',
