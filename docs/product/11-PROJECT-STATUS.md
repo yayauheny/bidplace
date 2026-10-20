@@ -2,6 +2,22 @@
 
 > Entries dated before 2026-10-13 mention Pen / .pen files; the Pen design was removed (DEC-119) — read those mentions as history.
 
+## 2026-10-20 — Монохромный focus (DEC-127)
+
+**Implemented (web).** По решению основателя общая семантическая роль focus
+заменена на #121212 в light и #FFFFFF в black. FigmaTextField, глобальный
+focus-visible и DateSelection продолжают читать единую роль; начальные значения
+CSS синхронизированы с ней. Размер/offset индикатора, keyboard/pointer поведение,
+ошибки/disabled не менялись. API и БД не затронуты. Black-палитра в целом остаётся
+provisional, пользовательское включение темы не добавлено.
+
+Проверки:14/14 owner unit (темы и поля), адресные browser checks полей/ошибки,
+вкладок, календаря и CSS theme mirror —12 успешных случаев Chromium/WebKit
+в двух проходах; typecheck/lint, design-tokens build, production web export.
+Один старый тест зависел от фиксированных6 Tab: заменён переходом от известного
+соседа с сохранением assertions. Calendar mock получил DRAFT revision; guards
+продукта не ослаблялись. Реальный iPhone/native runtime не проверялись.
+
 ## 2026-10-20 — Восстановление ручной dev-выдачи после E2E
 
 **Implemented.** Исправлена ошибка запуска приёмки календаря на общей dev-базе:

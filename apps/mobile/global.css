@@ -5,11 +5,11 @@
  * keep the ring correct before hydration. One role, no manual palette.
  */
 :root {
-  --bidplace-focus: #004dff;
+  --bidplace-focus: #121212;
 }
 
 :root[data-bidplace-theme='black'] {
-  --bidplace-focus: #7aa2ff;
+  --bidplace-focus: #ffffff;
 }
 
 /*
@@ -27,6 +27,7 @@ html {
 a:focus-visible,
 button:focus-visible,
 input:focus-visible,
+select:focus-visible,
 textarea:focus-visible,
 [role='button']:focus-visible,
 [role='link']:focus-visible,

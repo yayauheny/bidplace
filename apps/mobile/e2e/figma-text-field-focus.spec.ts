@@ -1,6 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
-const focusBorder = 'rgb(0, 77, 255)';
+const focusBorder = 'rgb(18, 18, 18)';
 const errorBorder = 'rgb(255, 0, 0)';
 const disabledBorder = 'rgb(138, 138, 138)';
 const now = '2026-10-06T12:00:00.000Z';
@@ -155,12 +155,10 @@ test('global input focus ring stays available outside FigmaTextField', async ({
     document.querySelector('[role="dialog"]')?.prepend(probe);
   });
   const probe = page.getByRole('textbox', { name: 'Глобальный контур' });
-  // The sheet mount may park focus on the scope container; walk forward until the
-  // probe takes focus, then verify the native ring arrived from the keyboard.
-  for (let step = 0; step < 6; step += 1) {
-    if (await probe.evaluate((node) => node === document.activeElement)) break;
-    await page.keyboard.press('Tab');
-  }
+  const close = page.getByRole('button', { name: 'Закрыть', exact: true });
+  await close.click({ trial: true });
+  await close.focus();
+  await close.press('Shift+Tab');
   await expect(probe).toBeFocused();
   let chrome = await fieldChrome(probe);
   expect(chrome.outlineStyle).not.toBe('none');
@@ -326,4 +324,67 @@ test('disabled fields do not take a native ring', async ({ page }) => {
   await expect
     .poll(async () => (await fieldChrome(about)).borderColor)
     .toBe(disabledBorder);
+});
+
+test('calendar keyboard focus uses the shared monochrome role', async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await mockApi(page, {
+    'GET /api/auth/me': { status: 200, body: { user: user(now) } },
+    'GET /api/seller/profile': {
+      status: 200,
+      body: {
+        ...pendingProfile,
+        editingRevision: {
+          id: profileId,
+          version: 1,
+          status: 'DRAFT',
+          updatedAt: now,
+        },
+        sellerProfile: { ...pendingProfile.sellerProfile, status: 'DRAFT' },
+      },
+    },
+    'GET /api/author/application': {
+      status: 200,
+      body: {
+        ...pendingApplication,
+        editingRevision: {
+          id: profileId,
+          version: 1,
+          status: 'DRAFT',
+          updatedAt: now,
+        },
+        application: { ...pendingApplication.application, status: 'DRAFT' },
+      },
+    },
+  });
+  await page.goto('/profile');
+  await page
+    .getByRole('button', { name: 'Дата достижения', exact: true })
+    .click();
+  const dialog = page.getByRole('dialog', {
+    name: 'Дата достижения',
+    exact: true,
+  });
+  await expect(dialog).toBeVisible();
+  const month = dialog.getByLabel('Месяц календаря', { exact: true });
+  await month.focus();
+  await month.press('Tab');
+  await page.keyboard.press('Shift+Tab');
+  await expect(month).toBeFocused();
+  await expect(month).toHaveCSS('outline-color', focusBorder);
+  await expect(month).toHaveCSS('outline-style', 'solid');
+  const day = dialog.getByRole('gridcell').getByRole('button').first();
+  await day.focus();
+  await page.keyboard.press('ArrowRight');
+  await expect
+    .poll(() =>
+      dialog.evaluate((e) => {
+        const focused = e.ownerDocument.activeElement;
+        if (!focused || !e.contains(focused)) return '';
+        return getComputedStyle(focused).outlineColor;
+      }),
+    )
+    .toBe(focusBorder);
 });

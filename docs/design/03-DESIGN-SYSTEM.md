@@ -605,7 +605,7 @@ control keeps its own 52 px height and 16/19 type.
 | hoverEmpty  | `292:5041` | `fieldHoverBorder` `#535353` | `fieldHoverFill` `#FCFCFC` |
 | filled      | `292:5038` | `ink` `#2A2A2A`              | `#FFFFFF`                  |
 | hoverFilled | `292:5039` | `solidHover` `#000000`       | `#FCFCFC`                  |
-| focus       | `292:5037` | `focus` `#004DFF`            | `#FFFFFF`                  |
+| focus       | `292:5037` | `focus` `#121212` (DEC-127)  | `#FFFFFF`                  |
 | error       | `292:5040` | `error` `#FF0000`            | `#FFFFFF`                  |
 | success     | `292:5036` | `success` `#039600`          | `#FFFFFF`                  |
 | disabled    | `292:5042` | `#8A8A8A`                    | `mutedFill` `#F3F3F3`      |
@@ -669,8 +669,8 @@ Dismissed dialogs must not intercept clicks: web `app-dialog-host` /
 
 `DEC-104`. A pressed `FigmaButton` or `FigmaChoiceChip` keeps its existing
 fill, inset, or opacity change. It does not draw a mint ring. Selected chips
-stay on the charcoal fill after release. Keyboard focus stays the blue
-`focus-visible` outline in `global.css`. Dock items already have no shadow.
+stay on the charcoal fill after release. Keyboard focus uses the monochrome
+`focus-visible` outline in `global.css` (DEC-127). Dock items already have no shadow.
 This does not change control size, type, or the field success state.
 
 ## 7. Account shared components (2026-10-20)
@@ -769,3 +769,13 @@ radius.small; постоянная геометрия передаётся ст�
 Крест AuthViewport использует size.touch и существующие auth.screenPaddingX/Top;
 в DOM следует после формы, чтобы первичный фокус оставался на поле. Цвет и
 модальность focus-visible из §6.4 сохранены.
+
+### DEC-127 — Монохромный focus (2026-10-20)
+
+По прямому решению основателя роль focus — #121212 в light и #FFFFFF в black.
+Это утверждённая замена прежнего синего из Figma состояния focus292:5037 и
+уточнение §6.4/DEC-104. Поля используют border этой роли, прочие элементы —
+существующий outline2px с offset2px. Pointer/keyboard-модальность, размеры,
+error/disabled состояния и доступность не меняются. ThemeProvider зеркалирует
+роль в CSS; начальные CSS-значения соответствуют токену до hydration. Black-тема
+в целом остаётся provisional и не включается пользователям этим решением.

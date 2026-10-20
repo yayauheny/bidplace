@@ -56,7 +56,7 @@ describe('Figma text field states', () => {
       },
       {
         status: state({ focused: true, filled: true }),
-        border: '#004DFF',
+        border: '#121212',
         fill: '#FFFFFF',
         label: true,
       },

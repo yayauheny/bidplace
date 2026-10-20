@@ -5,8 +5,8 @@ import { expect, test, type Page } from '@playwright/test';
 // consumes it. jsdom cannot resolve var() in getComputedStyle, so this spec
 // is the browser evidence for the real computed outline color per theme.
 
-const lightFocus = 'rgb(0, 77, 255)';
-const blackFocus = 'rgb(122, 162, 255)';
+const lightFocus = 'rgb(18, 18, 18)';
+const blackFocus = 'rgb(255, 255, 255)';
 
 async function mockAnonymous(page: Page) {
   await page.route('**/*', async (route) => {
@@ -61,7 +61,7 @@ test('computed focus ring follows the mirrored theme variable', async ({
   // read the resolved var() again — no per-element inline style involved.
   await page.evaluate(() => {
     document.documentElement.dataset.bidplaceTheme = 'black';
-    document.documentElement.style.setProperty('--bidplace-focus', '#7aa2ff');
+    document.documentElement.style.setProperty('--bidplace-focus', '#ffffff');
   });
   await expect
     .poll(async () => (await outlineColor()).replaceAll(' ', ''))
@@ -69,7 +69,7 @@ test('computed focus ring follows the mirrored theme variable', async ({
 
   await page.evaluate(() => {
     delete document.documentElement.dataset.bidplaceTheme;
-    document.documentElement.style.setProperty('--bidplace-focus', '#004dff');
+    document.documentElement.style.setProperty('--bidplace-focus', '#121212');
   });
   await expect
     .poll(async () => (await outlineColor()).replaceAll(' ', ''))
