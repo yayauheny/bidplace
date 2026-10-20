@@ -31,6 +31,7 @@ export function AccountIdentity({
 
   return (
     <View
+      testID="account-identity"
       style={{
         flexDirection: 'row',
         gap: designTokens.space.x2,
@@ -38,6 +39,7 @@ export function AccountIdentity({
       }}
     >
       <View
+        testID="account-avatar"
         style={{
           width: avatarSize,
           height: avatarSize,
@@ -59,16 +61,18 @@ export function AccountIdentity({
           />
         ) : null}
       </View>
-      <View style={{ flex: 1, minWidth: 0, gap: designTokens.space.x1 }}>
-        <AppText role="accountName" tone="strong">
-          {name}
-        </AppText>
-        {handle ? (
-          <AppText
-            role="accountHandle"
-            style={{ color: palette.accountMeta }}
-          >{`@${handle}`}</AppText>
-        ) : null}
+      <View style={{ flex: 1, minWidth: 0, gap: designTokens.space.x2 }}>
+        <View style={{ paddingLeft: designTokens.space.x1 }}>
+          <AppText role="accountName" tone="strong">
+            {name}
+          </AppText>
+          {handle ? (
+            <AppText
+              role="accountHandle"
+              style={{ color: palette.accountMeta }}
+            >{`@${handle}`}</AppText>
+          ) : null}
+        </View>
         {cta}
       </View>
     </View>

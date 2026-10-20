@@ -2,6 +2,23 @@
 
 > Entries dated before 2026-10-13 mention Pen / .pen files; the Pen design was removed (DEC-119) — read those mentions as history.
 
+## 2026-10-20 — Account: финальная приёмка и исправления
+
+**Implemented (проверенный web-срез); Needs verification — реальный iPhone,
+browser zoom/text enlargement.** Исправлены дубликат account после закрытия
+настроек (обе кнопки используют dismissTo), растянутая CTA, верхние отступы
+через варианты FormPageShell, композиция AccountIdentity и симметрия settings
+header. settingsTitle/settingsRow сохраняют source line-height normal.
+API, права, БД и backend удаления не менялись.
+
+Проверки: production web export, mobile tsc, адресные unit40/40,
+production browser6/6 Chromium+WebKit (320/390/414/440, long identity,
+unverified settings, published identity, scroll8works, close→Back),
+eslint/format/diff-check. Backend e2e/full suite не повторялись.
+[Итоговый аудит и evidence](../audits/2026-10-20-ACCOUNT-FINAL-ACCEPTANCE.md).
+Delete-план дополнен реальной Worker JSON cache policy; реализация удаления —
+отдельная волна. Desktop1024/1440 и black parity: NEEDS-FIGMA.
+
 ## 2026-10-20 — Account UI: волны 3A–3D, повторное ревью AC-01…AC-07
 
 **Implemented (ветка `fix/account-foundation`).** Реальные маршруты

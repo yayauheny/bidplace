@@ -17,7 +17,7 @@ export function FormPageShell({
   bottomAction?: ReactNode;
   maxWidth?: number;
   hideDock?: boolean;
-  variant?: 'default' | 'authorApplication';
+  variant?: 'default' | 'authorApplication' | 'account' | 'settings';
 }) {
   const { reserve } = useDockInset();
 
@@ -34,7 +34,11 @@ export function FormPageShell({
           paddingTop:
             variant === 'authorApplication'
               ? designTokens.authorApplication.contentTop
-              : designTokens.space.x6,
+              : variant === 'account'
+                ? designTokens.space.x3
+                : variant === 'settings'
+                  ? designTokens.space.x5
+                  : designTokens.space.x6,
         }}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"

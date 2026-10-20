@@ -618,7 +618,6 @@ export const designTokens = {
     settingsTitle: {
       fontFamily: 'Inter_600SemiBold',
       fontSize: 18,
-      lineHeight: 22,
       letterSpacing: -0.18,
       fontWeight: '600' as const,
     },
@@ -630,11 +629,10 @@ export const designTokens = {
       letterSpacing: -0.12,
       fontWeight: '500' as const,
     },
-    // Settings row label 14 medium; Figma line-height `normal` (render check pending).
+    // Settings row label 14 medium; preserve Figma line-height `normal`.
     settingsRow: {
       fontFamily: 'Inter_500Medium',
       fontSize: 14,
-      lineHeight: 20,
       letterSpacing: -0.28,
       fontWeight: '500' as const,
     },

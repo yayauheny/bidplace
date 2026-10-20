@@ -6,7 +6,10 @@ import { View, type LayoutChangeEvent } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
 
 import { AccountIdentity } from '../../components/figma/AccountIdentity';
-import { PaddedGrid, gridColumnsFromWidth } from '../../components/figma/PaddedGrid';
+import {
+  PaddedGrid,
+  gridColumnsFromWidth,
+} from '../../components/figma/PaddedGrid';
 import { authorSharePath } from '../../components/figma/public-share';
 import { BackButton } from '../../components/figma/BackButton';
 import { FigmaButton } from '../../components/figma/FigmaButton';
@@ -42,8 +45,13 @@ function accountCta(status: string | null): {
   label: string;
   href: '/profile' | '/profile?intro=1' | '/products/new';
 } | null {
-  if (status === null) return { label: 'Стать автором', href: '/profile?intro=1' };
-  if (status === 'DRAFT' || status === 'CHANGES_REQUESTED' || status === 'REJECTED') {
+  if (status === null)
+    return { label: 'Стать автором', href: '/profile?intro=1' };
+  if (
+    status === 'DRAFT' ||
+    status === 'CHANGES_REQUESTED' ||
+    status === 'REJECTED'
+  ) {
     return { label: 'Продолжить заявку', href: '/profile' };
   }
   if (status === 'PENDING_REVIEW') {
@@ -77,7 +85,7 @@ export function AccountScreen() {
 
   if (capability.isLoading || cabinet.isLoading) {
     return (
-      <FormPageShell>
+      <FormPageShell variant="account">
         <InfrastructurePageStatus status="loading" onRetry={() => undefined} />
         <AccountLogoutButton />
       </FormPageShell>
@@ -85,7 +93,7 @@ export function AccountScreen() {
   }
   if (capability.isError) {
     return (
-      <FormPageShell>
+      <FormPageShell variant="account">
         <InfrastructurePageStatus
           status="error"
           onRetry={() =>
@@ -102,7 +110,7 @@ export function AccountScreen() {
   // страницы при сохранённых данных — inline, работы остаются.
   if (cabinet.isError && !cabinet.data) {
     return (
-      <FormPageShell>
+      <FormPageShell variant="account">
         <InfrastructurePageStatus
           status="error"
           onRetry={() => void cabinet.refetch()}
@@ -129,9 +137,7 @@ export function AccountScreen() {
   // Нет displayName/публикованного имени — primary остаётся один @slug,
   // дублирующей secondary-строки не выводим.
   const displayName =
-    publishedAuthor?.fullName ??
-    (approved ? null : user?.displayName) ??
-    null;
+    publishedAuthor?.fullName ?? (approved ? null : user?.displayName) ?? null;
   const identitySlug = publishedAuthor?.slug ?? (approved ? null : accountSlug);
   const name: string =
     displayName ?? (identitySlug ? `@${identitySlug}` : 'Личный аккаунт');
@@ -139,12 +145,12 @@ export function AccountScreen() {
   const photoUrl = publishedAuthor ? publishedAuthor.profilePhotoUrl : null;
   const sharePath =
     publishedAuthor?.sharePath ??
-    (ownerSlug ?? accountSlug
+    ((ownerSlug ?? accountSlug)
       ? authorSharePath(ownerSlug ?? accountSlug ?? '')
       : null);
 
   return (
-    <FormPageShell>
+    <FormPageShell variant="account">
       <View style={{ gap: designTokens.space.x5 }}>
         <View
           style={{
@@ -259,7 +265,6 @@ export function AccountScreen() {
                   label={cta.label}
                   variant="solid"
                   size="matrix"
-                  width="full"
                   href={cta.href}
                 />
               ) : null

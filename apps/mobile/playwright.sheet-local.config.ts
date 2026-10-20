@@ -6,6 +6,7 @@ export default defineConfig({
     'sheet-live.spec.ts',
     'auth-layout.spec.ts',
     'auth-focus-restore.spec.ts',
+    'account-presentation.spec.ts',
   ],
   timeout: 60000,
   use: { baseURL: process.env.SHEET_TEST_URL || 'http://localhost:7899' },

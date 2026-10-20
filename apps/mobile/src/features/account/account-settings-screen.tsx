@@ -1,4 +1,4 @@
-import { useRouter, type Href } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
@@ -24,7 +24,7 @@ export function AccountSettingsScreen() {
   const { logout, busy } = useAccountLogout();
 
   return (
-    <FormPageShell hideDock>
+    <FormPageShell hideDock variant="settings">
       <View style={{ gap: designTokens.space.x5 }}>
         <View
           style={{
@@ -39,16 +39,17 @@ export function AccountSettingsScreen() {
             // /account, при direct/reload входе ведёт к /account без
             // собственных проверок history (web держит index под свежей
             // загрузкой, canGoBack там не различает сценарии).
-            onPress={() => router.dismissTo('/account' as Href)}
+            onPress={() => router.dismissTo('/account')}
           />
           <AppText role="settingsTitle" tone="strong">
             Настройки
           </AppText>
           <FigmaIconButton
             icon="x"
+            size="settingsHeader"
             iconSize={designTokens.size.settingsHeaderGlyph}
             label="Закрыть настройки"
-            onPress={() => router.replace('/account')}
+            onPress={() => router.dismissTo('/account')}
           />
         </View>
         <SettingsGroup label="Главное">

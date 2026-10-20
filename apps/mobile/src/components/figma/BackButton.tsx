@@ -61,9 +61,12 @@ export function BackButton({
         disabled={disabled}
         onPress={onPress}
         preset="icon"
+        hitSlop={
+          (designTokens.size.touch - designTokens.size.settingsHeaderGlyph) / 2
+        }
         style={{
-          width: designTokens.size.touch,
-          height: designTokens.size.touch,
+          width: designTokens.size.settingsHeaderGlyph,
+          height: designTokens.size.settingsHeaderGlyph,
           alignItems: 'center',
           justifyContent: 'center',
         }}

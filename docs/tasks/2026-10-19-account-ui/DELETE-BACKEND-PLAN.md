@@ -49,8 +49,9 @@ reads/moderation снято). Уточнения DP-02: §5/§7 (фактиче�
 - CuratorSelection ссылается на product (`curatorSelection` relation,
   schema.prisma:293) — home показывает selection по `slot` без проверки
   удаления; при delete selection надо снимать в той же транзакции.
-- HTTP-кэш: `Cache-Control` на публичных portfolio-ответах
-  (portfolio.controller.ts:104/162); публичные media URL стабильны.
+- HTTP-кэш: portfolio.controller.ts:104/162 задаёт заголовки изображений,
+  не JSON. Edge Worker `deploy/cloudflare/src/router.ts` кэширует анонимные
+  JSON works/authors на30секунд, home/facets на60; media URL стабильны.
 - Suspended: write-пути требуют `assertApprovedSeller` (setAuthorVisibility);
   читающий кабинет доступен при APPROVED и SUSPENDED
   (portfolio.service.ts:278).
@@ -153,13 +154,28 @@ reads/moderation снято). Уточнения DP-02: §5/§7 (фактиче�
     `private, no-store`; публичные product images =
     `public, max-age=31536000, immutable`; изменяемые публичные
     (seller-photo, creation-step) = `public, max-age=0, must-revalidate`.
-  - Решение до реализации: owner JSON (cabinet/works/seller) →
-    `Cache-Control: private, no-store`; публичные JSON (catalog/authors/
-    home) → либо `no-store`, либо короткий
-    `public, max-age=N, must-revalidate` (выбор на реализацию;
-    `must-revalidate` гарантирует ревалидацию у origin после истечения).
-    Немедленная недоступность origin обеспечивается `deletedAt`-предикатом
-    (§3), а не заголовками.
+  - Отдельный слой edge: `deploy/cloudflare/src/router.ts`,
+    `publicCacheTtl`/`routeRequest`: anonymous GET без Cookie/Authorization
+    на works/authors (list/detail) —30секунд, home/facets —60секунд,
+    categories —1800. Worker читает cache.match **раньше origin** и может
+    возвращать старый JSON после удаления. Origin-заголовок сам по себе
+    уже прогретые edge entries не исправит; must-revalidate также не
+    отключает этот lookup.
+  - Рекомендуемый обязательный срез будущей delete-волны: owner JSON →
+    `private, no-store`; затронутые публичные JSON →
+    `no-store`. В Worker убрать works/authors/home/facets из
+    `publicCacheTtl` (categories оставить): тогда ни lookup старых entries,
+    ни запись новых для этих маршрутов не выполняются. Доставить edge-
+    изменение **до включения DELETE/UI**, иначе немедленная недоступность
+    origin не означает недоступность публичной страницы. Это план, не
+    изменение текущей production cache policy.
+    Возврат JSON edge cache — отдельная оптимизация с доказанной
+    инвалидизацией; новый purge-сервис ради MVP не вводить.
+  - Критерий будущей реализации: прогреть cache fake-ответом с работой,
+    выполнить удаление и затем anonymous GET list/detail/author/home с
+    тем же URL/query; старый cache.match не вызывается на этих маршрутах,
+    удалённого id нет, detail404. Categories продолжает кэшироваться;
+    auth/Cookie/Range не получают публичного cache hit.
   - Публичные изображения продукта остаются `immutable`: полный отзыв из
     браузерного кэша не гарантируется даже при CDN purge — UI-копия это уже
     отражает. Отдельный edge-purge механизм не вводится.
@@ -213,16 +229,11 @@ Integration (reads):
 3. Reads-предикаты (центрально + raw SQL точки).
 4. UI-волна: подтверждение, исчезновение из кабинета, disabled при listing/
    suspended — **только после рабочего API** (интейк запрещает fake CTA).
-5. Кэш (фактическая policy — §5): JSON-ответы API сейчас без явного
-   `Cache-Control` — удалённая работа недоступна сразу через
-   `deletedAt`-предикат; явная политика (`private, no-store` для owner,
-   `no-store`/`must-revalidate` для публичных JSON) устанавливается до
-   реализации endpoint. Публичные изображения продукта — `immutable`
-   (§5), отзыв не гарантируется. Уточнение DP-01:
-   `portfolio.controller.ts:104/162` — это `Cache-Control` отдачи
-   **изображений** заявки/достижения, а не JSON-политика публичных
-   выдач. Медиа: CDN purge revoke-пути применяется, но не гарантирует
-   отзыв уже закэшированных байт и URL с другими живыми ссылками (§4/§5).
+5. Кэш: выполнить последовательность и warmed-cache gate из §5.
+   `deletedAt` закрывает origin, а отключение edge lookup для затронутых
+   JSON закрывает старые публичные ответы. Обязательный release gate —
+   Worker до включения DELETE/UI. Изображения остаются отдельной политикой:
+   revoke/CDN purge применяется, но отзыв уже скачанных байт не гарантируется.
 
 Открытые вопросы на review: ~~uniform 404 для чужого id~~ (DP-01: принят
 uniform 404, §2), ~~suspended policy~~ (DP-01: принят `403`, §4),

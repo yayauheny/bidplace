@@ -20,6 +20,7 @@ export function FigmaIconButton({
   iconSize = designTokens.size.icon,
   strokeWidthPx,
   surface = 'plain',
+  size = 'default',
 }: {
   ref?: Ref<ElementRef<typeof MotionPressable>>;
   icon: FigmaIconName;
@@ -30,6 +31,7 @@ export function FigmaIconButton({
   iconSize?: number;
   strokeWidthPx?: number;
   surface?: 'plain' | 'muted';
+  size?: 'default' | 'settingsHeader';
 }) {
   const palette = useAppTheme();
   return (
@@ -39,10 +41,21 @@ export function FigmaIconButton({
       accessibilityLabel={label}
       accessibilityState={{ disabled, selected }}
       disabled={disabled}
-      hitSlop={figmaIconButtonHitSlop}
+      hitSlop={
+        size === 'settingsHeader'
+          ? (designTokens.size.touch - designTokens.size.settingsHeaderGlyph) /
+            2
+          : figmaIconButtonHitSlop
+      }
       onPress={onPress}
       preset="icon"
-      style={({ pressed }) => figmaIconButtonStyle(pressed, surface, palette)}
+      style={({ pressed }) => [
+        figmaIconButtonStyle(pressed, surface, palette),
+        size === 'settingsHeader' && {
+          width: designTokens.size.settingsHeaderGlyph,
+          height: designTokens.size.settingsHeaderGlyph,
+        },
+      ]}
     >
       <FigmaIcon
         name={icon}
