@@ -508,3 +508,19 @@ revision at atomic User/evidence creation. Explicit legacy revisions still
 undergo mismatch rejection. No new database state or acceptance stage.
 RegisterForm completes navigation after the AuthProvider rendered the installed
 account, checked against the captured epoch/controller/focus receipt.
+
+## 2026-10-20 — Shared calendar boundary
+
+`components/ui/DateField` owns temporary selection and confirmation, shared
+FigmaSelectField and AppDialog own presentation. `DateSelection.tsx` is the web
+implementation using modular public React Aria exports; Metro selects
+`DateSelection.native.tsx` for Expo/system picker. `lib/calendar-date.ts` owns
+canonical string conversion and reuses the existing contract schema. Existing
+seller date exports delegate without changing null labels or local draft schema.
+UI never changes date-only values to timezone-dependent instants. No API,
+database migration or scheduling domain was added.
+
+`AppDialogSheetMotion.web` uses persistent Reanimated withTiming, inert closing
+content and cancellation on unmount. It replaces web layout exiting only, because
+that implementation moves live children into dummy DOM clones. Native keeps
+existing layout transitions. This boundary is shared by all AppDialog sheets.

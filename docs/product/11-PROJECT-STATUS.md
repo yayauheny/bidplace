@@ -2,6 +2,29 @@
 
 > Entries dated before 2026-10-13 mention Pen / .pen files; the Pen design was removed (DEC-119) — read those mentions as history.
 
+## 2026-10-20 — Общий календарь и безопасный web lifecycle шторки
+
+**Implemented (web).** `DateField` заменяет текстовый ввод даты достижения:
+общие FigmaSelectField/AppDialog, React Aria1.22.1 для календаря и клавиатуры,
+@internationalized/date3.12.4 для календарных значений; стили из текущих токенов.
+Выбор дня либо только месяца, подтверждение, отмена, очистка; восстановление
+`dateInput` совместимо со старым форматом. Между аккаунтами picker remounts;
+внешняя смена значения/блокировка закрывает выбор. Серверные проверки и write
+leases не изменены. Год создания остаётся числом0..9999; время публикации
+по-прежнему серверное, планирование публикации не добавлялось.
+
+В `AppDialogSheetMotion.web` одна DOM-оболочка с withTiming: выходящий контент
+inert/aria-hidden; входящий контент активируется только после завершения
+анимации, settled transform удаляется. Быстрый reopen не создаёт live exit-клоны Reanimated.
+Native сохраняет прежние enter/exit; DateSelection.native использует совместимый
+с SDK57 datetimepicker9.1.0. **Needs verification (native runtime):** нативный
+picker на устройствах/симуляторе не запускался; успешен iOS JS/Hermes export.
+
+Проверки: owner/state/modal unit65/65, typecheck/lint/diff-check, production web
+export. Browser gate6/6 Chromium/WebKit (дата, реальная запись/публикация,
+auth confirm, Home/share;320/390/440 и короткий viewport), evidence — в [аудите](../audits/2026-10-20-DATE-SELECTION.md).
+Полный suite, реальный browser zoom и физический iPhone не проверялись.
+
 ## 2026-10-20 — Домик в общем floating dock
 
 **Implemented (код).** Главная использует `home-01` из общего FigmaIcon вместо

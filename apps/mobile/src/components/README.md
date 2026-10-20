@@ -95,3 +95,10 @@
 ## Импорты
 
 Публичные re-export: `components/ui/index.ts`. Figma-компоненты импортируйте по прямому пути из `components/figma/…`, если их нет в barrel.
+
+### DateField
+
+`ui/DateField.tsx`: one date-selection owner using FigmaSelectField + AppDialog.
+Web uses React Aria; `.native` uses the Expo-compatible system picker. Its string
+value preserves month/year or day/month/year; owner forms retain validation and
+write guards. Do not replace date-only values with UTC timestamps.

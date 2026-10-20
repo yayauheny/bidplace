@@ -737,3 +737,25 @@ Fullscreen AuthViewport заполняет viewport; sheetWidthConstraint отн
 брендовый знак. Path совпадает с live node 7008:16942; размер, stroke, цвет
 и hit area остаются у существующих владельцев dock/FigmaIcon/tokens.
 Состав MVP dock остаётся Home/Search/Add/Profile без корзины.
+
+### Date selection — 2026-10-20, DEC-126
+
+`components/ui/DateField` is the shared date-only field (UI barrel export).
+It composes FigmaSelectField with optional calendar icon and existing AppDialog
+sheet. Use the same field for date selection; no free-text-only date entry.
+Owner forms retain validation, busy/session guards and persistence. The field
+emits a canonical date string only after confirmation or explicit clear.
+
+Web DateSelection composes public React Aria Calendar/NumberField/Button APIs,
+Russian locale and @internationalized/date calendar values. Calendar controls
+reuse field typography, control radius, touch size and semantic surface/ink/
+action/onAction/focus roles. Convert RN lineHeight to CSS px. Select appearance
+is normalized for WebKit with the existing arrow-down icon. Native uses SDK57
+system picker; its platform appearance is not claimed to match the web calendar.
+No new calendar geometry or palette is copied into screens. Month-only values
+remain day:null; never invent day1 or serialize civil dates as UTC instants.
+
+Web sheet motion has one persistent DOM tree with withTiming and reduced-motion
+support. Closing content is inert and aria-hidden; completion removes it. This
+avoids Reanimated web layout exit moving interactive controls into dummy clones.
+Native retains existing layout enter/exit.

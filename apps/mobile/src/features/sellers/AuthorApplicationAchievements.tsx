@@ -9,6 +9,7 @@ import { InfrastructureErrorState } from '../../components/shared/Infrastructure
 import { FigmaButton } from '../../components/figma/FigmaButton';
 import {
   AppText,
+  DateField,
   ResilientRemoteImage,
   SecondaryButton,
   TextField,
@@ -34,7 +35,6 @@ import {
 } from '../../lib/local-form-draft';
 import { usePrivateCacheEpoch } from '../../lib/use-private-cache-epoch';
 import { useApiClient } from '../../providers/api-provider';
-import { useAppTheme } from '../../providers/theme-provider';
 import type { User } from '@bidplace/contracts';
 import {
   parseAchievementDateInput,
@@ -82,7 +82,6 @@ export function AuthorApplicationAchievements({
   onDraftChange?: (epoch: number, dirty: boolean) => void;
   onStorageError?: (message: string | null) => void;
 }) {
-  const palette = useAppTheme();
   const api = useApiClient();
   const queryClient = useQueryClient();
   const authEpoch = usePrivateCacheEpoch(queryClient);
@@ -375,7 +374,8 @@ export function AuthorApplicationAchievements({
       ))}
       {editable ? (
         <>
-          <TextField
+          <DateField
+            key={accountId ?? 'anonymous'}
             label="Дата достижения"
             value={dateInput}
             onChangeText={(value) => {
@@ -384,12 +384,9 @@ export function AuthorApplicationAchievements({
               setDateGroupError(null);
               addAchievement.reset();
             }}
-            placeholder="ММ.ГГГГ"
             editable={!writeActive}
             error={dateGroupError ?? savedDateError ?? undefined}
             variant="authorApplication"
-            icon="calendar-01"
-            iconColor={palette.muted}
           />
           <TextField
             label="Описание достижения"

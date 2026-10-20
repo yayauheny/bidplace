@@ -5,6 +5,8 @@ import { designTokens } from '@bidplace/design-tokens';
 
 import { useAppTheme } from '../../providers/theme-provider';
 import { MotionPressable } from '../ui/MotionPressable';
+import { FigmaIcon } from './FigmaIcon';
+import type { FigmaIconName } from './figma-icon-names';
 import {
   figmaFieldPlaceholderColor,
   figmaFieldShowsFloatingLabel,
@@ -24,6 +26,7 @@ export const FigmaSelectField = forwardRef<
     disabled?: boolean;
     onPress: () => void;
     variant?: FigmaFieldVariant;
+    icon?: FigmaIconName;
   }
 >(function FigmaSelectField(
   {
@@ -34,6 +37,7 @@ export const FigmaSelectField = forwardRef<
     disabled = false,
     onPress,
     variant = 'default',
+    icon,
   },
   ref,
 ) {
@@ -82,6 +86,19 @@ export const FigmaSelectField = forwardRef<
           : {})}
         style={figmaFieldStyle(status, false, 'default', variant, palette)}
       >
+        {icon ? (
+          <View style={{ padding: designTokens.space.iconPad }}>
+            <FigmaIcon
+              name={icon}
+              color={palette.fieldIcon}
+              strokeWidthPx={
+                variant === 'authorApplication'
+                  ? designTokens.stroke.authorApplicationFieldPx
+                  : undefined
+              }
+            />
+          </View>
+        ) : null}
         <Text
           nativeID={valueId}
           numberOfLines={1}

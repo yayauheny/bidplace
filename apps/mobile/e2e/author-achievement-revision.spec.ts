@@ -1,9 +1,12 @@
+import { mkdir } from 'node:fs/promises';
+import { resolve } from 'node:path';
+import { e2eEvidenceDir } from './support/evidence-dir';
 import { expect, test } from '@playwright/test';
 
 import { authenticatedPage } from './support/auth-session';
 import { moderateSeller } from './support/admin-moderation';
 import { e2eApiBaseURL } from './support/e2e-env';
-import { fillControl } from './support/fill-control';
+import { fillControl, selectCalendarMonth } from './support/fill-control';
 import {
   createAdminModerationFixture,
   createApprovedAuthorFixture,
@@ -36,7 +39,11 @@ test('approved author replaces a published achievement without publishing the dr
     await guest.setViewportSize({ width: 390, height: 844 });
     await guest.goto(`/authors/${author.slug}`);
     await guest.getByRole('tab', { name: 'Об авторе' }).click();
-    await expect(guest.getByText(author.fullName)).toBeVisible();
+    await expect(
+      guest
+        .getByTestId('creator-meta')
+        .getByText(author.fullName, { exact: true }),
+    ).toBeVisible();
     await expect(guest.getByText(author.achievement.body)).toBeVisible();
     await expect(guest.getByText(draftBody)).toHaveCount(0);
     const publishedImage = await guest.request.get(
@@ -46,7 +53,83 @@ test('approved author replaces a published achievement without publishing the dr
 
     // The write contract is { occurredDate, body } since 3d9b4a87 — achievement
     // photos no longer upload through the application form.
-    await fillControl(page.getByLabel('Дата достижения'), '04.2026');
+    await page.bringToFront();
+    const dateField = page.getByRole('button', {
+      name: 'Дата достижения',
+      exact: true,
+    });
+    await expect(
+      page.getByRole('textbox', { name: 'Дата достижения', exact: true }),
+    ).toHaveCount(0);
+    await dateField.click();
+    const calendarDialog = page.getByRole('dialog', {
+      name: 'Дата достижения',
+      exact: true,
+    });
+    await calendarDialog
+      .getByLabel('Год календаря', { exact: true })
+      .fill('2024');
+    await calendarDialog
+      .getByLabel('Год календаря', { exact: true })
+      .press('Tab');
+    await calendarDialog
+      .getByLabel('Месяц календаря', { exact: true })
+      .selectOption('2');
+    expect(
+      (
+        await calendarDialog
+          .getByLabel('Месяц календаря', { exact: true })
+          .boundingBox()
+      )?.height,
+    ).toBeCloseTo(44, 1);
+    expect(
+      (
+        await calendarDialog
+          .getByLabel('Год календаря', { exact: true })
+          .boundingBox()
+      )?.height,
+    ).toBeCloseTo(44, 1);
+    const leapDay = calendarDialog.getByRole('button', {
+      name: /29 февраля 2024/,
+    });
+    await leapDay.focus();
+    await leapDay.press('Enter');
+    await expect(
+      calendarDialog.getByText('Выбрано: 29.02.2024', { exact: true }),
+    ).toBeVisible();
+    const evidence = resolve(e2eEvidenceDir, 'date-picker');
+    await mkdir(evidence, { recursive: true });
+    for (const viewport of [
+      { width: 320, height: 568 },
+      { width: 390, height: 874 },
+      { width: 440, height: 956 },
+    ]) {
+      await page.setViewportSize(viewport);
+      await expect
+        .poll(() =>
+          page.evaluate(() => document.body.scrollWidth <= window.innerWidth),
+        )
+        .toBe(true);
+      const applyDate = calendarDialog.getByRole('button', {
+        name: 'Выбрать',
+        exact: true,
+      });
+      await applyDate.scrollIntoViewIfNeeded();
+      await expect(applyDate).toBeInViewport();
+    }
+    await page.setViewportSize({ width: 390, height: 874 });
+    await calendarDialog
+      .getByRole('button', { name: 'Предыдущий месяц', exact: true })
+      .scrollIntoViewIfNeeded();
+    await page.screenshot({
+      path: resolve(evidence, `${test.info().project.name}-calendar.png`),
+    });
+    await calendarDialog
+      .getByRole('button', { name: 'Закрыть окно', exact: true })
+      .click();
+    await expect(dateField).toBeFocused();
+    await expect(dateField).toContainText('Выбрать дату');
+    await selectCalendarMonth(page, 'Дата достижения', 2026, 4);
     await fillControl(page.getByLabel('Описание достижения'), draftBody);
     const [savedResponse] = await Promise.all([
       page.waitForResponse(

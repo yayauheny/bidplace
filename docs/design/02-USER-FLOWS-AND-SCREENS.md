@@ -474,3 +474,12 @@ under the dimmer. Closing returns to that existing page; a direct login URL has
 Home as its fallback. The upper handle/header can be pulled down to request the
 same close action as the cross. Body scrolling cannot close the sheet. Busy-save
 blocking and dirty registration confirmation remain with AuthViewport.
+
+### Achievement date selection — 2026-10-20
+
+Date achievement opens the shared calendar sheet. Choose a day, or set year/month
+and select «Только месяц, без точного дня». «Выбрать» commits to the form, not the
+API; close/Escape/swipe discards the candidate. «Очистить дату» explicitly clears
+it. Existing add-event action and server validation remain unchanged. Session
+switch, external value replacement or busy state must not apply an old candidate.
+Creation year is numeric, and publication timestamp remains automatic.

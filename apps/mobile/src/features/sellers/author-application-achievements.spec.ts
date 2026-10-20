@@ -224,6 +224,36 @@ vi.mock('../../components/ui', () => {
     );
   }
 
+  const InputField = ({
+      label,
+      value,
+      editable = true,
+      error,
+      onChangeText,
+    }: {
+      label: string;
+      value?: string;
+      editable?: boolean;
+      error?: string;
+      onChangeText?: (value: string) => void;
+    }) =>
+      createElement(
+        'span',
+        null,
+        createElement('input', {
+          'aria-label': label,
+          value: value ?? '',
+          disabled: editable === false,
+          onChange: (event: { target: { value: string } }) => {
+            if (editable === false) return;
+            onChangeText?.(event.target.value);
+          },
+        }),
+        error
+          ? createElement('span', { 'data-error-for': label }, error)
+          : null,
+      );
+
   return {
     AppDialog: ({
       open,
@@ -257,35 +287,8 @@ vi.mock('../../components/ui', () => {
     SecondaryButton: PressButton,
     TextButton: PressButton,
     ResilientRemoteImage: () => null,
-    TextField: ({
-      label,
-      value,
-      editable = true,
-      error,
-      onChangeText,
-    }: {
-      label: string;
-      value?: string;
-      editable?: boolean;
-      error?: string;
-      onChangeText?: (value: string) => void;
-    }) =>
-      createElement(
-        'span',
-        null,
-        createElement('input', {
-          'aria-label': label,
-          value: value ?? '',
-          disabled: editable === false,
-          onChange: (event: { target: { value: string } }) => {
-            if (editable === false) return;
-            onChangeText?.(event.target.value);
-          },
-        }),
-        error
-          ? createElement('span', { 'data-error-for': label }, error)
-          : null,
-      ),
+    TextField: InputField,
+    DateField: InputField,
   };
 });
 

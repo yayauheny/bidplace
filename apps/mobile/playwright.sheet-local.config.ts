@@ -7,6 +7,7 @@ export default defineConfig({
     'auth-layout.spec.ts',
     'auth-focus-restore.spec.ts',
     'account-presentation.spec.ts',
+    'author-achievement-revision.spec.ts',
   ],
   timeout: 60000,
   use: { baseURL: process.env.SHEET_TEST_URL || 'http://localhost:7899' },

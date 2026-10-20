@@ -12,12 +12,12 @@ import {
   sheetBackdropEnter,
   sheetBackdropExit,
   sheetEnter,
-  sheetExit,
 } from '../../lib/layout-transition';
 
 import { FigmaIcon } from '../figma/FigmaIcon';
 import { useAppTheme } from '../../providers/theme-provider';
 import { AppText } from './AppText';
+import { AppDialogSheetMotion } from './AppDialogSheetMotion';
 import { SheetDragSurface, SheetDragHandle } from './SheetDragSurface';
 import { useSharedSheetBackdrop } from './sheet-backdrop';
 import {
@@ -396,17 +396,11 @@ export function AppDialog({
             )
           ) : null}
           <AppDialogFrame style={frameStyle}>
-            {open ? (
-              <Animated.View
-                entering={entering}
-                exiting={sheetExit}
-                style={{ width: '100%' }}
-              >
-                <SheetDragSurface enabled={open} onRequestClose={onClose}>
-                  {content}
-                </SheetDragSurface>
-              </Animated.View>
-            ) : null}
+            <AppDialogSheetMotion open={open} entering={entering} onEntered={focusAfterEnter}>
+              <SheetDragSurface enabled={open} onRequestClose={onClose}>
+                {content}
+              </SheetDragSurface>
+            </AppDialogSheetMotion>
           </AppDialogFrame>
         </Dialog.Portal>
       ) : (
