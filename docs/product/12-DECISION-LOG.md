@@ -1,6 +1,6 @@
 # bidplace — журнал решений
 
-Последнее обновление: 2026-10-12
+Последнее обновление: 2026-10-15
 
 Записи не удаляются. При пересмотре создаётся новая запись со ссылкой на старую.
 
@@ -1226,18 +1226,18 @@ The service starts free; subscription stays future scope. Figma is the visual
 direction; Pen remains on disk until a separate cleanup after a complete
 handoff.
 
-| Topic | Confirmed default |
-| --- | --- |
-| Offers | Buyer offer is server-owned. Seller may accept or reject. **No counteroffer** in MVP. |
-| Next bidder | Manual audited admin replacement only. Automatic next bidder is out of MVP (`DEC-054` stands). |
-| Contact window | Fixed 48-hour snapshot on every new Order (`DEC-070`). Seller 24/48/72 is deferred. |
-| Fixed buy | A unique work has at most one buyer. Buyer confirmation **atomically** creates the Order. Seller reconfirm is not required. The seller may withdraw the listing only **before** a successful buy. Auction Buy Now / buyout on a live auction is not added. |
-| Currency | Listing stores `BYN` or `RUB` by the seller's chosen market. No IP-based conversion. |
-| Portfolio | Portfolio-only author surface is **wave 2**, even if a Figma frame exists. RFC §12 keeps a simple examples block. |
-| Transactional email | In contract: verification, password reset, sale result, replacement/deadline, security/complaint. Outbid and marketing email stay later. RFC §9 still forbids outbid spam. |
-| Complaint attachments | Limited private images only. No video or arbitrary files. |
-| Legal review | Human legal review is required before a public audience. A closed local test among acquaintances is a separate gate. |
-| Pen files | Do not delete or edit canonical Pen in ordinary work. Cleanup is a separate commit only after a complete Figma handoff and an untracked-file inventory. |
+| Topic                 | Confirmed default                                                                                                                                                                                                                                          |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Offers                | Buyer offer is server-owned. Seller may accept or reject. **No counteroffer** in MVP.                                                                                                                                                                      |
+| Next bidder           | Manual audited admin replacement only. Automatic next bidder is out of MVP (`DEC-054` stands).                                                                                                                                                             |
+| Contact window        | Fixed 48-hour snapshot on every new Order (`DEC-070`). Seller 24/48/72 is deferred.                                                                                                                                                                        |
+| Fixed buy             | A unique work has at most one buyer. Buyer confirmation **atomically** creates the Order. Seller reconfirm is not required. The seller may withdraw the listing only **before** a successful buy. Auction Buy Now / buyout on a live auction is not added. |
+| Currency              | Listing stores `BYN` or `RUB` by the seller's chosen market. No IP-based conversion.                                                                                                                                                                       |
+| Portfolio             | Portfolio-only author surface is **wave 2**, even if a Figma frame exists. RFC §12 keeps a simple examples block.                                                                                                                                          |
+| Transactional email   | In contract: verification, password reset, sale result, replacement/deadline, security/complaint. Outbid and marketing email stay later. RFC §9 still forbids outbid spam.                                                                                 |
+| Complaint attachments | Limited private images only. No video or arbitrary files.                                                                                                                                                                                                  |
+| Legal review          | Human legal review is required before a public audience. A closed local test among acquaintances is a separate gate.                                                                                                                                       |
+| Pen files             | Do not delete or edit canonical Pen in ordinary work. Cleanup is a separate commit only after a complete Figma handoff and an untracked-file inventory.                                                                                                    |
 
 Current runtime may remain auction + BYN until P0-E implements this contract.
 Code status lives in `11-PROJECT-STATUS.md`.
@@ -1337,21 +1337,21 @@ offer. Current runtime remains auction + BYN until the unresolved mechanics belo
 are researched and explicitly selected. No implementation may infer those rules
 from the former `DEC-072` defaults.
 
-| Topic | Status after revision |
-| --- | --- |
-| Work / Listing | Confirmed: separate identities and lifecycles; one Work may exist without an active Listing. Historical sale records remain immutable. |
-| Sale formats | Confirmed target: auction + fixed + optional offer. Auction Buy Now is not currently requested. |
-| Offer expiry/revoke/counteroffer | Open: compare current marketplace practice, then obtain the required legal answer. |
-| Fixed-buy contract moment | Product direction is one explicit buyer confirmation for an active unique work; exact legal copy/required terms remain a lawyer gate. Atomicity and double-sale prevention are mandatory. |
-| Next bidder / non-payment | Open: manual admin replacement is current runtime only. Research second-chance offers, ranking, seller choice and contact disclosure before choosing target behavior. |
-| Contact window | Current code stores 48 hours. Product duration, reminders, weekends and enforcement remain open to research/legal review. |
-| Currency | Current MVP stays BYN. RUB or viewer conversion is not confirmed. Research and lawyer review must define contract currency, display hint, rate source and RF implications. |
-| Cabinet | Confirmed IA name: `Покупки / Продажи`; cancelled and failed deals must remain visible as history. |
-| Expired scheduled | Confirmed: cancel with audit, notify the author and offer a simple relist path. No silent +24-hour shift. |
-| Notifications | In-app notifications are required before redesign completion; email is reserved for appropriate transactional/security events after legal/product mapping. |
-| Error complaint | Required before public MVP: explicit report action, privacy-safe technical context and optional private screenshot. |
-| Object storage | S3-compatible media migration and rendition plan occur before final redesign/launch proof, after the current audit tasks. |
-| Redesign | Final implementation layer after product, legal UX and core flows are stable. Original Figma is read-only and must never be modified. |
+| Topic                            | Status after revision                                                                                                                                                                     |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Work / Listing                   | Confirmed: separate identities and lifecycles; one Work may exist without an active Listing. Historical sale records remain immutable.                                                    |
+| Sale formats                     | Confirmed target: auction + fixed + optional offer. Auction Buy Now is not currently requested.                                                                                           |
+| Offer expiry/revoke/counteroffer | Open: compare current marketplace practice, then obtain the required legal answer.                                                                                                        |
+| Fixed-buy contract moment        | Product direction is one explicit buyer confirmation for an active unique work; exact legal copy/required terms remain a lawyer gate. Atomicity and double-sale prevention are mandatory. |
+| Next bidder / non-payment        | Open: manual admin replacement is current runtime only. Research second-chance offers, ranking, seller choice and contact disclosure before choosing target behavior.                     |
+| Contact window                   | Current code stores 48 hours. Product duration, reminders, weekends and enforcement remain open to research/legal review.                                                                 |
+| Currency                         | Current MVP stays BYN. RUB or viewer conversion is not confirmed. Research and lawyer review must define contract currency, display hint, rate source and RF implications.                |
+| Cabinet                          | Confirmed IA name: `Покупки / Продажи`; cancelled and failed deals must remain visible as history.                                                                                        |
+| Expired scheduled                | Confirmed: cancel with audit, notify the author and offer a simple relist path. No silent +24-hour shift.                                                                                 |
+| Notifications                    | In-app notifications are required before redesign completion; email is reserved for appropriate transactional/security events after legal/product mapping.                                |
+| Error complaint                  | Required before public MVP: explicit report action, privacy-safe technical context and optional private screenshot.                                                                       |
+| Object storage                   | S3-compatible media migration and rendition plan occur before final redesign/launch proof, after the current audit tasks.                                                                 |
+| Redesign                         | Final implementation layer after product, legal UX and core flows are stable. Original Figma is read-only and must never be modified.                                                     |
 
 ### Why `DEC-072` changed
 
@@ -2080,7 +2080,6 @@ The Figma Search frames are an overlay on the current page. A submit-only
 
 Category taxonomy and media are decided, or overlay result limits require
 in-overlay pagination.
-
 
 ## DEC-097 — Portfolio release uses R2 and native Cloudflare CDN
 
@@ -2837,7 +2836,6 @@ The Figma copy and shared components stay as they are. City remains optional und
 The step-3 direction control is implemented, or the placeholder or field copy is
 changed by the founder or the assigned designer.
 
-
 ## DEC-118 — One legal handoff, DEC-078 registration and target retention
 
 Date: 2026-10-12
@@ -2933,3 +2931,135 @@ The layout clause of `DEC-085` only.
 ### Revisit when
 
 Desktop Figma compositions define different widths.
+
+## DEC-121 — Local browser-only draft restore; no sync
+
+Date: 2026-10-15
+Status: Confirmed
+Source: founder-approved task boundaries (задание «восстановление ввода и
+исправление маршрутов MVP», 2026-10-15).
+
+### Decision
+
+Restore of in-progress input (Work creation and author application) is local
+to the browser only: `localStorage` keyed by account + entity, throttled
+writes, Zod-checked payload that tolerates an incomplete first step. No new
+backend endpoints, tables, server autosaves, offline queues, live-sync or
+cross-device conflict UI. Uploaded media stays server-side; not-yet-uploaded
+files are re-selected. Drafts clear on logout/session change, confirmed
+submit, and successful save without edits after the request snapshot; after
+the first confirmed create the `…:new` key migrates to the confirmed id.
+Simultaneous editing from several devices resolves to the last successful
+server save (server revision token decides whether a stored draft still
+applies).
+
+### Revisit when
+
+Cross-device editing or offline-first requirements appear, or a future SDK
+upgrade changes what the local browser layer must cover.
+
+### Implementation
+
+`apps/mobile/src/lib/local-form-draft.ts`,
+`apps/mobile/src/features/sellers/local-form-restore.ts`; branch
+`fix/draft-routing` (2026-10-15).
+
+## DEC-122 — Auth over the current page; sheets dismiss from their header
+
+Date: 2026-10-18. Status: Confirmed by founder in this task.
+
+Login opened from Home, a profile or a catalog keeps that current page and its
+scroll position underneath. A direct auth URL uses Home as its fallback anchor.
+Do not mount a second Home inside auth to imitate a background.
+
+Sheet dismissal starts with a downward drag from the handle/header. Content
+scrolling does not dismiss it. Existing dirty-state confirmation and busy-save
+blocking apply to this gesture through the same close owner as the cross button.
+Centered confirmation dialogs and full-screen registration are not draggable sheets.
+
+Owner: Expo Router root/auth presentation + AuthViewport; shared interaction:
+SheetDragSurface used by AuthViewport/AppDialog/FilterSheet. Server contracts,
+permissions, draft persistence and visual geometry are unchanged.
+
+## DEC-123 — Личный аккаунт, Share до одобрения и удаление Work
+
+Дата: 2026-10-19. Статус продукта: Confirmed — прямые ответы основателя в задаче личного профиля.
+Статус кода: Not implemented для новых account/settings и удаления; наличие intake не означает реализованную функцию.
+
+Личный аккаунт объединяет вход пользователя и автора; автору доступен кабинет
+своих работ. До одобрения фото остаётся серым placeholder; у одобренного автора
+используется опубликованная identity, не редактируемая ревизия.
+
+Настройки и Share доступны также до публикации. Публичная ссылка недоступного
+профиля показывает нейтральный not-found: существование аккаунта/заявки, её
+поля и статус проверки не становятся публичными.
+
+Избранное остаётся после MVP, не входит в текущий UI-срез и не имитируется
+фиктивными controls. Его владелец — [post-MVP backlog](15-POST-MVP-BACKLOG.md).
+Смена email и authenticated-смена пароля — отдельная будущая волна.
+
+Основатель разрешил удаление собственных работ в любом статусе отдельной волной:
+после подтверждения работа исчезает из кабинета и публичного доступа, технически
+помечается удалённой для сохранения связности данных. Удаление не равно
+обратимому hide/restore и не означает каскадного удаления истории/файлов.
+Endpoint, конкуренция с модерацией, suspended policy, media/cache и legacy
+relations требуют отдельного backend/security-плана перед реализацией.
+
+Граница этой задачи не включает возвращение торгов, цен, корзины, Premium,
+валют, локализации или избранного из старых Figma frames.
+Не менять server permissions ради визуального сходства.
+
+Дизайн/implementation handoff:
+[2026-10-19-account-ui](../tasks/2026-10-19-account-ui/README.md).
+
+## DEC-124 — Одно явное подтверждение регистрации
+
+Дата:2026-10-20. Статус:Confirmed. Источник: прямое требование основателя
+в этом чате — один чекбокс, документы ссылками внутри текста, без дублей.
+
+Пересматривает DEC-078 и handoff12октября только в UI-композиции регистрации:
+один изначально не отмеченный control явно подтверждает18+, принятие соглашения,
+ознакомление с политикой и согласие на необходимые данные. Три документа доступны
+отдельными inline-ссылками; открытие ссылки не означает принятия.
+Серверный контракт отдельных флагов/версий сохраняется, но один клик больше не
+выдаётся за четыре независимых пользовательских действия. При смене версии или
+недоступности пакета подтверждение сбрасывается. Маркетинг/аналитика/будущие цели
+не включаются. Публикационный gate реквизитов и текстов не обходится.
+Это продуктовая UI-правка основателя, не новое юридическое заключение.
+
+## DEC-125 — Согласие при регистрации независимо от чтения документа
+
+Дата:2026-10-20. Статус:Confirmed. Источник: прямое уточнение основателя:
+согласие происходит сразу при регистрации; недоступность чтения не блокирует
+аккаунт. Пересматривает зависимость выдачи текстов от регистрации в DEC-124/
+legal handoff, сохраняя единый explicit control и подтверждение18+.
+
+Не вводить отложенное принятие, pending-legal accounts или новые consent gates
+перед заявкой/публикацией. Register фиксирует подтверждения в той же транзакции,
+что User, с редакцией реальных канонических файлов, определённой сервером.
+Чтение —отдельный lazy GET по ссылке, ошибка внутри существующего AppDialog;
+сбой не сбрасывает email/checkbox и не меняет CTA «Дальше».
+Явно переданная старая клиентская версия сохраняет stale-check для совместимости.
+Это продуктовый порядок записи согласия, не подтверждение юридической готовности
+неполного пакета и не доказательство прочтения документа.
+
+## DEC-126 — Общий контрол дат: React Aria web и системный native picker
+
+Дата: 2026-10-20. Статус: Confirmed (прямой выбор основателя в чате).
+
+Основателю нравится React Aria; использовать его везде, где платформа позволяет.
+Веб, включая Safari на телефонах, использует React Aria. Нативный Expo не имеет
+DOM, поэтому за тем же DateField API находится системный SDK57 picker. Фирменный
+web стиль собирается существующими токенами и компонентами. Отдельную Material
+дизайн-систему и самописную календарную арифметику не вводим. Точность даты и
+серверные правила сохраняются; время/планирование не добавляется без потребителя.
+
+## DEC-127 — Монохромный фокус во всём сервисе
+
+Дата: 2026-10-20. Статус: Confirmed (прямое согласие основателя в чате).
+
+Общая роль focus становится #121212 в светлой теме и #FFFFFF в black вместо
+синей. Решение уточняет DEC-104 и заменяет старый Figma focus292:5037 только
+по цвету. Видимый клавиатурный фокус, существующий border полей и outline
+прочих контролов сохраняются. Компонентных/маршрутных исключений не вводим.
+Это не решение о запуске всей provisional black-палитры пользователям.

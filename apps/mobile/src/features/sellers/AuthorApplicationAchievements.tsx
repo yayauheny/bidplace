@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { View } from 'react-native';
+import { z } from 'zod';
 
 import { designTokens } from '@bidplace/design-tokens';
 
@@ -8,6 +9,7 @@ import { InfrastructureErrorState } from '../../components/shared/Infrastructure
 import { FigmaButton } from '../../components/figma/FigmaButton';
 import {
   AppText,
+  DateField,
   ResilientRemoteImage,
   SecondaryButton,
   TextField,
@@ -15,12 +17,25 @@ import {
 import { getUserFacingErrorMessage, readFormFailure } from '../../errors';
 import { getApiAssetUrl } from '../../lib/environment';
 import {
+  authKeys,
   canWritePrivateCache,
+  captureDraftWriteLease,
   currentAuthEpoch,
+  draftWriteLeaseIsValid,
   refreshPrivateQuery,
 } from '../../lib/query-cache';
+import {
+  DRAFT_STORAGE_ERROR_MESSAGE,
+  clearFormDraft,
+  createDraftWriter,
+  draftWriteNeedsWarning,
+  formDraftKey,
+  readFormDraft,
+  writeFormDraft,
+} from '../../lib/local-form-draft';
 import { usePrivateCacheEpoch } from '../../lib/use-private-cache-epoch';
 import { useApiClient } from '../../providers/api-provider';
+import type { User } from '@bidplace/contracts';
 import {
   parseAchievementDateInput,
   formatAchievementDate,
@@ -33,6 +48,11 @@ function nextChildWriteToken() {
   childWriteSequence += 1;
   return childWriteSequence;
 }
+
+const achievementDraftSchema = z.object({
+  body: z.string(),
+  dateInput: z.string(),
+});
 
 type AchievementDraft = {
   token: number;
@@ -53,16 +73,26 @@ export function AuthorApplicationAchievements({
   parentOperation,
   onChildWrite,
   onDraftChange,
+  onStorageError,
 }: {
   editable: boolean;
   parentBusy: () => boolean;
   parentOperation: () => number;
   onChildWrite: (token: number, active: boolean) => void;
   onDraftChange?: (epoch: number, dirty: boolean) => void;
+  onStorageError?: (message: string | null) => void;
 }) {
   const api = useApiClient();
   const queryClient = useQueryClient();
   const authEpoch = usePrivateCacheEpoch(queryClient);
+  const draftWriter = useRef(createDraftWriter());
+  const restoredAccount = useRef<string | null>(null);
+  const accountId = canWritePrivateCache(queryClient, authEpoch)
+    ? (queryClient.getQueryData<User | null>(authKeys.session)?.id ?? null)
+    : null;
+  const draftKey = accountId
+    ? formDraftKey(accountId, 'seller-achievements', 'new')
+    : null;
   const seenAuthEpoch = useRef(authEpoch);
   const sessionOperation = useRef(0);
   const writeToken = useRef(0);
@@ -70,11 +100,13 @@ export function AuthorApplicationAchievements({
   const parentOperationRef = useRef(parentOperation);
   const onChildWriteRef = useRef(onChildWrite);
   const onDraftChangeRef = useRef(onDraftChange);
+  const onStorageErrorRef = useRef(onStorageError);
   const editableRef = useRef(editable);
   parentBusyRef.current = parentBusy;
   parentOperationRef.current = parentOperation;
   onChildWriteRef.current = onChildWrite;
   onDraftChangeRef.current = onDraftChange;
+  onStorageErrorRef.current = onStorageError;
   editableRef.current = editable;
 
   const [body, setBody] = useState('');
@@ -169,6 +201,7 @@ export function AuthorApplicationAchievements({
   useEffect(() => {
     if (seenAuthEpoch.current === authEpoch) return;
     seenAuthEpoch.current = authEpoch;
+    restoredAccount.current = null;
     sessionOperation.current += 1;
     const token = writeToken.current;
     writeToken.current = 0;
@@ -181,6 +214,49 @@ export function AuthorApplicationAchievements({
     addAchievement.reset();
     deleteAchievement.reset();
   }, [addAchievement, authEpoch, deleteAchievement]);
+
+  // Restore the unfinished achievement (runs after the epoch reset above).
+  useEffect(() => {
+    const restoreMark = `${authEpoch}:${accountId ?? ''}`;
+    if (restoredAccount.current === restoreMark) return;
+    restoredAccount.current = restoreMark;
+    if (!draftKey || !accountId) return;
+    const stored = readFormDraft(draftKey, achievementDraftSchema);
+    if (!stored || (!stored.body && !stored.dateInput)) return;
+    setBody((current) => current || stored.body);
+    setDateInput((current) => current || stored.dateInput);
+  }, [accountId, authEpoch, draftKey]);
+
+  // Persist while typing; an empty draft means the local copy is dropped.
+  useEffect(() => {
+    if (!draftKey) return;
+    if (!body && !dateInput) {
+      draftWriter.current.cancel();
+      clearFormDraft(draftKey);
+      return;
+    }
+    const account = accountId;
+    const lease = captureDraftWriteLease(queryClient);
+    draftWriter.current.schedule(() => {
+      // The session lease (captured at schedule time) is retired when logout
+      // begins and reissued only by the next session; a pending write cannot
+      // be re-armed by re-scheduling before that.
+      if (account === null || !draftWriteLeaseIsValid(queryClient, lease))
+        return;
+      const written = writeFormDraft(draftKey, { body, dateInput });
+      // Only a failing storage API warns; a successful write clears only this
+      // writer's error, not the form's.
+      onStorageErrorRef.current?.(
+        draftWriteNeedsWarning(written) ? DRAFT_STORAGE_ERROR_MESSAGE : null,
+      );
+    });
+  }, [accountId, body, dateInput, draftKey]);
+
+  useEffect(() => {
+    return () => {
+      draftWriter.current.flush();
+    };
+  }, []);
 
   const beginWrite = () => {
     if (
@@ -298,7 +374,8 @@ export function AuthorApplicationAchievements({
       ))}
       {editable ? (
         <>
-          <TextField
+          <DateField
+            key={accountId ?? 'anonymous'}
             label="Дата достижения"
             value={dateInput}
             onChangeText={(value) => {
@@ -307,12 +384,9 @@ export function AuthorApplicationAchievements({
               setDateGroupError(null);
               addAchievement.reset();
             }}
-            placeholder="ММ.ГГГГ"
             editable={!writeActive}
             error={dateGroupError ?? savedDateError ?? undefined}
             variant="authorApplication"
-            icon="calendar-01"
-            iconColor={designTokens.color.muted}
           />
           <TextField
             label="Описание достижения"

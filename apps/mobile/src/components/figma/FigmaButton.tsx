@@ -14,6 +14,7 @@ import {
 
 import { AppText } from '../ui/AppText';
 import { MotionPressable } from '../ui/MotionPressable';
+import { useAppTheme } from '../../providers/theme-provider';
 import { FigmaIcon } from './FigmaIcon';
 import { type FigmaIconName } from './figma-icon-names';
 import {
@@ -54,7 +55,8 @@ function FigmaButtonVisualContent({
   iconPosition = 'left',
   presentational = false,
 }: FigmaButtonVisualContentProps) {
-  const textColor = figmaButtonLabelColor(variant, size);
+  const palette = useAppTheme();
+  const textColor = figmaButtonLabelColor(variant, size, palette);
   const navigation = contentAlign === 'navigation';
   const iconElement = icon ? (
     <View style={styles.iconFrame}>
@@ -164,11 +166,12 @@ export function FigmaButtonStatePreview({
   testID,
   accessibilityLabel,
 }: FigmaButtonStatePreviewProps) {
+  const palette = useAppTheme();
   const { layout, onLayout } = useCssBorderBox();
   const resolvedTestID =
     testID ?? `figma-button-preview-${variant}-${interaction}`;
 
-  const shellStyle = figmaButtonStyle(variant, interaction);
+  const shellStyle = figmaButtonStyle(variant, interaction, 'matrix', palette);
 
   return (
     <View
@@ -214,6 +217,7 @@ export function FigmaButton(
   } = props;
   const inactive = disabled || loading;
   const alignSelf = width === 'full' ? 'stretch' : 'flex-start';
+  const palette = useAppTheme();
   const { layout, onLayout } = useCssBorderBox();
 
   const contentHeight = figmaButtonContentHeight(size);
@@ -245,7 +249,7 @@ export function FigmaButton(
           hovered,
           pressed,
         });
-        return figmaButtonStyle(variant, interaction, size);
+        return figmaButtonStyle(variant, interaction, size, palette);
       }}
     >
       {({ hovered, pressed }) => {

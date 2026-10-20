@@ -6,6 +6,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 
+import { useAppTheme } from '../../providers/theme-provider';
 import {
   figmaGlassSurfaceSpec,
   type FigmaGlassSurfacePreset,
@@ -40,7 +41,8 @@ export function FigmaGlassSurface({
   accessibilityRole?: string;
   accessibilityLabel?: string;
 }) {
-  const spec = figmaGlassSurfaceSpec(preset);
+  const palette = useAppTheme();
+  const spec = figmaGlassSurfaceSpec(preset, palette);
   const glassStyle: GlassCssProperties = {
     '--figma-glass-background': spec.background,
     '--figma-glass-blur': `${spec.blur}px`,

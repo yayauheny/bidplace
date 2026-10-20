@@ -25,6 +25,7 @@ import { FigmaChoiceChip } from '../../components/figma/FigmaChoiceChip';
 import { FigmaButton } from '../../components/figma/FigmaButton';
 import { FilterOptionRow } from '../../components/figma/FilterOptionRow';
 import { FilterSheet } from '../../components/figma/FilterSheet';
+import { useAppTheme } from '../../providers/theme-provider';
 import {
   PaddedGrid,
   gridColumnsFromWidth,
@@ -50,6 +51,7 @@ export function PublicSellerScreen({
   category?: string;
   categoryIds?: string[];
 }) {
+  const palette = useAppTheme();
   const api = useApiClient();
   const { reserve } = useDockInset();
   const router = useRouter();
@@ -132,7 +134,9 @@ export function PublicSellerScreen({
       <View style={{ flex: 1, position: 'relative', overflow: 'visible' }}>
         <ScrollView
           testID="creator-scroll"
+          style={{ marginHorizontal: -designTokens.layout.gutter }}
           contentContainerStyle={{
+            paddingHorizontal: designTokens.layout.gutter,
             paddingBottom: reserve,
             overflow: 'visible',
           }}
@@ -169,7 +173,7 @@ export function PublicSellerScreen({
             role="tabpanel"
             aria-labelledby={`${panelId}-${tab}`}
             style={{
-              backgroundColor: designTokens.color.canvas,
+              backgroundColor: palette.canvas,
               paddingTop:
                 tab === 'about'
                   ? designTokens.space.authorHeaderBottom

@@ -2,20 +2,18 @@
  * Search overlay chrome from Figma `456:8298` (captured 2026-10-10).
  * Scoped to that popup. It does not replace dock, filter, or text-button strokes.
  * Axes are the local userSpaceOnUse vectors in fallbacks/001-456_8298.svg.
+ * All colors resolve from the semantic palette passed by callers (AR-01).
  */
+import type { SemanticColorMap } from './theme';
+
 export const searchChromeTokens = {
   figmaNode: '456:8298',
   capturedAt: '2026-10-10T20:13:31.946Z',
-  fill: 'rgba(255, 255, 255, 0.6)',
   blur: {
     figmaRadius: 12,
     cssPx: 6,
   },
   strokeWidth: 0.5,
-  gradient: {
-    start: '#D1D1D1',
-    end: '#EBEBEB',
-  },
   field: {
     node: '456:8369',
     sampleWidth: 302,
@@ -32,7 +30,6 @@ export const searchChromeTokens = {
       lineHeight: 19,
       letterSpacing: -0.16,
       fontWeight: '400' as const,
-      color: '#121212',
     },
   },
   close: {
@@ -56,10 +53,6 @@ export const searchChromeTokens = {
   tab: {
     height: 41,
     radius: 80,
-    fill: '#FFFFFF',
-    selectedFill: '#F3F3F3',
-    stroke: '#FFFFFF',
-    label: '#565656',
     typography: {
       fontFamily: 'Inter_500Medium',
       fontSize: 14,
@@ -87,8 +80,9 @@ export function searchChromeStrokeViewport(
   kind: SearchChromeKind,
   width: number,
   height: number,
+  palette: SemanticColorMap,
 ) {
-  const paint = searchChromeScaledPaint(kind, width, height);
+  const paint = searchChromeScaledPaint(kind, width, height, palette);
   const half = searchChromeTokens.strokeWidth / 2;
   const left = Math.min(0, paint.x - half);
   const top = Math.min(0, paint.y - half);
@@ -123,6 +117,7 @@ export function searchChromeScaledPaint(
   kind: SearchChromeKind,
   width: number,
   height: number,
+  palette: SemanticColorMap,
 ) {
   const shape = searchChromeShape(kind);
   const scaleX = width / shape.sampleWidth;
@@ -143,8 +138,8 @@ export function searchChromeScaledPaint(
       y1: shape.axis.y1 * scaleY,
       x2: shape.axis.x2 * scaleX,
       y2: shape.axis.y2 * scaleY,
-      start: searchChromeTokens.gradient.start,
-      end: searchChromeTokens.gradient.end,
+      start: palette.searchChromeGradientStart,
+      end: palette.searchChromeGradientEnd,
     },
   };
 }

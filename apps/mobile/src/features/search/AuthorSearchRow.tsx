@@ -11,6 +11,7 @@ import {
 import { MotionPressable } from '../../components/ui/MotionPressable';
 import { ResilientRemoteImage } from '../../components/ui/ResilientRemoteImage';
 import { getApiAssetUrl } from '../../lib/environment';
+import { useAppTheme } from '../../providers/theme-provider';
 import { authorSearchRowStyle } from './author-search-row-style';
 
 export function AuthorSearchRow({
@@ -23,6 +24,7 @@ export function AuthorSearchRow({
   shortDescription: string;
 }) {
   const handle = `@${slug}`;
+  const palette = useAppTheme();
 
   return (
     <Link href={`/seller/${slug}`} asChild>
@@ -33,10 +35,13 @@ export function AuthorSearchRow({
         testID="author-search-row"
         preset="card"
         {...interactiveHitDataset()}
-        style={({ hovered, pressed }) => ({
+        style={{
           width: '100%',
-          ...interactiveHitFallbackStyle({ hovered, pressed }),
-        })}
+          borderRadius: designTokens.radius.small,
+        }}
+        interactionStyle={({ hovered, pressed }) =>
+          interactiveHitFallbackStyle({ hovered, pressed, palette })
+        }
       >
         <View style={authorSearchRowStyle()}>
           <View
@@ -45,7 +50,7 @@ export function AuthorSearchRow({
               height: designTokens.size.touch,
               borderRadius: designTokens.radius.avatar,
               overflow: 'hidden',
-              backgroundColor: designTokens.color.mutedFill,
+              backgroundColor: palette.mutedFill,
               flexShrink: 0,
             }}
           >
@@ -59,7 +64,11 @@ export function AuthorSearchRow({
             />
           </View>
           <View
-            style={{ flex: 1, minWidth: 0, gap: designTokens.space.authorRowGap }}
+            style={{
+              flex: 1,
+              minWidth: 0,
+              gap: designTokens.space.authorRowGap,
+            }}
           >
             <AppText
               role="body"

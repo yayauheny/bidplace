@@ -4,6 +4,11 @@ import { createRoot } from 'react-dom/client';
 import { expect, it, vi } from 'vitest';
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+
+vi.mock('expo-router', () => ({
+  DefaultTheme: { colors: {} },
+  ThemeProvider: ({ children }: { children?: ReactNode }) => children,
+}));
 vi.mock('react-native', () => ({
   View: ({ children }: { children?: ReactNode }) =>
     createElement('div', null, children),

@@ -36,7 +36,7 @@ import {
 } from '../core/database';
 import { AppException } from '../core/errors';
 import { resolveServiceRules } from '../core/rules';
-import { readPublishedLegalDocuments } from './legal-documents';
+import { readPublishedLegalDocuments, readRegistrationLegalVersion } from './legal-documents';
 
 function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
@@ -69,9 +69,9 @@ export class AuthService {
   async register(
     input: RegisterRequest & { ip?: string },
   ): Promise<AuthSessionResult> {
-    const published = readPublishedLegalDocuments();
+    const registrationVersion = readRegistrationLegalVersion();
     const { agreement, privacy, dataConsent } = input.legal;
-    if ([agreement.version, privacy.version, dataConsent.version].some((version) => version !== published.version)) {
+    if ([agreement.version, privacy.version, dataConsent.version].some((version) => version !== undefined && version !== registrationVersion)) {
       throw new ConflictException({
         code: ApiErrorCode.CONFLICT,
         message: 'Legal document version is stale',
@@ -116,11 +116,11 @@ export class AuthService {
           phoneVerifiedAt: null,
           registrationLegalEvidence: {
             create: {
-              agreementVersion: agreement.version,
+              agreementVersion: registrationVersion,
               agreementAcceptedAt: acceptedAt,
-              privacyVersion: privacy.version,
+              privacyVersion: registrationVersion,
               privacyAcknowledgedAt: acceptedAt,
-              dataConsentVersion: dataConsent.version,
+              dataConsentVersion: registrationVersion,
               dataConsentedAt: acceptedAt,
               age18ConfirmedAt: acceptedAt,
             },

@@ -1,8 +1,12 @@
 import { useId } from 'react';
 import { Defs, LinearGradient, Rect, Stop, Svg } from 'react-native-svg';
 
-import { figmaButtonMatrixCell, figmaButtonTokens } from '@bidplace/design-tokens';
+import {
+  figmaButtonMatrixCell,
+  figmaButtonTokens,
+} from '@bidplace/design-tokens';
 
+import { useAppTheme } from '../../providers/theme-provider';
 import {
   figmaButtonScaledGradientAxis,
   figmaButtonStrokeRadius,
@@ -21,10 +25,11 @@ export function FigmaButtonSurface({
   width: number;
   height: number;
 }) {
+  const palette = useAppTheme();
   const instanceId = useId().replace(/:/g, '');
   if (width <= 0 || height <= 0) return null;
 
-  const cell = figmaButtonMatrixCell(variant, interaction);
+  const cell = figmaButtonMatrixCell(variant, interaction, palette);
   const { metrics } = figmaButtonTokens;
   const strokeWidth = cell.strokeMode === 'none' ? 0 : metrics.strokeWidth;
   // Node 292:5046 paints an integer 82×42 frame at the original origin.
@@ -49,7 +54,12 @@ export function FigmaButtonSurface({
     ry: radius,
   };
   const gradientVariant = variant === 'solid' ? 'solid' : 'outline';
-  const axis = figmaButtonScaledGradientAxis(gradientVariant, width, height);
+  const axis = figmaButtonScaledGradientAxis(
+    gradientVariant,
+    width,
+    height,
+    palette,
+  );
   const gradientId = `figma-button-${gradientVariant}-${instanceId}`;
 
   return (
@@ -82,9 +92,11 @@ export function FigmaButtonSurface({
           {...rect}
           fill="none"
           strokeWidth={strokeWidth}
-          stroke={cell.strokeMode === 'gradient'
-            ? `url(#${gradientId})`
-            : cell.strokeColor ?? undefined}
+          stroke={
+            cell.strokeMode === 'gradient'
+              ? `url(#${gradientId})`
+              : (cell.strokeColor ?? undefined)
+          }
         />
       ) : null}
     </Svg>

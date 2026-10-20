@@ -1,4 +1,4 @@
-import { designTokens } from '@bidplace/design-tokens';
+import { designTokens, type SemanticColorMap } from '@bidplace/design-tokens';
 
 export type FigmaChoiceChipInteraction =
   | 'idle'
@@ -10,6 +10,7 @@ export function figmaChoiceChipStyle(
   selected: boolean,
   interaction: FigmaChoiceChipInteraction,
   removable = false,
+  palette: SemanticColorMap,
 ) {
   const active = interaction === 'hover' || interaction === 'pressed';
 
@@ -24,20 +25,23 @@ export function figmaChoiceChipStyle(
     paddingVertical: removable ? 0 : designTokens.space.choiceChipY,
     borderRadius: designTokens.radius.button,
     borderWidth: removable ? 0.5 : 1,
-    borderColor: selected ? designTokens.color.ink : designTokens.color.white,
+    borderColor: selected ? palette.ink : palette.white,
     backgroundColor: selected
       ? active
-        ? designTokens.color.solidHover
-        : designTokens.color.solid
+        ? palette.solidHover
+        : palette.solid
       : active
-        ? designTokens.color.mutedHover
-        : designTokens.color.mutedFill,
+        ? palette.mutedHover
+        : palette.mutedFill,
     opacity: interaction === 'disabled' ? designTokens.opacity.disabled : 1,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
   };
 }
 
-export function figmaChoiceChipTextColor(selected: boolean) {
-  return selected ? designTokens.color.white : designTokens.color.ink;
+export function figmaChoiceChipTextColor(
+  selected: boolean,
+  palette: SemanticColorMap,
+) {
+  return selected ? palette.white : palette.ink;
 }

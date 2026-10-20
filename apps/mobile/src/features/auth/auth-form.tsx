@@ -6,7 +6,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { View, type ViewStyle } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
 import { ApiErrorCode, newAccountSlugSchema, type User, type LegalDocumentId, type LegalDocumentsResponse } from '@bidplace/contracts';
-import { AppText, PrimaryButton, TextButton, TextField } from '../../components/ui';
+import { AppText, PrimaryButton, TextField } from '../../components/ui';
 import { FigmaButton } from '../../components/figma/FigmaButton';
 import { MotionPressable } from '../../components/ui/MotionPressable';
 import { AuthConsentCheckbox } from './auth-consent-checkbox';
@@ -14,10 +14,11 @@ import { AuthPasswordField } from './auth-password-field';
 import { registerSubmission } from './auth-dismissal';
 import { useAuthSheetComplete, useAuthSheetGuard } from './auth-sheet-context';
 import { AuthGoogleIcon } from './auth-google-icon';
-import { AuthLegalText } from './auth-legal-text';
+import { AuthLegalText, RegistrationLegalText, registrationConsentLabel } from './auth-legal-text';
 import { LegalDocumentViewer } from './legal-document-viewer';
 import { AuthTelegramIcon } from './auth-telegram-icon';
 import { useAnalytics } from '../../providers/analytics-provider';
+import { useAppTheme } from '../../providers/theme-provider';
 import { useApiClient } from '../../providers/api-provider';
 import { registerSessionChangeIsOwn, useAuth } from '../../providers/auth-provider';
 import {
@@ -51,6 +52,13 @@ import {
 import type { SafeRedirect } from './auth-redirect';
 import { TurnstileWidget, type TurnstileAvailability } from './turnstile-widget';
 
+const registrationConfirmationFields = [
+  'agreementAccepted',
+  'privacyAcknowledged',
+  'dataConsentGiven',
+  'age18Confirmed',
+] as const;
+
 function aborted(error: unknown): boolean {
   return (
     typeof error === 'object' &&
@@ -82,6 +90,7 @@ const dialogHostStyle: ViewStyle = {
 };
 type AuthFormProps = { redirectTo?: SafeRedirect };
 export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
+  const palette = useAppTheme();
   const auth = useAuth();
   const api = useApiClient();
   const router = useRouter();
@@ -414,7 +423,7 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
               onPress={() => undefined}
               style={{ alignSelf: 'flex-end' }}
             >
-              <AppText role="fieldError" style={{ color: designTokens.color.textSubdued, fontSize: 12 }}>
+              <AppText role="fieldError" style={{ color: palette.textSubdued, fontSize: 12 }}>
                 Забыли пароль?
               </AppText>
             </MotionPressable>
@@ -460,7 +469,7 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
           }}
         />
         </View>
-        <AppText role="authOr" style={{ textAlign: 'center', color: designTokens.color.textSubdued }}>
+        <AppText role="authOr" style={{ textAlign: 'center', color: palette.textSubdued }}>
           или
         </AppText>
         <View style={{ gap: designTokens.auth.loginFormGap }}>
@@ -510,7 +519,7 @@ const registrationCopy: Record<RegistrationStep, { title: string; caption: strin
   },
   nickname: {
     title: 'Выберите имя пользователя',
-    caption: 'Можете выбрать любой или предложений',
+    caption: 'Можете выбрать свой никнейм или предложенный',
   },
   password: {
     title: 'Создайте пароль',
@@ -540,6 +549,7 @@ function NicknameSuggestionList({
   suggestions: NicknameSuggestions;
   onSelect: (suggestion: string) => void;
 }) {
+  const palette = useAppTheme();
   return (
     <View
       nativeID="nickname-suggestions"
@@ -548,7 +558,7 @@ function NicknameSuggestionList({
       <AppText
         role="metadata"
         style={{
-          color: designTokens.color.fieldLabel,
+          color: palette.fieldLabel,
           textAlign: 'center',
           ...designTokens.typography.authSuggestionLabel,
         }}
@@ -579,6 +589,7 @@ function NicknameSuggestionList({
 }
 
 export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
+  const palette = useAppTheme();
   const auth = useAuth();
   const api = useApiClient();
   const analytics = useAnalytics();
@@ -595,6 +606,12 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
   const seenAuthEpoch = useRef(authEpoch);
   const mounted = useRef(true);
   const completed = useRef(false);
+  const registrationReceipt = useRef<{
+    user: User;
+    operation: number;
+    epoch: number;
+    controller: AbortController;
+  } | null>(null);
   const registerTransport = useRef<AbortController | null>(null);
   const registerSnapshot = useRef<string | null>(null);
   const registerSubmitting = useRef(false);
@@ -610,7 +627,6 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
   const focusedRef = useRef(focused);
   const wasFocused = useRef(focused);
   const [legalDocuments, setLegalDocuments] = useState<LegalDocumentsResponse | null>(null);
-  const [registrationLegalError, setRegistrationLegalError] = useState<string | null>(null);
   const [registrationLegalPending, setRegistrationLegalPending] = useState(false);
   const [registrationLegalOpen, setRegistrationLegalOpen] = useState<LegalDocumentId | null>(null);
   const legalRequest = useRef(0);
@@ -652,7 +668,7 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
     routeOwns(operation) &&
     (sessionUser()?.id ?? null) === null &&
     currentAuthEpoch(queryClient) === epoch;
-  const finishRegistration = (user: User, operation?: number) => {
+  const finishRegistration = useCallback((user: User, operation?: number) => {
     if (!mounted.current || !focusedRef.current || completed.current) return;
     if (operation !== undefined && sessionOperation.current !== operation) return;
     completed.current = true;
@@ -661,7 +677,25 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
       : (`/verify-email?redirectTo=${encodeURIComponent(redirectTo)}` as SafeRedirect);
     if (complete) complete(next);
     else router.replace(next as Href);
-  };
+  }, [complete, redirectTo, router]);
+  useEffect(() => {
+    const receipt = registrationReceipt.current;
+    if (!receipt) return;
+    const epoch = readAuthEpoch(queryClient);
+    if (
+      receipt.controller.signal.aborted || !mounted.current || !focusedRef.current ||
+      sessionOperation.current !== receipt.operation || epoch.id !== receipt.epoch ||
+      !epoch.writesOpen ||
+      queryClient.getQueryData<User | null>(authKeys.session)?.id !== receipt.user.id
+    ) {
+      registrationReceipt.current = null;
+      return;
+    }
+    if (!auth.isAuthenticated || auth.user?.id !== receipt.user.id || form.formState.isSubmitting) return;
+    registrationReceipt.current = null;
+    finishRegistration(receipt.user, receipt.operation);
+  }, [auth.isAuthenticated, auth.user?.id, authEpoch, form.formState.isSubmitting, finishRegistration, queryClient]);
+
   useAuthSheetGuard({
     dirty: Boolean(
       watched.slug ||
@@ -728,7 +762,10 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
     nicknameAdvancePending.current = false;
     invalidateSlugAvailability();
     setRegistrationLegalOpen(null);
-    if (mounted.current) setSubmitError('Сессия изменилась. Повторите регистрацию.');
+    // Guest bootstrap can rotate the epoch before any registration attempt.
+    if (mounted.current && Object.values(form.getValues()).some(Boolean)) {
+      setSubmitError('Сессия изменилась. Повторите регистрацию.');
+    }
   }, [authEpoch, form, invalidateSlugAvailability, queryClient]);
 
   useEffect(() => {
@@ -745,12 +782,7 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
     const controller = new AbortController();
     registrationLegalTransport.current = controller;
     setLegalDocuments(null);
-    // An earlier checkbox click is never treated as acceptance of a newer or unavailable version.
-    for (const key of ['agreementAccepted', 'privacyAcknowledged', 'dataConsentGiven', 'age18Confirmed'] as const) {
-      form.setValue(key, false);
-    }
     setRegistrationLegalPending(true);
-    setRegistrationLegalError(null);
     void api.auth.getLegalDocuments({ signal: controller.signal })
       .then((documents) => {
         if (!mounted.current || controller.signal.aborted || request !== legalRequest.current) return;
@@ -760,27 +792,22 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
       .catch(() => {
         if (!mounted.current || controller.signal.aborted || request !== legalRequest.current) return;
         setLegalDocuments(null);
-        setRegistrationLegalError('Юридические документы пока не опубликованы. Регистрация временно недоступна.');
         setRegistrationLegalPending(false);
       })
       .finally(() => {
         if (registrationLegalTransport.current === controller) registrationLegalTransport.current = null;
       });
   };
-  useEffect(() => {
-    // Initial fetch only. Manual retries must not reset checks on ordinary re-renders.
-    loadRegistrationLegal();
-  }, []);
+  const openRegistrationLegal = (id: LegalDocumentId) => {
+    setRegistrationLegalOpen(id);
+    if (!legalDocuments && !registrationLegalTransport.current) loadRegistrationLegal();
+  };
 
   const submitRegistration = form.handleSubmit(async (values) => {
     setSubmitError(null);
     const operation = sessionOperation.current;
     const epoch = currentAuthEpoch(queryClient);
     if (!anonymousOwns(operation, epoch)) return;
-    if (!legalDocuments || legalDocuments.documents.length !== 5) {
-      setSubmitError('Не удалось получить действующие юридические документы.');
-      return;
-    }
     if (proofAvailability === 'unavailable') {
       setSubmitError(AUTH_TURNSTILE_UNAVAILABLE_COPY);
       return;
@@ -798,7 +825,7 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
     setWidgetGeneration((generation) => generation + 1);
     try {
       const response = await auth.register(
-        { ...registerSubmission(values, legalDocuments.version), turnstileToken: token },
+        { ...registerSubmission(values), turnstileToken: token },
         { signal: controller.signal },
       );
       if (controller.signal.aborted || !routeOwns(operation)) return;
@@ -807,28 +834,15 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
         return;
       }
       analytics.identify(response.user.id, { claimAcquisition: true });
-      finishRegistration(response.user, operation);
+      registrationReceipt.current = {
+        user: response.user,
+        operation,
+        epoch: currentAuthEpoch(queryClient),
+        controller,
+      };
     } catch (error) {
       if (controller.signal.aborted || aborted(error)) return;
       if (!anonymousOwns(operation, epoch)) return;
-      if (
-        error instanceof ApiClientError &&
-        error.kind === 'conflict' &&
-        typeof error.details === 'object' &&
-        error.details !== null &&
-        'reason' in error.details &&
-        error.details.reason === 'legal_version_stale'
-      ) {
-        setStep('email');
-        setLegalDocuments(null);
-        form.setValue('agreementAccepted', false);
-        form.setValue('privacyAcknowledged', false);
-        form.setValue('dataConsentGiven', false);
-        form.setValue('age18Confirmed', false);
-        loadRegistrationLegal();
-        setSubmitError('Редакция документов изменилась. Ознакомьтесь с ней и подтвердите ещё раз.');
-        return;
-      }
       const message = authRequestMessage(error);
       if (message) {
         setSubmitError(message);
@@ -862,21 +876,11 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
       registerSubmitting.current = false;
     });
   };
-  const registrationConsentsReady =
-    watched.agreementAccepted &&
-    watched.privacyAcknowledged &&
-    watched.dataConsentGiven &&
-    watched.age18Confirmed;
+  const registrationConsentsReady = registrationConfirmationFields.every((key) => watched[key]);
   const goNext = async () => {
     if (!mounted.current || !focusedRef.current) return;
     setSubmitError(null);
     if (step === 'email') {
-      // Do not blame the visitor for unchecked controls that were disabled
-      // because the operator has not published the legal documents.
-      if (!legalDocuments || legalDocuments.documents.length !== 5) {
-        setSubmitError('Юридические документы пока недоступны.');
-        return;
-      }
       if (!registrationConsentsReady) return;
       const emailOk = await form.trigger('email');
       if (!emailOk) return;
@@ -958,21 +962,21 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
     step === 'nickname' && slugAvailability
       ? slugAvailability.status === 'checking'
         ? {
-            color: designTokens.color.textSubdued,
+            color: palette.textSubdued,
             text: 'Проверяем никнейм…',
           }
         : slugAvailability.status === 'available'
           ? {
-              color: designTokens.auth.available,
+              color: palette.usernameAvailable,
               text: `@${slugAvailability.slug} доступен`,
             }
           : slugAvailability.status === 'taken'
             ? {
-                color: designTokens.auth.taken,
+                color: palette.usernameTaken,
                 text: `@${slugAvailability.slug} недоступен`,
               }
             : {
-                color: designTokens.auth.taken,
+                color: palette.usernameTaken,
                 text: nicknameAvailabilityError(slugAvailability.error),
               }
       : null;
@@ -983,15 +987,10 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
       width="full"
       loading={
         form.formState.isSubmitting ||
-        slugAvailability?.status === 'checking' ||
-        (step === 'email' && registrationLegalPending)
+        slugAvailability?.status === 'checking'
       }
-      disabled={step === 'email' && (!legalDocuments || !registrationConsentsReady)}
-      accessibilityHint={
-        step === 'email' && legalDocuments && !registrationConsentsReady
-          ? 'Отметьте все обязательные согласия'
-          : undefined
-      }
+      disabled={step === 'email' && !registrationConsentsReady}
+      accessibilityHint={step === 'email' && !registrationConsentsReady ? 'Подтвердите документы и возраст 18+.' : undefined}
       onPress={() => void goNext()}
     />
   );
@@ -1007,17 +1006,20 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
   return (
       <View style={{ gap: designTokens.auth.screenGap, width: '100%' }}>
         <View style={{ gap: designTokens.auth.titleGap }}>
-          <AppText role="sectionTitle" style={{ textAlign: 'center', color: designTokens.color.fieldValue, ...designTokens.typography.authScreenTitle }}>
+          <AppText role="sectionTitle" style={{ textAlign: 'center', color: palette.fieldValue, ...designTokens.typography.authScreenTitle }}>
             {copy.title}
           </AppText>
-          <AppText role="bodySmall" style={{ textAlign: 'center', color: designTokens.color.textSubdued, ...designTokens.typography.authCaption, letterSpacing: 0 }}>
+          <AppText role="bodySmall" style={{ textAlign: 'center', color: palette.textSubdued, ...designTokens.typography.authCaption, letterSpacing: 0 }}>
             {copy.caption}
           </AppText>
           {step === 'nickname' ? (
             <View
               nativeID="nickname-status-slot"
               style={{
-                minHeight: 46,
+                // Reserve exactly one authStatus line so an appearing status
+                // doesn't shift the field/button; minHeight still lets long
+                // errors wrap and grow the area.
+                minHeight: designTokens.typography.authStatus.lineHeight,
                 width: '100%',
                 alignItems: 'center',
               }}
@@ -1048,7 +1050,7 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
                   <TextField ref={field.ref}
                     label="Никнейм"
                     icon="at-sign"
-                    iconColor={designTokens.color.fieldIcon}
+                    iconColor={palette.fieldIcon}
                     value={field.value}
                     onChangeText={(value) => {
                       nicknameAdvanceOperation.current += 1;
@@ -1148,39 +1150,26 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
         {nextAction}
         {step === 'email' ? (
           <View style={{ gap: designTokens.space.x3 }}>
-            {([
-              ['agreementAccepted', 'Я принимаю пользовательское соглашение bidplace', 'Пользовательское соглашение', 'agreement'],
-              ['privacyAcknowledged', 'Я ознакомился с политикой персональных данных и cookies', 'Политика и cookies', 'privacy'],
-              ['dataConsentGiven', 'Я даю согласие на обработку данных для основной услуги bidplace', 'Согласие на обработку данных', 'data-consent'],
-              ['age18Confirmed', 'Мне исполнилось 18 лет', '', null],
-            ] as const).map(([name, label, linkLabel, id]) => (
-              <Controller
-                key={name}
-                control={form.control}
-                name={name}
-                render={({ field }) => (
-                  <AuthConsentCheckbox
-                    checked={field.value}
-                    disabled={!legalDocuments || registrationLegalPending}
-                    onChange={field.onChange}
-                    label={label}
-                    linkLabel={linkLabel || undefined}
-                    onOpenDocument={id ? () => setRegistrationLegalOpen(id) : undefined}
-                  />
-                )}
-              />
-            ))}
-            {registrationLegalPending ? (
-              <AppText role="bodySmall" tone="secondary">Загружаем юридические документы…</AppText>
-            ) : null}
-            {registrationLegalError ? (
-              <>
-                <AppText role="bodySmall" tone="danger">{registrationLegalError}</AppText>
-                <TextButton label="Повторить" onPress={loadRegistrationLegal} />
-              </>
-            ) : legalDocuments ? (
-              <AppText role="metadata">Редакция документов: {legalDocuments.version.split('+')[0]}</AppText>
-            ) : null}
+            <AuthConsentCheckbox
+              checked={registrationConfirmationFields.every((key) => watched[key])}
+              label={registrationConsentLabel}
+              onChange={(checked) => {
+                for (const key of registrationConfirmationFields) {
+                  form.setValue(key, checked, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  });
+                }
+              }}
+              error={
+                registrationConfirmationFields.some((key) => form.formState.errors[key])
+                  ? 'Подтвердите документы и возраст 18+.'
+                  : undefined
+              }
+            >
+              <RegistrationLegalText onOpenDocument={openRegistrationLegal} />
+            </AuthConsentCheckbox>
+
           </View>
         ) : null}
         <View pointerEvents="box-none" style={dialogHostStyle}>

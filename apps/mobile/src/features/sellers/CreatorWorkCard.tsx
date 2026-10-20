@@ -1,10 +1,11 @@
 import { Link } from 'expo-router';
 import { View } from 'react-native';
-import { designTokens } from '@bidplace/design-tokens';
+import { designTokens, type SemanticColorMap } from '@bidplace/design-tokens';
 
 import { WorkCoverCard } from '../../components/figma/WorkCoverCard';
 import { FigmaIcon } from '../../components/figma/FigmaIcon';
 import { MotionPressable } from '../../components/ui';
+import { useAppTheme } from '../../providers/theme-provider';
 
 type Item = {
   work: {
@@ -16,14 +17,16 @@ type Item = {
   author: { slug: string };
 };
 
-const actionStyle = {
-  width: 40,
-  height: 40,
-  borderRadius: designTokens.radius.pill,
-  backgroundColor: designTokens.color.white,
-  alignItems: 'center' as const,
-  justifyContent: 'center' as const,
-};
+function actionStyle(palette: SemanticColorMap) {
+  return {
+    width: 40,
+    height: 40,
+    borderRadius: designTokens.radius.pill,
+    backgroundColor: palette.white,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  };
+}
 
 export function CreatorWorkCard({
   item,
@@ -36,6 +39,7 @@ export function CreatorWorkCard({
   onUnavailable: (feature: string) => void;
   onHide: (id: string) => void;
 }) {
+  const palette = useAppTheme();
   const image = item.work.images[0];
 
   return (
@@ -65,7 +69,7 @@ export function CreatorWorkCard({
                 accessibilityRole="link"
                 accessibilityLabel={`Редактировать работу ${item.work.title}`}
                 preset="icon"
-                style={actionStyle}
+                style={actionStyle(palette)}
               >
                 <FigmaIcon name="pencil-edit-01" size={20} />
               </MotionPressable>
@@ -75,9 +79,9 @@ export function CreatorWorkCard({
               accessibilityLabel={`Скрыть работу ${item.work.title}`}
               onPress={() => onHide(item.work.id)}
               preset="icon"
-              style={[actionStyle, { backgroundColor: designTokens.color.danger }]}
+              style={[actionStyle(palette), { backgroundColor: palette.danger }]}
             >
-              <FigmaIcon name="delete-02" size={20} color={designTokens.color.white} />
+              <FigmaIcon name="delete-02" size={20} color={palette.white} />
             </MotionPressable>
           </>
         ) : null}
@@ -86,7 +90,7 @@ export function CreatorWorkCard({
           accessibilityLabel={`Нравится работа ${item.work.title}`}
           onPress={() => onUnavailable('Избранные работы')}
           preset="icon"
-          style={actionStyle}
+          style={actionStyle(palette)}
         >
           <FigmaIcon name="heart" size={20} strokeWidthPx={1.5} />
         </MotionPressable>

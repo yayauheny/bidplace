@@ -20,6 +20,13 @@ import '../../testing/author-application-mocks';
 
 import { flush } from '../../testing/dom';
 
+// theme-provider imports expo-router, which is not importable in jsdom tests.
+vi.mock('expo-router', () => ({
+  DefaultTheme: { colors: {} },
+  ThemeProvider: ({ children }: { children?: ReactNode }) =>
+    createElement('div', null, children),
+}));
+
 import { profileDraftSchema } from './profile-validation';
 import {
   ProfileFieldWriteGuard,

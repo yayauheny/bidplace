@@ -1,4 +1,4 @@
-import { designTokens } from '@bidplace/design-tokens';
+import { designTokens, type SemanticColorMap } from '@bidplace/design-tokens';
 
 /**
  * Frame 76 (`745:21332`) is 350×48 at x=20, y=62 on a 390 frame whose
@@ -19,16 +19,22 @@ export function workGalleryChromeStyle() {
   };
 }
 
-export function workGalleryDotColor(active: boolean) {
-  return active ? designTokens.color.ink : designTokens.color.border;
+export function workGalleryDotColor(
+  active: boolean,
+  palette: SemanticColorMap,
+) {
+  return active ? palette.ink : palette.border;
 }
 
-export function workGalleryDotStyle(active: boolean) {
+export function workGalleryDotStyle(
+  active: boolean,
+  palette: SemanticColorMap,
+) {
   const size = designTokens.size.statusDot;
   return {
     width: size,
     height: size,
     borderRadius: size / 2,
-    backgroundColor: workGalleryDotColor(active),
+    backgroundColor: workGalleryDotColor(active, palette),
   };
 }

@@ -12,11 +12,14 @@ import {
   sheetBackdropEnter,
   sheetBackdropExit,
   sheetEnter,
-  sheetExit,
 } from '../../lib/layout-transition';
 
 import { FigmaIcon } from '../figma/FigmaIcon';
+import { useAppTheme } from '../../providers/theme-provider';
 import { AppText } from './AppText';
+import { AppDialogSheetMotion } from './AppDialogSheetMotion';
+import { SheetDragSurface, SheetDragHandle } from './SheetDragSurface';
+import { useSharedSheetBackdrop } from './sheet-backdrop';
 import {
   appDialogHostStyle,
   appDialogSheetBottomSpace,
@@ -65,12 +68,14 @@ export function AppDialog({
 }: AppDialogProps) {
   const { height, width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
+  const palette = useAppTheme();
   const viewportGutter = designTokens.space.x5;
   const closeButtonRef = useRef<ElementRef<typeof MotionPressable>>(null);
   const openRef = useRef(open);
   const instanceMountedRef = useRef(false);
   openRef.current = open;
   const returnFocus = useReturnFocus({
+    open: presentation !== 'dialog' ? open : undefined,
     explicitRef: explicitReturnFocusRef,
     focusOnOpen: () =>
       closeButtonRef.current instanceof HTMLElement
@@ -107,16 +112,23 @@ export function AppDialog({
   }, []);
 
   const isSheet = presentation !== 'dialog';
+  const sharedBackdrop = useSharedSheetBackdrop(open && isSheet);
   const isMediaSheet = presentation === 'mediaSheet';
   const overlay = (
     <AppDialogOverlay
       forceMount={isSheet ? true : undefined}
       style={{
         inset: 0,
-        backgroundColor: isSheet
-          ? designTokens.color.modalDimmer
-          : designTokens.color.overlay,
-        zIndex: designTokens.layer.modal,
+        backgroundColor:
+          sharedBackdrop && isSheet
+            ? 'transparent'
+            : isSheet
+              ? palette.modalDimmer
+              : palette.overlay,
+        zIndex:
+          sharedBackdrop && isSheet
+            ? designTokens.layer.modal - 1
+            : designTokens.layer.modal,
       }}
     />
   );
@@ -149,9 +161,9 @@ export function AppDialog({
       interactionStyle={({ hovered, pressed }) => ({
         backgroundColor:
           hovered || pressed
-            ? designTokens.color.surfaceStrong
+            ? palette.surfaceStrong
             : isMediaSheet
-              ? designTokens.color.dialogSurface
+              ? palette.dialogSurface
               : 'transparent',
       })}
     >
@@ -159,7 +171,7 @@ export function AppDialog({
         <FigmaIcon
           name="x"
           size={designTokens.size.buttonIconFrame}
-          color={designTokens.color.inkStrong}
+          color={palette.inkStrong}
           strokeWidthPx={designTokens.stroke.mediaSheetClosePx}
         />
       ) : (
@@ -178,7 +190,7 @@ export function AppDialog({
             overflow: 'hidden',
           }}
         >
-          {media}
+          <SheetDragHandle>{media}</SheetDragHandle>
         </View>
         <View
           style={{
@@ -230,26 +242,28 @@ export function AppDialog({
     </>
   ) : (
     <>
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'flex-start',
-          justifyContent: 'space-between',
-          gap: designTokens.space.x4,
-          minWidth: 0,
-          alignSelf: 'stretch',
-        }}
-      >
-        <Dialog.Title asChild>
-          <AppText
-            role={isSheet ? 'profileHeading' : 'sectionTitle'}
-            style={{ flex: 1, minWidth: 0 }}
-          >
-            {title}
-          </AppText>
-        </Dialog.Title>
-        {closeButton}
-      </View>
+      <SheetDragHandle>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'flex-start',
+            justifyContent: 'space-between',
+            gap: designTokens.space.x4,
+            minWidth: 0,
+            alignSelf: 'stretch',
+          }}
+        >
+          <Dialog.Title asChild>
+            <AppText
+              role={isSheet ? 'profileHeading' : 'sectionTitle'}
+              style={{ flex: 1, minWidth: 0 }}
+            >
+              {title}
+            </AppText>
+          </Dialog.Title>
+          {closeButton}
+        </View>
+      </SheetDragHandle>
       {description ? (
         <Dialog.Description asChild>
           <AppText role="bodySmall" tone="secondary">
@@ -278,16 +292,13 @@ export function AppDialog({
       style={{
         width: '100%',
         maxWidth: isSheet ? undefined : designTokens.layout.dialogMaxWidth,
-        maxHeight:
-          Platform.OS === 'web'
-            ? '100%'
-            : Math.max(height - viewportGutter * 2, 0),
+        maxHeight: Math.max(height - viewportGutter * 2, 0),
         minWidth: 0,
         flexShrink: Platform.OS === 'web' ? 1 : undefined,
         ...(Platform.OS === 'web' ? { pointerEvents: 'auto' as const } : {}),
         zIndex: designTokens.layer.modal,
         borderWidth: isMediaSheet || bare ? 0 : 1,
-        borderColor: 'rgba(20, 20, 20, 0.08)',
+        borderColor: palette.dialogBorder,
         borderRadius: isMediaSheet
           ? designTokens.radius.mediaSheet
           : isSheet
@@ -296,7 +307,7 @@ export function AppDialog({
         ...(isSheet
           ? { borderBottomLeftRadius: 0, borderBottomRightRadius: 0 }
           : {}),
-        backgroundColor: designTokens.color.dialogSurface,
+        backgroundColor: palette.dialogSurface,
         padding:
           isMediaSheet || bare
             ? 0
@@ -313,7 +324,7 @@ export function AppDialog({
                   : 0,
             }
           : {}),
-        ...(isMediaSheet || bare ? {} : designTokens.elevation.floating),
+        ...(isMediaSheet || bare ? {} : { boxShadow: palette.floatingShadow }),
       }}
     >
       {bare ? (
@@ -360,6 +371,7 @@ export function AppDialog({
   const frameStyle = appDialogHostStyle({
     presentation,
     viewportGutter,
+    viewportWidth: width,
   });
 
   return (
@@ -372,23 +384,23 @@ export function AppDialog({
       {isSheet ? (
         <Dialog.Portal forceMount>
           {open ? (
-            <Animated.View
-              entering={sheetBackdropEnter}
-              exiting={sheetBackdropExit}
-            >
-              {overlay}
-            </Animated.View>
+            sharedBackdrop ? (
+              overlay
+            ) : (
+              <Animated.View
+                entering={sheetBackdropEnter}
+                exiting={sheetBackdropExit}
+              >
+                {overlay}
+              </Animated.View>
+            )
           ) : null}
           <AppDialogFrame style={frameStyle}>
-            {open ? (
-              <Animated.View
-                entering={entering}
-                exiting={sheetExit}
-                style={{ width: '100%' }}
-              >
+            <AppDialogSheetMotion open={open} entering={entering} onEntered={focusAfterEnter}>
+              <SheetDragSurface enabled={open} onRequestClose={onClose}>
                 {content}
-              </Animated.View>
-            ) : null}
+              </SheetDragSurface>
+            </AppDialogSheetMotion>
           </AppDialogFrame>
         </Dialog.Portal>
       ) : (

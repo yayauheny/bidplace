@@ -5,6 +5,7 @@ import { Line, Svg } from 'react-native-svg';
 import { designTokens } from '@bidplace/design-tokens';
 
 import { FigmaIcon } from '../../components/figma/FigmaIcon';
+import { useAppTheme } from '../../providers/theme-provider';
 import {
   AppText,
   PrimaryButton,
@@ -72,6 +73,7 @@ export function AuthorApplicationBasicsStep({
 }
 
 function AuthorPhotoBlock({ photo }: { photo: AuthorApplicationPhoto }) {
+  const palette = useAppTheme();
   const uri = photo.failed ? null : photo.uri;
   const hasPhoto = uri !== null;
   return (
@@ -86,7 +88,7 @@ function AuthorPhotoBlock({ photo }: { photo: AuthorApplicationPhoto }) {
             width: photoWidth,
             height: photoHeight,
             borderRadius: photoRadius,
-            backgroundColor: designTokens.color.mutedFill,
+            backgroundColor: palette.mutedFill,
             overflow: 'hidden',
             alignItems: 'center',
             justifyContent: 'center',
@@ -117,7 +119,7 @@ function AuthorPhotoBlock({ photo }: { photo: AuthorApplicationPhoto }) {
                 name="image-add-02"
                 size={photoIconSize}
                 strokeWidthPx={photoIconStrokePx}
-                color={designTokens.color.inkStrong}
+                color={palette.inkStrong}
               />
             </>
           )}
@@ -141,6 +143,7 @@ function AuthorPhotoBlock({ photo }: { photo: AuthorApplicationPhoto }) {
 }
 
 function PhotoGuides() {
+  const palette = useAppTheme();
   return (
     <Svg
       width={photoWidth}
@@ -154,7 +157,7 @@ function PhotoGuides() {
           y1={y}
           x2={photoWidth}
           y2={y}
-          stroke={designTokens.color.photoGuide}
+          stroke={palette.photoGuide}
           strokeWidth={photoGuideStrokePx}
         />
       ))}
@@ -165,7 +168,7 @@ function PhotoGuides() {
           y1={0}
           x2={x}
           y2={photoHeight}
-          stroke={designTokens.color.photoGuide}
+          stroke={palette.photoGuide}
           strokeWidth={photoGuideStrokePx}
         />
       ))}

@@ -462,6 +462,36 @@ from below, exits downward, and the backdrop fades (`motion.control`,
 `cubic-bezier(0.2, 0, 0, 1)`, reduced motion). Geometry is unchanged. The
 native branch is a stub.
 
+Ordinary web AppDialog sheets share one visual `SheetBackdropProvider` installed
+under ThemeProvider in AppProviders. FilterSheet/ShareSheet/mediaSheet inherit it;
+A → B handoffs retain the same dimmer while each dialog keeps its dismissal,
+content and focus owner. The transparent hit layer stays below the panel.
+Last close/unmount removes the dimmer; native and standalone previews keep their
+existing per-dialog layer. Centered confirmations retain their separate level.
+Return-focus follows the opener ancestry only when the immediate opener was
+removed, preserving focus within a still-open parent (2026-10-19 transition matrix).
+
+Auth's visual dimmer is owned by the persistent `(auth)/_layout`, so changing
+between login, forgot-password and reset-password does not replay its fade.
+AuthViewport keeps the transparent dismissal hit layer and its existing guards;
+full-screen registration covers the dimmer with its opaque canvas. Shared modal
+color/motion values are unchanged (2026-10-19 auth-transition regression).
+
+`SheetDragSurface` owns downward header/handle dragging for AppDialog sheets,
+FilterSheet (including compact bare headers) and the auth sheet. The content body
+keeps its normal scroll behavior. A short drag springs back; a committed drag calls
+the existing close owner, preserving busy and dirty guards. Cross, Escape and focus
+return remain available. Reduced motion removes the return transition. Centered
+confirmations and full-screen registration have no drag affordance (DEC-122).
+
+Shared sheet width policy (2026-10-19, account foundation): for viewports up to
+`layout.sheetFillViewportMax` (600 CSS px) an auth/AppDialog sheet spans the full
+viewport width; above 600 it is capped at `layout.sheetMax` (390). Inner fields fill
+the sheet's inner width with the existing paddings. Full-screen registration keeps
+its measured 350 column, centered dialogs are not stretched. The rule lives in
+`sheetWidthConstraint()` (app-dialog-host-style) and AuthViewport; verified in
+production build, Chromium + WebKit, 320–1024 (`docs/audits/current/evidence/2026-10-19-sheet-widths/`).
+
 On web AppDialog focuses its close control when opened. A sheet also completes
 initial focus after its entering animation if focus is still outside the dialog;
 it never steals focus already inside. The existing Escape/trap/return-focus
@@ -578,7 +608,7 @@ control keeps its own 52 px height and 16/19 type.
 | hoverEmpty  | `292:5041` | `fieldHoverBorder` `#535353` | `fieldHoverFill` `#FCFCFC` |
 | filled      | `292:5038` | `ink` `#2A2A2A`              | `#FFFFFF`                  |
 | hoverFilled | `292:5039` | `solidHover` `#000000`       | `#FCFCFC`                  |
-| focus       | `292:5037` | `focus` `#004DFF`            | `#FFFFFF`                  |
+| focus       | `292:5037` | `focus` `#121212` (DEC-127)  | `#FFFFFF`                  |
 | error       | `292:5040` | `error` `#FF0000`            | `#FFFFFF`                  |
 | success     | `292:5036` | `success` `#039600`          | `#FFFFFF`                  |
 | disabled    | `292:5042` | `#8A8A8A`                    | `mutedFill` `#F3F3F3`      |
@@ -642,13 +672,113 @@ Dismissed dialogs must not intercept clicks: web `app-dialog-host` /
 
 `DEC-104`. A pressed `FigmaButton` or `FigmaChoiceChip` keeps its existing
 fill, inset, or opacity change. It does not draw a mint ring. Selected chips
-stay on the charcoal fill after release. Keyboard focus stays the blue
-`focus-visible` outline in `global.css`. Dock items already have no shadow.
+stay on the charcoal fill after release. Keyboard focus uses the monochrome
+`focus-visible` outline in `global.css` (DEC-127). Dock items already have no shadow.
 This does not change control size, type, or the field success state.
 
-## 7. Old system boundary
+## 7. Account shared components (2026-10-20)
+
+Владельцы и контракты общих компонентов экрана аккаунта (волны 3A–3D).
+Визуальные значения light прежние; black-палитра provisional.
+
+- `AccountIdentity` (`components/figma/AccountIdentity.tsx`) — row:
+  avatar100 (`size.accountAvatar`, `radius.avatar`, placeholder
+  `accountAvatarPlaceholder`) + текстовая колонка `flex:1/minWidth:0`
+  - опциональный CTA slot. Имя — `accountName` strong; handle
+    `@slug` — `accountHandle` цветом `accountMeta`; handle nullable.
+    Фото через `ResilientRemoteImage` (`fallback="plain"`, retryable=false).
+    Это не `CreatorIdentity`: та — для публичных страниц автора.
+- Published identity правило: при APPROVED имя/фото/sharePath берутся
+  только из публичного author-кэша (`use-account-public-identity`, общий
+  query key с публичным экраном автора); owner profile несёт editing
+  overlay и для identity не читается.
+- `SettingsGroup`/`SettingsRow` (`components/figma/SettingsList.tsx`):
+  label группы опционален и красится `accountMeta`; поверхность группы
+  прежняя. Row: иконка + текстовый блок `flex:1/minWidth:0` (AppText
+  `flexShrink:1`), props `trailingArrow` и `busy` (busy блокирует row).
+- `WorkCoverCaption` (экспорт `WorkCoverCard.tsx`) — единый caption
+  caption-варианта: author — `coverCaptionAuthor` (tracking −0.14), title
+  — роль `coverCaptionTitle` 14/17/500/−0.28, максимум 2 строки. Ветки
+  cover/no-cover используют один renderer; дублирующей разметки нет.
+- Новые semantic-роли (`SemanticColorMap` в обеих map theme.ts):
+  `accountMeta` (light #858585, black provisional #8F8F8F) — метки групп
+  настроек и handle; `coverCaptionTitle` — типографика caption-заголовка
+  (в tokens.ts). `gray2` не переиспользуется новыми consumers.
+- `ResilientRemoteImage`: prop `fallback: 'labelled' | 'plain'`
+  (plain — без текста плейсхолдера; default 'labelled' прежний).
+- Back variant `settings` — шапка настроек (frame/glyph28, hitSlop до touch44).
+  FigmaIconButton size=settingsHeader задаёт такой же frame для симметрии
+  противоположного действия; default-потребители сохраняют прежний размер.
+- settingsTitle/settingsRow сохраняют естественную высоту строки Figma
+  (normal), без предположительных чисел22/20.
+- AccountIdentity: имя/handle сгруппированы отдельно, CTA content-width;
+  длинное имя переносится, не масштабируется.
+- FormPageShell: варианты account/settings задают paddingTop12/20 через
+  spacing-токены; default24 и authorApplication сохраняют поведение.
+- `FormPageShell` — testID `form-page` (единый scroll-owner форм;
+  web-скоуп тестов поверх стека маршрутов).
+
+## 8. Old system boundary
 
 `docs/modern-ui` and its design language are retired. Runtime public screens
 use `apps/mobile/src/components/figma` and wrappers in `components/ui`. There
 is no nested Figma token object. Figma is the production visual source for
 mobile-web 390 (`DEC-119`).
+
+### Registration consent composition —2026-10-20
+
+AuthConsentCheckbox принимает текстовый children-slot; RegistrationLegalText
+переиспользует существующий keyboard-accessible LegalLink. Ссылки —fieldValue,
+основной текст —новая semantic-роль legalText (light858585, black provisional).
+Роль применяется ко всему AuthLegalText, без новых локальных цветов.
+Fullscreen AuthViewport заполняет viewport; sheetWidthConstraint относится только
+к шторкам. Форма внутри fullscreen сохраняет центрирование и maxWidth350.
+
+### Floating dock home icon — 2026-10-20
+
+Главная использует общий FigmaIcon `home-01` (Hugeicons Home01Icon), а не
+брендовый знак. Path совпадает с live node 7008:16942; размер, stroke, цвет
+и hit area остаются у существующих владельцев dock/FigmaIcon/tokens.
+Состав MVP dock остаётся Home/Search/Add/Profile без корзины.
+
+### Date selection — 2026-10-20, DEC-126
+
+`components/ui/DateField` is the shared date-only field (UI barrel export).
+It composes FigmaSelectField with optional calendar icon and existing AppDialog
+sheet. Use the same field for date selection; no free-text-only date entry.
+Owner forms retain validation, busy/session guards and persistence. The field
+emits a canonical date string only after confirmation or explicit clear.
+
+Web DateSelection composes public React Aria Calendar/NumberField/Button APIs,
+Russian locale and @internationalized/date calendar values. Calendar controls
+reuse field typography, control radius, touch size and semantic surface/ink/
+action/onAction/focus roles. Convert RN lineHeight to CSS px. Select appearance
+is normalized for WebKit with the existing arrow-down icon. Native uses SDK57
+system picker; its platform appearance is not claimed to match the web calendar.
+No new calendar geometry or palette is copied into screens. Month-only values
+remain day:null; never invent day1 or serialize civil dates as UTC instants.
+
+Web sheet motion has one persistent DOM tree with withTiming and reduced-motion
+support. Closing content is inert and aria-hidden; completion removes it. This
+avoids Reanimated web layout exit moving interactive controls into dummy clones.
+Native retains existing layout enter/exit.
+
+### 2026-10-20 — Search и полноэкранный AuthViewport
+
+SearchOverlayTabs растягивает rail на ширину доступной колонки, sampleWidth не
+является ограничением runtime. Интерактивная поверхность AuthorSearchRow имеет
+radius.small; постоянная геометрия передаётся статическим style, состояния —
+через interactionStyle, поскольку Link asChild не сохраняет callback-style.
+Крест AuthViewport использует size.touch и существующие auth.screenPaddingX/Top;
+в DOM следует после формы, чтобы первичный фокус оставался на поле. Цвет и
+модальность focus-visible из §6.4 сохранены.
+
+### DEC-127 — Монохромный focus (2026-10-20)
+
+По прямому решению основателя роль focus — #121212 в light и #FFFFFF в black.
+Это утверждённая замена прежнего синего из Figma состояния focus292:5037 и
+уточнение §6.4/DEC-104. Поля используют border этой роли, прочие элементы —
+существующий outline2px с offset2px. Pointer/keyboard-модальность, размеры,
+error/disabled состояния и доступность не меняются. ThemeProvider зеркалирует
+роль в CSS; начальные CSS-значения соответствуют токену до hydration. Black-тема
+в целом остаётся provisional и не включается пользователям этим решением.

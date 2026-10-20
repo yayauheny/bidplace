@@ -3,7 +3,10 @@ import { Platform, Text, View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
+import { useAppTheme } from '../../providers/theme-provider';
 import { MotionPressable } from '../ui/MotionPressable';
+import { FigmaIcon } from './FigmaIcon';
+import type { FigmaIconName } from './figma-icon-names';
 import {
   figmaFieldPlaceholderColor,
   figmaFieldShowsFloatingLabel,
@@ -23,6 +26,7 @@ export const FigmaSelectField = forwardRef<
     disabled?: boolean;
     onPress: () => void;
     variant?: FigmaFieldVariant;
+    icon?: FigmaIconName;
   }
 >(function FigmaSelectField(
   {
@@ -33,9 +37,11 @@ export const FigmaSelectField = forwardRef<
     disabled = false,
     onPress,
     variant = 'default',
+    icon,
   },
   ref,
 ) {
+  const palette = useAppTheme();
   const errorId = useId();
   const valueId = useId();
   const [focused, setFocused] = useState(false);
@@ -50,7 +56,7 @@ export const FigmaSelectField = forwardRef<
     filled: filled || focused,
   });
   const showLabel = figmaFieldShowsFloatingLabel(status);
-  const valueColor = figmaFieldValueColor(status);
+  const valueColor = figmaFieldValueColor(status, palette);
   const displayText = filled ? value : placeholder;
   const displayIsPlaceholder = !filled && !focused;
 
@@ -78,8 +84,21 @@ export const FigmaSelectField = forwardRef<
               'aria-haspopup': 'dialog',
             } as object)
           : {})}
-        style={figmaFieldStyle(status, false, 'default', variant)}
+        style={figmaFieldStyle(status, false, 'default', variant, palette)}
       >
+        {icon ? (
+          <View style={{ padding: designTokens.space.iconPad }}>
+            <FigmaIcon
+              name={icon}
+              color={palette.fieldIcon}
+              strokeWidthPx={
+                variant === 'authorApplication'
+                  ? designTokens.stroke.authorApplicationFieldPx
+                  : undefined
+              }
+            />
+          </View>
+        ) : null}
         <Text
           nativeID={valueId}
           numberOfLines={1}
@@ -89,34 +108,34 @@ export const FigmaSelectField = forwardRef<
             flex: 1,
             minWidth: 0,
             color: displayIsPlaceholder
-              ? figmaFieldPlaceholderColor(status, variant)
+              ? figmaFieldPlaceholderColor(status, variant, palette)
               : valueColor,
             ...designTokens.typography.field,
           }}
         >
           {displayText}
         </Text>
-        {showLabel ? (
-          <View
-            pointerEvents="none"
+        {/* shortcut: label stays mounted with display none — unmounting it during blur re-triggers the radix FocusScope mutation observer and steals focus to the dialog container */}
+        <View
+          pointerEvents="none"
+          style={{
+            position: 'absolute',
+            left: designTokens.space.fieldLabelX,
+            top: designTokens.space.fieldLabelY,
+            paddingHorizontal: 4,
+            backgroundColor: palette.canvas,
+            display: showLabel ? undefined : 'none',
+          }}
+        >
+          <Text
             style={{
-              position: 'absolute',
-              left: designTokens.space.fieldLabelX,
-              top: designTokens.space.fieldLabelY,
-              paddingHorizontal: 4,
-              backgroundColor: designTokens.color.canvas,
+              color: palette.fieldLabel,
+              ...designTokens.typography.fieldLabel,
             }}
           >
-            <Text
-              style={{
-                color: designTokens.color.fieldLabel,
-                ...designTokens.typography.fieldLabel,
-              }}
-            >
-              {label}
-            </Text>
-          </View>
-        ) : null}
+            {label}
+          </Text>
+        </View>
       </MotionPressable>
       {error ? (
         <Text
@@ -126,7 +145,7 @@ export const FigmaSelectField = forwardRef<
             marginTop: designTokens.space.fieldErrorGap,
             marginLeft: designTokens.space.fieldErrorX,
             marginRight: designTokens.space.fieldX,
-            color: designTokens.color.error,
+            color: palette.error,
             ...designTokens.typography.fieldError,
           }}
         >

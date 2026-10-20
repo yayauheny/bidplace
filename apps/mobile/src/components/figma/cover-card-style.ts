@@ -1,6 +1,6 @@
 import { Platform, type ViewStyle } from 'react-native';
 
-import { designTokens } from '@bidplace/design-tokens';
+import { designTokens, type SemanticColorMap } from '@bidplace/design-tokens';
 
 export const coverArtworkScale = 1.05;
 
@@ -11,15 +11,17 @@ export type CoverCardFrameSize = {
 
 export function coverCardFrameStyle(
   kind: 'work' | 'author',
-  size?: CoverCardFrameSize,
-  frameRadius?: number,
+  size: CoverCardFrameSize | undefined = undefined,
+  frameRadius: number | undefined = undefined,
+  palette: SemanticColorMap,
 ): ViewStyle {
   return {
     width: size?.width ?? '100%',
     ...(size
       ? { height: size.height }
       : {
-          aspectRatio: designTokens.size.coverWidth / designTokens.size.coverHeight,
+          aspectRatio:
+            designTokens.size.coverWidth / designTokens.size.coverHeight,
         }),
     overflow: 'hidden',
     borderRadius:
@@ -27,7 +29,7 @@ export function coverCardFrameStyle(
       (kind === 'author'
         ? designTokens.radius.authorCover
         : designTokens.radius.cover),
-    backgroundColor: designTokens.color.mutedFill,
+    backgroundColor: palette.mutedFill,
   };
 }
 
@@ -90,5 +92,23 @@ export function coverOverlayPadStyle(): ViewStyle {
   return {
     padding: designTokens.space.coverPad,
     gap: designTokens.space.coverGap,
+  };
+}
+
+// Caption-variant card (account cabinet grid): media 179/236, caption below.
+export function coverCaptionCardFrameStyle(palette: SemanticColorMap): ViewStyle {
+  return {
+    width: '100%',
+    aspectRatio: designTokens.ratio.ownerCardMedia,
+    overflow: 'hidden',
+    borderRadius: designTokens.radius.ownerCard,
+    backgroundColor: palette.mutedFill,
+  };
+}
+
+export function coverCaptionBlockStyle(): ViewStyle {
+  return {
+    paddingTop: designTokens.space.coverCaptionGap,
+    gap: designTokens.space.x1,
   };
 }

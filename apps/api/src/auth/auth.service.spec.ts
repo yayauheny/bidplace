@@ -1,4 +1,4 @@
-import { ConflictException, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, UnauthorizedException, ServiceUnavailableException } from '@nestjs/common';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { turnstileToken as syntheticTurnstileToken } from '../../test/integration/abuse-request';
@@ -7,9 +7,10 @@ import { authCredentialsSelect, authUserContractSelect } from './auth.mapper';
 import { AuthService } from './auth.service';
 import { AuthTokenService } from './auth-token.service';
 import { PasswordHasherService } from './password-hasher.service';
-import { readPublishedLegalDocuments } from './legal-documents';
+import { readPublishedLegalDocuments, readRegistrationLegalVersion } from './legal-documents';
 
 vi.mock('./legal-documents', () => ({
+  readRegistrationLegalVersion: vi.fn(() => 'portfolio-legal-2026-10-12'),
   readPublishedLegalDocuments: vi.fn(() => ({
     version: 'portfolio-legal-2026-10-12',
     documents: [],
@@ -176,11 +177,36 @@ describe('AuthService', () => {
     });
   });
 
-  it('rejects a stale legal version without creating a user or checking abuse', async () => {
-    vi.mocked(readPublishedLegalDocuments).mockReturnValueOnce({
-      version: 'new-legal-version',
-      documents: [],
+  it('creates the account and records the server revision when reading documents is unavailable', async () => {
+    vi.mocked(readPublishedLegalDocuments).mockImplementationOnce(() => {
+      throw new ServiceUnavailableException();
     });
+    prisma.user.findFirst.mockResolvedValue(null);
+    prisma.user.create.mockResolvedValue(createPrismaUser());
+    passwordHasher.hash.mockResolvedValue('hashed-value');
+    authTokenService.sign.mockReturnValue('signed-token');
+    await service.register({
+      email: 'new-user@example.com', password: 'registration-password',
+      slug: 'new-user', turnstileToken: registerProof,
+      legal: {
+        agreement: { confirmed: true }, privacy: { confirmed: true },
+        dataConsent: { confirmed: true }, age18Confirmed: true,
+      },
+    });
+    expect(prisma.user.create.mock.calls[0]?.[0].data.registrationLegalEvidence.create).toMatchObject({
+      agreementVersion: 'portfolio-legal-2026-10-12',
+      privacyVersion: 'portfolio-legal-2026-10-12',
+      dataConsentVersion: 'portfolio-legal-2026-10-12',
+      age18ConfirmedAt: expect.any(Date),
+    });
+    expect(readPublishedLegalDocuments).not.toHaveBeenCalled();
+    vi.mocked(readPublishedLegalDocuments).mockReset().mockReturnValue({
+      version: 'portfolio-legal-2026-10-12', documents: [],
+    });
+  });
+
+  it('rejects a stale legal version without creating a user or checking abuse', async () => {
+    vi.mocked(readRegistrationLegalVersion).mockReturnValueOnce('new-legal-version');
     await expect(service.register({
       email: 'seller@example.com',
       password: 'super-secret',

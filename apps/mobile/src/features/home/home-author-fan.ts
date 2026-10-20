@@ -13,7 +13,6 @@ export const homeAuthorFanLayout = {
   rearTransformOrigin: '0px 0px',
   rearOpacity: 0.5,
   cardRadius: 24,
-  frontShadow: '0 6px 20px rgba(58, 58, 58, 0.40)',
 } as const;
 
 export type HomeAuthorFanSlot = 'front' | 'rearLeft' | 'rearRight';

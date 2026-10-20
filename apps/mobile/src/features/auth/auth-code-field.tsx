@@ -4,6 +4,7 @@ import { Platform, TextInput, View } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
 
 import { AppText } from '../../components/ui';
+import { useAppTheme } from '../../providers/theme-provider';
 
 import { figmaFieldNativeOutlineStyle } from '../../components/figma/figma-text-field-style';
 import { normalizeEmailVerificationCode } from './author-email-verification';
@@ -20,39 +21,48 @@ export function AuthCodeField({
   error?: string;
 }) {
   const [focused, setFocused] = useState(false);
+  const palette = useAppTheme();
   const borderColor = error
-    ? designTokens.color.error
+    ? palette.error
     : focused
-      ? designTokens.color.focus
-      : designTokens.color.muted;
+      ? palette.focus
+      : palette.muted;
 
   return (
     <View style={{ width: '100%', gap: designTokens.space.x2 }}>
-      <View style={{ position: 'relative', minHeight: designTokens.size.input }}>
+      <View
+        style={{ position: 'relative', minHeight: designTokens.size.input }}
+      >
         <View
           pointerEvents="none"
-          style={{ flexDirection: 'row', gap: designTokens.auth.codeGap, width: '100%' }}
+          style={{
+            flexDirection: 'row',
+            gap: designTokens.auth.codeGap,
+            width: '100%',
+          }}
         >
           {CELLS.map((index) => (
-              <View
-                key={index}
-                accessibilityElementsHidden
-                importantForAccessibility="no"
-                {...(Platform.OS === 'web' ? { dataSet: { authCodeCell: 'true' } } : {})}
-                style={{
+            <View
+              key={index}
+              accessibilityElementsHidden
+              importantForAccessibility="no"
+              {...(Platform.OS === 'web'
+                ? { dataSet: { authCodeCell: 'true' } }
+                : {})}
+              style={{
                 flex: 1,
                 height: designTokens.auth.codeCellHeight,
                 borderRadius: designTokens.auth.codeRadius,
                 borderWidth: designTokens.size.fieldBorder,
                 borderColor,
-                backgroundColor: designTokens.color.canvas,
+                backgroundColor: palette.canvas,
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
             >
               <AppText
                 style={{
-                  color: designTokens.color.fieldValue,
+                  color: palette.fieldValue,
                   fontSize: 24,
                   lineHeight: 34,
                 }}
@@ -71,7 +81,9 @@ export function AuthCodeField({
           keyboardType="number-pad"
           maxLength={6}
           value={value}
-          onChangeText={(next) => onChangeText(normalizeEmailVerificationCode(next))}
+          onChangeText={(next) =>
+            onChangeText(normalizeEmailVerificationCode(next))
+          }
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           style={{
@@ -82,7 +94,9 @@ export function AuthCodeField({
             left: 0,
             color: 'transparent',
             ...designTokens.typography.authSheetTitle,
-            ...(Platform.OS === 'web' ? (figmaFieldNativeOutlineStyle as object) : null),
+            ...(Platform.OS === 'web'
+              ? (figmaFieldNativeOutlineStyle as object)
+              : null),
           }}
         />
       </View>

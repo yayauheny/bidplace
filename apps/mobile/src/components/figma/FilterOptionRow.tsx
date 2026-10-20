@@ -4,6 +4,7 @@ import { designTokens } from '@bidplace/design-tokens';
 
 import { AppText } from '../ui/AppText';
 import { MotionPressable } from '../ui/MotionPressable';
+import { useAppTheme } from '../../providers/theme-provider';
 import { FigmaIcon } from './FigmaIcon';
 import {
   filterOptionControlStyle,
@@ -28,6 +29,7 @@ export function FilterOptionRow({
   onPress: () => void;
 }) {
   const compact = variant === 'compact';
+  const palette = useAppTheme();
   const handleWebKeyDown = (event: {
     key: string;
     preventDefault: () => void;
@@ -67,12 +69,12 @@ export function FilterOptionRow({
       ]}
     >
       {!compact ? (
-        <View style={filterOptionControlStyle(mode, selected)}>
+        <View style={filterOptionControlStyle(mode, selected, palette)}>
           {selected && mode === 'checkbox' ? (
             <FigmaIcon
               name="check"
               size={designTokens.size.filterOptionCheck}
-              color={designTokens.color.white}
+              color={palette.white}
               strokeWidthPx={designTokens.stroke.filterOptionCheck}
             />
           ) : null}
@@ -82,7 +84,7 @@ export function FilterOptionRow({
                 width: 8,
                 height: 8,
                 borderRadius: 4,
-                backgroundColor: designTokens.color.white,
+                backgroundColor: palette.white,
               }}
             />
           ) : null}
@@ -98,7 +100,7 @@ export function FilterOptionRow({
                 flex: 0,
                 fontSize: 15,
                 fontWeight: '500' as const,
-                color: designTokens.color.ink,
+                color: palette.ink,
               }
             : null,
           variant === 'directions'

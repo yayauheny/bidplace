@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { getApiAssetUrl } from '../../lib/environment';
+import { useAppTheme } from '../../providers/theme-provider';
 import { coverFrostSpec, type CoverFrostPlacement } from './cover-frost-style';
 
 export function CoverFrost({
@@ -12,7 +13,8 @@ export function CoverFrost({
   imageUrl: string;
   placement: CoverFrostPlacement;
 }) {
-  const spec = coverFrostSpec(placement);
+  const palette = useAppTheme();
+  const spec = coverFrostSpec(placement, palette);
   return (
     <View
       aria-hidden

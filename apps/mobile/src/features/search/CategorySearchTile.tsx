@@ -10,6 +10,7 @@ import {
   interactiveHitFallbackStyle,
 } from '../../components/ui/interactive-hit-style';
 import { MotionPressable } from '../../components/ui/MotionPressable';
+import { useAppTheme } from '../../providers/theme-provider';
 import { toPortfolioWorksHref } from '../products/portfolio-works-query';
 
 export function CategorySearchTile({
@@ -21,6 +22,7 @@ export function CategorySearchTile({
   slug: string;
   name: string;
 }) {
+  const palette = useAppTheme();
   return (
     <Link href={toPortfolioWorksHref({ category: id })} asChild>
       <MotionPressable
@@ -34,7 +36,7 @@ export function CategorySearchTile({
           width: '100%',
           gap: designTokens.space.x2,
           borderRadius: designTokens.radius.small,
-          ...interactiveHitFallbackStyle({ hovered, pressed }),
+          ...interactiveHitFallbackStyle({ hovered, pressed, palette }),
         })}
       >
         <View
@@ -43,7 +45,7 @@ export function CategorySearchTile({
             aspectRatio: 120.67 / 121.89,
             borderRadius: designTokens.radius.small,
             overflow: 'hidden',
-            backgroundColor: designTokens.color.mutedFill,
+            backgroundColor: palette.mutedFill,
             alignItems: 'center',
             justifyContent: 'center',
           }}

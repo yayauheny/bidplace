@@ -23,6 +23,12 @@ export const sheetEnter = (onFinished: (finished: boolean) => void) =>
     .reduceMotion(ReduceMotion.System)
     .withCallback(onFinished);
 
+export const sheetTimingConfig = {
+  duration: designTokens.motion.control,
+  easing: controlEasing,
+  reduceMotion: ReduceMotion.System,
+};
+
 export const sheetExit = SlideOutDown.duration(designTokens.motion.control)
   .easing(controlEasing)
   .reduceMotion(ReduceMotion.System);

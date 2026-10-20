@@ -7,9 +7,12 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { flush } from '../../testing/dom';
-import { authKeys, replaceAuthenticatedSession } from '../../lib/query-cache';
+import { advanceAuthEpoch, authKeys, replaceAuthenticatedSession } from '../../lib/query-cache';
 import { ApiErrorCode, type User } from '@bidplace/contracts';
 import { ApiClientError } from '@bidplace/api-client';
+import { blackColorMap, designTokens, lightColorMap } from '@bidplace/design-tokens';
+
+import { ThemeProvider } from '../../providers/theme-provider';
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
@@ -22,6 +25,7 @@ const harness = vi.hoisted(() => ({
   emitBlur: () => undefined as void,
   legalReads: 0,
   registers: 0,
+  renderedUserId: null as string | null,
   lastRegister: null as null | { turnstileToken?: string; legal?: { agreement: {version: string}; privacy: {version: string}; dataConsent: {version: string}; age18Confirmed: boolean } },
   proof: 'widget-token' as string | null,
   availability: 'ready' as 'ready' | 'unavailable',
@@ -37,15 +41,31 @@ const harness = vi.hoisted(() => ({
 vi.mock('react-native', () => ({
   Platform: { OS: 'web' },
   Linking: { openURL: harness.openURL },
-  View: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
+  View: ({
+    children,
+    nativeID,
+    style,
+  }: {
+    children?: ReactNode;
+    nativeID?: string;
+    style?: unknown;
+  }) => {
+    const flat: Record<string, unknown> = {};
+    for (const item of Array.isArray(style) ? style : [style]) {
+      if (item && typeof item === 'object') Object.assign(flat, item);
+    }
+    return createElement('div', { id: nativeID, style: flat as React.CSSProperties }, children);
+  },
   Text: ({
     children,
     onPress,
     accessibilityRole,
+    style,
   }: {
     children?: ReactNode;
     onPress?: () => void;
     accessibilityRole?: string;
+    style?: unknown;
   }) =>
     onPress
       ? createElement(
@@ -57,7 +77,17 @@ vi.mock('react-native', () => ({
           },
           children,
         )
-      : createElement('span', null, children),
+      : (() => {
+          const flat: Record<string, unknown> = {};
+          for (const item of Array.isArray(style) ? style : [style]) {
+            if (item && typeof item === 'object') Object.assign(flat, item);
+          }
+          return createElement(
+            'span',
+            { style: flat as React.CSSProperties },
+            children,
+          );
+        })(),
   ScrollView: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
   Pressable: ({
     children,
@@ -131,6 +161,18 @@ vi.mock('expo-router', () => ({
     },
   }),
   Link: ({ children }: { children?: ReactNode }) => createElement('a', null, children),
+  DefaultTheme: {
+    colors: {
+      background: 'default',
+      card: 'default',
+      primary: 'default',
+      border: 'default',
+      text: 'default',
+      notification: 'default',
+    },
+  },
+  ThemeProvider: ({ children }: { children?: ReactNode }) =>
+    createElement('div', null, children),
 }));
 
 vi.mock('../../providers/analytics-provider', () => ({
@@ -216,23 +258,22 @@ vi.mock('../../components/ui', () => ({
     title: string;
     children?: ReactNode;
   }) => (open ? createElement('div', { role: 'dialog' }, title, children) : null),
-  AppText: ({ children }: { children?: ReactNode }) => createElement('span', null, children),
+  AppText: ({ children, style }: { children?: ReactNode; style?: unknown }) => {
+    const flat: Record<string, unknown> = {};
+    for (const item of Array.isArray(style) ? style : [style]) {
+      if (item && typeof item === 'object') Object.assign(flat, item);
+    }
+    return createElement('span', { style: flat as React.CSSProperties }, children);
+  },
   PrimaryButton: ({
     label,
     onPress,
     disabled,
-    accessibilityHint,
   }: {
     label: string;
     onPress?: () => void;
     disabled?: boolean;
-    accessibilityHint?: string;
-  }) =>
-    createElement(
-      'button',
-      { type: 'button', disabled, title: accessibilityHint, onClick: () => onPress?.() },
-      label,
-    ),
+  }) => createElement('button', { type: 'button', disabled, onClick: () => onPress?.() }, label),
   TextButton: ({
     label,
     onPress,
@@ -279,7 +320,7 @@ vi.mock('./turnstile-widget', () => ({
     },
 }));
 
-import { AuthProvider } from '../../providers/auth-provider';
+import { AuthProvider, useAuth } from '../../providers/auth-provider';
 import { RegisterForm } from './auth-form';
 
 function client() {
@@ -304,8 +345,15 @@ function account(id: string, email: string, slug: string): User {
   };
 }
 
+function ObserveSession() {
+  harness.renderedUserId = useAuth().user?.id ?? null;
+  return null;
+}
+
 function Host() {
-  return createElement(AuthProvider, null, createElement(RegisterForm, { redirectTo: '/profile' }));
+  return createElement(AuthProvider, null,
+    createElement(ObserveSession),
+    createElement(RegisterForm, { redirectTo: '/profile' }));
 }
 
 function mount() {
@@ -344,7 +392,7 @@ function fill(container: ParentNode, label: string, value: string) {
 
 function clickAllConsents(container: ParentNode) {
   const boxes = [...container.querySelectorAll('[role="checkbox"]')];
-  if (boxes.length !== 4) throw new Error('Expected four distinct legal confirmations');
+  if (boxes.length !== 1) throw new Error('Expected one explicit legal confirmation');
   for (const box of boxes) act(() => { if (box instanceof HTMLElement) box.click(); });
 }
 
@@ -386,11 +434,11 @@ async function until(
 async function reachNickname(container: HTMLElement) {
   await until(container, 'Введите вашу почту');
   fill(container, 'Электронная почта', 'a@example.com');
-  await until(container, 'Редакция документов: portfolio-legal-2026-10-12');
+  await until(container, () => { const box = container.querySelector('[role="checkbox"]'); return box instanceof HTMLButtonElement && !box.disabled; });
   await until(container, () => {
     const boxes = [...container.querySelectorAll('[role="checkbox"]')];
-    return boxes.length === 4 && boxes.every((node) => node instanceof HTMLButtonElement && !node.disabled);
-  }, 'four enabled legal checkboxes');
+    return boxes.length === 1 && boxes.every((node) => node instanceof HTMLButtonElement && !node.disabled);
+  }, 'one enabled legal checkbox');
   clickAllConsents(container);
   clickButton(container, 'Дальше');
   await until(container, 'Выберите имя пользователя');
@@ -437,57 +485,62 @@ afterEach(() => {
 });
 
 describe('registration consent attempt', () => {
-  it('keeps Next disabled until every confirmation is checked and still reports a bad email', async () => {
+  it('keeps Next disabled until confirmation and preserves email validation', async () => {
     const view = mount();
-    await until(view.container, 'Редакция документов: portfolio-legal-2026-10-12');
-    const next = [...view.container.querySelectorAll('button')].find(
-      (item) => item.textContent === 'Дальше',
-    );
-    expect(next).toBeInstanceOf(HTMLButtonElement);
-    const nextButton = next as HTMLButtonElement;
-    expect(nextButton.disabled).toBe(true);
-    expect(nextButton.title).toBe('Отметьте все обязательные согласия');
-    const boxes = [...view.container.querySelectorAll('[role="checkbox"]')];
-    expect(boxes).toHaveLength(4);
-    expect(boxes.every((node) => node instanceof HTMLButtonElement && !node.disabled)).toBe(true);
-    for (const box of boxes.slice(0, 3)) {
-      act(() => {
-        if (box instanceof HTMLElement) box.click();
-      });
-    }
+    await until(view.container, () => view.container.querySelector('[role="checkbox"]') instanceof HTMLButtonElement);
+    const next = [...view.container.querySelectorAll('button')].find((node) => node.textContent === 'Дальше') as HTMLButtonElement;
+    expect(next.disabled).toBe(true);
+    expect(harness.legalReads).toBe(0);
+    const checkbox = view.container.querySelector('[role="checkbox"]') as HTMLButtonElement;
+    act(() => checkbox.click());
     await flush();
-    expect(nextButton.disabled).toBe(true);
+    expect(next.disabled).toBe(false);
     fill(view.container, 'Электронная почта', 'not-an-email');
     clickButton(view.container, 'Дальше');
     await flush();
-    expect(view.container.textContent).toContain('Введите вашу почту');
-    expect(view.container.textContent).not.toContain('Примите пользовательское соглашение');
-    expect(view.container.textContent).not.toContain('Подтвердите, что вам исполнилось 18 лет');
-    act(() => {
-      if (boxes[3] instanceof HTMLElement) boxes[3].click();
-    });
-    await flush();
-    expect(nextButton.disabled).toBe(false);
-    clickButton(view.container, 'Дальше');
-    await until(view.container, 'Введите корректный email');
-    expect(view.container.textContent).toContain('Введите вашу почту');
-    fill(view.container, 'Электронная почта', 'a@example.com');
-    clickButton(view.container, 'Дальше');
-    await until(view.container, 'Выберите имя пользователя');
+    expect(view.container.textContent).toContain('Введите корректный email');
+    expect(harness.registers).toBe(0);
     view.unmount();
   });
 
-  it('keeps all confirmations disabled until a published legal pack is loaded', async () => {
+  it('renders one unchecked confirmation without fetching document text', async () => {
     const view = mount();
-    // The simulated transport is async; once resolved, four unchecked controls are available.
-    await until(view.container, 'Редакция документов: portfolio-legal-2026-10-12');
-    expect([...view.container.querySelectorAll('[role="checkbox"]')]).toHaveLength(4);
+    // Reading documents is independent of confirming registration.
+    await until(view.container, () => { const box = view.container.querySelector('[role="checkbox"]'); return box instanceof HTMLButtonElement && !box.disabled; });
+    expect([...view.container.querySelectorAll('[role="checkbox"]')]).toHaveLength(1);
     expect([...view.container.querySelectorAll('[role="checkbox"]')].every(
       (node) => node.getAttribute('aria-checked') === 'false',
     )).toBe(true);
+    expect(harness.legalReads).toBe(0);
+    const links = [...view.container.querySelectorAll('[role="link"]')];
+    expect(links).toHaveLength(3);
+    expect(links.map((node) => node.textContent)).toEqual([
+      'пользовательское соглашение',
+      'политикой персональных данных и cookies',
+      'согласие на обработку данных',
+    ]);
+    clickLegalLink(view.container, 'пользовательское соглашение');
+    expect(view.container.querySelector('[role="checkbox"]')?.getAttribute('aria-checked')).toBe('false');
     view.unmount();
   });
 
+
+  it('reports a changed session only after registration input', async () => {
+    const view = mount();
+    await until(view.container, () => {
+      const box = view.container.querySelector('[role="checkbox"]');
+      return box instanceof HTMLButtonElement && !box.disabled;
+    });
+    act(() => { advanceAuthEpoch(view.client); });
+    await flush();
+    expect(view.container.textContent).not.toContain('Сессия изменилась');
+    fill(view.container, 'Электронная почта', 'a@example.com');
+    act(() => { advanceAuthEpoch(view.client); });
+    await flush();
+    expect(view.container.textContent).toContain('Сессия изменилась');
+    expect(harness.registers).toBe(0);
+    view.unmount();
+  });
 
   it('checks only on Next, blocks duplicate requests, and advances on available', async () => {
     let resolveAvailability: (value: { available: boolean }) => void = () =>
@@ -564,6 +617,29 @@ describe('registration consent attempt', () => {
         ) as HTMLInputElement
       ).value,
     ).toBe('taken-author');
+    view.unmount();
+  });
+
+  it('reserves exactly one compact status line so an appearing status stays inside the slot', async () => {
+    harness.slugAvailability.mockResolvedValueOnce({ available: false });
+    const view = mount();
+    await reachNickname(view.container);
+    expect(view.container.textContent).toContain(
+      'Можете выбрать свой никнейм или предложенный',
+    );
+    const slot = view.container.querySelector('#nickname-status-slot');
+    expect(slot).not.toBeNull();
+    expect((slot as HTMLElement).style.minHeight).toBe(
+      `${designTokens.typography.authStatus.lineHeight}px`,
+    );
+
+    fill(view.container, 'Никнейм', 'taken-line');
+    clickButton(view.container, 'Дальше');
+    await until(view.container, '@taken-line недоступен');
+    const status = [...slot!.querySelectorAll('span')].find(
+      (node) => node.textContent === '@taken-line недоступен',
+    );
+    expect(status).toBeTruthy();
     view.unmount();
   });
 
@@ -703,20 +779,10 @@ describe('registration consent attempt', () => {
     view.unmount();
   });
 
-  it('does not register while legal documents are unavailable and lets the user retry', async () => {
-    harness.failLegalOnce = true;
+  it('opens the complete document without changing the form or confirmation', async () => {
     const view = mount();
-    await until(view.container, 'Юридические документы пока не опубликованы.');
-    expect([...view.container.querySelectorAll('[role="checkbox"]')].every(
-      (node) => node instanceof HTMLButtonElement && node.disabled,
-    )).toBe(true);
     fill(view.container, 'Электронная почта', 'a@example.com');
-    clickButton(view.container, 'Дальше');
-    await flush();
-    expect(harness.registers).toBe(0);
-    clickButton(view.container, 'Повторить');
-    await until(view.container, 'Редакция документов: portfolio-legal-2026-10-12');
-    clickLegalLink(view.container, 'Пользовательское соглашение');
+    clickLegalLink(view.container, 'пользовательское соглашение');
     await until(view.container, 'Договор для портфолио.');
     const dialog = view.container.querySelector('[role="dialog"]');
     expect(dialog?.textContent).toContain('Термин: Сервис');
@@ -727,27 +793,25 @@ describe('registration consent attempt', () => {
     expect(url).toBeDefined();
     act(() => { if (url instanceof HTMLElement) url.click(); });
     expect(harness.openURL).toHaveBeenCalledWith('https://bid.place/legal');
-    expect(harness.legalReads).toBe(2);
+    expect(harness.legalReads).toBe(1);
     expect(view.container.querySelector('[aria-label="Электронная почта"]')).toHaveProperty('value', 'a@example.com');
     view.unmount();
   });
 
-  it('resets all confirmations if the server reports a stale legal version', async () => {
-    harness.registerError = new ApiClientError('stale legal', {
-      kind: 'conflict',
-      status: 409,
-      code: ApiErrorCode.CONFLICT,
-      details: { reason: 'legal_version_stale' },
-    });
+  it('registers immediately even after a document read fails', async () => {
+    harness.failLegalOnce = true;
     const view = mount();
+    expect(harness.legalReads).toBe(0);
+    clickLegalLink(view.container, 'пользовательское соглашение');
+    await until(view.container, 'Не удалось открыть документ.');
+    expect(view.container.querySelector('[role="checkbox"]')).toHaveProperty('disabled', false);
     await reachPassword(view.container);
     clickButton(view.container, 'Дальше');
-    await until(view.container, 'Редакция документов изменилась.');
-    expect(harness.registers).toBe(1);
-    expect(view.container.textContent).toContain('Введите вашу почту');
-    const boxes = [...view.container.querySelectorAll('[role="checkbox"]')];
-    expect(boxes).toHaveLength(4);
-    expect(boxes.every((box) => box.getAttribute('aria-checked') !== 'true')).toBe(true);
+    await until(view.container, () => harness.registers === 1);
+    expect(harness.lastRegister?.legal).toEqual({
+      agreement: { confirmed: true }, privacy: { confirmed: true },
+      dataConsent: { confirmed: true }, age18Confirmed: true,
+    });
     view.unmount();
   });
 
@@ -831,7 +895,18 @@ describe('registration consent attempt', () => {
     view.unmount();
   });
 
-  it('registers once with all three document versions and separate 18+ acknowledgment', async () => {
+  it('navigates only after the authenticated provider has rendered the created account', async () => {
+    const view = mount();
+    let userAtNavigation: string | null = null;
+    harness.replace.mockImplementation(() => { userAtNavigation = harness.renderedUserId; });
+    await reachPassword(view.container);
+    clickButton(view.container, 'Дальше');
+    await until(view.container, () => harness.replace.mock.calls.length > 0);
+    expect(userAtNavigation).toBe('user-a');
+    view.unmount();
+  });
+
+  it('registers once with three explicit confirmations and 18+ acknowledgment', async () => {
     const view = mount();
     await reachPassword(view.container);
     clickButton(view.container, 'Дальше');
@@ -840,13 +915,70 @@ describe('registration consent attempt', () => {
     expect(harness.registers).toBe(1);
     expect(harness.lastRegister).toMatchObject({
       legal: {
-        agreement: { version: 'portfolio-legal-2026-10-12', confirmed: true },
-        privacy: { version: 'portfolio-legal-2026-10-12', confirmed: true },
-        dataConsent: { version: 'portfolio-legal-2026-10-12', confirmed: true },
+        agreement: { confirmed: true },
+        privacy: { confirmed: true },
+        dataConsent: { confirmed: true },
         age18Confirmed: true,
       },
     });
     expect(harness.replace).toHaveBeenCalledTimes(1);
     view.unmount();
+  });
+
+  it('re-themes the nickname availability status without remounting when the theme switches', async () => {
+    // A taken nickname keeps the status on the nickname step; an available
+    // one advances immediately and unmounts the status node.
+    harness.slugAvailability.mockResolvedValueOnce({ available: false });
+    const rgbOf = (hex: string) => {
+      const value = hex.replace('#', '');
+      const channels = [0, 2, 4].map((offset) =>
+        parseInt(value.slice(offset, offset + 2), 16),
+      );
+      return `rgb(${channels.join(', ')})`;
+    };
+    const statusNode = () =>
+      [...container.querySelectorAll('span')].find((node) =>
+        node.textContent?.startsWith('@theme-author'),
+      ) as HTMLElement | undefined;
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    queryClient.setQueryData(authKeys.session, null);
+    harness.client = queryClient;
+    const container = document.createElement('div');
+    document.body.append(container);
+    const root = createRoot(container);
+    const themed = (theme: 'light' | 'black') =>
+      createElement(
+        QueryClientProvider,
+        { client: queryClient },
+        createElement(ThemeProvider, {
+          theme,
+          children: createElement(Host),
+        }),
+      );
+    act(() => {
+      root.render(themed('light'));
+    });
+
+    await reachNickname(container);
+    fill(container, 'Никнейм', 'theme-author');
+    clickButton(container, 'Дальше');
+    await until(container, () => Boolean(statusNode()), 'nickname status');
+    const status = statusNode()!;
+    expect(status.textContent).toBe('@theme-author недоступен');
+    expect(status.style.color).toBe(rgbOf(lightColorMap.usernameTaken));
+
+    act(() => {
+      root.render(themed('black'));
+    });
+    expect(statusNode()).toBe(status);
+    expect(status.style.color).toBe(rgbOf(blackColorMap.usernameTaken));
+
+    act(() => {
+      root.unmount();
+    });
+    container.remove();
   });
 });

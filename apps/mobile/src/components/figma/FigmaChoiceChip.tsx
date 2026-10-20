@@ -3,6 +3,7 @@ import { Platform, Text } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
 
 import { MotionPressable } from '../ui/MotionPressable';
+import { useAppTheme } from '../../providers/theme-provider';
 import { FigmaIcon } from './FigmaIcon';
 import {
   figmaChoiceChipStyle,
@@ -30,6 +31,7 @@ export function FigmaChoiceChip({
   accessibilityRole?: 'button' | 'tab';
 }) {
   const showRemove = removable && selected && onRemove !== undefined;
+  const palette = useAppTheme();
   const typography = showRemove
     ? designTokens.typography.choiceChipSelectedRemovable
     : designTokens.typography.choiceChip;
@@ -51,6 +53,7 @@ export function FigmaChoiceChip({
           selected,
           resolveInteraction({ disabled, hovered, pressed }),
           showRemove,
+          palette,
         ),
         showRemove
           ? {
@@ -68,7 +71,7 @@ export function FigmaChoiceChip({
           {
             flex: showRemove ? 1 : undefined,
             minWidth: showRemove ? 0 : undefined,
-            color: figmaChoiceChipTextColor(selected),
+            color: figmaChoiceChipTextColor(selected, palette),
             textAlign: stretch ? 'center' : 'left',
           },
           typography,
@@ -80,7 +83,7 @@ export function FigmaChoiceChip({
         <FigmaIcon
           name="x"
           size={designTokens.size.choiceChipRemoveIcon}
-          color={designTokens.color.white}
+          color={palette.white}
         />
       ) : null}
     </MotionPressable>

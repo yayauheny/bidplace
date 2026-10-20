@@ -379,8 +379,11 @@ test.describe('product creation wizard navigation', () => {
       await expect(page.getByLabel('Название')).toHaveValue(title);
       const nameField = page.getByLabel('Название');
       await nameField.click();
-      await nameField.press('ControlOrMeta+a');
-      await nameField.press('Delete');
+      // Keyboard select-all + Delete does not clear a controlled input in
+      // Chromium (only one character is removed); fill('') emits real input
+      // events and clears it in both Chromium and WebKit.
+      await nameField.fill('');
+      await expect(nameField).toHaveValue('');
       await page
         .getByRole('button', { name: 'Сохранить и продолжить' })
         .click();

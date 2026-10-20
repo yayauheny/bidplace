@@ -17,13 +17,14 @@ export function FormPageShell({
   bottomAction?: ReactNode;
   maxWidth?: number;
   hideDock?: boolean;
-  variant?: 'default' | 'authorApplication';
+  variant?: 'default' | 'authorApplication' | 'account' | 'settings';
 }) {
   const { reserve } = useDockInset();
 
   return (
     <AppShell hideDock={hideDock} bottomAction={bottomAction}>
       <ScrollView
+        testID="form-page"
         contentContainerStyle={{
           paddingBottom: bottomAction
             ? 0
@@ -33,7 +34,11 @@ export function FormPageShell({
           paddingTop:
             variant === 'authorApplication'
               ? designTokens.authorApplication.contentTop
-              : designTokens.space.x6,
+              : variant === 'account'
+                ? designTokens.space.x3
+                : variant === 'settings'
+                  ? designTokens.space.x5
+                  : designTokens.space.x6,
         }}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"

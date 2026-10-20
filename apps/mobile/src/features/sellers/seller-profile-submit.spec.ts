@@ -1721,7 +1721,7 @@ describe('seller profile save reconciliation', () => {
       () => harness.push.mock.calls.length === 1,
       'next step',
     );
-    expect(harness.push).toHaveBeenCalledWith('/profile?step=3');
+    expect(harness.push).toHaveBeenCalledWith({ pathname: '/profile', params: { step: '3' } });
     await act(async () => {
       finishOldRead(draft);
       await Promise.resolve();
@@ -1786,7 +1786,7 @@ describe('seller profile save reconciliation', () => {
     click(view.container, 'Продолжить');
     await flush();
     expect(harness.updateProfile).toHaveBeenCalledTimes(2);
-    expect(harness.push).toHaveBeenCalledWith('/profile?step=2');
+    expect(harness.push).toHaveBeenCalledWith({ pathname: '/profile', params: { step: '2' } });
     view.unmount();
   });
 
@@ -2515,7 +2515,7 @@ describe('seller profile validation freshness', () => {
     expect(harness.updateProfile.mock.calls[0]?.[0]).toEqual(
       expect.objectContaining({ telegramUrl: 'https://t.me/maker_art' }),
     );
-    expect(harness.push).toHaveBeenCalledWith('/profile?step=1');
+    expect(harness.push).toHaveBeenCalledWith({ pathname: '/profile', params: { step: '1' } });
     view.unmount();
   });
 
@@ -2542,7 +2542,7 @@ describe('seller profile validation freshness', () => {
         publicEmail: null,
       }),
     );
-    expect(harness.push).toHaveBeenCalledWith('/profile?step=3');
+    expect(harness.push).toHaveBeenCalledWith({ pathname: '/profile', params: { step: '3' } });
     view.unmount();
   });
 
@@ -2630,7 +2630,7 @@ describe('seller profile validation freshness', () => {
       city: 'Minsk',
     });
     expect(harness.createProfile.mock.calls[0]?.[1]).toBe(photo);
-    expect(harness.push).toHaveBeenCalledWith('/profile?step=2');
+    expect(harness.push).toHaveBeenCalledWith({ pathname: '/profile', params: { step: '2' } });
     vi.unstubAllGlobals();
     view.unmount();
   });
@@ -2833,7 +2833,7 @@ describe('seller profile validation freshness', () => {
       () => harness.updateProfile.mock.calls.length === 1,
       'about save',
     );
-    expect(harness.push).toHaveBeenCalledWith('/profile?step=4');
+    expect(harness.push).toHaveBeenCalledWith({ pathname: '/profile', params: { step: '4' } });
     view.unmount();
   });
 

@@ -362,6 +362,7 @@ function mount() {
   });
   return {
     container,
+    queryClient,
     unmount() {
       act(() => {
         root.unmount();
@@ -452,6 +453,34 @@ describe('SellerProfileScreen render contract', () => {
     expect(hasButton(container, 'Продолжить')).toBe(true);
     expect(hasButton(container, 'Назад')).toBe(false);
     expect(hasButton(container, 'Сохранить и завершить')).toBe(false);
+  });
+
+  it('shows the infrastructure error state when a refetch fails over the cached absence', async () => {
+    harness.getMyProfile.mockRejectedValue(
+      new ApiClientError('missing', { kind: 'not_found', status: 404 }),
+    );
+    const { container, queryClient } = mount();
+    await until(
+      container,
+      () => hasButton(container, 'Загрузить фото'),
+      'wizard step 1 after absence',
+    );
+
+    // The cached null stays in the cache while the refetch errors out; the
+    // current error must outrank the stale absence.
+    harness.getMyProfile.mockRejectedValue(
+      new ApiClientError('network down', { kind: 'network', status: 0 }),
+    );
+    await act(async () => {
+      await queryClient.invalidateQueries({ queryKey: ['seller', 'profile'] });
+    });
+
+    await until(
+      container,
+      () => container.textContent?.includes('error') ?? false,
+      'infrastructure error state',
+    );
+    expect(hasButton(container, 'Загрузить фото')).toBe(false);
   });
 
   it.each([

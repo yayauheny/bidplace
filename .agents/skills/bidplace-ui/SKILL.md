@@ -1,40 +1,64 @@
 ---
 name: bidplace-ui
-description: Implement or change Bidplace Expo and React Native Web screens and shared UI using verified Figma sources, existing component owners, semantic tokens and responsive layout. Use for layout, controls, theme consumers, sheets, grids and Safe Area.
+description: Build or change Bidplace screens and shared UI in apps/mobile (Expo / React Native Web). Use for layout, container width, tokens, shared components, sheets/dialogs, tabs, card grids, Safe Area, or matching Figma.
 ---
 
-# Bidplace UI implementation
+# bidplace-ui
 
-Read AGENTS.md, required design/product owners and the actual checkout. Component map: apps/mobile/src/components/README.md. New/revised Figma sources use bidplace-figma-intake first; [workflow](../../../docs/design/FIGMA-TO-CODE-WORKFLOW.md) contains the compact handoff. Source provenance, product behavior and design geometry are different contracts; do not import commerce/social-auth functionality merely because it appears in a frame.
+Goal: one way to do each UI job. Find the existing mechanism, extend it, delete what it replaces.
 
-## Before editing
+Status: this is the **target contract** of the design-system waves (`docs/audits/2026-10-13-FRONTEND-DESIGN-SYSTEM-AUDIT.md` §17) and it is implemented in code: the legacy `OverlayHost`, `AppIcon`/lucide, `DestructiveButton` and fixed-390-column patterns are removed. The remaining intentional deviations — do not copy or extend them: the private `expo-router/build` import for `usePreventRemove` (no public export in SDK 57; expected public in SDK 58) and the custom web history guards (`features/sellers/product-draft-browser-guard.ts`, `features/auth/auth-browser-history.ts`).
 
-State success criteria, bounded plan, affected consumers and selected durable solution. Trace UI/state through existing contracts and services only where behavior changes. Map design nodes to existing components, variants, semantic roles and assets. Reuse → extend a fitting owner → create a component only for a missing responsibility. Do not copy generated HTML, coordinate trees or design-system primitives into a screen.
+## Read first (link, do not copy)
 
-Verify what is implemented at this SHA. Older branches may have fixed-390 shells or legacy wrappers; do not claim a target architecture is present without reading it. Preserve accepted SDK57 private-hook/history exceptions in existing flows; never mechanically replace them with an unavailable public API during visual work.
+- `docs/design/00-DESIGN-INDEX.md` → `03-DESIGN-SYSTEM.md` → `04-DESIGN-STATUS.md`; component map: `apps/mobile/src/components/README.md`.
+- Visual source is Figma (file `pAPQo6cADmG5XzVmBX76EE`); priority of sources is in `AGENTS.md`. Missing/ambiguous node or conflict with a product contract → stop that scope and record the decision.
+- Product limits `DEC-083`, `DEC-087` (`docs/product/12-DECISION-LOG.md`): Archive tab, sale/auction chips, favorites, bidding in a design → stop and report.
 
-## Responsive composition
+## Layout
 
-- Existing AppShell owns page container, Safe Area and dock reserve. Use its fluid width/maxWidth/gutter policy; a reference width such as 390 is not a production screen constraint. Sheet/dialog has its own host; do not nest page shells to center content.
-- Shared grid owner (PaddedGrid/gridColumnsFromWidth or WorkCoverCardGrid when present) derives columns from measured available container width and confirmed card constraints. Use onLayout for container width; useWindowDimensions is valid for genuine window/fontScale behavior, not scattered route-specific breakpoints.
-- Prefer Flexbox, wrapping, minWidth:0, content-based height, aspectRatio and bounded scroll regions. Breakpoints are allowed for real composition changes defined by design; keep their policy with the layout owner. No proportional scaling of an entire 390px screen.
-- Text wraps and containers grow. Fixed/min control sizes are legitimate semantic metrics, but must preserve enlarged text and touch targets. Do not disable font scaling or browser zoom, shrink text, hide overflow, or truncate essential content to disguise failures.
-- Safe Area/keyboard/dock spacing has one owner. Do not bake status-bar/home-indicator pixels from the mock into app content. Full-bleed decorative layers can sit outside the content column; absolute positioning is reserved for actual overlays/decorations, not ordinary document flow.
+- `AppShell` owns page container, Safe Area, dock inset, bottom action. One per screen; loading/empty/error render inside it.
+- Container is fluid: `maxWidth = layout.contentMax + 2·layout.gutter`, mobile gutter 12. Screens never pass widths or write 390/440/1280.
+- Columns derive from container width (`WorkCoverCardGrid`), not device breakpoints or `useWindowDimensions` in a screen.
+- Horizontal gutter is global; vertical gaps (20, 40 …) are local to the Figma composition.
+- Full-bleed atmosphere/blur is its own layer outside the column.
 
-## Centralized styling and themes
+## Safe Area
 
-- packages/design-tokens owns semantic roles and shared metrics. Repeated controls/styles use component variants. A role can justify a token with one consumer; usage count and equal hex values do not establish semantic equivalence.
-- Components consume the active theme owner when available; changing only navigation ThemeProvider does not theme static imports. Keep one semantic contract across light/black, including borders, gradients, shadows, icons, focus and state colors. No route-local dark palette, global mutable token switching or module-level snapshots of theme-dependent colors.
-- If runtime theme support is absent, report it and use the current canonical owner for a light-only task; do not claim dark readiness or build a competing theme system. Theme infrastructure requires its own bounded task.
-- One-off geometry may be a named local constant tied to the verified node. Do not promote every coordinate to a global token. No raw hex or repeated typography/control settings in screens; branded asset colors are explicit exceptions, not theme substitutes.
-- Read actual frame size, stroke alignment and renderer box model. Never round all values to even numbers or subtract one pixel by default. Confirmed design-system decisions apply to their specified controls; report conflicts with the current Figma source instead of guessing. Choose the exact variant or extend the owner, never a visually different nearest match.
+Applied once by the owner (`AppShell`, sheet host). Sheet bottom = `max(bottomSpace 20|40, insets.bottom)`. Never add insets under an owner or hardcode a home-indicator size.
 
-## Shared behavior
+## Tokens (`packages/design-tokens`)
 
-Keep button/field/tab/grid/back/dialog behavior in existing owners (e.g. FigmaButton, FigmaTextField, FigmaTabs, BackButton, AppDialog/FilterSheet). ui/Button wrappers delegating to one renderer are not automatically duplicates. Preserve navigation hrefs, disabled/loading/error semantics and keyboard handling. Use installed primitives/Reanimated/expo-image rather than new focus traps, portals, gesture or animation engines. Check library versions/public exports.
+- Token = role used by 2+ components or a global constant. One-off geometry = local named constant with the Figma node id. Second consumer → promote.
+- Semantic names only (`control.md`, `type.label`), never screen/device names. No breakpoint tokens.
+- Sizes/spacing/radius are even integers. Control size = Figma frame bounds − 1 when the stroke is outside (button 42/46/50/54, text field 50); borders drawn inside, set explicit `height` from the token.
+- Typography is a role; components never set `fontSize`/`fontWeight`. No hex in components.
 
-No new libraries, fake controls, independent screen palettes, copied renderers, any/ts-ignore or suppressed errors to force a visual match. Retire only superseded code after checking consumers; do not remove unrelated history or assets based on names.
+## Components
 
-## Acceptance
+1. Search: `rg -n "export (function|const)" apps/mobile/src/components` and read the README.
+2. Reuse as is → else add a role-named variant (`variant`, `tone`; no screen names, no boolean-flag forests) → else a new component with one stated responsibility.
+3. Prefer a library already in the repo (`@rn-primitives/*`, Reanimated, expo-image, react-hook-form + zod, expo-router public exports) over hand-written behavior.
+4. One tab bar (`FigmaTabs`, `fill` for equal columns), one grid mechanism (`PaddedGrid` + `gridColumnsFromWidth` / `WorkCoverCardGrid` for cover cards), one button family, one sheet (`FilterSheet` / `AppDialog`).
 
-Run bidplace-ui-review against the actual result. Verify the reference size plus narrower/wider/shorter cases, text resizing/zoom, keyboard, states and affected shared consumers. Match the exact approved reference without freezing the layout to it. No production Done from TypeScript/unit tests alone. Keep checks proportional; do not run every suite for a visual-only change. Update applicable canonical status docs with actual evidence and remaining NEEDS-FIGMA, without rewriting protected decisions.
+## Overlays and motion
+
+- Only `AppDialog` variants. No RN `Modal`, manual portals, own focus traps or dismiss logic; focus returns to the trigger.
+- Backdrop and panel animate independently (presets in `lib/layout-transition.ts`); reduced motion via the shared hook. No `setTimeout` animations.
+- Import expo-router only from public entries.
+
+## Bans
+
+`TouchableOpacity/Highlight`, `Modal`, `lucide-react-native`, raw hex, `expo-router/build/*`, `@ts-ignore`/`any`, `{value && <X/>}` with a possibly falsy value, scroll position in `useState`, per-screen button/tab/grid copies, fake data or controls.
+
+## States and accessibility
+
+Each screen: loading, empty, error, long text, missing image, owner vs visitor where relevant. Roles/labels, visible focus, keyboard (Tab/Space/Enter/Arrows/Escape), 44px targets, 200% zoom, reduced motion.
+
+## Consumers
+
+Before changing a shared component/token: `rg` its consumers, list them, check each affected route. Extend the owner spec; no one-test-file-per-bug.
+
+## Done
+
+Run `bidplace-ui-review` on your own diff before finishing. Update `docs/design/04-DESIGN-STATUS.md` (+ `03` for shared parts) and `docs/product/11-PROJECT-STATUS.md`.

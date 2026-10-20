@@ -1,15 +1,17 @@
 import { designTokens } from '@bidplace/design-tokens';
 
 import { MotionPressable } from '../ui/MotionPressable';
+import { useAppTheme } from '../../providers/theme-provider';
 import { FigmaGlassSurface } from './FigmaGlassSurface';
 import { FigmaIcon } from './FigmaIcon';
 import { FigmaIconButton } from './FigmaIconButton';
 
 /**
- * Единая кнопка «Назад». Три визуальных варианта, выточенные под фигму:
+ * Единая кнопка «Назад». Четыре визуальных варианта, выточенные под фигму:
  * - glass — страница работы (стеклянная плашка поверх медиа);
  * - muted — шапка автора (приглушённая поверхность);
- * - chrome — визард заявки автора (сырой глиф в квадрате chromeFrame).
+ * - chrome — визард заявки автора (сырой глиф в квадрате chromeFrame);
+ * - settings — шапка настроек (сырой глиф 28, touch 44).
  */
 export function BackButton({
   onPress,
@@ -19,9 +21,10 @@ export function BackButton({
 }: {
   onPress: () => void;
   label?: string;
-  variant: 'glass' | 'muted' | 'chrome';
+  variant: 'glass' | 'muted' | 'chrome' | 'settings';
   disabled?: boolean;
 }) {
+  const palette = useAppTheme();
   if (variant === 'glass') {
     return (
       <FigmaGlassSurface
@@ -49,6 +52,33 @@ export function BackButton({
       />
     );
   }
+  if (variant === 'settings') {
+    // Settings header: plain glyph, no surface; 44px touch target.
+    return (
+      <MotionPressable
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        disabled={disabled}
+        onPress={onPress}
+        preset="icon"
+        hitSlop={
+          (designTokens.size.touch - designTokens.size.settingsHeaderGlyph) / 2
+        }
+        style={{
+          width: designTokens.size.settingsHeaderGlyph,
+          height: designTokens.size.settingsHeaderGlyph,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <FigmaIcon
+          name="arrow-left-01"
+          size={designTokens.size.settingsHeaderGlyph}
+          color={palette.inkStrong}
+        />
+      </MotionPressable>
+    );
+  }
   const chrome = designTokens.authorApplication;
   return (
     <MotionPressable
@@ -69,7 +99,7 @@ export function BackButton({
         name="arrow-left-01"
         size={chrome.chromeGlyph}
         strokeWidthPx={chrome.chromeStroke}
-        color={designTokens.color.inkStrong}
+        color={palette.inkStrong}
       />
     </MotionPressable>
   );

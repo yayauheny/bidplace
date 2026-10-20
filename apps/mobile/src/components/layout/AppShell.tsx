@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { designTokens } from '@bidplace/design-tokens';
 
 import { FloatingDock } from '../figma/FloatingDock';
+import { useAppTheme } from '../../providers/theme-provider';
 import { useDockInset } from './use-dock-inset';
 
 export function AppShell({
@@ -21,13 +22,14 @@ export function AppShell({
   const dockBlurTarget = useRef<View | null>(null);
   const isFocused = useIsFocused();
   const { reserve } = useDockInset();
+  const palette = useAppTheme();
 
   return (
     <SafeAreaView
       edges={hideDock ? undefined : ['top', 'left', 'right']}
       style={{
         flex: 1,
-        backgroundColor: designTokens.color.canvas,
+        backgroundColor: palette.canvas,
         overflow: 'visible',
       }}
     >

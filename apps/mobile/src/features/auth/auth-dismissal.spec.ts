@@ -105,6 +105,10 @@ describe('auth sheet dismissal', () => {
 
   it('returns only a public page when the saved destination is protected', () => {
     expect(authLeaveDestination('/works/public-work')).toBe('/works/public-work');
+    expect(authLeaveDestination('/seller/vex')).toBe('/seller/vex');
+    expect(authLeaveDestination('/authors/vex?sort=popular')).toBe(
+      '/authors/vex?sort=popular',
+    );
     expect(authLeaveDestination('/profile')).toBe('/');
   });
 });
@@ -207,15 +211,15 @@ describe('registration request', () => {
       privacyAcknowledged: true,
       dataConsentGiven: true,
       age18Confirmed: true,
-    }, 'portfolio-legal-2026-10-12')).toEqual({
+    })).toEqual({
       email: 'author@example.com',
       password: 'password123',
       slug: 'author',
       phone: null,
       legal: {
-        agreement: { version: 'portfolio-legal-2026-10-12', confirmed: true },
-        privacy: { version: 'portfolio-legal-2026-10-12', confirmed: true },
-        dataConsent: { version: 'portfolio-legal-2026-10-12', confirmed: true },
+        agreement: { confirmed: true },
+        privacy: { confirmed: true },
+        dataConsent: { confirmed: true },
         age18Confirmed: true,
       },
     });

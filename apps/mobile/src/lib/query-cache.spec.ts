@@ -4,12 +4,16 @@ import { describe, expect, it } from 'vitest';
 import {
   authKeys,
   canWritePrivateCache,
+  captureDraftWriteLease,
   categoryKeys,
   clearAuthenticatedSession,
   clearAuthScopedDataExceptSession,
   currentAuthEpoch,
+  draftWriteLeaseIsValid,
   isAuthScopedQueryKey,
+  issueDraftWriteLease,
   replaceAuthenticatedSession,
+  retireDraftWriteLease,
 } from './query-cache';
 
 describe('query cache auth boundaries', () => {
@@ -109,8 +113,43 @@ describe('query cache auth boundaries', () => {
     const login = replaceAuthenticatedSession(queryClient, { id: 'user-b' });
     await Promise.all([logout, login]);
 
-    expect(queryClient.getQueryData(authKeys.session)).toEqual({ id: 'user-b' });
+    expect(queryClient.getQueryData(authKeys.session)).toEqual({
+      id: 'user-b',
+    });
     expect(queryClient.getQueryData(['seller', 'profile'])).toBeUndefined();
     expect(canWritePrivateCache(queryClient)).toBe(true);
+  });
+});
+
+describe('draft write lease', () => {
+  it('starts open and invalidates captured leases on retire', () => {
+    const queryClient = new QueryClient();
+    const lease = captureDraftWriteLease(queryClient);
+    expect(lease).not.toBeNull();
+    retireDraftWriteLease(queryClient);
+    expect(draftWriteLeaseIsValid(queryClient, lease)).toBe(false);
+    expect(captureDraftWriteLease(queryClient)).toBeNull();
+  });
+
+  it('re-arms only through a newly issued lease, never for old captures', () => {
+    const queryClient = new QueryClient();
+    const before = captureDraftWriteLease(queryClient);
+    retireDraftWriteLease(queryClient);
+    issueDraftWriteLease(queryClient);
+    const after = captureDraftWriteLease(queryClient);
+    expect(after).not.toBeNull();
+    expect(after).not.toBe(before);
+    expect(draftWriteLeaseIsValid(queryClient, before)).toBe(false);
+    expect(draftWriteLeaseIsValid(queryClient, after)).toBe(true);
+  });
+
+  it('issues a fresh lease when a replacement session installs', async () => {
+    const queryClient = new QueryClient();
+    const before = captureDraftWriteLease(queryClient);
+    retireDraftWriteLease(queryClient);
+    await replaceAuthenticatedSession(queryClient, { id: 'user-b' });
+    const after = captureDraftWriteLease(queryClient);
+    expect(after).not.toBeNull();
+    expect(draftWriteLeaseIsValid(queryClient, before)).toBe(false);
   });
 });

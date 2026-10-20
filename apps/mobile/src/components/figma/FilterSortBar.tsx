@@ -4,6 +4,7 @@ import { designTokens } from '@bidplace/design-tokens';
 
 import { AppText } from '../ui/AppText';
 import { MotionPressable } from '../ui/MotionPressable';
+import { useAppTheme } from '../../providers/theme-provider';
 import { FigmaGlassSurface } from './FigmaGlassSurface';
 import { FigmaIcon } from './FigmaIcon';
 import {
@@ -62,6 +63,7 @@ function FilterSortBarTrigger({
   disabled?: boolean;
   onPress: () => void;
 }) {
+  const palette = useAppTheme();
   return (
     <FigmaGlassSurface
       preset="filterControl"
@@ -86,7 +88,7 @@ function FilterSortBarTrigger({
         >
           <FigmaIcon name={icon} size={designTokens.size.icon} />
         </View>
-        <AppText role="nav" style={filterSortPillLabelStyle()}>
+        <AppText role="nav" style={filterSortPillLabelStyle(palette)}>
           {label}
         </AppText>
       </MotionPressable>

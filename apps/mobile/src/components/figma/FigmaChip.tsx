@@ -1,5 +1,6 @@
 import { Text, View } from 'react-native';
 
+import { useAppTheme } from '../../providers/theme-provider';
 import {
   figmaChipSizeStyle,
   figmaChipStyle,
@@ -18,14 +19,16 @@ export function FigmaChip({
   tone?: FigmaChipTone;
   size?: FigmaChipSize;
 }) {
+  const palette = useAppTheme();
+
   // Retained native compatibility: React Native has no mask-composite
   // gradient stroke, so native keeps the existing flat border.
   return (
-    <View style={[figmaChipStyle(tone), figmaChipSizeStyle(size)]}>
+    <View style={[figmaChipStyle(tone, palette), figmaChipSizeStyle(size)]}>
       <Text
         numberOfLines={1}
         style={[
-          { color: figmaChipTextColor(tone, size) },
+          { color: figmaChipTextColor(tone, size, palette) },
           figmaChipTypography(size),
         ]}
       >

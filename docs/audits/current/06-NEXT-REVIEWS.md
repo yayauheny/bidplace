@@ -2,7 +2,15 @@
 
 Run these as independent read-only reviews first. Each scope is small enough for a separate task and produces a fix-ready decision pack.
 
-## 1. Author MVP completion loop — RESOLVED; follow-up review only
+**Entry point (2026-10-16, после волн 5–11):** прежде чем брать пункт из этого
+списка, сверьтесь с `docs/audits/2026-10-16-WAVES-5-11-REVIEW.md` и
+`docs/audits/2026-10-16-WAVES-5-11-RESOLUTIONS.md` на ветке `fix/draft-restore` —
+там актуальные findings с namespace, SHA и проверками. Этот файл — очередь
+областей, а не сертификат закрытости. Статусы ниже читаются так:
+`RESOLVED` = реализация согласована; `Verified` = есть воспроизводимая проверка;
+`Partial` / `NEEDS-FIGMA` = есть непроверенное или зависящее от дизайна.
+
+## 1. Author MVP completion loop — RESOLVED implementation; regression review only
 
 **Scope:** mobile cabinet route/navigation, cabinet contract/projection, hide/unhide, moderation reason, create/edit return paths.
 
@@ -39,7 +47,14 @@ Files:
 
 Acceptance: explicit server invariants and redirect/error matrix; distinguish founder/legal decisions from code defects.
 
-## 4. Application draft persistence — RESOLVED; regression review only
+## 4. Application draft persistence — implementation fixed 2026-10-16; browser verification outstanding
+
+Повторное ревью волн 5–11 воспроизвело три дефекта сохранения (W5-01, W5-02,
+W6-01 — identity снапшота после собственного save, recovery-копия при
+несовместимом вводе, ложное предупреждение об ошибке без storage). Исправления
+и owner-регрессии — коммит `e5f246ef`, резолюции в
+`docs/audits/2026-10-16-WAVES-5-11-RESOLUTIONS.md`. Безусловное «закрыто» снято:
+E2E-перезапуск в браузере по этим сценариям ещё не выполнен.
 
 **Scope:** local step loss, server DRAFT semantics, URL step, photo handling, create versus submit endpoints.
 
@@ -77,7 +92,12 @@ Acceptance: concrete HTTP behavior and smallest service/controller moves; no rep
 
 ## 10. Visual/accessibility acceptance — P2
 
-**Scope:** current canonical Pen versus production at 390 first, then shared 1024/1440 correctness only where still required; keyboard, focus, zoom, reduced motion, loading/empty/error states.
+**Scope:** live Figma как источник (dated ZIP-снимок допустим как fallback, как в
+приёмке login 7008:20543 — см. `docs/audits/current/evidence/2026-10-16-login-sheet/`);
+production web на 390 в первую очередь, затем общие 1024/1440 только там, где ещё
+требуется; keyboard, focus, zoom, reduced motion, loading/empty/error states.
+Canonical Pen как источник сверки больше не используется; сверять новый UI с Pen
+не требуется.
 
 Acceptance: matched evidence per live screen and shared primitive; do not edit `design/pen/bidplace-web-v2.pen`.
 

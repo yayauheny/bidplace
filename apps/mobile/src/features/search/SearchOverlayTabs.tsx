@@ -6,6 +6,7 @@ import { searchChromeTokens } from '@bidplace/design-tokens';
 import { AppText } from '../../components/ui/AppText';
 import { MotionPressable } from '../../components/ui/MotionPressable';
 import { FigmaSearchGlass } from '../../components/figma/FigmaSearchGlass';
+import { useAppTheme } from '../../providers/theme-provider';
 import { useCssBorderBox } from '../../components/figma/use-css-border-box';
 import {
   searchOverlayTabPanelId,
@@ -27,9 +28,9 @@ export function SearchOverlayTabs({
       kind="rail"
       testID="search-overlay-tabs"
       style={{
-        width: rail.sampleWidth,
+        width: '100%',
         maxWidth: '100%',
-        alignSelf: 'flex-start',
+        alignSelf: 'stretch',
         marginTop: searchChromeTokens.railOffset,
       }}
     >
@@ -70,6 +71,7 @@ function SearchOverlayTabButton({
   onPress: () => void;
 }) {
   const { tab } = searchChromeTokens;
+  const palette = useAppTheme();
   const { layout, onLayout } = useCssBorderBox();
 
   return (
@@ -90,7 +92,7 @@ function SearchOverlayTabButton({
         minWidth: 0,
         height: tab.height,
         borderRadius: tab.radius,
-        backgroundColor: selected ? tab.selectedFill : tab.fill,
+        backgroundColor: selected ? palette.mutedFill : palette.surface,
         alignItems: 'center',
         justifyContent: 'center',
         overflow: 'hidden',
@@ -101,7 +103,7 @@ function SearchOverlayTabButton({
         role="body"
         numberOfLines={1}
         style={{
-          color: tab.label,
+          color: palette.tabInactive,
           fontFamily: tab.typography.fontFamily,
           fontSize: tab.typography.fontSize,
           lineHeight: tab.typography.lineHeight,
@@ -117,6 +119,7 @@ function SearchOverlayTabButton({
 
 function SearchTabStroke({ width, height }: { width: number; height: number }) {
   const { tab, strokeWidth } = searchChromeTokens;
+  const palette = useAppTheme();
   if (width <= 0 || height <= 0) return null;
   const inset = strokeWidth / 2;
   const innerWidth = width - strokeWidth;
@@ -139,7 +142,7 @@ function SearchTabStroke({ width, height }: { width: number; height: number }) {
         rx={radius}
         ry={radius}
         fill="none"
-        stroke={tab.stroke}
+        stroke={palette.surface}
         strokeWidth={strokeWidth}
       />
     </Svg>

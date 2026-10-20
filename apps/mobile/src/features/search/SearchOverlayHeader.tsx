@@ -1,4 +1,9 @@
-import { Platform, TextInput, View, type TextInput as TextInputRef } from 'react-native';
+import {
+  Platform,
+  TextInput,
+  View,
+  type TextInput as TextInputRef,
+} from 'react-native';
 import { useRef } from 'react';
 
 import { designTokens } from '@bidplace/design-tokens';
@@ -6,6 +11,7 @@ import { designTokens } from '@bidplace/design-tokens';
 import { FigmaIcon } from '../../components/figma/FigmaIcon';
 import { FigmaSearchGlass } from '../../components/figma/FigmaSearchGlass';
 import { MotionPressable } from '../../components/ui/MotionPressable';
+import { useAppTheme } from '../../providers/theme-provider';
 import { SearchOverlayTabs } from './SearchOverlayTabs';
 import {
   searchOverlayCloseStyle,
@@ -32,7 +38,11 @@ export function SearchOverlayHeader({
   return (
     <>
       <View style={searchOverlayFieldRowStyle()}>
-        <FigmaSearchGlass kind="field" style={{ flex: 1, minWidth: 0 }} testID="search-overlay-field">
+        <FigmaSearchGlass
+          kind="field"
+          style={{ flex: 1, minWidth: 0 }}
+          testID="search-overlay-field"
+        >
           <SearchOverlayField value={query} onChangeText={onChangeQuery} />
         </FigmaSearchGlass>
         <MotionPressable
@@ -64,6 +74,7 @@ function SearchOverlayField({
   onChangeText: (value: string) => void;
 }) {
   const inputRef = useRef<TextInputRef>(null);
+  const palette = useAppTheme();
 
   return (
     <View style={searchOverlayFieldChromeStyle()}>
@@ -76,13 +87,13 @@ function SearchOverlayField({
         onChangeText={onChangeText}
         accessibilityLabel="Поиск"
         placeholder="Поиск"
-        placeholderTextColor={designTokens.color.muted}
+        placeholderTextColor={palette.muted}
         autoCorrect={false}
         returnKeyType="search"
         testID="search-overlay-query"
         onSubmitEditing={() => inputRef.current?.blur()}
         style={{
-          ...searchOverlayFieldInputStyle(),
+          ...searchOverlayFieldInputStyle(palette),
           ...(Platform.OS === 'web'
             ? ({
                 outlineStyle: 'none',

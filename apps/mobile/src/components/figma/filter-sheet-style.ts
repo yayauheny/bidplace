@@ -1,11 +1,12 @@
-import { designTokens } from '@bidplace/design-tokens';
+import { designTokens, type SemanticColorMap } from '@bidplace/design-tokens';
 
 import { appDialogSheetBottomSpace } from '../ui/app-dialog-host-style';
 
 export function filterSheetPanelStyle(
   compact = false,
-  viewportHeight?: number,
+  viewportHeight: number | undefined = undefined,
   bottomInset = 0,
+  palette: SemanticColorMap,
 ) {
   return {
     width: '100%' as const,
@@ -17,7 +18,7 @@ export function filterSheetPanelStyle(
     paddingBottom: compact
       ? 0
       : appDialogSheetBottomSpace(designTokens.space.x5, bottomInset),
-    backgroundColor: designTokens.color.canvas,
+    backgroundColor: palette.canvas,
   };
 }
 

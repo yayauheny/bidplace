@@ -1,5 +1,4 @@
 import {
-  designTokens,
   figmaButtonMatrixCell,
   figmaButtonSizeMetrics,
   figmaButtonTokens,
@@ -8,6 +7,7 @@ import {
   type FigmaButtonInteraction,
   type FigmaButtonSize,
   type FigmaButtonVariant,
+  type SemanticColorMap,
 } from '@bidplace/design-tokens';
 
 export {
@@ -22,8 +22,9 @@ export function figmaButtonStyle(
   variant: FigmaButtonVariant,
   interaction: FigmaButtonInteraction,
   size: FigmaButtonSize = 'matrix',
+  palette: SemanticColorMap,
 ) {
-  const cell = figmaButtonMatrixCell(variant, interaction);
+  const cell = figmaButtonMatrixCell(variant, interaction, palette);
   const sizeMetrics = figmaButtonSizeMetrics(size);
   const { strokeWidth } = figmaButtonTokens.metrics;
 
@@ -45,50 +46,64 @@ export function figmaButtonStyle(
 export function figmaButtonOverlayColor(
   variant: FigmaButtonVariant,
   interaction: FigmaButtonInteraction,
+  palette: SemanticColorMap,
 ) {
-  return figmaButtonMatrixCell(variant, interaction).overlay;
+  return figmaButtonMatrixCell(variant, interaction, palette).overlay;
 }
 
 export function figmaButtonLabelColor(
   variant: FigmaButtonVariant,
   size: FigmaButtonSize = 'matrix',
+  palette: SemanticColorMap,
 ) {
   if (size === 'navigation' && variant === 'muted') {
-    return designTokens.color.inkStrong;
+    return palette.inkStrong;
   }
-  return figmaButtonMatrixCell(variant, 'idle').labelColor;
+  return figmaButtonMatrixCell(variant, 'idle', palette).labelColor;
 }
 
 export function figmaButtonSurfaceFill(
   variant: FigmaButtonVariant,
   interaction: FigmaButtonInteraction,
+  palette: SemanticColorMap,
 ) {
-  return figmaButtonMatrixCell(variant, interaction).fill;
+  return figmaButtonMatrixCell(variant, interaction, palette).fill;
 }
 
 export function figmaButtonPressedGhostInset(
   variant: FigmaButtonVariant,
   interaction: FigmaButtonInteraction,
+  palette: SemanticColorMap,
 ) {
-  return figmaButtonMatrixCell(variant, interaction).pressedGhostInset;
+  return figmaButtonMatrixCell(variant, interaction, palette).pressedGhostInset;
 }
 
 export function figmaButtonStrokeMode(
   variant: FigmaButtonVariant,
   interaction: FigmaButtonInteraction,
+  palette: SemanticColorMap,
 ) {
-  return figmaButtonMatrixCell(variant, interaction).strokeMode;
+  return figmaButtonMatrixCell(variant, interaction, palette).strokeMode;
 }
 
-export function figmaButtonGradientAxis(variant: 'solid' | 'outline') {
+export function figmaButtonGradientAxis(
+  variant: 'solid' | 'outline',
+  palette: SemanticColorMap,
+) {
   const axis = figmaButtonTokens.gradientStroke[variant];
   return {
     x1: axis.x1,
     y1: axis.y1,
     x2: axis.x2,
     y2: axis.y2,
-    start: axis.start,
-    end: axis.end,
+    start:
+      variant === 'solid'
+        ? palette.solidBorderGradientStart
+        : palette.outlineBorderGradientStart,
+    end:
+      variant === 'solid'
+        ? palette.solidBorderGradientEnd
+        : palette.outlineBorderGradientEnd,
   };
 }
 
@@ -115,8 +130,9 @@ export function figmaButtonScaledGradientAxis(
   variant: 'solid' | 'outline',
   width: number,
   height: number,
+  palette: SemanticColorMap,
 ) {
-  const axis = figmaButtonGradientAxis(variant);
+  const axis = figmaButtonGradientAxis(variant, palette);
   const { sampleWidth, sampleHeight } = figmaButtonTokens.metrics;
   const scaleX = width / sampleWidth;
   const scaleY = height / sampleHeight;
@@ -133,6 +149,7 @@ export function figmaButtonScaledGradientAxis(
 export function figmaButtonFlatStrokeColor(
   variant: FigmaButtonVariant,
   interaction: FigmaButtonInteraction,
+  palette: SemanticColorMap,
 ) {
-  return figmaButtonMatrixCell(variant, interaction).strokeColor;
+  return figmaButtonMatrixCell(variant, interaction, palette).strokeColor;
 }

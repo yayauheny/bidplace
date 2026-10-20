@@ -1,4 +1,7 @@
-import { authNavigationDismissal, authRouteFromLocation } from './auth-dismissal';
+import {
+  authNavigationDismissal,
+  authRouteFromLocation,
+} from './auth-dismissal';
 
 export type AuthHistoryLive = {
   id: string;
@@ -8,7 +11,7 @@ export type AuthHistoryLive = {
   released: () => boolean;
   completed: () => boolean;
   confirm: () => void;
-  rememberLeave: (path: string) => void;
+  rememberLeave: (path: string, traversal: { delta: number }) => void;
 };
 
 let liveAuthHistory: AuthHistoryLive | null = null;
@@ -55,7 +58,9 @@ function historyId(): string | null {
 function positionFrom(data: unknown): number | null {
   if (!data || typeof data !== 'object' || !('index' in data)) return null;
   const index = (data as { index?: unknown }).index;
-  return typeof index === 'number' && Number.isSafeInteger(index) && index >= 0 ? index : null;
+  return typeof index === 'number' && Number.isSafeInteger(index) && index >= 0
+    ? index
+    : null;
 }
 
 function withoutHistoryList(data: unknown): Record<string, unknown> {
@@ -100,14 +105,15 @@ function onPopState(event: PopStateEvent) {
   }
   const from = currentIndex;
   const restoreId = currentId;
-  const delta = from !== null && landedIndex !== null && restoreId ? from - landedIndex : 0;
+  const delta =
+    from !== null && landedIndex !== null && restoreId ? from - landedIndex : 0;
   const path = locationHref();
   const result = dismissalFor(path);
   if (!result || result.decision === 'allow' || delta === 0 || !restoreId) {
     remember(landedId ?? currentId, landedIndex);
     return;
   }
-  result.live.rememberLeave(path);
+  result.live.rememberLeave(path, { delta });
   event.stopImmediatePropagation();
   activeRestoreId = restoreId;
   window.history.go(delta);

@@ -33,7 +33,10 @@ function beginSessionRetirement(queryClient: QueryClient): number {
   return next;
 }
 
-function retirementStillOwns(queryClient: QueryClient, retirement: number): boolean {
+function retirementStillOwns(
+  queryClient: QueryClient,
+  retirement: number,
+): boolean {
   const state = authEpochState(queryClient);
   return state.id === retirement && !state.writesOpen;
 }
@@ -48,7 +51,8 @@ export function subscribeAuthEpoch(
   queryClient: QueryClient,
   listener: () => void,
 ): () => void {
-  const listeners = authEpochListeners.get(queryClient) ?? new Set<() => void>();
+  const listeners =
+    authEpochListeners.get(queryClient) ?? new Set<() => void>();
   listeners.add(listener);
   authEpochListeners.set(queryClient, listeners);
   return () => {
@@ -90,7 +94,8 @@ export async function clearAuthScopedDataExceptSession(
     !(query.queryKey[0] === 'user' && query.queryKey[1] === 'me');
 
   await queryClient.cancelQueries({ predicate });
-  if (retirement !== undefined && !retirementStillOwns(queryClient, retirement)) return;
+  if (retirement !== undefined && !retirementStillOwns(queryClient, retirement))
+    return;
   queryClient.removeQueries({ predicate });
 }
 
@@ -145,4 +150,55 @@ export async function replaceAuthenticatedSession(
   if (!retirementStillOwns(queryClient, retirement)) return;
   queryClient.setQueryData(authKeys.session, user);
   finishSessionRetirement(queryClient, retirement);
+  // A session now exists again: local draft writers may persist for it.
+  issueDraftWriteLease(queryClient);
+}
+
+/**
+ * Session-scoped lease for local draft writes (browser storage drafts).
+ * The session owner drives it: `logout` in auth-provider retires the lease
+ * before the network call; installing a replacement session issues a new
+ * one. Writers capture the lease when scheduling a debounced write and
+ * revalidate it at execution — a write pending across the boundary drops,
+ * and re-scheduling before the next session cannot re-arm it, because a
+ * retired lease yields null until a new session is installed.
+ */
+type DraftWriteLease = { generation: number; open: boolean };
+
+const draftWriteLeases = new WeakMap<QueryClient, DraftWriteLease>();
+
+function draftWriteLeaseState(queryClient: QueryClient): DraftWriteLease {
+  return draftWriteLeases.get(queryClient) ?? { generation: 0, open: true };
+}
+
+export function captureDraftWriteLease(
+  queryClient: QueryClient,
+): number | null {
+  const state = draftWriteLeaseState(queryClient);
+  return state.open ? state.generation : null;
+}
+
+export function draftWriteLeaseIsValid(
+  queryClient: QueryClient,
+  lease: number | null,
+): boolean {
+  if (lease === null) return false;
+  const state = draftWriteLeaseState(queryClient);
+  return state.open && state.generation === lease;
+}
+
+export function retireDraftWriteLease(queryClient: QueryClient): void {
+  const state = draftWriteLeaseState(queryClient);
+  draftWriteLeases.set(queryClient, {
+    generation: state.generation + 1,
+    open: false,
+  });
+}
+
+export function issueDraftWriteLease(queryClient: QueryClient): void {
+  const state = draftWriteLeaseState(queryClient);
+  draftWriteLeases.set(queryClient, {
+    generation: state.generation + 1,
+    open: true,
+  });
 }
