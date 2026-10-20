@@ -10,6 +10,7 @@ import {
   SettingsRow,
 } from '../../components/figma/SettingsList';
 import { FormPageShell } from '../../components/layout';
+import { navigateBack } from '../../components/layout/navigate-back';
 import { AppText } from '../../components/ui';
 import { useAccountLogout } from '../auth/account-logout';
 
@@ -33,7 +34,10 @@ export function AccountSettingsScreen() {
             justifyContent: 'space-between',
           }}
         >
-          <BackButton variant="settings" onPress={() => router.back()} />
+          <BackButton
+            variant="settings"
+            onPress={() => navigateBack(router, { fallbackHref: '/account' })}
+          />
           <AppText role="settingsTitle" tone="strong">
             Настройки
           </AppText>
@@ -41,7 +45,7 @@ export function AccountSettingsScreen() {
             icon="x"
             iconSize={designTokens.size.settingsHeaderGlyph}
             label="Закрыть настройки"
-            onPress={() => router.back()}
+            onPress={() => router.replace('/account')}
           />
         </View>
         <SettingsGroup label="Главное">

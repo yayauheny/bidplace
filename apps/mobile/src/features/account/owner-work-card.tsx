@@ -98,7 +98,12 @@ export function OwnerWorkCard({
         href={`/products/${work.id}`}
       />
       {visibility.canHide ? (
-        <SecondaryButton label="Скрыть" width="block" onPress={onHide} />
+        <SecondaryButton
+          label="Скрыть"
+          width="block"
+          disabled={visibilityPending}
+          onPress={onHide}
+        />
       ) : null}
       {visibility.canRestore ? (
         <SecondaryButton

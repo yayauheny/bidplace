@@ -51,13 +51,31 @@ export function useAuthorCabinetWorks(
   };
 }
 
+export type CabinetVisibilityAction = 'hide' | 'restore';
+
+/**
+ * Операция видимости целиком принадлежает одному intent {workId, action}:
+ * ошибка и retry не могут адресовать другую работу, чем подтверждает
+ * пользователь. Начало нового intent сбрасывает ошибку предыдущего;
+ * во время pending смена цели запрещена; поздний успех не закрывает
+ * чужой confirm.
+ */
+export type CabinetVisibilityIntent = {
+  workId: string;
+  action: CabinetVisibilityAction;
+};
+
+function sameIntent(
+  a: CabinetVisibilityIntent | null,
+  b: CabinetVisibilityIntent | null,
+) {
+  return a?.workId === b?.workId && a?.action === b?.action;
+}
+
 export function useAuthorCabinetVisibility() {
   const api = useApiClient();
   const queryClient = useQueryClient();
-  const [pendingHideId, setPendingHideId] = useState<string | null>(null);
-  const [attempt, setAttempt] = useState<{ id: string; archived: boolean } | null>(
-    null,
-  );
+  const [intent, setIntent] = useState<CabinetVisibilityIntent | null>(null);
 
   const invalidate = () => {
     void invalidateOwnerWorks(queryClient);
@@ -67,20 +85,44 @@ export function useAuthorCabinetVisibility() {
     void queryClient.invalidateQueries({ queryKey: ['portfolio-works'] });
   };
   const mutation = useMutation({
-    mutationFn: ({ id, archived }: { id: string; archived: boolean }) =>
-      archived ? api.portfolio.unhideWork(id) : api.portfolio.hideWork(id),
-    onMutate: (vars) => setAttempt(vars),
-    onSuccess: () => {
-      setPendingHideId(null);
+    mutationFn: ({ workId, action }: CabinetVisibilityIntent) =>
+      action === 'restore'
+        ? api.portfolio.unhideWork(workId)
+        : api.portfolio.hideWork(workId),
+    onSuccess: (_data, vars) => {
+      // Поздний ответ предыдущего intent не закрывает чужой confirm.
+      setIntent((current) => (sameIntent(current, vars) ? null : current));
       invalidate();
     },
   });
 
-  // Failed hide/restore stays visible and repeatable; the attempt owner is
-  // the mutation itself, so a retry re-runs the exact same operation.
+  const begin = (next: CabinetVisibilityIntent): boolean => {
+    // Пока операция pending, она владеет сессией: другую карточку не начать.
+    if (mutation.isPending && !sameIntent(intent, next)) return false;
+    if (!sameIntent(intent, next)) mutation.reset();
+    setIntent(next);
+    return true;
+  };
+  const cancel = () => {
+    if (mutation.isPending) return;
+    mutation.reset();
+    setIntent(null);
+  };
+  // Restore — одношаговый intent: начало = исполнение.
+  const restore = (workId: string) => {
+    if (mutation.isPending) return;
+    const next: CabinetVisibilityIntent = { workId, action: 'restore' };
+    if (!sameIntent(intent, next)) mutation.reset();
+    setIntent(next);
+    mutation.mutate(next);
+  };
+  const confirm = () => {
+    if (intent) mutation.mutate(intent);
+  };
+  // Повтор той же неотменённой операции: retry адресует текущий intent.
   const retry = () => {
-    if (attempt && !mutation.isPending) mutation.mutate(attempt);
+    if (intent && !mutation.isPending) mutation.mutate(intent);
   };
 
-  return { pendingHideId, setPendingHideId, mutation, retry };
+  return { intent, begin, cancel, restore, confirm, retry, mutation };
 }

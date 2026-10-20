@@ -12,6 +12,7 @@ import { BackButton } from '../../components/figma/BackButton';
 import { FigmaButton } from '../../components/figma/FigmaButton';
 import { FigmaIconButton } from '../../components/figma/FigmaIconButton';
 import { FormPageShell } from '../../components/layout';
+import { navigateBack } from '../../components/layout/navigate-back';
 import { InfrastructurePageStatus } from '../../components/shared/InfrastructurePageStatus';
 import {
   AppDialog,
@@ -116,25 +117,31 @@ export function AccountScreen() {
   const accountSlug = user?.slug ?? null;
   const cta = accountCta(capability.status);
   const works = cabinet.works;
-  const pendingHide = works.find((work) => work.id === visibility.pendingHideId);
+  const hideIntent =
+    visibility.intent?.action === 'hide' ? visibility.intent : null;
+  const pendingHide = hideIntent
+    ? works.find((work) => work.id === hideIntent.workId)
+    : undefined;
   const columns = gridColumnsFromWidth(gridWidth, GRID_POLICY);
 
   // Identity: APPROVED → публичная published (A, не editing B); иначе аккаунт.
   const publishedAuthor = approved ? identity.author : null;
-  const name: string =
+  // Нет displayName/публикованного имени — primary остаётся один @slug,
+  // дублирующей secondary-строки не выводим.
+  const displayName =
     publishedAuthor?.fullName ??
     (approved ? null : user?.displayName) ??
-    publishedAuthor?.slug ??
-    (approved ? null : accountSlug) ??
-    'Личный аккаунт';
-  const handle = publishedAuthor?.slug ?? (approved ? null : accountSlug);
+    null;
+  const identitySlug = publishedAuthor?.slug ?? (approved ? null : accountSlug);
+  const name: string =
+    displayName ?? (identitySlug ? `@${identitySlug}` : 'Личный аккаунт');
+  const handle = displayName ? identitySlug : null;
   const photoUrl = publishedAuthor ? publishedAuthor.profilePhotoUrl : null;
   const sharePath =
     publishedAuthor?.sharePath ??
     (ownerSlug ?? accountSlug
       ? authorSharePath(ownerSlug ?? accountSlug ?? '')
       : null);
-  const identityBusy = visibility.mutation.isPending;
 
   return (
     <FormPageShell>
@@ -146,7 +153,10 @@ export function AccountScreen() {
             justifyContent: 'space-between',
           }}
         >
-          <BackButton variant="muted" onPress={() => router.back()} />
+          <BackButton
+            variant="muted"
+            onPress={() => navigateBack(router, { fallbackHref: '/' })}
+          />
           <View style={{ flexDirection: 'row', gap: designTokens.space.x1 }}>
             {sharePath ? (
               <AuthorShare
@@ -289,10 +299,10 @@ export function AccountScreen() {
                     authorSlug={handle ?? ownerSlug ?? accountSlug ?? ''}
                     isSuspended={suspended}
                     visibilityPending={visibility.mutation.isPending}
-                    onHide={() => visibility.setPendingHideId(work.id)}
-                    onRestore={() =>
-                      visibility.mutation.mutate({ id: work.id, archived: true })
+                    onHide={() =>
+                      void visibility.begin({ workId: work.id, action: 'hide' })
                     }
+                    onRestore={() => visibility.restore(work.id)}
                   />
                 )}
               />
@@ -317,7 +327,8 @@ export function AccountScreen() {
                 />
               </View>
             ) : null}
-            {visibility.mutation.isError && !pendingHide ? (
+            {visibility.mutation.isError &&
+            visibility.intent?.action === 'restore' ? (
               <View style={{ gap: designTokens.space.x2 }}>
                 <AppText role="bodySmall" tone="danger">
                   Не удалось изменить видимость работы. Попробуйте ещё раз.
@@ -334,7 +345,7 @@ export function AccountScreen() {
         title="Скрыть работу?"
         description="Работа исчезнет из публичного профиля, но останется в кабинете."
         onClose={() => {
-          if (!identityBusy) visibility.setPendingHideId(null);
+          if (!visibility.mutation.isPending) visibility.cancel();
         }}
       >
         {visibility.mutation.isError ? (
@@ -347,10 +358,7 @@ export function AccountScreen() {
           width="block"
           loading={visibility.mutation.isPending}
           disabled={!pendingHide || visibility.mutation.isPending}
-          onPress={() =>
-            pendingHide &&
-            visibility.mutation.mutate({ id: pendingHide.id, archived: false })
-          }
+          onPress={visibility.confirm}
         />
         {visibility.mutation.isError ? (
           <SecondaryButton label="Повторить" onPress={visibility.retry} />
@@ -359,7 +367,7 @@ export function AccountScreen() {
           label="Отмена"
           width="block"
           disabled={visibility.mutation.isPending}
-          onPress={() => visibility.setPendingHideId(null)}
+          onPress={visibility.cancel}
         />
       </AppDialog>
       <AppDialog

@@ -40,8 +40,7 @@ export function AuthorCabinetScreen() {
   const queryClient = useQueryClient();
   const capability = useSellerCapability();
   const query = useAuthorCabinetWorks(capability.status);
-  const { pendingHideId, setPendingHideId, mutation: visibility } =
-    useAuthorCabinetVisibility();
+  const visibility = useAuthorCabinetVisibility();
 
   useEffect(() => {
     if (
@@ -54,7 +53,11 @@ export function AuthorCabinetScreen() {
   }, [capability.isError, capability.isLoading, capability.status, router]);
 
   const works = query.works;
-  const pendingHide = works.find((work) => work.id === pendingHideId);
+  const hideIntent =
+    visibility.intent?.action === 'hide' ? visibility.intent : null;
+  const pendingHide = hideIntent
+    ? works.find((work) => work.id === hideIntent.workId)
+    : undefined;
 
   if (capability.isLoading || query.isLoading) {
     return (
@@ -197,7 +200,10 @@ export function AuthorCabinetScreen() {
                 <SecondaryButton
                   label="Скрыть"
                   width="block"
-                  onPress={() => setPendingHideId(work.id)}
+                  disabled={visibility.mutation.isPending}
+                  onPress={() =>
+                    void visibility.begin({ workId: work.id, action: 'hide' })
+                  }
                 />
               ) : null}
               {authorCabinetVisibilityActions({
@@ -207,11 +213,9 @@ export function AuthorCabinetScreen() {
                 <SecondaryButton
                   label="Вернуть в профиль"
                   width="block"
-                  loading={visibility.isPending}
-                  disabled={visibility.isPending}
-                  onPress={() =>
-                    visibility.mutate({ id: work.id, archived: true })
-                  }
+                  loading={visibility.mutation.isPending}
+                  disabled={visibility.mutation.isPending}
+                  onPress={() => visibility.restore(work.id)}
                 />
               ) : null}
             </View>
@@ -226,7 +230,7 @@ export function AuthorCabinetScreen() {
             onPress={() => void query.fetchNextPage()}
           />
         ) : null}
-        {visibility.isError ? (
+        {visibility.mutation.isError ? (
           <AppText role="bodySmall" tone="danger">
             Не удалось изменить видимость работы. Попробуйте ещё раз.
           </AppText>
@@ -235,23 +239,22 @@ export function AuthorCabinetScreen() {
           open={Boolean(pendingHide)}
           title="Скрыть работу?"
           description="Работа исчезнет из публичного профиля, но останется в кабинете."
-          onClose={() => setPendingHideId(null)}
+          onClose={() => {
+            if (!visibility.mutation.isPending) visibility.cancel();
+          }}
         >
           <PrimaryButton
             label="Скрыть"
             width="block"
-            loading={visibility.isPending}
-            disabled={!pendingHide || visibility.isPending}
-            onPress={() =>
-              pendingHide &&
-              visibility.mutate({ id: pendingHide.id, archived: false })
-            }
+            loading={visibility.mutation.isPending}
+            disabled={!pendingHide || visibility.mutation.isPending}
+            onPress={visibility.confirm}
           />
           <SecondaryButton
             label="Отмена"
             width="block"
-            disabled={visibility.isPending}
-            onPress={() => setPendingHideId(null)}
+            disabled={visibility.mutation.isPending}
+            onPress={visibility.cancel}
           />
         </AppDialog>
       </View>

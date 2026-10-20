@@ -48,15 +48,26 @@ test('approved author: dock opens /account with published identity, settings rou
     await expect(page).toHaveURL(/\/account\/settings$/);
     await expect(page.getByText('Публичный профиль')).toBeVisible();
 
-    // Закрытие в естественном стеке возвращает в аккаунт.
-    await page.getByRole('button', { name: 'Закрыть настройки' }).click();
+    // Natural back-stack: Back возвращает в аккаунт.
+    await page.getByRole('button', { name: 'Назад' }).click();
     await expect(page).toHaveURL(/\/account$/);
 
-    // Прямой URL и refresh сохраняют экран настроек.
+    // Direct/fresh вход: Back без app history уходит в fallback /account.
+    await page.goto('/account/settings');
+    await page.getByRole('button', { name: 'Назад' }).click();
+    await expect(page).toHaveURL(/\/account$/);
+
+    // Reload: крест имеет явное назначение /account (reload-close не теряется).
     await page.goto('/account/settings');
     await page.reload();
     await expect(page).toHaveURL(/\/account\/settings$/);
     await expect(page.getByText('Публичный профиль')).toBeVisible();
+    await page.getByRole('button', { name: 'Закрыть настройки' }).click();
+    await expect(page).toHaveURL(/\/account$/);
+
+    // Прямой /account без app history: Back уходит в fallback '/'.
+    await page.getByRole('button', { name: 'Назад' }).click();
+    await expect(page).toHaveURL(/\/$/);
   } finally {
     await context.close();
   }

@@ -681,4 +681,327 @@ describe('account screen consumers', () => {
     expect(harness.getMyProfile.mock.calls.length).toBe(1);
     view.unmount();
   });
+
+  it('without displayName renders a single primary @slug, no duplicate', async () => {
+    harness.getMyProfile.mockRejectedValue(notFound());
+    harness.auth.user = {
+      ...harness.auth.user,
+      displayName: undefined,
+    } as unknown as typeof harness.auth.user;
+    const view = mount();
+    await until(
+      view.container,
+      () => view.container.textContent?.includes('@account-user') === true,
+      'slug identity',
+    );
+    const primary = [...view.container.querySelectorAll('span')].filter(
+      (el) => el.textContent === '@account-user',
+    );
+    expect(primary).toHaveLength(1);
+    expect(
+      [...view.container.querySelectorAll('span')].some(
+        (el) => el.textContent === 'account-user',
+      ),
+    ).toBe(false);
+    view.unmount();
+  });
+});
+
+const workB = {
+  id: '22222222-2222-4222-8222-222222222222',
+  publicId: 'work00000b2',
+  title: 'Work B',
+};
+
+function cardOf(container: HTMLElement, title: string): HTMLElement {
+  const cover = container.querySelector(`[data-cover="${title}"]`);
+  expect(cover, `cover for ${title}`).toBeTruthy();
+  let el: HTMLElement | null = cover as HTMLElement;
+  while (
+    el &&
+    !buttons(el).some(
+      (item) =>
+        item.textContent === 'Скрыть' ||
+        item.textContent === 'Вернуть в профиль',
+    )
+  ) {
+    el = el.parentElement;
+  }
+  expect(el, `card for ${title}`).toBeTruthy();
+  return el as HTMLElement;
+}
+
+function dialogButton(container: HTMLElement, label: string): HTMLElement {
+  const dialog = container.querySelector('[role="dialog"]') as HTMLElement;
+  expect(dialog, 'open dialog').toBeTruthy();
+  const button = buttons(dialog).find((item) => item.textContent === label);
+  expect(button, `dialog button "${label}"`).toBeTruthy();
+  return button as HTMLElement;
+}
+
+describe('visibility intent ownership (CR-01)', () => {
+  function mountTwoWorks(
+    aOverrides: Record<string, unknown> = {},
+    bOverrides: Record<string, unknown> = {},
+  ) {
+    harness.getMyProfile.mockResolvedValue(sellerProfile('APPROVED'));
+    harness.listCabinetWorks.mockResolvedValue({
+      works: [
+        cabinetWork('APPROVED', aOverrides),
+        cabinetWork('APPROVED', { ...workB, ...bOverrides }),
+      ],
+      pagination: { page: 1, limit: 20, total: 2 },
+    });
+    return mount();
+  }
+
+  async function untilWorks(view: { container: HTMLElement }) {
+    await until(
+      view.container,
+      () =>
+        view.container.textContent?.includes('Work title') === true &&
+        view.container.textContent?.includes('Work B') === true,
+      'both works',
+    );
+  }
+
+  it('failed hide A → cancel → confirm B addresses only B', async () => {
+    harness.hideWork
+      .mockRejectedValueOnce(new Error('network'))
+      .mockResolvedValue(undefined);
+    const view = mountTwoWorks();
+    await untilWorks(view);
+
+    act(() =>
+      buttons(cardOf(view.container, 'Work title'))
+        .find((item) => item.textContent === 'Скрыть')
+        ?.click(),
+    );
+    await until(
+      view.container,
+      () => view.container.textContent?.includes('Скрыть работу?') === true,
+      'confirm A',
+    );
+    act(() => dialogButton(view.container, 'Скрыть').click());
+    await until(
+      view.container,
+      () =>
+        view.container.textContent?.includes('Не удалось скрыть работу') ===
+        true,
+      'hide A error',
+    );
+    expect(harness.hideWork).toHaveBeenCalledTimes(1);
+    expect(harness.hideWork.mock.calls[0]?.[0]).toBe(productId);
+
+    act(() => dialogButton(view.container, 'Отмена').click());
+    await until(
+      view.container,
+      () => view.container.textContent?.includes('Скрыть работу?') === false,
+      'dialog closed',
+    );
+
+    act(() =>
+      buttons(cardOf(view.container, 'Work B'))
+        .find((item) => item.textContent === 'Скрыть')
+        ?.click(),
+    );
+    await until(
+      view.container,
+      () => view.container.textContent?.includes('Скрыть работу?') === true,
+      'confirm B',
+    );
+    // Ошибка A не переезжает в confirm B: ни текста, ни чужого retry.
+    const dialog = view.container.querySelector('[role="dialog"]') as HTMLElement;
+    expect(dialog.textContent).not.toContain('Не удалось скрыть работу');
+    expect(
+      buttons(dialog).some((item) => item.textContent === 'Повторить'),
+    ).toBe(false);
+
+    act(() => dialogButton(view.container, 'Скрыть').click());
+    await until(
+      view.container,
+      () => harness.hideWork.mock.calls.length === 2,
+      'hide B',
+    );
+    expect(harness.hideWork.mock.calls[1]?.[0]).toBe(workB.id);
+    view.unmount();
+  });
+
+  it('failed restore A → hide confirm B never retries unhide A', async () => {
+    harness.listCabinetWorks.mockResolvedValue({
+      works: [
+        cabinetWork('ARCHIVED'),
+        cabinetWork('APPROVED', workB),
+      ],
+      pagination: { page: 1, limit: 20, total: 2 },
+    });
+    harness.getMyProfile.mockResolvedValue(sellerProfile('APPROVED'));
+    harness.unhideWork.mockRejectedValue(new Error('network'));
+    const view = mount();
+
+    await until(
+      view.container,
+      () =>
+        view.container.textContent?.includes('Вернуть в профиль') === true,
+      'restore action',
+    );
+    act(() =>
+      buttons(cardOf(view.container, 'Work title'))
+        .find((item) => item.textContent === 'Вернуть в профиль')
+        ?.click(),
+    );
+    await until(
+      view.container,
+      () =>
+        view.container.textContent?.includes(
+          'Не удалось изменить видимость работы',
+        ) === true,
+      'restore A error',
+    );
+    expect(harness.unhideWork).toHaveBeenCalledTimes(1);
+
+    act(() =>
+      buttons(cardOf(view.container, 'Work B'))
+        .find((item) => item.textContent === 'Скрыть')
+        ?.click(),
+    );
+    await until(
+      view.container,
+      () => view.container.textContent?.includes('Скрыть работу?') === true,
+      'confirm B',
+    );
+    // Inline-ошибка restore A снята новым intent; retry чужой операции невозможен.
+    expect(
+      view.container.textContent?.includes(
+        'Не удалось изменить видимость работы',
+      ),
+    ).toBe(false);
+    expect(harness.unhideWork).toHaveBeenCalledTimes(1);
+    const dialog = view.container.querySelector('[role="dialog"]') as HTMLElement;
+    expect(
+      buttons(dialog).some((item) => item.textContent === 'Повторить'),
+    ).toBe(false);
+
+    act(() => dialogButton(view.container, 'Скрыть').click());
+    await until(
+      view.container,
+      () => harness.hideWork.mock.calls.length === 1,
+      'hide B',
+    );
+    expect(harness.hideWork.mock.calls[0]?.[0]).toBe(workB.id);
+    expect(harness.unhideWork).toHaveBeenCalledTimes(1);
+    view.unmount();
+  });
+
+  it('pending A blocks switching target; late success does not close another confirm', async () => {
+    let resolveHide: () => void = () => undefined;
+    harness.hideWork.mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveHide = resolve;
+        }),
+    );
+    const view = mountTwoWorks();
+    await untilWorks(view);
+
+    act(() =>
+      buttons(cardOf(view.container, 'Work title'))
+        .find((item) => item.textContent === 'Скрыть')
+        ?.click(),
+    );
+    await until(
+      view.container,
+      () => view.container.textContent?.includes('Скрыть работу?') === true,
+      'confirm A',
+    );
+    act(() => dialogButton(view.container, 'Скрыть').click());
+    await until(
+      view.container,
+      () => harness.hideWork.mock.calls.length === 1,
+      'hide A pending',
+    );
+
+    // Пока A pending, кнопка B disabled — смена цели невозможна.
+    const hideB = buttons(cardOf(view.container, 'Work B')).find(
+      (item) => item.textContent === 'Скрыть',
+    );
+    expect(hideB?.disabled).toBe(true);
+    act(() => hideB?.click());
+    await flush();
+    expect(harness.hideWork.mock.calls.length).toBe(1);
+    expect(view.container.textContent?.includes('Скрыть работу?')).toBe(true);
+
+    await act(async () => {
+      resolveHide();
+      await Promise.resolve();
+    });
+    await until(
+      view.container,
+      () => view.container.textContent?.includes('Скрыть работу?') === false,
+      'dialog closed by A success',
+    );
+
+    // Теперь B доступен: отдельный confirm, отдельная операция.
+    act(() =>
+      buttons(cardOf(view.container, 'Work B'))
+        .find((item) => item.textContent === 'Скрыть')
+        ?.click(),
+    );
+    await until(
+      view.container,
+      () => view.container.textContent?.includes('Скрыть работу?') === true,
+      'confirm B',
+    );
+    act(() => dialogButton(view.container, 'Скрыть').click());
+    await until(
+      view.container,
+      () => harness.hideWork.mock.calls.length === 2,
+      'hide B',
+    );
+    expect(harness.hideWork.mock.calls[1]?.[0]).toBe(workB.id);
+    view.unmount();
+  });
+
+  it('retry repeats the same un-cancelled operation and the error stays visible', async () => {
+    harness.hideWork
+      .mockRejectedValueOnce(new Error('network'))
+      .mockResolvedValue(undefined);
+    const view = mountTwoWorks();
+    await untilWorks(view);
+
+    act(() =>
+      buttons(cardOf(view.container, 'Work title'))
+        .find((item) => item.textContent === 'Скрыть')
+        ?.click(),
+    );
+    await until(
+      view.container,
+      () => view.container.textContent?.includes('Скрыть работу?') === true,
+      'confirm A',
+    );
+    act(() => dialogButton(view.container, 'Скрыть').click());
+    await until(
+      view.container,
+      () =>
+        view.container.textContent?.includes('Не удалось скрыть работу') ===
+        true,
+      'hide A error',
+    );
+    expect(harness.hideWork).toHaveBeenCalledTimes(1);
+
+    act(() => dialogButton(view.container, 'Повторить').click());
+    await until(
+      view.container,
+      () => harness.hideWork.mock.calls.length === 2,
+      'retry A',
+    );
+    expect(harness.hideWork.mock.calls[1]?.[0]).toBe(productId);
+    // Успех закрывает confirm того же intent.
+    await until(
+      view.container,
+      () => view.container.textContent?.includes('Скрыть работу?') === false,
+      'dialog closed by retry success',
+    );
+    view.unmount();
+  });
 });
