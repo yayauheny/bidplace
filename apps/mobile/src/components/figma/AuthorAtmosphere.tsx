@@ -2,6 +2,7 @@ import { designTokens } from '@bidplace/design-tokens';
 import { Platform, StyleSheet, View, type ViewStyle } from 'react-native';
 
 import { getApiAssetUrl } from '../../lib/environment';
+import { useAppTheme } from '../../providers/theme-provider';
 import { ResilientRemoteImage } from '../ui/ResilientRemoteImage';
 import { authorAtmosphereSpec } from './author-atmosphere-style';
 import { webFilterBlur } from './web-backdrop';
@@ -15,7 +16,8 @@ export function AuthorAtmosphere({
   fullName: string;
   compact?: boolean;
 }) {
-  const spec = authorAtmosphereSpec();
+  const palette = useAppTheme();
+  const spec = authorAtmosphereSpec(palette);
 
   return (
     <View

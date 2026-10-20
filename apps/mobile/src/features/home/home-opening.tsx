@@ -37,7 +37,7 @@ export function HomeOpening({ selection }: { selection: HomeCuratorSelection }) 
       </AppText>
       <View
         style={{
-          marginHorizontal: -designTokens.space.pageGutter,
+          marginHorizontal: -designTokens.layout.gutter,
           minWidth: 0,
           alignSelf: 'stretch',
           overflow: 'hidden',
@@ -51,8 +51,8 @@ export function HomeOpening({ selection }: { selection: HomeCuratorSelection }) 
           contentContainerStyle={{
             flexDirection: 'row',
             alignItems: 'flex-start',
-            gap: designTokens.space.pageGutter,
-            paddingHorizontal: designTokens.space.pageGutter,
+            gap: designTokens.layout.gutter,
+            paddingHorizontal: designTokens.layout.gutter,
           }}
         >
           <View

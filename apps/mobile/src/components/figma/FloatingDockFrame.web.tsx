@@ -8,7 +8,7 @@ import {
 import { createPortal } from 'react-dom';
 import type { View } from 'react-native';
 
-import { figmaTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import { FigmaGlassSurface } from './FigmaGlassSurface';
 
@@ -37,8 +37,9 @@ export function FloatingDockFrame({
 
   const layerStyle: DockLayerStyle = {
     bottom,
-    '--figma-dock-gap': `${figmaTokens.space.dockGap}px`,
-    '--figma-dock-padding': `${figmaTokens.space.dockPad}px`,
+    zIndex: designTokens.layer.dock,
+    '--figma-dock-gap': `${designTokens.space.dockGap}px`,
+    '--figma-dock-padding': `${designTokens.space.dockPad}px`,
   };
 
   return createPortal(

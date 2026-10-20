@@ -1,4 +1,4 @@
-import { figmaTokens } from '@bidplace/design-tokens';
+import { designTokens, type SemanticColorMap } from '@bidplace/design-tokens';
 
 export type FigmaFieldStatus =
   | 'empty'
@@ -45,34 +45,39 @@ export function figmaFieldStyle(
   multiline = false,
   metrics: 'default' | 'authPassword' | 'authScreenPassword' = 'default',
   variant: FigmaFieldVariant = 'default',
+  palette: SemanticColorMap,
 ) {
-  const password = metrics === 'authPassword' || metrics === 'authScreenPassword';
+  const password =
+    metrics === 'authPassword' || metrics === 'authScreenPassword';
   const passwordHeight =
     metrics === 'authScreenPassword'
-      ? figmaTokens.auth.screenPasswordHeight
-      : figmaTokens.auth.passwordHeight;
+      ? designTokens.auth.screenPasswordHeight
+      : designTokens.auth.passwordHeight;
   return {
     width: '100%' as const,
     // A single-line shell has a fixed outer height. At devicePixelRatio 1 the
     // 0.5 border paints as 1px; minHeight alone then lets padding and the
     // line box grow the border box. Multiline fields keep only minHeight.
     ...(multiline
-      ? { minHeight: figmaTokens.size.input }
+      ? { minHeight: designTokens.size.input }
       : password
         ? { height: passwordHeight, minHeight: passwordHeight }
-        : { height: figmaTokens.size.input, minHeight: figmaTokens.size.input }),
-    paddingHorizontal: figmaTokens.space.fieldX,
-    paddingVertical: password ? 0 : figmaTokens.space.fieldY,
-    borderRadius: figmaTokens.radius.field,
+        : {
+            height: designTokens.size.input,
+            minHeight: designTokens.size.input,
+          }),
+    paddingHorizontal: designTokens.space.fieldX,
+    paddingVertical: password ? 0 : designTokens.space.fieldY,
+    borderRadius: designTokens.radius.field,
     borderWidth:
       metrics === 'authScreenPassword'
-        ? figmaTokens.auth.passwordBorder
-        : figmaTokens.size.fieldBorder,
-    borderColor: fieldBorder(status, variant),
-    backgroundColor: fieldFill(status),
+        ? designTokens.auth.passwordBorder
+        : designTokens.size.fieldBorder,
+    borderColor: fieldBorder(status, variant, palette),
+    backgroundColor: fieldFill(status, palette),
     flexDirection: 'row' as const,
     alignItems: multiline ? ('flex-start' as const) : ('center' as const),
-    gap: figmaTokens.space.fieldGap,
+    gap: designTokens.space.fieldGap,
   };
 }
 
@@ -82,54 +87,62 @@ export const figmaFieldNativeOutlineStyle = {
   outlineWidth: 0,
 };
 
-export function figmaFieldValueColor(status: FigmaFieldStatus) {
+export function figmaFieldValueColor(
+  status: FigmaFieldStatus,
+  palette: SemanticColorMap,
+) {
   if (status === 'empty' || status === 'hoverEmpty') {
-    return figmaTokens.color.muted;
+    return palette.muted;
   }
-  return figmaTokens.color.fieldValue;
+  return palette.fieldValue;
 }
 
 /** Placeholder text is drawn only while the label is not floating, i.e. for `empty`. */
 export function figmaFieldPlaceholderColor(
   status: FigmaFieldStatus,
   variant: FigmaFieldVariant = 'default',
+  palette: SemanticColorMap,
 ) {
   return variant === 'authorApplication' && status === 'empty'
-    ? figmaTokens.color.authorApplicationField
-    : figmaTokens.color.muted;
+    ? palette.authorApplicationField
+    : palette.muted;
 }
 
-function fieldBorder(status: FigmaFieldStatus, variant: FigmaFieldVariant) {
+function fieldBorder(
+  status: FigmaFieldStatus,
+  variant: FigmaFieldVariant,
+  palette: SemanticColorMap,
+) {
   switch (status) {
     case 'empty':
       return variant === 'authorApplication'
-        ? figmaTokens.color.authorApplicationField
-        : figmaTokens.color.muted;
+        ? palette.authorApplicationField
+        : palette.muted;
     case 'disabled':
-      return figmaTokens.color.muted;
+      return palette.muted;
     case 'hoverEmpty':
-      return figmaTokens.color.fieldHoverBorder;
+      return palette.fieldHoverBorder;
     case 'filled':
-      return figmaTokens.color.ink;
+      return palette.ink;
     case 'hoverFilled':
-      return figmaTokens.color.solidHover;
+      return palette.solidHover;
     case 'focus':
-      return figmaTokens.color.focus;
+      return palette.focus;
     case 'error':
-      return figmaTokens.color.error;
+      return palette.error;
     case 'success':
-      return figmaTokens.color.success;
+      return palette.success;
   }
 }
 
-function fieldFill(status: FigmaFieldStatus) {
+function fieldFill(status: FigmaFieldStatus, palette: SemanticColorMap) {
   switch (status) {
     case 'disabled':
-      return figmaTokens.color.mutedFill;
+      return palette.mutedFill;
     case 'hoverEmpty':
     case 'hoverFilled':
-      return figmaTokens.color.fieldHoverFill;
+      return palette.fieldHoverFill;
     default:
-      return figmaTokens.color.canvas;
+      return palette.canvas;
   }
 }

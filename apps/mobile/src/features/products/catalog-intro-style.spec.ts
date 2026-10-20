@@ -166,9 +166,6 @@ vi.mock('expo-blur', () => ({
   BlurTargetView: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
 }));
 
-vi.mock('lucide-react-native', () => ({
-  X: () => null,
-}));
 
 vi.mock('expo-router', () => ({
   useRouter: () => ({

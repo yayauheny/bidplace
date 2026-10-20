@@ -6,8 +6,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { designTokens } from '@bidplace/design-tokens';
 
-import { OverlayHost } from './OverlayHost';
 import { FloatingDock } from '../figma/FloatingDock';
+import { useAppTheme } from '../../providers/theme-provider';
+import { useDockInset } from './use-dock-inset';
 
 export function AppShell({
   children,
@@ -20,48 +21,48 @@ export function AppShell({
 }) {
   const dockBlurTarget = useRef<View | null>(null);
   const isFocused = useIsFocused();
+  const { reserve } = useDockInset();
+  const palette = useAppTheme();
 
   return (
-    <OverlayHost>
-      <SafeAreaView
+    <SafeAreaView
+      edges={hideDock ? undefined : ['top', 'left', 'right']}
+      style={{
+        flex: 1,
+        backgroundColor: palette.canvas,
+        overflow: 'visible',
+      }}
+    >
+      <BlurTargetView
+        ref={dockBlurTarget}
+        testID="app-shell-content"
         style={{
           flex: 1,
-          backgroundColor: designTokens.color.canvas,
+          width: '100%',
+          maxWidth:
+            designTokens.layout.contentMax + 2 * designTokens.layout.gutter,
+          paddingHorizontal: designTokens.layout.gutter,
+          minWidth: 0,
+          alignSelf: 'center',
           overflow: 'visible',
         }}
       >
-        <BlurTargetView
-          ref={dockBlurTarget}
-          testID="app-shell-content"
-          style={{
-            flex: 1,
-            width: '100%',
-            maxWidth: designTokens.layout.phoneWidth,
-            minWidth: 0,
-            alignSelf: 'center',
-            overflow: 'visible',
-          }}
-        >
-          {children}
-          {bottomAction ? (
-            <View
-              style={{
-                paddingHorizontal: designTokens.space.pageGutter,
-                paddingBottom: hideDock
-                  ? designTokens.space.x4
-                  : designTokens.size.dockReserve,
-              }}
-            >
-              {bottomAction}
-            </View>
-          ) : null}
-        </BlurTargetView>
-        {!hideDock && isFocused ? (
-          // Focus only mounts the body-portaled dock so stacked screens do
-          // not paint multiple docks. It must not change page content.
-          <FloatingDock blurTarget={dockBlurTarget} />
+        {children}
+        {bottomAction ? (
+          <View
+            style={{
+              paddingBottom: hideDock ? designTokens.space.x4 : reserve,
+            }}
+          >
+            {bottomAction}
+          </View>
         ) : null}
-      </SafeAreaView>
-    </OverlayHost>
+      </BlurTargetView>
+      {!hideDock && isFocused ? (
+        // Focus only mounts the body-portaled dock so stacked screens do
+        // not paint multiple docks. It must not change page content.
+        <FloatingDock blurTarget={dockBlurTarget} />
+      ) : null}
+    </SafeAreaView>
   );
 }

@@ -23,15 +23,16 @@ export function WorkHeader({
 }: WorkHeaderProps) {
   return (
     <>
-      <WorkGallery
-        images={images}
-        label={title}
-        leadingAction={<WorkBackControl onPress={onBack} />}
-        action={<WorkShareControl onPress={onShare} />}
-      />
+      <View style={{ marginHorizontal: -designTokens.layout.gutter }}>
+        <WorkGallery
+          images={images}
+          label={title}
+          leadingAction={<WorkBackControl onPress={onBack} />}
+          action={<WorkShareControl onPress={onShare} />}
+        />
+      </View>
       <View
         style={{
-          paddingHorizontal: designTokens.space.pageGutter,
           paddingTop: designTokens.space.sectionGap,
           gap: designTokens.space.x10,
         }}

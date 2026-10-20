@@ -1,8 +1,10 @@
 import { designTokens } from './tokens';
+import type { SemanticColorMap } from './theme';
 
 /**
  * Text-button geometry and 16-cell visual matrix from Figma `292:5058`.
- * Button-only colors; does not replace shared field/chip/quietFill tokens.
+ * Button-only metrics/typography/state machine; every color resolves from the
+ * semantic palette passed into `figmaButtonMatrixCell` (AR-01 TZ п.2).
  */
 export const figmaButtonVariants = [
   'solid',
@@ -52,41 +54,20 @@ export const figmaButtonTokens = {
     letterSpacing: -0.28,
     fontWeight: '600' as const,
   },
-  colors: {
-    labelOnSolid: '#FFFFFF',
-    labelDefault: '#565656',
-    solidIdle: '#121212',
-    solidDisabledFill: '#949494',
-    canvas: '#FFFFFF',
-    mutedFill: '#F3F3F3',
-    flatStroke: '#F3F3F3',
-    ghostStroke: '#FFFFFF',
-    gradientSolidStart: '#2A2A2A',
-    gradientSolidEnd: '#585858',
-    gradientOutlineStart: '#D1D1D1',
-    gradientOutlineEnd: '#EBEBEB',
-  },
-  overlay: {
-    solidActive: 'rgba(255, 255, 255, 0.15)',
-    outlineGhostActive: 'rgba(0, 0, 0, 0.05)',
-    mutedActive: 'rgba(0, 0, 0, 0.06)',
-  },
+  // Gradient axes are sample userSpaceOnUse vectors; color stops come from
+  // the semantic roles solidBorderGradient*/outlineBorderGradient*.
   gradientStroke: {
     solid: {
       x1: 0,
       y1: 0,
       x2: 84.791,
       y2: 39.1182,
-      start: '#2A2A2A',
-      end: '#585858',
     },
     outline: {
       x1: 0,
       y1: 0,
       x2: 88.232,
       y2: 20.724,
-      start: '#D1D1D1',
-      end: '#EBEBEB',
     },
   },
   disabledOpacity: 0.5,
@@ -119,16 +100,18 @@ export function resolveFigmaButtonInteraction({
   return 'idle';
 }
 
-function baseFill(variant: FigmaButtonVariant): string {
-  const { colors } = figmaButtonTokens;
+function baseFill(
+  variant: FigmaButtonVariant,
+  palette: SemanticColorMap,
+): string {
   switch (variant) {
     case 'solid':
-      return colors.solidIdle;
+      return palette.inkStrong;
     case 'outline':
     case 'ghost':
-      return colors.canvas;
+      return palette.canvas;
     case 'muted':
-      return colors.mutedFill;
+      return palette.mutedFill;
   }
 }
 
@@ -144,27 +127,30 @@ function strokeModeFor(
 
 function strokeColorFor(
   strokeMode: FigmaButtonMatrixCell['strokeMode'],
+  palette: SemanticColorMap,
 ): string | null {
-  const { colors } = figmaButtonTokens;
-  if (strokeMode === 'ghost') return colors.ghostStroke;
-  if (strokeMode === 'flat') return colors.flatStroke;
+  if (strokeMode === 'ghost') return palette.canvas;
+  if (strokeMode === 'flat') return palette.mutedStroke;
   return null;
 }
 
-function activeOverlay(variant: FigmaButtonVariant): string {
-  const { overlay } = figmaButtonTokens;
-  if (variant === 'solid') return overlay.solidActive;
-  if (variant === 'muted') return overlay.mutedActive;
-  return overlay.outlineGhostActive;
+function activeOverlay(
+  variant: FigmaButtonVariant,
+  palette: SemanticColorMap,
+): string {
+  if (variant === 'solid') return palette.overlayOnSolid;
+  if (variant === 'muted') return palette.overlayOnMuted;
+  return palette.overlayOnLight;
 }
 
 export function figmaButtonMatrixCell(
   variant: FigmaButtonVariant,
   interaction: FigmaButtonInteraction,
+  palette: SemanticColorMap,
 ): FigmaButtonMatrixCell {
-  const { colors, metrics, disabledOpacity } = figmaButtonTokens;
+  const { metrics, disabledOpacity } = figmaButtonTokens;
   const labelColor =
-    variant === 'solid' ? colors.labelOnSolid : colors.labelDefault;
+    variant === 'solid' ? palette.onAction : palette.textSubdued;
   const radius =
     interaction === 'disabled' && variant === 'solid'
       ? metrics.disabledSolidRadius
@@ -173,25 +159,25 @@ export function figmaButtonMatrixCell(
   if (interaction === 'disabled') {
     const fill =
       variant === 'solid'
-        ? colors.solidDisabledFill
+        ? palette.solidDisabled
         : variant === 'muted'
-          ? colors.mutedFill
-          : colors.canvas;
+          ? palette.mutedFill
+          : palette.canvas;
     return {
       fill,
       overlay: null,
       labelColor,
       borderRadius: radius,
       strokeMode: strokeModeFor(variant, interaction),
-      strokeColor: strokeColorFor(strokeModeFor(variant, interaction)),
+      strokeColor: strokeColorFor(strokeModeFor(variant, interaction), palette),
       controlOpacity: disabledOpacity,
       pressedGhostInset: false,
     };
   }
 
-  const fill = baseFill(variant);
+  const fill = baseFill(variant, palette);
   const active = interaction === 'hover' || interaction === 'pressed';
-  const overlay = active ? activeOverlay(variant) : null;
+  const overlay = active ? activeOverlay(variant, palette) : null;
   const strokeMode = strokeModeFor(variant, interaction);
 
   return {
@@ -200,7 +186,7 @@ export function figmaButtonMatrixCell(
     labelColor,
     borderRadius: radius,
     strokeMode,
-    strokeColor: strokeColorFor(strokeMode),
+    strokeColor: strokeColorFor(strokeMode, palette),
     controlOpacity: 1,
     pressedGhostInset: variant === 'ghost' && interaction === 'pressed',
   };

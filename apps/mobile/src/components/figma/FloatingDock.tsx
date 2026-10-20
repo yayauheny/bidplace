@@ -1,19 +1,25 @@
 import type { RefObject } from 'react';
-import { Link, type Href, usePathname, useRouter } from 'expo-router';
-import { Platform, type View, type ViewStyle } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-import { figmaTokens } from '@bidplace/design-tokens';
-
 import {
-  authorProfileDestination,
-  useSellerCapability,
-} from '../../hooks/use-seller-capability';
+  Link,
+  type Href,
+  useGlobalSearchParams,
+  usePathname,
+  useRouter,
+  useSegments,
+} from 'expo-router';
+import { Platform, type View, type ViewStyle } from 'react-native';
+
+import { designTokens } from '@bidplace/design-tokens';
+
+import { useSellerCapability } from '../../hooks/use-seller-capability';
 import { useAuth } from '../../providers/auth-provider';
+import { useAppTheme } from '../../providers/theme-provider';
+import { getRouteSearchRedirect } from '../../features/auth/auth-redirect';
 import { useSearchOverlay } from '../../features/search/search-overlay-provider';
-import { BidplaceMark } from '../branding/BidplaceBrand';
 import { getMobileCreateHref } from '../layout/header-chrome';
+import { useDockInset } from '../layout/use-dock-inset';
 import { MotionPressable } from '../ui/MotionPressable';
+import { rememberPendingOpener } from '../ui/use-return-focus';
 import { FigmaIcon } from './FigmaIcon';
 import { FloatingDockFrame } from './FloatingDockFrame';
 import {
@@ -25,7 +31,7 @@ import {
 } from './floating-dock';
 
 const dockItemHitSlop =
-  (figmaTokens.size.dockIconHit - figmaTokens.size.control) / 2;
+  (designTokens.size.dockIconHit - designTokens.size.control) / 2;
 
 export function FloatingDock({
   blurTarget,
@@ -34,14 +40,26 @@ export function FloatingDock({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const params = useGlobalSearchParams();
+  const segments = useSegments();
   const auth = useAuth();
   const search = useSearchOverlay();
   const capability = useSellerCapability();
-  const insets = useSafeAreaInsets();
+  const { bottom } = useDockInset();
+  const returnPath = getRouteSearchRedirect(pathname, segments, params);
   const items = auth.isAdmin
     ? figmaDockItems.filter((item) => item.id !== 'plus')
     : figmaDockItems;
-  const bottom = Math.max(insets.bottom, 12);
+  // The dock unmounts under the auth sheet; remember the opener semantically
+  // so the shared focus owner can restore it on close. Only guest items that
+  // actually open the auth sheet qualify.
+  const rememberAuthOpener = (label: string) =>
+    Platform.OS === 'web' && !auth.isAuthenticated && !auth.isAdmin
+      ? () =>
+          rememberPendingOpener(
+            `[data-testid="figma-floating-dock"] [aria-label="${CSS.escape(label)}"]`,
+          )
+      : undefined;
   const buttons = items.map((item) => (
     <DockItem
       key={item.id}
@@ -52,7 +70,7 @@ export function FloatingDock({
           : !search.isOpen && isFigmaDockItemSelected(item.id, pathname)
       }
       href={dockHref(item, {
-        pathname,
+        returnPath,
         isAuthenticated: auth.isAuthenticated,
         isAdmin: auth.isAdmin,
         sellerStatus: capability.status,
@@ -61,15 +79,19 @@ export function FloatingDock({
         item.id === 'search'
           ? () => search.open()
           : item.id === 'plus'
-            ? () =>
+            ? () => {
+                rememberAuthOpener(item.label)?.();
                 router.push(
                   getMobileCreateHref({
                     isAuthenticated: auth.isAuthenticated,
                     sellerStatus: capability.status,
-                    returnPath: pathname || '/',
+                    returnPath,
                   }),
-                )
-            : undefined
+                );
+              }
+            : item.id === 'profile'
+              ? rememberAuthOpener(item.label)
+              : undefined
       }
     />
   ));
@@ -84,7 +106,7 @@ export function FloatingDock({
 function dockHref(
   item: FigmaDockItem,
   context: {
-    pathname: string;
+    returnPath: string;
     isAuthenticated: boolean;
     isAdmin: boolean;
     sellerStatus: ReturnType<typeof useSellerCapability>['status'];
@@ -97,10 +119,10 @@ function dockHref(
       return undefined;
     case 'profile':
       if (context.isAdmin) return '/admin';
-      if (context.isAuthenticated) {
-        return authorProfileDestination(context.sellerStatus) as Href;
-      }
-      return '/login';
+      if (context.isAuthenticated) return '/account';
+      return context.returnPath === '/'
+        ? '/login'
+        : { pathname: '/login', params: { redirectTo: context.returnPath } };
     case 'plus':
       return undefined;
   }
@@ -118,6 +140,7 @@ function DockItem({
   onPress?: () => void;
 }) {
   const itemAccessibility = dockItemAccessibility(item.id, selected);
+  const palette = useAppTheme();
   const content = (
     <MotionPressable
       {...(item.id === 'search'
@@ -138,10 +161,10 @@ function DockItem({
       preset="dock"
       hitSlop={dockItemHitSlop}
       style={{
-        width: figmaTokens.size.control,
-        height: figmaTokens.size.control,
-        padding: figmaTokens.space.dockIconPad,
-        borderRadius: figmaTokens.radius.pill,
+        width: designTokens.size.control,
+        height: designTokens.size.control,
+        padding: designTokens.space.dockIconPad,
+        borderRadius: designTokens.radius.pill,
         alignItems: 'center',
         justifyContent: 'center',
         ...(Platform.OS === 'web'
@@ -149,15 +172,11 @@ function DockItem({
           : null),
       }}
     >
-      {item.icon === 'logo' ? (
-        <BidplaceMark size={18} />
-      ) : (
-        <FigmaIcon
-          name={item.icon}
-          size={figmaTokens.size.dockIcon}
-          color={figmaTokens.color.ink}
-        />
-      )}
+      <FigmaIcon
+        name={item.icon}
+        size={designTokens.size.dockIcon}
+        color={palette.ink}
+      />
     </MotionPressable>
   );
 

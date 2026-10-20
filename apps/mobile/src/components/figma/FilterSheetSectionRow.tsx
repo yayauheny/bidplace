@@ -1,9 +1,10 @@
 import { View } from 'react-native';
 
-import { figmaTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import { AppText } from '../ui/AppText';
 import { MotionPressable } from '../ui/MotionPressable';
+import { useAppTheme } from '../../providers/theme-provider';
 import { FigmaIcon } from './FigmaIcon';
 import { filterSheetSectionRowStyle } from './filter-sheet-style';
 
@@ -18,6 +19,7 @@ export function FilterSheetSectionRow({
   onPress: () => void;
   disabled?: boolean;
 }) {
+  const palette = useAppTheme();
   return (
     <MotionPressable
       accessibilityRole="button"
@@ -39,8 +41,8 @@ export function FilterSheetSectionRow({
       </View>
       <FigmaIcon
         name="arrow-right-01"
-        size={figmaTokens.size.dockIcon}
-        color={figmaTokens.color.ink}
+        size={designTokens.size.dockIcon}
+        color={palette.ink}
       />
     </MotionPressable>
   );

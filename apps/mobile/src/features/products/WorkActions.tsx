@@ -1,5 +1,6 @@
 import { View } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
+import { BackButton } from '../../components/figma/BackButton';
 import { FigmaGlassSurface } from '../../components/figma/FigmaGlassSurface';
 import { FigmaIconButton } from '../../components/figma/FigmaIconButton';
 
@@ -12,17 +13,7 @@ export function WorkBackControl({
 }) {
   return (
     <View testID={testID} style={{ pointerEvents: 'auto' }}>
-      <FigmaGlassSurface
-        preset="controlGroup"
-        contentStyle={{ padding: designTokens.space.socialGroupY }}
-      >
-        <FigmaIconButton
-          icon="arrow-left-01"
-          iconSize={designTokens.size.socialGroupIcon}
-          label="Назад"
-          onPress={onPress}
-        />
-      </FigmaGlassSurface>
+      <BackButton variant="glass" onPress={onPress} />
     </View>
   );
 }

@@ -1,6 +1,38 @@
 import { createElement, type ReactNode } from 'react';
 import { vi } from 'vitest';
 
+vi.mock('expo-blur', () => ({
+  BlurView: ({ children }: { children?: ReactNode }) =>
+    createElement('div', null, children),
+}));
+
+vi.mock('expo-linear-gradient', () => ({
+  LinearGradient: ({ children }: { children?: ReactNode }) =>
+    createElement('div', null, children),
+}));
+
+vi.mock('../components/figma/BackButton', () => ({
+  BackButton: ({
+    label,
+    onPress,
+    disabled,
+  }: {
+    label?: string;
+    onPress?: () => void;
+    disabled?: boolean;
+  }) =>
+    createElement(
+      'button',
+      {
+        type: 'button',
+        disabled,
+        onClick: onPress,
+        'aria-label': label ?? 'Назад',
+      },
+      label ?? 'Назад',
+    ),
+}));
+
 // State-owner tests use DOM controls; real primitives are covered by browser tests.
 vi.mock('../components/ui/MotionPressable', () => ({
   MotionPressable: ({

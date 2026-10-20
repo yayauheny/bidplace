@@ -105,6 +105,10 @@ export const portfolioWorksQuerySchema = paginationQuerySchema
   .extend({
     q: z.string().trim().min(1).max(120).optional(),
     category: uuidSchema.optional(),
+    categories: z.preprocess(
+      (value) => typeof value === 'string' ? value.split(',') : value,
+      z.array(uuidSchema).min(1).max(20),
+    ).optional(),
     author: z.string().trim().min(1).max(120).optional(),
     materials: z
       .preprocess(

@@ -1,15 +1,23 @@
-import { figmaTokens } from '@bidplace/design-tokens';
+import { designTokens, type SemanticColorMap } from '@bidplace/design-tokens';
 
-export function figmaIconButtonStyle(pressed: boolean) {
+export function figmaIconButtonStyle(
+  pressed: boolean,
+  surface: 'plain' | 'muted' = 'plain',
+  palette: SemanticColorMap,
+) {
   return {
-    width: figmaTokens.size.iconButton,
-    height: figmaTokens.size.iconButton,
+    width: surface === 'muted' ? 42 : designTokens.size.iconButton,
+    height: surface === 'muted' ? 42 : designTokens.size.iconButton,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
-    borderRadius: figmaTokens.radius.pill,
-    backgroundColor: pressed ? figmaTokens.color.ghostHover : 'transparent',
+    borderRadius: designTokens.radius.pill,
+    backgroundColor: pressed
+      ? palette.ghostHover
+      : surface === 'muted'
+        ? palette.headerControl
+        : 'transparent',
   };
 }
 
 export const figmaIconButtonHitSlop =
-  (figmaTokens.size.touch - figmaTokens.size.iconButton) / 2;
+  (designTokens.size.touch - designTokens.size.iconButton) / 2;

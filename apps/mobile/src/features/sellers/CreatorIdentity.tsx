@@ -1,32 +1,21 @@
-import type { ReactNode } from 'react';
-import { View } from 'react-native';
-import Animated from 'react-native-reanimated';
+import { Platform, ScrollView, View } from 'react-native';
 import type { PortfolioWorkDetailResponse } from '@bidplace/contracts';
 import { designTokens } from '@bidplace/design-tokens';
+
+import { FigmaButton } from '../../components/figma/FigmaButton';
+import { webFilterBlur } from '../../components/figma/web-backdrop';
+
 import { AppText, ResilientRemoteImage } from '../../components/ui';
 import { getApiAssetUrl } from '../../lib/environment';
-import { controlLayoutTransition } from '../../lib/layout-transition';
 import { CreatorSocialActions } from './CreatorSocialActions';
 
 export function CreatorIdentity({
   profile,
-  compact,
-  actions,
-  tags,
+  onSubscribe,
 }: {
   profile: PortfolioWorkDetailResponse['author'];
-  compact: boolean;
-  actions: ReactNode;
-  tags?: ReactNode;
+  onSubscribe: () => void;
 }) {
-  const avatarSize = compact
-    ? designTokens.size.creatorCompactAvatar
-    : designTokens.size.avatar;
-  const handleOffset = compact
-    ? (designTokens.size.creatorCompactAvatar -
-        designTokens.typography.profileHandleCompact.lineHeight) /
-      2
-    : 0;
   const country = /^[a-z]{2}$/i.test(profile.country)
     ? new Intl.DisplayNames(['ru'], { type: 'region' }).of(
         profile.country.toUpperCase(),
@@ -35,137 +24,101 @@ export function CreatorIdentity({
 
   return (
     <View
-      style={
-        compact
-          ? {
-              position: 'absolute',
-              left: 0,
-              right: 0,
-              bottom: 0,
-              height: designTokens.stickyDock.actionHeight,
-              flexDirection: 'row',
-              alignItems: 'flex-start',
-              paddingTop: designTokens.stickyDock.controlTop,
-              paddingBottom: designTokens.space.x5,
-              paddingHorizontal: designTokens.stickyDock.controlInset,
-              zIndex: 2,
-            }
-          : {
-              alignSelf: 'stretch',
-              alignItems: 'center',
-            }
-      }
+      style={{
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        gap: designTokens.space.x2,
+
+        paddingBottom: designTokens.space.x5,
+      }}
     >
-      <Animated.View
-        key="creator-avatar"
+      <View
         testID="creator-avatar"
-        layout={controlLayoutTransition}
-        style={{ width: avatarSize, height: avatarSize }}
+        style={{ width: 100, height: 100, borderRadius: 56 }}
       >
+        <View
+          aria-hidden
+          accessible={false}
+          style={{
+            position: 'absolute',
+            width: 100,
+            height: 100,
+            borderRadius: 56,
+            opacity: 0.5,
+            pointerEvents: 'none',
+            ...(Platform.OS === 'web' ? webFilterBlur(15) : {}),
+          }}
+        >
+          <ResilientRemoteImage
+            uri={getApiAssetUrl(profile.profilePhotoUrl)}
+            component="AuthorPhoto"
+            accessibilityLabel=""
+            fallbackLabel=""
+            blurRadius={Platform.OS === 'web' ? undefined : 15}
+            style={{ width: 100, height: 100, borderRadius: 56 }}
+            contentFit="cover"
+            contentPosition="top"
+          />
+        </View>
         <ResilientRemoteImage
           uri={getApiAssetUrl(profile.profilePhotoUrl)}
           component="AuthorPhoto"
           accessibilityLabel={`Фото автора ${profile.fullName}`}
           fallbackLabel={`Фото автора недоступно: ${profile.fullName}`}
-          style={{
-            width: '100%',
-            height: '100%',
-            borderRadius: compact
-              ? designTokens.size.creatorCompactAvatar / 2
-              : designTokens.radius.avatar,
-          }}
+          style={{ width: '100%', height: '100%', borderRadius: 56 }}
           contentFit="cover"
           contentPosition="top"
         />
-      </Animated.View>
-      <View
-        style={
-          compact
-            ? {
-                flex: 1,
-                minWidth: 0,
-                marginLeft: designTokens.space.x2,
-                marginTop: handleOffset,
-              }
-            : {
-                alignSelf: 'stretch',
-                alignItems: 'center',
-                gap: designTokens.space.x1,
-                marginTop: designTokens.space.authorIdentityGap,
-              }
-        }
-      >
-        <Animated.View
-          key="creator-handle"
-          testID="creator-handle"
-          layout={controlLayoutTransition}
-          style={
-            compact
-              ? { maxWidth: '100%', minWidth: 0 }
-              : { alignSelf: 'center', maxWidth: '100%', minWidth: 0 }
-          }
-        >
-          <AppText
-            role={compact ? 'profileHandleCompact' : 'profileHandle'}
-            numberOfLines={1}
-          >
-            @{profile.slug}
+      </View>
+      <View style={{ flex: 1, minWidth: 0, gap: designTokens.space.x2 }}>
+        <View testID="creator-meta" style={{ gap: designTokens.space.x1 }}>
+          <AppText role="profileHeading" numberOfLines={2}>
+            {profile.fullName}
           </AppText>
-        </Animated.View>
-        {compact ? null : (
           <View
-            testID="creator-meta"
             style={{
               flexDirection: 'row',
               alignItems: 'center',
-              gap: designTokens.space.x2,
               flexWrap: 'wrap',
-              justifyContent: 'center',
+              gap: designTokens.space.x1,
             }}
           >
-            <AppText role="profileMetadata" style={{ textAlign: 'center' }}>
-              {profile.fullName}
-            </AppText>
-            <View
-              style={{
-                width: 4,
-                height: 4,
-                borderRadius: 2,
-                backgroundColor: designTokens.color.ink,
-              }}
-            />
-            <AppText role="profileMetadata">
+            <AppText role="bodySmall" tone="secondary">
               {profile.city || country}
             </AppText>
+            <AppText role="bodySmall" tone="secondary">
+              ·
+            </AppText>
+            <AppText
+              testID="creator-handle"
+              role="bodySmall"
+              tone="secondary"
+              numberOfLines={1}
+            >
+              @{profile.slug}
+            </AppText>
           </View>
-        )}
-      </View>
-      {compact || !tags ? null : (
-        <View
-          style={{
-            alignSelf: 'stretch',
-            marginTop: designTokens.space.authorSectionGap,
+        </View>
+        <ScrollView
+          horizontal
+          testID="creator-actions"
+          style={{ width: '100%', minWidth: 0, flexGrow: 0 }}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 4,
+            paddingRight: designTokens.space.x3,
           }}
         >
-          {tags}
-        </View>
-      )}
-      <Animated.View
-        key="creator-actions"
-        testID="creator-actions"
-        layout={controlLayoutTransition}
-        style={
-          compact
-            ? { marginLeft: designTokens.space.x3 }
-            : { marginTop: designTokens.space.authorSectionGap }
-        }
-      >
-        <CreatorSocialActions
-          profile={profile}
-          actions={actions}
-          compact={compact}
-        />
-      </Animated.View>
+          <FigmaButton
+            label="Подписаться"
+            variant="solid"
+            onPress={onSubscribe}
+          />
+          <CreatorSocialActions profile={profile} />
+        </ScrollView>
+      </View>
     </View>
   );
 }

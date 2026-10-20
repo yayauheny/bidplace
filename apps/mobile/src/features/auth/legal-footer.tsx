@@ -5,6 +5,7 @@ import type { LegalDocumentId } from '@bidplace/contracts';
 
 import { AppText } from '../../components/ui';
 import { MotionPressable } from '../../components/ui/MotionPressable';
+import { useAppTheme } from '../../providers/theme-provider';
 
 const links: { id: LegalDocumentId; title: string }[] = [
   { id: 'agreement', title: 'Соглашение' },
@@ -15,12 +16,13 @@ const links: { id: LegalDocumentId; title: string }[] = [
 ];
 
 export function LegalFooter() {
+  const palette = useAppTheme();
   return (
     <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: designTokens.space.x3, paddingVertical: designTokens.space.x4 }}>
       {links.map(({ id, title }) => (
         <Link key={id} href={('/legal/' + id) as Href} asChild>
           <MotionPressable accessibilityRole="link" accessibilityLabel={title} preset="button">
-            <AppText role="metadata" style={{ color: designTokens.color.textSubdued, textDecorationLine: 'underline' }}>{title}</AppText>
+            <AppText role="metadata" style={{ color: palette.textSubdued, textDecorationLine: 'underline' }}>{title}</AppText>
           </MotionPressable>
         </Link>
       ))}
@@ -30,7 +32,7 @@ export function LegalFooter() {
         preset="button"
         onPress={() => { void Linking.openURL('mailto:work.evles@gmail.com'); }}
       >
-        <AppText role="metadata" style={{ color: designTokens.color.textSubdued, textDecorationLine: 'underline' }}>
+        <AppText role="metadata" style={{ color: palette.textSubdued, textDecorationLine: 'underline' }}>
           Связаться с оператором
         </AppText>
       </MotionPressable>

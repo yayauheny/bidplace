@@ -55,19 +55,34 @@ function acceptsProfileSlug(value: string) {
   return slugSchema.safeParse(value).success;
 }
 
-export const profileDraftSchema = z
+// Raw storage-level shape (only JSON types); the draft schema below adds the
+// business refinements used for validation and save.
+export const profileDraftFieldsSchema = z
   .object({
-    slug: z.string().refine(acceptsProfileSlug, slugGrammarMessage),
+    slug: z.string(),
     fullName: z.string(),
     discipline: z.string(),
     directionCategoryIds: z.array(z.string()),
+    country: z.string(),
+    city: z.string(),
+    practice: z.string(),
+    socialLink: z.string(),
+    telegramUrl: z.string(),
+    instagramUrl: z.string(),
+    websiteUrl: z.string(),
+    publicEmail: z.string(),
+    shortDescription: z.string(),
+  })
+  .strict();
+
+export const profileDraftSchema = profileDraftFieldsSchema
+  .extend({
+    slug: z.string().refine(acceptsProfileSlug, slugGrammarMessage),
     country: z
       .string()
       .trim()
       .toUpperCase()
       .refine((v) => !v || isCountryCode(v), 'Выберите страну из списка'),
-    city: z.string(),
-    practice: z.string(),
     socialLink: z
       .string()
       .refine(
@@ -95,7 +110,6 @@ export const profileDraftSchema = z
     publicEmail: z
       .string()
       .refine(acceptsOptionalPublicEmail, 'Введите корректный email'),
-    shortDescription: z.string(),
   })
   .strict();
 

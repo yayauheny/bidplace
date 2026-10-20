@@ -11,10 +11,17 @@ import {
   ArrowUpDownIcon,
   AtSignIcon,
   Calendar01Icon,
+  Home01Icon,
   Cancel01Icon,
   Clock04Icon,
   Copy01Icon,
   Share04Icon,
+  Share03Icon,
+  FavouriteIcon,
+  MoreVerticalIcon,
+  Flag01Icon,
+  Link01Icon,
+  PencilEdit01Icon,
   Delete02Icon,
   FilterHorizontalIcon,
   GoogleIcon,
@@ -22,10 +29,12 @@ import {
   InstagramIcon,
   InternetIcon,
   LockKeyholeIcon,
+  LogOutIcon,
   MinusSignIcon,
   PlusSignIcon,
   QrCode01Icon,
   Search01Icon,
+  Setting07Icon,
   ShoppingBasket01Icon,
   ImageAdd02Icon,
   TelegramIcon,
@@ -34,8 +43,9 @@ import {
   ViewOffIcon,
 } from '@hugeicons/core-free-icons';
 
-import { figmaTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
+import { useAppTheme } from '../../providers/theme-provider';
 import { type FigmaIconName, figmaIconNames } from './figma-icon-names';
 import { figmaIconStrokeWidth } from './figma-icon-style';
 
@@ -68,6 +78,12 @@ const icons = {
   minus: MinusSignIcon,
   copy: Copy01Icon,
   'share-04': Share04Icon,
+  'share-03': Share03Icon,
+  heart: FavouriteIcon,
+  'more-vertical': MoreVerticalIcon,
+  'flag-01': Flag01Icon,
+  'link-01': Link01Icon,
+  'pencil-edit-01': PencilEdit01Icon,
   'qr-code-01': QrCode01Icon,
   'lock-keyhole': LockKeyholeIcon,
   'clock-04': Clock04Icon,
@@ -80,29 +96,35 @@ const icons = {
   'at-sign': AtSignIcon,
   'image-01': Image01Icon,
   'calendar-01': Calendar01Icon,
+  'home-01': Home01Icon,
   'ai-magic': AiMagicIcon,
   user: UserIcon,
   'shopping-basket-01': ShoppingBasket01Icon,
   'image-add-02': ImageAdd02Icon,
   check: checkIcon,
+  'setting-07': Setting07Icon,
+  'log-out': LogOutIcon,
 } as const satisfies Record<FigmaIconName, typeof Search01Icon>;
 
 const iconGridSize = 24;
 
 export function FigmaIcon({
   name,
-  size = figmaTokens.size.icon,
-  color = figmaTokens.color.ink,
+  size = designTokens.size.icon,
+  color,
   label,
   strokeWidthPx,
 }: {
   name: FigmaIconName;
   size?: number;
+  /** Explicit caller color wins; the default follows the active theme. */
   color?: string;
   label?: string;
   /** Final rendered stroke in px; replaces the per-icon grid stroke policy. */
   strokeWidthPx?: number;
 }) {
+  const themeColors = useAppTheme();
+  const resolvedColor = color ?? themeColors.ink;
   // Hugeicons strokes live on the 24-unit grid, so a px value is scaled to it.
   const strokeWidth =
     strokeWidthPx === undefined
@@ -117,7 +139,7 @@ export function FigmaIcon({
         height={size}
         viewBox="0 0 24 24"
         fill="none"
-        color={color}
+        color={resolvedColor}
         aria-hidden={label ? undefined : true}
         accessibilityLabel={label}
       >
@@ -135,7 +157,7 @@ export function FigmaIcon({
     <HugeiconsIcon
       icon={icons[name]}
       size={size}
-      color={color}
+      color={resolvedColor}
       strokeWidth={strokeWidth}
       {...(label
         ? { accessibilityLabel: label }

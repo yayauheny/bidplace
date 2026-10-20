@@ -1,4 +1,7 @@
-import { searchChromeTokens } from '@bidplace/design-tokens';
+import {
+  searchChromeTokens,
+  type SemanticColorMap,
+} from '@bidplace/design-tokens';
 
 const { field, close, rowGap } = searchChromeTokens;
 
@@ -33,14 +36,14 @@ export function searchOverlayIconFrameStyle() {
   };
 }
 
-export function searchOverlayFieldInputStyle() {
+export function searchOverlayFieldInputStyle(palette: SemanticColorMap) {
   return {
     flex: 1,
     minWidth: 0,
     height: field.typography.lineHeight,
     padding: 0,
     margin: 0,
-    color: field.typography.color,
+    color: palette.inkStrong,
     backgroundColor: 'transparent' as const,
     fontFamily: field.typography.fontFamily,
     fontSize: field.typography.fontSize,

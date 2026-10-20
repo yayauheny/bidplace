@@ -18,6 +18,7 @@ import {
   figmaButtonMatrixCell,
   figmaButtonTokens,
   figmaButtonVariants,
+  lightColorMap,
 } from '@bidplace/design-tokens';
 import { afterEach, describe, expect, expectTypeOf, it, vi } from 'vitest';
 
@@ -274,7 +275,6 @@ vi.mock('@hugeicons/react-native', () => ({
 import {
   type ButtonProps,
   type TextButtonProps,
-  DestructiveButton,
   PrimaryButton,
   SecondaryButton,
   TextButton,
@@ -355,7 +355,7 @@ function svgRects(container: ParentNode) {
 }
 
 describe('shared text button wrappers', () => {
-  it('renders primary, secondary, destructive, and ghost through FigmaButton metrics', async () => {
+  it('renders primary, secondary, and ghost through FigmaButton metrics', async () => {
     const primary = await mount(
       createElement(PrimaryButton, {
         label: 'Одобрить',
@@ -365,12 +365,6 @@ describe('shared text button wrappers', () => {
     const secondary = await mount(
       createElement(SecondaryButton, {
         label: 'Закрыть',
-        onPress: () => undefined,
-      }),
-    );
-    const destructive = await mount(
-      createElement(DestructiveButton, {
-        label: 'Удалить',
         onPress: () => undefined,
       }),
     );
@@ -384,20 +378,12 @@ describe('shared text button wrappers', () => {
     const primaryButton = buttonOf(primary.container);
     expectMatrixMetrics(primaryButton);
     expect(primaryButton.dataset.bg).toBe('transparent');
-    expect(svgRects(primary.container)[0]?.fill).toBe(
-      figmaButtonTokens.colors.solidIdle,
-    );
+    expect(svgRects(primary.container)[0]?.fill).toBe(lightColorMap.inkStrong);
 
     const secondaryButton = buttonOf(secondary.container);
     expectMatrixMetrics(secondaryButton);
     expect(secondaryButton.dataset.bg).toBe('transparent');
-    expect(svgRects(secondary.container)[0]?.fill).toBe(
-      figmaButtonTokens.colors.canvas,
-    );
-
-    const destructiveButton = buttonOf(destructive.container);
-    expectMatrixMetrics(destructiveButton);
-    expect(destructiveButton.dataset.bg).toBe('transparent');
+    expect(svgRects(secondary.container)[0]?.fill).toBe(lightColorMap.canvas);
 
     const ghostButton = buttonOf(ghost.container);
     expectMatrixMetrics(ghostButton);
@@ -405,7 +391,6 @@ describe('shared text button wrappers', () => {
 
     primary.unmount();
     secondary.unmount();
-    destructive.unmount();
     ghost.unmount();
   });
 
@@ -432,9 +417,7 @@ describe('shared text button wrappers', () => {
     expect(authButton.querySelector('span')?.dataset.fontSize).toBe(
       String(figmaButtonTokens.typography.fontSize),
     );
-    expect(svgRects(auth.container)[0]?.fill).toBe(
-      figmaButtonTokens.colors.solidIdle,
-    );
+    expect(svgRects(auth.container)[0]?.fill).toBe(lightColorMap.inkStrong);
     const chipButton = buttonOf(chip.container);
     expect(chipButton.dataset.padX).toBe(
       String(
@@ -449,9 +432,7 @@ describe('shared text button wrappers', () => {
     expect(chipButton.querySelector('span')?.dataset.fontSize).toBe(
       String(designTokens.typography.authSuggestion.fontSize),
     );
-    expect(svgRects(chip.container)[0]?.fill).toBe(
-      figmaButtonTokens.colors.canvas,
-    );
+    expect(svgRects(chip.container)[0]?.fill).toBe(lightColorMap.canvas);
     auth.unmount();
     chip.unmount();
   });
@@ -467,7 +448,7 @@ describe('shared text button wrappers', () => {
       }),
     );
     const loading = await mount(
-      createElement(DestructiveButton, {
+      createElement(PrimaryButton, {
         loading: true,
         label: 'Отклонить',
         onPress,
@@ -493,7 +474,7 @@ describe('shared text button wrappers', () => {
   it('renders all 16 static matrix previews with transparent shells and SVG fills', async () => {
     for (const variant of figmaButtonVariants) {
       for (const interaction of figmaButtonInteractions) {
-        const cell = figmaButtonMatrixCell(variant, interaction);
+        const cell = figmaButtonMatrixCell(variant, interaction, lightColorMap);
         const view = await mount(
           createElement(FigmaButtonStatePreview, {
             variant,
@@ -664,7 +645,6 @@ describe('shared text button wrappers', () => {
 describe('button href/onPress type contract', () => {
   type PrimaryProps = ComponentProps<typeof PrimaryButton>;
   type SecondaryProps = ComponentProps<typeof SecondaryButton>;
-  type DestructiveProps = ComponentProps<typeof DestructiveButton>;
 
   const hrefAndOnPress = {
     label: 'Пример',
@@ -682,12 +662,14 @@ describe('button href/onPress type contract', () => {
   const invalidHref = { label: 'Пример', href: 123 };
 
   it('FigmaButton accepts onPress, string href, or object href', () => {
-    expectTypeOf<{ label: string; onPress: () => void }>().toMatchTypeOf<
-      FigmaButtonProps
-    >();
-    expectTypeOf<{ label: string; href: '/profile' }>().toMatchTypeOf<
-      FigmaButtonProps
-    >();
+    expectTypeOf<{
+      label: string;
+      onPress: () => void;
+    }>().toMatchTypeOf<FigmaButtonProps>();
+    expectTypeOf<{
+      label: string;
+      href: '/profile';
+    }>().toMatchTypeOf<FigmaButtonProps>();
     expectTypeOf(objectHref).toMatchTypeOf<FigmaButtonProps>();
   });
 
@@ -698,12 +680,14 @@ describe('button href/onPress type contract', () => {
   });
 
   it('TextButton keeps the href/onPress union on public props', () => {
-    expectTypeOf<{ label: string; onPress: () => void }>().toMatchTypeOf<
-      TextButtonProps
-    >();
-    expectTypeOf<{ label: string; href: '/profile' }>().toMatchTypeOf<
-      TextButtonProps
-    >();
+    expectTypeOf<{
+      label: string;
+      onPress: () => void;
+    }>().toMatchTypeOf<TextButtonProps>();
+    expectTypeOf<{
+      label: string;
+      href: '/profile';
+    }>().toMatchTypeOf<TextButtonProps>();
     expectTypeOf(objectHref).toMatchTypeOf<TextButtonProps>();
     expectTypeOf(labelOnly).not.toMatchTypeOf<TextButtonProps>();
     expectTypeOf(hrefAndOnPress).not.toMatchTypeOf<TextButtonProps>();
@@ -717,19 +701,20 @@ describe('button href/onPress type contract', () => {
   });
 
   it('semantic wrappers share ButtonProps navigation contract', () => {
-    expectTypeOf<{ label: string; onPress: () => void }>().toMatchTypeOf<
-      ButtonProps
-    >();
-    expectTypeOf<{ label: string; href: '/profile' }>().toMatchTypeOf<
-      ButtonProps
-    >();
+    expectTypeOf<{
+      label: string;
+      onPress: () => void;
+    }>().toMatchTypeOf<ButtonProps>();
+    expectTypeOf<{
+      label: string;
+      href: '/profile';
+    }>().toMatchTypeOf<ButtonProps>();
     expectTypeOf(objectHref).toMatchTypeOf<ButtonProps>();
     expectTypeOf(labelOnly).not.toMatchTypeOf<ButtonProps>();
     expectTypeOf(hrefAndOnPress).not.toMatchTypeOf<ButtonProps>();
 
     expectTypeOf(hrefAndOnPress).not.toMatchTypeOf<PrimaryProps>();
     expectTypeOf(hrefAndOnPress).not.toMatchTypeOf<SecondaryProps>();
-    expectTypeOf(hrefAndOnPress).not.toMatchTypeOf<DestructiveProps>();
     expectTypeOf(labelOnly).not.toMatchTypeOf<PrimaryProps>();
   });
 });

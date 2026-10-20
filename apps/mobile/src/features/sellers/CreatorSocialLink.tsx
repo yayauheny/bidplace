@@ -1,16 +1,18 @@
 import { Link, type Href } from 'expo-router';
 
-import { figmaTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import { FigmaIcon } from '../../components/figma/FigmaIcon';
 import { figmaGlassCircleStyle } from '../../components/figma/figma-glass-circle';
 import { MotionPressable } from '../../components/ui';
+import { useAppTheme } from '../../providers/theme-provider';
 
 export type CreatorSocialLinkProps = {
   href: string;
   icon: 'send' | 'instagram' | 'globe';
   label: string;
   grouped?: boolean;
+  testID?: string;
 };
 
 export function CreatorSocialLink({
@@ -18,23 +20,29 @@ export function CreatorSocialLink({
   icon,
   label,
   grouped = false,
+  testID,
 }: CreatorSocialLinkProps) {
+  const palette = useAppTheme();
   return (
     <Link href={href as Href} target="_blank" asChild>
       <MotionPressable
         accessibilityRole="link"
+        testID={testID}
         accessibilityLabel={label}
         preset="icon"
         style={
           grouped
             ? {
-                width: figmaTokens.size.control,
-                height: figmaTokens.size.control,
+                width: 43,
+                height: 43,
+                borderWidth: 0.5,
+                borderColor: palette.divider,
+                backgroundColor: palette.white,
                 alignItems: 'center',
                 justifyContent: 'center',
-                borderRadius: figmaTokens.radius.pill,
+                borderRadius: designTokens.radius.pill,
               }
-            : figmaGlassCircleStyle()
+            : figmaGlassCircleStyle(palette)
         }
       >
         <FigmaIcon
@@ -45,9 +53,7 @@ export function CreatorSocialLink({
                 ? 'internet'
                 : 'instagram'
           }
-          size={
-            grouped ? figmaTokens.size.socialGroupIcon : figmaTokens.size.icon
-          }
+          size={grouped ? designTokens.size.dockIcon : designTokens.size.icon}
         />
       </MotionPressable>
     </Link>

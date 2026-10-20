@@ -3,6 +3,7 @@ import { Platform, View } from 'react-native';
 
 import { OverlayDimmer } from '../../components/figma/OverlayDimmer';
 import { filterSheetPanelStyle } from '../../components/figma/filter-sheet-style';
+import { useAppTheme } from '../../providers/theme-provider';
 
 export function SearchOverlayLayer({
   surfaceId,
@@ -13,6 +14,7 @@ export function SearchOverlayLayer({
   onClose?: () => void;
   children: ReactNode;
 }) {
+  const palette = useAppTheme();
   return (
     <>
       <OverlayDimmer onPress={Platform.OS === 'web' ? undefined : onClose} />
@@ -21,7 +23,7 @@ export function SearchOverlayLayer({
         testID="search-overlay"
         accessibilityViewIsModal
         accessibilityLabel="Поиск"
-        style={filterSheetPanelStyle()}
+        style={filterSheetPanelStyle(false, undefined, 0, palette)}
         {...(Platform.OS === 'web'
           ? ({ role: 'dialog', 'aria-modal': true } as object)
           : {})}

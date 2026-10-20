@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { View } from 'react-native';
 
-import { figmaTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import {
   FigmaButton,
@@ -109,7 +109,7 @@ export function CatalogFilterSheet({
       {search ? (
         <View
           style={{
-            marginBottom: figmaTokens.space.x4,
+            marginBottom: designTokens.space.x4,
           }}
         >
           <FilterSearchField
@@ -148,7 +148,7 @@ function SectionOptions({
 }) {
   if (section.state !== 'ready') {
     return (
-      <View style={{ gap: figmaTokens.space.x4 }}>
+      <View style={{ gap: designTokens.space.x4 }}>
         <AppText role="body" tone="secondary">
           {sectionStateLabel(section.state)}
         </AppText>

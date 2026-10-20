@@ -32,6 +32,10 @@ vi.mock('react-native', () => ({
     createElement('div', null, children),
 }));
 
+vi.mock('expo-image', () => ({
+  Image: () => null,
+}));
+
 vi.mock('expo-router', () => ({
   useRouter: () => ({ push: harness.push, replace: vi.fn() }),
   Link: ({ children }: { children?: ReactNode }) =>
@@ -130,7 +134,7 @@ vi.mock('../../components/ui', () => {
       open ? createElement('div', { role: 'dialog' }, title, children) : null,
     AppText: ({ children }: { children?: ReactNode }) =>
       createElement('span', null, children),
-    DestructiveButton: PressButton,
+    PrimaryButton: PressButton,
     FormSection: ({
       title,
       children,
@@ -140,7 +144,6 @@ vi.mock('../../components/ui', () => {
     }) => createElement('section', null, title, children),
     PageHeader: ({ title }: { title: string }) =>
       createElement('h1', null, title),
-    PrimaryButton: PressButton,
     ResilientRemoteImage: ({
       uri,
       accessibilityLabel,
@@ -598,7 +601,13 @@ describe('admin moderation revision projection', () => {
     expect(view.container.textContent).toContain('Проверка:');
     expect(view.container.textContent).toContain('На модерации');
     expect(view.container.textContent).not.toContain('Published work');
-    expect(view.container.textContent).toContain('Описание не указано');
+    // Revision story is block-based: with an empty revision story the card shows
+    // its placeholder. Legacy plain-text `story` is no longer edited or rendered.
+    expect(view.container.textContent).toContain(
+      'История создания не добавлена.',
+    );
+    // The published parent's plain-text story must not leak into the revision card.
+    expect(view.container.textContent).not.toContain('Published story');
     clickButton(view.container, 'Одобрить');
     await flush();
     expect(harness.updateProductStatus).toHaveBeenCalledWith(productId, {
@@ -617,28 +626,32 @@ describe('admin moderation revision projection', () => {
     const product = pendingProduct();
     harness.listSellerProfiles.mockResolvedValue({ sellerProfiles: [] });
     harness.listProducts.mockResolvedValue({
-      products: [{
-        ...product,
-        reviewTarget: {
-          ...product.reviewTarget,
-          selection: {
-            ...product.reviewTarget.selection,
-            proposals: [{
-              id: '83333333-3333-4333-8333-333333333333',
-              productRevisionId,
-              kind: 'MATERIAL',
-              rawName: 'Неясный материал',
-              normalizedName: 'неясный материал',
-              status: 'REJECTED',
-              selected: true,
-              mappedCategoryId: null,
-              mappedTermId: null,
-              rejectionReason: 'Уточните материал',
-              reviewedAt: seenAt,
-            }],
+      products: [
+        {
+          ...product,
+          reviewTarget: {
+            ...product.reviewTarget,
+            selection: {
+              ...product.reviewTarget.selection,
+              proposals: [
+                {
+                  id: '83333333-3333-4333-8333-333333333333',
+                  productRevisionId,
+                  kind: 'MATERIAL',
+                  rawName: 'Неясный материал',
+                  normalizedName: 'неясный материал',
+                  status: 'REJECTED',
+                  selected: true,
+                  mappedCategoryId: null,
+                  mappedTermId: null,
+                  rejectionReason: 'Уточните материал',
+                  reviewedAt: seenAt,
+                },
+              ],
+            },
           },
         },
-      }],
+      ],
     });
     const view = mount(createElement(AdminModerationScreen));
     await until(view.container, 'Модерация');

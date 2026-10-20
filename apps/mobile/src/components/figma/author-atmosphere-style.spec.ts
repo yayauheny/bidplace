@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
+import { designTokens } from '@bidplace/design-tokens';
+
 import { authorAtmosphereSpec } from './author-atmosphere-style';
 
 describe('Author atmosphere', () => {
   it('matches the captured 485px avatar-derived layer', () => {
-    expect(authorAtmosphereSpec()).toEqual({
+    expect(authorAtmosphereSpec(designTokens.color)).toEqual({
       sourceNodeId: '621:19476',
       width: 485,
       height: 485,

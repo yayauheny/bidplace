@@ -157,9 +157,6 @@ vi.mock('expo-image', () => ({
   Image: () => null,
 }));
 
-vi.mock('lucide-react-native', () => ({
-  X: () => null,
-}));
 
 vi.mock('expo-router', () => ({
   useRouter: () => router,

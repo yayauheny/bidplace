@@ -27,7 +27,6 @@ export function PageState({
           alignItems: 'center',
           justifyContent: 'center',
           paddingVertical: designTokens.space.x8,
-          paddingHorizontal: designTokens.space.pageGutter,
         }}
       >
         <AppText
@@ -51,7 +50,6 @@ export function PageState({
         justifyContent: 'center',
         gap: designTokens.space.x3,
         paddingVertical: designTokens.space.x8,
-        paddingHorizontal: designTokens.space.pageGutter,
       }}
     >
       <AppText role="sectionTitle" style={{ textAlign: 'center' }}>

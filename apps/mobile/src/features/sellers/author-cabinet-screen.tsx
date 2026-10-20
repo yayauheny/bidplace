@@ -1,9 +1,5 @@
-import { useEffect, useState } from 'react';
-import {
-  useInfiniteQuery,
-  useMutation,
-  useQueryClient,
-} from '@tanstack/react-query';
+import { useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { View } from 'react-native';
 
@@ -22,48 +18,29 @@ import {
   SecondaryButton,
 } from '../../components/ui';
 import { getApiAssetUrl } from '../../lib/environment';
-import { canWritePrivateCache, currentAuthEpoch } from '../../lib/query-cache';
 import {
   isAuthorCabinetAvailable,
   useSellerCapability,
 } from '../../hooks/use-seller-capability';
-import { useApiClient } from '../../providers/api-provider';
+import { useAppTheme } from '../../providers/theme-provider';
 import { AccountLogoutButton } from '../auth/AccountLogoutButton';
 import {
-  AUTHOR_CABINET_PAGE_SIZE,
   authorCabinetPrimaryAction,
   authorCabinetVisibilityActions,
-  authorCabinetWorksFromPages,
   authorCabinetWorkState,
 } from './author-cabinet-state';
-import { invalidateOwnerWorks, ownerWorkQueryKeys } from './owner-work-query';
+import {
+  useAuthorCabinetVisibility,
+  useAuthorCabinetWorks,
+} from '../account/use-author-cabinet';
 
 export function AuthorCabinetScreen() {
-  const api = useApiClient();
+  const palette = useAppTheme();
   const router = useRouter();
   const queryClient = useQueryClient();
   const capability = useSellerCapability();
-  const [pendingHideId, setPendingHideId] = useState<string | null>(null);
-  const query = useInfiniteQuery({
-    queryKey: ownerWorkQueryKeys.cabinet,
-    initialPageParam: 1,
-    queryFn: async ({ pageParam }) => {
-      const epoch = currentAuthEpoch(queryClient);
-      const page = await api.portfolio.listCabinetWorks({
-        page: pageParam,
-        limit: AUTHOR_CABINET_PAGE_SIZE,
-      });
-      if (!canWritePrivateCache(queryClient, epoch)) {
-        throw new Error('Private cache is closed');
-      }
-      return page;
-    },
-    getNextPageParam: (page) =>
-      page.pagination.page * page.pagination.limit < page.pagination.total
-        ? page.pagination.page + 1
-        : undefined,
-    enabled: isAuthorCabinetAvailable(capability.status),
-  });
+  const query = useAuthorCabinetWorks(capability.status);
+  const visibility = useAuthorCabinetVisibility();
 
   useEffect(() => {
     if (
@@ -75,21 +52,12 @@ export function AuthorCabinetScreen() {
     }
   }, [capability.isError, capability.isLoading, capability.status, router]);
 
-  const invalidate = () => {
-    void invalidateOwnerWorks(queryClient);
-    void queryClient.invalidateQueries({ queryKey: ['public-author'] });
-    void queryClient.invalidateQueries({ queryKey: ['portfolio-home'] });
-    void queryClient.invalidateQueries({ queryKey: ['portfolio-work'] });
-    void queryClient.invalidateQueries({ queryKey: ['portfolio-works'] });
-  };
-  const visibility = useMutation({
-    mutationFn: ({ id, archived }: { id: string; archived: boolean }) =>
-      archived ? api.portfolio.unhideWork(id) : api.portfolio.hideWork(id),
-    onSuccess: () => {
-      setPendingHideId(null);
-      invalidate();
-    },
-  });
+  const works = query.works;
+  const hideIntent =
+    visibility.intent?.action === 'hide' ? visibility.intent : null;
+  const pendingHide = hideIntent
+    ? works.find((work) => work.id === hideIntent.workId)
+    : undefined;
 
   if (capability.isLoading || query.isLoading) {
     return (
@@ -126,9 +94,6 @@ export function AuthorCabinetScreen() {
       </AppShell>
     );
   }
-
-  const works = authorCabinetWorksFromPages(query.data?.pages ?? []);
-  const pendingHide = works.find((work) => work.id === pendingHideId);
 
   return (
     <FormPageShell>
@@ -184,7 +149,7 @@ export function AuthorCabinetScreen() {
                 gap: designTokens.space.x3,
                 padding: designTokens.space.x4,
                 borderWidth: 1,
-                borderColor: designTokens.color.border,
+                borderColor: palette.border,
                 borderRadius: designTokens.radius.card,
               }}
             >
@@ -235,7 +200,10 @@ export function AuthorCabinetScreen() {
                 <SecondaryButton
                   label="Скрыть"
                   width="block"
-                  onPress={() => setPendingHideId(work.id)}
+                  disabled={visibility.mutation.isPending}
+                  onPress={() =>
+                    void visibility.begin({ workId: work.id, action: 'hide' })
+                  }
                 />
               ) : null}
               {authorCabinetVisibilityActions({
@@ -245,11 +213,9 @@ export function AuthorCabinetScreen() {
                 <SecondaryButton
                   label="Вернуть в профиль"
                   width="block"
-                  loading={visibility.isPending}
-                  disabled={visibility.isPending}
-                  onPress={() =>
-                    visibility.mutate({ id: work.id, archived: true })
-                  }
+                  loading={visibility.mutation.isPending}
+                  disabled={visibility.mutation.isPending}
+                  onPress={() => visibility.restore(work.id)}
                 />
               ) : null}
             </View>
@@ -264,7 +230,7 @@ export function AuthorCabinetScreen() {
             onPress={() => void query.fetchNextPage()}
           />
         ) : null}
-        {visibility.isError ? (
+        {visibility.mutation.isError ? (
           <AppText role="bodySmall" tone="danger">
             Не удалось изменить видимость работы. Попробуйте ещё раз.
           </AppText>
@@ -273,23 +239,22 @@ export function AuthorCabinetScreen() {
           open={Boolean(pendingHide)}
           title="Скрыть работу?"
           description="Работа исчезнет из публичного профиля, но останется в кабинете."
-          onClose={() => setPendingHideId(null)}
+          onClose={() => {
+            if (!visibility.mutation.isPending) visibility.cancel();
+          }}
         >
           <PrimaryButton
             label="Скрыть"
             width="block"
-            loading={visibility.isPending}
-            disabled={!pendingHide || visibility.isPending}
-            onPress={() =>
-              pendingHide &&
-              visibility.mutate({ id: pendingHide.id, archived: false })
-            }
+            loading={visibility.mutation.isPending}
+            disabled={!pendingHide || visibility.mutation.isPending}
+            onPress={visibility.confirm}
           />
           <SecondaryButton
             label="Отмена"
             width="block"
-            disabled={visibility.isPending}
-            onPress={() => setPendingHideId(null)}
+            disabled={visibility.mutation.isPending}
+            onPress={visibility.cancel}
           />
         </AppDialog>
       </View>

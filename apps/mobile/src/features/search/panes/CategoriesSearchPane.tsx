@@ -1,22 +1,23 @@
 import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
 import { View } from 'react-native';
 
-import { figmaTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
-import { paddedGridRows } from '../../../components/figma/flex-grid-rows';
+import {
+  PaddedGrid,
+  gridColumnsFromWidth,
+} from '../../../components/figma/PaddedGrid';
 import { retryTransientPublicQuery } from '../../../lib/query-retry';
 import { categoryKeys } from '../../../lib/query-cache';
 import { useApiClient } from '../../../providers/api-provider';
+import { useAppTheme } from '../../../providers/theme-provider';
 import { CategorySearchTile } from '../CategorySearchTile';
 import { filterCategoriesByQuery } from '../filter-categories';
 import { searchRequestQuery } from '../search-query';
 import { SearchPaneStatus } from './search-pane-status';
 
-export function CategoriesSearchPane({
-  query,
-}: {
-  query: string;
-}) {
+export function CategoriesSearchPane({ query }: { query: string }) {
   const api = useApiClient();
   const categories = useQuery({
     queryKey: categoryKeys.all,
@@ -28,6 +29,7 @@ export function CategoriesSearchPane({
     query,
   );
   const requestQuery = searchRequestQuery(query);
+  const [contentWidth, setContentWidth] = useState(0);
 
   return (
     <SearchPaneStatus
@@ -38,28 +40,31 @@ export function CategoriesSearchPane({
       emptyTitle="Категории не найдены"
       loading={<CategorySkeleton />}
     >
-      <View style={{ width: '100%', gap: figmaTokens.space.x2 }}>
-        {paddedGridRows(items, 3).map((row, rowIndex) => (
-          <View
-            key={row.find((item) => item)?.id ?? `row-${rowIndex}`}
-            style={{ flexDirection: 'row', gap: figmaTokens.space.x2 }}
-          >
-            {row.map((category, cellIndex) => (
-              <View
-                key={category?.id ?? `spacer-${rowIndex}-${cellIndex}`}
-                style={{ flex: 1, minWidth: 0 }}
-              >
-                {category ? (
-                  <CategorySearchTile
-                    id={category.id}
-                    slug={category.slug}
-                    name={category.name}
-                  />
-                ) : null}
-              </View>
-            ))}
-          </View>
-        ))}
+      <View
+        style={{ width: '100%', gap: designTokens.space.x2 }}
+        onLayout={(event) => setContentWidth(event.nativeEvent.layout.width)}
+      >
+        <PaddedGrid
+          items={items}
+          columns={gridColumnsFromWidth(contentWidth, {
+            // Дизайн: 3 тайла в ряд при 390. Реальный контейнер шторки —
+            // 390 − 2×12 (layout.gutter) = 366, тайл (366 − 2×8)/3 ≈ 116.67.
+            // Значение 120.67 в CategorySearchTile измерено при контейнере
+            // 378 и при текущих отступах три раза не помещается.
+            minCardWidth: 116,
+            gap: designTokens.space.x2,
+            max: 3,
+          })}
+          gap={designTokens.space.x2}
+          keyExtractor={(category) => category.id}
+          renderItem={(category) => (
+            <CategorySearchTile
+              id={category.id}
+              slug={category.slug}
+              name={category.name}
+            />
+          )}
+        />
       </View>
     </SearchPaneStatus>
   );
@@ -69,7 +74,7 @@ function CategorySkeleton() {
   return (
     <View
       accessibilityRole="progressbar"
-      style={{ flexDirection: 'row', gap: figmaTokens.space.x2 }}
+      style={{ flexDirection: 'row', gap: designTokens.space.x2 }}
     >
       <SkeletonTile />
       <SkeletonTile />
@@ -79,13 +84,14 @@ function CategorySkeleton() {
 }
 
 function SkeletonTile() {
+  const palette = useAppTheme();
   return (
     <View
       style={{
         flex: 1,
         aspectRatio: 120.67 / 160.89,
-        borderRadius: figmaTokens.radius.small,
-        backgroundColor: figmaTokens.color.surfaceMuted,
+        borderRadius: designTokens.radius.small,
+        backgroundColor: palette.surfaceMuted,
       }}
     />
   );

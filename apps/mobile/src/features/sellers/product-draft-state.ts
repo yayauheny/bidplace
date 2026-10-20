@@ -24,6 +24,10 @@ export type ProductRevisionIdentity = {
   updatedAt: string;
 };
 
+export type TrustedProductRevision = ProductRevisionIdentity & {
+  status: ProductStatus;
+};
+
 const moderationDecisionStatuses = new Set<ProductStatus>([
   'APPROVED',
   'CHANGES_REQUESTED',

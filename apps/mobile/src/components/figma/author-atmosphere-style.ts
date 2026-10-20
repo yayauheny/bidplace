@@ -1,16 +1,16 @@
-import { figmaTokens } from '@bidplace/design-tokens';
+import { designTokens, type SemanticColorMap } from '@bidplace/design-tokens';
 
-export function authorAtmosphereSpec() {
+export function authorAtmosphereSpec(palette: SemanticColorMap) {
   return {
     sourceNodeId: '621:19476',
-    width: figmaTokens.size.authorAtmosphere,
-    height: figmaTokens.size.authorAtmosphere,
+    width: designTokens.size.authorAtmosphere,
+    height: designTokens.size.authorAtmosphere,
     left: -47,
-    top: -figmaTokens.space.atmosphereOffset,
-    opacity: figmaTokens.opacity.atmosphere,
+    top: -designTokens.space.atmosphereOffset,
+    opacity: designTokens.opacity.atmosphere,
     blur: 80,
     maskFade: 80,
     bottomRadius: 200,
-    wash: figmaTokens.color.atmosphereWash,
+    wash: palette.atmosphereWash,
   } as const;
 }

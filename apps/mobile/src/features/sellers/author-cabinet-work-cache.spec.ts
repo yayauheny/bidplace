@@ -3,7 +3,11 @@
  */
 import { act, createElement, type ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
+import {
+  QueryClient,
+  QueryClientProvider,
+  useQuery,
+} from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { flush } from '../../testing/dom';
@@ -33,12 +37,17 @@ vi.mock('../../components/figma/FigmaChoiceChip', () => ({
     selected: boolean;
     onPress: () => void;
     disabled?: boolean;
-  }) => createElement('button', {
-    type: 'button',
-    disabled,
-    'aria-pressed': selected,
-    onClick: onPress,
-  }, label),
+  }) =>
+    createElement(
+      'button',
+      {
+        type: 'button',
+        disabled,
+        'aria-pressed': selected,
+        onClick: onPress,
+      },
+      label,
+    ),
 }));
 
 vi.mock('../../components/figma/FigmaSelectField', () => ({
@@ -50,26 +59,80 @@ vi.mock('../../components/figma/FigmaSelectField', () => ({
     label: string;
     value: string;
     onPress: () => void;
-  }) => createElement('button', {
-    type: 'button',
-    'aria-label': label,
-    onClick: onPress,
-  }, value || label),
+  }) =>
+    createElement(
+      'button',
+      {
+        type: 'button',
+        'aria-label': label,
+        onClick: onPress,
+      },
+      value || label,
+    ),
 }));
 
 vi.mock('./product-catalog-term-sheet', () => ({
   ProductCatalogTermSheet: () => null,
 }));
 
+vi.mock('react-native-svg', () => {
+  const shape = ({ children }: { children?: ReactNode }) =>
+    createElement('svg', null, children);
+  return {
+    default: shape,
+    Svg: shape,
+    SvgXml: shape,
+    Circle: shape,
+    Ellipse: shape,
+    G: shape,
+    Line: shape,
+    Path: shape,
+    Rect: shape,
+  };
+});
+
+// Named icon exports stay undefined (same as other specs); only HugeiconsIcon
+// is used at runtime by the components under test.
+vi.mock('@hugeicons/react-native', () => ({
+  HugeiconsIcon: () => null,
+}));
+
+vi.mock('expo-image', () => ({
+  Image: () => null,
+}));
+
 vi.mock('react-native', () => ({
   Platform: { OS: 'web' },
-  View: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
+  View: ({ children }: { children?: ReactNode }) =>
+    createElement('div', null, children),
+  ActivityIndicator: () => null,
+  Pressable: ({
+    children,
+    onPress,
+    accessibilityLabel,
+  }: {
+    children?: ReactNode;
+    onPress?: () => void;
+    accessibilityLabel?: string;
+  }) =>
+    createElement(
+      'button',
+      { type: 'button', onClick: onPress, 'aria-label': accessibilityLabel },
+      children,
+    ),
+  StyleSheet: {
+    create: (styles: unknown) => styles,
+    flatten: (style: unknown) => style,
+    compose: (a: unknown) => a,
+    absoluteFill: {},
+  },
 }));
 
 vi.mock('expo-router', () => ({
   useRouter: () => ({ replace: vi.fn(), setParams: vi.fn(), push: vi.fn() }),
   useNavigation: () => ({ dispatch: vi.fn() }),
-  Link: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
+  Link: ({ children }: { children?: ReactNode }) =>
+    createElement('div', null, children),
 }));
 
 vi.mock('expo-router/build/react-navigation/core', () => ({
@@ -85,7 +148,11 @@ vi.mock('../../providers/auth-provider', () => ({
     isAuthenticated: true,
     isAdmin: false,
     logout: vi.fn(),
-    user: { email: 'author@example.com', emailVerifiedAt: '2026-09-27T00:00:00.000Z', role: 'user' },
+    user: {
+      email: 'author@example.com',
+      emailVerifiedAt: '2026-09-27T00:00:00.000Z',
+      role: 'user',
+    },
   }),
 }));
 
@@ -93,22 +160,37 @@ vi.mock('../../providers/api-provider', () => ({
   useApiClient: () => ({
     categories: { list: harness.listCategories },
     catalog: { listTerms: async () => ({ terms: [] }) },
-    sellers: { getProduct: harness.getProduct, getMyProfile: harness.getMyProfile },
-    products: { create: vi.fn(), update: harness.updateProduct, submit: vi.fn() },
+    sellers: {
+      getProduct: harness.getProduct,
+      getMyProfile: harness.getMyProfile,
+    },
+    products: {
+      create: vi.fn(),
+      update: harness.updateProduct,
+      submit: vi.fn(),
+    },
     images: { add: vi.fn(), remove: vi.fn(), reorder: vi.fn() },
     portfolio: { listCabinetWorks: harness.listCabinetWorks },
   }),
 }));
 
 vi.mock('../auth/AccountLogoutButton', () => ({
-  AccountLogoutButton: () => createElement('button', { type: 'button' }, 'Выйти'),
+  AccountLogoutButton: () =>
+    createElement('button', { type: 'button' }, 'Выйти'),
 }));
 
 vi.mock('../../components/layout', () => ({
-  AppShell: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
-  FormPageShell: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
-  FormPageColumns: ({ children, sidebar }: { children?: ReactNode; sidebar?: ReactNode }) =>
-    createElement('div', null, sidebar, children),
+  AppShell: ({ children }: { children?: ReactNode }) =>
+    createElement('div', null, children),
+  FormPageShell: ({ children }: { children?: ReactNode }) =>
+    createElement('div', null, children),
+  FormPageColumns: ({
+    children,
+    sidebar,
+  }: {
+    children?: ReactNode;
+    sidebar?: ReactNode;
+  }) => createElement('div', null, sidebar, children),
 }));
 
 vi.mock('../../components/shared/InfrastructurePageStatus', () => ({
@@ -116,27 +198,61 @@ vi.mock('../../components/shared/InfrastructurePageStatus', () => ({
 }));
 
 vi.mock('../../components/ui', () => {
-  function PressButton({ label, onPress, disabled }: { label: string; onPress?: () => void; disabled?: boolean }) {
-    return createElement('button', { type: 'button', disabled: Boolean(disabled), onClick: () => { if (!disabled) onPress?.(); } }, label);
+  function PressButton({
+    label,
+    onPress,
+    disabled,
+  }: {
+    label: string;
+    onPress?: () => void;
+    disabled?: boolean;
+  }) {
+    return createElement(
+      'button',
+      {
+        type: 'button',
+        disabled: Boolean(disabled),
+        onClick: () => {
+          if (!disabled) onPress?.();
+        },
+      },
+      label,
+    );
   }
   return {
-    AppDialog: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
-    AppText: ({ children }: { children?: ReactNode }) => createElement('span', null, children),
-    DestructiveButton: PressButton,
-    FormSection: ({ children }: { children?: ReactNode }) => createElement('section', null, children),
-    ImagePlaceholder: ({ label }: { label: string }) => createElement('div', null, label),
-    PageHeader: ({ title }: { title: string }) => createElement('h1', null, title),
+    AppDialog: ({ children }: { children?: ReactNode }) =>
+      createElement('div', null, children),
+    AppText: ({ children }: { children?: ReactNode }) =>
+      createElement('span', null, children),
+    FormSection: ({ children }: { children?: ReactNode }) =>
+      createElement('section', null, children),
+    ImagePlaceholder: ({ label }: { label: string }) =>
+      createElement('div', null, label),
+    PageHeader: ({ title }: { title: string }) =>
+      createElement('h1', null, title),
     PageState: () => null,
     PrimaryButton: PressButton,
     SecondaryButton: PressButton,
     TextButton: PressButton,
-    ResilientRemoteImage: ({ accessibilityLabel }: { accessibilityLabel?: string }) =>
-      createElement('div', null, accessibilityLabel),
-    TextField: ({ label, value, onChangeText }: { label: string; value?: string; onChangeText?: (value: string) => void }) =>
+    ResilientRemoteImage: ({
+      accessibilityLabel,
+    }: {
+      accessibilityLabel?: string;
+    }) => createElement('div', null, accessibilityLabel),
+    TextField: ({
+      label,
+      value,
+      onChangeText,
+    }: {
+      label: string;
+      value?: string;
+      onChangeText?: (value: string) => void;
+    }) =>
       createElement('input', {
         'aria-label': label,
         value: value ?? '',
-        onChange: (event: { target: { value: string } }) => onChangeText?.(event.target.value),
+        onChange: (event: { target: { value: string } }) =>
+          onChangeText?.(event.target.value),
       }),
   };
 });
@@ -152,7 +268,9 @@ function PublicProbe() {
       return { marker: true };
     },
   });
-  return createElement('div', { 'data-public': query.data?.marker ? 'yes' : 'no' });
+  return createElement('div', {
+    'data-public': query.data?.marker ? 'yes' : 'no',
+  });
 }
 
 function product() {
@@ -191,18 +309,19 @@ function cabinetWork(status: 'DRAFT' | 'PENDING_REVIEW') {
     editingRevisionStatus: status === 'DRAFT' ? 'DRAFT' : null,
     updatedAt: '2026-09-28T00:00:00.000Z',
     moderationMessage: status === 'PENDING_REVIEW' ? 'Проверьте подпись' : null,
-    coverImage: status === 'PENDING_REVIEW'
-      ? {
-          id: '55555555-5555-4555-8555-555555555555',
-          position: 0,
-          url: '/api/images/55555555-5555-4555-8555-555555555555',
-          mimeType: 'image/png',
-          byteLength: 4,
-          checksum: 'a'.repeat(64),
-          width: null,
-          height: null,
-        }
-      : null,
+    coverImage:
+      status === 'PENDING_REVIEW'
+        ? {
+            id: '55555555-5555-4555-8555-555555555555',
+            position: 0,
+            url: '/api/images/55555555-5555-4555-8555-555555555555',
+            mimeType: 'image/png',
+            byteLength: 4,
+            checksum: 'a'.repeat(64),
+            width: null,
+            height: null,
+          }
+        : null,
   };
 }
 
@@ -235,12 +354,18 @@ function mount() {
   };
 }
 
-async function until(container: HTMLElement, predicate: () => boolean, label: string) {
+async function until(
+  container: HTMLElement,
+  predicate: () => boolean,
+  label: string,
+) {
   for (let attempt = 0; attempt < 20; attempt += 1) {
     if (predicate()) return;
     await flush();
   }
-  throw new Error(`Timed out waiting for ${label}. Body: ${container.textContent}`);
+  throw new Error(
+    `Timed out waiting for ${label}. Body: ${container.textContent}`,
+  );
 }
 
 beforeEach(() => {
@@ -292,7 +417,9 @@ afterEach(() => {
 
 describe('owner work cache', () => {
   it('updates the retained cabinet after a work save without touching public queries', async () => {
-    let resolveSave: (value: { product: ReturnType<typeof product> }) => void = () => undefined;
+    let resolveSave: (value: {
+      product: ReturnType<typeof product>;
+    }) => void = () => undefined;
     harness.updateProduct.mockImplementation(
       () =>
         new Promise((resolve) => {
@@ -302,30 +429,51 @@ describe('owner work cache', () => {
     const view = mount();
     await until(
       view.container,
-      () => view.container.textContent?.includes('Черновик') === true
-        && [...view.container.querySelectorAll('button')].some((button) => button.textContent === 'Сохранить изменения'),
+      () =>
+        view.container.textContent?.includes('Черновик') === true &&
+        [...view.container.querySelectorAll('button')].some(
+          (button) => button.textContent === 'Сохранить изменения',
+        ),
       'cabinet and editor',
     );
     const publicReads = harness.publicReads.count;
-    const save = [...view.container.querySelectorAll('button')].find((button) => button.textContent === 'Сохранить изменения');
+    const save = [...view.container.querySelectorAll('button')].find(
+      (button) => button.textContent === 'Сохранить изменения',
+    );
     act(() => save?.click());
     await flush();
     await act(async () => {
-      resolveSave({ product: { ...product(), title: 'Normalized title', status: 'PENDING_REVIEW' } });
+      resolveSave({
+        product: {
+          ...product(),
+          title: 'Normalized title',
+          status: 'PENDING_REVIEW',
+        },
+      });
       await Promise.resolve();
     });
-    await until(view.container, () => view.container.textContent?.includes('На модерации') === true, 'cabinet status');
+    await until(
+      view.container,
+      () => view.container.textContent?.includes('На модерации') === true,
+      'cabinet status',
+    );
     expect(view.container.textContent).toContain('Normalized title');
     expect(view.container.textContent).toContain('Проверьте подпись');
     expect(view.container.textContent).toContain('Normalized title');
-    expect(view.container.textContent).not.toContain('Обложка работы не добавлена');
+    expect(view.container.textContent).not.toContain(
+      'Обложка работы не добавлена',
+    );
     expect(harness.publicReads.count).toBe(publicReads);
-    expect(view.queryClient.getQueryData(['portfolio-works'])).toEqual({ marker: true });
+    expect(view.queryClient.getQueryData(['portfolio-works'])).toEqual({
+      marker: true,
+    });
     view.unmount();
   });
 
   it('does not refetch the cabinet after the session is cleared', async () => {
-    let resolveSave: (value: { product: ReturnType<typeof product> }) => void = () => undefined;
+    let resolveSave: (value: {
+      product: ReturnType<typeof product>;
+    }) => void = () => undefined;
     harness.updateProduct.mockImplementation(
       () =>
         new Promise((resolve) => {
@@ -340,7 +488,9 @@ describe('owner work cache', () => {
     );
     const reads = harness.listCabinetWorks.mock.calls.length;
     view.queryClient.setQueryData(['user', 'me'], null);
-    const save = [...view.container.querySelectorAll('button')].find((button) => button.textContent === 'Сохранить изменения');
+    const save = [...view.container.querySelectorAll('button')].find(
+      (button) => button.textContent === 'Сохранить изменения',
+    );
     act(() => save?.click());
     await flush();
     await act(async () => {

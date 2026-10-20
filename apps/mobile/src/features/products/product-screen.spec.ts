@@ -11,6 +11,20 @@ import { WorkHeader as WebWorkHeader } from './WorkHeader.web';
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
+vi.mock('expo-router', () => ({
+  DefaultTheme: {
+    colors: {
+      background: '',
+      card: '',
+      primary: '',
+      border: '',
+      text: '',
+      notification: '',
+    },
+  },
+  ThemeProvider: ({ children }: { children?: unknown }) => children,
+}));
+
 vi.mock('react-native', () => {
   function host(props: {
     accessibilityRole?: string;
@@ -27,9 +41,12 @@ vi.mock('react-native', () => {
     };
   }
   return {
-    Platform: { OS: 'web', select: (options: { web?: unknown }) => options.web },
+    Platform: {
+      OS: 'web',
+      select: (options: { web?: unknown }) => options.web,
+    },
     StyleSheet: {
-      create: <T,>(styles: T) => styles,
+      create: <T>(styles: T) => styles,
       flatten: (style: unknown) => style,
       absoluteFill: {},
       hairlineWidth: 1,
@@ -51,10 +68,17 @@ vi.mock('react-native', () => {
     ) {
       return createElement('div', { ...host(props), ref }, props.children);
     }),
-    Text: ({ children }: { children?: ReactNode }) => createElement('span', null, children),
+    Text: ({ children }: { children?: ReactNode }) =>
+      createElement('span', null, children),
     Pressable: forwardRef(function Pressable(
       props: {
-        children?: ReactNode | ((state: { pressed: boolean; hovered: boolean; focused: boolean }) => ReactNode);
+        children?:
+          | ReactNode
+          | ((state: {
+              pressed: boolean;
+              hovered: boolean;
+              focused: boolean;
+            }) => ReactNode);
         onPress?: () => void;
         accessibilityRole?: string;
         accessibilityLabel?: string;
@@ -89,7 +113,12 @@ vi.mock('react-native-svg', () => {
     children?: ReactNode;
     accessibilityRole?: string;
     accessibilityLabel?: string;
-  }) => createElement('svg', { role: accessibilityRole, 'aria-label': accessibilityLabel }, children);
+  }) =>
+    createElement(
+      'svg',
+      { role: accessibilityRole, 'aria-label': accessibilityLabel },
+      children,
+    );
   return {
     default: shape,
     Svg: shape,
@@ -107,11 +136,13 @@ vi.mock('@hugeicons/react-native', () => ({
 }));
 
 vi.mock('expo-blur', () => ({
-  BlurView: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
+  BlurView: ({ children }: { children?: ReactNode }) =>
+    createElement('div', null, children),
 }));
 
 vi.mock('expo-linear-gradient', () => ({
-  LinearGradient: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
+  LinearGradient: ({ children }: { children?: ReactNode }) =>
+    createElement('div', null, children),
 }));
 
 vi.mock('../../components/figma/WorkGallery', () => ({
@@ -123,11 +154,19 @@ vi.mock('../../components/figma/WorkGallery', () => ({
     leadingAction?: ReactNode;
     action?: ReactNode;
     children?: ReactNode;
-  }) => createElement('div', { 'data-marker': 'work-gallery' }, leadingAction, action, children),
+  }) =>
+    createElement(
+      'div',
+      { 'data-marker': 'work-gallery' },
+      leadingAction,
+      action,
+      children,
+    ),
 }));
 
 vi.mock('./WorkIdentity', () => ({
-  WorkIdentity: ({ title }: { title: string }) => createElement('h1', null, title),
+  WorkIdentity: ({ title }: { title: string }) =>
+    createElement('h1', null, title),
 }));
 
 vi.mock('../../components/figma/FigmaTabs', () => ({
@@ -139,7 +178,13 @@ vi.mock('../../components/figma/FigmaTabs', () => ({
     createElement(
       'div',
       { role: 'tablist' },
-      tabs.map((tab) => createElement('button', { key: tab.value, type: 'button', role: 'tab' }, tab.label)),
+      tabs.map((tab) =>
+        createElement(
+          'button',
+          { key: tab.value, type: 'button', role: 'tab' },
+          tab.label,
+        ),
+      ),
     ),
 }));
 
@@ -184,7 +229,9 @@ function mountHeader(node: ReactNode) {
 }
 
 function actionLabels(root: ParentNode) {
-  return [...root.querySelectorAll('button')].map((node) => node.getAttribute('aria-label'));
+  return [...root.querySelectorAll('button')].map((node) =>
+    node.getAttribute('aria-label'),
+  );
 }
 
 afterEach(() => {
@@ -206,25 +253,38 @@ describe('Work top chrome', () => {
   it.each([
     { platform: 'native', Header: NativeWorkHeader },
     { platform: 'web', Header: WebWorkHeader },
-  ])('$platform header shows one Back and one Share and no Like', ({ Header }) => {
-    const onBack = vi.fn();
-    const onShare = vi.fn();
-    const view = mountHeader(createElement(Header, { ...headerProps, onBack, onShare }));
-    const labels = actionLabels(view.container);
-    const back = view.container.querySelector<HTMLButtonElement>('[aria-label="Назад"]');
-    const share = view.container.querySelector<HTMLButtonElement>('[aria-label="Поделиться работой"]');
+  ])(
+    '$platform header shows one Back and one Share and no Like',
+    ({ Header }) => {
+      const onBack = vi.fn();
+      const onShare = vi.fn();
+      const view = mountHeader(
+        createElement(Header, { ...headerProps, onBack, onShare }),
+      );
+      const labels = actionLabels(view.container);
+      const back = view.container.querySelector<HTMLButtonElement>(
+        '[aria-label="Назад"]',
+      );
+      const share = view.container.querySelector<HTMLButtonElement>(
+        '[aria-label="Поделиться работой"]',
+      );
 
-    expect(labels.filter((label) => label === 'Назад')).toEqual(['Назад']);
-    expect(labels.filter((label) => label === 'Поделиться работой')).toEqual(['Поделиться работой']);
-    expect(labels.some((label) => /heart|like|лайк|нрав/i.test(label ?? ''))).toBe(false);
-    expect(back).toBeTruthy();
-    expect(share).toBeTruthy();
+      expect(labels.filter((label) => label === 'Назад')).toEqual(['Назад']);
+      expect(labels.filter((label) => label === 'Поделиться работой')).toEqual([
+        'Поделиться работой',
+      ]);
+      expect(
+        labels.some((label) => /heart|like|лайк|нрав/i.test(label ?? '')),
+      ).toBe(false);
+      expect(back).toBeTruthy();
+      expect(share).toBeTruthy();
 
-    act(() => {
-      back!.click();
-      share!.click();
-    });
-    expect(onBack).toHaveBeenCalledTimes(1);
-    expect(onShare).toHaveBeenCalledTimes(1);
-  });
+      act(() => {
+        back!.click();
+        share!.click();
+      });
+      expect(onBack).toHaveBeenCalledTimes(1);
+      expect(onShare).toHaveBeenCalledTimes(1);
+    },
+  );
 });

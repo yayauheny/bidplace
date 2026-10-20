@@ -19,7 +19,7 @@ export const legalDocumentsResponseSchema = z.object({
 }).strict();
 
 const versionedAction = z.object({
-  version: z.string().min(1),
+  version: z.string().min(1).optional(),
   confirmed: z.literal(true),
 }).strict();
 

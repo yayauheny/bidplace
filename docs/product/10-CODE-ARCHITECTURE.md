@@ -92,8 +92,8 @@ See [`11-PROJECT-STATUS.md`](11-PROJECT-STATUS.md) for remaining gates.
   `SearchOverlayHost` in the root layout. `SearchOverlayProvider` is the only
   owner of Search session state: it is reconstructed from the current route
   (`overlay=search`, `oq`, `otab`; `/search?q=` is the compatibility alias).
-  Overlay focus trap lives
-  in `useOverlayFocusTrap` and is shared with `FilterSheet`. Search reuses
+  Overlay focus trap lives in `useOverlayFocusTrap` for Search; `FilterSheet`
+  uses the shared `AppDialog` focus and dismissal lifecycle. Search reuses
   `GET /api/works`, `GET /api/authors` and `GET /api/categories`.
   There is no `/search` API and no second catalog fetch layer. `/search` is a
   compatibility route that opens the same overlay. On web the overlay host
@@ -156,8 +156,7 @@ See [`11-PROJECT-STATUS.md`](11-PROJECT-STATUS.md) for remaining gates.
   verification reads sampled objects and compares their checksums without logging
   content or credentials.
 - `apps/mobile/src/lib/environment.ts` owns API origin validation and `getApiAssetUrl`, which resolves relative media paths while preserving valid absolute HTTP(S) URLs. Media components own truthful missing/error presentation without changing API visibility rules.
-- `apps/mobile/src/components/layout/OverlayHost.tsx` stays mounted by AppShell. It keeps the relative content child and the absolute `app-overlay-host` layer. It does not portal descendants and does not export positioning helpers.
-- `apps/mobile/src/components/layout/index.ts` exports the shell, auth and form page primitives, `OverlayHost`, and `navigateBack`. Catalog sort and filter use `FilterSheet` through `CatalogFilterSheet`. `header-chrome.ts` and `dismissible-overlay.ts` stay outside that barrel. The unused `FilterMenu` and `focusable-anchor` helpers were removed.
+- `AppShell` owns page Safe Area and `FloatingDock`; `AppDialog` owns sheet portals, backdrop, motion, focus and bottom inset. Catalog sort and filter use `FilterSheet` through `CatalogFilterSheet`. `components/layout/index.ts` exports shell, auth and form page primitives and `navigateBack`; `OverlayHost` was removed. `header-chrome.ts` and `dismissible-overlay.ts` stay outside that barrel.
 - `apps/api/src/products/products.mapper.ts` and `apps/api/src/products/products-catalog.query.ts` own the canonical public catalog selection and CTE/order SQL; `products.service.ts` keeps only use-cases and orchestration. Public portfolio Work hydration uses `portfolioCatalogProductSelect`: product id, public id, `publishedAt`, the public seller profile, and the published revision gallery. Parent product fields and the parent image relation are not part of that read. Owner and moderation reads keep `productSelect`.
 - `packages/contracts` owns runtime HTTP and event shapes; `packages/api-client` validates responses with those schemas and declares `zod` `^3.24.2` for that import. Public catalog reads can pass an optional `AbortSignal` through that client into `fetch`. Mutations stay uncancelled unless a caller passes a signal.
 - `packages/contracts/src/seller-profile.ts` owns the reusable public-link and handoff-contact validation shapes consumed by both seller write contracts and the profile editor; client-side field feedback does not replace server validation. Public `socialLink`, `telegramUrl`, `instagramUrl` and `websiteUrl` use shared `httpsUrlSchema` and accept only `https:` URLs. Telegram/Instagram `@handle` forms stay on the separate handoff schemas.
@@ -205,6 +204,44 @@ SellerProfile
   1–120 character `accountSlugSchema` read contract. Future write endpoints
   must reuse the write schema; narrowing a response schema would reject
   historical accounts. This introduces no new persistence owner or migration.
+- `apps/mobile/src/lib/local-form-draft.ts` is the browser-only form-draft
+  boundary (DEC-121). Keys are `bidplace:draft:<accountId>:<scope>:<entityId>`
+  in `localStorage` — scoped to the account and to one Work or one seller
+  application, never shared across accounts or entities; the analytics
+  AsyncStorage is not used. A draft payload passes a Zod schema that allows an
+  incomplete first step (strict submit validation does not apply), and corrupt
+  JSON or unavailable storage yields `null`, never a form crash. Writing is
+  throttled (~400 ms) during editing and does not depend on `beforeunload`.
+  `features/sellers/local-form-restore.ts` adapts the two form owners: a stored
+  draft applies only while its `baseToken` (server revision token) matches the
+  loaded server state — the server revision wins on mismatch, so simultaneous
+  editing from several devices resolves to the last successful server save and
+  no sync/conflict UI exists. Restored values hydrate the form as dirty and go
+  into the next ordinary save; server hydration/refetch does not clear them.
+  Drafts are cleared on logout/session change (`account-logout`), on a
+  confirmed submit, and on a successful save with no edits after the request
+  snapshot. After the first confirmed create, the `…:new` key is migrated to
+  the confirmed entity id (`noteEntityCreated`) so a revisit cannot re-create
+  the entity. Passwords, OTP, tokens, registration/auth forms, blob URLs and
+  file bytes are never stored. Account-wide clear (logout) also bumps a
+  per-account write epoch: delayed writers capture it at schedule time and
+  drop the write after retirement, so a debounced write pending at logout
+  cannot resurrect the cleared private draft. The live writer persists only
+  unsaved input — a clean form (e.g. after `reset(persisted)` following a
+  confirmed save) clears the local snapshot instead of repersisting it, while
+  edits made after the request stay. Unavailable or failing storage surfaces a
+  visible message through the owners' existing danger-text pattern (restore
+  hook `storageError`); it never breaks the form. Stored form payloads are validated as data, not
+  as submittable forms: the envelope is schema-checked and each field is
+  accepted only when its JSON shape matches the form's own default, so an
+  unfinished intermediate value (half-typed email or year) never rejects the
+  other fields; business validation stays with the server save/submit path.
+  The story draft (`use-product-story-editor.ts`) is versioned: v2 blocks carry
+  stable keys (`server block id ?? client key`) and IMAGE placeholders
+  (mediaAssetId + altText), so edits, deletions, reordering and duplicate
+  texts restore exactly by block identity; pre-v2 text-only payloads keep the
+  legacy content-merge semantics, which cannot record deletions or image
+  positions and is not migrated.
 - `apps/mobile/src/features/auth/nickname-suggestion-generator.ts` is the
   replaceable synchronous nickname-generation boundary. Its sole current
   adapter confines `unique-names-generator` and curated bundled dictionaries to
@@ -433,3 +470,57 @@ imported rows as complete historical quota truth.
 
 Automated verification counts and browser evidence for this branch are owned by
 `11-PROJECT-STATUS.md`.
+
+
+### Auth background and shared sheet interaction (2026-10-18, DEC-122)
+
+Expo Router root anchor `index` and transparent auth presentation preserve the
+existing background screen. The auth layout also owns one persistent visual dimmer;
+AuthViewport retains only the transparent dismissal overlay, so child auth routes
+do not tear down and restart background dimming (2026-10-19). AuthViewport owns auth close guards and dismisses to
+its return target; it no longer renders HomeScreen as a second background.
+SheetDragSurface owns only gesture detection/translation, with web Pointer Events
+and a native PanResponder adapter. AppDialog, FilterSheet and AuthViewport declare
+the draggable header and supply the existing close callback. This avoids separate
+route-local gesture implementations; persistence, auth service, API and database
+boundaries are unchanged. useReturnFocus handles force-mounted sheet close cycles.
+
+
+### Shared web sheet backdrop (2026-10-19)
+
+AppProviders mounts SheetBackdropProvider under the semantic theme owner.
+AppDialog registers ordinary sheet/mediaSheet open lifetimes; one visual portal
+stays mounted across handoffs. This owner does not manage content, route history,
+focus traps, save state or permissions. Dialog.Overlay remains the dismissal hit
+layer below panels. Native/isolated rendering retains its existing per-dialog
+implementation; centered confirmations, auth and Search keep their flow layers.
+useReturnFocus records weak opener ancestry for handoffs without retaining closed
+DOM scopes. See audits/2026-10-19-TRANSITION-MATRIX.md for coverage and limits.
+
+### Registration evidence and document delivery —2026-10-20
+
+DEC-125: AuthService.register reads readRegistrationLegalVersion (edition +
+source digest) instead of the public document endpoint. Canonical source
+parsing/hashing is shared in legal-documents.ts; readPublishedLegalDocuments
+additionally rejects unresolved placeholders before exposing bodies.
+New clients submit confirmed actions without a revision; the server owns the
+revision at atomic User/evidence creation. Explicit legacy revisions still
+undergo mismatch rejection. No new database state or acceptance stage.
+RegisterForm completes navigation after the AuthProvider rendered the installed
+account, checked against the captured epoch/controller/focus receipt.
+
+## 2026-10-20 — Shared calendar boundary
+
+`components/ui/DateField` owns temporary selection and confirmation, shared
+FigmaSelectField and AppDialog own presentation. `DateSelection.tsx` is the web
+implementation using modular public React Aria exports; Metro selects
+`DateSelection.native.tsx` for Expo/system picker. `lib/calendar-date.ts` owns
+canonical string conversion and reuses the existing contract schema. Existing
+seller date exports delegate without changing null labels or local draft schema.
+UI never changes date-only values to timezone-dependent instants. No API,
+database migration or scheduling domain was added.
+
+`AppDialogSheetMotion.web` uses persistent Reanimated withTiming, inert closing
+content and cancellation on unmount. It replaces web layout exiting only, because
+that implementation moves live children into dummy DOM clones. Native keeps
+existing layout transitions. This boundary is shared by all AppDialog sheets.

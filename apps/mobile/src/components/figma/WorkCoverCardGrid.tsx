@@ -1,8 +1,8 @@
 import { View } from 'react-native';
 
-import { figmaTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
-import { paddedGridRows } from './flex-grid-rows';
+import { PaddedGrid } from './PaddedGrid';
 import { WorkCoverCard } from './WorkCoverCard';
 
 export type WorkCoverCardGridItem = {
@@ -27,7 +27,7 @@ export function WorkCoverCardGrid({
 }) {
   if (columns === 1) {
     return (
-      <View style={{ width: '100%', gap: figmaTokens.space.sectionGap }}>
+      <View style={{ width: '100%', gap: designTokens.space.sectionGap }}>
         {items.map((item) => (
           <WorkCoverGridCard
             key={item.work.publicId}
@@ -40,24 +40,16 @@ export function WorkCoverCardGrid({
   }
 
   return (
-    <View style={{ width: '100%', gap: figmaTokens.space.x2 }}>
-      {paddedGridRows(items, columns).map((row, rowIndex) => (
-        <View
-          key={row.find((item) => item)?.work.publicId ?? `row-${rowIndex}`}
-          style={{ flexDirection: 'row', gap: figmaTokens.space.x2 }}
-        >
-          {row.map((item, cellIndex) => (
-            <View
-              key={item?.work.publicId ?? `spacer-${rowIndex}-${cellIndex}`}
-              style={{ flex: 1, minWidth: 0 }}
-            >
-              {item ? (
-                <WorkCoverGridCard item={item} onItemPress={onItemPress} />
-              ) : null}
-            </View>
-          ))}
-        </View>
-      ))}
+    <View style={{ width: '100%', gap: designTokens.space.x2 }}>
+      <PaddedGrid
+        items={items}
+        columns={columns}
+        gap={designTokens.space.x2}
+        keyExtractor={(item) => item.work.publicId}
+        renderItem={(item) => (
+          <WorkCoverGridCard item={item} onItemPress={onItemPress} />
+        )}
+      />
     </View>
   );
 }

@@ -592,6 +592,21 @@ describe('seller profile revision submit', () => {
     view.unmount();
   });
 
+  it('keeps the pending lock copy visible in the wizard for a draft with a pending revision', async () => {
+    harness.getMyProfile.mockResolvedValue(response('DRAFT', 'PENDING_REVIEW'));
+    const view = mount();
+    await until(
+      view.container,
+      () =>
+        view.container.textContent?.includes(
+          'Заявка на проверке. Редактирование откроется',
+        ) === true,
+      'wizard pending lock copy',
+    );
+    expect(findButton(view.container, 'Сохранить и завершить')).toBeUndefined();
+    view.unmount();
+  });
+
   it.each(['CHANGES_REQUESTED', 'REJECTED'] as const)(
     'keeps submit available after %s',
     async (status) => {
@@ -1706,7 +1721,7 @@ describe('seller profile save reconciliation', () => {
       () => harness.push.mock.calls.length === 1,
       'next step',
     );
-    expect(harness.push).toHaveBeenCalledWith('/profile?step=3');
+    expect(harness.push).toHaveBeenCalledWith({ pathname: '/profile', params: { step: '3' } });
     await act(async () => {
       finishOldRead(draft);
       await Promise.resolve();
@@ -1771,7 +1786,7 @@ describe('seller profile save reconciliation', () => {
     click(view.container, 'Продолжить');
     await flush();
     expect(harness.updateProfile).toHaveBeenCalledTimes(2);
-    expect(harness.push).toHaveBeenCalledWith('/profile?step=2');
+    expect(harness.push).toHaveBeenCalledWith({ pathname: '/profile', params: { step: '2' } });
     view.unmount();
   });
 
@@ -2500,7 +2515,7 @@ describe('seller profile validation freshness', () => {
     expect(harness.updateProfile.mock.calls[0]?.[0]).toEqual(
       expect.objectContaining({ telegramUrl: 'https://t.me/maker_art' }),
     );
-    expect(harness.push).toHaveBeenCalledWith('/profile?step=1');
+    expect(harness.push).toHaveBeenCalledWith({ pathname: '/profile', params: { step: '1' } });
     view.unmount();
   });
 
@@ -2527,7 +2542,7 @@ describe('seller profile validation freshness', () => {
         publicEmail: null,
       }),
     );
-    expect(harness.push).toHaveBeenCalledWith('/profile?step=3');
+    expect(harness.push).toHaveBeenCalledWith({ pathname: '/profile', params: { step: '3' } });
     view.unmount();
   });
 
@@ -2615,7 +2630,7 @@ describe('seller profile validation freshness', () => {
       city: 'Minsk',
     });
     expect(harness.createProfile.mock.calls[0]?.[1]).toBe(photo);
-    expect(harness.push).toHaveBeenCalledWith('/profile?step=2');
+    expect(harness.push).toHaveBeenCalledWith({ pathname: '/profile', params: { step: '2' } });
     vi.unstubAllGlobals();
     view.unmount();
   });
@@ -2818,7 +2833,7 @@ describe('seller profile validation freshness', () => {
       () => harness.updateProfile.mock.calls.length === 1,
       'about save',
     );
-    expect(harness.push).toHaveBeenCalledWith('/profile?step=4');
+    expect(harness.push).toHaveBeenCalledWith({ pathname: '/profile', params: { step: '4' } });
     view.unmount();
   });
 

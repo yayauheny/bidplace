@@ -82,6 +82,10 @@ export function WorkHeader({
     <div
       data-testid="work-sticky-header"
       data-state={dockSurfaceActive ? 'docked' : 'overlay'}
+      style={{
+        marginLeft: -designTokens.layout.gutter,
+        marginRight: -designTokens.layout.gutter,
+      }}
     >
       <div
         style={{
@@ -99,7 +103,7 @@ export function WorkHeader({
             style={{
               paddingTop: designTokens.space.sectionGap,
               paddingBottom: designTokens.space.x10,
-              paddingHorizontal: designTokens.space.pageGutter,
+              paddingHorizontal: designTokens.layout.gutter,
             }}
           >
             <WorkIdentity
@@ -142,7 +146,8 @@ export function WorkHeader({
             onChange={onTabChange}
             label="Информация о работе"
             panelId={panelId}
-            contentInset={designTokens.space.pageGutter}
+            contentInset={designTokens.layout.gutter}
+            fill
           />
         </div>
         <div
@@ -151,6 +156,8 @@ export function WorkHeader({
             gridColumn: 1,
             minWidth: 0,
             paddingTop: designTokens.space.sectionGap,
+            paddingLeft: designTokens.layout.gutter,
+            paddingRight: designTokens.layout.gutter,
             zIndex: 0,
           }}
         >

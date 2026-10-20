@@ -1,31 +1,33 @@
 import { useId, type ReactNode } from 'react';
-import { Modal, Platform, ScrollView, View } from 'react-native';
+import * as Dialog from '@rn-primitives/dialog';
+import { ScrollView, useWindowDimensions, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import {
-  designTokens,
-  figmaTokens,
-  type FigmaButtonSize,
-} from '@bidplace/design-tokens';
+import { designTokens, type FigmaButtonSize } from '@bidplace/design-tokens';
 
+import { AppDialog } from '../ui/AppDialog';
+import { SheetDragHandle } from '../ui/SheetDragSurface';
+import { appDialogSheetBottomSpace } from '../ui/app-dialog-host-style';
 import { AppText } from '../ui/AppText';
 import { MotionPressable } from '../ui/MotionPressable';
+import { useAppTheme } from '../../providers/theme-provider';
 import { FigmaButton } from './FigmaButton';
 import { FigmaIcon } from './FigmaIcon';
 import { FilterSheetActionRow } from './FilterSheetActionRow';
-import { OverlayDimmer } from './OverlayDimmer';
 import {
   filterSheetHeaderStyle,
   filterSheetPanelStyle,
   filterSheetTitleStyle,
 } from './filter-sheet-style';
-import { useDismissibleOverlay } from '../layout/use-dismissible-overlay';
-import { useOverlayFocusTrap } from '../layout/use-overlay-focus-trap';
 
 export function FilterSheet({
   open,
   onClose,
   title,
+  accessibilityLabel = title,
   titleVariant = 'default',
+  presentation = 'full',
+  bottomSpace,
   showBack = false,
   onBack,
   onClear,
@@ -37,7 +39,10 @@ export function FilterSheet({
   open: boolean;
   onClose: () => void;
   title: string;
+  accessibilityLabel?: string;
   titleVariant?: 'default' | 'directions';
+  presentation?: 'full' | 'compact';
+  bottomSpace?: 20 | 40;
   showBack?: boolean;
   onBack?: () => void;
   onClear?: () => void;
@@ -52,50 +57,54 @@ export function FilterSheet({
   returnFocusRef?: { current: { focus?: () => void } | null };
   children: ReactNode;
 }) {
+  const compact = presentation === 'compact';
+  const { height } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const titleId = useId();
-  const dialogId = `filter-sheet-${titleId}`;
-
-  useDismissibleOverlay({
-    open,
-    onClose: () => onClose(),
-    getSurfaces: () => [
-      Platform.OS === 'web' ? document.getElementById(dialogId) : null,
-    ],
-  });
-  useOverlayFocusTrap({
-    open,
-    surfaceId: dialogId,
-    restoreOnClose: true,
-    returnFocusRef,
-  });
+  const palette = useAppTheme();
 
   return (
-    <Modal
-      visible={open}
-      transparent
-      animationType="none"
-      onRequestClose={onClose}
+    <AppDialog
+      open={open}
+      onClose={onClose}
+      title={accessibilityLabel}
+      accessibilityLabel={accessibilityLabel}
+      returnFocusRef={returnFocusRef}
+      presentation="sheet"
+      bare
+      bottomSpace={compact ? (bottomSpace ?? designTokens.space.x5) : undefined}
     >
       <View
-        style={{
-          flex: 1,
-          position: 'relative',
-          alignItems: 'center',
-        }}
+        style={filterSheetPanelStyle(
+          compact,
+          height,
+          primaryAction ? insets.bottom : 0,
+          palette,
+        )}
       >
-        <OverlayDimmer onPress={onClose} />
-        <View
-          nativeID={dialogId}
-          accessibilityViewIsModal
-          accessibilityLabel={title}
-          style={filterSheetPanelStyle()}
-          {...(Platform.OS === 'web'
-            ? ({ role: 'dialog', 'aria-modal': true } as object)
-            : {})}
-        >
+        <SheetDragHandle>
+          {compact ? (
+            <View
+              style={{
+                alignSelf: 'center',
+                width: 36,
+                height: 4,
+                borderRadius: 10,
+                backgroundColor: palette.quietFill,
+                marginBottom: 16,
+              }}
+            />
+          ) : null}
           <View
             style={[
-              filterSheetHeaderStyle(),
+              compact
+                ? {
+                    width: '100%',
+                    minHeight: title ? 22 : 0,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                  }
+                : filterSheetHeaderStyle(),
               titleVariant === 'directions'
                 ? {
                     minHeight:
@@ -104,79 +113,109 @@ export function FilterSheet({
                 : null,
             ]}
           >
-            <MotionPressable
-              accessibilityRole="button"
-              accessibilityLabel={showBack ? 'Назад' : 'Закрыть'}
-              hitSlop={figmaTokens.space.headerIconHitSlop}
-              onPress={showBack ? (onBack ?? onClose) : onClose}
-              preset="icon"
-              style={{
-                width: figmaTokens.size.buttonIconFrame,
-                height: figmaTokens.size.buttonIconFrame,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <FigmaIcon
-                name={showBack ? 'arrow-left-01' : 'x'}
-                size={figmaTokens.size.buttonIconFrame}
-                strokeWidthPx={
-                  titleVariant === 'directions' && showBack ? 2 : undefined
-                }
-              />
-            </MotionPressable>
-            <AppText
-              nativeID={titleId}
-              role={showBack ? 'profileHeading' : 'screenTitle'}
-              numberOfLines={1}
-              style={[
-                filterSheetTitleStyle(),
-                titleVariant === 'directions'
-                  ? designTokens.typography.directionsSheetTitle
-                  : null,
-              ]}
-            >
-              {title}
-            </AppText>
+            {!compact ? (
+              <MotionPressable
+                accessibilityRole="button"
+                accessibilityLabel={showBack ? 'Назад' : 'Закрыть'}
+                hitSlop={designTokens.space.headerIconHitSlop}
+                onPress={showBack ? (onBack ?? onClose) : onClose}
+                preset="icon"
+                style={{
+                  width: designTokens.size.buttonIconFrame,
+                  height: designTokens.size.buttonIconFrame,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <FigmaIcon
+                  name={showBack ? 'arrow-left-01' : 'x'}
+                  size={designTokens.size.buttonIconFrame}
+                  strokeWidthPx={
+                    titleVariant === 'directions' && showBack ? 2 : undefined
+                  }
+                />
+              </MotionPressable>
+            ) : null}
+            {title ? (
+              <Dialog.Title asChild>
+                <AppText
+                  nativeID={titleId}
+                  role={
+                    compact
+                      ? 'body'
+                      : showBack
+                        ? 'profileHeading'
+                        : 'screenTitle'
+                  }
+                  numberOfLines={1}
+                  style={[
+                    compact
+                      ? { fontSize: 18, fontWeight: '600' as const }
+                      : filterSheetTitleStyle(),
+                    titleVariant === 'directions'
+                      ? designTokens.typography.directionsSheetTitle
+                      : null,
+                  ]}
+                >
+                  {title}
+                </AppText>
+              </Dialog.Title>
+            ) : (
+              <Dialog.Title asChild>
+                <AppText style={{ position: 'absolute', opacity: 0 }}>
+                  {accessibilityLabel}
+                </AppText>
+              </Dialog.Title>
+            )}
             {onClear ? (
               <FigmaButton
                 label={clearLabel}
                 variant="ghost"
                 onPress={onClear}
               />
-            ) : (
-              <View style={{ width: figmaTokens.size.iconButton }} />
+            ) : compact ? null : (
+              <View style={{ width: designTokens.size.iconButton }} />
             )}
           </View>
-          <ScrollView
-            style={{
-              flex: 1,
-              marginTop:
-                titleVariant === 'directions' ? 0 : figmaTokens.space.x2,
-            }}
-            contentContainerStyle={{
-              paddingTop:
-                titleVariant === 'directions'
-                  ? designTokens.authorApplication.directionsSearchGap
-                  : figmaTokens.space.identityGap,
-              paddingBottom: figmaTokens.space.x4,
-            }}
-            keyboardShouldPersistTaps="handled"
-          >
-            {children}
-          </ScrollView>
-          {primaryAction ? (
-            <FilterSheetActionRow
-              primaryLabel={primaryAction.label}
-              onPrimary={primaryAction.onPress}
-              primaryDisabled={primaryAction.disabled}
-              primaryLoading={primaryAction.loading}
-              size={primaryAction.size}
-              variant={titleVariant}
-            />
-          ) : null}
-        </View>
+        </SheetDragHandle>
+        <ScrollView
+          style={{
+            flex: compact ? undefined : 1,
+            flexGrow: compact ? 0 : undefined,
+            marginTop: compact
+              ? 14
+              : titleVariant === 'directions'
+                ? 0
+                : designTokens.space.x2,
+          }}
+          contentContainerStyle={{
+            paddingTop: compact
+              ? 0
+              : titleVariant === 'directions'
+                ? designTokens.authorApplication.directionsSearchGap
+                : designTokens.space.identityGap,
+            paddingBottom: compact
+              ? 0
+              : appDialogSheetBottomSpace(
+                  designTokens.space.x4,
+                  primaryAction ? 0 : insets.bottom,
+                ),
+          }}
+          keyboardShouldPersistTaps="handled"
+        >
+          {children}
+        </ScrollView>
+        {primaryAction ? (
+          <FilterSheetActionRow
+            primaryLabel={primaryAction.label}
+            onPrimary={primaryAction.onPress}
+            primaryDisabled={primaryAction.disabled}
+            primaryLoading={primaryAction.loading}
+            size={primaryAction.size}
+            variant={titleVariant}
+          />
+        ) : null}
       </View>
-    </Modal>
+    </AppDialog>
   );
 }

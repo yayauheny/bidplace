@@ -1,34 +1,11 @@
-import { achievementOccurredDateSchema } from '@bidplace/contracts';
-
-type AchievementDate = { year: number; month: number; day: number | null };
-
-export function presentAchievementDateGroup(message: string) {
-  return /expected/i.test(message) ? 'Укажите существующую дату' : message;
-}
-
-export function parseAchievementDateInput(
-  value: string,
-): { date: AchievementDate; error: null } | { date: null; error: string } {
-  const match = /^(?:(\d{1,2})\.)?(\d{1,2})\.(\d{4})$/.exec(value.trim());
-  if (!match)
-    return {
-      date: null,
-      error: 'Введите дату в формате ММ.ГГГГ или ДД.ММ.ГГГГ',
-    };
-  const parsed = achievementOccurredDateSchema.safeParse({
-    year: Number(match[3]),
-    month: Number(match[2]),
-    day: match[1] ? Number(match[1]) : null,
-  });
-  return parsed.success
-    ? { date: parsed.data, error: null }
-    : {
-        date: null,
-        error: parsed.error.issues
-          .map((issue) => presentAchievementDateGroup(issue.message))
-          .join(' '),
-      };
-}
+import {
+  formatCalendarDateInput,
+  type CalendarDateValue as AchievementDate,
+} from '../../lib/calendar-date';
+export {
+  parseCalendarDateInput as parseAchievementDateInput,
+  presentCalendarDateError as presentAchievementDateGroup,
+} from '../../lib/calendar-date';
 
 export function formatAchievementDate(value: AchievementDate | null): string {
   if (!value) return 'Дата не указана';
@@ -47,9 +24,5 @@ export function formatAchievementDate(value: AchievementDate | null): string {
 export function formatAuthorAchievementLabel(
   value: AchievementDate | null,
 ): string {
-  if (!value) return 'Дата не указана';
-  const month = String(value.month).padStart(2, '0');
-  const prefix =
-    value.day === null ? '' : `${String(value.day).padStart(2, '0')}.`;
-  return `${prefix}${month}.${String(value.year).padStart(4, '0')}`;
+  return value ? formatCalendarDateInput(value) : 'Дата не указана';
 }

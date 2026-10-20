@@ -20,23 +20,47 @@ export default function LegalDocumentRoute() {
     queryFn: ({ signal }) => api.auth.getLegalDocuments({ signal }),
     retry: false,
   });
-  const document = parsed.success ? legal.data?.documents.find((item) => item.id === parsed.data) : null;
+  const document = parsed.success
+    ? legal.data?.documents.find((item) => item.id === parsed.data)
+    : null;
   return (
     <AppShell hideDock>
-      <ScrollView contentContainerStyle={{ padding: designTokens.space.pageGutter, gap: designTokens.space.x4 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <ScrollView
+        contentContainerStyle={{
+          paddingVertical: designTokens.layout.gutter,
+          gap: designTokens.space.x4,
+        }}
+      >
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
           <BrandLogo />
           <TextButton href="/" label="На главную" />
         </View>
-        <AppText role="sectionTitle">{document?.title ?? 'Юридические документы'}</AppText>
+        <AppText role="sectionTitle">
+          {document?.title ?? 'Юридические документы'}
+        </AppText>
         {document ? (
           <View style={{ gap: designTokens.space.x4 }}>
-            <AppText role="metadata">Редакция: {document.version.split('+')[0]}</AppText>
+            <AppText role="metadata">
+              Редакция: {document.version.split('+')[0]}
+            </AppText>
             <LegalDocumentContent markdown={document.markdown} />
           </View>
         ) : (
-          <AppText role="bodySmall" tone={legal.isError ? 'danger' : 'secondary'}>
-            {!parsed.success ? 'Неизвестный документ.' : legal.isLoading ? 'Загружаем документ…' : 'Документ пока не опубликован.'}
+          <AppText
+            role="bodySmall"
+            tone={legal.isError ? 'danger' : 'secondary'}
+          >
+            {!parsed.success
+              ? 'Неизвестный документ.'
+              : legal.isLoading
+                ? 'Загружаем документ…'
+                : 'Документ пока не опубликован.'}
           </AppText>
         )}
         <LegalFooter />

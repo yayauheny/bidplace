@@ -151,72 +151,24 @@ After changing UI:
 
 `docs/design/01-DESIGN-FOUNDATION.md` is protected and changes only by direct decision of the founder or assigned designer.
 
-### Canonical Pen Reference Protection
+## Figma is the visual source
 
-`design/pen/bidplace-web-v2.pen` is the canonical visual reference for the current UI direction.
+Production UI follows the live Figma file `pAPQo6cADmG5XzVmBX76EE`. The old Pen design is removed (`DEC-119`).
+Local exports in `design/figma-handoff` are secondary and may be stale. Source priority:
 
-- Never edit, delete, rename, move, replace, format, or resave this file during implementation, refactoring, testing, review, or documentation work.
-- Adapt production code to the canonical Pen reference; never adapt the Pen file to current code.
-- Pen changes are allowed only in a separately scoped design task with an explicit founder or assigned-designer instruction.
-- Even an authorized design task must not delete the canonical file; preserve history and explicit version lineage.
-- If a Pen node is missing, damaged, ambiguous, or conflicts with a product contract, stop the affected implementation and record the required decision. Do not repair Pen during a code task.
-- Before completing any UI task, verify that no `.pen` file appears in the diff.
-- Pen controls visual composition and styling. Product owner documents and server contracts continue to control routes, data, permissions, privacy, and auction behavior.
+1. Live Figma (`get_design_context`, `get_metadata`, read-only).
+2. The exact node or package in `design/figma-handoff` (check `INDEX.md`, `catalog.json`, and the parent screen `nodes.json` before saying a node is missing).
+3. Screenshots and the current implementation.
 
-### Pen UI Implementation Quality
+If they disagree, report the discrepancy before choosing a value. Never edit Figma during a code task.
+Do not invent geometry, fonts, assets, responsive behavior or interactions that Figma and `docs/design/03-DESIGN-SYSTEM.md` do not define; report them as `NEEDS-FIGMA` instead.
+Keep one semantic token layer in `packages/design-tokens`, one shared primitive per UI role, and thin screens. Fix shared visual rules in tokens or shared components, never with route-local patches.
+Static Figma frames do not define interactions: implement hover, focus, open/close, blur, sticky transitions and reduced motion from `docs/design/03-DESIGN-SYSTEM.md`.
+Verify visual parity with matched screenshots at 1440, 1024 and 390 px when frames exist for them; where Figma has only 390, state that 1024/1440 are `NEEDS-FIGMA`.
 
-- Use only durable solutions for the Pen v2 migration. If a durable implementation is blocked by route, data, or contract ambiguity, stop the affected scope instead of adding a workaround.
-- Maintain one semantic token layer in `packages/design-tokens`, one shared primitive per UI role, and one production master per canonical Pen component.
-- Keep screens thin. Fix shared visual rules in tokens or shared components, never with duplicated route-local patches.
-- Do not use repeated magic values, duplicate token systems, fake data or controls, client-only API approximations, giant boolean-flag components, silent fallbacks, type/lint suppressions, or a hybrid final shell.
-- Implement exact Pen measurements only after reading the canonical nodes. Never guess missing geometry, fonts, assets, responsive behavior, or interactions.
-- Static Pen frames do not exhaust interaction behavior. Implement hover, focus, open/close, blur, artwork atmosphere, sticky transitions and reduced-motion exactly from `docs/design/03-DESIGN-SYSTEM.md`; never add route-local animation guesses or edit Pen to show them.
-- Verify visual parity at 1440, 1024, and 390 px with matched screenshots, plus required content, role, state, keyboard, zoom, and reduced-motion coverage.
+Figma controls visual composition and styling; product owner documents and server contracts continue to control routes, data, permissions, privacy and auction behavior. If a Figma node is missing, ambiguous or conflicts with a product contract, stop the affected implementation and record the required decision.
 
-## Canonical Figma handoff
-
-For all Figma-driven UI work, check this local handoff FIRST:
-
-`/Users/yayauheny/projects/bidplace-home-figma-completion/design/figma-handoff/portfolio-phone-v1`
-
-This is the canonical imported Figma library from commit `d9fb5c2`.
-
-It contains 79 capture packages with:
-
-- `INDEX.md`
-- `catalog.json`
-- `VALIDATION.md`
-- `nodes.json`
-- `reference.png`
-- `assets/`
-
-Source priority:
-
-1. `portfolio-phone-v1` exact node/package
-2. exact node inside a parent capture's `nodes.json`
-3. live Figma Inspect / `get_design_context`
-4. raw Downloads `.figmacapture.zip`
-5. screenshots / current implementation
-
-Do NOT say “local package does not exist” before checking:
-
-- `INDEX.md`
-- `catalog.json`
-- parent screen `nodes.json`
-
-Some important nodes are embedded inside larger screen captures and do not have their own package.
-
-Examples:
-
-- quiet Opening pill `439:4419` lives inside `home__first-fold`
-- Frame 47 `436:1320` lives inside `home__default`
-- dock nodes live inside Home packages
-
-The other worktree is READ-ONLY. Never switch to it, commit there, merge from it, or alter its git state. Read/copy source data into the current task only when needed.
-
-Downloads are import source, not canonical truth. `docs/design-handoff` is prose documentation, not node geometry.
-
-If canonical handoff and live Inspect disagree: report the discrepancy before inventing a third value.
+The sibling worktree `~/projects/bidplace-home-figma-completion` is read-only: never switch to it, commit there or alter its git state.
 
 ### Figma UI Implementation
 

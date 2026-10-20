@@ -4,6 +4,7 @@ import { ScrollView, View } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
 
 import { AppShell } from './AppShell';
+import { useDockInset } from './use-dock-inset';
 
 export function FormPageShell({
   children,
@@ -16,20 +17,28 @@ export function FormPageShell({
   bottomAction?: ReactNode;
   maxWidth?: number;
   hideDock?: boolean;
-  variant?: 'default' | 'authorApplication';
+  variant?: 'default' | 'authorApplication' | 'account' | 'settings';
 }) {
+  const { reserve } = useDockInset();
+
   return (
     <AppShell hideDock={hideDock} bottomAction={bottomAction}>
       <ScrollView
+        testID="form-page"
         contentContainerStyle={{
-          paddingHorizontal: designTokens.space.pageGutter,
-          paddingBottom: hideDock
-            ? designTokens.space.x8
-            : designTokens.size.dockReserve,
+          paddingBottom: bottomAction
+            ? 0
+            : hideDock
+              ? designTokens.space.x8
+              : reserve,
           paddingTop:
             variant === 'authorApplication'
               ? designTokens.authorApplication.contentTop
-              : designTokens.space.x6,
+              : variant === 'account'
+                ? designTokens.space.x3
+                : variant === 'settings'
+                  ? designTokens.space.x5
+                  : designTokens.space.x6,
         }}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"

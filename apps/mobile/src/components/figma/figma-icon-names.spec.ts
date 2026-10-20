@@ -18,6 +18,12 @@ describe('Figma icon registry', () => {
       'minus',
       'copy',
       'share-04',
+      'share-03',
+      'heart',
+      'more-vertical',
+      'flag-01',
+      'link-01',
+      'pencil-edit-01',
       'qr-code-01',
       'lock-keyhole',
       'clock-04',
@@ -30,11 +36,14 @@ describe('Figma icon registry', () => {
       'at-sign',
       'image-01',
       'calendar-01',
+      'home-01',
       'ai-magic',
       'user',
       'shopping-basket-01',
       'image-add-02',
       'check',
+      'setting-07',
+      'log-out',
     ]);
   });
 });

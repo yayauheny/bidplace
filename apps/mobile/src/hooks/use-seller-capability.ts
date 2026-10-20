@@ -1,8 +1,14 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { ApiClientError, type ApiClient } from '@bidplace/api-client';
+import type { ApiClient } from '@bidplace/api-client';
 
-import { canWritePrivateCache, currentAuthEpoch } from '../lib/query-cache';
+import {
+  classifySellerProfileQuery,
+  fetchSellerProfile,
+  sellerProfileGcMs,
+  sellerProfileQueryKey,
+  sellerProfileStaleMs,
+} from '../features/sellers/seller-profile-data';
 import { useApiClient } from '../providers/api-provider';
 import { useAuth } from '../providers/auth-provider';
 
@@ -28,34 +34,21 @@ export function useSellerCapability() {
   const auth = useAuth();
   const queryClient = useQueryClient();
   const query = useQuery({
-    queryKey: ['seller', 'profile'],
-    queryFn: async () => {
-      const epoch = currentAuthEpoch(queryClient);
-      const result = await api.sellers.getMyProfile();
-      if (!canWritePrivateCache(queryClient, epoch)) {
-        const current = queryClient.getQueryData<Awaited<ReturnType<ApiClient['sellers']['getMyProfile']>>>([
-          'seller',
-          'profile',
-        ]);
-        if (current) return current;
-        throw new Error('Private cache is closed');
-      }
-      return result;
-    },
+    queryKey: sellerProfileQueryKey,
+    queryFn: () => fetchSellerProfile(api.sellers, queryClient),
     enabled: auth.isAuthenticated && !auth.isAdmin,
     retry: false,
+    staleTime: sellerProfileStaleMs,
+    gcTime: sellerProfileGcMs,
   });
   const profile: SellerProfile | null = query.data?.sellerProfile ?? null;
-  const absent =
-    query.isError &&
-    query.error instanceof ApiClientError &&
-    query.error.kind === 'not_found';
+  const { absent, isError } = classifySellerProfileQuery(query);
 
   return {
     profile,
     status: profile?.status ?? null,
     isLoading: query.isLoading,
-    isError: query.isError && !absent,
+    isError,
     isAbsent: absent || (!query.isLoading && !query.data && !query.isError),
   };
 }

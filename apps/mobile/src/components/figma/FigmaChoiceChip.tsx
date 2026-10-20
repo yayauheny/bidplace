@@ -1,8 +1,9 @@
 import { Platform, Text } from 'react-native';
 
-import { figmaTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import { MotionPressable } from '../ui/MotionPressable';
+import { useAppTheme } from '../../providers/theme-provider';
 import { FigmaIcon } from './FigmaIcon';
 import {
   figmaChoiceChipStyle,
@@ -30,9 +31,10 @@ export function FigmaChoiceChip({
   accessibilityRole?: 'button' | 'tab';
 }) {
   const showRemove = removable && selected && onRemove !== undefined;
+  const palette = useAppTheme();
   const typography = showRemove
-    ? figmaTokens.typography.choiceChipSelectedRemovable
-    : figmaTokens.typography.choiceChip;
+    ? designTokens.typography.choiceChipSelectedRemovable
+    : designTokens.typography.choiceChip;
 
   return (
     <MotionPressable
@@ -51,13 +53,14 @@ export function FigmaChoiceChip({
           selected,
           resolveInteraction({ disabled, hovered, pressed }),
           showRemove,
+          palette,
         ),
         showRemove
           ? {
               flexDirection: 'row',
               alignItems: 'center',
-              gap: figmaTokens.space.authorIdentityGap,
-              paddingRight: figmaTokens.space.choiceChipRemovableX,
+              gap: designTokens.space.authorIdentityGap,
+              paddingRight: designTokens.space.choiceChipRemovableX,
             }
           : null,
       ]}
@@ -68,7 +71,7 @@ export function FigmaChoiceChip({
           {
             flex: showRemove ? 1 : undefined,
             minWidth: showRemove ? 0 : undefined,
-            color: figmaChoiceChipTextColor(selected),
+            color: figmaChoiceChipTextColor(selected, palette),
             textAlign: stretch ? 'center' : 'left',
           },
           typography,
@@ -79,8 +82,8 @@ export function FigmaChoiceChip({
       {showRemove ? (
         <FigmaIcon
           name="x"
-          size={figmaTokens.size.choiceChipRemoveIcon}
-          color={figmaTokens.color.white}
+          size={designTokens.size.choiceChipRemoveIcon}
+          color={palette.white}
         />
       ) : null}
     </MotionPressable>

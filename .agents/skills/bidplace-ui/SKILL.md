@@ -7,7 +7,7 @@ description: Build or change Bidplace screens and shared UI in apps/mobile (Expo
 
 Goal: one way to do each UI job. Find the existing mechanism, extend it, delete what it replaces.
 
-Status: this is the **target contract** of the design-system waves (`docs/audits/2026-10-13-FRONTEND-DESIGN-SYSTEM-AUDIT.md` §17). Where code still differs (legacy `OverlayHost`, `AppIcon`/lucide, `DestructiveButton`, fixed 390 column), do not copy the legacy pattern and do not extend it; use the target one or stop and report.
+Status: this is the **target contract** of the design-system waves (`docs/audits/2026-10-13-FRONTEND-DESIGN-SYSTEM-AUDIT.md` §17) and it is implemented in code: the legacy `OverlayHost`, `AppIcon`/lucide, `DestructiveButton` and fixed-390-column patterns are removed. The remaining intentional deviations — do not copy or extend them: the private `expo-router/build` import for `usePreventRemove` (no public export in SDK 57; expected public in SDK 58) and the custom web history guards (`features/sellers/product-draft-browser-guard.ts`, `features/auth/auth-browser-history.ts`).
 
 ## Read first (link, do not copy)
 
@@ -39,7 +39,7 @@ Applied once by the owner (`AppShell`, sheet host). Sheet bottom = `max(bottomSp
 1. Search: `rg -n "export (function|const)" apps/mobile/src/components` and read the README.
 2. Reuse as is → else add a role-named variant (`variant`, `tone`; no screen names, no boolean-flag forests) → else a new component with one stated responsibility.
 3. Prefer a library already in the repo (`@rn-primitives/*`, Reanimated, expo-image, react-hook-form + zod, expo-router public exports) over hand-written behavior.
-4. One tab bar (`FigmaTabs`, `fill` for equal columns), one card grid, one button family, one sheet.
+4. One tab bar (`FigmaTabs`, `fill` for equal columns), one grid mechanism (`PaddedGrid` + `gridColumnsFromWidth` / `WorkCoverCardGrid` for cover cards), one button family, one sheet (`FilterSheet` / `AppDialog`).
 
 ## Overlays and motion
 

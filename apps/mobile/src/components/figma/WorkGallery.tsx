@@ -9,6 +9,7 @@ import {
 } from '../ui';
 import { getApiAssetUrl } from '../../lib/environment';
 import { useReducedMotion } from '../../lib/reduced-motion';
+import { useAppTheme } from '../../providers/theme-provider';
 import { FigmaGlassSurface } from './FigmaGlassSurface';
 import { FigmaIconButton } from './FigmaIconButton';
 import { workGalleryShowsArrows } from './work-gallery-arrows';
@@ -33,7 +34,7 @@ export function WorkGallery({
   leadingAction?: ReactNode;
   action?: ReactNode;
 }) {
-  const [width, setWidth] = useState<number>(designTokens.layout.phoneWidth);
+  const [width, setWidth] = useState(0);
   const [active, setActive] = useState(0);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
   const viewerImage =
@@ -42,6 +43,7 @@ export function WorkGallery({
       : images[Math.min(viewerIndex, images.length - 1)];
   const scroll = useRef<ScrollView>(null);
   const reduced = useReducedMotion();
+  const palette = useAppTheme();
   useEffect(() => {
     const page = Math.min(active, images.length - 1);
     if (page !== active) {
@@ -78,8 +80,8 @@ export function WorkGallery({
           horizontal
           pagingEnabled
           showsHorizontalScrollIndicator={false}
-          scrollEventThrottle={16}
-          onScroll={(event) =>
+          onMomentumScrollEnd={(event) =>
+            width > 0 &&
             setActive(
               Math.max(
                 0,
@@ -166,7 +168,13 @@ export function WorkGallery({
             }}
           />
           {images.length > 1 ? (
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: designTokens.space.x3 }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                gap: designTokens.space.x3,
+              }}
+            >
               <SecondaryButton
                 label="Предыдущее фото в просмотре"
                 disabled={viewerIndex === 0}
@@ -196,7 +204,7 @@ export function WorkGallery({
           {images.map((image, index) => (
             <View
               key={image.id}
-              style={workGalleryDotStyle(index === active)}
+              style={workGalleryDotStyle(index === active, palette)}
             />
           ))}
         </View>

@@ -1,4 +1,3 @@
-export * from './AppIcon';
 export * from './AppDialog';
 export * from './AppText';
 export * from './CreatorCard';
@@ -12,3 +11,4 @@ export * from './ResilientRemoteImage';
 export * from './TextField';
 export * from './product-media-style';
 export * from './page-state-contract';
+export * from './DateField';

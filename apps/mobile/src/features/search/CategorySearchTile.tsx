@@ -1,7 +1,7 @@
 import { Link } from 'expo-router';
 import { View } from 'react-native';
 
-import { figmaTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import { AppText } from '../../components/ui/AppText';
 import { ImagePlaceholder } from '../../components/ui/ImagePlaceholder';
@@ -10,6 +10,7 @@ import {
   interactiveHitFallbackStyle,
 } from '../../components/ui/interactive-hit-style';
 import { MotionPressable } from '../../components/ui/MotionPressable';
+import { useAppTheme } from '../../providers/theme-provider';
 import { toPortfolioWorksHref } from '../products/portfolio-works-query';
 
 export function CategorySearchTile({
@@ -21,6 +22,7 @@ export function CategorySearchTile({
   slug: string;
   name: string;
 }) {
+  const palette = useAppTheme();
   return (
     <Link href={toPortfolioWorksHref({ category: id })} asChild>
       <MotionPressable
@@ -32,18 +34,18 @@ export function CategorySearchTile({
         {...interactiveHitDataset()}
         style={({ hovered, pressed }) => ({
           width: '100%',
-          gap: figmaTokens.space.x2,
-          borderRadius: figmaTokens.radius.small,
-          ...interactiveHitFallbackStyle({ hovered, pressed }),
+          gap: designTokens.space.x2,
+          borderRadius: designTokens.radius.small,
+          ...interactiveHitFallbackStyle({ hovered, pressed, palette }),
         })}
       >
         <View
           style={{
             width: '100%',
             aspectRatio: 120.67 / 121.89,
-            borderRadius: figmaTokens.radius.small,
+            borderRadius: designTokens.radius.small,
             overflow: 'hidden',
-            backgroundColor: figmaTokens.color.mutedFill,
+            backgroundColor: palette.mutedFill,
             alignItems: 'center',
             justifyContent: 'center',
           }}

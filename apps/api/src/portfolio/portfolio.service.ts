@@ -39,6 +39,7 @@ export class PortfolioService {
       limit: query.limit,
       q: query.q,
       category: query.category,
+      categories: query.categories,
       materials: query.materials,
       materialId: query.materialId,
       techniqueId: query.techniqueId,

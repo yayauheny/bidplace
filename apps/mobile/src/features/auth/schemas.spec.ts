@@ -93,7 +93,7 @@ describe('registration form validation', () => {
     });
 
     expect(registration.phone).toBe(expected);
-    const submission = registerSubmission(registration, 'portfolio-legal-2026-10-12');
+    const submission = registerSubmission(registration);
     expect(submission).not.toHaveProperty('confirmPassword');
     expect(submission).not.toHaveProperty('turnstileToken');
     expect(registerRequestSchema.safeParse(submission).success).toBe(false);

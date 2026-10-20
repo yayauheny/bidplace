@@ -1,9 +1,10 @@
 import { View } from 'react-native';
 
-import { figmaTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import { WorkCoverCardGrid } from '../../../components/figma/WorkCoverCardGrid';
 import { FigmaButton } from '../../../components/figma/FigmaButton';
+import { useAppTheme } from '../../../providers/theme-provider';
 import { usePortfolioWorks } from '../../products/use-portfolio-works';
 import { SearchPaneStatus } from './search-pane-status';
 
@@ -27,7 +28,7 @@ export function WorksSearchPane({
       emptyTitle="Работы не найдены"
       loading={<WorksSkeleton />}
     >
-      <View style={{ gap: figmaTokens.space.x3 }}>
+      <View style={{ gap: designTokens.space.x3 }}>
         <WorkCoverCardGrid items={works.items} columns={2} />
         {works.hasNextPage ? (
           <FigmaButton
@@ -47,7 +48,7 @@ function WorksSkeleton() {
   return (
     <View
       accessibilityRole="progressbar"
-      style={{ flexDirection: 'row', gap: figmaTokens.space.x2 }}
+      style={{ flexDirection: 'row', gap: designTokens.space.x2 }}
     >
       <SkeletonCover />
       <SkeletonCover />
@@ -56,13 +57,14 @@ function WorksSkeleton() {
 }
 
 function SkeletonCover() {
+  const palette = useAppTheme();
   return (
     <View
       style={{
         flex: 1,
-        aspectRatio: figmaTokens.size.coverWidth / figmaTokens.size.coverHeight,
-        borderRadius: figmaTokens.radius.cover,
-        backgroundColor: figmaTokens.color.surfaceMuted,
+        aspectRatio: designTokens.size.coverWidth / designTokens.size.coverHeight,
+        borderRadius: designTokens.radius.cover,
+        backgroundColor: palette.surfaceMuted,
       }}
     />
   );

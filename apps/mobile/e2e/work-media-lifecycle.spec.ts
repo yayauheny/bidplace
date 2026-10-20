@@ -56,12 +56,15 @@ test('Work waits for CDN media, publishes revisions atomically, loads FULL only 
       `${e2eApiBaseURL}/api/seller/profile`,
       {
         multipart: {
-          slug: `work-${suffix}`,
-          fullName: 'Work lifecycle author',
-          country: 'BY',
-          city: 'Minsk',
-          discipline: 'Автор',
-          shortDescription: 'Portfolio lifecycle',
+          // Seller profile writes carry JSON fields in one `data` part
+          // (sellerProfileMultipartDataField) so nulls survive transport.
+          data: JSON.stringify({
+            fullName: 'Work lifecycle author',
+            country: 'BY',
+            city: 'Minsk',
+            discipline: 'Автор',
+            shortDescription: 'Portfolio lifecycle',
+          }),
           profilePhoto: {
             name: 'photo.png',
             mimeType: 'image/png',
@@ -72,6 +75,18 @@ test('Work waits for CDN media, publishes revisions atomically, loads FULL only 
     );
     expect(createdAuthor.status()).toBe(201);
     const created = await createdAuthor.json();
+    // The submit contract requires at least one direction on the revision
+    // (assertProfileRevisionReadyToSubmit) and the ABOUT advance checks it too.
+    const category = await prisma.category.findUniqueOrThrow({
+      where: { slug: 'e2e-art' },
+    });
+    await prisma.sellerProfileRevisionDirection.create({
+      data: {
+        revisionId: created.editingRevision.id,
+        categoryId: category.id,
+        position: 0,
+      },
+    });
     await context.request.post(
       `${e2eApiBaseURL}/api/author/application/advance`,
     );

@@ -1,7 +1,8 @@
 import { View } from 'react-native';
 
-import { figmaTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
+import { useAppTheme } from '../../../providers/theme-provider';
 import { usePortfolioAuthors } from '../../sellers/use-portfolio-authors';
 import { AuthorSearchRow } from '../AuthorSearchRow';
 import { FigmaButton } from '../../../components/figma/FigmaButton';
@@ -27,7 +28,7 @@ export function AuthorsSearchPane({
       emptyTitle="Авторы не найдены"
       loading={<AuthorSkeleton />}
     >
-      <View style={{ width: '100%', gap: figmaTokens.space.identityGap }}>
+      <View style={{ width: '100%', gap: designTokens.space.identityGap }}>
         {authors.items.map((item) => (
           <AuthorSearchRow
             key={item.author.slug}
@@ -54,7 +55,7 @@ function AuthorSkeleton() {
   return (
     <View
       accessibilityRole="progressbar"
-      style={{ gap: figmaTokens.space.identityGap }}
+      style={{ gap: designTokens.space.identityGap }}
     >
       <SkeletonRow />
       <SkeletonRow />
@@ -64,12 +65,13 @@ function AuthorSkeleton() {
 }
 
 function SkeletonRow() {
+  const palette = useAppTheme();
   return (
     <View
       style={{
-        height: figmaTokens.size.touch,
-        borderRadius: figmaTokens.radius.small,
-        backgroundColor: figmaTokens.color.surfaceMuted,
+        height: designTokens.size.touch,
+        borderRadius: designTokens.radius.small,
+        backgroundColor: palette.surfaceMuted,
       }}
     />
   );

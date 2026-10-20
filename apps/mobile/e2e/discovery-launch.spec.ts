@@ -1,3 +1,4 @@
+import { mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import { expect, test } from '@playwright/test';
@@ -6,6 +7,8 @@ import { e2eEvidenceDir } from './support/evidence-dir';
 
 const apiPort = process.env.E2E_API_PORT ?? '3001';
 const apiBaseURL = `http://localhost:${apiPort}`;
+const w1EvidenceDir = '/tmp/w1-fix-shots';
+mkdirSync(w1EvidenceDir, { recursive: true });
 
 type WorksPage = {
   works: Array<{
@@ -22,6 +25,55 @@ type WorksPage = {
 test.beforeEach(async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.emulateMedia({ reducedMotion: 'reduce' });
+});
+
+async function expectCatalogSheetsCloseAndRestoreFocus(
+  page: import('@playwright/test').Page,
+  screenshotPrefix?: string,
+) {
+  const filter = page.getByRole('button', { name: 'Фильтры', exact: true });
+  await filter.click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+  if (screenshotPrefix) {
+    await page.screenshot({
+      path: resolve(
+        w1EvidenceDir,
+        `${screenshotPrefix}-catalog-filter-390.png`,
+      ),
+    });
+  }
+  await page.getByRole('button', { name: 'Закрыть' }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(filter).toBeFocused();
+
+  await filter.click();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(filter).toBeFocused();
+
+  const sort = page.getByRole('button', { name: 'Сортировка', exact: true });
+  await sort.click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+  if (screenshotPrefix) {
+    await page.screenshot({
+      path: resolve(w1EvidenceDir, `${screenshotPrefix}-filter-sort-390.png`),
+    });
+  }
+  await page.getByRole('button', { name: 'Закрыть' }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(sort).toBeFocused();
+
+  await sort.click();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(sort).toBeFocused();
+}
+
+test('full catalog and sort sheets close and restore focus', async ({
+  page,
+}) => {
+  await page.goto('/authors');
+  await expectCatalogSheetsCloseAndRestoreFocus(page, 'authors');
 });
 
 test('Works keeps filters in the URL and restores them after Back', async ({
@@ -59,14 +111,16 @@ test('Works keeps filters in the URL and restores them after Back', async ({
   const hrefs = await workLinks.evaluateAll((links) =>
     links.map((link) => link.getAttribute('href')),
   );
-  expect(hrefs.every((href) => typeof href === 'string' && href.length > 0)).toBe(
-    true,
-  );
+  expect(
+    hrefs.every((href) => typeof href === 'string' && href.length > 0),
+  ).toBe(true);
   expect(new Set(hrefs).size).toBe(hrefs.length);
   await page.screenshot({
     path: resolve(e2eEvidenceDir, 'discovery/works-390.png'),
     fullPage: true,
   });
+
+  await expectCatalogSheetsCloseAndRestoreFocus(page);
 
   await page.getByRole('button', { name: 'Фильтры' }).click();
   await page.getByRole('button', { name: /^Категория,/ }).click();
@@ -115,7 +169,9 @@ test('Authors filters and sort are server-backed and URL-owned', async ({
   await page.goto('/authors');
   await page.getByRole('button', { name: 'Фильтры' }).click();
   await page.getByRole('button', { name: /^Направление,/ }).click();
-  await page.getByRole('radio', { name: target.discipline, exact: true }).click();
+  await page
+    .getByRole('radio', { name: target.discipline, exact: true })
+    .click();
   await page.getByRole('button', { name: 'Назад' }).click();
   await page.getByRole('button', { name: /^Город,/ }).click();
   await page.getByRole('radio', { name: target.city, exact: true }).click();
@@ -169,7 +225,9 @@ test('Search overlay live-updates without submit', async ({
   });
 
   await overlay.getByTestId('search-overlay-query').fill('no-results-zzzz');
-  await expect(overlay.getByText('Работы не найдены', { exact: true })).toBeVisible();
+  await expect(
+    overlay.getByText('Работы не найдены', { exact: true }),
+  ).toBeVisible();
 });
 
 async function expectNoHorizontalOverflow(

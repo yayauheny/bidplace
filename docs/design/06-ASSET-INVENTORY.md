@@ -17,40 +17,11 @@
 Замена runtime assets, favicon и используемых Expo icons — `Not implemented`.
 Таблица ниже описывает старый текущий код. Карта замены и проверки:
 [auth HANDOFF](../../design/figma-handoff/auth/2026-10-08-auth-fullscreen/HANDOFF.md).
-Capture assets не удалять вместе с dead runtime assets. Канонические Pen и
-портфельная библиотека не изменялись; прежние ссылки/хэши — история,
-не разрешение перезаписать источник под новый бренд.
+Capture assets не удалять вместе с dead runtime assets. Портфельная библиотека
+не изменялась; прежние ссылки/хэши — история, не разрешение перезаписать источник
+под новый бренд.
 
-## 1. Защищённый источник
-
-| Asset                            | Роль                    | Статус                 | Правило                        |
-| -------------------------------- | ----------------------- | ---------------------- | ------------------------------ |
-| `design/pen/bidplace-web-v2.pen` | canonical visual design | restored byte-for-byte | never edit/delete in code work |
-
-Canonical SHA-256:
-`03798831d76992080d4edebf53c4c264f8f9754e01bbe81965083f271148d2a9`.
-Исходная локальная копия:
-`/Users/yayauheny/Downloads/bidplace-web-v2/bidplace-web-v2.pen`.
-Публичная read-only публикация:
-[pen.dev — bidplace-web-v2.pen](https://app.pen.dev/s/r32fdudQVyiuEZ5htTMYdcv40WDQ4v3vwLT82lS27uk).
-
-Файл остаётся по canonical path. Checksum фиксируется до и после каждой
-implementation-задачи. Экспорты и публичная ссылка помогают review, но не
-заменяют repository source.
-
-## 2. Неканонические Pen-материалы
-
-| Asset                                              | Статус                    | Использование                       |
-| -------------------------------------------------- | ------------------------- | ----------------------------------- |
-| `design/pen/bidplace-web.pen`                      | historical                | не брать visual decisions           |
-| `design/pen/target-solution/bidplace-youthful.pen` | historical/incomplete     | не брать visual decisions           |
-| `design/pen/target-solution/` screenshots          | review context only       | только при явной привязке к v2 node |
-| `design/pen/exports/`                              | generated review evidence | не source of truth                  |
-
-Наличие исторического файла не разрешает удалить его в рамках code refactor.
-Любые `.pen` files защищены от incidental edits; v2 имеет canonical статус.
-
-## 3. Runtime assets
+## 1. Runtime assets
 
 Перед реализацией каждого экрана нужно инвентаризировать реальные imports из
 `apps/mobile` и public media endpoints, не открывая `.env` и credentials.
@@ -63,59 +34,30 @@ implementation-задачи. Экспорты и публичная ссылка
 - UI icons;
 - font files and loading strategy;
 - local/test-only demo media;
-- Pen-only reference imagery.
+- Figma-only reference imagery.
 
 Production UI не должен зависеть от случайного локального файла, clipboard
 asset или изображения без подтверждённых прав.
 
-### 3.1. Точная runtime-карта текущего MVP
+### 1.1. Точная runtime-карта текущего MVP
 
-| Роль | Точный путь в репозитории | Как используется |
-| --- | --- | --- |
-| Основной brand mark | `design/figma-handoff/branding/2026-10-08-brand/bidplace-mark.svg`, runtime `BidplaceBrand.tsx` | Общий знак 30.35×30.35, `#121212`. Header, dock и fullscreen-слот используют его без растяжения. Старый `bidplace-logo.png` с глазами удалён |
-| Wordmark `bidplace` | `design/figma-handoff/branding/2026-10-08-brand/bidplace-wordmark.svg` | Контуры 93×22 на четырёх fullscreen-шагах. Надпись не набирается шрифтом. Старый `bidplace-wordmark-light.*` не является этим контуром |
-| Favicon web | `apps/mobile/assets/branding/bidplace-favicon-light.png` | 32×32 из того же знака на белом; `app.json` |
-| Expo icon | `apps/mobile/assets/icon.png`, `android-icon-foreground.png`, `android-icon-monochrome.png`, `android-icon-background.png` | Растры того же знака. Фон adaptive icon `#FFFFFF` |
-| Product demo media | `packages/database/prisma/fixtures/product-images/dali-estate.png`, `caricature.png`, `yellow-sapphire.png`, `color-calibration.png`, `rainbow-mask.png`, `blossom-vase.png`, `memory.png`, `alice-glass.png`, `between-form.png` plus matching `*-detail.png` crops | Только local/test seed. Catalog covers are Figma raw fills. Vex `alice-glass` / `between-form` are unused Figma fills with demo ownership. Unpublished pending product uses `pending-placeholder.png` (technical 1×1, not catalog) |
-| Achievement demo media | `alice-glass-detail.png`, `between-form-detail.png`, `seller-achievements/pixelp-after-classics.png` | Seeded onto published `SellerProfileRevisionAchievement`. Detail crops are not covers. Spectre fill is Figma History `437:3989`, not Opening Dali. No isolated exhibition-install photos exist in Figma. |
-| Seller profile demo media | `packages/database/prisma/fixtures/seller-profile/vex.png`, `quantumparadox.png`, `havoc.png`, `bala_klava.png`, `pixelp.png` | Только local/test seed. Catalog four + vex are Figma fills. `pixelp.png` is a demo studio portrait because Figma has no isolated unused male portrait. `pending-seller.png` is a technical 1×1 for unpublished moderation. |
-| E2E Home Opening visual | golden `e2e/visual/references/home-opening-figma-390.png`; mock `e2e/visual/fixtures/home-opening.json` | Playwright mock of production Home. Rasters reuse Prisma fixtures (`vex.png`, `dali-estate.png`). Fixture JSON is not the identity of `@vex`; seed is. |
-| E2E-only profile fixture | `apps/mobile/e2e/fixtures/profile-photo.png` | Тест upload flow; не production content |
+| Роль                      | Точный путь в репозитории                                                                                                                                                                                                                                            | Как используется                                                                                                                                                                                                                   |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Основной brand mark       | `design/figma-handoff/branding/2026-10-08-brand/bidplace-mark.svg`, runtime `BidplaceBrand.tsx`                                                                                                                                                                      | Общий знак 30.35×30.35, `#121212`. Header, dock и fullscreen-слот используют его без растяжения. Старый `bidplace-logo.png` с глазами удалён                                                                                       |
+| Wordmark `bidplace`       | `design/figma-handoff/branding/2026-10-08-brand/bidplace-wordmark.svg`                                                                                                                                                                                               | Контуры 93×22 на четырёх fullscreen-шагах. Надпись не набирается шрифтом. Старый `bidplace-wordmark-light.*` не является этим контуром                                                                                             |
+| Favicon web               | `apps/mobile/assets/branding/bidplace-favicon-light.png`                                                                                                                                                                                                             | 32×32 из того же знака на белом; `app.json`                                                                                                                                                                                        |
+| Expo icon                 | `apps/mobile/assets/icon.png`, `android-icon-foreground.png`, `android-icon-monochrome.png`, `android-icon-background.png`                                                                                                                                           | Растры того же знака. Фон adaptive icon `#FFFFFF`                                                                                                                                                                                  |
+| Product demo media        | `packages/database/prisma/fixtures/product-images/dali-estate.png`, `caricature.png`, `yellow-sapphire.png`, `color-calibration.png`, `rainbow-mask.png`, `blossom-vase.png`, `memory.png`, `alice-glass.png`, `between-form.png` plus matching `*-detail.png` crops | Только local/test seed. Catalog covers are Figma raw fills. Vex `alice-glass` / `between-form` are unused Figma fills with demo ownership. Unpublished pending product uses `pending-placeholder.png` (technical 1×1, not catalog) |
+| Achievement demo media    | `alice-glass-detail.png`, `between-form-detail.png`, `seller-achievements/pixelp-after-classics.png`                                                                                                                                                                 | Seeded onto published `SellerProfileRevisionAchievement`. Detail crops are not covers. Spectre fill is Figma History `437:3989`, not Opening Dali. No isolated exhibition-install photos exist in Figma.                           |
+| Seller profile demo media | `packages/database/prisma/fixtures/seller-profile/vex.png`, `quantumparadox.png`, `havoc.png`, `bala_klava.png`, `pixelp.png`                                                                                                                                        | Только local/test seed. Catalog four + vex are Figma fills. `pixelp.png` is a demo studio portrait because Figma has no isolated unused male portrait. `pending-seller.png` is a technical 1×1 for unpublished moderation.         |
+| E2E Home Opening visual   | golden `e2e/visual/references/home-opening-figma-390.png`; mock `e2e/visual/fixtures/home-opening.json`                                                                                                                                                              | Playwright mock of production Home. Rasters reuse Prisma fixtures (`vex.png`, `dali-estate.png`). Fixture JSON is not the identity of `@vex`; seed is.                                                                             |
+| E2E-only profile fixture  | `apps/mobile/e2e/fixtures/profile-photo.png`                                                                                                                                                                                                                         | Тест upload flow; не production content                                                                                                                                                                                            |
 
 Local seed uses Figma raw fills listed above plus demo studio portrait for
 `pixelp` and two unused Figma fills as vex works. There are no Unsplash catalog
 fallbacks. User-facing copy is production-quality (`DEC-092`).
 
-### 3.2. Точные Pen image refs
-
-В canonical `design/pen/bidplace-web-v2.pen` найдено 17 image refs; все файлы
-существуют в `design/pen/images/`. Это reference imagery для Pen/design review,
-а не автоматический production content:
-
-```text
-design/pen/images/generated-1786212763126.png
-design/pen/images/generated-1786212763906.png
-design/pen/images/generated-1786212765393.png
-design/pen/images/generated-1786212771118.png
-design/pen/images/generated-1786212771295.png
-design/pen/images/generated-1786219980325.png
-design/pen/images/generated-1786219980566.png
-design/pen/images/generated-1786219983585.png
-design/pen/images/generated-1786219984336.png
-design/pen/images/generated-1786234139378.png
-design/pen/images/generated-1786234139941.png
-design/pen/images/generated-1786234141569.png
-design/pen/images/generated-1786234142900.png
-design/pen/images/generated-1786237222387.png
-design/pen/images/generated-1786237223787.png
-design/pen/images/generated-1786237225745.png
-design/pen/images/logo-transparent-tight.png
-```
-
-Canonical Pen SHA-256 на дату обновления:
-`03798831d76992080d4edebf53c4c264f8f9754e01bbe81965083f271148d2a9`.
-
-### 3.3. Шрифты и надпись bidplace
+### 1.2. Шрифты и надпись bidplace
 
 Шрифты не являются PNG-ассетами и не лежат отдельными файлами в репозитории:
 они импортируются из Expo font packages в
@@ -134,14 +76,14 @@ Canonical Pen SHA-256 на дату обновления:
 подтверждение почты ставят тот же знак сверху и контурный wordmark снизу.
 Надпись `bidplace` не набирается шрифтом.
 
-### 3.4. Иконки и кнопки
+### 1.3. Иконки и кнопки
 
 Кнопки не используют изображения. Общий primitive находится в
 `apps/mobile/src/components/ui/Button.tsx`, интерактивная оболочка — в
 `apps/mobile/src/components/ui/MotionPressable.tsx`, а размеры/радиусы — в
 `packages/design-tokens/src/tokens.ts`.
 
-Иконки не копируются из Pen и не являются bitmap-файлами: весь текущий набор
+Иконки не копируются из Figma и не являются bitmap-файлами: весь текущий набор
 сведён в `apps/mobile/src/components/ui/AppIcon.tsx` и импортирует
 `lucide-react-native`. Семантические имена набора: `catalog`, `moderation`,
 `purchases`, `seller`, `account`, `search`, `send`, `globe`, `instagram`,
@@ -156,18 +98,16 @@ Canonical Pen SHA-256 на дату обновления:
   variant `#BC3C1B`;
 - surface/white label: `designTokens.color.surface` = `#FFFFFF`.
 
-Если на конкретном canonical Pen state кнопка выглядит оранжевой, это должен
+Если на конкретном Figma state кнопка выглядит оранжевой, это должен
 быть отдельный semantic variant/state, а не recolor случайной иконки или
 растрового файла. Текущий общий `PrimaryButton` остаётся чёрным по shared token
-contract; retry/error state нужно сверять с конкретным Pen node перед заменой.
+contract; retry/error state нужно сверять с конкретным Figma node перед заменой.
 
 ### Approved logo input
 
 Founder-provided source pack:
 `/Users/yayauheny/Downloads/Telegram Desktop/logo_assets_web_expo`.
 
-- Pen использует `logo-transparent-tight.png`; repository copy находится в
-  `design/pen/images/logo-transparent-tight.png`.
 - Web pack содержит transparent PNG, square PNG и favicons.
 - Expo pack содержит icon/adaptive/splash/favicon/notification derivatives.
 - `web/logo.svg` является SVG-container с embedded raster JPEG, а не настоящей
@@ -179,7 +119,7 @@ Founder-provided source pack:
 
 ## 4. Fonts
 
-Точные font families, weights, sizes и line heights извлекаются из v2 Pen и
+Точные font families, weights, sizes и line heights извлекаются из live Figma и
 сверяются с лицензиями и доступными runtime files. Нельзя объявить системный
 fallback визуально эквивалентным без проверки. До canvas verification текущие
 Inter/PT Mono — только существующий runtime baseline.
@@ -202,9 +142,9 @@ contracts и безопасным external-link behavior.
 ## 6. Photography and media
 
 - Product image сохраняет исходное соотношение внутри правила canonical card.
-- Creator photo не подменяется generic avatar, если Pen требует фотографию;
+- Creator photo не подменяется generic avatar, если Figma требует фотографию;
   используется честный missing state.
-- Pen mock imagery не становится production content автоматически.
+- Figma mock imagery не становится production content автоматически.
 - Test/demo media остаётся local/test-only и не доказывает production rights.
 - Alt text берётся из real public content, а не из filename.
 
@@ -213,7 +153,7 @@ contracts и безопасным external-link behavior.
 ```text
 Asset:
 Consumer screen/component:
-Canonical Pen node:
+Canonical Figma node:
 Repository/runtime source:
 Owner:
 Rights/status:
@@ -229,7 +169,7 @@ behavior.
 
 ## 8. Approved reference sources
 
-Reference hierarchy не меняет canonical Pen:
+Reference hierarchy не меняет canonical Figma:
 
 | Source             | Location                                             | Status                                                                   | Разрешено брать                                                    |
 | ------------------ | ---------------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------ |

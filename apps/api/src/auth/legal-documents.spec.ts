@@ -1,7 +1,7 @@
 import { ServiceUnavailableException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { readPublishedLegalDocuments } from './legal-documents';
+import { readPublishedLegalDocuments, readRegistrationLegalVersion } from './legal-documents';
 
 const fixture = vi.hoisted(() => ({
   available: true,
@@ -35,6 +35,12 @@ describe('published legal documents', () => {
         ? 'Редакция: `portfolio-legal-2026-10-12`\n\nДополнено.'
         : 'Редакция: `portfolio-legal-2026-10-12`\n\nДокумент.';
     expect(readPublishedLegalDocuments().version).not.toBe(oldVersion);
+  });
+
+  it('identifies the registration source independently of document delivery', () => {
+    fixture.body = () => 'Редакция: `portfolio-legal-2026-10-12`\n\n[не заполнено]';
+    expect(() => readPublishedLegalDocuments()).toThrow(ServiceUnavailableException);
+    expect(readRegistrationLegalVersion()).toMatch(/^portfolio-legal-2026-10-12\+[a-f0-9]{32}$/);
   });
 
   it('fails closed if a canonical source contains an unresolved lowercase placeholder', () => {

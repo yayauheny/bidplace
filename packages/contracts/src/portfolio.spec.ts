@@ -4,6 +4,7 @@ import {
   portfolioCabinetWorksQuerySchema,
   portfolioCabinetWorksResponseSchema,
   portfolioAchievementWriteRequestSchema,
+  portfolioWorksQuerySchema,
 } from './portfolio';
 
 describe('portfolio cabinet contracts', () => {
@@ -53,5 +54,28 @@ describe('achievement writes', () => {
         image: null,
       }).success,
     ).toBe(false);
+  });
+});
+
+describe('public catalog category selection', () => {
+  const sculpture = '10000000-0000-4000-8000-000000000099';
+  const painting = '10000000-0000-4000-8000-000000000098';
+
+  it('accepts comma-separated or array categories and preserves legacy single ID', () => {
+    expect(portfolioWorksQuerySchema.parse({ categories: `${sculpture},${painting}` }).categories)
+      .toEqual([sculpture, painting]);
+    expect(portfolioWorksQuerySchema.parse({ categories: [sculpture] }).categories)
+      .toEqual([sculpture]);
+    expect(portfolioWorksQuerySchema.parse({ category: sculpture }).category)
+      .toBe(sculpture);
+  });
+
+  it('rejects invalid or excessive category lists', () => {
+    expect(portfolioWorksQuerySchema.safeParse({ categories: 'not-a-uuid' }).success)
+      .toBe(false);
+    expect(portfolioWorksQuerySchema.safeParse({ categories: [] }).success)
+      .toBe(false);
+    expect(portfolioWorksQuerySchema.safeParse({ categories: Array(21).fill(sculpture) }).success)
+      .toBe(false);
   });
 });

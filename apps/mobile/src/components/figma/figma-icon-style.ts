@@ -1,4 +1,4 @@
-import { figmaTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import { type FigmaIconName } from './figma-icon-names';
 
@@ -8,10 +8,10 @@ const heavyIconNames = new Set<FigmaIconName>([
 ]);
 
 export function figmaIconStrokeWidth(name: FigmaIconName, size: number) {
-  if (size >= figmaTokens.size.dockIcon) {
-    return figmaTokens.stroke.dockIcon;
+  if (size >= designTokens.size.dockIcon) {
+    return designTokens.stroke.dockIcon;
   }
   return heavyIconNames.has(name)
-    ? figmaTokens.stroke.iconHeavy
-    : figmaTokens.stroke.icon;
+    ? designTokens.stroke.iconHeavy
+    : designTokens.stroke.icon;
 }

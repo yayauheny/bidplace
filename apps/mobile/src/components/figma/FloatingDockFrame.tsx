@@ -1,7 +1,7 @@
 import type { ReactNode, RefObject } from 'react';
 import { View } from 'react-native';
 
-import { figmaTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import { FigmaGlassSurface } from './FigmaGlassSurface';
 
@@ -23,7 +23,7 @@ export function FloatingDockFrame({
         right: 0,
         bottom,
         alignItems: 'center',
-        zIndex: figmaTokens.layer.popover,
+        zIndex: designTokens.layer.popover,
       }}
     >
       <FigmaGlassSurface
@@ -34,8 +34,8 @@ export function FloatingDockFrame({
         contentStyle={{
           flexDirection: 'row',
           alignItems: 'center',
-          gap: figmaTokens.space.dockGap,
-          padding: figmaTokens.space.dockPad - 0.5,
+          gap: designTokens.space.dockGap,
+          padding: designTokens.space.dockPad - 0.5,
         }}
       >
         {children}

@@ -2,7 +2,6 @@ import { View } from 'react-native';
 
 import {
   designTokens,
-  figmaTokens,
   type FigmaButtonSize,
 } from '@bidplace/design-tokens';
 
@@ -27,7 +26,7 @@ export function FilterSheetActionRow({
     <View
       style={{
         width: '100%',
-        paddingTop: figmaTokens.space.x3,
+        paddingTop: designTokens.space.x3,
         paddingLeft:
           variant === 'directions'
             ? designTokens.authorApplication.directionsContentInset

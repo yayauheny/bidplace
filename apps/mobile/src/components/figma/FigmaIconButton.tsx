@@ -1,6 +1,8 @@
-import { figmaTokens } from '@bidplace/design-tokens';
+import type { ElementRef, Ref } from 'react';
+import { designTokens } from '@bidplace/design-tokens';
 
 import { MotionPressable } from '../ui/MotionPressable';
+import { useAppTheme } from '../../providers/theme-provider';
 import { FigmaIcon } from './FigmaIcon';
 import { type FigmaIconName } from './figma-icon-names';
 import {
@@ -9,35 +11,57 @@ import {
 } from './figma-icon-button-style';
 
 export function FigmaIconButton({
+  ref,
   icon,
   label,
   onPress,
   disabled = false,
   selected = false,
-  iconSize = figmaTokens.size.icon,
+  iconSize = designTokens.size.icon,
+  strokeWidthPx,
+  surface = 'plain',
+  size = 'default',
 }: {
+  ref?: Ref<ElementRef<typeof MotionPressable>>;
   icon: FigmaIconName;
   label: string;
   onPress: () => void;
   disabled?: boolean;
   selected?: boolean;
   iconSize?: number;
+  strokeWidthPx?: number;
+  surface?: 'plain' | 'muted';
+  size?: 'default' | 'settingsHeader';
 }) {
+  const palette = useAppTheme();
   return (
     <MotionPressable
+      ref={ref}
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ disabled, selected }}
       disabled={disabled}
-      hitSlop={figmaIconButtonHitSlop}
+      hitSlop={
+        size === 'settingsHeader'
+          ? (designTokens.size.touch - designTokens.size.settingsHeaderGlyph) /
+            2
+          : figmaIconButtonHitSlop
+      }
       onPress={onPress}
       preset="icon"
-      style={({ pressed }) => figmaIconButtonStyle(pressed)}
+      style={({ pressed }) => [
+        figmaIconButtonStyle(pressed, surface, palette),
+        size === 'settingsHeader' && {
+          width: designTokens.size.settingsHeaderGlyph,
+          height: designTokens.size.settingsHeaderGlyph,
+        },
+      ]}
     >
       <FigmaIcon
         name={icon}
         size={iconSize}
-        color={selected ? figmaTokens.color.solid : figmaTokens.color.ink}
+        strokeWidthPx={strokeWidthPx}
+        color={selected ? palette.solid : palette.ink}
       />
     </MotionPressable>
   );

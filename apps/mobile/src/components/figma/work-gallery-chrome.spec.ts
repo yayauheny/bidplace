@@ -25,11 +25,15 @@ describe('Work gallery chrome', () => {
   });
 
   it('uses border #DEDEDE for inactive dots and leaves divider unchanged', () => {
-    expect(workGalleryDotColor(false)).toBe(designTokens.color.border);
-    expect(workGalleryDotColor(false)).toBe('#DEDEDE');
-    expect(workGalleryDotColor(true)).toBe(designTokens.color.ink);
+    expect(workGalleryDotColor(false, designTokens.color)).toBe(
+      designTokens.color.border,
+    );
+    expect(workGalleryDotColor(false, designTokens.color)).toBe('#DEDEDE');
+    expect(workGalleryDotColor(true, designTokens.color)).toBe(
+      designTokens.color.ink,
+    );
     expect(designTokens.color.divider).toBe('#E2E2E2');
-    expect(workGalleryDotStyle(false)).toMatchObject({
+    expect(workGalleryDotStyle(false, designTokens.color)).toMatchObject({
       width: designTokens.size.statusDot,
       height: designTokens.size.statusDot,
       backgroundColor: '#DEDEDE',

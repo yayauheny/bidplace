@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { figmaTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import { figmaChipTextColor } from './figma-chip-style';
 import {
@@ -19,7 +19,11 @@ describe('Author identity chips', () => {
     expect(content.handle).toBe('@vex');
     expect(content.tags).toEqual(['Керамика', 'Скульптор']);
     expect(authorCoverAccessibilityLabel(content)).toContain('Керамика');
-    expect(figmaChipTextColor('onDark')).toBe(figmaTokens.color.white);
-    expect(figmaChipTextColor('onLight')).toBe(figmaTokens.color.ink);
+    expect(figmaChipTextColor('onDark', 'compact', designTokens.color)).toBe(
+      designTokens.color.white,
+    );
+    expect(figmaChipTextColor('onLight', 'compact', designTokens.color)).toBe(
+      designTokens.color.ink,
+    );
   });
 });

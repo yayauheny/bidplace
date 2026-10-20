@@ -1,13 +1,8 @@
-import { figmaTokens } from '@bidplace/design-tokens';
+import { designTokens, type SemanticColorMap } from '@bidplace/design-tokens';
 
 // `tinted`: the cover chip fill with ink text on a light surface (`874:5596`).
 export type FigmaChipTone = 'onLight' | 'onDark' | 'onGlass' | 'tinted';
 export type FigmaChipSize = 'compact' | 'profile' | 'work';
-
-export const figmaChipGradientStroke = {
-  start: 'rgba(255, 255, 255, 0.16)',
-  end: 'rgba(153, 153, 153, 0.16)',
-} as const;
 
 export function figmaChipUsesGradientStroke(tone: FigmaChipTone) {
   return tone === 'onDark' || tone === 'tinted' || tone === 'onGlass';
@@ -19,14 +14,23 @@ export function figmaChipGradientPlacement(tone: FigmaChipTone) {
   return 'none' as const;
 }
 
-export function figmaChipGradientColors(tone: FigmaChipTone) {
+export function figmaChipGradientColors(
+  tone: FigmaChipTone,
+  palette: SemanticColorMap,
+) {
   if (tone === 'onGlass') {
     return {
-      start: figmaTokens.color.glassBorder,
-      end: figmaTokens.color.glassBorderEnd,
+      start: palette.glassBorder,
+      end: palette.glassBorderEnd,
     } as const;
   }
-  return figmaChipGradientStroke;
+  // onDark/tinted: translucent gradient stroke over the chip fill; both stops
+  // live in the token owner. (The #000 literals below are CSS mask
+  // mechanics, not visible colors — deliberately not palette roles.)
+  return {
+    start: palette.chipBorderGradientStart,
+    end: palette.chipBorderGradientEnd,
+  } as const;
 }
 
 const contentBoxExcludeMask =
@@ -62,7 +66,7 @@ export function figmaChipOutsideGradientRingStyle(colors: {
     bottom: -1,
     left: -1,
     padding: 1,
-    borderRadius: figmaTokens.radius.chip + 1,
+    borderRadius: designTokens.radius.chip + 1,
     pointerEvents: 'none',
     boxSizing: 'border-box',
     backgroundImage: `linear-gradient(180deg, ${colors.start}, ${colors.end})`,
@@ -73,15 +77,18 @@ export function figmaChipOutsideGradientRingStyle(colors: {
   };
 }
 
-export function figmaChipStyle(tone: FigmaChipTone = 'onLight') {
+export function figmaChipStyle(
+  tone: FigmaChipTone = 'onLight',
+  palette: SemanticColorMap,
+) {
   if (tone === 'onGlass') {
     return {
-      paddingHorizontal: figmaTokens.space.chipX,
-      paddingVertical: figmaTokens.space.chipY,
-      borderRadius: figmaTokens.radius.chip,
-      backgroundColor: figmaTokens.color.glassStrong,
+      paddingHorizontal: designTokens.space.chipX,
+      paddingVertical: designTokens.space.chipY,
+      borderRadius: designTokens.radius.chip,
+      backgroundColor: palette.glassStrong,
       borderWidth: 1,
-      borderColor: figmaTokens.color.glassBorder,
+      borderColor: palette.glassBorder,
       justifyContent: 'center' as const,
       alignItems: 'center' as const,
     };
@@ -89,24 +96,24 @@ export function figmaChipStyle(tone: FigmaChipTone = 'onLight') {
 
   if (tone === 'onDark' || tone === 'tinted') {
     return {
-      paddingHorizontal: figmaTokens.space.chipX,
-      paddingVertical: figmaTokens.space.chipY,
-      borderRadius: figmaTokens.radius.chip,
-      backgroundColor: figmaTokens.color.chip,
+      paddingHorizontal: designTokens.space.chipX,
+      paddingVertical: designTokens.space.chipY,
+      borderRadius: designTokens.radius.chip,
+      backgroundColor: palette.chip,
       borderWidth: 1,
-      borderColor: figmaTokens.color.chipOutline,
+      borderColor: palette.chipOutline,
       justifyContent: 'center' as const,
       alignItems: 'center' as const,
     };
   }
 
   return {
-    paddingHorizontal: figmaTokens.space.chipX,
-    paddingVertical: figmaTokens.space.chipY,
-    borderRadius: figmaTokens.radius.chip,
-    backgroundColor: figmaTokens.color.mutedFill,
+    paddingHorizontal: designTokens.space.chipX,
+    paddingVertical: designTokens.space.chipY,
+    borderRadius: designTokens.radius.chip,
+    backgroundColor: palette.mutedFill,
     borderWidth: 1,
-    borderColor: figmaTokens.color.border,
+    borderColor: palette.border,
     justifyContent: 'center' as const,
     alignItems: 'center' as const,
   };
@@ -115,30 +122,31 @@ export function figmaChipStyle(tone: FigmaChipTone = 'onLight') {
 export function figmaChipSizeStyle(size: FigmaChipSize) {
   if (size === 'profile') {
     return {
-      paddingHorizontal: figmaTokens.space.authorChipX,
-      paddingVertical: figmaTokens.space.authorChipY,
+      paddingHorizontal: designTokens.space.authorChipX,
+      paddingVertical: designTokens.space.authorChipY,
     };
   }
   if (size === 'work') {
     return {
-      paddingHorizontal: figmaTokens.space.workChipX,
-      paddingVertical: figmaTokens.space.workChipY,
+      paddingHorizontal: designTokens.space.workChipX,
+      paddingVertical: designTokens.space.workChipY,
     };
   }
   return {};
 }
 
 export function figmaChipTypography(size: FigmaChipSize) {
-  if (size === 'profile') return figmaTokens.typography.profileChip;
-  if (size === 'work') return figmaTokens.typography.workChip;
-  return figmaTokens.typography.chip;
+  if (size === 'profile') return designTokens.typography.profileChip;
+  if (size === 'work') return designTokens.typography.workChip;
+  return designTokens.typography.chip;
 }
 
 export function figmaChipTextColor(
   tone: FigmaChipTone,
   size: FigmaChipSize = 'compact',
+  palette: SemanticColorMap,
 ) {
-  if (tone === 'onDark') return figmaTokens.color.white;
-  if (size === 'work') return figmaTokens.color.textSubdued;
-  return figmaTokens.color.ink;
+  if (tone === 'onDark') return palette.white;
+  if (size === 'work') return palette.textSubdued;
+  return palette.ink;
 }

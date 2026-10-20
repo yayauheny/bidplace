@@ -3,7 +3,7 @@
  */
 import { act, createElement, forwardRef, type ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { figmaButtonTokens, figmaTokens } from '@bidplace/design-tokens';
+import { figmaButtonTokens, designTokens } from '@bidplace/design-tokens';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
@@ -174,7 +174,7 @@ describe('MotionPressable opacityFeedback', () => {
     );
     const disabledShell = disabled.container.querySelector('div');
     expect(disabledShell?.getAttribute('data-idle-opacity')).toBe(
-      String(figmaTokens.opacity.disabled),
+      String(designTokens.opacity.disabled),
     );
     disabled.unmount();
   });

@@ -43,7 +43,7 @@ vi.mock('../../components/ui', () => {
   return {
     AppText: ({ children }: { children?: ReactNode }) => createElement('span', null, children),
     SecondaryButton: Button,
-    DestructiveButton: Button,
+    PrimaryButton: Button,
     TextField: ({
       label, value, onChangeText,
     }: { label: string; value: string; onChangeText: (text: string) => void }) =>

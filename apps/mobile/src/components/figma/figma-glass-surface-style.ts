@@ -1,4 +1,4 @@
-import { figmaTokens } from '@bidplace/design-tokens';
+import { designTokens, type SemanticColorMap } from '@bidplace/design-tokens';
 
 export const figmaGlassSurfacePresets = [
   'navigation',
@@ -6,27 +6,22 @@ export const figmaGlassSurfacePresets = [
   'filterControl',
 ] as const;
 
-export type FigmaGlassSurfacePreset =
-  (typeof figmaGlassSurfacePresets)[number];
+export type FigmaGlassSurfacePreset = (typeof figmaGlassSurfacePresets)[number];
 
-export function figmaGlassSurfaceSpec(preset: FigmaGlassSurfacePreset) {
+export function figmaGlassSurfaceSpec(
+  preset: FigmaGlassSurfacePreset,
+  palette: SemanticColorMap,
+) {
   const filterControl = preset === 'filterControl';
   return {
-    blur: figmaTokens.blur.dock,
-    nativeIntensity: figmaTokens.blur.dockNativeIntensity,
+    blur: designTokens.blur.dock,
+    nativeIntensity: designTokens.blur.dockNativeIntensity,
     borderWidth: 0.5,
     borderRadius: filterControl
-      ? figmaTokens.radius.filterSort
-      : figmaTokens.radius.dock,
-    background:
-      preset === 'navigation'
-        ? figmaTokens.color.glass
-        : figmaTokens.color.glassStrong,
-    borderStart: filterControl
-      ? figmaTokens.color.divider
-      : figmaTokens.color.glassBorder,
-    borderEnd: filterControl
-      ? figmaTokens.color.divider
-      : figmaTokens.color.glassBorderEnd,
+      ? designTokens.radius.filterSort
+      : designTokens.radius.dock,
+    background: preset === 'navigation' ? palette.glass : palette.glassStrong,
+    borderStart: filterControl ? palette.divider : palette.glassBorder,
+    borderEnd: filterControl ? palette.divider : palette.glassBorderEnd,
   } as const;
 }

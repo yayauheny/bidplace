@@ -80,16 +80,25 @@ test.describe('Work catalog browser round-trip', () => {
     try {
       await page.goto('/products/new');
       await page.getByRole('button', { name: 'E2E art' }).click();
-      await fillControl(page.getByRole('textbox', { name: /Название/ }), `Work catalog ${Date.now()}`);
+      await fillControl(
+        page.getByRole('textbox', { name: /Название/ }),
+        `Work catalog ${Date.now()}`,
+      );
 
       await page.getByRole('button', { name: 'Материалы' }).click();
-      await expect(page.getByRole('dialog', { name: 'Материалы' })).toBeVisible();
-      await page.getByRole('button', { name: materialName, exact: true }).click();
+      await expect(
+        page.getByRole('dialog', { name: 'Материалы' }),
+      ).toBeVisible();
+      await page
+        .getByRole('button', { name: materialName, exact: true })
+        .click();
       await fillControl(
         page.getByRole('textbox', { name: 'Поиск или новое значение' }),
         'Авторский материал E2E',
       );
-      await page.getByRole('button', { name: 'Предложить «Авторский материал E2E»' }).click();
+      await page
+        .getByRole('button', { name: 'Предложить «Авторский материал E2E»' })
+        .click();
       await page.getByRole('button', { name: 'Применить' }).click();
 
       const save = page.waitForResponse(
@@ -97,17 +106,27 @@ test.describe('Work catalog browser round-trip', () => {
           response.url().endsWith('/api/products') &&
           response.request().method() === 'POST',
       );
-      await page.getByRole('button', { name: 'Сохранить и продолжить' }).click();
+      await page
+        .getByRole('button', { name: 'Сохранить и продолжить' })
+        .click();
       const response = await save;
       expect(response.ok()).toBeTruthy();
       const { product } = await response.json();
 
       await page.goto(`/products/${product.id}?flow=creation&step=1`);
-      await expect(page.getByRole('button', { name: 'Материалы' })).toContainText(materialName);
-      await expect(page.getByRole('button', { name: 'Материалы' })).toContainText('Авторский материал E2E');
+      await expect(
+        page.getByRole('button', { name: 'Материалы' }),
+      ).toContainText(materialName);
+      await expect(
+        page.getByRole('button', { name: 'Материалы' }),
+      ).toContainText('Авторский материал E2E');
       await page.getByRole('button', { name: 'Материалы' }).click();
-      await expect(page.getByRole('button', { name: `Удалить ${materialName}` })).toBeVisible();
-      await expect(page.getByRole('button', { name: 'Удалить Авторский материал E2E' })).toBeVisible();
+      await expect(
+        page.getByRole('button', { name: `Удалить ${materialName}` }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole('button', { name: 'Удалить Авторский материал E2E' }),
+      ).toBeVisible();
     } finally {
       await context.close();
     }
@@ -145,13 +164,12 @@ test.describe('product creation wizard navigation', () => {
         .getByRole('button', { name: 'Продолжить к истории создания' })
         .click();
       await expect(page).toHaveURL(/flow=creation&step=3$/);
+      await page.getByRole('button', { name: 'Добавить текст' }).click();
       await fillControl(
-        page.getByRole('textbox', { name: 'История создания' }),
+        page.getByRole('textbox', { name: 'Текст истории' }),
         'Wizard regression draft.',
       );
-      await page
-        .getByRole('button', { name: 'Сохранить и перейти к проверке' })
-        .click();
+      await page.getByRole('button', { name: 'Закончить' }).click();
       await expect(page).toHaveURL(/flow=creation&step=4$/);
 
       await page.getByRole('button', { name: '1. О работе' }).click();
@@ -161,7 +179,13 @@ test.describe('product creation wizard navigation', () => {
       ).toBeEnabled();
       await page.getByRole('button', { name: '3. История создания' }).click();
       await expect(page).toHaveURL(/flow=creation&step=3$/);
-      await page.getByRole('button', { name: '2. Изображения' }).click();
+      // The story step follows Figma 7008:27134 — no step tabs there;
+      // back to images goes through the top-bar icon button (the story
+      // toolbar renders a second button with the same label further down).
+      await page
+        .getByRole('button', { name: 'Назад к изображениям' })
+        .first()
+        .click();
       await expect(page).toHaveURL(/flow=creation&step=2$/);
       await page.getByRole('button', { name: '4. Проверка' }).click();
       await expect(page).toHaveURL(/flow=creation&step=4$/);
@@ -184,6 +208,13 @@ test.describe('product creation wizard navigation', () => {
 
       await page.goto(`/products/${product.id}?flow=creation&step=3`);
       await expect(page).toHaveURL(/flow=creation&step=3$/);
+      // Step 3 renders the story chrome without step tabs (Figma 7008:27134);
+      // reach the review step through the images step.
+      await page
+        .getByRole('button', { name: 'Назад к изображениям' })
+        .first()
+        .click();
+      await expect(page).toHaveURL(/flow=creation&step=2$/);
       await expect(
         page.getByRole('button', { name: '4. Проверка' }),
       ).toBeEnabled();
@@ -208,6 +239,13 @@ test.describe('product creation wizard navigation', () => {
       await page
         .getByRole('button', { name: 'Продолжить к истории создания' })
         .click();
+      // The story step has no step tabs (Figma 7008:27134): go back to the
+      // images step first, then open step 1 from its tab list.
+      await page
+        .getByRole('button', { name: 'Назад к изображениям' })
+        .first()
+        .click();
+      await expect(page).toHaveURL(/flow=creation&step=2$/);
       await page.getByRole('button', { name: '1. О работе' }).click();
 
       await page.getByLabel('Название').fill(`${title} edited`);
@@ -313,7 +351,7 @@ test.describe('product creation wizard navigation', () => {
     }
   });
 
-  test('shows step 1 validation without locking later tabs', async ({
+  test('shows step 1 validation and blocks the step change until the draft persists', async ({
     browser,
   }) => {
     test.setTimeout(120_000);
@@ -324,14 +362,28 @@ test.describe('product creation wizard navigation', () => {
     try {
       await page.goto('/products/new');
       await fillProductStepOne(page, title);
-      await createDraftThroughStepOne(page);
+      const product = await createDraftThroughStepOne(page);
       await uploadFirstProductImage(page);
       await page
         .getByRole('button', { name: 'Продолжить к истории создания' })
         .click();
+      // The story step has no step tabs (Figma 7008:27134): go back to the
+      // images step first, then open step 1 from its tab list.
+      await page
+        .getByRole('button', { name: 'Назад к изображениям' })
+        .first()
+        .click();
+      await expect(page).toHaveURL(/flow=creation&step=2$/);
       await page.getByRole('button', { name: '1. О работе' }).click();
 
-      await page.getByLabel('Название').fill('');
+      await expect(page.getByLabel('Название')).toHaveValue(title);
+      const nameField = page.getByLabel('Название');
+      await nameField.click();
+      // Keyboard select-all + Delete does not clear a controlled input in
+      // Chromium (only one character is removed); fill('') emits real input
+      // events and clears it in both Chromium and WebKit.
+      await nameField.fill('');
+      await expect(nameField).toHaveValue('');
       await page
         .getByRole('button', { name: 'Сохранить и продолжить' })
         .click();
@@ -344,6 +396,35 @@ test.describe('product creation wizard navigation', () => {
       await expect(
         page.getByRole('button', { name: '2. Изображения' }),
       ).toBeEnabled();
+      // Save failure keeps the author on step 1 (02-USER-FLOWS §9): the tab
+      // stays reachable, but the transition waits for a successful persist.
+      // The draft schema itself allows an empty title, so force a real
+      // persistence failure instead of relying on validation.
+      await page.route(`**/api/products/${product.id}`, (route) => {
+        if (route.request().method() !== 'PATCH') return route.continue();
+        return route.fulfill({
+          status: 500,
+          contentType: 'application/json',
+          body: JSON.stringify({ code: 'internal_error' }),
+        });
+      });
+      const failedPatch = page.waitForResponse(
+        (response) =>
+          response.url().endsWith(`/api/products/${product.id}`) &&
+          response.request().method() === 'PATCH',
+      );
+      await page.getByRole('button', { name: '2. Изображения' }).click();
+      // The transition must actually fire the PATCH and surface its failure;
+      // a no-op click would wrongly pass the URL assertion below. A 500 maps
+      // to the canonical infrastructure copy.
+      expect((await failedPatch).status()).toBe(500);
+      await expect(
+        page.getByText('Проверьте соединение и попробуйте ещё раз.'),
+      ).toBeVisible();
+      await expect(page).toHaveURL(/flow=creation&step=1$/);
+      await expect(page.getByLabel('Название')).toHaveValue('');
+      await page.unroute(`**/api/products/${product.id}`);
+      await fillControl(page.getByRole('textbox', { name: /Название/ }), title);
       await page.getByRole('button', { name: '2. Изображения' }).click();
       await expect(page).toHaveURL(/flow=creation&step=2$/);
     } finally {

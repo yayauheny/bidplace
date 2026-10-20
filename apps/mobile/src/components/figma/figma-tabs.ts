@@ -1,4 +1,4 @@
-import { figmaTokens } from '@bidplace/design-tokens';
+import type { SemanticColorMap } from '@bidplace/design-tokens';
 
 export type FigmaTab = { value: string; label: string; count?: number };
 export type FigmaTabsProps = {
@@ -9,8 +9,13 @@ export type FigmaTabsProps = {
   panelId: string;
   align?: 'start' | 'center';
   contentInset?: number;
+  /** Таб-бар с фоном canvas и разделителем (веб-шапка). */
+  fill?: boolean;
 };
 
-export function figmaTabLabelColor(selected: boolean) {
-  return selected ? figmaTokens.color.ink : figmaTokens.color.tabInactive;
+export function figmaTabLabelColor(
+  selected: boolean,
+  palette: SemanticColorMap,
+) {
+  return selected ? palette.ink : palette.tabInactive;
 }

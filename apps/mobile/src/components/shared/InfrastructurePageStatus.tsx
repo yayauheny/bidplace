@@ -1,9 +1,12 @@
 import { View } from 'react-native';
 
-import { designTokens } from '@bidplace/design-tokens';
+import { useDockInset } from '../layout/use-dock-inset';
 
 import { INFRASTRUCTURE_ERROR_COPY } from '../../errors';
-import { BidplaceMark, BIDPLACE_PAGE_LOGO_SIZE } from '../branding/BidplaceBrand';
+import {
+  BidplaceMark,
+  BIDPLACE_PAGE_LOGO_SIZE,
+} from '../branding/BidplaceBrand';
 import { AppText, SecondaryButton } from '../ui';
 import {
   INFRASTRUCTURE_ERROR_COPY_MAX_WIDTH,
@@ -23,6 +26,7 @@ export function InfrastructurePageStatus({
   onRetry: () => void;
 }) {
   const visual = infrastructurePageVisual(status);
+  const { reserve } = useDockInset();
   const chromeStyle = {
     opacity: visual.showsErrorChrome ? 1 : 0,
     visibility: visual.showsErrorChrome ? 'visible' : 'hidden',
@@ -43,7 +47,7 @@ export function InfrastructurePageStatus({
         flex: 1,
         width: '100%',
         paddingHorizontal: infrastructurePageErrorLayout.padX,
-        paddingBottom: designTokens.size.dockReserve,
+        paddingBottom: reserve,
       }}
     >
       <View
@@ -83,11 +87,7 @@ export function InfrastructurePageStatus({
         pointerEvents={visual.showsErrorChrome ? 'auto' : 'none'}
         style={chromeStyle}
       >
-        <SecondaryButton
-          label="Повторить"
-          onPress={onRetry}
-          width="full"
-        />
+        <SecondaryButton label="Повторить" onPress={onRetry} width="full" />
       </View>
     </View>
   );

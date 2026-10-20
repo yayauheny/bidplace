@@ -1,6 +1,6 @@
-import { figmaTokens } from '@bidplace/design-tokens';
+import type { SemanticColorMap } from '@bidplace/design-tokens';
 
-export function authorAchievementRailSpec() {
+export function authorAchievementRailSpec(palette: SemanticColorMap) {
   return {
     sourceNodeId: '742:20510',
     markerNodeId: '744:20554',
@@ -11,10 +11,10 @@ export function authorAchievementRailSpec() {
     markerHole: 10,
     markerPad: 3,
     markerRadius: 21,
-    markerFill: figmaTokens.color.tabInactive,
-    markerHoleFill: figmaTokens.color.white,
+    markerFill: palette.tabInactive,
+    markerHoleFill: palette.white,
     lineHeight: 2,
-    lineColor: figmaTokens.color.tabInactive,
+    lineColor: palette.tabInactive,
     lineRadius: 6,
     imageRadius: 18.82,
     imageAspect: 3 / 4,

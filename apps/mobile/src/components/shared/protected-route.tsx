@@ -11,7 +11,7 @@ import { logInfrastructureError } from '../../errors';
 import { AppShell } from '../layout';
 import { InfrastructurePageStatus } from './InfrastructurePageStatus';
 import { useAuth } from '../../providers/auth-provider';
-import { getProtectedRedirect } from '../../features/auth/auth-redirect';
+import { getRouteSearchRedirect } from '../../features/auth/auth-redirect';
 import { resolveProtectedRouteAccess } from '../../features/auth/author-email-verification';
 
 type ProtectedRouteProps = {
@@ -59,12 +59,7 @@ export function ProtectedRoute({
     );
   }
 
-  const dynamicParamNames = segments.flatMap((segment) => {
-    const match = /^\[\.\.\.(.+)\]$|^\[(.+)\]$/.exec(segment);
-    return match ? [match[1] ?? match[2]!] : [];
-  });
-  const redirectTo = getProtectedRedirect(pathname, params, dynamicParamNames);
-
+  const redirectTo = getRouteSearchRedirect(pathname, segments, params);
   const access = resolveProtectedRouteAccess({
     isAuthenticated: auth.isAuthenticated,
     emailVerifiedAt: auth.user?.emailVerifiedAt,
@@ -78,7 +73,9 @@ export function ProtectedRoute({
   if (access === 'verify-email') {
     return (
       <Redirect
-        href={`/verify-email?redirectTo=${encodeURIComponent(redirectTo)}` as Href}
+        href={
+          `/verify-email?redirectTo=${encodeURIComponent(redirectTo)}` as Href
+        }
       />
     );
   }

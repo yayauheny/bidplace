@@ -5,6 +5,7 @@ import { ScrollView, View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 import { AppShell } from '../../components/layout';
+import { useDockInset } from '../../components/layout/use-dock-inset';
 import { InfrastructurePageStatus } from '../../components/shared/InfrastructurePageStatus';
 import {
   AppText,
@@ -20,13 +21,10 @@ import { getApiAssetUrl } from '../../lib/environment';
 import { useTrackWorkView } from '../../lib/analytics/use-track-views';
 import { retryTransientPublicQuery } from '../../lib/query-retry';
 import { useApiClient } from '../../providers/api-provider';
+import { useAppTheme } from '../../providers/theme-provider';
 import { PAYMENT_DELIVERY_STUB } from './payment-delivery-stub';
 import { resolvePublicWorkPageState } from './public-work-page-state';
-import {
-  resolveWorkTab,
-  workFacts,
-  workTabs,
-} from './work-content';
+import { resolveWorkTab, workFacts, workTabs } from './work-content';
 import { navigateWorkPageBack } from './work-page-back';
 import { WorkHeader } from './WorkHeader';
 
@@ -34,9 +32,11 @@ export { PAYMENT_DELIVERY_STUB };
 
 export function ProductScreen({ publicId }: { publicId: string }) {
   const api = useApiClient();
+  const { reserve } = useDockInset();
   const router = useRouter();
   const { tab: requestedTab } = useLocalSearchParams<{ tab?: string }>();
   const panelId = useId();
+  const palette = useAppTheme();
   const [shareOpen, setShareOpen] = useState(false);
   const query = useQuery({
     queryKey: ['portfolio-work', publicId],
@@ -47,7 +47,8 @@ export function ProductScreen({ publicId }: { publicId: string }) {
     if (
       query.data &&
       requestedTab &&
-      resolveWorkTab(query.data.work.creationStory.blocks, requestedTab) !== requestedTab
+      resolveWorkTab(query.data.work.creationStory.blocks, requestedTab) !==
+        requestedTab
     ) {
       router.setParams({ tab: undefined });
     }
@@ -96,7 +97,7 @@ export function ProductScreen({ publicId }: { publicId: string }) {
         testID="product-scroll-view"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
-          paddingBottom: designTokens.size.dockReserve,
+          paddingBottom: reserve,
           gap: designTokens.space.sectionGap,
         }}
       >
@@ -119,18 +120,17 @@ export function ProductScreen({ publicId }: { publicId: string }) {
           onBack={() => navigateWorkPageBack(router)}
           onShare={() => setShareOpen(true)}
         >
-        <View
-          style={{
-            paddingHorizontal: designTokens.space.pageGutter,
-            gap: designTokens.space.x10,
-          }}
-        >
           <View
-            nativeID={panelId}
-            role="tabpanel"
-            aria-labelledby={`${panelId}-${tab}`}
-            style={{ paddingBottom: designTokens.space.sectionGap }}
+            style={{
+              gap: designTokens.space.x10,
+            }}
           >
+            <View
+              nativeID={panelId}
+              role="tabpanel"
+              aria-labelledby={`${panelId}-${tab}`}
+              style={{ paddingBottom: designTokens.space.sectionGap }}
+            >
               {tab === 'story' ? (
                 <View
                   testID="work-history"
@@ -138,10 +138,7 @@ export function ProductScreen({ publicId }: { publicId: string }) {
                 >
                   {work.creationStory.blocks.map((block) =>
                     block.type === 'IMAGE' ? (
-                      <View
-                        key={block.id}
-                        testID="work-history-image"
-                      >
+                      <View key={block.id} testID="work-history-image">
                         <ResilientRemoteImage
                           uri={getApiAssetUrl(
                             `/api/products/${work.id}/story-images/${block.mediaAssetId}`,
@@ -151,7 +148,7 @@ export function ProductScreen({ publicId }: { publicId: string }) {
                             block.altText ?? `${work.title}, фото из истории`
                           }
                           fallbackLabel="Изображение недоступно"
-                          style={productMediaStyle()}
+                          style={productMediaStyle('100%', palette)}
                         />
                       </View>
                     ) : (
@@ -170,55 +167,55 @@ export function ProductScreen({ publicId }: { publicId: string }) {
                 <WorkFactsList facts={facts} />
               )}
             </View>
-          {related.length > 0 ? (
-            <View style={{ gap: designTokens.space.sectionGap }}>
-              <AppText
-                role="workTitle"
-                accessibilityRole="header"
-                aria-level={2}
-              >
-                Другие работы автора
-              </AppText>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                style={{ marginRight: -designTokens.space.pageGutter }}
-                contentContainerStyle={{
-                  gap: designTokens.space.x3,
-                  paddingRight: designTokens.space.pageGutter,
-                }}
-              >
-                {related.map((item) => (
-                  <View
-                    key={item.work.publicId}
-                    style={{ width: designTokens.size.coverWidth }}
-                  >
-                    <WorkCoverCard
-                      href={`/product/${item.work.publicId}`}
-                      imageUrl={item.work.images[0].url}
-                      imageLabel={item.work.title}
-                      title={item.work.title}
-                      authorSlug={item.author.slug}
-                    />
-                  </View>
-                ))}
-              </ScrollView>
-              <FigmaButton
-                label="Смотреть все"
-                variant="outline"
-                icon="arrow-right-01"
-                iconPosition="right"
-                accessibilityHint={`Открыть все работы автора ${author.fullName}`}
-                onPress={() =>
-                  router.push({
-                    pathname: '/seller/[slug]',
-                    params: { slug: author.slug },
-                  } as Href)
-                }
-              />
-            </View>
-          ) : null}
-        </View>
+            {related.length > 0 ? (
+              <View style={{ gap: designTokens.space.sectionGap }}>
+                <AppText
+                  role="workTitle"
+                  accessibilityRole="header"
+                  aria-level={2}
+                >
+                  Другие работы автора
+                </AppText>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  style={{ marginRight: -designTokens.layout.gutter }}
+                  contentContainerStyle={{
+                    gap: designTokens.space.x3,
+                    paddingRight: designTokens.layout.gutter,
+                  }}
+                >
+                  {related.map((item) => (
+                    <View
+                      key={item.work.publicId}
+                      style={{ width: designTokens.size.coverWidth }}
+                    >
+                      <WorkCoverCard
+                        href={`/product/${item.work.publicId}`}
+                        imageUrl={item.work.images[0].url}
+                        imageLabel={item.work.title}
+                        title={item.work.title}
+                        authorSlug={item.author.slug}
+                      />
+                    </View>
+                  ))}
+                </ScrollView>
+                <FigmaButton
+                  label="Смотреть все"
+                  variant="outline"
+                  icon="arrow-right-01"
+                  iconPosition="right"
+                  accessibilityHint={`Открыть все работы автора ${author.fullName}`}
+                  onPress={() =>
+                    router.push({
+                      pathname: '/seller/[slug]',
+                      params: { slug: author.slug },
+                    } as Href)
+                  }
+                />
+              </View>
+            ) : null}
+          </View>
         </WorkHeader>
       </ScrollView>
       <ShareSheet

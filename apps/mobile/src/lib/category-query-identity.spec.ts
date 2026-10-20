@@ -238,9 +238,6 @@ vi.mock('@react-native-async-storage/async-storage', () => ({
   },
 }));
 
-vi.mock('lucide-react-native', () => ({
-  X: () => null,
-}));
 
 vi.mock('expo-router', () => ({
   useRouter: () => ({
@@ -334,7 +331,6 @@ vi.mock('../components/ui', () => ({
   PageState: ({ title }: { title?: string }) => createElement('div', null, title),
   PrimaryButton: ({ label }: { label: string }) => createElement('button', { type: 'button' }, label),
   SecondaryButton: ({ label }: { label: string }) => createElement('button', { type: 'button' }, label),
-  DestructiveButton: ({ label }: { label: string }) => createElement('button', { type: 'button' }, label),
   TextButton: ({ label }: { label: string }) => createElement('button', { type: 'button' }, label),
   TextField: ({ label }: { label: string }) => createElement('input', { 'aria-label': label }),
   ResilientRemoteImage: () => null,

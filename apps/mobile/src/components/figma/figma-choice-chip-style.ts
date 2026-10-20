@@ -1,4 +1,4 @@
-import { figmaTokens } from '@bidplace/design-tokens';
+import { designTokens, type SemanticColorMap } from '@bidplace/design-tokens';
 
 export type FigmaChoiceChipInteraction =
   | 'idle'
@@ -10,34 +10,38 @@ export function figmaChoiceChipStyle(
   selected: boolean,
   interaction: FigmaChoiceChipInteraction,
   removable = false,
+  palette: SemanticColorMap,
 ) {
   const active = interaction === 'hover' || interaction === 'pressed';
 
   return {
-    height: removable ? figmaTokens.size.choiceChipRemovable : undefined,
+    height: removable ? designTokens.size.choiceChipRemovable : undefined,
     minHeight: removable
-      ? figmaTokens.size.choiceChipRemovable
-      : figmaTokens.size.choiceChip,
+      ? designTokens.size.choiceChipRemovable
+      : designTokens.size.choiceChip,
     paddingHorizontal: removable
-      ? figmaTokens.space.choiceChipRemovableX
-      : figmaTokens.space.choiceChipX,
-    paddingVertical: removable ? 0 : figmaTokens.space.choiceChipY,
-    borderRadius: figmaTokens.radius.button,
+      ? designTokens.space.choiceChipRemovableX
+      : designTokens.space.choiceChipX,
+    paddingVertical: removable ? 0 : designTokens.space.choiceChipY,
+    borderRadius: designTokens.radius.button,
     borderWidth: removable ? 0.5 : 1,
-    borderColor: selected ? figmaTokens.color.ink : figmaTokens.color.white,
+    borderColor: selected ? palette.ink : palette.white,
     backgroundColor: selected
       ? active
-        ? figmaTokens.color.solidHover
-        : figmaTokens.color.solid
+        ? palette.solidHover
+        : palette.solid
       : active
-        ? figmaTokens.color.mutedHover
-        : figmaTokens.color.mutedFill,
-    opacity: interaction === 'disabled' ? figmaTokens.opacity.disabled : 1,
+        ? palette.mutedHover
+        : palette.mutedFill,
+    opacity: interaction === 'disabled' ? designTokens.opacity.disabled : 1,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
   };
 }
 
-export function figmaChoiceChipTextColor(selected: boolean) {
-  return selected ? figmaTokens.color.white : figmaTokens.color.ink;
+export function figmaChoiceChipTextColor(
+  selected: boolean,
+  palette: SemanticColorMap,
+) {
+  return selected ? palette.white : palette.ink;
 }

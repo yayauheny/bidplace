@@ -7,6 +7,20 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
+vi.mock('expo-router', () => ({
+  DefaultTheme: {
+    colors: {
+      background: '',
+      card: '',
+      primary: '',
+      border: '',
+      text: '',
+      notification: '',
+    },
+  },
+  ThemeProvider: ({ children }: { children?: unknown }) => children,
+}));
+
 const nativeHarness = vi.hoisted(() => {
   const harness = {
     setAccessibilityFocus: vi.fn(),
@@ -26,16 +40,13 @@ vi.mock(
 );
 
 vi.mock('@rn-primitives/portal', () => ({
-  Portal: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
+  Portal: ({ children }: { children?: ReactNode }) =>
+    createElement('div', null, children),
   PortalHost: () => null,
 }));
 
 vi.mock('../figma/FigmaIcon', () => ({
   FigmaIcon: () => null,
-}));
-
-vi.mock('lucide-react-native', () => ({
-  X: () => null,
 }));
 
 vi.mock('react-native-reanimated', () => {
@@ -50,12 +61,17 @@ vi.mock('react-native-reanimated', () => {
       reduceMotion() {
         return api;
       },
-      withCallback() { return api; },
+      withCallback() {
+        return api;
+      },
     };
     return api;
   }
   return {
-    default: { View: ({ children }: { children?: ReactNode }) => createElement('div', null, children) },
+    default: {
+      View: ({ children }: { children?: ReactNode }) =>
+        createElement('div', null, children),
+    },
     Easing: { bezier: () => 'bezier' },
     FadeIn: chain(),
     FadeOut: chain(),
@@ -87,14 +103,20 @@ vi.mock('react-native', () => ({
     flatten: (style: unknown) => style ?? {},
     absoluteFill: {},
   },
-  useWindowDimensions: () => ({ width: 390, height: 844, scale: 1, fontScale: 1 }),
+  useWindowDimensions: () => ({
+    width: 390,
+    height: 844,
+    scale: 1,
+    fontScale: 1,
+  }),
   View: forwardRef(function View(
     { children, role }: { children?: ReactNode; role?: string },
     ref,
   ) {
     return createElement('div', { ref, role }, children);
   }),
-  Text: ({ children }: { children?: ReactNode }) => createElement('span', null, children),
+  Text: ({ children }: { children?: ReactNode }) =>
+    createElement('span', null, children),
   ScrollView: forwardRef(function ScrollView(
     { children, role }: { children?: ReactNode; role?: string },
     ref,
@@ -115,7 +137,12 @@ vi.mock('react-native', () => ({
   ) {
     return createElement(
       'button',
-      { ref, type: 'button', 'aria-label': accessibilityLabel, onClick: () => onPress?.() },
+      {
+        ref,
+        type: 'button',
+        'aria-label': accessibilityLabel,
+        onClick: () => onPress?.(),
+      },
       children,
     );
   }),

@@ -7,13 +7,14 @@ import {
   figmaButtonHitSlop,
   figmaButtonSizeMetrics,
   figmaButtonTokens,
-  figmaTokens,
+  designTokens,
   resolveFigmaButtonInteraction,
   type FigmaButtonSize,
 } from '@bidplace/design-tokens';
 
 import { AppText } from '../ui/AppText';
 import { MotionPressable } from '../ui/MotionPressable';
+import { useAppTheme } from '../../providers/theme-provider';
 import { FigmaIcon } from './FigmaIcon';
 import { type FigmaIconName } from './figma-icon-names';
 import {
@@ -54,7 +55,8 @@ function FigmaButtonVisualContent({
   iconPosition = 'left',
   presentational = false,
 }: FigmaButtonVisualContentProps) {
-  const textColor = figmaButtonLabelColor(variant, size);
+  const palette = useAppTheme();
+  const textColor = figmaButtonLabelColor(variant, size, palette);
   const navigation = contentAlign === 'navigation';
   const iconElement = icon ? (
     <View style={styles.iconFrame}>
@@ -85,7 +87,7 @@ function FigmaButtonVisualContent({
             iconNode || icon
               ? size === 'event'
                 ? 2
-                : figmaTokens.space.x2
+                : designTokens.space.x2
               : 0,
           opacity: loading ? 0 : 1,
         }}
@@ -164,11 +166,12 @@ export function FigmaButtonStatePreview({
   testID,
   accessibilityLabel,
 }: FigmaButtonStatePreviewProps) {
+  const palette = useAppTheme();
   const { layout, onLayout } = useCssBorderBox();
   const resolvedTestID =
     testID ?? `figma-button-preview-${variant}-${interaction}`;
 
-  const shellStyle = figmaButtonStyle(variant, interaction);
+  const shellStyle = figmaButtonStyle(variant, interaction, 'matrix', palette);
 
   return (
     <View
@@ -214,6 +217,7 @@ export function FigmaButton(
   } = props;
   const inactive = disabled || loading;
   const alignSelf = width === 'full' ? 'stretch' : 'flex-start';
+  const palette = useAppTheme();
   const { layout, onLayout } = useCssBorderBox();
 
   const contentHeight = figmaButtonContentHeight(size);
@@ -245,7 +249,7 @@ export function FigmaButton(
           hovered,
           pressed,
         });
-        return figmaButtonStyle(variant, interaction, size);
+        return figmaButtonStyle(variant, interaction, size, palette);
       }}
     >
       {({ hovered, pressed }) => {
@@ -286,9 +290,9 @@ export function FigmaButton(
 
 const styles = StyleSheet.create({
   iconFrame: {
-    width: figmaTokens.size.buttonIconFrame,
-    height: figmaTokens.size.buttonIconFrame,
-    padding: figmaTokens.space.buttonIconPad,
+    width: designTokens.size.buttonIconFrame,
+    height: designTokens.size.buttonIconFrame,
+    padding: designTokens.space.buttonIconPad,
     alignItems: 'center',
     justifyContent: 'center',
   },

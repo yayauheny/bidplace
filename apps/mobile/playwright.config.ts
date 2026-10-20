@@ -17,7 +17,12 @@ export default defineConfig({
   // R2 transport fault scenarios have their own server in playwright.media.config.ts.
   // Auth-abuse browser cases need the cookie proxy and an auth_browser_* database.
   // They are owned by playwright.auth-abuse.config.ts.
-  testIgnore: ['**/work-media-lifecycle.spec.ts', '**/auth-abuse.spec.ts'],
+  // Live sheet acceptance uses an already running seeded dev server.
+  testIgnore: [
+    '**/work-media-lifecycle.spec.ts',
+    '**/auth-abuse.spec.ts',
+    '**/sheet-live.spec.ts',
+  ],
   globalTimeout: 45 * 60_000,
   timeout: 60_000,
   workers: 1,

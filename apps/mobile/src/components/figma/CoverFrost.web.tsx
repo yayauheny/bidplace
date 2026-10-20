@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react';
 
+import { useAppTheme } from '../../providers/theme-provider';
 import {
   coverFrostBlur,
   coverFrostBlurMask,
@@ -20,7 +21,8 @@ export function CoverFrost({
   imageUrl: string;
   placement: CoverFrostPlacement;
 }) {
-  const spec = coverFrostSpec(placement);
+  const palette = useAppTheme();
+  const spec = coverFrostSpec(placement, palette);
   const blur = coverFrostBlur(spec.runtimeBlur);
   const mask = coverFrostBlurMask(spec.top);
 
