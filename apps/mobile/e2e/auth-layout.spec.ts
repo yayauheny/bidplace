@@ -1189,8 +1189,9 @@ test('nickname suggestions check availability only on explicit Next', async ({
   ]) {
     await page.setViewportSize(viewport);
     await expect(suggestions).toHaveCount(3);
-    expect(
-      await page.evaluate(() => document.body.scrollWidth <= window.innerWidth),
+    await expect.poll(
+      () => page.evaluate(() => document.body.scrollWidth <= window.innerWidth),
+      { message: `Nickname step must reflow at ${viewport.width}×${viewport.height}` },
     ).toBe(true);
     await suggestions.last().scrollIntoViewIfNeeded();
     await expect(suggestions.last()).toBeInViewport();
@@ -1211,11 +1212,29 @@ test('nickname suggestions check availability only on explicit Next', async ({
   });
 
   await nickname.fill('taken-author');
-  await page.getByRole('button', { name: 'Дальше', exact: true }).click();
+  const nextAction = page.getByRole('button', { name: 'Дальше', exact: true });
+  await nextAction.click({ trial: true });
+  const beforeStatus = {
+    field: await nickname.boundingBox(),
+    action: await nextAction.boundingBox(),
+  };
+  expect(beforeStatus.field).not.toBeNull();
+  expect(beforeStatus.action).not.toBeNull();
+  await nextAction.click();
   await expect(
     page.getByText('@taken-author недоступен', { exact: true }),
   ).toBeVisible();
   await expect(nickname).toHaveValue('taken-author');
+  await expect(nextAction).toBeEnabled();
+  await nextAction.click({ trial: true });
+  await expect.poll(async () => (await nickname.boundingBox())?.y).toBeCloseTo(
+    beforeStatus.field!.y,
+    1,
+  );
+  await expect.poll(async () => (await nextAction.boundingBox())?.y).toBeCloseTo(
+    beforeStatus.action!.y,
+    1,
+  );
   const refreshedSuggestions = await suggestions.allTextContents();
   expect(refreshedSuggestions).toHaveLength(3);
   expect(new Set(refreshedSuggestions).size).toBe(3);
