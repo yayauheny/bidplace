@@ -721,3 +721,12 @@ This does not change control size, type, or the field success state.
 use `apps/mobile/src/components/figma` and wrappers in `components/ui`. There
 is no nested Figma token object. Figma is the production visual source for
 mobile-web 390 (`DEC-119`).
+
+### Registration consent composition —2026-10-20
+
+AuthConsentCheckbox принимает текстовый children-slot; RegistrationLegalText
+переиспользует существующий keyboard-accessible LegalLink. Ссылки —fieldValue,
+основной текст —новая semantic-роль legalText (light858585, black provisional).
+Роль применяется ко всему AuthLegalText, без новых локальных цветов.
+Fullscreen AuthViewport заполняет viewport; sheetWidthConstraint относится только
+к шторкам. Форма внутри fullscreen сохраняет центрирование и maxWidth350.

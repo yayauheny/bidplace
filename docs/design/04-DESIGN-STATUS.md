@@ -2,6 +2,24 @@
 
 > Entries dated before 2026-10-13 mention Pen / .pen files; the Pen design was removed (DEC-119) — read those mentions as history.
 
+## 2026-10-20 — Регистрация: центрирование и один consent control
+
+**Implemented (web UI).** Fullscreen AuthViewport больше не ограничен sheetMax390;
+его внутренняя колонка350 остаётся центрированной на320/390/440. AuthConsentCheckbox
+показывает одно изначально пустое подтверждение с inline RegistrationLegalText:
+три чёрные ссылки, серый основной текст, явное18+, без повторов названий и
+служебной подписи редакции. Ложное предупреждение о смене сессии на ещё пустой форме устранено; epoch guards сохраняются.
+Обязательные флаги, версии, reset при смене пакета,
+защита операции/сессии и серверный legal gate сохранены. Решение основателя:
+DEC-124, пересмотр UI-композиции DEC-078; это не юридическое заключение.
+
+Проверки: unit25/25 (registration-consent + theme), mobile tsc, tokens build,
+production export, адресный browser gate Chromium/WebKit на320/390/440,
+eslint и diff-check. Серверная публикация юридических документов остаётся
+отдельным блокером: локальный GET /auth/legal возвращает503 при незаполненных
+реквизитах; эта правка не подставляет фиктивные документы в runtime.
+[Приёмка](../audits/2026-10-20-REGISTRATION-LAYOUT.md).
+
 ## 2026-10-20 — Account: финальная приёмка и исправления
 
 **Implemented (проверенный web-срез); Needs verification — реальный iPhone,

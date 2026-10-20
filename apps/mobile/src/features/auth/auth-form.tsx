@@ -14,7 +14,7 @@ import { AuthPasswordField } from './auth-password-field';
 import { registerSubmission } from './auth-dismissal';
 import { useAuthSheetComplete, useAuthSheetGuard } from './auth-sheet-context';
 import { AuthGoogleIcon } from './auth-google-icon';
-import { AuthLegalText } from './auth-legal-text';
+import { AuthLegalText, RegistrationLegalText, registrationConsentLabel } from './auth-legal-text';
 import { LegalDocumentViewer } from './legal-document-viewer';
 import { AuthTelegramIcon } from './auth-telegram-icon';
 import { useAnalytics } from '../../providers/analytics-provider';
@@ -51,6 +51,13 @@ import {
 } from './schemas';
 import type { SafeRedirect } from './auth-redirect';
 import { TurnstileWidget, type TurnstileAvailability } from './turnstile-widget';
+
+const registrationConfirmationFields = [
+  'agreementAccepted',
+  'privacyAcknowledged',
+  'dataConsentGiven',
+  'age18Confirmed',
+] as const;
 
 function aborted(error: unknown): boolean {
   return (
@@ -732,7 +739,10 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
     nicknameAdvancePending.current = false;
     invalidateSlugAvailability();
     setRegistrationLegalOpen(null);
-    if (mounted.current) setSubmitError('Сессия изменилась. Повторите регистрацию.');
+    // Guest bootstrap can rotate the epoch before any registration attempt.
+    if (mounted.current && Object.values(form.getValues()).some(Boolean)) {
+      setSubmitError('Сессия изменилась. Повторите регистрацию.');
+    }
   }, [authEpoch, form, invalidateSlugAvailability, queryClient]);
 
   useEffect(() => {
@@ -750,7 +760,7 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
     registrationLegalTransport.current = controller;
     setLegalDocuments(null);
     // An earlier checkbox click is never treated as acceptance of a newer or unavailable version.
-    for (const key of ['agreementAccepted', 'privacyAcknowledged', 'dataConsentGiven', 'age18Confirmed'] as const) {
+    for (const key of registrationConfirmationFields) {
       form.setValue(key, false);
     }
     setRegistrationLegalPending(true);
@@ -1144,29 +1154,26 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
         {nextAction}
         {step === 'email' ? (
           <View style={{ gap: designTokens.space.x3 }}>
-            {([
-              ['agreementAccepted', 'Я принимаю пользовательское соглашение bidplace', 'Пользовательское соглашение', 'agreement'],
-              ['privacyAcknowledged', 'Я ознакомился с политикой персональных данных и cookies', 'Политика и cookies', 'privacy'],
-              ['dataConsentGiven', 'Я даю согласие на обработку данных для основной услуги bidplace', 'Согласие на обработку данных', 'data-consent'],
-              ['age18Confirmed', 'Мне исполнилось 18 лет', '', null],
-            ] as const).map(([name, label, linkLabel, id]) => (
-              <Controller
-                key={name}
-                control={form.control}
-                name={name}
-                render={({ field }) => (
-                  <AuthConsentCheckbox
-                    checked={field.value}
-                    disabled={!legalDocuments || registrationLegalPending}
-                    onChange={field.onChange}
-                    label={label}
-                    linkLabel={linkLabel || undefined}
-                    onOpenDocument={id ? () => setRegistrationLegalOpen(id) : undefined}
-                    error={form.formState.errors[name]?.message}
-                  />
-                )}
-              />
-            ))}
+            <AuthConsentCheckbox
+              checked={registrationConfirmationFields.every((key) => watched[key])}
+              disabled={!legalDocuments || registrationLegalPending}
+              label={registrationConsentLabel}
+              onChange={(checked) => {
+                for (const key of registrationConfirmationFields) {
+                  form.setValue(key, checked, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  });
+                }
+              }}
+              error={
+                registrationConfirmationFields.some((key) => form.formState.errors[key])
+                  ? 'Подтвердите документы и возраст 18+.'
+                  : undefined
+              }
+            >
+              <RegistrationLegalText onOpenDocument={setRegistrationLegalOpen} />
+            </AuthConsentCheckbox>
             {registrationLegalPending ? (
               <AppText role="bodySmall" tone="secondary">Загружаем юридические документы…</AppText>
             ) : null}
@@ -1175,8 +1182,6 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
                 <AppText role="bodySmall" tone="danger">{registrationLegalError}</AppText>
                 <TextButton label="Повторить" onPress={loadRegistrationLegal} />
               </>
-            ) : legalDocuments ? (
-              <AppText role="metadata">Редакция документов: {legalDocuments.version.split('+')[0]}</AppText>
             ) : null}
           </View>
         ) : null}

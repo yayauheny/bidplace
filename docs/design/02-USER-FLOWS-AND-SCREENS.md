@@ -15,6 +15,15 @@ assets и measurements берутся только из versioned inspect/handof
 `pAPQo6cADmG5XzVmBX76EE` (`DEC-119`). Product owner documents и server contracts
 по-прежнему определяют routes, data, permissions и auction behavior.
 
+### Registration consent —2026-10-20
+
+DEC-124 уточняет предыдущие auth-описания: один пустой checkbox явно подтверждает
+три документа и18+. Полные тексты доступны inline до принятия, без потери формы.
+Один клик заполняет существующие обязательные флаги и версии документов; открытие
+ссылки не принимает документы. Недоступный пакет блокирует продолжение, смена
+редакции требует повторного подтверждения. В UI нет служебной подписи версии.
+Регистрация остаётся fullscreen, центрированная form-column350 без sheetMax390.
+
 ### Auth presentation — 2026-10-08
 
 Current fullscreen registration/confirmation source:

@@ -7,7 +7,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { flush } from '../../testing/dom';
-import { authKeys, replaceAuthenticatedSession } from '../../lib/query-cache';
+import { advanceAuthEpoch, authKeys, replaceAuthenticatedSession } from '../../lib/query-cache';
 import { ApiErrorCode, type User } from '@bidplace/contracts';
 import { ApiClientError } from '@bidplace/api-client';
 import { blackColorMap, lightColorMap } from '@bidplace/design-tokens';
@@ -370,7 +370,7 @@ function fill(container: ParentNode, label: string, value: string) {
 
 function clickAllConsents(container: ParentNode) {
   const boxes = [...container.querySelectorAll('[role="checkbox"]')];
-  if (boxes.length !== 4) throw new Error('Expected four distinct legal confirmations');
+  if (boxes.length !== 1) throw new Error('Expected one explicit legal confirmation');
   for (const box of boxes) act(() => { if (box instanceof HTMLElement) box.click(); });
 }
 
@@ -412,11 +412,11 @@ async function until(
 async function reachNickname(container: HTMLElement) {
   await until(container, 'Введите вашу почту');
   fill(container, 'Электронная почта', 'a@example.com');
-  await until(container, 'Редакция документов: portfolio-legal-2026-10-12');
+  await until(container, () => { const box = container.querySelector('[role="checkbox"]'); return box instanceof HTMLButtonElement && !box.disabled; });
   await until(container, () => {
     const boxes = [...container.querySelectorAll('[role="checkbox"]')];
-    return boxes.length === 4 && boxes.every((node) => node instanceof HTMLButtonElement && !node.disabled);
-  }, 'four enabled legal checkboxes');
+    return boxes.length === 1 && boxes.every((node) => node instanceof HTMLButtonElement && !node.disabled);
+  }, 'one enabled legal checkbox');
   clickAllConsents(container);
   clickButton(container, 'Дальше');
   await until(container, 'Выберите имя пользователя');
@@ -465,15 +465,41 @@ afterEach(() => {
 describe('registration consent attempt', () => {
   it('keeps all confirmations disabled until a published legal pack is loaded', async () => {
     const view = mount();
-    // The simulated transport is async; once resolved, four unchecked controls are available.
-    await until(view.container, 'Редакция документов: portfolio-legal-2026-10-12');
-    expect([...view.container.querySelectorAll('[role="checkbox"]')]).toHaveLength(4);
+    // The simulated transport is async; once resolved, one unchecked control are available.
+    await until(view.container, () => { const box = view.container.querySelector('[role="checkbox"]'); return box instanceof HTMLButtonElement && !box.disabled; });
+    expect([...view.container.querySelectorAll('[role="checkbox"]')]).toHaveLength(1);
     expect([...view.container.querySelectorAll('[role="checkbox"]')].every(
       (node) => node.getAttribute('aria-checked') === 'false',
     )).toBe(true);
+    const links = [...view.container.querySelectorAll('[role="link"]')];
+    expect(links).toHaveLength(3);
+    expect(links.map((node) => node.textContent)).toEqual([
+      'пользовательское соглашение',
+      'политикой персональных данных и cookies',
+      'согласие на обработку данных',
+    ]);
+    clickLegalLink(view.container, 'пользовательское соглашение');
+    expect(view.container.querySelector('[role="checkbox"]')?.getAttribute('aria-checked')).toBe('false');
     view.unmount();
   });
 
+
+  it('reports a changed session only after registration input', async () => {
+    const view = mount();
+    await until(view.container, () => {
+      const box = view.container.querySelector('[role="checkbox"]');
+      return box instanceof HTMLButtonElement && !box.disabled;
+    });
+    act(() => { advanceAuthEpoch(view.client); });
+    await flush();
+    expect(view.container.textContent).not.toContain('Сессия изменилась');
+    fill(view.container, 'Электронная почта', 'a@example.com');
+    act(() => { advanceAuthEpoch(view.client); });
+    await flush();
+    expect(view.container.textContent).toContain('Сессия изменилась');
+    expect(harness.registers).toBe(0);
+    view.unmount();
+  });
 
   it('checks only on Next, blocks duplicate requests, and advances on available', async () => {
     let resolveAvailability: (value: { available: boolean }) => void = () =>
@@ -701,8 +727,8 @@ describe('registration consent attempt', () => {
     await flush();
     expect(harness.registers).toBe(0);
     clickButton(view.container, 'Повторить');
-    await until(view.container, 'Редакция документов: portfolio-legal-2026-10-12');
-    clickLegalLink(view.container, 'Пользовательское соглашение');
+    await until(view.container, () => { const box = view.container.querySelector('[role="checkbox"]'); return box instanceof HTMLButtonElement && !box.disabled; });
+    clickLegalLink(view.container, 'пользовательское соглашение');
     await until(view.container, 'Договор для портфолио.');
     const dialog = view.container.querySelector('[role="dialog"]');
     expect(dialog?.textContent).toContain('Термин: Сервис');
@@ -732,7 +758,7 @@ describe('registration consent attempt', () => {
     expect(harness.registers).toBe(1);
     expect(view.container.textContent).toContain('Введите вашу почту');
     const boxes = [...view.container.querySelectorAll('[role="checkbox"]')];
-    expect(boxes).toHaveLength(4);
+    expect(boxes).toHaveLength(1);
     expect(boxes.every((box) => box.getAttribute('aria-checked') !== 'true')).toBe(true);
     view.unmount();
   });
@@ -817,7 +843,7 @@ describe('registration consent attempt', () => {
     view.unmount();
   });
 
-  it('registers once with all three document versions and separate 18+ acknowledgment', async () => {
+  it('registers once with all three document versions and explicit 18+ acknowledgment', async () => {
     const view = mount();
     await reachPassword(view.container);
     clickButton(view.container, 'Дальше');

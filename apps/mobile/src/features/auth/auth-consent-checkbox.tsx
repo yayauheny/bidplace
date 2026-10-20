@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { View } from 'react-native';
 import { Path, Svg } from 'react-native-svg';
@@ -20,16 +21,14 @@ export function AuthConsentCheckbox({
   checked,
   onChange,
   label,
-  linkLabel,
-  onOpenDocument,
+  children,
   error,
   disabled = false,
 }: {
   checked: boolean;
   onChange: (checked: boolean) => void;
   label: string;
-  linkLabel?: string;
-  onOpenDocument?: () => void;
+  children?: ReactNode;
   error?: string;
   disabled?: boolean;
 }) {
@@ -45,7 +44,13 @@ export function AuthConsentCheckbox({
 
   return (
     <View style={{ gap: designTokens.space.fieldErrorGap, width: '100%' }}>
-      <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: designTokens.auth.titleGap }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'flex-start',
+          gap: designTokens.auth.titleGap,
+        }}
+      >
         <MotionPressable
           accessibilityRole="checkbox"
           accessibilityState={{ checked, disabled }}
@@ -60,42 +65,47 @@ export function AuthConsentCheckbox({
             colors={borderColors}
             start={{ x: 0, y: 0.5 }}
             end={{ x: 1, y: 0.5 }}
-            style={{ width: checkboxSize, height: checkboxSize, borderRadius: checkboxRadius, padding: borderWidth }}
+            style={{
+              width: checkboxSize,
+              height: checkboxSize,
+              borderRadius: checkboxRadius,
+              padding: borderWidth,
+            }}
           >
-            <View style={{
-              flex: 1,
-              borderRadius: innerRadius,
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: checked ? palette.fieldValue : palette.canvas,
-            }}>
+            <View
+              style={{
+                flex: 1,
+                borderRadius: innerRadius,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: checked ? palette.fieldValue : palette.canvas,
+              }}
+            >
               {checked ? (
                 <Svg width={9.33} height={6.67} viewBox="0 0 9.333334 6.666667">
-                  <Path d={CHECK_PATH} stroke={palette.canvas} strokeWidth={1.5} fill="none" />
+                  <Path
+                    d={CHECK_PATH}
+                    stroke={palette.canvas}
+                    strokeWidth={1.5}
+                    fill="none"
+                  />
                 </Svg>
               ) : null}
             </View>
           </LinearGradient>
         </MotionPressable>
         <View style={{ flex: 1, gap: designTokens.space.x1, minWidth: 0 }}>
-          <AppText role="authConsent">{label}</AppText>
-          {linkLabel && onOpenDocument ? (
-            <MotionPressable
-              accessibilityRole="link"
-              accessibilityLabel={linkLabel}
-              onPress={onOpenDocument}
-              preset="button"
-              style={{ alignSelf: 'flex-start' }}
-            >
-              <AppText role="authConsent" style={{ color: palette.fieldValue, textDecorationLine: 'underline' }}>
-                {linkLabel}
-              </AppText>
-            </MotionPressable>
-          ) : null}
+          {children ?? <AppText role="authConsent">{label}</AppText>}
         </View>
       </View>
       {error ? (
-        <AppText role="bodySmall" tone="danger" accessibilityLiveRegion="polite">{error}</AppText>
+        <AppText
+          role="bodySmall"
+          tone="danger"
+          accessibilityLiveRegion="polite"
+        >
+          {error}
+        </AppText>
       ) : null}
     </View>
   );

@@ -441,9 +441,7 @@ export function AuthViewport(props: AuthViewportProps) {
                         // Fullscreen registration keeps its own geometry; the
                         // sheet follows the shared width policy (full width at
                         // <=600 viewport, sheetMax column above).
-                        maxWidth: screen
-                          ? designTokens.layout.sheetMax
-                          : sheetWidthConstraint(width),
+                        maxWidth: screen ? undefined : sheetWidthConstraint(width),
                         maxHeight: screen
                           ? height
                           : Math.max(

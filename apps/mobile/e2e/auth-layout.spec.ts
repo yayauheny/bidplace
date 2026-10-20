@@ -368,14 +368,7 @@ test('after aborting a filled registration the next Back and Forward walk real h
   await expect(page).toHaveURL(/\/register\?redirectTo=%2Fworks$/);
   const registerEmail = page.getByPlaceholder('example@gmail.com');
   await registerEmail.fill(`history-${Date.now()}@example.com`);
-  for (const label of [
-    'Я принимаю пользовательское соглашение bidplace',
-    'Я ознакомился с политикой персональных данных и cookies',
-    'Я даю согласие на обработку данных для основной услуги bidplace',
-    'Мне исполнилось 18 лет',
-  ]) {
-    await page.getByRole('checkbox', { name: label, exact: true }).check();
-  }
+  await acceptRegistrationConsents(page);
   await page.getByRole('button', { name: 'Дальше', exact: true }).click();
   const nickname = page.getByLabel('Никнейм', { exact: true });
   await expect(nickname).toBeVisible();
@@ -1422,16 +1415,9 @@ async function expectS4Register(page: Page) {
   const submit = page.getByRole('button', { name: 'Дальше' });
   await submit.scrollIntoViewIfNeeded();
   await expect(submit).toBeVisible();
-  for (const consent of [
-    'Я принимаю пользовательское соглашение bidplace',
-    'Я ознакомился с политикой персональных данных и cookies',
-    'Я даю согласие на обработку данных для основной услуги bidplace',
-    'Мне исполнилось 18 лет',
-  ]) {
-    await expect(
-      page.getByRole('checkbox', { name: consent, exact: true }),
-    ).toBeVisible();
-  }
+  const confirmation = page.getByRole('checkbox', { name: /^Мне есть 18 лет/ });
+  await expect(confirmation).toHaveCount(1);
+  await expect(confirmation).toBeVisible();
   await expect(
     page.getByRole('navigation', { name: 'Основная навигация' }),
   ).toHaveCount(0);
@@ -1467,3 +1453,31 @@ async function captureAuthSurface(
 function engine(page: Page) {
   return page.context().browser()?.browserType().name() ?? 'browser';
 }
+
+test('registration email stays centered with one inline legal confirmation', async ({ page }, info) => {
+  await installLegalDocumentsFixture(page);
+  for (const width of [320, 390, 440]) {
+    await page.setViewportSize({ width, height: 874 });
+    await page.goto('/register');
+    const email = page.getByRole('textbox', { name: 'Электронная почта' });
+    await expect(email).toBeVisible();
+    const box = await email.boundingBox();
+    expect(box!.x + box!.width / 2).toBeCloseTo(width / 2, 0);
+    expect(box!.width).toBeLessThanOrEqual(350);
+    const checkbox = page.getByRole('checkbox');
+    await expect(checkbox).toHaveCount(1);
+    await expect(checkbox).not.toBeChecked();
+    const agreement = page.getByRole('link', { name: 'пользовательское соглашение', exact: true });
+    await expect(agreement).toHaveCount(1);
+    await expect(agreement).toHaveCSS('color', 'rgb(18, 18, 18)');
+    await expect(page.getByText('Редакция документов:', { exact: false })).toHaveCount(0);
+    await expect(page.getByText('Сессия изменилась. Повторите регистрацию.', { exact: true })).toHaveCount(0);
+    await page.evaluate(() => document.fonts.ready);
+    await mkdir(artifactDir, { recursive: true });
+    await page.screenshot({ path: resolve(artifactDir, `${info.project.name}-register-centered-${width}.png`) });
+  }
+  await page.getByRole('textbox', { name: 'Электронная почта' }).fill('layout@example.com');
+  await page.getByRole('checkbox').check();
+  await page.getByRole('button', { name: 'Дальше', exact: true }).click();
+  await expect(page.getByText('Выберите имя пользователя', { exact: true })).toBeVisible();
+});

@@ -243,7 +243,7 @@ import { FigmaChip } from '../components/figma/FigmaChip.web';
 import { figmaButtonLabelColor } from '../components/figma/figma-button-style';
 import { AuthConsentCheckbox } from '../features/auth/auth-consent-checkbox';
 import { AuthGoogleIcon } from '../features/auth/auth-google-icon';
-import { AuthLegalText } from '../features/auth/auth-legal-text';
+import { AuthLegalText, RegistrationLegalText } from '../features/auth/auth-legal-text';
 import { HomeNewAuthors } from '../features/home/home-new-authors';
 import { AuthorShare } from '../features/sellers/AuthorShare';
 import { CreatorWorkCard } from '../features/sellers/CreatorWorkCard';
@@ -459,8 +459,7 @@ describe('app theme owner', () => {
             checked: false,
             onChange: () => undefined,
             label: 'Мне есть 18 лет',
-            linkLabel: 'условия',
-            onOpenDocument: () => undefined,
+            children: createElement(RegistrationLegalText, { onOpenDocument: () => undefined }),
           }),
           createElement(AuthGoogleIcon, { key: 'google' }),
           createElement(ProductDraftStoryStep, {
@@ -496,7 +495,7 @@ describe('app theme owner', () => {
         (node) => node.textContent === text,
       ) as HTMLElement;
     const legalLink = spanByText('политикой персональных данных и cookies');
-    const consentLink = spanByText('условия');
+    const consentLink = spanByText('пользовательское соглашение');
     const gradient = container.querySelector(
       '[data-gradient-colors]',
     ) as HTMLElement;
