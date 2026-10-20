@@ -24,6 +24,7 @@ export function FormPageShell({
   return (
     <AppShell hideDock={hideDock} bottomAction={bottomAction}>
       <ScrollView
+        testID="form-page"
         contentContainerStyle={{
           paddingBottom: bottomAction
             ? 0
