@@ -15,6 +15,15 @@ assets и measurements берутся только из versioned inspect/handof
 `pAPQo6cADmG5XzVmBX76EE` (`DEC-119`). Product owner documents и server contracts
 по-прежнему определяют routes, data, permissions и auction behavior.
 
+### Registration document reading —2026-10-20, DEC-125
+
+Один explicit control подтверждает документы и18+ при регистрации. Создание
+аккаунта не зависит от GET текста, CTA всегда «Дальше». По ссылке —существующий
+AppDialog, loading или ошибка чтения; закрытие сохраняет email/checkbox.
+Сервер определяет фактическую редакцию при атомарном создании аккаунта.
+Дополнительного принятия перед заявкой/публикацией нет. Это уточнение заменяет
+описанное ниже переключение primary action на повтор загрузки.
+
 ### Registration consent —2026-10-20
 
 DEC-124 уточняет предыдущие auth-описания: один пустой checkbox явно подтверждает

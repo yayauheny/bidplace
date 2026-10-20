@@ -496,3 +496,15 @@ layer below panels. Native/isolated rendering retains its existing per-dialog
 implementation; centered confirmations, auth and Search keep their flow layers.
 useReturnFocus records weak opener ancestry for handoffs without retaining closed
 DOM scopes. See audits/2026-10-19-TRANSITION-MATRIX.md for coverage and limits.
+
+### Registration evidence and document delivery —2026-10-20
+
+DEC-125: AuthService.register reads readRegistrationLegalVersion (edition +
+source digest) instead of the public document endpoint. Canonical source
+parsing/hashing is shared in legal-documents.ts; readPublishedLegalDocuments
+additionally rejects unresolved placeholders before exposing bodies.
+New clients submit confirmed actions without a revision; the server owns the
+revision at atomic User/evidence creation. Explicit legacy revisions still
+undergo mismatch rejection. No new database state or acceptance stage.
+RegisterForm completes navigation after the AuthProvider rendered the installed
+account, checked against the captured epoch/controller/focus receipt.

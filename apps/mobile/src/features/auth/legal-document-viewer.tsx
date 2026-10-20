@@ -23,7 +23,7 @@ export function LegalDocumentViewer({
           <LegalDocumentContent markdown={document.markdown} />
         </>
       ) : (
-        <AppText role="bodySmall" tone="secondary">{loading ? 'Загружаем документ…' : 'Документ пока не опубликован.'}</AppText>
+        <AppText role="bodySmall" tone="secondary">{loading ? 'Загружаем документ…' : 'Не удалось открыть документ. Попробуйте позже.'}</AppText>
       )}
     </AppDialog>
   );

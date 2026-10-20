@@ -1482,24 +1482,43 @@ test('registration email stays centered with one inline legal confirmation', asy
   await expect(page.getByText('Выберите имя пользователя', { exact: true })).toBeVisible();
 });
 
-test('registration retries unavailable documents through its primary action', async ({ page }) => {
-  await page.route('**/api/auth/legal', (route) => route.fulfill({
-    status: 503, json: { message: 'legal not published' },
-  }));
+test('registration continues when document reading is unavailable', async ({ page }, info) => {
+  await installTurnstileFixture(page);
+  const unique = Date.now().toString();
+  const registrationEmail = `register-${unique}-${info.project.name}@example.com`;
+  let documentReads = 0;
+  await page.route('**/api/auth/legal', (route) => {
+    documentReads += 1;
+    return route.fulfill({ status: 503, json: { message: 'legal not published' } });
+  });
   await page.setViewportSize({ width: 390, height: 874 });
   await page.goto('/register');
-  const retry = page.getByRole('button', { name: 'Повторить загрузку', exact: true });
-  await expect(retry).toBeVisible();
-  await expect(page.getByText(/Юридические документы пока не опубликованы/)).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Повторить', exact: true })).toHaveCount(0);
-  await expect(page.getByRole('checkbox')).toBeDisabled();
-  const email = page.getByRole('textbox', { name: 'Электронная почта' });
-  await email.fill('retry@example.com');
-  await page.unroute('**/api/auth/legal');
-  await installLegalDocumentsFixture(page);
-  await retry.click();
-  await expect(page.getByRole('button', { name: 'Дальше', exact: true })).toBeVisible();
+  const next = page.getByRole('button', { name: 'Дальше', exact: true });
+  await expect(next).toBeVisible();
+  expect(documentReads).toBe(0);
   await expect(page.getByRole('checkbox')).toBeEnabled();
-  await expect(page.getByRole('checkbox')).not.toBeChecked();
-  await expect(email).toHaveValue('retry@example.com');
+  const email = page.getByRole('textbox', { name: 'Электронная почта' });
+  await email.fill(registrationEmail);
+  await page.getByRole('checkbox').check();
+  await page.getByRole('link', { name: 'пользовательское соглашение', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Юридический документ', exact: true });
+  await expect(dialog.getByText('Не удалось открыть документ. Попробуйте позже.', { exact: true })).toBeVisible();
+  expect(documentReads).toBe(1);
+  await dialog.getByRole('button', { name: 'Закрыть окно', exact: true }).click();
+  await expect(email).toHaveValue(registrationEmail);
+  await expect(page.getByRole('checkbox')).toBeChecked();
+  await expect(page.getByRole('button', { name: /Повторить/ })).toHaveCount(0);
+  await next.click();
+  await expect(page.getByText('Выберите имя пользователя', { exact: true })).toBeVisible();
+  await page.getByLabel('Никнейм', { exact: true }).fill(`ui${info.project.name[0]}${unique}`);
+  await next.click();
+  await page.getByLabel('Введите пароль', { exact: true }).fill('browser-registration-test-2026');
+  await page.getByLabel('Подтвердите пароль', { exact: true }).fill('browser-registration-test-2026');
+  await expectTurnstileReady(page, 'register');
+  const response = page.waitForResponse((result) =>
+    result.url().endsWith('/api/auth/register') && result.request().method() === 'POST');
+  await next.click();
+  expect((await response).status()).toBe(201);
+  await expect(page).toHaveURL(/verify-email/);
+
 });

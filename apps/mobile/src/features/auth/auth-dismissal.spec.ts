@@ -211,15 +211,15 @@ describe('registration request', () => {
       privacyAcknowledged: true,
       dataConsentGiven: true,
       age18Confirmed: true,
-    }, 'portfolio-legal-2026-10-12')).toEqual({
+    })).toEqual({
       email: 'author@example.com',
       password: 'password123',
       slug: 'author',
       phone: null,
       legal: {
-        agreement: { version: 'portfolio-legal-2026-10-12', confirmed: true },
-        privacy: { version: 'portfolio-legal-2026-10-12', confirmed: true },
-        dataConsent: { version: 'portfolio-legal-2026-10-12', confirmed: true },
+        agreement: { confirmed: true },
+        privacy: { confirmed: true },
+        dataConsent: { confirmed: true },
         age18Confirmed: true,
       },
     });

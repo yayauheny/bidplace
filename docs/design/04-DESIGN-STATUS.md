@@ -2,6 +2,27 @@
 
 > Entries dated before 2026-10-13 mention Pen / .pen files; the Pen design was removed (DEC-119) — read those mentions as history.
 
+## 2026-10-20 — Регистрация отделена от выдачи текста документов
+
+**Implemented (DEC-125).** Один explicit checkbox, обычная CTA «Дальше»; документы
+запрашиваются только по ссылке, ошибка показывается в общем AppDialog. GET legal503
+не блокирует email→nickname→password→register. API сохраняет обязательные
+confirmed/18+ и серверную файловую редакцию в атомарном User+evidence create.
+Legacy client versions поддерживаются и stale отклоняется. Миграций и отложенного
+согласия нет. Публичная выдача незавершённых policy по-прежнему закрыта.
+
+Дополнительно исправлена воспроизведённая гонка перехода register→verify-email:
+навигация ждёт отрисованную установленную сессию, как существующий login receipt;
+epoch/controller/focus guards сохранены, таймеров нет.
+
+Проверки: API owner32/32, mobile focused67/67, HTTP/БД3/3 в disposable schema,
+production browser Chromium/WebKit (полный register201→verify-email после сбоя
+чтения), API/mobile typecheck и builds, lint/diff-check. Browser gate использует scripted proof; дополнительно без подмены проверен
+публичный test widget Cloudflare с реальным201 и verify-email. Production
+challenge не проверялся; local/test адаптер принимает официальный dummy token
+только в явно разрешённом test/local профиле.
+[Аудит](../audits/2026-10-20-REGISTRATION-DOCUMENT-ACCESS.md).
+
 ## 2026-10-20 — Регистрация: состояние загрузки без отдельного error-блока
 
 **Implemented.** Удалены красный текст недоступности legal-пакета, отдельная

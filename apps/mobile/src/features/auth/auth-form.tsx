@@ -606,6 +606,12 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
   const seenAuthEpoch = useRef(authEpoch);
   const mounted = useRef(true);
   const completed = useRef(false);
+  const registrationReceipt = useRef<{
+    user: User;
+    operation: number;
+    epoch: number;
+    controller: AbortController;
+  } | null>(null);
   const registerTransport = useRef<AbortController | null>(null);
   const registerSnapshot = useRef<string | null>(null);
   const registerSubmitting = useRef(false);
@@ -621,7 +627,6 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
   const focusedRef = useRef(focused);
   const wasFocused = useRef(focused);
   const [legalDocuments, setLegalDocuments] = useState<LegalDocumentsResponse | null>(null);
-  const [registrationLegalError, setRegistrationLegalError] = useState<string | null>(null);
   const [registrationLegalPending, setRegistrationLegalPending] = useState(false);
   const [registrationLegalOpen, setRegistrationLegalOpen] = useState<LegalDocumentId | null>(null);
   const legalRequest = useRef(0);
@@ -663,7 +668,7 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
     routeOwns(operation) &&
     (sessionUser()?.id ?? null) === null &&
     currentAuthEpoch(queryClient) === epoch;
-  const finishRegistration = (user: User, operation?: number) => {
+  const finishRegistration = useCallback((user: User, operation?: number) => {
     if (!mounted.current || !focusedRef.current || completed.current) return;
     if (operation !== undefined && sessionOperation.current !== operation) return;
     completed.current = true;
@@ -672,7 +677,25 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
       : (`/verify-email?redirectTo=${encodeURIComponent(redirectTo)}` as SafeRedirect);
     if (complete) complete(next);
     else router.replace(next as Href);
-  };
+  }, [complete, redirectTo, router]);
+  useEffect(() => {
+    const receipt = registrationReceipt.current;
+    if (!receipt) return;
+    const epoch = readAuthEpoch(queryClient);
+    if (
+      receipt.controller.signal.aborted || !mounted.current || !focusedRef.current ||
+      sessionOperation.current !== receipt.operation || epoch.id !== receipt.epoch ||
+      !epoch.writesOpen ||
+      queryClient.getQueryData<User | null>(authKeys.session)?.id !== receipt.user.id
+    ) {
+      registrationReceipt.current = null;
+      return;
+    }
+    if (!auth.isAuthenticated || auth.user?.id !== receipt.user.id || form.formState.isSubmitting) return;
+    registrationReceipt.current = null;
+    finishRegistration(receipt.user, receipt.operation);
+  }, [auth.isAuthenticated, auth.user?.id, authEpoch, form.formState.isSubmitting, finishRegistration, queryClient]);
+
   useAuthSheetGuard({
     dirty: Boolean(
       watched.slug ||
@@ -759,12 +782,7 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
     const controller = new AbortController();
     registrationLegalTransport.current = controller;
     setLegalDocuments(null);
-    // An earlier checkbox click is never treated as acceptance of a newer or unavailable version.
-    for (const key of registrationConfirmationFields) {
-      form.setValue(key, false);
-    }
     setRegistrationLegalPending(true);
-    setRegistrationLegalError(null);
     void api.auth.getLegalDocuments({ signal: controller.signal })
       .then((documents) => {
         if (!mounted.current || controller.signal.aborted || request !== legalRequest.current) return;
@@ -774,27 +792,22 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
       .catch(() => {
         if (!mounted.current || controller.signal.aborted || request !== legalRequest.current) return;
         setLegalDocuments(null);
-        setRegistrationLegalError('Юридические документы пока не опубликованы. Регистрация временно недоступна.');
         setRegistrationLegalPending(false);
       })
       .finally(() => {
         if (registrationLegalTransport.current === controller) registrationLegalTransport.current = null;
       });
   };
-  useEffect(() => {
-    // Initial fetch only. Manual retries must not reset checks on ordinary re-renders.
-    loadRegistrationLegal();
-  }, []);
+  const openRegistrationLegal = (id: LegalDocumentId) => {
+    setRegistrationLegalOpen(id);
+    if (!legalDocuments && !registrationLegalTransport.current) loadRegistrationLegal();
+  };
 
   const submitRegistration = form.handleSubmit(async (values) => {
     setSubmitError(null);
     const operation = sessionOperation.current;
     const epoch = currentAuthEpoch(queryClient);
     if (!anonymousOwns(operation, epoch)) return;
-    if (!legalDocuments || legalDocuments.documents.length !== 5) {
-      setSubmitError('Не удалось получить действующие юридические документы.');
-      return;
-    }
     if (proofAvailability === 'unavailable') {
       setSubmitError(AUTH_TURNSTILE_UNAVAILABLE_COPY);
       return;
@@ -812,7 +825,7 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
     setWidgetGeneration((generation) => generation + 1);
     try {
       const response = await auth.register(
-        { ...registerSubmission(values, legalDocuments.version), turnstileToken: token },
+        { ...registerSubmission(values), turnstileToken: token },
         { signal: controller.signal },
       );
       if (controller.signal.aborted || !routeOwns(operation)) return;
@@ -821,28 +834,15 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
         return;
       }
       analytics.identify(response.user.id, { claimAcquisition: true });
-      finishRegistration(response.user, operation);
+      registrationReceipt.current = {
+        user: response.user,
+        operation,
+        epoch: currentAuthEpoch(queryClient),
+        controller,
+      };
     } catch (error) {
       if (controller.signal.aborted || aborted(error)) return;
       if (!anonymousOwns(operation, epoch)) return;
-      if (
-        error instanceof ApiClientError &&
-        error.kind === 'conflict' &&
-        typeof error.details === 'object' &&
-        error.details !== null &&
-        'reason' in error.details &&
-        error.details.reason === 'legal_version_stale'
-      ) {
-        setStep('email');
-        setLegalDocuments(null);
-        form.setValue('agreementAccepted', false);
-        form.setValue('privacyAcknowledged', false);
-        form.setValue('dataConsentGiven', false);
-        form.setValue('age18Confirmed', false);
-        loadRegistrationLegal();
-        setSubmitError('Редакция документов изменилась. Ознакомьтесь с ней и подтвердите ещё раз.');
-        return;
-      }
       const message = authRequestMessage(error);
       if (message) {
         setSubmitError(message);
@@ -881,12 +881,6 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
     setSubmitError(null);
     if (step === 'email') {
       const emailOk = await form.trigger('email');
-      // Do not blame the visitor for unchecked controls that were disabled
-      // because the operator has not published the legal documents.
-      if (!legalDocuments || legalDocuments.documents.length !== 5) {
-        setSubmitError('Юридические документы пока недоступны.');
-        return;
-      }
       const consentOk = await form.trigger([
         'agreementAccepted', 'privacyAcknowledged', 'dataConsentGiven', 'age18Confirmed',
       ]);
@@ -989,19 +983,14 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
       : null;
   const nextAction = (
     <PrimaryButton
-      label={step === 'email' && registrationLegalError ? 'Повторить загрузку' : 'Дальше'}
+      label="Дальше"
       size="auth"
       width="full"
       loading={
         form.formState.isSubmitting ||
-        slugAvailability?.status === 'checking' ||
-        (step === 'email' && registrationLegalPending)
+        slugAvailability?.status === 'checking'
       }
-      disabled={step === 'email' && !legalDocuments && !registrationLegalError}
-      onPress={() => {
-        if (step === 'email' && registrationLegalError) loadRegistrationLegal();
-        else void goNext();
-      }}
+      onPress={() => void goNext()}
     />
   );
   const submitFeedback = submitError ? (
@@ -1159,7 +1148,6 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
           <View style={{ gap: designTokens.space.x3 }}>
             <AuthConsentCheckbox
               checked={registrationConfirmationFields.every((key) => watched[key])}
-              disabled={!legalDocuments || registrationLegalPending}
               label={registrationConsentLabel}
               onChange={(checked) => {
                 for (const key of registrationConfirmationFields) {
@@ -1175,7 +1163,7 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
                   : undefined
               }
             >
-              <RegistrationLegalText onOpenDocument={setRegistrationLegalOpen} />
+              <RegistrationLegalText onOpenDocument={openRegistrationLegal} />
             </AuthConsentCheckbox>
 
           </View>
