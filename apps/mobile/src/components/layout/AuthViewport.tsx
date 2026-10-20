@@ -327,9 +327,7 @@ export function AuthViewport(props: AuthViewportProps) {
     const sheet = document.getElementById('auth-sheet');
     if (!sheet) return;
     if (sheet.contains(document.activeElement)) return;
-    sheet
-      .querySelector<HTMLElement>('input')
-      ?.focus({ preventScroll: true });
+    sheet.querySelector<HTMLElement>('input')?.focus({ preventScroll: true });
   }, []);
 
   const entering = useMemo(
@@ -441,7 +439,9 @@ export function AuthViewport(props: AuthViewportProps) {
                         // Fullscreen registration keeps its own geometry; the
                         // sheet follows the shared width policy (full width at
                         // <=600 viewport, sheetMax column above).
-                        maxWidth: screen ? undefined : sheetWidthConstraint(width),
+                        maxWidth: screen
+                          ? undefined
+                          : sheetWidthConstraint(width),
                         maxHeight: screen
                           ? height
                           : Math.max(
@@ -667,6 +667,26 @@ export function AuthViewport(props: AuthViewportProps) {
                           {children}
                         </View>
                       </ScrollView>
+                      {screen ? (
+                        <MotionPressable
+                          accessibilityRole="button"
+                          accessibilityLabel="Закрыть"
+                          onPress={requestDismiss}
+                          preset="icon"
+                          style={{
+                            position: 'absolute',
+                            top: designTokens.auth.screenPaddingTop,
+                            right: designTokens.auth.screenPaddingX,
+                            width: designTokens.size.touch,
+                            height: designTokens.size.touch,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            zIndex: designTokens.layer.modal,
+                          }}
+                        >
+                          <FigmaIcon name="x" size={22} />
+                        </MotionPressable>
+                      ) : null}
                     </Dialog.Content>
                   </SheetDragSurface>
                 </Animated.View>

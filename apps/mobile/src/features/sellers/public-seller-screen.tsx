@@ -134,7 +134,9 @@ export function PublicSellerScreen({
       <View style={{ flex: 1, position: 'relative', overflow: 'visible' }}>
         <ScrollView
           testID="creator-scroll"
+          style={{ marginHorizontal: -designTokens.layout.gutter }}
           contentContainerStyle={{
+            paddingHorizontal: designTokens.layout.gutter,
             paddingBottom: reserve,
             overflow: 'visible',
           }}

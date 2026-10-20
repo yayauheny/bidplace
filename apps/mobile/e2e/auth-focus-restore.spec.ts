@@ -4,7 +4,8 @@ import { expect, test, type Page } from '@playwright/test';
 // The dock unmounts while the sheet is open, so the opener node is replaced;
 // focus must land on the remounted trigger (or the page navigation fallback).
 
-const DOCK_PROFILE = '[data-testid="figma-floating-dock"] [aria-label="Профиль"]';
+const DOCK_PROFILE =
+  '[data-testid="figma-floating-dock"] [aria-label="Профиль"]';
 
 async function openSheetFromDock(page: Page) {
   await page.goto('/');
@@ -42,9 +43,7 @@ for (const close of ['Escape', 'cross', 'swipe'] as const) {
     if (close === 'Escape') {
       await page.keyboard.press('Escape');
     } else if (close === 'cross') {
-      await page
-        .getByRole('button', { name: 'Закрыть', exact: true })
-        .click();
+      await page.getByRole('button', { name: 'Закрыть', exact: true }).click();
     } else {
       await pullSheetDown(page);
     }
@@ -81,9 +80,7 @@ test('login forgot transitions keep focus inside the active sheet', async ({
       () => document.activeElement?.closest?.('#auth-sheet') !== null,
     );
   await page.getByLabel('Электронная почта').focus();
-  await page
-    .getByRole('link', { name: 'Забыли пароль?', exact: true })
-    .click();
+  await page.getByRole('link', { name: 'Забыли пароль?', exact: true }).click();
   await page
     .getByText('Восстановление пароля', { exact: true })
     .waitFor({ state: 'visible' });
@@ -111,11 +108,32 @@ test('dirty exit-confirm cancel returns focus into the form', async ({
   await page
     .getByText('Прервать регистрацию', { exact: true })
     .waitFor({ state: 'visible' });
-  await page
-    .getByRole('button', { name: 'Продолжить', exact: true })
-    .click();
+  await page.getByRole('button', { name: 'Продолжить', exact: true }).click();
   await expect(email).toBeFocused();
   await expect(
     page.getByText('Прервать регистрацию', { exact: true }),
   ).toHaveCount(0);
+});
+
+test('registration close returns to its public origin and preserves the dirty guard', async ({
+  page,
+}) => {
+  await page.goto('/register?redirectTo=%2Fseller%2Fvex');
+  await expect(
+    page.getByLabel('Электронная почта', { exact: true }),
+  ).toBeFocused();
+  await page.getByRole('button', { name: 'Закрыть', exact: true }).click();
+  await expect(page).toHaveURL(/\/seller\/vex$/);
+  await page.goto('/register?redirectTo=%2Fseller%2Fvex');
+  const email = page.getByLabel('Электронная почта', { exact: true });
+  await email.fill('dirty@example.com');
+  await page.getByRole('button', { name: 'Закрыть', exact: true }).click();
+  await expect(
+    page.getByText('Прервать регистрацию', { exact: true }),
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'Продолжить', exact: true }).click();
+  await expect(email).toHaveValue('dirty@example.com');
+  await expect(
+    page.getByRole('button', { name: 'Закрыть', exact: true }),
+  ).toBeFocused();
 });

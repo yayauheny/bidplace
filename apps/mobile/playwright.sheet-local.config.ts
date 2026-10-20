@@ -6,6 +6,7 @@ export default defineConfig({
     'sheet-live.spec.ts',
     'auth-layout.spec.ts',
     'auth-focus-restore.spec.ts',
+    'search-overlay.spec.ts',
     'account-presentation.spec.ts',
     'author-achievement-revision.spec.ts',
   ],

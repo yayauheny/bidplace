@@ -466,7 +466,6 @@ Packaging, delivery, condition, provenance, город продажи, weight и
 - safe-area/keyboard behavior for fixed or floating controls;
 - direct URL access to disabled commerce surfaces fails safely.
 
-
 ## 2026-10-18 — Auth sheet background and close contract (DEC-122)
 
 Opening login from a public page retains that page, loaded images and scroll
@@ -483,3 +482,10 @@ API; close/Escape/swipe discards the candidate. «Очистить дату» ex
 it. Existing add-event action and server validation remain unchanged. Session
 switch, external value replacement or busy state must not apply an old candidate.
 Creation year is numeric, and publication timestamp remains automatic.
+
+### 2026-10-20 — Явный выход из регистрации
+
+Полноэкранные шаги регистрации имеют общий крест AuthViewport. Он использует
+существующие правила выхода: clean → исходный публичный redirectTo, dirty →
+подтверждение, busy → блокировка выхода. Отмена подтверждения возвращает фокус
+на открывший его элемент (крест при клике, поле при Escape).

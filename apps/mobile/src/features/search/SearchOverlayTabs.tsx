@@ -28,9 +28,9 @@ export function SearchOverlayTabs({
       kind="rail"
       testID="search-overlay-tabs"
       style={{
-        width: rail.sampleWidth,
+        width: '100%',
         maxWidth: '100%',
-        alignSelf: 'flex-start',
+        alignSelf: 'stretch',
         marginTop: searchChromeTokens.railOffset,
       }}
     >

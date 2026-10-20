@@ -681,10 +681,10 @@ This does not change control size, type, or the field success state.
 - `AccountIdentity` (`components/figma/AccountIdentity.tsx`) — row:
   avatar100 (`size.accountAvatar`, `radius.avatar`, placeholder
   `accountAvatarPlaceholder`) + текстовая колонка `flex:1/minWidth:0`
-  + опциональный CTA slot. Имя — `accountName` strong; handle
-  `@slug` — `accountHandle` цветом `accountMeta`; handle nullable.
-  Фото через `ResilientRemoteImage` (`fallback="plain"`, retryable=false).
-  Это не `CreatorIdentity`: та — для публичных страниц автора.
+  - опциональный CTA slot. Имя — `accountName` strong; handle
+    `@slug` — `accountHandle` цветом `accountMeta`; handle nullable.
+    Фото через `ResilientRemoteImage` (`fallback="plain"`, retryable=false).
+    Это не `CreatorIdentity`: та — для публичных страниц автора.
 - Published identity правило: при APPROVED имя/фото/sharePath берутся
   только из публичного author-кэша (`use-account-public-identity`, общий
   query key с публичным экраном автора); owner profile несёт editing
@@ -759,3 +759,13 @@ Web sheet motion has one persistent DOM tree with withTiming and reduced-motion
 support. Closing content is inert and aria-hidden; completion removes it. This
 avoids Reanimated web layout exit moving interactive controls into dummy clones.
 Native retains existing layout enter/exit.
+
+### 2026-10-20 — Search и полноэкранный AuthViewport
+
+SearchOverlayTabs растягивает rail на ширину доступной колонки, sampleWidth не
+является ограничением runtime. Интерактивная поверхность AuthorSearchRow имеет
+radius.small; постоянная геометрия передаётся статическим style, состояния —
+через interactionStyle, поскольку Link asChild не сохраняет callback-style.
+Крест AuthViewport использует size.touch и существующие auth.screenPaddingX/Top;
+в DOM следует после формы, чтобы первичный фокус оставался на поле. Цвет и
+модальность focus-visible из §6.4 сохранены.

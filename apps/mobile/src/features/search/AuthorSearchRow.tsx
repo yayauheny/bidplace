@@ -35,10 +35,13 @@ export function AuthorSearchRow({
         testID="author-search-row"
         preset="card"
         {...interactiveHitDataset()}
-        style={({ hovered, pressed }) => ({
+        style={{
           width: '100%',
-          ...interactiveHitFallbackStyle({ hovered, pressed, palette }),
-        })}
+          borderRadius: designTokens.radius.small,
+        }}
+        interactionStyle={({ hovered, pressed }) =>
+          interactiveHitFallbackStyle({ hovered, pressed, palette })
+        }
       >
         <View style={authorSearchRowStyle()}>
           <View

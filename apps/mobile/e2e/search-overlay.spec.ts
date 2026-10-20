@@ -628,3 +628,69 @@ function hoverFill(locator: {
 }) {
   return locator.evaluate((node) => getComputedStyle(node).backgroundColor);
 }
+
+test('search chrome fills the viewport, rounds author hits and distinguishes pointer from keyboard focus', async ({
+  page,
+}) => {
+  for (const width of [320, 390, 765]) {
+    await page.setViewportSize({ width, height: 876 });
+    await page.goto('/?overlay=search&otab=authors');
+    const tabs = page.getByTestId('search-overlay-tabs');
+    const query = page.getByTestId('search-overlay-query');
+    await expect(tabs).toBeVisible();
+    const railBox = await tabs.boundingBox();
+    const inputBox = await query.boundingBox();
+    expect(railBox).not.toBeNull();
+    expect(inputBox).not.toBeNull();
+    expect(railBox!.x).toBeLessThanOrEqual(inputBox!.x);
+    expect(railBox!.width).toBeGreaterThan(inputBox!.width);
+    const authorTab = page.getByRole('tab', { name: 'Авторы', exact: true });
+    await query.fill('vex');
+    await authorTab.click();
+    await expect(authorTab).toBeFocused();
+    expect(
+      await authorTab.evaluate((e) => getComputedStyle(e).outlineStyle),
+    ).toBe('none');
+    await page.keyboard.press('Tab');
+    await page.keyboard.press('Shift+Tab');
+    await expect(authorTab).toBeFocused();
+    expect(
+      await authorTab.evaluate((e) => getComputedStyle(e).outlineStyle),
+    ).toBe('solid');
+    const row = page.getByTestId('author-search-row').first();
+    await expect(row).toBeVisible();
+    expect(
+      await row.evaluate((e) =>
+        parseFloat(getComputedStyle(e).borderTopLeftRadius),
+      ),
+    ).toBeGreaterThan(0);
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+  }
+});
+
+test('author scroll includes page gutters without moving the identity column', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 765, height: 876 });
+  await page.goto('/seller/vex');
+  const avatar = page.getByTestId('creator-avatar');
+  await expect(avatar).toBeVisible();
+  const scroll = await page.getByTestId('creator-scroll').boundingBox();
+  const shell = await page
+    .getByTestId('app-shell-content')
+    .filter({ has: page.getByTestId('creator-scroll') })
+    .boundingBox();
+  const identity = await avatar.boundingBox();
+  expect(scroll!.x).toBe(shell!.x);
+  expect(scroll!.width).toBe(shell!.width);
+  expect(identity!.x).toBeGreaterThan(scroll!.x);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+});

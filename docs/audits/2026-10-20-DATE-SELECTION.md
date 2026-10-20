@@ -72,3 +72,56 @@ Founder asked to do these small changes after the calendar/dock task, not during
 
 Primary task complete for web. Five browser follow-ups below remain a separate
 subsequent wave, as the founder requested.
+
+## Последующие UI-замечания — проверка в работе
+
+- Выход из полноэкранной регистрации: добавлен общий крест в AuthViewport,
+  вызывающий существующий requestDismiss; подтверждение несохранённой формы и
+  redirectTo не заменяются отдельной навигацией.
+- SearchOverlayTabs: убрано ограничение шириной sampleWidth, rail заполняет
+  доступную ширину. Размер образца остаётся справочным токеном.
+- AuthorSearchRow: radius.small применяется к реальной интерактивной поверхности,
+  которую окрашивают hover/pressed-правила, а не только внутреннему содержимому.
+- Аватар: браузер подтвердил overflow-x:hidden у creator-scroll с границей x=12.
+  ScrollView расширен на существующие gutter; содержимое получает тот же gutter
+  внутри. Положение полей и ширина сетки сохраняются, декор может рисоваться до
+  края колонки страницы. Глобальное снятие ограничений overflow не используется.
+- Синяя рамка: в Chromium и WebKit после click и после input→click outline:none,
+  :focus-visible=false. Дизайн-система §6.4 явно сохраняет синий клавиатурный
+  focus-visible. Его подавление было бы обходом доступности, поэтому CSS не
+  меняется; добавлена браузерная проверка обеих модальностей.
+
+Приёмка этих правок ещё не завершена. API, база, серверные разрешения и контракты
+не меняются. Новых зависимостей и дублирующих владельцев не добавлено.
+
+### Итог адресного прохода
+
+Найдена дополнительная причина у AuthorSearchRow: Link asChild не сохраняет
+callback-style дочерней MotionPressable. Решение: static style для размера/radius,
+существующий interactionStyle для hover/pressed. DOM подтвердил radius12px.
+Регрессия проверяет именно hit target, а не внутреннюю обёртку.
+
+Browser gate:8/8 Chromium+WebKit (3 новых сценария и существующий Escape dirty
+cancel). Полоса поиска проверена при320/390/765; авторский scroll при765 совпадает
+с краями app-shell-content, аватар остаётся с отступом12px. Новая кнопка44×44;
+добавлена проверка первичного фокуса email. Typecheck, lint и production export
+проверены; полный suite не запускался. База/серверные контракты этим проходом не
+менялись, новые browser fixtures не создавались.
+
+Решения по альтернативам: durable — исправить ограничение ширины/владельца
+окрашивания/границу scroll, переиспользовать requestDismiss; workaround — растянуть
+отдельные дочерние блоки поверх старых ограничений; hack — глобально отключить
+outline/overflow или подменить guard прямым router.back. Выбран durable подход.
+
+Evidence Chromium: /tmp/bidplace-followup-author.png,
+/tmp/bidplace-followup-search.png, /tmp/bidplace-followup-register.png.
+Ограничения: реальные zoom/text-scale/устройство не проверены; по focus при
+обычном pointer click дефект на свежей сборке не воспроизведён в обоих движках.
+
+Финальное уточнение: после переноса креста за ScrollView повторно пройдены4/4
+Chromium/WebKit (initial email focus, clean-close, dirty-cancel через крест и
+Escape). Финальные typecheck/eslint/diff-check зелёные. Постоянные screenshots:
+`/Users/yayauheny/.codex/visualizations/2026/10/15/01a1419d-e107-7f51-ba62-d6b0d4498018/ui-followups/`.
+Security review: новый крест делегирует существующему guard/commitLeave; права,
+сессии, сохранение согласий и обработка safe redirect не обходятся. В изменённых
+артефактах нет приватных данных или секретов; браузерные примеры синтетические.
