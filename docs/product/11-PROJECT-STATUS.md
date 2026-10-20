@@ -38,9 +38,23 @@ delete CTA в UI отсутствует. Остаток: точная Figma-св
 аккаунта (следующий этап — один экран по exact Figma node), физический
 iPhone/native, browser zoom 200%/увеличение текста — Needs verification.
 Push/merge/deploy не выполнялись.
+Второе повторное ревью (CR-01/02/03, DP-02, коммиты `5ffafb5e`,
+`1d482747`, `56d11b8a`): owner hide/restore переведён на единый intent
+(`{workId, action}`) — ошибка, confirm и retry принадлежат одной работе
+(красные регрессии A→ошибка→отмена→B и restore(A)→hide(B); legacy
+/cabinet на том же контроллере, кнопка «Скрыть» блокируется при pending).
+Settings: безопасный возврат через `dismissTo('/account')`/крест
+`replace('/account')` — прямые URL/reload возвращают в аккаунт, e2e
+обновлён (reload-close не исключён), gate 10/10 Chromium+WebKit.
+Identity: без displayName имя — один `@slug`, дубля нет. План 3D
+дожат по DP-02: единый `200 {ok:true}` и в §6 тестов, фактическая
+cache policy зафиксирована по коду (`private,no-store` owner JSON,
+`no-store`/`must-revalidate` публичные JSON — решение до кодинга;
+product images остаются `immutable`), аналитическая «отдельная строка»
+снята. Consumer specs 14/14, адресные 28/28. Визуальные детали
+(CTA width, insets) сознательно оставлены для измеренной приёмки
+следующего этапа по сохранённому intake ace4a323.
 [Файл выполнения](../audits/2026-10-19-ACCOUNT-FOUNDATION-PROGRESS.md).
-
-## 2026-10-19 — Account foundation: общая ширина шторок, общий seller-profile query
 
 **Implemented (волны 1–2, ветка `fix/account-foundation`).** Единая политика
 ширины для AuthViewport и общего AppDialog: viewport ≤600 CSS px — sheet во всю

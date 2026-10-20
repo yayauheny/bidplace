@@ -454,3 +454,53 @@ DP-01 — отдельным коммитом. Push/merge/deploy не выпол
   переданы ранее); точная Figma-сверка композиции /account — следующий
   этап (один экран по exact Figma node), она же закроет визуальный
   эталон caption/отступов.
+
+## Второе повторное ревью 2026-10-20 (CR-01/02/03 + DP-02)
+
+База: `fb8923c4` + docs-пакет. Коммиты: `5ffafb5e` (CR-01/02/03 код),
+`1d482747` (CR-02 уточнение e2e), `56d11b8a` (DP-02 план). Кодинг
+удаления не начинался; push/merge/deploy не выполнялись.
+
+- **CR-01 (intent принадлежит работе и действию).** Контроллер
+  `use-author-cabinet.ts` переведён на intent `{workId, action:
+  'hide'|'restore'}`; API `{intent, begin, cancel, restore, confirm,
+  retry, mutation}`, `sameIntent`. Restore — одношаговый begin+mutate.
+  Pending блокирует смену цели; поздний onSuccess закрывает confirm
+  только своего intent; begin/cancel делают mutation.reset при
+  смене/отмене. Legacy `author-cabinet-screen.tsx` на том же контроллере
+  (inline-ошибка при `mutation.isError` безопасна — ошибка всегда
+  текущего intent). Кнопка «Скрыть» (`owner-work-card.tsx`) получила
+  `disabled={visibilityPending}`. Регрессии (сначала красные):
+  failed hide A→cancel→B адресует только B; failed restore A→hide
+  confirm B не вызывает unhide A; pending A блокирует перенацеливание,
+  поздний success не ломает чужой confirm; retry повторяет ту же
+  операцию. Проверка: account-consumer.spec **14/14**, адресные 28/28.
+- **CR-02 (возврат из настроек).** Settings Back = `dismissTo('/account')`
+  (существующий паттерн AuthViewport): естественный стек возвращает к
+  живому /account, прямая загрузка/reload — тоже к /account (web-стек
+  под свежей загрузкой содержит index, `navigateBack` уходил бы на '/' —
+  критерии ревьюера выполнены иначе named механизмом). Крест = `replace`.
+  E2E обновлён: natural Back, direct/fresh Back, reload→крест (reload-close
+  НЕ исключён из теста), account direct→Back→'/'. Gate **10/10
+  Chromium+WebKit** после обоих коммитов.
+- **CR-03 (дубль slug/@slug).** `account-screen.tsx`: при отсутствии
+  displayName имя = один `@slug`, handle = null. Регрессия-спек
+  единственности `@slug` в account-consumer.spec.
+- **DP-02 (план 3D).** `56d11b8a`: единый `200 {ok:true}` и в §6 тестов
+  (оставшиеся `204` устранены); фактическая cache policy установлена
+  чтением кода и зафиксирована как решение до кодинга (owner JSON →
+  `private, no-store`; публичные JSON → `no-store`/`must-revalidate`;
+  product images остаются `immutable`, отзыв не гарантируется;
+  отдельный edge-purge не вводится); аналитическая «отдельная строка»
+  снята (активные метрики фильтруются по deletedAt, новые панели не
+  вводятся). TTL-формулировка §7 приведена к фактической политике.
+- **Проверки.** account-consumer.spec 14/14; адресные specs 28/28 (3
+  файла); e2e account-screen 10/10 Chromium+WebKit; tsc/eslint чисто.
+  Полный suite/build повторно не гонялся (условие ревью). Production
+  build на `aaa0972d` остаётся актуальным для runtime (после `5ffafb5e`
+  — адресные проверки + e2e, без повторного build; runtime-изменения
+  ограничены контроллером/экранами аккаунта).
+- **Остаток (Needs verification, не этот проход).** Визуальные детали
+  (ширина CTA, insets, поля settings) — для измеренной приёмки этапа 4,
+  которую ревьюер выполняет сам по сохранённому intake ace4a323;
+  физический iPhone/native; browser zoom 200%/увеличение текста.

@@ -25,6 +25,15 @@ ResilientRemoteImage `fallback: 'plain'|'labelled'`, новая semantic-рол�
 Проверки: browser gate 10/10 Chromium+WebKit (маршруты, identity,
 настройки, not-found до публикации, 320 без переполнения, прокрутка
 320×568), consumer specs 9/9, production web build.
+
+Второе повторное ревью (CR-01/02/03, коммиты `5ffafb5e`, `1d482747`):
+intent-семантика hide/restore (ошибка/retry привязаны к работе,
+pending блокирует смену цели), возврат из настроек `dismissTo('/account')`
+прямо и при reload, identity без дубля `@slug`. Behavior-контракты
+стабильны; визуальные детали (ширина CTA, insets, поля) сознательно
+оставлены для измеренной приёмки следующего этапа — ревьюер выполняет
+её сам по сохранённому intake ace4a323 (README/source), повторный Figma
+intake не требуется.
 [Файл выполнения](../audits/2026-10-19-ACCOUNT-FOUNDATION-PROGRESS.md).
 
 ## 2026-10-19 — Account foundation: общая ширина шторок (волны 1–2)
