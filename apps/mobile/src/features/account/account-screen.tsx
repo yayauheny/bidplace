@@ -11,7 +11,7 @@ import { authorSharePath } from '../../components/figma/public-share';
 import { BackButton } from '../../components/figma/BackButton';
 import { FigmaButton } from '../../components/figma/FigmaButton';
 import { FigmaIconButton } from '../../components/figma/FigmaIconButton';
-import { AppShell } from '../../components/layout';
+import { FormPageShell } from '../../components/layout';
 import { InfrastructurePageStatus } from '../../components/shared/InfrastructurePageStatus';
 import {
   AppDialog,
@@ -27,6 +27,7 @@ import {
   useSellerCapability,
 } from '../../hooks/use-seller-capability';
 import { useAuth } from '../../providers/auth-provider';
+import { useAppTheme } from '../../providers/theme-provider';
 import { OwnerWorkCard } from './owner-work-card';
 import { useAccountPublicIdentity } from './use-account-public-identity';
 import {
@@ -56,6 +57,7 @@ function accountCta(status: string | null): {
 export function AccountScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const palette = useAppTheme();
   const auth = useAuth();
   const capability = useSellerCapability();
   const cabinet = useAuthorCabinetWorks(capability.status);
@@ -65,22 +67,24 @@ export function AccountScreen() {
 
   const approved = capability.status === 'APPROVED';
   const suspended = capability.status === 'SUSPENDED';
-  const publicIdentity = useAccountPublicIdentity({
+  // Опубликованная identity живёт только в публичном author кэше; owner DTO
+  // несёт editing overlay (seller-profile.mapper) и для identity не читается.
+  const identity = useAccountPublicIdentity({
     enabled: approved,
     slug: capability.profile?.slug ?? null,
   });
 
   if (capability.isLoading || cabinet.isLoading) {
     return (
-      <AppShell>
+      <FormPageShell>
         <InfrastructurePageStatus status="loading" onRetry={() => undefined} />
         <AccountLogoutButton />
-      </AppShell>
+      </FormPageShell>
     );
   }
   if (capability.isError) {
     return (
-      <AppShell>
+      <FormPageShell>
         <InfrastructurePageStatus
           status="error"
           onRetry={() =>
@@ -90,47 +94,51 @@ export function AccountScreen() {
           }
         />
         <AccountLogoutButton />
-      </AppShell>
+      </FormPageShell>
     );
   }
-  if (cabinet.isError) {
+  // Ошибка первой страницы без данных — полноэкранная; ошибка следующей
+  // страницы при сохранённых данных — inline, работы остаются.
+  if (cabinet.isError && !cabinet.data) {
     return (
-      <AppShell>
+      <FormPageShell>
         <InfrastructurePageStatus
           status="error"
           onRetry={() => void cabinet.refetch()}
         />
         <AccountLogoutButton />
-      </AppShell>
+      </FormPageShell>
     );
   }
 
-  // APPROVED: published identity владеет owner profile (base = опубликованное,
-  // AF-03); editing revision сюда не попадает. Остальные состояния — серый
-  // placeholder и данные самого аккаунта.
-  const published = approved ? capability.profile : null;
   const user = auth.user;
+  const ownerSlug = capability.profile?.slug ?? null;
   const accountSlug = user?.slug ?? null;
-  const handle = published?.slug ?? accountSlug;
-  const name =
-    published?.fullName ?? user?.displayName ?? handle ?? 'Личный аккаунт';
-  const photoUrl = published ? published.profilePhotoUrl : null;
-  const sharePath =
-    publicIdentity?.sharePath ?? (handle ? authorSharePath(handle) : null);
   const cta = accountCta(capability.status);
   const works = cabinet.works;
   const pendingHide = works.find((work) => work.id === visibility.pendingHideId);
   const columns = gridColumnsFromWidth(gridWidth, GRID_POLICY);
 
+  // Identity: APPROVED → публичная published (A, не editing B); иначе аккаунт.
+  const publishedAuthor = approved ? identity.author : null;
+  const name: string =
+    publishedAuthor?.fullName ??
+    (approved ? null : user?.displayName) ??
+    publishedAuthor?.slug ??
+    (approved ? null : accountSlug) ??
+    'Личный аккаунт';
+  const handle = publishedAuthor?.slug ?? (approved ? null : accountSlug);
+  const photoUrl = publishedAuthor ? publishedAuthor.profilePhotoUrl : null;
+  const sharePath =
+    publishedAuthor?.sharePath ??
+    (ownerSlug ?? accountSlug
+      ? authorSharePath(ownerSlug ?? accountSlug ?? '')
+      : null);
+  const identityBusy = visibility.mutation.isPending;
+
   return (
-    <AppShell>
-      <View
-        style={{
-          flex: 1,
-          gap: designTokens.space.x5,
-          paddingTop: designTokens.space.x3,
-        }}
-      >
+    <FormPageShell>
+      <View style={{ gap: designTokens.space.x5 }}>
         <View
           style={{
             flexDirection: 'row',
@@ -138,7 +146,7 @@ export function AccountScreen() {
             justifyContent: 'space-between',
           }}
         >
-          <BackButton variant="settings" onPress={() => router.back()} />
+          <BackButton variant="muted" onPress={() => router.back()} />
           <View style={{ flexDirection: 'row', gap: designTokens.space.x1 }}>
             {sharePath ? (
               <AuthorShare
@@ -167,25 +175,91 @@ export function AccountScreen() {
           </View>
         </View>
 
-        <AccountIdentity
-          name={name}
-          handle={handle}
-          photoUrl={photoUrl}
-          imageLabel={`Фото профиля: ${name}`}
-        />
+        {approved && identity.isLoading ? (
+          // Transient loading сохраняет геометрию identity-блока.
+          <View
+            style={{
+              flexDirection: 'row',
+              gap: designTokens.space.x2,
+              alignItems: 'center',
+            }}
+          >
+            <View
+              style={{
+                width: designTokens.size.accountAvatar,
+                height: designTokens.size.accountAvatar,
+                borderRadius: designTokens.radius.avatar,
+                backgroundColor: palette.accountAvatarPlaceholder,
+              }}
+            />
+            <View style={{ flex: 1, minWidth: 0, gap: designTokens.space.x1 }}>
+              <View
+                style={{
+                  height: designTokens.typography.accountName.lineHeight,
+                  borderRadius: designTokens.radius.small,
+                  backgroundColor: palette.mutedFill,
+                }}
+              />
+              <View
+                style={{
+                  height: designTokens.typography.accountHandle.lineHeight,
+                  width: '40%',
+                  borderRadius: designTokens.radius.small,
+                  backgroundColor: palette.mutedFill,
+                }}
+              />
+            </View>
+          </View>
+        ) : approved && identity.isError ? (
+          // Локальная ошибка identity: retry рядом, кабинет работает дальше.
+          <View
+            style={{
+              flexDirection: 'row',
+              gap: designTokens.space.x2,
+              alignItems: 'center',
+            }}
+          >
+            <View
+              style={{
+                width: designTokens.size.accountAvatar,
+                height: designTokens.size.accountAvatar,
+                borderRadius: designTokens.radius.avatar,
+                backgroundColor: palette.accountAvatarPlaceholder,
+              }}
+            />
+            <View style={{ flex: 1, minWidth: 0, gap: designTokens.space.x1 }}>
+              <AppText role="bodySmall" tone="danger">
+                Не удалось загрузить профиль. Попробуйте ещё раз.
+              </AppText>
+              <SecondaryButton
+                label="Повторить"
+                onPress={() => void identity.refetch()}
+              />
+            </View>
+          </View>
+        ) : (
+          <AccountIdentity
+            name={name}
+            handle={handle}
+            photoUrl={photoUrl}
+            imageLabel={`Фото профиля: ${name}`}
+            cta={
+              cta ? (
+                <FigmaButton
+                  label={cta.label}
+                  variant="solid"
+                  size="matrix"
+                  width="full"
+                  href={cta.href}
+                />
+              ) : null
+            }
+          />
+        )}
         {suspended ? (
           <AppText role="bodySmall" tone="danger">
             Профиль ограничен
           </AppText>
-        ) : null}
-        {cta ? (
-          <FigmaButton
-            label={cta.label}
-            variant="solid"
-            size="matrix"
-            width="full"
-            href={cta.href}
-          />
         ) : null}
 
         {isAuthorCabinetAvailable(capability.status) ? (
@@ -196,12 +270,13 @@ export function AccountScreen() {
             }
           >
             <AppText role="sectionTitle">Работы</AppText>
-            {!works.length ? (
+            {!works.length && !cabinet.isError ? (
               <PageState
                 title="У вас пока нет работ."
                 message="Создайте первую работу, чтобы отправить её на модерацию."
               />
-            ) : (
+            ) : null}
+            {works.length ? (
               <PaddedGrid
                 items={works}
                 columns={columns}
@@ -211,6 +286,7 @@ export function AccountScreen() {
                   <OwnerWorkCard
                     work={work}
                     authorName={name}
+                    authorSlug={handle ?? ownerSlug ?? accountSlug ?? ''}
                     isSuspended={suspended}
                     visibilityPending={visibility.mutation.isPending}
                     onHide={() => visibility.setPendingHideId(work.id)}
@@ -220,7 +296,7 @@ export function AccountScreen() {
                   />
                 )}
               />
-            )}
+            ) : null}
             {cabinet.hasNextPage ? (
               <SecondaryButton
                 label="Показать ещё"
@@ -230,10 +306,24 @@ export function AccountScreen() {
                 onPress={() => void cabinet.fetchNextPage()}
               />
             ) : null}
-            {cabinet.isError ? (
-              <AppText role="bodySmall" tone="danger">
-                Не удалось загрузить работы. Попробуйте ещё раз.
-              </AppText>
+            {cabinet.isError && cabinet.data ? (
+              <View style={{ gap: designTokens.space.x2 }}>
+                <AppText role="bodySmall" tone="danger">
+                  Не удалось загрузить следующие работы. Попробуйте ещё раз.
+                </AppText>
+                <SecondaryButton
+                  label="Повторить"
+                  onPress={() => void cabinet.fetchNextPage()}
+                />
+              </View>
+            ) : null}
+            {visibility.mutation.isError && !pendingHide ? (
+              <View style={{ gap: designTokens.space.x2 }}>
+                <AppText role="bodySmall" tone="danger">
+                  Не удалось изменить видимость работы. Попробуйте ещё раз.
+                </AppText>
+                <SecondaryButton label="Повторить" onPress={visibility.retry} />
+              </View>
             ) : null}
           </View>
         ) : null}
@@ -243,8 +333,15 @@ export function AccountScreen() {
         open={Boolean(pendingHide)}
         title="Скрыть работу?"
         description="Работа исчезнет из публичного профиля, но останется в кабинете."
-        onClose={() => visibility.setPendingHideId(null)}
+        onClose={() => {
+          if (!identityBusy) visibility.setPendingHideId(null);
+        }}
       >
+        {visibility.mutation.isError ? (
+          <AppText role="bodySmall" tone="danger">
+            Не удалось скрыть работу. Попробуйте ещё раз.
+          </AppText>
+        ) : null}
         <PrimaryButton
           label="Скрыть"
           width="block"
@@ -255,6 +352,9 @@ export function AccountScreen() {
             visibility.mutation.mutate({ id: pendingHide.id, archived: false })
           }
         />
+        {visibility.mutation.isError ? (
+          <SecondaryButton label="Повторить" onPress={visibility.retry} />
+        ) : null}
         <SecondaryButton
           label="Отмена"
           width="block"
@@ -281,6 +381,6 @@ export function AccountScreen() {
           onPress={() => setClaimNoticeOpen(false)}
         />
       </AppDialog>
-    </AppShell>
+    </FormPageShell>
   );
 }

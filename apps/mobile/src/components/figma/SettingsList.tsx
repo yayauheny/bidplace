@@ -25,7 +25,7 @@ export function SettingsGroup({
   return (
     <View style={{ gap: designTokens.space.quietButtonGap }}>
       {label ? (
-        <AppText role="settingsSection" tone="secondary">
+        <AppText role="settingsSection" style={{ color: palette.accountMeta }}>
           {label}
         </AppText>
       ) : null}
@@ -92,6 +92,7 @@ export function SettingsRow({
             flexDirection: 'row',
             alignItems: 'center',
             gap: designTokens.space.x2,
+            flex: 1,
             minWidth: 0,
           }}
         >
@@ -100,7 +101,9 @@ export function SettingsRow({
             size={designTokens.size.settingsRowIcon}
             color={palette.inkStrong}
           />
-          <AppText role="settingsRow">{label}</AppText>
+          <AppText role="settingsRow" style={{ flexShrink: 1 }}>
+            {label}
+          </AppText>
         </View>
         {trailingArrow ? (
           <FigmaIcon

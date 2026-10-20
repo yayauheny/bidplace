@@ -88,6 +88,9 @@ export const lightColorMap = {
   mutedFill: '#F3F3F3',
   mutedHover: '#E8E8E8',
   quietFill: '#EFEFEF',
+  // Account caption signature (account @handle, settings group label).
+  // Same light hex as gray2, own role: do not rename gray2 consumers.
+  accountMeta: '#858585',
   // Settings list divider — same light hex as quietFill, different purpose
   // (hairline separator, not fill); do not merge.
   settingsDivider: '#EFEFEF',
@@ -194,6 +197,7 @@ export const blackColorMap: SemanticColorMap = {
   mutedFill: '#242424',
   mutedHover: '#2E2E2E',
   quietFill: '#202020',
+  accountMeta: '#8F8F8F',
   settingsDivider: '#2C2C2C',
   quietBorderStart: '#161616',
   quietBorderEnd: '#8F8F8F',

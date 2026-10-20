@@ -25,12 +25,48 @@ import {
   workCoverAccessibilityLabel,
 } from './work-cover-fields';
 
+// Единый caption-рендерер caption-варианта: одинаковые bounds с любым media
+// состоянием (cover/no-cover/error). Author — display label (не притворяется
+// slug); title по Figma 7008:26967, до двух строк.
+export function WorkCoverCaption({
+  author,
+  title,
+}: {
+  author: string;
+  title: string;
+}) {
+  const palette = useAppTheme();
+  return (
+    <View style={coverCaptionBlockStyle()}>
+      <Text
+        numberOfLines={1}
+        style={[
+          { color: palette.inkStrong },
+          designTokens.typography.coverCaptionAuthor,
+        ]}
+      >
+        {author}
+      </Text>
+      <Text
+        numberOfLines={2}
+        style={[
+          { color: palette.textSubdued },
+          designTokens.typography.coverCaptionTitle,
+        ]}
+      >
+        {title}
+      </Text>
+    </View>
+  );
+}
+
 export function WorkCoverCard({
   href,
   imageUrl,
   imageLabel,
   title,
   authorSlug,
+  authorLabel,
   variant = 'overlay',
   onPress,
 }: {
@@ -39,19 +75,25 @@ export function WorkCoverCard({
   imageLabel: string;
   title: string;
   authorSlug: string;
+  /** Честный отображаемый автор caption-варианта (может быть fullName). */
+  authorLabel?: string;
   variant?: 'overlay' | 'caption';
   onPress?: () => void;
 }) {
   const overlay = getWorkCoverOverlay({ title, authorSlug });
   const reducedMotion = useReducedMotion();
   const palette = useAppTheme();
+  const captionAuthor = authorLabel ?? overlay.authorSlug;
 
   if (variant === 'caption') {
     return (
       <Link href={href} asChild>
         <MotionPressable
           accessibilityRole="link"
-          accessibilityLabel={workCoverAccessibilityLabel(overlay)}
+          accessibilityLabel={workCoverAccessibilityLabel({
+            title: overlay.title,
+            authorSlug: captionAuthor,
+          })}
           preset="card"
           onPress={onPress}
           {...coverHitDataset()}
@@ -83,26 +125,7 @@ export function WorkCoverCard({
                   />
                 </View>
               </View>
-              <View style={coverCaptionBlockStyle()}>
-                <Text
-                  numberOfLines={1}
-                  style={[
-                    { color: palette.ink },
-                    designTokens.typography.coverCaptionAuthor,
-                  ]}
-                >
-                  {overlay.authorSlug}
-                </Text>
-                <Text
-                  numberOfLines={1}
-                  style={[
-                    { color: palette.gray2 },
-                    designTokens.typography.authorRowBio,
-                  ]}
-                >
-                  {overlay.title}
-                </Text>
-              </View>
+              <WorkCoverCaption author={captionAuthor} title={overlay.title} />
             </>
           )}
         </MotionPressable>

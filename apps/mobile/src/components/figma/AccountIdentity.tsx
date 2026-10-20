@@ -8,26 +8,35 @@ import { AppText } from '../ui/AppText';
 import { ResilientRemoteImage } from '../ui/ResilientRemoteImage';
 
 /**
- * Account header identity: 100px round avatar + name/@handle stack.
- * Deliberately not CreatorIdentity — that one is tuned for public author
- * pages; this composition follows the account-screen Figma tokens.
+ * Account header identity (Figma account screen): row — avatar100 слева,
+ * текстовая колонка (flex1/minWidth0) справа со слотом CTA. Не
+ * CreatorIdentity: та настроена на публичные страницы автора.
  */
 export function AccountIdentity({
   name,
   handle,
   photoUrl,
   imageLabel,
+  cta,
 }: {
   name: string;
   handle: string | null;
   photoUrl: string | null;
   imageLabel: string;
+  /** Header CTA живёт в правой колонке (Figma solid matrix). */
+  cta?: React.ReactNode;
 }) {
   const palette = useAppTheme();
   const avatarSize = designTokens.size.accountAvatar;
 
   return (
-    <View style={{ alignItems: 'center', gap: designTokens.space.x3 }}>
+    <View
+      style={{
+        flexDirection: 'row',
+        gap: designTokens.space.x2,
+        alignItems: 'center',
+      }}
+    >
       <View
         style={{
           width: avatarSize,
@@ -44,21 +53,23 @@ export function AccountIdentity({
             accessibilityLabel={imageLabel}
             fallbackLabel={`Фото недоступно: ${name}`}
             retryable={false}
+            fallback="plain"
             style={{ width: avatarSize, height: avatarSize }}
             contentFit="cover"
           />
         ) : null}
       </View>
-      <View style={{ alignItems: 'center', gap: designTokens.space.x1 }}>
+      <View style={{ flex: 1, minWidth: 0, gap: designTokens.space.x1 }}>
         <AppText role="accountName" tone="strong">
           {name}
         </AppText>
         {handle ? (
           <AppText
             role="accountHandle"
-            style={{ color: palette.gray2 }}
+            style={{ color: palette.accountMeta }}
           >{`@${handle}`}</AppText>
         ) : null}
+        {cta}
       </View>
     </View>
   );

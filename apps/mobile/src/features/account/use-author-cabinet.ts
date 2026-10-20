@@ -55,6 +55,9 @@ export function useAuthorCabinetVisibility() {
   const api = useApiClient();
   const queryClient = useQueryClient();
   const [pendingHideId, setPendingHideId] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState<{ id: string; archived: boolean } | null>(
+    null,
+  );
 
   const invalidate = () => {
     void invalidateOwnerWorks(queryClient);
@@ -66,11 +69,18 @@ export function useAuthorCabinetVisibility() {
   const mutation = useMutation({
     mutationFn: ({ id, archived }: { id: string; archived: boolean }) =>
       archived ? api.portfolio.unhideWork(id) : api.portfolio.hideWork(id),
+    onMutate: (vars) => setAttempt(vars),
     onSuccess: () => {
       setPendingHideId(null);
       invalidate();
     },
   });
 
-  return { pendingHideId, setPendingHideId, mutation };
+  // Failed hide/restore stays visible and repeatable; the attempt owner is
+  // the mutation itself, so a retry re-runs the exact same operation.
+  const retry = () => {
+    if (attempt && !mutation.isPending) mutation.mutate(attempt);
+  };
+
+  return { pendingHideId, setPendingHideId, mutation, retry };
 }

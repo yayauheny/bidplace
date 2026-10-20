@@ -647,6 +647,15 @@ export const designTokens = {
       letterSpacing: -0.14,
       fontWeight: '600' as const,
     },
+    // Caption-variant cover card title 14/17 medium (Figma 7008:26967,
+    // Inter Medium, tracking -0.28); may wrap to two lines.
+    coverCaptionTitle: {
+      fontFamily: 'Inter_500Medium',
+      fontSize: 14,
+      lineHeight: 17,
+      letterSpacing: -0.28,
+      fontWeight: '500' as const,
+    },
   },
   motion: {
     instant: 80,

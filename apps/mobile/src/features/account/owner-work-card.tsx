@@ -3,11 +3,11 @@ import { View } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
 import type { PortfolioCabinetWorksResponse } from '@bidplace/contracts';
 
-import { WorkCoverCard } from '../../components/figma/WorkCoverCard';
 import {
-  coverCaptionBlockStyle,
-  coverCaptionCardFrameStyle,
-} from '../../components/figma/cover-card-style';
+  WorkCoverCaption,
+  WorkCoverCard,
+} from '../../components/figma/WorkCoverCard';
+import { coverCaptionCardFrameStyle } from '../../components/figma/cover-card-style';
 import {
   AppText,
   ImagePlaceholder,
@@ -32,13 +32,17 @@ export type OwnerCabinetWork = PortfolioCabinetWorksResponse['works'][number];
 export function OwnerWorkCard({
   work,
   authorName,
+  authorSlug,
   isSuspended,
   visibilityPending,
   onHide,
   onRestore,
 }: {
   work: OwnerCabinetWork;
+  /** Отображаемое имя автора для caption. */
   authorName: string;
+  /** Канонический slug для a11y/fallback caption. */
+  authorSlug: string;
   isSuspended: boolean;
   visibilityPending: boolean;
   onHide: () => void;
@@ -60,7 +64,8 @@ export function OwnerWorkCard({
           imageUrl={work.coverImage.url}
           imageLabel={title}
           title={title}
-          authorSlug={authorName}
+          authorSlug={authorSlug}
+          authorLabel={authorName}
         />
       ) : (
         <>
@@ -70,26 +75,7 @@ export function OwnerWorkCard({
               label="Обложка работы не добавлена"
             />
           </View>
-          <View style={coverCaptionBlockStyle()}>
-            <AppText
-              numberOfLines={1}
-              style={[
-                { color: palette.ink },
-                designTokens.typography.coverCaptionAuthor,
-              ]}
-            >
-              {authorName}
-            </AppText>
-            <AppText
-              numberOfLines={1}
-              style={[
-                { color: palette.gray2 },
-                designTokens.typography.authorRowBio,
-              ]}
-            >
-              {title}
-            </AppText>
-          </View>
+          <WorkCoverCaption author={authorName} title={title} />
         </>
       )}
       <View style={{ gap: designTokens.space.x1 }}>
