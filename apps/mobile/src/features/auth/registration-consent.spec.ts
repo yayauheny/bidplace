@@ -221,11 +221,18 @@ vi.mock('../../components/ui', () => ({
     label,
     onPress,
     disabled,
+    accessibilityHint,
   }: {
     label: string;
     onPress?: () => void;
     disabled?: boolean;
-  }) => createElement('button', { type: 'button', disabled, onClick: () => onPress?.() }, label),
+    accessibilityHint?: string;
+  }) =>
+    createElement(
+      'button',
+      { type: 'button', disabled, title: accessibilityHint, onClick: () => onPress?.() },
+      label,
+    ),
   TextButton: ({
     label,
     onPress,
@@ -430,6 +437,46 @@ afterEach(() => {
 });
 
 describe('registration consent attempt', () => {
+  it('keeps Next disabled until every confirmation is checked and still reports a bad email', async () => {
+    const view = mount();
+    await until(view.container, 'Редакция документов: portfolio-legal-2026-10-12');
+    const next = [...view.container.querySelectorAll('button')].find(
+      (item) => item.textContent === 'Дальше',
+    );
+    expect(next).toBeInstanceOf(HTMLButtonElement);
+    const nextButton = next as HTMLButtonElement;
+    expect(nextButton.disabled).toBe(true);
+    expect(nextButton.title).toBe('Отметьте все обязательные согласия');
+    const boxes = [...view.container.querySelectorAll('[role="checkbox"]')];
+    expect(boxes).toHaveLength(4);
+    expect(boxes.every((node) => node instanceof HTMLButtonElement && !node.disabled)).toBe(true);
+    for (const box of boxes.slice(0, 3)) {
+      act(() => {
+        if (box instanceof HTMLElement) box.click();
+      });
+    }
+    await flush();
+    expect(nextButton.disabled).toBe(true);
+    fill(view.container, 'Электронная почта', 'not-an-email');
+    clickButton(view.container, 'Дальше');
+    await flush();
+    expect(view.container.textContent).toContain('Введите вашу почту');
+    expect(view.container.textContent).not.toContain('Примите пользовательское соглашение');
+    expect(view.container.textContent).not.toContain('Подтвердите, что вам исполнилось 18 лет');
+    act(() => {
+      if (boxes[3] instanceof HTMLElement) boxes[3].click();
+    });
+    await flush();
+    expect(nextButton.disabled).toBe(false);
+    clickButton(view.container, 'Дальше');
+    await until(view.container, 'Введите корректный email');
+    expect(view.container.textContent).toContain('Введите вашу почту');
+    fill(view.container, 'Электронная почта', 'a@example.com');
+    clickButton(view.container, 'Дальше');
+    await until(view.container, 'Выберите имя пользователя');
+    view.unmount();
+  });
+
   it('keeps all confirmations disabled until a published legal pack is loaded', async () => {
     const view = mount();
     // The simulated transport is async; once resolved, four unchecked controls are available.

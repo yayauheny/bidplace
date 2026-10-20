@@ -2,6 +2,12 @@
 
 > Entries dated before 2026-10-13 mention Pen / .pen files; the Pen design was removed (DEC-119) — read those mentions as history.
 
+## 2026-10-20 — подпись кнопок и согласия регистрации
+
+- `Implemented`: подпись outline/ghost/muted в `figmaButtonTokens.colors.labelDefault` — `#121212` (живой master `292:5058`, текстовые узлы Black). Захват 2026-10-10 хранил `#565656`; hover, pressed и disabled не менялись. Потребители — все `FigmaButton` этих вариантов, включая обёртки `SecondaryButton` и `TextButton`.
+- `Implemented`: шаг email регистрации (`RegisterForm` в `auth-form.tsx`) не даёт нажать «Дальше», пока не загружен пакет документов и не отмечены четыре согласия. Красные ошибки согласий на этом шаге не показываются. Ошибка email и `submitError` остаются. Серверная схема `registrationLegalSchema` и `AuthService.register` не менялись. Четыре подтверждения не сведены к одному чекбоксу.
+- Проверки: `figma-button-style.spec.ts`, `registration-consent.spec.ts`, `schemas.spec.ts` — 48/48; typecheck и eslint затронутых файлов чистые. В браузере на `/dev/figma-buttons` подпись outline/ghost/muted — `rgb(18, 18, 18)`, disabled solid — заливка `#949494`, opacity 0.5, белая подпись. На `/register` без API «Дальше» disabled, четыре чекбокса на месте, красных ошибок согласий нет. Включение кнопки после четырёх согласий и ошибка невалидного email закреплены спеком: API в этой проверке не был запущен.
+
 ## 2026-10-15 — W5 grid clamp (остаток В2)
 
 - `Implemented`: колонки сеток — из измеренной ширины по формуле clamp (`gridColumnsFromWidth`, `components/figma/grid-columns.ts`, re-export из `PaddedGrid`; 5 тестов). `public-seller-screen`: пороги 700/1000 удалены (minCard 320, gap x3, max 3 — поведение на 390/700/1000 прежнее). `CategoriesSearchPane`: фикс-3 → clamp по onLayout; minCard 116 — из реальной вёрстки (контейнер 366 при 390 из-за gutter 12, тайл ≈116.67; 120.67 при текущих отступах три раза не помещается), закреплено helper-spec (366→3) и e2e «three tiles per row at 390» со скриншотом. Проверки: vitest 816/816 (132 файла), search-overlay.spec 16 passed + 2 предсуществующих фейла (dimmer history — известен; detail Back — воспроизводится на чистом HEAD), typecheck/eslint/prettier чисто. На В5 остаётся `WorksSearchPane` и прочие work-card-потребители.

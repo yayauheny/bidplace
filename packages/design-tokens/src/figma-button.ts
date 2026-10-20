@@ -54,7 +54,7 @@ export const figmaButtonTokens = {
   },
   colors: {
     labelOnSolid: '#FFFFFF',
-    labelDefault: '#565656',
+    labelDefault: '#121212',
     solidIdle: '#121212',
     solidDisabledFill: '#949494',
     canvas: '#FFFFFF',

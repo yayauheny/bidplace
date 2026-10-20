@@ -176,7 +176,7 @@ describe('figma button matrix', () => {
       expect(cell.strokeMode).toBe('flat');
       expect(cell.strokeColor).toBe('#F3F3F3');
       expect(cell.borderRadius).toBe(figmaButtonTokens.metrics.radius);
-      expect(cell.labelColor).toBe('#565656');
+      expect(cell.labelColor).toBe('#121212');
       if (interaction === 'hover' || interaction === 'pressed') {
         expect(cell.overlay).toBe('rgba(0, 0, 0, 0.06)');
         expect(cell.controlOpacity).toBe(1);

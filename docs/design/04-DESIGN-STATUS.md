@@ -2,6 +2,11 @@
 
 > Entries dated before 2026-10-13 mention Pen / .pen files; the Pen design was removed (DEC-119) — read those mentions as history.
 
+## 2026-10-20 — label кнопок и disabled «Дальше»
+
+- `Implemented`: живой master `292:5058` красит подпись outline, ghost и muted в Black `#121212`. Токен `labelDefault` обновлён; матрица 4×4, hover, pressed и disabled solid (`292:5054`: заливка `#949494`, opacity 0.5, белая подпись) не переписывались. Таблица §6.2 в `03-DESIGN-SYSTEM.md` совпадает с master.
+- `Implemented`: на шаге email «Дальше» disabled, пока не отмечены четыре обязательных согласия. Красная ошибка согласия не заменяет это состояние. Чекбоксы остаются отдельными и доступными после загрузки документов.
+
 ## 2026-10-15 — W5 grid clamp (остаток В2)
 
 - `Implemented`: `gridColumnsFromWidth(width, {minCardWidth, gap, max}) = clamp(floor((width + gap) / (minCardWidth + gap)), 1, max)` — чистая функция в `components/figma/grid-columns.ts` (re-export из `PaddedGrid`), спек `grid-columns.spec.ts` (5 тестов). Брейкпоинты 700/1000 в `public-seller-screen.tsx` удалены → clamp по измеренной ширине (minCard 320, gap `space.x3`=12, max 3): 390 → 1 колонка (карточка 366), 700 → 2, 1000 → 3 — визуал 390 не изменён. `CategoriesSearchPane`: фиксированные `columns={3}` → clamp по onLayout-ширине. Сверка с вёрсткой (по правке ревьюера): реальный контейнер шторки при 390 — 366 (390 − 2×12 `layout.gutter`), тайл (366 − 2×8)/3 ≈ 116.67; значение 120.67 из `CategorySearchTile` измерено при контейнере 378 и при текущих отступах три раза не помещается → minCard 116. Закреплено: helper-spec на ширине 366; e2e «Search categories keep three tiles per row at 390» (один top у первых трёх тайлов, ширина тайла 111–123; скриншот `categories-tiles-390.png`); на узких (<360) перестраивается в 2.

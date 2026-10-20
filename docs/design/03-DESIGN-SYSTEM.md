@@ -526,8 +526,11 @@ page width stays 390.
 
 ## 6.2 Shared text button
 
-Source: `design/figma-handoff/buttons/2026-10-10-buttons` (root `292:5058`,
-captured 2026-10-10). One `FigmaButton` renderer and four variants:
+Source: live Figma master `292:5058` (checked 2026-10-20) and the
+`design/figma-handoff/buttons/2026-10-10-buttons` capture. Outline, ghost, and
+muted labels bind to Black `#121212`. The 2026-10-10 capture stored `#565656`
+on those text nodes; that value is not the live master. One `FigmaButton`
+renderer and four variants:
 `solid`, `outline`, `ghost`, `muted`. Each has idle, hover, pressed, and
 disabled. State priority: disabled → pressed → hover → idle. Disabled applies
 `opacity` 0.5 once on the control shell.
@@ -547,9 +550,9 @@ disabled. State priority: disabled → pressed → hover → idle. Disabled appl
 | Variant | Idle fill                   | Hover / pressed                                                                              | Disabled                                 | Label     |
 | ------- | --------------------------- | -------------------------------------------------------------------------------------------- | ---------------------------------------- | --------- |
 | solid   | `#121212`                   | white 15% overlay                                                                            | `#949494` + shell opacity 0.5            | white     |
-| outline | white                       | black 5% overlay                                                                             | white + shell opacity 0.5                | `#565656` |
-| ghost   | white, white stroke         | black 5% overlay; pressed node `292:5046` paints 82×42 with no stroke inside the 83×43 frame | white + white stroke + shell opacity 0.5 | `#565656` |
-| muted   | `#F3F3F3`, stroke `#F3F3F3` | black 6% overlay; stroke stays `#F3F3F3`                                                     | `#F3F3F3` + shell opacity 0.5            | `#565656` |
+| outline | white                       | black 5% overlay                                                                             | white + shell opacity 0.5                | `#121212` |
+| ghost   | white, white stroke         | black 5% overlay; pressed node `292:5046` paints 82×42 with no stroke inside the 83×43 frame | white + white stroke + shell opacity 0.5 | `#121212` |
+| muted   | `#F3F3F3`, stroke `#F3F3F3` | black 6% overlay; stroke stays `#F3F3F3`                                                     | `#F3F3F3` + shell opacity 0.5            | `#121212` |
 
 Auth fullscreen actions and nickname suggestions use this matrix with size
 `auth` or `suggestion` (see Sizes row). Home «Смотреть все», admin links, and

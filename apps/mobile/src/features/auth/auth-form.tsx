@@ -862,21 +862,24 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
       registerSubmitting.current = false;
     });
   };
+  const registrationConsentsReady =
+    watched.agreementAccepted &&
+    watched.privacyAcknowledged &&
+    watched.dataConsentGiven &&
+    watched.age18Confirmed;
   const goNext = async () => {
     if (!mounted.current || !focusedRef.current) return;
     setSubmitError(null);
     if (step === 'email') {
-      const emailOk = await form.trigger('email');
       // Do not blame the visitor for unchecked controls that were disabled
       // because the operator has not published the legal documents.
       if (!legalDocuments || legalDocuments.documents.length !== 5) {
         setSubmitError('Юридические документы пока недоступны.');
         return;
       }
-      const consentOk = await form.trigger([
-        'agreementAccepted', 'privacyAcknowledged', 'dataConsentGiven', 'age18Confirmed',
-      ]);
-      if (!emailOk || !consentOk) return;
+      if (!registrationConsentsReady) return;
+      const emailOk = await form.trigger('email');
+      if (!emailOk) return;
       setStep('nickname');
       return;
     }
@@ -983,7 +986,12 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
         slugAvailability?.status === 'checking' ||
         (step === 'email' && registrationLegalPending)
       }
-      disabled={step === 'email' && !legalDocuments}
+      disabled={step === 'email' && (!legalDocuments || !registrationConsentsReady)}
+      accessibilityHint={
+        step === 'email' && legalDocuments && !registrationConsentsReady
+          ? 'Отметьте все обязательные согласия'
+          : undefined
+      }
       onPress={() => void goNext()}
     />
   );
@@ -1158,7 +1166,6 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
                     label={label}
                     linkLabel={linkLabel || undefined}
                     onOpenDocument={id ? () => setRegistrationLegalOpen(id) : undefined}
-                    error={form.formState.errors[name]?.message}
                   />
                 )}
               />
