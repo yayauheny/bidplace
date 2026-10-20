@@ -74,7 +74,7 @@ export function ProductListScreen({
     },
     {
       id: 'material',
-      label: 'Материал',
+      label: 'Материалы',
       value: state.material,
       options:
         facets.data?.materials.map((material) => ({
@@ -156,6 +156,7 @@ export function ProductListScreen({
         <View>
           <FilterSortBar
             filterLabel={activeFilterLabel(state)}
+            compactFilter
             filterActive={Boolean(state.q || state.category || state.material)}
             sortActive={state.sort !== 'newest'}
             onPressFilter={() => setFilterOpen(true)}
@@ -194,6 +195,8 @@ export function ProductListScreen({
         }}
       />
       <FilterSortSheet
+        compact
+        clearValue="newest"
         open={sortOpen}
         value={state.sort}
         options={sortOptions}

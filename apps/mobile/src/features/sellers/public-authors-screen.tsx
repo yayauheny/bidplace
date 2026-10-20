@@ -115,13 +115,14 @@ export function PublicAuthorsScreen({
       >
         <View style={{ gap: designTokens.space.x2 }}>
           <AppText role="screenTitle">
-            Креативные и проверенные авторы на Bidplace
+            Авторы на Bidplace
           </AppText>
           <AppText role="bodySmall">{AUTHORS_CATALOG_INTRO}</AppText>
         </View>
         <View>
           <FilterSortBar
             filterLabel={activeFilterLabel(state)}
+            compactFilter
             filterActive={Boolean(state.q || state.tag || state.city)}
             sortActive={state.sort !== 'added'}
             onPressFilter={() => setFilterOpen(true)}
@@ -150,6 +151,8 @@ export function PublicAuthorsScreen({
         }}
       />
       <FilterSortSheet
+        compact
+        clearValue="added"
         open={sortOpen}
         value={state.sort}
         options={AUTHOR_SORT_OPTIONS}

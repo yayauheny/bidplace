@@ -1,6 +1,20 @@
 import { figmaTokens } from '@bidplace/design-tokens';
 
-export function filterSheetPanelStyle() {
+export function filterSheetPanelStyle(compact = false) {
+  if (compact) {
+    return {
+      width: '100%' as const,
+      maxWidth: figmaTokens.layout.phoneWidth,
+      maxHeight: '78%' as const,
+      paddingHorizontal: figmaTokens.space.x5,
+      paddingTop: figmaTokens.space.x2,
+      paddingBottom: figmaTokens.space.x5,
+      borderTopLeftRadius: figmaTokens.radius.cover,
+      borderTopRightRadius: figmaTokens.radius.cover,
+      backgroundColor: figmaTokens.color.canvas,
+      overflow: 'hidden' as const,
+    };
+  }
   return {
     width: '100%' as const,
     maxWidth: figmaTokens.layout.phoneWidth,
@@ -12,10 +26,10 @@ export function filterSheetPanelStyle() {
   };
 }
 
-export function filterSheetHeaderStyle() {
+export function filterSheetHeaderStyle(compact = false) {
   return {
     width: '100%' as const,
-    minHeight: figmaTokens.size.touch,
+    minHeight: compact ? 43 : figmaTokens.size.touch,
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
     gap: figmaTokens.space.x1,
@@ -29,13 +43,13 @@ export function filterSheetTitleStyle() {
   };
 }
 
-export function filterSheetSectionRowStyle() {
+export function filterSheetSectionRowStyle(compact = false) {
   return {
     width: '100%' as const,
-    minHeight: figmaTokens.size.input,
+    minHeight: compact ? 44 : figmaTokens.size.input,
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
     gap: figmaTokens.space.identityGap,
-    paddingBottom: figmaTokens.space.x3,
+    paddingBottom: compact ? 0 : figmaTokens.space.x3,
   };
 }

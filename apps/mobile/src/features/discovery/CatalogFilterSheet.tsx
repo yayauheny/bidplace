@@ -52,29 +52,58 @@ export function CatalogFilterSheet({
   const [draftValues, setDraftValues] =
     useState<Record<string, string | undefined>>(committedValues);
   const [activeSectionId, setActiveSectionId] = useState<string>();
+  const [optionSearch, setOptionSearch] = useState('');
 
   useEffect(() => {
     if (!open) return;
     setDraftValues(committedValues);
     setActiveSectionId(undefined);
+    setOptionSearch('');
   }, [committedValues, open]);
 
   const activeSection = sections.find(
     (section) => section.id === activeSectionId,
   );
+  const apply = () =>
+    onApply(
+      Object.fromEntries(
+        Object.entries(draftValues).map(([id, value]) => {
+          const section = sections.find((item) => item.id === id);
+          return [
+            id,
+            (section?.state === 'ready' || section?.state === 'empty') &&
+            value &&
+            !section.options.some((option) => option.value === value)
+              ? undefined
+              : value,
+          ];
+        }),
+      ),
+    );
 
   if (activeSection) {
     return (
       <FilterSheet
         open={open}
+        compact
         onClose={onClose}
         title={activeSection.label}
         showBack
         onBack={() => setActiveSectionId(undefined)}
+        onClear={() =>
+          setDraftValues((current) => ({
+            ...current,
+            [activeSection.id]: undefined,
+          }))
+        }
+        clearLabel="Очистить"
+        primaryAction={{ label: 'Применить', onPress: apply }}
       >
         <SectionOptions
           section={activeSection}
           value={draftValues[activeSection.id]}
+          query={optionSearch}
+          onChangeQuery={setOptionSearch}
           onSelect={(value) =>
             setDraftValues((current) => ({
               ...current,
@@ -90,6 +119,7 @@ export function CatalogFilterSheet({
   return (
     <FilterSheet
       open={open}
+      compact
       onClose={onClose}
       title={title}
       onClear={() =>
@@ -103,7 +133,7 @@ export function CatalogFilterSheet({
       clearLabel="Сбросить"
       primaryAction={{
         label: 'Применить',
-        onPress: () => onApply(draftValues),
+        onPress: apply,
       }}
     >
       {search ? (
@@ -129,8 +159,12 @@ export function CatalogFilterSheet({
           key={section.id}
           label={section.label}
           valuePreview={sectionPreview(section, draftValues[section.id])}
-          disabled={section.state !== 'ready'}
-          onPress={() => setActiveSectionId(section.id)}
+          disabled={section.state === 'loading' || section.state === 'empty'}
+          compact
+          onPress={() => {
+            setOptionSearch('');
+            setActiveSectionId(section.id);
+          }}
         />
       ))}
     </FilterSheet>
@@ -141,10 +175,14 @@ function SectionOptions({
   section,
   value,
   onSelect,
+  query,
+  onChangeQuery,
 }: {
   section: CatalogFilterSection;
   value?: string;
   onSelect: (value: string) => void;
+  query: string;
+  onChangeQuery: (value: string) => void;
 }) {
   if (section.state !== 'ready') {
     return (
@@ -162,15 +200,41 @@ function SectionOptions({
       </View>
     );
   }
-  return section.options.map((option) => (
-    <FilterOptionRow
-      key={option.value}
-      label={option.label}
-      mode="radio"
-      selected={option.value === value}
-      onPress={() => onSelect(option.value)}
-    />
-  ));
+  const needle = query.trim().toLocaleLowerCase();
+  const visibleOptions = needle
+    ? section.options.filter((option) =>
+        option.label.toLocaleLowerCase().includes(needle),
+      )
+    : section.options;
+  return (
+    <>
+      {section.options.length > 9 ? (
+        <View style={{ marginBottom: figmaTokens.space.x2 }}>
+          <FilterSearchField
+            value={query}
+            placeholder="Поиск по значениям"
+            onChangeText={onChangeQuery}
+          />
+        </View>
+      ) : null}
+      {visibleOptions.length === 0 ? (
+        <AppText role="body" tone="secondary">
+          Ничего не найдено
+        </AppText>
+      ) : (
+        visibleOptions.map((option) => (
+          <FilterOptionRow
+            key={option.value}
+            label={option.label}
+            mode="radio"
+            variant="catalog"
+            selected={option.value === value}
+            onPress={() => onSelect(option.value)}
+          />
+        ))
+      )}
+    </>
+  );
 }
 
 function sectionPreview(section: CatalogFilterSection, value?: string) {

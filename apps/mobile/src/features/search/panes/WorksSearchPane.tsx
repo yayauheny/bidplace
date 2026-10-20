@@ -23,8 +23,8 @@ export function WorksSearchPane({
       isPending={works.isPending}
       isError={works.isError}
       onRetry={() => void works.refetch()}
-      isEmpty={Boolean(query) && works.items.length === 0}
-      emptyTitle="Работы не найдены"
+      isEmpty={works.items.length === 0}
+      emptyTitle={query ? 'Работы не найдены' : 'Пока нет работ'}
       loading={<WorksSkeleton />}
     >
       <View style={{ gap: figmaTokens.space.x3 }}>
