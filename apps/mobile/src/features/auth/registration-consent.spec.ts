@@ -10,7 +10,7 @@ import { flush } from '../../testing/dom';
 import { advanceAuthEpoch, authKeys, replaceAuthenticatedSession } from '../../lib/query-cache';
 import { ApiErrorCode, type User } from '@bidplace/contracts';
 import { ApiClientError } from '@bidplace/api-client';
-import { blackColorMap, lightColorMap } from '@bidplace/design-tokens';
+import { blackColorMap, designTokens, lightColorMap } from '@bidplace/design-tokens';
 
 import { ThemeProvider } from '../../providers/theme-provider';
 
@@ -41,7 +41,21 @@ const harness = vi.hoisted(() => ({
 vi.mock('react-native', () => ({
   Platform: { OS: 'web' },
   Linking: { openURL: harness.openURL },
-  View: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
+  View: ({
+    children,
+    nativeID,
+    style,
+  }: {
+    children?: ReactNode;
+    nativeID?: string;
+    style?: unknown;
+  }) => {
+    const flat: Record<string, unknown> = {};
+    for (const item of Array.isArray(style) ? style : [style]) {
+      if (item && typeof item === 'object') Object.assign(flat, item);
+    }
+    return createElement('div', { id: nativeID, style: flat as React.CSSProperties }, children);
+  },
   Text: ({
     children,
     onPress,
@@ -585,6 +599,29 @@ describe('registration consent attempt', () => {
         ) as HTMLInputElement
       ).value,
     ).toBe('taken-author');
+    view.unmount();
+  });
+
+  it('reserves exactly one compact status line so an appearing status stays inside the slot', async () => {
+    harness.slugAvailability.mockResolvedValueOnce({ available: false });
+    const view = mount();
+    await reachNickname(view.container);
+    expect(view.container.textContent).toContain(
+      'Можете выбрать свой никнейм или предложенный',
+    );
+    const slot = view.container.querySelector('#nickname-status-slot');
+    expect(slot).not.toBeNull();
+    expect((slot as HTMLElement).style.minHeight).toBe(
+      `${designTokens.typography.authStatus.lineHeight}px`,
+    );
+
+    fill(view.container, 'Никнейм', 'taken-line');
+    clickButton(view.container, 'Дальше');
+    await until(view.container, '@taken-line недоступен');
+    const status = [...slot!.querySelectorAll('span')].find(
+      (node) => node.textContent === '@taken-line недоступен',
+    );
+    expect(status).toBeTruthy();
     view.unmount();
   });
 

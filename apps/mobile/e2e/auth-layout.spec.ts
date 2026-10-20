@@ -1141,7 +1141,7 @@ test('nickname suggestions check availability only on explicit Next', async ({
       .getByText('Выберите имя пользователя', { exact: true })
       .boundingBox(),
     caption: await page
-      .getByText('Можете выбрать любой или предложений', { exact: true })
+      .getByText('Можете выбрать свой никнейм или предложенный', { exact: true })
       .boundingBox(),
     status: await page.locator('#nickname-status-slot').boundingBox(),
     action: await page
@@ -1160,15 +1160,15 @@ test('nickname suggestions check availability only on explicit Next', async ({
       .getByTestId('bidplace-brand-wordmark')
       .boundingBox(),
   };
-  expect(mappedGeometry.title?.y).toBeCloseTo(274, 0);
-  expect(mappedGeometry.caption?.y).toBeCloseTo(302, 0);
-  expect(mappedGeometry.status?.y).toBeCloseTo(328, 0);
-  expect(fieldGeometry.shell!.y).toBeCloseTo(390, 0);
-  expect(mappedGeometry.action?.y).toBeCloseTo(452, 0);
+  expect(mappedGeometry.title?.y).toBeCloseTo(277, 0);
+  expect(mappedGeometry.caption?.y).toBeCloseTo(305, 0);
+  expect(mappedGeometry.status?.y).toBeCloseTo(351, 0);
+  expect(fieldGeometry.shell!.y).toBeCloseTo(387, 0);
+  expect(mappedGeometry.action?.y).toBeCloseTo(449, 0);
   expect(mappedGeometry.action?.width).toBeCloseTo(350, 0);
   expect(mappedGeometry.action?.height).toBeCloseTo(51, 0);
-  expect(mappedGeometry.suggestionsLabel?.y).toBeCloseTo(527, 0);
-  expect(mappedGeometry.firstChip?.y).toBeCloseTo(551, 0);
+  expect(mappedGeometry.suggestionsLabel?.y).toBeCloseTo(524, 0);
+  expect(mappedGeometry.firstChip?.y).toBeCloseTo(548, 0);
   expect(mappedGeometry.firstChip?.height).toBeCloseTo(37, 0);
   expect(mappedGeometry.mark?.y).toBeCloseTo(67, 0);
   expect(mappedGeometry.wordmark?.y).toBeCloseTo(793, 0);

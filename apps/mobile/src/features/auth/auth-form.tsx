@@ -519,7 +519,7 @@ const registrationCopy: Record<RegistrationStep, { title: string; caption: strin
   },
   nickname: {
     title: 'Выберите имя пользователя',
-    caption: 'Можете выбрать любой или предложений',
+    caption: 'Можете выбрать свой никнейм или предложенный',
   },
   password: {
     title: 'Создайте пароль',
@@ -1015,7 +1015,10 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
             <View
               nativeID="nickname-status-slot"
               style={{
-                minHeight: 46,
+                // Reserve exactly one authStatus line so an appearing status
+                // doesn't shift the field/button; minHeight still lets long
+                // errors wrap and grow the area.
+                minHeight: designTokens.typography.authStatus.lineHeight,
                 width: '100%',
                 alignItems: 'center',
               }}
