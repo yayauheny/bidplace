@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 import { View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
@@ -10,7 +10,6 @@ import {
   SettingsRow,
 } from '../../components/figma/SettingsList';
 import { FormPageShell } from '../../components/layout';
-import { navigateBack } from '../../components/layout/navigate-back';
 import { AppText } from '../../components/ui';
 import { useAccountLogout } from '../auth/account-logout';
 
@@ -36,7 +35,11 @@ export function AccountSettingsScreen() {
         >
           <BackButton
             variant="settings"
-            onPress={() => navigateBack(router, { fallbackHref: '/account' })}
+            // dismissTo: в естественном стеке возвращает к существующему
+            // /account, при direct/reload входе ведёт к /account без
+            // собственных проверок history (web держит index под свежей
+            // загрузкой, canGoBack там не различает сценарии).
+            onPress={() => router.dismissTo('/account' as Href)}
           />
           <AppText role="settingsTitle" tone="strong">
             Настройки
