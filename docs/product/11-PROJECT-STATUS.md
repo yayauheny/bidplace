@@ -725,6 +725,19 @@ push/merge/deploy не выполнялись.
 - `Partial`: Chromium and WebKit owner specs now exercise compact 390/1440 and full 390 sheets, including Escape, explicit close, compact-backdrop dismissal and focus return. Evidence and screenshots are in `author-static-header.spec.ts`, `discovery-launch.spec.ts`, and `/tmp/w1-fix-shots`.
 - `Needs verification`: record a reliable base-to-HEAD comparison for compact/full/share/media bottom spacing before accepting W1. Native devices remain open; no product/API/database contract changed. This matches `05-MVP-RFC.md` discovery behavior and leaves commerce controls inactive.
 
+## 2026-10-13 — Post-merge catalog filter stabilization
+
+- `Needs verification`: `PortfolioService.listWorks` now forwards the stable
+  `materialId` and `techniqueId` filters from `portfolioWorksQuerySchema` to
+  `ProductsService.listPortfolio`, preserving server-side filtering and
+  pagination. `author-story-catalog.integration.spec.ts` now includes a
+  published Work without the selected material and a distinct technique so
+  `/works?materialId=…` and `/works?techniqueId=…` exclude non-matches. API
+  typecheck and focused unit specs pass on Node 22.20.0. The
+  disposable PostgreSQL integration run is blocked locally because no server
+  listens on `127.0.0.1:5432`; no shared, staging, or production database was
+  used.
+
 ## 2026-10-12 — Work Catalog integration (PR #37)
 
 - **Implemented in code:** Work author editor uses catalog term IDs and moderated proposals; materials and techniques use searchable Figma chips, category uses single-select chips. Existing selected terms, rejected proposals and revision hydration are retained.

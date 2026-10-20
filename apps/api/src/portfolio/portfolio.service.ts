@@ -41,6 +41,8 @@ export class PortfolioService {
       category: query.category,
       categories: query.categories,
       materials: query.materials,
+      materialId: query.materialId,
+      techniqueId: query.techniqueId,
       sort: query.sort,
       author: query.author,
     });
