@@ -2,6 +2,44 @@
 
 > Entries dated before 2026-10-13 mention Pen / .pen files; the Pen design was removed (DEC-119) — read those mentions as history.
 
+## 2026-10-20 — Account UI: волны 3A–3D, повторное ревью AC-01…AC-07
+
+**Implemented (ветка `fix/account-foundation`).** Реальные маршруты
+`(account)/account` и `(account)/account/settings`; легаси-плоские
+`account.tsx`/`settings.tsx` удалены. AccountScreen — композиция на
+FormPageShell (единый scroll-owner): published identity при APPROVED
+только из публичного author-кэша (owner profile с editing overlay не
+читается — read-цепочка фото подтверждена волнами 1–2), иначе identity
+из сессии; локальная ошибка identity («Не удалось загрузить профиль» +
+retry) не блочит кабинет. Owner-кабинет на аккаунте делает общий
+контроллер с /cabinet (один query key, дедупликация; attempt-based retry
+hide/restore; inline-ошибка следующей страницы с сохранением работ).
+Сессия и приватный кэш: общие guards (auth epoch, not_found→null
+классификация) без изменений. Shared-компоненты: AccountIdentity
+(row + CTA slot), SettingsGroup/SettingsRow (trailingArrow/busy),
+WorkCoverCaption (новая роль `coverCaptionTitle`; author — `coverCaptionAuthor`),
+ResilientRemoteImage `fallback: 'plain'|'labelled'`, новая semantic-роль
+`accountMeta` (black остаётся provisional). FormPageShell получил
+testID `form-page`.
+
+Проверки: account consumer specs 9/9 + адресные 42/42 (5 файлов),
+production web build (expo export, Node 22), браузерный gate
+`e2e/account-screen.spec.ts` 10/10 Chromium+WebKit (dock→/account с
+ожиданием гидратации сессии, published identity, настройки пуш/закрытие/
+прямой URL/refresh, guest neutral not-found /authors/<slug> до публикации,
+320 без горизонтального переполнения, прокрутка на 320×568).
+tsc/eslint чисто. Коммиты `e59c35bc`, `aaa0972d`, `fb8923c4` (+docs).
+
+Волна 3D: backend/security-план удаления работ уточнён по DP-01
+(`{ok:true}` вместо 204, tombstone-проверки под существующим lock у всех
+поздних writers включая admin approve, CDN purge через revoke-путь,
+owner/admin bypass не вводится) — план на review, кодинг не начат,
+delete CTA в UI отсутствует. Остаток: точная Figma-сверка экрана
+аккаунта (следующий этап — один экран по exact Figma node), физический
+iPhone/native, browser zoom 200%/увеличение текста — Needs verification.
+Push/merge/deploy не выполнялись.
+[Файл выполнения](../audits/2026-10-19-ACCOUNT-FOUNDATION-PROGRESS.md).
+
 ## 2026-10-19 — Account foundation: общая ширина шторок, общий seller-profile query
 
 **Implemented (волны 1–2, ветка `fix/account-foundation`).** Единая политика

@@ -673,7 +673,41 @@ stay on the charcoal fill after release. Keyboard focus stays the blue
 `focus-visible` outline in `global.css`. Dock items already have no shadow.
 This does not change control size, type, or the field success state.
 
-## 7. Old system boundary
+## 7. Account shared components (2026-10-20)
+
+Владельцы и контракты общих компонентов экрана аккаунта (волны 3A–3D).
+Визуальные значения light прежние; black-палитра provisional.
+
+- `AccountIdentity` (`components/figma/AccountIdentity.tsx`) — row:
+  avatar100 (`size.accountAvatar`, `radius.avatar`, placeholder
+  `accountAvatarPlaceholder`) + текстовая колонка `flex:1/minWidth:0`
+  + опциональный CTA slot. Имя — `accountName` strong; handle
+  `@slug` — `accountHandle` цветом `accountMeta`; handle nullable.
+  Фото через `ResilientRemoteImage` (`fallback="plain"`, retryable=false).
+  Это не `CreatorIdentity`: та — для публичных страниц автора.
+- Published identity правило: при APPROVED имя/фото/sharePath берутся
+  только из публичного author-кэша (`use-account-public-identity`, общий
+  query key с публичным экраном автора); owner profile несёт editing
+  overlay и для identity не читается.
+- `SettingsGroup`/`SettingsRow` (`components/figma/SettingsList.tsx`):
+  label группы опционален и красится `accountMeta`; поверхность группы
+  прежняя. Row: иконка + текстовый блок `flex:1/minWidth:0` (AppText
+  `flexShrink:1`), props `trailingArrow` и `busy` (busy блокирует row).
+- `WorkCoverCaption` (экспорт `WorkCoverCard.tsx`) — единый caption
+  caption-варианта: author — `coverCaptionAuthor` (tracking −0.14), title
+  — роль `coverCaptionTitle` 14/17/500/−0.28, максимум 2 строки. Ветки
+  cover/no-cover используют один renderer; дублирующей разметки нет.
+- Новые semantic-роли (`SemanticColorMap` в обеих map theme.ts):
+  `accountMeta` (light #858585, black provisional #8F8F8F) — метки групп
+  настроек и handle; `coverCaptionTitle` — типографика caption-заголовка
+  (в tokens.ts). `gray2` не переиспользуется новыми consumers.
+- `ResilientRemoteImage`: prop `fallback: 'labelled' | 'plain'`
+  (plain — без текста плейсхолдера; default 'labelled' прежний).
+- Back variant `settings` — шапка настроек (сырой глиф 28, touch 44).
+- `FormPageShell` — testID `form-page` (единый scroll-owner форм;
+  web-скоуп тестов поверх стека маршрутов).
+
+## 8. Old system boundary
 
 `docs/modern-ui` and its design language are retired. Runtime public screens
 use `apps/mobile/src/components/figma` and wrappers in `components/ui`. There

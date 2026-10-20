@@ -2,6 +2,31 @@
 
 > Entries dated before 2026-10-13 mention Pen / .pen files; the Pen design was removed (DEC-119) — read those mentions as history.
 
+## 2026-10-20 — Account UI: shared-компоненты и композиция (волны 3A–3D)
+
+**Implemented (код); Partial до Figma-сверки экрана.** Композиция /account
+собрана по intake: FormPageShell как единый scroll-owner, identity-блок
+(AccountIdentity: avatar100 + текстовая колонка flex1/minWidth0 + CTA
+slot; опубликованная идентичность — из public author, не editing
+overlay), секция «Работы» на PaddedGrid с OwnerWorkCard (caption-карточка
++ статусы/действия). SUSPENDED — read-only с пометкой «Профиль
+ограничен». Shared API зафиксированы в
+[03-DESIGN-SYSTEM](03-DESIGN-SYSTEM.md) §7: WorkCoverCaption
+(author `coverCaptionAuthor`, title — новая роль `coverCaptionTitle`
+14/17/500/−0.28, две строки), SettingsGroup (label опционален,
+`accountMeta`) / SettingsRow (trailingArrow/busy, текст flex1/minWidth0),
+ResilientRemoteImage `fallback: 'plain'|'labelled'`, новая semantic-роль
+`accountMeta` (light #858585; black provisional, пользователям не
+включена), Back variant «settings». FormPageShell — testID `form-page`.
+Визуальные значения light не менялись; точная сверка с Figma node
+/account — следующий этап (один экран по exact node), без неё
+визуальный эталон композиции не объявлен.
+
+Проверки: browser gate 10/10 Chromium+WebKit (маршруты, identity,
+настройки, not-found до публикации, 320 без переполнения, прокрутка
+320×568), consumer specs 9/9, production web build.
+[Файл выполнения](../audits/2026-10-19-ACCOUNT-FOUNDATION-PROGRESS.md).
+
 ## 2026-10-19 — Account foundation: общая ширина шторок (волны 1–2)
 
 **Implemented.** Единая политика ширины auth/AppDialog sheets: ≤600 CSS px — во всю

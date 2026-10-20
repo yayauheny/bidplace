@@ -374,3 +374,83 @@ ratio.ownerCardMedia 179/236; space.settingsSurfacePadX 14, coverCaptionGap 10.
 - Открытые вопросы на review: uniform 404 vs Forbidden для чужого id,
   suspended policy, видимость удалённых в admin moderation.
 - Код не писался; UI delete CTA не добавлялся (запрещено без рабочего API).
+
+## Повторное ревью 2026-10-20 (account-wave3-review) — AC-01…AC-07 + DP-01
+
+База правок: `e7ff97c3` (auth-layout test-only) поверх волн 3A–3D.
+Все находки закрыты коммитами `e59c35bc` (AC-03/01/02/05/04/06),
+`aaa0972d` (AC-07 specs), `fb8923c4` (AC-07 browser gate). Документы и
+DP-01 — отдельным коммитом. Push/merge/deploy не выполнялись.
+
+- **AC-03 (маршруты).** Реальные адреса: `(account)/account/index.tsx`
+  (AccountScreen) и `(account)/account/settings.tsx`
+  (AccountSettingsScreen); легаси `account.tsx`/`settings.tsx` удалены
+  (`git rm`). Проверка: e2e dock→/account, прямой goto и refresh
+  /account/settings, Back/закрытие — 10/10 Chromium/WebKit.
+- **AC-01 (public identity).** `use-account-public-identity` собран из
+  общих `authorWorksBaseOptions` (тот же cache/key/shape/queryFn, что
+  публичный экран автора) + общие staleTime 60s/gcTime 5min; возвращает
+  `{author, isLoading, isError, refetch}`. Дедупликация с экраном автора
+  доказана спеком (один network-вызов на два observer'а). Тип `PublicAuthor`
+  — `portfolioAuthorSchema._output`. Форма данных не менялась.
+- **AC-02 (ошибки действий).** Контроллер `use-author-cabinet.ts`
+  возвращает `{pendingHideId, setPendingHideId, mutation, retry}`:
+  attempt фиксируется в `onMutate`, retry перезапускает тот же mutate.
+  Hide: ошибка внутри диалога + retry, диалог открыт пока mutation
+  pending. Restore: inline-ошибка над grid + retry. Ошибка первой
+  страницы без данных — полноэкранная; ошибка следующей страницы при
+  сохранённых данных — inline, работы остаются. Проверки:
+  account-consumer.spec 9/9 (hide 2 вызова после retry, restore 2 вызова,
+  next-page fail → retry → вторая страница подгружена).
+- **AC-04 (published identity A vs editing B).** AccountScreen при
+  APPROVED берёт имя/фото/шеринг только из public author; owner profile
+  (editing overlay) не читается. E2E: published fullName виден, editing
+  Name B отсутствует. Фото — `Фото профиля: <published>` из public author.
+- **AC-05 (композиция).** FormPageShell — единый scroll-owner экрана;
+  skeleton identity с reserved geometry; локальная ошибка identity
+  («Не удалось загрузить профиль» + «Повторить»), кабинет ниже живёт.
+  Проверки: consumer spec + e2e.
+- **AC-06 (caption/компоненты).** `WorkCoverCaption` экспортирован
+  (author `coverCaptionAuthor`, title — новая роль `coverCaptionTitle`
+  14/17/500/−0.28, numberOfLines 2); OwnerWorkCard использует его в
+  no-cover ветке; дублирующей разметки нет. ResilientRemoteImage —
+  `fallback: 'labelled' | 'plain'` (аватар в AccountIdentity — plain).
+  AccountIdentity — row (avatar100 + flex1/minWidth0 колонка + cta slot),
+  handle nullable. SettingsRow: `flex:1/minWidth:0`, AppText flexShrink,
+  props trailingArrow/busy; SettingsGroup label опционален, красится
+  `accountMeta`. Новые semantic-роли: `accountMeta` (light #858585,
+  black provisional #8F8F8F — пользователям не включена), `coverCaptionTitle`.
+- **AC-07 (consumer-регрессии + gate).** `account-consumer.spec.ts` 9/9:
+  plain account (identity из сессии, CTA «Стать автором», секции работ
+  нет, Share/settings есть, share path typed `/authors/<slug>`), approved
+  A-over-B, key-parity с useAuthorWorks, identity error + retry + живой
+  grid, suspended read-only (cached public identity не показывается,
+  hide/restore отсутствуют), failed hide (диалог + retry), failed restore
+  (inline + retry той же попытки), next-page failure (работы остаются +
+  inline retry). Session-switch намеренно не дублирован
+  (author-cabinet-work-cache). Browser gate `e2e/account-screen.spec.ts`
+  10/10 Chromium+WebKit: dock→account (с ожиданием гидратации сессии —
+  гостевой dock-клик не навигирует), published identity, настройки
+  (пуш/закрытие/прямой URL/refresh), guest neutral not-found
+  /authors/<slug> до публикации, 320 без горизонтального переполнения,
+  настройки на коротком viewport, прокрутка контента аккаунта внутри
+  shell на 320×568.
+- **Прочие проверки.** Production web build (expo export, Node 22) на
+  `aaa0972d` зелёный. Адресные specs 42/42 (5 файлов), tsc --noEmit и
+  eslint чисто. Полный suite/build повторно не гонялся (по условию
+  ревью). FormPageShell получил `testID="form-page"` для однозначного
+  скоупа поверх стека маршрутов (RN Web отдаёт data-testid).
+- **DP-01 (delete-план).** Уточнён по пяти пунктам ревью
+  (DELETE-BACKEND-PLAN.md): `{ok:true}` вместо 204 (несовместим с
+  requestJson), tombstone-проверки под существующим lock у всех поздних
+  writers (включая admin approve — lock подтверждён чтением кода),
+  CDN purge через существующий revoke-путь с success/failure-тестами,
+  owner/admin bypass для direct image GET не вводится, противоречие
+  reads-vs-moderation снято (активные очереди фильтруются, audit-история
+  остаётся). Статус: план на review, кодинг не начинался, delete CTA в UI
+  не добавлялся.
+- **Остаток (Needs verification).** Физический iPhone/native-прогон
+  экрана аккаунта; browser zoom 200% и увеличение текста (ручные шаги
+  переданы ранее); точная Figma-сверка композиции /account — следующий
+  этап (один экран по exact Figma node), она же закроет визуальный
+  эталон caption/отступов.
