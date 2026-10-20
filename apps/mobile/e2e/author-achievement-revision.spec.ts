@@ -5,7 +5,10 @@ import { expect, test } from '@playwright/test';
 
 import { authenticatedPage } from './support/auth-session';
 import { moderateSeller } from './support/admin-moderation';
-import { e2eApiBaseURL } from './support/e2e-env';
+import {
+  assertFixtureDatabaseIsolation,
+  e2eApiBaseURL,
+} from './support/e2e-env';
 import { fillControl, selectCalendarMonth } from './support/fill-control';
 import {
   createAdminModerationFixture,
@@ -189,4 +192,29 @@ test('approved author replaces a published achievement without publishing the dr
   } finally {
     await context.close();
   }
+});
+
+test('fixture writes require isolated storage before opening a database client', () => {
+  for (const path of [
+    'bidplace_dev',
+    'bidplace_dev?schema=public',
+    'bidplace',
+  ]) {
+    expect(() =>
+      assertFixtureDatabaseIsolation(`postgresql://localhost/${path}`),
+    ).toThrow('Fixture writes require');
+  }
+  for (const path of [
+    'bidplace_e2e',
+    'bidplace_e2e?schema=public',
+    'bidplace_dev?schema=e2e_calendar',
+    'bidplace_dev?schema=auth_browser_acceptance',
+  ]) {
+    expect(() =>
+      assertFixtureDatabaseIsolation(`postgresql://localhost/${path}`),
+    ).not.toThrow();
+  }
+  expect(() => assertFixtureDatabaseIsolation('invalid')).toThrow(
+    'Fixture database URL is invalid',
+  );
 });

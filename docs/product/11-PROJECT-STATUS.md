@@ -2,6 +2,21 @@
 
 > Entries dated before 2026-10-13 mention Pen / .pen files; the Pen design was removed (DEC-119) — read those mentions as history.
 
+## 2026-10-20 — Восстановление ручной dev-выдачи после E2E
+
+**Implemented.** Исправлена ошибка запуска приёмки календаря на общей dev-базе:
+19 синтетических опубликованных профилей сняты с публичной выдачи с сохранением
+записей и предыдущих revision pointers; пять демо-авторов и их медиа не менялись.
+В e2e-fixtures десять входов создания PrismaClient проверяют выделенную e2e-базу
+или test schema через assertFixtureDatabaseIsolation. Пишущий achievement-revision
+сценарий исключён из sheet-local preview-конфига. Это защита тестового запуска;
+правила серверной выдачи и UI не менялись.
+
+Проверки: guard1/1 без БД; Search/avatar4/4 Chromium/WebKit, включая click→буква,
+загрузку обеих копий фото vex и blur15px/opacity0.5; восстановленные пять демо-фото
+проверены в обоих движках. Typecheck/lint — чисто. Полный suite/build не повторялись
+для тестовых изменений. Причины и границы — в [аудите](../audits/2026-10-20-DATE-SELECTION.md).
+
 ## 2026-10-20 — UI после общего календаря
 
 **Implemented (web, адресная приёмка).** AuthViewport показывает крест на всех

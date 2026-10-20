@@ -3,9 +3,15 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import { PrismaClient } from '../../../../packages/database/dist/index.js';
-import { e2eDatabaseURL } from './e2e-env';
+import { assertFixtureDatabaseIsolation, e2eDatabaseURL } from './e2e-env';
 
 const databaseUrl = e2eDatabaseURL;
+
+function fixtureDatabaseClient() {
+  assertFixtureDatabaseIsolation(databaseUrl);
+  return new PrismaClient({ datasources: { db: { url: databaseUrl } } });
+}
+
 const password = 'password123';
 const passwordHash =
   '$argon2id$v=19$m=65536,t=3,p=4$Hv01HhuWHyFmMIRCcxhH3w$9dvY3hECfoulYwe4VEPwWEJ4OHvYCCYbiw685vNdLZM';
@@ -46,9 +52,7 @@ const seededDemoProductIds = [
 ] as const;
 
 export async function prioritizeSeededDemoProducts(): Promise<void> {
-  const prisma = new PrismaClient({
-    datasources: { db: { url: databaseUrl } },
-  });
+  const prisma = fixtureDatabaseClient();
 
   try {
     await prisma.product.updateMany({
@@ -200,9 +204,7 @@ export async function createAuctionFixture(options?: {
   additionalTitles?: string[];
 }): Promise<AuctionFixture> {
   const suffix = randomUUID().slice(0, 8);
-  const prisma = new PrismaClient({
-    datasources: { db: { url: databaseUrl } },
-  });
+  const prisma = fixtureDatabaseClient();
   const now = new Date();
   const startsAt = new Date(
     now.getTime() + (options?.live === false ? 30_000 : -5_000),
@@ -357,9 +359,7 @@ export async function createSellerFixture(
   slug: string;
 }> {
   const suffix = randomUUID().slice(0, 8);
-  const prisma = new PrismaClient({
-    datasources: { db: { url: databaseUrl } },
-  });
+  const prisma = fixtureDatabaseClient();
   const seller = await createUser(
     prisma,
     uniqueEmail('seller', suffix),
@@ -404,9 +404,7 @@ export async function createApprovedAuthorFixture(): Promise<{
   achievement: { id: string; body: string };
 }> {
   const suffix = randomUUID().slice(0, 8);
-  const prisma = new PrismaClient({
-    datasources: { db: { url: databaseUrl } },
-  });
+  const prisma = fixtureDatabaseClient();
   const author = await createUser(
     prisma,
     uniqueEmail('author', suffix),
@@ -497,9 +495,7 @@ export async function createApprovedAuthorFixture(): Promise<{
 
 export async function createBuyerFixture(): Promise<{ buyer: E2EUser }> {
   const suffix = randomUUID().slice(0, 8);
-  const prisma = new PrismaClient({
-    datasources: { db: { url: databaseUrl } },
-  });
+  const prisma = fixtureDatabaseClient();
   const buyer = await createUser(
     prisma,
     uniqueEmail('buyer', suffix),
@@ -513,9 +509,7 @@ export async function createBuyerFixture(): Promise<{ buyer: E2EUser }> {
 
 export async function createAdminModerationFixture(): Promise<AdminModerationFixture> {
   const suffix = randomUUID().slice(0, 8);
-  const prisma = new PrismaClient({
-    datasources: { db: { url: databaseUrl } },
-  });
+  const prisma = fixtureDatabaseClient();
   const admin = await createUser(
     prisma,
     uniqueEmail('admin', suffix),
@@ -635,9 +629,7 @@ export async function createIsolatedWorksPaginationFixture(): Promise<{
 }> {
   const suffix = randomUUID().slice(0, 8);
   const material = `e2epage2m${suffix}`;
-  const prisma = new PrismaClient({
-    datasources: { db: { url: databaseUrl } },
-  });
+  const prisma = fixtureDatabaseClient();
   const profileIds: string[] = [];
   const userIds: string[] = [];
   let categoryId = '';
@@ -797,9 +789,7 @@ export async function createIsolatedAuthorsPaginationFixture(): Promise<{
   const tag = `e2epage2tag${suffix}`;
   const city = `e2epage2city${suffix}`;
   const searchQuery = `Page2 author ${suffix}`;
-  const prisma = new PrismaClient({
-    datasources: { db: { url: databaseUrl } },
-  });
+  const prisma = fixtureDatabaseClient();
   const profileIds: string[] = [];
   const userIds: string[] = [];
   let directionCategoryId = '';
@@ -885,9 +875,7 @@ export async function createIsolatedAuthorsPaginationFixture(): Promise<{
 }
 
 export async function approveProduct(productId: string): Promise<void> {
-  const prisma = new PrismaClient({
-    datasources: { db: { url: databaseUrl } },
-  });
+  const prisma = fixtureDatabaseClient();
   await prisma.product.update({
     where: { id: productId },
     data: { status: 'APPROVED', publishedAt: new Date() },
@@ -896,9 +884,7 @@ export async function approveProduct(productId: string): Promise<void> {
 }
 
 export async function removeRulesAcceptance(userId: string): Promise<void> {
-  const prisma = new PrismaClient({
-    datasources: { db: { url: databaseUrl } },
-  });
+  const prisma = fixtureDatabaseClient();
   await prisma.termsAcceptance.deleteMany({ where: { userId } });
   await prisma.$disconnect();
 }

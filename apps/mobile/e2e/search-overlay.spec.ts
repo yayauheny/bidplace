@@ -651,6 +651,10 @@ test('search chrome fills the viewport, rounds author hits and distinguishes poi
     expect(
       await authorTab.evaluate((e) => getComputedStyle(e).outlineStyle),
     ).toBe('none');
+    await page.keyboard.press('a');
+    expect(
+      await authorTab.evaluate((e) => getComputedStyle(e).outlineStyle),
+    ).toBe('solid');
     await page.keyboard.press('Tab');
     await page.keyboard.press('Shift+Tab');
     await expect(authorTab).toBeFocused();
@@ -679,6 +683,25 @@ test('author scroll includes page gutters without moving the identity column', a
   await page.goto('/seller/vex');
   const avatar = page.getByTestId('creator-avatar');
   await expect(avatar).toBeVisible();
+  const atmosphere = avatar.locator(':scope > [aria-hidden="true"]');
+  await expect(atmosphere).toHaveCSS('filter', 'blur(15px)');
+  await expect(atmosphere).toHaveCSS('opacity', '0.5');
+  await expect
+    .poll(() =>
+      avatar
+        .locator('img')
+        .evaluateAll(
+          (images) =>
+            images.length === 2 &&
+            images.every(
+              (image) =>
+                image instanceof HTMLImageElement &&
+                image.complete &&
+                image.naturalWidth > 0,
+            ),
+        ),
+    )
+    .toBe(true);
   const scroll = await page.getByTestId('creator-scroll').boundingBox();
   const shell = await page
     .getByTestId('app-shell-content')
