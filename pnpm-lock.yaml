@@ -3808,8 +3808,6 @@ packages:
 
   expo-image-manipulator@57.0.21:
     resolution: {integrity: sha512-NZeNvZxBNf/PK97Df5zORmtqRR/LovkA+lHdRLm1IJFiVKjs4xr+Ib6/jWhDxn04VOX3TJswCQyu4SCxkgMe4Q==}
-    dependencies:
-      expo-image-loader: ~57.0.1
     peerDependencies:
       expo: '*'
 
