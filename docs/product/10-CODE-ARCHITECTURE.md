@@ -524,3 +524,8 @@ database migration or scheduling domain was added.
 content and cancellation on unmount. It replaces web layout exiting only, because
 that implementation moves live children into dummy DOM clones. Native keeps
 existing layout transitions. This boundary is shared by all AppDialog sheets.
+
+Metro's transform cache identity includes the explicit public build configuration
+(API URL, public site key, app environment and analytics flag). Sequential preview
+and isolated-test exports must never reuse a bundle compiled for another origin.
+metro.config.js and environment.spec own this build/release invariant.

@@ -5120,3 +5120,8 @@ isolated test API/DB. Screenshots use test fixtures; manual preview DB was not r
 Visual desktop parity and physical iPhone remain Needs verification; see UI completion audit.
 
 2026-10-21 — Implemented: Home empty-state actions use a centered420px maximum column, preserving the1280px page and full mobile width. Browser geometry verified390/1024/1440/1920 in home-image-lifecycle; no catalog/API/data behavior changed. See UI completion audit.
+
+2026-10-21 — Implemented: Metro cache separates public build targets.
+metro.config.js/environment.spec verify identical builds retain cache identity
+and API/release changes invalidate it; actual sequential exports contain only
+their intended3001/3011 origin. Mobile typecheck and5 environment checks passed.

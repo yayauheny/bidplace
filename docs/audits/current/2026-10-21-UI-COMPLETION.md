@@ -90,3 +90,15 @@ Both browsers verify centering,1280 page cap and no horizontal overflow.
 [Matched viewport screenshots](evidence/2026-10-21-desktop-actions/).
 420 is the founder-approved default, not a claimed desktop Figma measurement.
 No state/API/database changes; future solitary actions can reuse the metric.
+
+## Public build cache correctness
+
+Reproduced: a production export for API3001 followed by an isolated export for
+API3011 reused the previous transform and bundled3001. This crossed the test
+transport boundary before authentication; no fixture writes reached the preview.
+Durable fix: Metro cacheVersion hashes the explicit public compile-time values
+(API origin, public Turnstile site key, app environment, analytics flag). No secrets
+are read or bundled. Existing cache/version/blockList behavior is preserved.
+Owner check environment.spec:5 passed; mobile typecheck passed. Actual exports
+without cache deletion prove3011-only in the isolated output and3001-only in the
+manual output. No dependency, server, API or database changes.
