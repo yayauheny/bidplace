@@ -51,8 +51,9 @@ Still **deferred**. Tag + link-check reduce operational risk; clone size needs s
 | Item | Result |
 | --- | --- |
 | Auth integration failure | Fixed in **PR #54** → merged to `feature/portfolio-mvp-release` @ `cc4911e5`; merged into this branch |
-| `pnpm docs:link-check` | Run at push (171 files) |
-| GitHub **Verify** on PR #53 | Re-run after push (includes integration suite) |
+| `pnpm docs:link-check` | Pass (171 files) |
+| `pnpm verify` (local @ branch tip) | Pass |
+| GitHub **Verify** on PR #53 | Confirm green on latest HEAD after push |
 
 ## Verification commands
 
