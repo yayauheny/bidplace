@@ -48,7 +48,7 @@ export function AppShell({
           contentLayout === 'column' ? pageColumnStyle : null,
         ]}
       >
-        <PageChromeProvider value={!hideDock && desktop}>
+        <PageChromeProvider value={{ desktop: !hideDock && desktop, dock: !hideDock && !desktop }}>
           {children}
           {bottomAction ? (
             <View

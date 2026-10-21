@@ -5,6 +5,7 @@ import { productWriteRequestSchema, type Product, type SellerProductDetailRespon
 import {
   emptyProductDraftFormValues,
   productDraftFormSchema,
+  productDraftTermLabels,
   productDraftToWriteRequest,
   productToDraftFormValues,
   shouldHydrateProductDraft,
@@ -47,6 +48,12 @@ const persistedProduct = {
 } satisfies Product;
 
 describe('product draft form lifecycle', () => {
+  it('resolves current selections and proposals in order using persisted names for inactive terms', () => {
+    expect(productDraftTermLabels(['old', 'new'], ['Авторский материал'], [{ id: 'new', name: 'Масло' }], [{ id: 'old', name: 'Холст' }])).toBe('Холст, Масло, Авторский материал');
+    expect(productDraftTermLabels([], [], [], [])).toBe('');
+    expect(productDraftTermLabels(['missing'], [], [], [])).toBe('Выбранный термин');
+  });
+
   it('accepts an incomplete draft and rejects a year outside 0..9999', () => {
     expect(productDraftFormSchema.parse(emptyProductDraftFormValues)).toEqual(
       emptyProductDraftFormValues,

@@ -431,6 +431,44 @@ describe('ProductDraftScreen render contract', () => {
     expect(titleInput(container)?.disabled).toBe(true);
   });
 
+  it('reviews labelled catalog values, including selected inactive terms, without exposing IDs', async () => {
+    const materialId = '81111111-1111-4111-8111-111111111111';
+    const techniqueId = '82222222-2222-4222-8222-222222222222';
+    const saved = detail();
+    harness.getProduct.mockResolvedValue({
+      ...saved,
+      product: { ...saved.product, dimensions: '20 × 30 см', year: 2026, uniqueness: 'Единственный экземпляр' },
+      selection: {
+        category: { id: categoryId, name: 'Живопись', slug: 'painting' },
+        materialTermIds: [materialId], techniqueTermIds: [techniqueId],
+        materialTerms: [{ id: materialId, name: 'Холст', active: false }],
+        techniqueTerms: [{ id: techniqueId, name: 'Масло', active: false }],
+        proposals: [],
+      },
+    });
+    harness.listCategories.mockResolvedValue({ categories: [] });
+    const { container, unmount } = mount({ flow: 'creation', stepParam: '4' });
+    await until(container, () => container.textContent?.includes('Проверка перед модерацией') ?? false, 'review step');
+    for (const label of ['Категория: Живопись', 'Материалы: Холст', 'Техники: Масло', 'Размеры: 20 × 30 см', 'Год создания: 2026', 'Уникальность: Единственный экземпляр']) {
+      expect(container.textContent).toContain(label);
+    }
+    expect(container.textContent).not.toContain(materialId);
+    expect(container.textContent).not.toContain(techniqueId);
+    expect(harness.updateProduct).not.toHaveBeenCalled();
+    expect(harness.submitProduct).not.toHaveBeenCalled();
+    unmount();
+  });
+
+  it('omits empty optional review values instead of rendering empty labels', async () => {
+    const { container, unmount } = mount({ flow: 'creation', stepParam: '4' });
+    await until(container, () => container.textContent?.includes('Проверка перед модерацией') ?? false, 'review step');
+    expect(container.textContent).toContain('Категория: Painting');
+    for (const label of ['Материалы:', 'Техники:', 'Размеры:', 'Год создания:', 'Уникальность:']) {
+      expect(container.textContent).not.toContain(label);
+    }
+    unmount();
+  });
+
   it('renders the story-step chrome in the creation wizard', async () => {
     const { container } = mount({ flow: 'creation', stepParam: '3' });
     await until(

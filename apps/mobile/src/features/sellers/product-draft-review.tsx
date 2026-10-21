@@ -1,3 +1,4 @@
+import type { SellerProductDetailResponse } from '@bidplace/contracts';
 import { View } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
 import { PrivateStoryImage } from '../../components/shared/PrivateStoryImage';
@@ -13,9 +14,12 @@ import {
   PrimaryButton,
   SecondaryButton,
 } from '../../components/ui';
-import type { ProductDraftFormValues } from './product-draft-form';
+import { productDraftTermLabels, type ProductDraftFormValues } from './product-draft-form';
 
 export type ProductDraftReviewStepProps = {
+  categories: ReadonlyArray<{ id: string; name: string }>;
+  selection?: SellerProductDetailResponse['selection'];
+  catalog: Pick<SellerProductDetailResponse['selection'], 'materialTerms' | 'techniqueTerms'>;
   productId: string;
   sessionEpoch: number;
   images: Array<{
@@ -36,6 +40,9 @@ export type ProductDraftReviewStepProps = {
 };
 
 export function ProductDraftReviewStep({
+  categories,
+  selection,
+  catalog,
   productId,
   sessionEpoch,
   images,
@@ -51,6 +58,18 @@ export function ProductDraftReviewStep({
   const values = useWatch<ProductDraftFormValues>();
   const title = values.title ?? '';
   const palette = useAppTheme();
+  const category = values.categoryId
+    ? categories.find((item) => item.id === values.categoryId)?.name ??
+      (selection?.category?.id === values.categoryId ? selection.category.name : 'Название категории недоступно')
+    : values.categoryProposal;
+  const characteristics = [
+    ['Категория', category],
+    ['Материалы', productDraftTermLabels(values.materialTermIds ?? [], values.materialProposals ?? [], catalog.materialTerms, selection?.materialTerms ?? [])],
+    ['Техники', productDraftTermLabels(values.techniqueTermIds ?? [], values.techniqueProposals ?? [], catalog.techniqueTerms, selection?.techniqueTerms ?? [])],
+    ['Размеры', values.dimensions],
+    ['Год создания', values.year],
+    ['Уникальность', values.uniqueness],
+  ] as const;
   return (
     <FormSection
       title="Проверка перед модерацией"
@@ -62,13 +81,9 @@ export function ProductDraftReviewStep({
         {blocks.length > 0 ? 'заполнена' : 'не заполнена'}
       </AppText>
       <View style={{ gap: designTokens.space.x3 }}>
-        {[values.uniqueness, values.dimensions, values.year]
-          .filter(Boolean)
-          .map((value, index) => (
-            <AppText key={index} role="bodySmall">
-              {value}
-            </AppText>
-          ))}
+        {characteristics.filter(([, value]) => value?.trim()).map(([label, value]) => (
+          <AppText key={label} role="bodySmall">{label}: {value}</AppText>
+        ))}
         <DraftImageGrid
           images={images}
           renderItem={(image) => (

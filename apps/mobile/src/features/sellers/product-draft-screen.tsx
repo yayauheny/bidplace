@@ -477,6 +477,12 @@ export function ProductDraftScreen({
           wizardStep === productWizardStep.review &&
           existingProduct ? (
             <ProductDraftReviewStep
+              categories={data.categories.data.categories}
+              selection={productDetail.data?.selection}
+              catalog={{
+                materialTerms: data.materialsCatalog.data?.terms ?? [],
+                techniqueTerms: data.techniquesCatalog.data?.terms ?? [],
+              }}
               productId={existingProduct.id}
               sessionEpoch={authEpoch}
               images={existingProduct.images}

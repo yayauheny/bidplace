@@ -55,6 +55,22 @@ describe('shared public navigation', () => {
   );
 
   it.each([
+    { status: null, destination: '/profile' },
+    { status: 'PENDING_REVIEW', destination: '/profile' },
+    { status: 'APPROVED', destination: '/products/new' },
+  ] as const)('keeps author onboarding separate from creation for $status', ({ status, destination }) => {
+    expect(getMobileCreateHref({ isAuthenticated: true, sellerStatus: status, returnPath: '/works' })).toBe(destination);
+    expect(getMobileCreateHref({ isAuthenticated: true, sellerStatus: null, returnPath: '/profile' })).toBe('/profile');
+    expect(getProfileHref({ isAdmin: false, isAuthenticated: true, returnPath: '/works' })).toBe('/account');
+  });
+
+  it('preserves the requested destination for guest onboarding and returns admins to their cabinet', () => {
+    expect(getMobileCreateHref({ isAuthenticated: false, sellerStatus: null, returnPath: '/profile' })).toEqual({ pathname: '/login', params: { redirectTo: '/profile' } });
+    expect(getMobileCreateHref({ isAuthenticated: false, sellerStatus: null, returnPath: '/works' })).toEqual({ pathname: '/login', params: { redirectTo: '/works' } });
+    expect(getProfileHref({ isAdmin: true, isAuthenticated: true, returnPath: '/works' })).toBe('/admin');
+  });
+
+  it.each([
     [false, false, '/', '/login'],
     [
       false,

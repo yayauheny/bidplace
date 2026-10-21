@@ -20,6 +20,7 @@ import { ProductDraftTextField, useProductDraftWriteGuard } from './product-draf
 import {
   emptyProductDraftFormValues,
   productDraftRequiredErrors,
+  productDraftTermLabels,
   type ProductDraftFormValues,
 } from './product-draft-form';
 import {
@@ -92,16 +93,6 @@ export function ProductDraftAboutStep({
   const knownTerms = openRole === 'MATERIAL'
     ? (selection?.materialTerms ?? [])
     : (selection?.techniqueTerms ?? []);
-  const termLabels = (
-    ids: readonly string[],
-    names: readonly string[],
-    active: typeof catalog.MATERIAL.terms,
-    previous: typeof knownTerms,
-  ) => {
-    const byId = new Map([...active, ...previous].map((term) => [term.id, term.name]));
-    const selected = ids.map((id) => byId.get(id) ?? 'Выбранный термин');
-    return [...selected, ...names].join(', ');
-  };
   const { errors } = useFormState({ control, name: 'year' });
   const requiredErrors = productDraftRequiredErrors({
     ...emptyProductDraftFormValues,
@@ -136,7 +127,7 @@ export function ProductDraftAboutStep({
             <FigmaSelectField
               label="Техники"
               placeholder="Выберите или предложите"
-              value={termLabels(techniqueTermIds, techniqueProposals, catalog.TECHNIQUE.terms, selection?.techniqueTerms ?? [])}
+              value={productDraftTermLabels(techniqueTermIds, techniqueProposals, catalog.TECHNIQUE.terms, selection?.techniqueTerms ?? [])}
               disabled={!editable}
               onPress={() => {
                 onCatalogOpen('TECHNIQUE');
@@ -146,7 +137,7 @@ export function ProductDraftAboutStep({
             <FigmaSelectField
               label="Материалы"
               placeholder="Выберите или предложите"
-              value={termLabels(materialTermIds, materialProposals, catalog.MATERIAL.terms, selection?.materialTerms ?? [])}
+              value={productDraftTermLabels(materialTermIds, materialProposals, catalog.MATERIAL.terms, selection?.materialTerms ?? [])}
               disabled={!editable}
               onPress={() => {
                 onCatalogOpen('MATERIAL');

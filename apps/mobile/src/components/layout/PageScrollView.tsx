@@ -3,7 +3,7 @@ import Animated from 'react-native-reanimated';
 
 import { designTokens } from '@bidplace/design-tokens';
 import { BrandLogo } from './BrandLogo';
-import { usePageDesktopChrome } from './public-navigation';
+import { usePageDesktopChrome, usePageDockVisible } from './public-navigation';
 import { PageColumn } from './PageColumn';
 import { SiteFooter } from './SiteFooter';
 import { useDockInset } from './use-dock-inset';
@@ -25,6 +25,7 @@ export function PageScrollView({
   variant?: 'default' | 'branded';
 }) {
   const desktop = usePageDesktopChrome();
+  const dockVisible = usePageDockVisible();
   const { reserve } = useDockInset();
   const Scroller = animated ? Animated.ScrollView : ScrollView;
   return (
@@ -55,7 +56,7 @@ export function PageScrollView({
         {children}
       </PageColumn>
       <SiteFooter />
-      <View aria-hidden style={{ height: reserveDock ? reserve : 0 }} />
+      <View aria-hidden style={{ height: reserveDock && dockVisible ? reserve : 0 }} />
     </Scroller>
   );
 }
