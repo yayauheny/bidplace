@@ -12,7 +12,7 @@
 **Источники.** Конспект после созвона + расшифровка записи (наложена 26 августа) + формулировки, которые юрист кидал в личку (галочки / расшифровка ИИ с его диктовки). Где конспект и запись расходились, берём то, что сказано вслух на созвоне.
 
 Ориентир по набору бумаг: [bidbaits.ru](https://bidbaits.ru). Сырые тексты:
-[`docs/research/raw/2026-08-25-bidbaits-legal-documents.md`](../research/raw/2026-08-25-bidbaits-legal-documents.md).
+[`docs/research/raw/2026-08-25-bidbaits-legal-documents.md`](../../../research/raw/2026-08-25-bidbaits-legal-documents.md).
 Карта использования: [`08-BIDBAITS-SOURCE-MAPPING-2026-09-06.md`](08-BIDBAITS-SOURCE-MAPPING-2026-09-06.md).
 Рабочие черновики: [`04-DOCUMENT-SET.md`](04-DOCUMENT-SET.md). Закрытые вопросники
 удалены из рабочего дерева; актуальные вопросы находятся в

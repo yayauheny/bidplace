@@ -1,5 +1,7 @@
 # Auth transition acceptance
 
+PNG: [`docs/archive/AUDIT-EVIDENCE-RECOVERY.md`](../../../archive/AUDIT-EVIDENCE-RECOVERY.md).
+
 2026-10-19, fix/image-flicker, production bundle at localhost:7899.
 390 × 874 CSS px, Home scrolled by 120 px.
 Baseline 576b2771: minimum dimming 0 in Chromium and WebKit.

@@ -20,9 +20,9 @@
 
 ## Текущий статус
 
-Репозиторий готовится к первому публичному portfolio MVP.
+Репозиторий на ветке `feature/portfolio-mvp-release` готовится к первому публичному portfolio MVP.
 
-Источник истины по продукту, архитектуре и фактическому состоянию находится в `docs/product/`.
+Для агентов и разработчиков: начните с [`docs/AGENT-MAP.md`](docs/AGENT-MAP.md) и [`docs/product/16-PORTFOLIO-ACTIVE-BACKLOG.md`](docs/product/16-PORTFOLIO-ACTIVE-BACKLOG.md). Полный продуктовый индекс — `docs/product/`.
 
 Ключевой сценарий MVP:
 
@@ -31,22 +31,23 @@
 - после модерации профиль и работы доступны публично;
 - опубликованные изображения выдаются через Cloudflare R2/CDN.
 
-R2/CDN ещё требуют реализации и внешней проверки; локальные auth-проверки пройдены.
-Актуальный снимок: [`docs/product/11-PROJECT-STATUS.md`](docs/product/11-PROJECT-STATUS.md).
+Медиа: S3-compatible object storage (Cloudflare R2 в production) реализован в API и deploy-скриптах; staging/production требуют своих smoke (`docs/ops/CLOUDFLARE-DEPLOYMENT.md`).
+Актуальный снимок: [`docs/product/11-PROJECT-STATUS.md`](docs/product/11-PROJECT-STATUS.md); релизный audit: [`docs/audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md`](docs/audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md).
 
 ## Документация
 
 Начинать отсюда:
 
-1. [Канонический индекс](docs/product/00-PROJECT-INDEX.md)
-2. [Продуктовая основа](docs/product/01-PRODUCT-FOUNDATION.md)
-3. [MVP RFC](docs/product/05-MVP-RFC.md)
-4. [Roadmap на 24 месяца](docs/product/06-ROADMAP-24-MONTHS.md)
-5. [Архитектура](docs/product/10-CODE-ARCHITECTURE.md)
-6. [Фактический статус проекта](docs/product/11-PROJECT-STATUS.md)
-7. [Индекс дизайн-документации](docs/design/00-DESIGN-INDEX.md)
-8. [Журнал решений](docs/product/12-DECISION-LOG.md)
-9. [Правила хранения исследований](docs/research/README.md)
+1. [Карта для агентов](docs/AGENT-MAP.md)
+2. [Активный backlog](docs/product/16-PORTFOLIO-ACTIVE-BACKLOG.md)
+3. [Канонический индекс](docs/product/00-PROJECT-INDEX.md)
+4. [Продуктовая основа](docs/product/01-PRODUCT-FOUNDATION.md) — при продуктовых изменениях
+5. [MVP RFC](docs/product/05-MVP-RFC.md)
+6. [Архитектура](docs/product/10-CODE-ARCHITECTURE.md)
+7. [Фактический статус (краткий)](docs/product/11-PROJECT-STATUS.md)
+8. [Индекс дизайн-документации](docs/design/00-DESIGN-INDEX.md)
+9. [Журнал решений](docs/product/12-DECISION-LOG.md) — lookup, не читать целиком
+10. [Проверка Markdown-ссылок](scripts/docs/check-markdown-links.mjs) — `pnpm docs:link-check`
 
 ## Технологии
 

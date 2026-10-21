@@ -2684,7 +2684,7 @@ require a bounded implementation plan; the proposed 5/20 limits are not approved
 merely by accepting the block editor.
 
 Contract owner: [05-MVP-RFC.md](05-MVP-RFC.md). Execution plan:
-[author/story backend](../tasks/2026-10-11-author-story-backend/PLAN.md).
+[author/story backend](../archive/tasks/2026-10-11-author-story-backend/PLAN.md).
 Deferred trade screens and video: [15-POST-MVP-BACKLOG.md](15-POST-MVP-BACKLOG.md).
 
 ## DEC-113 — Shared approved classifiers now; user proposals after MVP
@@ -2705,7 +2705,7 @@ in [15-POST-MVP-BACKLOG.md §5](15-POST-MVP-BACKLOG.md#5-медиа-и-creator-p
 This does not approve an arbitrary initial category list from an attached proposal.
 
 Contract owner: [05-MVP-RFC.md](05-MVP-RFC.md). Execution plan:
-[author/story backend](../tasks/2026-10-11-author-story-backend/PLAN.md).
+[author/story backend](../archive/tasks/2026-10-11-author-story-backend/PLAN.md).
 
 ## DEC-114 — Country selection hides codes; city is optional
 
@@ -2725,7 +2725,7 @@ public author/work projections, search/facets and their consumers together.
 The old country strings need an explicit migration mapping, not silent guessing.
 
 Contract owner: [05-MVP-RFC.md](05-MVP-RFC.md). Execution plan:
-[author/story backend](../tasks/2026-10-11-author-story-backend/PLAN.md).
+[author/story backend](../archive/tasks/2026-10-11-author-story-backend/PLAN.md).
 
 ## DEC-115 — Next wave adds sales; one complete post-MVP plan
 
@@ -2786,7 +2786,7 @@ Story limits are five images, twenty heading and paragraph blocks together,
 story-photo budget. An empty story and an image-only story are valid.
 
 Contract owner: [05-MVP-RFC.md](05-MVP-RFC.md). Client follow-up:
-[UI-HANDOFF.md](../tasks/2026-10-11-author-story-backend/UI-HANDOFF.md).
+[UI-HANDOFF.md](../archive/tasks/2026-10-11-author-story-backend/UI-HANDOFF.md).
 
 ---
 
@@ -3010,7 +3010,7 @@ relations требуют отдельного backend/security-плана пер
 Не менять server permissions ради визуального сходства.
 
 Дизайн/implementation handoff:
-[2026-10-19-account-ui](../tasks/2026-10-19-account-ui/README.md).
+[2026-10-19-account-ui](../archive/tasks/2026-10-19-account-ui/README.md).
 
 ## DEC-124 — Одно явное подтверждение регистрации
 

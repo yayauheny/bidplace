@@ -83,4 +83,4 @@ Runtime diff — только auth-layout и AuthViewport; оставшиеся 
 Скриншоты — `evidence/2026-10-19-auth-transition/`, это evidence взаимодействия,
 а не пересмотр геометрии Figma. Сохранённые ограничения прошлого отчёта действуют.
 
-![Восстановление поверх сохранённой Home](evidence/2026-10-19-auth-transition/chromium-forgot.png)
+Скриншоты: [`evidence/2026-10-19-auth-transition/`](evidence/2026-10-19-auth-transition/README.md) (PNG — [`docs/archive/AUDIT-EVIDENCE-RECOVERY.md`](../archive/AUDIT-EVIDENCE-RECOVERY.md), tag `archive/audit-evidence-pre-cleanup`).

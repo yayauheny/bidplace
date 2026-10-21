@@ -246,7 +246,7 @@ auth-layout 16/16. eslint чисто. Production-код приложения н�
 
 ## Волна 3A — account primitives (tokens + компоненты)
 
-Intake: docs/tasks/2026-10-19-account-ui (README §4/§6, HANDOFF). Экраны не
+Intake: `docs/archive/tasks/2026-10-19-account-ui` (README §4/§6, HANDOFF). Экраны не
 строились — только примитивы и токены; 3B/3C отдельными коммитами.
 
 ### Mapping ролей (зафиксирован до кода, как требует intake)
@@ -360,7 +360,7 @@ ratio.ownerCardMedia 179/236; space.settingsSurfacePadX 14, coverCaptionGap 10.
 
 ## Волна 3D — план удаления (docs-only, без кодинга)
 
-- План: docs/tasks/2026-10-19-account-ui/DELETE-BACKEND-PLAN.md.
+- План: [`docs/archive/tasks/2026-10-19-account-ui/DELETE-BACKEND-PLAN.md`](../archive/tasks/2026-10-19-account-ui/DELETE-BACKEND-PLAN.md).
 - Прочитаны products/portfolio/media/admin reads + transactions,
   schema (Product/Listing/ProductImage/CuratorSelection), suspended guards,
   public-visibility централизация, Cache-Control точки.

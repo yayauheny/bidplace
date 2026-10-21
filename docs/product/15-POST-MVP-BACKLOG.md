@@ -2,7 +2,7 @@
 
 Последнее обновление: 2026-10-11
 Статус: Planned/Deferred; направление следующей волны подтверждено (`DEC-115`)
-Execution backlog: [`../tasks/2026-09-06-reconciliation/99-POST-MVP-BACKLOG.md`](../tasks/2026-09-06-reconciliation/99-POST-MVP-BACKLOG.md)
+Execution backlog (архив): [`../archive/tasks/2026-09-06-reconciliation/99-POST-MVP-BACKLOG.md`](../archive/tasks/2026-09-06-reconciliation/99-POST-MVP-BACKLOG.md)
 
 Это единый продуктовый план функций после portfolio MVP. Сейчас сервис остаётся
 портфолио; следующая волна добавляет продажи через площадку. Сам план не включает

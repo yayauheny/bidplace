@@ -6,7 +6,7 @@ unchanged from the Codex review run; this folder does not regenerate captures.
 ## Source priority
 
 1. User-selected **2026-10-11** author-application Figma handoff:
-   [`design/figma-handoff/author-application/2026-10-11/README.md`](../../../../design/figma-handoff/author-application/2026-10-11/README.md)
+   [`design/figma-handoff/author-application/2026-10-11/README.md`](../../../../../design/figma-handoff/author-application/2026-10-11/README.md)
 2. Older September `portfolio-phone-v1` geometry is **not** canonical for this flow when it
    conflicts with Oct-11 captures.
 3. Protected product/design foundations, RFC, decision log, and `.pen` were not edited for
@@ -81,5 +81,5 @@ Shared ownership: `AuthorApplicationStepShell`, `ExitConfirmDialog`, `FigmaTextF
 layout fixes should stay in tokens and shared figma/ui primitives — no new zoom
 observers, dependencies, or migrations for this flow.
 
-Status owner: [`docs/design/04-DESIGN-STATUS.md`](../../../design/04-DESIGN-STATUS.md),
-[`docs/product/11-PROJECT-STATUS.md`](../../../product/11-PROJECT-STATUS.md).
+Status owner: [`docs/design/04-DESIGN-STATUS.md`](../../../../design/04-DESIGN-STATUS.md),
+[`docs/product/11-PROJECT-STATUS.md`](../../../../product/11-PROJECT-STATUS.md).

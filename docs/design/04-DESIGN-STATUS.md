@@ -302,7 +302,7 @@ Chromium и WebKit; 12/12 адресных browser cases, 53/53 unit, build/tsc/
 - `Confirmed` по live Figma `7008:27134` (секция 14 «История создания работы · Mobile», четыре состояния: пустой холст / ввод текста / активный блок / заполненный): экран — top-bar со стрелкой назад, точками прогресса и закрытием, заголовок «История создания», нижний тулбар `H T изображение Закончить` (в пустом состоянии — «Пропустить»). **Step-табов визарда на story-шаге в дизайне нет** — итоговый коммит `1ad60b20` (промежуточный `cfd1f472` отменён); навигация со story-шага — «Назад к изображениям» (→ шаг 2), далее таб-лист шагов 1/2/4 как раньше. Tab-list на не-story шагах и экстракция `stepTabs` не тронуты.
 - `Fix` (review-blocker): гард `moveToWizardStep` возвращён к контракту 02 §9 — **любая** неудача `persistAll('transition')` останавливает смену шага; итоговый коммит `9fc01f1d` (ослабление `57b030b5` отменено). Вскрытый e2e нюанс: draft-схема допускает пустое название, валидация ≠ ошибка сохранения; gate работает на уровне реального persist. #316 ждёт PATCH, проверяет статус 500 и видимую ошибку до asserts URL — ложноположительный проход исключён.
 - Проверки: e2e `product-creation-wizard` 11/11 Chromium + 11/11 WebKit; mobile vitest 811/811; typecheck/eslint/prettier чисто.
-- Остаток исходного W4 (`docs/audits/2026-10-13-wave-prompts/W4.md`), не входил в эту волну: (3) два private import `expo-router/build` (`usePreventRemove` в `AuthViewport` и `product-draft-screen`, снятие с allowlist); (4) исключение `/dev/figma-buttons` из production export. (5) Замена `lib/reduced-motion.ts` на Reanimated `useReducedMotion` — optional, **отложена явно**.
+- Остаток исходного W4 (wave prompts удалены из дерева 2026-10-21; контекст — `DEC-119`, `docs/audits/2026-10-13-FRONTEND-DESIGN-SYSTEM-AUDIT.md` §17), не входил в эту волну: (3) два private import `expo-router/build` (`usePreventRemove` в `AuthViewport` и `product-draft-screen`, снятие с allowlist); (4) исключение `/dev/figma-buttons` из production export. (5) Замена `lib/reduced-motion.ts` на Reanimated `useReducedMotion` — optional, **отложена явно**.
 - Порядок далее: остаток Волны 2 (пороги 700/1000 → clamp по измеренной ширине, `public-seller-screen` + `CategoriesSearchPane`) → Волна 5 (эталонный публичный профиль 390; туда же pixel-приёмка `profileTabCount` и `FigmaIcon x` в AuthViewport).
 
 ## 2026-10-14 — W5 screen splits (Wave 3)
@@ -407,7 +407,7 @@ _Superseded for overall flow status by the section above. Kept as the step-1-onl
 - `Not implemented` for `DEC-112`–`DEC-114`: story blocks, shared classifier
   selections and country-name popup with optional city. Eight new author capture
   archives were inspected by manifest/nodes; source roots and conflicts are in
-  [the backend plan](../tasks/2026-10-11-author-story-backend/PLAN.md).
+  [the backend plan](../archive/tasks/2026-10-11-author-story-backend/PLAN.md).
 - New author capture copy still mentions sales/buyers and mandatory location;
   product behavior follows the updated RFC. The achievement archive filename
   excludes photos while node `578:17378` still contains upload UI: this choice
@@ -449,7 +449,7 @@ _Superseded for overall flow status by the section above. Kept as the step-1-onl
   restores the form and clears its read error without sending mail. Regression
   evidence is in the existing hook/form owner specs and six Chromium/WebKit
   scenarios, including a short viewport and keyboard retry; see
-  [project status](../product/11-PROJECT-STATUS.md#2026-10-10--verification-state-retry-after-email-correction).
+  [project status (archive)](../archive/product/11-PROJECT-STATUS-historical.md) (см. записи 2026-10-10).
   No layout or token change. Native and deployed environment checks remain open.
 
 ## 2026-10-10 — Auth abuse web surfaces (state-first copy, Turnstile host)
