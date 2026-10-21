@@ -3,6 +3,10 @@
 This index points to the current task-local sources. Read product/design owners
 first; visuals do not add fields, permissions or backend behavior.
 
+Identical raster exports (same bytes, different capture names) are symlinks to
+the first copy in this tree. Paths in screen folders stay valid. Live Figma
+`pAPQo6cADmG5XzVmBX76EE` remains the visual source when a local export disagrees.
+
 | Source                                                                                                                               | Scope                                                                                 | Status                                     |
 | ------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------- | ------------------------------------------ |
 | [Auth full-screen registration, 2026-10-08](auth/2026-10-08-auth-fullscreen/README.md) | Current email/nickname/password/confirmation with top mark and bottom wordmark (`DEC-105`, `DEC-106`) | Current source; previous four fullscreen captures removed from checkout |
