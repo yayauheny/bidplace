@@ -17,7 +17,7 @@ Status: this is the **target contract** of the design-system waves (`docs/audits
 4. `docs/design/04-DESIGN-STATUS.md` — **grep the screen name**; do not read the full file unless you own a design-status update.
 5. Figma file `pAPQo6cADmG5XzVmBX76EE` (live); source priority in `AGENTS.md`. Missing node or product conflict → stop and record.
 6. Product limits `DEC-083`, `DEC-087` — grep `12-DECISION-LOG.md`; do not read the full decision log.
-7. Release blockers for the area — grep `docs/audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md` or `06-NEXT-REVIEWS.md`.
+7. Release blockers — `docs/product/16-PORTFOLIO-ACTIVE-BACKLOG.md` and `docs/audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md`.
 
 ## Layout
 

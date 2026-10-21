@@ -14,7 +14,7 @@
 | Area | Start here |
 | --- | --- |
 | Release / blockers | `docs/audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md` |
-| Next reviews | `docs/audits/current/06-NEXT-REVIEWS.md` |
+| Next reviews | `docs/product/16-PORTFOLIO-ACTIVE-BACKLOG.md` |
 | Implementation status (recent) | `docs/product/11-PROJECT-STATUS.md` |
 | Architecture | `docs/product/10-CODE-ARCHITECTURE.md` |
 | MVP contract | `docs/product/05-MVP-RFC.md` |
@@ -29,7 +29,7 @@
 
 - `docs/archive/**` — historical status, old execution roadmaps, First MVP task packs.
 - `docs/audits/**/evidence/**` — acceptance screenshots (removed from tree; see `docs/archive/README.md`).
-- `docs/audits/current/00-EXECUTION-ROADMAP.md` — pointer only; full log is archived.
+- Completed execution prompts and the pre-2026-10-21 status journal: `git show d0efc03b:docs/archive/`.
 - `docs/research/raw/**` — immutable research archive.
 - `design/bidplace-v2-visual-exploration/` — exploration, not production spec.
 

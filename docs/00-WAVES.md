@@ -7,7 +7,7 @@
 Публичные профили авторов и Work без commerce: onboarding/moderation, создание работы,
 Home/Works/Authors/search, простые filters, страница автора и Work, share и QR, legal/
 security/operations gate. Точный контракт: [`product/05-MVP-RFC.md`](product/05-MVP-RFC.md).
-Активные задачи: [`archive/tasks/2026-09-06-reconciliation/00-FIRST-MVP-BACKLOG.md`](archive/tasks/2026-09-06-reconciliation/00-FIRST-MVP-BACKLOG.md).
+Активные задачи: [`product/16-PORTFOLIO-ACTIVE-BACKLOG.md`](product/16-PORTFOLIO-ACTIVE-BACKLOG.md).
 
 ## Волна 2 — улучшение портфолио и commerce
 
@@ -19,8 +19,7 @@ security/operations gate. Точный контракт: [`product/05-MVP-RFC.md
 auction/fixed/offer, Orders/handoff, chat/reviews, richer media, subscription, payments,
 quantity, languages и остальные направления сохранены в:
 
-- [`product/15-POST-MVP-BACKLOG.md`](product/15-POST-MVP-BACKLOG.md);
-- [`archive/tasks/2026-09-06-reconciliation/99-POST-MVP-BACKLOG.md`](archive/tasks/2026-09-06-reconciliation/99-POST-MVP-BACKLOG.md).
+- [`product/15-POST-MVP-BACKLOG.md`](product/15-POST-MVP-BACKLOG.md).
 
 Read-only Figma определяет visual target первой волны после стабилизации contract/API.
 Старые handoff и Pen материалы сохраняются как исторические источники и не изменяются

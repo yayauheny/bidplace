@@ -6,10 +6,10 @@
 | --- | --- |
 | Активный backlog | [`16-PORTFOLIO-ACTIVE-BACKLOG.md`](16-PORTFOLIO-ACTIVE-BACKLOG.md) |
 | Релизные блокеры и приёмка | [`docs/audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md`](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md) |
-| Очередь bounded review | [`docs/audits/current/06-NEXT-REVIEWS.md`](../audits/current/06-NEXT-REVIEWS.md) |
+| Очередь bounded review | [`16-PORTFOLIO-ACTIVE-BACKLOG.md`](16-PORTFOLIO-ACTIVE-BACKLOG.md) |
 | Дизайн-статус | [`docs/design/04-DESIGN-STATUS.md`](../design/04-DESIGN-STATUS.md) |
 | Решения | [`12-DECISION-LOG.md`](12-DECISION-LOG.md) |
-| Записи до 2026-10-19 | [`docs/archive/product/11-PROJECT-STATUS-historical.md`](../archive/product/11-PROJECT-STATUS-historical.md) |
+| Записи до 2026-10-19 | `git show d0efc03b:docs/archive/product/11-PROJECT-STATUS-historical.md` |
 
 > Упоминания Pen до 2026-10-13 — история (DEC-119).
 
@@ -48,7 +48,7 @@ provisional, пользовательское включение темы не �
 Проверки: guard1/1 без БД; Search/avatar4/4 Chromium/WebKit, включая click→буква,
 загрузку обеих копий фото vex и blur15px/opacity0.5; восстановленные пять демо-фото
 проверены в обоих движках. Typecheck/lint — чисто. Полный suite/build не повторялись
-для тестовых изменений. Причины и границы — в [аудите](../audits/2026-10-20-DATE-SELECTION.md).
+для тестовых изменений. Причины и границы — в аудите `2026-10-20-DATE-SELECTION` (`git show d0efc03b:docs/audits/2026-10-20-DATE-SELECTION.md`).
 
 ## 2026-10-20 — UI после общего календаря
 
@@ -64,7 +64,7 @@ Chromium/WebKit: 8/8 адресных browser checks; ширины320/390/765, �
 overflow, clean-close, dirty-cancel и клавиатурный возврат. Pointer click и
 input→click не показывают focus ring; клавиатурный Tab/Shift+Tab сохраняет его по
 дизайн-системе §6.4. API/данные и палитра focus не изменены. Подробности и evidence:
-[аудит](../audits/2026-10-20-DATE-SELECTION.md).
+аудит `2026-10-20-DATE-SELECTION` (`git show d0efc03b:docs/audits/2026-10-20-DATE-SELECTION.md`).
 **Needs verification:** физический iPhone, реальный browser zoom, увеличенный
 системный текст; новых утверждённых desktop-макетов нет.
 
@@ -88,7 +88,7 @@ picker на устройствах/симуляторе не запускалс�
 
 Проверки: owner/state/modal unit65/65, typecheck/lint/diff-check, production web
 export. Browser gate6/6 Chromium/WebKit (дата, реальная запись/публикация,
-auth confirm, Home/share;320/390/440 и короткий viewport), evidence — в [аудите](../audits/2026-10-20-DATE-SELECTION.md).
+auth confirm, Home/share;320/390/440 и короткий viewport), evidence — в аудите `2026-10-20-DATE-SELECTION` (`git show d0efc03b:docs/audits/2026-10-20-DATE-SELECTION.md`).
 Полный suite, реальный browser zoom и физический iPhone не проверялись.
 
 ## 2026-10-20 — Домик в общем floating dock
@@ -160,7 +160,7 @@ production browser Chromium/WebKit (полный register201→verify-email по
 публичный test widget Cloudflare с реальным201 и verify-email. Production
 challenge не проверялся; local/test адаптер принимает официальный dummy token
 только в явно разрешённом test/local профиле.
-[Аудит](../audits/2026-10-20-REGISTRATION-DOCUMENT-ACCESS.md).
+Аудит `2026-10-20-REGISTRATION-DOCUMENT-ACCESS` (`git show d0efc03b:docs/audits/2026-10-20-REGISTRATION-DOCUMENT-ACCESS.md`).
 
 ## 2026-10-20 — Подтверждённые реквизиты оператора в legal pack
 
@@ -204,7 +204,7 @@ production export, адресный browser gate Chromium/WebKit на320/390/440
 eslint и diff-check. Серверная публикация юридических документов остаётся
 отдельным блокером: локальный GET /auth/legal возвращает503 при незаполненных
 реквизитах; эта правка не подставляет фиктивные документы в runtime.
-[Приёмка](../audits/2026-10-20-REGISTRATION-LAYOUT.md).
+Приёмка `2026-10-20-REGISTRATION-LAYOUT` (`git show d0efc03b:docs/audits/2026-10-20-REGISTRATION-LAYOUT.md`).
 
 ## 2026-10-20 — Account: финальная приёмка и исправления
 
@@ -219,7 +219,7 @@ API, права, БД и backend удаления не менялись.
 production browser6/6 Chromium+WebKit (320/390/414/440, long identity,
 unverified settings, published identity, scroll8works, close→Back),
 eslint/format/diff-check. Backend e2e/full suite не повторялись.
-[Итоговый аудит и evidence](../audits/2026-10-20-ACCOUNT-FINAL-ACCEPTANCE.md).
+Итоговый аудит `2026-10-20-ACCOUNT-FINAL-ACCEPTANCE` (`git show d0efc03b:docs/audits/2026-10-20-ACCOUNT-FINAL-ACCEPTANCE.md`).
 Delete-план дополнен реальной Worker JSON cache policy; реализация удаления —
 отдельная волна. Desktop1024/1440 и black parity: NEEDS-FIGMA.
 
@@ -275,7 +275,7 @@ product images остаются `immutable`), аналитическая «от�
 снята. Consumer specs 14/14, адресные 28/28. Визуальные детали
 (CTA width, insets) сознательно оставлены для измеренной приёмки
 следующего этапа по сохранённому intake ace4a323.
-[Файл выполнения](../audits/2026-10-19-ACCOUNT-FOUNDATION-PROGRESS.md).
+Файл выполнения `2026-10-19-ACCOUNT-FOUNDATION-PROGRESS` (`git show d0efc03b:docs/audits/2026-10-19-ACCOUNT-FOUNDATION-PROGRESS.md`).
 
 **Implemented (волны 1–2, ветка `fix/account-foundation`).** Единая политика
 ширины для AuthViewport и общего AppDialog: viewport ≤600 CSS px — sheet во всю
@@ -306,5 +306,5 @@ tsc/eslint чисто. Коммиты `ba00fb37`, `2eed81dd`, `6e89f8b9`, `d1473
 возвращают (pinned gate). Browser zoom 200% / увеличение текста — Needs
 verification (ручные шаги переданы ранее). Волна 3 (/account) не начата — ждёт
 Figma intake. Push/merge/deploy не выполнялись.
-[Файл выполнения](../audits/2026-10-19-ACCOUNT-FOUNDATION-PROGRESS.md).
+Файл выполнения `2026-10-19-ACCOUNT-FOUNDATION-PROGRESS` (`git show d0efc03b:docs/audits/2026-10-19-ACCOUNT-FOUNDATION-PROGRESS.md`).
 

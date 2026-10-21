@@ -429,7 +429,7 @@ insert trigger. The mobile and admin clients still speak the previous contracts,
 including the removed free-text materials and technique writes.
 
 Contracts belong to [05-MVP-RFC.md](05-MVP-RFC.md); affected consumers, migration
-and API work are in [the backend plan](../archive/tasks/2026-10-11-author-story-backend/PLAN.md).
+and API work were planned in `docs/archive/tasks/2026-10-11-author-story-backend/PLAN.md` (removed from the tree; `git show d0efc03b:docs/archive/tasks/2026-10-11-author-story-backend/PLAN.md`).
 The next sales wave has its own [complete product plan](15-POST-MVP-BACKLOG.md)
 (`DEC-115`), without changing the active boot graph.
 
@@ -495,7 +495,7 @@ focus traps, save state or permissions. Dialog.Overlay remains the dismissal hit
 layer below panels. Native/isolated rendering retains its existing per-dialog
 implementation; centered confirmations, auth and Search keep their flow layers.
 useReturnFocus records weak opener ancestry for handoffs without retaining closed
-DOM scopes. See audits/2026-10-19-TRANSITION-MATRIX.md for coverage and limits.
+DOM scopes. The 2026-10-19 transition matrix is no longer in the tree (`git show d0efc03b:docs/audits/2026-10-19-TRANSITION-MATRIX.md`).
 
 ### Registration evidence and document delivery —2026-10-20
 

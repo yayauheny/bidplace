@@ -1,12 +1,7 @@
-# Archive (не для routine agent reads)
+# Archive
 
-Материалы здесь сохранены для истории и расследований. **Не открывайте целиком** без явной задачи на прошлый аудит, регрессию или юридический контекст.
+Каталоги `tasks/`, `product/` и `audits/` сняты с рабочего дерева в фазе 3.
+Восстановление низкоценной истории: `git show d0efc03b:<path>`.
 
-| Путь | Содержимое |
-| --- | --- |
-| `product/11-PROJECT-STATUS-historical.md` | Журнал статуса до среза 2026-10-19 |
-| `audits/00-EXECUTION-ROADMAP-2026-10-05-full.md` | Полный execution roadmap ~2026-09–10 |
-| `tasks/` | First MVP execution prompts и reconciliation backlog (2026-09–10) |
-| `AUDIT-EVIDENCE-RECOVERY.md` | Как восстановить удалённые audit PNG (git tag `archive/audit-evidence-pre-cleanup`) |
-
-Скриншоты приёмки из `docs/audits/**/evidence/` удалены из активного дерева (2026-10-21 cleanup); копии остаются в git history до merge commit cleanup PR.
+Скриншоты приёмки: [`AUDIT-EVIDENCE-RECOVERY.md`](AUDIT-EVIDENCE-RECOVERY.md),
+тег `archive/audit-evidence-pre-cleanup`.

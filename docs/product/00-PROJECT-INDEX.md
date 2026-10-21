@@ -11,14 +11,8 @@
 [`../audits/00-CURRENT-MVP-READINESS.md`](../audits/00-CURRENT-MVP-READINESS.md).
 Архитектурные пробелы:
 [`../audits/01-OPEN-ARCHITECTURE-GAPS.md`](../audits/01-OPEN-ARCHITECTURE-GAPS.md).
-Исторические execution-пакеты First MVP:
-[`../archive/tasks/`](../archive/tasks/).
 Следующая волна — продажи, цены, аукционы, жалобы и отложенные улучшения:
 [`15-POST-MVP-BACKLOG.md`](15-POST-MVP-BACKLOG.md).
-Отложенные execution-задачи:
-[`../archive/tasks/2026-09-06-reconciliation/99-POST-MVP-BACKLOG.md`](../archive/tasks/2026-09-06-reconciliation/99-POST-MVP-BACKLOG.md).
-План адаптации backend заявки автора и истории:
-[`../archive/tasks/2026-10-11-author-story-backend/PLAN.md`](../archive/tasks/2026-10-11-author-story-backend/PLAN.md).
 Открытые решения: [`14-OPEN-MVP-DECISIONS.md`](14-OPEN-MVP-DECISIONS.md).
 Юридический вход: [`../legal/README.md`](../legal/README.md).
 
@@ -71,9 +65,7 @@
 | `../legal/site/`                                             | Полные русские тексты для сайта; подключение отдельной задачей                                            |
 | `../legal/deferred/05-commerce-and-future-features.md`       | Неактивное приложение будущих продаж, платежей, доставки и отзывов                                        |
 | `../legal/archive/README.md`                                 | Консультация, закрытый вопросник и старые редакции; не текущие задачи                                     |
-| `../archive/tasks/2026-09-06-reconciliation/00-FIRST-MVP-BACKLOG.md` | Исторический execution backlog First MVP (архив)                                                          |
-| `../archive/tasks/2026-09-06-reconciliation/99-POST-MVP-BACKLOG.md`  | Сохранённые execution-задачи после MVP и commerce wave (архив)                                            |
-| `../archive/tasks/2026-09-08-first-mvp/00-EXECUTION-ORDER.md`        | Восемь implementation/review пакетов First MVP (архив)                                                    |
+| `16-PORTFOLIO-ACTIVE-BACKLOG.md`                             | Открытые задачи portfolio MVP                                                                             |
 | `../research/2026-09-06-BELARUS-LEGAL-UX-PATTERNS.md`        | Проверенные правовые опоры, рыночные patterns и legal UX matrix                                           |
 | `../ops/00-RELEASE-AND-BACKUP.md`                            | Deploy, backup, restore drill и `pnpm verify` gate для пилота                                             |
 | `../ops/CLOUDFLARE-DEPLOYMENT.md`                            | Portfolio Cloudflare staging/production: domains, secrets, migrations и smoke                             |
@@ -105,7 +97,7 @@
 ### Подключение цен, аукционов или продаж после portfolio MVP
 
 Сначала прочитать целиком `15-POST-MVP-BACKLOG.md`, включая карту §2 и порядок
-полного ответа §10, затем `99-POST-MVP-BACKLOG.md` и указанные документы-владельцы.
+полного ответа §10, затем указанные документы-владельцы.
 Разделять принятые решения, фактический runtime и открытые механики. Нельзя
 сводить задачу к показу цены или включению архивного commerce-кода.
 
