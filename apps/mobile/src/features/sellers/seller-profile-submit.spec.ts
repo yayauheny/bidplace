@@ -1467,7 +1467,7 @@ describe('seller profile save reconciliation', () => {
   it('ignores a photo picker response after the screen unmounts', async () => {
     let finishPicker: (result: {
       canceled: boolean;
-      assets: Array<{ uri: string }>;
+      assets: Array<{ uri: string; width: number; height: number }>;
     }) => void = () => undefined;
     harness.getMyProfile.mockResolvedValue(response('APPROVED', 'DRAFT'));
     harness.launchImageLibraryAsync.mockImplementation(
@@ -1501,11 +1501,11 @@ describe('seller profile save reconciliation', () => {
     const secondPhoto = new Blob(['second'], { type: 'image/png' });
     let resolveFirst: (value: {
       canceled: boolean;
-      assets: Array<{ uri: string }>;
+      assets: Array<{ uri: string; width: number; height: number }>;
     }) => void = () => undefined;
     let resolveSecond: (value: {
       canceled: boolean;
-      assets: Array<{ uri: string }>;
+      assets: Array<{ uri: string; width: number; height: number }>;
     }) => void = () => undefined;
     harness.getMyProfile.mockResolvedValue(response('APPROVED', 'DRAFT'));
     harness.updateProfile.mockResolvedValue(savedProfile());
@@ -2057,7 +2057,7 @@ describe('seller profile save reconciliation', () => {
       const photoA = new Blob(['photo-a'], { type: 'image/png' });
       let resolvePicker: (value: {
         canceled: boolean;
-        assets: Array<{ uri: string }>;
+        assets: Array<{ uri: string; width: number; height: number }>;
       }) => void = () => undefined;
       harness.getMyProfile.mockResolvedValue(response('APPROVED', 'DRAFT'));
       harness.updateProfile.mockResolvedValue(savedProfile({ city: 'Hrodna' }));
