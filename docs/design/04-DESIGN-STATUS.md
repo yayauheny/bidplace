@@ -1832,3 +1832,5 @@ and private content preview; creation/edit use existing revision/save owners.89 
 checks,24 wizard/revision E2E and2 full media lifecycle cases passed. Mobile source
 mapping/evidence: `docs/audits/current/2026-10-21-UI-COMPLETION.md`. Visual status Partial:
 only390 source frames; wider screens NEEDS-FIGMA, physical iPhone/real zoom unverified.
+
+2026-10-21 — Implemented: Home empty action column capped420, fluid366 at390. Chromium/WebKit screenshots390/1024/1440/1920 confirm centering and no overflow; desktop empty-state Figma remains NEEDS-FIGMA. Evidence: current/evidence/2026-10-21-desktop-actions in the UI completion audit.

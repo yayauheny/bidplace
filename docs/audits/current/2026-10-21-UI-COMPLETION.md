@@ -11,8 +11,8 @@ writes against the manual preview.
 
 1. Sync MVP: complete, e3ba8074. Login correction: complete, f4ae9223;
    see [login audit](2026-10-20-LOGIN-SHEET-REVIEW.md).
-2. Work creation: implemented;89 owner tests,24 wizard/revision E2E and2 media-lifecycle E2E passed.
-3. Desktop empty-state actions: implemented, browser verification in progress.
+2. Work creation: implemented,571b0f94;89 owner tests,24 wizard/revision E2E and2 media-lifecycle E2E passed.
+3. Desktop empty-state actions: implemented, verified in Chromium/WebKit at390/1024/1440/1920.
 4. Shared sheet motion: implemented, browser verification in progress.
 5. Final production preview, documented verification and manual checklist: pending.
 
@@ -79,3 +79,14 @@ per menu/layout role avoids future creation-vs-edit divergence.
   a synthetic upload fixture, not the manual preview's author photos. Wider layouts
   are robustness checks, not desktop Figma parity. Physical iPhone and actual200%
   zoom/text enlargement remain Needs verification.
+
+## Desktop action width
+
+Cause: width=full described both button fill and the width of its desktop host.
+Durable fix: Home owns a centered fluid action column with semantic layout
+metric actionColumnMax420. AppShell1280, grids, legal footer and shared button
+variants remain unchanged. At390 the column is366px; at1024/1440/1920 it is420px.
+Both browsers verify centering,1280 page cap and no horizontal overflow.
+[Matched viewport screenshots](evidence/2026-10-21-desktop-actions/).
+420 is the founder-approved default, not a claimed desktop Figma measurement.
+No state/API/database changes; future solitary actions can reuse the metric.

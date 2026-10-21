@@ -798,3 +798,5 @@ FigmaIconButton carries expanded state; heading/text glyphs use the existing ico
 registry. `storyHeading`15/24, `mediaTile` radius16 and `stepDot`6 follow the supplied
 creation frames. Existing PaddedGrid derives photo columns from measured width.
 FormSection may omit its heading where the wizard chrome already supplies one.
+
+Home solitary CTA hosts use layout.actionColumnMax420 with width100% and centered alignment; shared buttons and catalog containers retain their own widths.

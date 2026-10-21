@@ -684,6 +684,7 @@ export const designTokens = {
   },
   layout: {
     contentMax: 1280,
+    actionColumnMax: 420,
     gutter: 12,
     desktopGutter: 12,
     creatorDesktopGutter: 12,

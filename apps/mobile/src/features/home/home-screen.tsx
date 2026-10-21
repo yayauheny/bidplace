@@ -62,11 +62,19 @@ export function HomeScreen({ hideDock = false }: { hideDock?: boolean }) {
           {plan.showWorks ? <HomeNewWorks works={plan.works} /> : null}
           {plan.showAuthors ? <HomeNewAuthors authors={plan.authors} /> : null}
           {plan.showAuthorsLink ? (
-            <PrimaryButton
-              label="Все авторы"
-              width="full"
-              onPress={() => router.push('/authors')}
-            />
+            <View
+              style={{
+                width: '100%',
+                maxWidth: designTokens.layout.actionColumnMax,
+                alignSelf: 'center',
+              }}
+            >
+              <PrimaryButton
+                label="Все авторы"
+                width="full"
+                onPress={() => router.push('/authors')}
+              />
+            </View>
           ) : null}
           {plan.showEmpty ? (
             <View style={{ gap: designTokens.space.sectionGap }}>
@@ -74,16 +82,26 @@ export function HomeScreen({ hideDock = false }: { hideDock?: boolean }) {
                 title="Пока здесь тихо"
                 message="Новые работы и авторы появятся после публикации."
               />
-              <PrimaryButton
-                label="Все работы"
-                width="full"
-                onPress={() => router.push('/works')}
-              />
-              <PrimaryButton
-                label="Все авторы"
-                width="full"
-                onPress={() => router.push('/authors')}
-              />
+              <View
+                testID="empty-home-actions"
+                style={{
+                  width: '100%',
+                  maxWidth: designTokens.layout.actionColumnMax,
+                  alignSelf: 'center',
+                  gap: designTokens.space.sectionGap,
+                }}
+              >
+                <PrimaryButton
+                  label="Все работы"
+                  width="full"
+                  onPress={() => router.push('/works')}
+                />
+                <PrimaryButton
+                  label="Все авторы"
+                  width="full"
+                  onPress={() => router.push('/authors')}
+                />
+              </View>
             </View>
           ) : null}
         </View>

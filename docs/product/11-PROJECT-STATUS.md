@@ -5118,3 +5118,5 @@ contract changes. Existing guards, recovery and approved-work editing revisions
 remain.89 owner checks,24 wizard/revision E2E and2 media lifecycle E2E passed on the
 isolated test API/DB. Screenshots use test fixtures; manual preview DB was not reset.
 Visual desktop parity and physical iPhone remain Needs verification; see UI completion audit.
+
+2026-10-21 — Implemented: Home empty-state actions use a centered420px maximum column, preserving the1280px page and full mobile width. Browser geometry verified390/1024/1440/1920 in home-image-lifecycle; no catalog/API/data behavior changed. See UI completion audit.

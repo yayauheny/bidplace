@@ -1,3 +1,6 @@
+import { mkdir } from 'node:fs/promises';
+import { resolve } from 'node:path';
+import { e2eEvidenceDir } from './support/evidence-dir';
 import { test, expect } from '@playwright/test';
 declare global {
   interface Window {
@@ -257,3 +260,46 @@ test('busy login keeps the same dismissal guard for a header swipe', async ({
     page.getByRole('button', { name: 'Войти', exact: true }),
   ).toBeEnabled();
 });
+
+test('empty home bounds its action column without shrinking the page container', async ({
+  page,
+}) => {
+  await page.route('**/api/portfolio/home', (route) =>
+    route.fulfill({
+      status: 200,
+      json: { curatorSelection: null, newWorks: [], newAuthors: [] },
+    }),
+  );
+  await page.goto('/');
+  const column = page.getByTestId('empty-home-actions');
+  const directory = resolve(e2eEvidenceDir, '2026-10-21-desktop-actions');
+  await mkdir(directory, { recursive: true });
+  for (const width of [390, 1024, 1440, 1920]) {
+    await page.setViewportSize({ width, height: 900 });
+    await expect(column).toBeVisible();
+    await expect
+      .poll(async () => Math.round((await column.boundingBox())?.width ?? 0))
+      .toBe(Math.min(width - 24, 420));
+    const bounds = await column.boundingBox();
+    expect(bounds).not.toBeNull();
+    expect(bounds!.x + bounds!.width / 2).toBeCloseTo(width / 2, 0);
+    for (const name of ['Все работы', 'Все авторы']) {
+      await expect(
+        column.getByRole('button', { name, exact: true }),
+      ).toBeVisible();
+    }
+    expect(
+      (await page.getByTestId('home-scroll').boundingBox())!.width,
+    ).toBeLessThanOrEqual(1280);
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth,
+      ),
+    ).toBe(true);
+    await page.screenshot({
+      path: resolve(directory, `${test.info().project.name}-${width}.png`),
+      fullPage: true,
+    });
+  }
+});
+
