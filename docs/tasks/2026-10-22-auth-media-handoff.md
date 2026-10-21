@@ -1,6 +1,8 @@
 # Bidplace: исследование и передача auth/media — 2026-10-22
 
 Статус: исследование и согласованный архитектурный выбор; реализация не начата.
+Основатель отдельно подтвердил: пока только планирование, не приступать к реализации.
+Раздел «Промпт для передачи» исполнять после отдельной команды на реализацию.
 Обновлено после продолжения: runtime compatibility spike3/3; предварительный
 контракт сессий/onboarding ниже. Проверка Prisma/TypeScript/Docker остаётся волной0.
 
@@ -43,6 +45,9 @@
 6. Платные auth-сервисы исключены; решение должно соответствовать текущему Cloudflare.
 7. Итоговый выбор: один NestJS-контейнер + готовые серверные сессии PostgreSQL + OIDC.
    Не Ory/Keycloak, не SaaS, не полный переезд на Better Auth.
+8. Вход по email-коду доступен всем зарегистрированным пользователям независимо
+   от первоначального способа регистрации; пароль остаётся альтернативой.
+   Привязка Google/Telegram остаётся явной. Решение: [DEC-131](../product/12-DECISION-LOG.md).
 
 ## Архитектура реализации
 
@@ -141,6 +146,9 @@ redirectTo обязательны. In-memory map не переживает Conta
 
 ### 4. Регистрация, привязка, UI
 
+Сначала закончить вход по email-коду по контракту ниже и его проверки; затем
+social onboarding и привязку. Не начинать несколько незаконченных auth-потоков.
+
 Google/Telegram existing identity -> тот же User. Новый -> только недостающие
 email/ник/одно подтверждение документов через текущие формы и схемы.
 Telegram email подтвердить; pending-onboarding не даёт обычный доступ к приватным
@@ -184,6 +192,41 @@ production-like image/web build без утечки настроек. Не ос�
 
 Это инженерная спецификация для проверки, не утверждение о существующих endpoint.
 Архитектура согласована; пути/имена моделей — предлагаемые имена внутри текущих владельцев.
+
+### Вход по email-коду
+
+- **Durable fix, выбран:** единый способ входа по коду для существующих аккаунтов,
+  независимо от наличия пароля/провайдера; пароль сохраняется альтернативой.
+  Код только для Google-пользователей — отвергнутое усложнение с ветвлением по
+  истории регистрации. Принимать Google email за автоматическую привязку — hack.
+- Google -> почта: после успешной проверки кода выдаётся сессия существующего
+  User, без повторной регистрации, создания пароля и новой ExternalIdentity.
+  Почта -> Google: совпадение email предлагает подтвердить существующий аккаунт
+  и явно подключить Google; после этого provider issuer+subject ведёт к тому же User.
+- Неизвестная почта не создаёт аккаунт автоматически; доступна обычная регистрация
+  с ником и подтверждением документов. До подтверждения владения почтой ответы
+  запроса кода не раскрывают наличие аккаунта, пароля или подключённых провайдеров.
+- Текущий `/otp/*` подтверждает email уже существующего authenticated User;
+  это не endpoint входа. Ввести отдельное назначение `email_login` и ограниченные
+  anonymous request/verify endpoints внутри auth, используя общие delivery/abuse
+  примитивы. Коды verification/reset/login не взаимозаменяемы.
+- Код привязан к назначению, попытке и текущему адресу аккаунта; одноразовый,
+  с ограниченным сроком и числом проверок. Сохранить Turnstile, mail budget/quota,
+  cooldown и idempotency. Потребление атомарное; двойной verify, поздний ответ,
+  смена email, ban/revoke и ошибка session save не обходят общие auth-инварианты.
+  Использовать принятые политики проекта; не придумывать отдельные лимиты в UI.
+- Незавершённую регистрацию не считать готовым аккаунтом только по совпадению email.
+  До кодинга проверить сценарий предварительной регистрации чужой почты: последующее
+  подтверждение настоящим владельцем не должно сохранять доступ злоумышленника
+  через ранее заданный пароль, provider identity или сессию. Этот сценарий — gate
+  спецификации волны0, а не разрешение автоматически переносить identity.
+- Затронутые владельцы: auth UI/feature state -> contracts и api-client -> AuthService,
+  OtpService/AuthAbuseService -> Prisma attempts/User/sessionVersion -> session store
+  и Cloudflare no-store. Переиспользовать поля/OTP UI, не менять BackButton.
+- Приёмка: Google -> email-code сохраняет User ID; password -> code сохраняет User ID;
+  email -> Google требует явной привязки; unknown email не регистрирует автоматически;
+  verification-код не принимается как login-код; expiry/replay/brute-force/race,
+  незавершённая регистрация и недоступность SMTP/БД покрыты owner/integration checks.
 
 ### Владение данными и границы
 
@@ -337,6 +380,10 @@ Express4.22.3, pg8.23.1. `node --test compatibility.test.cjs`: **3/3 passed**:
 - [Better Auth callback](https://github.com/better-auth/better-auth/blob/main/packages/better-auth/src/api/routes/callback.ts): missing email отклоняется до обычного account lookup; Google работает штатно, Telegram требует адаптации. Не предлагать fake-email plugin.
 - [Google email authority](https://developers.google.com/identity/gsi/web/guides/verify-google-id-token),
   [OWASP CSRF custom headers](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html).
+- [Supabase email OTP](https://supabase.com/docs/guides/auth/auth-email-passwordless),
+  [identity linking](https://supabase.com/docs/guides/auth/auth-identity-linking) и
+  [Auth0 linking](https://auth0.com/docs/manage-users/user-accounts/user-account-linking):
+  исследованы продуктовые паттерны; это не предложение менять выбранный стек.
 - [Ory flows](https://www.ory.com/docs/kratos/self-service/flows/user-registration): поддерживает missing traits, но добавляет identity service.
 - [Статья KTS,2024](https://habr.com/ru/companies/kts/articles/870454/): полезный опыт, не benchmark нашего Cloudflare; отдельное хранение/синхронизация и внешние abuse controls — важная цена. Исторические замечания статьи проверять по текущим версиям.
 - [Cloudflare Containers](https://developers.cloudflare.com/containers/); фактический владелец нашей конфигурации — deploy/cloudflare/src/index.ts и router.ts.

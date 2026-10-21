@@ -3096,3 +3096,18 @@ to shared owners. New visual source ibHSgpAKXnItNSHaHzvRk2: footer5065:21196 /
 variant. Cart/notification placeholders are allowed in desktop chrome; this
 revises the visual omission in DEC-128 only, without adding commerce or
 notification functionality to MVP. DEC-129's1024px navigation threshold stands.
+
+## DEC-131 — Единый вход по email-коду и явная привязка провайдеров
+
+Дата: 2026-10-22. Статус: Confirmed. Источник: основатель принял рекомендованную
+схему в чате и отдельно запретил пока приступать к реализации.
+
+Вход по коду доступен зарегистрированным пользователям независимо от способа
+создания аккаунта. Пароль остаётся альтернативой; social-вход не требует пароля.
+Google -> email-код ведёт в тот же профиль. Email -> Google требует подтверждения
+существующего аккаунта и явной привязки; совпадение email не объединяет аккаунты.
+Неизвестная почта не создаёт аккаунт автоматически: сохраняется регистрация с
+ником и подтверждением документов. Реальный email остаётся обязательным.
+
+Статус кода: Not implemented. Архитектура, порядок работ и проверки — в
+[задании auth/media](../tasks/2026-10-22-auth-media-handoff.md).
