@@ -25,7 +25,7 @@ function notPublished(): never {
   throw new ServiceUnavailableException('Legal documents are not published');
 }
 
-export function readPublishedLegalDocuments(): LegalDocumentsResponse {
+function readLegalSource(): LegalDocumentsResponse {
   const directory = directories.find((candidate) =>
     documents.every(({ filename }) => existsSync(join(candidate, filename))),
   );
@@ -35,12 +35,9 @@ export function readPublishedLegalDocuments(): LegalDocumentsResponse {
     const entries = documents.map(({ id, filename, title }) => {
       const markdown = readFileSync(join(directory, filename), 'utf8');
       const edition = /^Редакция:\s*`([^`]+)`/m.exec(markdown)?.[1];
-      // A missing or unresolved legal entity / transfer / analytics fact
-      // must never be exposed publicly as an actual policy.
       if (
         !edition ||
-        !/^portfolio-legal-[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(edition) ||
-        /\[[^\]\r\n]{1,150}\](?!\()/u.test(markdown)
+        !/^portfolio-legal-[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(edition)
       ) {
         return notPublished();
       }
@@ -50,7 +47,7 @@ export function readPublishedLegalDocuments(): LegalDocumentsResponse {
     const edition = entries[0]?.edition;
     if (!edition || entries.some((entry) => entry.edition !== edition)) return notPublished();
 
-    // A textual edition alone does not prove the exact displayed content.
+    // A textual edition alone does not prove the exact source content.
     // A deterministic digest changes even when someone edits the Markdown
     // without updating its human-readable edition. This is stored as evidence.
     const hash = createHash('sha256');
@@ -74,4 +71,18 @@ export function readPublishedLegalDocuments(): LegalDocumentsResponse {
     if (error instanceof ServiceUnavailableException) throw error;
     return notPublished();
   }
+}
+
+// Registration records the actual server revision, independently of HTTP document delivery.
+export function readRegistrationLegalVersion(): string {
+  return readLegalSource().version;
+}
+
+export function readPublishedLegalDocuments(): LegalDocumentsResponse {
+  const source = readLegalSource();
+  // Unfinished policy text must not be presented as a published document.
+  if (source.documents.some(({ markdown }) => /\[[^\]\r\n]{1,150}\](?!\()/u.test(markdown))) {
+    return notPublished();
+  }
+  return source;
 }

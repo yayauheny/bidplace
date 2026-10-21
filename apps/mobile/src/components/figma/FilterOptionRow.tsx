@@ -24,10 +24,9 @@ export function FilterOptionRow({
   mode: FilterOptionMode;
   selected: boolean;
   disabled?: boolean;
-  variant?: 'default' | 'directions' | 'compact';
+  variant?: 'default' | 'directions';
   onPress: () => void;
 }) {
-  const compact = variant === 'compact';
   const handleWebKeyDown = (event: {
     key: string;
     preventDefault: () => void;
@@ -53,54 +52,14 @@ export function FilterOptionRow({
       onPress={onPress}
       preset="icon"
       style={[
-        compact
-          ? {
-              width: '100%',
-              minHeight: 44,
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              paddingVertical: 12,
-            }
-          : filterOptionRowStyle(),
-        disabled ? { opacity: 0.5 } : null,
+        filterOptionRowStyle(),
+        disabled ? { opacity: designTokens.opacity.disabled } : null,
       ]}
     >
-      {!compact ? (
-        <View style={filterOptionControlStyle(mode, selected)}>
-          {selected && mode === 'checkbox' ? (
-            <FigmaIcon
-              name="check"
-              size={designTokens.size.filterOptionCheck}
-              color={designTokens.color.white}
-              strokeWidthPx={designTokens.stroke.filterOptionCheck}
-            />
-          ) : null}
-          {selected && mode === 'radio' ? (
-            <View
-              style={{
-                width: 8,
-                height: 8,
-                borderRadius: 4,
-                backgroundColor: designTokens.color.white,
-              }}
-            />
-          ) : null}
-        </View>
-      ) : null}
       <AppText
-        role="body"
-        numberOfLines={1}
+        role="optionLabel"
         style={[
           filterOptionLabelStyle(),
-          compact
-            ? {
-                flex: 0,
-                fontSize: 15,
-                fontWeight: '500' as const,
-                color: designTokens.color.ink,
-              }
-            : null,
           variant === 'directions'
             ? designTokens.typography.directionsOption
             : null,
@@ -108,20 +67,15 @@ export function FilterOptionRow({
       >
         {label}
       </AppText>
-      {compact ? (
-        <View
-          style={{
-            width: 20,
-            height: 20,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          {selected ? (
-            <FigmaIcon name="check" size={16} strokeWidthPx={1.5} />
-          ) : null}
-        </View>
-      ) : null}
+      <View style={filterOptionControlStyle()}>
+        {selected ? (
+          <FigmaIcon
+            name="check"
+            size={designTokens.size.filterOptionCheck}
+            strokeWidthPx={designTokens.stroke.filterOptionCheck}
+          />
+        ) : null}
+      </View>
     </MotionPressable>
   );
 }

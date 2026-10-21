@@ -7,6 +7,8 @@ import {
   type SearchChromeKind,
 } from '@bidplace/design-tokens';
 
+import { useAppTheme } from '../../providers/theme-provider';
+
 export function FigmaSearchChromeStroke({
   kind,
   width,
@@ -16,10 +18,11 @@ export function FigmaSearchChromeStroke({
   width: number;
   height: number;
 }) {
+  const palette = useAppTheme();
   const instanceId = useId().replace(/:/g, '');
   if (width <= 0 || height <= 0) return null;
 
-  const frame = searchChromeStrokeViewport(kind, width, height);
+  const frame = searchChromeStrokeViewport(kind, width, height, palette);
   const gradientId = `search-chrome-${kind}-${instanceId}`;
 
   return (

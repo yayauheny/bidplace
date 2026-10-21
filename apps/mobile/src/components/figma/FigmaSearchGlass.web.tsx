@@ -1,8 +1,12 @@
 import { type CSSProperties, type ReactNode } from 'react';
 import { View, type StyleProp, type ViewStyle } from 'react-native';
 
-import { searchChromeTokens, type SearchChromeKind } from '@bidplace/design-tokens';
+import {
+  searchChromeTokens,
+  type SearchChromeKind,
+} from '@bidplace/design-tokens';
 
+import { useAppTheme } from '../../providers/theme-provider';
 import { FigmaSearchChromeStroke } from './FigmaSearchChromeStroke';
 import { useCssBorderBox } from './use-css-border-box';
 
@@ -18,6 +22,7 @@ export function FigmaSearchGlass({
   testID?: string;
 }) {
   const { layout, onLayout } = useCssBorderBox();
+  const palette = useAppTheme();
   const shape = searchChromeTokens[kind];
   const blurred = kind !== 'rail';
 
@@ -38,14 +43,18 @@ export function FigmaSearchGlass({
           borderRadius: shape.radius,
           overflow: 'visible',
           position: 'relative',
-          backgroundColor: blurred ? searchChromeTokens.fill : 'transparent',
+          backgroundColor: blurred ? palette.glass : 'transparent',
           ...(blurStyle as object),
         },
         style,
       ]}
     >
       {children}
-      <FigmaSearchChromeStroke kind={kind} width={layout.width} height={layout.height} />
+      <FigmaSearchChromeStroke
+        kind={kind}
+        width={layout.width}
+        height={layout.height}
+      />
     </View>
   );
 }

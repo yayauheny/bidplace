@@ -11,6 +11,15 @@ import { ApiClientError } from '@bidplace/api-client';
 import { flush, inputValue, setInput } from '../../testing/dom';
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+vi.mock('../../components/figma/FigmaIcon', () => ({ FigmaIcon: () => null }));
+vi.mock('../../components/ui/MotionPressable', () => ({
+  MotionPressable: ({ children, accessibilityLabel, disabled, onPress }: {
+    children?: ReactNode; accessibilityLabel?: string; disabled?: boolean; onPress?: () => void;
+  }) => createElement('button', { 'aria-label': accessibilityLabel, disabled, onClick: onPress }, children),
+}));
+
+
+vi.mock('../../components/shared/PrivateStoryImage', () => ({ PrivateStoryImage: () => null }));
 
 const productId = '11111111-1111-4111-8111-111111111111';
 const categoryId = '33333333-3333-4333-8333-333333333333';
@@ -31,16 +40,25 @@ const harness = vi.hoisted(() => ({
 }));
 
 vi.mock('../../components/figma/FigmaIconButton', () => ({
-  FigmaIconButton: ({ label, onPress, disabled }: {
+  FigmaIconButton: ({
+    label,
+    onPress,
+    disabled,
+  }: {
     label: string;
     onPress: () => void;
     disabled?: boolean;
-  }) => createElement('button', {
-    type: 'button',
-    'aria-label': label,
-    disabled,
-    onClick: onPress,
-  }, label),
+  }) =>
+    createElement(
+      'button',
+      {
+        type: 'button',
+        'aria-label': label,
+        disabled,
+        onClick: onPress,
+      },
+      label,
+    ),
 }));
 
 vi.mock('./product-draft-story', () => ({
@@ -58,12 +76,17 @@ vi.mock('../../components/figma/FigmaChoiceChip', () => ({
     selected: boolean;
     onPress: () => void;
     disabled?: boolean;
-  }) => createElement('button', {
-    type: 'button',
-    disabled,
-    'aria-pressed': selected,
-    onClick: onPress,
-  }, label),
+  }) =>
+    createElement(
+      'button',
+      {
+        type: 'button',
+        disabled,
+        'aria-pressed': selected,
+        onClick: onPress,
+      },
+      label,
+    ),
 }));
 
 vi.mock('../../components/figma/FigmaSelectField', () => ({
@@ -77,12 +100,17 @@ vi.mock('../../components/figma/FigmaSelectField', () => ({
     value: string;
     disabled?: boolean;
     onPress: () => void;
-  }) => createElement('button', {
-    type: 'button',
-    'aria-label': label,
-    disabled,
-    onClick: () => onPress(),
-  }, value || label),
+  }) =>
+    createElement(
+      'button',
+      {
+        type: 'button',
+        'aria-label': label,
+        disabled,
+        onClick: () => onPress(),
+      },
+      value || label,
+    ),
 }));
 
 vi.mock('./product-catalog-term-sheet', () => ({
@@ -91,7 +119,8 @@ vi.mock('./product-catalog-term-sheet', () => ({
 
 vi.mock('react-native', () => ({
   Platform: { OS: 'web' },
-  View: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
+  View: ({ children }: { children?: ReactNode }) =>
+    createElement('div', null, children),
 }));
 
 vi.mock('expo-router', () => ({
@@ -120,13 +149,19 @@ vi.mock('../../providers/api-provider', () => ({
       update: harness.updateProduct,
       submit: harness.submitProduct,
     },
-    images: { add: harness.addImages, remove: harness.removeImage, reorder: harness.reorderImages },
+    images: {
+      add: harness.addImages,
+      remove: harness.removeImage,
+      reorder: harness.reorderImages,
+    },
   }),
 }));
 
 vi.mock('../../components/layout', () => ({
-  AppShell: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
-  FormPageShell: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
+  AppShell: ({ children }: { children?: ReactNode }) =>
+    createElement('div', null, children),
+  FormPageShell: ({ children }: { children?: ReactNode }) =>
+    createElement('div', null, children),
   FormPageColumns: ({
     children,
     sidebar,
@@ -168,12 +203,15 @@ vi.mock('../../components/ui', () => {
     );
   }
   return {
-    AppDialog: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
-    AppText: ({ children }: { children?: ReactNode }) => createElement('span', null, children),
+    AppDialog: ({ children }: { children?: ReactNode }) =>
+      createElement('div', null, children),
+    AppText: ({ children }: { children?: ReactNode }) =>
+      createElement('span', null, children),
     PrimaryButton: PressButton,
-    FormSection: ({ children }: { children?: ReactNode }) => createElement('section', null, children),
+    FormSection: ({ children }: { children?: ReactNode }) =>
+      createElement('section', null, children),
     PageState: () => null,
-        SecondaryButton: PressButton,
+    SecondaryButton: PressButton,
     TextButton: PressButton,
     ResilientRemoteImage: () => null,
     TextField: ({
@@ -191,12 +229,17 @@ vi.mock('../../components/ui', () => {
         'aria-label': label,
         value: value ?? '',
         disabled: editable === false,
-        onChange: (event: { target: { value: string } }) => onChangeText?.(event.target.value),
+        onChange: (event: { target: { value: string } }) =>
+          onChangeText?.(event.target.value),
       }),
   };
 });
 
-import { advanceAuthEpoch, authKeys, clearAuthenticatedSession } from '../../lib/query-cache';
+import {
+  advanceAuthEpoch,
+  authKeys,
+  clearAuthenticatedSession,
+} from '../../lib/query-cache';
 import { ownerWorkQueryKeys } from './owner-work-query';
 import { ProductDraftScreen } from './product-draft-screen';
 
@@ -253,16 +296,20 @@ function detail(title = 'Saved title', dimensions = '') {
   };
 }
 
-function mount(props: {
-  productId?: string;
-  flow?: string;
-  stepParam?: '1' | '2' | '3' | '4';
-  sessionId?: string;
-} = {}) {
+function mount(
+  props: {
+    productId?: string;
+    flow?: string;
+    stepParam?: '1' | '2' | '3' | '4';
+    sessionId?: string;
+  } = {},
+) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
-  queryClient.setQueryData(authKeys.session, { id: props.sessionId ?? 'user-a' });
+  queryClient.setQueryData(authKeys.session, {
+    id: props.sessionId ?? 'user-a',
+  });
   const container = document.createElement('div');
   document.body.append(container);
   const root: Root = createRoot(container);
@@ -289,16 +336,24 @@ function mount(props: {
   };
 }
 
-async function until(container: HTMLElement, predicate: () => boolean, label: string) {
+async function until(
+  container: HTMLElement,
+  predicate: () => boolean,
+  label: string,
+) {
   for (let attempt = 0; attempt < 20; attempt += 1) {
     if (predicate()) return;
     await flush();
   }
-  throw new Error(`Timed out waiting for ${label}. Body: ${container.textContent}`);
+  throw new Error(
+    `Timed out waiting for ${label}. Body: ${container.textContent}`,
+  );
 }
 
 function findButton(container: ParentNode, label: string) {
-  return [...container.querySelectorAll('button')].find((button) => button.textContent === label);
+  return [...container.querySelectorAll('button')].find(
+    (button) => button.textContent === label || button.getAttribute('aria-label') === label,
+  );
 }
 
 function click(container: ParentNode, label: string) {
@@ -309,15 +364,6 @@ function click(container: ParentNode, label: string) {
   });
 }
 
-function clickNth(container: ParentNode, label: string, index: number) {
-  const target = [...container.querySelectorAll('button')].filter(
-    (button) => button.textContent === label,
-  )[index];
-  if (!target) throw new Error(`Missing button ${label} at ${index}`);
-  act(() => {
-    target.click();
-  });
-}
 
 function formIsDirty() {
   const event = new Event('beforeunload', { cancelable: true });
@@ -326,6 +372,7 @@ function formIsDirty() {
 }
 
 beforeEach(() => {
+  window.localStorage.clear();
   window.history.replaceState({}, '');
   vi.spyOn(window.history, 'back').mockImplementation(() => {
     window.history.replaceState({}, '');
@@ -350,7 +397,9 @@ beforeEach(() => {
   harness.getProduct.mockResolvedValue(detail());
   harness.updateProduct.mockResolvedValue({ product: product() });
   harness.createProduct.mockResolvedValue({ product: product() });
-  harness.submitProduct.mockResolvedValue({ product: product('Saved title', 'Oil') });
+  harness.submitProduct.mockResolvedValue({
+    product: product('Saved title', 'Oil'),
+  });
 });
 
 afterEach(() => {
@@ -360,7 +409,9 @@ afterEach(() => {
 
 describe('product draft save reconciliation', () => {
   it('keeps text entered after the snapshot and applies normalization to an untouched field', async () => {
-    let resolveSave: (value: { product: ReturnType<typeof product> }) => void = () => undefined;
+    let resolveSave: (value: {
+      product: ReturnType<typeof product>;
+    }) => void = () => undefined;
     harness.updateProduct.mockImplementation(
       () =>
         new Promise((resolve) => {
@@ -368,7 +419,13 @@ describe('product draft save reconciliation', () => {
         }),
     );
     const view = mount({ productId });
-    await until(view.container, () => findButton(view.container, 'Сохранить изменения') instanceof HTMLButtonElement, 'save');
+    await until(
+      view.container,
+      () =>
+        findButton(view.container, 'Сохранить изменения') instanceof
+        HTMLButtonElement,
+      'save',
+    );
     click(view.container, 'Сохранить изменения');
     await flush();
     setInput(view.container, 'Название', 'Typed later');
@@ -387,7 +444,9 @@ describe('product draft save reconciliation', () => {
   });
 
   it('clears a field that was dirty before send once that snapshot is saved', async () => {
-    let resolveSave: (value: { product: ReturnType<typeof product> }) => void = () => undefined;
+    let resolveSave: (value: {
+      product: ReturnType<typeof product>;
+    }) => void = () => undefined;
     harness.updateProduct.mockImplementation(
       () =>
         new Promise((resolve) => {
@@ -395,7 +454,13 @@ describe('product draft save reconciliation', () => {
         }),
     );
     const view = mount({ productId });
-    await until(view.container, () => findButton(view.container, 'Сохранить изменения') instanceof HTMLButtonElement, 'save');
+    await until(
+      view.container,
+      () =>
+        findButton(view.container, 'Сохранить изменения') instanceof
+        HTMLButtonElement,
+      'save',
+    );
     setInput(view.container, 'Название', 'Next title');
     expect(formIsDirty()).toBe(true);
     click(view.container, 'Сохранить изменения');
@@ -416,12 +481,26 @@ describe('product draft save reconciliation', () => {
       .mockRejectedValueOnce(new Error('offline'))
       .mockResolvedValueOnce({ product: product('Kept title') });
     const view = mount({ productId });
-    await until(view.container, () => findButton(view.container, 'Сохранить изменения') instanceof HTMLButtonElement, 'save');
+    await until(
+      view.container,
+      () =>
+        findButton(view.container, 'Сохранить изменения') instanceof
+        HTMLButtonElement,
+      'save',
+    );
     setInput(view.container, 'Название', 'Kept title');
     click(view.container, 'Сохранить изменения');
-    await until(view.container, () => view.container.textContent?.includes('Не удалось сохранить предмет') === true, 'error');
+    await until(
+      view.container,
+      () =>
+        view.container.textContent?.includes('Не удалось сохранить предмет') ===
+        true,
+      'error',
+    );
     expect(inputValue(view.container, 'Название')).toBe('Kept title');
-    expect(findButton(view.container, 'Сохранить изменения')).toBeInstanceOf(HTMLButtonElement);
+    expect(findButton(view.container, 'Сохранить изменения')).toBeInstanceOf(
+      HTMLButtonElement,
+    );
     click(view.container, 'Сохранить изменения');
     await flush();
     expect(harness.updateProduct).toHaveBeenCalledTimes(2);
@@ -429,14 +508,18 @@ describe('product draft save reconciliation', () => {
       productId,
       expect.objectContaining({ title: 'Kept title' }),
     );
-    expect(view.container.textContent).not.toContain('Не удалось сохранить предмет');
+    expect(view.container.textContent).not.toContain(
+      'Не удалось сохранить предмет',
+    );
     expect(view.container.textContent).toContain('1/10 изображений');
     view.unmount();
   });
 
   it('assigns the created id and updates on the next save', async () => {
     const createdId = '66666666-6666-4666-8666-666666666666';
-    let resolveCreate: (value: { product: ReturnType<typeof product> }) => void = () => undefined;
+    let resolveCreate: (value: {
+      product: ReturnType<typeof product>;
+    }) => void = () => undefined;
     harness.createProduct.mockImplementation(
       () =>
         new Promise((resolve) => {
@@ -444,7 +527,11 @@ describe('product draft save reconciliation', () => {
         }),
     );
     const view = mount({ productId: undefined, flow: 'creation' });
-    await until(view.container, () => findButton(view.container, 'Painting') instanceof HTMLButtonElement, 'category');
+    await until(
+      view.container,
+      () => findButton(view.container, 'Painting') instanceof HTMLButtonElement,
+      'category',
+    );
     click(view.container, 'Painting');
     setInput(view.container, 'Название', 'First work');
     click(view.container, 'Сохранить и продолжить');
@@ -480,7 +567,9 @@ describe('product draft save reconciliation', () => {
   });
 
   it('blocks edits and a second submit until the save fails, then stays on the page', async () => {
-    let resolveUpdate: (value: { product: ReturnType<typeof product> }) => void = () => undefined;
+    let resolveUpdate: (value: {
+      product: ReturnType<typeof product>;
+    }) => void = () => undefined;
     let rejectUpdate: (error: Error) => void = () => undefined;
     harness.updateProduct.mockImplementation(
       () =>
@@ -490,7 +579,13 @@ describe('product draft save reconciliation', () => {
         }),
     );
     const view = mount({ productId });
-    await until(view.container, () => findButton(view.container, 'Отправить на модерацию') instanceof HTMLButtonElement, 'submit');
+    await until(
+      view.container,
+      () =>
+        findButton(view.container, 'Отправить на модерацию') instanceof
+        HTMLButtonElement,
+      'submit',
+    );
     click(view.container, 'Отправить на модерацию');
     click(view.container, 'Отправить на модерацию');
     await flush();
@@ -506,16 +601,72 @@ describe('product draft save reconciliation', () => {
     expect(harness.submitProduct).not.toHaveBeenCalled();
     expect(harness.replace).not.toHaveBeenCalled();
     expect(harness.setParams).not.toHaveBeenCalled();
-    expect(findButton(view.container, 'Отправить на модерацию')).toBeInstanceOf(HTMLButtonElement);
-    expect((findButton(view.container, 'Отправить на модерацию') as HTMLButtonElement).disabled).toBe(false);
+    expect(findButton(view.container, 'Отправить на модерацию')).toBeInstanceOf(
+      HTMLButtonElement,
+    );
+    expect(
+      (
+        findButton(
+          view.container,
+          'Отправить на модерацию',
+        ) as HTMLButtonElement
+      ).disabled,
+    ).toBe(false);
     void resolveUpdate;
     view.unmount();
   });
 
-  it('keeps local edits when the detail query refetches', async () => {
-    let resolveRefetch: (value: ReturnType<typeof detail>) => void = () => undefined;
+  it('confirms the saved snapshot when the field update succeeds but the submit fails', async () => {
+    harness.updateProduct.mockResolvedValue({
+      product: product('Revised title'),
+    });
+    harness.submitProduct.mockRejectedValue(
+      new ApiClientError('Отправка временно недоступна.', {
+        kind: 'conflict',
+        status: 409,
+      }),
+    );
     const view = mount({ productId });
-    await until(view.container, () => findButton(view.container, 'Обновить') instanceof HTMLButtonElement, 'refresh');
+    await until(
+      view.container,
+      () =>
+        findButton(view.container, 'Отправить на модерацию') instanceof
+        HTMLButtonElement,
+      'submit',
+    );
+    setInput(view.container, 'Название', 'Revised title');
+    click(view.container, 'Отправить на модерацию');
+    await until(
+      view.container,
+      () =>
+        view.container.textContent?.includes(
+          'Не удалось сохранить и отправить предмет на модерацию.',
+        ) === true,
+      'submit error',
+    );
+    expect(harness.updateProduct).toHaveBeenCalledTimes(1);
+    expect(harness.updateProduct).toHaveBeenCalledWith(
+      productId,
+      expect.objectContaining({ title: 'Revised title' }),
+    );
+    expect(harness.submitProduct).toHaveBeenCalledTimes(1);
+    // The server already accepted the fields: the form is reconciled to the
+    // saved snapshot instead of staying dirty with a stale base and draft.
+    expect(formIsDirty()).toBe(false);
+    expect(inputValue(view.container, 'Название')).toBe('Revised title');
+    expect(harness.replace).not.toHaveBeenCalled();
+    view.unmount();
+  });
+
+  it('keeps local edits when the detail query refetches', async () => {
+    let resolveRefetch: (value: ReturnType<typeof detail>) => void = () =>
+      undefined;
+    const view = mount({ productId });
+    await until(
+      view.container,
+      () => findButton(view.container, 'Обновить') instanceof HTMLButtonElement,
+      'refresh',
+    );
     harness.getProduct.mockImplementation(
       () =>
         new Promise((resolve) => {
@@ -535,7 +686,9 @@ describe('product draft save reconciliation', () => {
   });
 
   it('does not restore a private product query after the session is cleared', async () => {
-    let resolveSave: (value: { product: ReturnType<typeof product> }) => void = () => undefined;
+    let resolveSave: (value: {
+      product: ReturnType<typeof product>;
+    }) => void = () => undefined;
     harness.updateProduct.mockImplementation(
       () =>
         new Promise((resolve) => {
@@ -543,7 +696,13 @@ describe('product draft save reconciliation', () => {
         }),
     );
     const view = mount({ productId });
-    await until(view.container, () => findButton(view.container, 'Сохранить изменения') instanceof HTMLButtonElement, 'save');
+    await until(
+      view.container,
+      () =>
+        findButton(view.container, 'Сохранить изменения') instanceof
+        HTMLButtonElement,
+      'save',
+    );
     view.queryClient.setQueryData(['user', 'me'], null);
     view.queryClient.setQueryData(['portfolio-works'], { marker: true });
     const readsBeforeSave = harness.getProduct.mock.calls.length;
@@ -554,12 +713,16 @@ describe('product draft save reconciliation', () => {
     });
     await flush();
     expect(harness.getProduct.mock.calls.length).toBe(readsBeforeSave);
-    expect(view.queryClient.getQueryData(['portfolio-works'])).toEqual({ marker: true });
+    expect(view.queryClient.getQueryData(['portfolio-works'])).toEqual({
+      marker: true,
+    });
     view.unmount();
   });
 
   it('drops a work save from the previous session after logout and login', async () => {
-    let resolveSave: (value: { product: ReturnType<typeof product> }) => void = () => undefined;
+    let resolveSave: (value: {
+      product: ReturnType<typeof product>;
+    }) => void = () => undefined;
     harness.updateProduct.mockImplementation(
       () =>
         new Promise((resolve) => {
@@ -569,7 +732,10 @@ describe('product draft save reconciliation', () => {
     const view = mount({ productId, sessionId: 'user-a' });
     await until(
       view.container,
-      () => view.container.querySelector<HTMLInputElement>('[aria-label="Название"]')?.value === 'Saved title',
+      () =>
+        view.container.querySelector<HTMLInputElement>(
+          '[aria-label="Название"]',
+        )?.value === 'Saved title',
       'work A',
     );
     click(view.container, 'Сохранить изменения');
@@ -581,7 +747,10 @@ describe('product draft save reconciliation', () => {
     await act(async () => {
       await clearAuthenticatedSession(view.queryClient);
       view.queryClient.setQueryData(authKeys.session, { id: 'user-b' });
-      view.queryClient.setQueryData(ownerWorkQueryKeys.detail(productId), workB);
+      view.queryClient.setQueryData(
+        ownerWorkQueryKeys.detail(productId),
+        workB,
+      );
     });
     await flush();
     harness.getProduct.mockImplementation(() => new Promise(() => undefined));
@@ -590,14 +759,18 @@ describe('product draft save reconciliation', () => {
       await Promise.resolve();
     });
     await flush();
-    expect(view.queryClient.getQueryData(ownerWorkQueryKeys.detail(productId))).toEqual(workB);
+    expect(
+      view.queryClient.getQueryData(ownerWorkQueryKeys.detail(productId)),
+    ).toEqual(workB);
     expect(inputValue(view.container, 'Название')).toBe('User B title');
     expect(harness.replace).not.toHaveBeenCalled();
     view.unmount();
   });
 
   it('runs one ordinary save at a time and keeps text typed during that save', async () => {
-    const resolvers: Array<(value: { product: ReturnType<typeof product> }) => void> = [];
+    const resolvers: Array<
+      (value: { product: ReturnType<typeof product> }) => void
+    > = [];
     harness.updateProduct.mockImplementation(
       () =>
         new Promise((resolve) => {
@@ -605,7 +778,13 @@ describe('product draft save reconciliation', () => {
         }),
     );
     const view = mount({ productId });
-    await until(view.container, () => findButton(view.container, 'Сохранить изменения') instanceof HTMLButtonElement, 'save');
+    await until(
+      view.container,
+      () =>
+        findButton(view.container, 'Сохранить изменения') instanceof
+        HTMLButtonElement,
+      'save',
+    );
     setInput(view.container, 'Название', 'Title A');
     act(() => {
       const save = findButton(view.container, 'Сохранить изменения');
@@ -644,7 +823,9 @@ describe('product draft save reconciliation', () => {
     approved.product.status = 'APPROVED';
     approved.editingRevision.status = 'APPROVED';
     harness.getProduct.mockResolvedValue(approved);
-    let resolveSave: (value: { product: ReturnType<typeof product> }) => void = () => undefined;
+    let resolveSave: (value: {
+      product: ReturnType<typeof product>;
+    }) => void = () => undefined;
     harness.updateProduct.mockImplementation(
       () =>
         new Promise((resolve) => {
@@ -652,22 +833,32 @@ describe('product draft save reconciliation', () => {
         }),
     );
     const view = mount({ productId });
-    await until(view.container, () => findButton(view.container, 'Сохранить изменения') instanceof HTMLButtonElement, 'save');
+    await until(
+      view.container,
+      () =>
+        findButton(view.container, 'Сохранить изменения') instanceof
+        HTMLButtonElement,
+      'save',
+    );
     setInput(view.container, 'Название', 'Revised title');
     click(view.container, 'Сохранить изменения');
     await flush();
     expect(harness.updateProduct).toHaveBeenCalledTimes(1);
-    clickNth(view.container, 'Удалить изображение', 0);
+    click(view.container, 'Действия с изображением');
+    click(view.container, 'Удалить');
     await flush();
-    clickNth(view.container, 'Удалить изображение', 1);
-    clickNth(view.container, 'Удалить изображение', 1);
+    click(view.container, 'Удалить изображение');
+    click(view.container, 'Удалить изображение');
     await flush();
     expect(harness.removeImage).not.toHaveBeenCalled();
     const confirm = [...view.container.querySelectorAll('button')].filter(
       (button) => button.textContent === 'Удалить изображение',
-    )[1];
+    )[0];
     expect(confirm).toHaveProperty('disabled', true);
-    expect(findButton(view.container, 'Отмена')).toHaveProperty('disabled', true);
+    expect(findButton(view.container, 'Отмена')).toHaveProperty(
+      'disabled',
+      true,
+    );
     await act(async () => {
       resolveSave({
         product: { ...approved.product, title: 'Revised title' },
@@ -688,7 +879,9 @@ describe('product draft save reconciliation', () => {
     approved.editingRevision.status = 'APPROVED';
     harness.getProduct.mockResolvedValue(approved);
     let rejectSave: (error: Error) => void = () => undefined;
-    let resolveRetry: (value: { product: ReturnType<typeof product> }) => void = () => undefined;
+    let resolveRetry: (value: {
+      product: ReturnType<typeof product>;
+    }) => void = () => undefined;
     let attempt = 0;
     harness.updateProduct.mockImplementation(
       () =>
@@ -699,21 +892,31 @@ describe('product draft save reconciliation', () => {
         }),
     );
     const view = mount({ productId });
-    await until(view.container, () => findButton(view.container, 'Сохранить изменения') instanceof HTMLButtonElement, 'save');
+    await until(
+      view.container,
+      () =>
+        findButton(view.container, 'Сохранить изменения') instanceof
+        HTMLButtonElement,
+      'save',
+    );
     setInput(view.container, 'Название', 'Revised title');
     click(view.container, 'Сохранить изменения');
     await flush();
-    clickNth(view.container, 'Удалить изображение', 0);
+    click(view.container, 'Действия с изображением');
+    click(view.container, 'Удалить');
     await flush();
-    clickNth(view.container, 'Удалить изображение', 1);
+    click(view.container, 'Удалить изображение');
     await act(async () => {
       rejectSave(new Error('save failed'));
       await Promise.resolve();
     });
     await flush();
     expect(harness.removeImage).not.toHaveBeenCalled();
-    expect(findButton(view.container, 'Отмена')).toHaveProperty('disabled', false);
-    clickNth(view.container, 'Удалить изображение', 1);
+    expect(findButton(view.container, 'Отмена')).toHaveProperty(
+      'disabled',
+      false,
+    );
+    click(view.container, 'Удалить изображение');
     await flush();
     expect(harness.updateProduct).toHaveBeenCalledTimes(2);
     expect(harness.removeImage).not.toHaveBeenCalled();
@@ -734,7 +937,9 @@ describe('product draft save reconciliation', () => {
     approved.product.status = 'APPROVED';
     approved.editingRevision.status = 'APPROVED';
     harness.getProduct.mockResolvedValue(approved);
-    let resolveSave: (value: { product: ReturnType<typeof product> }) => void = () => undefined;
+    let resolveSave: (value: {
+      product: ReturnType<typeof product>;
+    }) => void = () => undefined;
     harness.updateProduct.mockImplementation(
       () =>
         new Promise((resolve) => {
@@ -742,13 +947,20 @@ describe('product draft save reconciliation', () => {
         }),
     );
     const view = mount({ productId });
-    await until(view.container, () => findButton(view.container, 'Сохранить изменения') instanceof HTMLButtonElement, 'save');
+    await until(
+      view.container,
+      () =>
+        findButton(view.container, 'Сохранить изменения') instanceof
+        HTMLButtonElement,
+      'save',
+    );
     setInput(view.container, 'Название', 'Revised title');
     click(view.container, 'Сохранить изменения');
     await flush();
-    clickNth(view.container, 'Удалить изображение', 0);
+    click(view.container, 'Действия с изображением');
+    click(view.container, 'Удалить');
     await flush();
-    clickNth(view.container, 'Удалить изображение', 1);
+    click(view.container, 'Удалить изображение');
     await act(async () => {
       await clearAuthenticatedSession(view.queryClient);
     });
@@ -768,7 +980,9 @@ describe('product draft save reconciliation', () => {
     approved.product.status = 'APPROVED';
     approved.editingRevision.status = 'APPROVED';
     harness.getProduct.mockResolvedValue(approved);
-    let resolveSave: (value: { product: ReturnType<typeof product> }) => void = () => undefined;
+    let resolveSave: (value: {
+      product: ReturnType<typeof product>;
+    }) => void = () => undefined;
     harness.updateProduct.mockImplementation(
       () =>
         new Promise((resolve) => {
@@ -776,7 +990,13 @@ describe('product draft save reconciliation', () => {
         }),
     );
     const view = mount({ productId });
-    await until(view.container, () => findButton(view.container, 'Сохранить изменения') instanceof HTMLButtonElement, 'save');
+    await until(
+      view.container,
+      () =>
+        findButton(view.container, 'Сохранить изменения') instanceof
+        HTMLButtonElement,
+      'save',
+    );
     setInput(view.container, 'Название', 'Revised title');
     click(view.container, 'Сохранить изменения');
     await flush();
@@ -808,7 +1028,9 @@ describe('product draft save reconciliation', () => {
       },
     ];
     harness.getProduct.mockResolvedValue(approved);
-    let resolveSave: (value: { product: ReturnType<typeof product> }) => void = () => undefined;
+    let resolveSave: (value: {
+      product: ReturnType<typeof product>;
+    }) => void = () => undefined;
     harness.updateProduct.mockImplementation(
       () =>
         new Promise((resolve) => {
@@ -816,11 +1038,18 @@ describe('product draft save reconciliation', () => {
         }),
     );
     const view = mount({ productId });
-    await until(view.container, () => findButton(view.container, 'Сохранить изменения') instanceof HTMLButtonElement, 'save');
+    await until(
+      view.container,
+      () =>
+        findButton(view.container, 'Сохранить изменения') instanceof
+        HTMLButtonElement,
+      'save',
+    );
     setInput(view.container, 'Название', 'Revised title');
     click(view.container, 'Сохранить изменения');
     await flush();
-    click(view.container, 'Переместить ниже');
+    click(view.container, 'Действия с изображением');
+    click(view.container, 'Ниже');
     await flush();
     expect(harness.reorderImages).not.toHaveBeenCalled();
     await act(async () => {
@@ -838,7 +1067,10 @@ describe('product draft save reconciliation', () => {
     let rejectSave: (error: unknown) => void = () => undefined;
     harness.updateProduct
       .mockRejectedValueOnce(
-        new ApiClientError('Предмет не найден.', { kind: 'not_found', status: 404 }),
+        new ApiClientError('Предмет не найден.', {
+          kind: 'not_found',
+          status: 404,
+        }),
       )
       .mockRejectedValueOnce(
         new ApiClientError('Недостаточно прав для сохранения предмета.', {
@@ -853,38 +1085,62 @@ describe('product draft save reconciliation', () => {
           }),
       );
     const view = mount({ productId });
-    await until(view.container, () => findButton(view.container, 'Сохранить изменения') instanceof HTMLButtonElement, 'save');
+    await until(
+      view.container,
+      () =>
+        findButton(view.container, 'Сохранить изменения') instanceof
+        HTMLButtonElement,
+      'save',
+    );
     setInput(view.container, 'Название', 'Kept title');
     click(view.container, 'Сохранить изменения');
-    await until(view.container, () => view.container.textContent?.includes('Предмет не найден.') === true, 'first error');
+    await until(
+      view.container,
+      () => view.container.textContent?.includes('Предмет не найден.') === true,
+      'first error',
+    );
     expect(inputValue(view.container, 'Название')).toBe('Kept title');
     expect(view.container.textContent).toContain('1/10 изображений');
     click(view.container, 'Сохранить изменения');
     await until(
       view.container,
-      () => view.container.textContent?.includes('Недостаточно прав для сохранения предмета.') === true,
+      () =>
+        view.container.textContent?.includes(
+          'Недостаточно прав для сохранения предмета.',
+        ) === true,
       'second error',
     );
     expect(view.container.textContent).not.toContain('Предмет не найден.');
     click(view.container, 'Сохранить изменения');
     await flush();
-    expect(view.container.textContent).not.toContain('Недостаточно прав для сохранения предмета.');
+    expect(view.container.textContent).not.toContain(
+      'Недостаточно прав для сохранения предмета.',
+    );
     await act(async () => {
       advanceAuthEpoch(view.queryClient);
     });
     await flush();
     await act(async () => {
-      rejectSave(new ApiClientError('Старая ошибка предмета.', { kind: 'not_found', status: 404 }));
+      rejectSave(
+        new ApiClientError('Старая ошибка предмета.', {
+          kind: 'not_found',
+          status: 404,
+        }),
+      );
       await Promise.resolve();
     });
     await flush();
     expect(view.container.textContent).not.toContain('Старая ошибка предмета.');
-    expect(view.container.textContent).not.toContain('Недостаточно прав для сохранения предмета.');
+    expect(view.container.textContent).not.toContain(
+      'Недостаточно прав для сохранения предмета.',
+    );
     view.unmount();
   });
 
   it('does not let a late successful save clear the next session error', async () => {
-    let resolveSave: (value: { product: ReturnType<typeof product> }) => void = () => undefined;
+    let resolveSave: (value: {
+      product: ReturnType<typeof product>;
+    }) => void = () => undefined;
     harness.updateProduct.mockImplementationOnce(
       () =>
         new Promise((resolve) => {
@@ -892,7 +1148,13 @@ describe('product draft save reconciliation', () => {
         }),
     );
     const view = mount({ productId });
-    await until(view.container, () => findButton(view.container, 'Сохранить изменения') instanceof HTMLButtonElement, 'save');
+    await until(
+      view.container,
+      () =>
+        findButton(view.container, 'Сохранить изменения') instanceof
+        HTMLButtonElement,
+      'save',
+    );
     click(view.container, 'Сохранить изменения');
     await flush();
     await act(async () => {
@@ -900,11 +1162,25 @@ describe('product draft save reconciliation', () => {
     });
     await flush();
     harness.updateProduct.mockRejectedValueOnce(
-      new ApiClientError('Новая ошибка предмета.', { kind: 'forbidden', status: 403 }),
+      new ApiClientError('Новая ошибка предмета.', {
+        kind: 'forbidden',
+        status: 403,
+      }),
     );
-    await until(view.container, () => findButton(view.container, 'Сохранить изменения') instanceof HTMLButtonElement, 'save again');
+    await until(
+      view.container,
+      () =>
+        findButton(view.container, 'Сохранить изменения') instanceof
+        HTMLButtonElement,
+      'save again',
+    );
     click(view.container, 'Сохранить изменения');
-    await until(view.container, () => view.container.textContent?.includes('Новая ошибка предмета.') === true, 'new error');
+    await until(
+      view.container,
+      () =>
+        view.container.textContent?.includes('Новая ошибка предмета.') === true,
+      'new error',
+    );
     await act(async () => {
       resolveSave({ product: product('Saved title') });
       await Promise.resolve();

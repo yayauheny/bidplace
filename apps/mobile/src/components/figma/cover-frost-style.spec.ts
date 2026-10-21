@@ -16,7 +16,7 @@ describe('Cover frost', () => {
   ] as const)(
     'fills the text-hugging overlay zone for %s without a fixed height',
     (placement, blur, top, gradientEnd) => {
-      const spec = coverFrostSpec(placement);
+      const spec = coverFrostSpec(placement, designTokens.color);
       expect(spec).toMatchObject({
         runtimeBlur: blur,
         top,

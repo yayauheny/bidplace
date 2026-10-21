@@ -4,8 +4,6 @@ import {
   FadeOut,
   LinearTransition,
   ReduceMotion,
-  SlideInDown,
-  SlideOutDown,
 } from 'react-native-reanimated';
 import { designTokens } from '@bidplace/design-tokens';
 
@@ -17,15 +15,11 @@ export const controlLayoutTransition = LinearTransition.duration(
   .easing(controlEasing)
   .reduceMotion(ReduceMotion.System);
 
-export const sheetEnter = (onFinished: (finished: boolean) => void) =>
-  SlideInDown.duration(designTokens.motion.control)
-    .easing(controlEasing)
-    .reduceMotion(ReduceMotion.System)
-    .withCallback(onFinished);
-
-export const sheetExit = SlideOutDown.duration(designTokens.motion.control)
-  .easing(controlEasing)
-  .reduceMotion(ReduceMotion.System);
+export const sheetTimingConfig = {
+  duration: designTokens.motion.control,
+  easing: controlEasing,
+  reduceMotion: ReduceMotion.System,
+};
 
 export const sheetBackdropEnter = FadeIn.duration(designTokens.motion.control)
   .easing(controlEasing)

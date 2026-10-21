@@ -1,17 +1,11 @@
 import type { RefObject } from 'react';
-import { Link, type Href, usePathname, useRouter } from 'expo-router';
+import { Link, type Href } from 'expo-router';
 import { Platform, type View, type ViewStyle } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
-import {
-  authorProfileDestination,
-  useSellerCapability,
-} from '../../hooks/use-seller-capability';
-import { useAuth } from '../../providers/auth-provider';
-import { useSearchOverlay } from '../../features/search/search-overlay-provider';
-import { BidplaceMark } from '../branding/BidplaceBrand';
-import { getMobileCreateHref } from '../layout/header-chrome';
+import { useAppTheme } from '../../providers/theme-provider';
+import { useAppNavigation } from '../layout/use-app-navigation';
 import { useDockInset } from '../layout/use-dock-inset';
 import { MotionPressable } from '../ui/MotionPressable';
 import { FigmaIcon } from './FigmaIcon';
@@ -32,13 +26,10 @@ export function FloatingDock({
 }: {
   blurTarget: RefObject<View | null>;
 }) {
-  const pathname = usePathname();
-  const router = useRouter();
-  const auth = useAuth();
-  const search = useSearchOverlay();
-  const capability = useSellerCapability();
+  const navigation = useAppNavigation('figma-floating-dock');
+  const { pathname, search } = navigation;
   const { bottom } = useDockInset();
-  const items = auth.isAdmin
+  const items = navigation.isAdmin
     ? figmaDockItems.filter((item) => item.id !== 'plus')
     : figmaDockItems;
   const buttons = items.map((item) => (
@@ -50,25 +41,21 @@ export function FloatingDock({
           ? search.isOpen || isFigmaDockItemSelected(item.id, pathname)
           : !search.isOpen && isFigmaDockItemSelected(item.id, pathname)
       }
-      href={dockHref(item, {
-        pathname,
-        isAuthenticated: auth.isAuthenticated,
-        isAdmin: auth.isAdmin,
-        sellerStatus: capability.status,
-      })}
+      href={
+        item.id === 'home'
+          ? '/'
+          : item.id === 'profile'
+            ? navigation.profileHref
+            : undefined
+      }
       onPress={
         item.id === 'search'
           ? () => search.open()
           : item.id === 'plus'
-            ? () =>
-                router.push(
-                  getMobileCreateHref({
-                    isAuthenticated: auth.isAuthenticated,
-                    sellerStatus: capability.status,
-                    returnPath: pathname || '/',
-                  }),
-                )
-            : undefined
+            ? () => navigation.create(item.label)
+            : item.id === 'profile'
+              ? () => navigation.rememberAuthOpener(item.label)
+              : undefined
       }
     />
   ));
@@ -78,31 +65,6 @@ export function FloatingDock({
       {buttons}
     </FloatingDockFrame>
   );
-}
-
-function dockHref(
-  item: FigmaDockItem,
-  context: {
-    pathname: string;
-    isAuthenticated: boolean;
-    isAdmin: boolean;
-    sellerStatus: ReturnType<typeof useSellerCapability>['status'];
-  },
-): Href | undefined {
-  switch (item.id) {
-    case 'home':
-      return '/';
-    case 'search':
-      return undefined;
-    case 'profile':
-      if (context.isAdmin) return '/admin';
-      if (context.isAuthenticated) {
-        return authorProfileDestination(context.sellerStatus) as Href;
-      }
-      return '/login';
-    case 'plus':
-      return undefined;
-  }
 }
 
 function DockItem({
@@ -117,6 +79,7 @@ function DockItem({
   onPress?: () => void;
 }) {
   const itemAccessibility = dockItemAccessibility(item.id, selected);
+  const palette = useAppTheme();
   const content = (
     <MotionPressable
       {...(item.id === 'search'
@@ -148,15 +111,11 @@ function DockItem({
           : null),
       }}
     >
-      {item.icon === 'logo' ? (
-        <BidplaceMark size={18} />
-      ) : (
-        <FigmaIcon
-          name={item.icon}
-          size={designTokens.size.dockIcon}
-          color={designTokens.color.ink}
-        />
-      )}
+      <FigmaIcon
+        name={item.icon}
+        size={designTokens.size.dockIcon}
+        color={palette.ink}
+      />
     </MotionPressable>
   );
 

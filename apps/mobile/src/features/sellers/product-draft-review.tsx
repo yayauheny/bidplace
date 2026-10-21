@@ -1,3 +1,10 @@
+import { View } from 'react-native';
+import { designTokens } from '@bidplace/design-tokens';
+import { PrivateStoryImage } from '../../components/shared/PrivateStoryImage';
+import { useAppTheme } from '../../providers/theme-provider';
+import { productMediaStyle } from '../../components/ui/product-media-style';
+import { DraftImageGrid, DraftImageRow } from './product-draft-images';
+import type { EditableStoryBlock } from './use-product-story-editor';
 import { useWatch } from 'react-hook-form';
 
 import {
@@ -9,10 +16,17 @@ import {
 import type { ProductDraftFormValues } from './product-draft-form';
 
 export type ProductDraftReviewStepProps = {
+  productId: string;
+  sessionEpoch: number;
+  images: Array<{
+    id: string;
+    url: string;
+    position: number;
+    mediaAssetId?: string | null;
+  }>;
+  blocks: EditableStoryBlock[];
   editable: boolean;
-  existingProductImagesLength: number;
   submitLabel: string;
-  hasStory: boolean;
 
   wizardSubmitted: boolean;
   submitPending: boolean;
@@ -22,17 +36,21 @@ export type ProductDraftReviewStepProps = {
 };
 
 export function ProductDraftReviewStep({
+  productId,
+  sessionEpoch,
+  images,
+  blocks,
   editable,
-  existingProductImagesLength,
   submitLabel,
-  hasStory,
   wizardSubmitted,
   submitPending,
   submitError,
   onSubmitPress,
   onBackToStory,
 }: ProductDraftReviewStepProps) {
-  const title = useWatch<ProductDraftFormValues, 'title'>({ name: 'title' }) ?? '';
+  const values = useWatch<ProductDraftFormValues>();
+  const title = values.title ?? '';
+  const palette = useAppTheme();
   return (
     <FormSection
       title="Проверка перед модерацией"
@@ -40,9 +58,62 @@ export function ProductDraftReviewStep({
     >
       <AppText role="label">Название: {title.trim() || 'Не заполнено'}</AppText>
       <AppText role="bodySmall" tone="secondary">
-        Изображения: {existingProductImagesLength}/10 · История:{' '}
-        {hasStory ? 'заполнена' : 'не заполнена'}
+        Изображения: {images.length}/10 · История:{' '}
+        {blocks.length > 0 ? 'заполнена' : 'не заполнена'}
       </AppText>
+      <View style={{ gap: designTokens.space.x3 }}>
+        {[values.uniqueness, values.dimensions, values.year]
+          .filter(Boolean)
+          .map((value, index) => (
+            <AppText key={index} role="bodySmall">
+              {value}
+            </AppText>
+          ))}
+        <DraftImageGrid
+          images={images}
+          renderItem={(image) => (
+            <DraftImageRow
+              url={image.url}
+              position={image.position}
+              editable={false}
+              isLast={false}
+              isReordering={false}
+              isRemoving={false}
+              onMove={() => undefined}
+              onDelete={() => undefined}
+            />
+          )}
+        />
+        {blocks.map((block) =>
+          block.type === 'IMAGE' ? (
+            <PrivateStoryImage
+              key={block.key}
+              productId={productId}
+              sessionEpoch={sessionEpoch}
+              mediaAssetId={block.mediaAssetId}
+              galleryImageId={
+                images.find(
+                  (image) => image.mediaAssetId === block.mediaAssetId,
+                )?.id
+              }
+              label={block.altText || 'Фото истории работы'}
+              style={productMediaStyle('100%', palette)}
+            />
+          ) : (
+            <AppText
+              key={block.key}
+              role="bodySmall"
+              style={
+                block.type === 'HEADING'
+                  ? designTokens.typography.storyHeading
+                  : undefined
+              }
+            >
+              {block.text}
+            </AppText>
+          ),
+        )}
+      </View>
       {wizardSubmitted ? (
         <AppText role="bodySmall" tone="success">
           Предмет отправлен на модерацию.
@@ -51,7 +122,7 @@ export function ProductDraftReviewStep({
         <PrimaryButton
           label={submitLabel}
           loading={submitPending}
-          disabled={!editable || existingProductImagesLength < 1}
+          disabled={!editable || images.length < 1}
           onPress={() => onSubmitPress()}
         />
       )}

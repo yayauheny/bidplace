@@ -3,6 +3,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { authenticatedPage } from './support/auth-session';
 import { moderateSeller } from './support/admin-moderation';
 import { e2eApiBaseURL } from './support/e2e-env';
+import { selectCalendarMonth } from './support/fill-control';
 import {
   createAdminModerationFixture,
   createBuyerFixture,
@@ -181,17 +182,17 @@ test('author onboarding matches source geometry and preserves entered data throu
       path: `${evidence}/${testInfo.project.name}-${label}.png`,
     });
   }
-  async function fieldHeight(label: string) {
+  async function fieldHeight(label: string, role: 'textbox' | 'button' = 'textbox') {
     const box = await page
-      .getByRole('textbox', { name: label, exact: true })
-      .evaluate((input) => input.parentElement?.getBoundingClientRect().height);
+      .getByRole(role, { name: label, exact: true })
+      .evaluate((control, type) => (type === 'button' ? control : control.parentElement)?.getBoundingClientRect().height, role);
     expect(box).toBeCloseTo(51, 1);
   }
-  async function expectAuthorFieldIconPhysicalStroke(label: string) {
+  async function expectAuthorFieldIconPhysicalStroke(label: string, role: 'textbox' | 'button' = 'textbox') {
     const physical = await page
-      .getByRole('textbox', { name: label, exact: true })
-      .evaluate((input) => {
-        const shell = input.parentElement;
+      .getByRole(role, { name: label, exact: true })
+      .evaluate((control, type) => {
+        const shell = type === 'button' ? control : control.parentElement;
         const svg = shell?.querySelector('svg');
         if (!(svg instanceof SVGSVGElement)) return null;
         const path = svg.querySelector('path, line, circle, rect, polyline');
@@ -203,7 +204,7 @@ test('author onboarding matches source geometry and preserves entered data throu
         const viewWidth = svg.viewBox.baseVal.width || 24;
         const renderedWidth = svg.getBoundingClientRect().width;
         return strokeUser * (renderedWidth / viewWidth);
-      });
+      }, role);
     expect(physical).toBeCloseTo(1.3, 1);
   }
   async function responsive(label: string) {
@@ -372,8 +373,8 @@ test('author onboarding matches source geometry and preserves entered data throu
       .fill('Авторская керамика');
     await page.getByRole('button', { name: 'Продолжить', exact: true }).click();
     await expect(page).toHaveURL(/step=4/);
-    await expectAuthorFieldIconPhysicalStroke('Дата достижения');
-    await fieldHeight('Дата достижения');
+    await expectAuthorFieldIconPhysicalStroke('Дата достижения', 'button');
+    await fieldHeight('Дата достижения', 'button');
     expect(
       (
         await page
@@ -385,9 +386,7 @@ test('author onboarding matches source geometry and preserves entered data throu
       page.getByRole('button', { name: /Добавить фото/ }),
     ).toHaveCount(0);
     await responsive('achievements');
-    await page
-      .getByRole('textbox', { name: 'Дата достижения', exact: true })
-      .fill('03.2025');
+    await selectCalendarMonth(page, 'Дата достижения', 2025, 3);
     await page
       .getByRole('textbox', { name: 'Описание достижения', exact: true })
       .fill('Выставка');

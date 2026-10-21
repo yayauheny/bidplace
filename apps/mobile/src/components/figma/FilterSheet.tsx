@@ -3,15 +3,15 @@ import * as Dialog from '@rn-primitives/dialog';
 import { ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import {
-  designTokens,
-  type FigmaButtonSize,
-} from '@bidplace/design-tokens';
+import { designTokens, type FigmaButtonSize } from '@bidplace/design-tokens';
 
 import { AppDialog } from '../ui/AppDialog';
+import { SheetDragHandle } from '../ui/SheetDragSurface';
 import { appDialogSheetBottomSpace } from '../ui/app-dialog-host-style';
 import { AppText } from '../ui/AppText';
 import { MotionPressable } from '../ui/MotionPressable';
+import { useAppTheme } from '../../providers/theme-provider';
+import { BackButton } from './BackButton';
 import { FigmaButton } from './FigmaButton';
 import { FigmaIcon } from './FigmaIcon';
 import { FilterSheetActionRow } from './FilterSheetActionRow';
@@ -62,6 +62,7 @@ export function FilterSheet({
   const { height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const titleId = useId();
+  const palette = useAppTheme();
 
   return (
     <AppDialog
@@ -79,94 +80,109 @@ export function FilterSheet({
           compact,
           height,
           primaryAction ? insets.bottom : 0,
+          palette,
         )}
       >
-        {compact ? (
-          <View
-            style={{
-              alignSelf: 'center',
-              width: 36,
-              height: 4,
-              borderRadius: 10,
-              backgroundColor: '#efefef',
-              marginBottom: 16,
-            }}
-          />
-        ) : null}
-        <View
-          style={[
-            compact
-              ? {
-                  width: '100%',
-                  minHeight: title ? 22 : 0,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                }
-              : filterSheetHeaderStyle(),
-            titleVariant === 'directions'
-              ? {
-                  minHeight:
-                    designTokens.authorApplication.directionsHeaderHeight,
-                }
-              : null,
-          ]}
-        >
-          {!compact ? (
-            <MotionPressable
-              accessibilityRole="button"
-              accessibilityLabel={showBack ? 'Назад' : 'Закрыть'}
-              hitSlop={designTokens.space.headerIconHitSlop}
-              onPress={showBack ? (onBack ?? onClose) : onClose}
-              preset="icon"
+        <SheetDragHandle>
+          {compact ? (
+            <View
               style={{
-                width: designTokens.size.buttonIconFrame,
-                height: designTokens.size.buttonIconFrame,
-                alignItems: 'center',
-                justifyContent: 'center',
+                alignSelf: 'center',
+                width: 36,
+                height: 4,
+                borderRadius: 10,
+                backgroundColor: palette.quietFill,
+                marginBottom: 16,
               }}
-            >
-              <FigmaIcon
-                name={showBack ? 'arrow-left-01' : 'x'}
-                size={designTokens.size.buttonIconFrame}
-                strokeWidthPx={
-                  titleVariant === 'directions' && showBack ? 2 : undefined
-                }
-              />
-            </MotionPressable>
+            />
           ) : null}
-          {title ? (
-            <Dialog.Title asChild>
-              <AppText
-                nativeID={titleId}
-                role={
-                  compact ? 'body' : showBack ? 'profileHeading' : 'screenTitle'
-                }
-                numberOfLines={1}
-                style={[
-                  compact
-                    ? { fontSize: 18, fontWeight: '600' as const }
-                    : filterSheetTitleStyle(),
-                  titleVariant === 'directions'
-                    ? designTokens.typography.directionsSheetTitle
-                    : null,
-                ]}
+          <View
+            style={[
+              compact
+                ? {
+                    width: '100%',
+                    minHeight: showBack
+                      ? designTokens.size.touch
+                      : title
+                        ? 22
+                        : 0,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                  }
+                : filterSheetHeaderStyle(),
+              titleVariant === 'directions'
+                ? {
+                    minHeight:
+                      designTokens.authorApplication.directionsHeaderHeight,
+                  }
+                : null,
+            ]}
+          >
+            {showBack ? (
+              <BackButton onPress={onBack ?? onClose} />
+            ) : !compact ? (
+              <MotionPressable
+                accessibilityRole="button"
+                accessibilityLabel="Закрыть"
+                hitSlop={designTokens.space.headerIconHitSlop}
+                onPress={onClose}
+                preset="icon"
+                style={{
+                  width: designTokens.size.buttonIconFrame,
+                  height: designTokens.size.buttonIconFrame,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
               >
-                {title}
-              </AppText>
-            </Dialog.Title>
-          ) : (
-            <Dialog.Title asChild>
-              <AppText style={{ position: 'absolute', opacity: 0 }}>
-                {accessibilityLabel}
-              </AppText>
-            </Dialog.Title>
-          )}
-          {onClear ? (
-            <FigmaButton label={clearLabel} variant="ghost" onPress={onClear} />
-          ) : compact ? null : (
-            <View style={{ width: designTokens.size.iconButton }} />
-          )}
-        </View>
+                <FigmaIcon
+                  name="x"
+                  size={designTokens.size.buttonIconFrame}
+                  strokeWidthPx={
+                    titleVariant === 'directions' && showBack ? 2 : undefined
+                  }
+                />
+              </MotionPressable>
+            ) : null}
+            {title ? (
+              <Dialog.Title asChild>
+                <AppText
+                  nativeID={titleId}
+                  role={
+                    compact
+                      ? 'pickerTitle'
+                      : showBack
+                        ? 'profileHeading'
+                        : 'screenTitle'
+                  }
+                  numberOfLines={1}
+                  style={[
+                    filterSheetTitleStyle(),
+                    titleVariant === 'directions'
+                      ? designTokens.typography.directionsSheetTitle
+                      : null,
+                  ]}
+                >
+                  {title}
+                </AppText>
+              </Dialog.Title>
+            ) : (
+              <Dialog.Title asChild>
+                <AppText style={{ position: 'absolute', opacity: 0 }}>
+                  {accessibilityLabel}
+                </AppText>
+              </Dialog.Title>
+            )}
+            {onClear ? (
+              <FigmaButton
+                label={clearLabel}
+                variant="ghost"
+                onPress={onClear}
+              />
+            ) : compact ? null : (
+              <View style={{ width: designTokens.size.iconButton }} />
+            )}
+          </View>
+        </SheetDragHandle>
         <ScrollView
           style={{
             flex: compact ? undefined : 1,
@@ -191,6 +207,7 @@ export function FilterSheet({
                 ),
           }}
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
           {children}
         </ScrollView>

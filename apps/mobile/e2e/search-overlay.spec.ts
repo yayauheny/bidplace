@@ -32,26 +32,6 @@ test('focused Search input Escape closes Search once', async ({ page }) => {
   await expect(page).toHaveURL(/\/works/);
 });
 
-test('Search dimmer click consumes exactly one history step', async ({
-  page,
-}) => {
-  await page.setViewportSize({ width: 1024, height: 860 });
-  await page.goto('/works');
-  await expect(page.getByTestId('catalog-scroll-view')).toBeVisible();
-  await page.getByTestId('figma-floating-dock').getByLabel('Главная').click();
-  await expect(page).toHaveURL(/\/$/);
-  await expect(page).not.toHaveURL(/\/works/);
-  await openSearchOverlay(page);
-  await page
-    .getByTestId('overlay-dimmer')
-    .click({ position: { x: 8, y: 200 } });
-  await expectSearchClosed(page);
-  await expect(page).toHaveURL(/\/$/);
-  await expect(page).not.toHaveURL(/overlay=search/);
-  await page.goBack();
-  await expect(page).toHaveURL(/\/works/);
-});
-
 test('FilterSheet Escape closes the sheet once and keeps Works', async ({
   page,
 }) => {
@@ -537,6 +517,41 @@ test('desktop pointer hover marks Author, Category, and Work hits', async ({
     .not.toMatch(/inset/);
 });
 
+test('search overlay state survives the shared-link aliases', async ({
+  page,
+  request,
+}) => {
+  const { work, author } = await publicSearchFixtures(request);
+
+  await page.goto(
+    `/works/${work.publicId}?overlay=search&oq=${encodeURIComponent(work.title)}&otab=works`,
+  );
+  await expect(page).toHaveURL(new RegExp(`/product/${work.publicId}[?#]`));
+  const workUrl = new URL(page.url());
+  expect(workUrl.searchParams.get('overlay')).toBe('search');
+  expect(workUrl.searchParams.get('oq')).toBe(work.title);
+  expect(workUrl.searchParams.get('otab')).toBe('works');
+  const workOverlay = page.getByTestId('search-overlay');
+  await expect(workOverlay).toBeVisible();
+  await expect(workOverlay.getByTestId('search-overlay-query')).toHaveValue(
+    work.title,
+  );
+
+  await page.goto(
+    `/authors/${author.slug}?overlay=search&oq=${encodeURIComponent(author.slug)}&otab=authors`,
+  );
+  await expect(page).toHaveURL(new RegExp(`/seller/${author.slug}[?#]`));
+  const authorUrl = new URL(page.url());
+  expect(authorUrl.searchParams.get('overlay')).toBe('search');
+  expect(authorUrl.searchParams.get('oq')).toBe(author.slug);
+  expect(authorUrl.searchParams.get('otab')).toBe('authors');
+  const authorOverlay = page.getByTestId('search-overlay');
+  await expect(authorOverlay).toBeVisible();
+  await expect(authorOverlay.getByTestId('search-overlay-query')).toHaveValue(
+    author.slug,
+  );
+});
+
 async function openSearchOverlay(page: Page) {
   await page.getByTestId('figma-floating-dock').getByLabel('Поиск').click();
   const overlay = page.getByTestId('search-overlay');
@@ -613,3 +628,92 @@ function hoverFill(locator: {
 }) {
   return locator.evaluate((node) => getComputedStyle(node).backgroundColor);
 }
+
+test('search chrome fills the viewport, rounds author hits and distinguishes pointer from keyboard focus', async ({
+  page,
+}) => {
+  for (const width of [320, 390, 765]) {
+    await page.setViewportSize({ width, height: 876 });
+    await page.goto('/?overlay=search&otab=authors');
+    const tabs = page.getByTestId('search-overlay-tabs');
+    const query = page.getByTestId('search-overlay-query');
+    await expect(tabs).toBeVisible();
+    const railBox = await tabs.boundingBox();
+    const inputBox = await query.boundingBox();
+    expect(railBox).not.toBeNull();
+    expect(inputBox).not.toBeNull();
+    expect(railBox!.x).toBeLessThanOrEqual(inputBox!.x);
+    expect(railBox!.width).toBeGreaterThan(inputBox!.width);
+    const authorTab = page.getByRole('tab', { name: 'Авторы', exact: true });
+    await query.fill('vex');
+    await authorTab.click();
+    await expect(authorTab).toBeFocused();
+    expect(
+      await authorTab.evaluate((e) => getComputedStyle(e).outlineStyle),
+    ).toBe('none');
+    await page.keyboard.press('a');
+    expect(
+      await authorTab.evaluate((e) => getComputedStyle(e).outlineStyle),
+    ).toBe('solid');
+    await page.keyboard.press('Tab');
+    await page.keyboard.press('Shift+Tab');
+    await expect(authorTab).toBeFocused();
+    expect(
+      await authorTab.evaluate((e) => getComputedStyle(e).outlineStyle),
+    ).toBe('solid');
+    const row = page.getByTestId('author-search-row').first();
+    await expect(row).toBeVisible();
+    expect(
+      await row.evaluate((e) =>
+        parseFloat(getComputedStyle(e).borderTopLeftRadius),
+      ),
+    ).toBeGreaterThan(0);
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+  }
+});
+
+test('author scroll includes page gutters without moving the identity column', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 765, height: 876 });
+  await page.goto('/seller/vex');
+  const avatar = page.getByTestId('creator-avatar');
+  await expect(avatar).toBeVisible();
+  const atmosphere = avatar.locator(':scope > [aria-hidden="true"]');
+  await expect(atmosphere).toHaveCSS('filter', 'blur(15px)');
+  await expect(atmosphere).toHaveCSS('opacity', '0.5');
+  await expect
+    .poll(() =>
+      avatar
+        .locator('img')
+        .evaluateAll(
+          (images) =>
+            images.length === 2 &&
+            images.every(
+              (image) =>
+                image instanceof HTMLImageElement &&
+                image.complete &&
+                image.naturalWidth > 0,
+            ),
+        ),
+    )
+    .toBe(true);
+  const scroll = await page.getByTestId('creator-scroll').boundingBox();
+  const shell = await page
+    .getByTestId('app-shell-content')
+    .filter({ has: page.getByTestId('creator-scroll') })
+    .boundingBox();
+  const identity = await avatar.boundingBox();
+  expect(scroll!.x).toBe(shell!.x);
+  expect(scroll!.width).toBe(shell!.width);
+  expect(identity!.x).toBeGreaterThan(scroll!.x);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+});

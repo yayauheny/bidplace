@@ -11,14 +11,17 @@ import {
   FigmaButtonStatePreview,
 } from '../../../components/figma/FigmaButton';
 import { AppText } from '../../../components/ui';
-import type { FigmaButtonInteraction, FigmaButtonVariant } from '../../../components/figma/figma-button-style';
+import { useAppTheme } from '../../../providers/theme-provider';
+import type {
+  FigmaButtonInteraction,
+  FigmaButtonVariant,
+} from '../../../components/figma/figma-button-style';
 
 const sampleLabel = figmaButtonTokens.metrics.sampleLabel;
 
 export const figmaButtonMatrixBoard = {
   width: 714,
   height: 283,
-  backgroundColor: '#FFFFFF',
   columnX: [20, 193, 366, 539],
   rowY: [20, 82, 144, 206],
   rowLabelWidth: 132,
@@ -47,15 +50,20 @@ function previewAccessibilityLabel(
 }
 
 function FigmaButtonStateMatrix() {
+  const palette = useAppTheme();
   const { rowLabelWidth, columnHeaderHeight, width, height, columnX, rowY } =
     figmaButtonMatrixBoard;
   const sampleHeight = figmaButtonTokens.metrics.sampleHeight;
 
   return (
-    <View testID="figma-button-state-matrix" style={{ gap: 8, alignSelf: 'stretch' }}>
+    <View
+      testID="figma-button-state-matrix"
+      style={{ gap: 8, alignSelf: 'stretch' }}
+    >
       <AppText role="sectionTitle">Матрица состояний</AppText>
       <AppText role="caption">
-        Статичное превью всех 16 ячеек по handoff 292:5058; ниже — живые контролы.
+        Статичное превью всех 16 ячеек по handoff 292:5058; ниже — живые
+        контролы.
       </AppText>
       <ScrollView
         horizontal
@@ -87,7 +95,9 @@ function FigmaButtonStateMatrix() {
                     justifyContent: 'center',
                   }}
                 >
-                  <AppText role="metadata">{interactionColumnLabels[interaction]}</AppText>
+                  <AppText role="metadata">
+                    {interactionColumnLabels[interaction]}
+                  </AppText>
                 </View>
               ))}
             </View>
@@ -122,7 +132,7 @@ function FigmaButtonStateMatrix() {
               style={{
                 width,
                 height,
-                backgroundColor: figmaButtonMatrixBoard.backgroundColor,
+                backgroundColor: palette.canvas,
                 position: 'relative',
               }}
             >
@@ -157,6 +167,13 @@ function FigmaButtonStateMatrix() {
 }
 
 export default function FigmaButtonsDevStand() {
+  // Dev-only stand: production web builds set EXPO_PUBLIC_APP_ENV (scripts/cloudflare/build-web.mjs).
+  if (
+    process.env.EXPO_PUBLIC_APP_ENV === 'production' ||
+    process.env.EXPO_PUBLIC_APP_ENV === 'staging'
+  ) {
+    return null;
+  }
   return (
     <ScrollView
       nativeID="figma-button-matrix-stand"
@@ -168,8 +185,9 @@ export default function FigmaButtonsDevStand() {
     >
       <AppText role="sectionTitle">FigmaButton matrix stand</AppText>
       <AppText role="caption" testID="figma-button-stand-note">
-        Unlinked dev route. Static board shows all 16 matrix cells; live controls
-        below exercise hover, mouse hold, keyboard activation, and disabled states.
+        Unlinked dev route. Static board shows all 16 matrix cells; live
+        controls below exercise hover, mouse hold, keyboard activation, and
+        disabled states.
       </AppText>
 
       <FigmaButtonStateMatrix />

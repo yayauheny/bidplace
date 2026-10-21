@@ -85,6 +85,16 @@ async function mockApi(page: Page) {
       });
       return;
     }
+    if (key === 'GET /api/countries') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          countries: [{ code: 'BY', name: 'Беларусь' }],
+        }),
+      });
+      return;
+    }
     if (key === 'POST /api/auth/slug') {
       await route.fulfill({
         status: 200,
@@ -115,42 +125,59 @@ test('an invalid nickname stays on step 1 until it matches the slug contract', a
   const posts: string[] = [];
   page.on('request', (request) => {
     const url = new URL(request.url());
-    if (url.port === '3001' && request.method() === 'POST' && url.pathname === '/api/seller/profile') {
+    if (
+      url.port === '3001' &&
+      request.method() === 'POST' &&
+      url.pathname === '/api/seller/profile'
+    ) {
       posts.push(request.postData() ?? '');
     }
   });
   await mockApi(page);
   await page.goto('/profile?step=1');
-  const nickname = page.getByRole('textbox', { name: 'Никнейм *' });
+  const nickname = page.getByRole('textbox', { name: 'Никнейм', exact: true });
   await expect(nickname).toBeVisible();
   await nickname.fill('БЕ');
-  await page.getByRole('textbox', { name: 'Имя или название *' }).fill('Synthetic Author');
-  await page.getByRole('textbox', { name: 'Страна *' }).fill('BY');
-  await page.getByRole('textbox', { name: 'Город *' }).fill('Minsk');
+  await page
+    .getByRole('textbox', { name: 'Имя или название', exact: true })
+    .fill('Synthetic Author');
+  await page.getByRole('button', { name: 'Страна' }).click();
+  await page.getByRole('radio', { name: 'Беларусь' }).click();
+  await page.getByRole('textbox', { name: 'Город', exact: true }).fill('Minsk');
   await expect(page.getByText(nicknameError)).toBeVisible();
   await expect(page.getByRole('button', { name: 'Продолжить' })).toBeDisabled();
   const chooser = page.waitForEvent('filechooser');
-  await page.getByRole('button', { name: 'Добавить фото' }).click();
-  await (await chooser).setFiles({
+  await page.getByRole('button', { name: 'Загрузить фото' }).click();
+  await (
+    await chooser
+  ).setFiles({
     name: 'portrait.png',
     mimeType: 'image/png',
     buffer: portrait,
   });
-  await expect(page.getByRole('button', { name: 'Изменить фото' })).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Изменить фото' }),
+  ).toBeVisible();
   await expect(nickname).toHaveValue('БЕ');
-  await expect(page.getByRole('textbox', { name: 'Имя или название *' })).toHaveValue(
-    'Synthetic Author',
-  );
-  await expect(page.getByRole('textbox', { name: 'Город *' })).toHaveValue('Minsk');
+  await expect(
+    page.getByRole('textbox', { name: 'Имя или название', exact: true }),
+  ).toHaveValue('Synthetic Author');
+  await expect(
+    page.getByRole('textbox', { name: 'Город', exact: true }),
+  ).toHaveValue('Minsk');
   expect(posts).toEqual([]);
   await expect(page.getByText('Не удалось сохранить профиль')).toHaveCount(0);
 
   await nickname.fill('synthetic-author');
   await expect(page.getByText(nicknameError)).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Изменить фото' })).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Изменить фото' }),
+  ).toBeVisible();
   await expect(page.getByRole('button', { name: 'Продолжить' })).toBeEnabled();
   await page.getByRole('button', { name: 'Продолжить' }).click();
-  await expect(page.getByText('Шаг 2 из 4')).toBeVisible();
+  await expect(
+    page.getByRole('progressbar', { name: 'Шаг 2 из 4' }),
+  ).toBeVisible();
   await expect(page.getByText('Контакты', { exact: true })).toBeVisible();
   expect(posts).toHaveLength(1);
   expect(posts[0]).not.toContain('name="slug"');

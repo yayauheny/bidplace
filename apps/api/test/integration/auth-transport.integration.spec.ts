@@ -1,3 +1,5 @@
+import { ServiceUnavailableException } from '@nestjs/common';
+import { readPublishedLegalDocuments } from '../../src/auth/legal-documents';
 import { randomUUID } from 'node:crypto';
 
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
@@ -31,7 +33,8 @@ const legal = {
 // This transport suite simulates an approved, published legal pack.
 // The actual docs/legal/site files retain founder blockers and fail closed in runtime.
 vi.mock('../../src/auth/legal-documents', () => ({
-  readPublishedLegalDocuments: () => ({
+  readRegistrationLegalVersion: () => LEGAL_VERSION,
+  readPublishedLegalDocuments: vi.fn(() => ({
     version: 'synthetic-publication-1',
     documents: [
       { id: 'agreement', version: 'synthetic-publication-1', title: 'Agreement', markdown: '# Agreement' },
@@ -40,7 +43,7 @@ vi.mock('../../src/auth/legal-documents', () => ({
       { id: 'author-rules', version: 'synthetic-publication-1', title: 'Rules', markdown: '# Rules' },
       { id: 'prohibited', version: 'synthetic-publication-1', title: 'Prohibited', markdown: '# Prohibited' },
     ],
-  }),
+  })),
 }));
 
 
@@ -160,7 +163,7 @@ describe('auth HTTP transport', () => {
     });
   });
 
-  it('registers over HTTP with normalized identity fields, establishes a session and rejects duplicates without a write', async () => {
+  it.each([true, false])('registers atomically and rejects duplicates with client version=%s', async (versioned) => {
     await createPermissionFixture(prisma);
     const client = new HttpTestClient(
       http.baseUrl,
@@ -168,13 +171,20 @@ describe('auth HTTP transport', () => {
       '10.0.2.5',
     );
 
+    if (!versioned) {
+      vi.mocked(readPublishedLegalDocuments).mockImplementationOnce(() => { throw new ServiceUnavailableException(); });
+      expect((await client.get('/auth/legal')).status).toBe(503);
+    }
     const registration = await client.post('/auth/register', {
       email: 'New.User@Wave3.Test',
       phone: '  +375291234567  ',
       slug: 'new-wave-3-user',
       password: 'password123',
       turnstileToken: turnstileToken('register'),
-      legal,
+      legal: versioned ? legal : {
+        agreement: { confirmed: true }, privacy: { confirmed: true },
+        dataConsent: { confirmed: true }, age18Confirmed: true,
+      },
     });
     expect(registration.status).toBe(201);
     expect(registration.headers.getSetCookie()[0]).toContain('HttpOnly');

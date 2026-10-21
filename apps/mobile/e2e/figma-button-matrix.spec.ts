@@ -3,7 +3,11 @@ import { join } from 'node:path';
 
 import { expect, test, type Page } from '@playwright/test';
 
-import { figmaButtonMatrixCell, figmaButtonTokens } from '@bidplace/design-tokens';
+import {
+  figmaButtonMatrixCell,
+  figmaButtonTokens,
+  lightColorMap,
+} from '@bidplace/design-tokens';
 
 import { e2eEvidenceDir } from './support/evidence-dir';
 import {
@@ -96,7 +100,9 @@ async function expectPreviewMatchesLive(
   interaction: (typeof interactions)[number],
   zoom = 1,
 ) {
-  const preview = page.getByTestId(`figma-button-preview-${variant}-${interaction}`);
+  const preview = page.getByTestId(
+    `figma-button-preview-${variant}-${interaction}`,
+  );
   await preview.scrollIntoViewIfNeeded();
   const previewProbe = await probeSvgButtonCell(preview);
   expectTypography(previewProbe);
@@ -129,12 +135,20 @@ async function expectPreviewMatchesLive(
     const liveProbe = await probeSvgButtonCell(live);
     expectSvgMatrixPaints(variant, interaction, liveProbe, zoom);
     if (interaction !== 'disabled') {
-      expect(liveProbe.shellCssWidth).toBeCloseTo(previewProbe.shellCssWidth, 2);
-      expect(liveProbe.shellCssHeight).toBeCloseTo(previewProbe.shellCssHeight, 2);
+      expect(liveProbe.shellCssWidth).toBeCloseTo(
+        previewProbe.shellCssWidth,
+        2,
+      );
+      expect(liveProbe.shellCssHeight).toBeCloseTo(
+        previewProbe.shellCssHeight,
+        2,
+      );
     }
     expect(liveProbe.rects[0]?.fill).toBe(previewProbe.rects[0]?.fill);
     if (previewProbe.rects.find((rect) => rect.fill?.includes('rgba'))) {
-      expect(liveProbe.rects.find((rect) => rect.fill?.includes('rgba'))?.fill).toBe(
+      expect(
+        liveProbe.rects.find((rect) => rect.fill?.includes('rgba'))?.fill,
+      ).toBe(
         previewProbe.rects.find((rect) => rect.fill?.includes('rgba'))?.fill,
       );
     }
@@ -146,8 +160,12 @@ async function expectPreviewMatchesLive(
   }
 }
 
-async function expectMatrixIdle(page: Page, variant: (typeof variants)[number], zoom = 1) {
-  const cell = figmaButtonMatrixCell(variant, 'idle');
+async function expectMatrixIdle(
+  page: Page,
+  variant: (typeof variants)[number],
+  zoom = 1,
+) {
+  const cell = figmaButtonMatrixCell(variant, 'idle', lightColorMap);
   const button = page.getByTestId(`figma-button-${variant}-idle`);
   await expect(button).toBeVisible();
   const probe = await probeSvgButtonCell(button);
@@ -194,7 +212,9 @@ test.describe('FigmaButton matrix stand', () => {
         await expectMatrixChromeAlignment(page);
       }
 
-      const previewCells = await matrix.locator('[data-testid^="figma-button-preview-"]').all();
+      const previewCells = await matrix
+        .locator('[data-testid^="figma-button-preview-"]')
+        .all();
       expect(previewCells).toHaveLength(16);
 
       const computedCells: Record<string, SvgButtonProbe> = {};
@@ -208,7 +228,9 @@ test.describe('FigmaButton matrix stand', () => {
             zoom,
           );
           computedCells[key] = previewProbe;
-          const preview = page.getByTestId(`figma-button-preview-${variant}-${interaction}`);
+          const preview = page.getByTestId(
+            `figma-button-preview-${variant}-${interaction}`,
+          );
           const beforeMove = await probeSvgButtonCell(preview);
           const previewBox = await preview.boundingBox();
           if (previewBox) {
@@ -248,7 +270,9 @@ test.describe('FigmaButton matrix stand', () => {
           await page.keyboard.press('ArrowRight');
         }
 
-        const lastPreview = page.getByTestId('figma-button-preview-muted-disabled');
+        const lastPreview = page.getByTestId(
+          'figma-button-preview-muted-disabled',
+        );
         const beforeScroll = await lastPreview.boundingBox();
         await page.evaluate(() => {
           const root = document.querySelector(
@@ -266,8 +290,12 @@ test.describe('FigmaButton matrix stand', () => {
         await lastPreview.scrollIntoViewIfNeeded();
         await expect(lastPreview).toBeInViewport();
         const afterScroll = await lastPreview.boundingBox();
-        expect(afterScroll?.x ?? 0).toBeLessThan(beforeScroll?.x ?? Number.MAX_VALUE);
-        await expect(page.getByRole('img', { name: /Кнопка:/ })).toHaveCount(16);
+        expect(afterScroll?.x ?? 0).toBeLessThan(
+          beforeScroll?.x ?? Number.MAX_VALUE,
+        );
+        await expect(page.getByRole('img', { name: /Кнопка:/ })).toHaveCount(
+          16,
+        );
       }
 
       mkdirSync(e2eEvidenceDir, { recursive: true });
@@ -312,8 +340,14 @@ test.describe('FigmaButton matrix stand', () => {
           const pressedProbe = await probeSvgButtonCell(idle);
           expectSvgMatrixPaints(variant, 'pressed', pressedProbe, zoom);
           const pressedMetrics = pressedProbe;
-          expect(pressedMetrics.shellCssWidth).toBeCloseTo(hoverProbe.shellCssWidth, 2);
-          expect(pressedMetrics.shellCssHeight).toBeCloseTo(hoverProbe.shellCssHeight, 2);
+          expect(pressedMetrics.shellCssWidth).toBeCloseTo(
+            hoverProbe.shellCssWidth,
+            2,
+          );
+          expect(pressedMetrics.shellCssHeight).toBeCloseTo(
+            hoverProbe.shellCssHeight,
+            2,
+          );
         } finally {
           await page.mouse.up();
         }
@@ -330,7 +364,9 @@ test.describe('FigmaButton matrix stand', () => {
 
       const loading = page.getByTestId('figma-button-solid-loading');
       const loadingProbe = await probeSvgButtonCell(loading);
-      expect(loadingProbe.opacity).toBe(String(figmaButtonTokens.disabledOpacity));
+      expect(loadingProbe.opacity).toBe(
+        String(figmaButtonTokens.disabledOpacity),
+      );
       await expect(loading.getByRole('progressbar')).toBeVisible();
 
       await expect(page.getByTestId('figma-button-solid-icon')).toBeVisible();
@@ -339,7 +375,9 @@ test.describe('FigmaButton matrix stand', () => {
       await expect(link).toHaveAttribute('role', 'link');
       const linkProbe = await probeSvgButtonCell(link);
       expectSvgShellAligned(linkProbe, zoom);
-      expect(linkProbe.shellCssWidth).toBeGreaterThan(figmaButtonTokens.metrics.sampleWidth);
+      expect(linkProbe.shellCssWidth).toBeGreaterThan(
+        figmaButtonTokens.metrics.sampleWidth,
+      );
       expect(linkProbe.gradientX2).toBeCloseTo(
         88.232 * (linkProbe.svgWidth! / figmaButtonTokens.metrics.sampleWidth),
         1,
@@ -395,10 +433,17 @@ test.describe('FigmaButton matrix stand', () => {
     );
     expect(transition === '0s' || transition === '0ms').toBe(true);
     const reducedProbe = await probeSvgButtonCell(reduced);
-    expectSvgMatrixPaints('outline', 'hover', reducedProbe, await pageZoom(page));
+    expectSvgMatrixPaints(
+      'outline',
+      'hover',
+      reducedProbe,
+      await pageZoom(page),
+    );
 
     const { sampleWidth, sampleHeight } = figmaButtonTokens.metrics;
-    const solidGradient = await probeSvgButtonCell(page.getByTestId('figma-button-solid-idle'));
+    const solidGradient = await probeSvgButtonCell(
+      page.getByTestId('figma-button-solid-idle'),
+    );
     expect(solidGradient.gradientStops).toEqual(['#2A2A2A', '#585858']);
     expect(solidGradient.gradientX2).toBeCloseTo(
       84.791 * ((solidGradient.svgWidth ?? 0) / sampleWidth),
@@ -408,7 +453,9 @@ test.describe('FigmaButton matrix stand', () => {
       39.1182 * ((solidGradient.svgHeight ?? 0) / sampleHeight),
       1,
     );
-    const wideGradient = await probeSvgButtonCell(page.getByTestId('figma-button-outline-link'));
+    const wideGradient = await probeSvgButtonCell(
+      page.getByTestId('figma-button-outline-link'),
+    );
     expect(wideGradient.svgWidth ?? 0).toBeGreaterThan(sampleWidth);
     expect(wideGradient.gradientX2).toBeCloseTo(
       88.232 * ((wideGradient.svgWidth ?? 0) / sampleWidth),

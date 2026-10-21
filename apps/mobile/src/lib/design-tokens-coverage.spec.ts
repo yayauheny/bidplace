@@ -59,7 +59,6 @@ describe('designTokens coverage', () => {
       'space.fieldLabelX',
       'space.fieldErrorX',
       'space.homeSectionStack',
-      'space.filterOptionY',
       'space.headerIconHitSlop',
       'radius.pill',
       'size.fieldBorder',

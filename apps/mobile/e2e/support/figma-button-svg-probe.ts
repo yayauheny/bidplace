@@ -1,6 +1,10 @@
 import { expect, type Locator } from '@playwright/test';
 
-import { figmaButtonMatrixCell, figmaButtonTokens } from '@bidplace/design-tokens';
+import {
+  figmaButtonMatrixCell,
+  figmaButtonTokens,
+  lightColorMap,
+} from '@bidplace/design-tokens';
 
 export type SvgRectProbe = {
   x: number;
@@ -44,15 +48,16 @@ export function cssRgb(hex: string) {
   return `rgb(${red}, ${green}, ${blue})`;
 }
 
-export async function probeSvgButtonCell(locator: Locator): Promise<SvgButtonProbe> {
+export async function probeSvgButtonCell(
+  locator: Locator,
+): Promise<SvgButtonProbe> {
   return locator.evaluate((node) => {
     const element = node as HTMLElement;
     const style = getComputedStyle(element);
     const shellRect = element.getBoundingClientRect();
     const textLeaves = [...element.querySelectorAll('*')].filter(
       (el) =>
-        el.childElementCount === 0 &&
-        (el.textContent?.trim().length ?? 0) > 0,
+        el.childElementCount === 0 && (el.textContent?.trim().length ?? 0) > 0,
     );
     const label =
       textLeaves.find((el) => el.textContent?.includes('Кнопка')) ??
@@ -84,8 +89,12 @@ export async function probeSvgButtonCell(locator: Locator): Promise<SvgButtonPro
       shellCssHeight: Number.parseFloat(style.height),
       backgroundColor: style.backgroundColor,
       opacity: style.opacity,
-      svgWidth: svg ? Number.parseFloat(svg.getAttribute('width') ?? '0') : null,
-      svgHeight: svg ? Number.parseFloat(svg.getAttribute('height') ?? '0') : null,
+      svgWidth: svg
+        ? Number.parseFloat(svg.getAttribute('width') ?? '0')
+        : null,
+      svgHeight: svg
+        ? Number.parseFloat(svg.getAttribute('height') ?? '0')
+        : null,
       svgRenderedWidth: svg?.getBoundingClientRect().width ?? null,
       svgRenderedHeight: svg?.getBoundingClientRect().height ?? null,
       rects,
@@ -110,14 +119,20 @@ export function interactionPaintReady(
   interaction: 'idle' | 'hover' | 'pressed' | 'disabled',
   probe: SvgButtonProbe,
 ) {
-  const cell = figmaButtonMatrixCell(variant, interaction);
+  const cell = figmaButtonMatrixCell(variant, interaction, lightColorMap);
   const base = probe.rects[0];
   if (!base) return false;
 
-  if (cell.overlay && !probe.rects.some((rect) => rect.fill?.includes('rgba'))) {
+  if (
+    cell.overlay &&
+    !probe.rects.some((rect) => rect.fill?.includes('rgba'))
+  ) {
     return false;
   }
-  if (!cell.overlay && probe.rects.some((rect) => rect.fill?.includes('rgba'))) {
+  if (
+    !cell.overlay &&
+    probe.rects.some((rect) => rect.fill?.includes('rgba'))
+  ) {
     return false;
   }
 
@@ -127,7 +142,10 @@ export function interactionPaintReady(
 
   if (cell.pressedGhostInset) {
     const { pressedGhostWidth, pressedGhostHeight } = figmaButtonTokens.metrics;
-    if (base.width !== pressedGhostWidth || base.height !== pressedGhostHeight) {
+    if (
+      base.width !== pressedGhostWidth ||
+      base.height !== pressedGhostHeight
+    ) {
       return false;
     }
     if (base.x !== 0 || base.y !== 0) return false;
@@ -157,20 +175,24 @@ export function expectSvgShellAligned(probe: SvgButtonProbe, zoom = 1) {
   expect(probe.backgroundColor).toBe('rgba(0, 0, 0, 0)');
   expect(probe.svgWidth).not.toBeNull();
   expect(probe.svgHeight).not.toBeNull();
-  expect(Math.abs((probe.svgWidth ?? 0) - probe.shellCssWidth)).toBeLessThanOrEqual(
-    0.01,
-  );
-  expect(Math.abs((probe.svgHeight ?? 0) - probe.shellCssHeight)).toBeLessThanOrEqual(
-    0.01,
-  );
-  expect(Math.abs(probe.shellWidth - probe.shellCssWidth * zoom)).toBeLessThanOrEqual(
-    0.05,
-  );
-  expect(Math.abs(probe.shellHeight - probe.shellCssHeight * zoom)).toBeLessThanOrEqual(
-    0.05,
-  );
-  expect(Math.abs((probe.svgRenderedWidth ?? 0) - probe.shellWidth)).toBeLessThanOrEqual(0.01);
-  expect(Math.abs((probe.svgRenderedHeight ?? 0) - probe.shellHeight)).toBeLessThanOrEqual(0.01);
+  expect(
+    Math.abs((probe.svgWidth ?? 0) - probe.shellCssWidth),
+  ).toBeLessThanOrEqual(0.01);
+  expect(
+    Math.abs((probe.svgHeight ?? 0) - probe.shellCssHeight),
+  ).toBeLessThanOrEqual(0.01);
+  expect(
+    Math.abs(probe.shellWidth - probe.shellCssWidth * zoom),
+  ).toBeLessThanOrEqual(0.05);
+  expect(
+    Math.abs(probe.shellHeight - probe.shellCssHeight * zoom),
+  ).toBeLessThanOrEqual(0.05);
+  expect(
+    Math.abs((probe.svgRenderedWidth ?? 0) - probe.shellWidth),
+  ).toBeLessThanOrEqual(0.01);
+  expect(
+    Math.abs((probe.svgRenderedHeight ?? 0) - probe.shellHeight),
+  ).toBeLessThanOrEqual(0.01);
 
   const sampleShell = 82.71875;
   if (Math.abs(probe.shellCssWidth - sampleShell) < 0.02) {
@@ -182,8 +204,12 @@ export function expectSvgShellAligned(probe: SvgButtonProbe, zoom = 1) {
     const halfStroke = (rect.strokeWidth ?? 0) / 2;
     expect(rect.x - halfStroke).toBeGreaterThanOrEqual(-0.01);
     expect(rect.y - halfStroke).toBeGreaterThanOrEqual(-0.01);
-    expect(rect.x + rect.width + halfStroke).toBeLessThanOrEqual((probe.svgWidth ?? 0) + 0.01);
-    expect(rect.y + rect.height + halfStroke).toBeLessThanOrEqual((probe.svgHeight ?? 0) + 0.01);
+    expect(rect.x + rect.width + halfStroke).toBeLessThanOrEqual(
+      (probe.svgWidth ?? 0) + 0.01,
+    );
+    expect(rect.y + rect.height + halfStroke).toBeLessThanOrEqual(
+      (probe.svgHeight ?? 0) + 0.01,
+    );
   }
 }
 
@@ -206,8 +232,8 @@ export function expectSvgMatrixPaints(
   probe: SvgButtonProbe,
   zoom = 1,
 ) {
-  const cell = figmaButtonMatrixCell(variant, interaction);
-  const { colors, disabledOpacity, metrics } = figmaButtonTokens;
+  const cell = figmaButtonMatrixCell(variant, interaction, lightColorMap);
+  const { metrics } = figmaButtonTokens;
 
   expect(probe.opacity).toBe(String(cell.controlOpacity));
   expectSvgShellAligned(probe, zoom);
@@ -218,13 +244,22 @@ export function expectSvgMatrixPaints(
   paintMatchesHex(base.fill, cell.fill);
 
   // Independent values from nodes.json and 001-292_5058.svg, not runtime tokens.
-  const sourceFill = variant === 'solid'
-    ? interaction === 'disabled' ? '#949494' : '#121212'
-    : variant === 'muted' ? '#F3F3F3' : '#FFFFFF';
-  const sourceOverlay = interaction === 'hover' || interaction === 'pressed'
-    ? variant === 'solid' ? 'rgba(255, 255, 255, 0.15)'
-      : variant === 'muted' ? 'rgba(0, 0, 0, 0.06)' : 'rgba(0, 0, 0, 0.05)'
-    : null;
+  const sourceFill =
+    variant === 'solid'
+      ? interaction === 'disabled'
+        ? '#949494'
+        : '#121212'
+      : variant === 'muted'
+        ? '#F3F3F3'
+        : '#FFFFFF';
+  const sourceOverlay =
+    interaction === 'hover' || interaction === 'pressed'
+      ? variant === 'solid'
+        ? 'rgba(255, 255, 255, 0.15)'
+        : variant === 'muted'
+          ? 'rgba(0, 0, 0, 0.06)'
+          : 'rgba(0, 0, 0, 0.05)'
+      : null;
   const sourceHasStroke = !(variant === 'ghost' && interaction === 'pressed');
   paintMatchesHex(base.fill, sourceFill);
   expect(probe.opacity).toBe(interaction === 'disabled' ? '0.5' : '1');
@@ -261,16 +296,20 @@ export function expectSvgMatrixPaints(
         variant === 'solid' ? ['#2A2A2A', '#585858'] : ['#D1D1D1', '#EBEBEB'],
       );
       expect(probe.gradientX2).toBeCloseTo(
-        (variant === 'solid' ? 84.791 : 88.232) * (probe.svgWidth ?? 0) / 83,
+        ((variant === 'solid' ? 84.791 : 88.232) * (probe.svgWidth ?? 0)) / 83,
         3,
       );
       expect(probe.gradientY2).toBeCloseTo(
-        (variant === 'solid' ? 39.1182 : 20.724) * (probe.svgHeight ?? 0) / 43,
+        ((variant === 'solid' ? 39.1182 : 20.724) * (probe.svgHeight ?? 0)) /
+          43,
         3,
       );
     } else {
       paintMatchesHex(strokeRect?.stroke ?? null, cell.strokeColor ?? '');
-      paintMatchesHex(strokeRect?.stroke ?? null, variant === 'ghost' ? '#FFFFFF' : '#F3F3F3');
+      paintMatchesHex(
+        strokeRect?.stroke ?? null,
+        variant === 'ghost' ? '#FFFFFF' : '#F3F3F3',
+      );
     }
   }
 
@@ -284,13 +323,13 @@ export function expectSvgMatrixPaints(
   }
 
   if (interaction === 'disabled' && variant === 'solid') {
-    paintMatchesHex(base.fill, colors.solidDisabledFill);
-    expect(probe.opacity).toBe(String(disabledOpacity));
+    paintMatchesHex(base.fill, lightColorMap.solidDisabled);
+    expect(probe.opacity).toBe(String(figmaButtonTokens.disabledOpacity));
   }
 
   if (variant === 'solid') {
-    expect(probe.labelColor).toBe(cssRgb(colors.labelOnSolid));
+    expect(probe.labelColor).toBe(cssRgb(lightColorMap.onAction));
   } else {
-    expect(probe.labelColor).toBe(cssRgb(colors.labelDefault));
+    expect(probe.labelColor).toBe(cssRgb(lightColorMap.textSubdued));
   }
 }

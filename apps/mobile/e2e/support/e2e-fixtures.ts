@@ -3,9 +3,15 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import { PrismaClient } from '../../../../packages/database/dist/index.js';
-import { e2eDatabaseURL } from './e2e-env';
+import { assertFixtureDatabaseIsolation, e2eDatabaseURL } from './e2e-env';
 
 const databaseUrl = e2eDatabaseURL;
+
+function fixtureDatabaseClient() {
+  assertFixtureDatabaseIsolation(databaseUrl);
+  return new PrismaClient({ datasources: { db: { url: databaseUrl } } });
+}
+
 const password = 'password123';
 const passwordHash =
   '$argon2id$v=19$m=65536,t=3,p=4$Hv01HhuWHyFmMIRCcxhH3w$9dvY3hECfoulYwe4VEPwWEJ4OHvYCCYbiw685vNdLZM';
@@ -46,9 +52,7 @@ const seededDemoProductIds = [
 ] as const;
 
 export async function prioritizeSeededDemoProducts(): Promise<void> {
-  const prisma = new PrismaClient({
-    datasources: { db: { url: databaseUrl } },
-  });
+  const prisma = fixtureDatabaseClient();
 
   try {
     await prisma.product.updateMany({
@@ -83,7 +87,7 @@ async function attachPublishedProductRevision(
     deliveryInfo: string | null;
     images: Array<{ id: string }>;
   },
-): Promise<void> {
+): Promise<string> {
   const revision = await prisma.productRevision.create({
     data: {
       productId: product.id,
@@ -117,6 +121,55 @@ async function attachPublishedProductRevision(
       publishedRevisionId: revision.id,
     },
   });
+  return revision.id;
+}
+
+// Public catalog reads seller content from the published revision; a bare
+// APPROVED profile without one is invisible (draft-restore contract).
+async function attachPublishedSellerProfileRevision(
+  prisma: PrismaClient,
+  profile: {
+    id: string;
+    slug: string;
+    fullName: string;
+    // Prisma read-back types optional profile fields as null; fixtures always
+    // set them, so the revision create asserts non-null below.
+    discipline: string | null;
+    country: string;
+    city: string | null;
+    shortDescription: string | null;
+    profilePhotoMimeType: string | null;
+    profilePhotoByteLength: number | null;
+    profilePhotoChecksum: string | null;
+    profilePhotoData: Uint8Array | null;
+  },
+): Promise<string> {
+  const revision = await prisma.sellerProfileRevision.create({
+    data: {
+      sellerProfileId: profile.id,
+      version: 1,
+      status: 'APPROVED',
+      slug: profile.slug,
+      discipline: profile.discipline!,
+      fullName: profile.fullName,
+      country: profile.country,
+      city: profile.city!,
+      shortDescription: profile.shortDescription!,
+      profilePhotoMimeType: profile.profilePhotoMimeType!,
+      profilePhotoByteLength: profile.profilePhotoByteLength!,
+      profilePhotoChecksum: profile.profilePhotoChecksum!,
+      profilePhotoObjectKey: `seller-photo:${profile.id}`,
+      profilePhotoData: profile.profilePhotoData! as Uint8Array<ArrayBuffer>,
+    },
+  });
+  await prisma.sellerProfile.update({
+    where: { id: profile.id },
+    data: {
+      publishedRevisionId: revision.id,
+      editingRevisionId: revision.id,
+    },
+  });
+  return revision.id;
 }
 
 async function createUser(
@@ -151,9 +204,7 @@ export async function createAuctionFixture(options?: {
   additionalTitles?: string[];
 }): Promise<AuctionFixture> {
   const suffix = randomUUID().slice(0, 8);
-  const prisma = new PrismaClient({
-    datasources: { db: { url: databaseUrl } },
-  });
+  const prisma = fixtureDatabaseClient();
   const now = new Date();
   const startsAt = new Date(
     now.getTime() + (options?.live === false ? 30_000 : -5_000),
@@ -308,9 +359,7 @@ export async function createSellerFixture(
   slug: string;
 }> {
   const suffix = randomUUID().slice(0, 8);
-  const prisma = new PrismaClient({
-    datasources: { db: { url: databaseUrl } },
-  });
+  const prisma = fixtureDatabaseClient();
   const seller = await createUser(
     prisma,
     uniqueEmail('seller', suffix),
@@ -355,9 +404,7 @@ export async function createApprovedAuthorFixture(): Promise<{
   achievement: { id: string; body: string };
 }> {
   const suffix = randomUUID().slice(0, 8);
-  const prisma = new PrismaClient({
-    datasources: { db: { url: databaseUrl } },
-  });
+  const prisma = fixtureDatabaseClient();
   const author = await createUser(
     prisma,
     uniqueEmail('author', suffix),
@@ -371,6 +418,9 @@ export async function createApprovedAuthorFixture(): Promise<{
   const fullName = `Опубликованный автор ${suffix}`;
   const achievementId = randomUUID();
   const achievementBody = `Первая выставка ${suffix}`;
+  const category = await prisma.category.findUniqueOrThrow({
+    where: { slug: 'e2e-art' },
+  });
   const profile = await prisma.sellerProfile.create({
     data: {
       userId: author.id,
@@ -421,6 +471,10 @@ export async function createApprovedAuthorFixture(): Promise<{
       data: photo,
     },
   });
+  // The submit contract requires at least one direction on the revision.
+  await prisma.sellerProfileRevisionDirection.create({
+    data: { revisionId: revision.id, categoryId: category.id, position: 0 },
+  });
   await prisma.sellerProfile.update({
     where: { id: profile.id },
     data: {
@@ -441,9 +495,7 @@ export async function createApprovedAuthorFixture(): Promise<{
 
 export async function createBuyerFixture(): Promise<{ buyer: E2EUser }> {
   const suffix = randomUUID().slice(0, 8);
-  const prisma = new PrismaClient({
-    datasources: { db: { url: databaseUrl } },
-  });
+  const prisma = fixtureDatabaseClient();
   const buyer = await createUser(
     prisma,
     uniqueEmail('buyer', suffix),
@@ -457,9 +509,7 @@ export async function createBuyerFixture(): Promise<{ buyer: E2EUser }> {
 
 export async function createAdminModerationFixture(): Promise<AdminModerationFixture> {
   const suffix = randomUUID().slice(0, 8);
-  const prisma = new PrismaClient({
-    datasources: { db: { url: databaseUrl } },
-  });
+  const prisma = fixtureDatabaseClient();
   const admin = await createUser(
     prisma,
     uniqueEmail('admin', suffix),
@@ -561,7 +611,9 @@ async function deleteSellerProfiles(
   userIds: string[],
 ) {
   if (profileIds.length > 0) {
-    await prisma.sellerProfile.deleteMany({ where: { id: { in: profileIds } } });
+    await prisma.sellerProfile.deleteMany({
+      where: { id: { in: profileIds } },
+    });
   }
   if (userIds.length > 0) {
     await prisma.user.deleteMany({ where: { id: { in: userIds } } });
@@ -577,12 +629,11 @@ export async function createIsolatedWorksPaginationFixture(): Promise<{
 }> {
   const suffix = randomUUID().slice(0, 8);
   const material = `e2epage2m${suffix}`;
-  const prisma = new PrismaClient({
-    datasources: { db: { url: databaseUrl } },
-  });
+  const prisma = fixtureDatabaseClient();
   const profileIds: string[] = [];
   const userIds: string[] = [];
   let categoryId = '';
+  let materialTermId = '';
   let closed = false;
   const cleanup = async () => {
     if (closed) return;
@@ -608,10 +659,15 @@ export async function createIsolatedWorksPaginationFixture(): Promise<{
           await prisma.productImage.deleteMany({
             where: { productId: { in: productIds } },
           });
-          await prisma.product.deleteMany({ where: { id: { in: productIds } } });
+          await prisma.product.deleteMany({
+            where: { id: { in: productIds } },
+          });
         }
       }
       await deleteSellerProfiles(prisma, profileIds, userIds);
+      if (materialTermId) {
+        await prisma.catalogTerm.delete({ where: { id: materialTermId } });
+      }
       if (categoryId) {
         await prisma.category.delete({ where: { id: categoryId } });
       }
@@ -640,6 +696,21 @@ export async function createIsolatedWorksPaginationFixture(): Promise<{
       },
     });
     categoryId = category.id;
+    // The materials catalog filter matches MATERIAL revision terms, not the
+    // legacy materials string (draft-restore catalog contract).
+    const materialTerm = await prisma.catalogTerm.create({
+      data: {
+        role: 'MATERIAL',
+        slug: `e2e-page2-material-${suffix}`,
+        name: material,
+        normalizedName: material
+          .normalize('NFKC')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .toLocaleLowerCase('ru'),
+      },
+    });
+    materialTermId = materialTerm.id;
     const profile = await prisma.sellerProfile.create({
       data: {
         userId: seller.id,
@@ -658,6 +729,7 @@ export async function createIsolatedWorksPaginationFixture(): Promise<{
       },
     });
     profileIds.push(profile.id);
+    await attachPublishedSellerProfileRevision(prisma, profile);
     const publicIds: string[] = [];
     for (let index = 0; index < 13; index += 1) {
       const publicId = `p${String(index).padStart(2, '0')}${suffix}`;
@@ -672,7 +744,9 @@ export async function createIsolatedWorksPaginationFixture(): Promise<{
           story: 'Isolated catalog page fixture.',
           materials: material,
           status: 'APPROVED',
-          publishedAt: new Date(catalogPageEpoch.getTime() + (12 - index) * 1000),
+          publishedAt: new Date(
+            catalogPageEpoch.getTime() + (12 - index) * 1000,
+          ),
           images: {
             create: {
               position: 0,
@@ -685,7 +759,10 @@ export async function createIsolatedWorksPaginationFixture(): Promise<{
         },
         include: { images: { orderBy: { position: 'asc' } } },
       });
-      await attachPublishedProductRevision(prisma, product);
+      const revisionId = await attachPublishedProductRevision(prisma, product);
+      await prisma.productRevisionTerm.create({
+        data: { revisionId, termId: materialTerm.id },
+      });
     }
     return {
       categoryId,
@@ -712,17 +789,19 @@ export async function createIsolatedAuthorsPaginationFixture(): Promise<{
   const tag = `e2epage2tag${suffix}`;
   const city = `e2epage2city${suffix}`;
   const searchQuery = `Page2 author ${suffix}`;
-  const prisma = new PrismaClient({
-    datasources: { db: { url: databaseUrl } },
-  });
+  const prisma = fixtureDatabaseClient();
   const profileIds: string[] = [];
   const userIds: string[] = [];
+  let directionCategoryId = '';
   let closed = false;
   const cleanup = async () => {
     if (closed) return;
     closed = true;
     try {
       await deleteSellerProfiles(prisma, profileIds, userIds);
+      if (directionCategoryId) {
+        await prisma.category.delete({ where: { id: directionCategoryId } });
+      }
     } finally {
       await prisma.$disconnect();
     }
@@ -730,6 +809,20 @@ export async function createIsolatedAuthorsPaginationFixture(): Promise<{
 
   try {
     const { photo, checksum } = catalogPhoto();
+    // The author tag catalog filter matches direction category names, not the
+    // legacy discipline string (draft-restore catalog contract).
+    const directionCategory = await prisma.category.create({
+      data: {
+        slug: `e2e-page2-tag-${suffix}`,
+        name: tag,
+        normalizedName: tag
+          .normalize('NFKC')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .toLocaleLowerCase('ru'),
+      },
+    });
+    directionCategoryId = directionCategory.id;
     const slugs: string[] = [];
     for (let index = 0; index < 9; index += 1) {
       const author = await createUser(
@@ -759,6 +852,13 @@ export async function createIsolatedAuthorsPaginationFixture(): Promise<{
         },
       });
       profileIds.push(profile.id);
+      const revisionId = await attachPublishedSellerProfileRevision(
+        prisma,
+        profile,
+      );
+      await prisma.sellerProfileRevisionDirection.create({
+        data: { revisionId, categoryId: directionCategory.id, position: 0 },
+      });
     }
     return {
       tag,
@@ -775,9 +875,7 @@ export async function createIsolatedAuthorsPaginationFixture(): Promise<{
 }
 
 export async function approveProduct(productId: string): Promise<void> {
-  const prisma = new PrismaClient({
-    datasources: { db: { url: databaseUrl } },
-  });
+  const prisma = fixtureDatabaseClient();
   await prisma.product.update({
     where: { id: productId },
     data: { status: 'APPROVED', publishedAt: new Date() },
@@ -786,9 +884,7 @@ export async function approveProduct(productId: string): Promise<void> {
 }
 
 export async function removeRulesAcceptance(userId: string): Promise<void> {
-  const prisma = new PrismaClient({
-    datasources: { db: { url: databaseUrl } },
-  });
+  const prisma = fixtureDatabaseClient();
   await prisma.termsAcceptance.deleteMany({ where: { userId } });
   await prisma.$disconnect();
 }

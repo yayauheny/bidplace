@@ -6,7 +6,7 @@ import { overlayDimmerStyle } from './overlay-dimmer';
 
 describe('Overlay dimmer', () => {
   it('matches Frame 140 without compounding opacity', () => {
-    expect(overlayDimmerStyle()).toMatchObject({
+    expect(overlayDimmerStyle(designTokens.color)).toMatchObject({
       position: 'absolute',
       backgroundColor: designTokens.color.modalDimmer,
     });

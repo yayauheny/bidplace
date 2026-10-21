@@ -224,6 +224,36 @@ vi.mock('../../components/ui', () => {
     );
   }
 
+  const InputField = ({
+      label,
+      value,
+      editable = true,
+      error,
+      onChangeText,
+    }: {
+      label: string;
+      value?: string;
+      editable?: boolean;
+      error?: string;
+      onChangeText?: (value: string) => void;
+    }) =>
+      createElement(
+        'span',
+        null,
+        createElement('input', {
+          'aria-label': label,
+          value: value ?? '',
+          disabled: editable === false,
+          onChange: (event: { target: { value: string } }) => {
+            if (editable === false) return;
+            onChangeText?.(event.target.value);
+          },
+        }),
+        error
+          ? createElement('span', { 'data-error-for': label }, error)
+          : null,
+      );
+
   return {
     AppDialog: ({
       open,
@@ -257,43 +287,19 @@ vi.mock('../../components/ui', () => {
     SecondaryButton: PressButton,
     TextButton: PressButton,
     ResilientRemoteImage: () => null,
-    TextField: ({
-      label,
-      value,
-      editable = true,
-      error,
-      onChangeText,
-    }: {
-      label: string;
-      value?: string;
-      editable?: boolean;
-      error?: string;
-      onChangeText?: (value: string) => void;
-    }) =>
-      createElement(
-        'span',
-        null,
-        createElement('input', {
-          'aria-label': label,
-          value: value ?? '',
-          disabled: editable === false,
-          onChange: (event: { target: { value: string } }) => {
-            if (editable === false) return;
-            onChangeText?.(event.target.value);
-          },
-        }),
-        error
-          ? createElement('span', { 'data-error-for': label }, error)
-          : null,
-      ),
+    TextField: InputField,
+    DateField: InputField,
   };
 });
 
 import {
   clearAuthenticatedSession,
+  issueDraftWriteLease,
   replaceAuthenticatedSession,
+  retireDraftWriteLease,
   authKeys,
 } from '../../lib/query-cache';
+import { clearAccountFormDrafts } from '../../lib/local-form-draft';
 import { SellerProfileScreen } from './seller-profile-screen';
 
 function profileResponse(city = 'Minsk') {
@@ -510,6 +516,7 @@ async function switchAccount(
 
 describe('Author application achievement lifecycle', () => {
   beforeEach(() => {
+    window.localStorage.clear();
     harness.params = {};
     harness.logout.mockReset();
     harness.replace.mockReset();
@@ -564,6 +571,7 @@ describe('Author application achievement lifecycle', () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.restoreAllMocks();
     document.body.replaceChildren();
   });
 
@@ -663,6 +671,67 @@ describe('Author application achievement lifecycle', () => {
     expect(
       findButton(view.container, 'Добавить фото (необязательно)'),
     ).toBeUndefined();
+    view.unmount();
+  });
+
+  it('shows a storage warning when the achievement draft write fails', async () => {
+    const view = mount();
+    await openEditor(view);
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new DOMException('quota exceeded', 'QuotaExceededError');
+    });
+    fillAchievement(view.container, 'Alpha');
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    expect(view.container.textContent).toContain('черновик на устройстве');
+    view.unmount();
+  });
+
+  it('does not warn when the runtime has no Web Storage', async () => {
+    vi.stubGlobal('localStorage', undefined);
+    try {
+      const view = mount();
+      await openEditor(view);
+      fillAchievement(view.container, 'Alpha');
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      expect(view.container.textContent).not.toContain(
+        'черновик на устройстве',
+      );
+      view.unmount();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('does not resurrect a cleared achievement draft after logout', async () => {
+    const view = mount();
+    await openEditor(view);
+    fillAchievement(view.container, 'Приватное событие');
+    // Logout clears the account drafts and retires the session lease while
+    // the debounced write is pending.
+    clearAccountFormDrafts('user-a');
+    retireDraftWriteLease(view.queryClient);
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    expect(
+      window.localStorage.getItem(
+        'bidplace:draft:user-a:seller-achievements:new',
+      ),
+    ).toBeNull();
+    view.unmount();
+  });
+
+  it('does not re-arm achievement writes until a new session lease is issued', async () => {
+    const view = mount();
+    await openEditor(view);
+    clearAccountFormDrafts('user-a');
+    retireDraftWriteLease(view.queryClient);
+    fillAchievement(view.container, 'Позднее событие');
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    const key = 'bidplace:draft:user-a:seller-achievements:new';
+    expect(window.localStorage.getItem(key)).toBeNull();
+    issueDraftWriteLease(view.queryClient);
+    fillAchievement(view.container, 'Новое событие');
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    expect(window.localStorage.getItem(key)).not.toBeNull();
     view.unmount();
   });
 
@@ -858,7 +927,10 @@ describe('Author application achievement lifecycle', () => {
       await pendingWizardBack.promise;
     });
     await flush();
-    expect(harness.push).toHaveBeenCalledWith('/profile?step=3');
+    expect(harness.push).toHaveBeenCalledWith({
+      pathname: '/profile',
+      params: { step: '3' },
+    });
     expect(harness.push).toHaveBeenCalledTimes(1);
     wizard.unmount();
     harness.params = {};
@@ -921,7 +993,8 @@ describe('Author application achievement lifecycle', () => {
     click(next.container, 'Сохранить');
     await flush();
     expect(harness.updateProfile).toHaveBeenCalledTimes(1);
-    expect(inputValue(next.container, 'Описание достижения')).toBe('');
+    // Abandoned input is restored from the local draft (owner contract: local restore of the form).
+    expect(inputValue(next.container, 'Описание достижения')).toBe('Alpha');
     next.unmount();
   });
 

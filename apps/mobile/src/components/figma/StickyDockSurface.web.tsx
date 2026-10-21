@@ -1,4 +1,5 @@
 import { useReducedMotion } from '../../lib/reduced-motion';
+import { useAppTheme } from '../../providers/theme-provider';
 import { stickyDockSurfaceStyle } from './sticky-dock-surface-style.web';
 
 export function StickyDockSurface({
@@ -9,12 +10,13 @@ export function StickyDockSurface({
   testID?: string;
 }) {
   const reducedMotion = useReducedMotion();
+  const palette = useAppTheme();
   return (
     <div
       data-testid={testID}
       data-active={active ? 'true' : 'false'}
       aria-hidden="true"
-      style={stickyDockSurfaceStyle(active, reducedMotion)}
+      style={stickyDockSurfaceStyle(active, reducedMotion, palette)}
     />
   );
 }

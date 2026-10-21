@@ -36,11 +36,18 @@ describe('Figma icon registry', () => {
       'at-sign',
       'image-01',
       'calendar-01',
+      'home-01',
       'ai-magic',
       'user',
+      'bell',
+      'shopping-bag-01',
       'shopping-basket-01',
       'image-add-02',
+      'heading',
+      'text',
       'check',
+      'setting-07',
+      'log-out',
     ]);
   });
 });

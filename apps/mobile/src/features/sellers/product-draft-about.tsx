@@ -127,6 +127,7 @@ export function ProductDraftAboutStep({
   return (
     <>
       <FormPageColumns
+        sidebarFirstOnCompact={false}
         sidebar={
           <FormSection
             title="Характеристики"
@@ -169,6 +170,26 @@ export function ProductDraftAboutStep({
           </FormSection>
         }
       >
+
+        <FormSection
+          title={isCreationFlow ? undefined : "О работе"}
+          description={isCreationFlow ? undefined : "Основная информация для каталога и страницы предмета."}
+        >
+          <ProductDraftTextField
+            name="title"
+            label="Название"
+            placeholder="Название"
+            editable={editable}
+            required
+            error={stepOneAttempted ? requiredErrors.title : undefined}
+          />
+          <ProductDraftTextField
+            name="uniqueness"
+            label="Уникальность или тираж"
+            placeholder="Необязательно"
+            editable={editable}
+          />
+        </FormSection>
         <FormSection title="Категория">
           {hiddenSelectedCategory ? (
             <AppText role="bodySmall" tone="secondary">
@@ -220,26 +241,6 @@ export function ProductDraftAboutStep({
               {requiredErrors.categoryId}
             </AppText>
           ) : null}
-        </FormSection>
-
-        <FormSection
-          title="О работе"
-          description="Основная информация для каталога и страницы предмета."
-        >
-          <ProductDraftTextField
-            name="title"
-            label="Название"
-            placeholder="Название"
-            editable={editable}
-            required
-            error={stepOneAttempted ? requiredErrors.title : undefined}
-          />
-          <ProductDraftTextField
-            name="uniqueness"
-            label="Уникальность или тираж"
-            placeholder="Необязательно"
-            editable={editable}
-          />
         </FormSection>
       </FormPageColumns>
 

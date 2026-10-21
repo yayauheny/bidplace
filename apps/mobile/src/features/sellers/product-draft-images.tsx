@@ -1,17 +1,25 @@
-import { View } from 'react-native';
+import { useState, type ReactNode } from 'react';
+import { ActivityIndicator, View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
 import {
   AppText,
-  FormSection,
   PrimaryButton,
   ResilientRemoteImage,
   SecondaryButton,
-  TextButton,
 } from '../../components/ui';
 import { getApiAssetUrl } from '../../lib/environment';
+import { useAppTheme } from '../../providers/theme-provider';
 
+import {
+  PaddedGrid,
+  gridColumnsFromWidth,
+} from '../../components/figma/PaddedGrid';
+import { MotionPressable } from '../../components/ui/MotionPressable';
+import { FigmaIcon } from '../../components/figma/FigmaIcon';
+import { ProductBlockActions } from './product-block-actions';
+import { productMediaStyle } from '../../components/ui/product-media-style';
 import { productWizardStep } from './product-draft-wizard';
 
 export type DraftImageRowProps = {
@@ -35,48 +43,71 @@ export function DraftImageRow({
   onMove,
   onDelete,
 }: DraftImageRowProps) {
-  const mediaStyle = {
-    width: 160,
-    height: 200,
-    borderRadius: designTokens.radius.image,
-    backgroundColor: designTokens.color.placeholder,
-  };
-
+  const palette = useAppTheme();
   return (
-    <View
-      style={{
-        flexDirection: 'row',
-        alignItems: 'flex-start',
-        gap: designTokens.space.x3,
-      }}
+    <ProductBlockActions
+      kind="image"
+      editable={editable}
+      disabled={isReordering || isRemoving}
+      first={position === 0}
+      last={isLast}
+      onMove={onMove}
+      onDelete={onDelete}
     >
       <ResilientRemoteImage
         uri={getApiAssetUrl(url)}
         component="ProductGallery"
         accessibilityLabel={`Изображение предмета ${position + 1}`}
         fallbackLabel={`Изображение ${position + 1} недоступно`}
-        style={mediaStyle}
+        style={{
+          ...productMediaStyle('100%', palette),
+          borderRadius: designTokens.radius.mediaTile,
+        }}
         contentFit="contain"
       />
-      {editable ? (
-        <View style={{ flex: 1, minWidth: 0, gap: designTokens.space.x1 }}>
-          <TextButton
-            label="Переместить выше"
-            disabled={position === 0 || isReordering}
-            onPress={() => onMove(-1)}
-          />
-          <TextButton
-            label="Переместить ниже"
-            disabled={isLast || isReordering}
-            onPress={() => onMove(1)}
-          />
-          <TextButton
-            label="Удалить изображение"
-            disabled={isRemoving}
-            onPress={onDelete}
-          />
+    </ProductBlockActions>
+  );
+}
+
+// Figma4551:31353: two177px tiles with12px gap at390; use the same measured grid at wider widths.
+export function DraftImageGrid({
+  images,
+  renderItem,
+  addAction,
+}: {
+  addAction?: ReactNode;
+  images: DraftImage[];
+  renderItem: (image: DraftImage) => ReactNode;
+}) {
+  const [width, setWidth] = useState(0);
+  const items: Array<{ id: string; image?: DraftImage }> = images.map(
+    (image) => ({ id: image.id, image }),
+  );
+  if (addAction) items.push({ id: 'add-image' });
+  return (
+    <View
+      onLayout={(event) => setWidth(event.nativeEvent.layout.width)}
+      style={{ gap: designTokens.space.x3 }}
+    >
+      {images.length === 0 && addAction ? (
+        <View style={{ width: 177, maxWidth: '100%', alignSelf: 'center' }}>
+          {addAction}
         </View>
-      ) : null}
+      ) : (
+        <PaddedGrid
+          items={items}
+          columns={gridColumnsFromWidth(width, {
+            minCardWidth: 177,
+            gap: designTokens.space.x3,
+            max: 3,
+          })}
+          gap={designTokens.space.x3}
+          keyExtractor={(item) => item.id}
+          renderItem={(item) =>
+            item.image ? renderItem(item.image) : addAction
+          }
+        />
+      )}
     </View>
   );
 }
@@ -133,12 +164,16 @@ export function ProductDraftImagesStep({
   onBackToAbout,
   onContinueToStory,
 }: ProductDraftImagesStepProps) {
+  const palette = useAppTheme();
   const showWizardNavigation =
     isCreationFlow && wizardStep === productWizardStep.images;
 
   return (
     <View style={{ gap: designTokens.space.x2 }}>
-      <FormSection title="Изображения">
+      <View style={{ gap: designTokens.space.x3 }}>
+        {!showWizardNavigation ? (
+          <AppText role="workTitle">Фотографии</AppText>
+        ) : null}
         <AppText role="bodySmall" tone="secondary">
           {images.length}/10 изображений
         </AppText>
@@ -147,32 +182,64 @@ export function ProductDraftImagesStep({
             Изображения нельзя изменить во время модерации.
           </AppText>
         ) : null}
-        {images.map((image) => (
-          <DraftImageRow
-            key={image.id}
-            url={image.url}
-            position={image.position}
-            editable={editable}
-            isLast={image.position === images.length - 1}
-            isReordering={reorderPending}
-            isRemoving={removePending}
-            onMove={(direction) => onMoveImage(image.id, direction)}
-            onDelete={() => onDeleteImage(image.id)}
-          />
-        ))}
-        {editable ? (
-          <SecondaryButton
-            label="Добавить изображения"
-            loading={uploadPending}
-            onPress={() => onChooseImages()}
-          />
-        ) : null}
+        <DraftImageGrid
+          images={images}
+          addAction={
+            editable && images.length < 10 ? (
+              <MotionPressable
+                accessibilityRole="button"
+                accessibilityLabel="Добавить изображения"
+                disabled={uploadPending || reorderPending || removePending}
+                onPress={onChooseImages}
+                preset="card"
+                style={{
+                  aspectRatio: designTokens.ratio.productPortrait,
+                  borderRadius: designTokens.radius.mediaTile,
+                  backgroundColor: palette.surfaceMuted,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: designTokens.space.x3,
+                }}
+              >
+                {uploadPending ? (
+                  <ActivityIndicator color={palette.inkStrong} />
+                ) : (
+                  <FigmaIcon name="image-add-02" size={40} />
+                )}
+                <AppText role="body">Добавить фото</AppText>
+              </MotionPressable>
+            ) : undefined
+          }
+          renderItem={(image) => (
+            <DraftImageRow
+              key={image.id}
+              url={image.url}
+              position={image.position}
+              editable={editable}
+              isLast={image.position === images.length - 1}
+              isReordering={reorderPending}
+              isRemoving={removePending}
+              onMove={(direction) => onMoveImage(image.id, direction)}
+              onDelete={() => onDeleteImage(image.id)}
+            />
+          )}
+        />
         {uploadError || uploadMessage ? (
-          <AppText role="bodySmall" tone="danger" accessibilityLiveRegion="polite">
+          <AppText
+            role="bodySmall"
+            tone="danger"
+            accessibilityLiveRegion="polite"
+          >
             {uploadMessage ?? 'Не удалось загрузить изображения.'}
           </AppText>
         ) : null}
-        {uploadError && onRetryUpload ? <SecondaryButton label="Повторить загрузку" disabled={uploadPending || !editable} onPress={onRetryUpload} /> : null}
+        {uploadError && onRetryUpload ? (
+          <SecondaryButton
+            label="Повторить загрузку"
+            disabled={uploadPending || !editable}
+            onPress={onRetryUpload}
+          />
+        ) : null}
         {imageSelectionError ? (
           <AppText role="bodySmall" tone="danger">
             {imageSelectionError}
@@ -183,7 +250,7 @@ export function ProductDraftImagesStep({
             Не удалось изменить изображения.
           </AppText>
         ) : null}
-      </FormSection>
+      </View>
 
       {showWizardNavigation ? (
         <View style={{ gap: designTokens.space.x3 }}>

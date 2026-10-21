@@ -9,10 +9,11 @@ import {
   SecondaryButton,
   productMediaStyle,
 } from '../../components/ui';
-import { MotionPressable } from '../../components/ui/MotionPressable';
+import { FigmaIconButton } from '../../components/figma/FigmaIconButton';
+import { ProductBlockActions } from './product-block-actions';
 import { FigmaButton } from '../../components/figma/FigmaButton';
-import { FigmaIcon } from '../../components/figma/FigmaIcon';
 import { PrivateStoryImage } from '../../components/shared/PrivateStoryImage';
+import { useAppTheme } from '../../providers/theme-provider';
 import type { EditableStoryBlock } from './use-product-story-editor';
 
 type GalleryImage = {
@@ -45,48 +46,6 @@ export type ProductDraftStoryStepProps = {
   onSaveAndContinue: () => void;
 };
 
-
-const toolbarIconSize = 43;
-const toolbarColors = designTokens.color;
-
-function StoryTool({
-  label,
-  glyph,
-  disabled,
-  onPress,
-}: {
-  label: string;
-  glyph: 'H' | 'T' | 'image';
-  disabled: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <MotionPressable
-      preset="icon"
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      disabled={disabled}
-      onPress={onPress}
-      style={{
-        height: toolbarIconSize,
-        width: toolbarIconSize,
-        borderRadius: designTokens.radius.button,
-        backgroundColor: toolbarColors.surfaceMuted,
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
-      {glyph === 'image' ? (
-        <FigmaIcon name="image-01" size={18} color={toolbarColors.inkStrong} />
-      ) : (
-        <AppText role="body" style={{ fontSize: 18, color: toolbarColors.inkStrong }}>
-          {glyph}
-        </AppText>
-      )}
-    </MotionPressable>
-  );
-}
-
 export function ProductDraftStoryStep({
   productId,
   sessionEpoch,
@@ -110,21 +69,23 @@ export function ProductDraftStoryStep({
   onBackToImages,
   onSaveAndContinue,
 }: ProductDraftStoryStepProps) {
-  const [menuKey, setMenuKey] = useState<string | null>(null);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const textCount = blocks.filter((block) => block.type !== 'IMAGE').length;
   const imageCount = blocks.length - textCount;
-  const canAddText = editable && !savePending && textCount < STORY_LIMITS.maxTextBlocks;
-  const canAddImage = editable && !savePending && imageCount < STORY_LIMITS.maxImages;
+  const canAddText =
+    editable && !savePending && textCount < STORY_LIMITS.maxTextBlocks;
+  const canAddImage =
+    editable && !savePending && imageCount < STORY_LIMITS.maxImages;
   const availableGallery = images.filter((image) => image.mediaAssetId);
   const hasBlocks = blocks.length > 0;
+  const palette = useAppTheme();
 
   return (
     <View style={{ gap: designTokens.space.x10 }}>
       <View style={{ gap: designTokens.space.x2, alignItems: 'center' }}>
         <AppText
-          role="sectionTitle"
-          style={{ textAlign: 'center', letterSpacing: -0.48 }}
+          role="mediaSheetTitle"
+          style={{ textAlign: 'center' }}
         >
           История создания
         </AppText>
@@ -151,157 +112,153 @@ export function ProductDraftStoryStep({
         </View>
       ) : null}
 
-      <View style={{ gap: designTokens.space.x5, minHeight: hasBlocks ? undefined : 220, justifyContent: hasBlocks ? 'flex-start' : 'center' }}>
+      <View
+        style={{
+          gap: designTokens.space.x5,
+          minHeight: hasBlocks ? undefined : 220,
+          justifyContent: hasBlocks ? 'flex-start' : 'center',
+        }}
+      >
         {blocks.map((block, index) => {
           const disabled = !editable || savePending;
-          const active = menuKey === block.key;
-          const galleryImageId = block.type === 'IMAGE'
-            ? availableGallery.find((item) => item.mediaAssetId === block.mediaAssetId)?.id
-            : undefined;
+          const galleryImageId =
+            block.type === 'IMAGE'
+              ? availableGallery.find(
+                  (item) => item.mediaAssetId === block.mediaAssetId,
+                )?.id
+              : undefined;
           return (
-            <View key={block.key} style={{ gap: designTokens.space.x2 }}>
-              <View style={{ position: 'relative', gap: designTokens.space.x1 }}>
-                {block.type === 'IMAGE' ? (
-                  <PrivateStoryImage
-                    productId={productId}
-                    mediaAssetId={block.mediaAssetId}
-                    galleryImageId={galleryImageId}
-                    sessionEpoch={sessionEpoch}
-                    label={block.altText ?? 'Фото истории работы'}
-                    style={{ ...productMediaStyle(), borderRadius: 0 }}
-                  />
-                ) : (
+            <ProductBlockActions
+              key={block.key}
+              kind={block.type === 'IMAGE' ? 'image' : 'text'}
+              editable={editable}
+              disabled={disabled}
+              first={index === 0}
+              last={index === blocks.length - 1}
+              onMove={(direction) => onMove(block.key, direction)}
+              onDelete={() => onRemove(block.key)}
+              details={
+                block.type === 'IMAGE' ? (
                   <TextInput
-                    accessibilityLabel={block.type === 'HEADING' ? 'Заголовок истории' : 'Текст истории'}
-                    placeholder={block.type === 'HEADING' ? 'Начните писать здесь' : 'Ваш текст'}
-                    placeholderTextColor={toolbarColors.fieldLabel}
-                    value={block.text}
-                    onChangeText={(value) => onEditText(block.key, value)}
-                    onFocus={() => setMenuKey(block.key)}
+                    accessibilityLabel="Описание фото"
+                    placeholder="Описание фото (необязательно)"
+                    placeholderTextColor={palette.fieldLabel}
+                    value={block.altText ?? ''}
+                    onChangeText={(value) => onEditAlt(block.key, value)}
+                    maxLength={STORY_LIMITS.altTextMaxLength}
                     editable={!disabled}
-                    multiline
-                    maxLength={block.type === 'HEADING'
-                      ? STORY_LIMITS.headingMaxLength
-                      : STORY_LIMITS.paragraphMaxLength}
-                    textAlignVertical="top"
                     style={{
                       ...designTokens.typography.bodySmall,
-                      fontFamily: block.type === 'HEADING'
-                        ? designTokens.typography.mediaSheetTitle.fontFamily
-                        : designTokens.typography.bodySmall.fontFamily,
-                      fontWeight: block.type === 'HEADING' ? '600' : '400',
-                      fontSize: block.type === 'HEADING' ? 15 : 14,
-                      lineHeight: block.type === 'HEADING' ? 24 : 20,
-                      letterSpacing: -0.15,
-                      color: toolbarColors.inkStrong,
+                      color: palette.inkStrong,
                       padding: 0,
-                      minHeight: 24,
-                      paddingRight: 36,
+                      minHeight: designTokens.size.touch,
                     }}
                   />
-                )}
-                {editable ? (
-                  <MotionPressable
-                    accessibilityRole="button"
-                    accessibilityLabel="Действия с блоком"
-                    disabled={disabled}
-                    onPress={() => setMenuKey(active ? null : block.key)}
-                    preset="icon"
-                    style={{
-                      position: 'absolute',
-                      right: block.type === 'IMAGE' ? 12 : 0,
-                      top: block.type === 'IMAGE' ? 12 : 0,
-                      height: 43,
-                      width: 43,
-                      borderRadius: 80,
-                      backgroundColor: toolbarColors.surfaceMuted,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <AppText role="body" style={{ color: toolbarColors.inkStrong, fontSize: 22 }}>
-                      ⋮
-                    </AppText>
-                  </MotionPressable>
-                ) : null}
-              </View>
-              {active && editable ? (
-                <View style={{ alignSelf: 'flex-end', flexDirection: 'row', flexWrap: 'wrap', gap: designTokens.space.x2 }}>
-                  <SecondaryButton
-                    label="Выше"
-                    icon="arrow-up-01"
-                    disabled={disabled || index === 0}
-                    onPress={() => { onMove(block.key, -1); setMenuKey(null); }}
-                  />
-                  <SecondaryButton
-                    label="Ниже"
-                    icon="arrow-down-01"
-                    disabled={disabled || index === blocks.length - 1}
-                    onPress={() => { onMove(block.key, 1); setMenuKey(null); }}
-                  />
-                  <SecondaryButton
-                    label="Удалить"
-                    icon="delete-02"
-                    disabled={disabled}
-                    onPress={() => { onRemove(block.key); setMenuKey(null); }}
-                  />
-                </View>
-              ) : null}
-              {active && block.type === 'IMAGE' && editable ? (
-                <TextInput
-                  accessibilityLabel="Описание фото"
-                  placeholder="Описание фото (необязательно)"
-                  placeholderTextColor={toolbarColors.fieldLabel}
-                  value={block.altText ?? ''}
-                  onChangeText={(value) => onEditAlt(block.key, value)}
-                  maxLength={STORY_LIMITS.altTextMaxLength}
-                  editable={!disabled}
+                ) : undefined
+              }
+            >
+              {block.type === 'IMAGE' ? (
+                <PrivateStoryImage
+                  productId={productId}
+                  mediaAssetId={block.mediaAssetId}
+                  galleryImageId={galleryImageId}
+                  sessionEpoch={sessionEpoch}
+                  label={block.altText ?? 'Фото истории работы'}
                   style={{
-                    ...designTokens.typography.bodySmall,
-                    color: toolbarColors.inkStrong,
-                    padding: 0,
-                    minHeight: 24,
+                    ...productMediaStyle('100%', palette),
+                    borderRadius: 0,
                   }}
                 />
-              ) : null}
-            </View>
+              ) : (
+                <TextInput
+                  accessibilityLabel={
+                    block.type === 'HEADING'
+                      ? 'Заголовок истории'
+                      : 'Текст истории'
+                  }
+                  placeholder={
+                    block.type === 'HEADING'
+                      ? 'Начните писать здесь'
+                      : 'Ваш текст'
+                  }
+                  placeholderTextColor={palette.fieldLabel}
+                  value={block.text}
+                  onChangeText={(value) => onEditText(block.key, value)}
+                  editable={!disabled}
+                  multiline
+                  maxLength={
+                    block.type === 'HEADING'
+                      ? STORY_LIMITS.headingMaxLength
+                      : STORY_LIMITS.paragraphMaxLength
+                  }
+                  textAlignVertical="top"
+                  style={{
+                    ...(block.type === 'HEADING'
+                      ? designTokens.typography.storyHeading
+                      : designTokens.typography.bodySmall),
+                    color: palette.inkStrong,
+                    padding: 0,
+                    minHeight: designTokens.size.touch,
+                    paddingRight:
+                      designTokens.size.touch + designTokens.space.x2,
+                  }}
+                />
+              )}
+            </ProductBlockActions>
           );
         })}
 
         {editable ? (
-          <View style={{
-            alignSelf: 'center',
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: designTokens.space.x1,
-            backgroundColor: toolbarColors.surface,
-            borderColor: '#D1D1D1',
-            borderWidth: 0.5,
-            borderRadius: 31,
-            padding: 4,
-          }}>
-            <StoryTool
+          <View
+            style={{
+              alignSelf: 'center',
+              flexDirection: 'row',
+              flexWrap: 'wrap',
+              justifyContent: 'center',
+              alignItems: 'center',
+              gap: designTokens.space.x1,
+              backgroundColor: palette.surface,
+              borderColor: palette.toolbarBorder,
+              borderWidth: 0.5,
+              borderRadius: 31,
+              padding: 4,
+            }}
+          >
+            <FigmaIconButton
+              surface="muted"
               label="Добавить заголовок"
-              glyph="H"
+              icon="heading"
               disabled={!canAddText}
               onPress={() => onAddText('HEADING')}
             />
-            <StoryTool
+            <FigmaIconButton
+              surface="muted"
               label="Добавить текст"
-              glyph="T"
+              icon="text"
               disabled={!canAddText}
               onPress={() => onAddText('PARAGRAPH')}
             />
-            <StoryTool
+            <FigmaIconButton
+              surface="muted"
               label="Добавить изображение"
-              glyph="image"
+              icon="image-01"
               disabled={!canAddImage || retryUpload}
-              onPress={() => availableGallery.length
-                ? setGalleryOpen((open) => !open)
-                : onChooseImage()}
+              onPress={() =>
+                availableGallery.length
+                  ? setGalleryOpen((open) => !open)
+                  : onChooseImage()
+              }
             />
             <FigmaButton
-              label={savePending ? 'Сохраняю' : !isCreationFlow ? 'Сохранить' : hasBlocks ? 'Закончить' : 'Пропустить'}
+              label={
+                savePending
+                  ? 'Сохраняю'
+                  : !isCreationFlow
+                    ? 'Сохранить'
+                    : hasBlocks
+                      ? 'Закончить'
+                      : 'Пропустить'
+              }
               variant="solid"
               icon="arrow-right-01"
               iconPosition="right"
@@ -312,13 +269,20 @@ export function ProductDraftStoryStep({
           </View>
         ) : null}
         {!hasBlocks && editable ? (
-          <AppText role="bodySmall" tone="subdued" style={{ textAlign: 'center' }}>
+          <AppText
+            role="bodySmall"
+            tone="subdued"
+            style={{ textAlign: 'center' }}
+          >
             Начните создавать тут
           </AppText>
         ) : null}
         {galleryOpen && canAddImage ? (
           <View style={{ gap: designTokens.space.x2 }}>
-            <SecondaryButton label="Загрузить новое фото" onPress={onChooseImage} />
+            <SecondaryButton
+              label="Загрузить новое фото"
+              onPress={onChooseImage}
+            />
             {availableGallery.map((image, index) => (
               <SecondaryButton
                 key={image.id}
@@ -339,7 +303,9 @@ export function ProductDraftStoryStep({
           />
         ) : null}
         {saveError ? (
-          <AppText role="bodySmall" tone="danger">{saveError}</AppText>
+          <AppText role="bodySmall" tone="danger">
+            {saveError}
+          </AppText>
         ) : null}
         {isCreationFlow ? (
           <SecondaryButton

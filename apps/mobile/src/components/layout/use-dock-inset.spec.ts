@@ -1,4 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+
+vi.mock('./public-navigation', () => ({ useDesktopNavigation: () => false }));
 
 import { dockInset } from './use-dock-inset';
 

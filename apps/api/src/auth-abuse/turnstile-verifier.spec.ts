@@ -58,6 +58,7 @@ describe('interpretTurnstileResponse', () => {
     ).toBe('rejected');
   });
 
+
   it('fails closed when siteverify reports an internal error or the body is unusable', () => {
     expect(
       interpretTurnstileResponse(
@@ -72,6 +73,22 @@ describe('interpretTurnstileResponse', () => {
 });
 
 describe('createTurnstileVerifier', () => {
+  it('accepts the official dummy token only in the explicit local test profile', async () => {
+    const token = 'XXXX.DUMMY.TOKEN.XXXX';
+    const env = syntheticServerEnv({ TURNSTILE_VERIFIER: 'test', TURNSTILE_HOSTNAME: 'localhost' });
+    await expect(createTurnstileVerifier(env).verify({ token, action: 'register' }))
+      .resolves.toEqual({ outcome: 'accepted' });
+    for (const profile of [
+      { NODE_ENV: 'development', APP_ENV: 'local' },
+      { NODE_ENV: 'production', APP_ENV: 'local' },
+      { NODE_ENV: 'test', APP_ENV: 'staging' },
+      { NODE_ENV: 'test', APP_ENV: 'production' },
+    ] as const) {
+      await expect(createTurnstileVerifier({ ...env, ...profile }).verify({ token, action: 'register' }))
+        .resolves.toEqual({ outcome: 'unavailable' });
+    }
+  });
+
   it('uses the scripted verifier only for an explicit local test profile', async () => {
     const verifier = createTurnstileVerifier(
       syntheticServerEnv({

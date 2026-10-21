@@ -1,10 +1,12 @@
 import {
+  blackColorMap,
   designTokens,
   figmaButtonContentHeight,
   figmaButtonInteractions,
   figmaButtonMatrixCell,
   figmaButtonTokens,
   figmaButtonVariants,
+  lightColorMap,
   resolveFigmaButtonInteraction,
 } from '@bidplace/design-tokens';
 import { describe, expect, it } from 'vitest';
@@ -19,11 +21,15 @@ import {
   figmaButtonStyle,
 } from './figma-button-style';
 
+const light = lightColorMap;
+
 describe('figma button matrix', () => {
   it('covers all 16 variant × interaction cells', () => {
     for (const variant of figmaButtonVariants) {
       for (const interaction of figmaButtonInteractions) {
-        expect(figmaButtonMatrixCell(variant, interaction)).toMatchObject({
+        expect(
+          figmaButtonMatrixCell(variant, interaction, light),
+        ).toMatchObject({
           fill: expect.any(String),
           labelColor: expect.any(String),
           borderRadius: expect.any(Number),
@@ -59,7 +65,7 @@ describe('figma button matrix', () => {
 
   it('applies disabled opacity once on the control shell', () => {
     for (const variant of figmaButtonVariants) {
-      const style = figmaButtonStyle(variant, 'disabled');
+      const style = figmaButtonStyle(variant, 'disabled', 'matrix', light);
       expect(style.opacity).toBe(figmaButtonTokens.disabledOpacity);
     }
   });
@@ -67,7 +73,7 @@ describe('figma button matrix', () => {
   it('keeps the interactive shell transparent and paints in SVG', () => {
     for (const variant of figmaButtonVariants) {
       for (const interaction of figmaButtonInteractions) {
-        const style = figmaButtonStyle(variant, interaction);
+        const style = figmaButtonStyle(variant, interaction, 'matrix', light);
         expect(style.backgroundColor).toBe('transparent');
         expect('overflow' in style).toBe(false);
       }
@@ -76,21 +82,26 @@ describe('figma button matrix', () => {
 
   it('keeps auth and nickname suggestion heights on the shared padding formula', () => {
     expect(figmaButtonContentHeight()).toBe(43);
-    expect(figmaButtonContentHeight('auth')).toBe(designTokens.auth.actionHeight);
-    expect(figmaButtonContentHeight('auth')).toBe(designTokens.auth.resendHeight);
+    expect(figmaButtonContentHeight('auth')).toBe(
+      designTokens.auth.actionHeight,
+    );
+    expect(figmaButtonContentHeight('auth')).toBe(
+      designTokens.auth.resendHeight,
+    );
     expect(figmaButtonContentHeight('suggestion')).toBe(
       designTokens.auth.suggestionHeight,
     );
-    const auth = figmaButtonStyle('solid', 'idle', 'auth');
+    const auth = figmaButtonStyle('solid', 'idle', 'auth', light);
     expect(auth.paddingHorizontal).toBe(
-      figmaButtonTokens.metrics.paddingX + figmaButtonTokens.metrics.strokeWidth,
+      figmaButtonTokens.metrics.paddingX +
+        figmaButtonTokens.metrics.strokeWidth,
     );
     expect(auth.paddingVertical).toBe(
       designTokens.space.x3 + figmaButtonTokens.metrics.strokeWidth,
     );
     expect(auth.backgroundColor).toBe('transparent');
     expect(auth.opacity).toBe(1);
-    const suggestion = figmaButtonStyle('outline', 'idle', 'suggestion');
+    const suggestion = figmaButtonStyle('outline', 'idle', 'suggestion', light);
     expect(suggestion.paddingHorizontal).toBe(
       designTokens.auth.suggestionX + figmaButtonTokens.metrics.strokeWidth,
     );
@@ -101,84 +112,90 @@ describe('figma button matrix', () => {
   });
 
   it('uses shared metrics and label colors', () => {
-    const idle = figmaButtonStyle('solid', 'idle');
+    const idle = figmaButtonStyle('solid', 'idle', 'matrix', light);
     expect(idle.paddingHorizontal).toBe(
-      figmaButtonTokens.metrics.paddingX + figmaButtonTokens.metrics.strokeWidth,
+      figmaButtonTokens.metrics.paddingX +
+        figmaButtonTokens.metrics.strokeWidth,
     );
     expect(idle.paddingVertical).toBe(
-      figmaButtonTokens.metrics.paddingY + figmaButtonTokens.metrics.strokeWidth,
+      figmaButtonTokens.metrics.paddingY +
+        figmaButtonTokens.metrics.strokeWidth,
     );
     expect(idle.borderRadius).toBe(figmaButtonTokens.metrics.radius);
-    expect(figmaButtonLabelColor('solid')).toBe(
-      figmaButtonTokens.colors.labelOnSolid,
+    expect(figmaButtonLabelColor('solid', 'matrix', light)).toBe(
+      light.onAction,
     );
-    expect(figmaButtonLabelColor('outline')).toBe(
-      figmaButtonTokens.colors.labelDefault,
+    expect(figmaButtonLabelColor('outline', 'matrix', light)).toBe(
+      light.inkStrong,
     );
   });
 
   it('maps solid disabled fill and radius from export node 292:5054', () => {
-    const cell = figmaButtonMatrixCell('solid', 'disabled');
-    expect(cell.fill).toBe(figmaButtonTokens.colors.solidDisabledFill);
-    expect(cell.borderRadius).toBe(figmaButtonTokens.metrics.disabledSolidRadius);
+    const cell = figmaButtonMatrixCell('solid', 'disabled', light);
+    expect(cell.fill).toBe(light.solidDisabled);
+    expect(cell.borderRadius).toBe(
+      figmaButtonTokens.metrics.disabledSolidRadius,
+    );
   });
 
   it('uses overlay tints for hover and pressed without lowering control opacity', () => {
-    expect(figmaButtonOverlayColor('outline', 'hover')).toBe(
-      figmaButtonTokens.overlay.outlineGhostActive,
+    expect(figmaButtonOverlayColor('outline', 'hover', light)).toBe(
+      light.overlayOnLight,
     );
-    expect(figmaButtonStyle('outline', 'hover').opacity).toBe(1);
-    expect(figmaButtonOverlayColor('solid', 'pressed')).toBe(
-      figmaButtonTokens.overlay.solidActive,
+    expect(figmaButtonStyle('outline', 'hover', 'matrix', light).opacity).toBe(
+      1,
     );
-    expect(figmaButtonOverlayColor('muted', 'pressed')).toBe(
-      figmaButtonTokens.overlay.mutedActive,
+    expect(figmaButtonOverlayColor('solid', 'pressed', light)).toBe(
+      light.overlayOnSolid,
+    );
+    expect(figmaButtonOverlayColor('muted', 'pressed', light)).toBe(
+      light.overlayOnMuted,
     );
   });
 
   it('insets the pressed ghost surface to the 82×42 capture and hides its stroke', () => {
     for (const interaction of figmaButtonInteractions) {
-      const cell = figmaButtonMatrixCell('ghost', interaction);
-      expect(cell.fill).toBe(figmaButtonTokens.colors.canvas);
+      const cell = figmaButtonMatrixCell('ghost', interaction, light);
+      expect(cell.fill).toBe(light.canvas);
       expect(cell.borderRadius).toBe(figmaButtonTokens.metrics.radius);
-      expect(cell.labelColor).toBe(figmaButtonTokens.colors.labelDefault);
+      expect(cell.labelColor).toBe(light.inkStrong);
       if (interaction === 'pressed') {
         expect(cell.strokeMode).toBe('none');
         expect(cell.strokeColor).toBeNull();
-        expect(cell.overlay).toBe(figmaButtonTokens.overlay.outlineGhostActive);
+        expect(cell.overlay).toBe(light.overlayOnLight);
       } else if (interaction === 'hover') {
         expect(cell.strokeMode).toBe('ghost');
-        expect(cell.strokeColor).toBe(figmaButtonTokens.colors.ghostStroke);
-        expect(cell.overlay).toBe(figmaButtonTokens.overlay.outlineGhostActive);
+        expect(cell.strokeColor).toBe(light.canvas);
+        expect(cell.overlay).toBe(light.overlayOnLight);
       } else if (interaction === 'disabled') {
-        expect(cell.strokeColor).toBe(figmaButtonTokens.colors.ghostStroke);
+        expect(cell.strokeColor).toBe(light.canvas);
         expect(cell.overlay).toBeNull();
         expect(cell.controlOpacity).toBe(figmaButtonTokens.disabledOpacity);
       } else {
-        expect(cell.strokeColor).toBe(figmaButtonTokens.colors.ghostStroke);
+        expect(cell.strokeColor).toBe(light.canvas);
         expect(cell.overlay).toBeNull();
         expect(cell.controlOpacity).toBe(1);
       }
-      expect(figmaButtonStyle('ghost', interaction).backgroundColor).toBe(
-        'transparent',
-      );
+      expect(
+        figmaButtonStyle('ghost', interaction, 'matrix', light).backgroundColor,
+      ).toBe('transparent');
     }
-    expect(figmaButtonPressedGhostInset('ghost', 'pressed')).toBe(true);
-    expect(figmaButtonPressedGhostInset('ghost', 'idle')).toBe(false);
+    expect(figmaButtonPressedGhostInset('ghost', 'pressed', light)).toBe(true);
+    expect(figmaButtonPressedGhostInset('ghost', 'idle', light)).toBe(false);
     expect(figmaButtonTokens.metrics.pressedGhostWidth).toBe(82);
     expect(figmaButtonTokens.metrics.pressedGhostHeight).toBe(42);
   });
 
   it('keeps the muted stroke the same gray as the fill on every state', () => {
     for (const interaction of figmaButtonInteractions) {
-      const cell = figmaButtonMatrixCell('muted', interaction);
-      expect(cell.fill).toBe('#F3F3F3');
+      const cell = figmaButtonMatrixCell('muted', interaction, light);
+      expect(cell.fill).toBe(light.mutedFill);
       expect(cell.strokeMode).toBe('flat');
-      expect(cell.strokeColor).toBe('#F3F3F3');
+      expect(cell.strokeColor).toBe(light.mutedStroke);
       expect(cell.borderRadius).toBe(figmaButtonTokens.metrics.radius);
-      expect(cell.labelColor).toBe('#121212');
+      expect(cell.labelColor).toBe(light.inkStrong);
       if (interaction === 'hover' || interaction === 'pressed') {
-        expect(cell.overlay).toBe('rgba(0, 0, 0, 0.06)');
+        expect(cell.overlay).toBe(light.overlayOnMuted);
         expect(cell.controlOpacity).toBe(1);
       } else if (interaction === 'disabled') {
         expect(cell.overlay).toBeNull();
@@ -192,8 +209,8 @@ describe('figma button matrix', () => {
 
   it('paints solid and outline with the SVG gradient on every state', () => {
     for (const interaction of figmaButtonInteractions) {
-      const solid = figmaButtonMatrixCell('solid', interaction);
-      const outline = figmaButtonMatrixCell('outline', interaction);
+      const solid = figmaButtonMatrixCell('solid', interaction, light);
+      const outline = figmaButtonMatrixCell('outline', interaction, light);
       expect(solid.strokeMode).toBe('gradient');
       expect(solid.strokeColor).toBeNull();
       expect(outline.strokeMode).toBe('gradient');
@@ -204,19 +221,19 @@ describe('figma button matrix', () => {
     expect(figmaButtonTokens.gradientStroke.solid).toMatchObject({
       x2: 84.791,
       y2: 39.1182,
-      start: '#2A2A2A',
-      end: '#585858',
     });
     expect(figmaButtonTokens.gradientStroke.outline).toMatchObject({
       x2: 88.232,
       y2: 20.724,
-      start: '#D1D1D1',
-      end: '#EBEBEB',
     });
+    expect(light.solidBorderGradientStart).toBe('#2A2A2A');
+    expect(light.solidBorderGradientEnd).toBe('#585858');
+    expect(light.outlineBorderGradientStart).toBe('#D1D1D1');
+    expect(light.outlineBorderGradientEnd).toBe('#EBEBEB');
   });
 
   it('keeps gradient stroke axes aligned with fallbacks/001-292_5058.svg', () => {
-    expect(figmaButtonGradientAxis('outline')).toMatchObject({
+    expect(figmaButtonGradientAxis('outline', light)).toMatchObject({
       x1: 0,
       y1: 0,
       x2: 88.232,
@@ -224,7 +241,7 @@ describe('figma button matrix', () => {
       start: '#D1D1D1',
       end: '#EBEBEB',
     });
-    expect(figmaButtonGradientAxis('solid')).toMatchObject({
+    expect(figmaButtonGradientAxis('solid', light)).toMatchObject({
       x1: 0,
       y1: 0,
       x2: 84.791,
@@ -257,15 +274,42 @@ describe('figma button matrix', () => {
 
   it('scales the sample gradient axis with the measured button', () => {
     const { sampleWidth, sampleHeight } = figmaButtonTokens.metrics;
-    expect(figmaButtonScaledGradientAxis('solid', sampleWidth, sampleHeight)).toMatchObject({
+    expect(
+      figmaButtonScaledGradientAxis('solid', sampleWidth, sampleHeight, light),
+    ).toMatchObject({
       x2: 84.791,
       y2: 39.1182,
     });
-    const wide = figmaButtonScaledGradientAxis('solid', 136, sampleHeight);
+    const wide = figmaButtonScaledGradientAxis(
+      'solid',
+      136,
+      sampleHeight,
+      light,
+    );
     expect(wide.x2).toBeCloseTo(84.791 * (136 / sampleWidth));
     expect(wide.y2).toBeCloseTo(39.1182);
-    const outline = figmaButtonScaledGradientAxis('outline', 141, sampleHeight);
+    const outline = figmaButtonScaledGradientAxis(
+      'outline',
+      141,
+      sampleHeight,
+      light,
+    );
     expect(outline.x2).toBeCloseTo(88.232 * (141 / sampleWidth));
     expect(outline.y2).toBeCloseTo(20.724);
+  });
+
+  it('resolves every color from the passed palette (black differs from light)', () => {
+    expect(figmaButtonMatrixCell('solid', 'idle', blackColorMap).fill).toBe(
+      blackColorMap.inkStrong,
+    );
+    expect(
+      figmaButtonMatrixCell('solid', 'idle', blackColorMap).labelColor,
+    ).toBe(blackColorMap.onAction);
+    expect(figmaButtonMatrixCell('solid', 'idle', blackColorMap).fill).not.toBe(
+      figmaButtonMatrixCell('solid', 'idle', light).fill,
+    );
+    expect(figmaButtonGradientAxis('solid', blackColorMap).start).toBe(
+      blackColorMap.solidBorderGradientStart,
+    );
   });
 });

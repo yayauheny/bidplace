@@ -3,12 +3,22 @@ import type { FlexStyle, ViewStyle } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
+export function sheetWidthConstraint(
+  viewportWidth: number,
+): number | '100%' {
+  return viewportWidth <= designTokens.layout.sheetFillViewportMax
+    ? '100%'
+    : designTokens.layout.sheetMax;
+}
+
 export function appDialogHostStyle({
   presentation,
   viewportGutter,
+  viewportWidth,
 }: {
   presentation: 'dialog' | 'sheet' | 'mediaSheet';
   viewportGutter: number;
+  viewportWidth: number;
 }): ViewStyle {
   const isSheet = presentation !== 'dialog';
 
@@ -19,7 +29,7 @@ export function appDialogHostStyle({
     ...(isSheet
       ? {
           width: '100%',
-          maxWidth: designTokens.layout.sheetMax,
+          maxWidth: sheetWidthConstraint(viewportWidth),
           marginLeft: 'auto',
           marginRight: 'auto',
         }

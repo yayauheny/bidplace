@@ -1,5 +1,5 @@
 import { Link, type Href } from 'expo-router';
-import type { ReactNode } from 'react';
+import type { ElementRef, ReactNode, Ref } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import {
@@ -14,6 +14,7 @@ import {
 
 import { AppText } from '../ui/AppText';
 import { MotionPressable } from '../ui/MotionPressable';
+import { useAppTheme } from '../../providers/theme-provider';
 import { FigmaIcon } from './FigmaIcon';
 import { type FigmaIconName } from './figma-icon-names';
 import {
@@ -54,7 +55,8 @@ function FigmaButtonVisualContent({
   iconPosition = 'left',
   presentational = false,
 }: FigmaButtonVisualContentProps) {
-  const textColor = figmaButtonLabelColor(variant, size);
+  const palette = useAppTheme();
+  const textColor = figmaButtonLabelColor(variant, size, palette);
   const navigation = contentAlign === 'navigation';
   const iconElement = icon ? (
     <View style={styles.iconFrame}>
@@ -119,6 +121,7 @@ function FigmaButtonVisualContent({
 }
 
 type FigmaButtonBaseProps = {
+  ref?: Ref<ElementRef<typeof MotionPressable>>;
   label: string;
   variant?: FigmaButtonVariant;
   disabled?: boolean;
@@ -127,6 +130,7 @@ type FigmaButtonBaseProps = {
   iconNode?: ReactNode;
   iconPosition?: 'left' | 'right';
   accessibilityHint?: string;
+  accessibilityCurrent?: 'page';
   width?: 'content' | 'full';
   size?: FigmaButtonSize;
   contentAlign?: FigmaButtonContentAlign;
@@ -164,11 +168,12 @@ export function FigmaButtonStatePreview({
   testID,
   accessibilityLabel,
 }: FigmaButtonStatePreviewProps) {
+  const palette = useAppTheme();
   const { layout, onLayout } = useCssBorderBox();
   const resolvedTestID =
     testID ?? `figma-button-preview-${variant}-${interaction}`;
 
-  const shellStyle = figmaButtonStyle(variant, interaction);
+  const shellStyle = figmaButtonStyle(variant, interaction, 'matrix', palette);
 
   return (
     <View
@@ -214,6 +219,7 @@ export function FigmaButton(
   } = props;
   const inactive = disabled || loading;
   const alignSelf = width === 'full' ? 'stretch' : 'flex-start';
+  const palette = useAppTheme();
   const { layout, onLayout } = useCssBorderBox();
 
   const contentHeight = figmaButtonContentHeight(size);
@@ -224,10 +230,12 @@ export function FigmaButton(
 
   const pressable = (
     <MotionPressable
+      ref={props.ref}
       testID={testID}
       accessibilityRole={props.href ? 'link' : 'button'}
       accessibilityLabel={label}
       accessibilityHint={accessibilityHint}
+      {...{ 'aria-current': props.accessibilityCurrent }}
       accessibilityState={{ disabled: inactive, busy: Boolean(loading) }}
       disabled={inactive}
       onPress={props.href ? undefined : props.onPress}
@@ -245,7 +253,7 @@ export function FigmaButton(
           hovered,
           pressed,
         });
-        return figmaButtonStyle(variant, interaction, size);
+        return figmaButtonStyle(variant, interaction, size, palette);
       }}
     >
       {({ hovered, pressed }) => {

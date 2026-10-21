@@ -7,6 +7,295 @@
 - `Implemented`: живой master `292:5058` красит подпись outline, ghost и muted в Black `#121212`. Токен `labelDefault` обновлён; матрица 4×4, hover, pressed и disabled solid (`292:5054`: заливка `#949494`, opacity 0.5, белая подпись) не переписывались. Таблица §6.2 в `03-DESIGN-SYSTEM.md` совпадает с master.
 - `Implemented`: на шаге email «Дальше» disabled, пока не отмечены четыре обязательных согласия. Красная ошибка согласия не заменяет это состояние. Чекбоксы остаются отдельными и доступными после загрузки документов.
 
+## 2026-10-20 — Монохромный focus (DEC-127)
+
+**Implemented (web).** По решению основателя общая семантическая роль focus
+заменена на #121212 в light и #FFFFFF в black. FigmaTextField, глобальный
+focus-visible и DateSelection продолжают читать единую роль; начальные значения
+CSS синхронизированы с ней. Размер/offset индикатора, keyboard/pointer поведение,
+ошибки/disabled не менялись. API и БД не затронуты. Black-палитра в целом остаётся
+provisional, пользовательское включение темы не добавлено.
+
+Проверки:14/14 owner unit (темы и поля), адресные browser checks полей/ошибки,
+вкладок, календаря и CSS theme mirror —12 успешных случаев Chromium/WebKit
+в двух проходах; typecheck/lint, design-tokens build, production web export.
+Один старый тест зависел от фиксированных6 Tab: заменён переходом от известного
+соседа с сохранением assertions. Calendar mock получил DRAFT revision; guards
+продукта не ослаблялись. Реальный iPhone/native runtime не проверялись.
+
+## 2026-10-20 — Уточнение визуальной приёмки preview
+
+Демо-фото не были заменены UI-кодом: первую страницу заполнили19 опубликованных
+E2E-профилей. Их снятие с выдачи вернуло пять исходных демо-авторов. Ореол vex
+проверен в Chromium/WebKit: оба img загружены, blur15px/opacity0.5 сохранены.
+Click→буква действительно включает клавиатурный focus-visible; прежняя формулировка
+«не воспроизводится» относилась только к click/input→click. На момент проверки цвет сохранялся по §6.4; последующее решение DEC-127
+утвердило общий монохромный токен (см. запись выше).
+Подробности и evidence — [аудит](../audits/2026-10-20-DATE-SELECTION.md).
+
+## 2026-10-20 — UI после общего календаря
+
+**Implemented (web, адресная приёмка).** AuthViewport показывает крест на всех
+полноэкранных шагах регистрации через существующий requestDismiss, с dirty guard
+и возвратом на redirectTo. SearchOverlayTabs занимает ширину колонки;
+AuthorSearchRow применяет radius.small к окрашиваемому hit target и отделяет
+статическую геометрию от interactionStyle для совместимости с Link asChild.
+PublicSellerScreen включает gutter внутрь viewport ScrollView: размытие доходит
+до края страницы, контент сохраняет прежние отступы и ширину сетки.
+
+Chromium/WebKit: 8/8 адресных browser checks; ширины320/390/765, без горизонтального
+overflow, clean-close, dirty-cancel и клавиатурный возврат. Pointer click и
+input→click не показывают focus ring; клавиатурный Tab/Shift+Tab сохраняет его по
+дизайн-системе §6.4. API/данные и палитра focus не изменены. Подробности и evidence:
+[аудит](../audits/2026-10-20-DATE-SELECTION.md).
+**Needs verification:** физический iPhone, реальный browser zoom, увеличенный
+системный текст; новых утверждённых desktop-макетов нет.
+
+## 2026-10-20 — Общий календарь и безопасный web lifecycle шторки
+
+**Implemented (web).** `DateField` заменяет текстовый ввод даты достижения:
+общие FigmaSelectField/AppDialog, React Aria1.22.1 для календаря и клавиатуры,
+@internationalized/date3.12.4 для календарных значений; стили из текущих токенов.
+Выбор дня либо только месяца, подтверждение, отмена, очистка; восстановление
+`dateInput` совместимо со старым форматом. Между аккаунтами picker remounts;
+внешняя смена значения/блокировка закрывает выбор. Серверные проверки и write
+leases не изменены. Год создания остаётся числом0..9999; время публикации
+по-прежнему серверное, планирование публикации не добавлялось.
+
+В общем `AppDialogSheetMotion` одна DOM-оболочка с withTiming: выходящий контент
+inert/aria-hidden; входящий контент активируется только после завершения
+анимации, settled transform удаляется. Быстрый reopen не создаёт live exit-клоны Reanimated.
+Web/native теперь используют общий owner движения (приёмка2026-10-21 ниже); DateSelection.native использует совместимый
+с SDK57 datetimepicker9.1.0. **Needs verification (native runtime):** нативный
+picker на устройствах/симуляторе не запускался; успешен iOS JS/Hermes export.
+
+Проверки: owner/state/modal unit65/65, typecheck/lint/diff-check, production web
+export. Browser gate6/6 Chromium/WebKit (дата, реальная запись/публикация,
+auth confirm, Home/share;320/390/440 и короткий viewport), evidence — в [аудите](../audits/2026-10-20-DATE-SELECTION.md).
+Полный suite, реальный browser zoom и физический iPhone не проверялись.
+
+## 2026-10-20 — Домик в общем floating dock
+
+**Implemented (код).** Главная использует `home-01` из общего FigmaIcon вместо
+отдельного BidplaceMark. SVG path установленного Home01Icon точно совпал с
+live Figma node 7008:16942 (источник 7008:16896). Состав меню и маршруты
+не менялись: корзина из reference остаётся вне MVP. Убрана неиспользуемая
+ветка logo. Общий registry spec также приведён к уже существующим
+setting-07/log-out. Адресные unit5/5, mobile typecheck, lint/diff-check и production export чисто.
+Rendered Chromium/WebKit: path, href, selected state и видимость на320/390/440
+проверены; evidence /tmp/bidplace-home-icon-{chromium,webkit}.png.
+Календарь — отдельная незавершённая часть: выбирается web/native реализация;
+поведение дат и API в этом коммите не меняется.
+
+## 2026-10-20 — Регистрация: компактный слот статуса никнейма
+
+**Implemented (код).** Слот статуса никнейма резервирует одну строку
+`authStatus` (20 px из токенов вместо 46): до проверки нет пустоты под два
+статуса, появление статуса не сдвигает поле и «Дальше», длинная ошибка
+растёт по `minHeight` без обрезки. Подзаголовок — «Можете выбрать свой
+никнейм или предложенный» (при 390 занимает две строки — фактический
+перенос, Figma-референс на одну строку; соответствие node 7008-21455
+по одной строке — Needs verification на ширине 390). Центрирование
+AuthViewport сохранено, translateY/отрицательные отступы не вводились.
+Статусы по-прежнему один видимый (проверка/доступен/недоступен/ошибка).
+Проверки: owner specs 27/27, e2e затронутых шагов 4/4 Chromium+WebKit,
+production web build; скриншоты 390×874 до проверки и с занятым ником.
+
+Корректирующая проверка: восстановлен заголовок предыдущей записи DEC-125.
+В существующем nickname E2E добавлено сравнение Y поля и кнопки до проверки
+и после короткого статуса занятого ника (точность 0,1 px). Проверка overflow
+после смены viewport ожидает применения responsive layout через expect.poll;
+требование отсутствия overflow не ослаблено. Gate на свежем production export:
+Chromium/WebKit 2/2. Сборка database и mobile typecheck, lint спеки и
+diff-check — чисто. Предыдущая ошибка typecheck после сборки зависимости
+не воспроизводится. Первоначальный dist был без EXPO_PUBLIC_API_URL и не
+запускался; повторный export с явным локальным URL успешен. Полный suite и
+физический iPhone в этом проходе не проверялись.
+
+## 2026-10-20 — Регистрация отделена от выдачи текста документов
+
+**Implemented (DEC-125).** Один explicit checkbox, обычная CTA «Дальше»; документы
+запрашиваются только по ссылке, ошибка показывается в общем AppDialog. GET legal503
+не блокирует email→nickname→password→register. API сохраняет обязательные
+confirmed/18+ и серверную файловую редакцию в атомарном User+evidence create.
+Legacy client versions поддерживаются и stale отклоняется. Миграций и отложенного
+согласия нет. Публичная выдача незавершённых policy по-прежнему закрыта.
+
+Дополнительно исправлена воспроизведённая гонка перехода register→verify-email:
+навигация ждёт отрисованную установленную сессию, как существующий login receipt;
+epoch/controller/focus guards сохранены, таймеров нет.
+
+Проверки: API owner32/32, mobile focused67/67, HTTP/БД3/3 в disposable schema,
+production browser Chromium/WebKit (полный register201→verify-email после сбоя
+чтения), API/mobile typecheck и builds, lint/diff-check. Browser gate использует scripted proof; дополнительно без подмены проверен
+публичный test widget Cloudflare с реальным201 и verify-email. Production
+challenge не проверялся; local/test адаптер принимает официальный dummy token
+только в явно разрешённом test/local профиле.
+[Аудит](../audits/2026-10-20-REGISTRATION-DOCUMENT-ACCESS.md).
+
+## 2026-10-20 — Регистрация: состояние загрузки без отдельного error-блока
+
+**Implemented.** Удалены красный текст недоступности legal-пакета, отдельная
+кнопка «Повторить» и дублирующий loading-caption под формой. Состояние и retry
+принадлежат существующей primary-кнопке: «Дальше» → при сбое «Повторить загрузку»;
+во время загрузки штатный loading. Повтор не отправляет регистрацию, сохраняет
+email и не отмечает согласие. Без пакета checkbox остаётся disabled.
+API/серверный legal gate не менялись.
+
+Проверки: registration-consent17/17, mobile tsc, lint/diff-check, production export,
+адресные Chromium/WebKit (centered initial +503→retry→ready), без full suite.
+
+## 2026-10-20 — Регистрация: центрирование и один consent control
+
+**Implemented (web UI).** Fullscreen AuthViewport больше не ограничен sheetMax390;
+его внутренняя колонка350 остаётся центрированной на320/390/440. AuthConsentCheckbox
+показывает одно изначально пустое подтверждение с inline RegistrationLegalText:
+три чёрные ссылки, серый основной текст, явное18+, без повторов названий и
+служебной подписи редакции. Ложное предупреждение о смене сессии на ещё пустой форме устранено; epoch guards сохраняются.
+Обязательные флаги, версии, reset при смене пакета,
+защита операции/сессии и серверный legal gate сохранены. Решение основателя:
+DEC-124, пересмотр UI-композиции DEC-078; это не юридическое заключение.
+
+Проверки: unit25/25 (registration-consent + theme), mobile tsc, tokens build,
+production export, адресный browser gate Chromium/WebKit на320/390/440,
+eslint и diff-check. Серверная публикация юридических документов остаётся
+отдельным блокером: локальный GET /auth/legal возвращает503 при незаполненных
+реквизитах; эта правка не подставляет фиктивные документы в runtime.
+[Приёмка](../audits/2026-10-20-REGISTRATION-LAYOUT.md).
+
+## 2026-10-20 — Account: финальная приёмка и исправления
+
+**Implemented (проверенный web-срез); Needs verification — реальный iPhone,
+browser zoom/text enlargement.** Исправлены дубликат account после закрытия
+настроек (обе кнопки используют dismissTo), растянутая CTA, верхние отступы
+через варианты FormPageShell, композиция AccountIdentity и симметрия settings
+header. settingsTitle/settingsRow сохраняют source line-height normal.
+API, права, БД и backend удаления не менялись.
+
+Проверки: production web export, mobile tsc, адресные unit40/40,
+production browser6/6 Chromium+WebKit (320/390/414/440, long identity,
+unverified settings, published identity, scroll8works, close→Back),
+eslint/format/diff-check. Backend e2e/full suite не повторялись.
+[Итоговый аудит и evidence](../audits/2026-10-20-ACCOUNT-FINAL-ACCEPTANCE.md).
+Delete-план дополнен реальной Worker JSON cache policy; реализация удаления —
+отдельная волна. Desktop1024/1440 и black parity: NEEDS-FIGMA.
+
+## 2026-10-20 — Account UI: shared-компоненты и композиция (волны 3A–3D)
+
+**Implemented (код); Partial до Figma-сверки экрана.** Композиция /account
+собрана по intake: FormPageShell как единый scroll-owner, identity-блок
+(AccountIdentity: avatar100 + текстовая колонка flex1/minWidth0 + CTA
+slot; опубликованная идентичность — из public author, не editing
+overlay), секция «Работы» на PaddedGrid с OwnerWorkCard (caption-карточка
+
+- статусы/действия). SUSPENDED — read-only с пометкой «Профиль
+  ограничен». Shared API зафиксированы в
+  [03-DESIGN-SYSTEM](03-DESIGN-SYSTEM.md) §7: WorkCoverCaption
+  (author `coverCaptionAuthor`, title — новая роль `coverCaptionTitle`
+  14/17/500/−0.28, две строки), SettingsGroup (label опционален,
+  `accountMeta`) / SettingsRow (trailingArrow/busy, текст flex1/minWidth0),
+  ResilientRemoteImage `fallback: 'plain'|'labelled'`, новая semantic-роль
+  `accountMeta` (light #858585; black provisional, пользователям не
+  включена), Back variant «settings». FormPageShell — testID `form-page`.
+  Визуальные значения light не менялись; точная сверка с Figma node
+  /account — следующий этап (один экран по exact node), без неё
+  визуальный эталон композиции не объявлен.
+
+Проверки: browser gate 10/10 Chromium+WebKit (маршруты, identity,
+настройки, not-found до публикации, 320 без переполнения, прокрутка
+320×568), consumer specs 9/9, production web build.
+
+Второе повторное ревью (CR-01/02/03, коммиты `5ffafb5e`, `1d482747`):
+intent-семантика hide/restore (ошибка/retry привязаны к работе,
+pending блокирует смену цели), возврат из настроек `dismissTo('/account')`
+прямо и при reload, identity без дубля `@slug`. Behavior-контракты
+стабильны; визуальные детали (ширина CTA, insets, поля) сознательно
+оставлены для измеренной приёмки следующего этапа — ревьюер выполняет
+её сам по сохранённому intake ace4a323 (README/source), повторный Figma
+intake не требуется.
+[Файл выполнения](../audits/2026-10-19-ACCOUNT-FOUNDATION-PROGRESS.md).
+
+## 2026-10-19 — Account foundation: общая ширина шторок (волны 1–2)
+
+**Implemented.** Единая политика ширины auth/AppDialog sheets: ≤600 CSS px — во всю
+ширину; >600 — 390; поля заполняют внутреннюю ширину; fullscreen-регистрация —
+350; центрированные диалоги не растягиваются. Правило зафиксировано в
+[03-DESIGN-SYSTEM](03-DESIGN-SYSTEM.md). Production build (Node 22), Chromium +
+WebKit: измерения 320/390/414/440/600/601/1024, fullscreen register, centered
+exit-confirm (366, центровка delta 0), короткая высота, login↔forgot, свайп —
+[evidence](../audits/current/evidence/2026-10-19-sheet-widths/). Визуальные цвета
+не менялись. Остаток: возврат фокуса на триггер dock после закрытия auth-шторки —
+предшествующий архитектурный гэп (dock размонтируется под шторкой), не волны 1–2;
+browser zoom/text enlargement — Needs verification. Волна 3 (/account) — после
+Figma intake.
+[Файл выполнения](../audits/2026-10-19-ACCOUNT-FOUNDATION-PROGRESS.md).
+
+## 2026-10-19 — Общая проверка переходов: dimmer handoff и focus
+
+**Implemented (общий web-механизм).** SheetBackdropProvider централизует только
+визуальное затемнение обычных AppDialog sheets; FilterSheet/ShareSheet и другие
+consumers наследуют исправление. Две красные цепочки (actions → QR, share → report)
+больше не дают светлой вспышки. useReturnFocus возвращает фокус к живому opener
+после удаления предыдущей шторки, сохраняя nested-parent поведение.
+
+Проверки: 26/26 Chromium/WebKit, 36/36 owner unit, build/tsc/lint/format.
+Матрица, исходные consumers и ограничения:
+[аудит](../audits/2026-10-19-TRANSITION-MATRIX.md).
+Физический iPhone/native и отдельная browser-приёмка всех внутренних форм —
+Needs verification; API/БД и серверные контракты не менялись.
+
+## 2026-10-19 — Auth → forgot-password: постоянное затемнение
+
+**Implemented (web).** Отдельные FadeIn/FadeOut каждого
+AuthViewport давали кадры с alpha=0 при смене login/forgot. Визуальное затемнение
+перенесено в постоянный auth-layout; прозрачный overlay формы сохраняет прежние
+закрытие, focus и guards. Маршруты, формы, API/БД и визуальные значения не менялись.
+Финальный browser gate: 14/14 Chromium + WebKit (включая покадровые переходы);
+unit 22/22, build/tsc/lint passed. Физический iPhone/native — Needs verification.
+[Аудит и итоговая приёмка](../audits/2026-10-19-AUTH-TRANSITION-FLICKER.md).
+
+## 2026-10-18 — Auth background и свайп шторок (DEC-122)
+
+**Implemented (web interaction)**: вход остаётся поверх текущей страницы без
+повторного монтажа Home. Верхняя ручка/header запрашивает закрытие через общий
+SheetDragSurface; тело скроллится отдельно, guards, Cross/Escape и возврат фокуса
+сохранены. Цвета/геометрия не менялись. Проверены Home/profile/share/filter в
+Chromium и WebKit; 12/12 адресных browser cases, 53/53 unit, build/tsc/lint чисто.
+**Needs verification:** физический iPhone/native, прежние zoom/text enlargement
+и live-Figma acceptance остаются открытыми. Полный auth/legal suite не закрыт.
+[Evidence и ограничения](../audits/2026-10-18-SHEET-FIX-ACCEPTANCE.md).
+
+## 2026-10-16 — Draft-restore волна 1 (ветка `fix/draft-restore`) — код-онли
+
+- `Implemented` для R1–R4 + O1: дизайн, копии, геометрия и навигационный chrome не изменены. Поведение восстановления истории стало точным: порядок и удаление текстовых блоков, дублирующиеся тексты и подписи серверных изображений восстанавливаются как есть (формат v2, подробности — `11-PROJECT-STATUS.md`). Визуальный дизайн не затронут.
+- E2E-покрытие восстановления расширено (`local-draft-restore.spec.ts` 3/3 Chromium + 3/3 WebKit); визард и sentinel-контракты зелёные в обоих браузерах (11/11 и 5/5).
+
+## 2026-10-15 — Восстановление ввода и маршрутов (ветка `fix/draft-routing`) — код-онли
+
+- `Implemented`: дизайн, копии, токены, визуальные состояния и навигационный chrome (step-табы визарда, dock, auth-шторка) не изменены; Figma-сверка и серии скриншотов не запускались. Изменилось поведение восстановления: локальные черновики форм Work и заявки автора (browser-only, см. `11-PROJECT-STATUS.md` запись Э1–Э4 и DEC-121).
+- Маршруты: публичные адреса и направление aliases не менялись; исправлено только сохранение допустимых query при входе через dock и при проходе через alias-редиректы (`sort/category/categories`, `tab`). Дизайн экранов не затронут.
+- E2E-покрытие восстановления: `draft-browser-sentinel` 5/5 и `product-creation-wizard` 11/11 (Chromium + WebKit) — навигационные контракты (Back/Forward, возврат на поздние шаги) зелёные. Единственные красные — предсуществующие на базе `3bf80951`: геометрия onboarding (51 vs 50) и legal-503 (плейсхолдеры ИП в юртексте); подробности — в `11-PROJECT-STATUS.md`.
+
+## 2026-10-15 — Integration: объединение сплитов seller-profile + product-draft (технические этапы W4/W5)
+
+- `Implemented`: ветка `fix/product-draft-structure` влита в `fix/seller-profile-structure` (merge `849965a4`), конфликты — только статус-доки. Проверки на объединении: typecheck 13/13, lint чисто, mobile vitest 816/816 (132 файла), production web build зелёный, e2e 30/30 (Chromium + WebKit: product-creation-wizard, author-revision-flow, author-application-slug, author-cabinet). Единственное красное — предсуществующий фейл `apps/api products.mapper.spec.ts` (`mediaAssetId` в select маппера отсутствует в ожиданиях спеки), воспроизводится на базе `4bc0c788`, apps/api у обоих родителей идентичен; в бэклог.
+- Остаток W4 (4): `/dev/figma-buttons` исключён из production bundle целиком — Metro `resolver.blockList` в `apps/mobile/metro.config.js` по тому же сигналу `EXPO_PUBLIC_APP_ENV` production/staging (новый флаг и зависимость не вводились); return-null guard в файле маршрута оставлен как второй контур. Верифицировано: маркеров `figmaButtonMatrixBoard`/`figma-button-matrix-stand` в экспортированном dist нет, runtime против статического SPA — 0 узлов стенда, `figma-button-matrix.spec` 10/10 в dev — `13098ff9` + `53b28e34`. Private import `expo-router/build` (`usePreventRemove` в `AuthViewport.tsx` и `product-draft-navigation.ts`) остаётся: публичного экспорта нет в expo-router 57.0.4, снятие с allowlist — кандидат Expo SDK 58. `lib/reduced-motion.ts` оставлен (запись в файле). Доки 07/08 не удалены — решением владельца 2026-10-13 сохранены как HISTORICAL.
+- Инвентаризация дублей UI-механизмов (W5): по одной реализации BackButton / FigmaTabs / AppDialog / галка FigmaIcon check / WorkGallery / PaddedGrid; ручной сборки сеток work-карточек нет (WorksSearchPane, product-list-screen — WorkCoverCardGrid; public-seller-screen — CreatorWorkCard через PaddedGrid, не дубль). Собственное history-управление (`product-draft-browser-guard.ts`, `auth-browser-history.ts`) публичными API Expo Router 57 не заменяется — частичный патч не делать.
+
+## 2026-10-15 — SellerProfileScreen: завершение структурного сплита (этап 2 W5)
+
+- `Implemented`: продолжение записи 2026-10-14 (была `Partial`, критерий «тонкие экраны-композиции» не достигнут). Тело `seller-profile-screen.tsx` 1258 → 755 строк; состояние разнесено по владельцам — `seller-profile-operation-guard.ts`, `seller-profile-form.tsx`, `seller-profile-photo.ts`, `seller-profile-directions.ts`, `seller-profile-submission.ts`; экран — композиция + exit-флоу + render. Визуал, копии, токены, отступы и состояния (loading / визард 1–4 / clamp `?step` / approved cabinet / pending lock, включая locked-копию «Заявка на проверке. Редактирование откроется…» вне кабинетного гейта при DRAFT + PENDING_REVIEW) не изменены: characterization-контракт 8/8 зелёный до и после, JSX перенесён без правок значений.
+- Дубли disabled-наборов сведены: `wizardSubmitDisabled = submitDisabled || achievementDraftDirty` (кабинетный набор — без этого члена, различие зафиксировано явно); busy-связки `saveMutation.isPending || accountLogout.busy || revisionSubmitActive` больше не собираются в трёх местах отдельно.
+- Проверки: mobile vitest **816/816** (132 файла); typecheck/eslint/prettier чисто. save/submit/claim-slug перенесены кодом, поэтому красные E2E ограничивали проверку именно их: попарный прогон на ветке и на `4bc0c788` в одном окружении (Node 22.20.0, порты 8081/3001, БД `bidplace_e2e`) дал побайтово идентичные ошибки; причины — устаревшие селекторы e2e (имена полей без `*`, «Загрузить фото», пикер страны, «Сохранить и завершить») и фикстура без обязательного направления (submit честно отвечал 409). Исправлено в e2e-поддержке, assertions не ослаблены, продакшн-код и дизайн не тронуты: `author-revision-flow` и `author-application-slug` **6/6 зелёные (Chromium + WebKit)**, e2e save/submit/claim-slug верифицированы end-to-end. Production web build зелёный.
+- Дизайн не менялся; Figma и серии скриншотов для этого рефакторинга не запускались (код-онли перенос, DOM-контракт закреплён characterization-спекой).
+
+## 2026-10-15 — ProductDraftScreen: завершение структурного сплита (Wave 3, экран 2 из 2)
+
+- `Implemented`: критерий «тонкие экраны-композиции» достигнут для `product-draft-screen.tsx` (1302 → 436 строк; JSX и визуальные пропы шагов перенесены дословно, визуал не изменён). Тело разделено по владению состоянием: `product-draft-save.ts` (сессия сохранения), `product-draft-data.ts` (запросы/гидратация/модерационный hold), `product-draft-browser-guard.ts` (web Back/Forward + beforeunload), `product-draft-navigation.ts` (route guard, шаги визарда), `product-draft-image-actions.ts` (медиа-действия). Устранены 3 копии блока «дождаться save перед мутацией в APPROVED» и 2 копии разбора ошибок формы. Существующие form/state/wizard/story/about/images/review/chrome модули переиспользованы без дубликатов.
+- Проверки: characterization + save-race + route-guard + submit-lifecycle (43 теста) и полный mobile vitest 816/816; typecheck 13/13; eslint чисто; production web build (SPA export) exit 0; `git diff --check` чисто. E2E `product-creation-wizard`: **Chromium 11/11 и WebKit 11/11**. Ранее отмеченный Chromium-фейл «shows step 1 validation…» был дефектом очистки controlled-поля тестом (клавиатурный select-all + Delete удалял один символ в Chromium) — исправлен `fill('')` + `toHaveValue('')` в самой спеке, assertions на ошибку и запрет перехода не ослаблены; предсуществование подтверждено прогоном на базе `4bc0c788`.
+- Замечание к записи W3 2026-10-14 ниже: утверждение «тела экранов механически не делятся» снято этим срезом и срезом seller-profile выше — сплит выполнен для обоих личных экранов.
+- Private import `expo-router/build` (`usePreventRemove` в `product-draft-navigation.ts` и `AuthViewport.tsx`) не расширен; снятие с allowlist — отдельная задача (кандидат: публичный экспорт в Expo SDK 58).
+
 ## 2026-10-15 — W5 grid clamp (остаток В2)
 
 - `Implemented`: `gridColumnsFromWidth(width, {minCardWidth, gap, max}) = clamp(floor((width + gap) / (minCardWidth + gap)), 1, max)` — чистая функция в `components/figma/grid-columns.ts` (re-export из `PaddedGrid`), спек `grid-columns.spec.ts` (5 тестов). Брейкпоинты 700/1000 в `public-seller-screen.tsx` удалены → clamp по измеренной ширине (minCard 320, gap `space.x3`=12, max 3): 390 → 1 колонка (карточка 366), 700 → 2, 1000 → 3 — визуал 390 не изменён. `CategoriesSearchPane`: фиксированные `columns={3}` → clamp по onLayout-ширине. Сверка с вёрсткой (по правке ревьюера): реальный контейнер шторки при 390 — 366 (390 − 2×12 `layout.gutter`), тайл (366 − 2×8)/3 ≈ 116.67; значение 120.67 из `CategorySearchTile` измерено при контейнере 378 и при текущих отступах три раза не помещается → minCard 116. Закреплено: helper-spec на ширине 366; e2e «Search categories keep three tiles per row at 390» (один top у первых трёх тайлов, ширина тайла 111–123; скриншот `categories-tiles-390.png`); на узких (<360) перестраивается в 2.
@@ -1527,3 +1816,102 @@ mapping or a desktop screenshot is insufficient.
   at 1440/1024/390 for composition, overflow and responsive action ownership.
 - `Needs verification`: formal matched Pen overlay, native-device behavior,
   physical screen-reader QA and founder approval remain open.
+
+## 2026-10-21 — Login Sheet review
+
+Implemented responsive AuthViewport: full-width sheet below768, centered420 dialog
+from768, shared auth field/button metrics, legalLink semantic role; single form
+preserves input and errors. Browser acceptance20/20 Chromium/WebKit; owner checks62/62,
+typecheck/export clean. Evidence/audit: `docs/audits/current/2026-10-20-LOGIN-SHEET-REVIEW.md`.
+Physical iPhone keyboard, actual200% zoom and device motion remain Needs verification.
+
+## 2026-10-21 — Work editor
+
+Implemented portfolio wizard chrome, rounded photo tiles, shared ordered-block menu
+and private content preview; creation/edit use existing revision/save owners.89 owner
+checks,24 wizard/revision E2E and2 full media lifecycle cases passed. Mobile source
+mapping/evidence: `docs/audits/current/2026-10-21-UI-COMPLETION.md`. Visual status Partial:
+only390 source frames; wider screens NEEDS-FIGMA, physical iPhone/real zoom unverified.
+
+2026-10-21 — Implemented: Home empty action column capped420, fluid366 at390. Chromium/WebKit screenshots390/1024/1440/1920 confirm centering and no overflow; desktop empty-state Figma remains NEEDS-FIGMA. Evidence: current/evidence/2026-10-21-desktop-actions in the UI completion audit.
+
+2026-10-21 — Implemented (browser): one continuous sheet translation and delayed
+auth dismissal navigation.48/48 Chromium/WebKit cover responsive login, loaded
+background images, focus, busy/dirty guards, share→QR/report, catalog filter,
+search and photo viewer. Slow/fast pointer release is monotonic in recorded frame
+traces; real Chromium CDP touch cancel/dismiss also passed. Recordings:
+[UI completion evidence](../audits/current/evidence/2026-10-21-sheet-motion/).
+Native/iPhone runtime, system keyboard and actual browser200% zoom remain Needs
+verification. Reflow viewport checks do not claim to replace these.
+
+Auth-layout/recovery acceptance:24 scenarios passed (20 plus4 addressed history
+reruns), including reload/Back/Forward, dirty cancel, long-copy scrolling and short
+dialog resize. iOS JS/Hermes export passed; no physical iPhone result is claimed.
+
+2026-10-21 — Author parity stage1 Implemented: shared filter rows have visible
+flexible text and trailing checks; compact footer spacing and hidden indicators
+verified. Shared Back normalized and direct-entry fallback corrected.14/14
+Chromium/WebKit cases, owner checks/tsc/lint/build pass. Author layout/desktop
+header/sticky remain Partial, tracked in
+[current audit](../audits/current/2026-10-21-AUTHOR-PROFILE-PARITY.md).
+
+
+### Public desktop navigation — 2026-10-21
+
+Implemented: public Home/Works/Authors/details use AppShell DesktopHeader from
+1024 CSS px on web (explicit founder decision); mobile/native retain FloatingDock.
+PublicNavigationProvider scopes the policy, use-app-navigation owns shared
+profile/create/search destinations. Inactive stacked headers retain geometry but
+are inert and do not duplicate search/focus IDs. Private routes retain their
+existing chrome. No cart/notification backend or placeholder controls added.
+Reference: HRRtDp0bQlukw7ptTkuEZg /4980:15230. Header68px, search48px,
+provided combined logo, current button master.1024/1440: responsive adaptation,
+NEEDS-FIGMA for exact parity.12 unit cases, tsc/lint/build and4 Chromium/WebKit
+navigation cases pass. Author composition remains Partial; see
+[author parity audit](../audits/current/2026-10-21-AUTHOR-PROFILE-PARITY.md).
+
+
+### Author profile parity — 2026-10-21
+
+Implemented: AppShell bleed + PageColumn remove the centered-scrollport halo
+clip; CreatorIdentity100/140px with semantic typography; Works up to four
+measured PaddedGrid columns; About two prose columns when space permits.
+CreatorHeader animates the same action row after measured scroll threshold with
+Reanimated and20px hysteresis/reduced motion, without remounting identity/media.
+Desktop AuthorShare has a labelled trigger; owner Settings →/account/settings.
+Existing unavailable follow/favorites feedback stays honest; no new backend.
+
+Checks:42 owner unit cases +15 button cases, tokens build/mobile tsc/scoped lint,
+production web export;24/24 Chromium/WebKit cases on320–1800px, plus2 recorded
+motion cases. Live read-only vex and API readiness200 checked. Visual parity
+Partial: current master/MVP exclusions and384px vs387px desktop grid start are
+explicit in the [audit](../audits/current/2026-10-21-AUTHOR-PROFILE-PARITY.md).
+1024/1440 exact frames: NEEDS-FIGMA. Physical iPhone, real zoom200% and enlarged
+text: Needs verification. This supersedes historical compact-avatar descriptions.
+
+
+### Shared footer and responsive brand — 2026-10-21
+
+Implemented: `SiteFooter` + `PageScrollView` provide one ordinary-page footer,
+including account/settings and legal pages; auth/forms/editors exclude it.
+All five current legal documents and operator contact remain reachable.
+`AppShell` supplies actual chrome visibility, shared with the branded page
+container; desktop Home has no second mark. `BidplaceLogo` renders the exact
+combined SVG with contain fitting. Navigation links reuse ghost `FigmaButton`.
+No backend or production deployment changed.
+
+Verification:44 owner unit tests,26 Chromium/WebKit cases, mobile tsc/scoped
+ESLint, tokens build and production web export passed. Visual parity Partial:
+44px targets and MVP legal labels differ from the static footer. Physical iPhone
+and browser zoom Needs verification. [Audit](../audits/current/2026-10-21-SHARED-FOOTER.md).
+
+
+### Desktop Home/header follow-up — 2026-10-21
+
+Implemented: shared FigmaIconButton outlined surface for profile/cart/notifications;
+cart/notifications show honest post-MVP feedback in FilterSheet. No unread dot or
+commerce API. Navigation uses ghost FigmaButton with aria-current. Desktop branded
+page inset matches live3139:2222: first section x272,y140,width1256 at1800px.
+Existing mobile/MVP content composition preserved.20 button/icon unit cases and
+8 targeted Chromium/WebKit tests, tsc/scoped lint/web export passed. Visual parity
+Partial; see [audit](../audits/current/2026-10-21-SHARED-FOOTER.md).

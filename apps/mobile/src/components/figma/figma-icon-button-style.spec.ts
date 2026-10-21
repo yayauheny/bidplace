@@ -9,7 +9,9 @@ import {
 
 describe('Figma icon button styles', () => {
   it('keeps the captured 36 px visual frame with a 44 px hit target', () => {
-    expect(figmaIconButtonStyle(false)).toMatchObject({
+    expect(
+      figmaIconButtonStyle(false, 'plain', designTokens.color),
+    ).toMatchObject({
       width: 36,
       height: 36,
       backgroundColor: 'transparent',
@@ -19,16 +21,33 @@ describe('Figma icon button styles', () => {
   });
 
   it('provides the captured 42px muted circular control without changing plain buttons', () => {
-    expect(figmaIconButtonStyle(false, 'muted')).toMatchObject({
+    expect(
+      figmaIconButtonStyle(false, 'muted', designTokens.color),
+    ).toMatchObject({
       width: 42,
       height: 42,
       backgroundColor: designTokens.color.headerControl,
     });
   });
 
+  it('provides an outlined header action without changing other surfaces', () => {
+    expect(
+      figmaIconButtonStyle(false, 'outline', designTokens.color),
+    ).toMatchObject({
+      width: 38,
+      height: 38,
+      borderWidth: designTokens.size.fieldBorder,
+      borderColor: designTokens.color.border,
+      backgroundColor: 'transparent',
+    });
+    expect(
+      figmaIconButtonStyle(true, 'outline', designTokens.color).backgroundColor,
+    ).toBe(designTokens.color.ghostHover);
+  });
+
   it('shows feedback without adding a permanent white plate', () => {
-    expect(figmaIconButtonStyle(true).backgroundColor).toBe(
-      designTokens.color.ghostHover,
-    );
+    expect(
+      figmaIconButtonStyle(true, 'plain', designTokens.color).backgroundColor,
+    ).toBe(designTokens.color.ghostHover);
   });
 });

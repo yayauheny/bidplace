@@ -204,12 +204,12 @@ focus visibility и согласованный URL/back contract.
 ### Shared image-derived atmosphere
 
 `AmbientImageBackground` is the single shared shell-level atmosphere primitive
-for Product About and Creator Profile. It uses the route-provided public image
+for Product About. CreatorIdentity owns the separate bounded avatar halo from
+the current author reference. It is not a shell-level atmosphere. The primitive uses the route-provided public image
 URL only as a blurred visual layer, keeps the sharp image/content accessible,
 adds a neutral veil and a light lower fade, and falls back to the warm page
 surface when media is absent or fails. It is decorative, pointer-inert and
-reduced-motion aware; Product and Creator do not own separate blur
-implementations.
+reduced-motion aware.
 
 ### Page states
 
@@ -245,7 +245,7 @@ Public infrastructure errors use `InfrastructureErrorState`. The unused
 ### Shared atmosphere and accordion invariants
 
 `AmbientImageBackground` is the single shell-level atmosphere primitive for
-Product and Creator Profile. Its media layer is clipped by the outer bounds,
+Product About. Its media layer is clipped by the outer bounds,
 overscanned by a bounded 1.1 scale, and fades through one explicit linear
 gradient into the warm surface. Product About accordion rows use one symmetric
 toggle behavior: the active row closes when activated again, and the control
@@ -283,27 +283,27 @@ requires an explicitly documented per-component exception.
 
 ### Creator identity header (web 390)
 
-Sticky creator header has two product states: `expanded` and `compact`. Scroll
-hysteresis chooses the state from measured hero geometry: `scrollTop >=
-heroHeight - compactStack` collapses, `scrollTop <= park - 20` expands;
-between those values the current state is kept. Unmeasured height stays
-expanded. Web sticky is CSS (`top: -(heroHeight - compactStack)`). Expanded
-`CreatorHero` is a static Figma layout. One `CreatorIdentity` stays mounted;
-compact only restyles the same avatar, handle and actions nodes. Reanimated
-`LinearTransition` (`200ms`, `cubic-bezier(0.2, 0, 0, 1)`,
-`ReduceMotion.System`) interpolates those layout changes. Tabs are not in
-that animation.
-Compact row: avatar `20 / 12` 48×48, handle `76 / 26.5`, actions
-`y=12`, tabs `y≈80`. Web compact stack is `stickyDock.actionHeight`
-(`space.x3 + size.header + space.x5` = 80), plus `stickyDock.tabsHeight` 26.
-Figma scrolled `526:14524` remains `76 / 58.5` under iPhone inset `y=44` /
-tabs `y=186`; those tokens stay canonical. Reduced motion keeps the same
-thresholds and snaps the layout change.
+Current source: HRRtDp0bQlukw7ptTkuEZg4306:8453 /4594:36802 and
+4861:7803 /4886:10106, superseding the previous compact-avatar contract.
+CreatorIdentity remains mounted at100px (mobile) /140px (public desktop).
+Only the existing action row pins after the measured header leaves the viewport;
+there is no duplicate compact identity. Animated.ScrollView feeds a shared scroll
+value. Reanimated transforms/opacity use the common200ms timing and system
+reduced motion.20px hysteresis prevents threshold flicker. React accessibility
+state changes only at visibility crossings, never per frame. Desktop keeps the
+expanded identity under the shared navigation; no duplicate mobile bar.
+
+AppShell contentLayout=bleed gives the author scrollport full viewport width;
+PageColumn owns the same1280+12px container inside it. The15px avatar halo can
+paint outside the centered column, while clipping remains at the physical screen.
+Works uses the common measured PaddedGrid up to four columns,12px horizontal /
+32px vertical gaps. About uses the same grid owner for two prose columns when
+space permits. Mobile remains one column. No Archive/commerce/favorites backend
+is implied by these Figma frames.
 
 ### Work identity header (web 390)
 
-Work uses the same `stickyDock.*` visual contract as Creator compact, with
-different sticky physics. Expanded rest is gallery media 520, dots after
+Work retains its separate `stickyDock.*` visual contract and sticky physics. Expanded rest is gallery media 520, dots after
 `space.x3`, identity after `sectionGap` 20, tabs after `space.x10` 40. One
 Back/Share pair stays mounted in `StickyDockActionRow` and overlays the
 gallery at `20 / 12` 48×48. Those nodes pin with CSS sticky at the same
@@ -315,8 +315,7 @@ that host and stays transparent until Work tabs stick at
 scrollport, top `rootMargin` `-stickyDock.actionHeight`). Then it fades to
 the shared navigation glass (`FigmaGlassSurface preset="navigation"`,
 `borderRadius: 0`, `motion.control`, `cubic-bezier(0.2, 0, 0, 1)`,
-`ReduceMotion.System`). Creator compact uses the same material behind
-identity and tabs. Docked tabs set `surface="transparent"` so they do not
+`ReduceMotion.System`). Docked tabs set `surface="transparent"` so they do not
 paint a second canvas. Tab labels use `contentInset={layout.gutter}`;
 the tablist divider stays full-bleed. Gallery and identity scroll away
 naturally. Native Work stays expanded-only.
@@ -462,6 +461,36 @@ from below, exits downward, and the backdrop fades (`motion.control`,
 `cubic-bezier(0.2, 0, 0, 1)`, reduced motion). Geometry is unchanged. The
 native branch is a stub.
 
+Ordinary web AppDialog sheets share one visual `SheetBackdropProvider` installed
+under ThemeProvider in AppProviders. FilterSheet/ShareSheet/mediaSheet inherit it;
+A → B handoffs retain the same dimmer while each dialog keeps its dismissal,
+content and focus owner. The transparent hit layer stays below the panel.
+Last close/unmount removes the dimmer; native and standalone previews keep their
+existing per-dialog layer. Centered confirmations retain their separate level.
+Return-focus follows the opener ancestry only when the immediate opener was
+removed, preserving focus within a still-open parent (2026-10-19 transition matrix).
+
+Auth's visual dimmer is owned by the persistent `(auth)/_layout`, so changing
+between login, forgot-password and reset-password does not replay its fade.
+AuthViewport keeps the transparent dismissal hit layer and its existing guards;
+full-screen registration covers the dimmer with its opaque canvas. Shared modal
+color/motion values are unchanged (2026-10-19 auth-transition regression).
+
+`SheetDragSurface` owns downward header/handle dragging for AppDialog sheets,
+FilterSheet (including compact bare headers) and the auth sheet. The content body
+keeps its normal scroll behavior. A short drag springs back; a committed drag calls
+the existing close owner, preserving busy and dirty guards. Cross, Escape and focus
+return remain available. Reduced motion removes the return transition. Centered
+confirmations and full-screen registration have no drag affordance (DEC-122).
+
+Shared sheet width policy (2026-10-19, account foundation): for viewports up to
+`layout.sheetFillViewportMax` (600 CSS px) an auth/AppDialog sheet spans the full
+viewport width; above 600 it is capped at `layout.sheetMax` (390). Inner fields fill
+the sheet's inner width with the existing paddings. Full-screen registration keeps
+its measured 350 column, centered dialogs are not stretched. The rule lives in
+`sheetWidthConstraint()` (app-dialog-host-style) and AuthViewport; verified in
+production build, Chromium + WebKit, 320–1024 (`docs/audits/current/evidence/2026-10-19-sheet-widths/`).
+
 On web AppDialog focuses its close control when opened. A sheet also completes
 initial focus after its entering animation if focus is still outside the dialog;
 it never steals focus already inside. The existing Escape/trap/return-focus
@@ -578,7 +607,7 @@ control keeps its own 52 px height and 16/19 type.
 | hoverEmpty  | `292:5041` | `fieldHoverBorder` `#535353` | `fieldHoverFill` `#FCFCFC` |
 | filled      | `292:5038` | `ink` `#2A2A2A`              | `#FFFFFF`                  |
 | hoverFilled | `292:5039` | `solidHover` `#000000`       | `#FCFCFC`                  |
-| focus       | `292:5037` | `focus` `#004DFF`            | `#FFFFFF`                  |
+| focus       | `292:5037` | `focus` `#121212` (DEC-127)  | `#FFFFFF`                  |
 | error       | `292:5040` | `error` `#FF0000`            | `#FFFFFF`                  |
 | success     | `292:5036` | `success` `#039600`          | `#FFFFFF`                  |
 | disabled    | `292:5042` | `#8A8A8A`                    | `mutedFill` `#F3F3F3`      |
@@ -642,13 +671,187 @@ Dismissed dialogs must not intercept clicks: web `app-dialog-host` /
 
 `DEC-104`. A pressed `FigmaButton` or `FigmaChoiceChip` keeps its existing
 fill, inset, or opacity change. It does not draw a mint ring. Selected chips
-stay on the charcoal fill after release. Keyboard focus stays the blue
-`focus-visible` outline in `global.css`. Dock items already have no shadow.
+stay on the charcoal fill after release. Keyboard focus uses the monochrome
+`focus-visible` outline in `global.css` (DEC-127). Dock items already have no shadow.
 This does not change control size, type, or the field success state.
 
-## 7. Old system boundary
+## 7. Account shared components (2026-10-20)
+
+Владельцы и контракты общих компонентов экрана аккаунта (волны 3A–3D).
+Визуальные значения light прежние; black-палитра provisional.
+
+- `AccountIdentity` (`components/figma/AccountIdentity.tsx`) — row:
+  avatar100 (`size.accountAvatar`, `radius.avatar`, placeholder
+  `accountAvatarPlaceholder`) + текстовая колонка `flex:1/minWidth:0`
+  - опциональный CTA slot. Имя — `accountName` strong; handle
+    `@slug` — `accountHandle` цветом `accountMeta`; handle nullable.
+    Фото через `ResilientRemoteImage` (`fallback="plain"`, retryable=false).
+    Это не `CreatorIdentity`: та — для публичных страниц автора.
+- Published identity правило: при APPROVED имя/фото/sharePath берутся
+  только из публичного author-кэша (`use-account-public-identity`, общий
+  query key с публичным экраном автора); owner profile несёт editing
+  overlay и для identity не читается.
+- `SettingsGroup`/`SettingsRow` (`components/figma/SettingsList.tsx`):
+  label группы опционален и красится `accountMeta`; поверхность группы
+  прежняя. Row: иконка + текстовый блок `flex:1/minWidth:0` (AppText
+  `flexShrink:1`), props `trailingArrow` и `busy` (busy блокирует row).
+- `WorkCoverCaption` (экспорт `WorkCoverCard.tsx`) — единый caption
+  caption-варианта: author — `coverCaptionAuthor` (tracking −0.14), title
+  — роль `coverCaptionTitle` 14/17/500/−0.28, максимум 2 строки. Ветки
+  cover/no-cover используют один renderer; дублирующей разметки нет.
+- Новые semantic-роли (`SemanticColorMap` в обеих map theme.ts):
+  `accountMeta` (light #858585, black provisional #8F8F8F) — метки групп
+  настроек и handle; `coverCaptionTitle` — типографика caption-заголовка
+  (в tokens.ts). `gray2` не переиспользуется новыми consumers.
+- `ResilientRemoteImage`: prop `fallback: 'labelled' | 'plain'`
+  (plain — без текста плейсхолдера; default 'labelled' прежний).
+- Back variant `settings` — шапка настроек (frame/glyph28, hitSlop до touch44).
+  FigmaIconButton size=settingsHeader задаёт такой же frame для симметрии
+  противоположного действия; default-потребители сохраняют прежний размер.
+- settingsTitle/settingsRow сохраняют естественную высоту строки Figma
+  (normal), без предположительных чисел22/20.
+- AccountIdentity: имя/handle сгруппированы отдельно, CTA content-width;
+  длинное имя переносится, не масштабируется.
+- FormPageShell: варианты account/settings задают paddingTop12/20 через
+  spacing-токены; default24 и authorApplication сохраняют поведение.
+- `FormPageShell` — testID `form-page` (единый scroll-owner форм;
+  web-скоуп тестов поверх стека маршрутов).
+
+## 8. Old system boundary
 
 `docs/modern-ui` and its design language are retired. Runtime public screens
 use `apps/mobile/src/components/figma` and wrappers in `components/ui`. There
 is no nested Figma token object. Figma is the production visual source for
 mobile-web 390 (`DEC-119`).
+
+### Registration consent composition —2026-10-20
+
+AuthConsentCheckbox принимает текстовый children-slot; RegistrationLegalText
+переиспользует существующий keyboard-accessible LegalLink. Ссылки —fieldValue,
+основной текст —новая semantic-роль legalText (light858585, black provisional).
+Роль применяется ко всему AuthLegalText, без новых локальных цветов.
+Fullscreen AuthViewport заполняет viewport; sheetWidthConstraint относится только
+к шторкам. Форма внутри fullscreen сохраняет центрирование и maxWidth350.
+
+### Floating dock home icon — 2026-10-20
+
+Главная использует общий FigmaIcon `home-01` (Hugeicons Home01Icon), а не
+брендовый знак. Path совпадает с live node 7008:16942; размер, stroke, цвет
+и hit area остаются у существующих владельцев dock/FigmaIcon/tokens.
+Состав MVP dock остаётся Home/Search/Add/Profile без корзины.
+
+### Date selection — 2026-10-20, DEC-126
+
+`components/ui/DateField` is the shared date-only field (UI barrel export).
+It composes FigmaSelectField with optional calendar icon and existing AppDialog
+sheet. Use the same field for date selection; no free-text-only date entry.
+Owner forms retain validation, busy/session guards and persistence. The field
+emits a canonical date string only after confirmation or explicit clear.
+
+Web DateSelection composes public React Aria Calendar/NumberField/Button APIs,
+Russian locale and @internationalized/date calendar values. Calendar controls
+reuse field typography, control radius, touch size and semantic surface/ink/
+action/onAction/focus roles. Convert RN lineHeight to CSS px. Select appearance
+is normalized for WebKit with the existing arrow-down icon. Native uses SDK57
+system picker; its platform appearance is not claimed to match the web calendar.
+No new calendar geometry or palette is copied into screens. Month-only values
+remain day:null; never invent day1 or serialize civil dates as UTC instants.
+
+Web sheet motion has one persistent DOM tree with withTiming and reduced-motion
+support. Closing content is inert and aria-hidden; completion removes it. This
+avoids Reanimated web layout exit moving interactive controls into dummy clones.
+Web/native now share AppDialogSheetMotion translation ownership; see the2026-10-21 acceptance below.
+
+### 2026-10-20 — Search и полноэкранный AuthViewport
+
+SearchOverlayTabs растягивает rail на ширину доступной колонки, sampleWidth не
+является ограничением runtime. Интерактивная поверхность AuthorSearchRow имеет
+radius.small; постоянная геометрия передаётся статическим style, состояния —
+через interactionStyle, поскольку Link asChild не сохраняет callback-style.
+Крест AuthViewport использует size.touch и существующие auth.screenPaddingX/Top;
+в DOM следует после формы, чтобы первичный фокус оставался на поле. Цвет и
+модальность focus-visible из §6.4 сохранены.
+
+### DEC-127 — Монохромный focus (2026-10-20)
+
+По прямому решению основателя роль focus — #121212 в light и #FFFFFF в black.
+Это утверждённая замена прежнего синего из Figma состояния focus292:5037 и
+уточнение §6.4/DEC-104. Поля используют border этой роли, прочие элементы —
+существующий outline2px с offset2px. Pointer/keyboard-модальность, размеры,
+error/disabled состояния и доступность не меняются. ThemeProvider зеркалирует
+роль в CSS; начальные CSS-значения соответствуют токену до hydration. Black-тема
+в целом остаётся provisional и не включается пользователям этим решением.
+
+### 2026-10-21 — Responsive auth composition
+
+AuthViewport owns mobile sheet/desktop dialog composition at768 CSS px, dialog cap420.
+Shared field metric `auth` is51; default fields unchanged. Button size `authDialog`
+uses47 geometry and current master typography. Login informational links use
+semantic `legalLink`; registration link meaning/color and DEC-124/125 are unchanged.
+
+### 2026-10-21 — Ordered content editing
+
+ProductBlockActions owns photo/story up/down/delete menus; text reveal uses hover /
+focus-within only for fine pointers, touch/native always exposes its trigger. Shared
+FigmaIconButton carries expanded state; heading/text glyphs use the existing icon
+registry. `storyHeading`15/24, `mediaTile` radius16 and `stepDot`6 follow the supplied
+creation frames. Existing PaddedGrid derives photo columns from measured width.
+FormSection may omit its heading where the wizard chrome already supplies one.
+
+Home solitary CTA hosts use layout.actionColumnMax420 with width100% and centered alignment; shared buttons and catalog containers retain their own widths.
+
+### 2026-10-21 — Continuous sheet motion
+
+AppDialogSheetMotion is the sole Reanimated translation owner for enter, header
+drag, cancellation and exit. SheetDragSurface feeds its shared value, without
+React state per frame or a second spring/transform. Accepted close retains the
+release offset; vetoed close returns to rest. Auth navigation waits for onExited.
+UseReturnFocus restores only after the real FocusScope closes. Reduced motion
+uses the existing system timing policy. Shared sheet consumers, busy/dirty guards,
+background continuity and focus are covered by named browser/owner checks in
+the [execution audit](../audits/current/2026-10-21-UI-COMPLETION.md).
+
+### 2026-10-21 — Shared filter selection and Back (DEC-128)
+
+FilterOptionRow uses one trailing check for checkbox/radio semantics. Its label
+flexes and wraps; optionLabel15/20 and pickerTitle18/22 are measured from current
+author Figma4594:35522 in HRRtDp0bQlukw7ptTkuEZg. Minimum row44px preserves
+touch access. Scroll indicators are hidden; scrolling remains available. Compact
+FilterSheet leaves bottom padding to AppDialog, with20px for author categories.
+BackButton is one muted round FigmaIconButton with disabled/pressed feedback;
+former glass/chrome/settings variants are removed by the founder's global request.
+
+
+### Public desktop navigation — 2026-10-21
+
+Implemented: public Home/Works/Authors/details use AppShell DesktopHeader from
+1024 CSS px on web (explicit founder decision); mobile/native retain FloatingDock.
+PublicNavigationProvider scopes the policy, use-app-navigation owns shared
+profile/create/search destinations. Inactive stacked headers retain geometry but
+are inert and do not duplicate search/focus IDs. Private routes retain their
+existing chrome. No cart/notification backend or placeholder controls added.
+Reference: HRRtDp0bQlukw7ptTkuEZg /4980:15230. Header68px, search48px,
+provided combined logo, current button master.1024/1440: responsive adaptation,
+NEEDS-FIGMA for exact parity.12 unit cases, tsc/lint/build and4 Chromium/WebKit
+navigation cases pass. Author composition remains Partial; see
+[author parity audit](../audits/current/2026-10-21-AUTHOR-PROFILE-PARITY.md).
+
+
+### Ordinary page chrome (2026-10-21)
+
+`AppShell` owns desktop/dock visibility; `PageScrollView` composes the existing
+`PageColumn`, `SiteFooter` and dock clearance in one scrollport. Its branded
+variant owns the responsive central mark. `SiteFooter` shares the wide-layout
+policy with navigation and uses existing auth/create routes and legal IDs.
+`FormPageShell` includes it for account/settings only by default. Full-screen
+forms and overlays retain their existing layout. `BidplaceLogo` is the shared
+contain-fitted combined SVG for header/footer.
+
+
+Desktop header uses the third (`ghost`) FigmaButton variant for Works/Authors,
+including shared hover/press/focus. `FigmaIconButton surface="outline"` implements
+the38px circular frame from4980:15197 with0.5px semantic border and existing hit
+slop; plain/muted consumers retain their behavior. Header routes are unchanged.
+Cart/notifications use the existing compact FilterSheet for post-MVP feedback;
+never show an unread indicator without real data. Branded PageScrollView owns
+the desktop72px top/24px gutter from3139:2222, preserving mobile spacing.

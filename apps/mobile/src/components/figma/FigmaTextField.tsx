@@ -16,6 +16,7 @@ import {
 
 import { designTokens } from '@bidplace/design-tokens';
 
+import { useAppTheme } from '../../providers/theme-provider';
 import { FigmaIcon } from './FigmaIcon';
 import { type FigmaIconName } from './figma-icon-names';
 import {
@@ -36,7 +37,7 @@ type FigmaTextFieldProps = Omit<TextInputProps, 'editable'> & {
   icon?: FigmaIconName;
   iconColor?: string;
   prefix?: string;
-  metrics?: 'default' | 'authPassword' | 'authScreenPassword';
+  metrics?: 'default' | 'auth' | 'authPassword' | 'authScreenPassword';
   variant?: FigmaFieldVariant;
   trailing?: ReactNode;
 };
@@ -59,7 +60,7 @@ export const FigmaTextField = forwardRef<TextInput, FigmaTextFieldProps>(
       success = false,
       disabled = false,
       icon,
-      iconColor = designTokens.color.fieldValue,
+      iconColor: iconColorProp,
       prefix,
       metrics = 'default',
       variant = 'default',
@@ -76,6 +77,8 @@ export const FigmaTextField = forwardRef<TextInput, FigmaTextFieldProps>(
     },
     ref,
   ) {
+    const palette = useAppTheme();
+    const iconColor = iconColorProp ?? palette.fieldValue;
     const errorId = useId();
     const [focused, setFocused] = useState(false);
     const [hovered, setHovered] = useState(false);
@@ -93,11 +96,13 @@ export const FigmaTextField = forwardRef<TextInput, FigmaTextFieldProps>(
       filled: filled || focused,
     });
     const showLabel = figmaFieldShowsFloatingLabel(status);
-    const valueColor = figmaFieldValueColor(status);
+    const valueColor = figmaFieldValueColor(status, palette);
 
     const field = (
       <View style={{ width: '100%' }}>
-        <View style={figmaFieldStyle(status, multiline, metrics, variant)}>
+        <View
+          style={figmaFieldStyle(status, multiline, metrics, variant, palette)}
+        >
           {icon ? (
             <View style={{ padding: designTokens.space.iconPad }}>
               <FigmaIcon
@@ -116,7 +121,7 @@ export const FigmaTextField = forwardRef<TextInput, FigmaTextFieldProps>(
               accessibilityElementsHidden
               importantForAccessibility="no"
               style={{
-                color: designTokens.color.fieldValue,
+                color: palette.fieldValue,
                 ...designTokens.typography.field,
               }}
             >
@@ -137,7 +142,11 @@ export const FigmaTextField = forwardRef<TextInput, FigmaTextFieldProps>(
             aria-invalid={error ? true : undefined}
             aria-describedby={error ? errorId : undefined}
             placeholder={showLabel ? undefined : (placeholder ?? label)}
-            placeholderTextColor={figmaFieldPlaceholderColor(status, variant)}
+            placeholderTextColor={figmaFieldPlaceholderColor(
+              status,
+              variant,
+              palette,
+            )}
             multiline={multiline}
             dataSet={Platform.OS === 'web' ? { figmaField: 'true' } : undefined}
             onChangeText={(nextValue) => {
@@ -173,27 +182,27 @@ export const FigmaTextField = forwardRef<TextInput, FigmaTextFieldProps>(
             ]}
           />
           {trailing}
-          {showLabel ? (
-            <View
-              pointerEvents="none"
+          {/* shortcut: label stays mounted with display none — unmounting it during blur re-triggers the radix FocusScope mutation observer and steals focus to the dialog container */}
+          <View
+            pointerEvents="none"
+            style={{
+              position: 'absolute',
+              left: designTokens.space.fieldLabelX,
+              top: designTokens.space.fieldLabelY,
+              paddingHorizontal: 4,
+              backgroundColor: palette.canvas,
+              display: showLabel ? undefined : 'none',
+            }}
+          >
+            <Text
               style={{
-                position: 'absolute',
-                left: designTokens.space.fieldLabelX,
-                top: designTokens.space.fieldLabelY,
-                paddingHorizontal: 4,
-                backgroundColor: designTokens.color.canvas,
+                color: palette.fieldLabel,
+                ...designTokens.typography.fieldLabel,
               }}
             >
-              <Text
-                style={{
-                  color: designTokens.color.fieldLabel,
-                  ...designTokens.typography.fieldLabel,
-                }}
-              >
-                {label}
-              </Text>
-            </View>
-          ) : null}
+              {label}
+            </Text>
+          </View>
         </View>
         {error ? (
           <Text
@@ -203,7 +212,7 @@ export const FigmaTextField = forwardRef<TextInput, FigmaTextFieldProps>(
               marginTop: designTokens.space.fieldErrorGap,
               marginLeft: designTokens.space.fieldErrorX,
               marginRight: designTokens.space.fieldX,
-              color: designTokens.color.error,
+              color: palette.error,
               ...designTokens.typography.fieldError,
             }}
           >

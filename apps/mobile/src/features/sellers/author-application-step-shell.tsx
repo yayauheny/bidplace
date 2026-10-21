@@ -7,6 +7,7 @@ import { BackButton } from '../../components/figma/BackButton';
 import { FigmaIcon } from '../../components/figma/FigmaIcon';
 import { MotionPressable } from '../../components/ui/MotionPressable';
 import { AppText } from '../../components/ui';
+import { useAppTheme } from '../../providers/theme-provider';
 import { SellerProfileCreationStepSelector } from './seller-profile-steps';
 
 const chrome = designTokens.authorApplication;
@@ -34,6 +35,7 @@ export function AuthorApplicationStepShell({
   children: ReactNode;
   footer?: ReactNode;
 }) {
+  const palette = useAppTheme();
   const showBack = profileStep > 1;
 
   return (
@@ -41,32 +43,32 @@ export function AuthorApplicationStepShell({
       <View style={{ gap: chrome.headerBlockGap }}>
         <View
           style={{
-            height: chrome.chromeFrame,
+            minHeight: designTokens.size.touch,
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',
           }}
         >
-          {showBack ? (
-            <BackButton
-              variant="chrome"
-              disabled={backDisabled || onBack === undefined}
-              onPress={() => onBack?.()}
-            />
-          ) : (
-            <View style={{ width: chrome.chromeFrame }} />
-          )}
+          <View
+            style={{ width: designTokens.size.touch, alignItems: 'center' }}
+          >
+            {showBack ? (
+              <BackButton
+                disabled={backDisabled || onBack === undefined}
+                onPress={() => onBack?.()}
+              />
+            ) : null}
+          </View>
           <SellerProfileCreationStepSelector profileStep={profileStep} />
           <MotionPressable
             accessibilityRole="button"
             accessibilityLabel="Закрыть"
             disabled={closeDisabled}
-            hitSlop={(designTokens.size.touch - chrome.chromeFrame) / 2}
             onPress={onClose}
             preset="icon"
             style={{
-              width: chrome.chromeFrame,
-              height: chrome.chromeFrame,
+              width: designTokens.size.touch,
+              height: designTokens.size.touch,
               alignItems: 'center',
               justifyContent: 'center',
             }}
@@ -75,7 +77,7 @@ export function AuthorApplicationStepShell({
               name="x"
               size={chrome.chromeGlyph}
               strokeWidthPx={chrome.chromeStroke}
-              color={designTokens.color.inkStrong}
+              color={palette.inkStrong}
             />
           </MotionPressable>
         </View>

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'expo-router';
 
 import { logInfrastructureError } from '../../errors';
+import { clearAccountFormDrafts } from '../../lib/local-form-draft';
 import { useAuth } from '../../providers/auth-provider';
 
 function isAbortError(error: unknown): boolean {
@@ -51,6 +52,9 @@ export function useAccountLogout() {
     pending.current = true;
     setBusy(true);
     const path = pathnameRef.current;
+    // Local form drafts belong to the signed-in account only; drop them with
+    // the session so a later login never resurrects pre-logout input.
+    if (auth.user?.id) clearAccountFormDrafts(auth.user.id);
     try {
       await completeAccountLogout({
         logout: () => auth.logout(),

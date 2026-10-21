@@ -9,9 +9,9 @@ import {
 
 describe('sticky dock surface', () => {
   it('fills its host and fades opacity only', () => {
-    const hidden = stickyDockSurfaceStyle(false, false);
-    const shown = stickyDockSurfaceStyle(true, false);
-    const reduced = stickyDockSurfaceStyle(true, true);
+    const hidden = stickyDockSurfaceStyle(false, false, designTokens.color);
+    const shown = stickyDockSurfaceStyle(true, false, designTokens.color);
+    const reduced = stickyDockSurfaceStyle(true, true, designTokens.color);
     expect(hidden).not.toHaveProperty('height');
     expect(hidden.position).toBe('absolute');
     expect(hidden.inset).toBe(0);

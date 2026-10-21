@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react';
 
+import { useAppTheme } from '../../providers/theme-provider';
 import {
   figmaChipGradientColors,
   figmaChipGradientPlacement,
@@ -27,10 +28,11 @@ export function FigmaChip({
   tone?: FigmaChipTone;
   size?: FigmaChipSize;
 }) {
+  const palette = useAppTheme();
   const usesGradientStroke = figmaChipUsesGradientStroke(tone);
   const gradientPlacement = figmaChipGradientPlacement(tone);
-  const gradientColors = figmaChipGradientColors(tone);
-  const baseStyle = figmaChipStyle(tone);
+  const gradientColors = figmaChipGradientColors(tone, palette);
+  const baseStyle = figmaChipStyle(tone, palette);
   const sizeStyle = figmaChipSizeStyle(size);
   const paddingHorizontal =
     'paddingHorizontal' in sizeStyle
@@ -50,9 +52,7 @@ export function FigmaChip({
         borderWidth:
           gradientPlacement === 'outside' ? 0 : baseStyle.borderWidth,
         borderStyle: 'solid',
-        borderColor: usesGradientStroke
-          ? 'transparent'
-          : baseStyle.borderColor,
+        borderColor: usesGradientStroke ? 'transparent' : baseStyle.borderColor,
         overflow: 'visible',
         alignItems: baseStyle.alignItems,
         justifyContent: baseStyle.justifyContent,
@@ -79,7 +79,7 @@ export function FigmaChip({
       ) : null}
       <span
         style={{
-          color: figmaChipTextColor(tone, size),
+          color: figmaChipTextColor(tone, size, palette),
           fontFamily: typography.fontFamily,
           fontSize: typography.fontSize,
           fontWeight: typography.fontWeight,

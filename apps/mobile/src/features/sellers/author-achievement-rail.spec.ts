@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { designTokens } from '@bidplace/design-tokens';
+import { designTokens, lightColorMap } from '@bidplace/design-tokens';
 
 import { authorAchievementRailSpec } from './author-achievement-rail';
 
 describe('Author achievement rail', () => {
   it('uses Frame 219 marker and line on the phone about cards', () => {
-    expect(authorAchievementRailSpec()).toEqual({
+    expect(authorAchievementRailSpec(lightColorMap)).toEqual({
       sourceNodeId: '742:20510',
       markerNodeId: '744:20554',
       pageNodeId: '621:19578',

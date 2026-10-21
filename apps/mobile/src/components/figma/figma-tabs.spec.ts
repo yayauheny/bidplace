@@ -12,6 +12,11 @@ import { FigmaTabs } from './FigmaTabs';
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
+vi.mock('expo-router', () => ({
+  DefaultTheme: { colors: {} },
+  ThemeProvider: ({ children }: { children?: ReactNode }) => children,
+}));
+
 // RN-примитивы прокидываем в DOM только с теми стилями, что проверяет спека.
 function domStyle(style?: Record<string, unknown> | null) {
   const out: Record<string, string> = {};
@@ -53,7 +58,11 @@ vi.mock('react-native', () => ({
     createElement(
       'div',
       { role: accessibilityRole },
-      createElement('div', { style: domStyle(contentContainerStyle) }, children),
+      createElement(
+        'div',
+        { style: domStyle(contentContainerStyle) },
+        children,
+      ),
     ),
 }));
 
@@ -114,13 +123,16 @@ afterEach(() => {
 
 describe('Figma tabs', () => {
   it('uses the author-page inactive ink from 621:19524', () => {
-    expect(figmaTabLabelColor(true)).toBe(designTokens.color.ink);
-    expect(figmaTabLabelColor(false)).toBe('#565656');
+    expect(figmaTabLabelColor(true, designTokens.color)).toBe(
+      designTokens.color.ink,
+    );
+    expect(figmaTabLabelColor(false, designTokens.color)).toBe('#565656');
   });
 
   it('insets the label rail by 24px and keeps the divider on the fill wrapper', () => {
     const view = mountTabs(24);
-    const tablist = view.container.querySelector<HTMLElement>('[role="tablist"]');
+    const tablist =
+      view.container.querySelector<HTMLElement>('[role="tablist"]');
     const rail = tablist?.firstElementChild as HTMLElement | null;
     const wrapper = tablist?.parentElement as HTMLElement | null;
     expect(tablist).toBeTruthy();
@@ -131,14 +143,17 @@ describe('Figma tabs', () => {
     expect(tablist!.style.paddingRight).not.toBe('24px');
     const expectedDivider = document.createElement('div');
     expectedDivider.style.borderBottom = `1px solid ${designTokens.color.divider}`;
-    expect(wrapper!.style.borderBottom).toBe(expectedDivider.style.borderBottom);
+    expect(wrapper!.style.borderBottom).toBe(
+      expectedDivider.style.borderBottom,
+    );
     expect(tablist!.style.borderBottom).toBe('');
     expect(rail!.style.borderBottom).toBe('');
   });
 
   it('uses a zero label-rail inset when contentInset is omitted', () => {
     const view = mountTabs();
-    const tablist = view.container.querySelector<HTMLElement>('[role="tablist"]');
+    const tablist =
+      view.container.querySelector<HTMLElement>('[role="tablist"]');
     const rail = tablist?.firstElementChild as HTMLElement | null;
     expect(rail!.style.paddingLeft).toBe('0px');
     expect(rail!.style.paddingRight).toBe('0px');

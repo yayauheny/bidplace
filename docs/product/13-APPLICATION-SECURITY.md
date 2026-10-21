@@ -236,3 +236,20 @@ Coverage: `env-profile.spec.ts`, `env.spec.ts` matrix, `rules.spec.ts`, `local-m
   mail idempotency stay in PostgreSQL and do not require Redis today (**DEC-109**).
   Revisit Redis only for shared cheap gates or high-contention IP spray without
   moving atomic quota/idempotency out of PostgreSQL.
+
+### Registration consent boundary —2026-10-20
+
+По DEC-125 подтверждения и18+ обязательны независимо от успешности просмотра
+документов. RegistrationLegalEvidence фиксирует принятие серверной редакции,
+а не доказательство загрузки/прочтения. Отсутствующие клиентские version допустимы;
+если версия передана, сервер проверяет актуальность. В БД всегда записывается
+настоящая серверная версия, без пустого/fake значения. Missing/corrupt canonical
+source не подменяется fallback. User+evidence создаются атомарно; Turnstile и
+session/identity protection не ослабляются. Не объявлять незавершённый пакет
+готовым к публичному запуску по одному факту доступной регистрации.
+
+Local manual-test compatibility: ScriptedTurnstileVerifier accepts Cloudflare's
+official public dummy token only through the existing test/local factory gate.
+Development/staging/production profiles do not enable this verifier. Dummy
+tokens have no real action/hostname proof and are not a security-verification
+claim. Production Cloudflare Siteverify/action/hostname/expiry checks unchanged.

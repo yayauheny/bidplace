@@ -432,12 +432,20 @@ describe('AdminModerationService', () => {
       instagramUrl: null,
       websiteUrl: null,
       shortDescription: 'Updated description',
+      profilePhotoMimeType: 'image/png',
+      profilePhotoByteLength: 20,
+      profilePhotoChecksum: 'b'.repeat(64),
+      profilePhotoObjectKey: 'seller-photo:editing-b',
       updatedAt: now,
     };
     const sellerProfile = {
       id: 'seller-id',
       status: 'APPROVED',
       updatedAt: now,
+      profilePhotoMimeType: 'image/jpeg',
+      profilePhotoByteLength: 8,
+      profilePhotoChecksum: 'a'.repeat(64),
+      profilePhotoObjectKey: 'seller-photo:published-a',
       profilePhotoData: new Uint8Array([1]),
       editingRevision: revision,
     };
@@ -471,6 +479,17 @@ describe('AdminModerationService', () => {
       }),
       select: sellerProfileResponseSelect,
     });
+    // Public identity switches to the approved revision photo only at
+    // approval; the published A photo must not survive the approve write.
+    expect(tx.sellerProfile.update.mock.calls[0]?.[0].data).toMatchObject({
+      profilePhotoObjectKey: 'seller-photo:editing-b',
+      profilePhotoMimeType: 'image/png',
+      profilePhotoByteLength: 20,
+      profilePhotoChecksum: 'b'.repeat(64),
+    });
+    expect(
+      tx.sellerProfile.update.mock.calls[0]?.[0].data.profilePhotoObjectKey,
+    ).not.toBe('seller-photo:published-a');
     expect(tx.sellerProfile.update.mock.calls[0]?.[0].data).not.toHaveProperty('slug');
   });
 

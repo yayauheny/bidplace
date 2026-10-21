@@ -3,76 +3,10 @@
  * `pAPQo6cADmG5XzVmBX76EE`.
  * Screen aliases map Figma values onto one semantic object.
  */
+import { lightColorMap } from './theme';
+
 export const designTokens = {
-  color: {
-    canvas: '#FFFFFF',
-    surface: '#FFFFFF',
-    surfaceWarm: '#FFFFFF',
-    surfaceMuted: '#F3F3F3',
-    surfaceStrong: '#E8E8E8',
-    surfacePanel: '#F3F3F3',
-    searchSurface: '#F3F3F3',
-    dialogSurface: '#FFFFFF',
-    ink: '#2A2A2A',
-    inkSoft: '#2A2A2A',
-    // Figma variable `Black`: media sheet heading and close glyph.
-    inkStrong: '#121212',
-    textSecondary: '#8A8A8A',
-    textMuted: '#8A8A8A',
-    tabInactive: '#565656',
-    textSubdued: '#565656',
-    gray2: '#858585',
-    border: '#DEDEDE',
-    borderStrong: '#2A2A2A',
-    divider: '#E2E2E2',
-    chip: 'rgba(0, 0, 0, 0.15)',
-    chipOutline: 'rgba(255, 255, 255, 0.16)',
-    placeholder: '#8A8A8A',
-    action: '#292929',
-    actionHover: '#000000',
-    accent: '#E9401A',
-    accentDark: '#E9401A',
-    accentSoft: '#F3F3F3',
-    success: '#039600',
-    warning: '#A66B12',
-    danger: '#FF0000',
-    dangerHover: '#C40000',
-    error: '#FF0000',
-    focus: '#004DFF',
-    overlay: 'rgba(41, 41, 41, 0.70)',
-    overlayScrim: 'rgba(0, 0, 0, 0.70)',
-    glass: 'rgba(255, 255, 255, 0.60)',
-    glassStrong: 'rgba(255, 255, 255, 0.80)',
-    glassChip: 'rgba(255, 255, 255, 0.70)',
-    glassBorder: '#DEDEDE',
-    glassBorderEnd: '#F3F3F3',
-    atmosphereWash: 'rgba(255, 255, 255, 0.40)',
-    modalDimmer: 'rgba(42, 42, 42, 0.50)',
-    headerControl: '#F3F3F3',
-    solid: '#292929',
-    solidHover: '#000000',
-    solidDisabled: '#949494',
-    muted: '#8A8A8A',
-    fieldLabel: '#999999',
-    fieldValue: '#121212',
-    fieldIcon: '#858585',
-    // Empty border and placeholder of the `authorApplication` field variant.
-    authorApplicationField: '#999999',
-    // Guide lines drawn over the author photo placeholder (Стать автором 527:16416).
-    photoGuide: '#911E05',
-    fieldHoverBorder: '#535353',
-    ghostHover: '#F7F7F7',
-    mutedFill: '#F3F3F3',
-    mutedHover: '#E8E8E8',
-    quietFill: '#EFEFEF',
-    quietBorderStart: '#FFFFFF',
-    quietBorderEnd: '#999999',
-    textSubtle: '#6F6F6F',
-    fieldHoverFill: '#FCFCFC',
-    saleLive: '#E9401A',
-    saleAnnounce: '#51E91A',
-    white: '#FFFFFF',
-  },
+  color: lightColorMap,
   space: {
     x1: 4,
     x2: 8,
@@ -143,10 +77,14 @@ export const designTokens = {
     socialGroupX: 8,
     socialGroupY: 6,
     socialGroupGap: 12,
-    filterOptionY: 9,
+    filterOptionY: 12,
     headerIconHitSlop: 9,
     // Inset of the media sheet heading block (Figma Frame 139 padding).
     mediaSheetTextInset: 6,
+    // Settings surface horizontal padding (Figma settings screen).
+    settingsSurfacePadX: 14,
+    // Caption-variant cover card: gap between media and caption block.
+    coverCaptionGap: 10,
   },
   /** Author application steps (Figma 526–746); chrome shared across all four steps. */
   authorApplication: {
@@ -171,6 +109,7 @@ export const designTokens = {
     control: 18,
     compact: 18,
     image: 24,
+    mediaTile: 16,
     media: 24,
     card: 24,
     button: 80,
@@ -194,10 +133,13 @@ export const designTokens = {
     workGallery: 20,
     statusDot: 20,
     filterSort: 14,
-    filterCheckbox: 6,
-    filterRadio: 20,
+    // Account header avatar (Figma account screen 100×100 round).
+    ownerCard: 16,
+    // Settings group surface (Figma settings screen).
+    settingsSurface: 26,
   },
   size: {
+    stepDot: 6,
     achievementWidth: 266,
     shareQr: 164,
     touch: 44,
@@ -238,9 +180,29 @@ export const designTokens = {
     filterSortPill: 42,
     filterOption: 20,
     filterOptionCheck: 16,
-    filterOptionRow: 38,
+    filterOptionRow: 44,
+    // Account header avatar 100×100 (Figma account screen).
+    accountAvatar: 100,
+    // Settings row leading icon 20 px.
+    settingsRowIcon: 20,
+    // Settings header back glyph 28 px.
+    settingsHeaderGlyph: 28,
   },
   typography: {
+    optionLabel: {
+      fontFamily: 'Inter_500Medium',
+      fontSize: 15,
+      lineHeight: 20,
+      letterSpacing: -0.3,
+      fontWeight: '500' as const,
+    },
+    pickerTitle: {
+      fontFamily: 'Inter_600SemiBold',
+      fontSize: 18,
+      lineHeight: 22,
+      letterSpacing: -0.18,
+      fontWeight: '600' as const,
+    },
     display: {
       fontFamily: 'Inter_600SemiBold',
       fontSize: 28,
@@ -262,6 +224,14 @@ export const designTokens = {
       lineHeight: 29,
       letterSpacing: -0.72,
       fontWeight: '600' as const,
+    },
+    // Figma 4562:32647; shared by editable and preview story blocks.
+    storyHeading: {
+      fontFamily: 'Inter_600SemiBold',
+      fontSize: 15,
+      lineHeight: 24,
+      fontWeight: '600',
+      letterSpacing: -0.15,
     },
     mediaSheetTitle: {
       fontFamily: 'Inter_600SemiBold',
@@ -360,6 +330,13 @@ export const designTokens = {
       letterSpacing: -0.18,
       fontWeight: '600' as const,
     },
+    authDialogTitle: {
+      fontFamily: 'Inter_600SemiBold',
+      fontSize: 17,
+      lineHeight: 21,
+      letterSpacing: -0.34,
+      fontWeight: '600' as const,
+    },
     authScreenTitle: {
       fontFamily: 'Inter_600SemiBold',
       fontSize: 20,
@@ -420,6 +397,49 @@ export const designTokens = {
       lineHeight: 20,
       letterSpacing: -0.18,
       fontWeight: '600' as const,
+    },
+    footerHeading: {
+      fontFamily: 'Inter_600SemiBold', fontSize: 16, lineHeight: 20,
+      letterSpacing: -0.32, fontWeight: '600' as const,
+    },
+    footerLink: {
+      fontFamily: 'Inter_500Medium', fontSize: 16, lineHeight: 20,
+      letterSpacing: -0.32, fontWeight: '500' as const,
+    },
+    footerLegal: {
+      fontFamily: 'Inter_400Regular', fontSize: 12, lineHeight: 16,
+      fontWeight: '400' as const,
+    },
+    creatorName: {
+      fontFamily: 'Inter_600SemiBold', fontSize: 20, lineHeight: 26,
+      letterSpacing: -0.4, fontWeight: '600' as const,
+    },
+    creatorNameWide: {
+      fontFamily: 'Inter_500Medium', fontSize: 24, lineHeight: 32,
+      letterSpacing: -0.72, fontWeight: '500' as const,
+    },
+    authorMeta: {
+      fontFamily: 'Inter_500Medium', fontSize: 14, lineHeight: 20,
+      letterSpacing: -0.14, fontWeight: '500' as const,
+    },
+    authorMetaWide: {
+      fontFamily: 'Inter_500Medium', fontSize: 16, lineHeight: 24,
+      letterSpacing: -0.16, fontWeight: '500' as const,
+    },
+    aboutHeadingWide: {
+      fontFamily: 'Inter_500Medium', fontSize: 18, lineHeight: 22,
+      letterSpacing: -0.36, fontWeight: '500' as const,
+    },
+    aboutBodyWide: {
+      fontFamily: 'Inter_400Regular', fontSize: 15, lineHeight: 24,
+      letterSpacing: -0.15, fontWeight: '400' as const,
+    },
+    searchPrompt: {
+      fontFamily: 'Inter_500Medium',
+      fontSize: 14,
+      lineHeight: 24,
+      letterSpacing: -0.14,
+      fontWeight: '500' as const,
     },
     field: {
       fontFamily: 'Inter_400Regular',
@@ -650,6 +670,62 @@ export const designTokens = {
       letterSpacing: -0.24,
       fontWeight: '600' as const,
     },
+    // Account header identity (Figma account screen): name 20/26 semibold.
+    accountName: {
+      fontFamily: 'Inter_600SemiBold',
+      fontSize: 20,
+      lineHeight: 26,
+      letterSpacing: -0.4,
+      fontWeight: '600' as const,
+    },
+    // Account @handle 14/20 medium.
+    accountHandle: {
+      fontFamily: 'Inter_500Medium',
+      fontSize: 14,
+      lineHeight: 20,
+      letterSpacing: -0.14,
+      fontWeight: '500' as const,
+    },
+    // Settings header title 18 semibold; Figma line-height `normal`.
+    settingsTitle: {
+      fontFamily: 'Inter_600SemiBold',
+      fontSize: 18,
+      letterSpacing: -0.18,
+      fontWeight: '600' as const,
+    },
+    // Settings group label 12/16 medium.
+    settingsSection: {
+      fontFamily: 'Inter_500Medium',
+      fontSize: 12,
+      lineHeight: 16,
+      letterSpacing: -0.12,
+      fontWeight: '500' as const,
+    },
+    // Settings row label 14 medium; preserve Figma line-height `normal`.
+    settingsRow: {
+      fontFamily: 'Inter_500Medium',
+      fontSize: 14,
+      letterSpacing: -0.28,
+      fontWeight: '500' as const,
+    },
+    // Caption-variant cover card author line 14/17 semibold. Tracking not
+    // captured in the intake; -0.14 mirrors workChip pending review.
+    coverCaptionAuthor: {
+      fontFamily: 'Inter_600SemiBold',
+      fontSize: 14,
+      lineHeight: 17,
+      letterSpacing: -0.14,
+      fontWeight: '600' as const,
+    },
+    // Caption-variant cover card title 14/17 medium (Figma 7008:26967,
+    // Inter Medium, tracking -0.28); may wrap to two lines.
+    coverCaptionTitle: {
+      fontFamily: 'Inter_500Medium',
+      fontSize: 14,
+      lineHeight: 17,
+      letterSpacing: -0.28,
+      fontWeight: '500' as const,
+    },
   },
   motion: {
     instant: 80,
@@ -663,6 +739,7 @@ export const designTokens = {
   },
   layout: {
     contentMax: 1280,
+    actionColumnMax: 420,
     gutter: 12,
     desktopGutter: 12,
     creatorDesktopGutter: 12,
@@ -674,15 +751,26 @@ export const designTokens = {
     mobileMenuWidth: 320,
     dialogMaxWidth: 366,
     sheetMax: 390,
+    // Sheets fill the viewport width up to this CSS-px viewport; wider
+    // viewports keep the measured sheetMax column.
+    sheetFillViewportMax: 600,
     openingAuthorWidth: 280,
     phoneFoldHeight: 860,
   },
   ratio: {
     productPortrait: 264 / 352,
     auctionCardMedia: 264 / 352,
+    // Caption-variant cover card media (Figma 179×236).
+    ownerCardMedia: 179 / 236,
   },
   auth: {
     sheetRadius: 32,
+    dialogMinWidth: 768,
+    dialogMaxWidth: 420,
+    dialogRadius: 34,
+    dialogSectionGap: 40,
+    dialogActionY: 10,
+    fieldHeight: 51,
     paddingTop: 8,
     paddingX: 20,
     paddingBottom: 20,
@@ -707,8 +795,6 @@ export const designTokens = {
     wordmarkWidth: 93,
     wordmarkHeight: 22,
     wordmarkBottom: 39,
-    available: '#267B07',
-    taken: '#731A06',
     screenPaddingTop: 8,
     screenPaddingX: 20,
     screenPaddingBottom: 20,
@@ -721,16 +807,9 @@ export const designTokens = {
     suggestionHeight: 37,
     suggestionX: 13,
     suggestionY: 8,
-    primaryBorderStart: '#2A2A2A',
-    primaryBorderEnd: '#585858',
-    providerBorderStart: '#D1D1D1',
-    providerBorderEnd: '#EBEBEB',
-    suggestionBorderStart: '#D1D1D1',
-    suggestionBorderEnd: '#EBEBEB',
-    checkboxBorderDarkStart: '#2A2A2A',
-    checkboxBorderDarkEnd: '#585858',
-    checkboxBorderLightStart: '#D1D1D1',
-    checkboxBorderLightEnd: '#EBEBEB',
+    // Username availability colors and gradient border stops moved to the
+    // semantic theme roles `usernameAvailable/usernameTaken` and
+    // `solid/outlineBorderGradientStart/End` (F-03); geometry stays here.
     checkboxBorderWidth: 1,
     checkboxSize: 20,
     checkboxRadius: 6,
@@ -745,11 +824,6 @@ export const designTokens = {
     exitActionsGap: 8,
     /** Source `I746:23099` / `278:4690`: Continue label 86 px + 14.5 px inset per side. */
     exitConfirmActionMinWidth: 115,
-  },
-  elevation: {
-    floating: {
-      boxShadow: '0 10px 24px rgba(17, 17, 17, 0.12)',
-    },
   },
   layer: { content: 0, chrome: 10, popover: 20, dock: 40, modal: 50 },
   blur: {

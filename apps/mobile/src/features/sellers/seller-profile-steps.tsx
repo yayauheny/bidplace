@@ -19,6 +19,7 @@ import { AppText, FormSection, TextField } from '../../components/ui';
 import { FigmaSelectField } from '../../components/figma/FigmaSelectField';
 import { FigmaButton } from '../../components/figma/FigmaButton';
 import { FigmaChoiceChip } from '../../components/figma/FigmaChoiceChip';
+import { useAppTheme } from '../../providers/theme-provider';
 import { CountryPickerSheet } from './country-picker-sheet';
 
 export type ProfileFields = {
@@ -248,6 +249,7 @@ function ProfileCountryField({ editable }: { editable: boolean }) {
 }
 
 export function ProfileContactsFields({ editable }: { editable: boolean }) {
+  const palette = useAppTheme();
   return (
     <>
       <ProfileDraftField
@@ -258,7 +260,7 @@ export function ProfileContactsFields({ editable }: { editable: boolean }) {
         editable={editable}
         variant="authorApplication"
         icon="at-sign"
-        iconColor={designTokens.color.muted}
+        iconColor={palette.muted}
       />
       <ProfileDraftField
         name="telegramUrl"
@@ -268,7 +270,7 @@ export function ProfileContactsFields({ editable }: { editable: boolean }) {
         editable={editable}
         variant="authorApplication"
         icon="at-sign"
-        iconColor={designTokens.color.muted}
+        iconColor={palette.muted}
       />
       <ProfileDraftField
         name="websiteUrl"
@@ -321,6 +323,7 @@ export function ProfileBasicsFields({
   editable: boolean;
   slugEditable: boolean;
 }) {
+  const palette = useAppTheme();
   return (
     <>
       <ProfileDraftField
@@ -342,7 +345,7 @@ export function ProfileBasicsFields({
         requiredMarker={false}
         variant="authorApplication"
         icon="at-sign"
-        iconColor={designTokens.color.muted}
+        iconColor={palette.muted}
       />
       <ProfileCountryField editable={editable} />
       <ProfileDraftField
@@ -361,6 +364,7 @@ export function SellerProfileCreationStepSelector({
 }: {
   profileStep: number;
 }) {
+  const palette = useAppTheme();
   return (
     <View
       accessibilityRole="progressbar"
@@ -377,8 +381,8 @@ export function SellerProfileCreationStepSelector({
             borderRadius: 3,
             backgroundColor:
               step === profileStep
-                ? designTokens.color.inkStrong
-                : designTokens.color.border,
+                ? palette.inkStrong
+                : palette.border,
           }}
         />
       ))}

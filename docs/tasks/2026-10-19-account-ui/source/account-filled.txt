@@ -1,0 +1,438 @@
+const imgRectangle19 = "https://www.figma.com/api/mcp/asset/592c13f1-e687-4b9a-a68f-635547ad0621.png";
+const imgRectangle20 = "https://www.figma.com/api/mcp/asset/57249cdf-c3b9-4d89-8b26-c6576c2c8235.png";
+const imgRectangle21 = "https://www.figma.com/api/mcp/asset/1b3f70a5-c9ef-418a-bc7a-1673a5c89981.png";
+const imgRectangle22 = "https://www.figma.com/api/mcp/asset/ebac4d64-53e2-4e99-9832-77c8a394e7e1.png";
+const imgRectangle23 = "https://www.figma.com/api/mcp/asset/ee83790e-c078-4f29-a563-b13d5f3c830a.png";
+const imgChangeThis = "https://www.figma.com/api/mcp/asset/ffec6aaf-c977-4ff0-b66f-4365ad172230.png";
+const imgArrowLeft01 = "https://www.figma.com/api/mcp/asset/373d6e6c-7b62-4cce-a722-4754053e5787.svg";
+const imgHeart = "https://www.figma.com/api/mcp/asset/33c56fdf-2dea-4ba8-ac6e-d4c7c59cd8bd.svg";
+const imgShare03 = "https://www.figma.com/api/mcp/asset/a0a39966-0bca-4403-8cd6-bad750960152.svg";
+const imgSetting07 = "https://www.figma.com/api/mcp/asset/12964e88-e047-41ab-99b5-cd8c27ba8e7d.svg";
+const imgMoreVertical = "https://www.figma.com/api/mcp/asset/02ef6d23-82a6-4da6-8900-456a01b381ec.svg";
+const imgBellOff = "https://www.figma.com/api/mcp/asset/8c13470b-3b11-461e-b6b8-e0f07bf70158.svg";
+const imgHeart1 = "https://www.figma.com/api/mcp/asset/0774ae79-a1e9-4f85-97cc-1410ab653aad.svg";
+const imgEdit03 = "https://www.figma.com/api/mcp/asset/682b6d9d-99be-4d73-8759-8e25232d0aa7.svg";
+const imgDelete02 = "https://www.figma.com/api/mcp/asset/fb03b2c0-2b12-4aa0-ad24-22347721a2e7.svg";
+const imgHome01 = "https://www.figma.com/api/mcp/asset/2d51b451-3a0e-4bfc-bb59-8f6357913828.svg";
+const imgSearch01 = "https://www.figma.com/api/mcp/asset/dc8ed027-8613-49be-8751-6dcf56f860fb.svg";
+const imgPlus = "https://www.figma.com/api/mcp/asset/88f21183-89e8-41fd-9290-11ea8828d5bd.svg";
+const imgShoppingBasket01 = "https://www.figma.com/api/mcp/asset/a67669a5-aeb0-4ea7-a6e8-e70732bf573a.svg";
+const imgUser = "https://www.figma.com/api/mcp/asset/d3c6fb21-26da-4bfe-a978-389c72b7ad06.svg";
+const imgGalleryHorizontal = "https://www.figma.com/api/mcp/asset/19b36156-dd93-46ab-9506-7270005b930c.svg";
+
+export default function Component02() {
+  return (
+    <div className="bg-[var(--white,white)] relative size-full" data-node-id="7008:26917" data-name="02 · Личный профиль / заполненные работы">
+      <div className="absolute content-stretch flex items-center justify-between left-0 px-[12px] top-[62px] w-[390px]" data-node-id="7008:26918">
+        <div className="content-stretch flex gap-[2px] items-center relative shrink-0" data-node-id="7008:26919">
+          <div className="bg-[var(--gray-5,#f3f3f3)] border-[0.558px] border-[var(--gray-5,#f3f3f3)] border-solid content-stretch flex gap-[2.233px] items-center justify-center p-[6px] relative rounded-[80px] shrink-0" data-node-id="7008:26920" data-name="Кнопки">
+            <div className="content-stretch flex items-center p-[4.465px] relative shrink-0" data-node-id="I7008:26920;584:17875" data-name="Иконка правая">
+              <div className="relative shrink-0 size-[20.093px]" data-node-id="I7008:26920;584:17876" data-name="Иконки кнопок">
+                <div className="absolute left-0 size-[20.093px] top-0" data-node-id="I7008:26920;584:17876;312:9236" data-name="arrow-left-01">
+                  <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgArrowLeft01} />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="bg-[var(--gray-5,#f3f3f3)] border-[0.558px] border-[var(--gray-5,#f3f3f3)] border-solid content-stretch flex gap-[2.233px] items-center justify-center opacity-50 p-[6px] relative rounded-[80px] shrink-0" data-node-id="7008:26921" data-name="Кнопки">
+            <div className="content-stretch flex items-center p-[4.465px] relative shrink-0" data-node-id="I7008:26921;584:17881" data-name="Иконка правая">
+              <div className="relative shrink-0 size-[20.093px]" data-node-id="I7008:26921;584:17882" data-name="Иконки кнопок">
+                <div className="absolute left-0 size-[20.093px] top-0" data-node-id="I7008:26921;584:17882;312:9236" data-name="arrow-left-01">
+                  <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgArrowLeft01} />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="content-stretch flex gap-[4px] items-center relative shrink-0" data-node-id="7008:26922">
+          <div className="bg-[var(--gray-5,#f3f3f3)] border-[0.5px] border-[var(--gray-5,#f3f3f3)] border-solid content-stretch flex gap-[2.233px] items-center justify-center p-[6px] relative rounded-[80px] shrink-0" data-node-id="7008:26923" data-name="Кнопки">
+            <div className="content-stretch flex items-center p-[4.465px] relative shrink-0" data-node-id="I7008:26923;584:17875" data-name="Иконка правая">
+              <div className="relative shrink-0 size-[20.093px]" data-node-id="I7008:26923;584:17876" data-name="Иконки кнопок">
+                <div className="absolute left-0 size-[20.093px] top-0" data-node-id="I7008:26923;584:17876;4590:35056" data-name="heart">
+                  <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgHeart} />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="bg-[var(--gray-5,#f3f3f3)] border-[0.5px] border-[var(--gray-5,#f3f3f3)] border-solid content-stretch flex gap-[2.233px] items-center justify-center p-[6px] relative rounded-[80px] shrink-0" data-node-id="7008:26924" data-name="Кнопки">
+            <div className="content-stretch flex items-center p-[4.465px] relative shrink-0" data-node-id="I7008:26924;584:17875" data-name="Иконка правая">
+              <div className="relative shrink-0 size-[20.093px]" data-node-id="I7008:26924;584:17876" data-name="Иконки кнопок">
+                <div className="absolute left-0 size-[20.093px] top-0" data-node-id="I7008:26924;584:17876;4597:37079" data-name="share-03">
+                  <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgShare03} />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="bg-[var(--gray-5,#f3f3f3)] border-[0.5px] border-[var(--gray-5,#f3f3f3)] border-solid content-stretch flex gap-[2.233px] items-center justify-center p-[6px] relative rounded-[80px] shrink-0" data-node-id="7008:26925" data-name="Кнопки">
+            <div className="content-stretch flex items-center p-[4.465px] relative shrink-0" data-node-id="I7008:26925;584:17875" data-name="Иконка правая">
+              <div className="relative shrink-0 size-[20.093px]" data-node-id="I7008:26925;584:17876" data-name="Иконки кнопок">
+                <div className="absolute left-0 size-[20.093px] top-0" data-node-id="I7008:26925;584:17876;4590:35090" data-name="setting-07">
+                  <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgSetting07} />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="bg-[var(--gray-5,#f3f3f3)] border-[0.5px] border-[var(--gray-5,#f3f3f3)] border-solid content-stretch flex gap-[2.233px] items-center justify-center p-[6px] relative rounded-[80px] shrink-0" data-node-id="7008:26926" data-name="Кнопки">
+            <div className="content-stretch flex items-center p-[4.465px] relative shrink-0" data-node-id="I7008:26926;584:17875" data-name="Иконка правая">
+              <div className="relative shrink-0 size-[20.093px]" data-node-id="I7008:26926;584:17876" data-name="Иконки кнопок">
+                <div className="absolute left-0 size-[20.093px] top-0" data-node-id="I7008:26926;584:17876;4563:32764" data-name="more-vertical">
+                  <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgMoreVertical} />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="-translate-y-1/2 absolute content-stretch flex flex-col gap-[10px] items-center left-[42px] top-[calc(50%-472.1px)] w-[306px]" data-node-id="7008:26927">
+        <div className="content-stretch flex items-center relative rounded-[104px] shrink-0" data-node-id="7008:26928">
+          <div className="content-stretch flex items-center p-[10.4px] relative shrink-0" data-node-id="7008:26929">
+            <div className="relative shrink-0 size-[28px]" data-node-id="7008:26930" data-name="bell-off">
+              <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgBellOff} />
+            </div>
+          </div>
+        </div>
+        <div className="[word-break:break-word] content-stretch flex flex-col gap-[7px] items-start not-italic relative shrink-0 text-center w-full" data-node-id="7008:26935">
+          <p className="font-['Inter:Semi_Bold'] font-semibold leading-[normal] relative shrink-0 text-[#2a2a2a] text-[18px] tracking-[-0.36px] w-full" data-node-id="7008:26936">
+            Здесь пока тихо
+          </p>
+          <div className="font-['Inter:Regular'] font-normal leading-[0] relative shrink-0 text-[14px] text-[color:var(--gray-2,#858585)] tracking-[-0.28px] w-full whitespace-pre-wrap" data-node-id="7008:26937">
+            <p className="leading-[20px] mb-0">{`Сделайте первую ставку `}</p>
+            <p className="leading-[20px]">или подпишитесь на авторов</p>
+          </div>
+        </div>
+      </div>
+      <div className="absolute gap-x-[8px] gap-y-[28px] grid grid-cols-[repeat(2,minmax(0,1fr))] grid-rows-[repeat(3,fit-content(100%))] left-[12px] top-[309px] w-[366px]" data-node-id="7008:26938">
+        <div className="content-stretch flex flex-col gap-[10px] items-start justify-self-stretch relative self-stretch shrink-0" data-node-id="7008:26939">
+          <div className="h-[236px] relative rounded-[16px] shrink-0 w-full" data-node-id="7008:26940">
+            <img alt="" className="absolute inset-0 max-w-none object-cover pointer-events-none rounded-[16px] size-full" src={imgRectangle19} />
+          </div>
+          <div className="absolute content-stretch flex flex-col gap-[6px] items-end right-[8px] top-[8px]" data-node-id="7008:26941">
+            <div className="content-stretch flex items-start justify-end relative shrink-0" data-node-id="7008:26942">
+              <div className="content-stretch flex items-start justify-end relative shrink-0" data-node-id="7008:26943">
+                <div className="bg-[var(--white,white)] border-[#d1d1d1] border-[0.5px] border-solid content-stretch flex gap-[2px] items-center justify-center p-[8px] relative rounded-[80px] shrink-0" data-node-id="7008:26944" data-name="Кнопки">
+                  <div className="relative shrink-0 size-[22px]" data-node-id="7008:26948" data-name="Иконки кнопок">
+                    <div className="absolute left-0 size-[22px] top-0" data-node-id="I7008:26948;4590:35056" data-name="heart">
+                      <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgHeart1} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="bg-[var(--white,white)] border-[#d1d1d1] border-[0.5px] border-solid content-stretch flex gap-[2px] items-center justify-center p-[8px] relative rounded-[80px] shrink-0" data-node-id="7008:26949" data-name="Кнопки">
+              <div className="relative shrink-0 size-[22px]" data-node-id="7008:26950" data-name="edit-03">
+                <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgEdit03} />
+              </div>
+            </div>
+            <div className="bg-[#d22f0b] border-[#d22f0b] border-[0.5px] border-solid content-stretch flex gap-[2px] items-center justify-center p-[8px] relative rounded-[80px] shrink-0" data-node-id="7008:26956" data-name="Кнопки">
+              <div className="relative shrink-0 size-[22px]" data-node-id="7008:26957" data-name="delete-02">
+                <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgDelete02} />
+              </div>
+            </div>
+          </div>
+          <div className="[word-break:break-word] content-stretch flex flex-col gap-[4px] items-start leading-[normal] not-italic relative shrink-0 text-[14px] w-full" data-node-id="7008:26965">
+            <p className="font-['Inter:Semi_Bold'] font-semibold relative shrink-0 text-[color:var(--black,#121212)] text-center tracking-[-0.14px] whitespace-nowrap" data-node-id="7008:26966">
+              @quantumparadox
+            </p>
+            <p className="font-['Inter:Medium'] font-medium overflow-hidden relative shrink-0 text-[color:var(--gray-1,#565656)] text-ellipsis tracking-[-0.28px] w-[177px]" data-node-id="7008:26967">{`Salvador Dalí Estate & Fundació Gala Сальвадор Дали`}</p>
+            <p className="font-['Inter:Medium'] font-medium relative shrink-0 text-[color:var(--gray-1,#565656)] text-center tracking-[-0.14px] whitespace-nowrap" data-node-id="7008:26968">
+              1 450 BYN
+            </p>
+            <p className="font-['Inter:Regular'] font-normal relative shrink-0 text-[color:var(--green,#267b07)] text-center tracking-[-0.14px] whitespace-nowrap" data-node-id="7008:26969">
+              Торги 13д 24ч 40м
+            </p>
+          </div>
+          <div className="absolute backdrop-blur-[3px] bg-[rgba(0,0,0,0.5)] border border-solid border-white content-stretch flex gap-[6px] items-center justify-center left-[8px] px-[10px] py-[4px] rounded-[28px] top-[8px]" data-node-id="7008:26970">
+            <div className="bg-[var(--green,#267b07)] relative rounded-[20px] shrink-0 size-[6px]" data-node-id="7008:26971" />
+            <p className="[word-break:break-word] font-['Inter:Medium'] font-medium leading-[normal] not-italic relative shrink-0 text-[13px] text-[color:var(--white,white)] text-center tracking-[-0.13px] whitespace-nowrap" data-node-id="7008:26972">
+              Торги
+            </p>
+          </div>
+        </div>
+        <div className="content-stretch flex flex-col gap-[10px] items-start justify-self-stretch relative self-stretch shrink-0" data-node-id="7008:26973">
+          <div className="h-[236px] relative rounded-[12px] shrink-0 w-full" data-node-id="7008:26974">
+            <img alt="" className="absolute inset-0 max-w-none object-cover pointer-events-none rounded-[12px] size-full" src={imgRectangle20} />
+          </div>
+          <div className="absolute content-stretch flex flex-col gap-[6px] items-end right-[8px] top-[8px]" data-node-id="7008:26975">
+            <div className="content-stretch flex items-start justify-end relative shrink-0" data-node-id="7008:26976">
+              <div className="content-stretch flex items-start justify-end relative shrink-0" data-node-id="7008:26977">
+                <div className="bg-[var(--white,white)] border-[#d1d1d1] border-[0.5px] border-solid content-stretch flex gap-[2px] items-center justify-center p-[8px] relative rounded-[80px] shrink-0" data-node-id="7008:26978" data-name="Кнопки">
+                  <div className="relative shrink-0 size-[22px]" data-node-id="7008:26982" data-name="Иконки кнопок">
+                    <div className="absolute left-0 size-[22px] top-0" data-node-id="I7008:26982;4590:35056" data-name="heart">
+                      <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgHeart1} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="bg-[var(--white,white)] border-[#d1d1d1] border-[0.5px] border-solid content-stretch flex gap-[2px] items-center justify-center p-[8px] relative rounded-[80px] shrink-0" data-node-id="7008:26983" data-name="Кнопки">
+              <div className="relative shrink-0 size-[22px]" data-node-id="7008:26984" data-name="edit-03">
+                <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgEdit03} />
+              </div>
+            </div>
+            <div className="bg-[#d22f0b] border-[#d22f0b] border-[0.5px] border-solid content-stretch flex gap-[2px] items-center justify-center p-[8px] relative rounded-[80px] shrink-0" data-node-id="7008:26990" data-name="Кнопки">
+              <div className="relative shrink-0 size-[22px]" data-node-id="7008:26991" data-name="delete-02">
+                <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgDelete02} />
+              </div>
+            </div>
+          </div>
+          <div className="[word-break:break-word] content-stretch flex flex-col gap-[4px] items-start leading-[normal] not-italic relative shrink-0 text-[14px] w-full" data-node-id="7008:26999">
+            <p className="font-['Inter:Semi_Bold'] font-semibold relative shrink-0 text-[color:var(--black,#121212)] text-center tracking-[-0.14px] whitespace-nowrap" data-node-id="7008:27000">
+              @artsy_mind
+            </p>
+            <p className="font-['Inter:Medium'] font-medium overflow-hidden relative shrink-0 text-[color:var(--gray-1,#565656)] text-balance text-ellipsis tracking-[-0.28px] w-[177px]" data-node-id="7008:27001">
+              Yellow Sapphire
+            </p>
+            <p className="font-['Inter:Medium'] font-medium relative shrink-0 text-[color:var(--gray-1,#565656)] text-center tracking-[-0.14px] whitespace-nowrap" data-node-id="7008:27002">
+              2 510 BYN
+            </p>
+            <p className="font-['Inter:Regular'] font-normal relative shrink-0 text-[color:var(--red,#731a06)] text-center tracking-[-0.14px] whitespace-nowrap" data-node-id="7008:27003">
+              Анонс 13д 24ч 40м
+            </p>
+          </div>
+          <div className="absolute backdrop-blur-[3px] bg-[rgba(0,0,0,0.5)] border border-solid border-white content-stretch flex gap-[6px] items-center justify-center left-[8px] px-[10px] py-[4px] rounded-[28px] top-[8px]" data-node-id="7008:27004">
+            <div className="bg-[var(--red,#731a06)] relative rounded-[20px] shrink-0 size-[6px]" data-node-id="7008:27005" />
+            <p className="[word-break:break-word] font-['Geist:Medium'] font-medium leading-[normal] relative shrink-0 text-[13px] text-[color:var(--white,white)] text-center tracking-[-0.13px] whitespace-nowrap" data-node-id="7008:27006">
+              Анонс
+            </p>
+          </div>
+        </div>
+        <div className="content-stretch flex flex-col gap-[10px] items-start justify-self-stretch relative self-stretch shrink-0" data-node-id="7008:27007">
+          <div className="h-[236px] relative rounded-[12px] shrink-0 w-full" data-node-id="7008:27008">
+            <img alt="" className="absolute inset-0 max-w-none object-cover pointer-events-none rounded-[12px] size-full" src={imgRectangle21} />
+          </div>
+          <div className="absolute content-stretch flex flex-col gap-[6px] items-end right-[8px] top-[8px]" data-node-id="7008:27009">
+            <div className="content-stretch flex items-start justify-end relative shrink-0" data-node-id="7008:27010">
+              <div className="content-stretch flex items-start justify-end relative shrink-0" data-node-id="7008:27011">
+                <div className="bg-[var(--white,white)] border-[#d1d1d1] border-[0.5px] border-solid content-stretch flex gap-[2px] items-center justify-center p-[8px] relative rounded-[80px] shrink-0" data-node-id="7008:27012" data-name="Кнопки">
+                  <div className="relative shrink-0 size-[22px]" data-node-id="7008:27016" data-name="Иконки кнопок">
+                    <div className="absolute left-0 size-[22px] top-0" data-node-id="I7008:27016;4590:35056" data-name="heart">
+                      <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgHeart1} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="bg-[var(--white,white)] border-[#d1d1d1] border-[0.5px] border-solid content-stretch flex gap-[2px] items-center justify-center p-[8px] relative rounded-[80px] shrink-0" data-node-id="7008:27017" data-name="Кнопки">
+              <div className="relative shrink-0 size-[22px]" data-node-id="7008:27018" data-name="edit-03">
+                <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgEdit03} />
+              </div>
+            </div>
+            <div className="bg-[#d22f0b] border-[#d22f0b] border-[0.5px] border-solid content-stretch flex gap-[2px] items-center justify-center p-[8px] relative rounded-[80px] shrink-0" data-node-id="7008:27024" data-name="Кнопки">
+              <div className="relative shrink-0 size-[22px]" data-node-id="7008:27025" data-name="delete-02">
+                <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgDelete02} />
+              </div>
+            </div>
+          </div>
+          <div className="[word-break:break-word] content-stretch flex flex-col gap-[4px] items-start leading-[normal] not-italic relative shrink-0 text-[14px] w-full" data-node-id="7008:27033">
+            <p className="font-['Inter:Semi_Bold'] font-semibold relative shrink-0 text-[color:var(--black,#121212)] text-center tracking-[-0.14px] whitespace-nowrap" data-node-id="7008:27034">
+              @artsy_mind
+            </p>
+            <p className="font-['Inter:Medium'] font-medium overflow-hidden relative shrink-0 text-[color:var(--gray-1,#565656)] text-balance text-ellipsis tracking-[-0.28px] w-[177px]" data-node-id="7008:27035">
+              UTOPIA
+            </p>
+            <p className="font-['Inter:Medium'] font-medium relative shrink-0 text-[color:var(--gray-1,#565656)] text-center tracking-[-0.14px] whitespace-nowrap" data-node-id="7008:27036">
+              2 510 BYN
+            </p>
+            <p className="font-['Inter:Medium'] font-medium relative shrink-0 text-[color:var(--gray-1,#565656)] text-center tracking-[-0.14px] whitespace-nowrap" data-node-id="7008:27037">
+              Продано
+            </p>
+          </div>
+          <div className="absolute backdrop-blur-[3px] bg-[rgba(0,0,0,0.5)] border border-solid border-white content-stretch flex gap-[6px] items-center justify-center left-[8px] px-[10px] py-[4px] rounded-[28px] top-[8px]" data-node-id="7008:27038">
+            <div className="bg-[var(--label-color,#433e3d)] relative rounded-[20px] shrink-0 size-[6px]" data-node-id="7008:27039" />
+            <p className="[word-break:break-word] font-['Geist:Medium'] font-medium leading-[normal] relative shrink-0 text-[13px] text-[color:var(--white,white)] text-center tracking-[-0.13px] whitespace-nowrap" data-node-id="7008:27040">
+              Продано
+            </p>
+          </div>
+        </div>
+        <div className="content-stretch flex flex-col gap-[10px] items-start justify-self-stretch relative self-stretch shrink-0" data-node-id="7008:27041">
+          <div className="h-[236px] relative rounded-[16px] shrink-0 w-full" data-node-id="7008:27042">
+            <img alt="" className="absolute inset-0 max-w-none object-cover pointer-events-none rounded-[16px] size-full" src={imgRectangle22} />
+          </div>
+          <div className="absolute content-stretch flex flex-col gap-[6px] items-end right-[8px] top-[8px]" data-node-id="7008:27043">
+            <div className="content-stretch flex items-start justify-end relative shrink-0" data-node-id="7008:27044">
+              <div className="content-stretch flex items-start justify-end relative shrink-0" data-node-id="7008:27045">
+                <div className="bg-[var(--white,white)] border-[#d1d1d1] border-[0.5px] border-solid content-stretch flex gap-[2px] items-center justify-center p-[8px] relative rounded-[80px] shrink-0" data-node-id="7008:27046" data-name="Кнопки">
+                  <div className="relative shrink-0 size-[22px]" data-node-id="7008:27050" data-name="Иконки кнопок">
+                    <div className="absolute left-0 size-[22px] top-0" data-node-id="I7008:27050;4590:35056" data-name="heart">
+                      <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgHeart1} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="bg-[var(--white,white)] border-[#d1d1d1] border-[0.5px] border-solid content-stretch flex gap-[2px] items-center justify-center p-[8px] relative rounded-[80px] shrink-0" data-node-id="7008:27051" data-name="Кнопки">
+              <div className="relative shrink-0 size-[22px]" data-node-id="7008:27052" data-name="edit-03">
+                <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgEdit03} />
+              </div>
+            </div>
+            <div className="bg-[#d22f0b] border-[#d22f0b] border-[0.5px] border-solid content-stretch flex gap-[2px] items-center justify-center p-[8px] relative rounded-[80px] shrink-0" data-node-id="7008:27058" data-name="Кнопки">
+              <div className="relative shrink-0 size-[22px]" data-node-id="7008:27059" data-name="delete-02">
+                <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgDelete02} />
+              </div>
+            </div>
+          </div>
+          <div className="[word-break:break-word] content-stretch flex flex-col gap-[4px] items-start leading-[normal] not-italic relative shrink-0 text-[14px] w-full" data-node-id="7008:27067">
+            <p className="font-['Inter:Semi_Bold'] font-semibold relative shrink-0 text-[color:var(--black,#121212)] text-center tracking-[-0.14px] whitespace-nowrap" data-node-id="7008:27068">
+              Gregory Crewdson
+            </p>
+            <p className="font-['Inter:Medium'] font-medium overflow-hidden relative shrink-0 text-[color:var(--gray-1,#565656)] text-ellipsis tracking-[-0.28px] w-[177px]" data-node-id="7008:27069">
+              Untitled [Dream House 2]
+            </p>
+            <p className="font-['Inter:Medium'] font-medium relative shrink-0 text-[color:var(--gray-1,#565656)] text-center tracking-[-0.14px] whitespace-nowrap" data-node-id="7008:27070">
+              659 BYN
+            </p>
+            <p className="font-['Inter:Regular'] font-normal relative shrink-0 text-[color:var(--green,#267b07)] text-center tracking-[-0.14px] whitespace-nowrap" data-node-id="7008:27071">
+              Торги 13д 24ч 40м
+            </p>
+          </div>
+          <div className="absolute backdrop-blur-[3px] bg-[rgba(0,0,0,0.5)] border border-solid border-white content-stretch flex gap-[6px] items-center justify-center left-[10px] px-[10px] py-[4px] rounded-[28px] top-[10px]" data-node-id="7008:27072">
+            <div className="bg-[var(--green,#267b07)] relative rounded-[20px] shrink-0 size-[6px]" data-node-id="7008:27073" />
+            <p className="[word-break:break-word] font-['Inter:Medium'] font-medium leading-[normal] not-italic relative shrink-0 text-[13px] text-[color:var(--white,white)] text-center tracking-[-0.13px] whitespace-nowrap" data-node-id="7008:27074">
+              Торги
+            </p>
+          </div>
+        </div>
+        <div className="content-stretch flex flex-col gap-[10px] items-start justify-self-stretch relative self-stretch shrink-0" data-node-id="7008:27075">
+          <div className="h-[236px] relative rounded-[12px] shrink-0 w-full" data-node-id="7008:27076">
+            <img alt="" className="absolute inset-0 max-w-none object-cover pointer-events-none rounded-[12px] size-full" src={imgRectangle23} />
+          </div>
+          <div className="[word-break:break-word] content-stretch flex flex-col gap-[4px] items-start leading-[normal] not-italic relative shrink-0 text-[14px] w-full" data-node-id="7008:27077">
+            <p className="font-['Inter:Semi_Bold'] font-semibold relative shrink-0 text-[color:var(--black,#121212)] text-center tracking-[-0.14px] whitespace-nowrap" data-node-id="7008:27078">
+              @artsy_mind
+            </p>
+            <p className="font-['Inter:Medium'] font-medium overflow-hidden relative shrink-0 text-[color:var(--gray-1,#565656)] text-balance text-ellipsis tracking-[-0.28px] w-[177px]" data-node-id="7008:27079">
+              Yellow Sapphire
+            </p>
+            <p className="font-['Inter:Medium'] font-medium relative shrink-0 text-[color:var(--gray-1,#565656)] text-center tracking-[-0.14px] whitespace-nowrap" data-node-id="7008:27080">
+              2 510 BYN
+            </p>
+            <p className="font-['Inter:Regular'] font-normal relative shrink-0 text-[color:var(--red,#731a06)] text-center tracking-[-0.14px] whitespace-nowrap" data-node-id="7008:27081">
+              Анонс 13д 24ч 40м
+            </p>
+          </div>
+          <div className="absolute backdrop-blur-[3px] bg-[rgba(0,0,0,0.5)] border border-solid border-white content-stretch flex gap-[6px] items-center justify-center left-[12px] px-[10px] py-[4px] rounded-[28px] top-[12px]" data-node-id="7008:27082">
+            <div className="bg-[var(--red,#731a06)] relative rounded-[20px] shrink-0 size-[6px]" data-node-id="7008:27083" />
+            <p className="[word-break:break-word] font-['Geist:Medium'] font-medium leading-[normal] relative shrink-0 text-[13px] text-[color:var(--white,white)] text-center tracking-[-0.13px] whitespace-nowrap" data-node-id="7008:27084">
+              Анонс
+            </p>
+          </div>
+        </div>
+        <div className="content-stretch flex flex-col gap-[10px] items-start justify-self-stretch relative self-stretch shrink-0" data-node-id="7008:27085">
+          <div className="h-[236px] relative rounded-[12px] shrink-0 w-full" data-node-id="7008:27086">
+            <img alt="" className="absolute inset-0 max-w-none object-cover pointer-events-none rounded-[12px] size-full" src={imgRectangle21} />
+          </div>
+          <div className="[word-break:break-word] content-stretch flex flex-col gap-[4px] items-start leading-[normal] not-italic relative shrink-0 text-[14px] w-full" data-node-id="7008:27087">
+            <p className="font-['Inter:Semi_Bold'] font-semibold relative shrink-0 text-[color:var(--black,#121212)] text-center tracking-[-0.14px] whitespace-nowrap" data-node-id="7008:27088">
+              @artsy_mind
+            </p>
+            <p className="font-['Inter:Medium'] font-medium overflow-hidden relative shrink-0 text-[color:var(--gray-1,#565656)] text-balance text-ellipsis tracking-[-0.28px] w-[177px]" data-node-id="7008:27089">
+              Yellow Sapphire
+            </p>
+            <p className="font-['Inter:Medium'] font-medium relative shrink-0 text-[color:var(--gray-1,#565656)] text-center tracking-[-0.14px] whitespace-nowrap" data-node-id="7008:27090">
+              2 510 BYN
+            </p>
+            <p className="font-['Inter:Medium'] font-medium relative shrink-0 text-[color:var(--gray-1,#565656)] text-center tracking-[-0.14px] whitespace-nowrap" data-node-id="7008:27091">
+              Продано
+            </p>
+          </div>
+          <div className="absolute backdrop-blur-[3px] bg-[rgba(0,0,0,0.5)] border border-solid border-white content-stretch flex gap-[6px] items-center justify-center left-[10px] px-[10px] py-[4px] rounded-[28px] top-[10px]" data-node-id="7008:27092">
+            <div className="bg-[var(--label-color,#433e3d)] relative rounded-[20px] shrink-0 size-[6px]" data-node-id="7008:27093" />
+            <p className="[word-break:break-word] font-['Geist:Medium'] font-medium leading-[normal] relative shrink-0 text-[13px] text-[color:var(--white,white)] text-center tracking-[-0.13px] whitespace-nowrap" data-node-id="7008:27094">
+              Продано
+            </p>
+          </div>
+        </div>
+      </div>
+      <div className="absolute content-stretch flex gap-[8px] items-center justify-center left-0 px-[12px] top-[124.14px] w-[390px]" data-node-id="7008:27095">
+        <div className="content-stretch flex gap-[10px] items-center relative shrink-0" data-node-id="7008:27096">
+          <div className="bg-[#e0e0e0] relative rounded-[56px] shrink-0 size-[100px]" data-node-id="7008:27097" />
+          <p className="[word-break:break-word] absolute font-['Inter:Medium'] font-medium leading-[26px] left-[calc(50%-12px)] not-italic text-[32px] text-[color:var(--black,#121212)] top-[37px] tracking-[-0.64px] whitespace-nowrap" data-node-id="7008:27098">
+            И
+          </p>
+        </div>
+        <div className="flex flex-[1_0_0] flex-row items-center self-stretch" data-node-id="7008:27099">
+          <div className="content-stretch flex flex-[1_0_0] flex-col gap-[8px] h-full items-start justify-center min-w-px relative">
+            <div className="content-stretch flex flex-col items-start pl-[4px] relative shrink-0 w-full" data-node-id="7008:27100">
+              <p className="[word-break:break-word] font-['Inter:Semi_Bold'] font-semibold leading-[26px] not-italic relative shrink-0 text-[20px] text-[color:var(--black,#121212)] tracking-[-0.4px] whitespace-nowrap" data-node-id="7008:27101">
+                Илья Васильев
+              </p>
+              <div className="content-center flex flex-wrap gap-y-[6px] items-center relative shrink-0 w-full" data-node-id="7008:27102">
+                <div className="content-stretch flex items-center relative shrink-0" data-node-id="7008:27103">
+                  <p className="[word-break:break-word] font-['Inter:Medium'] font-medium leading-[20px] not-italic relative shrink-0 text-[14px] text-[color:var(--gray-2,#858585)] text-balance text-center tracking-[-0.14px] whitespace-nowrap" data-node-id="7008:27104">
+                    @vex
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-[var(--black,#121212)] border-[#2a2a2a] border-[0.5px] border-solid content-stretch flex gap-[2px] items-center justify-center px-[16px] py-[8px] relative rounded-[80px] shrink-0" data-node-id="7008:27105" data-name="Кнопки">
+              <p className="[word-break:break-word] font-['Inter:Semi_Bold'] font-semibold leading-[26px] not-italic relative shrink-0 text-[14px] text-center text-white tracking-[-0.28px] whitespace-nowrap" data-node-id="I7008:27105;278:4690">
+                Стать автором
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="absolute h-[49.784px] left-[0.11%] right-0 top-0" data-node-id="7008:27106" data-name="Change-This">
+        <img alt="" className="absolute block inset-0 max-w-none size-full" height="49.784" src={imgChangeThis} width="389.563" />
+      </div>
+      <div className="-translate-x-1/2 absolute content-stretch flex gap-[6px] items-center left-1/2 top-[710px]" data-node-id="7008:27107">
+        <div className="backdrop-blur-[50px] bg-[rgba(255,255,255,0.6)] border-[#d1d1d1] border-[0.5px] border-solid content-stretch flex gap-[20px] items-center p-[14px] relative rounded-[200px] shrink-0" data-node-id="7008:27108" data-name="Навигация">
+          <div className="content-stretch flex items-center p-[6px] relative shrink-0" data-node-id="7008:27109">
+            <div className="relative shrink-0 size-[24px]" data-node-id="7008:27110" data-name="home-01">
+              <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgHome01} />
+            </div>
+          </div>
+          <div className="content-stretch flex items-center p-[6px] relative shrink-0" data-node-id="7008:27112">
+            <div className="relative shrink-0 size-[24px]" data-node-id="7008:27113" data-name="search-01">
+              <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgSearch01} />
+            </div>
+          </div>
+          <div className="content-stretch flex items-center p-[6px] relative shrink-0" data-node-id="7008:27116">
+            <div className="relative shrink-0 size-[24px]" data-node-id="7008:27117" data-name="plus">
+              <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgPlus} />
+            </div>
+          </div>
+          <div className="content-stretch flex items-center p-[6px] relative shrink-0" data-node-id="7008:27119">
+            <div className="relative shrink-0 size-[24px]" data-node-id="7008:27120" data-name="shopping-basket-01">
+              <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgShoppingBasket01} />
+            </div>
+          </div>
+          <div className="content-stretch flex items-center p-[6px] relative shrink-0" data-node-id="7008:27123">
+            <div className="relative shrink-0 size-[24px]" data-node-id="7008:27124" data-name="user">
+              <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgUser} />
+            </div>
+          </div>
+        </div>
+        <div className="backdrop-blur-[50px] bg-[rgba(255,255,255,0.6)] border-[#d1d1d1] border-[0.5px] border-solid content-stretch flex items-center p-[14px] relative rounded-[200px] shrink-0" data-node-id="7008:27127" data-name="Навигация">
+          <div className="content-stretch flex items-center p-[6px] relative shrink-0" data-node-id="7008:27128">
+            <div className="relative shrink-0 size-[24px]" data-node-id="7008:27129" data-name="gallery-horizontal">
+              <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgGalleryHorizontal} />
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="-translate-x-1/2 absolute border-[#d1d1d1] border-[0.5px] border-solid content-stretch flex gap-[4px] items-start left-1/2 p-[4px] rounded-[31px] top-[244px]" data-node-id="7008:27131">
+        <div className="bg-[var(--gray-5,#f3f3f3)] border-[0.5px] border-[var(--white,white)] border-solid content-stretch flex gap-[2px] items-center justify-center px-[16px] py-[10px] relative rounded-[80px] shrink-0" data-node-id="7008:27132" data-name="Кнопки">
+          <p className="[word-break:break-word] font-['Inter:Medium'] font-medium leading-[20px] not-italic relative shrink-0 text-[15px] text-[color:var(--black,#121212)] text-center tracking-[-0.3px] whitespace-nowrap" data-node-id="I7008:27132;584:17874">
+            Работы
+          </p>
+        </div>
+        <div className="backdrop-blur-[50px] bg-[var(--white,white)] border-[0.5px] border-[var(--white,white)] border-solid content-stretch flex gap-[2px] items-center justify-center px-[16px] py-[10px] relative rounded-[80px] shrink-0" data-node-id="7008:27133" data-name="Кнопки">
+          <p className="[word-break:break-word] font-['Inter:Medium'] font-medium leading-[20px] not-italic relative shrink-0 text-[15px] text-[color:var(--gray-1,#565656)] text-center tracking-[-0.3px] whitespace-nowrap" data-node-id="I7008:27133;278:4581">
+            Авторы
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+SUPER CRITICAL: The generated React+Tailwind code MUST be converted to match the target project's technology stack and styling system.
+1. Analyze the target codebase to identify: technology stack, styling approach, component patterns, and design tokens
+2. Convert React syntax to the target framework/library
+3. Transform all Tailwind classes to the target styling system while preserving exact visual design
+4. Follow the project's existing patterns and conventions
+DO NOT install any Tailwind as a dependency unless the user instructs you to do so.
+
+Node ids have been added to the code as data attributes, e.g. `data-node-id="1:2"`.
+These styles are contained in the design: White border block: , button-grad: , Blur: Effect(type: BACKGROUND_BLUR, radius: 100).
+The generated code contains image and SVG URL constants, e.g. const image = 'https://www.figma.com/api/mcp/asset/550e8400-e29b-41d4-a716-446655440000.png'. These URLs are temporary download sources and expire after 7 days. Download each asset into the project with curl -L, then replace its URL in the generated code with a reference to the downloaded asset. Never use the temporary URLs as runtime image sources.

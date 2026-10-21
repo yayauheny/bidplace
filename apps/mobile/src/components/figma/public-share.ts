@@ -14,6 +14,13 @@ export function publicShareTarget(sharePath: string, origin: string) {
   };
 }
 
+// Single typed owner of the public author route. Unpublished/missing slug has
+// no public path — callers surface the claim flow instead of building
+// /authors/null.
+export function authorSharePath(slug: string): `/authors/${string}` {
+  return `/authors/${slug}`;
+}
+
 export async function copyPublicLink(url: string) {
   if (navigator.clipboard) {
     try {

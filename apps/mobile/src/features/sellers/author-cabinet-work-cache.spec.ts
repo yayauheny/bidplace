@@ -26,6 +26,8 @@ const harness = vi.hoisted(() => ({
   publicReads: { count: 0 },
 }));
 
+vi.mock('../../components/layout/PageScrollView', () => ({ PageScrollView: ({ children }: { children?: ReactNode }) => createElement('div', null, children) }));
+
 vi.mock('../../components/figma/FigmaChoiceChip', () => ({
   FigmaChoiceChip: ({
     label,

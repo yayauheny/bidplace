@@ -7,6 +7,7 @@ import { AppText, PrimaryButton, SecondaryButton, TextButton, TextField } from '
 import { AUTH_TURNSTILE_UNAVAILABLE_COPY } from '../../errors';
 import { getTurnstileSiteKey } from '../../lib/environment';
 import { useAuth } from '../../providers/auth-provider';
+import { useAppTheme } from '../../providers/theme-provider';
 import { AuthCodeField } from './auth-code-field';
 import { type SafeRedirect } from './auth-redirect';
 import { useAuthSheetComplete, useAuthSheetGuard } from './auth-sheet-context';
@@ -93,13 +94,15 @@ export function VerifyEmailForm({ redirectTo }: VerifyEmailFormProps) {
     retrySendPending: verification.retrySendPending,
   });
 
+  const palette = useAppTheme();
+
   return (
     <View style={{ gap: designTokens.auth.screenGap, width: '100%' }}>
       <View style={{ gap: designTokens.auth.titleGap }}>
-        <AppText role="sectionTitle" style={{ textAlign: 'center', color: designTokens.color.fieldValue, ...designTokens.typography.authScreenTitle }}>
+        <AppText role="sectionTitle" style={{ textAlign: 'center', color: palette.fieldValue, ...designTokens.typography.authScreenTitle }}>
           Проверьте код на почте
         </AppText>
-        <AppText role="bodySmall" style={{ textAlign: 'center', color: designTokens.color.textSubdued, ...designTokens.typography.authCaption, letterSpacing: 0 }}>
+        <AppText role="bodySmall" style={{ textAlign: 'center', color: palette.textSubdued, ...designTokens.typography.authCaption, letterSpacing: 0 }}>
           {verification.readStatus === 'loading'
             ? 'Проверяем статус подтверждения…'
             : verification.readStatus === 'error'

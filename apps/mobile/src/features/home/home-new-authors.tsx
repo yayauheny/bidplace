@@ -5,6 +5,7 @@ import { designTokens } from '@bidplace/design-tokens';
 
 import { AuthorCoverCard } from '../../components/figma';
 import { AppText, PrimaryButton } from '../../components/ui';
+import { useAppTheme } from '../../providers/theme-provider';
 import {
   homeAuthorFanLayout,
   homeAuthorFanSlots,
@@ -42,7 +43,7 @@ function fanPositionStyle(slot: HomeAuthorFanSlot) {
   };
 }
 
-function fanShadowShellStyle(slot: HomeAuthorFanSlot) {
+function fanShadowShellStyle(slot: HomeAuthorFanSlot, frontShadow: string) {
   const size =
     slot === 'front' ? homeAuthorFanLayout.front : homeAuthorFanLayout.rear;
   return {
@@ -50,13 +51,12 @@ function fanShadowShellStyle(slot: HomeAuthorFanSlot) {
     height: size.height,
     borderRadius: homeAuthorFanLayout.cardRadius,
     overflow: 'visible' as const,
-    ...(slot === 'front'
-      ? { boxShadow: homeAuthorFanLayout.frontShadow }
-      : null),
+    ...(slot === 'front' ? { boxShadow: frontShadow } : null),
   };
 }
 
 export function HomeNewAuthors({ authors }: { authors: HomeAuthor[] }) {
+  const palette = useAppTheme();
   const { push } = useRouter();
   const slots = homeAuthorFanSlots(authors);
   if (slots.length === 0) return null;
@@ -90,7 +90,7 @@ export function HomeNewAuthors({ authors }: { authors: HomeAuthor[] }) {
               : homeAuthorFanLayout.rear;
           return (
             <View key={item.author.slug} style={fanPositionStyle(item.slot)}>
-              <View style={fanShadowShellStyle(item.slot)}>
+              <View style={fanShadowShellStyle(item.slot, palette.fanShadow)}>
                 <AuthorCoverCard
                   fullName={item.author.fullName}
                   slug={item.author.slug}

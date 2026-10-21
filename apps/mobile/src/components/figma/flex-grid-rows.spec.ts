@@ -14,6 +14,10 @@ describe('paddedGridRows', () => {
     ]);
   });
 
+  it('pads a four-column author row', () => {
+    expect(paddedGridRows(['a', 'b'], 4)).toEqual([['a', 'b', null, null]]);
+  });
+
   it('pads a three-column row', () => {
     expect(paddedGridRows(['a'], 3)).toEqual([['a', null, null]]);
   });

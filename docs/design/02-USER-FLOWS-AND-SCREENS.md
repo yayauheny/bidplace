@@ -15,6 +15,26 @@ assets и measurements берутся только из versioned inspect/handof
 `pAPQo6cADmG5XzVmBX76EE` (`DEC-119`). Product owner documents и server contracts
 по-прежнему определяют routes, data, permissions и auction behavior.
 
+### Registration document reading —2026-10-20, DEC-125
+
+Один explicit control подтверждает документы и18+ при регистрации. Создание
+аккаунта не зависит от GET текста, CTA всегда «Дальше». По ссылке —существующий
+AppDialog, loading или ошибка чтения; закрытие сохраняет email/checkbox.
+Сервер определяет фактическую редакцию при атомарном создании аккаунта.
+Дополнительного принятия перед заявкой/публикацией нет. Это уточнение заменяет
+описанное ниже переключение primary action на повтор загрузки.
+
+### Registration consent —2026-10-20
+
+DEC-124 уточняет предыдущие auth-описания: один пустой checkbox явно подтверждает
+три документа и18+. Полные тексты доступны inline до принятия, без потери формы.
+Один клик заполняет существующие обязательные флаги и версии документов; открытие
+ссылки не принимает документы. Недоступный пакет блокирует продолжение, смена
+редакции требует повторного подтверждения. В UI нет служебной подписи версии и отдельного error/retry-блока под формой.
+Сбой загрузки переключает основную кнопку на «Повторить загрузку»; успешный
+повтор сохраняет email и возвращает «Дальше», без автоматического принятия.
+Регистрация остаётся fullscreen, центрированная form-column350 без sheetMax390.
+
 ### Auth presentation — 2026-10-08
 
 Current fullscreen registration/confirmation source:
@@ -363,6 +383,15 @@ input. Обычное сохранение оставляет поле и фот
 правок или отклонения сменяет его. Pending revision закрывает редактирование и повторную
 отправку. Публичные данные и media остаются прежними до approval.
 
+Локальное восстановление (DEC-121, 2026-10-15): набранный на любом шаге ввод
+автоматически сохраняется локально в браузере (ключ привязан к аккаунту и к
+заявке) и восстанавливается после reload, закрытия вкладки или неудачного
+сохранения — включая незавершённые дату и текст недобавленного достижения.
+Черновик применяется, только пока совпадает серверная ревизия; после первого
+успешного создания заявки локальный ключ мигрирует на её id. Успешная отправка
+на проверку, выход из аккаунта и сохранение без последующих правок локальный
+ввод очищают. Восстановление ничего не отправляет и не публикует автоматически.
+
 ## 9. Work creation
 
 Три content-шага и отдельная проверка:
@@ -398,6 +427,22 @@ pending не открывает Save и Submit. Более новое решен
 Save failure оставляет автора на текущем экране. Повторное открытие
 `/products/:id` восстанавливает сохранённую editing revision.
 
+Локальное восстановление (DEC-121, 2026-10-15): ввод шагов 1–3 и незавершённые
+текстовые блоки истории автоматически сохраняются локально в браузере (ключ
+привязан к аккаунту и к работе — для ещё не созданной работы и для editing
+revision раздельно) и восстанавливаются после reload, закрытия вкладки или
+неудачного сохранения. Черновик применяется, только пока совпадает серверная
+ревизия; после первого успешного создания работы локальный ключ мигрирует на
+её id, чтобы повторный визит не создавал работу заново. Ещё не загруженные
+файлы выбирают повторно; загруженные медиа остаются серверными. Подтверждённый
+submit, выход из аккаунта и сохранение без правок после снимка запроса локальный
+ввод очищают; ошибка server save локальную копию сохраняет. Правки, удаления
+и порядок блоков истории восстанавливаются по идентичности блоков, а не по
+совпадению текста; одинаковые абзацы в разных блоках и удаление всех текстов
+восстанавливаются корректно. При одновременном
+редактировании с нескольких устройств побеждает последнее успешное серверное
+сохранение — системы синхронизации и экрана конфликтов нет.
+
 CTA: `Отправить на модерацию`. Main gallery и story независимы; их фотографии
 могут ссылаться на один MediaAsset. «Закончить» подтверждает сохранение
 истории, а не публикацию. Backend хранит упорядоченные блоки `HEADING`,
@@ -420,3 +465,43 @@ Packaging, delivery, condition, provenance, город продажи, weight и
 - 390 mobile, 1024 tablet and 1440 desktop;
 - safe-area/keyboard behavior for fixed or floating controls;
 - direct URL access to disabled commerce surfaces fails safely.
+
+## 2026-10-18 — Auth sheet background and close contract (DEC-122)
+
+Opening login from a public page retains that page, loaded images and scroll
+under the dimmer. Closing returns to that existing page; a direct login URL has
+Home as its fallback. The upper handle/header can be pulled down to request the
+same close action as the cross. Body scrolling cannot close the sheet. Busy-save
+blocking and dirty registration confirmation remain with AuthViewport.
+
+### Achievement date selection — 2026-10-20
+
+Date achievement opens the shared calendar sheet. Choose a day, or set year/month
+and select «Только месяц, без точного дня». «Выбрать» commits to the form, not the
+API; close/Escape/swipe discards the candidate. «Очистить дату» explicitly clears
+it. Existing add-event action and server validation remain unchanged. Session
+switch, external value replacement or busy state must not apply an old candidate.
+Creation year is numeric, and publication timestamp remains automatic.
+
+### 2026-10-20 — Явный выход из регистрации
+
+Полноэкранные шаги регистрации имеют общий крест AuthViewport. Он использует
+существующие правила выхода: clean → исходный публичный redirectTo, dirty →
+подтверждение, busy → блокировка выхода. Отмена подтверждения возвращает фокус
+на открывший его элемент (крест при клике, поле при Escape).
+
+
+### Public author navigation update — 2026-10-21
+
+Public routes share the desktop header from1024 CSS px (mobile dock below).
+Author Works/About preserve the same identity; mobile scroll pins the same
+Back/share/more controls after the hero leaves. Wide owner Settings uses the
+existing /account/settings route; profile editing remains its existing child
+flow. Category draft/apply/cancel, public data and unavailable follow/favorites
+behavior are unchanged. See03-DESIGN-SYSTEM and the current author parity audit.
+
+
+2026-10-21: ordinary public/account/settings pages end with SiteFooter; full-screen
+forms, editors and overlays exclude it. Desktop cart/notifications are explicit
+post-MVP placeholders opening the shared compact feedback sheet (close/Escape,
+return focus). They do not start a purchase or create notification state.

@@ -4,6 +4,7 @@ import { designTokens } from '@bidplace/design-tokens';
 
 import { WorkCoverCardGrid } from '../../../components/figma/WorkCoverCardGrid';
 import { FigmaButton } from '../../../components/figma/FigmaButton';
+import { useAppTheme } from '../../../providers/theme-provider';
 import { usePortfolioWorks } from '../../products/use-portfolio-works';
 import { SearchPaneStatus } from './search-pane-status';
 
@@ -56,13 +57,14 @@ function WorksSkeleton() {
 }
 
 function SkeletonCover() {
+  const palette = useAppTheme();
   return (
     <View
       style={{
         flex: 1,
         aspectRatio: designTokens.size.coverWidth / designTokens.size.coverHeight,
         borderRadius: designTokens.radius.cover,
-        backgroundColor: designTokens.color.surfaceMuted,
+        backgroundColor: palette.surfaceMuted,
       }}
     />
   );

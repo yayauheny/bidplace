@@ -11,6 +11,7 @@ import {
 import { retryTransientPublicQuery } from '../../../lib/query-retry';
 import { categoryKeys } from '../../../lib/query-cache';
 import { useApiClient } from '../../../providers/api-provider';
+import { useAppTheme } from '../../../providers/theme-provider';
 import { CategorySearchTile } from '../CategorySearchTile';
 import { filterCategoriesByQuery } from '../filter-categories';
 import { searchRequestQuery } from '../search-query';
@@ -83,13 +84,14 @@ function CategorySkeleton() {
 }
 
 function SkeletonTile() {
+  const palette = useAppTheme();
   return (
     <View
       style={{
         flex: 1,
         aspectRatio: 120.67 / 160.89,
         borderRadius: designTokens.radius.small,
-        backgroundColor: designTokens.color.surfaceMuted,
+        backgroundColor: palette.surfaceMuted,
       }}
     />
   );

@@ -1,6 +1,6 @@
 export function paddedGridRows<T>(
   items: readonly T[],
-  columns: 1 | 2 | 3,
+  columns: 1 | 2 | 3 | 4,
 ): Array<Array<T | null>> {
   const rows: Array<Array<T | null>> = [];
   for (let index = 0; index < items.length; index += columns) {

@@ -12,6 +12,14 @@ import { advanceAuthEpoch, authKeys, clearAuthenticatedSession } from '../../lib
 import { ownerWorkQueryKeys } from './owner-work-query';
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+vi.mock('../../components/shared/PrivateStoryImage', () => ({ PrivateStoryImage: () => null }));
+vi.mock('../../components/figma/FigmaIcon', () => ({ FigmaIcon: () => null }));
+vi.mock('../../components/ui/MotionPressable', () => ({
+  MotionPressable: ({ children, accessibilityLabel, disabled, onPress }: {
+    children?: ReactNode; accessibilityLabel?: string; disabled?: boolean; onPress?: () => void;
+  }) => createElement('button', { 'aria-label': accessibilityLabel, disabled, onClick: onPress }, children),
+}));
+
 
 const productId = '11111111-1111-4111-8111-111111111111';
 const categoryId = '33333333-3333-4333-8333-333333333333';
@@ -275,7 +283,7 @@ async function until(container: HTMLElement, predicate: () => boolean, label: st
 }
 
 function button(container: ParentNode, label: string) {
-  return [...container.querySelectorAll('button')].find((node) => node.textContent === label) ?? null;
+  return [...container.querySelectorAll('button')].find((node) => node.textContent === label || node.getAttribute('aria-label') === label) ?? null;
 }
 
 beforeEach(() => {

@@ -153,7 +153,10 @@ describe('product image contracts', () => {
   it('projects the revision a response represents and ignores stored columns', () => {
     const publishedTerms = [
       { termId: 'm1', term: { role: 'MATERIAL', name: 'Холст обновлённый' } },
-      { termId: 't1', term: { role: 'TECHNIQUE', name: 'Рисунок обновлённый' } },
+      {
+        termId: 't1',
+        term: { role: 'TECHNIQUE', name: 'Рисунок обновлённый' },
+      },
     ];
     const editingTerms = [
       { termId: 'm2', term: { role: 'MATERIAL', name: 'Масло' } },
@@ -228,6 +231,7 @@ describe('portfolioCatalogProductSelect', () => {
         .select,
     ).toEqual({
       mediaAsset: { select: publicMediaAssetSelect },
+      mediaAssetId: true,
       id: true,
       mimeType: true,
       byteLength: true,

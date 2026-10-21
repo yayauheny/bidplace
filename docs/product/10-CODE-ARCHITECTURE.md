@@ -204,6 +204,44 @@ SellerProfile
   1–120 character `accountSlugSchema` read contract. Future write endpoints
   must reuse the write schema; narrowing a response schema would reject
   historical accounts. This introduces no new persistence owner or migration.
+- `apps/mobile/src/lib/local-form-draft.ts` is the browser-only form-draft
+  boundary (DEC-121). Keys are `bidplace:draft:<accountId>:<scope>:<entityId>`
+  in `localStorage` — scoped to the account and to one Work or one seller
+  application, never shared across accounts or entities; the analytics
+  AsyncStorage is not used. A draft payload passes a Zod schema that allows an
+  incomplete first step (strict submit validation does not apply), and corrupt
+  JSON or unavailable storage yields `null`, never a form crash. Writing is
+  throttled (~400 ms) during editing and does not depend on `beforeunload`.
+  `features/sellers/local-form-restore.ts` adapts the two form owners: a stored
+  draft applies only while its `baseToken` (server revision token) matches the
+  loaded server state — the server revision wins on mismatch, so simultaneous
+  editing from several devices resolves to the last successful server save and
+  no sync/conflict UI exists. Restored values hydrate the form as dirty and go
+  into the next ordinary save; server hydration/refetch does not clear them.
+  Drafts are cleared on logout/session change (`account-logout`), on a
+  confirmed submit, and on a successful save with no edits after the request
+  snapshot. After the first confirmed create, the `…:new` key is migrated to
+  the confirmed entity id (`noteEntityCreated`) so a revisit cannot re-create
+  the entity. Passwords, OTP, tokens, registration/auth forms, blob URLs and
+  file bytes are never stored. Account-wide clear (logout) also bumps a
+  per-account write epoch: delayed writers capture it at schedule time and
+  drop the write after retirement, so a debounced write pending at logout
+  cannot resurrect the cleared private draft. The live writer persists only
+  unsaved input — a clean form (e.g. after `reset(persisted)` following a
+  confirmed save) clears the local snapshot instead of repersisting it, while
+  edits made after the request stay. Unavailable or failing storage surfaces a
+  visible message through the owners' existing danger-text pattern (restore
+  hook `storageError`); it never breaks the form. Stored form payloads are validated as data, not
+  as submittable forms: the envelope is schema-checked and each field is
+  accepted only when its JSON shape matches the form's own default, so an
+  unfinished intermediate value (half-typed email or year) never rejects the
+  other fields; business validation stays with the server save/submit path.
+  The story draft (`use-product-story-editor.ts`) is versioned: v2 blocks carry
+  stable keys (`server block id ?? client key`) and IMAGE placeholders
+  (mediaAssetId + altText), so edits, deletions, reordering and duplicate
+  texts restore exactly by block identity; pre-v2 text-only payloads keep the
+  legacy content-merge semantics, which cannot record deletions or image
+  positions and is not migrated.
 - `apps/mobile/src/features/auth/nickname-suggestion-generator.ts` is the
   replaceable synchronous nickname-generation boundary. Its sole current
   adapter confines `unique-names-generator` and curated bundled dictionaries to
@@ -432,3 +470,86 @@ imported rows as complete historical quota truth.
 
 Automated verification counts and browser evidence for this branch are owned by
 `11-PROJECT-STATUS.md`.
+
+
+### Auth background and shared sheet interaction (2026-10-18, DEC-122)
+
+Expo Router root anchor `index` and transparent auth presentation preserve the
+existing background screen. The auth layout also owns one persistent visual dimmer;
+AuthViewport retains only the transparent dismissal overlay, so child auth routes
+do not tear down and restart background dimming (2026-10-19). AuthViewport owns auth close guards and dismisses to
+its return target; it no longer renders HomeScreen as a second background.
+SheetDragSurface owns only gesture detection/translation, with web Pointer Events
+and a native PanResponder adapter. AppDialog, FilterSheet and AuthViewport declare
+the draggable header and supply the existing close callback. This avoids separate
+route-local gesture implementations; persistence, auth service, API and database
+boundaries are unchanged. useReturnFocus handles force-mounted sheet close cycles.
+
+
+### Shared web sheet backdrop (2026-10-19)
+
+AppProviders mounts SheetBackdropProvider under the semantic theme owner.
+AppDialog registers ordinary sheet/mediaSheet open lifetimes; one visual portal
+stays mounted across handoffs. This owner does not manage content, route history,
+focus traps, save state or permissions. Dialog.Overlay remains the dismissal hit
+layer below panels. Native/isolated rendering retains its existing per-dialog
+implementation; centered confirmations, auth and Search keep their flow layers.
+useReturnFocus records weak opener ancestry for handoffs without retaining closed
+DOM scopes. See audits/2026-10-19-TRANSITION-MATRIX.md for coverage and limits.
+
+### Registration evidence and document delivery —2026-10-20
+
+DEC-125: AuthService.register reads readRegistrationLegalVersion (edition +
+source digest) instead of the public document endpoint. Canonical source
+parsing/hashing is shared in legal-documents.ts; readPublishedLegalDocuments
+additionally rejects unresolved placeholders before exposing bodies.
+New clients submit confirmed actions without a revision; the server owns the
+revision at atomic User/evidence creation. Explicit legacy revisions still
+undergo mismatch rejection. No new database state or acceptance stage.
+RegisterForm completes navigation after the AuthProvider rendered the installed
+account, checked against the captured epoch/controller/focus receipt.
+
+## 2026-10-20 — Shared calendar boundary
+
+`components/ui/DateField` owns temporary selection and confirmation, shared
+FigmaSelectField and AppDialog own presentation. `DateSelection.tsx` is the web
+implementation using modular public React Aria exports; Metro selects
+`DateSelection.native.tsx` for Expo/system picker. `lib/calendar-date.ts` owns
+canonical string conversion and reuses the existing contract schema. Existing
+seller date exports delegate without changing null labels or local draft schema.
+UI never changes date-only values to timezone-dependent instants. No API,
+database migration or scheduling domain was added.
+
+`AppDialogSheetMotion` owns one Reanimated shared translation across enter, drag,
+cancel and exit on web/native. SheetDragSurface handles the header gesture only;
+it neither wraps the sheet in another transform nor resets an accepted dismissal.
+Web retains one live DOM tree, makes entering/closing content inert and removes it
+only after the timing completion. AuthViewport commits dismissal navigation from
+onExited; useReturnFocus restores at the real FocusScope close. Guarded dismissal
+animates back to rest. ReduceMotion.System remains the shared timing policy.
+Native shares this owner but device runtime still needs verification.
+
+Metro's transform cache identity includes the explicit public build configuration
+(API URL, public site key, app environment and analytics flag). Sequential preview
+and isolated-test exports must never reuse a bundle compiled for another origin.
+metro.config.js and environment.spec own this build/release invariant.
+
+
+### Public navigation / bleed layout ownership — 2026-10-21
+
+Public route context scopes navigation presentation; shared use-app-navigation
+retains the existing auth/capability/search owners for dock and desktop header.
+AppShell owns Safe Area and selects chrome; PageColumn owns constrained geometry
+inside both normal and full-bleed scroll hosts. No domain/API/persistence boundary
+changed. Visual and motion contract: docs/design/03-DESIGN-SYSTEM.md.
+
+
+### Ordinary page chrome (2026-10-21)
+
+`AppShell` owns desktop/dock visibility; `PageScrollView` composes the existing
+`PageColumn`, `SiteFooter` and dock clearance in one scrollport. Its branded
+variant owns the responsive central mark. `SiteFooter` shares the wide-layout
+policy with navigation and uses existing auth/create routes and legal IDs.
+`FormPageShell` includes it for account/settings only by default. Full-screen
+forms and overlays retain their existing layout. `BidplaceLogo` is the shared
+contain-fitted combined SVG for header/footer.

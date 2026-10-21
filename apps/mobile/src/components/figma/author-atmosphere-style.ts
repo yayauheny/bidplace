@@ -1,6 +1,6 @@
-import { designTokens } from '@bidplace/design-tokens';
+import { designTokens, type SemanticColorMap } from '@bidplace/design-tokens';
 
-export function authorAtmosphereSpec() {
+export function authorAtmosphereSpec(palette: SemanticColorMap) {
   return {
     sourceNodeId: '621:19476',
     width: designTokens.size.authorAtmosphere,
@@ -11,6 +11,6 @@ export function authorAtmosphereSpec() {
     blur: 80,
     maskFade: 80,
     bottomRadius: 200,
-    wash: designTokens.color.atmosphereWash,
+    wash: palette.atmosphereWash,
   } as const;
 }

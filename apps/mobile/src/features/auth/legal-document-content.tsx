@@ -1,11 +1,12 @@
 import type { ReactNode } from 'react';
 import { Linking, Text, View } from 'react-native';
 
-import { designTokens } from '@bidplace/design-tokens';
+import { designTokens, type SemanticColorMap } from '@bidplace/design-tokens';
 
 import { AppText } from '../../components/ui';
+import { useAppTheme } from '../../providers/theme-provider';
 
-function legalInline(source: string): ReactNode[] {
+function legalInline(source: string, palette: SemanticColorMap): ReactNode[] {
   return source.split(/(https?:\/\/[^\s<>]+|\*\*[^*\n]+\*\*|`[^`\n]+`)/g).filter(Boolean).map((part, index) => {
     if (/^https?:\/\//.test(part)) {
       const address = part.replace(/[.,;]+$/, '');
@@ -14,7 +15,7 @@ function legalInline(source: string): ReactNode[] {
         <Text key={index}>
           <Text
             accessibilityRole="link"
-            style={{ textDecorationLine: 'underline', color: designTokens.color.fieldValue }}
+            style={{ textDecorationLine: 'underline', color: palette.fieldValue }}
             onPress={() => { void Linking.openURL(address); }}
           >
             {address}
@@ -33,7 +34,7 @@ function legalInline(source: string): ReactNode[] {
   });
 }
 
-function legalTable(block: string) {
+function legalTable(block: string, palette: SemanticColorMap) {
   const cells = block.split('\n').filter((line) =>
     /^\|/.test(line) && !/^\|[\s:|-]+\|$/.test(line),
   ).map((line) => line.split('|').slice(1, -1).map((cell) => cell.trim()));
@@ -44,13 +45,13 @@ function legalTable(block: string) {
         <View key={index} style={{
           gap: designTokens.space.x2,
           padding: designTokens.space.x3,
-          backgroundColor: designTokens.color.canvas,
+          backgroundColor: palette.canvas,
           borderRadius: designTokens.radius.dialog,
         }}>
           {row.map((cell, cellIndex) => (
             <AppText key={cellIndex} role="bodySmall" selectable style={{ lineHeight: 22 }}>
               <Text style={{ fontWeight: '600' }}>{headers[cellIndex] ? `${headers[cellIndex]}: ` : ''}</Text>
-              {legalInline(cell)}
+              {legalInline(cell, palette)}
             </AppText>
           ))}
         </View>
@@ -62,6 +63,7 @@ function legalTable(block: string) {
 // The canonical legal pack uses headings, paragraphs, plain HTTPS URLs, lists,
 // bold/code spans and Markdown tables. Keep all prose and URLs selectable.
 export function LegalDocumentContent({ markdown }: { markdown: string }) {
+  const palette = useAppTheme();
   const blocks = markdown.replace(/\r\n/g, '\n').trim().split(/\n\s*\n/);
   return (
     <View style={{ gap: designTokens.space.x4, minWidth: 0 }}>
@@ -74,21 +76,21 @@ export function LegalDocumentContent({ markdown }: { markdown: string }) {
               key={index}
               role={top ? 'sectionTitle' : 'body'}
               selectable
-              style={{ color: designTokens.color.fieldValue, fontWeight: '600', lineHeight: top ? 32 : 26 }}
+              style={{ color: palette.fieldValue, fontWeight: '600', lineHeight: top ? 32 : 26 }}
             >
-              {legalInline(heading[2] ?? '')}
+              {legalInline(heading[2] ?? '', palette)}
             </AppText>
           );
         }
-        if (block.startsWith('|')) return <View key={index}>{legalTable(block)}</View>;
+        if (block.startsWith('|')) return <View key={index}>{legalTable(block, palette)}</View>;
         return (
           <AppText
             key={index}
             role="bodySmall"
             selectable
-            style={{ lineHeight: 23, color: designTokens.color.fieldValue }}
+            style={{ lineHeight: 23, color: palette.fieldValue }}
           >
-            {legalInline(block.replace(/^\s*[-*]\s+/gm, '• '))}
+            {legalInline(block.replace(/^\s*[-*]\s+/gm, '• '), palette)}
           </AppText>
         );
       })}

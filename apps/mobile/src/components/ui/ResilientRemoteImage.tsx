@@ -37,7 +37,8 @@ export type ResilientRemoteImageComponent =
   | 'AuthorCoverCard'
   | 'AuthorIdentity'
   | 'AuthorAtmosphere'
-  | 'AuthorSearchRow';
+  | 'AuthorSearchRow'
+  | 'AccountIdentity';
 
 type ResilientRemoteImageProps = {
   uri: string;
@@ -50,6 +51,14 @@ type ResilientRemoteImageProps = {
   transition?: ImageProps['transition'];
   recyclingKey?: string;
   blurRadius?: number;
+  /** Show the manual «Повторить» action after automatic retries exhaust. Default true. */
+  retryable?: boolean;
+  /**
+   * `plain` renders just the surface on failure — for round avatar discs
+   * where the labelled placeholder text would be clipped by the circle.
+   * Default `labelled`.
+   */
+  fallback?: 'labelled' | 'plain';
 };
 
 export function ResilientRemoteImage(props: ResilientRemoteImageProps) {
@@ -67,6 +76,8 @@ function RemoteImageLifetime({
   transition,
   recyclingKey,
   blurRadius,
+  retryable = true,
+  fallback = 'labelled',
 }: ResilientRemoteImageProps) {
   const [recovery, setRecovery] = useState(() => createMediaRecoveryState(uri));
   const recoveryRef = useRef(recovery);
@@ -155,11 +166,13 @@ function RemoteImageLifetime({
           },
         ]}
       >
-        <ImagePlaceholder
-          label={fallbackLabel}
-          style={StyleSheet.absoluteFill}
-        />
-        {recovery.exhausted ? (
+        {fallback === 'labelled' ? (
+          <ImagePlaceholder
+            label={fallbackLabel}
+            style={StyleSheet.absoluteFill}
+          />
+        ) : null}
+        {retryable && recovery.exhausted ? (
           <View style={{ position: 'absolute', bottom: designTokens.space.x2 }}>
             <SecondaryButton label="Повторить" onPress={handleManualRetry} />
           </View>

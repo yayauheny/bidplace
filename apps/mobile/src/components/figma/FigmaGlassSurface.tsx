@@ -12,6 +12,7 @@ import {
 
 import { designTokens } from '@bidplace/design-tokens';
 
+import { useAppTheme } from '../../providers/theme-provider';
 import {
   figmaGlassSurfaceSpec,
   type FigmaGlassSurfacePreset,
@@ -37,7 +38,8 @@ export function FigmaGlassSurface({
   accessibilityRole?: AccessibilityRole | 'navigation';
   accessibilityLabel?: string;
 }) {
-  const spec = figmaGlassSurfaceSpec(preset);
+  const palette = useAppTheme();
+  const spec = figmaGlassSurfaceSpec(preset, palette);
   const nativeRole =
     accessibilityRole === 'navigation' ? undefined : accessibilityRole;
 
@@ -72,7 +74,10 @@ export function FigmaGlassSurface({
       >
         <View
           pointerEvents="none"
-          style={[StyleSheet.absoluteFill, { backgroundColor: spec.background }]}
+          style={[
+            StyleSheet.absoluteFill,
+            { backgroundColor: spec.background },
+          ]}
         />
       </BlurView>
       <View

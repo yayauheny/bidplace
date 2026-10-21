@@ -7,6 +7,7 @@ import { ApiProvider } from './api-provider';
 import { AuthProvider } from './auth-provider';
 import { QueryProvider } from './query-provider';
 import { ThemeProvider } from './theme-provider';
+import { SheetBackdropProvider } from '../components/ui/sheet-backdrop';
 import { SearchOverlayProvider } from '../features/search/search-overlay-provider';
 
 export function AppProviders({ children }: { children: ReactNode }) {
@@ -15,13 +16,15 @@ export function AppProviders({ children }: { children: ReactNode }) {
       <SafeAreaProvider>
         <ApiProvider>
           <ThemeProvider>
-            <QueryProvider>
-              <AuthProvider>
-                <AnalyticsProvider>
-                  <SearchOverlayProvider>{children}</SearchOverlayProvider>
-                </AnalyticsProvider>
-              </AuthProvider>
-            </QueryProvider>
+            <SheetBackdropProvider>
+              <QueryProvider>
+                <AuthProvider>
+                  <AnalyticsProvider>
+                    <SearchOverlayProvider>{children}</SearchOverlayProvider>
+                  </AnalyticsProvider>
+                </AuthProvider>
+              </QueryProvider>
+            </SheetBackdropProvider>
           </ThemeProvider>
         </ApiProvider>
       </SafeAreaProvider>

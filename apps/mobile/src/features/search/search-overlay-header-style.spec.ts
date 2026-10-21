@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import {
+  lightColorMap,
   searchChromeScaledPaint,
   searchChromeStrokeViewport,
   searchChromeTokens,
@@ -49,9 +50,12 @@ describe('search overlay header style', () => {
       padding: 8,
       gap: 8,
     });
-    expect(searchOverlayIconFrameStyle()).toMatchObject({ width: 36, height: 36 });
+    expect(searchOverlayIconFrameStyle()).toMatchObject({
+      width: 36,
+      height: 36,
+    });
     expect(searchOverlayCloseStyle()).toMatchObject({ width: 52, height: 52 });
-    expect(searchOverlayFieldInputStyle()).toMatchObject({
+    expect(searchOverlayFieldInputStyle(lightColorMap)).toMatchObject({
       fontSize: 16,
       lineHeight: 19,
       letterSpacing: -0.16,
@@ -64,9 +68,9 @@ describe('search overlay header style', () => {
     const fieldPaint = paint('paint5_linear_456_8298');
     const closePaint = paint('paint6_linear_456_8298');
     const railPaint = paint('paint7_linear_456_8298');
-    const field = searchChromeScaledPaint('field', 302, 52);
-    const close = searchChromeScaledPaint('close', 52, 52);
-    const rail = searchChromeScaledPaint('rail', 364, 50);
+    const field = searchChromeScaledPaint('field', 302, 52, lightColorMap);
+    const close = searchChromeScaledPaint('close', 52, 52, lightColorMap);
+    const rail = searchChromeScaledPaint('rail', 364, 50, lightColorMap);
 
     expect(field.axis).toMatchObject({
       x2: fieldPaint.x2 - fieldPaint.x1,
@@ -74,17 +78,36 @@ describe('search overlay header style', () => {
       start: '#D1D1D1',
       end: '#EBEBEB',
     });
-    expect(field).toMatchObject({ x: -0.25, y: -0.25, width: 302.5, height: 52.5, rx: 26.25 });
+    expect(field).toMatchObject({
+      x: -0.25,
+      y: -0.25,
+      width: 302.5,
+      height: 52.5,
+      rx: 26.25,
+    });
     expect(close.axis.x2).toBeCloseTo(closePaint.x2 - closePaint.x1, 3);
     expect(close.axis.y2).toBeCloseTo(closePaint.y2 - closePaint.y1, 3);
-    expect(close).toMatchObject({ x: -0.25, width: 52.5, height: 52.5, rx: 26.25 });
+    expect(close).toMatchObject({
+      x: -0.25,
+      width: 52.5,
+      height: 52.5,
+      rx: 26.25,
+    });
     expect(rail.axis.x2).toBeCloseTo(railPaint.x2 - railPaint.x1, 3);
     expect(rail.axis.y2).toBeCloseTo(railPaint.y2 - railPaint.y1, 3);
-    expect(rail).toMatchObject({ x: 0.25, y: 0.25, width: 363.5, height: 49.5, rx: 24.75 });
+    expect(rail).toMatchObject({
+      x: 0.25,
+      y: 0.25,
+      width: 363.5,
+      height: 49.5,
+      rx: 24.75,
+    });
+    expect(lightColorMap.mutedFill).toBe('#F3F3F3');
+    expect(lightColorMap.surface).toBe('#FFFFFF');
+    expect(lightColorMap.searchChromeGradientStart).toBe('#D1D1D1');
+    expect(lightColorMap.searchChromeGradientEnd).toBe('#EBEBEB');
     expect(searchChromeTokens.tab).toMatchObject({
       height: 41,
-      selectedFill: '#F3F3F3',
-      stroke: '#FFFFFF',
     });
     expect(searchChromeTokens.tab.typography).toMatchObject({
       fontSize: 14,
@@ -102,16 +125,30 @@ describe('search overlay header style', () => {
       ['rail', 364, 50],
       ['field', 109.578, 52],
     ] as const) {
-      const frame = searchChromeStrokeViewport(sample[0], sample[1], sample[2]);
+      const frame = searchChromeStrokeViewport(
+        sample[0],
+        sample[1],
+        sample[2],
+        lightColorMap,
+      );
       expect(frame.path.x - half).toBeGreaterThanOrEqual(-1e-9);
       expect(frame.path.y - half).toBeGreaterThanOrEqual(-1e-9);
-      expect(frame.path.x + frame.path.width + half).toBeLessThanOrEqual(frame.width + 1e-9);
-      expect(frame.path.y + frame.path.height + half).toBeLessThanOrEqual(frame.height + 1e-9);
+      expect(frame.path.x + frame.path.width + half).toBeLessThanOrEqual(
+        frame.width + 1e-9,
+      );
+      expect(frame.path.y + frame.path.height + half).toBeLessThanOrEqual(
+        frame.height + 1e-9,
+      );
     }
-    const fractional = searchChromeStrokeViewport('field', 109.578, 52);
+    const fractional = searchChromeStrokeViewport(
+      'field',
+      109.578,
+      52,
+      lightColorMap,
+    );
     expect(fractional.width).not.toBe(110);
     expect(fractional.width).toBeGreaterThan(109.578);
-    const field = searchChromeStrokeViewport('field', 302, 52);
+    const field = searchChromeStrokeViewport('field', 302, 52, lightColorMap);
     expect(field.left).toBeCloseTo(-0.5, 5);
     expect(field.width).toBeCloseTo(303, 5);
     expect(field.height).toBeCloseTo(53, 5);

@@ -10,20 +10,22 @@ export function FormSection({
   description,
   children,
 }: {
-  title: string;
+  title?: string;
   description?: string;
   children: ReactNode;
 }) {
   return (
     <View style={{ gap: designTokens.space.sectionGap }}>
-      <View style={{ gap: designTokens.space.x2 }}>
-        <AppText role="screenTitle">{title}</AppText>
-        {description ? (
-          <AppText role="bodySmall" tone="secondary">
-            {description}
-          </AppText>
-        ) : null}
-      </View>
+      {title || description ? (
+        <View style={{ gap: designTokens.space.x2 }}>
+          {title ? <AppText role="screenTitle">{title}</AppText> : null}
+          {description ? (
+            <AppText role="bodySmall" tone="secondary">
+              {description}
+            </AppText>
+          ) : null}
+        </View>
+      ) : null}
       <View style={{ gap: designTokens.space.x4 }}>{children}</View>
     </View>
   );

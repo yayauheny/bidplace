@@ -6,7 +6,7 @@ import { figmaGlassSurfaceSpec } from './figma-glass-surface-style';
 
 describe('Figma glass surface spec', () => {
   it('matches the 60% navigation glass contract', () => {
-    expect(figmaGlassSurfaceSpec('navigation')).toEqual({
+    expect(figmaGlassSurfaceSpec('navigation', designTokens.color)).toEqual({
       blur: 6,
       nativeIntensity: 30,
       borderWidth: 0.5,
@@ -18,8 +18,8 @@ describe('Figma glass surface spec', () => {
   });
 
   it('uses the captured 80% white fill for profile control groups', () => {
-    expect(figmaGlassSurfaceSpec('controlGroup').background).toBe(
-      designTokens.color.glassStrong,
-    );
+    expect(
+      figmaGlassSurfaceSpec('controlGroup', designTokens.color).background,
+    ).toBe(designTokens.color.glassStrong);
   });
 });

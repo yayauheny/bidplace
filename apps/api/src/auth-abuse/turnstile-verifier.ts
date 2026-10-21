@@ -139,6 +139,8 @@ export class ScriptedTurnstileVerifier extends TurnstileVerifier {
   }
 
   async verify(input: TurnstileCheck): Promise<TurnstileDecision> {
+    // Official Cloudflare dummy token for manual tests; this verifier is local/test only.
+    if (input.token === 'XXXX.DUMMY.TOKEN.XXXX') return { outcome: 'accepted' };
     if (input.token === 'turnstile-unavailable') return { outcome: 'unavailable' };
     const match = TEST_TOKEN.exec(input.token);
     if (!match || match[1] !== input.action || match[2] !== this.hostname) {
