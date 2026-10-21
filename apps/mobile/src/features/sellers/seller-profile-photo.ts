@@ -3,6 +3,11 @@ import type { QueryClient } from '@tanstack/react-query';
 import { useQuery } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 
+import {
+  ImagePreparationError,
+  prepareImageUpload,
+} from '../../lib/media/prepare-image-upload';
+
 import type { SellerProfileResponse } from '@bidplace/contracts';
 
 import { getApiAssetUrl } from '../../lib/environment';
@@ -11,6 +16,13 @@ import type { useApiClient } from '../../providers/api-provider';
 import type { ProfileOperationGuard } from './seller-profile-operation-guard';
 
 type Profile = SellerProfileResponse['sellerProfile'];
+
+const profilePhotoOptions = {
+  maxDimension: 1600,
+  maxBytes: 2 * 1024 * 1024,
+  maxSourceBytes: 25 * 1024 * 1024,
+  quality: 0.85,
+} as const;
 
 type ReportProfileError = (
   error: unknown,
@@ -113,19 +125,21 @@ export function useProfilePhoto({
       if (!stillOwnsPhoto()) return;
       if (result.canceled || !result.assets[0]) return;
       const asset = result.assets[0];
-      const blob = await fetch(asset.uri).then((response) => response.blob());
+      const prepared = await prepareImageUpload(asset, profilePhotoOptions);
       if (!stillOwnsPhoto()) return;
-      photoBlobRef.current = blob;
-      setPhotoUri(asset.uri);
+      photoBlobRef.current = prepared.blob;
+      setPhotoUri(prepared.uri);
       setPhotoFailed(false);
-      setPhotoBlob(blob);
+      setPhotoBlob(prepared.blob);
       clearAlert();
     } catch (error) {
       if (stillOwnsPhoto()) {
         reportError(
           error,
           'seller-profile-photo',
-          'Не удалось выбрать фото',
+          error instanceof ImagePreparationError
+            ? error.message
+            : 'Не удалось выбрать фото',
           operation,
         );
       }
