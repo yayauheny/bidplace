@@ -5109,3 +5109,12 @@ mobile typecheck,62 owner tests and20/20 Chromium/WebKit acceptance passed. Curr
 registration remains one checkbox recording four confirmations (DEC-124/125), lazy
 document reading never blocks registration. Older four-checkbox notes are historical.
 Physical iPhone/real browser zoom remain Needs verification. See current login audit.
+
+## 2026-10-21 — Portfolio creation UI
+
+Implemented UI over existing data → photos → story → review flow, ordered HEADING /
+PARAGRAPH / IMAGE controls and actual private preview. No commerce steps or server
+contract changes. Existing guards, recovery and approved-work editing revisions
+remain.89 owner checks,24 wizard/revision E2E and2 media lifecycle E2E passed on the
+isolated test API/DB. Screenshots use test fixtures; manual preview DB was not reset.
+Visual desktop parity and physical iPhone remain Needs verification; see UI completion audit.

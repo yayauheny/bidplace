@@ -1824,3 +1824,11 @@ from768, shared auth field/button metrics, legalLink semantic role; single form
 preserves input and errors. Browser acceptance20/20 Chromium/WebKit; owner checks62/62,
 typecheck/export clean. Evidence/audit: `docs/audits/current/2026-10-20-LOGIN-SHEET-REVIEW.md`.
 Physical iPhone keyboard, actual200% zoom and device motion remain Needs verification.
+
+## 2026-10-21 — Work editor
+
+Implemented portfolio wizard chrome, rounded photo tiles, shared ordered-block menu
+and private content preview; creation/edit use existing revision/save owners.89 owner
+checks,24 wizard/revision E2E and2 full media lifecycle cases passed. Mobile source
+mapping/evidence: `docs/audits/current/2026-10-21-UI-COMPLETION.md`. Visual status Partial:
+only390 source frames; wider screens NEEDS-FIGMA, physical iPhone/real zoom unverified.

@@ -23,6 +23,8 @@ import { advanceAuthEpoch, authKeys } from '../../lib/query-cache';
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
+vi.mock('../../components/shared/PrivateStoryImage', () => ({ PrivateStoryImage: () => null }));
+
 const productId = '11111111-1111-4111-8111-111111111111';
 const categoryId = '33333333-3333-4333-8333-333333333333';
 
@@ -388,8 +390,8 @@ describe('ProductDraftScreen render contract', () => {
       () => hasButton(container, '1. О работе'),
       'creation wizard',
     );
-    expect(container.textContent).toContain('Создание предмета');
-    expect(container.textContent).toContain('Новый предмет');
+    expect(container.textContent).toContain('Основная информация');
+    expect(container.textContent).not.toContain('Новый предмет');
     for (const label of [
       '1. О работе',
       '2. Изображения',
@@ -551,5 +553,42 @@ describe('ProductDraftScreen recovered story copy', () => {
     });
     await until(container, () => hasButton(container, copyLabel), 'reset status');
     expect(hasButton(container, 'Скопировано')).toBe(false);
+  });
+});
+
+describe('ordered block actions', () => {
+  it('opens only on request, blocks boundary movement, closes after an action and guards pending writes', async () => {
+    const { ProductBlockActions } = await import('./product-block-actions');
+    const container = document.createElement('div');
+    document.body.append(container);
+    const root = createRoot(container);
+    const onMove = vi.fn();
+    const onDelete = vi.fn();
+    const render = (disabled: boolean) => act(() => root.render(createElement(ProductBlockActions, {
+      kind: 'text', editable: true, disabled, first: true, last: false,
+      onMove, onDelete, children: createElement('input', { 'aria-label': 'Текст' }),
+    })));
+    const button = (label: string) => [...container.querySelectorAll('button')].find((node) => node.textContent === label || node.getAttribute('aria-label') === label)!;
+    try {
+      render(false);
+      act(() => container.querySelector('input')!.focus());
+      expect(hasButton(container, 'Выше')).toBe(false);
+      act(() => button('Действия с блоком').click());
+      expect(button('Выше').disabled).toBe(true);
+      act(() => button('Ниже').click());
+      expect(onMove).toHaveBeenCalledExactlyOnceWith(1);
+      expect(hasButton(container, 'Ниже')).toBe(false);
+      act(() => button('Действия с блоком').click());
+      render(true);
+      act(() => button('Удалить').click());
+      expect(onDelete).not.toHaveBeenCalled();
+      render(false);
+      act(() => button('Удалить').click());
+      expect(onDelete).toHaveBeenCalledOnce();
+      expect(hasButton(container, 'Удалить')).toBe(false);
+    } finally {
+      act(() => root.unmount());
+      container.remove();
+    }
   });
 });

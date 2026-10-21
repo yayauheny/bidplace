@@ -789,3 +789,12 @@ AuthViewport owns mobile sheet/desktop dialog composition at768 CSS px, dialog c
 Shared field metric `auth` is51; default fields unchanged. Button size `authDialog`
 uses47 geometry and current master typography. Login informational links use
 semantic `legalLink`; registration link meaning/color and DEC-124/125 are unchanged.
+
+### 2026-10-21 — Ordered content editing
+
+ProductBlockActions owns photo/story up/down/delete menus; text reveal uses hover /
+focus-within only for fine pointers, touch/native always exposes its trigger. Shared
+FigmaIconButton carries expanded state; heading/text glyphs use the existing icon
+registry. `storyHeading`15/24, `mediaTile` radius16 and `stepDot`6 follow the supplied
+creation frames. Existing PaddedGrid derives photo columns from measured width.
+FormSection may omit its heading where the wizard chrome already supplies one.

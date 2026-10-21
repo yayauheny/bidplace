@@ -250,7 +250,9 @@ test('short dialog and sheet stay usable on a short viewport and across resize',
 
     // Short dialog on a 390x400 viewport: everything reachable, no
     // horizontal page overflow.
-    await page.getByRole('button', { name: 'Удалить изображение' }).click();
+    const image = page.locator('[data-editor-block="image"]').first();
+    await image.getByRole('button', { name: 'Действия с изображением', exact: true }).click();
+    await image.getByRole('button', { name: 'Удалить', exact: true }).click();
     const shortDialog = page.getByRole('dialog');
     await expect(shortDialog).toBeVisible();
     await expect(

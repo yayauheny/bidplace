@@ -35,6 +35,8 @@ export const figmaIconNames = [
   'user',
   'shopping-basket-01',
   'image-add-02',
+  'heading',
+  'text',
   'check',
   'setting-07',
   'log-out',

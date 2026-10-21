@@ -17,6 +17,7 @@ export function FigmaIconButton({
   onPress,
   disabled = false,
   selected = false,
+  expanded,
   iconSize = designTokens.size.icon,
   strokeWidthPx,
   surface = 'plain',
@@ -28,6 +29,7 @@ export function FigmaIconButton({
   onPress: () => void;
   disabled?: boolean;
   selected?: boolean;
+  expanded?: boolean;
   iconSize?: number;
   strokeWidthPx?: number;
   surface?: 'plain' | 'muted';
@@ -39,7 +41,7 @@ export function FigmaIconButton({
       ref={ref}
       accessibilityRole="button"
       accessibilityLabel={label}
-      accessibilityState={{ disabled, selected }}
+      accessibilityState={{ disabled, selected, expanded }}
       disabled={disabled}
       hitSlop={
         size === 'settingsHeader'

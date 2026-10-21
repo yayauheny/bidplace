@@ -109,6 +109,7 @@ export const designTokens = {
     control: 18,
     compact: 18,
     image: 24,
+    mediaTile: 16,
     media: 24,
     card: 24,
     button: 80,
@@ -140,6 +141,7 @@ export const designTokens = {
     settingsSurface: 26,
   },
   size: {
+    stepDot: 6,
     achievementWidth: 266,
     shareQr: 164,
     touch: 44,
@@ -210,6 +212,14 @@ export const designTokens = {
       lineHeight: 29,
       letterSpacing: -0.72,
       fontWeight: '600' as const,
+    },
+    // Figma 4562:32647; shared by editable and preview story blocks.
+    storyHeading: {
+      fontFamily: 'Inter_600SemiBold',
+      fontSize: 15,
+      lineHeight: 24,
+      fontWeight: '600',
+      letterSpacing: -0.15,
     },
     mediaSheetTitle: {
       fontFamily: 'Inter_600SemiBold',

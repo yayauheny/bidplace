@@ -1,4 +1,7 @@
-import { expect, test } from '@playwright/test';
+import { mkdir } from 'node:fs/promises';
+import { resolve } from 'node:path';
+import { e2eEvidenceDir } from './support/evidence-dir';
+import { expect, test, type Page } from '@playwright/test';
 import { PrismaClient } from '../../../packages/database/dist/index.js';
 import { authenticatedPage } from './support/auth-session';
 import { fillControl } from './support/fill-control';
@@ -12,6 +15,30 @@ import {
   e2eWebBaseURL,
 } from './support/e2e-env';
 import { readFileSync } from 'node:fs';
+
+async function captureWorkStep(page: Page, name: string) {
+  const directory = resolve(e2eEvidenceDir, '2026-10-21-work-editor');
+  await mkdir(directory, { recursive: true });
+  for (const width of [390, 1024, 1440]) {
+    await page.setViewportSize({ width, height: 874 });
+    await page.evaluate(() => document.fonts.ready);
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () => document.documentElement.scrollWidth <= window.innerWidth,
+        ),
+      )
+      .toBe(true);
+    await page.screenshot({
+      path: resolve(
+        directory,
+        `${test.info().project.name}-${name}-${width}.png`,
+      ),
+      fullPage: true,
+    });
+  }
+  await page.setViewportSize({ width: 390, height: 874 });
+}
 
 // NestJS, PostgreSQL, forms and image pipeline are real. Only R2/purge transport
 // is replaced by media-server.mjs so outages and direct CDN reads are repeatable.
@@ -140,6 +167,7 @@ test('Work waits for CDN media, publishes revisions atomically, loads FULL only 
       page.getByRole('textbox', { name: 'Название *', exact: true }),
       `Lifecycle ${suffix}`,
     );
+    await captureWorkStep(page, 'data');
     const createWork = page.waitForResponse(
       (r) =>
         r.url().endsWith('/api/products') && r.request().method() === 'POST',
@@ -151,6 +179,7 @@ test('Work waits for CDN media, publishes revisions atomically, loads FULL only 
     await expect(
       page.getByRole('button', { name: 'Добавить изображения', exact: true }),
     ).toBeVisible();
+    await captureWorkStep(page, 'photos-empty');
     let dropUploadResponse = true;
     await page.route('**/api/products/*/images', async (route) => {
       if (dropUploadResponse && route.request().method() === 'POST') {
@@ -178,6 +207,69 @@ test('Work waits for CDN media, publishes revisions atomically, loads FULL only 
     expect(
       await prisma.productImage.count({ where: { productId: work.id } }),
     ).toBe(2);
+    await captureWorkStep(page, 'photos');
+    await page
+      .getByRole('button', { name: '3. История создания', exact: true })
+      .click();
+    await page.getByRole('button', { name: 'Добавить текст' }).click();
+    await page
+      .getByRole('textbox', { name: 'Текст истории' })
+      .fill('Wizard regression draft.');
+    await page.getByRole('button', { name: 'Добавить заголовок' }).click();
+    await page
+      .getByRole('textbox', { name: 'Заголовок истории' })
+      .fill('Вторая строка');
+    const paragraphBlock = page.locator('[data-editor-block="text"]').first();
+    await paragraphBlock.hover();
+    await paragraphBlock
+      .getByRole('button', { name: 'Действия с блоком' })
+      .click();
+    await expect(
+      paragraphBlock.getByRole('button', { name: 'Выше', exact: true }),
+    ).toBeDisabled();
+    await paragraphBlock
+      .getByRole('button', { name: 'Ниже', exact: true })
+      .click();
+    await expect(
+      page.locator('[data-editor-block="text"]').first().getByRole('textbox'),
+    ).toHaveValue('Вторая строка');
+    await page.getByRole('button', { name: 'Добавить изображение' }).click();
+    const storyFileChooser = page.waitForEvent('filechooser');
+    await page.getByRole('button', { name: 'Загрузить новое фото' }).click();
+    await (await storyFileChooser).setFiles('e2e/fixtures/profile-photo.png');
+    const photoBlock = page.locator('[data-editor-block="image"]');
+    await expect(
+      photoBlock.getByRole('button', { name: 'Действия с изображением' }),
+    ).toBeVisible();
+    await expect(photoBlock.getByRole('img')).toBeVisible();
+    await captureWorkStep(page, 'mixed-story');
+    await photoBlock
+      .getByRole('button', { name: 'Действия с изображением' })
+      .click();
+    await expect(
+      photoBlock.getByRole('button', { name: 'Ниже', exact: true }),
+    ).toBeDisabled();
+    await photoBlock
+      .getByRole('button', { name: 'Удалить', exact: true })
+      .click();
+    const headingBlock = page.locator('[data-editor-block="text"]').first();
+    await headingBlock.hover();
+    await headingBlock
+      .getByRole('button', { name: 'Действия с блоком' })
+      .focus();
+    await page.keyboard.press('Enter');
+    await headingBlock
+      .getByRole('button', { name: 'Удалить', exact: true })
+      .click();
+    await expect(
+      page.getByRole('textbox', { name: 'Текст истории' }),
+    ).toHaveValue('Wizard regression draft.');
+    await page.getByRole('button', { name: 'Закончить', exact: true }).click();
+    await expect(page).toHaveURL(/step=4$/);
+    await expect(
+      page.getByText('Wizard regression draft.', { exact: true }),
+    ).toBeVisible();
+    await captureWorkStep(page, 'review');
     await page
       .getByRole('button', { name: '4. Проверка', exact: true })
       .click();
@@ -298,10 +390,9 @@ test('Work waits for CDN media, publishes revisions atomically, loads FULL only 
       .getByRole('button', { name: 'Сохранить изменения', exact: true })
       .click();
     for (const remaining of [1, 0]) {
-      await page
-        .getByRole('button', { name: 'Удалить изображение', exact: true })
-        .first()
-        .click();
+      const image = page.locator('[data-editor-block="image"]').first();
+      await image.getByRole('button', { name: 'Действия с изображением', exact: true }).click();
+      await image.getByRole('button', { name: 'Удалить', exact: true }).click();
       await page
         .getByRole('dialog')
         .getByRole('button', { name: 'Удалить изображение', exact: true })
@@ -385,6 +476,7 @@ test('Work waits for CDN media, publishes revisions atomically, loads FULL only 
       .toBe(404);
   } finally {
     await prisma.$disconnect();
+    await guest.unrouteAll({ behavior: 'wait' });
     await guest.close();
     await context.close();
     await adminContext.close();

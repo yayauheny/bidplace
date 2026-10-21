@@ -171,6 +171,9 @@ test.describe('product creation wizard navigation', () => {
       );
       await page.getByRole('button', { name: 'Закончить' }).click();
       await expect(page).toHaveURL(/flow=creation&step=4$/);
+      await expect(
+        page.getByText('Wizard regression draft.', { exact: true }),
+      ).toBeVisible();
 
       await page.getByRole('button', { name: '1. О работе' }).click();
       await expect(page).toHaveURL(/flow=creation&step=1$/);
