@@ -131,6 +131,10 @@ test('recovered story copy: the manual-copy dialog shows the long text, scrolls,
     await page.getByRole('button', { name: 'Отправить на модерацию' }).click();
     expect((await patchResponse).ok()).toBeTruthy();
 
+    // Unmount the editor before seeding storage so its final draft flush cannot
+    // replace the stale copy being tested.
+    await page.goto('/');
+
     // Seed a stale copy of the previous revision with a long text.
     const longText = Array.from(
       { length: 40 },

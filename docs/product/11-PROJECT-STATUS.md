@@ -5125,3 +5125,15 @@ Visual desktop parity and physical iPhone remain Needs verification; see UI comp
 metro.config.js/environment.spec verify identical builds retain cache identity
 and API/release changes invalidate it; actual sequential exports contain only
 their intended3001/3011 origin. Mobile typecheck and5 environment checks passed.
+
+2026-10-21 — Implemented (web): AppDialog/AuthViewport share one Reanimated
+enter/drag/cancel/exit owner; dismissal navigation follows animation completion.
+Background images/scroll, nested dialogs, focus and busy/dirty guards passed
+48 browser cases Chromium/WebKit plus65 selected owner cases on the final code.
+Recorded Chromium touch verifies cancel/dismiss continuity. Native/device motion
+and keyboard remain Needs verification; no API/persistence/permissions changed.
+
+Final auth/recovery regression result:24 scenarios passed across Chromium/WebKit
+(20 complete-run cases plus4 addressed history reruns). iOS JS/Hermes export
+passed; physical device behavior remains Needs verification. Existing registration
+consent and unavailable-document behavior remain intact.

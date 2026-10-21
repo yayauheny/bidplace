@@ -12,8 +12,8 @@ writes against the manual preview.
 1. Sync MVP: complete, e3ba8074. Login correction: complete, f4ae9223;
    see [login audit](2026-10-20-LOGIN-SHEET-REVIEW.md).
 2. Work creation: implemented,571b0f94;89 owner tests,24 wizard/revision E2E and2 media-lifecycle E2E passed.
-3. Desktop empty-state actions: implemented, verified in Chromium/WebKit at390/1024/1440/1920.
-4. Shared sheet motion: implemented, browser verification in progress.
+3. Desktop empty-state actions: implemented,0ba87ff9, verified in Chromium/WebKit at390/1024/1440/1920.
+4. Shared sheet motion: implemented;48/48 browser checks and recorded Chromium touch passed.
 5. Final production preview, documented verification and manual checklist: pending.
 
 ## Work design map
@@ -102,3 +102,57 @@ are read or bundled. Existing cache/version/blockList behavior is preserved.
 Owner check environment.spec:5 passed; mobile typecheck passed. Actual exports
 without cache deletion prove3011-only in the isolated output and3001-only in the
 manual output. No dependency, server, API or database changes.
+
+## Sheet motion — root cause and result
+
+- Cause: the drag wrapper reset its offset before requesting close while another
+  wrapper ran the exit transition. Auth dismissal could navigate/unmount before
+  exit completed. Web also rendered React state per pointer frame; native ran a
+  separate spring. This creates a visible return/jump followed by disappearance.
+- Durable fix: a single Reanimated position in AppDialogSheetMotion, consumed by
+  the existing header-only gesture. Preserve the release position on accepted
+  close; animate to rest on cancel/veto; defer auth leave until onExited. No global
+  listeners, new dependency or parallel gesture mechanism. Superseded web motion
+  file, RN Animated spring, CSS transition and early focus-restore effect removed.
+- Ownership: shared UI/state only; existing auth guard/navigation/private state
+  and API contracts are preserved. Shared consumers inherit the correction.
+- Checks:48/48 browser cases (Chromium/WebKit) on production preview;65 focused
+  owner tests and mobile typecheck. The earlier144 owner cases also passed before
+  the final narrow rerun. Pointer slow/fast/cancel frame samples never reverse
+  beyond1px rounding; Chromium CDP real touch cancel/close passed. Recordings and
+  JSON samples: [motion evidence](evidence/2026-10-21-sheet-motion/).
+- Shared consumers: login/forgot/reset via responsive acceptance; dirty registration
+  and focus via auth-focus-restore; Share/QR/report, Filter, Search and full photo
+  viewer via sheet-live. Recovery long/short dialog checks use isolated API3011.
+- The old auth-layout test filled inert inputs before entry readiness, searched
+  floating placeholders that disappear on focus, and assumed a390px fullscreen
+  registration host. It now waits for primary focus, scopes the active form and
+  verifies fluid fullscreen host/350px form. Stability compares the same form
+  before/after resize rather than a superseded absolute y. Required consent is
+  checked before testing invalid email. Error/value/history assertions remain.
+- CSS zoom scaled fixed portals without changing visualViewport and was not
+  browser zoom. Those probes now test an actual320px reflow viewport; real200%
+  browser zoom remains explicitly unverified. Recovery fixture unmounts its editor
+  before injecting a stale draft, avoiding a final flush overwriting test data.
+- Limit: browser frames prove continuity, not physical-device frame rate or user
+  feel. Actual iPhone keyboard/scroll/motion and browser200% zoom still need manual
+  results; iOS JS/Hermes export passed; native device runtime was not part of this browser gate.
+
+### Final auth/recovery verification
+
+All24 auth-layout/recovery browser scenarios now pass across Chromium/WebKit:
+20 passed in the complete run; the remaining4 history paths passed after the
+readiness/locator corrections. No test was skipped and no error, history, value,
+focus or guard assertion was removed. Preserve checks of background fields under
+a confirmation by locating them inside the active auth-sheet; role queries rightly
+exclude them from the accessible tree while its modal confirmation is open.
+A fresh iOS JS/Hermes export also passed; this is compilation, not device runtime.
+
+### Final review / size
+
+One translation owner replaces the platform-specific motion implementations and
+parallel drag transforms. Work creation keeps existing hooks/contracts; new code
+adds actual private review content and shared gallery/story menu ownership. The
+positive diff includes meaningful owner/E2E coverage and evidence; it is not an
+additional editor framework or a second persistence implementation. No dependency,
+permission, server contract or database migration was introduced.

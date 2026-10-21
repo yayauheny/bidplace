@@ -62,10 +62,10 @@ input→click не показывают focus ring; клавиатурный Tab
 leases не изменены. Год создания остаётся числом0..9999; время публикации
 по-прежнему серверное, планирование публикации не добавлялось.
 
-В `AppDialogSheetMotion.web` одна DOM-оболочка с withTiming: выходящий контент
+В общем `AppDialogSheetMotion` одна DOM-оболочка с withTiming: выходящий контент
 inert/aria-hidden; входящий контент активируется только после завершения
 анимации, settled transform удаляется. Быстрый reopen не создаёт live exit-клоны Reanimated.
-Native сохраняет прежние enter/exit; DateSelection.native использует совместимый
+Web/native теперь используют общий owner движения (приёмка2026-10-21 ниже); DateSelection.native использует совместимый
 с SDK57 datetimepicker9.1.0. **Needs verification (native runtime):** нативный
 picker на устройствах/симуляторе не запускался; успешен iOS JS/Hermes export.
 
@@ -1834,3 +1834,16 @@ mapping/evidence: `docs/audits/current/2026-10-21-UI-COMPLETION.md`. Visual stat
 only390 source frames; wider screens NEEDS-FIGMA, physical iPhone/real zoom unverified.
 
 2026-10-21 — Implemented: Home empty action column capped420, fluid366 at390. Chromium/WebKit screenshots390/1024/1440/1920 confirm centering and no overflow; desktop empty-state Figma remains NEEDS-FIGMA. Evidence: current/evidence/2026-10-21-desktop-actions in the UI completion audit.
+
+2026-10-21 — Implemented (browser): one continuous sheet translation and delayed
+auth dismissal navigation.48/48 Chromium/WebKit cover responsive login, loaded
+background images, focus, busy/dirty guards, share→QR/report, catalog filter,
+search and photo viewer. Slow/fast pointer release is monotonic in recorded frame
+traces; real Chromium CDP touch cancel/dismiss also passed. Recordings:
+[UI completion evidence](../audits/current/evidence/2026-10-21-sheet-motion/).
+Native/iPhone runtime, system keyboard and actual browser200% zoom remain Needs
+verification. Reflow viewport checks do not claim to replace these.
+
+Auth-layout/recovery acceptance:24 scenarios passed (20 plus4 addressed history
+reruns), including reload/Back/Forward, dirty cancel, long-copy scrolling and short
+dialog resize. iOS JS/Hermes export passed; no physical iPhone result is claimed.

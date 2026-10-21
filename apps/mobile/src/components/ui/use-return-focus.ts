@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useRef } from 'react';
 
 type FocusRef = { current: { focus?: () => void } | null };
 
@@ -62,9 +62,7 @@ export function useReturnFocus({
   focusOnOpen,
   shouldRestore,
   fallback,
-  open,
 }: {
-  open?: boolean;
   explicitRef?: FocusRef;
   focusOnOpen?: () => HTMLElement | null;
   shouldRestore?: () => boolean;
@@ -94,21 +92,6 @@ export function useReturnFocus({
     // point instead of leaving focus on body.
     fallback?.()?.focus?.({ preventScroll: true });
   };
-
-  const restoreRef = useRef(restoreFocus);
-  restoreRef.current = restoreFocus;
-  const wasOpen = useRef(open);
-  useEffect(() => {
-    // Restore after the closed focus scope commits; cancel a rapid reopen.
-    const frame =
-      wasOpen.current === true && open === false
-        ? requestAnimationFrame(() => restoreRef.current())
-        : null;
-    wasOpen.current = open;
-    return () => {
-      if (frame !== null) cancelAnimationFrame(frame);
-    };
-  }, [open]);
 
   return {
     onOpenAutoFocus: (event: Event) => {

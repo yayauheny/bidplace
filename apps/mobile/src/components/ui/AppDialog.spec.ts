@@ -6,6 +6,7 @@ import {
   createElement,
   forwardRef,
   useState,
+  useRef,
   type ReactNode,
 } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
@@ -14,6 +15,12 @@ import { ThemeProvider } from '../../providers/theme-provider';
 import { SheetBackdropProvider } from './sheet-backdrop';
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+const motionCalls = vi.hoisted(() => ({
+  timings: [] as Array<{ value: number; config: { reduceMotion?: unknown } }>,
+}));
+vi.mock('react-native-worklets', () => ({
+  scheduleOnRN: (fn: () => void) => fn(),
+}));
 
 vi.mock('./SheetDragSurface', () => import('./SheetDragSurface.web'));
 vi.mock('./sheet-backdrop-layer', () => import('./sheet-backdrop-layer.web'));
@@ -98,6 +105,18 @@ vi.mock('react-native-reanimated', () => {
           },
           children,
         ),
+    },
+    useSharedValue: (value: number) => useRef({ value }).current,
+    useAnimatedStyle: (style: () => object) => style(),
+    cancelAnimation: () => undefined,
+    withTiming: (
+      value: number,
+      config: { reduceMotion?: unknown },
+      callback?: (finished: boolean) => void,
+    ) => {
+      motionCalls.timings.push({ value, config });
+      if (callback) queueMicrotask(() => callback(true));
+      return value;
     },
     Easing: { bezier: () => 'bezier' },
     FadeIn: chain('fade-in'),
@@ -621,8 +640,7 @@ describe('AppDialog web focus lifecycle', () => {
     const dialog = dialogByTitle('Лист');
     if (!dialog) throw new Error('missing sheet');
     const motion = dialog.closest('[data-animated="true"]');
-    expect(motion?.getAttribute('data-exit')).toBe('slide-out');
-    expect(motion?.getAttribute('data-exit-motion')).toBe('system');
+    expect(motion).not.toBeNull();
     expect(dialog.contains(document.activeElement)).toBe(true);
 
     act(() => {
@@ -630,9 +648,15 @@ describe('AppDialog web focus lifecycle', () => {
     });
     await flush();
 
+    expect(
+      motionCalls.timings.some(
+        ({ value, config }) =>
+          value === 844 && config.reduceMotion === 'system',
+      ),
+    ).toBe(true);
     expect(closes.count).toBe(1);
     expect(dialogByTitle('Лист')).toBeUndefined();
-    expect(document.activeElement).toBe(opener);
+    await vi.waitFor(() => expect(document.activeElement).toBe(opener));
     view.unmount();
   });
 

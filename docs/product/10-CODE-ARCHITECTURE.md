@@ -520,10 +520,14 @@ seller date exports delegate without changing null labels or local draft schema.
 UI never changes date-only values to timezone-dependent instants. No API,
 database migration or scheduling domain was added.
 
-`AppDialogSheetMotion.web` uses persistent Reanimated withTiming, inert closing
-content and cancellation on unmount. It replaces web layout exiting only, because
-that implementation moves live children into dummy DOM clones. Native keeps
-existing layout transitions. This boundary is shared by all AppDialog sheets.
+`AppDialogSheetMotion` owns one Reanimated shared translation across enter, drag,
+cancel and exit on web/native. SheetDragSurface handles the header gesture only;
+it neither wraps the sheet in another transform nor resets an accepted dismissal.
+Web retains one live DOM tree, makes entering/closing content inert and removes it
+only after the timing completion. AuthViewport commits dismissal navigation from
+onExited; useReturnFocus restores at the real FocusScope close. Guarded dismissal
+animates back to rest. ReduceMotion.System remains the shared timing policy.
+Native shares this owner but device runtime still needs verification.
 
 Metro's transform cache identity includes the explicit public build configuration
 (API URL, public site key, app environment and analytics flag). Sequential preview

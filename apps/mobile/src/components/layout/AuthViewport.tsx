@@ -5,13 +5,11 @@ import {
   useCallback,
   useEffect,
   useId,
-  useMemo,
   useRef,
   useState,
   type ReactNode,
 } from 'react';
 import { Platform, ScrollView, View } from 'react-native';
-import { scheduleOnRN } from 'react-native-worklets';
 
 import { designTokens } from '@bidplace/design-tokens';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -39,7 +37,6 @@ import {
   type AuthSheetGuard,
 } from '../../features/auth/auth-sheet-context';
 import type { SafeRedirect } from '../../features/auth/auth-redirect';
-import { sheetEnter } from '../../lib/layout-transition';
 import { BidplaceMark, BidplaceWordmark } from '../branding/BidplaceBrand';
 import { AppText } from '../ui';
 import { SheetDragSurface, SheetDragHandle } from '../ui/SheetDragSurface';
@@ -110,6 +107,7 @@ export function AuthViewport(props: AuthViewportProps) {
   });
   const [confirm, setConfirm] = useState(false);
   const [released, setReleased] = useState(false);
+  const [closing, setClosing] = useState(false);
   const screenScrollRef = useRef<ScrollView>(null);
   const pendingAction = useRef<NavigationAction | null>(null);
   const browserLeavePath = useRef<string | null>(null);
@@ -204,18 +202,14 @@ export function AuthViewport(props: AuthViewportProps) {
     [router],
   );
 
-  const commitLeave = useCallback(() => {
-    if (releasedRef.current) return;
-    allowRestoreRef.current = true;
+  const finishLeave = useCallback(() => {
+    if (!releasedRef.current || !allowRestoreRef.current) return;
     const action = pendingAction.current;
     const left = browserLeavePath.current;
     const traversal = browserLeaveTraversal.current;
     pendingAction.current = null;
     browserLeavePath.current = null;
     browserLeaveTraversal.current = null;
-    releasedRef.current = true;
-    setReleased(true);
-    setConfirm(false);
     const commit = authLeaveCommit({ hasNavigationAction: action !== null });
     if (commit === 'dispatch' && action) {
       navigation.dispatch(action as never);
@@ -231,6 +225,15 @@ export function AuthViewport(props: AuthViewportProps) {
       (left ? authBrowserLeaveTarget(left) : destination) as Href,
     );
   }, [destination, navigation, router]);
+
+  const commitLeave = useCallback(() => {
+    if (releasedRef.current) return;
+    allowRestoreRef.current = true;
+    releasedRef.current = true;
+    setReleased(true);
+    setConfirm(false);
+    setClosing(true);
+  }, []);
 
   const requestDismiss = useCallback(() => {
     if (!focusedRef.current || releasedRef.current) return;
@@ -331,14 +334,6 @@ export function AuthViewport(props: AuthViewportProps) {
     sheet.querySelector<HTMLElement>('input')?.focus({ preventScroll: true });
   }, []);
 
-  const entering = useMemo(
-    () =>
-      sheetEnter((finished) => {
-        'worklet';
-        if (finished) scheduleOnRN(focusAfterEnter);
-      }),
-    [focusAfterEnter],
-  );
   const screen = presentation === 'screen';
   const desktopDialog = !screen && isAuthDialog(width);
   const brandInset = screenBrandInset();
@@ -438,13 +433,17 @@ export function AuthViewport(props: AuthViewportProps) {
                   }}
                 >
                   <AppDialogSheetMotion
-                    open={focused}
-                    entering={entering}
+                    open={focused && !closing}
+                    onExited={finishLeave}
                     onEntered={focusAfterEnter}
                   >
                     <SheetDragSurface
                       enabled={
-                        !screen && !desktopDialog && focused && !guard.busy
+                        !screen &&
+                        !desktopDialog &&
+                        focused &&
+                        !closing &&
+                        !guard.busy
                       }
                       onRequestClose={requestDismiss}
                     >

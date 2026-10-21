@@ -761,7 +761,7 @@ remain day:null; never invent day1 or serialize civil dates as UTC instants.
 Web sheet motion has one persistent DOM tree with withTiming and reduced-motion
 support. Closing content is inert and aria-hidden; completion removes it. This
 avoids Reanimated web layout exit moving interactive controls into dummy clones.
-Native retains existing layout enter/exit.
+Web/native now share AppDialogSheetMotion translation ownership; see the2026-10-21 acceptance below.
 
 ### 2026-10-20 — Search и полноэкранный AuthViewport
 
@@ -800,3 +800,14 @@ creation frames. Existing PaddedGrid derives photo columns from measured width.
 FormSection may omit its heading where the wizard chrome already supplies one.
 
 Home solitary CTA hosts use layout.actionColumnMax420 with width100% and centered alignment; shared buttons and catalog containers retain their own widths.
+
+### 2026-10-21 — Continuous sheet motion
+
+AppDialogSheetMotion is the sole Reanimated translation owner for enter, header
+drag, cancellation and exit. SheetDragSurface feeds its shared value, without
+React state per frame or a second spring/transform. Accepted close retains the
+release offset; vetoed close returns to rest. Auth navigation waits for onExited.
+UseReturnFocus restores only after the real FocusScope closes. Reduced motion
+uses the existing system timing policy. Shared sheet consumers, busy/dirty guards,
+background continuity and focus are covered by named browser/owner checks in
+the [execution audit](../audits/current/2026-10-21-UI-COMPLETION.md).
