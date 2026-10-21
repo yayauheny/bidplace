@@ -38,6 +38,10 @@ const harness = vi.hoisted(() => {
   return { state };
 });
 
+vi.mock('../../components/layout/PageScrollView', () => ({
+  PageScrollView: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
+}));
+
 vi.mock('../../lib/api', () => ({
   createMobileApiClient: () => {
     const fetchImpl = harness.state.fetchImpl;

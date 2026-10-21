@@ -1,17 +1,15 @@
 import * as Dialog from '@rn-primitives/dialog';
 import type { ElementRef, ReactNode } from 'react';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { Platform, ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated from 'react-native-reanimated';
-import { scheduleOnRN } from 'react-native-worklets';
 
 import { designTokens } from '@bidplace/design-tokens';
 
 import {
   sheetBackdropEnter,
   sheetBackdropExit,
-  sheetEnter,
 } from '../../lib/layout-transition';
 
 import { FigmaIcon } from '../figma/FigmaIcon';
@@ -26,7 +24,7 @@ import {
 } from './app-dialog-host-style';
 import { AppDialogFrame, AppDialogOverlay } from './app-dialog-layer';
 import { MotionPressable } from './MotionPressable';
-import { useReturnFocus } from './use-return-focus';
+import { focusDialogAfterEnter, useReturnFocus } from './use-return-focus';
 
 type AppDialogBaseProps = {
   open: boolean;
@@ -75,7 +73,6 @@ export function AppDialog({
   const instanceMountedRef = useRef(false);
   openRef.current = open;
   const returnFocus = useReturnFocus({
-    open: presentation !== 'dialog' ? open : undefined,
     explicitRef: explicitReturnFocusRef,
     focusOnOpen: () =>
       closeButtonRef.current instanceof HTMLElement
@@ -92,18 +89,8 @@ export function AppDialog({
       return;
     const button = closeButtonRef.current;
     if (!(button instanceof HTMLElement)) return;
-    if (button.closest('[role="dialog"]')?.contains(document.activeElement))
-      return;
-    button.focus({ preventScroll: true });
+    focusDialogAfterEnter(button);
   }, []);
-  const entering = useMemo(
-    () =>
-      sheetEnter((finished) => {
-        'worklet';
-        if (finished) scheduleOnRN(focusAfterEnter);
-      }),
-    [focusAfterEnter],
-  );
   useEffect(() => {
     instanceMountedRef.current = true;
     return () => {
@@ -396,7 +383,7 @@ export function AppDialog({
             )
           ) : null}
           <AppDialogFrame style={frameStyle}>
-            <AppDialogSheetMotion open={open} entering={entering} onEntered={focusAfterEnter}>
+            <AppDialogSheetMotion open={open} onEntered={focusAfterEnter}>
               <SheetDragSurface enabled={open} onRequestClose={onClose}>
                 {content}
               </SheetDragSurface>

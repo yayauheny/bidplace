@@ -78,6 +78,16 @@ export const emptyProductDraftFormValues: ProductDraftFormValues = {
   uniqueness: '',
 };
 
+export function productDraftTermLabels(
+  ids: readonly string[],
+  proposals: readonly string[],
+  catalog: ReadonlyArray<{ id: string; name: string }>,
+  selected: ReadonlyArray<{ id: string; name: string }>,
+) {
+  const byId = new Map([...catalog, ...selected].map((term) => [term.id, term.name]));
+  return [...ids.map((id) => byId.get(id) ?? 'Выбранный термин'), ...proposals].join(', ');
+}
+
 export function productToDraftFormValues(
   product: Product,
   selection?: SellerProductDetailResponse['selection'],

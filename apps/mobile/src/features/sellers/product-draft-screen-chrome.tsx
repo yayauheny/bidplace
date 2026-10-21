@@ -12,6 +12,8 @@ import {
   SecondaryButton,
 } from '../../components/ui';
 import { presentEnum, productStatusLabels } from '../../lib/presentation';
+import { MotionPressable } from '../../components/ui/MotionPressable';
+import { BackButton } from '../../components/figma/BackButton';
 import { FigmaIconButton } from '../../components/figma/FigmaIconButton';
 import { useAppTheme } from '../../providers/theme-provider';
 
@@ -27,11 +29,9 @@ export function ProductDraftScreenChrome({
   storyWizardView,
   wizardSubmitted,
   wizardStep,
-  draftTitle,
   hasExistingProduct,
   canOpenStep,
   onStepPress,
-  onBackToImages,
   storyBarDisabled,
   closeLabel,
   closeLoading,
@@ -53,11 +53,9 @@ export function ProductDraftScreenChrome({
   storyWizardView: boolean;
   wizardSubmitted: boolean;
   wizardStep: number;
-  draftTitle: string;
   hasExistingProduct: boolean;
   canOpenStep: (step: number) => boolean;
   onStepPress: (step: number) => void;
-  onBackToImages: () => void;
   storyBarDisabled: boolean;
   closeLabel: string;
   closeLoading: boolean;
@@ -76,99 +74,88 @@ export function ProductDraftScreenChrome({
   lockedVisible: boolean;
 }) {
   const palette = useAppTheme();
-  const stepTabs = isCreationFlow ? (
-    <View
-      accessibilityRole="tablist"
-      style={{
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: designTokens.space.x2,
-      }}
-    >
-      {WIZARD_STEP_LABELS.map((label, index) => {
-        const currentStep = index + 1;
-        return (
-          <SecondaryButton
-            key={label}
-            label={`${currentStep}. ${label}`}
-            disabled={wizardSubmitted || !canOpenStep(currentStep)}
-            onPress={() => onStepPress(currentStep)}
-          />
-        );
-      })}
-    </View>
-  ) : null;
-
   return (
     <>
-      {isCreationFlow && !storyWizardView ? (
-        <FormSection
-          title={wizardSubmitted ? 'Предмет отправлен' : 'Создание предмета'}
-          description={
-            wizardSubmitted
-              ? 'Черновик отправлен на модерацию. Дальше команда проверит его содержание и изображения.'
-              : 'Заполните предмет по шагам, сохраните промежуточные изменения и проверьте публикацию перед отправкой.'
-          }
-        >
-          {stepTabs}
-          {hasExistingProduct ? (
-            <AppText role="metadata" tone="secondary">
-              Шаг {wizardStep} из 4 · {draftTitle.trim() || 'Без названия'}
+      {isCreationFlow ? (
+        <View style={{ gap: designTokens.space.x3 }}>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+          >
+            <BackButton
+              label={wizardStep === 3 ? 'Назад к изображениям' : 'Назад'}
+              disabled={storyBarDisabled || wizardSubmitted}
+              onPress={() =>
+                wizardStep > 1 ? onStepPress(wizardStep - 1) : onClose()
+              }
+            />
+            <View
+              accessibilityLabel={`Шаг ${wizardStep} из 4`}
+              style={{ flexDirection: 'row' }}
+            >
+              {WIZARD_STEP_LABELS.map((label, index) => (
+                <MotionPressable
+                  key={label}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${index + 1}. ${label}`}
+                  accessibilityState={{
+                    selected: index + 1 === wizardStep,
+                    disabled: wizardSubmitted || !canOpenStep(index + 1),
+                  }}
+                  disabled={
+                    wizardSubmitted ||
+                    storyBarDisabled ||
+                    !canOpenStep(index + 1)
+                  }
+                  onPress={() => onStepPress(index + 1)}
+                  preset="icon"
+                  style={{
+                    width: designTokens.size.touch,
+                    height: designTokens.size.touch,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <View
+                    style={{
+                      width: designTokens.size.stepDot,
+                      height: designTokens.size.stepDot,
+                      borderRadius: designTokens.radius.pill,
+                      backgroundColor:
+                        index + 1 === wizardStep
+                          ? palette.inkStrong
+                          : palette.border,
+                    }}
+                  />
+                </MotionPressable>
+              ))}
+            </View>
+            <FigmaIconButton
+              icon="x"
+              label={closeLabel}
+              disabled={closeDisabled || closeLoading}
+              onPress={onClose}
+            />
+          </View>
+          {!storyWizardView ? (
+            <AppText role="workTitle" style={{ textAlign: 'center' }}>
+              {wizardSubmitted
+                ? 'Работа отправлена'
+                : [
+                    'Основная информация',
+                    'Фотографии',
+                    'История создания',
+                    'Проверка',
+                  ][wizardStep - 1]}
             </AppText>
           ) : null}
-          <SecondaryButton
-            label={closeLabel}
-            loading={closeLoading}
-            disabled={closeDisabled}
-            onPress={onClose}
-          />
-        </FormSection>
-      ) : null}
-
-      {storyWizardView ? (
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            paddingVertical: designTokens.space.x2,
-          }}
-        >
-          <FigmaIconButton
-            icon="arrow-left-01"
-            label="Назад к изображениям"
-            disabled={storyBarDisabled}
-            onPress={onBackToImages}
-          />
-          <View
-            accessibilityLabel="Шаг 3 из 4"
-            style={{ flexDirection: 'row', gap: designTokens.space.x2 }}
-          >
-            {[1, 2, 3, 4].map((index) => (
-              <View
-                key={index}
-                style={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: 6,
-                  backgroundColor:
-                    index === 2
-                      ? palette.inkStrong
-                      : palette.border,
-                }}
-              />
-            ))}
-          </View>
-          <FigmaIconButton
-            icon="x"
-            label="Сохранить и закрыть"
-            disabled={storyBarDisabled}
-            onPress={onClose}
-          />
         </View>
       ) : null}
 
-      {!storyWizardView ? (
+      {!isCreationFlow ? (
         <View style={{ gap: designTokens.space.x2 }}>
           <AppText role="screenTitle">
             {hasExistingProduct ? 'Редактировать предмет' : 'Новый предмет'}

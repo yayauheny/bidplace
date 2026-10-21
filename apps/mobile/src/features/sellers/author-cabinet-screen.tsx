@@ -1,3 +1,4 @@
+import { PageScrollView } from '../../components/layout/PageScrollView';
 import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
@@ -61,42 +62,51 @@ export function AuthorCabinetScreen() {
 
   if (capability.isLoading || query.isLoading) {
     return (
-      <AppShell>
-        <InfrastructurePageStatus status="loading" onRetry={() => undefined} />
-        <AccountLogoutButton />
+      <AppShell contentLayout="bleed">
+        <PageScrollView>
+          <InfrastructurePageStatus
+            status="loading"
+            onRetry={() => undefined}
+          />
+          <AccountLogoutButton />
+        </PageScrollView>
       </AppShell>
     );
   }
   if (capability.isError) {
     return (
-      <AppShell>
-        <InfrastructurePageStatus
-          status="error"
-          onRetry={() =>
-            void queryClient.invalidateQueries({
-              queryKey: ['seller', 'profile'],
-            })
-          }
-        />
-        <AccountLogoutButton />
+      <AppShell contentLayout="bleed">
+        <PageScrollView>
+          <InfrastructurePageStatus
+            status="error"
+            onRetry={() =>
+              void queryClient.invalidateQueries({
+                queryKey: ['seller', 'profile'],
+              })
+            }
+          />
+          <AccountLogoutButton />
+        </PageScrollView>
       </AppShell>
     );
   }
   if (!isAuthorCabinetAvailable(capability.status)) return null;
   if (query.isError) {
     return (
-      <AppShell>
-        <InfrastructurePageStatus
-          status="error"
-          onRetry={() => void query.refetch()}
-        />
-        <AccountLogoutButton />
+      <AppShell contentLayout="bleed">
+        <PageScrollView>
+          <InfrastructurePageStatus
+            status="error"
+            onRetry={() => void query.refetch()}
+          />
+          <AccountLogoutButton />
+        </PageScrollView>
       </AppShell>
     );
   }
 
   return (
-    <FormPageShell>
+    <FormPageShell footer>
       <View style={{ gap: designTokens.space.x5 }}>
         <PageHeader title="Кабинет автора" />
         <View style={{ gap: designTokens.space.x1 }}>

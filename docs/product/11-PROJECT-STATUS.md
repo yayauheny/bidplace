@@ -15,6 +15,30 @@
 
 После изменения кода: добавьте **одну** датированную секцию в начало (ниже этой таблицы) со статусом `Implemented` / `Partial` / `Needs verification` и ссылками на модули и тесты. Не дублируйте длинные аудиты; переносите детали в owner audit или decision log.
 
+## 2026-10-22 — Слияние responsive portfolio UI в MVP
+
+**Implemented:** responsive AuthViewport и общий Reanimated sheet motion;
+четыре этапа создания работы и редактор блоков без commerce; desktop-навигация
+от1024px, общие footer/brand/layout, страница автора и ограничение empty-state CTA.
+Доработки ревью: подписанные метаданные Review из формы/каталогов, фактическая
+видимость dock, стабильные header/footer image nodes и восстановление фокуса.
+Сохранены DEC-124/125: одно подтверждение регистрации, чтение документов не
+блокирует её; API, права, медиа и ревизии UI-правками не менялись.
+
+**Partial:** визуальное центрирование заголовка настроек оставлено по явному
+исключению BackButton/FigmaIconButton; физический iPhone, реальный zoom200% и
+увеличение текста — Needs verification. Последние проверки исходной UI-ветки:
+mobile988/988, editor E2E26/26, UI68 passed/2 settings-center failures,
+WebKit focus/motion20/20. На объединённой ветке полный `pnpm verify` прошёл:
+mobile988, API integration155 passed/28 skipped, typecheck/lint и8 build tasks,
+включая Expo web/iOS/Android export. Проверка184 Markdown-файлов прошла.
+Исправление API legal-pack assertion `cc4911e5` уже присутствует в MVP.
+
+Подробности: [UI completion](../audits/current/2026-10-21-UI-COMPLETION.md),
+[author parity](../audits/current/2026-10-21-AUTHOR-PROFILE-PARITY.md),
+[shared footer](../audits/current/2026-10-21-SHARED-FOOTER.md),
+[independent review](../audits/current/2026-10-21-INDEPENDENT-UI-REVIEW.md).
+
 ## 2026-10-21 — Repository cleanup (docs only)
 
 **Implemented.** Сокращены agent instructions (`AGENTS.md`, `docs/AGENT-MAP.md`), журнал статуса и execution roadmap; wave-prompts и audit PNG evidence удалены из активного дерева; First MVP tasks — в `docs/archive/tasks/`; тег `archive/audit-evidence-pre-cleanup` @ `3818f0f3` для PNG; `pnpm docs:link-check`; активный backlog — [`16-PORTFOLIO-ACTIVE-BACKLOG.md`](16-PORTFOLIO-ACTIVE-BACKLOG.md). Код, CI и runtime не менялись. Отчёт: [`docs/CLEANUP-REPORT.md`](../CLEANUP-REPORT.md).

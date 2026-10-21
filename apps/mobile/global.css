@@ -133,3 +133,17 @@ textarea:focus-visible,
 [data-interactive-hit]:active {
   background-color: #e8e8e8;
 }
+
+/* Text block controls stay reachable by keyboard and are always exposed on touch. */
+@media (hover: hover) and (pointer: fine) {
+  [data-editor-block='text'] [data-block-menu='true'] {
+    opacity: 0;
+    pointer-events: none;
+  }
+  [data-editor-block='text']:hover [data-block-menu='true'],
+  [data-editor-block='text']:focus-within [data-block-menu='true'],
+  [data-editor-block='text'] [data-block-menu-open='true'] {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}

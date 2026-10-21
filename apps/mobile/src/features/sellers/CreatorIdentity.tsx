@@ -2,6 +2,8 @@ import { Platform, ScrollView, View } from 'react-native';
 import type { PortfolioWorkDetailResponse } from '@bidplace/contracts';
 import { designTokens } from '@bidplace/design-tokens';
 
+import { useAppTheme } from '../../providers/theme-provider';
+import { useDesktopNavigation } from '../../components/layout/public-navigation';
 import { FigmaButton } from '../../components/figma/FigmaButton';
 import { webFilterBlur } from '../../components/figma/web-backdrop';
 
@@ -16,6 +18,11 @@ export function CreatorIdentity({
   profile: PortfolioWorkDetailResponse['author'];
   onSubscribe: () => void;
 }) {
+  const desktop = useDesktopNavigation();
+  const palette = useAppTheme();
+  // Figma4306:8453 /4861:7803: same identity, no remount on presentation changes.
+  const avatarSize = desktop ? 140 : 100;
+  const metaRole = desktop ? 'authorMetaWide' : 'authorMeta';
   const country = /^[a-z]{2}$/i.test(profile.country)
     ? new Intl.DisplayNames(['ru'], { type: 'region' }).of(
         profile.country.toUpperCase(),
@@ -27,23 +34,26 @@ export function CreatorIdentity({
       style={{
         flexDirection: 'row',
         alignItems: 'flex-start',
-        gap: designTokens.space.x2,
-
-        paddingBottom: designTokens.space.x5,
+        gap: desktop ? designTokens.space.x5 : designTokens.space.x2,
+        paddingBottom: desktop ? 50 : designTokens.space.x5,
       }}
     >
       <View
         testID="creator-avatar"
-        style={{ width: 100, height: 100, borderRadius: 56 }}
+        style={{
+          width: avatarSize,
+          height: avatarSize,
+          borderRadius: designTokens.radius.pill,
+        }}
       >
         <View
           aria-hidden
           accessible={false}
           style={{
             position: 'absolute',
-            width: 100,
-            height: 100,
-            borderRadius: 56,
+            width: avatarSize,
+            height: avatarSize,
+            borderRadius: designTokens.radius.pill,
             opacity: 0.5,
             pointerEvents: 'none',
             ...(Platform.OS === 'web' ? webFilterBlur(15) : {}),
@@ -55,7 +65,11 @@ export function CreatorIdentity({
             accessibilityLabel=""
             fallbackLabel=""
             blurRadius={Platform.OS === 'web' ? undefined : 15}
-            style={{ width: 100, height: 100, borderRadius: 56 }}
+            style={{
+              width: avatarSize,
+              height: avatarSize,
+              borderRadius: designTokens.radius.pill,
+            }}
             contentFit="cover"
             contentPosition="top"
           />
@@ -65,14 +79,28 @@ export function CreatorIdentity({
           component="AuthorPhoto"
           accessibilityLabel={`Фото автора ${profile.fullName}`}
           fallbackLabel={`Фото автора недоступно: ${profile.fullName}`}
-          style={{ width: '100%', height: '100%', borderRadius: 56 }}
+          style={{
+            width: '100%',
+            height: '100%',
+            borderRadius: designTokens.radius.pill,
+          }}
           contentFit="cover"
           contentPosition="top"
         />
       </View>
-      <View style={{ flex: 1, minWidth: 0, gap: designTokens.space.x2 }}>
+      <View
+        style={{
+          flex: 1,
+          minWidth: 0,
+          gap: desktop ? designTokens.space.x4 : designTokens.space.x2,
+        }}
+      >
         <View testID="creator-meta" style={{ gap: designTokens.space.x1 }}>
-          <AppText role="profileHeading" numberOfLines={2}>
+          <AppText
+            role={desktop ? 'creatorNameWide' : 'creatorName'}
+            tone="strong"
+            numberOfLines={2}
+          >
             {profile.fullName}
           </AppText>
           <View
@@ -83,16 +111,16 @@ export function CreatorIdentity({
               gap: designTokens.space.x1,
             }}
           >
-            <AppText role="bodySmall" tone="secondary">
+            <AppText role={metaRole} style={{ color: palette.accountMeta }}>
               {profile.city || country}
             </AppText>
-            <AppText role="bodySmall" tone="secondary">
+            <AppText role={metaRole} style={{ color: palette.accountMeta }}>
               ·
             </AppText>
             <AppText
               testID="creator-handle"
-              role="bodySmall"
-              tone="secondary"
+              role={metaRole}
+              style={{ color: palette.accountMeta }}
               numberOfLines={1}
             >
               @{profile.slug}

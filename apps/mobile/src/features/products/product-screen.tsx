@@ -1,3 +1,4 @@
+import { PageScrollView } from '../../components/layout/PageScrollView';
 import { useEffect, useId, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
@@ -5,7 +6,6 @@ import { ScrollView, View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 import { AppShell } from '../../components/layout';
-import { useDockInset } from '../../components/layout/use-dock-inset';
 import { InfrastructurePageStatus } from '../../components/shared/InfrastructurePageStatus';
 import {
   AppText,
@@ -32,7 +32,6 @@ export { PAYMENT_DELIVERY_STUB };
 
 export function ProductScreen({ publicId }: { publicId: string }) {
   const api = useApiClient();
-  const { reserve } = useDockInset();
   const router = useRouter();
   const { tab: requestedTab } = useLocalSearchParams<{ tab?: string }>();
   const panelId = useId();
@@ -61,21 +60,25 @@ export function ProductScreen({ publicId }: { publicId: string }) {
   const pageState = resolvePublicWorkPageState(query);
   if (pageState === 'not_found') {
     return (
-      <AppShell>
-        <PageState
-          title="Работа не найдена"
-          message="Работа больше недоступна."
-        />
+      <AppShell contentLayout="bleed">
+        <PageScrollView>
+          <PageState
+            title="Работа не найдена"
+            message="Работа больше недоступна."
+          />
+        </PageScrollView>
       </AppShell>
     );
   }
   if (pageState === 'loading' || pageState === 'error' || !query.data)
     return (
-      <AppShell>
-        <InfrastructurePageStatus
-          status={pageState === 'loading' ? 'loading' : 'error'}
-          onRetry={() => void query.refetch()}
-        />
+      <AppShell contentLayout="bleed">
+        <PageScrollView>
+          <InfrastructurePageStatus
+            status={pageState === 'loading' ? 'loading' : 'error'}
+            onRetry={() => void query.refetch()}
+          />
+        </PageScrollView>
       </AppShell>
     );
   const { work, author, relatedWorks } = query.data;
@@ -92,12 +95,12 @@ export function ProductScreen({ publicId }: { publicId: string }) {
     ),
   ];
   return (
-    <AppShell>
-      <ScrollView
+    <AppShell contentLayout="bleed">
+      <PageScrollView
         testID="product-scroll-view"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
-          paddingBottom: reserve,
+          paddingBottom: 0,
           gap: designTokens.space.sectionGap,
         }}
       >
@@ -217,7 +220,7 @@ export function ProductScreen({ publicId }: { publicId: string }) {
             ) : null}
           </View>
         </WorkHeader>
-      </ScrollView>
+      </PageScrollView>
       <ShareSheet
         open={shareOpen}
         onClose={() => setShareOpen(false)}

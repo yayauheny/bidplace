@@ -10,7 +10,16 @@ export function navigateBack(
   router: NavigateBackRouter,
   { fallbackHref }: { fallbackHref: Href },
 ) {
-  if (router.canGoBack()) {
+  // Expo's index anchor can exist without a real previous browser entry.
+  // The root history owner stamps this index on every application entry.
+  const state: unknown =
+    typeof window === 'undefined' ? null : window.history.state;
+  const initialBrowserEntry =
+    state !== null &&
+    typeof state === 'object' &&
+    'index' in state &&
+    state.index === 0;
+  if (!initialBrowserEntry && router.canGoBack()) {
     router.back();
     return;
   }

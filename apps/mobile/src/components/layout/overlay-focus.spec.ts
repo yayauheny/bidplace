@@ -1,6 +1,11 @@
-import { describe, expect, it, vi } from 'vitest';
+/** @vitest-environment jsdom */
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { cycleOverlayTabFocus, isDisplayedFocusable } from './overlay-focus';
+
+import { focusDialogAfterEnter } from '../ui/use-return-focus';
+
+afterEach(() => document.body.replaceChildren());
 
 describe('overlay focus helpers', () => {
   it('keeps only visible tabbable nodes', () => {
@@ -52,5 +57,21 @@ describe('overlay focus helpers', () => {
         nodes: [first, last],
       }),
     ).toBeNull();
+  });
+});
+
+describe('focus after entering a dialog', () => {
+  it.each(['outside', 'container', 'control'] as const)('moves fallback %s focus to the target while preserving an active control', (initial) => {
+    const dialog = document.createElement('div');
+    dialog.setAttribute('role', 'dialog');
+    dialog.tabIndex = -1;
+    const input = document.createElement('input');
+    const button = document.createElement('button');
+    dialog.append(input, button);
+    document.body.append(dialog);
+    if (initial === 'container') dialog.focus();
+    if (initial === 'control') button.focus();
+    focusDialogAfterEnter(input);
+    expect(document.activeElement).toBe(initial === 'control' ? button : input);
   });
 });

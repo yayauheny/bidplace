@@ -485,6 +485,24 @@ afterEach(() => {
 });
 
 describe('registration consent attempt', () => {
+  it('keeps Next disabled until confirmation and preserves email validation', async () => {
+    const view = mount();
+    await until(view.container, () => view.container.querySelector('[role="checkbox"]') instanceof HTMLButtonElement);
+    const next = [...view.container.querySelectorAll('button')].find((node) => node.textContent === 'Дальше') as HTMLButtonElement;
+    expect(next.disabled).toBe(true);
+    expect(harness.legalReads).toBe(0);
+    const checkbox = view.container.querySelector('[role="checkbox"]') as HTMLButtonElement;
+    act(() => checkbox.click());
+    await flush();
+    expect(next.disabled).toBe(false);
+    fill(view.container, 'Электронная почта', 'not-an-email');
+    clickButton(view.container, 'Дальше');
+    await flush();
+    expect(view.container.textContent).toContain('Введите корректный email');
+    expect(harness.registers).toBe(0);
+    view.unmount();
+  });
+
   it('renders one unchecked confirmation without fetching document text', async () => {
     const view = mount();
     // Reading documents is independent of confirming registration.

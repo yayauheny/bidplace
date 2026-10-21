@@ -3,8 +3,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
-import { View, type ViewStyle } from 'react-native';
+import { useWindowDimensions, View, type ViewStyle } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
+import { isAuthDialog } from '../../components/layout/auth-viewport-layout';
 import { ApiErrorCode, newAccountSlugSchema, type User, type LegalDocumentId, type LegalDocumentsResponse } from '@bidplace/contracts';
 import { AppText, PrimaryButton, TextField } from '../../components/ui';
 import { FigmaButton } from '../../components/figma/FigmaButton';
@@ -90,6 +91,9 @@ const dialogHostStyle: ViewStyle = {
 };
 type AuthFormProps = { redirectTo?: SafeRedirect };
 export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
+  const { width } = useWindowDimensions();
+  const desktop = isAuthDialog(width);
+  const actionSize = desktop ? 'authDialog' : 'auth';
   const palette = useAppTheme();
   const auth = useAuth();
   const api = useApiClient();
@@ -365,7 +369,7 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
         <AppText role="bodySmall">Перейдите к следующему шагу.</AppText>
         <PrimaryButton
           label="Перейти дальше"
-          size="auth"
+          size={actionSize}
           width="full"
           onPress={() => {
             if (complete) complete(redirectTo);
@@ -375,13 +379,14 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
       </View>
     );
   return (
-      <View style={{ gap: designTokens.auth.loginGap }}>
+      <View style={{ gap: desktop ? designTokens.auth.dialogSectionGap : designTokens.auth.loginGap }}>
       <View style={{ gap: designTokens.auth.loginFormGap }}>
         <Controller
           control={form.control}
           name="email"
           render={({ field }) => (
             <TextField ref={field.ref}
+              metrics="auth"
               label="Электронная почта"
               value={field.value ?? ''}
               onChangeText={field.onChange}
@@ -453,7 +458,7 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
         ) : null}
         <PrimaryButton
           label="Войти"
-          size="auth"
+          size={actionSize}
           width="full"
           loading={form.formState.isSubmitting}
           onPress={submit}
@@ -461,7 +466,7 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
         <FigmaButton
           label="Регистрация"
           variant="ghost"
-          size="auth"
+          size={actionSize}
           width="full"
           href={{
             pathname: '/register',
@@ -469,15 +474,15 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
           }}
         />
         </View>
-        <AppText role="authOr" style={{ textAlign: 'center', color: palette.textSubdued }}>
-          или
-        </AppText>
+        {!desktop ? (
+          <AppText role="authOr" style={{ textAlign: 'center', color: palette.textSubdued }}>или</AppText>
+        ) : null}
         <View style={{ gap: designTokens.auth.loginFormGap }}>
         <FigmaButton
           label="Войти с Telegram"
           iconNode={<AuthTelegramIcon />}
           variant="outline"
-          size="auth"
+          size={actionSize}
           width="full"
           onPress={() => setProviderNotice('Вход через Telegram пока недоступен')}
         />
@@ -485,7 +490,7 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
           label="Войти с Google"
           iconNode={<AuthGoogleIcon />}
           variant="outline"
-          size="auth"
+          size={actionSize}
           width="full"
           onPress={() => setProviderNotice('Вход через Google пока недоступен')}
         />
@@ -876,15 +881,14 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
       registerSubmitting.current = false;
     });
   };
+  const registrationConsentsReady = registrationConfirmationFields.every((key) => watched[key]);
   const goNext = async () => {
     if (!mounted.current || !focusedRef.current) return;
     setSubmitError(null);
     if (step === 'email') {
+      if (!registrationConsentsReady) return;
       const emailOk = await form.trigger('email');
-      const consentOk = await form.trigger([
-        'agreementAccepted', 'privacyAcknowledged', 'dataConsentGiven', 'age18Confirmed',
-      ]);
-      if (!emailOk || !consentOk) return;
+      if (!emailOk) return;
       setStep('nickname');
       return;
     }
@@ -990,6 +994,8 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
         form.formState.isSubmitting ||
         slugAvailability?.status === 'checking'
       }
+      disabled={step === 'email' && !registrationConsentsReady}
+      accessibilityHint={step === 'email' && !registrationConsentsReady ? 'Подтвердите документы и возраст 18+.' : undefined}
       onPress={() => void goNext()}
     />
   );

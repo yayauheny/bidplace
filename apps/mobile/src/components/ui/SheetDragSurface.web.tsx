@@ -1,14 +1,12 @@
-import { designTokens } from '@bidplace/design-tokens';
 import {
   createContext,
   useContext,
-  useEffect,
   useRef,
-  useState,
   type ReactNode,
   type PointerEvent,
 } from 'react';
-import { useReducedMotion } from '../../lib/reduced-motion';
+import { cancelAnimation } from 'react-native-reanimated';
+import { useSheetMotion } from './sheet-motion-context';
 import { shouldDismissSheet } from './sheet-dismissal';
 
 const DragContext = createContext<
@@ -24,27 +22,17 @@ export function SheetDragSurface({
   enabled: boolean;
   onRequestClose: () => void;
 }) {
-  const reducedMotion = useReducedMotion();
-  const pendingDismiss = useRef<number | null>(null);
-  useEffect(
-    () => () => {
-      if (pendingDismiss.current !== null)
-        cancelAnimationFrame(pendingDismiss.current);
-    },
-    [],
-  );
-  const [offset, setOffset] = useState(0);
-  const [dragging, setDragging] = useState(false);
+  const { position, cancelDrag, dismissDrag } = useSheetMotion();
   const drag = useRef<{
     x: number;
     y: number;
     time: number;
     id: number;
+    captured: boolean;
   } | null>(null);
   const reset = () => {
     drag.current = null;
-    setDragging(false);
-    setOffset(0);
+    cancelDrag();
   };
   return (
     <DragContext.Provider
@@ -57,6 +45,7 @@ export function SheetDragSurface({
                 y: event.clientY,
                 time: event.timeStamp,
                 id: event.pointerId,
+                captured: false,
               };
             }
           : null
@@ -66,25 +55,29 @@ export function SheetDragSurface({
         style={{
           width: '100%',
           minWidth: 0,
-          transform: offset ? `translateY(${offset}px)` : undefined,
-          transition:
-            dragging || reducedMotion
-              ? 'none'
-              : `transform ${designTokens.motion.control}ms ${designTokens.motion.easing}`,
         }}
         onPointerMove={(event) => {
-          if (!enabled) return reset();
+          if (!enabled) {
+            if (drag.current) reset();
+            return;
+          }
           const start = drag.current;
           if (!start || start.id !== event.pointerId) return;
           const dy = event.clientY - start.y;
-          if (dy <= 6 || dy <= Math.abs(event.clientX - start.x)) return;
-          event.currentTarget.setPointerCapture(event.pointerId);
+          if (!start.captured) {
+            if (dy <= 6 || dy <= Math.abs(event.clientX - start.x)) return;
+            event.currentTarget.setPointerCapture(event.pointerId);
+            start.captured = true;
+          }
           event.preventDefault();
-          setDragging(true);
-          setOffset(dy);
+          cancelAnimation(position);
+          position.value = Math.max(0, dy);
         }}
         onPointerUp={(event) => {
-          if (!enabled) return reset();
+          if (!enabled) {
+            if (drag.current) reset();
+            return;
+          }
           const start = drag.current;
           if (!start || start.id !== event.pointerId) return;
           const dy = event.clientY - start.y;
@@ -93,19 +86,19 @@ export function SheetDragSurface({
             dy,
             dy / Math.max(event.timeStamp - start.time, 1),
           );
-          reset();
+          drag.current = null;
           if (dismiss) {
             event.preventDefault();
-            // Finish pointer release before removing the focus scope (Safari).
-            pendingDismiss.current = requestAnimationFrame(() => {
-              pendingDismiss.current = null;
-              onRequestClose();
-            });
+            dismissDrag(onRequestClose);
+          } else {
+            cancelDrag();
           }
         }}
-        onPointerCancel={reset}
+        onPointerCancel={() => {
+          if (drag.current) reset();
+        }}
         onLostPointerCapture={(event) => {
-          if (event.target === event.currentTarget) reset();
+          if (drag.current && event.target === event.currentTarget) reset();
         }}
       >
         {children}

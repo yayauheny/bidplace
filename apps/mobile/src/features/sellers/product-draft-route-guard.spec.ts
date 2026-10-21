@@ -25,6 +25,13 @@ const harness = vi.hoisted(() => ({
   callback: null as null | ((event: { data: { action: { type: string } } }) => void),
 }));
 
+// Native presentation is browser-covered; this spec owns save/navigation guards.
+vi.mock('../../components/figma/FigmaIcon', () => ({ FigmaIcon: () => null }));
+vi.mock('../../components/ui/MotionPressable', () => ({
+  MotionPressable: ({ children, onPress, disabled }: { children?: ReactNode; onPress?: () => void; disabled?: boolean }) => createElement('button', { onClick: onPress, disabled }, children),
+}));
+vi.mock('../../components/shared/PrivateStoryImage', () => ({ PrivateStoryImage: () => null }));
+
 vi.mock('../../components/figma/FigmaIconButton', () => ({
   FigmaIconButton: ({ label, onPress, disabled }: {
     label: string;

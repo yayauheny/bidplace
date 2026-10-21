@@ -1,13 +1,18 @@
 import { useId, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
+import {
+  useAnimatedScrollHandler,
+  useSharedValue,
+} from 'react-native-reanimated';
 import { ScrollView, View } from 'react-native';
 
 import { ApiClientError } from '@bidplace/api-client';
 import { designTokens } from '@bidplace/design-tokens';
 
+import { useDesktopNavigation } from '../../components/layout/public-navigation';
+import { PageScrollView } from '../../components/layout/PageScrollView';
 import { AppShell, navigateBack } from '../../components/layout';
-import { useDockInset } from '../../components/layout/use-dock-inset';
 import { InfrastructureErrorState } from '../../components/shared/InfrastructureErrorState';
 import { InfrastructurePageStatus } from '../../components/shared/InfrastructurePageStatus';
 import { infrastructurePageFetchStatus } from '../../components/shared/infrastructure-page-status';
@@ -38,7 +43,7 @@ import { CreatorHeader } from './CreatorHeader';
 
 import { type AuthorPublicTab } from './author-public-tabs';
 
-const categorySheetBottomSpace = 40; // Figma 7008:1756
+const categorySheetBottomSpace = 20; // Current Figma 4594:35522
 
 export function PublicSellerScreen({
   slug,
@@ -52,12 +57,16 @@ export function PublicSellerScreen({
   categoryIds?: string[];
 }) {
   const palette = useAppTheme();
+  const desktop = useDesktopNavigation();
   const api = useApiClient();
-  const { reserve } = useDockInset();
   const router = useRouter();
   const queryClient = useQueryClient();
   const capability = useSellerCapability();
   const panelId = useId();
+  const scrollY = useSharedValue(0);
+  const onScroll = useAnimatedScrollHandler((event) => {
+    scrollY.value = event.contentOffset.y;
+  });
   const [tab, setTab] = useState<AuthorPublicTab>('works');
   const [contentWidth, setContentWidth] = useState(0);
   const [unavailable, setUnavailable] = useState<string | null>(null);
@@ -110,39 +119,122 @@ export function PublicSellerScreen({
     query.error.kind === 'not_found'
   ) {
     return (
-      <AppShell>
-        <PageState
-          title="Автор не найден"
-          message="Профиль больше недоступен."
-        />
+      <AppShell contentLayout="bleed">
+        <View style={{ flex: 1, position: 'relative', overflow: 'visible' }}>
+          <PageScrollView
+            animated
+            onScroll={onScroll}
+            scrollEventThrottle={16}
+            showsVerticalScrollIndicator={false}
+          >
+            <PageState
+              title="Автор не найден"
+              message="Профиль больше недоступен."
+            />
+          </PageScrollView>
+        </View>
       </AppShell>
     );
   }
   if (pageStatus !== 'ready' || !firstPage || !author) {
     return (
-      <AppShell>
-        <InfrastructurePageStatus
-          status={pageStatus === 'loading' ? 'loading' : 'error'}
-          onRetry={() => void query.refetch()}
-        />
+      <AppShell contentLayout="bleed">
+        <View style={{ flex: 1, position: 'relative', overflow: 'visible' }}>
+          <PageScrollView
+            animated
+            onScroll={onScroll}
+            scrollEventThrottle={16}
+            showsVerticalScrollIndicator={false}
+          >
+            <InfrastructurePageStatus
+              status={pageStatus === 'loading' ? 'loading' : 'error'}
+              onRetry={() => void query.refetch()}
+            />
+          </PageScrollView>
+        </View>
       </AppShell>
     );
   }
 
-  return (
-    <AppShell>
-      <View style={{ flex: 1, position: 'relative', overflow: 'visible' }}>
+  const filters =
+    tab === 'works' ? (
+      categories.isError ? (
+        <PrimaryButton
+          label="Повторить загрузку категорий"
+          onPress={() => void categories.refetch()}
+        />
+      ) : (
         <ScrollView
-          testID="creator-scroll"
-          style={{ marginHorizontal: -designTokens.layout.gutter }}
+          horizontal
+          testID="creator-filter-strip"
+          showsHorizontalScrollIndicator={false}
           contentContainerStyle={{
-            paddingHorizontal: designTokens.layout.gutter,
-            paddingBottom: reserve,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: designTokens.space.x2,
+            paddingRight: designTokens.layout.gutter,
+          }}
+        >
+          <FigmaButton
+            label={
+              selectedCategories.length
+                ? `Категория ${selectedCategories.length}`
+                : 'Категория'
+            }
+            icon="arrow-right-01"
+            iconPosition="right"
+            variant="outline"
+            disabled={!categories.data}
+            onPress={() => {
+              setDraftCategories(selectedCategories);
+              setFilterOpen(true);
+            }}
+          />
+          {selectedCategories.map((id) => (
+            <FigmaChoiceChip
+              key={id}
+              label={
+                categories.data?.categories.find((item) => item.id === id)
+                  ?.name ?? 'Категория'
+              }
+              selected
+              removable
+              onPress={() => {
+                setDraftCategories(selectedCategories);
+                setFilterOpen(true);
+              }}
+              onRemove={() => {
+                const next = selectedCategories.filter(
+                  (current) => current !== id,
+                );
+                router.setParams({
+                  categories: next.length ? next.join(',') : undefined,
+                  category: undefined,
+                });
+              }}
+            />
+          ))}
+        </ScrollView>
+      )
+    ) : null;
+
+  return (
+    <AppShell contentLayout="bleed">
+      <View style={{ flex: 1, position: 'relative', overflow: 'visible' }}>
+        <PageScrollView
+          animated
+          onScroll={onScroll}
+          scrollEventThrottle={16}
+          testID="creator-scroll"
+          contentContainerStyle={{
+            paddingBottom: 0,
             overflow: 'visible',
           }}
           showsVerticalScrollIndicator={false}
         >
           <CreatorHeader
+            toolbar={filters}
+            scrollY={scrollY}
             profile={author}
             onBack={() => navigateBack(router, { fallbackHref: '/authors' })}
             tabs={[
@@ -177,71 +269,12 @@ export function PublicSellerScreen({
               paddingTop:
                 tab === 'about'
                   ? designTokens.space.authorHeaderBottom
-                  : designTokens.space.sectionGap,
+                  : desktop
+                    ? designTokens.space.x8
+                    : designTokens.space.sectionGap,
               gap: designTokens.space.authorSectionGap,
             }}
           >
-            {tab === 'works' ? (
-              categories.isError ? (
-                <PrimaryButton
-                  label="Повторить загрузку категорий"
-                  onPress={() => void categories.refetch()}
-                />
-              ) : (
-                <ScrollView
-                  horizontal
-                  testID="creator-filter-strip"
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: designTokens.space.x2,
-                    paddingRight: designTokens.layout.gutter,
-                  }}
-                >
-                  <FigmaButton
-                    label={
-                      selectedCategories.length
-                        ? `Категория ${selectedCategories.length}`
-                        : 'Категория'
-                    }
-                    icon="arrow-right-01"
-                    iconPosition="right"
-                    variant="outline"
-                    disabled={!categories.data}
-                    onPress={() => {
-                      setDraftCategories(selectedCategories);
-                      setFilterOpen(true);
-                    }}
-                  />
-                  {selectedCategories.map((id) => (
-                    <FigmaChoiceChip
-                      key={id}
-                      label={
-                        categories.data?.categories.find(
-                          (item) => item.id === id,
-                        )?.name ?? 'Категория'
-                      }
-                      selected
-                      removable
-                      onPress={() => {
-                        setDraftCategories(selectedCategories);
-                        setFilterOpen(true);
-                      }}
-                      onRemove={() => {
-                        const next = selectedCategories.filter(
-                          (current) => current !== id,
-                        );
-                        router.setParams({
-                          categories: next.length ? next.join(',') : undefined,
-                          category: undefined,
-                        });
-                      }}
-                    />
-                  ))}
-                </ScrollView>
-              )
-            ) : null}
             {tab === 'about' ? (
               <AuthorAbout author={author} />
             ) : worksPending ? (
@@ -262,14 +295,17 @@ export function PublicSellerScreen({
             ) : (
               <>
                 <View
-                  style={{ width: '100%', gap: designTokens.space.sectionGap }}
+                  style={{
+                    width: '100%',
+                    gap: designTokens.space.x8,
+                  }}
                 >
                   <PaddedGrid
                     items={works}
                     columns={gridColumnsFromWidth(contentWidth, {
-                      minCardWidth: 320,
+                      minCardWidth: designTokens.size.coverWidth,
                       gap: designTokens.space.x3,
-                      max: 3,
+                      max: 4,
                     })}
                     gap={designTokens.space.x3}
                     keyExtractor={(item) => item.work.publicId}
@@ -294,7 +330,7 @@ export function PublicSellerScreen({
               </>
             )}
           </View>
-        </ScrollView>
+        </PageScrollView>
         <FilterSheet
           presentation="compact"
           bottomSpace={categorySheetBottomSpace}
@@ -320,7 +356,6 @@ export function PublicSellerScreen({
               key={item.id}
               label={item.name}
               mode="checkbox"
-              variant="compact"
               selected={draftCategories.includes(item.id)}
               disabled={
                 !draftCategories.includes(item.id) &&

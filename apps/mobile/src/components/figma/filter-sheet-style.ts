@@ -15,9 +15,14 @@ export function filterSheetPanelStyle(
       : { height: (viewportHeight ?? '100%') as number | '100%' }),
     paddingHorizontal: compact ? 20 : designTokens.layout.gutter,
     paddingTop: compact ? 8 : designTokens.space.x5,
-    paddingBottom: compact
-      ? 0
-      : appDialogSheetBottomSpace(designTokens.space.x5, bottomInset),
+    ...(compact
+      ? {}
+      : {
+          paddingBottom: appDialogSheetBottomSpace(
+            designTokens.space.x5,
+            bottomInset,
+          ),
+        }),
     backgroundColor: palette.canvas,
   };
 }

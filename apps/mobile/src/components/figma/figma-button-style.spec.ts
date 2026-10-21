@@ -126,7 +126,7 @@ describe('figma button matrix', () => {
       light.onAction,
     );
     expect(figmaButtonLabelColor('outline', 'matrix', light)).toBe(
-      light.textSubdued,
+      light.inkStrong,
     );
   });
 
@@ -158,7 +158,7 @@ describe('figma button matrix', () => {
       const cell = figmaButtonMatrixCell('ghost', interaction, light);
       expect(cell.fill).toBe(light.canvas);
       expect(cell.borderRadius).toBe(figmaButtonTokens.metrics.radius);
-      expect(cell.labelColor).toBe(light.textSubdued);
+      expect(cell.labelColor).toBe(light.inkStrong);
       if (interaction === 'pressed') {
         expect(cell.strokeMode).toBe('none');
         expect(cell.strokeColor).toBeNull();
@@ -193,7 +193,7 @@ describe('figma button matrix', () => {
       expect(cell.strokeMode).toBe('flat');
       expect(cell.strokeColor).toBe(light.mutedStroke);
       expect(cell.borderRadius).toBe(figmaButtonTokens.metrics.radius);
-      expect(cell.labelColor).toBe(light.textSubdued);
+      expect(cell.labelColor).toBe(light.inkStrong);
       if (interaction === 'hover' || interaction === 'pressed') {
         expect(cell.overlay).toBe(light.overlayOnMuted);
         expect(cell.controlOpacity).toBe(1);

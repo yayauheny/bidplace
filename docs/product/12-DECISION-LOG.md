@@ -3063,3 +3063,36 @@ web стиль собирается существующими токенами 
 по цвету. Видимый клавиатурный фокус, существующий border полей и outline
 прочих контролов сохраняются. Компонентных/маршрутных исключений не вводим.
 Это не решение о запуске всей provisional black-палитры пользователям.
+
+## DEC-128 — Общая desktop-шапка и визуальная унификация навигации
+
+Date:2026-10-21
+Status: Confirmed
+
+Основатель подтвердил общую desktop-шапку на публичных Home/Works/Authors и
+страницах деталей; нижний dock остаётся мобильным. Корзину и уведомления вне MVP
+не добавлять. Для страницы автора актуальный визуальный источник — точные frames
+из HRRtDp0bQlukw7ptTkuEZg, page1:3, вместо старой копии; текущий master кнопок и
+MVP-ограничения сохраняются. Общие FilterOptionRow — с галочкой справа, без
+видимого индикатора скролла. Одна круглая кнопка Back для всех экранов со
+состояниями normal/pressed/disabled. Избранное/подписки и их экраны остаются после
+MVP; показ макета выбранного состояния не является решением включить backend.
+
+Implementation status: [author parity audit](../audits/current/2026-10-21-AUTHOR-PROFILE-PARITY.md).
+
+
+### DEC-129 — Public desktop navigation threshold (2026-10-21)
+
+Confirmed by founder: shared public desktop header starts at1024 CSS px;
+mobile dock below. Extends DEC-128; no cart/notifications/favorites scope added.
+
+
+## DEC-130 — Shared footer and desktop header completion (2026-10-21)
+
+Confirmed by founder: footer on ordinary pages including account/settings,
+excluding auth, forms, step editors and overlays; responsive visibility belongs
+to shared owners. New visual source ibHSgpAKXnItNSHaHzvRk2: footer5065:21196 /
+4980:16299 and desktop Home3139:2222. Works/Authors use the third ghost button
+variant. Cart/notification placeholders are allowed in desktop chrome; this
+revises the visual omission in DEC-128 only, without adding commerce or
+notification functionality to MVP. DEC-129's1024px navigation threshold stands.

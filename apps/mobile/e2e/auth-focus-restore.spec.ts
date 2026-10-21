@@ -8,6 +8,7 @@ const DOCK_PROFILE =
   '[data-testid="figma-floating-dock"] [aria-label="Профиль"]';
 
 async function openSheetFromDock(page: Page) {
+  await page.setViewportSize({ width: 390, height: 874 });
   await page.goto('/');
   await page
     .getByText('Открытие недели', { exact: true })
@@ -43,7 +44,9 @@ for (const close of ['Escape', 'cross', 'swipe'] as const) {
     if (close === 'Escape') {
       await page.keyboard.press('Escape');
     } else if (close === 'cross') {
-      await page.getByRole('button', { name: 'Закрыть', exact: true }).click();
+      const closeButton = page.getByRole('button', { name: 'Закрыть', exact: true });
+      await closeButton.focus();
+      await closeButton.press('Enter');
     } else {
       await pullSheetDown(page);
     }
@@ -55,6 +58,7 @@ test('opening from another dock item restores focus to that item', async ({
   page,
 }) => {
   // The plus item routes guests to the same auth sheet via a different trigger.
+  await page.setViewportSize({ width: 390, height: 874 });
   await page.goto('/');
   await page
     .getByText('Открытие недели', { exact: true })
@@ -103,6 +107,7 @@ test('dirty exit-confirm cancel returns focus into the form', async ({
     .getByText('Введите вашу почту', { exact: true })
     .waitFor({ state: 'visible' });
   const email = page.getByLabel('Электронная почта', { exact: true });
+  await expect(email).toBeFocused();
   await email.fill('dirty@example.com');
   await page.keyboard.press('Escape');
   await page
@@ -126,6 +131,7 @@ test('registration close returns to its public origin and preserves the dirty gu
   await expect(page).toHaveURL(/\/seller\/vex$/);
   await page.goto('/register?redirectTo=%2Fseller%2Fvex');
   const email = page.getByLabel('Электронная почта', { exact: true });
+  await expect(email).toBeFocused();
   await email.fill('dirty@example.com');
   await page.getByRole('button', { name: 'Закрыть', exact: true }).click();
   await expect(

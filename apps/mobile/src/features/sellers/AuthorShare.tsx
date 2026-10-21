@@ -1,6 +1,7 @@
 import { useRef, useState, type ElementRef } from 'react';
 import { Alert, Platform, Share, View } from 'react-native';
 
+import { FigmaButton } from '../../components/figma/FigmaButton';
 import { FigmaIconButton } from '../../components/figma/FigmaIconButton';
 import { FigmaIcon } from '../../components/figma/FigmaIcon';
 import { FilterSheet } from '../../components/figma/FilterSheet';
@@ -18,11 +19,13 @@ export function AuthorShare({
   sharePath,
   onUnavailable,
   owner = false,
+  trigger = 'icon',
 }: {
   sharePath: string;
   onUnavailable: (feature: string) => void;
   /** Owner account share: the public "Пожаловаться" action does not apply. */
   owner?: boolean;
+  trigger?: 'icon' | 'label';
 }) {
   const palette = useAppTheme();
   const triggerRef = useRef<ElementRef<typeof MotionPressable>>(null);
@@ -49,18 +52,32 @@ export function AuthorShare({
 
   return (
     <>
-      <FigmaIconButton
-        ref={triggerRef}
-        icon="share-03"
-        iconSize={20}
-        strokeWidthPx={1.5}
-        surface="muted"
-        label="Поделиться профилем"
-        onPress={() => {
-          setMessage('');
-          setOpen(true);
-        }}
-      />
+      {trigger === 'label' ? (
+        <FigmaButton
+          ref={triggerRef}
+          label="Поделиться"
+          variant="muted"
+          icon="share-03"
+          iconPosition="right"
+          onPress={() => {
+            setMessage('');
+            setOpen(true);
+          }}
+        />
+      ) : (
+        <FigmaIconButton
+          ref={triggerRef}
+          icon="share-03"
+          iconSize={20}
+          strokeWidthPx={1.5}
+          surface="muted"
+          label="Поделиться профилем"
+          onPress={() => {
+            setMessage('');
+            setOpen(true);
+          }}
+        />
+      )}
       <FilterSheet
         returnFocusRef={triggerRef}
         presentation="compact"

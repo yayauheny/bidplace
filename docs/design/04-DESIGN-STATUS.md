@@ -2,6 +2,11 @@
 
 > Entries dated before 2026-10-13 mention Pen / .pen files; the Pen design was removed (DEC-119) — read those mentions as history.
 
+## 2026-10-20 — label кнопок и disabled «Дальше»
+
+- `Implemented`: живой master `292:5058` красит подпись outline, ghost и muted в Black `#121212`. Токен `labelDefault` обновлён; матрица 4×4, hover, pressed и disabled solid (`292:5054`: заливка `#949494`, opacity 0.5, белая подпись) не переписывались. Таблица §6.2 в `03-DESIGN-SYSTEM.md` совпадает с master.
+- `Implemented`: на шаге email «Дальше» disabled, пока не отмечены четыре обязательных согласия. Красная ошибка согласия не заменяет это состояние. Чекбоксы остаются отдельными и доступными после загрузки документов.
+
 ## 2026-10-20 — Монохромный focus (DEC-127)
 
 **Implemented (web).** По решению основателя общая семантическая роль focus
@@ -57,10 +62,10 @@ input→click не показывают focus ring; клавиатурный Tab
 leases не изменены. Год создания остаётся числом0..9999; время публикации
 по-прежнему серверное, планирование публикации не добавлялось.
 
-В `AppDialogSheetMotion.web` одна DOM-оболочка с withTiming: выходящий контент
+В общем `AppDialogSheetMotion` одна DOM-оболочка с withTiming: выходящий контент
 inert/aria-hidden; входящий контент активируется только после завершения
 анимации, settled transform удаляется. Быстрый reopen не создаёт live exit-клоны Reanimated.
-Native сохраняет прежние enter/exit; DateSelection.native использует совместимый
+Web/native теперь используют общий owner движения (приёмка2026-10-21 ниже); DateSelection.native использует совместимый
 с SDK57 datetimepicker9.1.0. **Needs verification (native runtime):** нативный
 picker на устройствах/симуляторе не запускался; успешен iOS JS/Hermes export.
 
@@ -1811,3 +1816,135 @@ mapping or a desktop screenshot is insufficient.
   at 1440/1024/390 for composition, overflow and responsive action ownership.
 - `Needs verification`: formal matched Pen overlay, native-device behavior,
   physical screen-reader QA and founder approval remain open.
+
+## 2026-10-21 — Login Sheet review
+
+Implemented responsive AuthViewport: full-width sheet below768, centered420 dialog
+from768, shared auth field/button metrics, legalLink semantic role; single form
+preserves input and errors. Browser acceptance20/20 Chromium/WebKit; owner checks62/62,
+typecheck/export clean. Evidence/audit: `docs/audits/current/2026-10-20-LOGIN-SHEET-REVIEW.md`.
+Physical iPhone keyboard, actual200% zoom and device motion remain Needs verification.
+
+## 2026-10-21 — Work editor
+
+Implemented portfolio wizard chrome, rounded photo tiles, shared ordered-block menu
+and private content preview; creation/edit use existing revision/save owners.89 owner
+checks,24 wizard/revision E2E and2 full media lifecycle cases passed. Mobile source
+mapping/evidence: `docs/audits/current/2026-10-21-UI-COMPLETION.md`. Visual status Partial:
+only390 source frames; wider screens NEEDS-FIGMA, physical iPhone/real zoom unverified.
+
+2026-10-21 — Implemented: Home empty action column capped420, fluid366 at390. Chromium/WebKit screenshots390/1024/1440/1920 confirm centering and no overflow; desktop empty-state Figma remains NEEDS-FIGMA. Evidence: current/evidence/2026-10-21-desktop-actions in the UI completion audit.
+
+2026-10-21 — Implemented (browser): one continuous sheet translation and delayed
+auth dismissal navigation.48/48 Chromium/WebKit cover responsive login, loaded
+background images, focus, busy/dirty guards, share→QR/report, catalog filter,
+search and photo viewer. Slow/fast pointer release is monotonic in recorded frame
+traces; real Chromium CDP touch cancel/dismiss also passed. Recordings:
+[UI completion evidence](../audits/current/evidence/2026-10-21-sheet-motion/).
+Native/iPhone runtime, system keyboard and actual browser200% zoom remain Needs
+verification. Reflow viewport checks do not claim to replace these.
+
+Auth-layout/recovery acceptance:24 scenarios passed (20 plus4 addressed history
+reruns), including reload/Back/Forward, dirty cancel, long-copy scrolling and short
+dialog resize. iOS JS/Hermes export passed; no physical iPhone result is claimed.
+
+2026-10-21 — Author parity stage1 Implemented: shared filter rows have visible
+flexible text and trailing checks; compact footer spacing and hidden indicators
+verified. Shared Back normalized and direct-entry fallback corrected.14/14
+Chromium/WebKit cases, owner checks/tsc/lint/build pass. Author layout/desktop
+header/sticky remain Partial, tracked in
+[current audit](../audits/current/2026-10-21-AUTHOR-PROFILE-PARITY.md).
+
+
+### Public desktop navigation — 2026-10-21
+
+Implemented: public Home/Works/Authors/details use AppShell DesktopHeader from
+1024 CSS px on web (explicit founder decision); mobile/native retain FloatingDock.
+PublicNavigationProvider scopes the policy, use-app-navigation owns shared
+profile/create/search destinations. Inactive stacked headers retain geometry but
+are inert and do not duplicate search/focus IDs. Private routes retain their
+existing chrome. No cart/notification backend or placeholder controls added.
+Reference: HRRtDp0bQlukw7ptTkuEZg /4980:15230. Header68px, search48px,
+provided combined logo, current button master.1024/1440: responsive adaptation,
+NEEDS-FIGMA for exact parity.12 unit cases, tsc/lint/build and4 Chromium/WebKit
+navigation cases pass. Author composition remains Partial; see
+[author parity audit](../audits/current/2026-10-21-AUTHOR-PROFILE-PARITY.md).
+
+
+### Author profile parity — 2026-10-21
+
+Implemented: AppShell bleed + PageColumn remove the centered-scrollport halo
+clip; CreatorIdentity100/140px with semantic typography; Works up to four
+measured PaddedGrid columns; About two prose columns when space permits.
+CreatorHeader animates the same action row after measured scroll threshold with
+Reanimated and20px hysteresis/reduced motion, without remounting identity/media.
+Desktop AuthorShare has a labelled trigger; owner Settings →/account/settings.
+Existing unavailable follow/favorites feedback stays honest; no new backend.
+
+Checks:42 owner unit cases +15 button cases, tokens build/mobile tsc/scoped lint,
+production web export;24/24 Chromium/WebKit cases on320–1800px, plus2 recorded
+motion cases. Live read-only vex and API readiness200 checked. Visual parity
+Partial: current master/MVP exclusions and384px vs387px desktop grid start are
+explicit in the [audit](../audits/current/2026-10-21-AUTHOR-PROFILE-PARITY.md).
+1024/1440 exact frames: NEEDS-FIGMA. Physical iPhone, real zoom200% and enlarged
+text: Needs verification. This supersedes historical compact-avatar descriptions.
+
+
+### Shared footer and responsive brand — 2026-10-21
+
+Implemented: `SiteFooter` + `PageScrollView` provide one ordinary-page footer,
+including account/settings and legal pages; auth/forms/editors exclude it.
+All five current legal documents and operator contact remain reachable.
+`AppShell` supplies actual chrome visibility, shared with the branded page
+container; desktop Home has no second mark. `BidplaceLogo` renders the exact
+combined SVG with contain fitting. Navigation links reuse ghost `FigmaButton`.
+No backend or production deployment changed.
+
+Verification:44 owner unit tests,26 Chromium/WebKit cases, mobile tsc/scoped
+ESLint, tokens build and production web export passed. Visual parity Partial:
+44px targets and MVP legal labels differ from the static footer. Physical iPhone
+and browser zoom Needs verification. [Audit](../audits/current/2026-10-21-SHARED-FOOTER.md).
+
+
+### Desktop Home/header follow-up — 2026-10-21
+
+Implemented: shared FigmaIconButton outlined surface for profile/cart/notifications;
+cart/notifications show honest post-MVP feedback in FilterSheet. No unread dot or
+commerce API. Navigation uses ghost FigmaButton with aria-current. Desktop branded
+page inset matches live3139:2222: first section x272,y140,width1256 at1800px.
+Existing mobile/MVP content composition preserved.20 button/icon unit cases and
+8 targeted Chromium/WebKit tests, tsc/scoped lint/web export passed. Visual parity
+Partial; see [audit](../audits/current/2026-10-21-SHARED-FOOTER.md).
+
+
+### Independent UI review follow-up — 2026-10-21
+
+Implemented: complete labelled work Review metadata using current form/catalog
+and persisted selection names; shared dock reserve follows actual AppShell
+visibility; stable header/footer semantic roles preserve image nodes under auth;
+container-only focus after enter moves to the intended control through the
+existing shared focus owner. Save/media/revision APIs remain unchanged.
+Overall acceptance is Partial: the excluded BackButton-dependent settings title
+centering and the unrelated API legal-pack integration assertion remain open.
+Evidence and per-finding classification: [independent UI review](../audits/current/2026-10-21-INDEPENDENT-UI-REVIEW.md).
+
+Verification: mobile988/988, editor API E2E26/26, UI68 passed with2 excluded
+settings-center failures, WebKit focus/motion stress20/20; typecheck, lint and
+production web export passed. Full verify remains red on the unchanged API
+legal-pack mock assertion (upstream fix `cc4911e5`), with28 optional DB cases
+skipped. Physical iPhone/real zoom/text scaling remain Needs verification.
+
+
+### 2026-10-22 — MVP merge verification
+
+Responsive auth, editor, author/header/footer and UI-review changes are merged
+from `feature/shared-footer` without further visual changes. The previous API
+legal-pack test failure is resolved by MVP commit `cc4911e5` (155 integration
+passed,28 optional cases skipped). Visual acceptance remains Partial for the
+excluded settings-title geometry and real-device/zoom checks; earlier test
+results are historical branch evidence. See the dated merge section in the
+[independent review](../audits/current/2026-10-21-INDEPENDENT-UI-REVIEW.md).
+
+Merged-tree verification: full `pnpm verify` passed, including988 mobile unit
+cases,155 API integration cases (28 optional skipped), typecheck/lint and all8
+build tasks with web/iOS/Android exports. Markdown links184 files passed.

@@ -42,15 +42,17 @@ test('filled login closes without confirmation and providers stay unavailable', 
   await page.setViewportSize({ width: 390, height: 874 });
   await installLegalDocumentsFixture(page);
   await page.goto('/login');
-  const email = page.getByLabel('Электронная почта');
+  const email = page.getByRole('textbox', { name: 'Электронная почта', exact: true });
   const password = page.getByLabel('Пароль', { exact: true });
   const loginTitle = page.getByText('Вход на Bidplace', { exact: true });
   const privacyLinkName = 'политикой персональных данных и cookies';
+  await expect(page.getByRole('textbox', { name: 'Электронная почта', exact: true })).toBeFocused();
   await email.fill('a');
   await password.fill('visual-password-123');
   await expectPasswordVisibility(password);
   await expect(page.locator('#auth-exit-confirm')).toHaveCount(0);
-  await page.getByRole('button', { name: 'Закрыть', exact: true }).click();
+  await page.getByRole('button', { name: 'Закрыть', exact: true }).focus();
+  await page.getByRole('button', { name: 'Закрыть', exact: true }).press('Enter');
   await expect(page.getByText('Прервать вход', { exact: true })).toHaveCount(0);
   await expect(page.locator('#auth-exit-confirm')).toHaveCount(0);
   await expect(loginTitle).toHaveCount(0);
@@ -89,6 +91,7 @@ test('filled login closes without confirmation and providers stay unavailable', 
 
   await page.goto('/login');
   await expect(loginTitle).toBeVisible();
+  await expect(page.getByRole('textbox', { name: 'Электронная почта', exact: true })).toBeFocused();
   await email.fill('a');
   await password.fill('visual-password-123');
   await page
@@ -171,9 +174,8 @@ test('filled login closes without confirmation and providers stay unavailable', 
   await expect(page.locator('#auth-exit-confirm')).toHaveCount(0);
   await expect(loginTitle).toBeVisible();
   await page.setViewportSize({ width: 390, height: 874 });
-  await page.evaluate(() => {
-    document.documentElement.style.zoom = '1.5';
-  });
+  // Reflow uses CSS viewport size; CSS zoom does not emulate browser zoom.
+  await page.setViewportSize({ width: 320, height: 583 });
   const privacyAtZoom = page
     .locator('#auth-sheet')
     .getByRole('link', { name: privacyLinkName, exact: true });
@@ -181,8 +183,7 @@ test('filled login closes without confirmation and providers stay unavailable', 
   expect(
     await page
       .locator('#app-dialog-content')
-      // 1px tolerance: WebKit rounds a fractional CSS-zoomed width up
-      // (scrollWidth 256 vs clientWidth 255) with no overflowing child.
+      // WebKit can round fractional layout widths up by one pixel.
       .evaluate((node) => node.scrollWidth <= node.clientWidth + 1),
   ).toBe(true);
   const closeAtZoom = page.getByRole('button', {
@@ -191,9 +192,7 @@ test('filled login closes without confirmation and providers stay unavailable', 
   });
   await expect(closeAtZoom).toBeInViewport();
   await clickAtHitCenter(page, closeAtZoom);
-  await page.evaluate(() => {
-    document.documentElement.style.zoom = '';
-  });
+  await page.setViewportSize({ width: 390, height: 874 });
   await email.fill('login-layout@example.com');
   for (const failure of [
     {
@@ -240,9 +239,8 @@ test('filled login closes without confirmation and providers stay unavailable', 
     expect.arrayContaining(AUTH_BROWSER_VIEWPORTS.map(viewportLabel)),
   );
   await page.setViewportSize({ width: 390, height: 400 });
-  await page.evaluate(() => {
-    document.documentElement.style.zoom = '1.5';
-  });
+  // Reflow uses CSS viewport size; CSS zoom does not emulate browser zoom.
+  await page.setViewportSize({ width: 320, height: 583 });
   await page.route('**/api/auth/login', (route) =>
     route.fulfill({
       status: 429,
@@ -262,9 +260,7 @@ test('filled login closes without confirmation and providers stay unavailable', 
   await expect(
     page.getByRole('button', { name: 'Войти', exact: true }),
   ).toBeInViewport();
-  await page.evaluate(() => {
-    document.documentElement.style.zoom = '';
-  });
+  await page.setViewportSize({ width: 390, height: 874 });
   await page.unroute('**/api/auth/login');
   expect(errors).toEqual([]);
 });
@@ -366,7 +362,8 @@ test('after aborting a filled registration the next Back and Forward walk real h
   );
   await page.getByRole('link', { name: 'Регистрация', exact: true }).click();
   await expect(page).toHaveURL(/\/register\?redirectTo=%2Fworks$/);
-  const registerEmail = page.getByPlaceholder('example@gmail.com');
+  const registerEmail = page.locator('#auth-sheet').getByLabel('Электронная почта', { exact: true });
+  await expect(page.getByRole('textbox', { name: 'Электронная почта', exact: true })).toBeFocused();
   await registerEmail.fill(`history-${Date.now()}@example.com`);
   await acceptRegistrationConsents(page);
   await page.getByRole('button', { name: 'Дальше', exact: true }).click();
@@ -515,8 +512,9 @@ async function expectAuthBrowserHistory(page: Page, navigationApi: boolean) {
   await expect(
     page.getByRole('navigation', { name: 'Основная навигация' }),
   ).toHaveCount(0);
-  const email = page.getByLabel('Электронная почта');
+  const email = page.getByRole('textbox', { name: 'Электронная почта', exact: true });
   const password = page.getByLabel('Пароль', { exact: true });
+  await expect(page.getByRole('textbox', { name: 'Электронная почта', exact: true })).toBeFocused();
   await email.fill('a');
   await email.fill('');
   await historyStep(page, -1);
@@ -530,6 +528,7 @@ async function expectAuthBrowserHistory(page: Page, navigationApi: boolean) {
   await page.getByRole('link', { name: 'Профиль', exact: true }).click();
   await expect(page).toHaveURL(/\/login$/);
   await expect(loginTitle).toBeVisible();
+  await expect(page.getByRole('textbox', { name: 'Электронная почта', exact: true })).toBeFocused();
   await email.fill('a');
   await password.fill('visual-password-123');
   await historyStep(page, -1);
@@ -562,7 +561,7 @@ async function expectAuthBrowserHistory(page: Page, navigationApi: boolean) {
   await expect(
     page.getByText('Введите вашу почту', { exact: true }),
   ).toBeVisible();
-  await page.getByPlaceholder('example@gmail.com').fill('author@example.com');
+  await page.getByRole('textbox', { name: 'Электронная почта', exact: true }).fill('author@example.com');
   await historyStep(page, -1);
   await expect(
     page.getByText('Прервать регистрацию', { exact: true }),
@@ -592,7 +591,8 @@ async function expectAuthBrowserHistory(page: Page, navigationApi: boolean) {
   await expect(page).toHaveURL(/\/login\?redirectTo=%2Fworks$/);
   await page.getByRole('link', { name: 'Регистрация', exact: true }).click();
   await expect(page).toHaveURL(/\/register\?redirectTo=%2Fworks$/);
-  const registerEmail = page.getByPlaceholder('example@gmail.com');
+  const registerEmail = page.locator('#auth-sheet').getByLabel('Электронная почта', { exact: true });
+  await expect(page.getByRole('textbox', { name: 'Электронная почта', exact: true })).toBeFocused();
   await registerEmail.fill('kept@example.com');
   await acceptRegistrationConsents(page);
   await page.getByRole('button', { name: 'Дальше', exact: true }).click();
@@ -640,7 +640,8 @@ async function expectAuthBrowserHistory(page: Page, navigationApi: boolean) {
   await expect(
     page.getByText('Введите вашу почту', { exact: true }),
   ).toBeVisible();
-  const reloadedEmail = page.getByLabel('Электронная почта', { exact: true });
+  const reloadedEmail = page.locator('#auth-sheet').getByLabel('Электронная почта', { exact: true });
+  await expect(reloadedEmail).toBeFocused();
   await reloadedEmail.fill('reloaded@example.com');
   await historyStep(page, -2);
   await expect(
@@ -713,7 +714,8 @@ async function expectAuthBrowserHistory(page: Page, navigationApi: boolean) {
   await expect(
     page.getByText('Введите вашу почту', { exact: true }),
   ).toBeVisible();
-  const escapeEmail = page.getByLabel('Электронная почта', { exact: true });
+  const escapeEmail = page.locator('#auth-sheet').getByLabel('Электронная почта', { exact: true });
+  await expect(escapeEmail).toBeFocused();
   await escapeEmail.fill('escape-register@example.com');
   await page.keyboard.press('Escape');
   await expect(
@@ -791,12 +793,9 @@ test('register email title layout is stable across viewport resize', async ({
   await page.setViewportSize({ width: 390, height: 874 });
   await page.goto('/register');
   await expect(title()).toBeVisible();
-  await expect
-    .poll(async () => {
-      const y = await emailTitleY();
-      return y >= 199.25 && y <= 201.75;
-    })
-    .toBe(true);
+  await expect(page.getByRole('textbox', { name: 'Электронная почта', exact: true })).toBeFocused();
+  await page.evaluate(() => document.fonts.ready);
+  const initialTitleY = await settledEmailTitleY();
   await expectTitleClearOfMark();
   await expect(
     page.getByRole('navigation', { name: 'Основная навигация' }),
@@ -815,12 +814,7 @@ test('register email title layout is stable across viewport resize', async ({
 
   await page.setViewportSize({ width: 390, height: 874 });
   await expectTitleClearOfMark();
-  await expect
-    .poll(async () => {
-      const y = await emailTitleY();
-      return y >= 199.25 && y <= 201.75;
-    })
-    .toBe(true);
+  await expect.poll(emailTitleY).toBeCloseTo(initialTitleY, 0);
 
   await page.setViewportSize({ width: 390, height: 400 });
   await page.goto('/register');
@@ -837,6 +831,7 @@ test('register email title layout is stable across viewport resize', async ({
   await page.setViewportSize({ width: 390, height: 400 });
   await page.goto('/register');
   await expectTitleClearOfMark();
+  await acceptRegistrationConsents(page);
   await page.getByRole('button', { name: 'Дальше', exact: true }).click();
   await expect(
     page.getByText('Введите корректный email', { exact: true }),
@@ -876,7 +871,7 @@ test('register email title layout is stable across viewport resize', async ({
   expect(frame!.x).toBe(0);
 });
 
-test('auth composition is stacked in the S4 phone column', async ({ page }) => {
+test('auth composition keeps a centered form inside the fullscreen registration', async ({ page }) => {
   await mkdir(artifactDir, { recursive: true });
   await installTurnstileFixture(page);
   await installLegalDocumentsFixture(page);
@@ -930,7 +925,8 @@ test('auth composition is stacked in the S4 phone column', async ({ page }) => {
     availabilityRequests += 1;
     return route.fulfill({ json: { available: true } });
   });
-  await page.getByLabel('Электронная почта').fill('layout-only@example.com');
+  await expect(page.getByRole('textbox', { name: 'Электронная почта', exact: true })).toBeFocused();
+  await page.getByRole('textbox', { name: 'Электронная почта', exact: true }).fill('layout-only@example.com');
   await acceptRegistrationConsents(page);
   await page.getByRole('button', { name: 'Дальше', exact: true }).click();
   const nickname = page.getByLabel('Никнейм', { exact: true });
@@ -1002,7 +998,8 @@ test('auth composition is stacked in the S4 phone column', async ({ page }) => {
   await expectPasswordVisibility(resetPassword);
   await expectPasswordVisibility(resetConfirmation);
   await expect(page.locator('#auth-exit-confirm')).toHaveCount(0);
-  await page.getByRole('button', { name: 'Закрыть', exact: true }).click();
+  await page.getByRole('button', { name: 'Закрыть', exact: true }).focus();
+  await page.getByRole('button', { name: 'Закрыть', exact: true }).press('Enter');
   await expect(
     page.getByText('Новый пароль не сохранится, пока форма не отправлена.', {
       exact: true,
@@ -1018,8 +1015,9 @@ test('auth composition is stacked in the S4 phone column', async ({ page }) => {
   await expect(
     page.getByText('Восстановление пароля', { exact: true }),
   ).toBeVisible();
-  await page.getByLabel('Электронная почта').fill('recover@example.com');
-  await page.getByRole('button', { name: 'Закрыть', exact: true }).click();
+  await page.getByRole('textbox', { name: 'Электронная почта', exact: true }).fill('recover@example.com');
+  await page.getByRole('button', { name: 'Закрыть', exact: true }).focus();
+  await page.getByRole('button', { name: 'Закрыть', exact: true }).press('Enter');
   await expect(
     page.getByText('Прервать восстановление', { exact: true }),
   ).toHaveCount(0);
@@ -1091,7 +1089,8 @@ test('nickname suggestions check availability only on explicit Next', async ({
 
   await page.setViewportSize({ width: 390, height: 874 });
   await page.goto('/register');
-  await page.getByLabel('Электронная почта').fill('nickname-only@example.com');
+  await expect(page.getByRole('textbox', { name: 'Электронная почта', exact: true })).toBeFocused();
+  await page.getByRole('textbox', { name: 'Электронная почта', exact: true }).fill('nickname-only@example.com');
   await acceptRegistrationConsents(page);
   await page.getByRole('button', { name: 'Дальше', exact: true }).click();
 
@@ -1197,9 +1196,8 @@ test('nickname suggestions check availability only on explicit Next', async ({
     await expect(suggestions.last()).toBeInViewport();
   }
 
-  await page.evaluate(() => {
-    document.documentElement.style.zoom = '1.5';
-  });
+  // Reflow uses CSS viewport size; CSS zoom does not emulate browser zoom.
+  await page.setViewportSize({ width: 320, height: 583 });
   expect(
     await page.evaluate(() => document.body.scrollWidth <= window.innerWidth),
   ).toBe(true);
@@ -1207,9 +1205,7 @@ test('nickname suggestions check availability only on explicit Next', async ({
     await suggestions.nth(index).scrollIntoViewIfNeeded();
     await expect(suggestions.nth(index)).toBeInViewport();
   }
-  await page.evaluate(() => {
-    document.documentElement.style.zoom = '';
-  });
+  await page.setViewportSize({ width: 390, height: 874 });
 
   await nickname.fill('taken-author');
   const nextAction = page.getByRole('button', { name: 'Дальше', exact: true });
@@ -1330,18 +1326,15 @@ test('nickname suggestions check availability only on explicit Next', async ({
   ).toHaveValue('registration-password-123');
   expect(registerRequests).toBe(1);
 
-  await page.evaluate(() => {
-    document.documentElement.style.zoom = '1.5';
-  });
+  // Reflow uses CSS viewport size; CSS zoom does not emulate browser zoom.
+  await page.setViewportSize({ width: 320, height: 583 });
   await page
     .getByLabel('Введите пароль', { exact: true })
     .scrollIntoViewIfNeeded();
   await expect(
     page.getByLabel('Введите пароль', { exact: true }),
   ).toBeInViewport();
-  await page.evaluate(() => {
-    document.documentElement.style.zoom = '';
-  });
+  await page.setViewportSize({ width: 390, height: 874 });
 });
 
 async function clickAtHitCenter(
@@ -1349,6 +1342,7 @@ async function clickAtHitCenter(
   target: ReturnType<Page['locator']>,
 ) {
   await target.scrollIntoViewIfNeeded();
+  await target.click({ trial: true });
   const point = await target.evaluate((node) => {
     const reaches = (x: number, y: number) => {
       const hit = document.elementFromPoint(x, y);
@@ -1428,7 +1422,7 @@ async function expectS4Register(page: Page) {
   await expect(page.getByText(removedIntro, { exact: true })).toHaveCount(0);
   const title = page.getByText('Введите вашу почту', { exact: true });
   await expect(title).toBeVisible();
-  await expect(page.getByLabel('Электронная почта')).toBeVisible();
+  await expect(page.getByRole('textbox', { name: 'Электронная почта', exact: true })).toBeVisible();
   await expect(page.getByLabel('Никнейм')).toHaveCount(0);
   await expect(page.getByLabel('Введите пароль')).toHaveCount(0);
   const submit = page.getByRole('button', { name: 'Дальше' });
@@ -1442,7 +1436,7 @@ async function expectS4Register(page: Page) {
   ).toHaveCount(0);
 
   const titleBox = await title.boundingBox();
-  const emailBox = await page.getByLabel('Электронная почта').boundingBox();
+  const emailBox = await page.getByRole('textbox', { name: 'Электронная почта', exact: true }).boundingBox();
   expect(titleBox).not.toBeNull();
   expect(emailBox).not.toBeNull();
   expect(titleBox!.y).toBeLessThan(emailBox!.y);
@@ -1453,7 +1447,10 @@ async function expectCenteredPhoneColumn(page: Page) {
   const viewport = page.viewportSize();
   expect(frame).not.toBeNull();
   expect(viewport).not.toBeNull();
-  expect(frame!.width).toBeCloseTo(390, 1);
+  expect(frame!.width).toBeCloseTo(viewport!.width, 1);
+  const form = await page.getByRole('textbox', { name: 'Электронная почта', exact: true }).locator('../..').boundingBox();
+  expect(form!.width).toBeCloseTo(Math.min(viewport!.width - 40, 350), 1);
+  expect(form!.x + form!.width / 2).toBeCloseTo(viewport!.width / 2, 1);
   expect(frame!.x).toBeCloseTo((viewport!.width - frame!.width) / 2, 0);
 }
 

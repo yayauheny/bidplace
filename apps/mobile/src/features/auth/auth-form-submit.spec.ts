@@ -61,6 +61,7 @@ vi.mock('expo-linear-gradient', () => ({
 }));
 
 vi.mock('react-native', () => ({
+  useWindowDimensions: () => ({ width: 390, height: 874, scale: 1, fontScale: 1 }),
   Platform: { OS: 'web' },
   View: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
   Text: ({ children }: { children?: ReactNode }) => createElement('span', null, children),

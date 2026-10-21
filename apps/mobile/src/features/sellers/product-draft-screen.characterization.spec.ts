@@ -23,6 +23,8 @@ import { advanceAuthEpoch, authKeys } from '../../lib/query-cache';
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
+vi.mock('../../components/shared/PrivateStoryImage', () => ({ PrivateStoryImage: () => null }));
+
 const productId = '11111111-1111-4111-8111-111111111111';
 const categoryId = '33333333-3333-4333-8333-333333333333';
 
@@ -388,8 +390,8 @@ describe('ProductDraftScreen render contract', () => {
       () => hasButton(container, '1. О работе'),
       'creation wizard',
     );
-    expect(container.textContent).toContain('Создание предмета');
-    expect(container.textContent).toContain('Новый предмет');
+    expect(container.textContent).toContain('Основная информация');
+    expect(container.textContent).not.toContain('Новый предмет');
     for (const label of [
       '1. О работе',
       '2. Изображения',
@@ -427,6 +429,44 @@ describe('ProductDraftScreen render contract', () => {
     );
     expect(hasButton(container, 'Отправить на модерацию')).toBe(false);
     expect(titleInput(container)?.disabled).toBe(true);
+  });
+
+  it('reviews labelled catalog values, including selected inactive terms, without exposing IDs', async () => {
+    const materialId = '81111111-1111-4111-8111-111111111111';
+    const techniqueId = '82222222-2222-4222-8222-222222222222';
+    const saved = detail();
+    harness.getProduct.mockResolvedValue({
+      ...saved,
+      product: { ...saved.product, dimensions: '20 × 30 см', year: 2026, uniqueness: 'Единственный экземпляр' },
+      selection: {
+        category: { id: categoryId, name: 'Живопись', slug: 'painting' },
+        materialTermIds: [materialId], techniqueTermIds: [techniqueId],
+        materialTerms: [{ id: materialId, name: 'Холст', active: false }],
+        techniqueTerms: [{ id: techniqueId, name: 'Масло', active: false }],
+        proposals: [],
+      },
+    });
+    harness.listCategories.mockResolvedValue({ categories: [] });
+    const { container, unmount } = mount({ flow: 'creation', stepParam: '4' });
+    await until(container, () => container.textContent?.includes('Проверка перед модерацией') ?? false, 'review step');
+    for (const label of ['Категория: Живопись', 'Материалы: Холст', 'Техники: Масло', 'Размеры: 20 × 30 см', 'Год создания: 2026', 'Уникальность: Единственный экземпляр']) {
+      expect(container.textContent).toContain(label);
+    }
+    expect(container.textContent).not.toContain(materialId);
+    expect(container.textContent).not.toContain(techniqueId);
+    expect(harness.updateProduct).not.toHaveBeenCalled();
+    expect(harness.submitProduct).not.toHaveBeenCalled();
+    unmount();
+  });
+
+  it('omits empty optional review values instead of rendering empty labels', async () => {
+    const { container, unmount } = mount({ flow: 'creation', stepParam: '4' });
+    await until(container, () => container.textContent?.includes('Проверка перед модерацией') ?? false, 'review step');
+    expect(container.textContent).toContain('Категория: Painting');
+    for (const label of ['Материалы:', 'Техники:', 'Размеры:', 'Год создания:', 'Уникальность:']) {
+      expect(container.textContent).not.toContain(label);
+    }
+    unmount();
   });
 
   it('renders the story-step chrome in the creation wizard', async () => {
@@ -551,5 +591,42 @@ describe('ProductDraftScreen recovered story copy', () => {
     });
     await until(container, () => hasButton(container, copyLabel), 'reset status');
     expect(hasButton(container, 'Скопировано')).toBe(false);
+  });
+});
+
+describe('ordered block actions', () => {
+  it('opens only on request, blocks boundary movement, closes after an action and guards pending writes', async () => {
+    const { ProductBlockActions } = await import('./product-block-actions');
+    const container = document.createElement('div');
+    document.body.append(container);
+    const root = createRoot(container);
+    const onMove = vi.fn();
+    const onDelete = vi.fn();
+    const render = (disabled: boolean) => act(() => root.render(createElement(ProductBlockActions, {
+      kind: 'text', editable: true, disabled, first: true, last: false,
+      onMove, onDelete, children: createElement('input', { 'aria-label': 'Текст' }),
+    })));
+    const button = (label: string) => [...container.querySelectorAll('button')].find((node) => node.textContent === label || node.getAttribute('aria-label') === label)!;
+    try {
+      render(false);
+      act(() => container.querySelector('input')!.focus());
+      expect(hasButton(container, 'Выше')).toBe(false);
+      act(() => button('Действия с блоком').click());
+      expect(button('Выше').disabled).toBe(true);
+      act(() => button('Ниже').click());
+      expect(onMove).toHaveBeenCalledExactlyOnceWith(1);
+      expect(hasButton(container, 'Ниже')).toBe(false);
+      act(() => button('Действия с блоком').click());
+      render(true);
+      act(() => button('Удалить').click());
+      expect(onDelete).not.toHaveBeenCalled();
+      render(false);
+      act(() => button('Удалить').click());
+      expect(onDelete).toHaveBeenCalledOnce();
+      expect(hasButton(container, 'Удалить')).toBe(false);
+    } finally {
+      act(() => root.unmount());
+      container.remove();
+    }
   });
 });

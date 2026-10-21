@@ -1,8 +1,13 @@
+import { useState } from 'react';
 import { Linking, Pressable, ScrollView, View } from 'react-native';
 
 import type { PortfolioWorkDetailResponse } from '@bidplace/contracts';
 import { designTokens } from '@bidplace/design-tokens';
 
+import {
+  PaddedGrid,
+  gridColumnsFromWidth,
+} from '../../components/figma/PaddedGrid';
 import { AppText, ResilientRemoteImage } from '../../components/ui';
 import { getApiAssetUrl } from '../../lib/environment';
 import { useAppTheme } from '../../providers/theme-provider';
@@ -14,21 +19,38 @@ export function AuthorAbout({
 }: {
   author: PortfolioWorkDetailResponse['author'];
 }) {
+  const [width, setWidth] = useState(0);
+  const columns = gridColumnsFromWidth(width, {
+    minCardWidth: 440,
+    gap: 40,
+    max: 2,
+  });
+  const sections = [
+    { title: 'Биография', body: author.biography ?? author.shortDescription },
+    ...(author.practice
+      ? [{ title: 'Практика и подход', body: author.practice }]
+      : []),
+  ];
   return (
-    <View style={{ gap: designTokens.space.authorAboutGap }}>
-      <AboutSection
-        title="Биография"
-        body={author.biography ?? author.shortDescription}
+    <View
+      onLayout={(event) => setWidth(event.nativeEvent.layout.width)}
+      style={{ gap: designTokens.space.authorAboutGap }}
+    >
+      <PaddedGrid
+        items={sections}
+        columns={columns}
+        gap={40}
+        keyExtractor={(item) => item.title}
+        renderItem={(item) => <AboutSection {...item} wide={columns === 2} />}
       />
-      {author.practice ? (
-        <AboutSection title="Практика и подход" body={author.practice} />
-      ) : null}
       {author.publicEmail ? (
         <View style={{ gap: designTokens.space.x2 }}>
           <AppText role="profileHeading" accessibilityRole="header">
             Контакты
           </AppText>
-          <Pressable onPress={() => void Linking.openURL(`mailto:${author.publicEmail}`)}>
+          <Pressable
+            onPress={() => void Linking.openURL(`mailto:${author.publicEmail}`)}
+          >
             <AppText role="bodySmall">{author.publicEmail}</AppText>
           </Pressable>
         </View>
@@ -131,8 +153,7 @@ function AchievementCard({
           <View
             style={{
               width: '100%',
-              minHeight:
-                (designTokens.size.achievementWidth * 4) / 3,
+              minHeight: (designTokens.size.achievementWidth * 4) / 3,
               padding: designTokens.space.x3,
               borderRadius: rail.imageRadius,
               backgroundColor: palette.surfaceMuted,
@@ -147,21 +168,36 @@ function AchievementCard({
             </AppText>
           </View>
         )}
-        {item.image ? (
-          <AppText role="bodySmall">{item.body}</AppText>
-        ) : null}
+        {item.image ? <AppText role="bodySmall">{item.body}</AppText> : null}
       </View>
     </View>
   );
 }
 
-function AboutSection({ title, body }: { title: string; body: string }) {
+function AboutSection({
+  title,
+  body,
+  wide,
+}: {
+  title: string;
+  body: string;
+  wide: boolean;
+}) {
   return (
     <View style={{ gap: designTokens.space.x2 }}>
-      <AppText role="profileHeading" accessibilityRole="header">
+      <AppText
+        role={wide ? 'aboutHeadingWide' : 'profileHeading'}
+        tone="strong"
+        accessibilityRole="header"
+      >
         {title}
       </AppText>
-      <AppText role="bodySmall">{body}</AppText>
+      <AppText
+        role={wide ? 'aboutBodyWide' : 'bodySmall'}
+        tone={wide ? 'subdued' : 'strong'}
+      >
+        {body}
+      </AppText>
     </View>
   );
 }

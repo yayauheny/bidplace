@@ -3,6 +3,7 @@ import { ScrollView, View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
+import { PageScrollView } from './PageScrollView';
 import { AppShell } from './AppShell';
 import { useDockInset } from './use-dock-inset';
 
@@ -12,25 +13,34 @@ export function FormPageShell({
   maxWidth,
   hideDock = false,
   variant = 'default',
+  footer = variant === 'account' || variant === 'settings',
 }: {
   children: ReactNode;
   bottomAction?: ReactNode;
   maxWidth?: number;
   hideDock?: boolean;
+  footer?: boolean;
   variant?: 'default' | 'authorApplication' | 'account' | 'settings';
 }) {
   const { reserve } = useDockInset();
+  const Scroller = footer ? PageScrollView : ScrollView;
 
   return (
-    <AppShell hideDock={hideDock} bottomAction={bottomAction}>
-      <ScrollView
+    <AppShell
+      hideDock={hideDock}
+      bottomAction={bottomAction}
+      contentLayout={footer ? 'bleed' : 'column'}
+    >
+      <Scroller
+        {...(footer ? { reserveDock: !hideDock } : {})}
         testID="form-page"
         contentContainerStyle={{
-          paddingBottom: bottomAction
-            ? 0
-            : hideDock
-              ? designTokens.space.x8
-              : reserve,
+          paddingBottom:
+            footer || bottomAction
+              ? 0
+              : hideDock
+                ? designTokens.space.x8
+                : reserve,
           paddingTop:
             variant === 'authorApplication'
               ? designTokens.authorApplication.contentTop
@@ -54,7 +64,7 @@ export function FormPageShell({
         >
           {children}
         </View>
-      </ScrollView>
+      </Scroller>
     </AppShell>
   );
 }

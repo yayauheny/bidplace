@@ -15,6 +15,7 @@ export const figmaButtonVariants = [
 export const figmaButtonSizes = [
   'matrix',
   'auth',
+  'authDialog',
   'suggestion',
   'navigation',
   'exitConfirm',
@@ -149,8 +150,7 @@ export function figmaButtonMatrixCell(
   palette: SemanticColorMap,
 ): FigmaButtonMatrixCell {
   const { metrics, disabledOpacity } = figmaButtonTokens;
-  const labelColor =
-    variant === 'solid' ? palette.onAction : palette.textSubdued;
+  const labelColor = variant === 'solid' ? palette.onAction : palette.inkStrong;
   const radius =
     interaction === 'disabled' && variant === 'solid'
       ? metrics.disabledSolidRadius
@@ -217,6 +217,13 @@ export function figmaButtonSizeMetrics(size: FigmaButtonSize = 'matrix') {
     return {
       paddingX: figmaButtonTokens.metrics.paddingX,
       paddingY: designTokens.space.x3,
+      typography: figmaButtonTokens.typography,
+    };
+  }
+  if (size === 'authDialog') {
+    return {
+      paddingX: figmaButtonTokens.metrics.paddingX,
+      paddingY: designTokens.auth.dialogActionY,
       typography: figmaButtonTokens.typography,
     };
   }
