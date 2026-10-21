@@ -846,3 +846,12 @@ policy with navigation and uses existing auth/create routes and legal IDs.
 `FormPageShell` includes it for account/settings only by default. Full-screen
 forms and overlays retain their existing layout. `BidplaceLogo` is the shared
 contain-fitted combined SVG for header/footer.
+
+
+Desktop header uses the third (`ghost`) FigmaButton variant for Works/Authors,
+including shared hover/press/focus. `FigmaIconButton surface="outline"` implements
+the38px circular frame from4980:15197 with0.5px semantic border and existing hit
+slop; plain/muted consumers retain their behavior. Header routes are unchanged.
+Cart/notifications use the existing compact FilterSheet for post-MVP feedback;
+never show an unread indicator without real data. Branded PageScrollView owns
+the desktop72px top/24px gutter from3139:2222, preserving mobile spacing.

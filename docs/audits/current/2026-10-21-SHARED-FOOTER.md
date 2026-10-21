@@ -61,3 +61,31 @@ pixel parity is Partial. Real iPhone and browser zoom remain Needs verification.
 New Home source3139:2222 was read live on2026-10-21. Desktop composition starts
 at y140 below the68px header;1280px column. Header action outlines and Home
 spacing are the next bounded change, separate from this footer integration.
+
+## Desktop Home/header follow-up
+
+Source: live ibHSgpAKXnItNSHaHzvRk2 /3139:2222 (1800px), founder supplied
+2026-10-21; explicit button choice is third/ghost from the current master.
+Chosen durable fix: extend shared FigmaIconButton with outlined surface and
+reuse ghost FigmaButton links, rather than copying button states into the header
+(workaround) or drawing noninteractive icons (hack). Profile/cart/notifications
+share the outlined38px frame and existing hit slop. Bell/bag reuse the installed
+Hugeicons library through the existing FigmaIcon registry. No new dependency.
+Cart/notifications open existing FilterSheet feedback; no fake unread dot,
+checkout endpoint or notification data. Founder explicitly allowed placeholders.
+FigmaButton links preserve aria-current via a named accessibility prop.
+
+Branded PageScrollView owns desktop top72px and inner gutter24px, deriving the
+first section at y140,x272,width1256 for1800px (68px header). Mobile composition
+and the existing MVP New works rail/New authors stack remain as specified in
+03-DESIGN-SYSTEM; no trading sections, prices or timers added from the older frame.
+Header groups respect content minimums, preventing ghost buttons from overlapping
+search/actions at1024px. Actual content length/data differ from the static frame;
+this is measured layout parity, not a claim of full pixel equality.
+
+Checks:20/20 shared button/icon unit cases, mobile tsc/scoped ESLint, production
+web export.8/8 targeted Chromium/WebKit cases include measured Home composition,
+header overlap/placeholder focus and footer regression. Earlier full author/
+navigation/footer pass26/26 was before adding placeholders; its unchanged pinned
+bar/filters behavior was not rerun without a new concern. Physical device and
+real browser zoom remain unverified.

@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { Link, useRouter } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
 
 import { BidplaceLogo } from '../branding/BidplaceLogo';
 import { useAppTheme } from '../../providers/theme-provider';
+import { FilterSheet } from '../figma/FilterSheet';
 import { FigmaButton } from '../figma/FigmaButton';
 import { FigmaIcon } from '../figma/FigmaIcon';
 import { FigmaIconButton } from '../figma/FigmaIconButton';
@@ -20,6 +22,7 @@ const header = {
 };
 
 export function DesktopHeader({ active }: { active: boolean }) {
+  const [unavailable, setUnavailable] = useState<string | null>(null);
   const palette = useAppTheme();
   const router = useRouter();
   const navigation = useAppNavigation('desktop-navigation');
@@ -52,6 +55,9 @@ export function DesktopHeader({ active }: { active: boolean }) {
               key={route}
               href={route === 'works' ? '/works' : '/authors'}
               variant="ghost"
+              accessibilityCurrent={
+                navigation.pathname.startsWith(`/${route}`) ? 'page' : undefined
+              }
               label={route === 'works' ? 'Работы' : 'Авторы'}
             />
           ))}
@@ -81,7 +87,23 @@ export function DesktopHeader({ active }: { active: boolean }) {
         </MotionPressable>
         <View style={[styles.group, styles.actions]}>
           <FigmaIconButton
+            icon="shopping-bag-01"
+            label="Корзина"
+            surface="outline"
+            iconSize={18}
+            onPress={() => setUnavailable('Корзина')}
+          />
+          <FigmaIconButton
+            icon="bell"
+            label="Уведомления"
+            surface="outline"
+            iconSize={18}
+            onPress={() => setUnavailable('Уведомления')}
+          />
+          <FigmaIconButton
             icon="user"
+            surface="outline"
+            iconSize={18}
             label="Профиль"
             onPress={() => {
               navigation.rememberAuthOpener('Профиль');
@@ -99,6 +121,18 @@ export function DesktopHeader({ active }: { active: boolean }) {
           ) : null}
         </View>
       </View>
+      <FilterSheet
+        open={unavailable !== null}
+        onClose={() => setUnavailable(null)}
+        title={unavailable ?? ''}
+        presentation="compact"
+        primaryAction={{
+          label: 'Понятно',
+          onPress: () => setUnavailable(null),
+        }}
+      >
+        <AppText role="bodySmall">Этот раздел появится после MVP.</AppText>
+      </FilterSheet>
     </View>
   );
 }
@@ -121,7 +155,7 @@ const styles = StyleSheet.create({
   },
   group: {
     flex: 1,
-    minWidth: 0,
+    minWidth: 'auto',
     flexDirection: 'row',
     gap: designTokens.space.x5,
     alignItems: 'center',

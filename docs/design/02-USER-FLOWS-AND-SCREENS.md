@@ -499,3 +499,9 @@ Back/share/more controls after the hero leaves. Wide owner Settings uses the
 existing /account/settings route; profile editing remains its existing child
 flow. Category draft/apply/cancel, public data and unavailable follow/favorites
 behavior are unchanged. See03-DESIGN-SYSTEM and the current author parity audit.
+
+
+2026-10-21: ordinary public/account/settings pages end with SiteFooter; full-screen
+forms, editors and overlays exclude it. Desktop cart/notifications are explicit
+post-MVP placeholders opening the shared compact feedback sheet (close/Escape,
+return focus). They do not start a purchase or create notification state.

@@ -30,6 +30,21 @@ describe('Figma icon button styles', () => {
     });
   });
 
+  it('provides an outlined header action without changing other surfaces', () => {
+    expect(
+      figmaIconButtonStyle(false, 'outline', designTokens.color),
+    ).toMatchObject({
+      width: 38,
+      height: 38,
+      borderWidth: designTokens.size.fieldBorder,
+      borderColor: designTokens.color.border,
+      backgroundColor: 'transparent',
+    });
+    expect(
+      figmaIconButtonStyle(true, 'outline', designTokens.color).backgroundColor,
+    ).toBe(designTokens.color.ghostHover);
+  });
+
   it('shows feedback without adding a permanent white plate', () => {
     expect(
       figmaIconButtonStyle(true, 'plain', designTokens.color).backgroundColor,

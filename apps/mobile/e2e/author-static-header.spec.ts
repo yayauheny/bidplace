@@ -559,6 +559,56 @@ test.describe('shared footer and responsive brand', () => {
     await expect(page.getByTestId('site-footer')).toHaveCount(1);
   });
 
+  test('uses shared navigation buttons and honest header placeholders', async ({ page }) => {
+    await mockAuthor(page, 'footer-header', 0, 0);
+    await page.setViewportSize({ width: 1024, height: 900 });
+    await page.goto('/seller/footer-header');
+    const header = page.getByTestId('desktop-navigation');
+    await expect(header).toBeVisible();
+    const controls = [header.getByRole('link', { name: 'Работы', exact: true }), header.getByRole('link', { name: 'Авторы', exact: true }), header.getByRole('button', { name: 'Поиск', exact: true }), header.getByRole('button', { name: 'Корзина', exact: true }), header.getByRole('button', { name: 'Уведомления', exact: true }), header.getByRole('button', { name: 'Профиль', exact: true }), header.getByRole('button', { name: 'Создать', exact: true })];
+    let previousRight = 0;
+    for (const control of controls) {
+      const box = await control.boundingBox();
+      expect(box).not.toBeNull();
+      expect(box!.x).toBeGreaterThanOrEqual(previousRight);
+      previousRight = box!.x + box!.width;
+    }
+    expect(previousRight).toBeLessThanOrEqual(1024);
+    for (const name of ['Корзина', 'Уведомления']) {
+      const opener = header.getByRole('button', { name, exact: true });
+      await opener.click();
+      await expect(page.getByRole('dialog', { name, exact: true })).toBeVisible();
+      await expect(page.getByText('Этот раздел появится после MVP.')).toBeVisible();
+      await page.keyboard.press('Escape');
+      await expect(opener).toBeFocused();
+    }
+    await header.getByRole('link', { name: 'Авторы', exact: true }).click();
+    await expect(page).toHaveURL(/authors$/);
+    await expect(page.getByTestId('desktop-navigation').getByRole('link', { name: 'Авторы', exact: true })).toHaveAttribute('aria-current', 'page');
+  });
+
+  test('measures the desktop Home first section against frame 3139:2222', async ({ page }) => {
+    await mockAuthor(page, 'footer-composition', 0, 1);
+    const fixture = authorFixture('footer-composition', 0, 1);
+    await page.route('**/api/portfolio/home', route => route.fulfill({ json: {
+      curatorSelection: { curator: fixture.author, work: { ...fixture.works[0].work, author: fixture.author }, note: 'Выбор куратора' },
+      newWorks: fixture.works, newAuthors: [],
+    } }));
+    await page.setViewportSize({ width: 1800, height: 1000 });
+    await page.goto('/');
+    const opening = page.locator('#home-opening');
+    await expect(opening).toBeVisible();
+    await page.evaluate(() => document.fonts.ready);
+    const box = await opening.boundingBox();
+    expect(box?.x).toBe(272);
+    expect(box?.y).toBe(140);
+    expect(box?.width).toBe(1256);
+    const header = page.getByTestId('desktop-navigation');
+    await header.getByRole('link', { name: 'Работы', exact: true }).hover();
+    await page.screenshot({ path: `${w1EvidenceDir}/home-desktop-${test.info().project.name}-1800.png` });
+    await header.screenshot({ path: `${w1EvidenceDir}/header-buttons-${test.info().project.name}.png` });
+  });
+
   test('has one responsive Home brand and keeps forms free of the page footer', async ({ page }) => {
     await mockAuthor(page, 'footer-home', 0, 0);
     await page.route('**/api/portfolio/home', route => route.fulfill({ json: { curatorSelection: null, newWorks: [], newAuthors: [] } }));

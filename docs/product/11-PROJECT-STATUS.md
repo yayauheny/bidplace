@@ -5194,3 +5194,14 @@ Verification:44 owner unit tests,26 Chromium/WebKit cases, mobile tsc/scoped
 ESLint, tokens build and production web export passed. Visual parity Partial:
 44px targets and MVP legal labels differ from the static footer. Physical iPhone
 and browser zoom Needs verification. [Audit](../audits/current/2026-10-21-SHARED-FOOTER.md).
+
+
+### Desktop Home/header follow-up — 2026-10-21
+
+Implemented: shared FigmaIconButton outlined surface for profile/cart/notifications;
+cart/notifications show honest post-MVP feedback in FilterSheet. No unread dot or
+commerce API. Navigation uses ghost FigmaButton with aria-current. Desktop branded
+page inset matches live3139:2222: first section x272,y140,width1256 at1800px.
+Existing mobile/MVP content composition preserved.20 button/icon unit cases and
+8 targeted Chromium/WebKit tests, tsc/scoped lint/web export passed. Visual parity
+Partial; see [audit](../audits/current/2026-10-21-SHARED-FOOTER.md).

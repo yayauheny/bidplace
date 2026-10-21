@@ -32,7 +32,7 @@ export function FigmaIconButton({
   expanded?: boolean;
   iconSize?: number;
   strokeWidthPx?: number;
-  surface?: 'plain' | 'muted';
+  surface?: 'plain' | 'muted' | 'outline';
   size?: 'default' | 'settingsHeader';
 }) {
   const palette = useAppTheme();

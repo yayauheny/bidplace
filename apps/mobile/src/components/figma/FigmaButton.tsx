@@ -130,6 +130,7 @@ type FigmaButtonBaseProps = {
   iconNode?: ReactNode;
   iconPosition?: 'left' | 'right';
   accessibilityHint?: string;
+  accessibilityCurrent?: 'page';
   width?: 'content' | 'full';
   size?: FigmaButtonSize;
   contentAlign?: FigmaButtonContentAlign;
@@ -234,6 +235,7 @@ export function FigmaButton(
       accessibilityRole={props.href ? 'link' : 'button'}
       accessibilityLabel={label}
       accessibilityHint={accessibilityHint}
+      {...{ 'aria-current': props.accessibilityCurrent }}
       accessibilityState={{ disabled: inactive, busy: Boolean(loading) }}
       disabled={inactive}
       onPress={props.href ? undefined : props.onPress}

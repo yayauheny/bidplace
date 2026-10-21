@@ -8,6 +8,9 @@ import { PageColumn } from './PageColumn';
 import { SiteFooter } from './SiteFooter';
 import { useDockInset } from './use-dock-inset';
 
+// Desktop Home3139:2222: heading y140 below68px header,12px inner section inset.
+const brandedPage = { wideTop: 72, wideGutter: 24 };
+
 /** One full-width page scrollport; content and footer share the column owner. */
 export function PageScrollView({
   children,
@@ -31,9 +34,11 @@ export function PageScrollView({
           { flexGrow: 1 },
           variant === 'branded' && {
             paddingTop: desktop
-              ? designTokens.space.x10
+              ? brandedPage.wideTop
               : designTokens.space.logoTop,
           },
+          variant === 'branded' &&
+            desktop && { paddingHorizontal: brandedPage.wideGutter },
           contentContainerStyle,
         ]}
       >

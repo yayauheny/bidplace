@@ -33,6 +33,8 @@ export const figmaIconNames = [
   'home-01',
   'ai-magic',
   'user',
+  'bell',
+  'shopping-bag-01',
   'shopping-basket-01',
   'image-add-02',
   'heading',
