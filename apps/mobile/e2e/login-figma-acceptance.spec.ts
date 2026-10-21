@@ -39,7 +39,7 @@ test('login uses one responsive form and preserves values and errors across the 
   await expect(
     page.getByText('Введите корректный email', { exact: true }),
   ).toBeVisible();
-  for (const width of [320, 390, 414, 440, 767, 768, 1024, 1440]) {
+  for (const width of [320, 390, 414, 440, 767, 768, 1023, 1024, 1440, 1800]) {
     await page.setViewportSize({ width, height: 874 });
     await expect(email).toHaveValue('bad-email');
     await expect(password).toHaveValue('synthetic-test-input');
@@ -156,4 +156,19 @@ test('login closes by backdrop keyboard and handle without losing the return pag
   await openLogin(page, 1440);
   await page.getByRole('button', { name: 'Закрыть', exact: true }).click();
   await expect(page).toHaveURL(/\/seller\/vex$/);
+});
+
+
+test('late focus-trap fallback returns to the active form control', async ({ page }) => {
+  const email = await openLogin(page);
+  await expect(email).toBeFocused();
+  const password = page.getByRole('textbox', { name: 'Пароль', exact: true });
+  await password.focus();
+  await expect(password).toBeFocused();
+  await page.locator('#auth-sheet').evaluate(sheet => {
+    const dialog = sheet.closest<HTMLElement>('[role="dialog"]');
+    if (!dialog) throw new Error('Missing dialog focus owner');
+    dialog.focus();
+  });
+  await expect(password).toBeFocused();
 });

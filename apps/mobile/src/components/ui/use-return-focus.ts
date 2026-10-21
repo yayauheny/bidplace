@@ -17,6 +17,14 @@ const dialogOpeners = new WeakMap<HTMLElement, readonly StoredOpener[]>();
 // Consumed by the next dialog open; never stacked.
 let pendingOpenerSelector: string | null = null;
 
+export function focusDialogAfterEnter(target: HTMLElement | null) {
+  if (!target?.isConnected || typeof document === 'undefined') return;
+  const dialog = target.closest('[role="dialog"]');
+  // The focus trap's container fallback is not a chosen control.
+  if (document.activeElement !== dialog && dialog?.contains(document.activeElement)) return;
+  target.focus({ preventScroll: true });
+}
+
 export function rememberPendingOpener(selector: string) {
   pendingOpenerSelector = selector;
 }

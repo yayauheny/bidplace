@@ -553,3 +553,10 @@ policy with navigation and uses existing auth/create routes and legal IDs.
 `FormPageShell` includes it for account/settings only by default. Full-screen
 forms and overlays retain their existing layout. `BidplaceLogo` is the shared
 contain-fitted combined SVG for header/footer.
+
+
+UI review follow-up (2026-10-21): the existing PageChromeContext carries actual
+`desktop` and `dock` visibility from AppShell. PageScrollView consumes this state
+for dock clearance; screens do not independently derive navigation visibility.
+No server, persistence or API boundary changed. Focus-after-enter lives in the
+existing use-return-focus module and is shared by auth and general dialogs.

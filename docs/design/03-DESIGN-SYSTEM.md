@@ -855,3 +855,12 @@ slop; plain/muted consumers retain their behavior. Header routes are unchanged.
 Cart/notifications use the existing compact FilterSheet for post-MVP feedback;
 never show an unread indicator without real data. Branded PageScrollView owns
 the desktop72px top/24px gutter from3139:2222, preserving mobile spacing.
+
+
+Shared page chrome follow-up (2026-10-21): AppShell supplies actual desktop/dock
+visibility to PageScrollView, so hidden dock never contributes a bottom spacer
+in loading/error/empty/ready states. Header/footer landmark roles stay constant
+while inactive chrome uses inert/accessibility hiding; changing a role would
+replace RN Web's native DOM tag and remount images. After-enter focus preserves
+an active descendant control but moves a container fallback to the intended
+input/close target. Existing overlay/focus owners remain the only mechanism.

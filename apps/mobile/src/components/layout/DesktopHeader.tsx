@@ -29,7 +29,7 @@ export function DesktopHeader({ active }: { active: boolean }) {
   return (
     <View
       testID={active ? 'desktop-navigation' : undefined}
-      role={active ? 'navigation' : undefined}
+      role="navigation"
       accessibilityElementsHidden={!active}
       importantForAccessibility={active ? 'auto' : 'no-hide-descendants'}
       {...(!active ? { inert: true } : {})}

@@ -5205,3 +5205,21 @@ page inset matches live3139:2222: first section x272,y140,width1256 at1800px.
 Existing mobile/MVP content composition preserved.20 button/icon unit cases and
 8 targeted Chromium/WebKit tests, tsc/scoped lint/web export passed. Visual parity
 Partial; see [audit](../audits/current/2026-10-21-SHARED-FOOTER.md).
+
+
+### Independent UI review follow-up — 2026-10-21
+
+Implemented: complete labelled work Review metadata using current form/catalog
+and persisted selection names; shared dock reserve follows actual AppShell
+visibility; stable header/footer semantic roles preserve image nodes under auth;
+container-only focus after enter moves to the intended control through the
+existing shared focus owner. Save/media/revision APIs remain unchanged.
+Overall acceptance is Partial: the excluded BackButton-dependent settings title
+centering and the unrelated API legal-pack integration assertion remain open.
+Evidence and per-finding classification: [independent UI review](../audits/current/2026-10-21-INDEPENDENT-UI-REVIEW.md).
+
+Verification: mobile988/988, editor API E2E26/26, UI68 passed with2 excluded
+settings-center failures, WebKit focus/motion stress20/20; typecheck, lint and
+production web export passed. Full verify remains red on the unchanged API
+legal-pack mock assertion (upstream fix `cc4911e5`), with28 optional DB cases
+skipped. Physical iPhone/real zoom/text scaling remain Needs verification.

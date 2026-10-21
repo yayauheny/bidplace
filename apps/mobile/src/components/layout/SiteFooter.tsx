@@ -43,7 +43,7 @@ export function SiteFooter() {
   return (
     <View
       testID={active ? 'site-footer' : undefined}
-      role={active ? 'contentinfo' : undefined}
+      role="contentinfo"
       accessibilityElementsHidden={!active}
       importantForAccessibility={active ? 'auto' : 'no-hide-descendants'}
       {...(!active && Platform.OS === 'web' ? { inert: true } : {})}

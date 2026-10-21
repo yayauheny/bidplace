@@ -291,9 +291,12 @@ test('empty home bounds its action column without shrinking the page container',
         column.getByRole('button', { name, exact: true }),
       ).toBeVisible();
     }
-    expect(
-      (await page.getByTestId('home-scroll').boundingBox())!.width,
-    ).toBeLessThanOrEqual(1280);
+    expect((await page.getByTestId('home-scroll').boundingBox())!.width).toBe(width);
+    const contentWidth = await page.getByTestId('home-scroll').getByTestId('page-content-column').evaluate(node => {
+      const style = getComputedStyle(node);
+      return node.getBoundingClientRect().width - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+    });
+    expect(contentWidth).toBeLessThanOrEqual(1280);
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= window.innerWidth,

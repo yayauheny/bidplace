@@ -31,6 +31,7 @@ export function PageScrollView({
   return (
     <Scroller {...props} contentContainerStyle={{ flexGrow: 1 }}>
       <PageColumn
+        testID="page-content-column"
         style={[
           { flexGrow: 1 },
           variant === 'branded' && {

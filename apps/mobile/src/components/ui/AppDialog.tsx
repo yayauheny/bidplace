@@ -24,7 +24,7 @@ import {
 } from './app-dialog-host-style';
 import { AppDialogFrame, AppDialogOverlay } from './app-dialog-layer';
 import { MotionPressable } from './MotionPressable';
-import { useReturnFocus } from './use-return-focus';
+import { focusDialogAfterEnter, useReturnFocus } from './use-return-focus';
 
 type AppDialogBaseProps = {
   open: boolean;
@@ -89,9 +89,7 @@ export function AppDialog({
       return;
     const button = closeButtonRef.current;
     if (!(button instanceof HTMLElement)) return;
-    if (button.closest('[role="dialog"]')?.contains(document.activeElement))
-      return;
-    button.focus({ preventScroll: true });
+    focusDialogAfterEnter(button);
   }, []);
   useEffect(() => {
     instanceMountedRef.current = true;

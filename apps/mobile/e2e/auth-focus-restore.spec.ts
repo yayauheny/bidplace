@@ -58,6 +58,7 @@ test('opening from another dock item restores focus to that item', async ({
   page,
 }) => {
   // The plus item routes guests to the same auth sheet via a different trigger.
+  await page.setViewportSize({ width: 390, height: 874 });
   await page.goto('/');
   await page
     .getByText('Открытие недели', { exact: true })

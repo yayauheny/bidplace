@@ -439,6 +439,8 @@ test.describe('shared public desktop navigation', () => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/seller/desktop-focus');
     const nav = page.getByTestId('desktop-navigation');
+    const brandImage = await nav.getByTestId('bidplace-logo').locator('img').elementHandle();
+    expect(brandImage).not.toBeNull();
     const search = nav.getByRole('button', { name: 'Поиск', exact: true });
     await search.click();
     await expect(page.getByRole('tablist', { name: 'Разделы поиска' })).toBeVisible();
@@ -455,6 +457,7 @@ test.describe('shared public desktop navigation', () => {
     await expect(page.getByRole('dialog')).toBeVisible();
     await page.keyboard.press('Escape');
     await expect(nav.getByRole('button', { name: 'Создать', exact: true })).toBeFocused();
+    expect(await brandImage!.evaluate(node => node.isConnected)).toBe(true);
   });
 });
 

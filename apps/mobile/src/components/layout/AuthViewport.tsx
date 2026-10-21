@@ -45,7 +45,7 @@ import { useAppTheme } from '../../providers/theme-provider';
 import { AppDialogFrame, AppDialogOverlay } from '../ui/app-dialog-layer';
 import { appDialogHostStyle } from '../ui/app-dialog-host-style';
 import { MotionPressable } from '../ui/MotionPressable';
-import { useReturnFocus } from '../ui/use-return-focus';
+import { focusDialogAfterEnter, useReturnFocus } from '../ui/use-return-focus';
 
 function screenBrandInset() {
   return {
@@ -303,6 +303,12 @@ export function AuthViewport(props: AuthViewportProps) {
     const onFocusIn = (event: FocusEvent) => {
       const target = event.target;
       if (!(target instanceof HTMLElement)) return;
+      const sheet = document.getElementById('auth-sheet');
+      // Radix can restore its container after enter; it is not a form control.
+      if (!releasedRef.current && sheet && target === sheet.closest('[role="dialog"]') && !sheet.closest('[inert]')) {
+        const previous = returnFocus.current;
+        focusDialogAfterEnter(previous?.isConnected && sheet.contains(previous) ? previous : sheet.querySelector<HTMLElement>('input'));
+      }
       if (target.closest('#auth-sheet')) returnFocus.current = target;
     };
     document.addEventListener('focusin', onFocusIn);
@@ -330,8 +336,7 @@ export function AuthViewport(props: AuthViewportProps) {
     if (!focusedRef.current || releasedRef.current) return;
     const sheet = document.getElementById('auth-sheet');
     if (!sheet) return;
-    if (sheet.contains(document.activeElement)) return;
-    sheet.querySelector<HTMLElement>('input')?.focus({ preventScroll: true });
+    focusDialogAfterEnter(sheet.querySelector<HTMLElement>('input'));
   }, []);
 
   const screen = presentation === 'screen';
