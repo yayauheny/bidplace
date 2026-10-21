@@ -23,6 +23,16 @@ import {
 import { idempotencyKey, turnstileToken } from './abuse-request';
 
 const LEGAL_VERSION = 'synthetic-publication-1';
+const syntheticPublishedLegalPack = {
+  version: LEGAL_VERSION,
+  documents: [
+    { id: 'agreement', version: LEGAL_VERSION, title: 'Agreement', markdown: '# Agreement' },
+    { id: 'privacy', version: LEGAL_VERSION, title: 'Privacy', markdown: '# Privacy' },
+    { id: 'data-consent', version: LEGAL_VERSION, title: 'Consent', markdown: '# Consent' },
+    { id: 'author-rules', version: LEGAL_VERSION, title: 'Rules', markdown: '# Rules' },
+    { id: 'prohibited', version: LEGAL_VERSION, title: 'Prohibited', markdown: '# Prohibited' },
+  ],
+};
 const legal = {
   agreement: { version: LEGAL_VERSION, confirmed: true },
   privacy: { version: LEGAL_VERSION, confirmed: true },
@@ -34,16 +44,7 @@ const legal = {
 // The actual docs/legal/site files retain founder blockers and fail closed in runtime.
 vi.mock('../../src/auth/legal-documents', () => ({
   readRegistrationLegalVersion: () => LEGAL_VERSION,
-  readPublishedLegalDocuments: vi.fn(() => ({
-    version: 'synthetic-publication-1',
-    documents: [
-      { id: 'agreement', version: 'synthetic-publication-1', title: 'Agreement', markdown: '# Agreement' },
-      { id: 'privacy', version: 'synthetic-publication-1', title: 'Privacy', markdown: '# Privacy' },
-      { id: 'data-consent', version: 'synthetic-publication-1', title: 'Consent', markdown: '# Consent' },
-      { id: 'author-rules', version: 'synthetic-publication-1', title: 'Rules', markdown: '# Rules' },
-      { id: 'prohibited', version: 'synthetic-publication-1', title: 'Prohibited', markdown: '# Prohibited' },
-    ],
-  })),
+  readPublishedLegalDocuments: vi.fn(() => syntheticPublishedLegalPack),
 }));
 
 
@@ -155,11 +156,19 @@ describe('auth HTTP transport', () => {
     const response = await visitor.get('/auth/legal');
     expect(response.status).toBe(200);
     expect(response.headers.get('Cache-Control')).toContain('no-store');
-    expect(await response.json()).toMatchObject({
+    const body = await response.json();
+    expect(body.version).toBe(LEGAL_VERSION);
+    expect(body.documents).toHaveLength(syntheticPublishedLegalPack.documents.length);
+    expect(body.documents.map((doc: { id: string }) => doc.id)).toEqual(
+      syntheticPublishedLegalPack.documents.map((doc) => doc.id),
+    );
+    expect(body).toMatchObject({
       version: LEGAL_VERSION,
-      documents: [
-        { id: 'agreement', title: 'Agreement', version: LEGAL_VERSION },
-      ],
+      documents: syntheticPublishedLegalPack.documents.map(({ id, title, version }) => ({
+        id,
+        title,
+        version,
+      })),
     });
   });
 
