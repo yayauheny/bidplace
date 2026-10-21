@@ -255,7 +255,30 @@ test.describe('static public creator header', () => {
         (node) => new DOMMatrixReadOnly(getComputedStyle(node).transform).m42,
       ),
     ).toBe(0);
-    await page.getByRole('checkbox', { name: 'Скульптура' }).click();
+    const option = page.getByRole('checkbox', { name: 'Скульптура' });
+    const label = option.getByText('Скульптура', { exact: true });
+    expect((await label.boundingBox())!.width).toBeGreaterThan(0);
+    expect((await option.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    await expect(label).toHaveCSS('font-size', '15px');
+    await option.focus();
+    await option.press('Space');
+    await expect(option).toBeChecked();
+    const tick = await option.locator('svg').boundingBox();
+    const optionBox = await option.boundingBox();
+    expect(tick!.x + tick!.width / 2).toBeGreaterThan(optionBox!.x + optionBox!.width - 24);
+    const scrollbars = await page.getByRole('dialog').evaluate((dialog) =>
+      [...dialog.querySelectorAll('*')]
+        .filter((node) => getComputedStyle(node).overflowY === 'auto')
+        .map((node) => getComputedStyle(node).scrollbarWidth),
+    );
+    expect(scrollbars.length).toBeGreaterThan(0);
+    expect(scrollbars.every((width) => width === 'none')).toBe(true);
+    await page.getByRole('dialog').getByText('Категория', { exact: true }).click();
+    const panel = await page.getByRole('dialog').boundingBox();
+    const action = await page.getByRole('button', { name: 'Показать работы' }).boundingBox();
+    expect(panel!.y + panel!.height - action!.y - action!.height).toBeCloseTo(20, 0);
+    await page.screenshot({ path: resolve(w1EvidenceDir, `category-picker-${test.info().project.name}.png`) });
+
     await page.getByRole('checkbox', { name: 'Живопись' }).click();
     await page.getByRole('button', { name: 'Показать работы' }).click();
     await expect
@@ -362,6 +385,10 @@ test.describe('static public creator header', () => {
     );
 
     await page.getByRole('button', { name: 'Назад' }).click();
+    await expect(page).toHaveURL(/\/authors(?:\?|$)/);
+    await page.getByText('@static-tabs', { exact: true }).click();
+    await expect(page).toHaveURL(/\/seller\/static-tabs/);
+    await page.getByRole('button', { name: 'Назад', exact: true }).click();
     await expect(page).toHaveURL(/\/authors(?:\?|$)/);
   });
 });

@@ -21,7 +21,7 @@
 | **SecondaryButton** | `ui/Button.tsx`             | `variant="outline"`.                                                                                                                |
 | **TextButton**      | `ui/Button.tsx`             | `variant="ghost"`.                                                                                                                  |
 | **FigmaIconButton** | `figma/FigmaIconButton.tsx` | Иконка без текста: `surface="plain"` по умолчанию, `surface="muted"` для круглых 42px кнопок из Figma.                              |
-| **BackButton**      | `figma/BackButton.tsx`      | Единая кнопка «Назад»: варианты `glass` (страница работы), `muted` (шапка автора), `chrome` (визард).                               |
+| **BackButton**      | `figma/BackButton.tsx`      | Единая круглая muted-кнопка «Назад», normal/pressed/disabled, для всех экранов.                               |
 | **MotionPressable** | `ui/MotionPressable.tsx`    | Низкоуровневое нажатие с пресетами анимации; для кастомных ячеек, не для типовых CTA.                                               |
 
 `width`: у обёрток допустимо `block` (= `full` у `FigmaButton`).

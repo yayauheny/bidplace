@@ -811,3 +811,13 @@ UseReturnFocus restores only after the real FocusScope closes. Reduced motion
 uses the existing system timing policy. Shared sheet consumers, busy/dirty guards,
 background continuity and focus are covered by named browser/owner checks in
 the [execution audit](../audits/current/2026-10-21-UI-COMPLETION.md).
+
+### 2026-10-21 — Shared filter selection and Back (DEC-128)
+
+FilterOptionRow uses one trailing check for checkbox/radio semantics. Its label
+flexes and wraps; optionLabel15/20 and pickerTitle18/22 are measured from current
+author Figma4594:35522 in HRRtDp0bQlukw7ptTkuEZg. Minimum row44px preserves
+touch access. Scroll indicators are hidden; scrolling remains available. Compact
+FilterSheet leaves bottom padding to AppDialog, with20px for author categories.
+BackButton is one muted round FigmaIconButton with disabled/pressed feedback;
+former glass/chrome/settings variants are removed by the founder's global request.

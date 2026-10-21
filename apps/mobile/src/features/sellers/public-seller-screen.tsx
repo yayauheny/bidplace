@@ -38,7 +38,7 @@ import { CreatorHeader } from './CreatorHeader';
 
 import { type AuthorPublicTab } from './author-public-tabs';
 
-const categorySheetBottomSpace = 40; // Figma 7008:1756
+const categorySheetBottomSpace = 20; // Current Figma 4594:35522
 
 export function PublicSellerScreen({
   slug,
@@ -320,7 +320,6 @@ export function PublicSellerScreen({
               key={item.id}
               label={item.name}
               mode="checkbox"
-              variant="compact"
               selected={draftCategories.includes(item.id)}
               disabled={
                 !draftCategories.includes(item.id) &&

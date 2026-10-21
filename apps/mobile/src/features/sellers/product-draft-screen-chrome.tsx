@@ -13,6 +13,7 @@ import {
 } from '../../components/ui';
 import { presentEnum, productStatusLabels } from '../../lib/presentation';
 import { MotionPressable } from '../../components/ui/MotionPressable';
+import { BackButton } from '../../components/figma/BackButton';
 import { FigmaIconButton } from '../../components/figma/FigmaIconButton';
 import { useAppTheme } from '../../providers/theme-provider';
 
@@ -84,8 +85,7 @@ export function ProductDraftScreenChrome({
               justifyContent: 'space-between',
             }}
           >
-            <FigmaIconButton
-              icon="arrow-left-01"
+            <BackButton
               label={wizardStep === 3 ? 'Назад к изображениям' : 'Назад'}
               disabled={storyBarDisabled || wizardSubmitted}
               onPress={() =>

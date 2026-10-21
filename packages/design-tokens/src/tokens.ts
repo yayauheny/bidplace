@@ -77,7 +77,7 @@ export const designTokens = {
     socialGroupX: 8,
     socialGroupY: 6,
     socialGroupGap: 12,
-    filterOptionY: 9,
+    filterOptionY: 12,
     headerIconHitSlop: 9,
     // Inset of the media sheet heading block (Figma Frame 139 padding).
     mediaSheetTextInset: 6,
@@ -133,8 +133,6 @@ export const designTokens = {
     workGallery: 20,
     statusDot: 20,
     filterSort: 14,
-    filterCheckbox: 6,
-    filterRadio: 20,
     // Account header avatar (Figma account screen 100×100 round).
     ownerCard: 16,
     // Settings group surface (Figma settings screen).
@@ -182,7 +180,7 @@ export const designTokens = {
     filterSortPill: 42,
     filterOption: 20,
     filterOptionCheck: 16,
-    filterOptionRow: 38,
+    filterOptionRow: 44,
     // Account header avatar 100×100 (Figma account screen).
     accountAvatar: 100,
     // Settings row leading icon 20 px.
@@ -191,6 +189,20 @@ export const designTokens = {
     settingsHeaderGlyph: 28,
   },
   typography: {
+    optionLabel: {
+      fontFamily: 'Inter_500Medium',
+      fontSize: 15,
+      lineHeight: 20,
+      letterSpacing: -0.3,
+      fontWeight: '500' as const,
+    },
+    pickerTitle: {
+      fontFamily: 'Inter_600SemiBold',
+      fontSize: 18,
+      lineHeight: 22,
+      letterSpacing: -0.18,
+      fontWeight: '600' as const,
+    },
     display: {
       fontFamily: 'Inter_600SemiBold',
       fontSize: 28,

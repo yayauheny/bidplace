@@ -1847,3 +1847,10 @@ verification. Reflow viewport checks do not claim to replace these.
 Auth-layout/recovery acceptance:24 scenarios passed (20 plus4 addressed history
 reruns), including reload/Back/Forward, dirty cancel, long-copy scrolling and short
 dialog resize. iOS JS/Hermes export passed; no physical iPhone result is claimed.
+
+2026-10-21 — Author parity stage1 Implemented: shared filter rows have visible
+flexible text and trailing checks; compact footer spacing and hidden indicators
+verified. Shared Back normalized and direct-entry fallback corrected.14/14
+Chromium/WebKit cases, owner checks/tsc/lint/build pass. Author layout/desktop
+header/sticky remain Partial, tracked in
+[current audit](../audits/current/2026-10-21-AUTHOR-PROFILE-PARITY.md).

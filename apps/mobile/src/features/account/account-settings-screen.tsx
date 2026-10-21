@@ -34,7 +34,6 @@ export function AccountSettingsScreen() {
           }}
         >
           <BackButton
-            variant="settings"
             // dismissTo: в естественном стеке возвращает к существующему
             // /account, при direct/reload входе ведёт к /account без
             // собственных проверок history (web держит index под свежей

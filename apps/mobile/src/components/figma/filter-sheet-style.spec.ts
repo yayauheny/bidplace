@@ -21,5 +21,6 @@ describe('FilterSheet layouts', () => {
       paddingHorizontal: 20,
     });
     expect(compact).not.toHaveProperty('height');
+    expect(compact).not.toHaveProperty('paddingBottom');
   });
 });

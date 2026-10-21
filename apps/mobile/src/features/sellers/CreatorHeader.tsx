@@ -46,7 +46,7 @@ export function CreatorHeader({
           }}
         >
           <View testID="author-back">
-            <BackButton variant="muted" onPress={onBack} />
+            <BackButton onPress={onBack} />
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <FigmaIconButton

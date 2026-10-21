@@ -5137,3 +5137,10 @@ Final auth/recovery regression result:24 scenarios passed across Chromium/WebKit
 (20 complete-run cases plus4 addressed history reruns). iOS JS/Hermes export
 passed; physical device behavior remains Needs verification. Existing registration
 consent and unavailable-document behavior remain intact.
+
+2026-10-21 — Implemented: common FilterOptionRow zero-width label defect fixed;
+filter checkbox/radio selection, draft/apply/cancel and URLs preserved. Common
+BackButton forwards disabled; navigateBack uses the existing browser index to
+distinguish a direct entry from Expo's synthetic anchor.14 browser checks pass
+in Chromium/WebKit; no API/contracts/database changes. Shared desktop navigation
+and author composition remain Partial in the author parity audit.

@@ -13,7 +13,7 @@ export function WorkBackControl({
 }) {
   return (
     <View testID={testID} style={{ pointerEvents: 'auto' }}>
-      <BackButton variant="glass" onPress={onPress} />
+      <BackButton onPress={onPress} />
     </View>
   );
 }

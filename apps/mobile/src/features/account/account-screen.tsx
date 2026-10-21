@@ -160,7 +160,6 @@ export function AccountScreen() {
           }}
         >
           <BackButton
-            variant="muted"
             onPress={() => navigateBack(router, { fallbackHref: '/' })}
           />
           <View style={{ flexDirection: 'row', gap: designTokens.space.x1 }}>
