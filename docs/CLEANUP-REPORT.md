@@ -46,8 +46,18 @@ See `docs/CLEANUP-METRICS.txt` (updated at branch HEAD).
 
 Still **deferred**. Tag + link-check reduce operational risk; clone size needs separate measure.
 
-## Verification
+## Verify / merge readiness (2026-10-21)
 
-- `pnpm docs:link-check`
-- `@bidplace/contracts` unit tests (on doc-only commits)
-- Full `pnpm verify` — run on CI / reviewer machine for release branch + this PR
+| Item | Result |
+| --- | --- |
+| Auth integration failure | Fixed in **PR #54** → merged to `feature/portfolio-mvp-release` @ `cc4911e5`; merged into this branch |
+| `pnpm docs:link-check` | Run at push (171 files) |
+| GitHub **Verify** on PR #53 | Re-run after push (includes integration suite) |
+
+## Verification commands
+
+```bash
+pnpm docs:link-check
+pnpm --filter @bidplace/contracts test
+pnpm verify   # CI parity
+```

@@ -14,14 +14,17 @@ Restore into a working directory (read-only export):
 
 ```bash
 git fetch origin tag archive/audit-evidence-pre-cleanup
+mkdir -p /tmp/bidplace-audit-evidence
 git archive archive/audit-evidence-pre-cleanup docs/audits \
   | tar -x -C /tmp/bidplace-audit-evidence
 ```
 
-Or single folder:
+Or single file:
 
 ```bash
-git show archive/audit-evidence-pre-cleanup:docs/audits/current/evidence/2026-10-16-login-sheet/chromium-login-sheet-390x874.png > /tmp/chromium-login-sheet-390x874.png
+mkdir -p /tmp/bidplace-audit-evidence/login-sheet
+git show archive/audit-evidence-pre-cleanup:docs/audits/current/evidence/2026-10-16-login-sheet/chromium-login-sheet-390x874.png \
+  > /tmp/bidplace-audit-evidence/login-sheet/chromium-login-sheet-390x874.png
 ```
 
 ## Future GitHub repository split
