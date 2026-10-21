@@ -16,17 +16,17 @@ afterEach(() => {
 });
 
 const DATABASE_URL = 'postgres://user:pass@localhost:5432/bidplace';
-const LOCAL_JWT_SECRET = 'secret';
-const PRODUCTION_JWT_SECRET = 'test-only-production-jwt-secret-32';
+const LOCAL_SESSION_SECRET = 'secret';
+const PRODUCTION_SESSION_SECRET = 'test-only-production-jwt-secret-32';
 
 const localEnv = {
   DATABASE_URL,
-  JWT_SECRET: LOCAL_JWT_SECRET,
+  SESSION_SECRET: LOCAL_SESSION_SECRET,
 } as const;
 
 const productionSecurityEnv = {
   DATABASE_URL,
-  JWT_SECRET: PRODUCTION_JWT_SECRET,
+  SESSION_SECRET: PRODUCTION_SESSION_SECRET,
   SMTP_HOST: 'smtp.example.com',
   SMTP_PORT: '465',
   SMTP_SECURE: 'true',
@@ -230,7 +230,7 @@ describe('NODE_ENV × APP_ENV matrix', () => {
         NODE_ENV: 'production',
         APP_ENV: 'production',
         DATABASE_URL,
-        JWT_SECRET: PRODUCTION_JWT_SECRET,
+        SESSION_SECRET: PRODUCTION_SESSION_SECRET,
         SMTP_PORT: '465',
         SMTP_SECURE: 'true',
         SMTP_FROM: 'no-reply@example.com',
@@ -251,7 +251,7 @@ describe('NODE_ENV × APP_ENV matrix', () => {
         NODE_ENV: 'production',
         APP_ENV: 'production',
         DATABASE_URL,
-        JWT_SECRET: PRODUCTION_JWT_SECRET,
+        SESSION_SECRET: PRODUCTION_SESSION_SECRET,
         SMTP_HOST: 'smtp.example.com',
         SMTP_PORT: '587',
         SMTP_SECURE: 'false',
@@ -275,16 +275,16 @@ describe('NODE_ENV × APP_ENV matrix', () => {
         ...productionSecurityEnv,
         NODE_ENV: 'production',
         APP_ENV: 'production',
-        JWT_SECRET: shortSecret,
+        SESSION_SECRET: shortSecret,
       }),
-    ).toThrow(ENV_PROFILE_ERROR.jwtSecretTooShortInProduction);
+    ).toThrow(ENV_PROFILE_ERROR.sessionSecretTooShortInProduction);
 
     try {
       loadServerEnv({
         ...productionSecurityEnv,
         NODE_ENV: 'production',
         APP_ENV: 'production',
-        JWT_SECRET: shortSecret,
+        SESSION_SECRET: shortSecret,
       });
     } catch (error) {
       expect(String(error)).not.toContain(shortSecret);
@@ -361,7 +361,7 @@ describe('NODE_ENV × APP_ENV matrix', () => {
         NODE_ENV: 'development',
         APP_ENV: 'local',
         DATABASE_URL,
-        JWT_SECRET: LOCAL_JWT_SECRET,
+        SESSION_SECRET: LOCAL_SESSION_SECRET,
         SMTP_HOST: 'mailpit',
         SMTP_PORT: '1025',
         SMTP_SECURE: 'false',
@@ -481,7 +481,7 @@ const productionProfileLines = [
   'NODE_ENV=production',
   'APP_ENV=production',
   `DATABASE_URL=${syntheticDatabaseUrl}`,
-  'JWT_SECRET=synthetic-production-jwt-secret-32',
+  'SESSION_SECRET=synthetic-production-jwt-secret-32',
   'SMTP_HOST=smtp.example.com',
   'SMTP_PORT=465',
   'SMTP_SECURE=true',
@@ -511,7 +511,7 @@ describe('leading env-file BOM', () => {
     const contents = [
       'NODE_ENV=production',
       `DATABASE_URL=${syntheticDatabaseUrl}`,
-      `JWT_SECRET=${shortJwtSecret}`,
+      `SESSION_SECRET=${shortJwtSecret}`,
     ].join('\n');
 
     expect(() => loadSyntheticServerEnv(contents)).toThrow(
@@ -526,7 +526,7 @@ describe('leading env-file BOM', () => {
     const contents = [
       'APP_ENV=production',
       `DATABASE_URL=${syntheticDatabaseUrl}`,
-      `JWT_SECRET=${shortJwtSecret}`,
+      `SESSION_SECRET=${shortJwtSecret}`,
     ].join('\n');
 
     expect(() => loadSyntheticServerEnv(contents)).toThrow(
@@ -553,13 +553,13 @@ describe('leading env-file BOM', () => {
       [
         '\uFEFFNODE_ENV=production',
         `DATABASE_URL=${syntheticDatabaseUrl}`,
-        `JWT_SECRET=${shortJwtSecret}`,
+        `SESSION_SECRET=${shortJwtSecret}`,
       ].join('\n'),
       {
         NODE_ENV: 'test',
         APP_ENV: 'local',
         DATABASE_URL: syntheticDatabaseUrl,
-        JWT_SECRET: shortJwtSecret,
+        SESSION_SECRET: shortJwtSecret,
       },
     );
 

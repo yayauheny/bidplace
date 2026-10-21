@@ -1,3 +1,2 @@
-export const AUTH_TOKEN_SECRET = 'AUTH_TOKEN_SECRET';
-export const AUTH_TOKEN_COOKIE_NAME = 'bidplace_session';
-export const AUTH_TOKEN_TTL_SECONDS = 60 * 60 * 12;
+export const SESSION_COOKIE_NAME = 'bidplace_session';
+export const SESSION_TTL_MS = 12 * 60 * 60 * 1000;

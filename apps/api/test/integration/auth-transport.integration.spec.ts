@@ -2,7 +2,15 @@ import { ServiceUnavailableException } from '@nestjs/common';
 import { readPublishedLegalDocuments } from '../../src/auth/legal-documents';
 import { randomUUID } from 'node:crypto';
 
-import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
 import type { PrismaClient } from '@bidplace/database';
 import { CURRENT_RULES_VERSION } from '@bidplace/contracts';
 
@@ -26,11 +34,36 @@ const LEGAL_VERSION = 'synthetic-publication-1';
 const syntheticPublishedLegalPack = {
   version: LEGAL_VERSION,
   documents: [
-    { id: 'agreement', version: LEGAL_VERSION, title: 'Agreement', markdown: '# Agreement' },
-    { id: 'privacy', version: LEGAL_VERSION, title: 'Privacy', markdown: '# Privacy' },
-    { id: 'data-consent', version: LEGAL_VERSION, title: 'Consent', markdown: '# Consent' },
-    { id: 'author-rules', version: LEGAL_VERSION, title: 'Rules', markdown: '# Rules' },
-    { id: 'prohibited', version: LEGAL_VERSION, title: 'Prohibited', markdown: '# Prohibited' },
+    {
+      id: 'agreement',
+      version: LEGAL_VERSION,
+      title: 'Agreement',
+      markdown: '# Agreement',
+    },
+    {
+      id: 'privacy',
+      version: LEGAL_VERSION,
+      title: 'Privacy',
+      markdown: '# Privacy',
+    },
+    {
+      id: 'data-consent',
+      version: LEGAL_VERSION,
+      title: 'Consent',
+      markdown: '# Consent',
+    },
+    {
+      id: 'author-rules',
+      version: LEGAL_VERSION,
+      title: 'Rules',
+      markdown: '# Rules',
+    },
+    {
+      id: 'prohibited',
+      version: LEGAL_VERSION,
+      title: 'Prohibited',
+      markdown: '# Prohibited',
+    },
   ],
 };
 const legal = {
@@ -46,7 +79,6 @@ vi.mock('../../src/auth/legal-documents', () => ({
   readRegistrationLegalVersion: () => LEGAL_VERSION,
   readPublishedLegalDocuments: vi.fn(() => syntheticPublishedLegalPack),
 }));
-
 
 let database: IntegrationDatabaseContext;
 let http: HttpTestApp;
@@ -83,24 +115,82 @@ function cookiePair(setCookie: string): string {
 
 describe('auth HTTP transport', () => {
   it.each([
-    { name: 'malformed bearer header', headers: { authorization: 'Bearer invalid extra' } },
-    { name: 'malformed session cookie', headers: { cookie: 'bidplace_session=%E0%A4%A' } },
-    { name: 'empty session cookie', headers: { cookie: 'bidplace_session=' } },
-  ])('returns 401 for $name on media while preserving anonymous public access', async ({ headers }) => {
+    { origin: 'https://untrusted.example', header: '1' },
+    { origin: 'http://localhost:8081', header: '' },
+  ])(
+    'rejects cross-site or unmarked mutations: %j',
+    async ({ origin, header }) => {
+      const response = await fetch(new URL('/api/auth/logout', http.baseUrl), {
+        method: 'POST',
+        headers: { origin, 'X-Bidplace-Request': header },
+      });
+      expect(response.status).toBe(403);
+    },
+  );
+
+  it('persists the session across API restart and rejects a late save after logout', async () => {
     const fixture = await createPermissionFixture(prisma);
-    const profile = await prisma.sellerProfile.findUniqueOrThrow({
-      where: { id: fixture.sellers.approved.profileId },
-      select: { slug: true },
+    const client = new HttpTestClient(http.baseUrl);
+    const loginResponse = await login(client, fixture.buyer);
+    const cookie = cookiePair(loginResponse.headers.getSetCookie()[0]!);
+    const stored = await prisma.authSession.findFirstOrThrow({
+      where: {
+        sess: { path: ['principal', 'userId'], equals: fixture.buyer.id },
+      },
     });
-    const url = new URL(`/api/sellers/${profile.slug}/photo`, http.baseUrl);
-    expect((await fetch(url)).status).toBe(200);
-
-    const response = await fetch(url, { headers });
-
-    expect(response.status).toBe(401);
-    expect((await response.json()).code).toBe('unauthorized');
-    expect((await fetch(new URL('/api/works', http.baseUrl), { headers })).status).toBe(200);
+    const restarted = await createHttpTestApp(database.databaseUrl);
+    try {
+      const me = await fetch(new URL('/api/auth/me', restarted.baseUrl), {
+        headers: { cookie },
+      });
+      expect(me.status).toBe(200);
+      expect((await me.json()).user.id).toBe(fixture.buyer.id);
+      await client.post('/auth/logout');
+      // Simulate a request that loaded this session before logout and saved afterwards.
+      await prisma.authSession.upsert({
+        where: { sid: stored.sid },
+        create: stored,
+        update: { sess: stored.sess! },
+      });
+      const stale = await fetch(new URL('/api/auth/me', restarted.baseUrl), {
+        headers: { cookie },
+      });
+      expect(stale.status).toBe(401);
+    } finally {
+      await restarted.close();
+    }
   });
+
+  it.each([
+    {
+      name: 'malformed bearer header',
+      headers: { authorization: 'Bearer invalid extra' },
+    },
+    {
+      name: 'malformed session cookie',
+      headers: { cookie: 'bidplace_session=%E0%A4%A' },
+    },
+    { name: 'empty session cookie', headers: { cookie: 'bidplace_session=' } },
+  ])(
+    'returns 401 for $name on media while preserving anonymous public access',
+    async ({ headers }) => {
+      const fixture = await createPermissionFixture(prisma);
+      const profile = await prisma.sellerProfile.findUniqueOrThrow({
+        where: { id: fixture.sellers.approved.profileId },
+        select: { slug: true },
+      });
+      const url = new URL(`/api/sellers/${profile.slug}/photo`, http.baseUrl);
+      expect((await fetch(url)).status).toBe(200);
+
+      const response = await fetch(url, { headers });
+
+      expect(response.status).toBe(401);
+      expect((await response.json()).code).toBe('unauthorized');
+      expect(
+        (await fetch(new URL('/api/works', http.baseUrl), { headers })).status,
+      ).toBe(200);
+    },
+  );
 
   it('clears a malformed session cookie through logout without changing any account', async () => {
     await createPermissionFixture(prisma);
@@ -108,19 +198,29 @@ describe('auth HTTP transport', () => {
 
     const response = await fetch(new URL('/api/auth/logout', http.baseUrl), {
       method: 'POST',
-      headers: { cookie: 'bidplace_session=%E0%A4%A' },
+      headers: {
+        cookie: 'bidplace_session=%E0%A4%A',
+        origin: 'http://localhost:8081',
+        'X-Bidplace-Request': '1',
+      },
     });
 
     expect(response.status).toBe(201);
     expect(await response.json()).toEqual({ ok: true });
     expect(response.headers.getSetCookie()[0]).toContain('bidplace_session=;');
-    expect(response.headers.getSetCookie()[0]).toContain('Expires=Thu, 01 Jan 1970');
+    expect(response.headers.getSetCookie()[0]).toContain(
+      'Expires=Thu, 01 Jan 1970',
+    );
     expect(await permissionState(prisma)).toEqual(before);
   });
 
   it('rejects extra JWT segments over HTTP while keeping the original session valid', async () => {
     const fixture = await createPermissionFixture(prisma);
-    const client = new HttpTestClient(http.baseUrl, 'http://localhost:8081', '10.0.2.8');
+    const client = new HttpTestClient(
+      http.baseUrl,
+      'http://localhost:8081',
+      '10.0.2.8',
+    );
     const response = await login(client, fixture.buyer);
     const cookie = cookiePair(response.headers.getSetCookie()[0]!);
 
@@ -152,106 +252,141 @@ describe('auth HTTP transport', () => {
   });
 
   it('serves the legal document pack anonymously with a no-store response', async () => {
-    const visitor = new HttpTestClient(http.baseUrl, 'http://localhost:8081', '203.0.113.42');
+    const visitor = new HttpTestClient(
+      http.baseUrl,
+      'http://localhost:8081',
+      '203.0.113.42',
+    );
     const response = await visitor.get('/auth/legal');
     expect(response.status).toBe(200);
     expect(response.headers.get('Cache-Control')).toContain('no-store');
     const body = await response.json();
     expect(body.version).toBe(LEGAL_VERSION);
-    expect(body.documents).toHaveLength(syntheticPublishedLegalPack.documents.length);
+    expect(body.documents).toHaveLength(
+      syntheticPublishedLegalPack.documents.length,
+    );
     expect(body.documents.map((doc: { id: string }) => doc.id)).toEqual(
       syntheticPublishedLegalPack.documents.map((doc) => doc.id),
     );
     expect(body).toMatchObject({
       version: LEGAL_VERSION,
-      documents: syntheticPublishedLegalPack.documents.map(({ id, title, version }) => ({
-        id,
-        title,
-        version,
-      })),
+      documents: syntheticPublishedLegalPack.documents.map(
+        ({ id, title, version }) => ({
+          id,
+          title,
+          version,
+        }),
+      ),
     });
   });
 
-  it.each([true, false])('registers atomically and rejects duplicates with client version=%s', async (versioned) => {
-    await createPermissionFixture(prisma);
+  it.each([true, false])(
+    'registers atomically and rejects duplicates with client version=%s',
+    async (versioned) => {
+      await createPermissionFixture(prisma);
+      const client = new HttpTestClient(
+        http.baseUrl,
+        'http://localhost:8081',
+        '10.0.2.5',
+      );
+
+      if (!versioned) {
+        vi.mocked(readPublishedLegalDocuments).mockImplementationOnce(() => {
+          throw new ServiceUnavailableException();
+        });
+        expect((await client.get('/auth/legal')).status).toBe(503);
+      }
+      const registration = await client.post('/auth/register', {
+        email: 'New.User@Wave3.Test',
+        phone: '  +375291234567  ',
+        slug: 'new-wave-3-user',
+        password: 'password123',
+        turnstileToken: turnstileToken('register'),
+        legal: versioned
+          ? legal
+          : {
+              agreement: { confirmed: true },
+              privacy: { confirmed: true },
+              dataConsent: { confirmed: true },
+              age18Confirmed: true,
+            },
+      });
+      expect(registration.status).toBe(201);
+      expect(registration.headers.getSetCookie()[0]).toContain('HttpOnly');
+
+      const registered = await prisma.user.findUniqueOrThrow({
+        where: { email: 'new.user@wave3.test' },
+        select: {
+          id: true,
+          email: true,
+          phone: true,
+          displayName: true,
+          slug: true,
+        },
+      });
+      expect(registered).toEqual({
+        id: expect.any(String),
+        email: 'new.user@wave3.test',
+        phone: '+375291234567',
+        displayName: null,
+        slug: 'new-wave-3-user',
+      });
+
+      const evidence = await prisma.registrationLegalEvidence.findUniqueOrThrow(
+        {
+          where: { userId: registered.id },
+        },
+      );
+      expect(evidence).toMatchObject({
+        agreementVersion: LEGAL_VERSION,
+        privacyVersion: LEGAL_VERSION,
+        dataConsentVersion: LEGAL_VERSION,
+        agreementAcceptedAt: expect.any(Date),
+        privacyAcknowledgedAt: expect.any(Date),
+        dataConsentedAt: expect.any(Date),
+        age18ConfirmedAt: expect.any(Date),
+      });
+      // Account deletion must not silently cascade into the legal-evidence ledger.
+      await expect(
+        prisma.user.delete({ where: { id: registered.id } }),
+      ).rejects.toThrow();
+      expect(
+        await prisma.registrationLegalEvidence.count({
+          where: { userId: registered.id },
+        }),
+      ).toBe(1);
+
+      const me = await client.get('/auth/me');
+      expect(me.status).toBe(200);
+      expect(((await me.json()) as { user: { id: string } }).user.id).toBe(
+        registered.id,
+      );
+
+      const duplicateBefore = await permissionState(prisma);
+      const duplicateClient = new HttpTestClient(
+        http.baseUrl,
+        'http://localhost:8081',
+        '10.0.2.6',
+      );
+      const duplicate = await duplicateClient.post('/auth/register', {
+        email: 'NEW.USER@WAVE3.TEST',
+        phone: '+375291234567',
+        slug: 'another-user',
+        password: 'password123',
+        turnstileToken: turnstileToken('register'),
+        legal,
+      });
+      expect(duplicate.status).toBe(409);
+      expect(await permissionState(prisma)).toEqual(duplicateBefore);
+    },
+  );
+
+  it('rejects missing consent, false age acknowledgment, and stale versions before writing a user', async () => {
     const client = new HttpTestClient(
       http.baseUrl,
       'http://localhost:8081',
-      '10.0.2.5',
+      '10.0.2.7',
     );
-
-    if (!versioned) {
-      vi.mocked(readPublishedLegalDocuments).mockImplementationOnce(() => { throw new ServiceUnavailableException(); });
-      expect((await client.get('/auth/legal')).status).toBe(503);
-    }
-    const registration = await client.post('/auth/register', {
-      email: 'New.User@Wave3.Test',
-      phone: '  +375291234567  ',
-      slug: 'new-wave-3-user',
-      password: 'password123',
-      turnstileToken: turnstileToken('register'),
-      legal: versioned ? legal : {
-        agreement: { confirmed: true }, privacy: { confirmed: true },
-        dataConsent: { confirmed: true }, age18Confirmed: true,
-      },
-    });
-    expect(registration.status).toBe(201);
-    expect(registration.headers.getSetCookie()[0]).toContain('HttpOnly');
-
-    const registered = await prisma.user.findUniqueOrThrow({
-      where: { email: 'new.user@wave3.test' },
-      select: { id: true, email: true, phone: true, displayName: true, slug: true },
-    });
-    expect(registered).toEqual({
-      id: expect.any(String),
-      email: 'new.user@wave3.test',
-      phone: '+375291234567',
-      displayName: null,
-      slug: 'new-wave-3-user',
-    });
-
-    const evidence = await prisma.registrationLegalEvidence.findUniqueOrThrow({
-      where: { userId: registered.id },
-    });
-    expect(evidence).toMatchObject({
-      agreementVersion: LEGAL_VERSION,
-      privacyVersion: LEGAL_VERSION,
-      dataConsentVersion: LEGAL_VERSION,
-      agreementAcceptedAt: expect.any(Date),
-      privacyAcknowledgedAt: expect.any(Date),
-      dataConsentedAt: expect.any(Date),
-      age18ConfirmedAt: expect.any(Date),
-    });
-    // Account deletion must not silently cascade into the legal-evidence ledger.
-    await expect(prisma.user.delete({ where: { id: registered.id } })).rejects.toThrow();
-    expect(await prisma.registrationLegalEvidence.count({ where: { userId: registered.id } })).toBe(1);
-
-    const me = await client.get('/auth/me');
-    expect(me.status).toBe(200);
-    expect(((await me.json()) as { user: { id: string } }).user.id).toBe(
-      registered.id,
-    );
-
-    const duplicateBefore = await permissionState(prisma);
-    const duplicateClient = new HttpTestClient(
-      http.baseUrl,
-      'http://localhost:8081',
-      '10.0.2.6',
-    );
-    const duplicate = await duplicateClient.post('/auth/register', {
-      email: 'NEW.USER@WAVE3.TEST',
-      phone: '+375291234567',
-      slug: 'another-user',
-      password: 'password123',
-      turnstileToken: turnstileToken('register'),
-      legal,
-    });
-    expect(duplicate.status).toBe(409);
-    expect(await permissionState(prisma)).toEqual(duplicateBefore);
-  });
-
-  it('rejects missing consent, false age acknowledgment, and stale versions before writing a user', async () => {
-    const client = new HttpTestClient(http.baseUrl, 'http://localhost:8081', '10.0.2.7');
     const email = 'consent-incomplete@wave3.test';
     const request = {
       email,
@@ -294,7 +429,10 @@ describe('auth HTTP transport', () => {
     expect(setCookie).toContain('HttpOnly');
     expect(setCookie).toContain('SameSite=Lax');
     expect(setCookie).toContain('Path=/');
-    expect(setCookie).toContain('Max-Age=43200');
+    const expires = /Expires=([^;]+)/.exec(setCookie!)?.[1];
+    expect(expires).toBeDefined();
+    expect(Date.parse(expires!) - Date.now()).toBeGreaterThan(43_190_000);
+    expect(Date.parse(expires!) - Date.now()).toBeLessThanOrEqual(43_200_000);
     expect(setCookie).not.toContain('Secure');
     expect(setCookie).not.toContain('Domain=');
 
@@ -400,7 +538,11 @@ describe('auth HTTP transport', () => {
   it('uses the trusted forwarded address for the OTP IP gate', async () => {
     const email = `fwd-${randomUUID().slice(0, 8)}@example.com`;
     const password = 'password123';
-    const clientA = new HttpTestClient(http.baseUrl, 'http://localhost:8081', '203.0.113.10');
+    const clientA = new HttpTestClient(
+      http.baseUrl,
+      'http://localhost:8081',
+      '203.0.113.10',
+    );
     const registration = await clientA.post('/auth/register', {
       email,
       password,
@@ -425,7 +567,11 @@ describe('auth HTTP transport', () => {
       message: 'Too many requests',
     });
 
-    const clientB = new HttpTestClient(http.baseUrl, 'http://localhost:8081', '203.0.113.11');
+    const clientB = new HttpTestClient(
+      http.baseUrl,
+      'http://localhost:8081',
+      '203.0.113.11',
+    );
     const loginResponse = await clientB.post('/auth/login', {
       email,
       password,

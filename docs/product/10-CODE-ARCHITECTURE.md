@@ -163,7 +163,7 @@ See [`11-PROJECT-STATUS.md`](11-PROJECT-STATUS.md) for remaining gates.
 - Mobile author application (`apps/mobile/src/features/sellers/seller-profile-screen.tsx`, `author-application-*-step.tsx`, `AuthorApplicationAchievements.tsx`) renders four URL-owned steps against portfolio application reads/writes. Shared Zod in `seller-profile.ts` describes DTO and write payloads (for example `shortDescription: null` clears on PATCH); step UI and local hints are not readiness or stage authority. Server clamp, `applicationStage`, and validation errors remain authoritative. Achievement append/delete are JSON writes validated on the API (`z.output`); Work creation-story media and steps stay on the separate Product path.
 - `packages/database` owns Prisma schema, additive migrations and deterministic local/test seed. Demo seed may run only with `NODE_ENV=development|test`, `APP_ENV=local` and `ALLOW_DESTRUCTIVE_DEMO_SEED=true`; production-like profiles fail before writes. Local seed is the Figma Home catalog (four public authors plus `pixelp`, nine public works including two demo vex works, no Listing/Bid/Order rows). User-facing seed copy is production-quality (`DEC-092`). `CuratorSelection` points at Dali (`daliEstate1` / `pixelp`) with curator `vex` and the Figma `note`. Pre-production amendment of the unreleased `curator_selections` CREATE TABLE (`note TEXT`, `curator_seller_profile_id`, `DEC-090`/`DEC-091`) is the only in-place migration edit; after first production apply, further columns are additive. Seller `biography` is an additive column (`20260914200000_add_seller_biography`). This does not authorize editing commerce/baseline migrations (`DEC-087`). `scripts/ops/commerce-inventory.mjs` is a read-only leftover-listing inventory; it is not a write path and is not a staging/production dry-run unless that environment is the connected target.
 - `packages/config` owns env-file parsing through Node `util.parseEnv`. One leading U+FEFF is removed from the file text before that parse; a later BOM, including one inside a quoted value, stays. A missing file is an empty record. Explicit process env overrides file values. `apps/api/src/core/config/env.ts` validates that merge once and freezes the result. `ServerEnvModule.forRoot` provides that same object as `SERVER_ENV` for one Nest application context. `main.ts` and `apps/api/test/integration/http-test-app.ts` are the bootstrap loaders. Analytics, auth, OTP, password reset, mail, image storage, and rate limits inject the snapshot. `loadServerEnv` still copies unset keys into `process.env`, because `PrismaService` constructs `PrismaClient` without a datasource argument and Prisma reads `DATABASE_URL` from the process environment. A second application context gets its own snapshot through its own `ServerEnvModule.forRoot` call. The provider is the existing Nest dynamic module.
-- `apps/api/src/core/config/env-profile.ts` owns the `NODE_ENV` × `APP_ENV` predicates. `APP_ENV=production` requires `NODE_ENV=production`; `NODE_ENV=production` cannot combine with `APP_ENV=local`. Production SMTP, service rules, password-reset URL, JWT length and test-bypass prohibitions apply when either variable is `production`. Staging keeps its previous requirement shape: production security only when `NODE_ENV=production`.
+- `apps/api/src/core/config/env-profile.ts` owns the `NODE_ENV` × `APP_ENV` predicates. `APP_ENV=production` requires `NODE_ENV=production`; `NODE_ENV=production` cannot combine with `APP_ENV=local`. Production SMTP, service rules, password-reset URL, session-secret length and test-bypass prohibitions apply when either variable is `production`. Staging keeps its previous requirement shape: production security only when `NODE_ENV=production`.
 - Release automation is deliberately layered: root `pnpm verify` is the local and
   standard automatic CI gate (including mobile unit tests and the E2E database
   fence). Full browser E2E is not run automatically on pull requests or pushes:
@@ -390,7 +390,7 @@ The admin seller photo uses the same identity plus the photo checksum, so a
 resubmitted revision replaces the displayed bytes. Work and achievement image
 reads use the existing endpoints. The mobile API client sends the session
 cookie with `credentials: 'include'` and does not attach an Authorization
-bearer token. `OptionalBearerAuthGuard` accepts that cookie or a bearer token.
+opaque session cookie. `OptionalSessionAuthGuard` validates that cookie; supplied bearer credentials are rejected.
 Public and owner projections stay on their existing records.
 
 The active API is an HTTP process. There is no scheduler or Socket.IO adapter on the boot graph. Do not add future sale types, payments, delivery or automatic winner replacement until a product decision requires them. Commerce application code is not restored from leftover Prisma tables; the archive branch is `feature/commerce-runtime-archive` @ `19eb40e`.
@@ -444,7 +444,7 @@ Pilot operations are documented in [`docs/ops/00-RELEASE-AND-BACKUP.md`](../ops/
 
 ### Author email verification boundary
 
-`VerifiedEmailGuard` runs after `BearerAuthGuard` on authenticated Author
+`VerifiedEmailGuard` runs after `SessionAuthGuard` on authenticated Author
 application, Work, and related media mutations. It reads `User.emailVerifiedAt`
 from persistence and returns 403 for an unverified session; read/public routes
 remain outside this boundary. Mobile keeps `/me` in `['user','me']` as the sole
@@ -560,3 +560,15 @@ UI review follow-up (2026-10-21): the existing PageChromeContext carries actual
 for dock clearance; screens do not independently derive navigation visibility.
 No server, persistence or API boundary changed. Focus-after-enter lives in the
 existing use-return-focus module and is shared by auth and general dialogs.
+
+## Server sessions (2026-10-22)
+
+AuthService returns the existing user and current sessionVersion internally;
+SessionService rotates/saves an opaque SID with express-session/connect-pg-simple.
+AuthSession migration owns auth_sessions; store runtime DDL is disabled and its
+schema follows DATABASE_URL. SessionAuthGuard and optional/logout guards use one
+principal resolver, current User role/status/version and absolute 12h expiry.
+Late session saves cannot bypass logout/reset/admin version invalidation.
+Bootstrap owns session middleware and CSRF origin/custom-header checks; api-client
+uses cookies and marks mutations. JWT issuer and bearer client transport removed.
+Google/Telegram/email-code remain subsequent work, not implemented by this wave.

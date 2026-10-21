@@ -5,17 +5,20 @@ import {
   emailOtpVerifyRequestSchema,
   emailVerificationStateSchema,
   meResponseSchema,
-  type AuthTokenPayload,
+  type AuthPrincipal,
 } from '@bidplace/contracts';
 import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
 
-import { AuthService, BearerAuthGuard, CurrentUser } from '../auth';
-import { readClientIpContext, type ClientIpRequest } from '../auth-abuse/client-ip';
+import { AuthService, SessionAuthGuard, CurrentUser } from '../auth';
+import {
+  readClientIpContext,
+  type ClientIpRequest,
+} from '../auth-abuse/client-ip';
 import { parseBody } from '../core/validation';
 import { OtpService } from './otp.service';
 
 @Controller('auth/email')
-@UseGuards(BearerAuthGuard)
+@UseGuards(SessionAuthGuard)
 export class OtpController {
   constructor(
     private readonly otp: OtpService,
@@ -23,13 +26,13 @@ export class OtpController {
   ) {}
 
   @Get('state')
-  async state(@CurrentUser() auth: AuthTokenPayload) {
+  async state(@CurrentUser() auth: AuthPrincipal) {
     return emailVerificationStateSchema.parse(await this.otp.state(auth.sub));
   }
 
   @Post('request')
   async request(
-    @CurrentUser() auth: AuthTokenPayload,
+    @CurrentUser() auth: AuthPrincipal,
     @Req() request: ClientIpRequest,
     @Body() body: unknown,
   ) {
@@ -39,12 +42,15 @@ export class OtpController {
       idempotencyKey: parsed.idempotencyKey,
       turnstileToken: parsed.turnstileToken,
     });
-    return emailOtpRequestResponseSchema.parse({ ok: true as const, delivery: result.delivery });
+    return emailOtpRequestResponseSchema.parse({
+      ok: true as const,
+      delivery: result.delivery,
+    });
   }
 
   @Post('verify')
   async verify(
-    @CurrentUser() auth: AuthTokenPayload,
+    @CurrentUser() auth: AuthPrincipal,
     @Req() request: ClientIpRequest,
     @Body() body: unknown,
   ) {
@@ -58,7 +64,7 @@ export class OtpController {
 
   @Post('address')
   async changeAddress(
-    @CurrentUser() authUser: AuthTokenPayload,
+    @CurrentUser() authUser: AuthPrincipal,
     @Body() body: unknown,
   ) {
     const parsed = parseBody(changeUnverifiedEmailRequestSchema, body);

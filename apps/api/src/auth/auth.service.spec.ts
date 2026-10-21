@@ -1,13 +1,19 @@
-import { ConflictException, UnauthorizedException, ServiceUnavailableException } from '@nestjs/common';
+import {
+  ConflictException,
+  UnauthorizedException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { turnstileToken as syntheticTurnstileToken } from '../../test/integration/abuse-request';
 import { syntheticServerEnv } from '../core/config/synthetic-server-env';
 import { authCredentialsSelect, authUserContractSelect } from './auth.mapper';
 import { AuthService } from './auth.service';
-import { AuthTokenService } from './auth-token.service';
 import { PasswordHasherService } from './password-hasher.service';
-import { readPublishedLegalDocuments, readRegistrationLegalVersion } from './legal-documents';
+import {
+  readPublishedLegalDocuments,
+  readRegistrationLegalVersion,
+} from './legal-documents';
 
 vi.mock('./legal-documents', () => ({
   readRegistrationLegalVersion: vi.fn(() => 'portfolio-legal-2026-10-12'),
@@ -18,9 +24,15 @@ vi.mock('./legal-documents', () => ({
 }));
 
 const legal = {
-  agreement: { version: 'portfolio-legal-2026-10-12', confirmed: true as const },
+  agreement: {
+    version: 'portfolio-legal-2026-10-12',
+    confirmed: true as const,
+  },
   privacy: { version: 'portfolio-legal-2026-10-12', confirmed: true as const },
-  dataConsent: { version: 'portfolio-legal-2026-10-12', confirmed: true as const },
+  dataConsent: {
+    version: 'portfolio-legal-2026-10-12',
+    confirmed: true as const,
+  },
   age18Confirmed: true as const,
 };
 const registerProof = syntheticTurnstileToken('register');
@@ -83,22 +95,18 @@ describe('AuthService', () => {
     dummyHash: vi.fn().mockResolvedValue('dummy-hash'),
   } satisfies Pick<PasswordHasherService, 'hash' | 'verify' | 'dummyHash'>;
 
-  const authTokenService = {
-    sign: vi.fn(),
-    verify: vi.fn(),
-  } satisfies Pick<AuthTokenService, 'sign' | 'verify'>;
-
   const abuse = {
     assertRegistration: vi.fn().mockResolvedValue(undefined),
     assessLogin: vi.fn(async (input: { passwordAccepted: boolean }) =>
-      input.passwordAccepted ? { outcome: 'accepted' as const } : { outcome: 'invalid' as const },
+      input.passwordAccepted
+        ? { outcome: 'accepted' as const }
+        : { outcome: 'invalid' as const },
     ),
   };
 
   const service = new AuthService(
     prisma,
     passwordHasher,
-    authTokenService,
     abuse as never,
     syntheticServerEnv(),
   );
@@ -116,7 +124,6 @@ describe('AuthService', () => {
       }),
     );
     passwordHasher.hash.mockResolvedValue('hashed-value');
-    authTokenService.sign.mockReturnValue('signed-token');
 
     const result = await service.register({
       email: 'New-Seller@Example.com',
@@ -152,14 +159,8 @@ describe('AuthService', () => {
       },
       select: authCredentialsSelect,
     });
-    expect(authTokenService.sign).toHaveBeenCalledWith({
-      sub: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
-      email: 'new-seller@example.com',
-      role: 'user',
-      sessionVersion: 0,
-    });
     expect(result).toEqual({
-      accessToken: 'signed-token',
+      sessionVersion: 0,
       user: {
         id: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
         email: 'new-seller@example.com',
@@ -184,16 +185,22 @@ describe('AuthService', () => {
     prisma.user.findFirst.mockResolvedValue(null);
     prisma.user.create.mockResolvedValue(createPrismaUser());
     passwordHasher.hash.mockResolvedValue('hashed-value');
-    authTokenService.sign.mockReturnValue('signed-token');
     await service.register({
-      email: 'new-user@example.com', password: 'registration-password',
-      slug: 'new-user', turnstileToken: registerProof,
+      email: 'new-user@example.com',
+      password: 'registration-password',
+      slug: 'new-user',
+      turnstileToken: registerProof,
       legal: {
-        agreement: { confirmed: true }, privacy: { confirmed: true },
-        dataConsent: { confirmed: true }, age18Confirmed: true,
+        agreement: { confirmed: true },
+        privacy: { confirmed: true },
+        dataConsent: { confirmed: true },
+        age18Confirmed: true,
       },
     });
-    expect(prisma.user.create.mock.calls[0]?.[0].data.registrationLegalEvidence.create).toMatchObject({
+    expect(
+      prisma.user.create.mock.calls[0]?.[0].data.registrationLegalEvidence
+        .create,
+    ).toMatchObject({
       agreementVersion: 'portfolio-legal-2026-10-12',
       privacyVersion: 'portfolio-legal-2026-10-12',
       dataConsentVersion: 'portfolio-legal-2026-10-12',
@@ -201,35 +208,43 @@ describe('AuthService', () => {
     });
     expect(readPublishedLegalDocuments).not.toHaveBeenCalled();
     vi.mocked(readPublishedLegalDocuments).mockReset().mockReturnValue({
-      version: 'portfolio-legal-2026-10-12', documents: [],
+      version: 'portfolio-legal-2026-10-12',
+      documents: [],
     });
   });
 
   it('rejects a stale legal version without creating a user or checking abuse', async () => {
-    vi.mocked(readRegistrationLegalVersion).mockReturnValueOnce('new-legal-version');
-    await expect(service.register({
-      email: 'seller@example.com',
-      password: 'super-secret',
-      slug: 'seller',
-      turnstileToken: registerProof,
-      legal,
-    })).rejects.toMatchObject({ status: 409 });
+    vi.mocked(readRegistrationLegalVersion).mockReturnValueOnce(
+      'new-legal-version',
+    );
+    await expect(
+      service.register({
+        email: 'seller@example.com',
+        password: 'super-secret',
+        slug: 'seller',
+        turnstileToken: registerProof,
+        legal,
+      }),
+    ).rejects.toMatchObject({ status: 409 });
     expect(prisma.user.create).not.toHaveBeenCalled();
     expect(abuse.assertRegistration).not.toHaveBeenCalled();
   });
 
   it('does not issue a session when the atomic user/evidence insert fails', async () => {
     prisma.user.findFirst.mockResolvedValue(null);
-    prisma.user.create.mockRejectedValueOnce(new Error('registration evidence insert failed'));
+    prisma.user.create.mockRejectedValueOnce(
+      new Error('registration evidence insert failed'),
+    );
     passwordHasher.hash.mockResolvedValue('hash');
-    await expect(service.register({
-      email: 'seller@example.com',
-      password: 'super-secret',
-      slug: 'seller',
-      turnstileToken: registerProof,
-      legal,
-    })).rejects.toThrow('registration evidence insert failed');
-    expect(authTokenService.sign).not.toHaveBeenCalled();
+    await expect(
+      service.register({
+        email: 'seller@example.com',
+        password: 'super-secret',
+        slug: 'seller',
+        turnstileToken: registerProof,
+        legal,
+      }),
+    ).rejects.toThrow('registration evidence insert failed');
   });
 
   it('rejects duplicate email or phone on registration', async () => {
@@ -242,7 +257,7 @@ describe('AuthService', () => {
         phone: '+15555550123',
         slug: 'demo-seller',
         turnstileToken: registerProof,
-      legal,
+        legal,
       }),
     ).rejects.toBeInstanceOf(ConflictException);
   });
@@ -259,9 +274,15 @@ describe('AuthService', () => {
     ).rejects.toMatchObject({ status: 401, message: 'Invalid credentials' });
 
     expect(passwordHasher.dummyHash).toHaveBeenCalled();
-    expect(passwordHasher.verify).toHaveBeenCalledWith('dummy-hash', 'super-secret');
+    expect(passwordHasher.verify).toHaveBeenCalledWith(
+      'dummy-hash',
+      'super-secret',
+    );
     expect(abuse.assessLogin).toHaveBeenCalledWith(
-      expect.objectContaining({ passwordAccepted: false, email: 'missing@example.com' }),
+      expect.objectContaining({
+        passwordAccepted: false,
+        email: 'missing@example.com',
+      }),
     );
     expect(prisma.user.update).not.toHaveBeenCalled();
   });
@@ -298,7 +319,6 @@ describe('AuthService', () => {
       }),
     );
     passwordHasher.verify.mockResolvedValue(true);
-    authTokenService.sign.mockReturnValue('signed-token');
 
     const result = await service.login({
       email: 'Login@Example.com',
@@ -310,14 +330,8 @@ describe('AuthService', () => {
       'super-secret',
     );
     expect(prisma.user.update).not.toHaveBeenCalled();
-    expect(authTokenService.sign).toHaveBeenCalledWith({
-      sub: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
-      email: 'login@example.com',
-      role: 'user',
-      sessionVersion: 0,
-    });
     expect(result).toEqual({
-      accessToken: 'signed-token',
+      sessionVersion: 0,
       user: {
         id: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
         email: 'login@example.com',
@@ -338,9 +352,7 @@ describe('AuthService', () => {
   it('returns the current user from me', async () => {
     prisma.user.findUnique.mockResolvedValue(createPrismaUser());
 
-    const result = await service.me(
-      '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
-    );
+    const result = await service.me('2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1');
 
     expect(result).toEqual({
       id: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
@@ -392,9 +404,15 @@ describe('AuthService', () => {
       }),
     ).rejects.toBeInstanceOf(UnauthorizedException);
     expect(passwordHasher.dummyHash).toHaveBeenCalled();
-    expect(passwordHasher.verify).toHaveBeenCalledWith('dummy-hash', 'super-secret');
+    expect(passwordHasher.verify).toHaveBeenCalledWith(
+      'dummy-hash',
+      'super-secret',
+    );
     expect(abuse.assessLogin).toHaveBeenCalledWith(
-      expect.objectContaining({ passwordAccepted: false, email: 'banned@example.com' }),
+      expect.objectContaining({
+        passwordAccepted: false,
+        email: 'banned@example.com',
+      }),
     );
     expect(prisma.user.update).not.toHaveBeenCalled();
   });
@@ -419,7 +437,6 @@ describe('AuthService', () => {
     const rulesService = new AuthService(
       prisma,
       passwordHasher,
-      authTokenService,
       abuse as never,
       syntheticServerEnv({
         SERVICE_RULES_TEXT: 'from-snapshot',

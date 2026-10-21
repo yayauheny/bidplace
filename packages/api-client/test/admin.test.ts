@@ -44,6 +44,7 @@ describe('admin client', () => {
     let requestBody = '';
     const client = createApiClient({
       baseUrl: 'https://api.example.test',
+      credentials: 'include',
       fetchImpl: async (_url, init) => {
         requestBody = String(init?.body ?? '');
         return new Response(JSON.stringify(sellerResponse()), {
@@ -74,12 +75,11 @@ describe('admin client', () => {
     let requested = '';
     const client = createApiClient({
       baseUrl: 'https://api.example.test',
-      getAccessToken: () => 'admin-token',
+      credentials: 'include',
       fetchImpl: async (url, init) => {
         requested = String(url);
-        expect(new Headers(init?.headers).get('authorization')).toBe(
-          'Bearer admin-token',
-        );
+        expect(init?.credentials).toBe('include');
+        expect(new Headers(init?.headers).has('authorization')).toBe(false);
         return new Response(new Uint8Array([1, 2, 3]), {
           headers: { 'content-type': 'image/png' },
         });
@@ -96,17 +96,16 @@ describe('admin client', () => {
     expect(photo.size).toBe(3);
   });
 
-  it('loads a product image with the admin bearer token', async () => {
+  it('loads a product image with the admin session cookie', async () => {
     const imageId = '00000000-0000-4000-8000-000000000008';
     let requested = '';
     const client = createApiClient({
       baseUrl: 'https://api.example.test',
-      getAccessToken: () => 'admin-token',
+      credentials: 'include',
       fetchImpl: async (url, init) => {
         requested = String(url);
-        expect(new Headers(init?.headers).get('authorization')).toBe(
-          'Bearer admin-token',
-        );
+        expect(init?.credentials).toBe('include');
+        expect(new Headers(init?.headers).has('authorization')).toBe(false);
         return new Response(new Uint8Array([4, 5, 6, 7]), {
           headers: { 'content-type': 'image/png' },
         });
@@ -126,6 +125,7 @@ describe('admin client', () => {
     const requested: string[] = [];
     const client = createApiClient({
       baseUrl: 'https://api.example.test',
+      credentials: 'include',
       fetchImpl: async (url, init) => {
         requested.push(String(url));
         if (String(url).includes('/seller-profiles')) {
@@ -174,6 +174,7 @@ describe('admin client', () => {
     let called = false;
     const client = createApiClient({
       baseUrl: 'https://api.example.test',
+      credentials: 'include',
       fetchImpl: async () => {
         called = true;
         return new Response('{}');

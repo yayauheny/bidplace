@@ -21,9 +21,9 @@ import {
 } from '@bidplace/contracts';
 
 import {
-  BearerAuthGuard,
+  SessionAuthGuard,
   CurrentUser,
-  OptionalBearerAuthGuard,
+  OptionalSessionAuthGuard,
   VerifiedEmailGuard,
 } from '../auth';
 import { RateLimit, RateLimitGuard } from '../core/rate-limit';
@@ -45,13 +45,13 @@ export class SellersController {
   constructor(private readonly sellers: SellersService) {}
 
   @Get('seller/profile')
-  @UseGuards(BearerAuthGuard)
+  @UseGuards(SessionAuthGuard)
   getMine(@CurrentUser() auth: { sub: string }) {
     return this.sellers.getMine(auth.sub);
   }
 
   @Post('seller/profile')
-  @UseGuards(BearerAuthGuard, VerifiedEmailGuard, RateLimitGuard)
+  @UseGuards(SessionAuthGuard, VerifiedEmailGuard, RateLimitGuard)
   @RateLimit({
     keyPrefix: 'images:profile-photo-upload',
     limit: 10,
@@ -92,7 +92,7 @@ export class SellersController {
   }
 
   @Patch('seller/profile')
-  @UseGuards(BearerAuthGuard, VerifiedEmailGuard, RateLimitGuard)
+  @UseGuards(SessionAuthGuard, VerifiedEmailGuard, RateLimitGuard)
   @RateLimit({
     keyPrefix: 'images:profile-photo-upload',
     limit: 10,
@@ -127,13 +127,13 @@ export class SellersController {
   }
 
   @Get('seller/products')
-  @UseGuards(BearerAuthGuard)
+  @UseGuards(SessionAuthGuard)
   listProducts(@CurrentUser() auth: { sub: string }) {
     return this.sellers.listProducts(auth.sub);
   }
 
   @Get('seller/products/:id')
-  @UseGuards(BearerAuthGuard)
+  @UseGuards(SessionAuthGuard)
   getProduct(
     @CurrentUser() auth: { sub: string },
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
@@ -142,7 +142,7 @@ export class SellersController {
   }
 
   @Get('sellers/:slug/photo')
-  @UseGuards(OptionalBearerAuthGuard)
+  @UseGuards(OptionalSessionAuthGuard)
   async getPhoto(
     @Param('slug') slug: string,
     @CurrentUser() auth: { sub: string; role: string } | undefined,

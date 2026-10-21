@@ -1,5 +1,5 @@
 import {
-  type AuthTokenPayload,
+  type AuthPrincipal,
   acceptRulesRequestSchema,
   acceptRulesResponseSchema,
   authResponseSchema,
@@ -27,12 +27,10 @@ import {
   UseGuards,
 } from '@nestjs/common';
 
-import {
-  AUTH_TOKEN_COOKIE_NAME,
-  AUTH_TOKEN_TTL_SECONDS,
-} from './auth.constants';
+import { SESSION_COOKIE_NAME } from './auth.constants';
 import { AuthService } from './auth.service';
-import { BearerAuthGuard } from './bearer-auth.guard';
+import { SessionService, type SessionRequest } from './session.service';
+import { SessionAuthGuard } from './session-auth.guard';
 import { LogoutAuthGuard } from './logout-auth.guard';
 import { CurrentUser } from './current-user.decorator';
 import {
@@ -40,22 +38,11 @@ import {
   type ServerEnv,
   requiresProductionSecurity,
 } from '../core/config';
-import { resolveClientIp, type ClientIpRequest } from '../auth-abuse/client-ip';
+import { resolveClientIp } from '../auth-abuse/client-ip';
 import { parseBody } from '../core/validation';
 import { RateLimit, RateLimitGuard } from '../core/rate-limit';
 
 type AuthCookieResponse = {
-  cookie: (
-    name: string,
-    value: string,
-    options: {
-      httpOnly: boolean;
-      sameSite: 'lax';
-      secure: boolean;
-      path: string;
-      maxAge: number;
-    },
-  ) => void;
   clearCookie: (
     name: string,
     options: {
@@ -71,13 +58,16 @@ type AuthCookieResponse = {
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
+    private readonly sessions: SessionService,
     @Inject(SERVER_ENV) private readonly env: ServerEnv,
   ) {}
 
   @Header('Cache-Control', 'no-store')
   @Get('legal')
   getLegalDocuments() {
-    return legalDocumentsResponseSchema.parse(this.authService.getLegalDocuments());
+    return legalDocumentsResponseSchema.parse(
+      this.authService.getLegalDocuments(),
+    );
   }
 
   @Get('rules')
@@ -93,18 +83,14 @@ export class AuthController {
     scope: 'ip',
   })
   @Post('register')
-  async register(
-    @Body() body: unknown,
-    @Req() request: ClientIpRequest,
-    @Res({ passthrough: true }) response: AuthCookieResponse,
-  ) {
+  async register(@Body() body: unknown, @Req() request: SessionRequest) {
     const parsed = parseBody(registerRequestSchema, body);
     const session = await this.authService.register({
       ...parsed,
       ip: resolveClientIp(request, this.env.TRUST_PROXY),
     });
 
-    this.writeSessionCookie(response, session.accessToken);
+    await this.sessions.login(request, session.user.id, session.sessionVersion);
 
     return authResponseSchema.parse({
       user: session.user,
@@ -119,18 +105,14 @@ export class AuthController {
     scope: 'ip',
   })
   @Post('login')
-  async login(
-    @Body() body: unknown,
-    @Req() request: ClientIpRequest,
-    @Res({ passthrough: true }) response: AuthCookieResponse,
-  ) {
+  async login(@Body() body: unknown, @Req() request: SessionRequest) {
     const parsed = parseBody(loginRequestSchema, body);
     const session = await this.authService.login({
       ...parsed,
       ip: resolveClientIp(request, this.env.TRUST_PROXY),
     });
 
-    this.writeSessionCookie(response, session.accessToken);
+    await this.sessions.login(request, session.user.id, session.sessionVersion);
 
     return authResponseSchema.parse({
       user: session.user,
@@ -152,7 +134,7 @@ export class AuthController {
     );
   }
 
-  @UseGuards(BearerAuthGuard, RateLimitGuard)
+  @UseGuards(SessionAuthGuard, RateLimitGuard)
   @RateLimit({
     keyPrefix: 'auth:slug',
     limit: 10,
@@ -160,10 +142,7 @@ export class AuthController {
     scope: 'ip',
   })
   @Post('slug')
-  async claimSlug(
-    @Body() body: unknown,
-    @CurrentUser() auth?: AuthTokenPayload,
-  ) {
+  async claimSlug(@Body() body: unknown, @CurrentUser() auth?: AuthPrincipal) {
     if (!auth) {
       throw new UnauthorizedException('Missing authenticated user');
     }
@@ -174,11 +153,11 @@ export class AuthController {
     );
   }
 
-  @UseGuards(BearerAuthGuard)
+  @UseGuards(SessionAuthGuard)
   @Post('rules/accept')
   async acceptRules(
     @Body() body: unknown,
-    @CurrentUser() auth?: AuthTokenPayload,
+    @CurrentUser() auth?: AuthPrincipal,
   ) {
     if (!auth) {
       throw new UnauthorizedException('Missing authenticated user');
@@ -191,9 +170,9 @@ export class AuthController {
     );
   }
 
-  @UseGuards(BearerAuthGuard)
+  @UseGuards(SessionAuthGuard)
   @Get('me')
-  async me(@CurrentUser() auth?: AuthTokenPayload) {
+  async me(@CurrentUser() auth?: AuthPrincipal) {
     if (!auth) {
       throw new UnauthorizedException('Missing authenticated user');
     }
@@ -206,33 +185,22 @@ export class AuthController {
   @UseGuards(LogoutAuthGuard)
   @Post('logout')
   async logout(
-    @CurrentUser() auth: AuthTokenPayload | undefined,
+    @CurrentUser() auth: AuthPrincipal | undefined,
+    @Req() request: SessionRequest,
     @Res({ passthrough: true }) response: AuthCookieResponse,
   ) {
     if (auth) {
       await this.authService.logout(auth.sub);
     }
 
+    await this.sessions.destroy(request);
     this.clearSessionCookie(response);
 
     return { ok: true } as const;
   }
 
-  private writeSessionCookie(
-    response: AuthCookieResponse,
-    accessToken: string,
-  ): void {
-    response.cookie(AUTH_TOKEN_COOKIE_NAME, accessToken, {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: requiresProductionSecurity(this.env),
-      path: '/',
-      maxAge: AUTH_TOKEN_TTL_SECONDS * 1000,
-    });
-  }
-
   private clearSessionCookie(response: AuthCookieResponse): void {
-    response.clearCookie(AUTH_TOKEN_COOKIE_NAME, {
+    response.clearCookie(SESSION_COOKIE_NAME, {
       httpOnly: true,
       sameSite: 'lax',
       secure: requiresProductionSecurity(this.env),

@@ -1,11 +1,13 @@
 export type ClientIpRequest = {
-  ip?: string;
+  ip?: string | undefined;
   socket?: {
-    remoteAddress?: string;
+    remoteAddress?: string | undefined;
   };
 };
 
-export function readClientIpContext(request: ClientIpRequest | undefined): ClientIpRequest {
+export function readClientIpContext(
+  request: ClientIpRequest | undefined,
+): ClientIpRequest {
   if (!request) return {};
   const ip = request.ip;
   const remoteAddress = request.socket?.remoteAddress;

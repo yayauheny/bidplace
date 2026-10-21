@@ -13,7 +13,7 @@ import {
   storyWriteRequestSchema,
 } from '@bidplace/contracts';
 
-import { BearerAuthGuard, CurrentUser, VerifiedEmailGuard } from '../auth';
+import { SessionAuthGuard, CurrentUser, VerifiedEmailGuard } from '../auth';
 import { parseBody } from '../core/validation';
 import { ProductsService } from './products.service';
 
@@ -22,7 +22,7 @@ export class ProductsController {
   constructor(private readonly products: ProductsService) {}
 
   @Post()
-  @UseGuards(BearerAuthGuard, VerifiedEmailGuard)
+  @UseGuards(SessionAuthGuard, VerifiedEmailGuard)
   create(@CurrentUser() auth: { sub: string }, @Body() body: unknown) {
     return this.products.create(
       auth.sub,
@@ -31,7 +31,7 @@ export class ProductsController {
   }
 
   @Post(':id/submit')
-  @UseGuards(BearerAuthGuard, VerifiedEmailGuard)
+  @UseGuards(SessionAuthGuard, VerifiedEmailGuard)
   submit(
     @CurrentUser() auth: { sub: string },
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
@@ -40,7 +40,7 @@ export class ProductsController {
   }
 
   @Post(':id/hide')
-  @UseGuards(BearerAuthGuard, VerifiedEmailGuard)
+  @UseGuards(SessionAuthGuard, VerifiedEmailGuard)
   hide(
     @CurrentUser() auth: { sub: string },
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
@@ -49,7 +49,7 @@ export class ProductsController {
   }
 
   @Post(':id/unhide')
-  @UseGuards(BearerAuthGuard, VerifiedEmailGuard)
+  @UseGuards(SessionAuthGuard, VerifiedEmailGuard)
   unhide(
     @CurrentUser() auth: { sub: string },
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
@@ -58,7 +58,7 @@ export class ProductsController {
   }
 
   @Patch(':id')
-  @UseGuards(BearerAuthGuard, VerifiedEmailGuard)
+  @UseGuards(SessionAuthGuard, VerifiedEmailGuard)
   update(
     @CurrentUser() auth: { sub: string },
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
@@ -72,7 +72,7 @@ export class ProductsController {
   }
 
   @Put(':id/creation')
-  @UseGuards(BearerAuthGuard, VerifiedEmailGuard)
+  @UseGuards(SessionAuthGuard, VerifiedEmailGuard)
   replaceCreation(
     @CurrentUser() auth: { sub: string },
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,

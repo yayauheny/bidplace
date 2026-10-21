@@ -332,3 +332,11 @@ verification (ручные шаги переданы ранее). Волна 3 (
 Figma intake. Push/merge/deploy не выполнялись.
 [Файл выполнения](../audits/2026-10-19-ACCOUNT-FOUNDATION-PROGRESS.md).
 
+
+## 2026-10-22 — Web auth: server-session wave
+
+**Partial (overall auth migration).** Server session transport implemented in
+SessionService, session/optional/logout guards, bootstrap and api-client. Additive
+AuthSession migration; no production migration/deploy. Session/auth/config unit
+checks and isolated HTTP transport pass (including restart, CSRF and late-save
+after logout). OIDC/email-code/onboarding UI are the next waves.

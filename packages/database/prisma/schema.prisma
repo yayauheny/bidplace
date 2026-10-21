@@ -903,3 +903,13 @@ model MediaOperationObject {
   @@id([operationId, objectId])
   @@map("media_operation_objects")
 }
+
+// express-session store; table creation belongs to migrations, never runtime DDL.
+model AuthSession {
+  sid    String   @id @db.VarChar(255)
+  sess   Json     @db.Json
+  expire DateTime @db.Timestamp(6)
+
+  @@index([expire])
+  @@map("auth_sessions")
+}

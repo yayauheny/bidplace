@@ -52,7 +52,7 @@ export default defineConfig({
         TRUST_PROXY: 'true',
         DATABASE_URL: databaseUrl,
         E2E_DATABASE_URL: databaseUrl,
-        JWT_SECRET: 'e2e-jwt-secret',
+        SESSION_SECRET: 'e2e-jwt-secret',
         TEST_EMAIL_FILE: 'apps/mobile/e2e/.email.jsonl',
         TURNSTILE_VERIFIER: 'test',
         TURNSTILE_HOSTNAME: 'localhost',

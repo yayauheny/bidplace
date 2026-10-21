@@ -17,19 +17,17 @@ export const authResponseSchema = z
   })
   .strict();
 
-export const authTokenPayloadSchema = z
+export const authPrincipalSchema = z
   .object({
     sub: uuidSchema,
     email: z.string().email(),
     role: userRoleSchema,
     sessionVersion: z.number().int().nonnegative(),
-    iat: z.number().int().nonnegative(),
-    exp: z.number().int().positive(),
   })
   .strict();
 
 export type AuthResponse = z.infer<typeof authResponseSchema>;
-export type AuthTokenPayload = z.infer<typeof authTokenPayloadSchema>;
+export type AuthPrincipal = z.infer<typeof authPrincipalSchema>;
 
 export const emailOtpRequestSchema = z
   .object({
@@ -88,8 +86,12 @@ export const resetPasswordRequestSchema = z
   .strict();
 
 export type EmailOtpRequest = z.infer<typeof emailOtpRequestSchema>;
-export type EmailOtpRequestResponse = z.infer<typeof emailOtpRequestResponseSchema>;
+export type EmailOtpRequestResponse = z.infer<
+  typeof emailOtpRequestResponseSchema
+>;
 export type EmailOtpVerifyRequest = z.infer<typeof emailOtpVerifyRequestSchema>;
-export type EmailVerificationState = z.infer<typeof emailVerificationStateSchema>;
+export type EmailVerificationState = z.infer<
+  typeof emailVerificationStateSchema
+>;
 export type ForgotPasswordRequest = z.infer<typeof forgotPasswordRequestSchema>;
 export type ResetPasswordRequest = z.infer<typeof resetPasswordRequestSchema>;

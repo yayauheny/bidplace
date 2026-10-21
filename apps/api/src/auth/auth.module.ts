@@ -1,15 +1,13 @@
 import { Module } from '@nestjs/common';
 
-import { AuthTokenService } from './auth-token.service';
-import { AUTH_TOKEN_SECRET } from './auth.constants';
+import { SessionService } from './session.service';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-import { BearerAuthGuard } from './bearer-auth.guard';
+import { SessionAuthGuard } from './session-auth.guard';
 import { LogoutAuthGuard } from './logout-auth.guard';
-import { OptionalBearerAuthGuard } from './optional-bearer-auth.guard';
+import { OptionalSessionAuthGuard } from './optional-session-auth.guard';
 import { PasswordHasherService } from './password-hasher.service';
 import { VerifiedEmailGuard } from './verified-email.guard';
-import { SERVER_ENV, type ServerEnv } from '../core/config';
 import { DatabaseModule } from '../core/database';
 import { RateLimitModule } from '../core/rate-limit';
 
@@ -18,24 +16,19 @@ import { RateLimitModule } from '../core/rate-limit';
   controllers: [AuthController],
   providers: [
     AuthService,
-    AuthTokenService,
-    BearerAuthGuard,
+    SessionService,
+    SessionAuthGuard,
     LogoutAuthGuard,
-    OptionalBearerAuthGuard,
+    OptionalSessionAuthGuard,
     PasswordHasherService,
     VerifiedEmailGuard,
-    {
-      provide: AUTH_TOKEN_SECRET,
-      useFactory: (env: ServerEnv) => env.JWT_SECRET,
-      inject: [SERVER_ENV],
-    },
   ],
   exports: [
     AuthService,
-    AuthTokenService,
-    BearerAuthGuard,
+    SessionService,
+    SessionAuthGuard,
     LogoutAuthGuard,
-    OptionalBearerAuthGuard,
+    OptionalSessionAuthGuard,
     PasswordHasherService,
     VerifiedEmailGuard,
   ],

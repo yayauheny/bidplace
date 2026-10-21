@@ -5,7 +5,7 @@ import { z } from 'zod';
 
 import {
   ENV_PROFILE_ERROR,
-  PRODUCTION_JWT_SECRET_MIN_LENGTH,
+  PRODUCTION_SESSION_SECRET_MIN_LENGTH,
   isExplicitLocalDevelopmentProfile,
   isExplicitLocalTestProfile,
   requiresProductionSecurity,
@@ -49,7 +49,7 @@ const serverEnvSchema = z
       .int()
       .positive()
       .default(40 * 1024 * 1024),
-    JWT_SECRET: z.string().min(1),
+    SESSION_SECRET: z.string().min(1),
     SMTP_HOST: optionalNonEmptyStringEnvSchema,
     SMTP_PORT: z.coerce.number().int().positive().optional(),
     SMTP_SECURE: booleanEnvSchema.optional(),
@@ -176,11 +176,11 @@ const serverEnvSchema = z
         }
       }
 
-      if (env.JWT_SECRET.length < PRODUCTION_JWT_SECRET_MIN_LENGTH) {
+      if (env.SESSION_SECRET.length < PRODUCTION_SESSION_SECRET_MIN_LENGTH) {
         context.addIssue({
           code: z.ZodIssueCode.custom,
-          path: ['JWT_SECRET'],
-          message: ENV_PROFILE_ERROR.jwtSecretTooShortInProduction,
+          path: ['SESSION_SECRET'],
+          message: ENV_PROFILE_ERROR.sessionSecretTooShortInProduction,
         });
       }
 
@@ -208,7 +208,10 @@ const serverEnvSchema = z
         });
       }
     } else {
-      if (env.TURNSTILE_VERIFIER === 'test' && !isExplicitLocalTestProfile(env)) {
+      if (
+        env.TURNSTILE_VERIFIER === 'test' &&
+        !isExplicitLocalTestProfile(env)
+      ) {
         context.addIssue({
           code: z.ZodIssueCode.custom,
           path: ['TURNSTILE_VERIFIER'],

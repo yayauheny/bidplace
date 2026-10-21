@@ -19,7 +19,6 @@ import {
 } from '@nestjs/common';
 import { type Prisma } from '@bidplace/database';
 
-import { AuthTokenService } from './auth-token.service';
 import {
   authCredentialsSelect,
   authUserContractSelect,
@@ -36,7 +35,10 @@ import {
 } from '../core/database';
 import { AppException } from '../core/errors';
 import { resolveServiceRules } from '../core/rules';
-import { readPublishedLegalDocuments, readRegistrationLegalVersion } from './legal-documents';
+import {
+  readPublishedLegalDocuments,
+  readRegistrationLegalVersion,
+} from './legal-documents';
 
 function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
@@ -48,7 +50,7 @@ function normalizePhone(phone: string | null | undefined): string | null {
 }
 
 export interface AuthSessionResult {
-  accessToken: string;
+  sessionVersion: number;
   user: ContractUser;
 }
 
@@ -61,7 +63,6 @@ export class AuthService {
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     private readonly passwordHasher: PasswordHasherService,
-    private readonly authTokenService: AuthTokenService,
     private readonly abuse: AuthAbuseService,
     @Inject(SERVER_ENV) private readonly env: ServerEnv,
   ) {}
@@ -71,7 +72,11 @@ export class AuthService {
   ): Promise<AuthSessionResult> {
     const registrationVersion = readRegistrationLegalVersion();
     const { agreement, privacy, dataConsent } = input.legal;
-    if ([agreement.version, privacy.version, dataConsent.version].some((version) => version !== undefined && version !== registrationVersion)) {
+    if (
+      [agreement.version, privacy.version, dataConsent.version].some(
+        (version) => version !== undefined && version !== registrationVersion,
+      )
+    ) {
       throw new ConflictException({
         code: ApiErrorCode.CONFLICT,
         message: 'Legal document version is stale',
@@ -182,7 +187,9 @@ export class AuthService {
     return { slug: current };
   }
 
-  async login(input: LoginRequest & { ip?: string }): Promise<AuthSessionResult> {
+  async login(
+    input: LoginRequest & { ip?: string },
+  ): Promise<AuthSessionResult> {
     const email = normalizeEmail(input.email);
     const user = await this.prisma.user.findUnique({
       where: { email },
@@ -190,9 +197,15 @@ export class AuthService {
     });
     let passwordAccepted = false;
     if (user && toContractUser(user).status === 'active') {
-      passwordAccepted = await this.passwordHasher.verify(user.passwordHash, input.password);
+      passwordAccepted = await this.passwordHasher.verify(
+        user.passwordHash,
+        input.password,
+      );
     } else {
-      await this.passwordHasher.verify(await this.passwordHasher.dummyHash(), input.password);
+      await this.passwordHasher.verify(
+        await this.passwordHasher.dummyHash(),
+        input.password,
+      );
     }
 
     const decision = await this.abuse.assessLogin({
@@ -315,12 +328,7 @@ export class AuthService {
     const contractUser = toContractUser(user);
 
     return {
-      accessToken: this.authTokenService.sign({
-        sub: user.id,
-        email: user.email,
-        role: contractUser.role,
-        sessionVersion: user.sessionVersion,
-      }),
+      sessionVersion: user.sessionVersion,
       user: contractUser,
     };
   }
