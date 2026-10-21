@@ -16,6 +16,8 @@ export type ImagePreparationOptions = {
   maxBytes: number;
   maxSourceBytes: number;
   quality: number;
+  /** PNG preserves transparency but may need further downsizing. */
+  format?: 'jpeg' | 'png';
 };
 
 export type PreparedImage = {
@@ -104,7 +106,7 @@ export async function prepareImageUpload(
       const rendered = await context.renderAsync();
       try {
         resultUri = (await rendered.saveAsync({
-          format: SaveFormat.JPEG,
+          format: options.format === 'png' ? SaveFormat.PNG : SaveFormat.JPEG,
           compress: options.quality,
         })).uri;
       } finally {
@@ -120,7 +122,9 @@ export async function prepareImageUpload(
     if (encoded.size <= options.maxBytes && encoded.size > 0) {
       return {
         uri: resultUri,
-        blob: new Blob([encoded], { type: 'image/jpeg' }),
+        blob: new Blob([encoded], {
+          type: options.format === 'png' ? 'image/png' : 'image/jpeg',
+        }),
       };
     }
   }
