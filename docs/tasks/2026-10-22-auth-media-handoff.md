@@ -1,6 +1,21 @@
 # Bidplace: исследование и передача auth/media — 2026-10-22
 
 Статус: исследование и согласованный архитектурный выбор; реализация не начата.
+Обновлено после продолжения: runtime compatibility spike3/3; предварительный
+контракт сессий/onboarding ниже. Проверка Prisma/TypeScript/Docker остаётся волной0.
+
+## Промпт для передачи
+
+Ты реализуешь auth/media Bidplace по этому документу. Начни с проверки базы и
+волны0; не начинай параллельно переделывать фото, сессии и UI. После каждого
+законченного этапа покажи SHA и доказательства, затем переходи дальше. В споре
+между сокращением кода и сохранением прав/согласий/целостности сохраняй инварианты.
+Готовые библиотеки владеют протоколом и сессией; Nest владеет доменной политикой.
+Не заменяй оставшиеся неизвестные оптимистичными заглушками или самописным OAuth.
+Ниже указан согласованный скоуп; произвольный выбор SaaS/нового auth-движка запрещён.
+Поддержка старых JWT не нужна; переход одноразово завершает тестовые сессии,
+но сохраняет id пользователей, их работы, медиа и audit/evidence. Миграция данных
+и обновление seed/fixtures выполняются явно, без reset БД.
 
 ## Точка продолжения
 
@@ -9,7 +24,8 @@
 - База исследования MVP: `e024d91d`; перед реализацией fetch и сверить актуальный remote.
 - Основной checkout занят `refactor/docs-deep-cleanup`; не переключать и не изменять чужую работу.
 - Ветка этого документа: `feature/auth-media-investigation`.
-- PR56: https://github.com/yayauheny/bidplace/pull/56 ; OPEN, head `aff5ddfc`.
+- Повторная проверка22октября: remote MVP всё ещё `e024d91d`; PR56:
+  https://github.com/yayauheny/bidplace/pull/56 ; OPEN/DRAFT, head `aff5ddfc`.
   Общая база PR56 и исследованной MVP — `334d9ba6`. PR пока не влит.
 - На проверенном head PR56 GitHub verify и GitGuardian SUCCESS. Это не доказательство
   реального HEIC/native smoke и не новая проверка его интеграции с MVP.
@@ -73,9 +89,9 @@ feature-ветке от актуальной MVP. Каждую волну зак
 Не смешивать с чисткой документации или новой визуальной унификацией кнопок.
 Зафиксировать таблицу endpoint/state/ownership до кода: anonymous, pending-social,
 email verification, authenticated, explicit-link, cancelled/expired.
-Самые важные незавершённые детали: способ переиспользования OTP до обычной
-аутентификации, одноразовое потребление callback/onboarding и CSRF-защита.
-Не оставлять эти решения на случайные обработчики в UI.
+Предварительный контракт этих границ зафиксирован ниже. Проверь его на реальных
+типах/миграциях и исполняемом test IdP. В случае доказанной несовместимости
+останови зависимую волну с конкретным объяснением; не меняй архитектуру молча.
 
 ### 1. Закончить media на основе PR56
 
@@ -96,6 +112,8 @@ admin revoke/password reset, Cloudflare env/CI/image checks.
 Создать session-store таблицу миграцией Prisma; runtime DDL запрещён:
 `createTableIfMissing:false`. PrismaClient не является pg.Pool: нужен небольшой
 ограниченный pool и корректное закрытие при shutdown, без новой БД/Redis.
+`schemaName` store явно совпадает с Prisma/test schema: node-postgres не должен
+молча писать в public вместо изолированной `itest_*`. Добавить регрессию изоляции.
 `resave:false`, `saveUninitialized:false`; cookie HttpOnly/Secure production,
 SameSite и proxy trust по реальному Worker boundary. Успешный вход: regenerate,
 назначить principal, await save, только затем redirect/ответ. Ошибка БД не успех.
@@ -162,6 +180,151 @@ production-like image/web build без утечки настроек. Не ос�
 фактическому изменению; записать подтверждённые решения перед реализацией.
 Не делать deploy/DB reset и не вливать ветку автоматически в рамках задания.
 
+## Уточнение волны0: минимальный контракт реализации
+
+Это инженерная спецификация для проверки, не утверждение о существующих endpoint.
+Архитектура согласована; пути/имена моделей — предлагаемые имена внутри текущих владельцев.
+
+### Владение данными и границы
+
+- `User.email` остаётся реальным и обязательным; `passwordHash` становится nullable.
+  Не вводить отдельную таблицу password credentials без текущей необходимости.
+  Login без hash проходит dummy-hash ветку, не выдаёт существование social account.
+  Существующее восстановление пароля остаётся email recovery; после успешной
+  проверки reset-token оно может установить настоящий пароль social-only аккаунту.
+- `ExternalIdentity`: userId, provider, issuer, subject, timestamps; уникальны
+  issuer+subject (provider из фиксированного server allowlist). Не хранить секреты
+  провайдера, refresh/access tokens и его профиль целиком.
+- Session store — таблица в существующей БД, формат sid/sess/expire по библиотеке.
+  Nest principal: userId + sessionVersion; роль и active-status читаются из User.
+  Сохранить нынешний абсолютный срок12ч из auth.constants.ts, не подменять его
+  default/бесконечным sliding expiry store. В session data зафиксировать время входа
+  и предельный expiry; guard проверяет его даже после touch/позднего save.
+  В публичном contracts `User` не появляется hash/session JSON/OIDC claims.
+- `AuthFlow`: небольшая SQL-запись попытки входа/привязки/завершения регистрации.
+  Хранит browser binding, intent/provider, безопасный returnPath, expiry,
+  состояние и минимальные серверные proof-данные. State хранить хешем;
+  PKCE verifier нужен серверу только до обмена кода, после него удалить.
+  Это координатор доменной операции, не новая реализация OIDC.
+
+### Состояния и OTP без дублирования движка
+
+| Состояние | Доступ | Переход |
+| --- | --- | --- |
+| Anonymous | Публичное чтение, password login/register, social start | OIDC-подтверждение |
+| Provider verified, profile missing | Только текущий onboarding flow; обычный principal отсутствует | Email/ник/одно согласие |
+| Email pending | Только state/request/verify/cancel текущего onboarding | Подтверждение реального email |
+| Authenticated | Существующие guards ролей/владения/модерации | Logout/reset/revoke |
+| Expired/cancelled/consumed | Никаких прав попытки | Новый start |
+
+Для Telegram не создавать User с пустым/фиктивным email. После получения настоящего
+email, ника и согласий создать User + legal evidence + ExternalIdentity в одной
+транзакции. До проверки email browser-session содержит только pending-flow reference,
+без authenticated userId. Созданный User — обычный unverified account; это не повод
+давать ему обычную сессию. Повторный Telegram вход находит identity и возобновляет
+email completion. Не удалять такого User автоматически при истечении flow: новый
+flow безопасно возобновляет его; чистка брошенных аккаунтов требует отдельной политики.
+
+Ограниченные onboarding endpoints берут userId исключительно из серверной записи
+AuthFlow и вызывают существующие `OtpService`/`AuthAbuseService`, сохраняя Turnstile,
+mail quota/budget, idempotency, блокировки и hash/expiry кодов. Они не ослабляют
+Bearer/обычный session guard и не делают `/otp/*` общедоступным. `GET /auth/me`
+в pending состоянии возвращает401. Ошибка SMTP оставляет безопасный повтор.
+
+Предлагаемые endpoint под текущим префиксом `/api`:
+
+- `POST /auth/providers/:provider/start`: intent login/link, относительный returnPath.
+- `GET /auth/providers/:provider/callback`: единственное redirect-исключение; OIDC state.
+- `GET /auth/onboarding`: только состояние текущего flow и необходимые поля.
+- `POST /auth/onboarding`: реальные email/slug/legal, server-side validation.
+- `POST /auth/onboarding/email/request`, `/verify`: те же DTO idempotency/OTP,
+  что у текущего механизма; отдельные scope guards, не отдельный OTP engine.
+- `POST /auth/onboarding/cancel`: завершает попытку, но не удаляет аккаунт.
+
+Не регистрировать User непосредственно из Google profile до ввода nickname и
+явного принятия документов. Google email — prefill; пропуск OTP допускается только
+для валидированного доказательства актуального владения: Google authoritative Gmail
+или verified Workspace с hd. Для стороннего email одного email_verified недостаточно
+по документации Google; использовать тот же email-completion путь. Изменение
+prefilled email всегда сбрасывает proof и требует OTP. Повторный вход не перезаписывает
+email/displayName/профиль автора и не объединяет совпадающие email.
+
+### Атомарность и конкурентные запросы
+
+- `express-session` JSON не использовать как одноразовый semaphore: параллельные
+  запросы могут прочитать и затем сохранить старую копию. State consume, expiry,
+  terminal-state и победитель completion проверяются SQL CAS/короткой транзакцией.
+- Разрешить одну активную попытку данного browser binding; новый start отменяет
+  предыдущую под тем же lock. Поздний callback, отмена или duplicate completion
+  не создают второй аккаунт/identity и не заменяют текущую сессию другим пользователем.
+- При link flow зафиксировать accountId, sessionVersion и свежую аутентификацию;
+  callback повторно проверяет их. Нельзя привязать identity после logout/login в другой
+  аккаунт. Рекомендованный предел свежести5мин — именованная server policy, не таймер UI.
+- Транзакция create/link/consume не включает сетевой обмен с IdP/SMTP. Перед выходом
+  из auth-границы regenerate SID, await save; ошибка save не означает успешный вход.
+  Повтор после ошибки использует server state/identity и не дублирует domain writes.
+- Global logout, ban, password reset сохраняют version-инвалидацию. DELETE store rows
+  — очистка, не гарантия безопасности; поздний session save с устаревшей версией
+  всегда получает401. Обязательно интеграционный тест этой гонки.
+
+### CSRF, cookie и Cloudflare
+
+Для web JSON/multipart API выбран простой custom-header подход OWASP:
+общий api-client добавляет `X-Bidplace-Request: 1` к мутациям своего backend.
+Общий Nest middleware требует этот header и точный allowlisted Origin; при отсутствии
+Origin проверяет exact origin Referer, а если отсутствуют оба — отклоняет browser
+mutation. CORS не разрешает произвольные origins/субдомены. HTML form/text/plain
+без header не выполняет мутацию, включая login/logout/uploads. Header не секрет;
+защита строится на preflight + серверной проверке. Тестовые HTTP-клиенты передают
+синтетический разрешённый Origin, без production bypass. SameSite не единственная защита.
+
+OIDC callback GET — ограниченное исключение с browser-bound state/nonce/PKCE,
+не общий обход middleware. В state не доверять клиентскому targetUserId/redirect URL.
+GET не выполняет другие произвольные мутации по cookie. Browser navigates только
+на library-built provider URL и exact registered server callback.
+
+В production cookie host-only, HttpOnly, Secure, SameSite=Lax; отсутствие Domain
+не позволяет делиться ею с чужими subdomains. Подписан только opaque SID, не наши
+claims. Reverse proxy trust ограничен реальным Worker -> Container путём; не доверять
+пользовательскому X-Forwarded-Host. Session middleware должно видеть secure protocol
+от текущего очищающего Worker. Public cache остаётся allowlist и обходит cookie/
+Authorization; auth flow и onboarding ответы всегда no-store.
+
+Provider secrets задаёт владелец через server-only bindings, не через чат/бандл.
+Нет конфигурации провайдера -> контрол недоступен с понятным объяснением;
+password login остаётся рабочим. Не показывать сообщение об успешном social login
+до действительной callback/session проверки. Не логировать SID/code/state/PKCE/OTP
+или сырой callback query; применять существующий безопасный requestId logger.
+
+### Сравнение вариантов по правилу минимального устойчивого решения
+
+- **Durable fix, выбран:** session middleware + PostgreSQL store + OIDC-client
+  внутри текущего Nest. Мы поддерживаем правила продукта, библиотеки — протокол.
+- **Durable alternative, не выбрана:** self-hosted Kratos. Дополнительные deployment,
+  identity-store sync, courier и эксплуатация не оправданы текущим скоупом.
+- **Acceptable workaround, не цель:** временно добавить social поверх нашего JWT;
+  откладывает удаление ручного issuer и создаёт лишнюю переходную реализацию.
+- **Hack, запрещён:** fake email/password, auto-link по email, fork auth-library,
+  пропуск PKCE/nonce/CSRF, MemoryStore/in-memory OAuth state в production.
+
+## Что фактически проверено при продолжении
+
+В `/tmp/bidplace-auth-library-spike` установлены только временные зависимости;
+package.json/lockfile Bidplace не изменены. Node22.20.0:
+express-session1.19.0, connect-pg-simple10.0.0, openid-client6.8.8,
+Express4.22.3, pg8.23.1. `node --test compatibility.test.cjs`: **3/3 passed**:
+
+1. CommonJS import OIDC и построение S256 authorization URL.
+2. Создание PgStore с запретом runtime DDL без подключения к БД.
+3. HTTP middleware: anonymous request без Set-Cookie, rotate SID, save-before-redirect,
+   отсутствие старого pending state после regenerate, destroy и отказ старому SID.
+
+Третий тест использует MemoryStore ТОЛЬКО для изолированной проверки библиотеки.
+Это не проверка PostgreSQL persistence, не интеграция Nest/TS, не IdP token exchange,
+не CSRF-тест и не подтверждение работоспособности Google/Telegram.
+Волна0 должна проверить эти оставшиеся границы на disposable DB/test IdP и Docker.
+Полный application suite не повторялся: runtime-код не менялся.
+
 ## Первичные источники и исследованные проекты
 
 - [PR56](https://github.com/yayauheny/bidplace/pull/56), head aff5ddfc; CI verify39678668075.
@@ -172,6 +335,8 @@ production-like image/web build без утечки настроек. Не ос�
 - [Telegram OIDC](https://core.telegram.org/bots/telegram-login), [Google OIDC](https://developers.google.com/identity/openid-connect/openid-connect).
 - [openid-client](https://github.com/panva/openid-client), [express-session](https://github.com/expressjs/session), [connect-pg-simple](https://github.com/voxpelli/node-connect-pg-simple), [Nest sessions](https://docs.nestjs.com/techniques/session).
 - [Better Auth callback](https://github.com/better-auth/better-auth/blob/main/packages/better-auth/src/api/routes/callback.ts): missing email отклоняется до обычного account lookup; Google работает штатно, Telegram требует адаптации. Не предлагать fake-email plugin.
+- [Google email authority](https://developers.google.com/identity/gsi/web/guides/verify-google-id-token),
+  [OWASP CSRF custom headers](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html).
 - [Ory flows](https://www.ory.com/docs/kratos/self-service/flows/user-registration): поддерживает missing traits, но добавляет identity service.
 - [Статья KTS,2024](https://habr.com/ru/companies/kts/articles/870454/): полезный опыт, не benchmark нашего Cloudflare; отдельное хранение/синхронизация и внешние abuse controls — важная цена. Исторические замечания статьи проверять по текущим версиям.
 - [Cloudflare Containers](https://developers.cloudflare.com/containers/); фактический владелец нашей конфигурации — deploy/cloudflare/src/index.ts и router.ts.
@@ -182,6 +347,7 @@ Graph Verify: проект Users-yayauheny-projects-bidplace, generation2026-10-
 другая checkout-ветка. Проверены coverage auth/schema/provider paths; точные выводы
 подтверждены чтением исходников MVP и PR56. Граф не доказывает отсутствие всех связей.
 Исходники внешних проектов прочитаны по указанным SHA; дерево Twenty было truncated,
-поэтому выводов о полном составе проекта нет. OIDC/SDK/store interoperability пока
-не проверялось исполняемым spike; реальный вход, mobile photo smoke и production logs
-не проверялись. Новые auth-библиотеки не установлены, код приложения не менялся.
+поэтому выводов о полном составе проекта нет. Минимальный runtime spike выполнен
+отдельно, точная граница проверки указана выше. Nest/TS/PG/IdP interoperability,
+реальный вход, mobile photo smoke и production logs не проверялись. Новые
+зависимости в Bidplace не установлены, код приложения не менялся.
