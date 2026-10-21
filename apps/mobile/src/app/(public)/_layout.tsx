@@ -1,5 +1,11 @@
 import { Stack } from 'expo-router';
 
+import { PublicNavigationProvider } from '../../components/layout/public-navigation';
+
 export default function PublicLayout() {
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return (
+    <PublicNavigationProvider>
+      <Stack screenOptions={{ headerShown: false }} />
+    </PublicNavigationProvider>
+  );
 }

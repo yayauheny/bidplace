@@ -398,6 +398,13 @@ export const designTokens = {
       letterSpacing: -0.18,
       fontWeight: '600' as const,
     },
+    searchPrompt: {
+      fontFamily: 'Inter_500Medium',
+      fontSize: 14,
+      lineHeight: 24,
+      letterSpacing: -0.14,
+      fontWeight: '500' as const,
+    },
     field: {
       fontFamily: 'Inter_400Regular',
       fontSize: 14,

@@ -3079,3 +3079,9 @@ MVP-ограничения сохраняются. Общие FilterOptionRow �
 MVP; показ макета выбранного состояния не является решением включить backend.
 
 Implementation status: [author parity audit](../audits/current/2026-10-21-AUTHOR-PROFILE-PARITY.md).
+
+
+### DEC-129 — Public desktop navigation threshold (2026-10-21)
+
+Confirmed by founder: shared public desktop header starts at1024 CSS px;
+mobile dock below. Extends DEC-128; no cart/notifications/favorites scope added.

@@ -82,3 +82,30 @@ auth capability and search owners. No new dependency or server contract is neede
   The fixture has two options versus Figma's three, so intrinsic panel heights
   differ by one row. Key focus is retained; comparison screenshot uses pointer
   modality to avoid mistaking its monochrome focus indicator for a divider.
+
+
+## Stage2: public desktop navigation
+
+Stage1 committed as `853f5b01`. Founder confirmed desktop navigation from1024
+CSS px; below it the existing mobile dock remains. Exact header source4980:15230
+in the new author file:68px bar,48px search trigger,1280px inner content,
+115.1696×22 provided logo. At1024/1440 layout adapts; no matching Figma frame
+exists at those widths. Cart/notifications are excluded by the MVP decision.
+
+Chosen durable owner: public-route context → AppShell navigation presentation,
+shared use-app-navigation → existing auth/search/capability destinations. This
+replaces the dock's private destination implementation. Private shells are
+unchanged; public desktop has no phantom bottom dock reserve. A route-local
+header or duplicated capability/redirect rules would be a workaround and were
+rejected. No API/service/database/release contract changed.
+
+Inactive stacked pages keep header geometry, but are inert and have no navigation
+landmark/search ID. Browser checks caught duplicate background Home IDs before
+this fix: search focus returned to the hidden page. Only the active public page
+now owns the navigation target; auth close restores Profile/Create correctly.
+
+Checks:12 navigation/inset unit cases, mobile typecheck and scoped eslint,
+production web export,4/4 new Chromium/WebKit cases (1023→1024→1440→1800,
+identity node retained, public routes, search/auth focus). Full author/filter
+regressions run before commit. Screenshots saved beside stage1 evidence.
+Remaining stage3: author composition/halo/grid/About and animated pinned actions.

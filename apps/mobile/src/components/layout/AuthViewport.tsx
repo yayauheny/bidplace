@@ -134,7 +134,7 @@ export function AuthViewport(props: AuthViewportProps) {
       typeof document === 'undefined'
         ? null
         : document.querySelector<HTMLElement>(
-            '[data-testid="figma-floating-dock"] a[href], [data-testid="figma-floating-dock"] [role="button"]',
+            '[data-testid="figma-floating-dock"] a[href], [data-testid="figma-floating-dock"] [role="button"], [data-testid="desktop-navigation"] a[href], [data-testid="desktop-navigation"] [role="button"]',
           ),
   });
   const focusedRef = useRef(focused);

@@ -821,3 +821,18 @@ touch access. Scroll indicators are hidden; scrolling remains available. Compact
 FilterSheet leaves bottom padding to AppDialog, with20px for author categories.
 BackButton is one muted round FigmaIconButton with disabled/pressed feedback;
 former glass/chrome/settings variants are removed by the founder's global request.
+
+
+### Public desktop navigation — 2026-10-21
+
+Implemented: public Home/Works/Authors/details use AppShell DesktopHeader from
+1024 CSS px on web (explicit founder decision); mobile/native retain FloatingDock.
+PublicNavigationProvider scopes the policy, use-app-navigation owns shared
+profile/create/search destinations. Inactive stacked headers retain geometry but
+are inert and do not duplicate search/focus IDs. Private routes retain their
+existing chrome. No cart/notification backend or placeholder controls added.
+Reference: HRRtDp0bQlukw7ptTkuEZg /4980:15230. Header68px, search48px,
+provided combined logo, current button master.1024/1440: responsive adaptation,
+NEEDS-FIGMA for exact parity.12 unit cases, tsc/lint/build and4 Chromium/WebKit
+navigation cases pass. Author composition remains Partial; see
+[author parity audit](../audits/current/2026-10-21-AUTHOR-PROFILE-PARITY.md).

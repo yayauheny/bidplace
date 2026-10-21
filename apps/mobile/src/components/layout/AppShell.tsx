@@ -8,6 +8,8 @@ import { designTokens } from '@bidplace/design-tokens';
 
 import { FloatingDock } from '../figma/FloatingDock';
 import { useAppTheme } from '../../providers/theme-provider';
+import { DesktopHeader } from './DesktopHeader';
+import { useDesktopNavigation } from './public-navigation';
 import { useDockInset } from './use-dock-inset';
 
 export function AppShell({
@@ -23,6 +25,7 @@ export function AppShell({
   const isFocused = useIsFocused();
   const { reserve } = useDockInset();
   const palette = useAppTheme();
+  const desktop = useDesktopNavigation();
 
   return (
     <SafeAreaView
@@ -33,6 +36,7 @@ export function AppShell({
         overflow: 'visible',
       }}
     >
+      {!hideDock && desktop ? <DesktopHeader active={isFocused} /> : null}
       <BlurTargetView
         ref={dockBlurTarget}
         testID="app-shell-content"
@@ -58,7 +62,7 @@ export function AppShell({
           </View>
         ) : null}
       </BlurTargetView>
-      {!hideDock && isFocused ? (
+      {!hideDock && !desktop && isFocused ? (
         // Focus only mounts the body-portaled dock so stacked screens do
         // not paint multiple docks. It must not change page content.
         <FloatingDock blurTarget={dockBlurTarget} />

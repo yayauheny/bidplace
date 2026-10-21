@@ -392,3 +392,58 @@ test.describe('static public creator header', () => {
     await expect(page).toHaveURL(/\/authors(?:\?|$)/);
   });
 });
+
+test.describe('shared public desktop navigation', () => {
+  test('switches one navigation surface at 1024px and keeps author content mounted', async ({ page }) => {
+    await mockAuthor(page, 'desktop-chrome', 2, 3);
+    await page.setViewportSize({ width: 1023, height: 900 });
+    await page.goto('/seller/desktop-chrome');
+    const avatar = page.getByTestId('creator-avatar');
+    await expect(avatar).toBeVisible();
+    await avatar.evaluate((node) => { node.setAttribute('data-continuity', 'retained'); });
+    await expect(page.getByTestId('figma-floating-dock')).toBeVisible();
+    await expect(page.getByTestId('desktop-navigation')).toHaveCount(0);
+    for (const width of [1024, 1440, 1800]) {
+      await page.setViewportSize({ width, height: 900 });
+      const nav = page.getByTestId('desktop-navigation');
+      await expect(nav).toBeVisible();
+      await expect(page.getByTestId('figma-floating-dock')).toHaveCount(0);
+      await expect(avatar).toHaveAttribute('data-continuity', 'retained');
+      expect((await nav.boundingBox())?.height).toBe(68);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      await page.screenshot({ path: `${w1EvidenceDir}/desktop-navigation-${test.info().project.name}-${width}.png` });
+    }
+    await page.getByTestId('desktop-navigation').getByRole('link', { name: 'Авторы', exact: true }).click();
+    await expect(page).toHaveURL(/\/authors$/);
+    await expect(page.getByTestId('desktop-navigation')).toBeVisible();
+    await page.getByTestId('desktop-navigation').getByRole('link', { name: 'Работы', exact: true }).click();
+    await expect(page).toHaveURL(/\/works$/);
+    await expect(page.getByTestId('desktop-navigation')).toBeVisible();
+    await page.getByTestId('desktop-navigation').getByRole('link', { name: 'bidplace — на главную' }).click();
+    await expect(page).toHaveURL(/\/$/);
+    await expect(page.getByTestId('desktop-navigation')).toBeVisible();
+  });
+
+  test('reuses search and guest auth with focus return to desktop openers', async ({ page }) => {
+    await mockAuthor(page, 'desktop-focus', 2, 3);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/seller/desktop-focus');
+    const nav = page.getByTestId('desktop-navigation');
+    const search = nav.getByRole('button', { name: 'Поиск', exact: true });
+    await search.click();
+    await expect(page.getByRole('tablist', { name: 'Разделы поиска' })).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(search).toBeFocused();
+    const profile = nav.getByRole('button', { name: 'Профиль', exact: true });
+    await profile.click();
+    await expect(page).toHaveURL(/\/login\?redirectTo=%2Fseller%2Fdesktop-focus/);
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page).toHaveURL(/\/seller\/desktop-focus$/);
+    await expect(profile).toBeFocused();
+    await nav.getByRole('button', { name: 'Создать', exact: true }).click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(nav.getByRole('button', { name: 'Создать', exact: true })).toBeFocused();
+  });
+});
