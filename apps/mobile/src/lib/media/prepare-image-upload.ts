@@ -9,6 +9,8 @@ export type ImageUploadInput = {
   height?: number;
   mimeType?: string | null;
   file?: File;
+  /** Size reported by the picker, used for early rejection before reading the file. */
+  fileSize?: number;
 };
 
 export type ImagePreparationOptions = {
@@ -16,7 +18,7 @@ export type ImagePreparationOptions = {
   maxBytes: number;
   maxSourceBytes: number;
   quality: number;
-  /** PNG preserves transparency but may need further downsizing. */
+  /** Override output format. By default PNG stays PNG to preserve transparency. */
   format?: 'jpeg' | 'png';
 };
 
@@ -55,13 +57,26 @@ async function readImage(uri: string): Promise<Blob> {
 }
 
 /**
- * Keeps small supported files unchanged. Large photos and formats not accepted
- * by the API are converted to JPEG, preserving the original aspect ratio.
+ * Keeps supported files unchanged when they fit the limits. Large images and
+ * unsupported formats are re-encoded while preserving their aspect ratio.
  */
 export async function prepareImageUpload(
   input: ImageUploadInput,
   options: ImagePreparationOptions,
 ): Promise<PreparedImage> {
+  if (input.fileSize !== undefined && input.fileSize > options.maxSourceBytes) {
+    throw new ImagePreparationError('Исходный файл слишком большой. Выберите другое фото.');
+  }
+
+  const width = input.width;
+  const height = input.height;
+  if (
+    typeof width !== 'number' || !Number.isFinite(width) || width <= 0 ||
+    typeof height !== 'number' || !Number.isFinite(height) || height <= 0
+  ) {
+    throw new ImagePreparationError('Не удалось определить размеры изображения.');
+  }
+
   const source = input.file ?? (await readImage(input.uri));
   if (source.size === 0) {
     throw new ImagePreparationError('Выбранный файл пустой.');
@@ -70,26 +85,18 @@ export async function prepareImageUpload(
     throw new ImagePreparationError('Исходный файл слишком большой. Выберите другое фото.');
   }
 
-  const width = input.width;
-  const height = input.height;
-  const knownDimensions =
-    typeof width === 'number' && Number.isFinite(width) && width > 0 &&
-    typeof height === 'number' && Number.isFinite(height) && height > 0;
   const type = (source.type || input.mimeType || '').toLowerCase();
   const supported = ['image/jpeg', 'image/png', 'image/webp'].includes(type);
-  const fitsDimensions = knownDimensions &&
-    Math.max(width, height) <= options.maxDimension;
+  const fitsDimensions = Math.max(width, height) <= options.maxDimension;
   const requestedMimeType = options.format ? `image/${options.format}` : null;
   const matchesFormat = requestedMimeType === null || type === requestedMimeType;
 
   if (supported && matchesFormat && source.size <= options.maxBytes &&
-      (!knownDimensions || fitsDimensions)) {
+      fitsDimensions) {
     return { uri: input.uri, blob: source };
   }
 
-  if (!knownDimensions) {
-    throw new ImagePreparationError('Не удалось определить размеры изображения.');
-  }
+  const outputFormat = options.format ?? (type === 'image/png' ? 'png' : 'jpeg');
 
   // Only load the native/web image manipulator when a transform is necessary.
   const { ImageManipulator, SaveFormat } = await import('expo-image-manipulator');
@@ -108,7 +115,7 @@ export async function prepareImageUpload(
       const rendered = await context.renderAsync();
       try {
         resultUri = (await rendered.saveAsync({
-          format: options.format === 'png' ? SaveFormat.PNG : SaveFormat.JPEG,
+          format: outputFormat === 'png' ? SaveFormat.PNG : SaveFormat.JPEG,
           compress: options.quality,
         })).uri;
       } finally {
@@ -125,7 +132,7 @@ export async function prepareImageUpload(
       return {
         uri: resultUri,
         blob: new Blob([encoded], {
-          type: options.format === 'png' ? 'image/png' : 'image/jpeg',
+          type: outputFormat === 'png' ? 'image/png' : 'image/jpeg',
         }),
       };
     }

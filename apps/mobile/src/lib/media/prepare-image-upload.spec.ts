@@ -145,4 +145,46 @@ describe('image upload preparation', () => {
     }
   });
 
+
+  it('rejects invalid dimensions instead of bypassing the pixel limit', async () => {
+    const file = new File(['small'], 'photo.png', { type: 'image/png' });
+    await expect(prepareImageUpload({ uri: 'blob:invalid', width: 0, height: 600, file }, options))
+      .rejects.toThrow('Не удалось определить размеры изображения.');
+    expect(renderer.manipulate).not.toHaveBeenCalled();
+  });
+
+  it('rejects an oversized picker asset without fetching the entire source', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    try {
+      await expect(prepareImageUpload({
+        uri: 'blob:large', width: 500, height: 500, fileSize: options.maxSourceBytes + 1,
+      }, options)).rejects.toThrow('Исходный файл слишком большой.');
+      expect(fetchSpy).not.toHaveBeenCalled();
+    } finally {
+      fetchSpy.mockRestore();
+    }
+  });
+
+  it('keeps transparency when resizing an oversized PNG by default', async () => {
+    const file = new File(['png-input'], 'transparent.png', { type: 'image/png' });
+    const output = new Blob(['png-output'], { type: 'image/png' });
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true, blob: async () => output,
+    } as Response);
+    renderer.save.mockResolvedValue({ uri: 'blob:resized-png' });
+    renderer.manipulate.mockReturnValue({
+      resize: renderer.resize,
+      renderAsync: async () => ({ saveAsync: renderer.save, release: renderer.renderRelease }),
+      release: renderer.contextRelease,
+    });
+    try {
+      const prepared = await prepareImageUpload(
+        { uri: 'blob:large-png', width: 2500, height: 1600, file }, options,
+      );
+      expect(renderer.save).toHaveBeenCalledWith({ format: 'png', compress: options.quality });
+      expect(prepared.blob.type).toBe('image/png');
+    } finally {
+      fetchSpy.mockRestore();
+    }
+  });
 });
