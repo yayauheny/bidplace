@@ -1,12 +1,12 @@
+import { PageScrollView } from '../../components/layout/PageScrollView';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
 import { AppShell } from '../../components/layout';
-import { useDockInset } from '../../components/layout/use-dock-inset';
 import {
   FigmaButton,
   FilterSortBar,
@@ -31,7 +31,6 @@ export function PublicAuthorsScreen({
   state: PortfolioAuthorsRouteState;
 }) {
   const api = useApiClient();
-  const { reserve } = useDockInset();
   const router = useRouter();
   const [filterOpen, setFilterOpen] = useState(false);
   const [sortOpen, setSortOpen] = useState(false);
@@ -105,11 +104,11 @@ export function PublicAuthorsScreen({
   }
 
   return (
-    <AppShell>
-      <ScrollView
+    <AppShell contentLayout="bleed">
+      <PageScrollView
         contentContainerStyle={{
           paddingTop: designTokens.space.x10,
-          paddingBottom: reserve,
+          paddingBottom: 0,
           gap: designTokens.space.sectionGap,
         }}
         showsVerticalScrollIndicator={false}
@@ -130,7 +129,7 @@ export function PublicAuthorsScreen({
           />
         </View>
         {content}
-      </ScrollView>
+      </PageScrollView>
       <CatalogFilterSheet
         open={filterOpen}
         search={{

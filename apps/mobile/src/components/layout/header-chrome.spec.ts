@@ -1,3 +1,5 @@
+import { legalDocumentIdSchema } from '@bidplace/contracts';
+import { footerLegalLinks, footerSupportLinks } from './footer-links';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -70,4 +72,13 @@ describe('shared public navigation', () => {
       );
     },
   );
+});
+
+describe('footer legal destinations', () => {
+  it('keeps all existing MVP documents reachable without commerce placeholders', () => {
+    const ids = [...footerLegalLinks, ...footerSupportLinks].map((item) =>
+      item.href.replace('/legal/', ''),
+    );
+    expect(new Set(ids)).toEqual(new Set(legalDocumentIdSchema.options));
+  });
 });

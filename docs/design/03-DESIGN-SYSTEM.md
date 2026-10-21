@@ -835,3 +835,14 @@ provided combined logo, current button master.1024/1440: responsive adaptation,
 NEEDS-FIGMA for exact parity.12 unit cases, tsc/lint/build and4 Chromium/WebKit
 navigation cases pass. Author composition remains Partial; see
 [author parity audit](../audits/current/2026-10-21-AUTHOR-PROFILE-PARITY.md).
+
+
+### Ordinary page chrome (2026-10-21)
+
+`AppShell` owns desktop/dock visibility; `PageScrollView` composes the existing
+`PageColumn`, `SiteFooter` and dock clearance in one scrollport. Its branded
+variant owns the responsive central mark. `SiteFooter` shares the wide-layout
+policy with navigation and uses existing auth/create routes and legal IDs.
+`FormPageShell` includes it for account/settings only by default. Full-screen
+forms and overlays retain their existing layout. `BidplaceLogo` is the shared
+contain-fitted combined SVG for header/footer.

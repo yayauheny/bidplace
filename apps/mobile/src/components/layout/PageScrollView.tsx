@@ -1,0 +1,56 @@
+import { ScrollView, View, type ScrollViewProps } from 'react-native';
+import Animated from 'react-native-reanimated';
+
+import { designTokens } from '@bidplace/design-tokens';
+import { BrandLogo } from './BrandLogo';
+import { usePageDesktopChrome } from './public-navigation';
+import { PageColumn } from './PageColumn';
+import { SiteFooter } from './SiteFooter';
+import { useDockInset } from './use-dock-inset';
+
+/** One full-width page scrollport; content and footer share the column owner. */
+export function PageScrollView({
+  children,
+  contentContainerStyle,
+  reserveDock = true,
+  animated = false,
+  variant = 'default',
+  ...props
+}: ScrollViewProps & {
+  reserveDock?: boolean;
+  animated?: boolean;
+  variant?: 'default' | 'branded';
+}) {
+  const desktop = usePageDesktopChrome();
+  const { reserve } = useDockInset();
+  const Scroller = animated ? Animated.ScrollView : ScrollView;
+  return (
+    <Scroller {...props} contentContainerStyle={{ flexGrow: 1 }}>
+      <PageColumn
+        style={[
+          { flexGrow: 1 },
+          variant === 'branded' && {
+            paddingTop: desktop
+              ? designTokens.space.x10
+              : designTokens.space.logoTop,
+          },
+          contentContainerStyle,
+        ]}
+      >
+        {variant === 'branded' && !desktop ? (
+          <View
+            style={{
+              alignItems: 'center',
+              marginBottom: designTokens.space.logoGap,
+            }}
+          >
+            <BrandLogo />
+          </View>
+        ) : null}
+        {children}
+      </PageColumn>
+      <SiteFooter />
+      <View aria-hidden style={{ height: reserveDock ? reserve : 0 }} />
+    </Scroller>
+  );
+}

@@ -109,3 +109,14 @@ selects DesktopHeader from1024 CSS px on web; FloatingDock remains below it and
 on native. use-app-navigation owns destinations/search/auth opener for both.
 PaddedGrid supports1–4 measured columns. FigmaButton forwards its ref to the
 existing MotionPressable for the same dialog focus-return owner as icon triggers.
+
+
+### Ordinary page chrome (2026-10-21)
+
+`AppShell` owns desktop/dock visibility; `PageScrollView` composes the existing
+`PageColumn`, `SiteFooter` and dock clearance in one scrollport. Its branded
+variant owns the responsive central mark. `SiteFooter` shares the wide-layout
+policy with navigation and uses existing auth/create routes and legal IDs.
+`FormPageShell` includes it for account/settings only by default. Full-screen
+forms and overlays retain their existing layout. `BidplaceLogo` is the shared
+contain-fitted combined SVG for header/footer.

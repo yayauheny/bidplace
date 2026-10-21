@@ -1,7 +1,7 @@
 /**
  * @vitest-environment jsdom
  */
-import { act, createElement, type ReactNode } from 'react';
+import { act, createElement, useRef, type ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { notifyManager, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterAll, afterEach, describe, expect, it, vi } from 'vitest';
@@ -15,6 +15,15 @@ import { ProductListScreen } from '../features/products/product-list-screen';
 import { ProductDraftScreen } from '../features/sellers/product-draft-screen';
 import { PublicSellerScreen } from '../features/sellers/public-seller-screen';
 import { CategoriesSearchPane } from '../features/search/panes/CategoriesSearchPane';
+
+// Query ownership is independent of page chrome and dialogs.
+vi.mock('../components/ui/AppDialog', () => ({ AppDialog: () => null }));
+vi.mock('../features/sellers/CreatorHeader', () => ({
+  CreatorHeader: ({ profile }: { profile: { fullName: string } }) => createElement('div', null, profile.fullName),
+}));
+vi.mock('../components/layout/PageScrollView', () => ({
+  PageScrollView: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
+}));
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
@@ -216,6 +225,8 @@ vi.mock('react-native-reanimated', () => {
     return api;
   }
   return {
+    useSharedValue: (value: number) => useRef({ value }).current,
+    useAnimatedScrollHandler: (handler: unknown) => handler,
     default: {
       View: ({ children, testID }: { children?: ReactNode; testID?: string }) =>
         createElement('div', { 'data-testid': testID }, children),

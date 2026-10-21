@@ -34,6 +34,11 @@ export function useAppNavigation(hostTestID: string) {
     pathname,
     search,
     isAdmin: auth.isAdmin,
+    authorHref: getMobileCreateHref({
+      isAuthenticated: auth.isAuthenticated,
+      sellerStatus: null,
+      returnPath: '/profile',
+    }),
     profileHref: getProfileHref({ ...auth, returnPath }),
     rememberAuthOpener,
     create: (label: string) => {

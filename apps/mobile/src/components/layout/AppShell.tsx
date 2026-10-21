@@ -10,7 +10,7 @@ import { FloatingDock } from '../figma/FloatingDock';
 import { useAppTheme } from '../../providers/theme-provider';
 import { pageColumnStyle } from './PageColumn';
 import { DesktopHeader } from './DesktopHeader';
-import { useDesktopNavigation } from './public-navigation';
+import { PageChromeProvider, useDesktopNavigation } from './public-navigation';
 import { useDockInset } from './use-dock-inset';
 
 export function AppShell({
@@ -48,16 +48,18 @@ export function AppShell({
           contentLayout === 'column' ? pageColumnStyle : null,
         ]}
       >
-        {children}
-        {bottomAction ? (
-          <View
-            style={{
-              paddingBottom: hideDock ? designTokens.space.x4 : reserve,
-            }}
-          >
-            {bottomAction}
-          </View>
-        ) : null}
+        <PageChromeProvider value={!hideDock && desktop}>
+          {children}
+          {bottomAction ? (
+            <View
+              style={{
+                paddingBottom: hideDock ? designTokens.space.x4 : reserve,
+              }}
+            >
+              {bottomAction}
+            </View>
+          ) : null}
+        </PageChromeProvider>
       </BlurTargetView>
       {!hideDock && !desktop && isFocused ? (
         // Focus only mounts the body-portaled dock so stacked screens do

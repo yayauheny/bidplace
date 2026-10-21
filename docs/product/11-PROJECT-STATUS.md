@@ -5178,3 +5178,19 @@ Partial: current master/MVP exclusions and384px vs387px desktop grid start are
 explicit in the [audit](../audits/current/2026-10-21-AUTHOR-PROFILE-PARITY.md).
 1024/1440 exact frames: NEEDS-FIGMA. Physical iPhone, real zoom200% and enlarged
 text: Needs verification. This supersedes historical compact-avatar descriptions.
+
+
+### Shared footer and responsive brand — 2026-10-21
+
+Implemented: `SiteFooter` + `PageScrollView` provide one ordinary-page footer,
+including account/settings and legal pages; auth/forms/editors exclude it.
+All five current legal documents and operator contact remain reachable.
+`AppShell` supplies actual chrome visibility, shared with the branded page
+container; desktop Home has no second mark. `BidplaceLogo` renders the exact
+combined SVG with contain fitting. Navigation links reuse ghost `FigmaButton`.
+No backend or production deployment changed.
+
+Verification:44 owner unit tests,26 Chromium/WebKit cases, mobile tsc/scoped
+ESLint, tokens build and production web export passed. Visual parity Partial:
+44px targets and MVP legal labels differ from the static footer. Physical iPhone
+and browser zoom Needs verification. [Audit](../audits/current/2026-10-21-SHARED-FOOTER.md).

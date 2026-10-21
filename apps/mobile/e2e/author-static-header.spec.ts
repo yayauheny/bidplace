@@ -519,3 +519,62 @@ test('preserves navigation and page states for empty and unavailable authors', a
     await expect(page.getByTestId(width >= 1024 ? 'desktop-navigation' : 'figma-floating-dock')).toBeVisible();
   }
 });
+
+test.describe('shared footer and responsive brand', () => {
+  test('renders full-width footer with usable real links from mobile through desktop', async ({ page }) => {
+    await mockAuthor(page, 'footer-author', 2, 3);
+    await page.goto('/seller/footer-author');
+    for (const width of [320, 390, 440, 1024, 1440, 1800]) {
+      await page.setViewportSize({ width, height: 900 });
+      const footer = page.getByTestId('site-footer');
+      await expect(page.getByTestId('creator-avatar')).toBeVisible();
+      await footer.scrollIntoViewIfNeeded();
+      await page.getByTestId('creator-scroll').evaluate(node => { node.scrollTop = node.scrollHeight; });
+      await expect(footer).toBeVisible();
+      await page.evaluate(() => document.fonts.ready);
+      expect(Math.round((await footer.boundingBox())?.width ?? 0)).toBe(width);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      await expect(footer.getByRole('link', { name: 'Политика и cookies' })).toHaveAttribute('href', '/legal/privacy');
+      await expect(footer.getByRole('link', { name: 'Согласие ПДн' })).toHaveAttribute('href', '/legal/data-consent');
+      await expect(footer.getByRole('link', { name: 'Правила сервиса' })).toHaveAttribute('href', '/legal/agreement');
+      await expect(footer.getByRole('link', { name: /торгов|Оплата/ })).toHaveCount(0);
+      for (const link of await footer.getByRole('link').all()) {
+        expect((await link.boundingBox())?.height).toBeGreaterThanOrEqual(44);
+      }
+      await expect(footer.getByTestId('bidplace-logo').locator('img')).toHaveCSS('object-fit', 'contain');
+      const dock = page.getByTestId('figma-floating-dock');
+      if (width < 1024) {
+        const legal = await footer.getByRole('link', { name: 'Политика и cookies' }).boundingBox();
+        expect((legal?.y ?? 1000) + (legal?.height ?? 0)).toBeLessThanOrEqual((await dock.boundingBox())?.y ?? 0);
+      }
+      await footer.screenshot({ path: `${w1EvidenceDir}/footer-${test.info().project.name}-${width}.png` });
+    }
+    const footer = page.getByTestId('site-footer');
+    await footer.getByRole('button', { name: 'Создать работу' }).click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(footer.getByRole('button', { name: 'Создать работу' })).toBeFocused();
+    await footer.getByRole('link', { name: 'Правила сервиса' }).click();
+    await expect(page).toHaveURL(/\/legal\/agreement/);
+    await expect(page.getByTestId('site-footer')).toHaveCount(1);
+  });
+
+  test('has one responsive Home brand and keeps forms free of the page footer', async ({ page }) => {
+    await mockAuthor(page, 'footer-home', 0, 0);
+    await page.route('**/api/portfolio/home', route => route.fulfill({ json: { curatorSelection: null, newWorks: [], newAuthors: [] } }));
+    await page.goto('/');
+    await expect(page.getByText('Пока здесь тихо')).toBeVisible();
+    for (const width of [390, 1023, 1024, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      await expect(page.getByTestId('home-scroll').getByTestId('bidplace-brand-mark')).toHaveCount(width < 1024 ? 1 : 0);
+      await expect(page.getByTestId('desktop-navigation')).toHaveCount(width < 1024 ? 0 : 1);
+    }
+    const navLogo = page.getByTestId('desktop-navigation').getByTestId('bidplace-logo');
+    await expect(navLogo.locator('img')).toHaveCSS('object-fit', 'contain');
+    await navLogo.screenshot({ path: `${w1EvidenceDir}/header-logo-${test.info().project.name}.png` });
+    await page.goto('/register');
+    await expect(page.getByRole('dialog', { name: 'Регистрация' })).toBeVisible();
+    await expect(page.getByRole('textbox', { name: 'Электронная почта' })).toBeVisible();
+    await expect(page.getByTestId('site-footer')).toHaveCount(0);
+  });
+});

@@ -1,7 +1,7 @@
 import { useId, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import Animated, {
+import {
   useAnimatedScrollHandler,
   useSharedValue,
 } from 'react-native-reanimated';
@@ -11,9 +11,8 @@ import { ApiClientError } from '@bidplace/api-client';
 import { designTokens } from '@bidplace/design-tokens';
 
 import { useDesktopNavigation } from '../../components/layout/public-navigation';
-import { PageColumn } from '../../components/layout/PageColumn';
+import { PageScrollView } from '../../components/layout/PageScrollView';
 import { AppShell, navigateBack } from '../../components/layout';
-import { useDockInset } from '../../components/layout/use-dock-inset';
 import { InfrastructureErrorState } from '../../components/shared/InfrastructureErrorState';
 import { InfrastructurePageStatus } from '../../components/shared/InfrastructurePageStatus';
 import { infrastructurePageFetchStatus } from '../../components/shared/infrastructure-page-status';
@@ -60,7 +59,6 @@ export function PublicSellerScreen({
   const palette = useAppTheme();
   const desktop = useDesktopNavigation();
   const api = useApiClient();
-  const { reserve } = useDockInset();
   const router = useRouter();
   const queryClient = useQueryClient();
   const capability = useSellerCapability();
@@ -121,21 +119,39 @@ export function PublicSellerScreen({
     query.error.kind === 'not_found'
   ) {
     return (
-      <AppShell>
-        <PageState
-          title="Автор не найден"
-          message="Профиль больше недоступен."
-        />
+      <AppShell contentLayout="bleed">
+        <View style={{ flex: 1, position: 'relative', overflow: 'visible' }}>
+          <PageScrollView
+            animated
+            onScroll={onScroll}
+            scrollEventThrottle={16}
+            showsVerticalScrollIndicator={false}
+          >
+            <PageState
+              title="Автор не найден"
+              message="Профиль больше недоступен."
+            />
+          </PageScrollView>
+        </View>
       </AppShell>
     );
   }
   if (pageStatus !== 'ready' || !firstPage || !author) {
     return (
-      <AppShell>
-        <InfrastructurePageStatus
-          status={pageStatus === 'loading' ? 'loading' : 'error'}
-          onRetry={() => void query.refetch()}
-        />
+      <AppShell contentLayout="bleed">
+        <View style={{ flex: 1, position: 'relative', overflow: 'visible' }}>
+          <PageScrollView
+            animated
+            onScroll={onScroll}
+            scrollEventThrottle={16}
+            showsVerticalScrollIndicator={false}
+          >
+            <InfrastructurePageStatus
+              status={pageStatus === 'loading' ? 'loading' : 'error'}
+              onRetry={() => void query.refetch()}
+            />
+          </PageScrollView>
+        </View>
       </AppShell>
     );
   }
@@ -205,117 +221,116 @@ export function PublicSellerScreen({
   return (
     <AppShell contentLayout="bleed">
       <View style={{ flex: 1, position: 'relative', overflow: 'visible' }}>
-        <Animated.ScrollView
+        <PageScrollView
+          animated
           onScroll={onScroll}
           scrollEventThrottle={16}
           testID="creator-scroll"
           contentContainerStyle={{
-            paddingBottom: reserve,
+            paddingBottom: 0,
             overflow: 'visible',
           }}
           showsVerticalScrollIndicator={false}
         >
-          <PageColumn>
-            <CreatorHeader
-              toolbar={filters}
-              scrollY={scrollY}
-              profile={author}
-              onBack={() => navigateBack(router, { fallbackHref: '/authors' })}
-              tabs={[
-                {
-                  value: 'works',
-                  label: 'Работы',
-                  count: query.isPlaceholderData
-                    ? undefined
-                    : firstPage.pagination.total,
-                },
-                { value: 'about', label: 'Об авторе' },
-              ]}
-              tab={tab}
-              onTabChange={(value) =>
-                setTab(value === 'about' ? 'about' : 'works')
-              }
-              panelId={panelId}
-              isOwner={isOwner}
-              onUnavailable={setUnavailable}
-            />
+          <CreatorHeader
+            toolbar={filters}
+            scrollY={scrollY}
+            profile={author}
+            onBack={() => navigateBack(router, { fallbackHref: '/authors' })}
+            tabs={[
+              {
+                value: 'works',
+                label: 'Работы',
+                count: query.isPlaceholderData
+                  ? undefined
+                  : firstPage.pagination.total,
+              },
+              { value: 'about', label: 'Об авторе' },
+            ]}
+            tab={tab}
+            onTabChange={(value) =>
+              setTab(value === 'about' ? 'about' : 'works')
+            }
+            panelId={panelId}
+            isOwner={isOwner}
+            onUnavailable={setUnavailable}
+          />
 
-            <View
-              testID="author-content"
-              onLayout={(event) =>
-                setContentWidth(event.nativeEvent.layout.width)
-              }
-              nativeID={panelId}
-              role="tabpanel"
-              aria-labelledby={`${panelId}-${tab}`}
-              style={{
-                backgroundColor: palette.canvas,
-                paddingTop:
-                  tab === 'about'
-                    ? designTokens.space.authorHeaderBottom
-                    : desktop
-                      ? designTokens.space.x8
-                      : designTokens.space.sectionGap,
-                gap: designTokens.space.authorSectionGap,
-              }}
-            >
-              {tab === 'about' ? (
-                <AuthorAbout author={author} />
-              ) : worksPending ? (
-                <PageState title="Загружаем работы…" loading />
-              ) : query.isError ? (
-                <InfrastructureErrorState
-                  presentation="inline"
-                  onRetry={() => void query.refetch()}
-                />
-              ) : works.length === 0 ? (
-                <PageState
-                  title={
-                    selectedCategories.length
-                      ? 'В выбранных категориях пока нет работ'
-                      : 'У автора пока нет опубликованных работ'
-                  }
-                />
-              ) : (
-                <>
-                  <View
-                    style={{
-                      width: '100%',
-                      gap: designTokens.space.x8,
-                    }}
-                  >
-                    <PaddedGrid
-                      items={works}
-                      columns={gridColumnsFromWidth(contentWidth, {
-                        minCardWidth: designTokens.size.coverWidth,
-                        gap: designTokens.space.x3,
-                        max: 4,
-                      })}
-                      gap={designTokens.space.x3}
-                      keyExtractor={(item) => item.work.publicId}
-                      renderItem={(item) => (
-                        <CreatorWorkCard
-                          item={item}
-                          isOwner={isOwner}
-                          onUnavailable={setUnavailable}
-                          onHide={setPendingHide}
-                        />
-                      )}
-                    />
-                  </View>
-                  {query.hasNextPage ? (
-                    <PrimaryButton
-                      label="Смотреть все"
-                      width="full"
-                      loading={query.isFetchingNextPage}
-                      onPress={() => void query.fetchNextPage()}
-                    />
-                  ) : null}
-                </>
-              )}
-            </View>
-          </PageColumn>
-        </Animated.ScrollView>
+          <View
+            testID="author-content"
+            onLayout={(event) =>
+              setContentWidth(event.nativeEvent.layout.width)
+            }
+            nativeID={panelId}
+            role="tabpanel"
+            aria-labelledby={`${panelId}-${tab}`}
+            style={{
+              backgroundColor: palette.canvas,
+              paddingTop:
+                tab === 'about'
+                  ? designTokens.space.authorHeaderBottom
+                  : desktop
+                    ? designTokens.space.x8
+                    : designTokens.space.sectionGap,
+              gap: designTokens.space.authorSectionGap,
+            }}
+          >
+            {tab === 'about' ? (
+              <AuthorAbout author={author} />
+            ) : worksPending ? (
+              <PageState title="Загружаем работы…" loading />
+            ) : query.isError ? (
+              <InfrastructureErrorState
+                presentation="inline"
+                onRetry={() => void query.refetch()}
+              />
+            ) : works.length === 0 ? (
+              <PageState
+                title={
+                  selectedCategories.length
+                    ? 'В выбранных категориях пока нет работ'
+                    : 'У автора пока нет опубликованных работ'
+                }
+              />
+            ) : (
+              <>
+                <View
+                  style={{
+                    width: '100%',
+                    gap: designTokens.space.x8,
+                  }}
+                >
+                  <PaddedGrid
+                    items={works}
+                    columns={gridColumnsFromWidth(contentWidth, {
+                      minCardWidth: designTokens.size.coverWidth,
+                      gap: designTokens.space.x3,
+                      max: 4,
+                    })}
+                    gap={designTokens.space.x3}
+                    keyExtractor={(item) => item.work.publicId}
+                    renderItem={(item) => (
+                      <CreatorWorkCard
+                        item={item}
+                        isOwner={isOwner}
+                        onUnavailable={setUnavailable}
+                        onHide={setPendingHide}
+                      />
+                    )}
+                  />
+                </View>
+                {query.hasNextPage ? (
+                  <PrimaryButton
+                    label="Смотреть все"
+                    width="full"
+                    loading={query.isFetchingNextPage}
+                    onPress={() => void query.fetchNextPage()}
+                  />
+                ) : null}
+              </>
+            )}
+          </View>
+        </PageScrollView>
         <FilterSheet
           presentation="compact"
           bottomSpace={categorySheetBottomSpace}

@@ -1,8 +1,8 @@
 import { Link, useRouter } from 'expo-router';
-import { Image, StyleSheet, View } from 'react-native';
-import { designTokens, figmaButtonTokens } from '@bidplace/design-tokens';
+import { StyleSheet, View } from 'react-native';
+import { designTokens } from '@bidplace/design-tokens';
 
-import logo from '../../../assets/branding/bidplace-logo-light.svg';
+import { BidplaceLogo } from '../branding/BidplaceLogo';
 import { useAppTheme } from '../../providers/theme-provider';
 import { FigmaButton } from '../figma/FigmaButton';
 import { FigmaIcon } from '../figma/FigmaIcon';
@@ -17,7 +17,6 @@ const header = {
   height: 68,
   searchHeight: 48,
   logoWidth: 115.1696,
-  logoHeight: 22,
 };
 
 export function DesktopHeader({ active }: { active: boolean }) {
@@ -45,33 +44,16 @@ export function DesktopHeader({ active }: { active: boolean }) {
               accessibilityLabel="bidplace — на главную"
               style={styles.brand}
             >
-              <Image
-                source={logo}
-                accessible={false}
-                style={{ width: header.logoWidth, height: header.logoHeight }}
-              />
+              <BidplaceLogo width={header.logoWidth} />
             </MotionPressable>
           </Link>
           {(['works', 'authors'] as const).map((route) => (
-            <Link
+            <FigmaButton
               key={route}
               href={route === 'works' ? '/works' : '/authors'}
-              asChild
-            >
-              <MotionPressable
-                accessibilityRole="link"
-                style={styles.link}
-                {...{
-                  'aria-current': navigation.pathname.startsWith(`/${route}`)
-                    ? 'page'
-                    : undefined,
-                }}
-              >
-                <AppText style={figmaButtonTokens.typography}>
-                  {route === 'works' ? 'Работы' : 'Авторы'}
-                </AppText>
-              </MotionPressable>
-            </Link>
+              variant="ghost"
+              label={route === 'works' ? 'Работы' : 'Авторы'}
+            />
           ))}
         </View>
         <MotionPressable
@@ -149,7 +131,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flexShrink: 0,
   },
-  link: { minHeight: designTokens.size.touch, justifyContent: 'center' },
   search: {
     flex: 1,
     minWidth: 0,

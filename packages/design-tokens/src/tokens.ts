@@ -398,6 +398,18 @@ export const designTokens = {
       letterSpacing: -0.18,
       fontWeight: '600' as const,
     },
+    footerHeading: {
+      fontFamily: 'Inter_600SemiBold', fontSize: 16, lineHeight: 20,
+      letterSpacing: -0.32, fontWeight: '600' as const,
+    },
+    footerLink: {
+      fontFamily: 'Inter_500Medium', fontSize: 16, lineHeight: 20,
+      letterSpacing: -0.32, fontWeight: '500' as const,
+    },
+    footerLegal: {
+      fontFamily: 'Inter_400Regular', fontSize: 12, lineHeight: 16,
+      fontWeight: '400' as const,
+    },
     creatorName: {
       fontFamily: 'Inter_600SemiBold', fontSize: 20, lineHeight: 26,
       letterSpacing: -0.4, fontWeight: '600' as const,

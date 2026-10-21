@@ -1,13 +1,13 @@
+import { PageScrollView } from '../../components/layout/PageScrollView';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
 import { AppShell } from '../../components/layout';
-import { useDockInset } from '../../components/layout/use-dock-inset';
 import { InfrastructureErrorState } from '../../components/shared/InfrastructureErrorState';
 import { AppText, PageState } from '../../components/ui';
 import {
@@ -46,7 +46,6 @@ export function ProductListScreen({
   title?: string;
 }) {
   const api = useApiClient();
-  const { reserve } = useDockInset();
   const router = useRouter();
   const [filterOpen, setFilterOpen] = useState(false);
   const [sortOpen, setSortOpen] = useState(false);
@@ -132,12 +131,12 @@ export function ProductListScreen({
   }
 
   return (
-    <AppShell>
-      <ScrollView
+    <AppShell contentLayout="bleed">
+      <PageScrollView
         testID="catalog-scroll-view"
         contentContainerStyle={{
           paddingTop: designTokens.space.x10,
-          paddingBottom: reserve,
+          paddingBottom: 0,
           gap: designTokens.space.sectionGap,
         }}
         showsVerticalScrollIndicator={false}
@@ -174,7 +173,7 @@ export function ProductListScreen({
           </AppText>
         ) : null}
         {content}
-      </ScrollView>
+      </PageScrollView>
       <CatalogFilterSheet
         open={filterOpen}
         search={{
@@ -213,7 +212,9 @@ export function ProductListScreen({
 }
 
 function activeFilterLabel(state: PortfolioWorksRouteState) {
-  const count = [state.q, state.category, state.material].filter(Boolean).length;
+  const count = [state.q, state.category, state.material].filter(
+    Boolean,
+  ).length;
   return count ? `Фильтры · ${count}` : 'Фильтры';
 }
 
