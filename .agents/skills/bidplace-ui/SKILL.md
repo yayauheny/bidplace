@@ -7,7 +7,7 @@ description: Build or change Bidplace screens and shared UI in apps/mobile (Expo
 
 Goal: one way to do each UI job. Find the existing mechanism, extend it, delete what it replaces.
 
-Status: this is the **target contract** of the design-system waves (`docs/audits/2026-10-13-FRONTEND-DESIGN-SYSTEM-AUDIT.md` §17) and it is implemented in code: the legacy `OverlayHost`, `AppIcon`/lucide, `DestructiveButton` and fixed-390-column patterns are removed. The remaining intentional deviations — do not copy or extend them: the private `expo-router/build` import for `usePreventRemove` (no public export in SDK 57; expected public in SDK 58) and the custom web history guards (`features/sellers/product-draft-browser-guard.ts`, `features/auth/auth-browser-history.ts`).
+Status: this is the **target contract** of the design-system waves (`docs/audits/2026-10-13-FRONTEND-DESIGN-SYSTEM-AUDIT.md` §17; execution prompts archived 2026-10-21) and it is implemented in code: the legacy `OverlayHost`, `AppIcon`/lucide, `DestructiveButton` and fixed-390-column patterns are removed. The remaining intentional deviations — do not copy or extend them: the private `expo-router/build` import for `usePreventRemove` (no public export in SDK 57; expected public in SDK 58) and the custom web history guards (`features/sellers/product-draft-browser-guard.ts`, `features/auth/auth-browser-history.ts`).
 
 ## Read first (link, do not copy)
 

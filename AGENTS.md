@@ -69,13 +69,13 @@ For high-risk backend changes, use both `nest` and `security`.
 
 ## Bidplace Project Documentation
 
-Before every task in this repository:
+### Agent reading order (default)
 
-1. Read `docs/product/00-PROJECT-INDEX.md`.
-2. Read `docs/product/01-PRODUCT-FOUNDATION.md`.
-3. Read `docs/product/11-PROJECT-STATUS.md`.
-4. Use the index to open only the owner documents relevant to the task.
-5. Identify the affected product behavior, its owner document, and any conflict with confirmed bidplace principles before changing code.
+1. Read `docs/AGENT-MAP.md` (one screen: scope, owners, what to skip).
+2. Open **only** owner docs for the task area from `docs/product/00-PROJECT-INDEX.md` — not the whole tree.
+3. Do **not** load by default: `docs/archive/**`, `docs/audits/**/evidence/**`, full `12-DECISION-LOG.md`, archived execution roadmaps, or historical status journals.
+4. Before **product-changing** code, read `docs/product/01-PRODUCT-FOUNDATION.md` (principles) and the relevant sections of `05-MVP-RFC.md`.
+5. For **status after a behavior change**, append one dated section to `docs/product/11-PROJECT-STATUS.md` (compact); do not paste long audit logs there.
 
 The core product principle is value. bidplace is for direct sales of significant, authored, limited, or personally connected items. General resale, resellers, mass-market goods, and artificial bids conflict with the product.
 
@@ -133,13 +133,7 @@ Do not rewrite `05-MVP-RFC.md` merely because current code differs. Change it on
 
 ### Design documentation
 
-Before changing user-facing UI, read:
-
-- `docs/design/00-DESIGN-INDEX.md`;
-- `docs/design/01-DESIGN-FOUNDATION.md`;
-- `docs/design/02-USER-FLOWS-AND-SCREENS.md`;
-- `docs/design/03-DESIGN-SYSTEM.md`;
-- `docs/design/04-DESIGN-STATUS.md`.
+Before changing user-facing UI, read `docs/design/00-DESIGN-INDEX.md`, then **only** the owner files needed for the screen (usually `03-DESIGN-SYSTEM.md` + `04-DESIGN-STATUS.md`; flows only when routes change). Load `01-DESIGN-FOUNDATION.md` when principles or scope are in question.
 
 After changing UI:
 

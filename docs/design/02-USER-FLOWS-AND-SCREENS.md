@@ -448,7 +448,7 @@ CTA: `Отправить на модерацию`. Main gallery и story нез�
 истории, а не публикацию. Backend хранит упорядоченные блоки `HEADING`,
 `PARAGRAPH` и `IMAGE` на ревизии Work. Экран создания в клиенте ещё редактирует
 прежний plain-text `story`; перенос вёрстки — отдельный этап
-[UI-HANDOFF.md](../tasks/2026-10-11-author-story-backend/UI-HANDOFF.md).
+[UI-HANDOFF.md](../archive/tasks/2026-10-11-author-story-backend/UI-HANDOFF.md).
 Город автора необязателен. Новые достижения не загружают фотографию.
 Packaging, delivery, condition, provenance, город продажи, weight и video не
 входят в portfolio MVP editor. Торговые шаги сохранены в

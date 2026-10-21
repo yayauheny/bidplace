@@ -7,8 +7,9 @@
 
 Дата среза: 2026-09-08
 Product contract: [`docs/product/05-MVP-RFC.md`](../product/05-MVP-RFC.md)
-Active work: [`00-FIRST-MVP-BACKLOG.md`](../tasks/2026-09-06-reconciliation/00-FIRST-MVP-BACKLOG.md)
-Deferred work: [`99-POST-MVP-BACKLOG.md`](../tasks/2026-09-06-reconciliation/99-POST-MVP-BACKLOG.md)
+Active work (архив 2026-10-21): [`00-FIRST-MVP-BACKLOG.md`](../archive/tasks/2026-09-06-reconciliation/00-FIRST-MVP-BACKLOG.md)
+Deferred work: [`99-POST-MVP-BACKLOG.md`](../archive/tasks/2026-09-06-reconciliation/99-POST-MVP-BACKLOG.md)
+Release audit: [`12-PORTFOLIO-MVP-RELEASE-AUDIT.md`](current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md)
 
 ## Итог
 

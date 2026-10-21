@@ -429,7 +429,7 @@ insert trigger. The mobile and admin clients still speak the previous contracts,
 including the removed free-text materials and technique writes.
 
 Contracts belong to [05-MVP-RFC.md](05-MVP-RFC.md); affected consumers, migration
-and API work are in [the backend plan](../tasks/2026-10-11-author-story-backend/PLAN.md).
+and API work are in [the backend plan](../archive/tasks/2026-10-11-author-story-backend/PLAN.md).
 The next sales wave has its own [complete product plan](15-POST-MVP-BACKLOG.md)
 (`DEC-115`), without changing the active boot graph.
 

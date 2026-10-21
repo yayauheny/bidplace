@@ -25,5 +25,9 @@ apps/mobile/playwright-report/
 /backups/
 /docs.zip
 /docs 2.zip
+# Manual audit screenshots (keep README/json in repo; regenerate locally)
+docs/audits/**/evidence/**/*.png
+docs/audits/**/evidence/**/*.jpg
+docs/audits/**/evidence/**/*.jpeg
 .wrangler/
 .dev.vars*
