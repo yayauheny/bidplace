@@ -65,17 +65,21 @@ Node map, style measurements, source discrepancies и execution handoff нахо
 | `08-IMPLEMENTATION-LOG.md`                      | этапы, commits, проверки и оставшийся scope       |
 
 Live Figma `pAPQo6cADmG5XzVmBX76EE` — единственный visual source для текущего production UI.
-Текущие blockers и порядок redesign находятся в
-[`../audits/00-CURRENT-MVP-READINESS.md`](../audits/00-CURRENT-MVP-READINESS.md).
+Текущие blockers: [`../product/16-PORTFOLIO-ACTIVE-BACKLOG.md`](../product/16-PORTFOLIO-ACTIVE-BACKLOG.md)
+и [`../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md`](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md).
+Срез [`../audits/00-CURRENT-MVP-READINESS.md`](../audits/00-CURRENT-MVP-READINESS.md) — сентябрь 2026, не очередь работ.
 
 ## Обязательное чтение
 
-Перед любой UI-задачей:
+Перед UI-задачей в `apps/mobile`:
 
-1. прочитать product index, foundation и project status;
-2. прочитать `00`–`04` этого раздела;
-3. для portfolio target открыть `02`, `04`, `05`, `06` и live Figma;
-4. проверить фактические routes, contracts, components и tests в коде.
+1. skill `bidplace-ui` и [`../AGENT-MAP.md`](../AGENT-MAP.md);
+2. `03-DESIGN-SYSTEM.md` и нужный поток из `02`;
+3. live Figma для затронутого экрана;
+4. фактические routes, contracts, components и tests в коде.
+
+`04-DESIGN-STATUS.md` открывать поиском по экрану. `00`–`01` и `05`–`06` — когда
+задача про карту документов, принципы, handoff или assets.
 
 ## Что не является источником дизайна
 
