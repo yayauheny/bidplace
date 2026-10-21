@@ -1,10 +1,11 @@
 # Portfolio MVP — release gates
 
-Дата среза журнала: 2026-10-06…10-07. Подневные прогоны, SHA деплоев и классификация старых падений тестов сняты с рабочего дерева.
+Таблица ниже — checkpoint **2026-10-06…10-07**, не сертификат состояния на 2026-10-20…22 и не на HEAD `d0efc03b`.
+Строка «Сейчас: исправлено» означает только тот прогон. Поздние правки UI, auth и account описаны в `docs/product/11-PROJECT-STATUS.md`; они не перепроверялись этим файлом.
 
-Полный журнал: `git show d0efc03b:docs/audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md`.
+Полный журнал прогонов: `git show d0efc03b:docs/audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md`.
 
-Открытые launch gates из этого среза (не перепроверялись в этой очистке): **D01**, **D03**, **D04**. Строки таблицы со статусом «Сейчас: исправлено» — закрытые на том checkpoint дефекты, не новый прогон. Не ставьте им `Done` заново без свежей проверки.
+Открытыми launch gates этот срез оставил **D01**, **D03**, **D04** (и условный **L01**). Более поздние документы их не закрывали. Не ставьте `Done` без новой проверки production.
 
 До первого public traffic остаются D01 (live R2/CDN/cache/purge), D03
 (production startup/TLS/email/restore) и D04 (минимальные portfolio Rules/Privacy).

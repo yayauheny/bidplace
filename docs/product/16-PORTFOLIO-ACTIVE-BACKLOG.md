@@ -37,6 +37,24 @@ Post-MVP, не блокер запуска: V01 (Home Opening visual), W08, W10.
 9. **Frontend dead code** — неиспользуемые header/primitives, лишние icon packs. `Needs verification`. Не визуальный редизайн.
 10. **Query cache keys** — category, public author, cabinet, search first page. `Needs verification`.
 11. **Backend boundaries** — Prisma в admin controller, дубль submit, malformed UUID. `Needs verification`.
-12. **Visual / a11y** — live Figma, сначала 390, keyboard/focus/zoom/reduced motion. `Needs verification`. Физический iPhone не проверялся (см. design status).
+12. **Visual / a11y** — live Figma, сначала 390, keyboard/focus/zoom/reduced motion, native Safe Area. `Needs verification`. Физический iPhone не проверялся (`docs/design/04-DESIGN-STATUS.md`).
 
 Порядок: 1–3 параллельно, 4 после контракта auth, 5–8 до заявлений о релизе, 9–11 после границ, 12 перед приёмкой основателя.
+
+## Не сделано в коде (сверено read-only с деревом `d0efc03b`)
+
+**Удаление своей работы — Not implemented.** DEC-123 разрешает автору удалить Work в любом статусе: после подтверждения работа исчезает из кабинета и публичного доступа и помечается удалённой, без каскадного удаления файлов и без подмены hide/restore. В API нет удаления Product, в мобильном UI нет этого действия.
+
+Ограничения до реализации (полный план: `git show d0efc03b:docs/archive/tasks/2026-10-19-account-ui/DELETE-BACKEND-PLAN.md`):
+
+- не обходить commerce locks;
+- в той же транзакции снять curator selection;
+- не удалять байты `ProductImage` в MVP;
+- suspended-автору удаление запрещено;
+- поздний approve не публикует уже удалённую работу;
+- публичные списки, detail, home и кабинет автора удалённую работу не показывают;
+- admin: не в активной очереди модерации, след в audit остаётся.
+
+Проверка: delete для DRAFT…ARCHIVED, затем anonymous GET detail → 404 и отсутствие id в list/home/cabinet.
+
+**История работы (author story).** План 2026-10-11 помечал B6 (клиентский cutover) как не начатый. На текущем дереве это уже не так: api-client пишет story, черновик редактирует блоки, публичный экран читает `creationStory.blocks`. Не переносить статус «B6 не начат» в работу. Остаток — `Needs verification`: `product-screen` всё ещё показывает `work.materials` и `work.technique`; нужно подтвердить, что это проекция терминов ревизии, а не второй write-контракт. План и UI handoff: `git show d0efc03b:docs/archive/tasks/2026-10-11-author-story-backend/`.

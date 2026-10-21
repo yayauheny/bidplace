@@ -17,12 +17,15 @@
 | Account | Shared-ширина шторок и финальная web-приёмка 2026-10-20 | Сверка с Figma account nodes — Needs verification |
 | Dock | Домик в общем floating dock; DEC-088 — четыре пункта | |
 | Шторки auth | Поверх текущей страницы, dismiss из шапки (DEC-122); dimmer не сбрасывается на forgot-password | |
-| Поиск | Fullscreen overlay (DEC-096) | |
+| Поиск | Fullscreen overlay (DEC-096) | Последняя revision: один history entry `overlay=search`; Back восстанавливает сессию. Раннее «Back не пушит history» отменено |
 
 ## Needs verification
 
-- Физический iPhone, реальный browser zoom, увеличенный системный текст.
+- Физический iPhone и native runtime, реальный browser zoom, увеличенный системный текст.
+- Native Safe Area. Поздний web-срез её не закрывал.
 - Desktop 1024/1440 там, где в Figma есть только 390 (`NEEDS-FIGMA`).
-- Home Opening visual mismatch (V01 в release audit) — post-MVP, порог 0.12 не ослаблять.
+- Live Turnstile и Cloudflare site key: production fail-closed, не local dummy token.
+- Keyboard focus, reduced motion и состояния loading/empty/error остаются правилами `03-DESIGN-SYSTEM.md`. На физическом устройстве они не приняты.
+- Home Opening visual mismatch (V01) — post-MVP, порог 0.12 не ослаблять.
 
 Не закрывайте эти пункты по старым записям журнала без новой проверки.
