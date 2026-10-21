@@ -83,6 +83,37 @@ describe('image upload preparation', () => {
     }
   });
 
+  it('honors a requested output format even for small inputs', async () => {
+    const file = new File(['jpeg'], 'photo.jpg', { type: 'image/jpeg' });
+    const output = new Blob(['png'], { type: 'image/png' });
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      blob: async () => output,
+    } as Response);
+    renderer.save.mockResolvedValue({ uri: 'blob:png' });
+    renderer.manipulate.mockReturnValue({
+      resize: renderer.resize,
+      renderAsync: async () => ({
+        saveAsync: renderer.save,
+        release: renderer.renderRelease,
+      }),
+      release: renderer.contextRelease,
+    });
+    try {
+      const prepared = await prepareImageUpload(
+        { uri: 'blob:jpeg', width: 300, height: 200, file },
+        { ...options, format: 'png' },
+      );
+      expect(renderer.save).toHaveBeenCalledWith({
+        format: 'png',
+        compress: options.quality,
+      });
+      expect(prepared.blob.type).toBe('image/png');
+    } finally {
+      fetchSpy.mockRestore();
+    }
+  });
+
   it('supports lossless PNG output for callers that need transparency', async () => {
     const input = new File(['heic'], 'image.heic', { type: 'image/heic' });
     const output = new Blob(['png'], { type: 'image/png' });
