@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   ImagePreparationError,
@@ -15,7 +15,7 @@ const renderer = vi.hoisted(() => ({
 }));
 
 vi.mock('expo-image-manipulator', () => ({
-  SaveFormat: { JPEG: 'jpeg' },
+  SaveFormat: { JPEG: 'jpeg', PNG: 'png' },
   ImageManipulator: { manipulate: renderer.manipulate },
 }));
 
@@ -27,6 +27,7 @@ const options = {
 };
 
 describe('image upload preparation', () => {
+  beforeEach(() => vi.clearAllMocks());
   it('maintains aspect ratio without upscaling', () => {
     expect(containedDimensions(6000, 4000, 1600)).toEqual({ width: 1600, height: 1067 });
     expect(containedDimensions(200, 400, 1600)).toEqual({ width: 200, height: 400 });
@@ -81,4 +82,36 @@ describe('image upload preparation', () => {
       fetchSpy.mockRestore();
     }
   });
+
+  it('supports lossless PNG output for callers that need transparency', async () => {
+    const input = new File(['heic'], 'image.heic', { type: 'image/heic' });
+    const output = new Blob(['png'], { type: 'image/png' });
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      blob: async () => output,
+    } as Response);
+    renderer.save.mockResolvedValue({ uri: 'blob:png' });
+    renderer.manipulate.mockReturnValue({
+      resize: renderer.resize,
+      renderAsync: async () => ({
+        saveAsync: renderer.save,
+        release: renderer.renderRelease,
+      }),
+      release: renderer.contextRelease,
+    });
+    try {
+      const result = await prepareImageUpload(
+        { uri: 'blob:heic', width: 2000, height: 1200, file: input },
+        { ...options, format: 'png' },
+      );
+      expect(renderer.save).toHaveBeenCalledWith({
+        format: 'png',
+        compress: options.quality,
+      });
+      expect(result.blob.type).toBe('image/png');
+    } finally {
+      fetchSpy.mockRestore();
+    }
+  });
+
 });
