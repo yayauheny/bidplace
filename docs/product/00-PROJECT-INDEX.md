@@ -77,7 +77,7 @@
 | `../research/2026-09-06-BELARUS-LEGAL-UX-PATTERNS.md`        | Проверенные правовые опоры, рыночные patterns и legal UX matrix                                           |
 | `../ops/00-RELEASE-AND-BACKUP.md`                            | Deploy, backup, restore drill и `pnpm verify` gate для пилота                                             |
 | `../ops/CLOUDFLARE-DEPLOYMENT.md`                            | Portfolio Cloudflare staging/production: domains, secrets, migrations и smoke                             |
-| `../audits/00-CURRENT-MVP-READINESS.md`                      | Главный текущий аудит готовности и блокеров                                                               |
+| `../audits/00-CURRENT-MVP-READINESS.md`                      | Исторический срез 2026-09-08; текущие блокеры — `16` и release audit                                      |
 | `../audits/01-OPEN-ARCHITECTURE-GAPS.md`                     | Нерешённые архитектурные пробелы, варианты и зависимости от решений                                       |
 | `../research/README.md`                                      | Правила хранения сырого исследования                                                                      |
 | `../research/raw/*`                                          | Архив исходных отчётов; не каноническое решение                                                           |
@@ -86,9 +86,12 @@
 
 ### Любая задача
 
-1. `00-PROJECT-INDEX.md`
-2. `01-PRODUCT-FOUNDATION.md`
-3. `11-PROJECT-STATUS.md`
+1. [`../AGENT-MAP.md`](../AGENT-MAP.md)
+2. Этот индекс — только чтобы выбрать owner-документ
+
+`01-PRODUCT-FOUNDATION.md` — когда меняется продуктовое поведение.
+`11-PROJECT-STATUS.md` — когда нужен фактический статус реализации.
+Не читать целиком `12-DECISION-LOG.md` и `04-DESIGN-STATUS.md`.
 
 ### Реализация продуктовой функции
 
@@ -110,11 +113,12 @@
 
 Дополнительно:
 
-- `../design/00-DESIGN-INDEX.md`;
-- `../design/01-DESIGN-FOUNDATION.md`;
-- `../design/02-USER-FLOWS-AND-SCREENS.md`;
 - `../design/03-DESIGN-SYSTEM.md`;
-- `../design/04-DESIGN-STATUS.md`.
+- нужный поток из `../design/02-USER-FLOWS-AND-SCREENS.md`;
+- skill `bidplace-ui`.
+
+`04-DESIGN-STATUS.md` — точечный поиск по экрану, не чтение файла целиком.
+`01-DESIGN-FOUNDATION.md` — когда спорны принципы или scope дизайна.
 
 Для чистого handoff вместо полного набора достаточно `00`, нужного flow из `02`, системы из `03` и `05-DESIGN-HANDOFF.md`.
 

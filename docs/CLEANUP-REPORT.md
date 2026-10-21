@@ -39,7 +39,7 @@ See `docs/CLEANUP-METRICS.txt` (updated at branch HEAD).
 ## KEEP / REVIEW
 
 - `design/figma-handoff/` (~70MB) — REVIEW: LFS or external mirror before new repo
-- `docs/audits/00-CURRENT-MVP-READINESS.md` — REVIEW: refresh against current code
+- `docs/audits/00-CURRENT-MVP-READINESS.md` — pointer to backlog/release audit; full 2026-09-08 text at `334d9ba6`
 - `12-DECISION-LOG.md` — lookup only
 
 ## New repo with clean history?
