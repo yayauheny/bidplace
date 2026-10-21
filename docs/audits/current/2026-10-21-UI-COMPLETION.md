@@ -13,8 +13,8 @@ writes against the manual preview.
    see [login audit](2026-10-20-LOGIN-SHEET-REVIEW.md).
 2. Work creation: implemented,571b0f94;89 owner tests,24 wizard/revision E2E and2 media-lifecycle E2E passed.
 3. Desktop empty-state actions: implemented,0ba87ff9, verified in Chromium/WebKit at390/1024/1440/1920.
-4. Shared sheet motion: implemented;48/48 browser checks and recorded Chromium touch passed.
-5. Final production preview, documented verification and manual checklist: pending.
+4. Shared sheet motion: implemented,e8adce34;48/48 browser checks and recorded Chromium touch passed.
+5. Final production preview and documented automated verification: complete; physical-device checks remain explicitly open below.
 
 ## Work design map
 
@@ -156,3 +156,47 @@ adds actual private review content and shared gallery/story menu ownership. The
 positive diff includes meaningful owner/E2E coverage and evidence; it is not an
 additional editor framework or a second persistence implementation. No dependency,
 permission, server contract or database migration was introduced.
+
+## Commits and final state
+
+| Stage | SHA |
+| --- | --- |
+| MVP synchronization | e3ba8074 |
+| Responsive login review | f4ae9223 |
+| Portfolio work creation/editor/review |571b0f94 |
+| Desktop action widths |0ba87ff9 |
+| Public build cache target isolation | fa03de39 |
+| Shared continuous sheet motion and regression acceptance | e8adce34 |
+
+Tracked working changes are committed. Foreign .cursor and old2026-10-20 agent
+evidence remain untouched/untracked; the login baseline stash and patch remain
+preserved. No push, Cloudflare deployment, manual database reset or fixture writes
+to the manual preview. Frontend7899 serves the fresh production web export with
+API3001; isolated browser writes used API3011 and the disposable E2E database.
+
+Final checks: scoped mobile eslint and tsc pass; work/media browser acceptance
+24 wizard/revision +2 complete media cases;48 responsive/shared-sheet cases;
+24 auth/recovery scenarios (20 plus4 addressed reruns). Owner checks144 passed
+before the final narrow rerun of65; public cache identity included in that rerun.
+Web production and iOS JS/Hermes exports pass. Complete repository suite was not
+run: verification was bounded to affected owners and browser integrations.
+
+## User manual check order
+
+1. Home at390/1024/1440/1920: empty actions remain centered, up to420px on desktop.
+2. Login → forgot → login; resize across767/768 with filled fields and an error.
+3. Close through backdrop, Escape, keyboard close and handle; slow, fast and
+   cancelled drag. Reopen; verify page scroll and loaded images remain stable.
+4. Register: one confirmation; document links and unreadable-document error do
+   not block the registration flow.
+5. Create: data → photos/upload retry/order/delete → mixed heading/text/photo
+   blocks → reorder/delete → review → submit for moderation. Reload a saved draft.
+6. Edit an approved work from the cabinet; public data must remain at the approved
+   revision until changes receive moderation approval.
+7. Physical iPhone: system keyboard, reachable bottom actions, form scrolling,
+   gesture feel; separately test real browser200% zoom and enlarged text.
+
+Remaining limits: actual iPhone/native runtime, real browser zoom/text enlargement
+need manual results. Desktop creation frames were not supplied (NEEDS-FIGMA);
+1024/1440 screenshots establish responsive robustness, not invented visual parity.
+Login known reference differences remain documented in its own audit.
