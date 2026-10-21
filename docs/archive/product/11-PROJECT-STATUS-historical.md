@@ -14,7 +14,7 @@ consumers наследуют исправление. Две красные це�
 
 Проверки: 26/26 Chromium/WebKit, 36/36 owner unit, build/tsc/lint/format.
 Матрица, исходные consumers и ограничения:
-[аудит](../audits/2026-10-19-TRANSITION-MATRIX.md).
+[аудит](../../audits/2026-10-19-TRANSITION-MATRIX.md).
 Физический iPhone/native и отдельная browser-приёмка всех внутренних форм —
 Needs verification; API/БД и серверные контракты не менялись.
 
@@ -26,7 +26,7 @@ AuthViewport давали кадры с alpha=0 при смене login/forgot. 
 закрытие, focus и guards. Маршруты, формы, API/БД и визуальные значения не менялись.
 Финальный browser gate: 14/14 Chromium + WebKit (включая покадровые переходы);
 unit 22/22, build/tsc/lint passed. Физический iPhone/native — Needs verification.
-[Аудит и итоговая приёмка](../audits/2026-10-19-AUTH-TRANSITION-FLICKER.md).
+[Аудит и итоговая приёмка](../../audits/2026-10-19-AUTH-TRANSITION-FLICKER.md).
 
 ## 2026-10-18 — Фон auth и общий свайп шторок (DEC-122)
 
@@ -40,7 +40,7 @@ FloatingDock сохраняет публичный return path/query. SheetDragS
 mobile tsc, lint/format затронутых файлов. **Needs verification:** физический iPhone
 и native. Большой legal/auth case остался красным на старом locator текста;
 полный auth-suite не заявляется зелёным. Отчёт и evidence:
-[приёмка](../audits/2026-10-18-SHEET-FIX-ACCEPTANCE.md). API/БД не менялись.
+[приёмка](../../audits/2026-10-18-SHEET-FIX-ACCEPTANCE.md). API/БД не менялись.
 
 ## 2026-10-18 — TC-final: TCF-01 закрыт, TC-02 Needs verification (Partial), техчистка остановлена
 
@@ -469,7 +469,7 @@ push/merge/deploy не выполнялись.
 ## 2026-10-12 — Consolidated legal documents (`fix/legal-pack`)
 
 - `Implemented` (documentation): один актуальный юридический handoff в
-  [`../legal/00-FINAL-LEGAL-AUDIT.md`](../legal/00-FINAL-LEGAL-AUDIT.md); прежние
+  [`../legal/00-FINAL-LEGAL-AUDIT.md`](../../legal/00-FINAL-LEGAL-AUDIT.md); прежние
   checklist/document-set/questions/manifest и drafts сохранены без переписывания
   в `docs/legal/archive`. Восстановлен закрытый вопросник из `0bb2f86e`, где вопросы
   1–7 закрыты основателем после уточнений юриста. Повторно предоставленный конспект
@@ -529,7 +529,7 @@ push/merge/deploy не выполнялись.
   bundle `entry-e29b977a2398a6f0f9e6bec19d658305.js`). `category-query-identity` **4/4**
   still fails on base `d8bfba17` — not fixed or claimed caused by this branch.
 - Evidence:
-  [`docs/audits/current/evidence/2026-10-12-author-onboarding/README.md`](../audits/current/evidence/2026-10-12-author-onboarding/README.md),
+  [`docs/audits/current/evidence/2026-10-12-author-onboarding/README.md`](../../audits/current/evidence/2026-10-12-author-onboarding/README.md),
   `author-application-publication.spec.ts`, owner specs under `apps/mobile/src/features/sellers`
   and `components/{figma,ui}`.
 
@@ -631,7 +631,7 @@ _Superseded by the section above. Retained for the step-1-only audit trail._
   Eight founder-provided author captures were inspected from 2026-10-11 exports.
   Their node source and product scope differ in places; UI parity is not claimed.
 - `Not implemented` for the next sales wave (`DEC-115`). Its complete product
-  map is [15-POST-MVP-BACKLOG.md](15-POST-MVP-BACKLOG.md); execution mapping stays
+  map is [15-POST-MVP-BACKLOG.md](../../product/15-POST-MVP-BACKLOG.md); execution mapping stays
   in the post-MVP backlog. This documentation does not enable commerce.
 - Verification for this pass is documentation links, diff and decision
   consistency only. Application tests, native, live Figma and production were
@@ -651,7 +651,7 @@ _Superseded by the section above. Retained for the step-1-only audit trail._
 - Fresh `expo export --platform web --clear` to `web-dist-geometry` (`entry-60dc056ca7b8420536eaac498f298184.js`) embeds `http://127.0.0.1:50281` once and `127.0.0.1:50181` zero times.
 - Search chrome and the 16-cell button matrix: **14/14** (48.2s) on Chromium and WebKit against that export. Full `search-overlay.spec.ts` was not run: the standard Playwright config starts `e2e/prepare.mjs`, which loads `.env` and runs `migrate reset --force`.
 - Auth browser **44/44** (1.8m) on schema `auth_browser_release_20261011_v3` (`playwright.auth-abuse.config.ts`, no webServer). The previous four geometry failures passed first (14.1s). Test API only uses `TRUST_PROXY=true`; `assignAuthClientIp` keeps a distinct documentation IP per test so the register limit stays **5/60s per IP**. «Вернуться ко входу» and «Регистрация» stay links. Chromium privacy Escape restores the legal span after `LegalLink` focuses itself before open.
-- Auth and nickname layout geometry is restored on the shared `FigmaButton` renderer via size presets `auth` and `suggestion` (default matrix unchanged for the 4×4 board). Tokens and measurements: [design system §6.2](../design/03-DESIGN-SYSTEM.md#62-shared-text-button).
+- Auth and nickname layout geometry is restored on the shared `FigmaButton` renderer via size presets `auth` and `suggestion` (default matrix unchanged for the 4×4 board). Tokens and measurements: [design system §6.2](../../design/03-DESIGN-SYSTEM.md#62-shared-text-button).
 - Production Cloudflare SPA build: Node 22, `EXPO_NO_DOTENV=1`, `node scripts/cloudflare/build-web.mjs production` with synthetic public Turnstile site key **exit 0**. Output `apps/mobile/dist` (`entry-d486afb3492577ae340f2a839e167129.js`). Post-export checks passed: production API origin present, staging origin absent, build secret canary absent from assets.
 - Rollout still needs a coordinated old-writer stop and a separate operator deploy for slug `20261008040000`, auth-abuse `20261010010000`, and legacy import `20261010100000`. Real SMTP, live Turnstile, and WAF were not exercised. Workflow wiring passes the public Turnstile site key into both SPA builds and the Turnstile secret only into backend validation/runtime. Secret values and their GitHub environment scope were not inspected.
 
@@ -771,11 +771,11 @@ _Superseded by the section above. Retained for the step-1-only audit trail._
   E2e gates password visibility on `expectTurnstileReady` after the local fixture;
   where Turnstile is not in-frame for layout evidence, the register nickname PNG is
   taken at initial stable **390×874** before resize/zoom. Repro:
-  [`apps/mobile/e2e/README.md`](../../apps/mobile/e2e/README.md). Visual QA: **50**
+  [`apps/mobile/e2e/README.md`](../../../apps/mobile/e2e/README.md). Visual QA: **50**
   blank-form PNGs (scripted Turnstile only) —
-  [`forms/CAPTURE-MANIFEST.md`](../audits/current/evidence/2026-10-10-auth-abuse-protection/forms/CAPTURE-MANIFEST.md);
+  [`forms/CAPTURE-MANIFEST.md`](../../audits/current/evidence/2026-10-10-auth-abuse-protection/forms/CAPTURE-MANIFEST.md);
   audit summary:
-  [`README.md`](../audits/current/evidence/2026-10-10-auth-abuse-protection/README.md).
+  [`README.md`](../../audits/current/evidence/2026-10-10-auth-abuse-protection/README.md).
 - `Needs verification` (production): real SMTP mailbox delivery, live Cloudflare
   Turnstile hostname/Siteverify, edge WAF/rate rules, and coordinated application
   of migrations `20261010010000_auth_abuse_protection` and
@@ -855,7 +855,7 @@ _Superseded by the section above. Retained for the step-1-only audit trail._
   remains blocked by schema compatibility. No migration/reset was run.
   Standard e2e preparation migrates/resets its DB, so it was not used.
 - Evidence and exact verification boundaries:
-  [`auth runtime audit`](../audits/current/evidence/2026-10-09-auth-runtime-validation/README.md).
+  [`auth runtime audit`](../../audits/current/evidence/2026-10-09-auth-runtime-validation/README.md).
   Privacy policy stays a placeholder and OAuth stays unavailable. This does
   not claim 1:1, launch readiness or a production schema update.
 
@@ -1012,7 +1012,7 @@ _Superseded by the section above. Retained for the step-1-only audit trail._
   fullscreen captures and exact shared brand vectors are imported and validated;
   the previous four fullscreen packages were removed from checkout with recorded
   Git lineage. Current source and executor prompt:
-  [HANDOFF.md](../../design/figma-handoff/auth/2026-10-08-auth-fullscreen/HANDOFF.md).
+  [HANDOFF.md](../../../design/figma-handoff/auth/2026-10-08-auth-fullscreen/HANDOFF.md).
 - Read-only localhost review confirmed the login dock overlap at three phone
   sizes and missing brand/checkbox/style details in registration. Synthetic
   email/nickname were used only for local step navigation; no password entry,
@@ -1876,8 +1876,8 @@ _Superseded by the section above. Retained for the step-1-only audit trail._
 - Evidence: `apps/api/src/images/image-processing-admission.ts`,
   `sellers.controller.ts`, `images.service.ts`,
   `upload-safety.integration.spec.ts`. Audit:
-  [FinOps](../audits/current/13-FINOPS-SCALE-TO-ZERO-AUDIT.md),
-  [deployment verification](../audits/current/14-CLOUDFLARE-DEPLOYMENT-VERIFICATION.md).
+  [FinOps](../../audits/current/13-FINOPS-SCALE-TO-ZERO-AUDIT.md),
+  [deployment verification](../../audits/current/14-CLOUDFLARE-DEPLOYMENT-VERIFICATION.md).
 
 ## 2026-10-05 — Cloudflare deployment package
 
@@ -1898,7 +1898,7 @@ _Superseded by the section above. Retained for the step-1-only audit trail._
   claimed. Runtime secret location and media optimization await founder answers.
 - Source: updated remote release `507bb5b`; work stays in separate deployment
   branch, without release integration/push/deploy. Exact results, registry and
-  manual blockers: [deployment verification](../audits/current/14-CLOUDFLARE-DEPLOYMENT-VERIFICATION.md).
+  manual blockers: [deployment verification](../../audits/current/14-CLOUDFLARE-DEPLOYMENT-VERIFICATION.md).
 
 ## 2026-10-05 — Container runtime safety
 
@@ -1935,7 +1935,7 @@ _Superseded by the section above. Retained for the step-1-only audit trail._
   `pnpm verify` exits 0 (API 372, integration 123, builds 8/8); dedicated media
   passes in both engines. Full Chromium/WebKit remains `Partial`: 210 passed
   and the same two known Home Opening visual failures, no skips/retries. Exact results and source
-  reproduction are in the [permanent audit](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md).
+  reproduction are in the [permanent audit](../../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md).
   Existing valid sessions, roles, ownership and anonymous catalog contracts are
   preserved. No Google OAuth, new dependencies or UI changes are included.
 
@@ -1956,7 +1956,7 @@ _Superseded by the section above. Retained for the step-1-only audit trail._
   all browser statuses match the previous release baseline. Backend typecheck/build,
   lint, targeted ProductsService tests and the catalog integration file pass.
   Exact evidence and current branch are in
-  the [permanent audit](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md).
+  the [permanent audit](../../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md).
   UI, public contracts, Prisma and deployment configuration are unchanged.
 
 ## 2026-10-04 — Portfolio release verification
@@ -1972,7 +1972,7 @@ _Superseded by the section above. Retained for the step-1-only audit trail._
 - `Implemented` (handoff prepared): docs-only evidence commit preserves verified
   application/test tree; release is ready for authorized normal push. Actual
   verified release SHA, source manifest, inventory and exact evidence live in the
-  [permanent release audit](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md).
+  [permanent release audit](../../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md).
   External deployment/provider acceptance was outside this pass.
 
 ## 2026-10-04 — Portfolio integration candidate
@@ -1996,7 +1996,7 @@ _Superseded by the section above. Retained for the step-1-only audit trail._
 - `Needs verification`: live R2/CDN/cache/purge, production startup/email/restore,
   portfolio Rules/Privacy and conditional valuable-data cutover. No deployment,
   push or PR. The permanent
-  [release audit](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md) owns exact
+  [release audit](../../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md) owns exact
   commands, findings, classification and preserved evidence.
 
 ## 2026-10-04 — Portfolio Work runtime and critical media flow
@@ -2034,7 +2034,7 @@ _Superseded by the section above. Retained for the step-1-only audit trail._
   Final `pnpm verify` exit 0 (8/8 builds); frost follow-up 2 passed, 43.6s.
   The package is ready for integration regression, not accepted as a live release.
   Exact commands/results and remaining public-launch gates are recorded in the permanent
-  [release audit](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md), which owns
+  [release audit](../../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md), which owns
   every finding, severity, decision and exact command/evidence.
 
 ## 2026-10-04 — R2 media lifecycle implementation in progress
@@ -2119,7 +2119,7 @@ build-web` (4 successful tasks), `make test` and dev smoke passed. Production
   0 flaky. Publication tests now wait for completed save-and-exit navigation.
   Full maintained browser baseline and external SMTP/R2/TLS checks remain open.
   Details and remaining launch gates:
-  [launch audit](../audits/2026-10-04-PUBLIC-LAUNCH-READINESS.md).
+  [launch audit](../../audits/2026-10-04-PUBLIC-LAUNCH-READINESS.md).
 
 ## 2026-10-04 — City publication browser locator
 
@@ -2130,7 +2130,7 @@ build-web` (4 successful tasks), `make test` and dev smoke passed. Production
 - Verification: logout followed by publication, one worker and one disposable
   database across both browsers: 12 passed, 0 failed, 0 skipped. Both approved
   city authors remain in that database. Commands and evidence:
-  [execution roadmap](../audits/current/00-EXECUTION-ROADMAP.md#2026-10-04--city-publication-locator-follow-up).
+  [execution roadmap](../../audits/current/00-EXECUTION-ROADMAP.md).
 - `Needs verification`: the full R29/T05 browser baseline, timings and cleanup
   remain open. The production approval guard still lacks the `discipline`
   requirement enforced by the public seller mapper; this test correction does
@@ -3560,7 +3560,7 @@ build-web` (4 successful tasks), `make test` and dev smoke passed. Production
   `visibility` through a web-only helper. React Native `ViewStyle` is not
   globally augmented.
 - `Partial`: first-application optional achievements remain the founder decision
-  in [`14-OPEN-MVP-DECISIONS.md`](14-OPEN-MVP-DECISIONS.md).
+  in [`14-OPEN-MVP-DECISIONS.md`](../../product/14-OPEN-MVP-DECISIONS.md).
 - `Unchanged`: 232×64 dock, Home/Works/Authors/Search/ShareSheet/cards/frost
   and `CreatorHeader.web` except the listed AppShell/achievement/e2e files.
   Fixed 390 mobile-web column stays expected. Commerce archive `19eb40e` is not
@@ -3586,7 +3586,7 @@ build-web` (4 successful tasks), `make test` and dev smoke passed. Production
   immediately, so optional achievements cannot be added before the first moderation.
   Design `02-USER-FLOWS-AND-SCREENS.md` §8 allows a fourth visual step and a saved
   incomplete draft; that workflow is not implemented here. Exact founder decision:
-  [`14-OPEN-MVP-DECISIONS.md`](14-OPEN-MVP-DECISIONS.md).
+  [`14-OPEN-MVP-DECISIONS.md`](../../product/14-OPEN-MVP-DECISIONS.md).
 - `Implemented` (compile-only, no UI redesign): mobile typecheck accepts the
   `global.css` side-effect import and web overlay positioning via a CSS `div` /
   platform dialog layer instead of `ViewStyle['position'] = 'fixed'`.
@@ -3644,7 +3644,7 @@ build-web` (4 successful tasks), `make test` and dev smoke passed. Production
   images render in Author About and can be uploaded/deleted by the owner;
   AdminRecoveryPanel + «Восстановление» stay while commerce runtime is loaded;
   `DestructiveButton` uses shared `danger`; `sort=added` and hide-vs-live
-  listing stay from [PR A preservation](#2026-09-14--portfolio-foundation-preservation);
+  listing stay from [PR A preservation](#2026-09-14-mobile-web-figma-staged-on-portfolio-foundation);
   dock is `navigation` with links/`aria-current` and a create button;
   `PortfolioWorkDetailResponse` is imported from `@bidplace/contracts`;
   `test:e2e` is the maintained Playwright gate and
@@ -3800,7 +3800,7 @@ build-web` (4 successful tasks), `make test` and dev smoke passed. Production
 
 - `Implemented` (docs only): обнаруженные в T07 технические пробелы и варианты их
   решения сохранены в
-  [`../audits/01-OPEN-ARCHITECTURE-GAPS.md`](../audits/01-OPEN-ARCHITECTURE-GAPS.md).
+  [`../audits/01-OPEN-ARCHITECTURE-GAPS.md`](../../audits/01-OPEN-ARCHITECTURE-GAPS.md).
   Карта покрывает Work-level deal uniqueness, Order sources, handoff outcomes,
   second chance, snapshots, contact disclosure, notifications, Work/Listing boundary
   и complaints.
@@ -3813,9 +3813,9 @@ build-web` (4 successful tasks), `make test` and dev smoke passed. Production
 - `Implemented` (research/docs only): D01–D04 проверены как единая модель
   `Work → Listing → Bid/offer → Order → handoff`. Рекомендации, rejected alternatives,
   race/abuse invariants и вопросы юристу находятся в
-  [`../research/2026-09-06-MVP-DEAL-DECISION-STRESS-TEST.md`](../research/2026-09-06-MVP-DEAL-DECISION-STRESS-TEST.md).
+  [`../research/2026-09-06-MVP-DEAL-DECISION-STRESS-TEST.md`](../../research/2026-09-06-MVP-DEAL-DECISION-STRESS-TEST.md).
 - `Needs founder decision`: memo не меняет RFC или decision log. D01–D04 остаются
-  открыты в [`14-OPEN-MVP-DECISIONS.md`](14-OPEN-MVP-DECISIONS.md).
+  открыты в [`14-OPEN-MVP-DECISIONS.md`](../../product/14-OPEN-MVP-DECISIONS.md).
 - `Needs future implementation`: текущая БД ограничивает активный Order только на
   уровне Listing, а seller единолично меняет `CONTACTED`, `COMPLETED` и
   `HANDOFF_FAILED`. Для Work-first/fixed/offer нужен Work-level deal invariant и
@@ -3826,16 +3826,16 @@ build-web` (4 successful tasks), `make test` and dev smoke passed. Production
 
 - `Implemented` (docs only): выполненные task-prompts и закрытые legal-вопросники
   удалены из активной структуры; текущие blockers сведены в
-  [`../audits/00-CURRENT-MVP-READINESS.md`](../audits/00-CURRENT-MVP-READINESS.md),
+  [`../audits/00-CURRENT-MVP-READINESS.md`](../../audits/00-CURRENT-MVP-READINESS.md),
   активные задачи — в
   [`../tasks/2026-09-06-reconciliation/00-FIRST-MVP-BACKLOG.md`](../../archive/tasks/2026-09-06-reconciliation/00-FIRST-MVP-BACKLOG.md).
 - `Implemented` (research): Belarus legal UX findings перенесены в
-  [`../research/2026-09-06-BELARUS-LEGAL-UX-PATTERNS.md`](../research/2026-09-06-BELARUS-LEGAL-UX-PATTERNS.md).
+  [`../research/2026-09-06-BELARUS-LEGAL-UX-PATTERNS.md`](../../research/2026-09-06-BELARUS-LEGAL-UX-PATTERNS.md).
   Research определяет понятные места controls, но не заменяет заключение юриста.
 - `Needs verification`: отдельный обязательный PD consent из `DEC-078` требует
   purpose-by-purpose legal basis check. Это не отменяет решение основателя молча;
   финальный registration contract остаётся заблокирован вопросом 1 из
-  [итоговый юридический аудит](../legal/00-FINAL-LEGAL-AUDIT.md).
+  [итоговый юридический аудит](../../legal/00-FINAL-LEGAL-AUDIT.md).
 - Code behavior is unchanged by this documentation update. Tests were not rerun.
 - `Planned` (docs only): backlog содержит независимые security/dependency evidence и
   public-pilot operations reviews. Они не разрешают открытые вопросы автоматически и
@@ -4030,14 +4030,14 @@ build-web` (4 successful tasks), `make test` and dev smoke passed. Production
 
 - `Implemented`: pinned Node `22` (`.nvmrc`); root `test:unit` and `pnpm verify`
   (`db:generate` → typecheck → lint → unit → integration → build).
-- `Implemented`: GitHub Actions [`.github/workflows/verify.yml`](../../.github/workflows/verify.yml)
+- `Implemented`: GitHub Actions [`.github/workflows/verify.yml`](../../../.github/workflows/verify.yml)
   with PostgreSQL service container.
 - `Implemented`: `GET /api/health/ready` — Prisma `SELECT 1` with 2s timeout; `503`
   when DB unreachable; liveness remains `GET /api/health` (`health.service.ts`,
   `health.service.spec.ts`). Playwright waits on `/api/health/ready`.
 - `Implemented`: API `Dockerfile` (`pnpm deploy --prod` runtime layout),
   `docker compose --profile app` with production env from `.env`, ops runbook
-  [`docs/ops/00-RELEASE-AND-BACKUP.md`](../ops/00-RELEASE-AND-BACKUP.md).
+  [`docs/ops/00-RELEASE-AND-BACKUP.md`](../../ops/00-RELEASE-AND-BACKUP.md).
 - `Implemented`: `scripts/ops/backup-db.sh`, `restore-db.sh`,
   `verify-restore-integrity.mjs` with `pnpm ops:backup|restore|verify-restore`;
   local restore drill to `bidplace_restore` verified counts + 5 image checksums
@@ -4077,7 +4077,7 @@ build-web` (4 successful tasks), `make test` and dev smoke passed. Production
   image POSTs (`images.controller.ts`).
 - `Implemented`: admin incident guards — cannot ban/revoke self or other admins;
   session revoke audit uses `oldStatus: session`, `newStatus: revoked`.
-- `Implemented`: engineering owner doc [`13-APPLICATION-SECURITY.md`](13-APPLICATION-SECURITY.md);
+- `Implemented`: engineering owner doc [`13-APPLICATION-SECURITY.md`](../../product/13-APPLICATION-SECURITY.md);
   **DEC-068** in decision log.
 - Coverage: `image-policy.spec.ts`, `image-upload-safety.integration.spec.ts`,
   extended `admin-user.service.spec.ts`, `admin-user-emergency.integration.spec.ts`.

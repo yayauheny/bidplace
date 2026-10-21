@@ -5,7 +5,7 @@
 **Актуализация 2026-10-05:** подтверждённый release code/test HEAD — `6af9096`
 (два product correctness commits поверх `00d7ed6`).
 Последние release/browser результаты принадлежат
-[`12-PORTFOLIO-MVP-RELEASE-AUDIT.md`](12-PORTFOLIO-MVP-RELEASE-AUDIT.md).
+[`12-PORTFOLIO-MVP-RELEASE-AUDIT.md`](../../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md).
 R29/T05 — `PARTIAL`: полный Chromium/WebKit выполнен, остались два известных
 Home Opening visual failures. A02/R23 — `PARTIAL`: локальный hydration visibility
 fix и шесть PostgreSQL interleavings проверены; snapshot/count/filter consistency

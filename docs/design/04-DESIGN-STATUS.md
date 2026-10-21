@@ -449,7 +449,7 @@ _Superseded for overall flow status by the section above. Kept as the step-1-onl
   restores the form and clears its read error without sending mail. Regression
   evidence is in the existing hook/form owner specs and six Chromium/WebKit
   scenarios, including a short viewport and keyboard retry; see
-  [project status](../product/11-PROJECT-STATUS.md#2026-10-10--verification-state-retry-after-email-correction).
+  [project status (archive)](../archive/product/11-PROJECT-STATUS-historical.md) (см. записи 2026-10-10).
   No layout or token change. Native and deployed environment checks remain open.
 
 ## 2026-10-10 — Auth abuse web surfaces (state-first copy, Turnstile host)

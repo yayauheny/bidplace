@@ -4,6 +4,7 @@
 Статус: Confirmed
 
 Карта для агентов: [`../AGENT-MAP.md`](../AGENT-MAP.md).
+Активный backlog: [`16-PORTFOLIO-ACTIVE-BACKLOG.md`](16-PORTFOLIO-ACTIVE-BACKLOG.md).
 Релиз portfolio MVP:
 [`../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md`](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md).
 Срез готовности (2026-09-08, частично устарел):

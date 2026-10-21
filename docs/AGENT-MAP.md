@@ -18,7 +18,8 @@
 | Implementation status (recent) | `docs/product/11-PROJECT-STATUS.md` |
 | Architecture | `docs/product/10-CODE-ARCHITECTURE.md` |
 | MVP contract | `docs/product/05-MVP-RFC.md` |
-| UI in `apps/mobile` | `bidplace-ui` skill + `docs/design/03-DESIGN-SYSTEM.md` |
+| UI in `apps/mobile` | `bidplace-ui` skill → `03-DESIGN-SYSTEM.md` + component README; grep `04-DESIGN-STATUS` / release audit, do not read whole files |
+| Active backlog (not archive tasks) | `docs/product/16-PORTFOLIO-ACTIVE-BACKLOG.md` |
 | Nest/API | `nest` skill + `10-CODE-ARCHITECTURE.md` |
 | Deploy / ops | `docs/ops/00-RELEASE-AND-BACKUP.md`, `docs/ops/CLOUDFLARE-DEPLOYMENT.md` |
 | Legal publish | `docs/legal/00-FINAL-LEGAL-AUDIT.md` |

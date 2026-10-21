@@ -1,5 +1,7 @@
 # Login sheet Figma 7008:20543 — acceptance — 2026-10-16
 
+PNG captures: removed from active tree — [`docs/archive/AUDIT-EVIDENCE-RECOVERY.md`](../../../../archive/AUDIT-EVIDENCE-RECOVERY.md).
+
 Base: `a37ad983` (branch `fix/draft-restore`), evidence regenerated on
 `fix/draft-restore` после пакета C повторного ревью (W11-03, см. ниже).
 Status: **Partial** — совпадение подтверждено по ZIP-снимку,

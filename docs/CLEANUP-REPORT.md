@@ -1,46 +1,53 @@
 # Repository cleanup report (2026-10-21)
 
-Base branch: `feature/portfolio-mvp-release` @ `3818f0f3`.
+Base: `feature/portfolio-mvp-release` @ `3818f0f3`. Branch: `refactor/repository-cleanup`.
 
 ## Metrics
 
-See `docs/CLEANUP-METRICS.txt` (before/after file counts and `docs/` size).
+See `docs/CLEANUP-METRICS.txt` (updated at branch HEAD).
+
+## PR #53 review follow-up (same branch)
+
+| Issue | Fix |
+| --- | --- |
+| Broken relative links after `docs/archive/` move | Bulk path fixes; `pnpm docs:link-check` (171 markdown files) |
+| Removed audit PNGs | Tag `archive/audit-evidence-pre-cleanup` @ `3818f0f3`; [`docs/archive/AUDIT-EVIDENCE-RECOVERY.md`](archive/AUDIT-EVIDENCE-RECOVERY.md); evidence README stubs |
+| Frontend agent context | `bidplace-ui` + `AGENT-MAP` — selective reads; no mandatory full `04-DESIGN-STATUS` / release audit |
+| Archived First MVP tasks vs reality | [`docs/product/16-PORTFOLIO-ACTIVE-BACKLOG.md`](product/16-PORTFOLIO-ACTIVE-BACKLOG.md); archive backlog marked `archived` |
+| Stale README | R2/S3 media + agent entry points |
+| Link CI | `scripts/docs/check-markdown-links.mjs` + `pnpm docs:link-check` |
 
 ## DELETE (active tree)
 
 | Item | Evidence |
 | --- | --- |
-| `docs/audits/2026-10-13-wave-prompts/**` | Waves W0–W6b done; normative context in FRONTEND audit §17–19, DEC-119/120; not used by CI |
-| `docs/audits/**/evidence/**/*.png` (247 files) | Manual acceptance screenshots only; no build/test references; copies remain in git history |
+| `docs/audits/2026-10-13-wave-prompts/**` | Waves done; DEC-119/120; not in CI |
+| `docs/audits/**/evidence/**/*.png` (247) | Manual acceptance; recover via tag above |
 
-## ARCHIVE (moved, excluded from default agent reads)
+## ARCHIVE
 
 | Item | Notes |
 | --- | --- |
-| `docs/archive/product/11-PROJECT-STATUS-historical.md` | Status journal before 2026-10-19 slice |
-| `docs/archive/audits/00-EXECUTION-ROADMAP-2026-10-05-full.md` | Replaced by short pointer in `docs/audits/current/00-EXECUTION-ROADMAP.md` |
-| `docs/archive/tasks/**` | First MVP execution packs; stub at `docs/tasks/README.md` |
+| `docs/archive/product/11-PROJECT-STATUS-historical.md` | Pre-2026-10-19 status journal |
+| `docs/archive/audits/00-EXECUTION-ROADMAP-2026-10-05-full.md` | Short pointer in `docs/audits/current/00-EXECUTION-ROADMAP.md` |
+| `docs/archive/tasks/**` | First MVP execution packs |
 
 ## COMPACT
 
-| Item | Action |
-| --- | --- |
-| `docs/product/11-PROJECT-STATUS.md` | ~5k → ~300 lines + pointer table |
-| `AGENTS.md` | Mandatory reads → `docs/AGENT-MAP.md` + selective owners |
-| `docs/product/00-PROJECT-INDEX.md` | Points to release audit + archive |
+`11-PROJECT-STATUS.md`, `AGENTS.md`, `00-PROJECT-INDEX.md`, new `AGENT-MAP.md`.
 
-## KEEP (unchanged scope)
+## KEEP / REVIEW
 
-- `design/figma-handoff/` (~70MB) — secondary Figma export; REVIEW for future LFS or external mirror
-- `docs/product/01`, `05`, `10`, `12`, `13`, legal, ops, apps, packages
-- `.agents/skills/**` including `vercel-react-native-skills` (referenced by AGENTS)
-
-## REVIEW (not in this PR)
-
-- Refresh `docs/audits/00-CURRENT-MVP-READINESS.md` (Sept snapshot vs current code)
-- `design/figma-handoff` size vs live-Figma-only workflow
-- New repo with clean history — **not started** (requires separate approval)
+- `design/figma-handoff/` (~70MB) — REVIEW: LFS or external mirror before new repo
+- `docs/audits/00-CURRENT-MVP-READINESS.md` — REVIEW: refresh against current code
+- `12-DECISION-LOG.md` — lookup only
 
 ## New repo with clean history?
 
-Not justified yet: this PR already shrinks **agent context** and working tree; git object size unchanged without history rewrite. Revisit after measuring clone size and LFS for `design/figma-handoff`.
+Still **deferred**. Tag + link-check reduce operational risk; clone size needs separate measure.
+
+## Verification
+
+- `pnpm docs:link-check`
+- `@bidplace/contracts` unit tests (on doc-only commits)
+- Full `pnpm verify` — run on CI / reviewer machine for release branch + this PR

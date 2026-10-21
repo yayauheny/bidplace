@@ -13,7 +13,7 @@
 Вход включает предоставленные пользователем User Agreement, Personal Data
 Consent, Privacy Policy, Cookies, buyer/seller advice, FAQ и rights-holder page.
 Репозиторный архив находится в
-[`../research/raw/2026-08-25-bidbaits-legal-documents.md`](../research/raw/2026-08-25-bidbaits-legal-documents.md).
+[`../research/raw/2026-08-25-bidbaits-legal-documents.md`](../../../research/raw/2026-08-25-bidbaits-legal-documents.md).
 Повторные вложения не создают новую юридическую версию без даты/источника сайта.
 
 ## Mapping
@@ -43,5 +43,5 @@ dispute. Для bidplace это backlog и research evidence. Ни один их
 вопрос применимого права, next bidder или ответственности. Беларусь, BYN и product
 outcomes fixed/offer зафиксированы в `DEC-076`–`DEC-078`. Текущий UX и оставшиеся
 юридические вопросы находятся в
-[`../research/2026-09-06-BELARUS-LEGAL-UX-PATTERNS.md`](../research/2026-09-06-BELARUS-LEGAL-UX-PATTERNS.md)
+[`../research/2026-09-06-BELARUS-LEGAL-UX-PATTERNS.md`](../../../research/2026-09-06-BELARUS-LEGAL-UX-PATTERNS.md)
 и [`06-OPEN-QUESTIONS-FOR-BELARUS-LAWYER.md`](06-OPEN-QUESTIONS-FOR-BELARUS-LAWYER.md).

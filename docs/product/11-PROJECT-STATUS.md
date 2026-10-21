@@ -4,6 +4,7 @@
 
 | Нужно | Документ |
 | --- | --- |
+| Активный backlog | [`16-PORTFOLIO-ACTIVE-BACKLOG.md`](16-PORTFOLIO-ACTIVE-BACKLOG.md) |
 | Релизные блокеры и приёмка | [`docs/audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md`](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md) |
 | Очередь bounded review | [`docs/audits/current/06-NEXT-REVIEWS.md`](../audits/current/06-NEXT-REVIEWS.md) |
 | Дизайн-статус | [`docs/design/04-DESIGN-STATUS.md`](../design/04-DESIGN-STATUS.md) |
@@ -16,7 +17,7 @@
 
 ## 2026-10-21 — Repository cleanup (docs only)
 
-**Implemented.** Сокращены agent instructions (`AGENTS.md`, `docs/AGENT-MAP.md`), журнал статуса и execution roadmap; wave-prompts и audit PNG evidence удалены из активного дерева; First MVP tasks — в `docs/archive/tasks/`. Код, CI и runtime не менялись. Отчёт: [`docs/CLEANUP-REPORT.md`](../CLEANUP-REPORT.md).
+**Implemented.** Сокращены agent instructions (`AGENTS.md`, `docs/AGENT-MAP.md`), журнал статуса и execution roadmap; wave-prompts и audit PNG evidence удалены из активного дерева; First MVP tasks — в `docs/archive/tasks/`; тег `archive/audit-evidence-pre-cleanup` @ `3818f0f3` для PNG; `pnpm docs:link-check`; активный backlog — [`16-PORTFOLIO-ACTIVE-BACKLOG.md`](16-PORTFOLIO-ACTIVE-BACKLOG.md). Код, CI и runtime не менялись. Отчёт: [`docs/CLEANUP-REPORT.md`](../CLEANUP-REPORT.md).
 
 ## 2026-10-20 — Монохромный focus (DEC-127)
 

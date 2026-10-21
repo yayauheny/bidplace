@@ -1,7 +1,7 @@
 # bidplace — восемь пакетов до первого public MVP
 
 Дата: 2026-09-08
-Контракт: [`docs/product/05-MVP-RFC.md`](../../product/05-MVP-RFC.md)
+Контракт: [`docs/product/05-MVP-RFC.md`](../../../product/05-MVP-RFC.md)
 Текущий backlog: [`00-FIRST-MVP-BACKLOG.md`](../2026-09-06-reconciliation/00-FIRST-MVP-BACKLOG.md)
 После MVP: [`99-POST-MVP-BACKLOG.md`](../2026-09-06-reconciliation/99-POST-MVP-BACKLOG.md)
 

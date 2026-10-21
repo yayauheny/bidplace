@@ -2,7 +2,7 @@
 
 Последнее обновление: 2026-10-11
 Статус: deferred; задачи сохранены, не входят в First MVP
-Product owner и полная карта следующей волны: [`15-POST-MVP-BACKLOG.md`](../../product/15-POST-MVP-BACKLOG.md) (`DEC-115`)
+Product owner и полная карта следующей волны: [`15-POST-MVP-BACKLOG.md`](../../../product/15-POST-MVP-BACKLOG.md) (`DEC-115`)
 
 Эти задачи не удаляются и не маскируются под portfolio scope. Они возвращаются в
 работу только после отдельного решения, обновлённого RFC и соответствующего legal/
@@ -44,7 +44,7 @@ execution mapping, не второй product contract.
 6. Именные серии/коллекции, ручная сортировка работ, расширенный social export.
 7. AI draft для профиля/Work, category hints и photo assistance после data/legal gate.
 8. Пользовательские предложения новых категорий/терминов и их модерация:
-   [product owner §5](../../product/15-POST-MVP-BACKLOG.md#5-медиа-и-creator-profile).
+   [product owner §5](../../../product/15-POST-MVP-BACKLOG.md#5-медиа-и-creator-profile).
    Общие утверждённые справочники относятся к текущему MVP (`DEC-113`).
 
 ## Более поздние направления

@@ -1,8 +1,8 @@
 # bidplace — execution backlog первого portfolio MVP
 
 Последнее обновление: 2026-10-11
-Статус: active
-Product contract: [`docs/product/05-MVP-RFC.md`](../../product/05-MVP-RFC.md)
+Статус: archived (2026-10-21) — активный backlog: [`16-PORTFOLIO-ACTIVE-BACKLOG.md`](../../../product/16-PORTFOLIO-ACTIVE-BACKLOG.md)
+Product contract: [`docs/product/05-MVP-RFC.md`](../../../product/05-MVP-RFC.md)
 Future work: [`99-POST-MVP-BACKLOG.md`](99-POST-MVP-BACKLOG.md)
 Ready-to-run prompts: [`../2026-09-08-first-mvp/00-EXECUTION-ORDER.md`](../2026-09-08-first-mvp/00-EXECUTION-ORDER.md)
 

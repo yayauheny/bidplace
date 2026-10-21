@@ -16,7 +16,7 @@ UI fixture перехватывает API и проходит настоящие
 ## Дополнительные замечания
 
 5. **P2, исправлено: выдуманная высота строки настроек.** Figma7008:15156/15170 задаёт leading normal. В settingsTitle/settingsRow удалены предположительные22/20; остальные text roles не изменены. Критерий: реальный Inter, computed line-height normal, сохранение размеров/центра шапки и строк. В обоих браузерах выполнено.
-6. **P1 для будущего удаления: неучтённый edge JSON cache.** Origin deletedAt не убирает прогретый ответ Worker. Уточнены фактические TTL и последовательность release в [delete-плане](../tasks/2026-10-19-account-ui/DELETE-BACKEND-PLAN.md) §5/§7. Рекомендация: в delete-волне owner private,no-store, публичные затронутые JSON no-store + исключение works/authors/home/facets из edge lookup до включения DELETE. Критерий: warmed-cache anonymous GET после удаления без старой карточки; categories сохраняет свой кэш. **Это план; runtime backend/Worker здесь не менялись.**
+6. **P1 для будущего удаления: неучтённый edge JSON cache.** Origin deletedAt не убирает прогретый ответ Worker. Уточнены фактические TTL и последовательность release в [delete-плане](../archive/tasks/2026-10-19-account-ui/DELETE-BACKEND-PLAN.md) §5/§7. Рекомендация: в delete-волне owner private,no-store, публичные затронутые JSON no-store + исключение works/authors/home/facets из edge lookup до включения DELETE. Критерий: warmed-cache anonymous GET после удаления без старой карточки; categories сохраняет свой кэш. **Это план; runtime backend/Worker здесь не менялись.**
 
 ## Измеренная приёмка
 

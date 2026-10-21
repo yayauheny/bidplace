@@ -9,11 +9,15 @@ Goal: one way to do each UI job. Find the existing mechanism, extend it, delete 
 
 Status: this is the **target contract** of the design-system waves (`docs/audits/2026-10-13-FRONTEND-DESIGN-SYSTEM-AUDIT.md` §17; execution prompts archived 2026-10-21) and it is implemented in code: the legacy `OverlayHost`, `AppIcon`/lucide, `DestructiveButton` and fixed-390-column patterns are removed. The remaining intentional deviations — do not copy or extend them: the private `expo-router/build` import for `usePreventRemove` (no public export in SDK 57; expected public in SDK 58) and the custom web history guards (`features/sellers/product-draft-browser-guard.ts`, `features/auth/auth-browser-history.ts`).
 
-## Read first (link, do not copy)
+## Read first (minimal — do not load whole status/audit journals)
 
-- `docs/design/00-DESIGN-INDEX.md` → `03-DESIGN-SYSTEM.md` → `04-DESIGN-STATUS.md`; component map: `apps/mobile/src/components/README.md`.
-- Visual source is Figma (file `pAPQo6cADmG5XzVmBX76EE`); priority of sources is in `AGENTS.md`. Missing/ambiguous node or conflict with a product contract → stop that scope and record the decision.
-- Product limits `DEC-083`, `DEC-087` (`docs/product/12-DECISION-LOG.md`): Archive tab, sale/auction chips, favorites, bidding in a design → stop and report.
+1. `apps/mobile/src/components/README.md` — component map for the screen you touch.
+2. `docs/design/03-DESIGN-SYSTEM.md` — tokens, overlays, focus, motion, responsive rules for the pattern you change.
+3. `docs/design/00-DESIGN-INDEX.md` — only when you need scoped Figma handoff paths or hierarchy.
+4. `docs/design/04-DESIGN-STATUS.md` — **grep the screen name**; do not read the full file unless you own a design-status update.
+5. Figma file `pAPQo6cADmG5XzVmBX76EE` (live); source priority in `AGENTS.md`. Missing node or product conflict → stop and record.
+6. Product limits `DEC-083`, `DEC-087` — grep `12-DECISION-LOG.md`; do not read the full decision log.
+7. Release blockers for the area — grep `docs/audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md` or `06-NEXT-REVIEWS.md`.
 
 ## Layout
 
@@ -61,4 +65,4 @@ Before changing a shared component/token: `rg` its consumers, list them, check e
 
 ## Done
 
-Run `bidplace-ui-review` on your own diff before finishing. Update `docs/design/04-DESIGN-STATUS.md` (+ `03` for shared parts) and `docs/product/11-PROJECT-STATUS.md`.
+Run `bidplace-ui-review` on your own diff before finishing. Update the **relevant section** of `04-DESIGN-STATUS.md` (+ `03` for shared tokens) and add one entry to `11-PROJECT-STATUS.md` — not whole-file dumps.

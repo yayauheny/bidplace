@@ -28,6 +28,7 @@
     "test:ops": "node --test scripts/ops/lib/*.spec.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "docs:link-check": "node scripts/docs/check-markdown-links.mjs",
     "clean": "turbo clean && rm -rf node_modules",
     "docker:up": "docker compose up -d --wait postgres",
     "docker:down": "docker compose down",

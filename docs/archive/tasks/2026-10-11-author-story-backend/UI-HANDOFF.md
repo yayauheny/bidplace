@@ -6,7 +6,7 @@ Backend на `fix/author-story-review` уже говорит новыми кон
 
 **Author application (intro + four steps)** on mobile-web is implemented and
 locally verified on branch `fix/author-onboarding-figma`; current status:
-[`11-PROJECT-STATUS.md`](../../product/11-PROJECT-STATUS.md) (2026-10-12).
+[`11-PROJECT-STATUS.md`](../../../product/11-PROJECT-STATUS.md) (2026-10-12).
 Work creation-story UI and admin surfaces below remain on this handoff plan.
 
 ## Что сломается у текущего клиента

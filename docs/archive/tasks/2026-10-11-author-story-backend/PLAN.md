@@ -5,13 +5,13 @@
 
 Ниже разделы 4–6 — исходный план. Фразы «Planned» и «на этом planning pass ни одна строка не выполнена» описывают момент планирования, а не текущий API. B1–B5 выполнены в API. B6 (клиентский cutover и удаление старых клиентских путей) не начат. Перенос старого текста истории не делался: реальных пользователей нет, общие и production-базы не очищались.
 
-Product contract: [05-MVP-RFC.md](../../product/05-MVP-RFC.md).
-Принятые решения: `DEC-112`–`DEC-115` в [decision log](../../product/12-DECISION-LOG.md).
-Дальнейшие продажи и расширенное управление справочниками: [post-MVP plan](../../product/15-POST-MVP-BACKLOG.md).
+Product contract: [05-MVP-RFC.md](../../../product/05-MVP-RFC.md).
+Принятые решения: `DEC-112`–`DEC-115` в [decision log](../../../product/12-DECISION-LOG.md).
+Дальнейшие продажи и расширенное управление справочниками: [post-MVP plan](../../../product/15-POST-MVP-BACKLOG.md).
 Пользовательские предложения категорий и терминов входят в этот MVP (`DEC-116`).
 Следующий этап клиента: [UI-HANDOFF.md](UI-HANDOFF.md).
-Фактический runtime: [architecture](../../product/10-CODE-ARCHITECTURE.md) и
-[project status](../../product/11-PROJECT-STATUS.md).
+Фактический runtime: [architecture](../../../product/10-CODE-ARCHITECTURE.md) и
+[project status](../../../product/11-PROJECT-STATUS.md).
 
 ## 1. Цель и граница работы
 
@@ -80,7 +80,7 @@ catalog и parent `screens/**/nodes.json`; есть отдельный новы�
 | Public projections | `apps/api/src/portfolio/`, catalog queries, `work-content.ts` | Только approved revision, стабильные ID, авторы без города, канонический порядок истории |
 
 Существующие гарантии save/session/submit описаны в
-[flows §8–§9](../../design/02-USER-FLOWS-AND-SCREENS.md). Не заменять их вторым
+[flows §8–§9](../../../design/02-USER-FLOWS-AND-SCREENS.md). Не заменять их вторым
 клиентским черновиком или новым универсальным wizard. На frontend использовать
 имеющиеся React Hook Form / React Query и shared controls; не писать аналоги
 встроенных возможностей библиотек.

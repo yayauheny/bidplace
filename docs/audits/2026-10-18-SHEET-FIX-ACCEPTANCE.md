@@ -73,6 +73,4 @@ AppDialog/FilterSheet и указывает header; save/dirty/permissions ос�
 интеракций, а не новая Figma-приёмка геометрии. Файлы сохраняются рядом в
 `evidence/2026-10-18-sheet-lifecycle/`.
 
-![Вход поверх сохранённой Home](evidence/2026-10-18-sheet-lifecycle/chromium-login.png)
-
-![Общая шторка профиля](evidence/2026-10-18-sheet-lifecycle/webkit-share.png)
+Скриншоты: [`evidence/2026-10-18-sheet-lifecycle/`](evidence/2026-10-18-sheet-lifecycle/README.md) (PNG — [`docs/archive/AUDIT-EVIDENCE-RECOVERY.md`](../archive/AUDIT-EVIDENCE-RECOVERY.md)).

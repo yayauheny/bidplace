@@ -5,6 +5,6 @@
 
 Текущая работа и блокеры:
 
+- [`docs/product/16-PORTFOLIO-ACTIVE-BACKLOG.md`](../product/16-PORTFOLIO-ACTIVE-BACKLOG.md)
 - [`docs/audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md`](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md)
 - [`docs/audits/current/06-NEXT-REVIEWS.md`](../audits/current/06-NEXT-REVIEWS.md)
-- [`docs/product/15-POST-MVP-BACKLOG.md`](../product/15-POST-MVP-BACKLOG.md)

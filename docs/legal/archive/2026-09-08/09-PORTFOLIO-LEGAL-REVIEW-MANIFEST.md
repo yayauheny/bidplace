@@ -3,7 +3,7 @@
 Status: `Prepared, external lawyer review pending`.
 
 This manifest covers the portfolio-only release described by
-[`../product/05-MVP-RFC.md`](../product/05-MVP-RFC.md). It is not legal advice and
+[`../product/05-MVP-RFC.md`](../../../product/05-MVP-RFC.md). It is not legal advice and
 does not approve publication of any draft.
 
 ## Documents and controls

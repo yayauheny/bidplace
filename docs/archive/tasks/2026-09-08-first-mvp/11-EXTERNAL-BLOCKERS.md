@@ -7,7 +7,7 @@ These launch gates do not authorize deployment.
 ## Legal preparation and publication
 
 The prepared package and all current legal requirements have one owner:
-[final audit](../../legal/00-FINAL-LEGAL-AUDIT.md). DEC-078 registration and the target
+[final audit](../../../legal/00-FINAL-LEGAL-AUDIT.md). DEC-078 registration and the target
 retention schedule are confirmed by DEC-118; do not request the closed questionnaire
 again. The founder explicitly retained one lawyer question: the lawful basis for
 current immediately enabled identifiable analytics. Complete operator/provider facts
