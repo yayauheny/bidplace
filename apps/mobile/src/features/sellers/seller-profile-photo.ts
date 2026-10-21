@@ -3,10 +3,7 @@ import type { QueryClient } from '@tanstack/react-query';
 import { useQuery } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 
-import {
-  ImagePreparationError,
-  prepareImageUpload,
-} from '../../lib/media/prepare-image-upload';
+import { prepareImageUpload } from '../../lib/media/prepare-image-upload';
 
 import type { SellerProfileResponse } from '@bidplace/contracts';
 
@@ -137,9 +134,7 @@ export function useProfilePhoto({
         reportError(
           error,
           'seller-profile-photo',
-          error instanceof ImagePreparationError
-            ? error.message
-            : 'Не удалось выбрать фото',
+          'Не удалось выбрать фото',
           operation,
         );
       }

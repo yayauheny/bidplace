@@ -48,9 +48,10 @@ export function getUserFacingErrorMessage(
     return INFRASTRUCTURE_ERROR_COPY;
   }
 
+  const imageMessage = getImageUploadErrorMessage(error);
+  if (imageMessage) return imageMessage;
+
   if (error instanceof ApiClientError) {
-    const imageMessage = getImageUploadErrorMessage(error);
-    if (imageMessage) return imageMessage;
     if (publicMessageKinds.has(error.kind) && error.message.trim()) {
       return error.message;
     }

@@ -145,11 +145,10 @@ describe('image upload preparation', () => {
     }
   });
 
-
   it('rejects invalid dimensions instead of bypassing the pixel limit', async () => {
     const file = new File(['small'], 'photo.png', { type: 'image/png' });
     await expect(prepareImageUpload({ uri: 'blob:invalid', width: 0, height: 600, file }, options))
-      .rejects.toThrow('Не удалось определить размеры изображения.');
+      .rejects.toMatchObject({ code: 'INVALID_DIMENSIONS' });
     expect(renderer.manipulate).not.toHaveBeenCalled();
   });
 
@@ -158,7 +157,7 @@ describe('image upload preparation', () => {
     try {
       await expect(prepareImageUpload({
         uri: 'blob:large', width: 500, height: 500, fileSize: options.maxSourceBytes + 1,
-      }, options)).rejects.toThrow('Исходный файл слишком большой.');
+      }, options)).rejects.toMatchObject({ code: 'SOURCE_TOO_LARGE' });
       expect(fetchSpy).not.toHaveBeenCalled();
     } finally {
       fetchSpy.mockRestore();

@@ -27,9 +27,17 @@ export type PreparedImage = {
   blob: Blob;
 };
 
+export type ImagePreparationErrorCode =
+  | 'READ_FAILED'
+  | 'EMPTY_FILE'
+  | 'SOURCE_TOO_LARGE'
+  | 'INVALID_DIMENSIONS'
+  | 'PROCESSING_FAILED'
+  | 'OUTPUT_TOO_LARGE';
+
 export class ImagePreparationError extends Error {
-  constructor(message: string) {
-    super(message);
+  constructor(readonly code: ImagePreparationErrorCode) {
+    super(`Image preparation failed: ${code}`);
     this.name = 'ImagePreparationError';
   }
 }
@@ -52,7 +60,7 @@ async function readImage(uri: string): Promise<Blob> {
     if (response.ok === false) throw new Error('Image fetch failed');
     return await response.blob();
   } catch {
-    throw new ImagePreparationError('Не удалось прочитать выбранное изображение.');
+    throw new ImagePreparationError('READ_FAILED');
   }
 }
 
@@ -65,7 +73,7 @@ export async function prepareImageUpload(
   options: ImagePreparationOptions,
 ): Promise<PreparedImage> {
   if (input.fileSize !== undefined && input.fileSize > options.maxSourceBytes) {
-    throw new ImagePreparationError('Исходный файл слишком большой. Выберите другое фото.');
+    throw new ImagePreparationError('SOURCE_TOO_LARGE');
   }
 
   const width = input.width;
@@ -74,15 +82,15 @@ export async function prepareImageUpload(
     typeof width !== 'number' || !Number.isFinite(width) || width <= 0 ||
     typeof height !== 'number' || !Number.isFinite(height) || height <= 0
   ) {
-    throw new ImagePreparationError('Не удалось определить размеры изображения.');
+    throw new ImagePreparationError('INVALID_DIMENSIONS');
   }
 
   const source = input.file ?? (await readImage(input.uri));
   if (source.size === 0) {
-    throw new ImagePreparationError('Выбранный файл пустой.');
+    throw new ImagePreparationError('EMPTY_FILE');
   }
   if (source.size > options.maxSourceBytes) {
-    throw new ImagePreparationError('Исходный файл слишком большой. Выберите другое фото.');
+    throw new ImagePreparationError('SOURCE_TOO_LARGE');
   }
 
   const type = (source.type || input.mimeType || '').toLowerCase();
@@ -122,7 +130,7 @@ export async function prepareImageUpload(
         rendered.release();
       }
     } catch {
-      throw new ImagePreparationError('Не удалось обработать выбранное изображение.');
+      throw new ImagePreparationError('PROCESSING_FAILED');
     } finally {
       context.release();
     }
@@ -138,5 +146,5 @@ export async function prepareImageUpload(
     }
   }
 
-  throw new ImagePreparationError('Не удалось уменьшить фото до допустимого размера.');
+  throw new ImagePreparationError('OUTPUT_TOO_LARGE');
 }

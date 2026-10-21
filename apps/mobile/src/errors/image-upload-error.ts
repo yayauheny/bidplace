@@ -1,5 +1,10 @@
 import { ApiClientError } from '@bidplace/api-client';
 
+import {
+  ImagePreparationError,
+  type ImagePreparationErrorCode,
+} from '../lib/media/prepare-image-upload';
+
 const knownImageErrors: Record<string, string> = {
   'Unsupported image type': 'Этот формат изображения не поддерживается. Выберите JPG, PNG или WebP.',
   'Image MIME type does not match file contents': 'Формат файла не соответствует его содержимому. Выберите другое изображение.',
@@ -8,11 +13,19 @@ const knownImageErrors: Record<string, string> = {
   'File too large': 'Файл слишком большой. Попробуйте выбрать изображение меньшего размера.',
 };
 
-/**
- * Only translate known image-upload failures. Never display arbitrary 400
- * response bodies as user-facing text.
- */
-export function getImageUploadErrorMessage(error: ApiClientError): string | null {
+const preparationErrorMessages: Record<ImagePreparationErrorCode, string> = {
+  READ_FAILED: 'Не удалось прочитать выбранное изображение.',
+  EMPTY_FILE: 'Выбранный файл пустой.',
+  SOURCE_TOO_LARGE: 'Исходный файл слишком большой. Выберите другое фото.',
+  INVALID_DIMENSIONS: 'Не удалось определить размеры изображения.',
+  PROCESSING_FAILED: 'Не удалось обработать выбранное изображение.',
+  OUTPUT_TOO_LARGE: 'Не удалось уменьшить фото до допустимого размера.',
+};
+
+/** Translate only known upload failures, never arbitrary response messages. */
+export function getImageUploadErrorMessage(error: unknown): string | null {
+  if (error instanceof ImagePreparationError) return preparationErrorMessages[error.code];
+  if (!(error instanceof ApiClientError)) return null;
   if (error.status === 413) {
     return 'Файл слишком большой. Попробуйте выбрать изображение меньшего размера.';
   }
