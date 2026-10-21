@@ -17,7 +17,7 @@ export function PaddedGrid<T>({
   renderItem,
 }: {
   items: readonly T[];
-  columns: 1 | 2 | 3;
+  columns: 1 | 2 | 3 | 4;
   gap: number;
   keyExtractor: (item: T) => string;
   renderItem: (item: T) => ReactNode;

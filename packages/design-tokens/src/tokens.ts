@@ -398,6 +398,30 @@ export const designTokens = {
       letterSpacing: -0.18,
       fontWeight: '600' as const,
     },
+    creatorName: {
+      fontFamily: 'Inter_600SemiBold', fontSize: 20, lineHeight: 26,
+      letterSpacing: -0.4, fontWeight: '600' as const,
+    },
+    creatorNameWide: {
+      fontFamily: 'Inter_500Medium', fontSize: 24, lineHeight: 32,
+      letterSpacing: -0.72, fontWeight: '500' as const,
+    },
+    authorMeta: {
+      fontFamily: 'Inter_500Medium', fontSize: 14, lineHeight: 20,
+      letterSpacing: -0.14, fontWeight: '500' as const,
+    },
+    authorMetaWide: {
+      fontFamily: 'Inter_500Medium', fontSize: 16, lineHeight: 24,
+      letterSpacing: -0.16, fontWeight: '500' as const,
+    },
+    aboutHeadingWide: {
+      fontFamily: 'Inter_500Medium', fontSize: 18, lineHeight: 22,
+      letterSpacing: -0.36, fontWeight: '500' as const,
+    },
+    aboutBodyWide: {
+      fontFamily: 'Inter_400Regular', fontSize: 15, lineHeight: 24,
+      letterSpacing: -0.15, fontWeight: '400' as const,
+    },
     searchPrompt: {
       fontFamily: 'Inter_500Medium',
       fontSize: 14,

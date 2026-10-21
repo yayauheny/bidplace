@@ -109,3 +109,86 @@ production web export,4/4 new Chromium/WebKit cases (1023→1024→1440→1800,
 identity node retained, public routes, search/auth focus). Full author/filter
 regressions run before commit. Screenshots saved beside stage1 evidence.
 Remaining stage3: author composition/halo/grid/About and animated pinned actions.
+
+## Stage3 diagnosis / choice
+
+Stage2 committed23448b0d. Halo is painted inside a ScrollView whose viewport
+ends at the centered content column. overflow:visible on its descendants cannot
+escape the scrollport. Chosen durable fix: AppShell full-bleed content role with
+the same shared PageColumn owner inside the full-width scrollport. Negative
+per-route viewport widths or a bigger blur would only mask the cause (rejected).
+Existing author data/API/cache/moderation remain unchanged. The grid owner gains
+four-column capacity; no second grid or viewport-based column calculation.
+
+## Stage3 result / review
+
+- AppShell keeps one column geometry owner (PageColumn); author scrollport uses
+  the bleed role. Halo remains the bounded15px /0.5-opacity duplicate of the
+  real avatar, outside the column clip. No enlarged blur, viewport-width math,
+  copied photos, remote sample assets or new dependencies.
+- Identity100px /140px; name20/26 semibold /24/32 medium; metadata14/20 /
+  16/24, exact existing accountMeta color. Existing Home authorName22 role is
+  preserved. Wide About18/22 headings,15/24 body, two measured columns; mobile
+  stacks. Achievements retain existing precision/media handling and scroll rail.
+- Works:1–4 columns from measured width via the existing grid, min cover264,
+ 12px horizontal /32px vertical gaps. Canonical1280px content gives4×311px.
+  Tabs and category trigger share the wide toolbar; mobile remains stacked.
+- Desktop share uses the existing AuthorShare flow with a labelled muted trigger;
+  owner settings goes to existing /account/settings. FigmaButton forwards the
+  actual control ref for the existing return-focus owner. Visitors have no
+  private settings action. QR/more and honest unavailable favorites/follow
+  feedback are retained; no simulated subscription state.
+- One action row remains mounted. Animated.ScrollView → shared scroll value →
+  Reanimated translate/opacity. Measured header/row heights and20px hysteresis;
+  common200ms/system-reduced-motion timing. React only receives accessibility
+  visibility crossings. Identity/images never collapse, clone or remount.
+- Self-review: accept with explicit visual limitations below. Server, public
+  projections, auth guards, revision/privacy rules and database are unchanged.
+  Source additions implement shared navigation, full-bleed layout and real
+  responsive/motion behavior; old private dock destination code was removed.
+
+### Verification and artifacts
+
+-42 unit cases across8 owner files +15 existing button-style cases pass.
+- Tokens build, mobile typecheck, scoped ESLint without autofix and web export pass.
+-24/24 Chromium/WebKit browser cases: filters/Back/close/focus, search/auth,
+  continuity across resize,320/390/440/1024/1440/1800, Works/About geometry,
+  pinned action use and return, reduced motion, empty/unavailable author.
+-2/2 recorded motion cases: same row on scroll/return in both engines. These are
+  browser scroll recordings, not evidence from a physical iPhone.
+- Live read-only /seller/vex: real photos/work data render, one desktop nav and
+  avatar; no pageerror; API readiness200. No database reset or fixture write.
+- Theme owner test had an obsolete Reanimated mock plus old legal-link/toolbar
+  color expectations from earlier UI work. Updated mock APIs and exact current
+  semantic roles (legalLink/ink); no assertions removed or production recoloring.
+- Screenshots/video: [evidence](evidence/2026-10-21-author-profile/).
+
+### Remaining limits
+
+Functional UI is implemented and browser-verified. Visual parity is Partial:
+reference data differ, current button master takes precedence, Archive/commerce
+and verified/subscription/favorites states are deliberately excluded. Desktop
+Works starts at384px versus reference387px with its older instance dimensions;
+this is reported, not compensated by a route-local offset.1024/1440 responsive
+adaptations have no exact supplied Figma frames (NEEDS-FIGMA). Physical iPhone,
+system keyboard, true200% browser zoom and text enlargement remain Needs
+verification. No native simulator, full suite, push or production deployment.
+
+### Manual acceptance order
+
+1. Refresh localhost:7899. Desktop Home → Works → Authors → author; resize across
+   1024px. One top navigation or one mobile dock, never both.
+2. /seller/vex: avatar halo, Works/About, card columns and social/share actions.
+3. Category: visible labels, trailing checks, scrolling without indicator,
+   apply/clear, Escape/backdrop and return focus; then Back.
+4. Phone: scroll beyond identity, use pinned actions, scroll back. Repeat slow,
+   quick and cancelled gestures on a physical iPhone; check system keyboard and
+   accessible lower actions in login separately. Existing login/create-work
+   acceptance order remains in2026-10-21-UI-COMPLETION.md.
+
+
+Reproduce the author suite against the local preview:
+`pnpm --filter @bidplace/mobile exec playwright test --config playwright.sheet-local.config.ts author-static-header.spec.ts`.
+The catalog drilldown regression is in sheet-live.spec.ts. The committed local
+config includes the author owner spec; temporary bounded configs changed only
+selection/output/video and supplied no application behavior.

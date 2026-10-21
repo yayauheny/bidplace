@@ -489,3 +489,13 @@ Creation year is numeric, and publication timestamp remains automatic.
 существующие правила выхода: clean → исходный публичный redirectTo, dirty →
 подтверждение, busy → блокировка выхода. Отмена подтверждения возвращает фокус
 на открывший его элемент (крест при клике, поле при Escape).
+
+
+### Public author navigation update — 2026-10-21
+
+Public routes share the desktop header from1024 CSS px (mobile dock below).
+Author Works/About preserve the same identity; mobile scroll pins the same
+Back/share/more controls after the hero leaves. Wide owner Settings uses the
+existing /account/settings route; profile editing remains its existing child
+flow. Category draft/apply/cancel, public data and unavailable follow/favorites
+behavior are unchanged. See03-DESIGN-SYSTEM and the current author parity audit.

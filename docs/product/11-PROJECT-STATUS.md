@@ -5159,3 +5159,22 @@ provided combined logo, current button master.1024/1440: responsive adaptation,
 NEEDS-FIGMA for exact parity.12 unit cases, tsc/lint/build and4 Chromium/WebKit
 navigation cases pass. Author composition remains Partial; see
 [author parity audit](../audits/current/2026-10-21-AUTHOR-PROFILE-PARITY.md).
+
+
+### Author profile parity — 2026-10-21
+
+Implemented: AppShell bleed + PageColumn remove the centered-scrollport halo
+clip; CreatorIdentity100/140px with semantic typography; Works up to four
+measured PaddedGrid columns; About two prose columns when space permits.
+CreatorHeader animates the same action row after measured scroll threshold with
+Reanimated and20px hysteresis/reduced motion, without remounting identity/media.
+Desktop AuthorShare has a labelled trigger; owner Settings →/account/settings.
+Existing unavailable follow/favorites feedback stays honest; no new backend.
+
+Checks:42 owner unit cases +15 button cases, tokens build/mobile tsc/scoped lint,
+production web export;24/24 Chromium/WebKit cases on320–1800px, plus2 recorded
+motion cases. Live read-only vex and API readiness200 checked. Visual parity
+Partial: current master/MVP exclusions and384px vs387px desktop grid start are
+explicit in the [audit](../audits/current/2026-10-21-AUTHOR-PROFILE-PARITY.md).
+1024/1440 exact frames: NEEDS-FIGMA. Physical iPhone, real zoom200% and enlarged
+text: Needs verification. This supersedes historical compact-avatar descriptions.

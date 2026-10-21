@@ -9,9 +9,9 @@ export function gridColumnsFromWidth(
     minCardWidth,
     gap,
     max,
-  }: { minCardWidth: number; gap: number; max: 1 | 2 | 3 },
-): 1 | 2 | 3 {
+  }: { minCardWidth: number; gap: number; max: 1 | 2 | 3 | 4 },
+): 1 | 2 | 3 | 4 {
   if (width <= 0) return 1;
   const columns = Math.floor((width + gap) / (minCardWidth + gap));
-  return Math.min(max, Math.max(1, columns)) as 1 | 2 | 3;
+  return Math.min(max, Math.max(1, columns)) as 1 | 2 | 3 | 4;
 }

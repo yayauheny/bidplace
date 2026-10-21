@@ -89,7 +89,11 @@ export function DesktopHeader({ active }: { active: boolean }) {
           {...{ 'aria-haspopup': 'dialog' }}
         >
           <FigmaIcon name="search-01" size={18} color={palette.fieldIcon} />
-          <AppText role="searchPrompt" tone="subdued" numberOfLines={1}>
+          <AppText
+            role="searchPrompt"
+            style={{ color: palette.fieldIcon }}
+            numberOfLines={1}
+          >
             Поиск
           </AppText>
         </MotionPressable>

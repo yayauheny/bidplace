@@ -533,3 +533,12 @@ Metro's transform cache identity includes the explicit public build configuratio
 (API URL, public site key, app environment and analytics flag). Sequential preview
 and isolated-test exports must never reuse a bundle compiled for another origin.
 metro.config.js and environment.spec own this build/release invariant.
+
+
+### Public navigation / bleed layout ownership — 2026-10-21
+
+Public route context scopes navigation presentation; shared use-app-navigation
+retains the existing auth/capability/search owners for dock and desktop header.
+AppShell owns Safe Area and selects chrome; PageColumn owns constrained geometry
+inside both normal and full-bleed scroll hosts. No domain/API/persistence boundary
+changed. Visual and motion contract: docs/design/03-DESIGN-SYSTEM.md.

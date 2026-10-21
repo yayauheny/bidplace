@@ -330,7 +330,7 @@ test.describe('static public creator header', () => {
     ).toHaveCount(0);
   });
 
-  test('scrolls away naturally without resizing and leaves room above the dock', async ({
+  test('pins the same action bar after the identity scrolls away and leaves room above the dock', async ({
     page,
   }) => {
     await page.setViewportSize({ width: 390, height: 860 });
@@ -352,6 +352,16 @@ test.describe('static public creator header', () => {
     expect(avatarAfter?.width).toBeCloseTo(avatarBefore?.width ?? 0, 0);
     expect(avatarAfter?.height).toBeCloseTo(avatarBefore?.height ?? 0, 0);
 
+    const actions = page.getByTestId('creator-action-bar');
+    await expect.poll(async () => (await actions.boundingBox())?.y ?? -100).toBeGreaterThanOrEqual(-1);
+    await expect(page.getByRole('button', { name: 'Поделиться профилем' })).toBeVisible();
+    await page.screenshot({ path: `${w1EvidenceDir}/author-pinned-${test.info().project.name}-390.png` });
+    await page.getByRole('button', { name: 'Поделиться профилем' }).click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await scrollCreator(page, 0);
+    await expect.poll(async () => Math.round((await actions.boundingBox())?.y ?? -100)).toBe(18);
     await scrollCreator(page, 100_000);
     const clear = await page.evaluate(() => {
       const panel = document.querySelector('[data-testid="author-content"]');
@@ -446,4 +456,66 @@ test.describe('shared public desktop navigation', () => {
     await page.keyboard.press('Escape');
     await expect(nav.getByRole('button', { name: 'Создать', exact: true })).toBeFocused();
   });
+});
+
+
+test('measures author composition and preserves identity across responsive layouts', async ({ page }) => {
+  await mockAuthor(page, 'author-parity', 2, 8);
+  await page.setViewportSize({ width: 390, height: 874 });
+  await page.goto('/seller/author-parity');
+  await expect(page.getByTestId('creator-avatar')).toBeVisible();
+  await page.getByTestId('creator-avatar').evaluate((node) => node.setAttribute('data-continuity', 'same'));
+  for (const width of [320, 390, 440, 1024, 1440, 1800]) {
+    await page.setViewportSize({ width, height: 874 });
+    await page.evaluate(() => document.fonts.ready);
+    const avatar = page.getByTestId('creator-avatar');
+    await expect(avatar).toHaveCSS('width', width < 1024 ? '100px' : '140px');
+    await expect(avatar).toHaveAttribute('data-continuity', 'same');
+    await expect(page.getByTestId('creator-meta').getByText('Анна Морозова')).toHaveCSS('font-size', width < 1024 ? '20px' : '24px');
+    const scrollport = await page.getByTestId('creator-scroll').boundingBox();
+    expect(scrollport?.width).toBe(width);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    const positions = await page.locator('[data-testid^="author-work-actions-"]').evaluateAll((nodes) => nodes.slice(0, 4).map((node) => node.getBoundingClientRect().y));
+    if (width >= 1440) expect(new Set(positions).size).toBe(1);
+    await page.screenshot({ path: `${w1EvidenceDir}/author-works-${test.info().project.name}-${width}.png` });
+    await page.getByRole('tab', { name: 'Об авторе', exact: true }).click();
+    await expect.poll(async () => {
+      const bio = await page.getByText('Биография', { exact: true }).boundingBox();
+      const practice = await page.getByText('Практика и подход', { exact: true }).boundingBox();
+      return width >= 1024 ? bio?.y === practice?.y : (practice?.y ?? 0) > (bio?.y ?? 0);
+    }).toBe(true);
+    await page.screenshot({ path: `${w1EvidenceDir}/author-about-${test.info().project.name}-${width}.png` });
+    await page.getByRole('tab', { name: /^Работы/ }).click();
+  }
+});
+
+
+test('pins author controls with reduced motion and restores the original row on return', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.setViewportSize({ width: 390, height: 874 });
+  await mockAuthor(page, 'author-reduced', 2, 8);
+  await page.goto('/seller/author-reduced');
+  const actions = page.getByTestId('creator-action-bar');
+  await expect(actions).toBeVisible();
+  await actions.evaluate((node) => node.setAttribute('data-continuity', 'same'));
+  for (const top of [450, 900, 450, 0]) {
+    await scrollCreator(page, top);
+    await expect.poll(async () => Math.round((await actions.boundingBox())?.y ?? -100)).toBe(top === 0 ? 18 : 0);
+    await expect(actions).toHaveAttribute('data-continuity', 'same');
+    await expect(page.getByTestId('creator-avatar')).toHaveCount(1);
+  }
+});
+
+
+test('preserves navigation and page states for empty and unavailable authors', async ({ page }) => {
+  await mockAuthor(page, 'author-empty', 0, 0);
+  await page.route('**/api/authors/author-missing**', (route) => route.fulfill({ status: 404, json: { message: 'Not found' } }));
+  for (const width of [390, 1440]) {
+    await page.setViewportSize({ width, height: 874 });
+    await page.goto('/seller/author-empty');
+    await expect(page.getByText('У автора пока нет опубликованных работ')).toBeVisible();
+    await page.goto('/seller/author-missing');
+    await expect(page.getByText('Автор не найден', { exact: true })).toBeVisible();
+    await expect(page.getByTestId(width >= 1024 ? 'desktop-navigation' : 'figma-floating-dock')).toBeVisible();
+  }
 });

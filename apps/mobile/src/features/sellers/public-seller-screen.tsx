@@ -1,11 +1,17 @@
 import { useId, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
+import Animated, {
+  useAnimatedScrollHandler,
+  useSharedValue,
+} from 'react-native-reanimated';
 import { ScrollView, View } from 'react-native';
 
 import { ApiClientError } from '@bidplace/api-client';
 import { designTokens } from '@bidplace/design-tokens';
 
+import { useDesktopNavigation } from '../../components/layout/public-navigation';
+import { PageColumn } from '../../components/layout/PageColumn';
 import { AppShell, navigateBack } from '../../components/layout';
 import { useDockInset } from '../../components/layout/use-dock-inset';
 import { InfrastructureErrorState } from '../../components/shared/InfrastructureErrorState';
@@ -52,12 +58,17 @@ export function PublicSellerScreen({
   categoryIds?: string[];
 }) {
   const palette = useAppTheme();
+  const desktop = useDesktopNavigation();
   const api = useApiClient();
   const { reserve } = useDockInset();
   const router = useRouter();
   const queryClient = useQueryClient();
   const capability = useSellerCapability();
   const panelId = useId();
+  const scrollY = useSharedValue(0);
+  const onScroll = useAnimatedScrollHandler((event) => {
+    scrollY.value = event.contentOffset.y;
+  });
   const [tab, setTab] = useState<AuthorPublicTab>('works');
   const [contentWidth, setContentWidth] = useState(0);
   const [unavailable, setUnavailable] = useState<string | null>(null);
@@ -129,172 +140,182 @@ export function PublicSellerScreen({
     );
   }
 
-  return (
-    <AppShell>
-      <View style={{ flex: 1, position: 'relative', overflow: 'visible' }}>
+  const filters =
+    tab === 'works' ? (
+      categories.isError ? (
+        <PrimaryButton
+          label="Повторить загрузку категорий"
+          onPress={() => void categories.refetch()}
+        />
+      ) : (
         <ScrollView
-          testID="creator-scroll"
-          style={{ marginHorizontal: -designTokens.layout.gutter }}
+          horizontal
+          testID="creator-filter-strip"
+          showsHorizontalScrollIndicator={false}
           contentContainerStyle={{
-            paddingHorizontal: designTokens.layout.gutter,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: designTokens.space.x2,
+            paddingRight: designTokens.layout.gutter,
+          }}
+        >
+          <FigmaButton
+            label={
+              selectedCategories.length
+                ? `Категория ${selectedCategories.length}`
+                : 'Категория'
+            }
+            icon="arrow-right-01"
+            iconPosition="right"
+            variant="outline"
+            disabled={!categories.data}
+            onPress={() => {
+              setDraftCategories(selectedCategories);
+              setFilterOpen(true);
+            }}
+          />
+          {selectedCategories.map((id) => (
+            <FigmaChoiceChip
+              key={id}
+              label={
+                categories.data?.categories.find((item) => item.id === id)
+                  ?.name ?? 'Категория'
+              }
+              selected
+              removable
+              onPress={() => {
+                setDraftCategories(selectedCategories);
+                setFilterOpen(true);
+              }}
+              onRemove={() => {
+                const next = selectedCategories.filter(
+                  (current) => current !== id,
+                );
+                router.setParams({
+                  categories: next.length ? next.join(',') : undefined,
+                  category: undefined,
+                });
+              }}
+            />
+          ))}
+        </ScrollView>
+      )
+    ) : null;
+
+  return (
+    <AppShell contentLayout="bleed">
+      <View style={{ flex: 1, position: 'relative', overflow: 'visible' }}>
+        <Animated.ScrollView
+          onScroll={onScroll}
+          scrollEventThrottle={16}
+          testID="creator-scroll"
+          contentContainerStyle={{
             paddingBottom: reserve,
             overflow: 'visible',
           }}
           showsVerticalScrollIndicator={false}
         >
-          <CreatorHeader
-            profile={author}
-            onBack={() => navigateBack(router, { fallbackHref: '/authors' })}
-            tabs={[
-              {
-                value: 'works',
-                label: 'Работы',
-                count: query.isPlaceholderData
-                  ? undefined
-                  : firstPage.pagination.total,
-              },
-              { value: 'about', label: 'Об авторе' },
-            ]}
-            tab={tab}
-            onTabChange={(value) =>
-              setTab(value === 'about' ? 'about' : 'works')
-            }
-            panelId={panelId}
-            isOwner={isOwner}
-            onUnavailable={setUnavailable}
-          />
+          <PageColumn>
+            <CreatorHeader
+              toolbar={filters}
+              scrollY={scrollY}
+              profile={author}
+              onBack={() => navigateBack(router, { fallbackHref: '/authors' })}
+              tabs={[
+                {
+                  value: 'works',
+                  label: 'Работы',
+                  count: query.isPlaceholderData
+                    ? undefined
+                    : firstPage.pagination.total,
+                },
+                { value: 'about', label: 'Об авторе' },
+              ]}
+              tab={tab}
+              onTabChange={(value) =>
+                setTab(value === 'about' ? 'about' : 'works')
+              }
+              panelId={panelId}
+              isOwner={isOwner}
+              onUnavailable={setUnavailable}
+            />
 
-          <View
-            testID="author-content"
-            onLayout={(event) =>
-              setContentWidth(event.nativeEvent.layout.width)
-            }
-            nativeID={panelId}
-            role="tabpanel"
-            aria-labelledby={`${panelId}-${tab}`}
-            style={{
-              backgroundColor: palette.canvas,
-              paddingTop:
-                tab === 'about'
-                  ? designTokens.space.authorHeaderBottom
-                  : designTokens.space.sectionGap,
-              gap: designTokens.space.authorSectionGap,
-            }}
-          >
-            {tab === 'works' ? (
-              categories.isError ? (
-                <PrimaryButton
-                  label="Повторить загрузку категорий"
-                  onPress={() => void categories.refetch()}
+            <View
+              testID="author-content"
+              onLayout={(event) =>
+                setContentWidth(event.nativeEvent.layout.width)
+              }
+              nativeID={panelId}
+              role="tabpanel"
+              aria-labelledby={`${panelId}-${tab}`}
+              style={{
+                backgroundColor: palette.canvas,
+                paddingTop:
+                  tab === 'about'
+                    ? designTokens.space.authorHeaderBottom
+                    : desktop
+                      ? designTokens.space.x8
+                      : designTokens.space.sectionGap,
+                gap: designTokens.space.authorSectionGap,
+              }}
+            >
+              {tab === 'about' ? (
+                <AuthorAbout author={author} />
+              ) : worksPending ? (
+                <PageState title="Загружаем работы…" loading />
+              ) : query.isError ? (
+                <InfrastructureErrorState
+                  presentation="inline"
+                  onRetry={() => void query.refetch()}
+                />
+              ) : works.length === 0 ? (
+                <PageState
+                  title={
+                    selectedCategories.length
+                      ? 'В выбранных категориях пока нет работ'
+                      : 'У автора пока нет опубликованных работ'
+                  }
                 />
               ) : (
-                <ScrollView
-                  horizontal
-                  testID="creator-filter-strip"
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: designTokens.space.x2,
-                    paddingRight: designTokens.layout.gutter,
-                  }}
-                >
-                  <FigmaButton
-                    label={
-                      selectedCategories.length
-                        ? `Категория ${selectedCategories.length}`
-                        : 'Категория'
-                    }
-                    icon="arrow-right-01"
-                    iconPosition="right"
-                    variant="outline"
-                    disabled={!categories.data}
-                    onPress={() => {
-                      setDraftCategories(selectedCategories);
-                      setFilterOpen(true);
+                <>
+                  <View
+                    style={{
+                      width: '100%',
+                      gap: designTokens.space.x8,
                     }}
-                  />
-                  {selectedCategories.map((id) => (
-                    <FigmaChoiceChip
-                      key={id}
-                      label={
-                        categories.data?.categories.find(
-                          (item) => item.id === id,
-                        )?.name ?? 'Категория'
-                      }
-                      selected
-                      removable
-                      onPress={() => {
-                        setDraftCategories(selectedCategories);
-                        setFilterOpen(true);
-                      }}
-                      onRemove={() => {
-                        const next = selectedCategories.filter(
-                          (current) => current !== id,
-                        );
-                        router.setParams({
-                          categories: next.length ? next.join(',') : undefined,
-                          category: undefined,
-                        });
-                      }}
+                  >
+                    <PaddedGrid
+                      items={works}
+                      columns={gridColumnsFromWidth(contentWidth, {
+                        minCardWidth: designTokens.size.coverWidth,
+                        gap: designTokens.space.x3,
+                        max: 4,
+                      })}
+                      gap={designTokens.space.x3}
+                      keyExtractor={(item) => item.work.publicId}
+                      renderItem={(item) => (
+                        <CreatorWorkCard
+                          item={item}
+                          isOwner={isOwner}
+                          onUnavailable={setUnavailable}
+                          onHide={setPendingHide}
+                        />
+                      )}
                     />
-                  ))}
-                </ScrollView>
-              )
-            ) : null}
-            {tab === 'about' ? (
-              <AuthorAbout author={author} />
-            ) : worksPending ? (
-              <PageState title="Загружаем работы…" loading />
-            ) : query.isError ? (
-              <InfrastructureErrorState
-                presentation="inline"
-                onRetry={() => void query.refetch()}
-              />
-            ) : works.length === 0 ? (
-              <PageState
-                title={
-                  selectedCategories.length
-                    ? 'В выбранных категориях пока нет работ'
-                    : 'У автора пока нет опубликованных работ'
-                }
-              />
-            ) : (
-              <>
-                <View
-                  style={{ width: '100%', gap: designTokens.space.sectionGap }}
-                >
-                  <PaddedGrid
-                    items={works}
-                    columns={gridColumnsFromWidth(contentWidth, {
-                      minCardWidth: 320,
-                      gap: designTokens.space.x3,
-                      max: 3,
-                    })}
-                    gap={designTokens.space.x3}
-                    keyExtractor={(item) => item.work.publicId}
-                    renderItem={(item) => (
-                      <CreatorWorkCard
-                        item={item}
-                        isOwner={isOwner}
-                        onUnavailable={setUnavailable}
-                        onHide={setPendingHide}
-                      />
-                    )}
-                  />
-                </View>
-                {query.hasNextPage ? (
-                  <PrimaryButton
-                    label="Смотреть все"
-                    width="full"
-                    loading={query.isFetchingNextPage}
-                    onPress={() => void query.fetchNextPage()}
-                  />
-                ) : null}
-              </>
-            )}
-          </View>
-        </ScrollView>
+                  </View>
+                  {query.hasNextPage ? (
+                    <PrimaryButton
+                      label="Смотреть все"
+                      width="full"
+                      loading={query.isFetchingNextPage}
+                      onPress={() => void query.fetchNextPage()}
+                    />
+                  ) : null}
+                </>
+              )}
+            </View>
+          </PageColumn>
+        </Animated.ScrollView>
         <FilterSheet
           presentation="compact"
           bottomSpace={categorySheetBottomSpace}

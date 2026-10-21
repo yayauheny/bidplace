@@ -8,6 +8,7 @@ import { designTokens } from '@bidplace/design-tokens';
 
 import { FloatingDock } from '../figma/FloatingDock';
 import { useAppTheme } from '../../providers/theme-provider';
+import { pageColumnStyle } from './PageColumn';
 import { DesktopHeader } from './DesktopHeader';
 import { useDesktopNavigation } from './public-navigation';
 import { useDockInset } from './use-dock-inset';
@@ -16,10 +17,12 @@ export function AppShell({
   children,
   bottomAction,
   hideDock = false,
+  contentLayout = 'column',
 }: {
   children: ReactNode;
   bottomAction?: ReactNode;
   hideDock?: boolean;
+  contentLayout?: 'column' | 'bleed';
 }) {
   const dockBlurTarget = useRef<View | null>(null);
   const isFocused = useIsFocused();
@@ -40,16 +43,10 @@ export function AppShell({
       <BlurTargetView
         ref={dockBlurTarget}
         testID="app-shell-content"
-        style={{
-          flex: 1,
-          width: '100%',
-          maxWidth:
-            designTokens.layout.contentMax + 2 * designTokens.layout.gutter,
-          paddingHorizontal: designTokens.layout.gutter,
-          minWidth: 0,
-          alignSelf: 'center',
-          overflow: 'visible',
-        }}
+        style={[
+          { flex: 1, minWidth: 0, width: '100%', overflow: 'visible' },
+          contentLayout === 'column' ? pageColumnStyle : null,
+        ]}
       >
         {children}
         {bottomAction ? (

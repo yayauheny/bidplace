@@ -1,5 +1,5 @@
 import { Link, type Href } from 'expo-router';
-import type { ReactNode } from 'react';
+import type { ElementRef, ReactNode, Ref } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import {
@@ -121,6 +121,7 @@ function FigmaButtonVisualContent({
 }
 
 type FigmaButtonBaseProps = {
+  ref?: Ref<ElementRef<typeof MotionPressable>>;
   label: string;
   variant?: FigmaButtonVariant;
   disabled?: boolean;
@@ -228,6 +229,7 @@ export function FigmaButton(
 
   const pressable = (
     <MotionPressable
+      ref={props.ref}
       testID={testID}
       accessibilityRole={props.href ? 'link' : 'button'}
       accessibilityLabel={label}

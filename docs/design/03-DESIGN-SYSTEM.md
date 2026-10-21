@@ -204,12 +204,12 @@ focus visibility и согласованный URL/back contract.
 ### Shared image-derived atmosphere
 
 `AmbientImageBackground` is the single shared shell-level atmosphere primitive
-for Product About and Creator Profile. It uses the route-provided public image
+for Product About. CreatorIdentity owns the separate bounded avatar halo from
+the current author reference. It is not a shell-level atmosphere. The primitive uses the route-provided public image
 URL only as a blurred visual layer, keeps the sharp image/content accessible,
 adds a neutral veil and a light lower fade, and falls back to the warm page
 surface when media is absent or fails. It is decorative, pointer-inert and
-reduced-motion aware; Product and Creator do not own separate blur
-implementations.
+reduced-motion aware.
 
 ### Page states
 
@@ -245,7 +245,7 @@ Public infrastructure errors use `InfrastructureErrorState`. The unused
 ### Shared atmosphere and accordion invariants
 
 `AmbientImageBackground` is the single shell-level atmosphere primitive for
-Product and Creator Profile. Its media layer is clipped by the outer bounds,
+Product About. Its media layer is clipped by the outer bounds,
 overscanned by a bounded 1.1 scale, and fades through one explicit linear
 gradient into the warm surface. Product About accordion rows use one symmetric
 toggle behavior: the active row closes when activated again, and the control
@@ -283,27 +283,27 @@ requires an explicitly documented per-component exception.
 
 ### Creator identity header (web 390)
 
-Sticky creator header has two product states: `expanded` and `compact`. Scroll
-hysteresis chooses the state from measured hero geometry: `scrollTop >=
-heroHeight - compactStack` collapses, `scrollTop <= park - 20` expands;
-between those values the current state is kept. Unmeasured height stays
-expanded. Web sticky is CSS (`top: -(heroHeight - compactStack)`). Expanded
-`CreatorHero` is a static Figma layout. One `CreatorIdentity` stays mounted;
-compact only restyles the same avatar, handle and actions nodes. Reanimated
-`LinearTransition` (`200ms`, `cubic-bezier(0.2, 0, 0, 1)`,
-`ReduceMotion.System`) interpolates those layout changes. Tabs are not in
-that animation.
-Compact row: avatar `20 / 12` 48×48, handle `76 / 26.5`, actions
-`y=12`, tabs `y≈80`. Web compact stack is `stickyDock.actionHeight`
-(`space.x3 + size.header + space.x5` = 80), plus `stickyDock.tabsHeight` 26.
-Figma scrolled `526:14524` remains `76 / 58.5` under iPhone inset `y=44` /
-tabs `y=186`; those tokens stay canonical. Reduced motion keeps the same
-thresholds and snaps the layout change.
+Current source: HRRtDp0bQlukw7ptTkuEZg4306:8453 /4594:36802 and
+4861:7803 /4886:10106, superseding the previous compact-avatar contract.
+CreatorIdentity remains mounted at100px (mobile) /140px (public desktop).
+Only the existing action row pins after the measured header leaves the viewport;
+there is no duplicate compact identity. Animated.ScrollView feeds a shared scroll
+value. Reanimated transforms/opacity use the common200ms timing and system
+reduced motion.20px hysteresis prevents threshold flicker. React accessibility
+state changes only at visibility crossings, never per frame. Desktop keeps the
+expanded identity under the shared navigation; no duplicate mobile bar.
+
+AppShell contentLayout=bleed gives the author scrollport full viewport width;
+PageColumn owns the same1280+12px container inside it. The15px avatar halo can
+paint outside the centered column, while clipping remains at the physical screen.
+Works uses the common measured PaddedGrid up to four columns,12px horizontal /
+32px vertical gaps. About uses the same grid owner for two prose columns when
+space permits. Mobile remains one column. No Archive/commerce/favorites backend
+is implied by these Figma frames.
 
 ### Work identity header (web 390)
 
-Work uses the same `stickyDock.*` visual contract as Creator compact, with
-different sticky physics. Expanded rest is gallery media 520, dots after
+Work retains its separate `stickyDock.*` visual contract and sticky physics. Expanded rest is gallery media 520, dots after
 `space.x3`, identity after `sectionGap` 20, tabs after `space.x10` 40. One
 Back/Share pair stays mounted in `StickyDockActionRow` and overlays the
 gallery at `20 / 12` 48×48. Those nodes pin with CSS sticky at the same
@@ -315,8 +315,7 @@ that host and stays transparent until Work tabs stick at
 scrollport, top `rootMargin` `-stickyDock.actionHeight`). Then it fades to
 the shared navigation glass (`FigmaGlassSurface preset="navigation"`,
 `borderRadius: 0`, `motion.control`, `cubic-bezier(0.2, 0, 0, 1)`,
-`ReduceMotion.System`). Creator compact uses the same material behind
-identity and tabs. Docked tabs set `surface="transparent"` so they do not
+`ReduceMotion.System`). Docked tabs set `surface="transparent"` so they do not
 paint a second canvas. Tab labels use `contentInset={layout.gutter}`;
 the tablist divider stays full-bleed. Gallery and identity scroll away
 naturally. Native Work stays expanded-only.
