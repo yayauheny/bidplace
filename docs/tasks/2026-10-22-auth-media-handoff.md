@@ -3,7 +3,7 @@
 Статус: исследование и согласованный архитектурный выбор; реализация не начата.
 Основатель отдельно подтвердил: пока только планирование, не приступать к реализации.
 Раздел «Промпт для передачи» исполнять после отдельной команды на реализацию.
-Обновлено после продолжения: runtime compatibility spike3/3; предварительный
+Обновлено после продолжения: runtime compatibility spike3/3; уточнённый
 контракт сессий/onboarding ниже. Проверка Prisma/TypeScript/Docker остаётся волной0.
 
 ## Промпт для передачи
@@ -56,13 +56,32 @@
 - `openid-client` v6 — общий OIDC-клиент Google и Telegram: discovery, PKCE,
   nonce/state, обмен кода и проверка ID token. Никакой собственной JWT/JWKS-криптографии.
 - Nest + Prisma — аккаунты, роли/статусы, согласия, nickname, provider identities,
-  onboarding, явная привязка, ограничения рассылок и правила доступа.
+  onboarding, email-code login, явная привязка, ограничения рассылок и правила доступа.
 - Удалить собственный JWT issuer после переключения всех читателей/тестов;
   отдельный `jose` для application JWT в выбранной архитектуре не нужен.
 - Это готовые auth-примитивы, а не полный auth-движок: прикладные правила остаются нашими.
 - Проверенные кандидаты: express-session1.19.0, connect-pg-simple10.0.0,
   openid-client6.x. Node22.20 подходит; точные версии и CJS/TS/build нужно подтвердить
   коротким исполняемым compatibility spike до изменения основного auth.
+
+## Готовность задания и порядок исполнения
+
+Критерий успеха: один User ID сохраняется при password/email-code/Google/Telegram,
+готовые библиотеки владеют сессией и OIDC, а текущие guards, согласия, модерация,
+private media и отзыв доступа продолжают работать. Приложение не содержит второго
+auth runtime и двух копий OTP-политики. Исследование не разрешает деплой.
+
+Последовательность:0 -> отдельная media-волна1 -> сессии2 -> OIDC3 ->
+email-code4A -> social onboarding/link4B -> финальная проверка5.
+Если PR56 ещё не готов к интеграции, явно отложить только media1 и закончить auth;
+не переносить непроверенный PR целиком ради старта auth. Внутри каждой волны сначала
+проверить текущих владельцев и написать необходимые регрессии, затем код и gate.
+Не делать новый самостоятельный auth-framework, repository-слой поверх Prisma
+или запасной механизм входа на случай непрохождения библиотечных проверок.
+
+Нынешний MVP RFC оставляет эти способы после первого portfolio-релиза. Решение
+основателя расширяет следующую auth-волну, а не объявляет её уже включённой в MVP;
+см. DEC-131. Полный статус владельцев менять только вместе с реализацией.
 
 ## Что обнаружено в коде
 
@@ -94,7 +113,7 @@ feature-ветке от актуальной MVP. Каждую волну зак
 Не смешивать с чисткой документации или новой визуальной унификацией кнопок.
 Зафиксировать таблицу endpoint/state/ownership до кода: anonymous, pending-social,
 email verification, authenticated, explicit-link, cancelled/expired.
-Предварительный контракт этих границ зафиксирован ниже. Проверь его на реальных
+Контракт этих границ зафиксирован ниже. Проверь его на реальных
 типах/миграциях и исполняемом test IdP. В случае доказанной несовместимости
 останови зависимую волну с конкретным объяснением; не меняй архитектуру молча.
 
@@ -144,7 +163,7 @@ redirectTo обязательны. In-memory map не переживает Conta
 если они не нужны для простого login. Не подтягивать provider avatar на сервер
 как произвольный URL: это отдельная media/SSRF-граница.
 
-### 4. Регистрация, привязка, UI
+### 4. Вход по коду, регистрация, привязка, UI
 
 Сначала закончить вход по email-коду по контракту ниже и его проверки; затем
 social onboarding и привязку. Не начинать несколько незаконченных auth-потоков.
@@ -159,6 +178,11 @@ API. Никаких fake email/password. Email conflict -> вход в суще�
 Повторный вход не просит снова регистрироваться и не перезаписывает профиль автора.
 Настройки подключений переиспользуют существующие rows/dialogs. Новую композицию,
 не определённую Figma, оформить intake; BackButton/FigmaIconButton не переделывать.
+Пароль остаётся текущим вариантом входа; код — явная альтернатива без определения
+провайдера по введённой почте. Переиспользовать AuthCodeField и поля email, логику
+resend/state брать с сервера. Не запускать resend в useEffect при каждом mount.
+Не добавлять unlink, смену подтверждённой почты, passkeys, MFA и magic links в эту
+волну: для поставленной задачи достаточно списка и явного подключения провайдеров.
 Сохранить auth epoch, dirty/busy guards, redirectTo, focus/resize/reduced motion,
 единое подтверждение документов и неблокирующее чтение юридических страниц.
 Отмена провайдера/сеть/state expired -> понятная ошибка и повтор без потери формы.
@@ -206,7 +230,7 @@ production-like image/web build без утечки настроек. Не ос�
 - Неизвестная почта не создаёт аккаунт автоматически; доступна обычная регистрация
   с ником и подтверждением документов. До подтверждения владения почтой ответы
   запроса кода не раскрывают наличие аккаунта, пароля или подключённых провайдеров.
-- Текущий `/otp/*` подтверждает email уже существующего authenticated User;
+- Текущий `/auth/email/*` подтверждает email уже существующего authenticated User;
   это не endpoint входа. Ввести отдельное назначение `email_login` и ограниченные
   anonymous request/verify endpoints внутри auth, используя общие delivery/abuse
   примитивы. Коды verification/reset/login не взаимозаменяемы.
@@ -215,11 +239,33 @@ production-like image/web build без утечки настроек. Не ос�
   cooldown и idempotency. Потребление атомарное; двойной verify, поздний ответ,
   смена email, ban/revoke и ошибка session save не обходят общие auth-инварианты.
   Использовать принятые политики проекта; не придумывать отдельные лимиты в UI.
-- Незавершённую регистрацию не считать готовым аккаунтом только по совпадению email.
-  До кодинга проверить сценарий предварительной регистрации чужой почты: последующее
-  подтверждение настоящим владельцем не должно сохранять доступ злоумышленника
-  через ранее заданный пароль, provider identity или сессию. Этот сценарий — gate
-  спецификации волны0, а не разрешение автоматически переносить identity.
+- Email-login выдаёт код только для active User с подтверждённым текущим email.
+  Незавершённая регистрация проходит существующее подтверждение после исходной
+  аутентификации или восстановления доступа, без превращения login-кода в verify-код.
+  Unknown/inactive/unverified случаи имеют одинаковый нейтральный ответ request.
+  При email collision с unverified User не активировать новую provider identity;
+  предложить существующий вход/recovery. Reset отменяет pending identities/flows
+  вместе с sessionVersion bump. Эти правила исключают автоматическую активацию
+  предварительно привязанного злоумышленником провайдера после чужого подтверждения.
+- Не возвращать `already_verified` из login verify как доказательство входа:
+  каждый вход требует именно своего непотреблённого challenge. Повтор verify с тем
+  же idempotency key не создаёт новую сессию без исходной browser binding; ключ
+  идемпотентности не является credential. При SMTP unknown код может прийти позже;
+  не слать письмо автоматически второй раз и не обещать доставку по `accepted`.
+- Переиспользовать текущие 6 цифр и policy: TTL5мин, 5 неверных проверок -> пауза5мин,
+  resend60/120/300с; новый request не сбрасывает durable failures/pause. Login-письма
+  входят в общие mail quotas/budgets, а не получают отдельный обходной лимит.
+  Короткий код хранить как purpose/challenge-bound HMAC с server-only ключом через
+  Node crypto; простой SHA-256 от 6 цифр не защищает код при чтении дампа БД.
+  Это относится и к code-derived contentHash идемпотентной операции, не только
+  к codeHash challenge: иначе код восстанавливается через второй сохранённый hash.
+  Миграция не сохраняет активные тестовые OTP: их явно завершить, не конвертировать.
+- В `AuthAbuseStore.reserveMailLocked` сейчас ветвление на verification/reset,
+  а `verifyEmailCode` возвращает успех для уже подтверждённого User. Простого
+  добавления `email_login_send` в MAIL_PURPOSES недостаточно: явно расширить purpose
+  policy, выбор secret/TTL, invalidation, content binding, counters и replay paths.
+  Выделять только действительно общие части reservation/delivery/consume;
+  не копировать весь store/service и не делать configurable OTP engine.
 - Затронутые владельцы: auth UI/feature state -> contracts и api-client -> AuthService,
   OtpService/AuthAbuseService -> Prisma attempts/User/sessionVersion -> session store
   и Cloudflare no-store. Переиспользовать поля/OTP UI, не менять BackButton.
@@ -236,7 +282,8 @@ production-like image/web build без утечки настроек. Не ос�
   Существующее восстановление пароля остаётся email recovery; после успешной
   проверки reset-token оно может установить настоящий пароль social-only аккаунту.
 - `ExternalIdentity`: userId, provider, issuer, subject, timestamps; уникальны
-  issuer+subject (provider из фиксированного server allowlist). Не хранить секреты
+  issuer+subject (provider из фиксированного server allowlist). Pending/active
+  состояние отличает незаконченную проверку от готового способа входа. Не хранить секреты
   провайдера, refresh/access tokens и его профиль целиком.
 - Session store — таблица в существующей БД, формат sid/sess/expire по библиотеке.
   Nest principal: userId + sessionVersion; роль и active-status читаются из User.
@@ -254,28 +301,39 @@ production-like image/web build без утечки настроек. Не ос�
 
 | Состояние | Доступ | Переход |
 | --- | --- | --- |
-| Anonymous | Публичное чтение, password login/register, social start | OIDC-подтверждение |
+| Anonymous | Публичное чтение, password login/register, email-login request/verify, social start | Проверка выбранного способа входа |
 | Provider verified, profile missing | Только текущий onboarding flow; обычный principal отсутствует | Email/ник/одно согласие |
 | Email pending | Только state/request/verify/cancel текущего onboarding | Подтверждение реального email |
 | Authenticated | Существующие guards ролей/владения/модерации | Logout/reset/revoke |
 | Expired/cancelled/consumed | Никаких прав попытки | Новый start |
 
 Для Telegram не создавать User с пустым/фиктивным email. После получения настоящего
-email, ника и согласий создать User + legal evidence + ExternalIdentity в одной
+email, ника и согласий создать User + legal evidence + pending ExternalIdentity в одной
 транзакции. До проверки email browser-session содержит только pending-flow reference,
 без authenticated userId. Созданный User — обычный unverified account; это не повод
-давать ему обычную сессию. Повторный Telegram вход находит identity и возобновляет
-email completion. Не удалять такого User автоматически при истечении flow: новый
+давать ему обычную сессию. Повторный Telegram вход находит pending identity и возобновляет
+email completion, но не выдаёт обычную сессию. Identity активируется только при
+доказательствах провайдера и текущего email в одном непросроченном flow, с повторной
+проверкой sessionVersion. Проверка email в другом flow сама по себе не активирует
+pending identity. Reset/revoke/смена адреса отменяют pending identities/flows;
+активные identities сохраняются, если отдельная политика не требует их отзыва. Не удалять такого User автоматически при истечении flow: новый
 flow безопасно возобновляет его; чистка брошенных аккаунтов требует отдельной политики.
 
 Ограниченные onboarding endpoints берут userId исключительно из серверной записи
 AuthFlow и вызывают существующие `OtpService`/`AuthAbuseService`, сохраняя Turnstile,
 mail quota/budget, idempotency, блокировки и hash/expiry кодов. Они не ослабляют
-Bearer/обычный session guard и не делают `/otp/*` общедоступным. `GET /auth/me`
+обычный session guard и не делают `/auth/email/*` общедоступным. `GET /auth/me`
 в pending состоянии возвращает401. Ошибка SMTP оставляет безопасный повтор.
 
 Предлагаемые endpoint под текущим префиксом `/api`:
 
+- `POST /auth/email-login/request`: email, idempotencyKey, Turnstile;
+  единый нейтральный ответ и opaque flow reference, привязанный к browser session.
+- `POST /auth/email-login/verify`: flow reference, code, idempotencyKey;
+  success возвращает существующий authResponse и сохраняет новую session cookie.
+  Invalid/expired/paused — типизированные ошибки без account/provider disclosure.
+- `GET /auth/connections`: authenticated-only список собственных подключений;
+  без provider subject, tokens и чужих email. Не public email lookup.
 - `POST /auth/providers/:provider/start`: intent login/link, относительный returnPath.
 - `GET /auth/providers/:provider/callback`: единственное redirect-исключение; OIDC state.
 - `GET /auth/onboarding`: только состояние текущего flow и необходимые поля.
@@ -283,6 +341,11 @@ Bearer/обычный session guard и не делают `/otp/*` общедос
 - `POST /auth/onboarding/email/request`, `/verify`: те же DTO idempotency/OTP,
   что у текущего механизма; отдельные scope guards, не отдельный OTP engine.
 - `POST /auth/onboarding/cancel`: завершает попытку, но не удаляет аккаунт.
+
+Существующие `/auth/login`, `/auth/register`, `/auth/me`, `/auth/logout`,
+`/auth/password/*` и `/auth/email/*` сохраняют свои доменные задачи. DTO дополнять
+через публичные exports contracts/api-client; не подменять verification endpoint
+новым sign-in и не дублировать один response type локально в Nest и Expo.
 
 Не регистрировать User непосредственно из Google profile до ввода nickname и
 явного принятия документов. Google email — prefill; пропуск OTP допускается только
@@ -300,6 +363,11 @@ email/displayName/профиль автора и не объединяет со�
 - Разрешить одну активную попытку данного browser binding; новый start отменяет
   предыдущую под тем же lock. Поздний callback, отмена или duplicate completion
   не создают второй аккаунт/identity и не заменяют текущую сессию другим пользователем.
+- При email collision завершить неподключённую provider-попытку и предложить
+  обычный вход в существующий аккаунт, затем подключение в настройках с новым
+  link intent. Не переносить provider proof через произвольный login flow и
+  не пытаться неявно завершить привязку после входа. Это простой последовательный
+  сценарий без второго параллельного координатора попыток.
 - При link flow зафиксировать accountId, sessionVersion и свежую аутентификацию;
   callback повторно проверяет их. Нельзя привязать identity после logout/login в другой
   аккаунт. Рекомендованный предел свежести5мин — именованная server policy, не таймер UI.
@@ -351,6 +419,79 @@ password login остаётся рабочим. Не показывать соо
   пропуск PKCE/nonce/CSRF, MemoryStore/in-memory OAuth state в production.
 
 ## Что фактически проверено при продолжении
+
+### Данные для настройки и внешней приёмки
+
+Эти настройки готовит владелец через штатный server-only secret store, не в чате.
+Для кода и test IdP реальные значения не нужны. Не открывать `.env` для проверки
+их наличия; проверять схему настроек и валидировать конфигурацию при старте.
+
+| Настройка | Требование |
+| --- | --- |
+| Session / OTP | Новые server-only `SESSION_SECRET` и `OTP_HASH_SECRET`; независимые ключи для подписи SID и purpose-bound HMAC коротких кодов. Нет ключа -> fail closed; никаких встроенных значений и client fallback |
+| Google | Web OAuth client; `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`; discovery `https://accounts.google.com/.well-known/openid-configuration`, scopes `openid email profile` |
+| Telegram | BotFather Login Widget: `TELEGRAM_CLIENT_ID`, `TELEGRAM_CLIENT_SECRET`, `TELEGRAM_REDIRECT_URI`, Allowed URLs; discovery `https://oauth.telegram.org/.well-known/openid-configuration`, scopes `openid profile`, без phone/bot messaging |
+| Callback | Предлагаемые exact production URI: `https://bid.place/api/auth/providers/google/callback` и `https://bid.place/api/auth/providers/telegram/callback`; зарегистрировать у провайдеров после фиксации route. Не собирать адрес из Host/X-Forwarded-Host |
+| Окружения | Local/test, staging и production не используют общие session/OTP keys и callback registrations; для smoke — отдельные безопасные provider clients. Test IdP доступен только explicit test profile |
+| Почта / Turnstile / DB | Существующие server настройки и реальные mail budgets сохраняются. Проверить новый email-login action в серверном allowlist и клиентском widget; не выключать Turnstile для успешного smoke |
+
+Telegram token endpoint по документации требует client-secret Basic auth; настроить
+это через openid-client, не вручную через base64/fetch. В волне0 проверить реальную
+discovery metadata и поддерживаемые методы клиента. Google также поддерживает
+client_secret_basic. Оба потока — server code flow + S256/nonce/state через redirect
+текущей вкладки, без добавления popup SDK и изменения COOP ради popup.
+
+Отсутствие настроек конкретного provider не ломает password/email login; частично
+заданный provider config — понятная startup validation error. UI получает только
+признаки доступных методов через общий публичный config/API, без account lookup
+и без provider secrets. Не заводить secret manager и не менять deploy в этой задаче.
+
+Реальная внешняя приёмка после безопасной настройки: первый и повторный Google,
+первый и повторный Telegram, отмена consent, недостающий email, конфликт email,
+явная привязка, Google -> code и email -> Google. В отчёте отличать результаты
+test IdP от результатов настоящих providers. Наличие библиотеки/кнопки не равно
+готовому provider login. Browser smoke возможен на локальном/выделенном тестовом
+стеке; URL регистрации callback должен совпадать с реально настроенным окружением.
+
+### Минимальный пакет доказательств по волнам
+
+| Волна | Обязательный gate |
+| --- | --- |
+| 0 | Актуальный SHA + версия PR56; Nest10/Express4/Node22 TS и runtime compatibility; disposable PostgreSQL store/schema, test IdP, production-like Docker build |
+| 1 | Media owner specs и file-input smoke; если media отложена, явно назвать её отдельным остатком |
+| 2 | Session HTTP/integration: anonymous, cookie, rotate/save/destroy, 12h absolute expiry, restart, reset/revoke/ban и late-save race; auth client/provider regressions |
+| 3 | OIDC HTTP: оба issuer, PKCE/nonce/state/claims, cancel, replay/concurrent callback, session switch и redirect validation; private API не доступно pending flow |
+| 4A | Email-code HTTP/DB и UI: нейтральный request, invalid/expiry/pause/resend/budget, purpose isolation, User ID, browser binding, stale version, idempotent replay и session save failure |
+| 4B | Social creation/link: mandatory email/slug/legal, pending identity не становится active от чужого verify, collision без merge, recovery отменяет pending proof, повторный вход без новой регистрации |
+| 5 | Affected lint/typecheck/tests/build; `pnpm verify`, `pnpm cloudflare:check`, image verification и Chromium/WebKit на isolated stack. Настоящий provider smoke отдельно от mock-покрытия |
+
+Не запускать пишущие e2e на localhost7899, пока не доказана изоляция его API/БД:
+это пользовательский стенд. Использовать существующий изолированный auth-abuse
+Playwright config/HTTP harness и расширять owner specs, не делать файл на каждый баг.
+Артефакты — скриншоты без кодов/секретов, SHA, команды, фактические failures/skips.
+Нужные Figma состояния email-code/link брать из текущего intake/owners до UI-кода;
+при отсутствии точного frame отметить только затронутую геометрию NEEDS-FIGMA.
+
+### Совместимость, миграция и передача
+
+Сохранять все User ID, slug, работы, media и legal evidence. Миграции additive,
+изменение старых migration SQL/reset seed не разрешены. Отдельная команда релиза
+в будущем: закрыть записи старого API -> применить миграцию -> новый image ->
+проверить health/auth/private reads -> открыть доступ. До открытия выполнить
+стандартный backup/restore preflight; применённые миграции не откатывать drop-ом.
+Старые JWT и активные OTP явно завершаются; документировать повторный вход.
+Новая версия и старый auth writer не должны работать одновременно в одном rollout.
+Задание готовит код и runbook; применять production миграции/deploy/push/merge без
+отдельной команды нельзя. Установленные локально зависимости не меняют это правило.
+
+Проверено22октября перед передачей: remote MVP `e024d91d22ac5f5912e45dae1dbff8f723c65690`;
+PR56 всё ещё OPEN/DRAFT, head `aff5ddfc99a368ab9d4ea2e85ea41491aa9b6291`.
+Документация находится локально в исследовательском checkout; до старта исполнения
+прочитать её по указанному абсолютному пути. Не cherry-pick всего старого
+12-DECISION-LOG поверх чужой docs-чистки: переносить подтверждённое решение адресно,
+сохраняя текущую структуру canonical docs и проверяя занятые номера решений.
+
+### Исполнявшийся библиотечный spike
 
 В `/tmp/bidplace-auth-library-spike` установлены только временные зависимости;
 package.json/lockfile Bidplace не изменены. Node22.20.0:
