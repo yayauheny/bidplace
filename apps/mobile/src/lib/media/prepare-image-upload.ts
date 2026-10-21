@@ -79,8 +79,10 @@ export async function prepareImageUpload(
   const supported = ['image/jpeg', 'image/png', 'image/webp'].includes(type);
   const fitsDimensions = knownDimensions &&
     Math.max(width, height) <= options.maxDimension;
+  const requestedMimeType = options.format ? `image/${options.format}` : null;
+  const matchesFormat = requestedMimeType === null || type === requestedMimeType;
 
-  if (supported && source.size <= options.maxBytes &&
+  if (supported && matchesFormat && source.size <= options.maxBytes &&
       (!knownDimensions || fitsDimensions)) {
     return { uri: input.uri, blob: source };
   }
