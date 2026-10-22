@@ -15,6 +15,22 @@
 
 После изменения кода: добавьте **одну** датированную секцию в начало (ниже этой таблицы) со статусом `Implemented` / `Partial` / `Needs verification` и ссылками на модули и тесты. Не дублируйте длинные аудиты; переносите детали в owner audit или decision log.
 
+## 2026-10-22 — PR58 second review follow-up
+
+**Partial; local changes pending CI.** [SessionService](../../apps/api/src/auth/session.service.ts)
+and [AuthFlowService](../../apps/api/src/auth/auth-flow.service.ts) now serialize
+flow creation, account switching and logout by browser SID in PostgreSQL. A
+delayed provider response cannot restore a rotated session; the cross-account
+case is covered in [social-auth integration](../../apps/api/test/integration/social-auth.integration.spec.ts).
+Email-login resend reads a bounded, indexed ledger window. Draft PR CI now
+runs the auth integration owners against an isolated abuse database; the ready
+PR gate also runs browser auth checks. Local verification: 97 targeted auth
+integration cases passed, with one optional browser runner skipped.
+
+Registration collision responses and SMTP/verify timing privacy are under
+review as product contract changes. Real providers and staging still need
+external acceptance. No MVP merge or deployment performed.
+
 ## 2026-10-22 — PR58 review fixes and MVP auth simplification
 
 **Implemented locally; external acceptance pending.** Four reproduced review

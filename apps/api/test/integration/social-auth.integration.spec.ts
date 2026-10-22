@@ -1194,4 +1194,129 @@ describe('OIDC, email login and explicit account linking', () => {
     );
     expect((await client.get('/auth/onboarding')).status).toBe(401);
   });
+
+  it('rejects a late provider start after password login replaces the session', async () => {
+    const { body: first } = await signup(
+      'google',
+      `race-a-${randomUUID()}@gmail.com`,
+    );
+    const second = await database.prisma.user.create({
+      data: {
+        email: `race-b-${randomUUID()}@example.test`,
+        slug: 'race-' + randomUUID().slice(0, 8),
+        emailVerifiedAt: new Date(),
+        passwordHash: await http.app
+          .get(
+            (await import('../../src/auth/password-hasher.service'))
+              .PasswordHasherService,
+          )
+          .hash('synthetic-password'),
+      },
+    });
+    const providers = http.app.get(OidcProvidersService);
+    const authorization = providers.authorization.bind(providers);
+    let release!: () => void;
+    let entered!: () => void;
+    const waiting = new Promise<void>((resolve) => {
+      entered = resolve;
+    });
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const spy = vi
+      .spyOn(providers, 'authorization')
+      .mockImplementationOnce(async (...args) => {
+        entered();
+        await gate;
+        return authorization(...args);
+      });
+    try {
+      const pending = client.post('/auth/providers/telegram/start', {
+        intent: 'link',
+        returnPath: '/account',
+      });
+      await waiting;
+      const login = await client.post('/auth/login', {
+        email: second.email,
+        password: 'synthetic-password',
+      });
+      expect(login.status).toBe(201);
+      expect((await (await client.get('/auth/me')).json()).user.id).toBe(
+        second.id,
+      );
+      release();
+      const late = await pending;
+      expect(late.status).toBe(401);
+      const after = await (await client.get('/auth/me')).json();
+      expect(after.user.id).toBe(second.id);
+      expect(
+        await database.prisma.externalIdentity.count({
+          where: {
+            userId: first.user.id,
+            provider: 'telegram',
+            activatedAt: { not: null },
+          },
+        }),
+      ).toBe(0);
+    } finally {
+      release();
+      spy.mockRestore();
+    }
+  });
+
+  it('does not restore a rotated anonymous session from a late provider start', async () => {
+    const user = await database.prisma.user.create({
+      data: {
+        email: `anonymous-race-${randomUUID()}@example.test`,
+        slug: 'race-' + randomUUID().slice(0, 8),
+        emailVerifiedAt: new Date(),
+        passwordHash: await http.app
+          .get(
+            (await import('../../src/auth/password-hasher.service'))
+              .PasswordHasherService,
+          )
+          .hash('synthetic-password'),
+      },
+    });
+    await start();
+    expect((await client.post('/auth/onboarding/cancel')).status).toBe(201);
+    const providers = http.app.get(OidcProvidersService);
+    const authorization = providers.authorization.bind(providers);
+    let release!: () => void;
+    let entered!: () => void;
+    const waiting = new Promise<void>((resolve) => {
+      entered = resolve;
+    });
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const spy = vi
+      .spyOn(providers, 'authorization')
+      .mockImplementationOnce(async (...args) => {
+        entered();
+        await gate;
+        return authorization(...args);
+      });
+    try {
+      const pending = client.post('/auth/providers/telegram/start', {
+        intent: 'login',
+        returnPath: '/account',
+      });
+      await waiting;
+      expect(
+        (
+          await client.post('/auth/login', {
+            email: user.email,
+            password: 'synthetic-password',
+          })
+        ).status,
+      ).toBe(201);
+      release();
+      expect((await pending).status).toBe(401);
+      expect((await (await client.get('/auth/me')).json()).user.id).toBe(user.id);
+    } finally {
+      release();
+      spy.mockRestore();
+    }
+  });
 });

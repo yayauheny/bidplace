@@ -316,6 +316,7 @@ export class AuthAbuseService {
       const sends = await tx.authAbuseOperation.findMany({
         where: { purpose: 'email_login_request', contentHash },
         orderBy: { createdAt: 'desc' },
+        take: 3,
       });
       const last = sends[0];
       const retryAt = last
@@ -352,6 +353,7 @@ export class AuthAbuseService {
         contentHash: this.loginRequestHash(browserHash, email),
       },
       orderBy: { createdAt: 'desc' },
+      take: 3,
     });
     const last = sends[0];
     return {

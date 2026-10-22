@@ -569,6 +569,11 @@ AuthSession migration owns auth_sessions; store runtime DDL is disabled and its
 schema follows DATABASE_URL. SessionAuthGuard and optional/logout guards use one
 principal resolver, current User role/status/version and absolute 12h expiry.
 Late session saves cannot bypass logout/reset/admin version invalidation.
+Flow creation, account switching and logout hold a PostgreSQL advisory lock on
+the browser SID while saving session state. Before a delayed request writes, it
+rechecks that its previously loaded SID still exists, so an old request cannot
+recreate a session after rotation or logout. The lock is shared across API
+workers and is released after the session write.
 Bootstrap owns session middleware and CSRF origin/custom-header checks; api-client
 uses cookies and marks mutations. JWT issuer and bearer client transport removed.
 SocialAuthModule extends this transport through one AuthFlowService and
@@ -589,6 +594,9 @@ ledger binds browser SID digest plus email, independently of a credential flow;
 rotation after revoke preserves cooldown and replay. Turnstile succeeds before
 admission is recorded. OTP/real mail operations still bind their own flow/version.
 The neutral ledger grants no authentication or SMTP-delivery claim.
+Email-login resend reads only the three newest ledger rows through the
+`purpose, contentHash, createdAt` index; the cooldown policy needs no older
+history.
 
 Email-login verify exposes one typed EMAIL_LOGIN_REJECTED for all credential
 refusals, including unknown/ineligible/expired/paused/revoked attempts; durable

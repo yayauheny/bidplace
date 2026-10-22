@@ -32,6 +32,7 @@ jobs:
           POSTGRES_DB: bidplace_integration
         ports:
           - 5432:5432
+          - 55440:5432
         options: >-
           --health-cmd "pg_isready -U auction -d bidplace_integration"
           --health-interval 5s
@@ -42,6 +43,7 @@ jobs:
       NODE_ENV: test
       APP_ENV: local
       DATABASE_URL: postgresql://auction:auction@localhost:5432/bidplace_integration?schema=public
+      AUTH_ABUSE_TEST_DATABASE_URL: postgresql://auction:auction@127.0.0.1:55440/bidplace_auth_abuse_test
       SESSION_SECRET: ci-verify-jwt-secret
       OTP_HASH_SECRET: synthetic-ci-otp-key-at-least-32-characters
       TEST_EMAIL_BYPASS: 'false'
@@ -63,6 +65,9 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Create isolated auth abuse test database
+        run: docker exec "${{ job.services.postgres.id }}" createdb -U auction bidplace_auth_abuse_test
 
       - name: Fast checks for draft PR
         if: github.event_name == 'pull_request' && github.event.pull_request.draft == true
@@ -101,6 +106,10 @@ jobs:
           pnpm --filter @bidplace/mobile exec vitest run src/features/admin/AdminWorkCatalogProposals.spec.ts
           pnpm --filter @bidplace/api exec vitest run src/images/images.service.spec.ts
 
+      - name: Auth regression tests for draft PR
+        if: github.event_name == 'pull_request' && github.event.pull_request.draft == true && github.head_ref == 'feature/web-auth'
+        run: pnpm --filter @bidplace/api exec vitest run --config vitest.integration.config.ts test/integration/auth-abuse.integration.spec.ts test/integration/auth-transport.integration.spec.ts test/integration/social-auth.integration.spec.ts
+
       - name: Build workspace only (no tests)
         if: github.event_name == 'push' && contains(github.event.head_commit.message, '[build-only]')
         run: pnpm build
@@ -124,3 +133,17 @@ jobs:
       - name: Verify production-like amd64 container
         if: (github.event_name != 'pull_request' || github.event.pull_request.draft == false) && !contains(github.event.head_commit.message, '[build-only]')
         run: pnpm cloudflare:image:verify
+
+      - name: Verify web auth in Chromium and WebKit
+        if: github.event_name == 'pull_request' && github.event.pull_request.draft == false && github.head_ref == 'feature/web-auth'
+        env:
+          AUTH_BROWSER_SMOKE: '1'
+          INTEGRATION_DATABASE_URL: postgresql://auction:auction@localhost:5432/bidplace_integration?schema=public
+          EXPO_NO_DOTENV: '1'
+          EXPO_PUBLIC_API_URL: http://127.0.0.1:55442
+          EXPO_PUBLIC_TURNSTILE_SITE_KEY: 1x00000000000000000000AA
+        run: |
+          pnpm --filter @bidplace/mobile exec playwright install --with-deps chromium webkit
+          pnpm --filter @bidplace/mobile exec expo start --offline --web --port 55441 > /tmp/bidplace-auth-expo.log 2>&1 &
+          curl --fail --retry 30 --retry-delay 2 --retry-connrefused http://127.0.0.1:55441/ > /dev/null
+          pnpm --filter @bidplace/api exec vitest run --config vitest.integration.config.ts test/integration/social-auth.integration.spec.ts

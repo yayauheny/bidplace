@@ -163,6 +163,17 @@ export class SessionService implements OnModuleDestroy {
     version: number,
     completingFlowId?: string,
   ): Promise<void> {
+    return this.withLease(request, () =>
+      this.installLogin(request, userId, version, completingFlowId),
+    );
+  }
+
+  private async installLogin(
+    request: SessionRequest,
+    userId: string,
+    version: number,
+    completingFlowId?: string,
+  ): Promise<void> {
     await this.cancelFlows(request, completingFlowId);
     const pending =
       !request.session.principal && request.session.flowId
@@ -195,6 +206,51 @@ export class SessionService implements OnModuleDestroy {
     }
   }
 
+  async withLease<T>(
+    request: SessionRequest,
+    operation: () => Promise<T>,
+  ): Promise<T> {
+    const client = await this.pool.connect();
+    const key = `auth-session:${request.sessionID}`;
+    let locked = false;
+    try {
+      await client.query('SELECT pg_advisory_lock(hashtextextended($1, 0))', [
+        key,
+      ]);
+      locked = true;
+      let suppliedSid: string | null;
+      try {
+        suppliedSid = readCookie(request.headers.cookie, SESSION_COOKIE_NAME);
+      } catch {
+        suppliedSid = null;
+      }
+      if (
+        request.session.principal ||
+        request.session.flowId ||
+        suppliedSid?.startsWith(`s:${request.sessionID}.`)
+      ) {
+        const stored = await new Promise<session.SessionData | null>(
+          (resolve, reject) =>
+            this.store.get(request.sessionID, (error, value) =>
+              error ? reject(error) : resolve(value ?? null),
+            ),
+        );
+        if (!stored) throw new UnauthorizedException('Session replaced');
+      }
+      return await operation();
+    } finally {
+      try {
+        if (locked)
+          await client.query(
+            'SELECT pg_advisory_unlock(hashtextextended($1, 0))',
+            [key],
+          );
+      } finally {
+        client.release();
+      }
+    }
+  }
+
   save(request: SessionRequest): Promise<void> {
     return new Promise((resolve, reject) =>
       request.session.save((error: unknown) =>
@@ -206,6 +262,10 @@ export class SessionService implements OnModuleDestroy {
   }
 
   async destroy(request: SessionRequest): Promise<void> {
+    return this.withLease(request, () => this.removeSession(request));
+  }
+
+  private async removeSession(request: SessionRequest): Promise<void> {
     await this.cancelFlows(request);
     return new Promise((resolve, reject) =>
       request.session.destroy((error: unknown) =>

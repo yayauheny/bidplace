@@ -68,6 +68,16 @@ export class AuthFlowService {
     data: Pick<Prisma.AuthFlowCreateInput, 'intent' | 'stage' | 'returnPath'> &
       Partial<Prisma.AuthFlowCreateInput>,
   ): Promise<AuthFlow> {
+    return this.sessions.withLease(request, () =>
+      this.createFlow(request, data),
+    );
+  }
+
+  private async createFlow(
+    request: SessionRequest,
+    data: Pick<Prisma.AuthFlowCreateInput, 'intent' | 'stage' | 'returnPath'> &
+      Partial<Prisma.AuthFlowCreateInput>,
+  ): Promise<AuthFlow> {
     const browserHash = digest(request.sessionID);
     const now = new Date();
     const flow = await this.prisma.$transaction(async (tx) => {
@@ -777,6 +787,10 @@ export class AuthFlowService {
   }
 
   async cancel(request: SessionRequest): Promise<void> {
+    return this.sessions.withLease(request, () => this.cancelFlow(request));
+  }
+
+  private async cancelFlow(request: SessionRequest): Promise<void> {
     if (request.session.flowId)
       await this.prisma.authFlow.updateMany({
         where: {

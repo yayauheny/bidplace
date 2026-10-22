@@ -188,6 +188,8 @@ registration (registration starts at `0`). Logout, password reset completion,
 ban, and admin revoke are the current bump paths. Wrong-password, unknown-account,
 and foreign login attempts do not revoke existing sessions; they may trigger
 Turnstile challenge and email+IP pair pause only.
+Flow creation, login and logout serialize on a PostgreSQL lock for the browser
+SID and reject a delayed write when the old SID was rotated or removed.
 
 **Turnstile:** server-side Siteverify only; `TURNSTILE_SECRET_KEY` and
 `TURNSTILE_HOSTNAME` are required on the production security profile. Each check

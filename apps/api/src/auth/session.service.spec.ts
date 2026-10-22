@@ -100,6 +100,9 @@ describe('server session authentication', () => {
 
   it('rotates before saving and removes authentication on save failure', async () => {
     const { service, request } = fixture();
+    vi.spyOn(service, 'withLease').mockImplementation(
+      async (_request, operation) => operation(),
+    );
     const order: string[] = [];
     request.session.regenerate = vi.fn((callback) => {
       order.push('rotate');

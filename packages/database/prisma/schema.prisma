@@ -880,6 +880,7 @@ model AuthAbuseOperation {
   @@unique([purpose, idempotencyKey])
   @@index([ownerUserId, purpose, createdAt])
   @@index([email, purpose, createdAt])
+  @@index([purpose, contentHash, createdAt])
   @@index([purpose, status, createdAt])
   @@map("auth_abuse_operations")
 }
