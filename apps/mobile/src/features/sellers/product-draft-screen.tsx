@@ -184,7 +184,21 @@ export function ProductDraftScreen({
   });
   storyEditorSlot.current = storyEditor;
 
+  const imageActions = useProductDraftImageActions({
+    api,
+    queryClient,
+    authEpoch,
+    existingProduct,
+    editorStatus,
+    session,
+    storyEditor,
+  });
+
+  const uploadBusy =
+    imageActions.choosingImages || imageActions.upload.isPending;
+
   const browserGuard = useProductDraftBrowserHistoryGuard({
+    uploadPending: uploadBusy,
     isDirty: form.formState.isDirty,
     storyDirty: storyEditor.dirty,
     storyPending: storyEditor.pending,
@@ -197,17 +211,8 @@ export function ProductDraftScreen({
 
   const isCreationFlow = flow === 'creation' || !productId;
 
-  const imageActions = useProductDraftImageActions({
-    api,
-    queryClient,
-    authEpoch,
-    existingProduct,
-    editorStatus,
-    session,
-    storyEditor,
-  });
-
   const wizardNavigation = useProductDraftNavigation({
+    uploadBusy,
     productId,
     stepParam,
     isCreationFlow,
@@ -278,9 +283,6 @@ export function ProductDraftScreen({
   const submitLabel = ownerProductSubmitLabel(editorStatus);
   const storyWizardView =
     isCreationFlow && wizardStep === productWizardStep.story;
-
-  const uploadBusy =
-    imageActions.choosingImages || imageActions.upload.isPending;
 
   return (
     <FormProvider {...form}>

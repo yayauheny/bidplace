@@ -338,6 +338,8 @@ model ProductRevision {
 }
 
 model ProductImage {
+  uploadIdentity String? @unique @map("upload_identity") @db.Char(64)
+  inputChecksum String? @map("input_checksum") @db.Char(64)
   id         String   @id @default(uuid()) @db.Uuid
   productId  String   @map("product_id") @db.Uuid
   position   Int

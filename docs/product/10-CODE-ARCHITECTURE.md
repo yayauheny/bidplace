@@ -537,8 +537,8 @@ resize oversized sources without cropping or flattening alpha. Derivatives are
 built from the persisted master, so upload recovery can reproduce their checksums.
 
 An idempotent gallery request accepts one JPEG/PNG/WebP up to 25 MiB; legacy
-multi-file requests and story uploads retain the 5 MiB input limit. Pixel limits
-remain 4096 per edge / 16_777_216 pixels. `WorkImageUploadInterceptor` keeps large
+multi-file requests and story uploads retain the 5 MiB input limit. Gallery input is bounded at 8192px per edge / 50_331_648 pixels;
+stored masters and other purposes retain 4096px / 16_777_216 pixels. `WorkImageUploadInterceptor` keeps large
 input single-file, avoiding a ten-file 250 MiB buffered request. Gallery admission
 allows 20 requests/minute for the initial ten files and manual retries; the shared
 process admission remains two image-processing operations.
@@ -551,6 +551,26 @@ objects are rewritten. Both p1 and p2 URLs remain accepted by transport/contract
 
 The Work hook reads/uploads one asset at a time, releases confirmed Blob/File
 references, invalidates owner queries after each confirmation, and retains the
-current file/key for retry. Its 90-second upload deadline and session/unmount abort
-preserve unknown-response replay. Preparation and per-file results use existing
-UI components; portrait preparation remains the Expo helper from PR #56.
+current file/key for retry. Its size-based deadline (60 seconds plus one second
+per 64 KiB; 460 seconds at 25 MiB), explicit timeout message and session/unmount
+abort preserve unknown-response replay. Wizard, native Back and browser
+Back/unload are guarded during preparation/upload. Preparation and per-file
+results use existing UI components; portrait preparation uses the Expo helper
+from PR #56, with a final 640px fallback instead of 256px.
+
+Review corrections (2026-10-23): gallery input is bounded at 8192px per edge /
+50_331_648 pixels; stored masters and other purposes retain 4096px / 16_777_216
+pixels. Compact 16-bit PNGs remain byte-identical. Oversized artwork is encoded
+at quality 90/82/70, then resized to 2560/1600px with a final 1600px quality-60
+attempt; no 800/256px gallery fallback remains.
+
+Legacy ImageStore uploads persist a nullable unique owner/Work/key hash and
+submitted MIME/byte checksum on ProductImage. Replay runs before processing
+and again under the product row lock; conflicting bytes or an earlier revision
+return 409. Only metadata-stripped PREVIEW bytes are stored in this publicly
+served fallback. Lifecycle-enabled uploads check legacy identities too,
+preserving retries across cutover. Apply migration
+`20261022180000_legacy_image_upload_identity` before the API release.
+
+Upload retries reuse a verified persisted SOURCE when available, so encoder
+policy changes do not alter a partially written operation manifest.

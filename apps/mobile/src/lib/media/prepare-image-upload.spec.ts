@@ -141,8 +141,8 @@ describe('image upload preparation', () => {
       );
       expect(result.blob.size).toBe(compact.size);
       expect(renderer.resize).toHaveBeenLastCalledWith({
-        width: 256,
-        height: 192,
+        width: 640,
+        height: 480,
       });
       expect(renderer.contextRelease).toHaveBeenCalledTimes(4);
     } finally {

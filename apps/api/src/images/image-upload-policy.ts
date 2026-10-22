@@ -8,6 +8,11 @@ export const productImageUploadLimits = {
 
 export { workImageMaxInputBytes } from '@bidplace/contracts';
 
+export const workImageInputPixelBudgets = {
+  maxEdgePx: 8192,
+  maxPixels: 50_331_648,
+} as const;
+
 export const productImagePixelBudgets = {
   maxEdgePx: 4096,
   maxPixels: 16_777_216,

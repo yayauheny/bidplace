@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { ImageProcessor } from './image-processor';
 
 import {
   Inject,
@@ -65,6 +66,7 @@ export class ImagesService {
     private readonly imageStore: ImageStore,
     @Inject(MediaLifecycleService)
     private readonly media?: MediaLifecycleService,
+    @Inject(ImageProcessor) private readonly processor?: ImageProcessor,
   ) {}
 
   async add(
@@ -86,21 +88,44 @@ export class ImagesService {
       productId,
     );
 
+    const uploadIdentity = idempotencyKey
+      ? createHash('sha256').update(`${userId}:${productId}:${idempotencyKey}`).digest('hex')
+      : null;
+    const inputChecksum = uploadIdentity ? mediaInputChecksum(files[0]!) : null;
+    const replay = async (client: Prisma.TransactionClient, revisionId: string | null) => {
+      if (!uploadIdentity) return false;
+      const existing = await client.productImage.findUnique({
+        where: { uploadIdentity },
+        select: { inputChecksum: true, revisions: { select: { revisionId: true } } },
+      });
+      if (!existing) return false;
+      if (existing.inputChecksum !== inputChecksum)
+        throw new ConflictException('Idempotency identity has different content');
+      if (!existing.revisions.some((revision) => revision.revisionId === revisionId))
+        throw new ConflictException('Upload identity belongs to an earlier revision');
+      return true;
+    };
+    if (await replay(this.prisma, product.editingRevisionId)) return { ok: true as const };
     if (this.media?.enabled) {
       return this.addMedia(userId, productId, product, files, idempotencyKey);
     }
-
-    assertProductImageCapacity(
-      product.images,
-      files.map((file) => ({ byteLength: file.buffer.byteLength })),
-    );
-
-    const validated = await validateAndNormalizeProductImageUploads(files);
-
-    assertProductImageCapacity(
-      product.images,
-      validated.map((file) => ({ byteLength: file.buffer.byteLength })),
-    );
+    assertProductImageCount(product.images.length, files.length);
+    let validated;
+    if (uploadIdentity) {
+      if (!this.processor) throw new Error('Image processor is missing');
+      const processed = await this.processor.process(files[0]!, 'WORK_IMAGE');
+      // Legacy ImageStore is publicly served: persist the metadata-stripped variant.
+      const preview = processed.find((image) => image.variant === 'PREVIEW');
+      if (!preview) throw new Error('Processed image preview is missing');
+      validated = [{
+        buffer: preview.bytes,
+        mimeType: preview.mimeType,
+        width: preview.width,
+        height: preview.height,
+      }];
+    } else {
+      validated = await validateAndNormalizeProductImageUploads(files);
+    }
 
     await runReadCommittedTransaction(this.prisma, async (tx) => {
       const freshProduct = await this.requireWritableOwnerInTx(
@@ -109,6 +134,7 @@ export class ImagesService {
         productId,
       );
 
+      if (await replay(tx, freshProduct.editingRevisionId)) return;
       assertProductImageCapacity(
         freshProduct.images,
         validated.map((file) => ({ byteLength: file.buffer.byteLength })),
@@ -120,6 +146,8 @@ export class ImagesService {
         const row = await tx.productImage.create({
           data: {
             productId,
+            uploadIdentity,
+            inputChecksum,
             position: freshProduct.nextProductImagePosition + index,
             mimeType: file.mimeType,
             byteLength: file.buffer.byteLength,

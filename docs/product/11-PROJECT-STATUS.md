@@ -345,3 +345,27 @@ Chromium и WebKit подтвердили частичный успех и по�
 Expo export для iOS и Android также прошёл; это проверка JS/Hermes-сборки, а не
 приёмка нативного image picker. Live Figma parity и реальные
 устройства не заявляются проверенными. Production migration/deploy не выполнялись.
+
+
+## 2026-10-23 — Исправления ревью загрузки фотографий
+
+**Partial.** `SharpImageProcessor` разделяет вход галереи (8192px/50M/25 МиБ)
+и сохраняемый мастер (4096px/5 МиБ), сохраняет компактные 16-битные PNG,
+автоматически сжимает большие прозрачные изображения без уменьшения ниже
+1600px. Портретный Expo fallback сохраняет 640px вместо 256px.
+`useProductDraftImageActions` рассчитывает таймаут по размеру и показывает
+понятную ошибку; wizard/native/browser Back и beforeunload учитывают отправку.
+Legacy `ImagesService` сохраняет ключ/контрольную сумму в `ProductImage`,
+повторно проверяет их под блокировкой Work и хранит публичный вариант без EXIF.
+Миграция `20261022180000_legacy_image_upload_identity` обязательна до API-релиза.
+
+Проверки: `media-pipeline.spec.ts` (48MP JPEG, 16-bit PNG, noisy alpha),
+`product-draft-submit-lifecycle.spec.ts` (блокировка и таймаут/повтор),
+`product-draft-browser-guard.spec.ts`, `prepare-image-upload.spec.ts`,
+`product-write-atomicity.integration.spec.ts` (конкурентный повтор,
+конфликт байтов/ревизии, отсутствие EXIF); прежние media lifecycle/HTTP проверки.
+Итог проверок: 161 тест (81 API unit, 46 mobile unit, 32 PostgreSQL integration,
+2 Chromium/WebKit), typecheck API/mobile, lint, сборки database/API/web и
+проверка ссылок документации прошли.
+Реальные устройства, R2/CDN, визуальный Figma-паритет и пиковая память
+production-контейнера при одновременном декодировании 48MP остаются Needs verification.

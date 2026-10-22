@@ -28,6 +28,7 @@ export type PreparedImage = {
 };
 
 export type ImagePreparationErrorCode =
+  | 'UPLOAD_TIMEOUT'
   | 'READ_FAILED'
   | 'EMPTY_FILE'
   | 'SOURCE_TOO_LARGE'
@@ -124,7 +125,7 @@ export async function prepareImageUpload(
   for (let attempt = 0; attempt < 4; attempt += 1) {
     const scale =
       attempt === 3
-        ? Math.min(1, 256 / Math.max(initial.width, initial.height))
+        ? Math.min(1, 640 / Math.max(initial.width, initial.height))
         : 0.75 ** attempt;
     const dimensions = {
       width: Math.max(1, Math.round(initial.width * scale)),

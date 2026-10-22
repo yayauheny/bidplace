@@ -505,7 +505,7 @@ async function expectAuthBrowserHistory(page: Page, navigationApi: boolean) {
   await page.setViewportSize({ width: 390, height: 874 });
   await installLegalDocumentsFixture(page);
   await page.goto('/');
-  expect(await page.evaluate(() => window.navigation != null)).toBe(
+  expect(await page.evaluate(() => 'navigation' in window && window.navigation != null)).toBe(
     navigationApi,
   );
   await page.getByRole('link', { name: 'Профиль', exact: true }).click();

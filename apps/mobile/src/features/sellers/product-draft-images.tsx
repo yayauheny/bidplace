@@ -252,6 +252,7 @@ export function ProductDraftImagesStep({
           </AppText>
           <SecondaryButton
             label="Назад к описанию"
+            disabled={uploadPending}
             onPress={() => onBackToAbout()}
           />
           <PrimaryButton

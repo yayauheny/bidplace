@@ -10,6 +10,7 @@ import {
   productImageUploadLimits,
   productImagePixelBudgets,
   workImageMaxInputBytes,
+  workImageInputPixelBudgets,
 } from '../../images/image-upload-policy';
 import {
   ImageProcessor,
@@ -30,7 +31,13 @@ export class SharpImageProcessor extends ImageProcessor {
         purpose === 'WORK_IMAGE' && !preserveSource
           ? workImageMaxInputBytes
           : productImageUploadLimits.maxFileBytes;
-      const metadata = await validateImage(file, maxInputBytes);
+      const metadata = await validateImage(
+        file,
+        maxInputBytes,
+        purpose === 'WORK_IMAGE' && !preserveSource
+          ? workImageInputPixelBudgets
+          : productImagePixelBudgets,
+      );
       const maxBytes =
         purpose === 'AUTHOR_PHOTO'
           ? 2 * 1024 * 1024
@@ -101,7 +108,7 @@ export class SharpImageProcessor extends ImageProcessor {
 function imageInput(buffer: Buffer) {
   return sharp(buffer, {
     animated: false,
-    limitInputPixels: productImagePixelBudgets.maxPixels,
+    limitInputPixels: workImageInputPixelBudgets.maxPixels,
   });
 }
 
@@ -116,7 +123,12 @@ async function optimizeSource(
       : file.mimetype === 'image/webp'
         ? 'webp'
         : 'jpeg';
-  if (format === 'jpeg' && file.buffer.length <= maxBytes) {
+  const fitsDimensions =
+    Math.max(metadata.width!, metadata.height!) <= productImagePixelBudgets.maxEdgePx;
+  if (
+    fitsDimensions && file.buffer.length <= maxBytes &&
+    (format === 'jpeg' || metadata.bitsPerSample === 16)
+  ) {
     await imageInput(file.buffer).raw().toBuffer();
     return {
       buffer: file.buffer,
@@ -125,7 +137,7 @@ async function optimizeSource(
       height: metadata.height!,
     };
   }
-  if (format !== 'jpeg') {
+  if (format !== 'jpeg' && fitsDimensions && metadata.bitsPerSample !== 16) {
     const lossless = await imageInput(file.buffer)
       .keepMetadata()
       .toFormat(format, format === 'webp' ? { lossless: true } : {})
@@ -150,16 +162,18 @@ async function optimizeSource(
       };
   }
   const outputFormat = metadata.hasAlpha ? 'webp' : 'jpeg';
-  const edge = Math.max(metadata.width!, metadata.height!);
-  // Each attempt starts from the input; the final 256px image bounds even noisy RGBA inputs.
+  const edge = Math.min(
+    Math.max(metadata.width!, metadata.height!),
+    productImagePixelBudgets.maxEdgePx,
+  );
+  // Retry from the input, retaining at least 1600px for large artwork masters.
   for (const [maxEdge, quality] of [
     [edge, 90],
     [edge, 82],
     [edge, 70],
     [Math.min(edge, 2560), 82],
     [Math.min(edge, 1600), 80],
-    [Math.min(edge, 800), 75],
-    [Math.min(edge, 256), 60],
+    [Math.min(edge, 1600), 60],
   ]) {
     const image = await imageInput(file.buffer)
       .rotate()
@@ -186,6 +200,7 @@ async function optimizeSource(
 async function validateImage(
   file: RawImageUpload,
   maxFileBytes: number,
+  pixelBudget: { maxEdgePx: number; maxPixels: number } = productImagePixelBudgets,
 ): Promise<Metadata> {
   if (!file.buffer?.length)
     throw new BadRequestException('Image file is empty');
@@ -204,14 +219,14 @@ async function validateImage(
   try {
     metadata = await sharp(file.buffer, {
       animated: true,
-      limitInputPixels: productImagePixelBudgets.maxPixels,
+      limitInputPixels: pixelBudget.maxPixels,
     }).metadata();
   } catch {
     throw new BadRequestException(
       `${detected} payload is corrupted or not decodable`,
     );
   }
-  assertStaticImageMetadata(detected, metadata);
+  assertStaticImageMetadata(detected, metadata, pixelBudget);
   return metadata;
 }
 
@@ -226,6 +241,7 @@ function assertSupportedMimeType(
 function assertStaticImageMetadata(
   mimeType: SupportedImageMimeType,
   metadata: Metadata,
+  pixelBudget: { maxEdgePx: number; maxPixels: number },
 ): void {
   const frameCount = metadata.pages ?? 1;
   if (frameCount > 1) {
@@ -245,17 +261,17 @@ function assertStaticImageMetadata(
   }
 
   if (
-    width > productImagePixelBudgets.maxEdgePx ||
-    height > productImagePixelBudgets.maxEdgePx
+    width > pixelBudget.maxEdgePx ||
+    height > pixelBudget.maxEdgePx
   ) {
     throw new BadRequestException(
-      `Image dimensions cannot exceed ${productImagePixelBudgets.maxEdgePx}px on either edge`,
+      `Image dimensions cannot exceed ${pixelBudget.maxEdgePx}px on either edge`,
     );
   }
 
-  if (width * height > productImagePixelBudgets.maxPixels) {
+  if (width * height > pixelBudget.maxPixels) {
     throw new BadRequestException(
-      `Image cannot exceed ${productImagePixelBudgets.maxPixels} pixels`,
+      `Image cannot exceed ${pixelBudget.maxPixels} pixels`,
     );
   }
 }

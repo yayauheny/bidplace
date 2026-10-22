@@ -15,7 +15,7 @@
 | Календарь дат | Implemented: общий `DateField`, React Aria на web | Native picker — DEC-126; физический iPhone не проверялся |
 | Регистрация | Fullscreen-последовательность, один consent, слот никнейма, документы не внутри шага | Сверка с live Figma при расхождении handoff |
 | Account | Shared-ширина шторок и финальная web-приёмка 2026-10-20 | Сверка с Figma account nodes — Needs verification |
-| Загрузка фото | Partial: локальные превью, подготовка, пофайловый результат и retry; обработка портрета видима | Chromium/WebKit: 7 МиБ, частичный сбой/retry, ширины 390/1024/1440 проверены; Expo iOS/Android export прошёл; физические устройства и Figma-паритет новых состояний — Needs verification |
+| Загрузка фото | Partial: локальные превью, подготовка, пофайловый результат и retry; обработка портрета видима; Back блокируется во время отправки, таймаут зависит от размера | Chromium/WebKit: 7 МиБ, частичный сбой/retry, ширины 390/1024/1440 проверены; Expo iOS/Android export прошёл; физические устройства и Figma-паритет новых состояний — Needs verification |
 | Dock | Домик в общем floating dock; DEC-088 — четыре пункта | |
 | Шторки auth | Поверх текущей страницы, dismiss из шапки (DEC-122); dimmer не сбрасывается на forgot-password | |
 | Поиск | Fullscreen overlay (DEC-096) | Последняя revision: один history entry `overlay=search`; Back восстанавливает сессию. Раннее «Back не пушит history» отменено |

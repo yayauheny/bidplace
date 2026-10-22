@@ -1234,6 +1234,28 @@ describe('scheduled media recovery on PostgreSQL', () => {
     restarted.media.onModuleDestroy();
   });
 
+  it('retries a previous encoder upload from its persisted master after an upgrade', async () => {
+    const store = new MemoryStore();
+    store.privateWritesBeforeFailure = 1;
+    const s = setup(store);
+    const owner = await user();
+    const input = await sharp(bytes).toColourspace('rgb16').png().toBuffer();
+    const currentProcess = SharpImageProcessor.prototype.process;
+    const oldEncoder = vi.spyOn(SharpImageProcessor.prototype, 'process').mockImplementation(async function (file, purpose, preserveSource) {
+      const downgraded = await sharp(file.buffer).png().toBuffer();
+      return currentProcess.call(this, { buffer: downgraded, mimetype: 'image/png' }, purpose, preserveSource);
+    });
+    try {
+      await expect(s.media.stage(owner.id, 'WORK_IMAGE', { buffer: input, mimetype: 'image/png' }, 'encoder-upgrade')).rejects.toThrow('Provider outage');
+    } finally { oldEncoder.mockRestore(); }
+    store.privateWritesBeforeFailure = Number.POSITIVE_INFINITY;
+    const asset = await s.media.stage(owner.id, 'WORK_IMAGE', { buffer: input, mimetype: 'image/png' }, 'encoder-upgrade');
+    const persisted = await store.get('PRIVATE', asset.source.objectKey);
+    expect(mediaChecksum(persisted!.bytes)).toBe(asset.source.sha256);
+    expect((await sharp(persisted!.bytes).metadata()).bitsPerSample).toBe(8);
+    s.media.onModuleDestroy();
+  });
+
   it('cleans a partially stored upload after the grace period and does not retry the upload', async () => {
     const clock = useSchedulerClock();
     const started = clock.started;

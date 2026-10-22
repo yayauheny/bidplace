@@ -132,7 +132,11 @@ export function useProductDraftImageActions({
           setStatus('uploading');
           const controller = new AbortController();
           uploadController.current = controller;
-          const deadline = setTimeout(() => controller.abort(), 90_000);
+          let timedOut = false;
+          const deadline = setTimeout(() => {
+            timedOut = true;
+            controller.abort();
+          }, 60_000 + Math.ceil(batch.blob.size / (64 * 1024)) * 1000);
           try {
             await api.images.add(
               batch.productId,
@@ -140,6 +144,9 @@ export function useProductDraftImageActions({
               `${batch.key}:${batch.next}`,
               { signal: controller.signal },
             );
+          } catch (error) {
+            if (timedOut) throw new ImagePreparationError('UPLOAD_TIMEOUT');
+            throw error;
           } finally {
             clearTimeout(deadline);
             if (uploadController.current === controller)

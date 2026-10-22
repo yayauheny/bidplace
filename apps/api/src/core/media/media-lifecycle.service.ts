@@ -195,7 +195,22 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
     const keepSource = preserveSource || Boolean(operation?.objects.some(
       ({ object }) => object.variant === 'PREVIEW' && object.pipelineVersion === 'p1',
     ));
-    const pipeline = await this.imageProcessor.process(file, purpose, keepSource);
+    const priorSource = operation?.objects.find(
+      ({ object }) => object.variant === 'SOURCE',
+    )?.object;
+    const stored = priorSource && operation?.inputChecksum === mediaInputChecksum(file)
+      ? await this.store.get('PRIVATE', priorSource.objectKey)
+      : null;
+    const canReuse = stored && priorSource &&
+      stored.mimeType === priorSource.mimeType &&
+      stored.bytes.byteLength === priorSource.byteLength &&
+      mediaChecksum(stored.bytes) === priorSource.sha256;
+    // A retry after a codec upgrade must reproduce the already persisted master.
+    const pipeline = canReuse
+      ? await this.imageProcessor.process(
+          { buffer: Buffer.from(stored.bytes), mimetype: stored.mimeType }, purpose, true,
+        )
+      : await this.imageProcessor.process(file, purpose, keepSource);
     const pipelineVersion = keepSource ? 'p1' : 'p2';
     if (!operation) {
       try {

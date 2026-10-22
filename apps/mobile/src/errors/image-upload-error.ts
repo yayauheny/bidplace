@@ -18,6 +18,7 @@ const knownImageErrors: Record<string, string> = {
 };
 
 const preparationErrorMessages: Record<ImagePreparationErrorCode, string> = {
+  UPLOAD_TIMEOUT: 'Загрузка заняла слишком много времени. Проверьте соединение и повторите: уже загруженные фото сохранятся.',
   READ_FAILED: 'Не удалось прочитать выбранное изображение.',
   EMPTY_FILE: 'Выбранный файл пустой.',
   SOURCE_TOO_LARGE: 'Исходный файл слишком большой. Выберите другое фото.',

@@ -27,6 +27,6 @@ import {
       inject: [SERVER_ENV],
     },
   ],
-  exports: [MediaLifecycleService],
+  exports: [MediaLifecycleService, ImageProcessor],
 })
 export class MediaModule {}

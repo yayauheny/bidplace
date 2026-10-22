@@ -30,6 +30,7 @@ import type { ProductStoryEditor } from './use-product-story-editor';
  */
 export function useProductDraftNavigation({
   productId,
+  uploadBusy = false,
   stepParam,
   isCreationFlow,
   existingProduct,
@@ -40,6 +41,7 @@ export function useProductDraftNavigation({
   retireGuard,
 }: {
   productId?: string;
+  uploadBusy?: boolean;
   stepParam?: ProductWizardStepParam;
   isCreationFlow: boolean;
   existingProduct?: Product;
@@ -67,7 +69,7 @@ export function useProductDraftNavigation({
     if (form.formState.isDirty || storyEditor.dirty || storyEditor.pending)
       return;
     const navigate = pendingNavigation.current;
-    if (!navigate || session.inputsLocked) return;
+    if (!navigate || session.inputsLocked || uploadBusy) return;
     pendingNavigation.current = null;
     navigate();
   }, [
@@ -76,6 +78,7 @@ export function useProductDraftNavigation({
     storyEditor.pending,
     session.inputsLocked,
     pendingNavigationVersion,
+    uploadBusy,
   ]);
 
   const navigateAfterPersist = useCallback((navigate: () => void) => {
@@ -105,8 +108,10 @@ export function useProductDraftNavigation({
     form.formState.isDirty ||
       storyEditor.dirty ||
       storyEditor.pending ||
+      uploadBusy ||
       session.inputsLocked,
     ({ data }) => {
+      if (uploadBusy) return;
       const operation = session.snapshotOperation();
       void session.persistAll('transition').then((persisted) => {
         if (!session.isCurrentOperation(operation) || !persisted) return;
@@ -117,7 +122,7 @@ export function useProductDraftNavigation({
   );
 
   const moveToWizardStep = async (nextStep: number) => {
-    if (session.transitionLock.current || storyEditor.pending) return;
+    if (uploadBusy || session.transitionLock.current || storyEditor.pending) return;
     if (!existingProduct) return;
     if (!canOpenProductWizardStep(nextStep, wizardDraft)) return;
     if (nextStep === wizardStep) return;
@@ -194,7 +199,7 @@ export function useProductDraftNavigation({
   };
 
   const saveStoryAndContinue = async () => {
-    if (session.transitionLock.current || storyEditor.pending) return;
+    if (uploadBusy || session.transitionLock.current || storyEditor.pending) return;
     const operation = session.snapshotOperation();
     const persisted = await session.persistAll('transition');
     if (!persisted) return;

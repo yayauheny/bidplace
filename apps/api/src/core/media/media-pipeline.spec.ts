@@ -6,6 +6,27 @@ import { mediaChecksum } from './media-object-store';
 const processor = new SharpImageProcessor();
 
 describe('media pipeline', () => {
+  it('keeps compact 16-bit PNG samples intact', async () => {
+    const source = await sharp({ create: { width: 100, height: 100, channels: 3, background: '#83a6c9' } })
+      .toColourspace('rgb16').png().toBuffer();
+    const [master] = await processor.process({ buffer: source, mimetype: 'image/png' }, 'WORK_IMAGE');
+    expect(master!.bytes.equals(source)).toBe(true);
+    expect((await sharp(master!.bytes).metadata()).bitsPerSample).toBe(16);
+  });
+
+  it('accepts a 48MP phone photo and bounds the stored master to 4096px', async () => {
+    const source = await sharp({ create: { width: 8064, height: 6048, channels: 3, background: '#83a6c9' } }).jpeg().toBuffer();
+    const [master] = await processor.process({ buffer: source, mimetype: 'image/jpeg' }, 'WORK_IMAGE');
+    expect(master!.width).toBe(4096);
+    expect(master!.height).toBe(3072);
+    expect(master!.bytes.length).toBeLessThanOrEqual(5 * 1024 * 1024);
+    await expect(processor.process({ buffer: source, mimetype: 'image/jpeg' }, 'STORY_IMAGE')).rejects.toThrow();
+  });
+
+  it('rejects inputs beyond the separate source edge ceiling', async () => {
+    const source = await sharp({ create: { width: 8193, height: 10, channels: 3, background: 'red' } }).png().toBuffer();
+    await expect(processor.process({ buffer: source, mimetype: 'image/png' }, 'WORK_IMAGE')).rejects.toThrow('8192px');
+  });
   it('preserves SOURCE bytes and strips metadata from bounded sRGB WebP derivatives', async () => {
     const source = await sharp({
       create: {
@@ -97,6 +118,7 @@ describe('media pipeline', () => {
     expect(source.bytes.length).toBeLessThanOrEqual(5 * 1024 * 1024);
     expect((await sharp(source.bytes).metadata()).hasAlpha).toBe(true);
     expect(source.width).toBeLessThanOrEqual(2300);
+    expect(source.width).toBeGreaterThanOrEqual(1600);
     expect(source.sha256).toBe(mediaChecksum(source.bytes));
     const restored = await processor.process(
       { buffer: source.bytes, mimetype: source.mimeType },
