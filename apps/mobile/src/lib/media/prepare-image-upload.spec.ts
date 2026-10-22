@@ -39,8 +39,8 @@ describe('image upload preparation', () => {
     });
   });
 
-  it('keeps small supported files unchanged', async () => {
-    const file = new File(['small'], 'photo.png', { type: 'image/png' });
+  it.each(['jpeg', 'png', 'webp'])('keeps small supported %s files unchanged', async (format) => {
+    const file = new File(['small'], `photo.${format}`, { type: `image/${format}` });
     const input = { uri: 'blob:small', width: 800, height: 600, file };
     await expect(prepareImageUpload(input, options)).resolves.toEqual({
       uri: 'blob:small',

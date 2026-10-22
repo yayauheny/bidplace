@@ -712,6 +712,78 @@ describe('product draft submit lifecycle', () => {
     view.unmount();
   });
 
+  it.each(['unmount', 'session-change'] as const)(
+    'aborts the active upload and drops queued files after %s',
+    async (reason) => {
+      const image = new Blob(['photo'], { type: 'image/png' });
+      harness.launchImageLibraryAsync.mockResolvedValue({
+        canceled: false,
+        assets: [
+          { uri: 'blob:first', file: image },
+          { uri: 'blob:second', file: image },
+        ],
+      });
+      harness.addImages.mockImplementation(
+        (_id, _images, _key, options) =>
+          new Promise((_resolve, reject) => {
+            options.signal.addEventListener('abort', () =>
+              reject(new DOMException('Aborted', 'AbortError')),
+            );
+          }),
+      );
+      const view = mount();
+      let mounted = true;
+      try {
+        await until(
+          view.container,
+          () => Boolean(button(view.container, 'Добавить изображения')),
+          'images',
+        );
+        act(() => button(view.container, 'Добавить изображения')?.click());
+        await until(
+          view.container,
+          () => harness.addImages.mock.calls.length === 1,
+          'first request',
+        );
+        const signal = harness.addImages.mock.calls[0]![3].signal as AbortSignal;
+        expect(signal.aborted).toBe(false);
+        if (reason === 'unmount') {
+          view.unmount();
+          mounted = false;
+        } else
+          await act(async () => {
+            await clearAuthenticatedSession(view.queryClient);
+          });
+        await flush();
+        expect(signal.aborted).toBe(true);
+        expect(harness.addImages).toHaveBeenCalledTimes(1);
+      } finally {
+        if (mounted) view.unmount();
+      }
+    },
+  );
+
+  it('does not send a request when the file chooser is cancelled', async () => {
+    const view = mount();
+    try {
+      await until(
+        view.container,
+        () => Boolean(button(view.container, 'Добавить изображения')),
+        'images',
+      );
+      act(() => button(view.container, 'Добавить изображения')?.click());
+      await flush();
+      expect(harness.launchImageLibraryAsync).toHaveBeenCalledTimes(1);
+      expect(harness.addImages).not.toHaveBeenCalled();
+      expect(button(view.container, 'Повторить загрузку')).toBeNull();
+      expect(button(view.container, 'Добавить изображения')?.disabled).toBe(
+        false,
+      );
+    } finally {
+      view.unmount();
+    }
+  });
+
   it('does not upload a work image chosen by the previous session', async () => {
     const imageA = new Blob(['image-a'], { type: 'image/png' });
     let resolvePicker: (value: { canceled: boolean; assets: Array<{ uri: string }> }) => void = () => undefined;

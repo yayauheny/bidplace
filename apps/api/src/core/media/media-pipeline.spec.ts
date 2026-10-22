@@ -6,6 +6,106 @@ import { mediaChecksum } from './media-object-store';
 const processor = new SharpImageProcessor();
 
 describe('media pipeline', () => {
+  it.each(['jpeg', 'png', 'webp'] as const)(
+    'decodes %s, applies orientation, strips private metadata and reproduces derivatives',
+    async (format) => {
+      const input = await sharp({
+        create: {
+          width: 24,
+          height: 40,
+          channels: format === 'jpeg' ? 3 : 4,
+          background: { r: 45, g: 120, b: 190, alpha: 0.5 },
+        },
+      })
+        .toFormat(format)
+        .withMetadata({ orientation: 6 })
+        .withExif({ IFD0: { Artist: 'Private author' } })
+        .toBuffer();
+      const images = await processor.process(
+        { buffer: input, mimetype: `image/${format}` },
+        'WORK_IMAGE',
+      );
+      const master = images[0]!;
+      expect(master.bytes.length).toBeLessThanOrEqual(5 * 1024 * 1024);
+      expect(master.sha256).toBe(mediaChecksum(master.bytes));
+      for (const image of images.slice(1)) {
+        const metadata = await sharp(image.bytes).metadata();
+        expect(metadata.format).toBe('webp');
+        expect([metadata.width, metadata.height]).toEqual([40, 24]);
+        expect(metadata.hasAlpha).toBe(format !== 'jpeg');
+        expect(metadata.exif).toBeUndefined();
+        expect(metadata.icc).toBeUndefined();
+        expect(metadata.orientation).toBeUndefined();
+        const pixels = await sharp(image.bytes).ensureAlpha().raw().toBuffer();
+        expect(pixels.length).toBe(40 * 24 * 4);
+        expect(pixels[3]).toBe(format === 'jpeg' ? 255 : 128);
+      }
+      const recovered = await processor.process(
+        { buffer: master.bytes, mimetype: master.mimeType },
+        'WORK_IMAGE',
+        true,
+      );
+      expect(recovered.map((image) => image.sha256)).toEqual(
+        images.map((image) => image.sha256),
+      );
+    },
+  );
+
+  it.each(['jpeg', 'webp'] as const)(
+    'automatically compresses an actual oversized %s payload',
+    async (format) => {
+      const edge = format === 'jpeg' ? 2600 : 1400;
+      const channels = format === 'jpeg' ? 3 : 4;
+      const input = await sharp(randomBytes(edge * edge * channels), {
+        raw: { width: edge, height: edge, channels },
+      })
+        .toFormat(
+          format,
+          format === 'jpeg' ? { quality: 100 } : { lossless: true },
+        )
+        .toBuffer();
+      expect(input.length).toBeGreaterThan(5 * 1024 * 1024);
+      expect(input.length).toBeLessThanOrEqual(25 * 1024 * 1024);
+      const [master] = await processor.process(
+        { buffer: input, mimetype: `image/${format}` },
+        'WORK_IMAGE',
+      );
+      expect(master!.bytes.length).toBeLessThanOrEqual(5 * 1024 * 1024);
+      expect(master!.width).toBeLessThanOrEqual(edge);
+      expect(master!.width).toBeGreaterThanOrEqual(Math.min(edge, 1600));
+      expect((await sharp(master!.bytes).metadata()).hasAlpha).toBe(
+        format === 'webp',
+      );
+      await expect(sharp(master!.bytes).raw().toBuffer()).resolves.toBeInstanceOf(
+        Buffer,
+      );
+    },
+    30_000,
+  );
+
+  it.each(['jpeg', 'png', 'webp'] as const)(
+    'rejects truncated %s and a MIME claim that differs from its contents',
+    async (format) => {
+      const buffer = await sharp({
+        create: { width: 20, height: 10, channels: 3, background: 'red' },
+      })
+        .toFormat(format)
+        .toBuffer();
+      await expect(
+        processor.process(
+          { buffer: buffer.subarray(0, 12), mimetype: `image/${format}` },
+          'WORK_IMAGE',
+        ),
+      ).rejects.toThrow('corrupted or not decodable');
+      await expect(
+        processor.process(
+          { buffer, mimetype: format === 'png' ? 'image/jpeg' : 'image/png' },
+          'WORK_IMAGE',
+        ),
+      ).rejects.toThrow('MIME type does not match');
+    },
+  );
+
   it('keeps compact 16-bit PNG samples intact', async () => {
     const source = await sharp({ create: { width: 100, height: 100, channels: 3, background: '#83a6c9' } })
       .toColourspace('rgb16').png().toBuffer();

@@ -120,17 +120,103 @@ async function run(
   });
   for (const operation of operations) await media.run(operation.id);
 }
-function upload(bytes: Buffer) {
+function upload(bytes: Buffer, format: 'jpeg' | 'png' | 'webp' = 'png') {
   const form = new FormData();
   form.append(
     'images',
-    new Blob([new Uint8Array(bytes)], { type: 'image/png' }),
-    'work.png',
+    new Blob([new Uint8Array(bytes)], { type: `image/${format}` }),
+    `work.${format}`,
   );
   return form;
 }
 
 describe('Work media lifecycle over authenticated HTTP and PostgreSQL', () => {
+  it('uploads JPEG, PNG and WebP through multipart HTTP and replays each without duplicates', async () => {
+    const suffix = `formats-${randomUUID().slice(0, 8)}`;
+    const owner = await user('user', suffix);
+    const profile = await db.prisma.sellerProfile.create({
+      data: {
+        userId: owner.row.id,
+        slug: suffix,
+        sellerType: 'creator',
+        fullName: 'Format check',
+        country: 'BY',
+        shortDescription: 'Format check',
+        status: 'APPROVED',
+        profilePhotoMimeType: 'image/png',
+        profilePhotoByteLength: 1,
+        profilePhotoChecksum: 'c'.repeat(64),
+        profilePhotoData: Buffer.from('x'),
+      },
+    });
+    const product = await db.prisma.product.create({
+      data: {
+        sellerProfileId: profile.id,
+        publicId: `f${randomUUID().replace(/-/g, '').slice(0, 10)}`,
+        title: 'Format check',
+      },
+    });
+    const revision = await db.prisma.productRevision.create({
+      data: {
+        productId: product.id,
+        version: 1,
+        status: 'DRAFT',
+        title: 'Format check',
+      },
+    });
+    await db.prisma.product.update({
+      where: { id: product.id },
+      data: { editingRevisionId: revision.id },
+    });
+    try {
+      for (const [index, format] of (
+        ['jpeg', 'png', 'webp'] as const
+      ).entries()) {
+        const bytes = await sharp({
+          create: {
+            width: 64,
+            height: 48,
+            channels: format === 'jpeg' ? 3 : 4,
+            background: { r: 45, g: 120, b: 190, alpha: 0.5 },
+          },
+        })
+          .toFormat(format)
+          .withExif({ IFD0: { Artist: 'Private author' } })
+          .toBuffer();
+        const send = () =>
+          owner.client.request(`/products/${product.id}/images`, {
+            method: 'POST',
+            headers: { 'Idempotency-Key': `format-${format}` },
+            body: upload(bytes, format),
+          });
+        expect((await send()).status).toBe(201);
+        expect((await send()).status).toBe(201);
+        const rows = await db.prisma.productImage.findMany({
+          where: { productId: product.id },
+          orderBy: { position: 'asc' },
+        });
+        expect(rows).toHaveLength(index + 1);
+        const response = await owner.client.get(`/images/${rows[index]!.id}`);
+        expect(response.status).toBe(200);
+        expect(response.headers.get('content-type')).toContain('image/webp');
+        expect(response.headers.get('cache-control')).toBe('private, no-store');
+        const rendered = Buffer.from(await response.arrayBuffer());
+        const metadata = await sharp(rendered).metadata();
+        expect([metadata.width, metadata.height]).toEqual([64, 48]);
+        expect(metadata.hasAlpha).toBe(format !== 'jpeg');
+        expect(metadata.exif).toBeUndefined();
+        expect((await sharp(rendered).raw().toBuffer()).length).toBeGreaterThan(
+          0,
+        );
+      }
+    } finally {
+      await db.prisma.sellerProfile.update({
+        where: { id: profile.id },
+        data: { status: 'DRAFT' },
+      });
+    }
+  });
+
   it('creates, uploads once, submits, waits for delivery, publishes, revises atomically and revokes exact public objects', async () => {
     const author = await user('user', 'author');
     const admin = await user('admin', 'admin');
@@ -373,9 +459,12 @@ describe('Work media lifecycle over authenticated HTTP and PostgreSQL', () => {
         );
         expect(purged).toContain(url);
       }
-    expect(
-      [...objects.keys()].filter((key) => key.includes('/source.')).length,
-    ).toBe(3);
+    const retainedSources = await db.prisma.mediaObject.findMany({
+      where: { variant: 'SOURCE', asset: { ownerUserId: author.row.id } },
+      select: { objectKey: true },
+    });
+    expect(retainedSources).toHaveLength(3);
+    expect(retainedSources.every(({ objectKey }) => objects.has(`PRIVATE:${objectKey}`))).toBe(true);
     expect(
       (await author.client.post(`/products/${work.id}/unhide`)).status,
     ).toBe(201);

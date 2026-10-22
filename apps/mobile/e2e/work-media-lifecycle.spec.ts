@@ -473,3 +473,76 @@ test('shows a partial gallery upload and retries only the unfinished photo', asy
     await context.close();
   }
 });
+
+
+test('uploads a mixed JPEG PNG WebP selection and renders every saved photo', async ({
+  browser,
+}) => {
+  const { seller, categoryId } = await createSellerFixture();
+  const { context, page } = await authenticatedPage(browser, seller);
+  try {
+    const created = await context.request.post(
+      `${e2eApiBaseURL}/api/products`,
+      {
+        data: { title: 'Mixed photo formats', categoryId },
+      },
+    );
+    expect(created.status()).toBe(201);
+    const { product } = await created.json();
+    const requests: string[] = [];
+    page.on('request', (request) => {
+      if (
+        request.method() === 'POST' &&
+        request.url().endsWith(`/products/${product.id}/images`)
+      ) {
+        requests.push(request.headers()['idempotency-key']!);
+      }
+    });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`/products/${product.id}?flow=creation&step=2`);
+    const chooser = page.waitForEvent('filechooser');
+    await page.getByRole('button', { name: 'Добавить изображения' }).click();
+    await (
+      await chooser
+    ).setFiles([
+      'e2e/fixtures/work-photo.jpg',
+      'e2e/fixtures/profile-photo.png',
+      'e2e/fixtures/work-photo.webp',
+    ]);
+    await expect(
+      page.getByText('3/10 изображений', { exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByText('Изображение 3: загружено', { exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: 'Назад к описанию', exact: true }),
+    ).toBeEnabled();
+    for (const index of [1, 2, 3]) {
+      const preview = page.locator(
+        `[aria-label="Изображение предмета ${index}"] img`,
+      );
+      await expect(preview).toBeVisible();
+      await expect
+        .poll(() =>
+          preview.evaluate((node) => {
+            const image = node as HTMLImageElement;
+            return (
+              image.complete &&
+              image.naturalWidth > 0 &&
+              image.naturalHeight > 0
+            );
+          }),
+        )
+        .toBe(true);
+    }
+    expect(requests).toHaveLength(3);
+    expect(new Set(requests).size).toBe(3);
+    await page.reload();
+    await expect(
+      page.getByText('3/10 изображений', { exact: true }),
+    ).toBeVisible();
+  } finally {
+    await context.close();
+  }
+});
