@@ -619,3 +619,27 @@ purged user namespace; public provider availability is separate. Native provider
 login and exact new Figma compositions are outside this wave. Local verification
 and remaining external acceptance: 11-PROJECT-STATUS.md and
 [rollout runbook](../ops/WEB-AUTH-ROLLOUT.md).
+
+
+## 2026-10-22 — Pre-account email proof and neutral verify
+
+`EmailProofService` owns browser-bound email proof in `auth_flows`: hashed code,
+10-minute flow/code lifetime, five guesses per code, three sends per flow,
+60-second resend delay. `auth/register/email/request` and `verify` precede
+`auth/register`; the latter creates a verified user and legal evidence.
+The public registration contract no longer accepts phone or a second CAPTCHA;
+CAPTCHA is required before sending the proof. API client and registration UI
+change together. No User or ExternalIdentity is written for unproved social
+onboarding. Existing pending identities remain bound to their user/version.
+
+Proof mail reserves `email_proof_send` in the common abuse ledger under the
+existing global mail lock; account/address quotas and global budgets include it.
+Delivery status distinguishes accepted, rejected and unknown; definite reject
+invalidates the pending code. Session flow, purpose, address and TTL bind proof.
+The additive `20261022040000_auth_email_proof` migration must precede API rollout.
+
+Email-login refusal uses the same counter, operation replay, code lookup and
+pause writes for registered and unregistered subjects. Unregistered subjects
+use their flow UUID, never a synthetic User row; their ledger owner is null and
+they cannot authenticate. Shared existing OTP policy remains the owner. This
+keeps account counters durable without a response sleep or a second auth engine.

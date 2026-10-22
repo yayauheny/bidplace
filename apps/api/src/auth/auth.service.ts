@@ -44,11 +44,6 @@ function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
 }
 
-function normalizePhone(phone: string | null | undefined): string | null {
-  const trimmed = phone?.trim();
-  return trimmed ? trimmed : null;
-}
-
 export interface AuthSessionResult {
   sessionVersion: number;
   user: ContractUser;
@@ -84,24 +79,15 @@ export class AuthService {
       });
     }
     const email = normalizeEmail(input.email);
-    const phone = normalizePhone(input.phone);
-    await this.abuse.assertRegistration({
-      email,
-      turnstileToken: input.turnstileToken,
-      ip: input.ip ?? 'unknown',
-    });
+    this.abuse.assertRegistrationEmail(email);
 
     const existingUser = await this.prisma.user.findFirst({
-      where: phone
-        ? {
-            OR: [{ email }, { phone }],
-          }
-        : { email },
+      where: { email },
       select: authUserExistsSelect,
     });
 
     if (existingUser) {
-      throw new ConflictException('Email or phone already in use');
+      throw new ConflictException('Email already in use');
     }
 
     const passwordHash = await this.passwordHasher.hash(input.password);
@@ -111,13 +97,12 @@ export class AuthService {
       const user = await this.prisma.user.create({
         data: {
           email,
-          phone,
           slug: input.slug,
           displayName: null,
           passwordHash,
           status: 'active',
           sessionVersion: 0,
-          emailVerifiedAt: null,
+          emailVerifiedAt: acceptedAt,
           phoneVerifiedAt: null,
           registrationLegalEvidence: {
             create: {
@@ -147,7 +132,7 @@ export class AuthService {
             details: { reason: 'slug_taken' },
           });
         }
-        throw new ConflictException('Email or phone already in use');
+        throw new ConflictException('Email already in use');
       }
 
       throw error;

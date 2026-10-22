@@ -19,7 +19,7 @@ import { lockAbuseUser, otpCodeHash } from '../auth-abuse/auth-abuse.store';
 import { SERVER_ENV, type ServerEnv } from '../core/config';
 import { PrismaService, isPrismaUniqueConstraintError } from '../core/database';
 import { AppException } from '../core/errors';
-import { OtpService } from '../otp/otp.service';
+import { EmailProofService } from './email-proof.service';
 import { AuthService } from './auth.service';
 import { readRegistrationLegalVersion } from './legal-documents';
 import { OidcProvidersService } from './oidc-providers.service';
@@ -59,7 +59,7 @@ export class AuthFlowService {
     private readonly sessions: SessionService,
     private readonly auth: AuthService,
     private readonly abuse: AuthAbuseService,
-    private readonly otp: OtpService,
+    private readonly emailProof: EmailProofService,
     @Inject(SERVER_ENV) private readonly env: ServerEnv,
   ) {}
 
@@ -472,6 +472,22 @@ export class AuthFlowService {
       throw new ConflictException('Версия документов обновилась');
     this.abuse.assertRegistrationEmail(email);
     const verified = email === flow.emailProof;
+    if (!verified) {
+      await this.prisma.$transaction(async (tx) => {
+        await this.lockFlow(tx, flow, ['profile']);
+        await tx.authFlow.update({
+          where: { id: flow.id },
+          data: {
+            stage: 'email',
+            email,
+            profileSlug: input.slug,
+            legalVersion: version,
+            legalAcceptedAt: new Date(),
+          },
+        });
+      });
+      return { next: 'email' as const };
+    }
     let result;
     try {
       result = await this.prisma.$transaction(async (tx) => {
@@ -482,7 +498,7 @@ export class AuthFlowService {
             email,
             slug: input.slug,
             passwordHash: null,
-            emailVerifiedAt: verified ? now : null,
+            emailVerifiedAt: now,
             registrationLegalEvidence: {
               create: {
                 agreementVersion: version,
@@ -502,14 +518,14 @@ export class AuthFlowService {
             provider: flow.provider!,
             issuer: flow.issuer!,
             subject: flow.subject!,
-            activatedAt: verified ? now : null,
+            activatedAt: now,
             pendingVersion: user.sessionVersion,
           },
         });
         await tx.authFlow.update({
           where: { id: flow.id },
           data: {
-            stage: verified ? 'ready' : 'email',
+            stage: 'ready',
             userId: user.id,
             email,
             version: user.sessionVersion,
@@ -532,7 +548,6 @@ export class AuthFlowService {
       }
       throw error;
     }
-    if (!verified) return { next: 'email' as const };
     await this.finish(request, {
       ...flow,
       userId: result.id,
@@ -551,85 +566,111 @@ export class AuthFlowService {
     ip: string,
   ) {
     const flow = await this.flow(request, ['email']);
-    const user = await this.prisma.user.findUniqueOrThrow({
-      where: { id: flow.userId! },
+    if (!flow.email) throw new UnauthorizedException('Повторите вход');
+    const result = await this.emailProof.request(request, {
+      ...input,
+      email: flow.email,
+      ip,
+      intent: 'onboarding',
     });
-    if (
-      user.emailVerifiedAt ||
-      user.sessionVersion !== flow.version ||
-      user.status !== 'active'
-    )
-      throw new UnauthorizedException('Повторите вход');
-    return this.otp.request(user.id, { ...input, flowId: flow.id, ip });
+    return { delivery: result.delivery };
   }
 
   async verificationState(request: SessionRequest) {
     const flow = await this.flow(request, ['email']);
-    const user = await this.prisma.user.findUniqueOrThrow({
-      where: { id: flow.userId! },
-      select: { sessionVersion: true, status: true },
-    });
-    if (user.sessionVersion !== flow.version || user.status !== 'active')
-      throw new UnauthorizedException('Доступ отозван');
-    return this.otp.state(flow.userId!);
+    return {
+      serverNow: new Date().toISOString(),
+      email: flow.email!,
+      verified: Boolean(flow.emailProvedAt),
+      sendStatus: await this.emailProof.deliveryState(flow.id, flow.codeRequestKey),
+      codeExpiresAt: flow.codeExpiresAt?.toISOString() ?? null,
+      resendAvailableAt: flow.codeSentAt
+        ? new Date(flow.codeSentAt.getTime() + 60_000).toISOString()
+        : null,
+      pausedUntil: null,
+      quotaResetsAt: null,
+    };
   }
 
   async verifyOnboarding(
     request: SessionRequest,
     code: string,
-    idempotencyKey: string,
-    ip: string,
   ) {
     const flow = await this.flow(request, ['email', 'ready']);
-    await this.otp.verify(flow.userId!, code, {
-      idempotencyKey,
-      flowId: flow.id,
-      ip,
-    });
-    const user = await this.prisma.$transaction(async (tx) => {
-      await this.lockFlow(tx, flow, ['email', 'ready']);
-      const current = await tx.user.findUniqueOrThrow({
-        where: { id: flow.userId! },
+    if (flow.stage === 'email') await this.emailProof.verify(request, code);
+    let user;
+    try {
+      user = await this.prisma.$transaction(async (tx) => {
+        await this.lockFlow(tx, flow, ['email', 'ready']);
+        const current = await tx.authFlow.findUniqueOrThrow({ where: { id: flow.id } });
+        if (current.stage === 'ready' && current.userId)
+          return tx.user.findUniqueOrThrow({ where: { id: current.userId } });
+        if (!current.emailProvedAt) throw new UnauthorizedException('Нет подтверждения почты этой попытки');
+        if (current.userId) {
+          const existing = await tx.user.findUniqueOrThrow({ where: { id: current.userId } });
+          if (existing.status !== 'active' || existing.sessionVersion !== current.version || existing.email !== current.email)
+            throw new UnauthorizedException('Доступ отозван');
+          const activated = await tx.externalIdentity.updateMany({
+            where: { userId: existing.id, issuer: current.issuer!, subject: current.subject!, activatedAt: null, pendingVersion: existing.sessionVersion },
+            data: { activatedAt: new Date() },
+          });
+          if (activated.count !== 1) throw new UnauthorizedException('Подключение недоступно');
+          await tx.authFlow.update({ where: { id: current.id }, data: { stage: 'ready' } });
+          return tx.user.update({ where: { id: existing.id }, data: { emailVerifiedAt: new Date() } });
+        }
+        if (
+          !current.emailProvedAt ||
+          !current.email ||
+          !current.profileSlug ||
+          !current.legalVersion ||
+          !current.legalAcceptedAt ||
+          !current.provider ||
+          !current.issuer ||
+          !current.subject
+        ) throw new UnauthorizedException('Нет подтверждения почты этой попытки');
+        const now = new Date();
+        const created = await tx.user.create({
+          data: {
+            email: current.email,
+            slug: current.profileSlug,
+            passwordHash: null,
+            emailVerifiedAt: now,
+            registrationLegalEvidence: {
+              create: {
+                agreementVersion: current.legalVersion,
+                agreementAcceptedAt: current.legalAcceptedAt,
+                privacyVersion: current.legalVersion,
+                privacyAcknowledgedAt: current.legalAcceptedAt,
+                dataConsentVersion: current.legalVersion,
+                dataConsentedAt: current.legalAcceptedAt,
+                age18ConfirmedAt: current.legalAcceptedAt,
+              },
+            },
+          },
+        });
+        await tx.externalIdentity.create({
+          data: {
+            userId: created.id,
+            provider: current.provider,
+            issuer: current.issuer,
+            subject: current.subject,
+            activatedAt: now,
+            pendingVersion: created.sessionVersion,
+          },
+        });
+        await tx.authFlow.update({
+          where: { id: flow.id },
+          data: { stage: 'ready', userId: created.id, version: created.sessionVersion },
+        });
+        return created;
       });
-      const consumed = await tx.emailVerificationCode.findFirst({
-        where: {
-          userId: current.id,
-          purpose: 'email_verification',
-          flowId: flow.id,
-          version: current.sessionVersion,
-          codeHash: otpCodeHash(
-            this.env.OTP_HASH_SECRET,
-            current.id,
-            current.email,
-            code,
-            'email_verification',
-            flow.id,
-          ),
-          usedAt: { not: null },
-          expiresAt: { gt: new Date() },
-        },
-      });
-      if (!consumed || !current.emailVerifiedAt)
-        throw new UnauthorizedException('Нет подтверждения почты этой попытки');
-      if (flow.stage === 'ready') return current;
-      const activated = await tx.externalIdentity.updateMany({
-        where: {
-          userId: current.id,
-          issuer: flow.issuer!,
-          subject: flow.subject!,
-          activatedAt: null,
-          pendingVersion: current.sessionVersion,
-        },
-        data: { activatedAt: new Date() },
-      });
-      if (activated.count !== 1)
-        throw new UnauthorizedException('Подключение недоступно');
-      await tx.authFlow.update({
-        where: { id: flow.id },
-        data: { stage: 'ready' },
-      });
-      return current;
-    });
+    } catch (error) {
+      if (isPrismaUniqueConstraintError(error))
+        throw new ConflictException(
+          'Почта или ник уже используются. Войдите в существующий аккаунт и подключите провайдера в настройках',
+        );
+      throw error;
+    }
     await this.finish(request, {
       ...flow,
       userId: user.id,
@@ -732,15 +773,16 @@ export class AuthFlowService {
     idempotencyKey: string,
   ) {
     const flow = await this.flow(request, ['email_login', 'ready']);
-    if (!flow.userId)
-      throw new UnauthorizedException('Код недействителен или истёк');
     await this.abuse.verifyEmailCode({
-      userId: flow.userId,
+      userId: flow.userId ?? flow.id,
+      ...(!flow.userId ? { unregisteredEmail: flow.email! } : {}),
       purpose: 'email_login',
       flowId: flow.id,
       code,
       idempotencyKey,
     });
+    if (!flow.userId)
+      throw new UnauthorizedException('Код недействителен или истёк');
     await this.prisma.$transaction(async (tx) => {
       await this.lockFlow(tx, flow, ['email_login', 'ready']);
       const user = await tx.user.findUniqueOrThrow({

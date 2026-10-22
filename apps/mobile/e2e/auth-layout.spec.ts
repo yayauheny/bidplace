@@ -10,6 +10,7 @@ import {
 } from './support/auth-viewports';
 import { e2eEvidenceDir } from './support/evidence-dir';
 import { expectPasswordVisibility } from './support/fill-control';
+import { finishRegistrationEmailProof } from './support/auth-browser-flow';
 import {
   expectTurnstileReady,
   installTurnstileFixture,
@@ -1307,7 +1308,7 @@ test('nickname suggestions check availability only on explicit Next', async ({
     .getByLabel('Подтвердите пароль', { exact: true })
     .fill('registration-password-123');
   await expectTurnstileReady(page, 'register');
-  await next.click();
+  expect((await finishRegistrationEmailProof(page, 'nickname-only@example.com')).status()).toBe(409);
   await expect(
     page.getByText('Этот никнейм уже занят. Выберите другой.', { exact: true }),
   ).toBeVisible();
@@ -1530,11 +1531,7 @@ test('registration continues when document reading is unavailable', async ({ pag
   await next.click();
   await page.getByLabel('Введите пароль', { exact: true }).fill('browser-registration-test-2026');
   await page.getByLabel('Подтвердите пароль', { exact: true }).fill('browser-registration-test-2026');
-  await expectTurnstileReady(page, 'register');
-  const response = page.waitForResponse((result) =>
-    result.url().endsWith('/api/auth/register') && result.request().method() === 'POST');
-  await next.click();
-  expect((await response).status()).toBe(201);
-  await expect(page).toHaveURL(/verify-email/);
+  expect((await finishRegistrationEmailProof(page, registrationEmail)).status()).toBe(201);
+  await expect(page).toHaveURL(/\/$/);
 
 });

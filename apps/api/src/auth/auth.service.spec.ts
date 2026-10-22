@@ -97,6 +97,7 @@ describe('AuthService', () => {
 
   const abuse = {
     assertRegistration: vi.fn().mockResolvedValue(undefined),
+    assertRegistrationEmail: vi.fn(),
     assessLogin: vi.fn(async (input: { passwordAccepted: boolean }) =>
       input.passwordAccepted
         ? { outcome: 'accepted' as const }
@@ -137,13 +138,12 @@ describe('AuthService', () => {
     expect(prisma.user.create).toHaveBeenCalledWith({
       data: {
         email: 'new-seller@example.com',
-        phone: '+15555550123',
         slug: 'demo-seller',
         displayName: null,
         passwordHash: 'hashed-value',
         status: 'active',
         sessionVersion: 0,
-        emailVerifiedAt: null,
+        emailVerifiedAt: expect.any(Date),
         phoneVerifiedAt: null,
         registrationLegalEvidence: {
           create: {

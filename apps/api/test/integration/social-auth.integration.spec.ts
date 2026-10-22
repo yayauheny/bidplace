@@ -168,6 +168,24 @@ describe('OIDC, email login and explicit account linking', () => {
     expect((await client.get('/auth/me')).status).toBe(200);
   });
 
+  it('finishes an existing pending identity only after email proof without creating another user', async () => {
+    const email = `pending-existing-${randomUUID()}@example.test`;
+    const subject = 'pending-' + randomUUID();
+    const user = await database.prisma.user.create({
+      data: { email, slug: 'pending-' + randomUUID().slice(0, 8) },
+    });
+    await database.prisma.externalIdentity.create({
+      data: { userId: user.id, provider: 'telegram', issuer: provider.issuer, subject, pendingVersion: user.sessionVersion },
+    });
+    const callbackUrl = provider.authorize(await start('telegram'), { sub: subject });
+    expect((await callback(callbackUrl)).headers.get('location')).toBe('/auth/complete');
+    expect((await sendVerification()).status).toBe(201);
+    expect((await client.post('/auth/onboarding/email/verify', { code: code(), idempotencyKey: idempotencyKey() })).status).toBe(201);
+    expect((await (await client.get('/auth/me')).json()).user.id).toBe(user.id);
+    expect(await database.prisma.user.count({ where: { email } })).toBe(1);
+    expect((await database.prisma.externalIdentity.findFirstOrThrow({ where: { userId: user.id } })).activatedAt).not.toBeNull();
+  });
+
   it.each(['email_verification', 'email_login'])(
     'never accepts %s code for the other purpose',
     async (purpose) => {
@@ -175,13 +193,13 @@ describe('OIDC, email login and explicit account linking', () => {
       await signup('telegram', email);
       await sendVerification();
       const verificationCode = code();
-      const flow = await database.prisma.authFlow.findFirstOrThrow({
-        where: { email, stage: 'email' },
-      });
       if (purpose === 'email_verification') {
-        await database.prisma.user.update({
-          where: { id: flow.userId! },
-          data: { emailVerifiedAt: new Date() },
+        await database.prisma.user.create({
+          data: {
+            email,
+            slug: 'proof-' + randomUUID().slice(0, 8),
+            emailVerifiedAt: new Date(),
+          },
         });
         await client.post('/auth/email-login/request', {
           email,
@@ -272,6 +290,36 @@ describe('OIDC, email login and explicit account linking', () => {
     expect(
       await database.prisma.user.findUnique({ where: { email } }),
     ).toBeNull();
+  });
+
+  it('persists the same failed verification and pause for known and unknown addresses', async () => {
+    const knownEmail = `neutral-known-${randomUUID()}@example.test`;
+    await database.prisma.user.create({
+      data: { email: knownEmail, slug: 'neutral-' + randomUUID().slice(0, 8), emailVerifiedAt: new Date() },
+    });
+    for (const email of [knownEmail, `neutral-unknown-${randomUUID()}@example.test`]) {
+      client = new HttpTestClient(http.baseUrl, undefined, `198.51.100.${email === knownEmail ? 21 : 22}`);
+      expect((await client.post('/auth/email-login/request', {
+        email, turnstileToken: turnstileToken('email_login'), idempotencyKey: idempotencyKey(),
+      })).status).toBe(201);
+      const wrongCode = mail.at(-1) ? (code() === '000000' ? '111111' : '000000') : '000000';
+      const keys: string[] = [];
+      for (let attempt = 0; attempt < 6; attempt += 1) {
+        const key = idempotencyKey();
+        keys.push(key);
+        const result = await client.post('/auth/email-login/verify', { code: wrongCode, idempotencyKey: key });
+        expect(result.status).toBe(403);
+        expect((await result.json()).code).toBe(ApiErrorCode.EMAIL_LOGIN_REJECTED);
+      }
+      const operations = await database.prisma.authAbuseOperation.findMany({
+        where: { purpose: 'email_login_verify', idempotencyKey: { in: keys } },
+        orderBy: { createdAt: 'asc' },
+      });
+      expect(operations.map((operation) => operation.status)).toEqual([
+        'invalid', 'invalid', 'invalid', 'invalid', 'paused', 'paused',
+      ]);
+      expect((await client.get('/auth/me')).status).toBe(401);
+    }
   });
 
   it.each(['rejected', 'unavailable'] as const)(
@@ -682,48 +730,17 @@ describe('OIDC, email login and explicit account linking', () => {
     ).toBe('/auth/complete');
   });
 
-  it('password recovery cancels pending social proof without activating its identity', async () => {
+  it('does not create an account or identity before social email proof', async () => {
     const email = `recovery-${randomUUID()}@example.test`;
     await signup('telegram', email);
     await sendVerification();
-    const previousCode = code();
-    const user = await database.prisma.user.findUniqueOrThrow({
-      where: { email },
-    });
-    const token = randomUUID();
-    await database.prisma.passwordResetToken.create({
-      data: {
-        userId: user.id,
-        tokenHash: createHash('sha256').update(token).digest('hex'),
-        expiresAt: new Date(Date.now() + 60_000),
-      },
-    });
-    expect(
-      (
-        await client.post('/auth/password/reset', {
-          token,
-          password: 'synthetic-recovery-password-9',
-        })
-      ).status,
-    ).toBe(201);
+    expect(await database.prisma.user.count({ where: { email } })).toBe(0);
     expect(
       await database.prisma.externalIdentity.count({
-        where: { userId: user.id },
+        where: { user: { email } },
       }),
     ).toBe(0);
-    expect(
-      (
-        await client.post('/auth/onboarding/email/verify', {
-          code: previousCode,
-          idempotencyKey: idempotencyKey(),
-        })
-      ).status,
-    ).toBe(401);
     expect((await client.get('/auth/me')).status).toBe(401);
-    expect(
-      (await database.prisma.user.findUniqueOrThrow({ where: { id: user.id } }))
-        .sessionVersion,
-    ).toBe(user.sessionVersion + 1);
   });
 
   it('rejects wrong state before token exchange and old callbacks after a new start', async () => {
@@ -771,17 +788,17 @@ describe('OIDC, email login and explicit account linking', () => {
     ).toBe(owner);
   });
 
-  it('does not activate pending identity from an unrelated email verification', async () => {
+  it('does not attach a social identity to an existing account after email proof', async () => {
     const email = `pending-${randomUUID()}@example.test`;
     await signup('telegram', email);
     await sendVerification();
     const value = code();
-    const user = await database.prisma.user.findUniqueOrThrow({
-      where: { email },
-    });
-    await database.prisma.user.update({
-      where: { id: user.id },
-      data: { emailVerifiedAt: new Date() },
+    const user = await database.prisma.user.create({
+      data: {
+        email,
+        slug: 'existing-' + randomUUID().slice(0, 8),
+        emailVerifiedAt: new Date(),
+      },
     });
     expect(
       (
@@ -790,14 +807,10 @@ describe('OIDC, email login and explicit account linking', () => {
           idempotencyKey: idempotencyKey(),
         })
       ).status,
-    ).toBe(403);
+    ).toBe(409);
     expect(
-      (
-        await database.prisma.externalIdentity.findFirstOrThrow({
-          where: { userId: user.id },
-        })
-      ).activatedAt,
-    ).toBeNull();
+      await database.prisma.externalIdentity.count({ where: { userId: user.id } }),
+    ).toBe(0);
     expect((await client.get('/auth/me')).status).toBe(401);
   });
   it('returns the same account on a later provider login', async () => {
@@ -852,7 +865,17 @@ describe('OIDC, email login and explicit account linking', () => {
     expect(completed.filter((value) => value.status === 201)).toHaveLength(1);
     expect(
       await database.prisma.user.count({ where: { email: input.email } }),
-    ).toBe(1);
+    ).toBe(0);
+    await sendVerification();
+    expect(
+      (
+        await client.post('/auth/onboarding/email/verify', {
+          code: code(),
+          idempotencyKey: idempotencyKey(),
+        })
+      ).status,
+    ).toBe(201);
+    expect(await database.prisma.user.count({ where: { email: input.email } })).toBe(1);
   });
 
   it('does not retain a provider proof when cancelled or superseded', async () => {

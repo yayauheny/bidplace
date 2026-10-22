@@ -135,10 +135,10 @@ jobs:
         run: pnpm cloudflare:image:verify
 
       - name: Verify web auth in Chromium and WebKit
-        if: github.event_name == 'pull_request' && github.event.pull_request.draft == false && github.head_ref == 'feature/web-auth'
+        if: github.event_name == 'pull_request' && github.head_ref == 'feature/web-auth'
         env:
           AUTH_BROWSER_SMOKE: '1'
-          INTEGRATION_DATABASE_URL: postgresql://auction:auction@localhost:5432/bidplace_integration?schema=public
+          INTEGRATION_DATABASE_URL: postgresql://auction:auction@127.0.0.1:55440/bidplace_integration?schema=public
           EXPO_NO_DOTENV: '1'
           EXPO_PUBLIC_API_URL: http://127.0.0.1:55442
           EXPO_PUBLIC_TURNSTILE_SITE_KEY: 1x00000000000000000000AA

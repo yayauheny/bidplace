@@ -116,7 +116,17 @@ vi.mock('react-native', () => ({
       },
       children,
     ),
-  TextInput: () => createElement('input'),
+  TextInput: ({ accessibilityLabel, value, onChangeText, editable }: {
+    accessibilityLabel?: string;
+    value?: string;
+    onChangeText?: (value: string) => void;
+    editable?: boolean;
+  }) => createElement('input', {
+    'aria-label': accessibilityLabel,
+    value: value ?? '',
+    disabled: editable === false,
+    onChange: (event: { target: { value: string } }) => onChangeText?.(event.target.value),
+  }),
 }));
 
 vi.mock('react-native-svg', () => ({
@@ -206,6 +216,12 @@ vi.mock('../../providers/api-provider', () => ({
         }
         return Promise.resolve({ user });
       },
+      requestRegistrationEmail: async () => ({
+        ok: true,
+        serverNow: new Date().toISOString(),
+        resendAvailableAt: new Date(Date.now() + 60_000).toISOString(),
+      }),
+      verifyRegistrationEmail: async () => ({ ok: true }),
       slugAvailability: harness.slugAvailability,
       getLegalDocuments: async () => {
         harness.legalReads += 1;
@@ -457,6 +473,13 @@ async function reachPassword(container: HTMLElement) {
   fill(container, 'Введите пароль', 'registration-password-123');
   fill(container, 'Подтвердите пароль', 'registration-password-123');
   return suggestions;
+}
+
+async function completeEmailProof(container: HTMLElement) {
+  clickButton(container, 'Дальше');
+  await until(container, 'Подтвердите почту');
+  fill(container, 'Код из письма', '123456');
+  clickButton(container, 'Подтвердить и зарегистрироваться');
 }
 
 beforeEach(() => {
@@ -746,10 +769,10 @@ describe('registration consent attempt', () => {
     });
     const view = mount();
     const initialSuggestions = await reachPassword(view.container);
-    clickButton(view.container, 'Дальше');
+    await completeEmailProof(view.container);
     await until(view.container, 'Этот никнейм уже занят. Выберите другой.');
     expect(harness.registers).toBe(1);
-    expect(harness.lastRegister).toMatchObject({ turnstileToken: 'widget-token' });
+    expect(harness.lastRegister).not.toHaveProperty('turnstileToken');
     expect(
       [
         ...view.container.querySelectorAll(
@@ -806,7 +829,7 @@ describe('registration consent attempt', () => {
     await until(view.container, 'Не удалось открыть документ.');
     expect(view.container.querySelector('[role="checkbox"]')).toHaveProperty('disabled', false);
     await reachPassword(view.container);
-    clickButton(view.container, 'Дальше');
+    await completeEmailProof(view.container);
     await until(view.container, () => harness.registers === 1);
     expect(harness.lastRegister?.legal).toEqual({
       agreement: { confirmed: true }, privacy: { confirmed: true },
@@ -819,7 +842,7 @@ describe('registration consent attempt', () => {
     harness.blurDuringRegister = true;
     const view = mount();
     await reachPassword(view.container);
-    clickButton(view.container, 'Дальше');
+    await completeEmailProof(view.container);
     await flush();
     await flush();
     expect(harness.registers).toBe(1);
@@ -832,7 +855,7 @@ describe('registration consent attempt', () => {
     harness.holdRegister = true;
     const view = mount();
     await reachPassword(view.container);
-    clickButton(view.container, 'Дальше');
+    await completeEmailProof(view.container);
     for (let attempt = 0; attempt < 20 && harness.registers === 0; attempt += 1) {
       await flush();
     }
@@ -850,7 +873,7 @@ describe('registration consent attempt', () => {
     expect(harness.replace).not.toHaveBeenCalled();
     expect(harness.registers).toBe(1);
     expect(view.container.textContent).toContain('Сессия изменилась. Повторите регистрацию.');
-    clickButton(view.container, 'Дальше');
+    clickButton(view.container, 'Подтвердить и зарегистрироваться');
     await flush();
     expect(harness.registers).toBe(1);
     expect(harness.replace).not.toHaveBeenCalled();
@@ -861,9 +884,9 @@ describe('registration consent attempt', () => {
     harness.holdRegister = true;
     const view = mount();
     await reachPassword(view.container);
-    clickButton(view.container, 'Дальше');
+    await completeEmailProof(view.container);
     await until(view.container, () => harness.registers === 1, 'registration request');
-    const confirmation = view.container.querySelector('[aria-label="Подтвердите пароль"]');
+    const confirmation = view.container.querySelector('[aria-label="Код из письма"]');
     expect(confirmation).toBeInstanceOf(HTMLInputElement);
     expect((confirmation as HTMLInputElement).disabled).toBe(true);
     await act(async () => { harness.releaseRegister?.(); });
@@ -900,7 +923,7 @@ describe('registration consent attempt', () => {
     let userAtNavigation: string | null = null;
     harness.replace.mockImplementation(() => { userAtNavigation = harness.renderedUserId; });
     await reachPassword(view.container);
-    clickButton(view.container, 'Дальше');
+    await completeEmailProof(view.container);
     await until(view.container, () => harness.replace.mock.calls.length > 0);
     expect(userAtNavigation).toBe('user-a');
     view.unmount();
@@ -909,8 +932,8 @@ describe('registration consent attempt', () => {
   it('registers once with three explicit confirmations and 18+ acknowledgment', async () => {
     const view = mount();
     await reachPassword(view.container);
-    clickButton(view.container, 'Дальше');
-    clickButton(view.container, 'Дальше');
+    await completeEmailProof(view.container);
+    clickButton(view.container, 'Подтвердить и зарегистрироваться');
     await until(view.container, () => harness.replace.mock.calls.length > 0, 'navigation');
     expect(harness.registers).toBe(1);
     expect(harness.lastRegister).toMatchObject({

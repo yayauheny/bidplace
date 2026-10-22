@@ -949,12 +949,23 @@ model AuthFlow {
   subject     String?  @db.VarChar(255)
   emailProof  String?  @map("email_proof") @db.VarChar(255)
   email       String?  @db.VarChar(255)
+  codeHash    String?  @map("code_hash") @db.Char(64)
+  codeExpiresAt DateTime? @map("code_expires_at")
+  codeSentAt  DateTime? @map("code_sent_at")
+  codeAttempts Int @default(0) @map("code_attempts")
+  codeSends Int @default(0) @map("code_sends")
+  emailProvedAt DateTime? @map("email_proved_at")
+  codeRequestKey String? @map("code_request_key") @db.VarChar(80)
+  profileSlug String? @map("profile_slug") @db.VarChar(120)
+  legalVersion String? @map("legal_version") @db.VarChar(120)
+  legalAcceptedAt DateTime? @map("legal_accepted_at")
   userId      String?  @map("user_id") @db.Uuid
   version     Int?
   expiresAt   DateTime @map("expires_at")
   createdAt   DateTime @default(now()) @map("created_at")
 
   @@index([browserHash, stage])
+  @@index([email, codeSentAt])
   @@index([expiresAt])
   @@map("auth_flows")
 }

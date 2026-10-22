@@ -40,9 +40,7 @@ export const registerRequestSchema = z
   .object({
     email: emailAddressSchema,
     password: passwordSchema,
-    phone: z.string().trim().min(1).nullable().optional(),
     slug: newAccountSlugSchema,
-    turnstileToken: turnstileTokenSchema,
     legal: registrationLegalSchema,
   })
   .strict();

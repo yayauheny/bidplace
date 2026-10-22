@@ -14,7 +14,7 @@ import { AuthAbuseService } from '../../src/auth-abuse/auth-abuse.service';
 import {
   cooldownAfterSends,
   LOGIN_WINDOW_MS,
-  MAIL_PURPOSES,
+  MAIL_BUDGET_PURPOSES,
   OTP_PAUSE_MS,
   OTP_TTL_MS,
   PERSONAL_MAIL_WINDOW_MS,
@@ -43,6 +43,8 @@ import { PasswordResetService } from '../../src/password-reset/password-reset.se
 import { idempotencyKey, turnstileToken } from './abuse-request';
 
 const databaseUrl = process.env.AUTH_ABUSE_TEST_DATABASE_URL;
+if (process.env.CI && !databaseUrl)
+  throw new Error('AUTH_ABUSE_TEST_DATABASE_URL is required in CI');
 const repoRoot = resolve(__dirname, '../../../..');
 
 function assertIsolatedDatabase(url: string): void {
@@ -554,6 +556,10 @@ describe.skipIf(!databaseUrl)('auth abuse postgres owner', () => {
   });
 
   it('lets one reservation win when the daily budget is one', async () => {
+    await prisma.authAbuseOperation.create({ data: {
+      email: 'registration-budget@example.test', purpose: 'email_proof_send', status: 'accepted',
+      idempotencyKey: idempotencyKey(), contentHash: 'a'.repeat(64),
+    } });
     const first = await createUser(
       prisma,
       `budget-a-${randomUUID()}@example.com`,
@@ -567,7 +573,7 @@ describe.skipIf(!databaseUrl)('auth abuse postgres owner', () => {
     const now = new Date();
     const spent = await prisma.authAbuseOperation.count({
       where: {
-        purpose: { in: [...MAIL_PURPOSES] },
+        purpose: { in: [...MAIL_BUDGET_PURPOSES] },
         status: { in: ['reserved', 'accepted', 'unknown'] },
         createdAt: { gt: new Date(now.getTime() - PERSONAL_MAIL_WINDOW_MS) },
       },

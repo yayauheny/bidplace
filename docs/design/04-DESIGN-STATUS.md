@@ -1968,3 +1968,15 @@ results are historical branch evidence. See the dated merge section in the
 Merged-tree verification: full `pnpm verify` passed, including988 mobile unit
 cases,155 API integration cases (28 optional skipped), typecheck/lint and all8
 build tasks with web/iOS/Android exports. Markdown links184 files passed.
+
+
+## 2026-10-22 — Registration before account creation
+
+Implemented locally: DEC-133 adds email proof before password/social account
+creation, reusing AuthCodeField and auth layout/actions. Registration retains
+legal consent through a failed submission; resend/change-address remain explicit.
+The consent checkbox supports web Space activation. Chromium/WebKit lifecycle
+14/14 and OIDC/email-code/link smoke 12/12 passed on isolated schemas with a test
+IdP; registration keyboard consent and code-form responsive resize are included.
+Exact visual acceptance of the added registration step and native device QA
+remain Needs verification; existing design tokens and composition are reused.

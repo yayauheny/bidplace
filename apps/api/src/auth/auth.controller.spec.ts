@@ -26,6 +26,7 @@ describe('AuthController nickname availability', () => {
       const controller = new AuthController(
         authService as never,
         sessions as never,
+        {} as never,
         syntheticServerEnv(),
       );
       const slug = 'a'.repeat(length);
@@ -62,6 +63,7 @@ describe('AuthController public legal reader', () => {
     const controller = new AuthController(
       service as never,
       sessions as never,
+      {} as never,
       syntheticServerEnv(),
     );
 
@@ -78,6 +80,7 @@ describe('AuthController logout', () => {
     const controller = new AuthController(
       authService as never,
       sessions as never,
+      {} as never,
       syntheticServerEnv(),
     );
     const response = {
@@ -106,6 +109,7 @@ describe('AuthController logout', () => {
     const controller = new AuthController(
       authService as never,
       sessions as never,
+      {} as never,
       syntheticServerEnv(),
     );
     const response = {
@@ -141,6 +145,7 @@ describe('AuthController logout', () => {
     const controller = new AuthController(
       authService as never,
       sessions as never,
+      {} as never,
       syntheticProductionServerEnv(),
     );
     const response = {

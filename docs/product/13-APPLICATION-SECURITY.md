@@ -276,3 +276,25 @@ official public dummy token only through the existing test/local factory gate.
 Development/staging/production profiles do not enable this verifier. Dummy
 tokens have no real action/hostname proof and are not a security-verification
 claim. Production Cloudflare Siteverify/action/hostname/expiry checks unchanged.
+
+
+## 2026-10-22 — Email proof before account creation
+
+Implemented locally (DEC-133): password registration requires a browser-bound
+proof for the exact email before creating User/legal evidence; unproved social
+onboarding creates neither User nor ExternalIdentity. A trusted provider email
+proof remains valid. Email collisions are disclosed only after ownership proof;
+no automatic linking occurs. Explicit link still requires the current verified
+account session and provider proof.
+
+`EmailProofService` enforces 10-minute expiry, five guesses, three sends per
+flow, 60-second resend delay, shared address quota and global auth mail budgets.
+Codes are HMAC-only in PostgreSQL. Definite mail rejects invalidate the code;
+unknown outcomes retain it and do not trigger automatic resend.
+
+Known/unknown email-login failures now use the same durable operation/counter
+path, including pause and replay, without creating dummy users. HTTP regression
+covers equal outcomes, five-failure pause, expiry, cancellation, browser binding,
+mail budgets and pre-proof absence of users. CI requires the isolated abuse DB
+and runs the browser owner on Draft auth PRs too. Production timing, live
+Google/Telegram/SMTP/Turnstile remain Needs verification.

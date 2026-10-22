@@ -153,6 +153,15 @@ export const emailLoginRequestSchema = z
     turnstileToken: turnstileTokenSchema,
   })
   .strict();
+export const registrationEmailRequestSchema = emailLoginRequestSchema;
+export const registrationEmailResponseSchema = z
+  .object({
+    ok: z.literal(true),
+    serverNow: isoDateTimeSchema,
+    resendAvailableAt: isoDateTimeSchema,
+  })
+  .strict();
+export type RegistrationEmailRequest = z.infer<typeof registrationEmailRequestSchema>;
 export const emailLoginRequestResponseSchema = z
   .object({
     ok: z.literal(true),

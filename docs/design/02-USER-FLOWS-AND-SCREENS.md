@@ -522,3 +522,13 @@ behavior are unchanged. See03-DESIGN-SYSTEM and the current author parity audit.
 forms, editors and overlays exclude it. Desktop cart/notifications are explicit
 post-MVP placeholders opening the shared compact feedback sheet (close/Escape,
 return focus). They do not start a purchase or create notification state.
+
+
+## 2026-10-22 — Registration email proof (DEC-133)
+
+Password registration: email/legal consent → nickname → password → email code
+→ verified account/session → safe destination. No User is created before proof.
+The proof step reuses AuthCodeField and existing auth actions; resend uses the
+server deadline and change-email returns to the email step. Social onboarding
+without a trusted email proof likewise creates the account only after the code.
+Existing-account collisions require signing in and explicit provider linking.

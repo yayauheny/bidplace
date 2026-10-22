@@ -10,7 +10,7 @@ import {
   AUTH_TURNSTILE_UNAVAILABLE_COPY,
 } from '../src/errors/copy';
 
-import { registerUntilVerify, sendVerification } from './support/auth-browser-flow';
+import { openUnverifiedAccount, sendVerification } from './support/auth-browser-flow';
 import { assignAuthClientIp } from './support/auth-client-ip';
 import {
   armAuthWriteHold,
@@ -22,6 +22,7 @@ import { AUTH_BROWSER_VIEWPORTS, AUTH_PHONE_VIEWPORT, AUTH_SHORT_PHONE_VIEWPORT 
 import { e2eApiBaseURL } from './support/e2e-env';
 import { e2eEvidenceDir } from './support/evidence-dir';
 import { createBuyerFixture } from './support/e2e-fixtures';
+import { localTestMailValue } from './support/task-mail';
 import { assertScriptedProof, expectTurnstileReady, expectTurnstileSizeForHost, installTurnstileFixture } from './support/turnstile-fixture';
 
 test.use({ trace: 'off', screenshot: 'off', video: 'off' });
@@ -129,7 +130,7 @@ test('verification errors keep the fake code and show the server pause, quota, a
 }) => {
   await installTurnstileFixture(page);
   const id = randomUUID().slice(0, 8);
-  await registerUntilVerify(page, {
+  await openUnverifiedAccount(page, {
     email: `errors-${id}@bidplace.test`,
     slug: `err${id}`,
   });
@@ -193,7 +194,7 @@ test('one accepted verification send shows the server cooldown without waiting i
 }) => {
   await installTurnstileFixture(page);
   const id = randomUUID().slice(0, 8);
-  await registerUntilVerify(page, {
+  await openUnverifiedAccount(page, {
     email: `cooldown-${id}@bidplace.test`,
     slug: `cool${id}`,
   });
@@ -245,7 +246,8 @@ test('a late registration response cannot replace the account installed while it
     const nonce = await pinDocument(page);
     await page.getByRole('link', { name: 'Регистрация', exact: true }).click();
     const id = randomUUID().slice(0, 8);
-    await page.getByRole('textbox', { name: 'Электронная почта', exact: true }).fill(`late-a-${id}@bidplace.test`);
+    const email = `late-a-${id}@bidplace.test`;
+    await page.getByRole('textbox', { name: 'Электронная почта', exact: true }).fill(email);
     await page.getByRole('checkbox', { name: /Мне есть 18 лет/ }).click();
     await page.getByRole('button', { name: 'Дальше', exact: true }).click();
     await page.getByLabel('Никнейм', { exact: true }).fill(`latea${id}`);
@@ -255,6 +257,9 @@ test('a late registration response cannot replace the account installed while it
     await expectTurnstileReady(page, 'register');
     await armAuthWriteHold('/api/auth/register');
     await page.getByRole('button', { name: 'Дальше', exact: true }).click();
+    await expect(page.getByText('Подтвердите почту', { exact: true })).toBeVisible();
+    await page.getByLabel('Код из письма').fill(await localTestMailValue(email, 'code'));
+    await page.getByRole('button', { name: 'Подтвердить и зарегистрироваться', exact: true }).click();
     await waitForHeldAuthWrite();
     await expectSameDocument(page, nonce);
     await page.goBack();

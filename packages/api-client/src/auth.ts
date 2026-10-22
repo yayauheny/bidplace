@@ -10,9 +10,12 @@ import {
   onboardingResultSchema,
   emailLoginRequestSchema,
   emailLoginRequestResponseSchema,
+  registrationEmailRequestSchema,
+  registrationEmailResponseSchema,
   type AuthProvider,
   type OnboardingRequest,
   type EmailLoginRequest,
+  type RegistrationEmailRequest,
   acceptRulesRequestSchema,
   acceptRulesResponseSchema,
   newAccountSlugSchema,
@@ -194,6 +197,20 @@ export function createAuthClient(context: RequestContext) {
       return requestJson(context, '/api/auth/register', authResponseSchema, {
         method: 'POST',
         body: parseRequest(registerRequestSchema, input),
+        ...signalRequestOptions(options),
+      });
+    },
+    requestRegistrationEmail(input: RegistrationEmailRequest, options?: ReadCallOptions) {
+      return requestJson(context, '/api/auth/register/email/request', registrationEmailResponseSchema, {
+        method: 'POST',
+        body: parseRequest(registrationEmailRequestSchema, input),
+        ...signalRequestOptions(options),
+      });
+    },
+    verifyRegistrationEmail(input: EmailOtpVerifyRequest, options?: ReadCallOptions) {
+      return requestJson(context, '/api/auth/register/email/verify', okResponseSchema, {
+        method: 'POST',
+        body: parseRequest(emailOtpVerifyRequestSchema, input),
         ...signalRequestOptions(options),
       });
     },

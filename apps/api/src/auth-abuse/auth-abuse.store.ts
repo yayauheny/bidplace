@@ -16,6 +16,7 @@ import {
   LOGIN_PAUSE_MS,
   LOGIN_TURNSTILE_AFTER,
   MAIL_PURPOSES,
+  MAIL_BUDGET_PURPOSES,
   MAIL_SPEND_STATUSES,
   OTP_PAUSE_AFTER,
   OTP_PAUSE_MS,
@@ -432,6 +433,7 @@ export class AuthAbuseStore {
 
   async verifyEmailCode(input: {
     userId: string;
+    unregisteredEmail?: string;
     code: string;
     idempotencyKey: string;
     purpose?: 'email_verification' | 'email_login';
@@ -448,7 +450,7 @@ export class AuthAbuseStore {
       await tx.$queryRaw`
         SELECT id FROM users WHERE id = CAST(${input.userId} AS uuid) FOR UPDATE
       `;
-      const user = await tx.user.findUnique({
+      const registeredUser = await tx.user.findUnique({
         where: { id: input.userId },
         select: {
           id: true,
@@ -458,12 +460,22 @@ export class AuthAbuseStore {
           status: true,
         },
       });
-      if (!user) return { outcome: 'missing' };
+      const subject = registeredUser ?? (
+        purpose === 'email_login' && input.unregisteredEmail
+          ? {
+              id: input.userId,
+              email: input.unregisteredEmail,
+              sessionVersion: -1,
+            }
+          : null
+      );
+      if (!subject) return { outcome: 'missing' };
+      const ownerUserId = registeredUser?.id ?? null;
 
       const boundHash = verifyContentHash(
         this.env.OTP_HASH_SECRET,
-        user.id,
-        user.email,
+        subject.id,
+        subject.email,
         input.code,
         purpose,
         input.flowId,
@@ -479,7 +491,7 @@ export class AuthAbuseStore {
       if (existing) {
         if (
           existing.contentHash !== boundHash ||
-          existing.ownerUserId !== user.id
+          existing.ownerUserId !== ownerUserId
         ) {
           return { outcome: 'conflict' };
         }
@@ -488,21 +500,16 @@ export class AuthAbuseStore {
 
       const admittedAt = this.clock.now();
       if (
-        purpose === 'email_login' &&
-        (!user.emailVerifiedAt || user.status !== 'active')
-      )
-        return { outcome: 'invalid' };
-      if (
-        user.emailVerifiedAt &&
+        registeredUser?.emailVerifiedAt &&
         purpose === 'email_verification' &&
         input.flowId
       )
         return { outcome: 'invalid' };
-      if (user.emailVerifiedAt && purpose === 'email_verification') {
+      if (registeredUser?.emailVerifiedAt && purpose === 'email_verification') {
         await this.writeVerifyOperation(
           tx,
-          user.id,
-          user.email,
+          ownerUserId,
+          subject.email,
           boundHash,
           input.idempotencyKey,
           admittedAt,
@@ -513,21 +520,34 @@ export class AuthAbuseStore {
         return { outcome: 'already_verified' };
       }
 
-      const counterHash = subjectHash('otp_verify', user.id);
-      const counter = await this.ensureCounter(
-        tx,
-        'otp_verify',
-        counterHash,
-        admittedAt,
-      );
+      const counterHash = subjectHash('otp_verify', subject.id);
+      const counter = purpose === 'email_login'
+        ? await tx.authAbuseCounter.upsert({
+            where: { scope_subjectHash: { scope: 'otp_verify', subjectHash: counterHash } },
+            update: { subjectHash: counterHash },
+            create: { scope: 'otp_verify', subjectHash: counterHash, failures: 0, windowStart: admittedAt, failureTimestamps: [] },
+          })
+        : await this.ensureCounter(tx, 'otp_verify', counterHash, admittedAt);
       const pause = refreshOtpPause(counter, admittedAt);
       const activePause = pause.pausedUntil;
+
+      const record = await tx.emailVerificationCode.findFirst({
+        where: {
+          userId: subject.id,
+          purpose,
+          flowId: input.flowId ?? null,
+          version: subject.sessionVersion,
+          usedAt: null,
+          expiresAt: { gt: admittedAt },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
       if (activePause && activePause > admittedAt) {
         await this.persistCounter(tx, counter.id, pause);
         await this.writeVerifyOperation(
           tx,
-          user.id,
-          user.email,
+          ownerUserId,
+          subject.email,
           boundHash,
           input.idempotencyKey,
           admittedAt,
@@ -537,24 +557,12 @@ export class AuthAbuseStore {
         );
         return { outcome: 'paused', pausedUntil: activePause };
       }
-
-      const record = await tx.emailVerificationCode.findFirst({
-        where: {
-          userId: user.id,
-          purpose,
-          flowId: input.flowId ?? null,
-          version: user.sessionVersion,
-          usedAt: null,
-          expiresAt: { gt: admittedAt },
-        },
-        orderBy: { createdAt: 'desc' },
-      });
-      if (!record) {
+      if (!record && purpose !== 'email_login') {
         await this.persistCounter(tx, counter.id, pause);
         await this.writeVerifyOperation(
           tx,
-          user.id,
-          user.email,
+          ownerUserId,
+          subject.email,
           boundHash,
           input.idempotencyKey,
           admittedAt,
@@ -565,17 +573,15 @@ export class AuthAbuseStore {
         return { outcome: 'expired' };
       }
 
-      if (
-        record.codeHash !==
-        otpCodeHash(
+      const expectedHash = otpCodeHash(
           this.env.OTP_HASH_SECRET,
-          user.id,
-          user.email,
+          subject.id,
+          subject.email,
           input.code,
           purpose,
           input.flowId,
-        )
-      ) {
+        );
+      if (!record || record.codeHash !== expectedHash || (purpose === 'email_login' && (!registeredUser?.emailVerifiedAt || registeredUser.status !== 'active'))) {
         pause.failures += 1;
         if (pause.failures >= OTP_PAUSE_AFTER) {
           pause.pausedUntil = new Date(admittedAt.getTime() + OTP_PAUSE_MS);
@@ -586,8 +592,8 @@ export class AuthAbuseStore {
         await this.persistCounter(tx, counter.id, pause);
         await this.writeVerifyOperation(
           tx,
-          user.id,
-          user.email,
+          ownerUserId,
+          subject.email,
           boundHash,
           input.idempotencyKey,
           admittedAt,
@@ -605,8 +611,8 @@ export class AuthAbuseStore {
       if (record.expiresAt <= consumedAt) {
         await this.writeVerifyOperation(
           tx,
-          user.id,
-          user.email,
+          ownerUserId,
+          subject.email,
           boundHash,
           input.idempotencyKey,
           consumedAt,
@@ -624,8 +630,8 @@ export class AuthAbuseStore {
       if (consumed.count !== 1) {
         await this.writeVerifyOperation(
           tx,
-          user.id,
-          user.email,
+          ownerUserId,
+          subject.email,
           boundHash,
           input.idempotencyKey,
           consumedAt,
@@ -638,14 +644,14 @@ export class AuthAbuseStore {
 
       if (purpose === 'email_verification')
         await tx.user.update({
-          where: { id: user.id },
+          where: { id: subject.id },
           data: { emailVerifiedAt: consumedAt },
         });
       await this.persistCounter(tx, counter.id, pause);
       await this.writeVerifyOperation(
         tx,
-        user.id,
-        user.email,
+        ownerUserId,
+        subject.email,
         boundHash,
         input.idempotencyKey,
         consumedAt,
@@ -868,14 +874,14 @@ export class AuthAbuseStore {
         this.personalQuota(tx, user.id, user.email, input.now),
         tx.authAbuseOperation.count({
           where: {
-            purpose: { in: [...MAIL_PURPOSES] },
+            purpose: { in: [...MAIL_BUDGET_PURPOSES] },
             status: spendFilter,
             createdAt: { gt: dayStart },
           },
         }),
         tx.authAbuseOperation.count({
           where: {
-            purpose: { in: [...MAIL_PURPOSES] },
+            purpose: { in: [...MAIL_BUDGET_PURPOSES] },
             status: spendFilter,
             createdAt: { gt: monthStart },
           },
@@ -1032,7 +1038,7 @@ export class AuthAbuseStore {
     const since = new Date(now.getTime() - PERSONAL_MAIL_WINDOW_MS);
     const spends = await db.authAbuseOperation.findMany({
       where: {
-        purpose: { in: [...MAIL_PURPOSES] },
+        purpose: { in: [...MAIL_BUDGET_PURPOSES] },
         status: spendFilter,
         createdAt: { gt: since },
         OR: [{ ownerUserId: userId }, { email }],
@@ -1148,7 +1154,7 @@ export class AuthAbuseStore {
 
   private async writeVerifyOperation(
     tx: Tx,
-    userId: string,
+    userId: string | null,
     email: string,
     hash: string,
     idempotencyKey: string,

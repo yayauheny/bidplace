@@ -19,11 +19,13 @@ import {
   type LegalDocumentId,
   type LegalDocumentsResponse,
 } from '@bidplace/contracts';
-import { AppText, PrimaryButton, TextField } from '../../components/ui';
+import { AppText, PrimaryButton, TextButton, TextField } from '../../components/ui';
 import { FigmaButton } from '../../components/figma/FigmaButton';
 import { MotionPressable } from '../../components/ui/MotionPressable';
 import { AuthConsentCheckbox } from './auth-consent-checkbox';
 import { AuthPasswordField } from './auth-password-field';
+import { AuthCodeField } from './auth-code-field';
+import { createOperationKey } from './recovery-operation';
 import { registerSubmission } from './auth-dismissal';
 import { useAuthSheetComplete, useAuthSheetGuard } from './auth-sheet-context';
 import { ProviderButtons } from './provider-buttons';
@@ -575,7 +577,7 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
     </View>
   );
 }
-type RegistrationStep = 'email' | 'nickname' | 'password';
+type RegistrationStep = 'email' | 'nickname' | 'password' | 'proof';
 
 const registrationCopy: Record<
   RegistrationStep,
@@ -592,6 +594,10 @@ const registrationCopy: Record<
   password: {
     title: 'Создайте пароль',
     caption: 'Пусть он будет надежный',
+  },
+  proof: {
+    title: 'Подтвердите почту',
+    caption: 'Введите шестизначный код из письма',
   },
 };
 
@@ -683,6 +689,11 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
   const registerTransport = useRef<AbortController | null>(null);
   const registerSnapshot = useRef<string | null>(null);
   const registerSubmitting = useRef(false);
+  const emailProved = useRef(false);
+  const [registrationCode, setRegistrationCode] = useState('');
+  const [resendAvailableAt, setResendAvailableAt] = useState(0);
+  const [proofNow, setProofNow] = useState(Date.now());
+  const [resendingCode, setResendingCode] = useState(false);
   const [proof, setProof] = useState<string | null>(null);
   const [proofAvailability, setProofAvailability] =
     useState<TurnstileAvailability>('ready');
@@ -716,7 +727,6 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
       slug: '',
       password: '',
       confirmPassword: '',
-      phone: '',
       agreementAccepted: false,
       privacyAcknowledged: false,
       dataConsentGiven: false,
@@ -724,6 +734,11 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
     },
   });
   const watched = form.watch();
+  useEffect(() => {
+    if (step !== 'proof') return;
+    const timer = setInterval(() => setProofNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [step]);
   const registrationValuesSnapshot = JSON.stringify(watched);
   const {
     check: checkSlugAvailability,
@@ -922,11 +937,11 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
     const operation = sessionOperation.current;
     const epoch = currentAuthEpoch(queryClient);
     if (!anonymousOwns(operation, epoch)) return;
-    if (proofAvailability === 'unavailable') {
+    if (step === 'password' && !emailProved.current && proofAvailability === 'unavailable') {
       setSubmitError(AUTH_TURNSTILE_UNAVAILABLE_COPY);
       return;
     }
-    if (!proof) {
+    if (step === 'password' && !emailProved.current && !proof) {
       setSubmitError(AUTH_TURNSTILE_REQUIRED_COPY);
       return;
     }
@@ -935,11 +950,37 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
     registerTransport.current = controller;
     registerSnapshot.current = JSON.stringify(form.getValues());
     const token = proof;
-    setProof(null);
-    setWidgetGeneration((generation) => generation + 1);
+    if (step === 'password' && !emailProved.current) {
+      setProof(null);
+      setWidgetGeneration((generation) => generation + 1);
+    }
     try {
+      if (step === 'password' && !emailProved.current) {
+        const result = await api.auth.requestRegistrationEmail(
+          {
+            email: values.email,
+            turnstileToken: token!,
+            idempotencyKey: createOperationKey(),
+          },
+          { signal: controller.signal },
+        );
+        if (controller.signal.aborted || !routeOwns(operation)) return;
+        setResendAvailableAt(
+          Date.now() + Date.parse(result.resendAvailableAt) - Date.parse(result.serverNow),
+        );
+        setStep('proof');
+        return;
+      }
+      if (step === 'proof' && !emailProved.current) {
+        await api.auth.verifyRegistrationEmail(
+          { code: registrationCode, idempotencyKey: createOperationKey() },
+          { signal: controller.signal },
+        );
+        if (controller.signal.aborted || !routeOwns(operation)) return;
+        emailProved.current = true;
+      }
       const response = await auth.register(
-        { ...registerSubmission(values), turnstileToken: token },
+        registerSubmission(values),
         { signal: controller.signal },
       );
       if (controller.signal.aborted || !routeOwns(operation)) return;
@@ -966,7 +1007,6 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
         'email',
         'slug',
         'password',
-        'phone',
       ]);
       if (failure.disposition === 'passthrough') {
         setSubmitError(
@@ -974,7 +1014,7 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
         );
         return;
       }
-      applyFormFailure(form, failure, ['email', 'slug', 'password', 'phone']);
+      applyFormFailure(form, failure, ['email', 'slug', 'password']);
       if (failure.fields.slug) {
         nicknameAdvanceOperation.current += 1;
         nicknameAdvancePending.current = false;
@@ -990,6 +1030,36 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
       }
     }
   });
+  const resendRegistrationCode = async () => {
+    if (resendingCode || proofNow < resendAvailableAt) return;
+    if (!proof) {
+      setSubmitError(AUTH_TURNSTILE_REQUIRED_COPY);
+      return;
+    }
+    const token = proof;
+    setProof(null);
+    setWidgetGeneration((generation) => generation + 1);
+    setResendingCode(true);
+    setSubmitError(null);
+    const operation = sessionOperation.current;
+    const epoch = currentAuthEpoch(queryClient);
+    try {
+      const result = await api.auth.requestRegistrationEmail({
+        email: form.getValues('email'),
+        turnstileToken: token,
+        idempotencyKey: createOperationKey(),
+      });
+      if (!anonymousOwns(operation, epoch)) return;
+      setResendAvailableAt(
+        Date.now() + Date.parse(result.resendAvailableAt) - Date.parse(result.serverNow),
+      );
+    } catch (error) {
+      if (anonymousOwns(operation, epoch))
+        setSubmitError(getUserFacingErrorMessage(error, 'Не удалось отправить код'));
+    } finally {
+      setResendingCode(false);
+    }
+  };
   const submit = () => {
     if (registerSubmitting.current) return;
     registerSubmitting.current = true;
@@ -1055,6 +1125,7 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
       }
       return;
     }
+    if (step === 'proof' && registrationCode.length !== 6) return;
     if (registerSubmitting.current) return;
     await submit();
   };
@@ -1105,13 +1176,16 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
       : null;
   const nextAction = (
     <PrimaryButton
-      label="Дальше"
+      label={step === 'proof' ? 'Подтвердить и зарегистрироваться' : 'Дальше'}
       size="auth"
       width="full"
       loading={
         form.formState.isSubmitting || slugAvailability?.status === 'checking'
       }
-      disabled={step === 'email' && !registrationConsentsReady}
+      disabled={
+        (step === 'email' && !registrationConsentsReady) ||
+        (step === 'proof' && registrationCode.length !== 6)
+      }
       accessibilityHint={
         step === 'email' && !registrationConsentsReady
           ? 'Подтвердите документы и возраст 18+.'
@@ -1233,7 +1307,11 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
                   ref={field.ref}
                   label="Электронная почта"
                   value={field.value}
-                  onChangeText={field.onChange}
+                  onChangeText={(value) => {
+                    emailProved.current = false;
+                    setRegistrationCode('');
+                    field.onChange(value);
+                  }}
                   onBlur={field.onBlur}
                   placeholder="example@gmail.com"
                   autoComplete="email"
@@ -1282,6 +1360,37 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
                 action="register"
                 onToken={onProof}
                 onAvailability={onProofAvailability}
+              />
+            </>
+          ) : null}
+          {step === 'proof' ? (
+            <>
+              <AppText role="bodySmall">Код отправлен на {watched.email}.</AppText>
+              <AuthCodeField
+                value={registrationCode}
+                onChangeText={setRegistrationCode}
+                editable={!form.formState.isSubmitting}
+              />
+              <TurnstileWidget
+                key={widgetGeneration}
+                action="register"
+                onToken={onProof}
+                onAvailability={onProofAvailability}
+              />
+              <TextButton
+                label={proofNow < resendAvailableAt
+                  ? `Отправить код снова через ${Math.ceil((resendAvailableAt - proofNow) / 1000)} с`
+                  : 'Отправить код снова'}
+                disabled={resendingCode || proofNow < resendAvailableAt || proofAvailability === 'unavailable'}
+                onPress={() => void resendRegistrationCode()}
+              />
+              <TextButton
+                label="Изменить почту"
+                onPress={() => {
+                  emailProved.current = false;
+                  setRegistrationCode('');
+                  setStep('email');
+                }}
               />
             </>
           ) : null}

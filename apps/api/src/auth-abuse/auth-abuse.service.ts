@@ -67,6 +67,19 @@ export class AuthAbuseService {
     this.assertRegistrationEmail(input.email);
   }
 
+  async assertOnboardingEmailProof(input: {
+    email: string;
+    turnstileToken: string;
+    ip: string;
+  }): Promise<void> {
+    await this.requireTurnstile(
+      'email_verification',
+      input.turnstileToken,
+      input.ip,
+    );
+    this.assertRegistrationEmail(input.email);
+  }
+
   assertRegistrationEmail(email: string): void {
     if (this.disposable.contains(email)) {
       throw abuseError(
@@ -372,6 +385,7 @@ export class AuthAbuseService {
 
   async verifyEmailCode(input: {
     userId: string;
+    unregisteredEmail?: string;
     code: string;
     idempotencyKey: string;
     purpose?: 'email_verification' | 'email_login';
@@ -380,6 +394,7 @@ export class AuthAbuseService {
     this.assertIdempotencyKey(input.idempotencyKey);
     const decision = await this.store.verifyEmailCode({
       userId: input.userId,
+      ...(input.unregisteredEmail ? { unregisteredEmail: input.unregisteredEmail } : {}),
       code: input.code,
       idempotencyKey: input.idempotencyKey,
       ...(input.purpose ? { purpose: input.purpose } : {}),

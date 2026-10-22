@@ -16,6 +16,8 @@ export const MAIL_PURPOSES = [
   'email_login_send',
 ] as const;
 
+export const MAIL_BUDGET_PURPOSES = [...MAIL_PURPOSES, 'email_proof_send'] as const;
+
 /** Reservations that spend quota, including an unfinished or unknown send. */
 export const MAIL_SPEND_STATUSES = ['reserved', 'accepted', 'unknown'] as const;
 

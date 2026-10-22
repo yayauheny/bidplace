@@ -507,6 +507,23 @@ export async function createBuyerFixture(): Promise<{ buyer: E2EUser }> {
   return { buyer };
 }
 
+export async function createUnverifiedBuyerFixture(input: {
+  email: string;
+  slug: string;
+}): Promise<{ buyer: E2EUser }> {
+  const prisma = fixtureDatabaseClient();
+  try {
+    const buyer = await createUser(prisma, input.email, input.slug, 'user', input.slug);
+    await prisma.user.update({
+      where: { id: buyer.id },
+      data: { emailVerifiedAt: null },
+    });
+    return { buyer };
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
 export async function createAdminModerationFixture(): Promise<AdminModerationFixture> {
   const suffix = randomUUID().slice(0, 8);
   const prisma = fixtureDatabaseClient();

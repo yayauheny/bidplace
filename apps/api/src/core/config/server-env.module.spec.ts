@@ -244,6 +244,8 @@ describe('server env ownership', () => {
 
       vi.spyOn(localApp.get(PrismaService).authFlow, 'updateMany').mockResolvedValue({ count: 0 });
       vi.spyOn(productionApp.get(PrismaService).authFlow, 'updateMany').mockResolvedValue({ count: 0 });
+      vi.spyOn(localApp.get(SessionService), 'withLease').mockImplementation(async (_request, operation) => operation());
+      vi.spyOn(productionApp.get(SessionService), 'withLease').mockImplementation(async (_request, operation) => operation());
       const localResponse = { clearCookie: vi.fn() };
       await localApp
         .select(AuthModule)

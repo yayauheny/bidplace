@@ -414,3 +414,25 @@ Google/Telegram real-provider smoke requires safe provider configuration and is
 not claimed. New UI compositions remain NEEDS-FIGMA. PR56 media remains OPEN
 and draft when checked on 2026-10-22; it was not integrated. No push/merge/deploy
 or production migration was performed.
+
+
+## 2026-10-22 — PR #58 review continuation
+
+Implemented locally: old-SID serialization (`SessionService`, commit 9f8887db),
+neutral failed email-code verification (`AuthAbuseStore`), bounded cooldown reads
+(last three operations) with lookup index, isolated abuse DB in CI and browser
+auth checks for Draft PRs. Missing abuse DB now fails CI rather than skipping.
+
+Implemented locally (DEC-133): `EmailProofService`, registration request/verify
+API + contracts/client/UI, pre-account social onboarding, HMAC proof fields in
+`auth_flows`, common mail budget/address quota and classified delivery outcomes.
+User/identity is created only after email proof; existing pending identities
+retain user/version binding. Password-register contract drops optional phone
+and moves CAPTCHA to proof send. Migration must run before API rollout.
+
+Verified: HTTP auth/abuse regression, Chromium/WebKit lifecycle 14/14 and test-IdP
+auth completion 12/12. Final checks passed: affected dependency graph typecheck/lint, `pnpm test:unit`
+(1,533 tests), API build and Expo web export, docs links and workflow YAML.
+Targeted registration layout passed 6/6 in Chromium/WebKit.
+Partial release acceptance: live Google/Telegram/SMTP/Turnstile, production timing,
+native devices and exact Figma acceptance of the new proof step remain pending.

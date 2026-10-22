@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
-import { View } from 'react-native';
+import { Platform, View } from 'react-native';
 import { Path, Svg } from 'react-native-svg';
 
 import { designTokens } from '@bidplace/design-tokens';
@@ -58,6 +58,15 @@ export function AuthConsentCheckbox({
           aria-checked={checked}
           disabled={disabled}
           onPress={toggle}
+          {...(Platform.OS === 'web'
+            ? ({
+                onKeyDown: (event: { key: string; preventDefault: () => void }) => {
+                  if (event.key !== ' ') return;
+                  event.preventDefault();
+                  toggle();
+                },
+              } as object)
+            : {})}
           preset="button"
           hitSlop={12}
         >

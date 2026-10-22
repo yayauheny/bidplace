@@ -10,6 +10,9 @@ import {
   newAccountSlugSchema,
   slugAvailabilityResponseSchema,
   registerRequestSchema,
+  registrationEmailRequestSchema,
+  registrationEmailResponseSchema,
+  emailOtpVerifyRequestSchema,
   serviceRulesResponseSchema,
   legalDocumentsResponseSchema,
 } from '@bidplace/contracts';
@@ -29,6 +32,7 @@ import {
 
 import { SESSION_COOKIE_NAME } from './auth.constants';
 import { AuthService } from './auth.service';
+import { EmailProofService } from './email-proof.service';
 import { SessionService, type SessionRequest } from './session.service';
 import { SessionAuthGuard } from './session-auth.guard';
 import { LogoutAuthGuard } from './logout-auth.guard';
@@ -59,6 +63,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly sessions: SessionService,
+    private readonly emailProof: EmailProofService,
     @Inject(SERVER_ENV) private readonly env: ServerEnv,
   ) {}
 
@@ -85,16 +90,40 @@ export class AuthController {
   @Post('register')
   async register(@Body() body: unknown, @Req() request: SessionRequest) {
     const parsed = parseBody(registerRequestSchema, body);
+    await this.emailProof.assertRegistrationReady(request, parsed.email);
     const session = await this.authService.register({
       ...parsed,
       ip: resolveClientIp(request, this.env.TRUST_PROXY),
     });
-
+    await this.emailProof.completeRegistration(request);
     await this.sessions.login(request, session.user.id, session.sessionVersion);
 
     return authResponseSchema.parse({
       user: session.user,
     });
+  }
+
+  @UseGuards(RateLimitGuard)
+  @RateLimit({ keyPrefix: 'auth:register-email', limit: 5, windowMs: 60_000, scope: 'ip' })
+  @Post('register/email/request')
+  async requestRegistrationEmail(@Body() body: unknown, @Req() request: SessionRequest) {
+    const input = parseBody(registrationEmailRequestSchema, body);
+    await this.emailProof.startRegistration(request, input.email);
+    const { ok, serverNow, resendAvailableAt } = await this.emailProof.request(request, {
+        ...input,
+        intent: 'register',
+        ip: resolveClientIp(request, this.env.TRUST_PROXY),
+      });
+    return registrationEmailResponseSchema.parse({ ok, serverNow, resendAvailableAt });
+  }
+
+  @UseGuards(RateLimitGuard)
+  @RateLimit({ keyPrefix: 'auth:register-email-verify', limit: 20, windowMs: 60_000, scope: 'ip' })
+  @Post('register/email/verify')
+  async verifyRegistrationEmail(@Body() body: unknown, @Req() request: SessionRequest) {
+    const input = parseBody(emailOtpVerifyRequestSchema, body);
+    await this.emailProof.verify(request, input.code);
+    return { ok: true as const };
   }
 
   @UseGuards(RateLimitGuard)

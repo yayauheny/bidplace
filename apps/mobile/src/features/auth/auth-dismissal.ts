@@ -123,13 +123,12 @@ export function registerSubmission(values: {
   email: string;
   password: string;
   slug: string;
-  phone?: string | null;
   confirmPassword: string;
   agreementAccepted: boolean;
   privacyAcknowledged: boolean;
   dataConsentGiven: boolean;
   age18Confirmed: boolean;
-}): Omit<RegisterRequest, 'turnstileToken'> {
+}): RegisterRequest {
   if (
     !values.agreementAccepted ||
     !values.privacyAcknowledged ||
@@ -138,7 +137,7 @@ export function registerSubmission(values: {
   ) {
     throw new Error('Registration requires all legal confirmations');
   }
-  const request: Omit<RegisterRequest, 'turnstileToken'> = {
+  const request: RegisterRequest = {
     email: values.email,
     password: values.password,
     slug: values.slug,
@@ -149,6 +148,5 @@ export function registerSubmission(values: {
       age18Confirmed: true,
     },
   };
-  if (values.phone !== undefined) request.phone = values.phone;
   return request;
 }

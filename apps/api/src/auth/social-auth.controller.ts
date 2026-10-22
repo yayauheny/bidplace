@@ -142,8 +142,6 @@ export class SocialAuthController {
       await this.flows.verifyOnboarding(
         request,
         input.code,
-        input.idempotencyKey,
-        resolveClientIp(request, this.env.TRUST_PROXY),
       ),
     );
   }

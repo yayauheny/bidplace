@@ -206,7 +206,6 @@ describe('registration request', () => {
       password: 'password123',
       confirmPassword: 'password123',
       slug: 'author',
-      phone: null,
       agreementAccepted: true,
       privacyAcknowledged: true,
       dataConsentGiven: true,
@@ -215,7 +214,6 @@ describe('registration request', () => {
       email: 'author@example.com',
       password: 'password123',
       slug: 'author',
-      phone: null,
       legal: {
         agreement: { confirmed: true },
         privacy: { confirmed: true },

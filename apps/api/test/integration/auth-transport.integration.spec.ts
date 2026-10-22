@@ -1,6 +1,12 @@
 import { ServiceUnavailableException } from '@nestjs/common';
 import { readPublishedLegalDocuments } from '../../src/auth/legal-documents';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
+import { EmailProofService } from '../../src/auth/email-proof.service';
+import { SessionService, type SessionRequest } from '../../src/auth/session.service';
+import { AuthAbuseService } from '../../src/auth-abuse/auth-abuse.service';
+import { MAIL_BUDGET_PURPOSES, MAIL_SPEND_STATUSES } from '../../src/auth-abuse/auth-abuse.policy';
+import { SERVER_ENV } from '../../src/core/config';
+import { PrismaService } from '../../src/core/database';
 
 import {
   afterAll,
@@ -29,6 +35,7 @@ import {
   type HttpTestApp,
 } from './http-test-app';
 import { idempotencyKey, turnstileToken } from './abuse-request';
+import { MailTransport } from '../../src/core/mail';
 
 const LEGAL_VERSION = 'synthetic-publication-1';
 const syntheticPublishedLegalPack = {
@@ -83,6 +90,30 @@ vi.mock('../../src/auth/legal-documents', () => ({
 let database: IntegrationDatabaseContext;
 let http: HttpTestApp;
 let prisma: PrismaClient;
+
+async function proveRegistrationEmail(client: HttpTestClient, email: string) {
+  let code = '';
+  const mail = http.app.get(MailTransport);
+  const spy = vi.spyOn(mail, 'send').mockImplementationOnce(async (message) => {
+    code = /\b(\d{6})\b/.exec(message.text)?.[1] ?? '';
+  });
+  try {
+    const requested = await client.post('/auth/register/email/request', {
+      email,
+      idempotencyKey: idempotencyKey(),
+      turnstileToken: turnstileToken('register'),
+    });
+    expect(requested.status).toBe(201);
+    expect(code).toMatch(/^\d{6}$/);
+    const verified = await client.post('/auth/register/email/verify', {
+      code,
+      idempotencyKey: idempotencyKey(),
+    });
+    expect(verified.status).toBe(201);
+  } finally {
+    spy.mockRestore();
+  }
+}
 
 beforeAll(async () => {
   database = await createIntegrationDatabaseContext();
@@ -296,12 +327,11 @@ describe('auth HTTP transport', () => {
         });
         expect((await client.get('/auth/legal')).status).toBe(503);
       }
+      await proveRegistrationEmail(client, 'New.User@Wave3.Test');
       const registration = await client.post('/auth/register', {
         email: 'New.User@Wave3.Test',
-        phone: '  +375291234567  ',
         slug: 'new-wave-3-user',
         password: 'password123',
-        turnstileToken: turnstileToken('register'),
         legal: versioned
           ? legal
           : {
@@ -327,7 +357,7 @@ describe('auth HTTP transport', () => {
       expect(registered).toEqual({
         id: expect.any(String),
         email: 'new.user@wave3.test',
-        phone: '+375291234567',
+        phone: null,
         displayName: null,
         slug: 'new-wave-3-user',
       });
@@ -368,12 +398,11 @@ describe('auth HTTP transport', () => {
         'http://localhost:8081',
         '10.0.2.6',
       );
+      await proveRegistrationEmail(duplicateClient, 'NEW.USER@WAVE3.TEST');
       const duplicate = await duplicateClient.post('/auth/register', {
         email: 'NEW.USER@WAVE3.TEST',
-        phone: '+375291234567',
         slug: 'another-user',
         password: 'password123',
-        turnstileToken: turnstileToken('register'),
         legal,
       });
       expect(duplicate.status).toBe(409);
@@ -392,7 +421,6 @@ describe('auth HTTP transport', () => {
       email,
       password: 'password123',
       slug: 'incomplete-consent',
-      turnstileToken: turnstileToken('register'),
     };
     const omitted = await client.post('/auth/register', { ...request });
     expect(omitted.status).toBe(400);
@@ -401,12 +429,127 @@ describe('auth HTTP transport', () => {
       legal: { ...legal, age18Confirmed: false },
     });
     expect(falseAge.status).toBe(400);
+    await proveRegistrationEmail(client, email);
     const stale = await client.post('/auth/register', {
       ...request,
       legal: { ...legal, privacy: { version: 'stale', confirmed: true } },
     });
     expect(stale.status).toBe(409);
     expect(await prisma.user.findUnique({ where: { email } })).toBeNull();
+  });
+
+  it('reserves registration mail against the same global budget as other auth mail', async () => {
+    const email = `proof-budget-${randomUUID()}@example.test`;
+    const sid = randomUUID();
+    const flow = await prisma.authFlow.create({ data: {
+      browserHash: createHash('sha256').update(sid).digest('hex'),
+      intent: 'register', stage: 'email', email, returnPath: '/', expiresAt: new Date(Date.now() + 600_000),
+    } });
+    const spent = await prisma.authAbuseOperation.count({ where: {
+      purpose: { in: [...MAIL_BUDGET_PURPOSES] }, status: { in: [...MAIL_SPEND_STATUSES] },
+      createdAt: { gt: new Date(Date.now() - 86_400_000) },
+    } });
+    const mail = http.app.get(MailTransport);
+    const spy = vi.spyOn(mail, 'send').mockResolvedValue(undefined);
+    const service = new EmailProofService(
+      http.app.get(PrismaService), mail, http.app.get(AuthAbuseService), http.app.get(SessionService),
+      { ...http.app.get(SERVER_ENV), AUTH_MAIL_DAILY_BUDGET: spent },
+    );
+    try {
+      await expect(service.request({ sessionID: sid, session: { flowId: flow.id } } as SessionRequest, {
+        email, idempotencyKey: idempotencyKey(), turnstileToken: turnstileToken('register'), ip: '198.51.100.65', intent: 'register',
+      })).rejects.toThrow('Email budget exhausted');
+      expect(spy).not.toHaveBeenCalled();
+      expect((await prisma.authFlow.findUniqueOrThrow({ where: { id: flow.id } })).codeSends).toBe(0);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it('limits registration code guesses and replays a send without a second email', async () => {
+    const email = `proof-limits-${randomUUID()}@example.test`;
+    const client = new HttpTestClient(http.baseUrl, undefined, '198.51.100.64');
+    let sentCode = '';
+    const spy = vi.spyOn(http.app.get(MailTransport), 'send').mockImplementation(async (message) => {
+      sentCode = /\b(\d{6})\b/.exec(message.text)?.[1] ?? '';
+    });
+    try {
+      const input = { email, idempotencyKey: idempotencyKey(), turnstileToken: turnstileToken('register') };
+      expect((await client.post('/auth/register/email/request', input)).status).toBe(201);
+      expect((await client.post('/auth/register/email/request', input)).status).toBe(201);
+      expect(spy).toHaveBeenCalledTimes(1);
+      expect(await prisma.user.count({ where: { email } })).toBe(0);
+      const wrong = sentCode === '000000' ? '111111' : '000000';
+      for (let attempt = 0; attempt < 5; attempt += 1)
+        expect((await client.post('/auth/register/email/verify', { code: wrong, idempotencyKey: idempotencyKey() })).status).toBe(403);
+      expect((await client.post('/auth/register/email/verify', { code: sentCode, idempotencyKey: idempotencyKey() })).status).toBe(429);
+      expect((await client.post('/auth/register', { email, slug: 'limit-' + randomUUID().slice(0, 8), password: 'synthetic-password', legal })).status).toBe(401);
+      expect(await prisma.user.count({ where: { email } })).toBe(0);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it.each(['expired', 'cancelled', 'different-email'] as const)('rejects %s registration proof before creating a user', async (state) => {
+    const email = `proof-state-${randomUUID()}@example.test`;
+    const current = new HttpTestClient(http.baseUrl, undefined, `198.51.100.${state === 'expired' ? 66 : state === 'cancelled' ? 67 : 68}`);
+    await proveRegistrationEmail(current, email);
+    if (state === 'expired')
+      await prisma.authFlow.updateMany({ where: { email }, data: { expiresAt: new Date(0) } });
+    if (state === 'cancelled') expect((await current.post('/auth/logout')).status).toBe(201);
+    const requestedEmail = state === 'different-email' ? `different-${email}` : email;
+    expect((await current.post('/auth/register', { email: requestedEmail, slug: 'state-' + randomUUID().slice(0, 8), password: 'synthetic-password', legal })).status).toBe(401);
+    expect(await prisma.user.count({ where: { email: { in: [email, requestedEmail] } } })).toBe(0);
+  });
+
+  it('requires browser-bound email proof before registration and reveals collisions only afterward', async () => {
+    const existing = await prisma.user.create({
+      data: {
+        email: `existing-${randomUUID()}@example.test`,
+        slug: 'existing-' + randomUUID().slice(0, 8),
+        emailVerifiedAt: new Date(),
+      },
+    });
+    const client = new HttpTestClient(http.baseUrl);
+    const other = new HttpTestClient(http.baseUrl);
+    const email = `new-${randomUUID()}@example.test`;
+    let code = '';
+    const spy = vi.spyOn(http.app.get(MailTransport), 'send').mockImplementation(async (message) => {
+      code = /\b(\d{6})\b/.exec(message.text)?.[1] ?? '';
+    });
+    try {
+      for (const address of [existing.email, email]) {
+        const response = await client.post('/auth/register/email/request', {
+          email: address,
+          idempotencyKey: idempotencyKey(),
+          turnstileToken: turnstileToken('register'),
+        });
+        expect(response.status).toBe(201);
+        expect(Object.keys(await response.json()).sort()).toEqual([
+          'ok', 'resendAvailableAt', 'serverNow',
+        ]);
+        expect(code).toMatch(/^\d{6}$/);
+        expect((await other.post('/auth/register/email/verify', {
+          code,
+          idempotencyKey: idempotencyKey(),
+        })).status).toBe(403);
+        expect((await client.post('/auth/register/email/verify', {
+          code,
+          idempotencyKey: idempotencyKey(),
+        })).status).toBe(201);
+        const result = await client.post('/auth/register', {
+          email: address,
+          slug: 'new-' + randomUUID().slice(0, 8),
+          password: 'synthetic-password',
+          legal,
+        });
+        expect(result.status).toBe(address === email ? 201 : 409);
+      }
+      expect(await prisma.user.count({ where: { email } })).toBe(1);
+      expect(await prisma.user.count({ where: { email: existing.email } })).toBe(1);
+    } finally {
+      spy.mockRestore();
+    }
   });
 
   it('round-trips the session cookie through /me and logout, then rejects the stale session', async () => {
@@ -543,14 +686,18 @@ describe('auth HTTP transport', () => {
       'http://localhost:8081',
       '203.0.113.10',
     );
+    await proveRegistrationEmail(clientA, email);
     const registration = await clientA.post('/auth/register', {
       email,
       password,
       slug: `fwd${randomUUID().slice(0, 6)}`,
-      turnstileToken: turnstileToken('register'),
       legal,
     });
     expect(registration.status).toBe(201);
+    await prisma.user.update({
+      where: { email },
+      data: { emailVerifiedAt: null },
+    });
 
     const requestCode = () =>
       clientA.post('/auth/email/request', {
@@ -594,10 +741,9 @@ describe('auth HTTP transport', () => {
       '203.0.113.40',
     );
     const email = `missing-proof-${randomUUID().slice(0, 8)}@wave3.test`;
-    const register = await client.post('/auth/register', {
+    const register = await client.post('/auth/register/email/request', {
       email,
-      password: 'password123',
-      slug: `mp${randomUUID().slice(0, 6)}`,
+      idempotencyKey: idempotencyKey(),
     });
     expect(register.status).toBe(400);
     expect(await register.json()).toMatchObject({
