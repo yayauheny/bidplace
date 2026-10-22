@@ -126,7 +126,6 @@ export const onboardingRequestSchema = z
     email: emailAddressSchema,
     slug: newAccountSlugSchema,
     legal: registrationLegalSchema,
-    turnstileToken: turnstileTokenSchema,
   })
   .strict();
 export const onboardingStateSchema = z
@@ -155,7 +154,11 @@ export const emailLoginRequestSchema = z
   })
   .strict();
 export const emailLoginRequestResponseSchema = z
-  .object({ ok: z.literal(true), serverNow: isoDateTimeSchema, resendAvailableAt: isoDateTimeSchema })
+  .object({
+    ok: z.literal(true),
+    serverNow: isoDateTimeSchema,
+    resendAvailableAt: isoDateTimeSchema,
+  })
   .strict();
 export type OnboardingRequest = z.infer<typeof onboardingRequestSchema>;
 export type EmailLoginRequest = z.infer<typeof emailLoginRequestSchema>;

@@ -60,6 +60,7 @@ export function getUserFacingErrorMessage(
 
 export function authRequestMessage(error: unknown): string | null {
   if (!(error instanceof ApiClientError)) return null;
+  if (error.code === ApiErrorCode.EMAIL_LOGIN_REJECTED) return 'Не удалось подтвердить вход. Проверьте код, запросите новый или повторите через несколько минут.';
   if (error.code === ApiErrorCode.OTP_INVALID) return 'Код не подошёл. Измените его, затем повторите проверку.';
   if (error.code === ApiErrorCode.OTP_EXPIRED) return 'Срок этого кода истёк. Запросите новый код.';
   if (error.code === ApiErrorCode.OTP_PAUSED) return 'Проверка кода приостановлена. Повторите через несколько минут.';

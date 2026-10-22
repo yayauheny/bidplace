@@ -140,9 +140,9 @@ outside the database transaction.
 
 | Mechanism | Detail |
 | --- | --- |
-| Mail purposes | `email_verification_send`, `password_reset_send` (combined for quotas); verify ledger purpose `email_verification_verify` |
+| Mail purposes | `email_verification_send`, `password_reset_send`, `email_login_send` share quotas; verification and email-login have separate verify purposes |
 | Global mail budgets | `AUTH_MAIL_DAILY_BUDGET` default **200** spends / rolling 24h; `AUTH_MAIL_MONTHLY_BUDGET` default **3000** spends / rolling 31 days (`env.ts`; counts all `MAIL_PURPOSES` with spend statuses) |
-| Personal mail quota | **10** spends per rolling 24h **per account and per address** together (`PERSONAL_MAIL_LIMIT` / `PERSONAL_MAIL_WINDOW_MS`); verification and recovery sends share this pool, not separate per-purpose allowances |
+| Personal mail quota | **10** spends per rolling 24h **per account and per address** together (`PERSONAL_MAIL_LIMIT` / `PERSONAL_MAIL_WINDOW_MS`); verification, recovery and email-login sends share this pool, not separate per-purpose allowances |
 | Send spacing | After 1st/2nd/3rd+ **reserved** spend on the same owner+purpose: 60s / 120s / 300s (`cooldownAfterSends`); not gated on SMTP `accepted` alone |
 | Quota spend | `reserved`, `accepted`, and `unknown` spend; definite `rejected` does not |
 | OTP code TTL | 5 minutes; one active unused code per send cycle |
@@ -150,8 +150,23 @@ outside the database transaction.
 | Login Turnstile | After 5 failed password attempts on an email within 15 minutes (distributed email counter) |
 | Login pair pause | After 10 failed attempts on the email+IP pair: 5 minute pause only |
 | Reset token TTL | 1 hour (unchanged product window) |
-| Idempotency | Required on OTP send, OTP verify, and forgot-password send only (not register/login). Same `(purpose, idempotencyKey)` replays stored outcome without a second SMTP send or verify-attempt recharge |
+| Idempotency | Required on OTP send, OTP verify, and forgot-password send only (not password register/login). Same `(purpose, idempotencyKey)` replays stored outcome without a second SMTP send or verify-attempt recharge |
 | Content binding | Send hashes bind owner, purpose, and address; verify hash includes the six-digit code (`verifyContentHash`). Same key with changed content is rejected |
+
+**Email-login boundary (2026-10-22):** CAPTCHA is checked once before neutral
+browser/email admission. Rejected/unavailable CAPTCHA spends no cooldown; SMTP
+unknown replay never sends twice. Browser admission survives credential-flow
+rotation after revoke, while OTP proofs keep their flow/version binding.
+Credential refusals return the same 403 EMAIL_LOGIN_REJECTED with no account,
+pause or provider details; account OTP counters remain durable. Infrastructure
+failures retain 5xx. `social-auth.integration.spec.ts` covers eligibility, expiry,
+pause, same-key replay, revoke and successful fresh proof.
+
+**MVP CAPTCHA simplification:** social profile completion already requires a
+valid browser-bound Google/Telegram proof, so it has no second registration
+CAPTCHA. Real email policy, legal evidence, TTL, single-use transitions and
+pending-email restrictions remain server-side. Password registration, mail
+requests and adaptive password-login CAPTCHA remain enabled. See DEC-132.
 
 **SMTP outcome truth:** `accepted` means the transport completed without a
 classified failure. `rejected` is definite only for the single-recipient guard

@@ -33,6 +33,7 @@ export const ApiErrorCode = {
   MAIL_QUOTA: 'MAIL_QUOTA',
   MAIL_BUDGET: 'MAIL_BUDGET',
   MAIL_REJECTED: 'MAIL_REJECTED',
+  EMAIL_LOGIN_REJECTED: 'EMAIL_LOGIN_REJECTED',
   OTP_INVALID: 'OTP_INVALID',
   OTP_EXPIRED: 'OTP_EXPIRED',
   OTP_PAUSED: 'OTP_PAUSED',
@@ -67,6 +68,7 @@ export const apiErrorCodeSchema = z.enum([
   ApiErrorCode.MAIL_QUOTA,
   ApiErrorCode.MAIL_BUDGET,
   ApiErrorCode.MAIL_REJECTED,
+  ApiErrorCode.EMAIL_LOGIN_REJECTED,
   ApiErrorCode.OTP_INVALID,
   ApiErrorCode.OTP_EXPIRED,
   ApiErrorCode.OTP_PAUSED,
@@ -101,6 +103,8 @@ export const apiErrorResponseSchema = z
   .strict();
 
 export type ApiErrorCode = z.infer<typeof apiErrorCodeSchema>;
-export type ValidationErrorDetails = z.infer<typeof validationErrorDetailsSchema>;
+export type ValidationErrorDetails = z.infer<
+  typeof validationErrorDetailsSchema
+>;
 export type BidTooLowDetails = z.infer<typeof bidTooLowDetailsSchema>;
 export type ApiErrorResponse = z.infer<typeof apiErrorResponseSchema>;

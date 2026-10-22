@@ -51,12 +51,22 @@ export async function createTestIdentityProvider() {
       const google = authorization.searchParams
         .get('client_id')
         ?.startsWith('google');
-      const callback = authorize(authorization.href, {
-        sub: `${google ? 'google' : 'telegram'}-${browser}`,
-        ...(google
-          ? { email: `browser-${browser}@gmail.com`, email_verified: true }
-          : {}),
-      });
+      const denied = authorization.searchParams.get('test_denied') === '1';
+      const callback = denied
+        ? new URL(authorization.searchParams.get('redirect_uri')!)
+        : authorize(authorization.href, {
+            sub: `${google ? 'google' : 'telegram'}-${browser}`,
+            ...(google
+              ? { email: `browser-${browser}@gmail.com`, email_verified: true }
+              : {}),
+          });
+      if (denied) {
+        callback.searchParams.set(
+          'state',
+          authorization.searchParams.get('state')!,
+        );
+        callback.searchParams.set('error', 'access_denied');
+      }
       response.statusCode = 302;
       response.setHeader(
         'Set-Cookie',

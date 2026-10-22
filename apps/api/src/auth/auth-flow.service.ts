@@ -1,4 +1,5 @@
 import {
+  ApiErrorCode,
   type AuthProvider,
   type EmailLoginRequest,
   type OnboardingRequest,
@@ -8,18 +9,16 @@ import {
   ConflictException,
   Inject,
   Injectable,
+  HttpException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { createHash } from 'node:crypto';
 import * as oidc from 'openid-client';
 import { AuthAbuseService } from '../auth-abuse/auth-abuse.service';
-import {
-  cooldownAfterSends,
-  OTP_TTL_MS,
-} from '../auth-abuse/auth-abuse.policy';
 import { lockAbuseUser, otpCodeHash } from '../auth-abuse/auth-abuse.store';
 import { SERVER_ENV, type ServerEnv } from '../core/config';
 import { PrismaService, isPrismaUniqueConstraintError } from '../core/database';
+import { AppException } from '../core/errors';
 import { OtpService } from '../otp/otp.service';
 import { AuthService } from './auth.service';
 import { readRegistrationLegalVersion } from './legal-documents';
@@ -41,6 +40,15 @@ export function safeAuthReturnPath(value: string): string {
   )
     throw new ConflictException('Invalid return path');
   return value;
+}
+
+export function authFailureRedirect(
+  returnPath: string | undefined,
+  reason: 'failed' | 'cancelled' | 'link_required',
+): string {
+  const query = new URLSearchParams({ authError: reason });
+  if (returnPath) query.set('redirectTo', safeAuthReturnPath(returnPath));
+  return '/login?' + query.toString();
 }
 
 @Injectable()
@@ -101,11 +109,10 @@ export class AuthFlowService {
       where: {
         id,
         browserHash: digest(request.sessionID),
-        stage: { in: stages },
-        expiresAt: { gt: new Date() },
       },
     });
-    if (!flow)
+    if (flow) request.authReturnPath = safeAuthReturnPath(flow.returnPath);
+    if (!flow || !stages.includes(flow.stage) || flow.expiresAt <= new Date())
       throw new UnauthorizedException('Попытка входа завершена. Начните снова');
     return flow;
   }
@@ -114,7 +121,6 @@ export class AuthFlowService {
     tx: Prisma.TransactionClient,
     flow: AuthFlow,
     stages: string[],
-    checkUser = true,
   ): Promise<AuthFlow> {
     if (flow.userId) await lockAbuseUser(tx, flow.userId);
     await tx.$queryRaw`SELECT id FROM auth_flows WHERE id = CAST(${flow.id} AS uuid) FOR UPDATE`;
@@ -127,7 +133,7 @@ export class AuthFlowService {
       current.browserHash !== flow.browserHash
     )
       throw new UnauthorizedException('Попытка входа завершена');
-    if (current.userId && checkUser) {
+    if (current.userId) {
       const user = await tx.user.findUnique({
         where: { id: current.userId },
         select: { sessionVersion: true, status: true },
@@ -240,7 +246,7 @@ export class AuthFlowService {
       throw new UnauthorizedException('Попытка завершена');
     if (query.has('error')) {
       await this.cancel(request);
-      return '/login?authError=cancelled';
+      return authFailureRedirect(flow.returnPath, 'cancelled');
     }
     if (flow.intent === 'link') {
       await this.sessions.authenticate(request);
@@ -374,7 +380,7 @@ export class AuthFlowService {
         return {
           userId: null,
           version: null,
-          redirect: '/login?authError=link_required',
+          redirect: authFailureRedirect(flow.returnPath, 'link_required'),
         };
       }
       await tx.authFlow.update({
@@ -432,11 +438,7 @@ export class AuthFlowService {
     };
   }
 
-  async complete(
-    request: SessionRequest,
-    input: OnboardingRequest,
-    ip: string,
-  ) {
+  async complete(request: SessionRequest, input: OnboardingRequest) {
     const flow = await this.flow(request, ['profile', 'ready']);
     if (flow.stage === 'ready') {
       await this.finish(request, flow);
@@ -458,11 +460,7 @@ export class AuthFlowService {
       ].some((item) => item.version !== undefined && item.version !== version)
     )
       throw new ConflictException('Версия документов обновилась');
-    await this.abuse.assertRegistration({
-      email,
-      turnstileToken: input.turnstileToken,
-      ip,
-    });
+    this.abuse.assertRegistrationEmail(email);
     const verified = email === flow.emailProof;
     let result;
     try {
@@ -663,7 +661,12 @@ export class AuthFlowService {
     });
     const eligible = user?.emailVerifiedAt && user.status === 'active';
     const flow =
-      existing ??
+      (existing &&
+      (!eligible ||
+        (existing.userId === user.id &&
+          existing.version === user.sessionVersion))
+        ? existing
+        : null) ??
       (await this.begin(request, {
         intent: 'email_login',
         stage: 'email_login',
@@ -672,80 +675,48 @@ export class AuthFlowService {
         userId: eligible ? user.id : null,
         version: eligible ? user.sessionVersion : null,
       }));
-    // This browser-only ledger is identical for known and unknown addresses.
-    const admission = await this.prisma.$transaction(async (tx) => {
-      await this.lockFlow(tx, flow, ['email_login'], false);
-      const contentHash = digest(flow.id + '\0' + email);
-      const previous = await tx.authAbuseOperation.findUnique({
-        where: {
-          purpose_idempotencyKey: {
-            purpose: 'email_login_request',
-            idempotencyKey: input.idempotencyKey,
-          },
-        },
-      });
-      if (previous && previous.contentHash !== contentHash)
-        throw new ConflictException('Ключ запроса уже использован');
-      const sends = await tx.authAbuseOperation.findMany({
-        where: { purpose: 'email_login_request', contentHash },
-        orderBy: { createdAt: 'desc' },
-      });
-      const last = sends[0];
-      const retryAt = last
-        ? new Date(last.createdAt.getTime() + cooldownAfterSends(sends.length))
-        : new Date();
-      if (!previous && retryAt > new Date()) return { send: false, retryAt };
-      if (!previous)
-        await tx.authAbuseOperation.create({
-          data: {
-            purpose: 'email_login_request',
-            idempotencyKey: input.idempotencyKey,
-            contentHash,
-            email,
-            status: 'accepted',
-          },
-        });
-      return {
-        send: true,
-        retryAt: previous
-          ? retryAt
-          : new Date(Date.now() + cooldownAfterSends(sends.length + 1)),
-      };
+    const retryAt = await this.abuse.sendEmailLogin({
+      ...input,
+      email,
+      flowId: flow.id,
+      ip,
     });
-    if (admission.send)
-      await this.abuse.sendEmailLogin({ ...input, email, flowId: flow.id, ip });
     return {
       ok: true as const,
       serverNow: new Date().toISOString(),
-      resendAvailableAt: admission.retryAt.toISOString(),
+      resendAvailableAt: retryAt.toISOString(),
     };
   }
 
   async loginCodeState(request: SessionRequest) {
     const flow = await this.flow(request, ['email_login', 'ready']);
-    const sends = await this.prisma.authAbuseOperation.findMany({
-      where: {
-        purpose: 'email_login_request',
-        contentHash: digest(flow.id + '\0' + flow.email),
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-    const last = sends[0];
-    return {
-      email: flow.email!,
-      serverNow: new Date().toISOString(),
-      resendAvailableAt: last
-        ? new Date(
-            last.createdAt.getTime() + cooldownAfterSends(sends.length),
-          ).toISOString()
-        : null,
-      codeExpiresAt: last
-        ? new Date(last.createdAt.getTime() + OTP_TTL_MS).toISOString()
-        : null,
-    };
+    return this.abuse.readEmailLoginState(flow.browserHash, flow.email!);
   }
 
   async verifyLogin(
+    request: SessionRequest,
+    code: string,
+    idempotencyKey: string,
+  ) {
+    try {
+      return await this.completeLoginCode(request, code, idempotencyKey);
+    } catch (error) {
+      if (
+        error instanceof HttpException &&
+        error.getStatus() >= 400 &&
+        error.getStatus() < 500
+      ) {
+        throw new AppException({
+          status: 403,
+          code: ApiErrorCode.EMAIL_LOGIN_REJECTED,
+          message: 'Email login could not be verified',
+        });
+      }
+      throw error;
+    }
+  }
+
+  private async completeLoginCode(
     request: SessionRequest,
     code: string,
     idempotencyKey: string,

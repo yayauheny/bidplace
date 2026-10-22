@@ -391,7 +391,18 @@ test('web auth completion: Google, email code and Telegram link keep one account
   await expect(page).toHaveURL(/\/auth\/complete$/);
   await page.getByRole('textbox', { name: 'Никнейм', exact: true }).fill(`web-${randomUUID().slice(0, 8)}`);
   await page.getByRole('checkbox', { name: /Мне есть 18 лет/ }).click();
-  await expectTurnstileReady(page, 'register');
+  const originalViewport = page.viewportSize();
+  expect(originalViewport).not.toBeNull();
+  await mkdir(e2eEvidenceDir, { recursive: true });
+  for (const width of [390, 1024, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    await expect(page.locator('[data-turnstile-action="register"]')).toHaveCount(0);
+    const finish = page.getByRole('button', { name: 'Завершить регистрацию', exact: true });
+    await finish.scrollIntoViewIfNeeded();
+    await expect(finish).toBeInViewport();
+    await page.screenshot({ path: resolve(e2eEvidenceDir, `${engine(page)}-social-onboarding-${width}.png`), fullPage: true });
+  }
+  await page.setViewportSize(originalViewport!);
   await page.getByRole('button', { name: 'Завершить регистрацию', exact: true }).click();
   await expect.poll(() => new URL(page.url()).pathname).toBe('/account');
   const original = (await (await page.request.get('/api/auth/me')).json()).user;
@@ -433,7 +444,6 @@ test('web auth completion: Telegram requires email proof and preserves pending s
   await page.getByRole('textbox', { name: 'Электронная почта', exact: true }).fill(`telegram-${randomUUID()}@example.test`);
   await page.getByRole('textbox', { name: 'Никнейм', exact: true }).fill(`tg-${randomUUID().slice(0, 8)}`);
   await page.getByRole('checkbox', { name: /Мне есть 18 лет/ }).click();
-  await expectTurnstileReady(page, 'register');
   await page.getByRole('button', { name: 'Завершить регистрацию', exact: true }).click();
   await expect(page.getByText(/Подтвердите почту/)).toBeVisible();
   expect((await page.request.get('/api/auth/me')).status()).toBe(401);
@@ -497,4 +507,62 @@ test('web auth completion: code form preserves focus and edits through responsiv
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     await page.screenshot({ path: resolve(e2eEvidenceDir, `${engine(page)}-email-login-${width}.png`), fullPage: true });
   }
+});
+
+
+test('web auth completion: a rejected proof can be retried immediately and bad codes stay neutral', async ({ page }) => {
+  await installTurnstileFixture(page);
+  await page.goto('/login?redirectTo=/account');
+  await page.getByRole('button', { name: 'Войти с Google', exact: true }).click();
+  await page.getByRole('textbox', { name: 'Никнейм', exact: true }).fill(`retry-${randomUUID().slice(0, 8)}`);
+  await page.getByRole('checkbox', { name: /Мне есть 18 лет/ }).click();
+  await expect(page.locator('[data-turnstile-action="register"]')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Завершить регистрацию', exact: true }).click();
+  await expect.poll(() => new URL(page.url()).pathname).toBe('/account');
+  const user = (await (await page.request.get('/api/auth/me')).json()).user;
+  await page.request.post('/api/auth/logout', { headers: { Origin: 'http://127.0.0.1:55442', 'X-Bidplace-Request': '1' } });
+  await page.goto('/email-login?redirectTo=/account');
+  await page.getByRole('textbox', { name: 'Электронная почта', exact: true }).fill(user.email);
+  await expectTurnstileReady(page, 'email_login');
+  await page.route('**/api/auth/email-login/request', async route => {
+    await page.unroute('**/api/auth/email-login/request');
+    await route.continue({ postData: JSON.stringify({ ...route.request().postDataJSON(), turnstileToken: 'synthetic-invalid-proof' }) });
+  });
+  const failed = page.waitForResponse(response => response.url().endsWith('/api/auth/email-login/request') && response.request().method() === 'POST');
+  await page.getByRole('button', { name: 'Получить код', exact: true }).click();
+  expect((await failed).status()).toBe(403);
+  await expect(page.getByText(AUTH_TURNSTILE_FAILED_COPY, { exact: true })).toBeVisible();
+  await expectTurnstileReady(page, 'email_login');
+  const sending = page.waitForResponse(response => response.url().endsWith('/api/auth/email-login/request') && response.request().method() === 'POST');
+  await page.getByRole('button', { name: 'Получить код', exact: true }).click();
+  expect((await sending).status()).toBe(201);
+  const proof = await (await page.request.get('/__test/mail')).json();
+  const wrong = String((Number(proof.code) + 1) % 1_000_000).padStart(6, '0');
+  await page.getByRole('textbox', { name: 'Код из письма', exact: true }).fill(wrong);
+  await page.getByRole('button', { name: 'Войти', exact: true }).click();
+  await expect(page.getByText(/Не удалось подтвердить вход. Проверьте код/)).toBeVisible();
+  await page.getByRole('textbox', { name: 'Код из письма', exact: true }).fill(proof.code);
+  await page.getByRole('button', { name: 'Войти', exact: true }).click();
+  await expect.poll(() => new URL(page.url()).pathname).toBe('/account');
+  expect((await (await page.request.get('/api/auth/me')).json()).user.id).toBe(user.id);
+});
+
+test('web auth completion: provider cancellation preserves the destination through retry', async ({ page }) => {
+  await installTurnstileFixture(page);
+  const destination = '/account/settings?review=1';
+  await page.route(/\/authorize\?/, async route => {
+    await page.unroute(/\/authorize\?/);
+    const authorization = new URL(route.request().url());
+    authorization.searchParams.set('test_denied', '1');
+    await route.continue({ url: authorization.href });
+  });
+  await page.goto('/login?redirectTo=' + encodeURIComponent(destination));
+  await page.getByRole('button', { name: 'Войти с Google', exact: true }).click();
+  await expect.poll(() => new URL(page.url()).searchParams.get('authError')).toBe('cancelled');
+  expect(new URL(page.url()).searchParams.get('redirectTo')).toBe(destination);
+  await page.getByRole('button', { name: 'Войти с Google', exact: true }).click();
+  await page.getByRole('textbox', { name: 'Никнейм', exact: true }).fill(`return-${randomUUID().slice(0, 8)}`);
+  await page.getByRole('checkbox', { name: /Мне есть 18 лет/ }).click();
+  await page.getByRole('button', { name: 'Завершить регистрацию', exact: true }).click();
+  await expect.poll(() => new URL(page.url()).pathname + new URL(page.url()).search).toBe(destination);
 });

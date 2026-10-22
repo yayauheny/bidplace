@@ -35,7 +35,10 @@ declare module 'express-session' {
   }
 }
 
-export type SessionRequest = Request & { auth?: AuthPrincipal };
+export type SessionRequest = Request & {
+  auth?: AuthPrincipal;
+  authReturnPath?: string;
+};
 
 @Injectable()
 export class SessionService implements OnModuleDestroy {

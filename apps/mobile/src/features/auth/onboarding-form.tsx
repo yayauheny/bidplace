@@ -113,10 +113,6 @@ export function OnboardingForm() {
       action.setError('Подтвердите документы и возраст 18+.');
       return;
     }
-    if (!proof) {
-      action.setError('Пройдите проверку безопасности.');
-      return;
-    }
     const parsed = onboardingRequestSchema.safeParse({
       email,
       slug,
@@ -126,7 +122,6 @@ export function OnboardingForm() {
         dataConsent: { confirmed: true },
         age18Confirmed: true,
       },
-      turnstileToken: proof,
     });
     if (!parsed.success) {
       action.setError(
@@ -134,8 +129,6 @@ export function OnboardingForm() {
       );
       return;
     }
-    setProof(null);
-    setGeneration((value) => value + 1);
     void action.run(
       (signal) => api.auth.completeOnboarding(parsed.data, { signal }),
       finish,
@@ -265,18 +258,12 @@ export function OnboardingForm() {
           >
             <RegistrationLegalText onOpenDocument={openLegal} />
           </AuthConsentCheckbox>
-          <TurnstileWidget
-            key={generation}
-            action="register"
-            onToken={onProof}
-            onAvailability={onAvailability}
-          />
           <PrimaryButton
             label="Завершить регистрацию"
             size="auth"
             width="full"
             loading={action.busy}
-            disabled={!consent || availability === 'unavailable'}
+            disabled={!consent || action.busy}
             onPress={submit}
           />
         </>

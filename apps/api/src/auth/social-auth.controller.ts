@@ -34,7 +34,7 @@ import { resolveClientIp } from '../auth-abuse/client-ip';
 import { SERVER_ENV, type ServerEnv } from '../core/config';
 import { RateLimit, RateLimitGuard } from '../core/rate-limit';
 import { parseBody } from '../core/validation';
-import { AuthFlowService } from './auth-flow.service';
+import { AuthFlowService, authFailureRedirect } from './auth-flow.service';
 import { OidcProvidersService } from './oidc-providers.service';
 import { type SessionRequest } from './session.service';
 
@@ -87,7 +87,7 @@ export class SocialAuthController {
       );
     } catch {
       this.logger.warn('Provider callback rejected');
-      response.redirect('/login?authError=failed');
+      response.redirect(authFailureRedirect(request.authReturnPath, 'failed'));
     }
   }
 
@@ -112,7 +112,6 @@ export class SocialAuthController {
       await this.flows.complete(
         request,
         parseBody(onboardingRequestSchema, body),
-        resolveClientIp(request, this.env.TRUST_PROXY),
       ),
     );
   }

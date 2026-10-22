@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { ApiErrorCode } from '@bidplace/contracts';
 import { HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
 
@@ -12,7 +13,11 @@ import { AppException } from '../core/errors';
 import { MailTransport } from '../core/mail';
 import { safeFailureLocation } from '../core/request-context/safe-request-log';
 import { buildPasswordResetLink } from '../password-reset/password-reset-link';
-import { normalizeEmail } from './auth-abuse.policy';
+import {
+  cooldownAfterSends,
+  normalizeEmail,
+  OTP_TTL_MS,
+} from './auth-abuse.policy';
 import {
   AuthAbuseStore,
   type LoginDecision,
@@ -59,7 +64,11 @@ export class AuthAbuseService {
     ip: string;
   }): Promise<void> {
     await this.requireTurnstile('register', input.turnstileToken, input.ip);
-    if (this.disposable.contains(input.email)) {
+    this.assertRegistrationEmail(input.email);
+  }
+
+  assertRegistrationEmail(email: string): void {
+    if (this.disposable.contains(email)) {
       throw abuseError(
         HttpStatus.BAD_REQUEST,
         ApiErrorCode.DISPOSABLE_EMAIL,
@@ -221,17 +230,20 @@ export class AuthAbuseService {
     idempotencyKey: string;
     turnstileToken: string;
     ip: string;
-  }): Promise<void> {
+  }): Promise<Date> {
     this.assertIdempotencyKey(input.idempotencyKey);
     await this.requireTurnstile('email_login', input.turnstileToken, input.ip, {
       operationKey: input.idempotencyKey,
       contentHash: resetContentHash(input.email),
     });
+    const admission = await this.admitEmailLoginRequest(input);
+    if (!admission.send) return admission.retryAt;
     const user = await this.prisma.user.findUnique({
       where: { email: normalizeEmail(input.email) },
       select: { id: true, email: true, emailVerifiedAt: true, status: true },
     });
-    if (!user || !user.emailVerifiedAt || user.status !== 'active') return;
+    if (!user || !user.emailVerifiedAt || user.status !== 'active')
+      return admission.retryAt;
     const reserved = await this.store.reserveMail({
       purpose: 'email_login_send',
       flowId: input.flowId,
@@ -247,7 +259,7 @@ export class AuthAbuseService {
       dailyBudget: this.env.AUTH_MAIL_DAILY_BUDGET,
       monthlyBudget: this.env.AUTH_MAIL_MONTHLY_BUDGET,
     });
-    if (reserved.kind !== 'reserved') return;
+    if (reserved.kind !== 'reserved') return admission.retryAt;
     await this.finishSend({
       operationId: reserved.operationId,
       purpose: 'email_login_send',
@@ -258,6 +270,102 @@ export class AuthAbuseService {
         text: `Код для входа в bidplace: ${reserved.rawSecret}. Если вы не запрашивали вход, никому не сообщайте этот код.`,
       },
     });
+    return admission.retryAt;
+  }
+
+  private loginRequestHash(browserHash: string, email: string): string {
+    return createHash('sha256')
+      .update(browserHash + '\0' + email)
+      .digest('hex');
+  }
+
+  private async admitEmailLoginRequest(input: {
+    flowId: string;
+    email: string;
+    idempotencyKey: string;
+  }) {
+    return this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM auth_flows WHERE id = CAST(${input.flowId} AS uuid) FOR UPDATE`;
+      const flow = await tx.authFlow.findUnique({
+        where: { id: input.flowId },
+      });
+      if (
+        !flow ||
+        flow.intent !== 'email_login' ||
+        flow.stage !== 'email_login' ||
+        flow.email !== input.email ||
+        flow.expiresAt <= new Date()
+      ) {
+        throw abuseError(
+          HttpStatus.UNAUTHORIZED,
+          ApiErrorCode.UNAUTHORIZED,
+          'Попытка входа завершена',
+        );
+      }
+      const contentHash = this.loginRequestHash(flow.browserHash, input.email);
+      const previous = await tx.authAbuseOperation.findUnique({
+        where: {
+          purpose_idempotencyKey: {
+            purpose: 'email_login_request',
+            idempotencyKey: input.idempotencyKey,
+          },
+        },
+      });
+      if (previous && previous.contentHash !== contentHash)
+        this.throwContentConflict();
+      const sends = await tx.authAbuseOperation.findMany({
+        where: { purpose: 'email_login_request', contentHash },
+        orderBy: { createdAt: 'desc' },
+      });
+      const last = sends[0];
+      const retryAt = last
+        ? new Date(last.createdAt.getTime() + cooldownAfterSends(sends.length))
+        : new Date();
+      if (!previous && retryAt > new Date()) return { send: false, retryAt };
+      const admittedAt = new Date();
+      if (!previous)
+        await tx.authAbuseOperation.create({
+          data: {
+            purpose: 'email_login_request',
+            idempotencyKey: input.idempotencyKey,
+            contentHash,
+            email: input.email,
+            status: 'accepted',
+            createdAt: admittedAt,
+          },
+        });
+      return {
+        send: true,
+        retryAt: previous
+          ? retryAt
+          : new Date(
+              admittedAt.getTime() + cooldownAfterSends(sends.length + 1),
+            ),
+      };
+    });
+  }
+
+  async readEmailLoginState(browserHash: string, email: string) {
+    const sends = await this.prisma.authAbuseOperation.findMany({
+      where: {
+        purpose: 'email_login_request',
+        contentHash: this.loginRequestHash(browserHash, email),
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    const last = sends[0];
+    return {
+      email,
+      serverNow: new Date().toISOString(),
+      resendAvailableAt: last
+        ? new Date(
+            last.createdAt.getTime() + cooldownAfterSends(sends.length),
+          ).toISOString()
+        : null,
+      codeExpiresAt: last
+        ? new Date(last.createdAt.getTime() + OTP_TTL_MS).toISOString()
+        : null,
+    };
   }
 
   async verifyEmailCode(input: {

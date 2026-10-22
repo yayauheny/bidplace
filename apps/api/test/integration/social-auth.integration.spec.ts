@@ -25,6 +25,7 @@ import { idempotencyKey, turnstileToken } from './abuse-request';
 import { OidcProvidersService } from '../../src/auth/oidc-providers.service';
 import { SessionService } from '../../src/auth/session.service';
 import { ServiceUnavailableException } from '@nestjs/common';
+import { ApiErrorCode } from '@bidplace/contracts';
 import { MailTransport } from '../../src/core/mail';
 
 const legal = {
@@ -124,7 +125,6 @@ async function signup(kind: 'google' | 'telegram', email: string) {
     email,
     slug: 'u-' + randomUUID().slice(0, 10),
     legal,
-    turnstileToken: turnstileToken('register'),
   });
   expect(result.status).toBe(201);
   return { url, result, body: await result.json() };
@@ -236,7 +236,7 @@ describe('OIDC, email login and explicit account linking', () => {
           idempotencyKey: idempotencyKey(),
         })
       ).status,
-    ).toBe(401);
+    ).toBe(403);
     const key = idempotencyKey();
     const result = await client.post('/auth/email-login/verify', {
       code: value,
@@ -251,7 +251,7 @@ describe('OIDC, email login and explicit account linking', () => {
           idempotencyKey: key,
         })
       ).status,
-    ).toBe(401);
+    ).toBe(403);
     expect(await database.prisma.user.count({ where: { email } })).toBe(1);
   });
 
@@ -274,6 +274,368 @@ describe('OIDC, email login and explicit account linking', () => {
     ).toBeNull();
   });
 
+  it.each(['rejected', 'unavailable'] as const)(
+    'does not spend admission or cooldown on %s Turnstile',
+    async (outcome) => {
+      const email = `captcha-${randomUUID()}@example.test`;
+      await database.prisma.user.create({
+        data: {
+          email,
+          slug: 'captcha-' + randomUUID().slice(0, 8),
+          passwordHash: null,
+          emailVerifiedAt: new Date(),
+        },
+      });
+      const failed = await client.post('/auth/email-login/request', {
+        email,
+        idempotencyKey: idempotencyKey(),
+        turnstileToken:
+          outcome === 'rejected' ? 'invalid-proof' : 'turnstile-unavailable',
+      });
+      expect(failed.status).toBe(outcome === 'rejected' ? 403 : 503);
+      expect(
+        await database.prisma.authAbuseOperation.count({
+          where: { email, purpose: 'email_login_request' },
+        }),
+      ).toBe(0);
+      const sent = await client.post('/auth/email-login/request', {
+        email,
+        idempotencyKey: idempotencyKey(),
+        turnstileToken: turnstileToken('email_login'),
+      });
+      expect(sent.status).toBe(201);
+      expect(mail).toHaveLength(1);
+    },
+  );
+
+  it('does not duplicate a send when an uncertain result is retried with the same operation', async () => {
+    const email = `uncertain-${randomUUID()}@example.test`;
+    await database.prisma.user.create({
+      data: {
+        email,
+        slug: 'uncertain-' + randomUUID().slice(0, 8),
+        passwordHash: null,
+        emailVerifiedAt: new Date(),
+      },
+    });
+    vi.spyOn(http.app.get(MailTransport), 'send').mockImplementationOnce(
+      async (message) => {
+        mail.push({ to: message.to, text: message.text });
+        throw Object.assign(new Error('Synthetic mail timeout'), {
+          code: 'ETIMEDOUT',
+        });
+      },
+    );
+    const input = {
+      email,
+      idempotencyKey: idempotencyKey(),
+      turnstileToken: turnstileToken('email_login'),
+    };
+    expect((await client.post('/auth/email-login/request', input)).status).toBe(
+      201,
+    );
+    expect((await client.post('/auth/email-login/request', input)).status).toBe(
+      201,
+    );
+    expect(mail).toHaveLength(1);
+    expect(
+      await database.prisma.authAbuseOperation.count({
+        where: { email, purpose: 'email_login_send', status: 'unknown' },
+      }),
+    ).toBe(1);
+  });
+
+  it.each([
+    'unknown',
+    'unverified',
+    'banned',
+    'invalid',
+    'expired',
+    'paused',
+    'revoked',
+  ] as const)(
+    'does not disclose %s account or code state in login verification',
+    async (state) => {
+      const email = `neutral-verify-${randomUUID()}@example.test`;
+      const user =
+        state === 'unknown'
+          ? null
+          : await database.prisma.user.create({
+              data: {
+                email,
+                slug: 'nv-' + randomUUID().slice(0, 8),
+                passwordHash: null,
+                emailVerifiedAt: state === 'unverified' ? null : new Date(),
+                status: state === 'banned' ? 'banned' : 'active',
+              },
+            });
+      expect(
+        (
+          await client.post('/auth/email-login/request', {
+            email,
+            idempotencyKey: idempotencyKey(),
+            turnstileToken: turnstileToken('email_login'),
+          })
+        ).status,
+      ).toBe(201);
+      const correct = mail.length ? code() : '000000';
+      const wrong = String((Number(correct) + 1) % 1_000_000).padStart(6, '0');
+      if (state === 'expired')
+        await database.prisma.emailVerificationCode.updateMany({
+          where: { userId: user!.id },
+          data: { expiresAt: new Date(Date.now() - 1000) },
+        });
+      if (state === 'revoked')
+        await database.prisma.user.update({
+          where: { id: user!.id },
+          data: { sessionVersion: { increment: 1 } },
+        });
+      if (state === 'paused') {
+        for (let attempt = 0; attempt < 5; attempt++)
+          expect(
+            (
+              await client.post('/auth/email-login/verify', {
+                code: wrong,
+                idempotencyKey: idempotencyKey(),
+              })
+            ).status,
+          ).toBe(403);
+        const counter = await database.prisma.authAbuseCounter.findFirstOrThrow(
+          {
+            where: {
+              scope: 'otp_verify',
+              subjectHash: createHash('sha256')
+                .update('otp_verify\n' + user!.id)
+                .digest('hex'),
+            },
+          },
+        );
+        expect(counter.failures).toBe(5);
+        expect(counter.pausedUntil!.getTime()).toBeGreaterThan(Date.now());
+      }
+      const rejected = await client.post('/auth/email-login/verify', {
+        code: state === 'paused' || state === 'revoked' ? correct : wrong,
+        idempotencyKey: idempotencyKey(),
+      });
+      expect(rejected.status).toBe(403);
+      const { requestId, ...body } = await rejected.json();
+      expect(requestId).toEqual(expect.any(String));
+      expect(body).toEqual({
+        status: 403,
+        code: ApiErrorCode.EMAIL_LOGIN_REJECTED,
+        message: 'Email login could not be verified',
+      });
+      expect((await client.get('/auth/me')).status).toBe(401);
+    },
+  );
+
+  it.each(['replay', 'fresh'] as const)(
+    'preserves neutral browser admission after revoke for a %s operation',
+    async (operation) => {
+      for (const known of [true, false]) {
+        client = new HttpTestClient(http.baseUrl);
+        const email = `admission-${randomUUID()}@example.test`;
+        const user = known
+          ? await database.prisma.user.create({
+              data: {
+                email,
+                slug: 'admission-' + randomUUID().slice(0, 8),
+                passwordHash: null,
+                emailVerifiedAt: new Date(),
+              },
+            })
+          : null;
+        const input = {
+          email,
+          idempotencyKey: idempotencyKey(),
+          turnstileToken: turnstileToken('email_login'),
+        };
+        const original = await client.post('/auth/email-login/request', input);
+        expect(original.status).toBe(201);
+        const initial = await original.json();
+        if (user)
+          await database.prisma.user.update({
+            where: { id: user.id },
+            data: { sessionVersion: { increment: 1 } },
+          });
+        const response = await client.post(
+          '/auth/email-login/request',
+          operation === 'replay'
+            ? input
+            : {
+                ...input,
+                idempotencyKey: idempotencyKey(),
+                turnstileToken: turnstileToken('email_login'),
+              },
+        );
+        expect(response.status).toBe(201);
+        const again = await response.json();
+        expect(again.resendAvailableAt).toBe(initial.resendAvailableAt);
+        expect(
+          (await (await client.get('/auth/email-login/state')).json())
+            .resendAvailableAt,
+        ).toBe(initial.resendAvailableAt);
+        expect(
+          await database.prisma.authAbuseOperation.count({
+            where: { email, purpose: 'email_login_request' },
+          }),
+        ).toBe(1);
+      }
+    },
+  );
+
+  it('admits a fresh login code after revoke without accepting the old proof', async () => {
+    const email = `renewed-${randomUUID()}@example.test`;
+    const user = await database.prisma.user.create({
+      data: {
+        email,
+        slug: 'renew-' + randomUUID().slice(0, 8),
+        passwordHash: null,
+        emailVerifiedAt: new Date(),
+      },
+    });
+    const request = () =>
+      client.post('/auth/email-login/request', {
+        email,
+        idempotencyKey: idempotencyKey(),
+        turnstileToken: turnstileToken('email_login'),
+      });
+    expect((await request()).status).toBe(201);
+    const oldCode = code();
+    const oldFlow = await database.prisma.authFlow.findFirstOrThrow({
+      where: { email, stage: 'email_login' },
+    });
+    await database.prisma.user.update({
+      where: { id: user.id },
+      data: { sessionVersion: { increment: 1 } },
+    });
+    expect(
+      (
+        await client.post('/auth/email-login/verify', {
+          code: oldCode,
+          idempotencyKey: idempotencyKey(),
+        })
+      ).status,
+    ).toBe(403);
+    await database.prisma.authAbuseOperation.updateMany({
+      where: { email },
+      data: { createdAt: new Date(Date.now() - 301_000) },
+    });
+    expect((await request()).status).toBe(201);
+    const freshCode = code();
+    const freshFlow = await database.prisma.authFlow.findFirstOrThrow({
+      where: { email, stage: 'email_login' },
+    });
+    expect(freshFlow.id).not.toBe(oldFlow.id);
+    expect(freshFlow.version).toBe(1);
+    expect(
+      (
+        await database.prisma.authFlow.findUniqueOrThrow({
+          where: { id: oldFlow.id },
+        })
+      ).stage,
+    ).toBe('cancelled');
+    expect(mail).toHaveLength(2);
+    const signedIn = await client.post('/auth/email-login/verify', {
+      code: freshCode,
+      idempotencyKey: idempotencyKey(),
+    });
+    expect(signedIn.status).toBe(201);
+    expect((await signedIn.json()).user.id).toBe(user.id);
+  });
+
+  it.each(['cancelled', 'exchange', 'expired', 'collision'] as const)(
+    'preserves the trusted destination after provider %s and retry',
+    async (failure) => {
+      const response = await client.post('/auth/providers/google/start', {
+        intent: 'login',
+        returnPath: '/profile?edit=1',
+      });
+      const authorization = new URL((await response.json()).url);
+      const url = provider.authorize(
+        authorization.href,
+        failure === 'collision'
+          ? {
+              email: `collision-${randomUUID()}@gmail.com`,
+              email_verified: true,
+            }
+          : {},
+      );
+      if (failure === 'cancelled') {
+        url.searchParams.set('error', 'access_denied');
+        url.searchParams.delete('code');
+      }
+      if (failure === 'exchange') url.searchParams.set('code', 'invalid-code');
+      if (failure === 'expired')
+        await database.prisma.authFlow.updateMany({
+          where: { stage: 'provider', returnPath: '/profile?edit=1' },
+          data: { expiresAt: new Date(Date.now() - 1000) },
+        });
+      if (failure === 'collision') {
+        // An authoritative provider proof can collide, but never auto-link.
+        const email = `existing-${randomUUID()}@gmail.com`;
+        await database.prisma.user.create({
+          data: {
+            email,
+            slug: 'collision-' + randomUUID().slice(0, 8),
+            passwordHash: null,
+            emailVerifiedAt: new Date(),
+          },
+        });
+        const colliding = provider.authorize(authorization.href, {
+          email,
+          email_verified: true,
+        });
+        url.search = colliding.search;
+      }
+      const location = (await callback(url)).headers.get('location')!;
+      const redirect = new URL(location, 'http://localhost');
+      expect(redirect.pathname).toBe('/login');
+      expect(redirect.searchParams.get('redirectTo')).toBe('/profile?edit=1');
+      expect(redirect.searchParams.get('authError')).toBe(
+        failure === 'cancelled'
+          ? 'cancelled'
+          : failure === 'collision'
+            ? 'link_required'
+            : 'failed',
+      );
+      expect((await client.get('/auth/me')).status).toBe(401);
+      const retry = await client.post('/auth/providers/google/start', {
+        intent: 'login',
+        returnPath: redirect.searchParams.get('redirectTo'),
+      });
+      expect(
+        (
+          await callback(provider.authorize((await retry.json()).url))
+        ).headers.get('location'),
+      ).toBe('/auth/complete');
+      expect(
+        (await (await client.get('/auth/onboarding')).json()).returnPath,
+      ).toBe('/profile?edit=1');
+    },
+  );
+
+  it('requires provider proof and allowed email even without a second registration CAPTCHA', async () => {
+    expect(
+      (
+        await client.post('/auth/onboarding', {
+          email: 'proof@example.test',
+          slug: 'proof-required',
+          legal,
+        })
+      ).status,
+    ).toBe(401);
+    await callback(provider.authorize(await start('telegram')));
+    const denied = await client.post('/auth/onboarding', {
+      email: 'proof@mailinator.com',
+      slug: 'proof-required',
+      legal,
+    });
+    expect(denied.status).toBe(400);
+    expect((await denied.json()).code).toBe(ApiErrorCode.DISPOSABLE_EMAIL);
+    expect((await client.get('/auth/me')).status).toBe(401);
+  });
+
   it.each([
     { iss: 'https://wrong.example' },
     { aud: 'wrong-client' },
@@ -282,7 +644,7 @@ describe('OIDC, email login and explicit account linking', () => {
   ])('rejects invalid OIDC claims %j', async (overrides) => {
     const url = provider.authorize(await start(), overrides);
     expect((await callback(url)).headers.get('location')).toBe(
-      '/login?authError=failed',
+      '/login?authError=failed&redirectTo=%2Faccount',
     );
     expect((await client.get('/auth/me')).status).toBe(401);
   });
@@ -292,14 +654,16 @@ describe('OIDC, email login and explicit account linking', () => {
       (await callback(provider.authorize(await start(), {}, true))).headers.get(
         'location',
       ),
-    ).toBe('/login?authError=failed');
+    ).toBe('/login?authError=failed&redirectTo=%2Faccount');
   });
 
   it('rejects an authorization code bound to another PKCE challenge', async () => {
     const authorization = new URL(await start());
     authorization.searchParams.set('code_challenge', 'another-challenge');
     const result = await callback(provider.authorize(authorization.href));
-    expect(result.headers.get('location')).toBe('/login?authError=failed');
+    expect(result.headers.get('location')).toBe(
+      '/login?authError=failed&redirectTo=%2Faccount',
+    );
     expect((await client.get('/auth/me')).status).toBe(401);
   });
 
@@ -309,7 +673,7 @@ describe('OIDC, email login and explicit account linking', () => {
     denied.searchParams.set('error', 'access_denied');
     denied.searchParams.set('state', authorization.searchParams.get('state')!);
     expect((await callback(denied)).headers.get('location')).toBe(
-      '/login?authError=cancelled',
+      '/login?authError=cancelled&redirectTo=%2Faccount',
     );
     expect(
       (await callback(provider.authorize(await start()))).headers.get(
@@ -366,11 +730,11 @@ describe('OIDC, email login and explicit account linking', () => {
     const old = provider.authorize(await start());
     old.searchParams.set('state', 'wrong');
     expect((await callback(old)).headers.get('location')).toBe(
-      '/login?authError=failed',
+      '/login?authError=failed&redirectTo=%2Faccount',
     );
     const next = provider.authorize(await start());
     expect((await callback(old)).headers.get('location')).toBe(
-      '/login?authError=failed',
+      '/login?authError=failed&redirectTo=%2Faccount',
     );
     expect((await callback(next)).headers.get('location')).toBe(
       '/auth/complete',
@@ -399,7 +763,7 @@ describe('OIDC, email login and explicit account linking', () => {
       email_verified: true,
     });
     expect((await callback(newGoogle)).headers.get('location')).toBe(
-      '/login?authError=link_required',
+      '/login?authError=link_required&redirectTo=%2Faccount',
     );
     expect(await database.prisma.user.count({ where: { email } })).toBe(1);
     expect(
@@ -472,12 +836,14 @@ describe('OIDC, email login and explicit account linking', () => {
     const responses = await Promise.all([callback(url), callback(url)]);
     expect(
       responses.map((value) => value.headers.get('location')).sort(),
-    ).toEqual(['/auth/complete', '/login?authError=failed']);
+    ).toEqual([
+      '/auth/complete',
+      '/login?authError=failed&redirectTo=%2Faccount',
+    ]);
     const input = {
       email: `race-${randomUUID()}@example.test`,
       slug: 'race-' + randomUUID().slice(0, 8),
       legal,
-      turnstileToken: turnstileToken('register'),
     };
     const completed = await Promise.all([
       client.post('/auth/onboarding', input),
@@ -500,7 +866,7 @@ describe('OIDC, email login and explicit account linking', () => {
     cancelled.searchParams.set('error', 'access_denied');
     cancelled.searchParams.delete('code');
     expect((await callback(cancelled)).headers.get('location')).toBe(
-      '/login?authError=cancelled',
+      '/login?authError=cancelled&redirectTo=%2Faccount',
     );
   });
 
@@ -525,7 +891,6 @@ describe('OIDC, email login and explicit account linking', () => {
       email: `edited-${randomUUID()}@example.test`,
       slug: 'edit-' + randomUUID().slice(0, 8),
       legal,
-      turnstileToken: turnstileToken('register'),
     });
     expect((await response.json()).next).toBe('email');
     expect((await client.get('/auth/me')).status).toBe(401);
@@ -641,7 +1006,7 @@ describe('OIDC, email login and explicit account linking', () => {
     expect(login.status).toBe(201);
     release();
     expect((await pending).headers.get('location')).toBe(
-      '/login?authError=failed',
+      '/login?authError=failed&redirectTo=%2Faccount',
     );
     expect(
       await database.prisma.externalIdentity.count({
@@ -697,7 +1062,9 @@ describe('OIDC, email login and explicit account linking', () => {
       const again = await client.post('/auth/email-login/request', {
         ...input,
         idempotencyKey: idempotencyKey(),
+        turnstileToken: turnstileToken('email_login'),
       });
+      expect(again.status).toBe(201);
       expect((await again.json()).resendAvailableAt).toBe(
         state.resendAvailableAt,
       );
@@ -809,6 +1176,7 @@ describe('OIDC, email login and explicit account linking', () => {
     const revoked = await client.post('/auth/email-login/request', {
       ...input,
       idempotencyKey: idempotencyKey(),
+      turnstileToken: turnstileToken('email_login'),
     });
     expect(revoked.status).toBe(201);
     expect(Object.keys(await revoked.json()).sort()).toEqual([

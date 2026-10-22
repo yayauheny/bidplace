@@ -15,6 +15,33 @@
 
 После изменения кода: добавьте **одну** датированную секцию в начало (ниже этой таблицы) со статусом `Implemented` / `Partial` / `Needs verification` и ссылками на модули и тесты. Не дублируйте длинные аудиты; переносите детали в owner audit или decision log.
 
+## 2026-10-22 — PR58 review fixes and MVP auth simplification
+
+**Implemented locally; external acceptance pending.** Four reproduced review
+fixes: CAPTCHA before admission, neutral EMAIL_LOGIN_REJECTED, fresh credential
+flow after revoke with stable browser/email cooldown/replay, and retained safe
+returnPath on provider cancellation/failure. [AuthAbuseService](../../apps/api/src/auth-abuse/auth-abuse.service.ts)
+owns admission/state and single Turnstile validation; private OTP pause/version
+checks remain. [AuthFlowService](../../apps/api/src/auth/auth-flow.service.ts)
+keeps browser/credential flow ownership. Social profile completion no longer
+asks for a second registration CAPTCHA after browser-bound OIDC proof (DEC-132);
+ordinary registration and mail CAPTCHA remain.
+
+Verification: `pnpm verify` passed (1536 unit,236 integration,31 operations,
+E2E fence,typecheck/lint and all8 build tasks with API/web/iOS/Android). One
+optional browser runner was skipped there and run explicitly in the
+[social-auth owner](../../apps/api/test/integration/social-auth.integration.spec.ts):
+51/51, including12/12 Chromium/WebKit checks. Cloudflare31 Vitest +20 Node,
+production `build:web` with server-setting canaries, isolated linux/amd64 image
+smoke (migrations/native modules/HTTP auth/SIGTERM), docs links and whitespace
+checks passed. Screenshot review covers simplified onboarding390/1024/1440 in
+both browsers; new compositions remain NEEDS-FIGMA. Independent repeat security
+review found no further confirmed substantial defects in these fixes.
+
+Real Google/Telegram and staging acceptance remain pending. Registration
+collision UX and SMTP timing limitations are unchanged. No production
+migration/deploy or MVP merge performed.
+
 ## 2026-10-22 — Слияние responsive portfolio UI в MVP
 
 **Implemented:** responsive AuthViewport и общий Reanimated sheet motion;

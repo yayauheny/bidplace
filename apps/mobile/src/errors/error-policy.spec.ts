@@ -100,6 +100,7 @@ describe('mobile infrastructure error policy', () => {
     infoSpy.mockRestore();
   });
   it.each([
+    [ApiErrorCode.EMAIL_LOGIN_REJECTED, 'Не удалось подтвердить вход'],
     [ApiErrorCode.OTP_INVALID, 'Код не подошёл'],
     [ApiErrorCode.OTP_EXPIRED, 'Срок этого кода истёк'],
     [ApiErrorCode.OTP_PAUSED, 'Проверка кода приостановлена'],

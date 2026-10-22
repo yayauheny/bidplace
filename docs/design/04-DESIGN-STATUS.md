@@ -7,15 +7,16 @@
 | Surface | Current implementation | Visual acceptance |
 | --- | --- | --- |
 | Login | Google/Telegram start real server redirects; unavailable config disables controls; password and email-code alternatives | Existing auth primitives retained |
-| `/email-login` | Browser-bound request/verify, neutral response, reload state, explicit resend, server-relative deadlines, typed failures | NEEDS-FIGMA for the new composition |
-| `/auth/complete` | Real email/slug, single consent, non-blocking legal reader, pending email proof, cancel/resume | NEEDS-FIGMA for the new composition |
+| `/email-login` | Browser-bound request/verify, neutral credential refusal, CAPTCHA retry, reload state, explicit resend, server-relative deadlines | NEEDS-FIGMA for the new composition |
+| `/auth/complete` | Real email/slug, single consent, non-blocking legal reader, pending email proof, cancel/resume; no second registration CAPTCHA after OIDC | NEEDS-FIGMA for the new composition |
 | Account settings | Current connections and explicit fresh-session linking using shared SettingsGroup/ProviderButtons | NEEDS-FIGMA for added rows/composition |
 
-**Implemented locally; visual acceptance Partial.** Chromium/WebKit: eight auth
+**Implemented locally; visual acceptance Partial.** Chromium/WebKit: twelve auth
 checks passed, including one-profile creation/link/code login, pending reload,
-clock skew and delayed state; email-code resize/focus at 320/390/440/768/1024/1440
-with reduced motion. Screenshot review confirms reachable fields/actions and no
-horizontal overflow. AuthViewport retains dirty/busy/dismissal ownership;
+clock skew, delayed state, CAPTCHA retry and provider cancellation destination; email-code resize/focus at 320/390/440/768/1024/1440
+with reduced motion. Social onboarding without the second CAPTCHA was captured
+at 390/1024/1440 in both browsers. Screenshot review confirms reachable
+fields/actions and no horizontal overflow. AuthViewport retains dirty/busy/dismissal ownership;
 BackButton and FigmaIconButton are unchanged. New composition Figma frames,
 physical device and manual zoom acceptance remain unverified. Native provider
 login is outside this wave. Test IdP does not constitute Google/Telegram
