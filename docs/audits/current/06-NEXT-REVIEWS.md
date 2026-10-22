@@ -5,6 +5,8 @@
 релизные gates — [release audit](12-PORTFOLIO-MVP-RELEASE-AUDIT.md).
 Не запускать заново закрытые волны по старому prompt.
 
+[Исходная очередь review и полные критерии проверки](../../archive/audits/06-NEXT-REVIEWS-before-2026-10-23.md) сохранены для восстановления контекста.
+
 | Область | Что проверить при затрагивании | Последнее основание |
 | --- | --- | --- |
 | Author application / cabinet | draft/resume/submit, revision/public identity, hide/restore, moderation | [Project status](../../product/11-PROJECT-STATUS.md), [account acceptance](../2026-10-20-ACCOUNT-FINAL-ACCEPTANCE.md) |

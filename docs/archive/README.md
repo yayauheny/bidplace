@@ -10,6 +10,7 @@
 | [Project status20–23октября](product/11-PROJECT-STATUS-2026-10-20-23.md) | Полный журнал до текущей очистки |
 | [Design status](design/04-DESIGN-STATUS-through-2026-10-23.md) | Полный прежний design journal, включая ранние непроверенные состояния |
 | [Release checkpoints](audits/12-PORTFOLIO-MVP-RELEASE-through-2026-10-07.md) | Полный старый release audit; исторические commands/gates не исполнять как текущие |
+| [Исходная очередь review](audits/06-NEXT-REVIEWS-before-2026-10-23.md) | Полные scopes и acceptance criteria до сокращения; не список закрытых задач |
 | [Execution roadmap](audits/00-EXECUTION-ROADMAP-2026-10-05-full.md) | История execution волн |
 | `tasks/` | Оставленные contracts, незакрытые plans/preflight и deferred work; не готовая очередь |
 | [Evidence recovery](AUDIT-EVIDENCE-RECOVERY.md) | PNG, удалённые прежней очисткой; тег `archive/audit-evidence-pre-cleanup` |

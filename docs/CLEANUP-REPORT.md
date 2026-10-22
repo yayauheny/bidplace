@@ -32,8 +32,8 @@ UTF-8 bytes и строки измерены по tracked `872f22fc` и фина
 | Вход + product index | 535 → 146 | 33,532 → 16,666 | 50.3% |
 | Три текущих status/audit файла | 3852 → 156 | 304,514 → 19,201 | 93.7% |
 
-Docs Markdown (включая сохранённую историю): 181 → 177 файлов; 3,716,788 → 3,674,757 bytes.
-Всё tracked-дерево docs: 297 → 292 файлов; 12,921,136 → 12,878,142 bytes.
+Docs Markdown (включая сохранённую историю): 181 → 178 файлов; 3,716,788 → 3,681,789 bytes.
+Всё tracked-дерево docs: 297 → 293 файлов; 12,921,136 → 12,885,174 bytes.
 Архивирование уменьшает routine context, а не физический размер истории.
 Git history/clone size этой очисткой не уменьшаются.
 
@@ -71,9 +71,16 @@ commerce/research tasks. Их открытые требования не уда�
 Safe Area, live Turnstile/R2/CDN, zoom/text enlargement, desktop NEEDS-FIGMA,
 settings geometry, optional integration skips) остались видимыми в сводках.
 
+## Правка после review PR #60
+
+Исходная очередь `06-NEXT-REVIEWS.md` из `872f22fc` сохранена целиком в
+[архиве](archive/audits/06-NEXT-REVIEWS-before-2026-10-23.md), включая query/cache,
+frontend dependencies, backend boundaries и их acceptance criteria. В короткой
+навигации добавлена одна ссылка; статус этих направлений не переопределён.
+
 ## Проверки и границы доказательства
 
-- `pnpm docs:link-check` — pass (180 Markdown-файлов, включая архивы и entrypoints).
+- `pnpm docs:link-check` — pass (181 Markdown-файл, включая архивы и entrypoints).
 - `git diff --check` — pass; changed paths ограничены `docs/**` и `AGENTS.md`.
 - `12-DECISION-LOG.md` целиком byte-identical относительно `872f22fc`: **132 уникальных
   DEC-001…132** (в приложенном задании указано131), включая все поздние revisions,
