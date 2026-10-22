@@ -1,3 +1,5 @@
+import { ImageProcessor } from '../../images/image-processor';
+import { SharpImageProcessor } from './media-pipeline';
 import { Module } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -75,6 +77,7 @@ function recoveryService(script: Script) {
     } as never,
     { purge: async () => undefined } as never,
     recoveryEnv(),
+    new SharpImageProcessor(),
   );
 }
 
@@ -111,6 +114,7 @@ Module({
     },
     { provide: PublicMediaCache, useValue: { purge: async () => undefined } },
     { provide: SERVER_ENV, useFactory: recoveryEnv },
+    { provide: ImageProcessor, useClass: SharpImageProcessor },
   ],
 })(StartupRecoveryModule);
 
@@ -242,6 +246,7 @@ describe('media recovery scheduler', () => {
       } as never,
       { purge: async () => undefined } as never,
       recoveryEnv(),
+      new SharpImageProcessor(),
     );
     await media.onModuleInit();
     await vi.advanceTimersByTimeAsync(5_000);

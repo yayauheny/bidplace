@@ -2,6 +2,12 @@
 
 > Entries dated before 2026-10-13 mention Pen / .pen files; the Pen design was removed (DEC-119) — read those mentions as history.
 
+## Текущий статус загрузки фото
+
+| Область | Статус | Проверка |
+| --- | --- | --- |
+| Фото работ и автора | Partial: release-сетка/wizard и меню действий сохранены; локальные превью, пофайловый прогресс, retry, таймаут и блокировка переходов объединены с ними | После merge: 1023 mobile tests и 6 media E2E Chromium/WebKit прошли; скриншоты 390/1024/1440; физические устройства, live R2/CDN и Figma-паритет новых статусов — Needs verification |
+
 ## 2026-10-20 — label кнопок и disabled «Дальше»
 
 - `Implemented`: живой master `292:5058` красит подпись outline, ghost и muted в Black `#121212`. Токен `labelDefault` обновлён; матрица 4×4, hover, pressed и disabled solid (`292:5054`: заливка `#949494`, opacity 0.5, белая подпись) не переписывались. Таблица §6.2 в `03-DESIGN-SYSTEM.md` совпадает с master.

@@ -96,6 +96,8 @@ vi.mock('./product-catalog-term-sheet', () => ({
 }));
 
 vi.mock('react-native', () => ({
+  ActivityIndicator: () => createElement('span', { role: 'progressbar' }),
+  Image: ({ source, accessibilityLabel }: { source: { uri: string }; accessibilityLabel: string }) => createElement('img', { src: source.uri, alt: accessibilityLabel }),
   Platform: { OS: 'web' },
   View: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
 }));
@@ -247,7 +249,7 @@ function detail(status = 'DRAFT', title = 'Saved title', updatedAt = '2026-09-27
   };
 }
 
-function mount(props: { flow?: string; stepParam?: '4' } = {}) {
+function mount(props: { flow?: string; stepParam?: '4' | '2' } = {}) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
@@ -311,6 +313,52 @@ afterEach(() => {
 });
 
 describe('product draft submit lifecycle', () => {
+  it('allows a slow large upload and retries a timed-out request with the same identity', async () => {
+    const image = new Blob([new Uint8Array(25 * 1024 * 1024)], { type: 'image/png' });
+    harness.launchImageLibraryAsync.mockResolvedValue({ canceled: false, assets: [{ uri: 'blob:large', file: image }] });
+    harness.addImages.mockImplementationOnce((_id, _images, _key, options) => new Promise((_resolve, reject) => {
+      options.signal.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')));
+    })).mockResolvedValue({ ok: true });
+    const timer = vi.spyOn(globalThis, 'setTimeout');
+    const view = mount();
+    try {
+      await until(view.container, () => Boolean(button(view.container, 'Добавить изображения')), 'images');
+      act(() => button(view.container, 'Добавить изображения')?.click());
+      await until(view.container, () => harness.addImages.mock.calls.length === 1, 'upload');
+      const deadline = timer.mock.calls.find((call) => call[1] === 460_000);
+      expect(deadline).toBeDefined();
+      await act(async () => {
+        const expire = deadline![0];
+        if (typeof expire !== 'function') throw new Error('Expected a timeout callback');
+        expire();
+        await Promise.resolve();
+      });
+      await until(view.container, () => Boolean(button(view.container, 'Повторить загрузку')), 'retry');
+      expect(view.container.textContent).toContain('Загрузка заняла слишком много времени');
+      act(() => button(view.container, 'Повторить загрузку')?.click());
+      await until(view.container, () => harness.addImages.mock.calls.length === 2, 'second upload');
+      expect(harness.addImages.mock.calls[1]?.slice(0, 3)).toEqual(harness.addImages.mock.calls[0]?.slice(0, 3));
+    } finally { view.unmount(); timer.mockRestore(); }
+  });
+
+  it('blocks backward navigation while an image is being sent', async () => {
+    harness.launchImageLibraryAsync.mockResolvedValue({ canceled: false, assets: [{ uri: 'blob:image', file: new Blob(['image'], { type: 'image/png' }) }] });
+    let finish: () => void = () => undefined;
+    harness.addImages.mockImplementation(() => new Promise((resolve) => { finish = () => resolve({ ok: true }); }));
+    const view = mount({ flow: 'creation', stepParam: '2' });
+    try {
+      await until(view.container, () => Boolean(button(view.container, 'Добавить изображения')), 'images');
+      act(() => button(view.container, 'Добавить изображения')?.click());
+      await until(view.container, () => harness.addImages.mock.calls.length === 1, 'upload');
+      expect(button(view.container, 'Назад к описанию')?.disabled).toBe(true);
+      harness.setParams.mockClear();
+      act(() => button(view.container, 'Назад к описанию')?.click());
+      expect(harness.setParams).not.toHaveBeenCalled();
+      await act(async () => { finish(); await Promise.resolve(); });
+      await until(view.container, () => !button(view.container, 'Назад к описанию')?.disabled, 'unlock');
+    } finally { view.unmount(); }
+  });
+
   it('keeps a submitted draft closed until a newer moderation decision arrives', async () => {
     let resolveSubmit: (value: { product: ReturnType<typeof product> }) => void = () => undefined;
     harness.submitProduct.mockImplementation(
@@ -599,10 +647,150 @@ describe('product draft submit lifecycle', () => {
     await flush();
     expect(harness.launchImageLibraryAsync).toHaveBeenCalledTimes(1);
     expect(harness.addImages).toHaveBeenCalledTimes(2);
-    expect(harness.addImages.mock.calls[1]).toEqual(harness.addImages.mock.calls[0]);
+    expect(harness.addImages.mock.calls[1]?.slice(0, 3)).toEqual(harness.addImages.mock.calls[0]?.slice(0, 3));
     expect(harness.addImages.mock.calls[0]?.[2]).toEqual(expect.any(String));
     vi.unstubAllGlobals();
     view.unmount();
+  });
+
+  it('shows preparation, reads one file at a time, and retries only the unfinished file', async () => {
+    const images = [
+      new Blob(['first'], { type: 'image/png' }),
+      new Blob(['second'], { type: 'image/png' }),
+    ];
+    harness.launchImageLibraryAsync.mockResolvedValue({
+      canceled: false,
+      assets: [{ uri: 'blob:first' }, { uri: 'blob:second' }],
+    });
+    let finishFirst: () => void = () => undefined;
+    harness.addImages
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            finishFirst = () => resolve({ ok: true });
+          }),
+      )
+      .mockRejectedValueOnce(new Error('response lost'))
+      .mockResolvedValue({ ok: true });
+    const read = vi.fn(async (uri: string) => ({
+      ok: true,
+      blob: async () => images[uri === 'blob:first' ? 0 : 1],
+    }));
+    vi.stubGlobal('fetch', read);
+    const view = mount();
+    await until(
+      view.container,
+      () => Boolean(button(view.container, 'Добавить изображения')),
+      'images',
+    );
+    act(() => button(view.container, 'Добавить изображения')?.click());
+    await until(
+      view.container,
+      () => harness.addImages.mock.calls.length === 1,
+      'first upload',
+    );
+    expect(read).toHaveBeenCalledTimes(1);
+    expect(view.container.textContent).toContain('Загрузка 1 из 2');
+    await act(async () => {
+      finishFirst();
+      await Promise.resolve();
+    });
+    await until(
+      view.container,
+      () => Boolean(button(view.container, 'Повторить загрузку')),
+      'second failed',
+    );
+    expect(view.container.textContent).toContain('Изображение 1: загружено');
+    expect(harness.getProduct.mock.calls.length).toBeGreaterThan(1);
+    const secondKey = harness.addImages.mock.calls[1]?.[2];
+    act(() => button(view.container, 'Повторить загрузку')?.click());
+    await until(
+      view.container,
+      () => harness.addImages.mock.calls.length === 3,
+      'retry second',
+    );
+    await flush();
+    expect(harness.addImages.mock.calls.map((call) => call[1])).toEqual([
+      [images[0]],
+      [images[1]],
+      [images[1]],
+    ]);
+    expect(harness.addImages.mock.calls[2]?.[2]).toBe(secondKey);
+    expect(read).toHaveBeenCalledTimes(2);
+    vi.unstubAllGlobals();
+    view.unmount();
+  });
+
+  it.each(['unmount', 'session-change'] as const)(
+    'aborts the active upload and drops queued files after %s',
+    async (reason) => {
+      const image = new Blob(['photo'], { type: 'image/png' });
+      harness.launchImageLibraryAsync.mockResolvedValue({
+        canceled: false,
+        assets: [
+          { uri: 'blob:first', file: image },
+          { uri: 'blob:second', file: image },
+        ],
+      });
+      harness.addImages.mockImplementation(
+        (_id, _images, _key, options) =>
+          new Promise((_resolve, reject) => {
+            options.signal.addEventListener('abort', () =>
+              reject(new DOMException('Aborted', 'AbortError')),
+            );
+          }),
+      );
+      const view = mount();
+      let mounted = true;
+      try {
+        await until(
+          view.container,
+          () => Boolean(button(view.container, 'Добавить изображения')),
+          'images',
+        );
+        act(() => button(view.container, 'Добавить изображения')?.click());
+        await until(
+          view.container,
+          () => harness.addImages.mock.calls.length === 1,
+          'first request',
+        );
+        const signal = harness.addImages.mock.calls[0]![3].signal as AbortSignal;
+        expect(signal.aborted).toBe(false);
+        if (reason === 'unmount') {
+          view.unmount();
+          mounted = false;
+        } else
+          await act(async () => {
+            await clearAuthenticatedSession(view.queryClient);
+          });
+        await flush();
+        expect(signal.aborted).toBe(true);
+        expect(harness.addImages).toHaveBeenCalledTimes(1);
+      } finally {
+        if (mounted) view.unmount();
+      }
+    },
+  );
+
+  it('does not send a request when the file chooser is cancelled', async () => {
+    const view = mount();
+    try {
+      await until(
+        view.container,
+        () => Boolean(button(view.container, 'Добавить изображения')),
+        'images',
+      );
+      act(() => button(view.container, 'Добавить изображения')?.click());
+      await flush();
+      expect(harness.launchImageLibraryAsync).toHaveBeenCalledTimes(1);
+      expect(harness.addImages).not.toHaveBeenCalled();
+      expect(button(view.container, 'Повторить загрузку')).toBeNull();
+      expect(button(view.container, 'Добавить изображения')?.disabled).toBe(
+        false,
+      );
+    } finally {
+      view.unmount();
+    }
   });
 
   it('does not upload a work image chosen by the previous session', async () => {

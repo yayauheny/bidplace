@@ -1,3 +1,4 @@
+import { SharpImageProcessor } from '../../src/core/media/media-pipeline';
 import { randomUUID } from 'node:crypto';
 import {
   afterAll,
@@ -74,6 +75,7 @@ class MemoryCache extends PublicMediaCache {
 }
 let context: IntegrationDatabaseContext;
 let prisma: PrismaClient;
+const mediaServices = new Set<MediaLifecycleService>();
 let bytes: Buffer;
 beforeAll(async () => {
   context = await createIntegrationDatabaseContext();
@@ -83,6 +85,10 @@ beforeAll(async () => {
   })
     .png()
     .toBuffer();
+});
+afterEach(() => {
+  for (const service of mediaServices) service.onModuleDestroy();
+  mediaServices.clear();
 });
 afterAll(async () => context?.cleanup());
 function setup(store = new MemoryStore(), cache = new MemoryCache()) {
@@ -98,11 +104,9 @@ function setup(store = new MemoryStore(), cache = new MemoryCache()) {
     CLOUDFLARE_ZONE_ID: 'a'.repeat(32),
     CLOUDFLARE_CACHE_TOKEN: 'test',
   });
-  return {
-    store,
-    cache,
-    media: new MediaLifecycleService(prisma as never, store, cache, env),
-  };
+  const media = new MediaLifecycleService(prisma as never, store, cache, env, new SharpImageProcessor());
+  mediaServices.add(media);
+  return { store, cache, media };
 }
 async function author(media: MediaLifecycleService) {
   const user = await prisma.user.create({
@@ -511,20 +515,26 @@ describe('durable media lifecycle on PostgreSQL', () => {
       ).publishedRevisionId,
     ).toBeNull();
   });
-  it('reuses identical upload identity and rejects changed bytes', async () => {
+  it.each([false, true])('reuses upload identity and rejects changed bytes (legacy=%s)', async (legacy) => {
     const s = setup();
     const f = await author(s.media);
     const key = randomUUID();
+    const input = legacy ? Buffer.concat([bytes, Buffer.alloc(1024)]) : bytes;
     const a = await s.media.stage(
       f.user.id,
       'WORK_IMAGE',
-      { buffer: bytes, mimetype: 'image/png' },
+      { buffer: input, mimetype: 'image/png' },
       key,
+      legacy,
     );
+    if (legacy) await prisma.mediaOperation.updateMany({
+      where: { kind: 'UPLOAD', objects: { some: { object: { assetId: a.id } } } },
+      data: { inputChecksum: null },
+    });
     const b = await s.media.stage(
       f.user.id,
       'WORK_IMAGE',
-      { buffer: bytes, mimetype: 'image/png' },
+      { buffer: input, mimetype: 'image/png' },
       key,
     );
     expect(a.id).toBe(b.id);
@@ -1225,6 +1235,28 @@ describe('scheduled media recovery on PostgreSQL', () => {
       ).state,
     ).toBe('DONE');
     restarted.media.onModuleDestroy();
+  });
+
+  it('retries a previous encoder upload from its persisted master after an upgrade', async () => {
+    const store = new MemoryStore();
+    store.privateWritesBeforeFailure = 1;
+    const s = setup(store);
+    const owner = await user();
+    const input = await sharp(bytes).toColourspace('rgb16').png().toBuffer();
+    const currentProcess = SharpImageProcessor.prototype.process;
+    const oldEncoder = vi.spyOn(SharpImageProcessor.prototype, 'process').mockImplementation(async function (file, purpose, preserveSource) {
+      const downgraded = await sharp(file.buffer).png().toBuffer();
+      return currentProcess.call(this, { buffer: downgraded, mimetype: 'image/png' }, purpose, preserveSource);
+    });
+    try {
+      await expect(s.media.stage(owner.id, 'WORK_IMAGE', { buffer: input, mimetype: 'image/png' }, 'encoder-upgrade')).rejects.toThrow('Provider outage');
+    } finally { oldEncoder.mockRestore(); }
+    store.privateWritesBeforeFailure = Number.POSITIVE_INFINITY;
+    const asset = await s.media.stage(owner.id, 'WORK_IMAGE', { buffer: input, mimetype: 'image/png' }, 'encoder-upgrade');
+    const persisted = await store.get('PRIVATE', asset.source.objectKey);
+    expect(mediaChecksum(persisted!.bytes)).toBe(asset.source.sha256);
+    expect((await sharp(persisted!.bytes).metadata()).bitsPerSample).toBe(8);
+    s.media.onModuleDestroy();
   });
 
   it('cleans a partially stored upload after the grace period and does not retry the upload', async () => {

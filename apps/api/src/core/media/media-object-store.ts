@@ -6,6 +6,7 @@ import {
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
+import type { RawImageUpload } from '../../images/image-policy';
 import type { MediaTier } from '@bidplace/database';
 import type { ServerEnv } from '../config';
 
@@ -15,6 +16,13 @@ export type MediaIdentity = {
   byteLength: number;
   mimeType: string;
 };
+export function mediaInputChecksum(file: RawImageUpload) {
+  return createHash('sha256')
+    .update(file.mimetype)
+    .update('\0')
+    .update(file.buffer)
+    .digest('hex');
+}
 export function mediaChecksum(bytes: Uint8Array) {
   return createHash('sha256').update(bytes).digest('hex');
 }
@@ -60,7 +68,7 @@ export class S3MediaObjectStore extends MediaObjectStore {
   }
   private bucket(tier: MediaTier, key: string) {
     if (
-      !/^assets\/[a-f0-9-]{36}\/(source\.(jpeg|png|webp)|p1\/(preview|full)\.webp)$/.test(
+      !/^assets\/[a-f0-9-]{36}\/(source\.(jpeg|png|webp)|p[12]\/(preview|full)\.webp)$/.test(
         key,
       )
     )

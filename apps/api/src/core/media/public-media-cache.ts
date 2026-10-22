@@ -52,7 +52,7 @@ export function publicMediaUrl(base: string, key: string) {
     origin.username ||
     origin.password ||
     origin.hostname.endsWith('.r2.dev') ||
-    !/^assets\/[a-f0-9-]{36}\/p1\/(preview|full)\.webp$/.test(key)
+    !/^assets\/[a-f0-9-]{36}\/p[12]\/(preview|full)\.webp$/.test(key)
   )
     throw new Error('Invalid public media URL');
   return new URL(key, origin).href;

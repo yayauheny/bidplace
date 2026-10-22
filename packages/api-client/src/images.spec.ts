@@ -3,6 +3,23 @@ import { createImagesClient } from './images';
 import { createRequestContext } from './request';
 
 describe('Work upload identity', () => {
+  it('forwards cancellation and preserves an aborted upload as an abort', async () => {
+    const controller = new AbortController();
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockImplementation(async (_url, init) => {
+        expect(init?.signal).toBe(controller.signal);
+        throw new DOMException('Upload aborted', 'AbortError');
+      });
+    const client = createImagesClient(
+      createRequestContext({ baseUrl: 'https://api.example.test', fetchImpl }),
+    );
+    await expect(
+      client.add('work-id', [new Blob(['photo'])], 'upload', {
+        signal: controller.signal,
+      }),
+    ).rejects.toMatchObject({ name: 'AbortError' });
+  });
   it('keeps one stable key per file when the whole selection is retried after an unknown response', async () => {
     const requests: RequestInit[] = [];
     const fetchImpl = vi

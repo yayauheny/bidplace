@@ -3,6 +3,8 @@ import type { QueryClient } from '@tanstack/react-query';
 import { useQuery } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 
+import { prepareImageUpload } from '../../lib/media/prepare-image-upload';
+
 import type { SellerProfileResponse } from '@bidplace/contracts';
 
 import { getApiAssetUrl } from '../../lib/environment';
@@ -11,6 +13,13 @@ import type { useApiClient } from '../../providers/api-provider';
 import type { ProfileOperationGuard } from './seller-profile-operation-guard';
 
 type Profile = SellerProfileResponse['sellerProfile'];
+
+const profilePhotoOptions = {
+  maxDimension: 1600,
+  maxBytes: 2 * 1024 * 1024,
+  maxSourceBytes: 25 * 1024 * 1024,
+  quality: 0.85,
+} as const;
 
 type ReportProfileError = (
   error: unknown,
@@ -46,6 +55,8 @@ export function useProfilePhoto({
   const [photoBlob, setPhotoBlob] = useState<Blob | null>(null);
   const [photoFailed, setPhotoFailed] = useState(false);
   const photoSelection = useRef(0);
+  const [preparing, setPreparing] = useState(false);
+  const preparingRef = useRef(false);
   const photoBlobRef = useRef<Blob | null>(null);
   const seenAuthEpoch = useRef(guard.authEpoch);
 
@@ -71,6 +82,8 @@ export function useProfilePhoto({
     setPhotoBlob(null);
     setPhotoUri(null);
     setPhotoFailed(false);
+    preparingRef.current = false;
+    setPreparing(false);
   }, [guard.authEpoch]);
 
   useEffect(() => {
@@ -93,7 +106,8 @@ export function useProfilePhoto({
   }, [applicationPhoto.data, photoBlob, profile]);
 
   const choosePhoto = async () => {
-    if (!fieldsEditable || guard.transitionLock.current) return;
+    if (!fieldsEditable || guard.transitionLock.current || preparingRef.current)
+      return;
     const epoch = currentAuthEpoch(queryClient);
     const operation = guard.currentOperation();
     const startedInFocus = guard.focusTurn.current;
@@ -113,12 +127,14 @@ export function useProfilePhoto({
       if (!stillOwnsPhoto()) return;
       if (result.canceled || !result.assets[0]) return;
       const asset = result.assets[0];
-      const blob = await fetch(asset.uri).then((response) => response.blob());
+      preparingRef.current = true;
+      setPreparing(true);
+      const prepared = await prepareImageUpload(asset, profilePhotoOptions);
       if (!stillOwnsPhoto()) return;
-      photoBlobRef.current = blob;
-      setPhotoUri(asset.uri);
+      photoBlobRef.current = prepared.blob;
+      setPhotoUri(prepared.uri);
       setPhotoFailed(false);
-      setPhotoBlob(blob);
+      setPhotoBlob(prepared.blob);
       clearAlert();
     } catch (error) {
       if (stillOwnsPhoto()) {
@@ -129,6 +145,14 @@ export function useProfilePhoto({
           operation,
         );
       }
+    } finally {
+      if (
+        selection === photoSelection.current &&
+        guard.sessionStillOwns(operation, epoch)
+      ) {
+        preparingRef.current = false;
+        setPreparing(false);
+      }
     }
   };
 
@@ -137,6 +161,7 @@ export function useProfilePhoto({
 
   return {
     photoBlob,
+    preparing,
     photoBlobRef,
     photoFailed,
     setPhotoFailed,

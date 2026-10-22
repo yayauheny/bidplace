@@ -118,6 +118,7 @@ vi.mock('./product-catalog-term-sheet', () => ({
 }));
 
 vi.mock('react-native', () => ({
+  ActivityIndicator: () => createElement('span', { role: 'progressbar' }),
   Platform: { OS: 'web' },
   View: ({ children }: { children?: ReactNode }) =>
     createElement('div', null, children),

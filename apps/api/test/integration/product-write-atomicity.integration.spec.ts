@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import sharp from 'sharp';
 
 import { Prisma, type PrismaClient } from '@bidplace/database';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
@@ -7,6 +8,7 @@ import { normalizeCatalogName } from '../../src/catalog/catalog-data';
 import { PostgresImageStore } from '../../src/core/image-store';
 import { PublicIdService } from '../../src/core/public-id';
 import { AdminModerationService } from '../../src/admin/admin-moderation.service';
+import { SharpImageProcessor } from '../../src/core/media/media-pipeline';
 import { ImagesService } from '../../src/images/images.service';
 import { ProductsService } from '../../src/products/products.service';
 import { SellersService } from '../../src/sellers/sellers.service';
@@ -195,7 +197,7 @@ function createServices() {
   const imageStore = new PostgresImageStore(prisma as never);
   return {
     products: new ProductsService(prisma as never, new PublicIdService()),
-    images: new ImagesService(prisma as never, imageStore),
+    images: new ImagesService(prisma as never, imageStore, undefined, new SharpImageProcessor()),
     admin: new AdminModerationService(prisma as never),
     sellers: new SellersService(prisma as never, imageStore),
   };
@@ -223,6 +225,24 @@ async function holdProductAndMutate(
 }
 
 describe('Product write atomicity against PostgreSQL', () => {
+  it('replays concurrent legacy uploads without duplicates and rejects changed bytes', async () => {
+    const { owner, product } = await createSubmitReadyProduct();
+    const { images } = createServices();
+    const input = await sharp(png).withExif({ IFD0: { Artist: 'Private author' } }).png().toBuffer();
+    const file = { buffer: input, mimetype: 'image/png' };
+    const before = await prisma.productImage.count({ where: { productId: product.id } });
+    await Promise.all([images.add(owner.id, product.id, [file], 'same-upload'), images.add(owner.id, product.id, [file], 'same-upload')]);
+    await images.add(owner.id, product.id, [file], 'same-upload');
+    const stored = await prisma.productImage.findFirstOrThrow({ where: { productId: product.id, uploadIdentity: { not: null } } });
+    const bytes = await new PostgresImageStore(prisma as never).get(stored.objectKey!);
+    expect((await sharp(Buffer.from(bytes!.bytes)).metadata()).exif).toBeUndefined();
+    expect(await prisma.productImage.count({ where: { productId: product.id } })).toBe(before + 1);
+    await expect(images.add(owner.id, product.id, [{ ...file, buffer: Buffer.concat([png, Buffer.from('changed')]) }], 'same-upload')).rejects.toThrow('different content');
+    const nextRevision = await prisma.productRevision.create({ data: { productId: product.id, version: 2, title: 'Next', story: 'Next', status: 'DRAFT' } });
+    await prisma.product.update({ where: { id: product.id }, data: { editingRevisionId: nextRevision.id } });
+    await expect(images.add(owner.id, product.id, [file], 'same-upload')).rejects.toThrow('earlier revision');
+  });
+
   it('keeps the editing revision canonical from draft save through approval', async () => {
     const { owner, product } = await createSubmitReadyProduct();
     const { products, admin, sellers } = createServices();

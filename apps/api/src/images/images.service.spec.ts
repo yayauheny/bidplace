@@ -1076,6 +1076,7 @@ describe('ImagesService media gallery admission', () => {
           .mockResolvedValue({ state: options.assetState ?? 'READY' }),
       },
       productImage: {
+        findUnique: vi.fn().mockResolvedValue(null),
         findMany: vi.fn().mockResolvedValue(options.attached ?? []),
       },
       $transaction: vi.fn(

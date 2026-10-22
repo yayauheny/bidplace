@@ -332,3 +332,31 @@ verification (ручные шаги переданы ранее). Волна 3 (
 Figma intake. Push/merge/deploy не выполнялись.
 [Файл выполнения](../audits/2026-10-19-ACCOUNT-FOUNDATION-PROGRESS.md).
 
+
+
+## 2026-10-23 — Синхронизация фото с актуальным MVP (PR #59)
+
+**Partial (local verification passed).** Обычный merge `origin/feature/portfolio-mvp-release`
+в `fix/photo-upload`; новая сетка фото, wizard, авторские экраны и исправления
+MVP сохраняются. Фото используют `ImageProcessor`/Sharp, нормализованный
+приватный SOURCE до 5 МиБ, вход галереи до 25 МиБ/8192px/50M, сохранённый мастер
+до 4096px, компактные 16-bit PNG, JPEG/PNG/WebP, EXIF-поворот и удаление
+метаданных из публичных производных. Пофайловая отправка сохраняет прогресс,
+частичный успех, abort/timeout и idempotency; legacy-повторы проверяются под
+блокировкой Work. Старые p1 и новые p2 media-контракты поддерживаются.
+
+Миграции `20261022120000_normalized_media_source` и
+`20261022180000_legacy_image_upload_identity` обязательны перед выпуском API.
+Историческая документация восстановлена из release; добавлены только сведения
+по фото. DEC-131/132 — прежние фото-решения DEC-128/129, перенумерованные из-за
+коллизии с UI-решениями release. Production migration/deploy не выполняются.
+
+Проверки объединённого дерева прошли: `pnpm verify` (typecheck, lint,
+479 API unit, 1023 mobile tests, 159 integration, остальные package/ops tests,
+web/iOS/Android export); все 6 media E2E в Chromium/WebKit; `pnpm build:web`
+для production API-origin с публичным тестовым Turnstile key, как в CI;
+markdown links (184 файла). 28 существующих integration skip не изменялись.
+Моки двух owner-spec дополнены ActivityIndicator под release UI; assertions
+и таймауты не ослаблены. CI точного merge SHA проверяется в PR #59 перед
+объявлением готовности. Физические устройства и live R2/CDN остаются отдельными
+release gates; миграции/deploy production не выполнялись.

@@ -31,8 +31,8 @@ owns exact results and blockers. Migration is a separate operator step, never co
 process reconciles persisted operations without another worker or queue service.
 Short DB transactions record intent/attach/switch; tiered S3 writes happen outside
 transactions. Operations claim exact objects with renewable leases, so restore
-cannot overlap an unfinished DELETE of the same object. SOURCE is private and
-byte-identical; metadata-stripped WebP derivatives use immutable asset/pipeline
+cannot overlap an unfinished DELETE of the same object. SOURCE is private; new uploads store a normalized master up to 5 MiB
+(2 MiB for author photos), while existing/imported sources retain their bytes; metadata-stripped WebP derivatives use immutable asset/pipeline
 keys. Cloudflare purge is a separate `PublicMediaCache` boundary.
 
 `S3_BUCKET` is private; `S3_PUBLIC_BUCKET` must differ. HTTPS
@@ -40,7 +40,7 @@ keys. Cloudflare purge is a separate `PublicMediaCache` boundary.
 `CLOUDFLARE_CACHE_TOKEN` configure exact-URL purge; no secrets enter contracts.
 Public objects use browser revalidation and a separate edge TTL. SOURCE uses
 `pipelineVersion=source` as a non-null identity discriminator; derivatives use
-`p1`. SQL constraints prevent public SOURCE and invalid dimensions.
+`p2` for normalized uploads and `p1` for existing/imported objects. SQL constraints prevent public SOURCE and invalid dimensions.
 
 `POST /api/products/:id/images` optionally accepts `Idempotency-Key` for one
 image. Client selections retain one key per file across retries; server stage
@@ -347,9 +347,9 @@ SellerProfile
   then `ImageStore.get`. Per-user upload rate limits apply to product, creation-step,
   achievement, and profile-photo uploads. Author, achievement, and work decode share
   one process-local admission of two operations; nested pipeline validation reuses
-  that slot and releases it on failure. A new Work upload that already exceeds gallery
-  count or total bytes is rejected before Sharp/R2. The locked transaction repeats
-  the capacity check. Replaying bytes already attached to the current revision does
+  that slot and releases it on failure. A new Work upload that exceeds gallery count or targets an already full byte
+  budget is rejected before Sharp/R2. The locked transaction checks the remaining
+  capacity against the normalized SOURCE. Replaying bytes already attached to the current revision does
   not create another image. See
   `13-APPLICATION-SECURITY.md` and `apps/api/src/images/image-policy.ts`.
 - Publication is confirmed in the request that enqueued it. HTTP success means the
@@ -560,3 +560,52 @@ UI review follow-up (2026-10-21): the existing PageChromeContext carries actual
 for dock clearance; screens do not independently derive navigation visibility.
 No server, persistence or API boundary changed. Focus-after-enter lives in the
 existing use-return-focus module and is shared by auth and general dialogs.
+
+## 2026-10-22 — Normalized image processing boundary
+
+`images/ImageProcessor` is the Nest DI contract; `core/media/SharpImageProcessor`
+in `media-pipeline.ts` owns all Sharp calls, including the legacy normalization
+entry point re-exported by `image-policy.ts`. Controllers and business services
+use the contract/policy rather than codec APIs. Normalization is bounded: preserve
+compact inputs or use a smaller lossless result, then progressively encode and
+resize oversized sources without cropping or flattening alpha. Derivatives are
+built from the persisted master, so upload recovery can reproduce their checksums.
+
+An idempotent gallery request accepts one JPEG/PNG/WebP up to 25 MiB; legacy
+multi-file requests and story uploads retain the 5 MiB input limit. Gallery input is bounded at 8192px per edge / 50_331_648 pixels;
+stored masters and other purposes retain 4096px / 16_777_216 pixels. `WorkImageUploadInterceptor` keeps large
+input single-file, avoiding a ten-file 250 MiB buffered request. Gallery admission
+allows 20 requests/minute for the initial ten files and manual retries; the shared
+process admission remains two image-processing operations.
+
+`MediaOperation.inputChecksum` hashes the submitted MIME and bytes independently
+of the normalized object checksum. Nullable values preserve old replay behavior;
+new assets use `MediaProvenance.NORMALIZED`. Apply migration
+`20261022120000_normalized_media_source` before the new API release. No existing
+objects are rewritten. Both p1 and p2 URLs remain accepted by transport/contracts.
+
+The Work hook reads/uploads one asset at a time, releases confirmed Blob/File
+references, invalidates owner queries after each confirmation, and retains the
+current file/key for retry. Its size-based deadline (60 seconds plus one second
+per 64 KiB; 460 seconds at 25 MiB), explicit timeout message and session/unmount
+abort preserve unknown-response replay. Wizard, native Back and browser
+Back/unload are guarded during preparation/upload. Preparation and per-file
+results use existing UI components; portrait preparation uses the Expo helper
+from PR #56, with a final 640px fallback instead of 256px.
+
+Review corrections (2026-10-23): gallery input is bounded at 8192px per edge /
+50_331_648 pixels; stored masters and other purposes retain 4096px / 16_777_216
+pixels. Compact 16-bit PNGs remain byte-identical. Oversized artwork is encoded
+at quality 90/82/70, then resized to 2560/1600px with a final 1600px quality-60
+attempt; no 800/256px gallery fallback remains.
+
+Legacy ImageStore uploads persist a nullable unique owner/Work/key hash and
+submitted MIME/byte checksum on ProductImage. Replay runs before processing
+and again under the product row lock; conflicting bytes or an earlier revision
+return 409. Only metadata-stripped PREVIEW bytes are stored in this publicly
+served fallback. Lifecycle-enabled uploads check legacy identities too,
+preserving retries across cutover. Apply migration
+`20261022180000_legacy_image_upload_identity` before the API release.
+
+Upload retries reuse a verified persisted SOURCE when available, so encoder
+policy changes do not alter a partially written operation manifest.
