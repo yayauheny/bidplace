@@ -340,3 +340,34 @@ SessionService, session/optional/logout guards, bootstrap and api-client. Additi
 AuthSession migration; no production migration/deploy. Session/auth/config unit
 checks and isolated HTTP transport pass (including restart, CSRF and late-save
 after logout). OIDC/email-code/onboarding UI are the next waves.
+
+
+## 2026-10-22 — Web auth completion
+
+**Implemented locally (auth waves 3–5); external acceptance pending.** One User ID
+for password, email code and explicitly linked Google/Telegram. openid-client owns
+OIDC signature/state/nonce/S256 PKCE; PostgreSQL owns one-use browser flows.
+Social accounts keep a real email and may have no password; pending identity
+requires its own proof and grants no ordinary principal. Recovery, logout and
+account switching invalidate pending proof. Shared auth-abuse owns OTP HMAC,
+mail budgets, cooldowns, pause, purpose isolation and idempotency. Session save
+failure can resume committed proof without another User.
+
+API/contracts/database, api-client/AuthProvider, login/code/onboarding/settings,
+CI and Cloudflare runtime bindings are implemented. Local independent security
+review findings were fixed (in-flight account switch, private cache, delayed
+hydration, clock skew, navigation receipt and suspended-route retry).
+Chromium/WebKit: 8/8; signed test IdP HTTP owner: 33/33 including browser runner.
+`pnpm verify` passed: typecheck/lint, 1535 unit tests, 218 integration checks,
+31 operations checks, E2E fence and API/web/iOS/Android builds. One optional
+browser-runner skip in the general integration run was executed explicitly in
+the 33/33 gate above. Cloudflare: 31 Vitest + 20 Node checks passed. Docs links
+and diff whitespace checks passed. Production `build:web` passed with canary
+checks for session/OTP/provider server settings in SPA assets. Server wave commit: `d6752e6c` (sessions
+were committed earlier as `061294e3`). The isolated linux/amd64 image smoke
+passed migration, auth boundary, native modules and SIGTERM. See [rollout and remaining acceptance](../ops/WEB-AUTH-ROLLOUT.md).
+
+Google/Telegram real-provider smoke requires safe provider configuration and is
+not claimed. New UI compositions remain NEEDS-FIGMA. PR56 media remains OPEN
+and draft when checked on 2026-10-22; it was not integrated. No push/merge/deploy
+or production migration was performed.

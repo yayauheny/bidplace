@@ -3,7 +3,12 @@ export const TURNSTILE_SCRIPT_URL =
 
 export const TURNSTILE_SCRIPT_TIMEOUT_MS = 10_000;
 
-export type TurnstileAction = 'login' | 'register' | 'password_reset' | 'email_verification';
+export type TurnstileAction =
+  | 'email_login'
+  | 'login'
+  | 'register'
+  | 'password_reset'
+  | 'email_verification';
 
 type TurnstileRenderOptions = {
   sitekey: string;

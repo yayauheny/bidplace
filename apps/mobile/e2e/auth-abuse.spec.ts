@@ -246,7 +246,7 @@ test('a late registration response cannot replace the account installed while it
     await page.getByRole('link', { name: 'Регистрация', exact: true }).click();
     const id = randomUUID().slice(0, 8);
     await page.getByRole('textbox', { name: 'Электронная почта', exact: true }).fill(`late-a-${id}@bidplace.test`);
-    await page.getByRole('checkbox', { name: /соглашаюсь/ }).click();
+    await page.getByRole('checkbox', { name: /Мне есть 18 лет/ }).click();
     await page.getByRole('button', { name: 'Дальше', exact: true }).click();
     await page.getByLabel('Никнейм', { exact: true }).fill(`latea${id}`);
     await page.getByRole('button', { name: 'Дальше', exact: true }).click();
@@ -383,3 +383,118 @@ async function fulfillNext(
 function engine(page: Page) {
   return page.context().browser()?.browserType().name() ?? 'browser';
 }
+
+test('web auth completion: Google, email code and Telegram link keep one account', async ({ page }) => {
+  await installTurnstileFixture(page);
+  await page.goto('/login?redirectTo=/account');
+  await page.getByRole('button', { name: 'Войти с Google', exact: true }).click();
+  await expect(page).toHaveURL(/\/auth\/complete$/);
+  await page.getByRole('textbox', { name: 'Никнейм', exact: true }).fill(`web-${randomUUID().slice(0, 8)}`);
+  await page.getByRole('checkbox', { name: /Мне есть 18 лет/ }).click();
+  await expectTurnstileReady(page, 'register');
+  await page.getByRole('button', { name: 'Завершить регистрацию', exact: true }).click();
+  await expect.poll(() => new URL(page.url()).pathname).toBe('/account');
+  const original = (await (await page.request.get('/api/auth/me')).json()).user;
+  await page.goto('/account/settings');
+  await page.getByRole('button', { name: 'Подключить Telegram', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Telegram подключён', exact: true })).toBeVisible();
+  const logout = () => page.request.post('/api/auth/logout', { headers: { Origin: 'http://127.0.0.1:55442', 'X-Bidplace-Request': '1' } });
+  expect((await logout()).status()).toBe(201);
+  await page.goto('/email-login?redirectTo=/account');
+  await page.getByRole('textbox', { name: 'Электронная почта', exact: true }).fill(original.email);
+  await expectTurnstileReady(page, 'email_login');
+  await page.getByRole('button', { name: 'Получить код', exact: true }).click();
+  await expect(page.getByText(/Новый аккаунт не создаётся/)).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole('button', { name: /Повторить запрос через/ })).toBeDisabled();
+  const proof = await (await page.request.get('/__test/mail')).json();
+  await page.getByRole('textbox', { name: 'Код из письма', exact: true }).fill(proof.code);
+  const signingIn = page.waitForResponse(response => response.url().endsWith('/api/auth/email-login/verify') && response.request().method() === 'POST');
+  await page.getByRole('button', { name: 'Войти', exact: true }).click();
+  expect((await signingIn).status()).toBe(201);
+  await expect.poll(() => new URL(page.url()).pathname).toBe('/account');
+  const signedIn = await page.request.get('/api/auth/me');
+  expect(signedIn.status()).toBe(200);
+  expect((await signedIn.json()).user.id).toBe(original.id);
+  expect((await logout()).status()).toBe(201);
+  await page.goto('/login?redirectTo=/account');
+  await page.getByRole('button', { name: 'Войти с Telegram', exact: true }).click();
+  await expect.poll(() => new URL(page.url()).pathname).toBe('/account');
+  const returning = await page.request.get('/api/auth/me');
+  expect(returning.status()).toBe(200);
+  expect((await returning.json()).user.id).toBe(original.id);
+});
+
+test('web auth completion: Telegram requires email proof and preserves pending state on reload', async ({ page }) => {
+  await installTurnstileFixture(page);
+  await page.goto('/login?redirectTo=/account');
+  await page.getByRole('button', { name: 'Войти с Telegram', exact: true }).click();
+  await expect(page).toHaveURL(/\/auth\/complete$/);
+  await page.getByRole('textbox', { name: 'Электронная почта', exact: true }).fill(`telegram-${randomUUID()}@example.test`);
+  await page.getByRole('textbox', { name: 'Никнейм', exact: true }).fill(`tg-${randomUUID().slice(0, 8)}`);
+  await page.getByRole('checkbox', { name: /Мне есть 18 лет/ }).click();
+  await expectTurnstileReady(page, 'register');
+  await page.getByRole('button', { name: 'Завершить регистрацию', exact: true }).click();
+  await expect(page.getByText(/Подтвердите почту/)).toBeVisible();
+  expect((await page.request.get('/api/auth/me')).status()).toBe(401);
+  await page.reload();
+  await expectTurnstileReady(page, 'email_verification');
+  const sending = page.waitForResponse(response => response.url().endsWith('/api/auth/onboarding/email/request') && response.request().method() === 'POST');
+  await page.getByRole('button', { name: 'Запросить код', exact: true }).click();
+  expect((await sending).status()).toBe(201);
+  const proof = await (await page.request.get('/__test/mail')).json();
+  await page.getByRole('textbox', { name: 'Код из письма', exact: true }).fill(proof.code);
+  await page.getByRole('button', { name: 'Подтвердить и войти', exact: true }).click();
+  await expect.poll(() => new URL(page.url()).pathname).toBe('/account');
+  expect((await page.request.get('/api/auth/me')).status()).toBe(200);
+});
+
+test('web auth completion: delayed state preserves an edited email and resend uses server time', async ({ page }) => {
+  await installTurnstileFixture(page);
+  await page.addInitScript(() => { const realNow = Date.now.bind(Date); Date.now = () => realNow() + 3_600_000; });
+  await page.goto('/email-login');
+  await page.getByRole('textbox', { name: 'Электронная почта', exact: true }).fill(`unknown-${randomUUID()}@example.test`);
+  await expectTurnstileReady(page, 'email_login');
+  await page.getByRole('button', { name: 'Получить код', exact: true }).click();
+  await expect(page.getByRole('button', { name: /Повторить запрос через/ })).toBeDisabled();
+  let release!: () => void;
+  const gate = new Promise<void>(resolve => { release = resolve; });
+  let entered!: () => void;
+  const pending = new Promise<void>(resolve => { entered = resolve; });
+  await page.route('**/api/auth/email-login/state', async route => {
+    const response = await route.fetch();
+    entered();
+    await gate;
+    await route.fulfill({ response });
+  });
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await pending;
+  const edited = `edited-${randomUUID()}@example.test`;
+  await page.getByRole('textbox', { name: 'Электронная почта', exact: true }).fill(edited);
+  release();
+  await expect(page.getByRole('textbox', { name: 'Электронная почта', exact: true })).toHaveValue(edited);
+  await expect(page.getByRole('textbox', { name: 'Код из письма', exact: true })).toHaveCount(0);
+});
+
+
+test('web auth completion: code form preserves focus and edits through responsive resize', async ({ page }) => {
+  await installTurnstileFixture(page);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/email-login?redirectTo=/account');
+  const email = page.getByRole('textbox', { name: 'Электронная почта', exact: true });
+  await email.fill('resize@example.test');
+  const originalUrl = page.url();
+  await mkdir(e2eEvidenceDir, { recursive: true });
+  for (const width of [320, 390, 440, 768, 1024, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    await email.focus();
+    await expect(email).toBeFocused();
+    await expect(email).toHaveValue('resize@example.test');
+    await expectTurnstileReady(page, 'email_login');
+    await expect(async () => { await expectTurnstileSizeForHost(page); }).toPass({ timeout: 5000 });
+    await expect(page.getByRole('button', { name: 'Получить код', exact: true })).toBeInViewport();
+    expect(page.url()).toBe(originalUrl);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await page.screenshot({ path: resolve(e2eEvidenceDir, `${engine(page)}-email-login-${width}.png`), fullPage: true });
+  }
+});

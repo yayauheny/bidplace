@@ -35,6 +35,20 @@ DEC-124 уточняет предыдущие auth-описания: один п
 повтор сохраняет email и возвращает «Дальше», без автоматического принятия.
 Регистрация остаётся fullscreen, центрированная form-column350 без sheetMax390.
 
+### Web auth additions — 2026-10-22
+
+Password login remains `/login`; `/email-login` is its explicit alternative for
+an already registered, verified account. Unknown email does not create a User.
+Google/Telegram start through `/api/auth/providers/:provider/start` and return to
+the exact configured server callback. Known active identity signs in; a new
+identity continues at `/auth/complete` with email, nickname and one legal consent.
+Pending email proof grants no ordinary session. A conflicting email asks for
+ordinary login, then a new explicit link intent in `/account/settings`.
+Connections require authentication within five minutes and never transfer an
+identity owned by another User. No unlink, phone/SMS, native provider login,
+magic links, passkeys or MFA were added. New composition geometry is NEEDS-FIGMA;
+existing shared auth and settings primitives own layout and interaction.
+
 ### Auth presentation — 2026-10-08
 
 Current fullscreen registration/confirmation source:

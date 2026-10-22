@@ -18,6 +18,7 @@ import {
 import { advanceAuthEpoch, authKeys } from '../../lib/query-cache';
 import { ForgotPasswordForm } from './forgot-password-form';
 import { LoginForm } from './auth-form';
+import { useAuthFlowAction } from './use-auth-flow-action';
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
@@ -592,6 +593,32 @@ describe('recovery submit ownership', () => {
     expect(view.container.isConnected).toBe(true);
     randomUUID.mockRestore();
     getRandomValues.mockRestore();
+    view.unmount();
+  });
+});
+
+
+describe('provider action ownership', () => {
+  it('allows a new action after an aborted request settles while the route is blurred', async () => {
+    const pending = defer<void>();
+    const work = vi.fn(() => pending.promise);
+    function Probe() {
+      useSyncExternalStore(authBridge.subscribe, authBridge.revision, authBridge.revision);
+      const action = useAuthFlowAction();
+      return createElement('button', { disabled: action.busy, onClick: () => void action.run(work, () => undefined) }, 'Start provider');
+    }
+    const view = mount(createElement(Probe));
+    click(view.container, 'Start provider');
+    expect(view.container.querySelector('button')?.disabled).toBe(true);
+    act(() => { harness.focused = false; harness.emitBlur(); harness.bump(); });
+    pending.reject(new DOMException('Aborted', 'AbortError'));
+    await flush();
+    act(() => { harness.focused = true; harness.bump(); });
+    await flush();
+    expect(view.container.querySelector('button')?.disabled).toBe(false);
+    click(view.container, 'Start provider');
+    expect(work).toHaveBeenCalledTimes(2);
+    await flush();
     view.unmount();
   });
 });

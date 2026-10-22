@@ -2,6 +2,25 @@
 
 > Entries dated before 2026-10-13 mention Pen / .pen files; the Pen design was removed (DEC-119) — read those mentions as history.
 
+## Web auth completion — 2026-10-22
+
+| Surface | Current implementation | Visual acceptance |
+| --- | --- | --- |
+| Login | Google/Telegram start real server redirects; unavailable config disables controls; password and email-code alternatives | Existing auth primitives retained |
+| `/email-login` | Browser-bound request/verify, neutral response, reload state, explicit resend, server-relative deadlines, typed failures | NEEDS-FIGMA for the new composition |
+| `/auth/complete` | Real email/slug, single consent, non-blocking legal reader, pending email proof, cancel/resume | NEEDS-FIGMA for the new composition |
+| Account settings | Current connections and explicit fresh-session linking using shared SettingsGroup/ProviderButtons | NEEDS-FIGMA for added rows/composition |
+
+**Implemented locally; visual acceptance Partial.** Chromium/WebKit: eight auth
+checks passed, including one-profile creation/link/code login, pending reload,
+clock skew and delayed state; email-code resize/focus at 320/390/440/768/1024/1440
+with reduced motion. Screenshot review confirms reachable fields/actions and no
+horizontal overflow. AuthViewport retains dirty/busy/dismissal ownership;
+BackButton and FigmaIconButton are unchanged. New composition Figma frames,
+physical device and manual zoom acceptance remain unverified. Native provider
+login is outside this wave. Test IdP does not constitute Google/Telegram
+production acceptance.
+
 ## 2026-10-20 — label кнопок и disabled «Дальше»
 
 - `Implemented`: живой master `292:5058` красит подпись outline, ghost и muted в Black `#121212`. Токен `labelDefault` обновлён; матрица 4×4, hover, pressed и disabled solid (`292:5054`: заливка `#949494`, opacity 0.5, белая подпись) не переписывались. Таблица §6.2 в `03-DESIGN-SYSTEM.md` совпадает с master.
