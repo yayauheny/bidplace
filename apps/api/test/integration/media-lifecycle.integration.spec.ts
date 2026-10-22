@@ -75,6 +75,7 @@ class MemoryCache extends PublicMediaCache {
 }
 let context: IntegrationDatabaseContext;
 let prisma: PrismaClient;
+const mediaServices = new Set<MediaLifecycleService>();
 let bytes: Buffer;
 beforeAll(async () => {
   context = await createIntegrationDatabaseContext();
@@ -84,6 +85,10 @@ beforeAll(async () => {
   })
     .png()
     .toBuffer();
+});
+afterEach(() => {
+  for (const service of mediaServices) service.onModuleDestroy();
+  mediaServices.clear();
 });
 afterAll(async () => context?.cleanup());
 function setup(store = new MemoryStore(), cache = new MemoryCache()) {
@@ -99,11 +104,9 @@ function setup(store = new MemoryStore(), cache = new MemoryCache()) {
     CLOUDFLARE_ZONE_ID: 'a'.repeat(32),
     CLOUDFLARE_CACHE_TOKEN: 'test',
   });
-  return {
-    store,
-    cache,
-    media: new MediaLifecycleService(prisma as never, store, cache, env, new SharpImageProcessor()),
-  };
+  const media = new MediaLifecycleService(prisma as never, store, cache, env, new SharpImageProcessor());
+  mediaServices.add(media);
+  return { store, cache, media };
 }
 async function author(media: MediaLifecycleService) {
   const user = await prisma.user.create({

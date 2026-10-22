@@ -394,3 +394,15 @@ production-контейнера при одновременном декодир
 4 api-client, 20 HTTP/PostgreSQL safety/replay, 4 Chromium/WebKit mixed/retry.
 Все прошли. Физические iOS/Android, HEIC/RAW галереи и настоящий R2/CDN этим
 прогоном не подтверждены; новых форматов в продуктовый контракт не добавлено.
+
+
+Дополнительная проверка общего CI: старый media integration-прогон выявил
+утечку фоновых таймеров сервисов между сценариями с разными MemoryStore и
+общей БД. `media-lifecycle.integration.spec.ts` теперь останавливает все
+созданные сервисы в afterEach. Таймауты и утверждения о сохранности/удалении
+объектов не ослаблены. Полная API integration suite прошла: 159 passed,
+28 ранее пропущенных сценариев; тестовая БД использует ICU Unicode locale
+(локальная C locale не поддерживала существующую проверку кириллицы ILIKE).
+Итого проверено 257 тестов: 39 pipeline/policy, 51 mobile, 4 api-client,
+159 PostgreSQL integration и 4 Chromium/WebKit. Typecheck API/mobile, lint
+изменённых файлов и markdown links прошли.
