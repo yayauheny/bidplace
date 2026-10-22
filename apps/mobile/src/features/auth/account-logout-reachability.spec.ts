@@ -21,6 +21,8 @@ const harness = vi.hoisted(() => ({
   listSellerProfiles: vi.fn(),
 }));
 
+vi.mock('../../components/layout/PageScrollView', () => ({ PageScrollView: ({ children }: { children?: ReactNode }) => createElement('div', null, children) }));
+
 vi.mock('react-native', () => ({
   Platform: { OS: 'web' },
   View: ({ children }: { children?: ReactNode }) => createElement('div', null, children),

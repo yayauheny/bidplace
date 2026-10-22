@@ -1,6 +1,7 @@
+import { PageScrollView } from '../../../components/layout/PageScrollView';
 import { useQuery } from '@tanstack/react-query';
 import { useLocalSearchParams } from 'expo-router';
-import { ScrollView, View } from 'react-native';
+import { View } from 'react-native';
 import { legalDocumentIdSchema } from '@bidplace/contracts';
 import { designTokens } from '@bidplace/design-tokens';
 
@@ -8,7 +9,6 @@ import { AppShell } from '../../../components/layout/AppShell';
 import { BrandLogo } from '../../../components/layout/BrandLogo';
 import { AppText, TextButton } from '../../../components/ui';
 import { LegalDocumentContent } from '../../../features/auth/legal-document-content';
-import { LegalFooter } from '../../../features/auth/legal-footer';
 import { useApiClient } from '../../../providers/api-provider';
 
 export default function LegalDocumentRoute() {
@@ -24,8 +24,9 @@ export default function LegalDocumentRoute() {
     ? legal.data?.documents.find((item) => item.id === parsed.data)
     : null;
   return (
-    <AppShell hideDock>
-      <ScrollView
+    <AppShell hideDock contentLayout="bleed">
+      <PageScrollView
+        reserveDock={false}
         contentContainerStyle={{
           paddingVertical: designTokens.layout.gutter,
           gap: designTokens.space.x4,
@@ -63,8 +64,7 @@ export default function LegalDocumentRoute() {
                 : 'Документ пока не опубликован.'}
           </AppText>
         )}
-        <LegalFooter />
-      </ScrollView>
+      </PageScrollView>
     </AppShell>
   );
 }

@@ -1,7 +1,7 @@
 /**
  * @vitest-environment jsdom
  */
-import { act, createElement, type ReactNode } from 'react';
+import { act, createElement, useRef, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -192,6 +192,10 @@ vi.mock('../components/figma/WorkCoverCard', () => ({
 
 // Vitest resolves reanimated through Node ESM, which rejects its internal
 // directory imports; the AppDialog owner spec uses the same stand-in.
+vi.mock('react-native-worklets', () => ({
+  scheduleOnRN: (fn: () => void) => fn(),
+}));
+
 vi.mock('react-native-reanimated', () => {
   function chain() {
     const api = {
@@ -214,6 +218,17 @@ vi.mock('react-native-reanimated', () => {
     default: {
       View: ({ children }: { children?: ReactNode }) =>
         createElement('div', null, children),
+    },
+    useSharedValue: (value: number) => useRef({ value }).current,
+    useAnimatedStyle: (style: () => object) => style(),
+    cancelAnimation: () => undefined,
+    withTiming: (
+      value: number,
+      _config: unknown,
+      callback?: (finished: boolean) => void,
+    ) => {
+      if (callback) queueMicrotask(() => callback(true));
+      return value;
     },
     Easing: { bezier: () => 'bezier' },
     FadeIn: chain(),
@@ -243,7 +258,10 @@ import { FigmaChip } from '../components/figma/FigmaChip.web';
 import { figmaButtonLabelColor } from '../components/figma/figma-button-style';
 import { AuthConsentCheckbox } from '../features/auth/auth-consent-checkbox';
 import { AuthGoogleIcon } from '../features/auth/auth-google-icon';
-import { AuthLegalText, RegistrationLegalText } from '../features/auth/auth-legal-text';
+import {
+  AuthLegalText,
+  RegistrationLegalText,
+} from '../features/auth/auth-legal-text';
 import { HomeNewAuthors } from '../features/home/home-new-authors';
 import { AuthorShare } from '../features/sellers/AuthorShare';
 import { CreatorWorkCard } from '../features/sellers/CreatorWorkCard';
@@ -459,7 +477,9 @@ describe('app theme owner', () => {
             checked: false,
             onChange: () => undefined,
             label: 'Мне есть 18 лет',
-            children: createElement(RegistrationLegalText, { onOpenDocument: () => undefined }),
+            children: createElement(RegistrationLegalText, {
+              onOpenDocument: () => undefined,
+            }),
           }),
           createElement(AuthGoogleIcon, { key: 'google' }),
           createElement(ProductDraftStoryStep, {
@@ -511,7 +531,7 @@ describe('app theme owner', () => {
 
     for (const theme of ['light', 'black'] as const) {
       const palette = theme === 'light' ? lightColorMap : blackColorMap;
-      expect(legalLink.style.color).toBe(rgbOf(palette.fieldValue));
+      expect(legalLink.style.color).toBe(rgbOf(palette.legalLink));
       expect(consentLink.style.color).toBe(rgbOf(palette.fieldValue));
       expect(gradient.dataset.gradientColors).toBe(
         `${palette.outlineBorderGradientStart}|${palette.outlineBorderGradientEnd}`,
@@ -519,12 +539,12 @@ describe('app theme owner', () => {
       expect(googlePath.getAttribute('fill')).toBe(palette.fieldValue);
       expect(tool.style.backgroundColor).toBe(rgbOf(palette.surfaceMuted));
       expect((tool.querySelector('span') as HTMLElement).style.color).toBe(
-        rgbOf(palette.inkStrong),
+        rgbOf(palette.ink),
       );
       expect(
         (imageTool.querySelector('[data-figma-icon]') as HTMLElement).style
           .color,
-      ).toBe(rgbOf(palette.inkStrong));
+      ).toBe(rgbOf(palette.ink));
       if (theme === 'light') {
         act(() => root.render(createElement(Controls, { theme: 'black' })));
         // Same DOM nodes: the palette switch re-paints consumers in place.

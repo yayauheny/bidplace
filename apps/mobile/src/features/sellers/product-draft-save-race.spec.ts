@@ -11,6 +11,15 @@ import { ApiClientError } from '@bidplace/api-client';
 import { flush, inputValue, setInput } from '../../testing/dom';
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+vi.mock('../../components/figma/FigmaIcon', () => ({ FigmaIcon: () => null }));
+vi.mock('../../components/ui/MotionPressable', () => ({
+  MotionPressable: ({ children, accessibilityLabel, disabled, onPress }: {
+    children?: ReactNode; accessibilityLabel?: string; disabled?: boolean; onPress?: () => void;
+  }) => createElement('button', { 'aria-label': accessibilityLabel, disabled, onClick: onPress }, children),
+}));
+
+
+vi.mock('../../components/shared/PrivateStoryImage', () => ({ PrivateStoryImage: () => null }));
 
 const productId = '11111111-1111-4111-8111-111111111111';
 const categoryId = '33333333-3333-4333-8333-333333333333';
@@ -109,6 +118,7 @@ vi.mock('./product-catalog-term-sheet', () => ({
 }));
 
 vi.mock('react-native', () => ({
+  ActivityIndicator: () => createElement('span', { role: 'progressbar' }),
   Platform: { OS: 'web' },
   View: ({ children }: { children?: ReactNode }) =>
     createElement('div', null, children),
@@ -343,7 +353,7 @@ async function until(
 
 function findButton(container: ParentNode, label: string) {
   return [...container.querySelectorAll('button')].find(
-    (button) => button.textContent === label,
+    (button) => button.textContent === label || button.getAttribute('aria-label') === label,
   );
 }
 
@@ -355,15 +365,6 @@ function click(container: ParentNode, label: string) {
   });
 }
 
-function clickNth(container: ParentNode, label: string, index: number) {
-  const target = [...container.querySelectorAll('button')].filter(
-    (button) => button.textContent === label,
-  )[index];
-  if (!target) throw new Error(`Missing button ${label} at ${index}`);
-  act(() => {
-    target.click();
-  });
-}
 
 function formIsDirty() {
   const event = new Event('beforeunload', { cancelable: true });
@@ -844,15 +845,16 @@ describe('product draft save reconciliation', () => {
     click(view.container, 'Сохранить изменения');
     await flush();
     expect(harness.updateProduct).toHaveBeenCalledTimes(1);
-    clickNth(view.container, 'Удалить изображение', 0);
+    click(view.container, 'Действия с изображением');
+    click(view.container, 'Удалить');
     await flush();
-    clickNth(view.container, 'Удалить изображение', 1);
-    clickNth(view.container, 'Удалить изображение', 1);
+    click(view.container, 'Удалить изображение');
+    click(view.container, 'Удалить изображение');
     await flush();
     expect(harness.removeImage).not.toHaveBeenCalled();
     const confirm = [...view.container.querySelectorAll('button')].filter(
       (button) => button.textContent === 'Удалить изображение',
-    )[1];
+    )[0];
     expect(confirm).toHaveProperty('disabled', true);
     expect(findButton(view.container, 'Отмена')).toHaveProperty(
       'disabled',
@@ -901,9 +903,10 @@ describe('product draft save reconciliation', () => {
     setInput(view.container, 'Название', 'Revised title');
     click(view.container, 'Сохранить изменения');
     await flush();
-    clickNth(view.container, 'Удалить изображение', 0);
+    click(view.container, 'Действия с изображением');
+    click(view.container, 'Удалить');
     await flush();
-    clickNth(view.container, 'Удалить изображение', 1);
+    click(view.container, 'Удалить изображение');
     await act(async () => {
       rejectSave(new Error('save failed'));
       await Promise.resolve();
@@ -914,7 +917,7 @@ describe('product draft save reconciliation', () => {
       'disabled',
       false,
     );
-    clickNth(view.container, 'Удалить изображение', 1);
+    click(view.container, 'Удалить изображение');
     await flush();
     expect(harness.updateProduct).toHaveBeenCalledTimes(2);
     expect(harness.removeImage).not.toHaveBeenCalled();
@@ -955,9 +958,10 @@ describe('product draft save reconciliation', () => {
     setInput(view.container, 'Название', 'Revised title');
     click(view.container, 'Сохранить изменения');
     await flush();
-    clickNth(view.container, 'Удалить изображение', 0);
+    click(view.container, 'Действия с изображением');
+    click(view.container, 'Удалить');
     await flush();
-    clickNth(view.container, 'Удалить изображение', 1);
+    click(view.container, 'Удалить изображение');
     await act(async () => {
       await clearAuthenticatedSession(view.queryClient);
     });
@@ -1045,7 +1049,8 @@ describe('product draft save reconciliation', () => {
     setInput(view.container, 'Название', 'Revised title');
     click(view.container, 'Сохранить изменения');
     await flush();
-    click(view.container, 'Переместить ниже');
+    click(view.container, 'Действия с изображением');
+    click(view.container, 'Ниже');
     await flush();
     expect(harness.reorderImages).not.toHaveBeenCalled();
     await act(async () => {

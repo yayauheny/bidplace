@@ -1,5 +1,5 @@
 import { Link, type Href } from 'expo-router';
-import type { ReactNode } from 'react';
+import type { ElementRef, ReactNode, Ref } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import {
@@ -121,6 +121,7 @@ function FigmaButtonVisualContent({
 }
 
 type FigmaButtonBaseProps = {
+  ref?: Ref<ElementRef<typeof MotionPressable>>;
   label: string;
   variant?: FigmaButtonVariant;
   disabled?: boolean;
@@ -129,6 +130,7 @@ type FigmaButtonBaseProps = {
   iconNode?: ReactNode;
   iconPosition?: 'left' | 'right';
   accessibilityHint?: string;
+  accessibilityCurrent?: 'page';
   width?: 'content' | 'full';
   size?: FigmaButtonSize;
   contentAlign?: FigmaButtonContentAlign;
@@ -228,10 +230,12 @@ export function FigmaButton(
 
   const pressable = (
     <MotionPressable
+      ref={props.ref}
       testID={testID}
       accessibilityRole={props.href ? 'link' : 'button'}
       accessibilityLabel={label}
       accessibilityHint={accessibilityHint}
+      {...{ 'aria-current': props.accessibilityCurrent }}
       accessibilityState={{ disabled: inactive, busy: Boolean(loading) }}
       disabled={inactive}
       onPress={props.href ? undefined : props.onPress}

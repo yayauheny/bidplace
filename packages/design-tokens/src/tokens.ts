@@ -77,7 +77,7 @@ export const designTokens = {
     socialGroupX: 8,
     socialGroupY: 6,
     socialGroupGap: 12,
-    filterOptionY: 9,
+    filterOptionY: 12,
     headerIconHitSlop: 9,
     // Inset of the media sheet heading block (Figma Frame 139 padding).
     mediaSheetTextInset: 6,
@@ -109,6 +109,7 @@ export const designTokens = {
     control: 18,
     compact: 18,
     image: 24,
+    mediaTile: 16,
     media: 24,
     card: 24,
     button: 80,
@@ -132,14 +133,13 @@ export const designTokens = {
     workGallery: 20,
     statusDot: 20,
     filterSort: 14,
-    filterCheckbox: 6,
-    filterRadio: 20,
     // Account header avatar (Figma account screen 100×100 round).
     ownerCard: 16,
     // Settings group surface (Figma settings screen).
     settingsSurface: 26,
   },
   size: {
+    stepDot: 6,
     achievementWidth: 266,
     shareQr: 164,
     touch: 44,
@@ -180,7 +180,7 @@ export const designTokens = {
     filterSortPill: 42,
     filterOption: 20,
     filterOptionCheck: 16,
-    filterOptionRow: 38,
+    filterOptionRow: 44,
     // Account header avatar 100×100 (Figma account screen).
     accountAvatar: 100,
     // Settings row leading icon 20 px.
@@ -189,6 +189,20 @@ export const designTokens = {
     settingsHeaderGlyph: 28,
   },
   typography: {
+    optionLabel: {
+      fontFamily: 'Inter_500Medium',
+      fontSize: 15,
+      lineHeight: 20,
+      letterSpacing: -0.3,
+      fontWeight: '500' as const,
+    },
+    pickerTitle: {
+      fontFamily: 'Inter_600SemiBold',
+      fontSize: 18,
+      lineHeight: 22,
+      letterSpacing: -0.18,
+      fontWeight: '600' as const,
+    },
     display: {
       fontFamily: 'Inter_600SemiBold',
       fontSize: 28,
@@ -210,6 +224,14 @@ export const designTokens = {
       lineHeight: 29,
       letterSpacing: -0.72,
       fontWeight: '600' as const,
+    },
+    // Figma 4562:32647; shared by editable and preview story blocks.
+    storyHeading: {
+      fontFamily: 'Inter_600SemiBold',
+      fontSize: 15,
+      lineHeight: 24,
+      fontWeight: '600',
+      letterSpacing: -0.15,
     },
     mediaSheetTitle: {
       fontFamily: 'Inter_600SemiBold',
@@ -308,6 +330,13 @@ export const designTokens = {
       letterSpacing: -0.18,
       fontWeight: '600' as const,
     },
+    authDialogTitle: {
+      fontFamily: 'Inter_600SemiBold',
+      fontSize: 17,
+      lineHeight: 21,
+      letterSpacing: -0.34,
+      fontWeight: '600' as const,
+    },
     authScreenTitle: {
       fontFamily: 'Inter_600SemiBold',
       fontSize: 20,
@@ -368,6 +397,49 @@ export const designTokens = {
       lineHeight: 20,
       letterSpacing: -0.18,
       fontWeight: '600' as const,
+    },
+    footerHeading: {
+      fontFamily: 'Inter_600SemiBold', fontSize: 16, lineHeight: 20,
+      letterSpacing: -0.32, fontWeight: '600' as const,
+    },
+    footerLink: {
+      fontFamily: 'Inter_500Medium', fontSize: 16, lineHeight: 20,
+      letterSpacing: -0.32, fontWeight: '500' as const,
+    },
+    footerLegal: {
+      fontFamily: 'Inter_400Regular', fontSize: 12, lineHeight: 16,
+      fontWeight: '400' as const,
+    },
+    creatorName: {
+      fontFamily: 'Inter_600SemiBold', fontSize: 20, lineHeight: 26,
+      letterSpacing: -0.4, fontWeight: '600' as const,
+    },
+    creatorNameWide: {
+      fontFamily: 'Inter_500Medium', fontSize: 24, lineHeight: 32,
+      letterSpacing: -0.72, fontWeight: '500' as const,
+    },
+    authorMeta: {
+      fontFamily: 'Inter_500Medium', fontSize: 14, lineHeight: 20,
+      letterSpacing: -0.14, fontWeight: '500' as const,
+    },
+    authorMetaWide: {
+      fontFamily: 'Inter_500Medium', fontSize: 16, lineHeight: 24,
+      letterSpacing: -0.16, fontWeight: '500' as const,
+    },
+    aboutHeadingWide: {
+      fontFamily: 'Inter_500Medium', fontSize: 18, lineHeight: 22,
+      letterSpacing: -0.36, fontWeight: '500' as const,
+    },
+    aboutBodyWide: {
+      fontFamily: 'Inter_400Regular', fontSize: 15, lineHeight: 24,
+      letterSpacing: -0.15, fontWeight: '400' as const,
+    },
+    searchPrompt: {
+      fontFamily: 'Inter_500Medium',
+      fontSize: 14,
+      lineHeight: 24,
+      letterSpacing: -0.14,
+      fontWeight: '500' as const,
     },
     field: {
       fontFamily: 'Inter_400Regular',
@@ -667,6 +739,7 @@ export const designTokens = {
   },
   layout: {
     contentMax: 1280,
+    actionColumnMax: 420,
     gutter: 12,
     desktopGutter: 12,
     creatorDesktopGutter: 12,
@@ -692,6 +765,12 @@ export const designTokens = {
   },
   auth: {
     sheetRadius: 32,
+    dialogMinWidth: 768,
+    dialogMaxWidth: 420,
+    dialogRadius: 34,
+    dialogSectionGap: 40,
+    dialogActionY: 10,
+    fieldHeight: 51,
     paddingTop: 8,
     paddingX: 20,
     paddingBottom: 20,

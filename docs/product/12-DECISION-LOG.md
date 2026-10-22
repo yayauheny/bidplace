@@ -1,11 +1,10 @@
 # bidplace — журнал решений
 
-Каждая запись сохраняет последний утверждённый текст, revisions и ограничения.
-Сняты только разделы Rationale, Alternatives, Revisit when, Why и явно отклонённые варианты.
-Если revision противоречит раннему абзацу той же записи, действует более поздняя revision.
-Полный журнал с обсуждением: `git show d0efc03b:docs/product/12-DECISION-LOG.md`.
+Последнее обновление: 2026-10-15
 
-Portfolio-only запуск — DEC-082 и последующие. Более ранние commerce-решения описывают отложенную волну, пока их не заменил поздний DEC.
+Записи не удаляются. При пересмотре создаётся новая запись со ссылкой на старую.
+
+---
 
 ## DEC-001 — Ценность является ядром
 
@@ -16,6 +15,16 @@ Status: Confirmed
 
 Главное слово и принцип bidplace — **ценность**.
 
+### Rationale
+
+Оно объединяет авторство, личность, историю, ограниченность, provenance и честное определение цены.
+
+### Revisit when
+
+Не пересматривается без полного изменения продукта.
+
+---
+
 ## DEC-002 — Внешняя формулировка
 
 Date: 2026-07-18
@@ -24,6 +33,18 @@ Status: Confirmed
 ### Decision
 
 `bidplace — место, где ценят`.
+
+### Alternatives
+
+- место, где создаётся ценность;
+- creator auction marketplace;
+- verified scarcity commerce.
+
+### Rationale
+
+Коротко, понятно, без пафоса.
+
+---
 
 ## DEC-003 — Первый механизм: timed auction
 
@@ -34,6 +55,16 @@ Status: Confirmed
 
 MVP тестирует timed auction.
 
+### Rationale
+
+Уникальный предмет, несколько покупателей и неопределённая цена дают чистую проверку.
+
+### Revisit when
+
+После первой сделки и интервью.
+
+---
+
 ## DEC-004 — Seller-tool-first
 
 Date: 2026-07-18
@@ -42,6 +73,16 @@ Status: Confirmed
 ### Decision
 
 Первый traffic приводит seller.
+
+### Rationale
+
+У нового marketplace нет buyer-аудитории.
+
+### Revisit when
+
+После каталога и repeat buyers.
+
+---
 
 ## DEC-005 — Закрытый запуск
 
@@ -52,6 +93,12 @@ Status: Confirmed
 
 Первые sellers/lots допускаются вручную.
 
+### Revisit when
+
+После 10–50 проверенных sellers.
+
+---
+
 ## DEC-006 — Первый рынок
 
 Date: 2026-07-18
@@ -60,6 +107,12 @@ Status: Confirmed
 ### Decision
 
 Беларусь, русский интерфейс, BYN.
+
+### Revisit when
+
+После локальной повторяемости и legal review.
+
+---
 
 ## DEC-007 — Первый creator
 
@@ -70,6 +123,12 @@ Status: Hypothesis
 
 Таисия Борисова — предпочтительный первый seller.
 
+### Rationale
+
+Готовые работы, около 1 500 подписчиков, опыт и доверие после custdev.
+
+---
+
 ## DEC-008 — Hard close в MVP
 
 Date: 2026-07-18
@@ -78,6 +137,16 @@ Status: Confirmed
 ### Decision
 
 Bids прекращаются строго по server `endsAt`.
+
+### Alternative
+
+Soft close.
+
+### Revisit when
+
+После pilot feedback или до крупных запусков.
+
+---
 
 ## DEC-009 — Soft close planned
 
@@ -92,6 +161,7 @@ Status: Planned
 
 Load test, понятный UI, отдельное решение.
 
+---
 
 ## DEC-010 — Внешние уведомления не входят в MVP
 
@@ -106,6 +176,12 @@ Status: Confirmed
 
 Пользователь не вернётся после outbid.
 
+### Revisit when
+
+После return metrics и интервью.
+
+---
+
 ## DEC-011 — Искусственные ставки запрещены
 
 Date: 2026-07-18
@@ -114,6 +190,12 @@ Status: Rejected
 ### Decision
 
 Никаких fake bids, linked accounts или platform seed bids.
+
+### Revisit when
+
+Не пересматривается.
+
+---
 
 ## DEC-012 — Общий resale запрещён
 
@@ -128,6 +210,7 @@ bidplace не становится вторичным рынком.
 
 Личная вещь продаётся самим связанным с ней человеком.
 
+---
 
 ## DEC-013 — Два seller-направления
 
@@ -143,6 +226,7 @@ Status: Confirmed
 
 Сначала creators.
 
+---
 
 ## DEC-014 — Brands отложены
 
@@ -157,6 +241,7 @@ Status: Rejected for current stage
 
 Проверенный first-party проект конкретного известного человека.
 
+---
 
 ## DEC-015 — Creator без известности может быть допущен
 
@@ -171,6 +256,7 @@ Follower count не абсолютный gate.
 
 Для auction pilot нужен реальный план привлечения нескольких покупателей.
 
+---
 
 ## DEC-016 — Телефон перед первой ставкой
 
@@ -181,6 +267,7 @@ Status: Confirmed
 
 Просмотр и базовая регистрация без обязательного телефона; verification перед bid.
 
+---
 
 ## DEC-017 — Scheduled preview
 
@@ -191,6 +278,7 @@ Status: Confirmed
 
 Auction page публикуется заранее, bidding открывается в `startsAt`.
 
+---
 
 ## DEC-018 — Seller privacy mode
 
@@ -205,6 +293,7 @@ Seller может скрыть личный contact и сам написать w
 
 Internal inbox/representative.
 
+---
 
 ## DEC-019 — Bid history сохраняется
 
@@ -215,6 +304,7 @@ Status: Confirmed
 
 Bid audit не удаляется вместе с UI auction.
 
+---
 
 ## DEC-020 — Первые пилоты без комиссии
 
@@ -225,15 +315,26 @@ Status: Confirmed
 
 0% для первых пилотов.
 
+### Revisit when
+
+После повторяемых продаж и/или payments.
+
+---
+
 ## DEC-021 — Монетизация не фиксируется заранее
 
 Date: 2026-07-18
 Status: Hypothesis
 
+### Candidates
+
+Buyer fee, seller fee, promotion, subscription, paid tools.
+
 ### Rule
 
 Не внедрять до подтверждённой ценности.
 
+---
 
 ## DEC-022 — Discovery позднее
 
@@ -244,6 +345,7 @@ Status: Planned
 
 Feed, recommendations и AI не входят в первые фазы.
 
+---
 
 ## DEC-023 — Technical gate: 10 users
 
@@ -254,6 +356,7 @@ Status: Confirmed
 
 До pilot полный scenario с 10 concurrent users и simultaneous bids.
 
+---
 
 ## DEC-024 — Concierge для первых sellers
 
@@ -264,6 +367,7 @@ Status: Confirmed
 
 Первые 5–10 sellers сопровождаются вручную.
 
+---
 
 ## DEC-025 — Профиль без рангов
 
@@ -274,6 +378,7 @@ Status: Confirmed
 
 Не использовать «профессионал/любитель».
 
+---
 
 ## DEC-026 — Образовательный контент не продукт
 
@@ -284,6 +389,12 @@ Status: Confirmed
 
 Контент используется для роста и объяснения ценности.
 
+### Rejected
+
+Отдельная educational platform.
+
+---
+
 ## DEC-027 — Services/masterclasses отложены
 
 Date: 2026-07-18
@@ -293,6 +404,7 @@ Status: Rejected for current roadmap
 
 Не добавлять booking без повторяющегося спроса.
 
+---
 
 ## DEC-028 — Charity и significant events отложены
 
@@ -303,6 +415,7 @@ Status: Rejected for current stage
 
 Не тратить resources до реального запроса.
 
+---
 
 ## DEC-029 — Документы разделены по state
 
@@ -317,6 +430,7 @@ Status: Confirmed
 
 Coding-agent обновляет status и релевантный документ после задачи.
 
+---
 
 ## DEC-030 — Roadmap трёхмесячными волнами
 
@@ -327,6 +441,7 @@ Status: Confirmed
 
 План на 24 месяца, без недельной feature-гонки.
 
+---
 
 ## DEC-031 — Market reports дают гипотезы
 
@@ -337,6 +452,7 @@ Status: Confirmed
 
 Внешний отчёт не становится проверенным фактом автоматически.
 
+---
 
 ## DEC-032 — Admin panel сохраняется
 
@@ -347,6 +463,7 @@ Status: Confirmed
 
 Admin — controlled operations layer, расширяется по реальным задачам.
 
+---
 
 ## DEC-033 — Mobile web first
 
@@ -357,6 +474,12 @@ Status: Confirmed
 
 Первый продукт распространяется ссылкой и должен отлично работать в mobile browser.
 
+### Rejected MVP
+
+Обязательный app-store launch.
+
+---
+
 ## DEC-034 — Start price и reserve
 
 Date: 2026-07-18
@@ -365,6 +488,12 @@ Status: Hypothesis
 ### Decision
 
 MVP поддерживает hidden reserve; цена первого seller согласуется вручную.
+
+### Revisit when
+
+После auction interviews, особенно по trust.
+
+---
 
 ## DEC-035 — Три источника ценности
 
@@ -375,6 +504,7 @@ Status: Confirmed
 
 Авторство, личная связь, подтверждённая ограниченность.
 
+---
 
 ## DEC-036 — Mass brand не создаёт ценность автоматически
 
@@ -389,6 +519,7 @@ Status: Confirmed
 
 Обычные брюки массового производства не подходят; личная вещь известного человека или сделанная им вещь может подходить.
 
+---
 
 ## DEC-037 — Product и Listing разделяют предмет и размещение
 
@@ -404,6 +535,7 @@ Status: Confirmed
 
 Решение основателя, Task A, 2026-07-18.
 
+---
 
 ## DEC-038 — Публичная ссылка Product использует random publicId
 
@@ -414,6 +546,7 @@ Status: Confirmed
 
 Единственный публичный detail route — `/product/[publicId]`. `Product` и `Order` получают неизменяемый криптографически случайный publicId; title-derived slug и `/auctions/[slug]` удаляются без compatibility period.
 
+---
 
 ## DEC-039 — BYN, startPrice и soft close для MVP
 
@@ -428,6 +561,7 @@ MVP использует только BYN. Reserve и Buy Now исключены
 
 `DEC-008`, `DEC-009` и `DEC-034` в части hard close и reserve.
 
+---
 
 ## DEC-040 — Order foundation и минимальная moderation входят в MVP
 
@@ -438,6 +572,7 @@ Status: Confirmed
 
 После завершённого Listing создаётся privacy-safe `Order` без payment/delivery machine. SellerProfile и Product используют минимальные admin-only approval transitions. Automatic winner replacement и visual redesign не входят в текущую реализацию; light redesign отложен в Task B.
 
+---
 
 ## DEC-041 — Task A closed-pilot verification boundary
 
@@ -448,6 +583,7 @@ Status: Confirmed
 
 Task A is accepted for a closed pilot with manual controls after its focused Chromium E2E and full repository gates. WebKit, full browser/device matrix, visual regression, exhaustive seller/admin E2E, accessibility automation and ten-session rehearsal are release hardening after Task B, not prerequisites for the pilot.
 
+---
 
 ## DEC-042 — Публичная заявка seller и отдельный доступ к продажам
 
@@ -458,6 +594,12 @@ Status: Confirmed
 
 Кнопка «Стать seller» доступна публично зарегистрированному User. Заявка создаёт SellerProfile, но не даёт право создавать или публиковать Product и Listing. После ручного admin approval выдаётся отдельный persisted seller access; admin может его отозвать. Buyer account и seller capability не являются одной ролью.
 
+### Rationale
+
+MVP не требует ручных приглашений, но сохраняет curated supply и не допускает неподтверждённые товары на площадку.
+
+---
+
 ## DEC-043 — Данные публичного SellerProfile
 
 Date: 2026-07-23
@@ -467,6 +609,7 @@ Status: Confirmed
 
 Для заявки seller обязательны profile photo, имя и фамилия либо название seller, краткое описание автора/стиля работ и хотя бы один social link или другие публично проверяемые данные. SellerProfile отделён от buyer account; имя из регистрации может предзаполнять профиль, но seller может выбрать другое публичное имя или название.
 
+---
 
 ## DEC-044 — Модерация Product до публичной публикации
 
@@ -481,6 +624,7 @@ Seller создаёт private Product draft и отправляет его на 
 
 Поздние классы предметов могут потребовать condition/defects отдельным решением.
 
+---
 
 ## DEC-045 — Ручная замена winner в MVP
 
@@ -495,6 +639,7 @@ Status: Confirmed
 
 Автоматическая замена может быть рассмотрена после MVP на основании подтверждённого evidence неудачного контакта, включая AI-assisted разбор материала, предоставленного seller. Для неё нужны отдельные privacy, security и product decisions.
 
+---
 
 ## DEC-046 — Минимальная first-party analytics для pilot
 
@@ -505,6 +650,7 @@ Status: Confirmed
 
 MVP фиксирует только минимальные first-party события воронки и результата сделки. Dashboard и third-party marketing trackers не входят в решение.
 
+---
 
 ## DEC-047 — Временные поля для будущих retention policies
 
@@ -515,6 +661,7 @@ Status: Confirmed
 
 Persisted entities должны иметь `createdAt` и `updatedAt`; Product дополнительно получает `publishedAt` при первой публичной публикации. PII и audit хранятся бессрочно до отдельной legal/privacy policy.
 
+---
 
 ## DEC-048 — Дизайн не расширяется в ближайшей MVP-волне
 
@@ -525,6 +672,7 @@ Status: Confirmed
 
 Следующая MVP-волна использует существующий UI. Redesign и новые визуальные направления не входят в seller access, moderation, handoff, analytics и security work.
 
+---
 
 ## DEC-049 — SellerProfile approval является seller capability
 
@@ -539,6 +687,7 @@ Status: Confirmed
 
 `DEC-042` в части отдельного persisted seller grant.
 
+---
 
 ## DEC-050 — Email verification и принятие правил перед первой ставкой
 
@@ -553,6 +702,7 @@ Production MVP использует email verification перед первой �
 
 `DEC-016` в части обязательной phone verification.
 
+---
 
 ## DEC-051 — Публичный профиль и handoff contacts
 
@@ -565,6 +715,7 @@ SellerProfile использует одно публичное поле `fullNam
 
 Seller отдельно указывает handoff contact: Telegram, phone или Instagram. После создания active Order buyer получает этот contact, seller получает verified buyer email. Privacy mode seller сохраняется.
 
+---
 
 ## DEC-052 — Public catalog и история завершённого Product
 
@@ -575,6 +726,7 @@ Status: Confirmed
 
 Product появляется в public catalog только после moderation approval и при `SCHEDULED` либо `LIVE` Listing. После завершения он исключается из общего каталога, но сохраняется по прямому public URL с результатом и историей, пока admin его не скрыл.
 
+---
 
 ## DEC-053 — Юридическая граница MVP в Беларуси
 
@@ -587,6 +739,7 @@ Status: Confirmed
 
 До real pilot нужны public rules, privacy notice и legal review checklist. Это решение не является юридическим заключением.
 
+---
 
 ## DEC-054 — Нет удаления и автоматизации replacement в MVP
 
@@ -597,6 +750,7 @@ Status: Confirmed
 
 В MVP нет self-service удаления account, Product, PII или audit. Все winner replacement выполняются вручную admin. AI-анализ и автоматическая replacement logic не входят в MVP и не получают заранее заданного post-MVP workflow.
 
+---
 
 ## DEC-055 — Final Modern UI выполняется единым cutover
 
@@ -609,10 +763,15 @@ Modern UI реализуется в отдельной `feature/modern-ui-final`
 
 Временный логотип до поставки approved asset: compact mark на desktop и live lowercase `bidplace` в Inter на mobile. Product scope не расширяется Search, Settings, saved items, filters или новыми API.
 
+### Rationale
+
+Гибридный UI делает аукционные, privacy и role flows труднее проверяемыми. До production допустим единый чистый переход без runtime rollback; обычный Git revert остаётся техническим средством восстановления после merge.
+
 ### Revises
 
 `DEC-048` в части запрета redesign в ближайшей MVP-волне.
 
+---
 
 ## DEC-056 — Клиентская проверка ставки и подтверждение первой ставки
 
@@ -625,6 +784,16 @@ Client проверяет обязательность, числовой BYN ф�
 
 Перед первой Bid пользователя в конкретном Listing UI показывает confirmation с предметом, суммой, актуальным minimum, server deadline и последствием действия. Повторная Bid в том же Listing не требует повторного confirmation, если participation достоверно известен. Rejected/stale Bid refetches canonical HTTP snapshot и не получает success presentation.
 
+### Rationale
+
+Это снижает случайные ставки, но не создаёт клиентский аукционный rule engine и не допускает расхождения с конкурентной server transaction.
+
+### Revisit when
+
+Right-swipe confirmation может рассматриваться после MVP только с отдельной accessibility и web-equivalence проверкой.
+
+---
+
 ## DEC-057 — Web-first UI polish boundary
 
 Date: 2026-07-30
@@ -635,6 +804,12 @@ Status: Confirmed
 Вторая UI-волна использует web-first spatial logic: белый canvas, компактный icon rail, единый account control справа и shared page-state primitives. Seller navigation derives capability from `SellerProfile.status`; `APPROVED` остаётся единственным доступом к созданию предмета. Автор Product берётся из публичного `SellerProfile.fullName`, а публичная история строится только из Product/Listing данных.
 
 Tags, search, tag filtering, notifications, account settings, password reset, buyer profile page, new Product fields и mobile redesign отложены.
+
+### Rationale
+
+Это улучшает web hierarchy и role clarity без дублирования автора, изменения Product schema, расширения API или ослабления auction/privacy boundaries.
+
+---
 
 ## DEC-058 — Admin не участвует в торгах
 
@@ -649,6 +824,7 @@ Admin имеет только Catalog и Moderation в навигации. Backe
 
 Связанные ограничения роли из `DEC-052` и UI-решения `DEC-057`; правило завершённых лотов из `DEC-052` пересмотрено выше.
 
+---
 
 ## DEC-059 — Завершённые лоты остаются в public catalog
 
@@ -663,6 +839,7 @@ Public catalog включает `APPROVED` Product с `SCHEDULED`, `LIVE` или
 
 Эта запись пересматривает только правило public catalog из `DEC-052`; исходный текст `DEC-052` сохранён без изменений.
 
+---
 
 ## DEC-060 — Local/test-only demo Bid fixtures are allowed
 
@@ -693,6 +870,7 @@ disposable PostgreSQL database.
 Clarifies the technical-fixture boundary of `DEC-011`; its prohibition on
 artificial bids remains unchanged for production and real auctions.
 
+---
 
 ## DEC-061 — Wave B semantic action and keyboard focus colors
 
@@ -703,10 +881,15 @@ Status: Confirmed
 
 For Wave B shared visual-system fixes, small accent text uses the contrast-safe semantic `accentDark` color `#BC3C1B`, destructive text and buttons use `#B63B3B`, and keyboard focus uses `#2457E6`.
 
+### Rationale
+
+These values are explicitly confirmed in the Wave B implementation request and provide readable semantic action text plus a visible keyboard focus ring without changing the Wave A layout or brand canvas decisions.
+
 ### Scope
 
 Wave B shared tokens and primitives only; product flows, API contracts, and protected product/design foundations remain unchanged.
 
+---
 
 ## DEC-062 — Canonical Pen v2 is immutable during implementation
 
@@ -746,6 +929,7 @@ visual target or its implementation documentation. Their product boundaries,
 server-authoritative auction behavior and accessibility obligations remain in
 force.
 
+---
 
 ## DEC-063 — Pen v2 UI uses durable shared architecture only
 
@@ -765,6 +949,14 @@ parallel token systems, fake data or controls, client-side approximations of
 missing API behavior, type/lint suppressions, silent fallbacks and hybrid final
 shells. When a durable solution requires an unresolved route, field, data or
 API decision, only that scope remains Blocked until the owner decision exists.
+
+### Rationale
+
+The founder is delegating detailed design implementation and requires the
+result to remain visually exact, scalable, understandable and maintainable
+without relying on subjective design judgment during coding.
+
+---
 
 ## DEC-064 — Foundation, Gamma and Avant Arte define approved interaction references
 
@@ -797,6 +989,14 @@ mapped into runtime platform assets without redesigning the mark.
   `docs/design/03-DESIGN-SYSTEM.md`; route-local animation guesses are rejected.
 - Production auction, auth, permissions, privacy and data contracts remain
   server/product-authoritative.
+
+### Rationale
+
+The founder explicitly requires a polished, maintainable implementation with
+smooth transitions and artwork-led atmosphere while acknowledging that static
+design frames cannot efficiently show every interactive state.
+
+---
 
 ## DEC-065 — Public discovery uses explicit routes and server-owned query semantics
 
@@ -844,6 +1044,12 @@ acceptance target. `HOXkZ`, named `FINAL — Desktop Creator / Profile / Editori
 Refinement v1`, is a rejected alternative for this route and must not be used
 as a second target, fallback composition or separate implementation.
 
+### Rationale
+
+The founder selected the MVP v1 composition as the final creator-profile
+direction. One route and one shared implementation prevent visual drift and
+duplicate screen anatomy.
+
 ### Boundaries
 
 This decision changes only the creator-profile visual target. It does not alter
@@ -877,6 +1083,12 @@ Revises `DEC-046` only where it excluded any dashboard: a compact admin
 dashboard is now in scope for pilot operations. The first-party / no marketing
 tracker constraint remains.
 
+### Rationale
+
+Pre-signup journey and acquisition are otherwise irrecoverable. Storing events
+in PostgreSQL lets the founder join funnels with Bid/Order without ETL and keep
+one operational UI.
+
 ## DEC-068 — MVP static-only image uploads with authz-before-decode
 
 Status: Confirmed
@@ -888,6 +1100,18 @@ Product image uploads accept **static JPEG, PNG, and WebP only**. Reject GIF and
 any animated WebP/PNG. Run ownership and approved-seller checks **before** Sharp
 decode. Enforce max edge 4096px and 16_777_216 pixels; normalize sequentially to
 canonical bytes with bounded `limitInputPixels`; rate-limit upload POSTs.
+
+### Alternatives considered
+
+- Allow GIF/animated assets for creator storytelling — rejected for MVP decode
+  risk and catalog consistency.
+- Client-only size limits — rejected; server must enforce regardless of client.
+
+### Revisit when
+
+Creators need motion assets, print-resolution uploads above the pixel budget, or
+object-storage/CDN replaces PostgreSQL blobs. Any animated-media change requires
+an explicit product decision and update to `13-APPLICATION-SECURITY.md`.
 
 ## DEC-069 — Pilot ops: single-replica Compose + pg_dump backup
 
@@ -901,6 +1125,17 @@ Pilot production operations use **one API replica** deployed via Docker Compose
 encrypted-optional `pg_dump -Fc` via `scripts/ops/backup-db.sh`. Restore targets a
 separate database name only; integrity checks sample `ProductImage.checksum`
 values after restore.
+
+### Alternatives considered
+
+- Kubernetes / managed PaaS for pilot — rejected as unnecessary scope before first
+  users.
+- Separate object-storage backup for images — rejected while blobs live in Postgres.
+
+### Revisit when
+
+Multi-instance API, object storage for media, or managed backup/restore service is
+required for scale or compliance.
 
 ## DEC-070 — Fixed 48-hour Order contact window
 
@@ -927,6 +1162,18 @@ uses the same `orderContactSchedule`. Callers cannot pass a custom
 not a server gate for `HANDOFF_FAILED`; seller-driven status changes stay
 independent of the deadline until an explicit SLA decision.
 
+### Alternatives considered
+
+- Keep 24 hours for first Orders and fix only replacement — rejected; one window
+  is the founder MVP rule.
+- Configurable 24/48/72 per seller or Listing — deferred.
+- Automatic next-bidder replacement — still outside MVP (`DEC-054`).
+
+### Revisit when
+
+Seller-configurable contact windows, automatic replacement, or a different
+handoff SLA is an explicit product decision.
+
 ## DEC-071 — REJECTED Product is recovered on the same Product
 
 Date: 2026-09-05
@@ -950,6 +1197,18 @@ scheduled/live Listings stay locked.
 `DEC-044` only where the previous implementation treated Product `REJECTED` as
 terminal with no owner recovery. `DEC-044` still requires moderation before
 public publication.
+
+### Alternatives considered
+
+- Clone a rejected Product into a new draft — rejected: duplicates identity and
+  splits the audit trail.
+- A dedicated reset endpoint that rewrites status or history — rejected: mutates
+  audit and adds a second write path.
+
+### Revisit when
+
+A later item class needs a different post-rejection workflow, or legal process
+requires a distinct appeal record separate from Product identity.
 
 ## DEC-072 — Expanded MVP product contract (founder defaults)
 
@@ -991,6 +1250,21 @@ Code status lives in `11-PROJECT-STATUS.md`.
 - RFC §19 “fixed price is out of MVP”: fixed-price sale and optional offer are
   now in the product contract for P0-E. They are not in the current runtime.
 
+### Alternatives considered
+
+- Counteroffer in cabinet — rejected for MVP; accept/reject only.
+- Automatic next bidder at close — rejected for MVP; keep manual admin
+  replacement.
+- IP-detected currency — rejected; seller market on Listing is the source.
+- Seller reconfirm after fixed buy — rejected; the buy itself creates the deal.
+- Portfolio-only in wave 1 because Figma drew it — rejected; wave 2.
+
+### Revisit when
+
+P0-E implementation starts, a lawyer requires a different contract moment for
+fixed vs auction, or an explicit founder decision adds counteroffer or
+automatic replacement.
+
 ## DEC-073 — Expired SCHEDULED listings are cancelled
 
 Date: 2026-09-05
@@ -1004,6 +1278,17 @@ without bids. The scheduler writes `CANCELLED`, `closedAt = now`, an append-only
 `AuditEvent` (`EXPIRED_SCHEDULED_WINDOW`, no user actor) and emits
 `listing.updated`. No Order is created. Activation still requires
 `startsAt <= now AND endsAt > now` plus approved product/seller handoff.
+
+### Alternatives considered
+
+- Silent +24h reschedule — rejected; hides scheduler failure.
+- `ENDED` without bids — rejected; looks like a completed auction.
+- Leave `SCHEDULED` forever — rejected; catalog and bid path stay broken.
+
+### Revisit when
+
+A founder decision restores a published recovery window or a different missed-
+schedule outcome.
 
 ## DEC-074 — Immutable Order deal snapshot
 
@@ -1019,6 +1304,20 @@ recovery and manual replacement load those fields inside the create
 transaction through the shared snapshot helper. Order projections prefer the
 frozen fields. Historical rows without snapshot columns keep the live
 Product/Listing fallback and are not rewritten.
+
+### Alternatives considered
+
+- Snapshot only contacts — rejected; seller inbox and P0-E would keep reading a
+  mutable title.
+- Backfill old Orders — rejected for this change; additive nullable columns
+  avoid a data rewrite.
+- Duplicate `snapshotListingId` — rejected; `listingId` is already the frozen
+  Listing identity.
+
+### Revisit when
+
+P0-E reuses this helper for fixed/offers, or a founder decision requires
+backfilling historical Orders.
 
 ## DEC-075 — Work-first MVP and reopened marketplace mechanics
 
@@ -1054,6 +1353,18 @@ from the former `DEC-072` defaults.
 | Object storage                   | S3-compatible media migration and rendition plan occur before final redesign/launch proof, after the current audit tasks.                                                                 |
 | Redesign                         | Final implementation layer after product, legal UX and core flows are stable. Original Figma is read-only and must never be modified.                                                     |
 
+### Why `DEC-072` changed
+
+The founder had asked the prior work to expose weak points and propose defaults,
+not to silently promote every proposed default to a final product decision. The
+September 6 review explicitly reopened the marketplace-specific choices and
+confirmed portfolio-first behavior.
+
+### Revisit when
+
+The marketplace comparison and written BY+RF legal response are available. Record
+each selected mechanic as a new append-only decision before implementation.
+
 ## DEC-076 — Sale mode boundaries for the public MVP
 
 Date: 2026-09-06
@@ -1082,6 +1393,11 @@ This decision fixes the product boundary without inventing those rules.
 `DEC-075` where “auction + fixed + optional offer” could be read as allowing an
 offer inside an auction. It does not revise Work-first portfolio behavior.
 
+### Revisit when
+
+A written legal answer requires a different transaction flow or the founder adds
+another sale format.
+
 ## DEC-077 — Belarus-only current legal workstream
 
 Date: 2026-09-06
@@ -1107,6 +1423,11 @@ unverified legal proposition into a repository fact.
 `DEC-075` and RFC references that made a written BY+RF answer the active launch
 gate. Product language and public accessibility do not add a second active legal
 workstream without a new founder decision.
+
+### Revisit when
+
+The founder deliberately opens a separate country launch, changes the operator
+jurisdiction or receives legal advice that requires a broader review.
 
 ## DEC-078 — Belarus launch documents and legal UX defaults
 
@@ -1147,6 +1468,12 @@ follow-up messages
   subject to the legal UX research.
 - `DEC-077`: the broad lawyer questionnaire is replaced by focused Belarus legal
   UX research and final review of the adapted documents.
+
+### Revisit when
+
+The Belarus research finds a primary-source conflict, the final lawyer review
+requires a change, marketing email is enabled, or technical diagnostics are added
+to error reports.
 
 ## DEC-079 — Work availability and persistent fixed sale
 
@@ -1189,6 +1516,11 @@ but unused inventory/presale behavior is not implemented speculatively in MVP.
 - Which confirmed failure reasons release a Work for relist.
 - Exact state names and UI grouping after the marketplace/community research.
 
+### Revisit when
+
+The service introduces quantity, editions, presale, platform payment or a legal answer
+requires a fixed Listing deadline.
+
 ## DEC-080 — One format-neutral Order identity
 
 Date: 2026-09-07
@@ -1220,6 +1552,11 @@ Work and quantity one.
 
 Extends `DEC-074`: immutable Order snapshot is format-neutral. The current mandatory
 `sourceBidId` is a runtime limitation, not a target contract for fixed/offer.
+
+### Revisit when
+
+The research and Work-first contract choose the persistence model, or a multi-unit
+format is approved for implementation.
 
 ## DEC-081 — Test-data reset and deferred general platform tooling
 
@@ -1253,6 +1590,12 @@ this decision.
 - Narrows pre-MVP complaints to transaction-specific handoff problems; general content
   and author reports move after MVP.
 
+### Revisit when
+
+Research shows that the auction cannot produce a reliable result without a minimal
+notification, public users enter the database, or abuse volume requires general
+reporting before the planned post-MVP phase.
+
 ## DEC-082 — Первый публичный MVP проверяет портфолио автора
 
 Date: 2026-09-08
@@ -1271,6 +1614,17 @@ Revises for the first public release: `DEC-003`, `DEC-016`–`DEC-020`, `DEC-075
 Order, handoff, корзины, истории покупок/продаж и контактов для сделки. Это не отказ от
 commerce-направления. Оно сохраняется как следующая продуктовая волна после проверки
 портфолио и отдельного legal/domain gate.
+
+### Why
+
+Одновременный запуск портфолио, трёх способов сделки, невыкупа, раскрытия контактов и
+споров делает первую проверку слишком большой и задерживает выход. Публичное портфолио
+само проверяет ценность профиля, работ, creator onboarding, discovery и share loop.
+
+### Revisit when
+
+Есть несколько одобренных авторов с реальными работами, публичные страницы используются
+внешней аудиторией, а основатель готов открыть отдельную commerce wave.
 
 ## DEC-083 — Публичная модель Work без «Архива» и простой creation flow
 
@@ -1298,6 +1652,11 @@ Extends: `DEC-075`, `DEC-079`
 Public likes, wishlist, notification bell и cart/navigation purchase entry отсутствуют
 в первом MVP. Share и QR профиля входят в первый MVP.
 
+### Revisit when
+
+Добавляются clickable tag discovery, rich creation story, commerce availability или
+buyer account value.
+
 ## DEC-084 — Commerce сохраняется в коде и выключается fail-closed
 
 Date: 2026-09-08
@@ -1316,6 +1675,10 @@ Commerce tests могут явно включать capability в изолиро
 Долгоживущая отдельная ветка не является хранилищем уже принятого кода: она быстро
 расходится с общими исправлениями auth, media и security. Отдельная feature branch
 используется только для будущей ограниченной разработки commerce v2 до review/merge.
+
+### Revisit when
+
+Commerce contract, документы, UX и release gates утверждены и проверены отдельно.
 
 ## DEC-085 — Figma is the production visual source; Pen file stays historical
 
@@ -1342,6 +1705,11 @@ to code.
   Geist font files are deferred. Work shows an `Оплата и доставка` unavailable
   stub.
 
+### Revisit when
+
+Desktop/tablet Figma compositions exist, search overlay is in scope, or commerce
+capability is enabled with matching frames.
+
 ## DEC-086 — Opening of the week is a server-owned editorial selection
 
 Date: 2026-09-09
@@ -1359,6 +1727,11 @@ include one deterministic example. Production does not invent a selection.
 Missing, hidden, rejected or unpublished pointers resolve to `null` and the
 section is omitted. Newest-work, random pick and client hardcoded `publicId`
 are forbidden.
+
+### Revisit when
+
+Home UI implements the section from an approved capture, or editorial workflow
+needs a non-admin operator tool.
 
 ## DEC-087 — Commerce v1 archived; active main becomes portfolio-native
 
@@ -1388,6 +1761,19 @@ Revises: retention clause of `DEC-084` only. Does not reopen `DEC-082`, `DEC-083
 - Do **not** rewrite Git history or introduce Git LFS as part of source cleanup.
 - Commerce is deferred and may be redesigned; it is not `Rejected`.
 
+### Why
+
+Portfolio MVP is already the public product contract. Keeping commerce modules,
+adapters and schema in the active tree preserves naming drift, test burden and
+accidental re-exposure risk even with `COMMERCE_ENABLED=false`. A protected
+archive preserves the exact prior implementation without maintaining two active
+product lines.
+
+### Revisit when
+
+Commerce contract, legal/domain gate, UX and release gates are approved for a
+new wave; then port deliberate concepts from the archive into `commerce-v2`.
+
 ## DEC-089 — Discovery facets are derived from public server data
 
 Date: 2026-09-13
@@ -1405,6 +1791,17 @@ material string is one canonical facet value; delimiters are not guessed.
 The accepted Figma Work card remains title + author. RFC §6 “brief facts” is a
 documented product/design ambiguity and does not authorize adding unapproved
 fields or changing the Figma master during this implementation.
+
+### Why
+
+Server ownership keeps available filters aligned with public visibility and
+prevents stale, fake or private values from entering discovery. Preserving the
+accepted card avoids resolving an incomplete visual contract by invention.
+
+### Revisit when
+
+The domain gains structured multi-material data, or an approved Figma/card
+contract defines which brief facts must be visible.
 
 ## DEC-090 — Home Opening curator note is an optional selection field
 
@@ -1436,6 +1833,12 @@ migrations.
   it is close. The quiet profile pill hugs contents (padding 8/14, radius 28,
   `#EFEFEF` fill, 16% white→`#999999` stroke).
 
+### Revisit when
+
+The table has been applied in production, an admin editor for `note` is in
+scope, or live Figma inspect copy `uMo04w9bgrchWXXDgO4W62` disagrees with the
+versioned first-fold snapshot.
+
 ## DEC-091 — Figma Opening identity is local seed; curator is not the work owner
 
 Date: 2026-09-14
@@ -1463,6 +1866,11 @@ Revises: `DEC-090` (Playwright-only `@vex` / Anna seed). Does not reopen
   decision (`DEC-092`) assigns a demo work for catalog completeness. Missing
   Figma rasters are not replaced with Unsplash.
 
+### Revisit when
+
+Figma confirms a vex-owned work, an isolated `pixelp` portrait exists, or the
+unreleased `curator_selections` table is applied in production.
+
 ## DEC-092 — Demo data is invented in seed, production-quality in the UI
 
 Date: 2026-09-15
@@ -1488,6 +1896,11 @@ Does not reopen Opening ownership (`vex` curator, Dali / `pixelp`) or
 - Public Work `История` stays RFC plain-text paragraphs. Extra `ProductImage`
   rows are gallery photos, not a process-builder content model.
 
+### Revisit when
+
+Figma confirms an isolated `pixelp` portrait or a vex-owned work card, or the
+process photo/text story builder leaves the post-MVP backlog.
+
 ## DEC-093 — Phone gallery hides arrows; History and achievements reuse media
 
 Date: 2026-09-15
@@ -1510,6 +1923,17 @@ Does not rewrite `05-MVP-RFC.md`.
   attach a same-event Figma fill or same-work **detail** crop, never the
   product cover and never one raster reused across authors.
 
+### Why
+
+Phone UI was duplicating swipe with overlay arrows. About cards were
+text-only grey blocks while Figma shows date → photo → description.
+History was a text wall despite existing gallery extras.
+
+### Revisit when
+
+Figma supplies isolated exhibition-install photos, a second same-work Dali
+History fill, or the process-builder leaves the post-MVP backlog.
+
 ## DEC-088 — MVP dock is one four-item glass capsule
 
 Date: 2026-09-11
@@ -1525,6 +1949,16 @@ logo (Home), search, plus (Add), profile. Search is an item inside that
 capsule. Figma first-fold split chrome (`Frame 182` + `Frame 46` 64×64 search
 FAB) and the long-Home five-icon pill (`436:1366`, 288×64 with cart) are unused
 variants, not separate production components. Cart stays deferred.
+
+### Why
+
+Handoff captures show two dock layouts. Implementing both would create two
+shells. The founder selected the unified capsule already described in
+`02-USER-FLOWS-AND-SCREENS.md` (Home, Search, Add, Profile).
+
+### Revisit when
+
+Search overlay, cart, or a designer-approved second dock layout is in scope.
 
 ## DEC-094 — Infrastructure errors have one layered path
 
@@ -1548,6 +1982,17 @@ loaded. Feature domain errors stay in their modules.
 
 Infrastructure UI copy is one sentence: «Проверьте соединение и попробуйте ещё раз.»
 
+### Why
+
+Infrastructure copy, mappers and dual Home retry/banner were scattered across
+screens. A second filter, a giant error enum, or a coordinator/state machine
+would duplicate existing layers.
+
+### Revisit when
+
+Form validation and other public-kind `error.message` leaks are migrated off
+the old mapper, or a product-specific infrastructure title is required.
+
 ## DEC-095 — Public session failure is silent; ProtectedRoute owns the UI
 
 Date: 2026-09-17
@@ -1568,6 +2013,16 @@ canonical infrastructure state with Retry → `auth.refreshSession()`.
 
 Feature screens do not suppress or coordinate session alerts. Infrastructure
 UI is one sentence plus Retry, via `InfrastructureErrorState`.
+
+### Why
+
+Per-screen `showSessionAlert={!query.isError}` recreated scattered policy.
+New public pages should not need to know about session-bootstrap chrome.
+
+### Revisit when
+
+A contextual, non-chrome use of `SessionAlert` is required, or logo-motion is
+wired into `InfrastructureErrorState`.
 
 ## DEC-096 — Search is a fullscreen overlay over the current public page
 
@@ -1616,6 +2071,16 @@ canonical fallback only when the stack is empty (`/works`, `/authors`). Direct
 when there is no predecessor. Search does not use scenario flags
 (`cameFromSearch`, category parent, and similar).
 
+### Why
+
+The Figma Search frames are an overlay on the current page. A submit-only
+`/search` landing with stacked Works+Authors fought that contract.
+
+### Revisit when
+
+Category taxonomy and media are decided, or overlay result limits require
+in-overlay pagination.
+
 ## DEC-097 — Portfolio release uses R2 and native Cloudflare CDN
 
 Date: 2026-10-04
@@ -1656,7 +2121,7 @@ Portfolio Rules/Privacy are pending and do not stop technical implementation.
 
 Confirmed choices are not evidence of implementation. Current runtime still
 uses one ImageStore bucket and API media reads. Exact phased plan and remaining
-operational inputs: R2/CDN second pass (`git show d0efc03b:docs/audits/2026-10-04-R2-MEDIA-IMPLEMENTATION-PLAN.md`).
+operational inputs: [R2/CDN second pass](../audits/2026-10-04-R2-MEDIA-IMPLEMENTATION-PLAN.md).
 Lazy FULL generation is not implicitly selected by the lazy loading requirement.
 
 ## DEC-098 — Cloudflare application deployment boundary
@@ -1876,6 +2341,13 @@ or opacity change. A selected chip keeps its charcoal fill. Keyboard focus
 keeps the existing blue outline. Field success `#039600` and real success
 messages stay. The captured Figma field board and the protected `.pen` file
 are not rewritten.
+
+### Alternatives
+
+- Drawing the ring again after a delay. That only hides the flash.
+- Replacing the mint ring with another colored ring. The founder did not ask
+  for a new color effect.
+- A route-local stylesheet. The ring is shared by buttons and choice chips.
 
 ## DEC-105 — Auth sheets follow the supplied versioned capture
 
@@ -2212,7 +2684,7 @@ require a bounded implementation plan; the proposed 5/20 limits are not approved
 merely by accepting the block editor.
 
 Contract owner: [05-MVP-RFC.md](05-MVP-RFC.md). Execution plan:
-author/story backend (`git show d0efc03b:docs/archive/tasks/2026-10-11-author-story-backend/PLAN.md`).
+[author/story backend](../archive/tasks/2026-10-11-author-story-backend/PLAN.md).
 Deferred trade screens and video: [15-POST-MVP-BACKLOG.md](15-POST-MVP-BACKLOG.md).
 
 ## DEC-113 — Shared approved classifiers now; user proposals after MVP
@@ -2233,7 +2705,7 @@ in [15-POST-MVP-BACKLOG.md §5](15-POST-MVP-BACKLOG.md#5-медиа-и-creator-p
 This does not approve an arbitrary initial category list from an attached proposal.
 
 Contract owner: [05-MVP-RFC.md](05-MVP-RFC.md). Execution plan:
-author/story backend (`git show d0efc03b:docs/archive/tasks/2026-10-11-author-story-backend/PLAN.md`).
+[author/story backend](../archive/tasks/2026-10-11-author-story-backend/PLAN.md).
 
 ## DEC-114 — Country selection hides codes; city is optional
 
@@ -2253,7 +2725,7 @@ public author/work projections, search/facets and their consumers together.
 The old country strings need an explicit migration mapping, not silent guessing.
 
 Contract owner: [05-MVP-RFC.md](05-MVP-RFC.md). Execution plan:
-author/story backend (`git show d0efc03b:docs/archive/tasks/2026-10-11-author-story-backend/PLAN.md`).
+[author/story backend](../archive/tasks/2026-10-11-author-story-backend/PLAN.md).
 
 ## DEC-115 — Next wave adds sales; one complete post-MVP plan
 
@@ -2314,8 +2786,9 @@ Story limits are five images, twenty heading and paragraph blocks together,
 story-photo budget. An empty story and an image-only story are valid.
 
 Contract owner: [05-MVP-RFC.md](05-MVP-RFC.md). Client follow-up:
-UI-HANDOFF.md (`git show d0efc03b:docs/archive/tasks/2026-10-11-author-story-backend/UI-HANDOFF.md`).
+[UI-HANDOFF.md](../archive/tasks/2026-10-11-author-story-backend/UI-HANDOFF.md).
 
+---
 
 ## DEC-117 — Author basics step copy, country popup and city clearing
 
@@ -2345,6 +2818,23 @@ readiness and the server contract. Upload, selection and validation errors use t
 existing mechanisms. The logout action is a ghost «Выйти» below «Продолжить» in the
 normal flow. The field variant `authorApplication` changes only the empty border and
 the placeholder to `#999999`; icons keep their color.
+
+### Alternatives
+
+- A separate clear request or a second save for the city was rejected: it breaks one
+  save per user action.
+- Sending the city as the string `"null"` or an empty string was rejected: it mixes
+  a clear marker with user text.
+
+### Rationale
+
+The Figma copy and shared components stay as they are. City remains optional under
+`DEC-114`, so the wire format needs one explicit clear marker and no new endpoint.
+
+### Revisit when
+
+The step-3 direction control is implemented, or the placeholder or field copy is
+changed by the founder or the assigned designer.
 
 ## DEC-118 — One legal handoff, DEC-078 registration and target retention
 
@@ -2418,6 +2908,10 @@ secondary and may be stale; live Figma wins on disagreement. `AGENTS.md` and
 The "Pen is canonical / immutable" parts of `DEC-062` and `DEC-063`, and the
 "Pen file stays historical" part of `DEC-085`.
 
+### Revisit when
+
+A new design tool replaces Figma.
+
 ## DEC-120 — Fluid container
 
 Date: 2026-10-13
@@ -2433,6 +2927,10 @@ no longer keep a 390 column.
 ### Revises
 
 The layout clause of `DEC-085` only.
+
+### Revisit when
+
+Desktop Figma compositions define different widths.
 
 ## DEC-121 — Local browser-only draft restore; no sync
 
@@ -2454,6 +2952,11 @@ the first confirmed create the `…:new` key migrates to the confirmed id.
 Simultaneous editing from several devices resolves to the last successful
 server save (server revision token decides whether a stored draft still
 applies).
+
+### Revisit when
+
+Cross-device editing or offline-first requirements appear, or a future SDK
+upgrade changes what the local browser layer must cover.
 
 ### Implementation
 
@@ -2507,7 +3010,7 @@ relations требуют отдельного backend/security-плана пер
 Не менять server permissions ради визуального сходства.
 
 Дизайн/implementation handoff:
-2026-10-19-account-ui (`git show d0efc03b:docs/archive/tasks/2026-10-19-account-ui/README.md`).
+[2026-10-19-account-ui](../archive/tasks/2026-10-19-account-ui/README.md).
 
 ## DEC-124 — Одно явное подтверждение регистрации
 
@@ -2561,8 +3064,40 @@ web стиль собирается существующими токенами 
 прочих контролов сохраняются. Компонентных/маршрутных исключений не вводим.
 Это не решение о запуске всей provisional black-палитры пользователям.
 
+## DEC-128 — Общая desktop-шапка и визуальная унификация навигации
 
-## DEC-128 — Автоматическая оптимизация фотографий и нормализованный SOURCE
+Date:2026-10-21
+Status: Confirmed
+
+Основатель подтвердил общую desktop-шапку на публичных Home/Works/Authors и
+страницах деталей; нижний dock остаётся мобильным. Корзину и уведомления вне MVP
+не добавлять. Для страницы автора актуальный визуальный источник — точные frames
+из HRRtDp0bQlukw7ptTkuEZg, page1:3, вместо старой копии; текущий master кнопок и
+MVP-ограничения сохраняются. Общие FilterOptionRow — с галочкой справа, без
+видимого индикатора скролла. Одна круглая кнопка Back для всех экранов со
+состояниями normal/pressed/disabled. Избранное/подписки и их экраны остаются после
+MVP; показ макета выбранного состояния не является решением включить backend.
+
+Implementation status: [author parity audit](../audits/current/2026-10-21-AUTHOR-PROFILE-PARITY.md).
+
+
+### DEC-129 — Public desktop navigation threshold (2026-10-21)
+
+Confirmed by founder: shared public desktop header starts at1024 CSS px;
+mobile dock below. Extends DEC-128; no cart/notifications/favorites scope added.
+
+
+## DEC-130 — Shared footer and desktop header completion (2026-10-21)
+
+Confirmed by founder: footer on ordinary pages including account/settings,
+excluding auth, forms, step editors and overlays; responsive visibility belongs
+to shared owners. New visual source ibHSgpAKXnItNSHaHzvRk2: footer5065:21196 /
+4980:16299 and desktop Home3139:2222. Works/Authors use the third ghost button
+variant. Cart/notification placeholders are allowed in desktop chrome; this
+revises the visual omission in DEC-128 only, without adding commerce or
+notification functionality to MVP. DEC-129's1024px navigation threshold stands.
+
+## DEC-131 — Автоматическая оптимизация фотографий и нормализованный SOURCE
 
 Дата: 2026-10-22. Статус: Confirmed (прямое решение основателя в чате).
 
@@ -2580,12 +3115,16 @@ web стиль собирается существующими токенами 
 Обновлённый контракт: `05-MVP-RFC.md` §10; реализация и совместимость старых
 объектов: `10-CODE-ARCHITECTURE.md`, раздел от 2026-10-22.
 
-## DEC-129 — Исправления ревью загрузки фотографий
+## DEC-132 — Исправления ревью загрузки фотографий
 
 Дата: 2026-10-23. Статус: Confirmed (прямое поручение основателя исправить
-замечания обоих ревью). Уточняет DEC-128: галерея принимает до 8192 px по стороне
+замечания обоих ревью). Уточняет DEC-131: галерея принимает до 8192 px по стороне
 и 50 331 648 пикселей, автоматически приводит мастер к 4096 px и 5 МиБ.
 Уменьшение больших фото ниже 1600 px и портретов до 256 px исключено;
 финальная попытка портрета — 640 px. Компактные 16-битные PNG сохраняют исходные
 байты. Таймаут зависит от размера, переходы блокируются на время отправки,
 legacy-хранилище гарантирует повтор по тому же ключу без дубля.
+
+Фото-решения перенумерованы при синхронизации веток: прежние номера
+DEC-128/129 в фото-ветке конфликтовали с независимыми UI-решениями release.
+Содержание решений сохранено.

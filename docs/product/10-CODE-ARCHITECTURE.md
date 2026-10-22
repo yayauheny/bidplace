@@ -347,9 +347,9 @@ SellerProfile
   then `ImageStore.get`. Per-user upload rate limits apply to product, creation-step,
   achievement, and profile-photo uploads. Author, achievement, and work decode share
   one process-local admission of two operations; nested pipeline validation reuses
-  that slot and releases it on failure. A new Work upload that exceeds gallery count, or targets an already full
-  byte budget, is rejected before Sharp/R2. Remaining byte capacity is checked
-  against the normalized SOURCE in the locked attach transaction. Replaying bytes already attached to the current revision does
+  that slot and releases it on failure. A new Work upload that exceeds gallery count or targets an already full byte
+  budget is rejected before Sharp/R2. The locked transaction checks the remaining
+  capacity against the normalized SOURCE. Replaying bytes already attached to the current revision does
   not create another image. See
   `13-APPLICATION-SECURITY.md` and `apps/api/src/images/image-policy.ts`.
 - Publication is confirmed in the request that enqueued it. HTTP success means the
@@ -429,7 +429,7 @@ insert trigger. The mobile and admin clients still speak the previous contracts,
 including the removed free-text materials and technique writes.
 
 Contracts belong to [05-MVP-RFC.md](05-MVP-RFC.md); affected consumers, migration
-and API work were planned in `docs/archive/tasks/2026-10-11-author-story-backend/PLAN.md` (removed from the tree; `git show d0efc03b:docs/archive/tasks/2026-10-11-author-story-backend/PLAN.md`).
+and API work are in [the backend plan](../archive/tasks/2026-10-11-author-story-backend/PLAN.md).
 The next sales wave has its own [complete product plan](15-POST-MVP-BACKLOG.md)
 (`DEC-115`), without changing the active boot graph.
 
@@ -495,7 +495,7 @@ focus traps, save state or permissions. Dialog.Overlay remains the dismissal hit
 layer below panels. Native/isolated rendering retains its existing per-dialog
 implementation; centered confirmations, auth and Search keep their flow layers.
 useReturnFocus records weak opener ancestry for handoffs without retaining closed
-DOM scopes. The 2026-10-19 transition matrix is no longer in the tree (`git show d0efc03b:docs/audits/2026-10-19-TRANSITION-MATRIX.md`).
+DOM scopes. See audits/2026-10-19-TRANSITION-MATRIX.md for coverage and limits.
 
 ### Registration evidence and document delivery —2026-10-20
 
@@ -520,11 +520,46 @@ seller date exports delegate without changing null labels or local draft schema.
 UI never changes date-only values to timezone-dependent instants. No API,
 database migration or scheduling domain was added.
 
-`AppDialogSheetMotion.web` uses persistent Reanimated withTiming, inert closing
-content and cancellation on unmount. It replaces web layout exiting only, because
-that implementation moves live children into dummy DOM clones. Native keeps
-existing layout transitions. This boundary is shared by all AppDialog sheets.
+`AppDialogSheetMotion` owns one Reanimated shared translation across enter, drag,
+cancel and exit on web/native. SheetDragSurface handles the header gesture only;
+it neither wraps the sheet in another transform nor resets an accepted dismissal.
+Web retains one live DOM tree, makes entering/closing content inert and removes it
+only after the timing completion. AuthViewport commits dismissal navigation from
+onExited; useReturnFocus restores at the real FocusScope close. Guarded dismissal
+animates back to rest. ReduceMotion.System remains the shared timing policy.
+Native shares this owner but device runtime still needs verification.
 
+Metro's transform cache identity includes the explicit public build configuration
+(API URL, public site key, app environment and analytics flag). Sequential preview
+and isolated-test exports must never reuse a bundle compiled for another origin.
+metro.config.js and environment.spec own this build/release invariant.
+
+
+### Public navigation / bleed layout ownership — 2026-10-21
+
+Public route context scopes navigation presentation; shared use-app-navigation
+retains the existing auth/capability/search owners for dock and desktop header.
+AppShell owns Safe Area and selects chrome; PageColumn owns constrained geometry
+inside both normal and full-bleed scroll hosts. No domain/API/persistence boundary
+changed. Visual and motion contract: docs/design/03-DESIGN-SYSTEM.md.
+
+
+### Ordinary page chrome (2026-10-21)
+
+`AppShell` owns desktop/dock visibility; `PageScrollView` composes the existing
+`PageColumn`, `SiteFooter` and dock clearance in one scrollport. Its branded
+variant owns the responsive central mark. `SiteFooter` shares the wide-layout
+policy with navigation and uses existing auth/create routes and legal IDs.
+`FormPageShell` includes it for account/settings only by default. Full-screen
+forms and overlays retain their existing layout. `BidplaceLogo` is the shared
+contain-fitted combined SVG for header/footer.
+
+
+UI review follow-up (2026-10-21): the existing PageChromeContext carries actual
+`desktop` and `dock` visibility from AppShell. PageScrollView consumes this state
+for dock clearance; screens do not independently derive navigation visibility.
+No server, persistence or API boundary changed. Focus-after-enter lives in the
+existing use-return-focus module and is shared by auth and general dialogs.
 
 ## 2026-10-22 — Normalized image processing boundary
 

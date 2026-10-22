@@ -61,6 +61,8 @@ Node map, style measurements, source discrepancies и execution handoff нахо
 | `04-DESIGN-STATUS.md`                           | фактическая готовность дизайна и реализации       |
 | `05-DESIGN-HANDOFF.md`                          | обязательный процесс Figma → code → QA            |
 | `06-ASSET-INVENTORY.md`                         | разрешённые assets, fonts, icons и ограничения    |
+| `07-PEN-V2-UI-AUDIT-AND-IMPLEMENTATION-PLAN.md` | полный аудит, node registry и этапы реализации    |
+| `08-IMPLEMENTATION-LOG.md`                      | этапы, commits, проверки и оставшийся scope       |
 
 Live Figma `pAPQo6cADmG5XzVmBX76EE` — единственный visual source для текущего production UI.
 Текущие blockers: [`../product/16-PORTFOLIO-ACTIVE-BACKLOG.md`](../product/16-PORTFOLIO-ACTIVE-BACKLOG.md)

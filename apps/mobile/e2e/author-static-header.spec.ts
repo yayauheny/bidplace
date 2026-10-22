@@ -255,7 +255,30 @@ test.describe('static public creator header', () => {
         (node) => new DOMMatrixReadOnly(getComputedStyle(node).transform).m42,
       ),
     ).toBe(0);
-    await page.getByRole('checkbox', { name: 'Скульптура' }).click();
+    const option = page.getByRole('checkbox', { name: 'Скульптура' });
+    const label = option.getByText('Скульптура', { exact: true });
+    expect((await label.boundingBox())!.width).toBeGreaterThan(0);
+    expect((await option.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    await expect(label).toHaveCSS('font-size', '15px');
+    await option.focus();
+    await option.press('Space');
+    await expect(option).toBeChecked();
+    const tick = await option.locator('svg').boundingBox();
+    const optionBox = await option.boundingBox();
+    expect(tick!.x + tick!.width / 2).toBeGreaterThan(optionBox!.x + optionBox!.width - 24);
+    const scrollbars = await page.getByRole('dialog').evaluate((dialog) =>
+      [...dialog.querySelectorAll('*')]
+        .filter((node) => getComputedStyle(node).overflowY === 'auto')
+        .map((node) => getComputedStyle(node).scrollbarWidth),
+    );
+    expect(scrollbars.length).toBeGreaterThan(0);
+    expect(scrollbars.every((width) => width === 'none')).toBe(true);
+    await page.getByRole('dialog').getByText('Категория', { exact: true }).click();
+    const panel = await page.getByRole('dialog').boundingBox();
+    const action = await page.getByRole('button', { name: 'Показать работы' }).boundingBox();
+    expect(panel!.y + panel!.height - action!.y - action!.height).toBeCloseTo(20, 0);
+    await page.screenshot({ path: resolve(w1EvidenceDir, `category-picker-${test.info().project.name}.png`) });
+
     await page.getByRole('checkbox', { name: 'Живопись' }).click();
     await page.getByRole('button', { name: 'Показать работы' }).click();
     await expect
@@ -307,7 +330,7 @@ test.describe('static public creator header', () => {
     ).toHaveCount(0);
   });
 
-  test('scrolls away naturally without resizing and leaves room above the dock', async ({
+  test('pins the same action bar after the identity scrolls away and leaves room above the dock', async ({
     page,
   }) => {
     await page.setViewportSize({ width: 390, height: 860 });
@@ -329,6 +352,16 @@ test.describe('static public creator header', () => {
     expect(avatarAfter?.width).toBeCloseTo(avatarBefore?.width ?? 0, 0);
     expect(avatarAfter?.height).toBeCloseTo(avatarBefore?.height ?? 0, 0);
 
+    const actions = page.getByTestId('creator-action-bar');
+    await expect.poll(async () => (await actions.boundingBox())?.y ?? -100).toBeGreaterThanOrEqual(-1);
+    await expect(page.getByRole('button', { name: 'Поделиться профилем' })).toBeVisible();
+    await page.screenshot({ path: `${w1EvidenceDir}/author-pinned-${test.info().project.name}-390.png` });
+    await page.getByRole('button', { name: 'Поделиться профилем' }).click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await scrollCreator(page, 0);
+    await expect.poll(async () => Math.round((await actions.boundingBox())?.y ?? -100)).toBe(18);
     await scrollCreator(page, 100_000);
     const clear = await page.evaluate(() => {
       const panel = document.querySelector('[data-testid="author-content"]');
@@ -363,5 +396,238 @@ test.describe('static public creator header', () => {
 
     await page.getByRole('button', { name: 'Назад' }).click();
     await expect(page).toHaveURL(/\/authors(?:\?|$)/);
+    await page.getByText('@static-tabs', { exact: true }).click();
+    await expect(page).toHaveURL(/\/seller\/static-tabs/);
+    await page.getByRole('button', { name: 'Назад', exact: true }).click();
+    await expect(page).toHaveURL(/\/authors(?:\?|$)/);
+  });
+});
+
+test.describe('shared public desktop navigation', () => {
+  test('switches one navigation surface at 1024px and keeps author content mounted', async ({ page }) => {
+    await mockAuthor(page, 'desktop-chrome', 2, 3);
+    await page.setViewportSize({ width: 1023, height: 900 });
+    await page.goto('/seller/desktop-chrome');
+    const avatar = page.getByTestId('creator-avatar');
+    await expect(avatar).toBeVisible();
+    await avatar.evaluate((node) => { node.setAttribute('data-continuity', 'retained'); });
+    await expect(page.getByTestId('figma-floating-dock')).toBeVisible();
+    await expect(page.getByTestId('desktop-navigation')).toHaveCount(0);
+    for (const width of [1024, 1440, 1800]) {
+      await page.setViewportSize({ width, height: 900 });
+      const nav = page.getByTestId('desktop-navigation');
+      await expect(nav).toBeVisible();
+      await expect(page.getByTestId('figma-floating-dock')).toHaveCount(0);
+      await expect(avatar).toHaveAttribute('data-continuity', 'retained');
+      expect((await nav.boundingBox())?.height).toBe(68);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      await page.screenshot({ path: `${w1EvidenceDir}/desktop-navigation-${test.info().project.name}-${width}.png` });
+    }
+    await page.getByTestId('desktop-navigation').getByRole('link', { name: 'Авторы', exact: true }).click();
+    await expect(page).toHaveURL(/\/authors$/);
+    await expect(page.getByTestId('desktop-navigation')).toBeVisible();
+    await page.getByTestId('desktop-navigation').getByRole('link', { name: 'Работы', exact: true }).click();
+    await expect(page).toHaveURL(/\/works$/);
+    await expect(page.getByTestId('desktop-navigation')).toBeVisible();
+    await page.getByTestId('desktop-navigation').getByRole('link', { name: 'bidplace — на главную' }).click();
+    await expect(page).toHaveURL(/\/$/);
+    await expect(page.getByTestId('desktop-navigation')).toBeVisible();
+  });
+
+  test('reuses search and guest auth with focus return to desktop openers', async ({ page }) => {
+    await mockAuthor(page, 'desktop-focus', 2, 3);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/seller/desktop-focus');
+    const nav = page.getByTestId('desktop-navigation');
+    const brandImage = await nav.getByTestId('bidplace-logo').locator('img').elementHandle();
+    expect(brandImage).not.toBeNull();
+    const search = nav.getByRole('button', { name: 'Поиск', exact: true });
+    await search.click();
+    await expect(page.getByRole('tablist', { name: 'Разделы поиска' })).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(search).toBeFocused();
+    const profile = nav.getByRole('button', { name: 'Профиль', exact: true });
+    await profile.click();
+    await expect(page).toHaveURL(/\/login\?redirectTo=%2Fseller%2Fdesktop-focus/);
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page).toHaveURL(/\/seller\/desktop-focus$/);
+    await expect(profile).toBeFocused();
+    await nav.getByRole('button', { name: 'Создать', exact: true }).click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(nav.getByRole('button', { name: 'Создать', exact: true })).toBeFocused();
+    expect(await brandImage!.evaluate(node => node.isConnected)).toBe(true);
+  });
+});
+
+
+test('measures author composition and preserves identity across responsive layouts', async ({ page }) => {
+  await mockAuthor(page, 'author-parity', 2, 8);
+  await page.setViewportSize({ width: 390, height: 874 });
+  await page.goto('/seller/author-parity');
+  await expect(page.getByTestId('creator-avatar')).toBeVisible();
+  await page.getByTestId('creator-avatar').evaluate((node) => node.setAttribute('data-continuity', 'same'));
+  for (const width of [320, 390, 440, 1024, 1440, 1800]) {
+    await page.setViewportSize({ width, height: 874 });
+    await page.evaluate(() => document.fonts.ready);
+    const avatar = page.getByTestId('creator-avatar');
+    await expect(avatar).toHaveCSS('width', width < 1024 ? '100px' : '140px');
+    await expect(avatar).toHaveAttribute('data-continuity', 'same');
+    await expect(page.getByTestId('creator-meta').getByText('Анна Морозова')).toHaveCSS('font-size', width < 1024 ? '20px' : '24px');
+    const scrollport = await page.getByTestId('creator-scroll').boundingBox();
+    expect(scrollport?.width).toBe(width);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    const positions = await page.locator('[data-testid^="author-work-actions-"]').evaluateAll((nodes) => nodes.slice(0, 4).map((node) => node.getBoundingClientRect().y));
+    if (width >= 1440) expect(new Set(positions).size).toBe(1);
+    await page.screenshot({ path: `${w1EvidenceDir}/author-works-${test.info().project.name}-${width}.png` });
+    await page.getByRole('tab', { name: 'Об авторе', exact: true }).click();
+    await expect.poll(async () => {
+      const bio = await page.getByText('Биография', { exact: true }).boundingBox();
+      const practice = await page.getByText('Практика и подход', { exact: true }).boundingBox();
+      return width >= 1024 ? bio?.y === practice?.y : (practice?.y ?? 0) > (bio?.y ?? 0);
+    }).toBe(true);
+    await page.screenshot({ path: `${w1EvidenceDir}/author-about-${test.info().project.name}-${width}.png` });
+    await page.getByRole('tab', { name: /^Работы/ }).click();
+  }
+});
+
+
+test('pins author controls with reduced motion and restores the original row on return', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.setViewportSize({ width: 390, height: 874 });
+  await mockAuthor(page, 'author-reduced', 2, 8);
+  await page.goto('/seller/author-reduced');
+  const actions = page.getByTestId('creator-action-bar');
+  await expect(actions).toBeVisible();
+  await actions.evaluate((node) => node.setAttribute('data-continuity', 'same'));
+  for (const top of [450, 900, 450, 0]) {
+    await scrollCreator(page, top);
+    await expect.poll(async () => Math.round((await actions.boundingBox())?.y ?? -100)).toBe(top === 0 ? 18 : 0);
+    await expect(actions).toHaveAttribute('data-continuity', 'same');
+    await expect(page.getByTestId('creator-avatar')).toHaveCount(1);
+  }
+});
+
+
+test('preserves navigation and page states for empty and unavailable authors', async ({ page }) => {
+  await mockAuthor(page, 'author-empty', 0, 0);
+  await page.route('**/api/authors/author-missing**', (route) => route.fulfill({ status: 404, json: { message: 'Not found' } }));
+  for (const width of [390, 1440]) {
+    await page.setViewportSize({ width, height: 874 });
+    await page.goto('/seller/author-empty');
+    await expect(page.getByText('У автора пока нет опубликованных работ')).toBeVisible();
+    await page.goto('/seller/author-missing');
+    await expect(page.getByText('Автор не найден', { exact: true })).toBeVisible();
+    await expect(page.getByTestId(width >= 1024 ? 'desktop-navigation' : 'figma-floating-dock')).toBeVisible();
+  }
+});
+
+test.describe('shared footer and responsive brand', () => {
+  test('renders full-width footer with usable real links from mobile through desktop', async ({ page }) => {
+    await mockAuthor(page, 'footer-author', 2, 3);
+    await page.goto('/seller/footer-author');
+    for (const width of [320, 390, 440, 1024, 1440, 1800]) {
+      await page.setViewportSize({ width, height: 900 });
+      const footer = page.getByTestId('site-footer');
+      await expect(page.getByTestId('creator-avatar')).toBeVisible();
+      await footer.scrollIntoViewIfNeeded();
+      await page.getByTestId('creator-scroll').evaluate(node => { node.scrollTop = node.scrollHeight; });
+      await expect(footer).toBeVisible();
+      await page.evaluate(() => document.fonts.ready);
+      expect(Math.round((await footer.boundingBox())?.width ?? 0)).toBe(width);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      await expect(footer.getByRole('link', { name: 'Политика и cookies' })).toHaveAttribute('href', '/legal/privacy');
+      await expect(footer.getByRole('link', { name: 'Согласие ПДн' })).toHaveAttribute('href', '/legal/data-consent');
+      await expect(footer.getByRole('link', { name: 'Правила сервиса' })).toHaveAttribute('href', '/legal/agreement');
+      await expect(footer.getByRole('link', { name: /торгов|Оплата/ })).toHaveCount(0);
+      for (const link of await footer.getByRole('link').all()) {
+        expect((await link.boundingBox())?.height).toBeGreaterThanOrEqual(44);
+      }
+      await expect(footer.getByTestId('bidplace-logo').locator('img')).toHaveCSS('object-fit', 'contain');
+      const dock = page.getByTestId('figma-floating-dock');
+      if (width < 1024) {
+        const legal = await footer.getByRole('link', { name: 'Политика и cookies' }).boundingBox();
+        expect((legal?.y ?? 1000) + (legal?.height ?? 0)).toBeLessThanOrEqual((await dock.boundingBox())?.y ?? 0);
+      }
+      await footer.screenshot({ path: `${w1EvidenceDir}/footer-${test.info().project.name}-${width}.png` });
+    }
+    const footer = page.getByTestId('site-footer');
+    await footer.getByRole('button', { name: 'Создать работу' }).click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(footer.getByRole('button', { name: 'Создать работу' })).toBeFocused();
+    await footer.getByRole('link', { name: 'Правила сервиса' }).click();
+    await expect(page).toHaveURL(/\/legal\/agreement/);
+    await expect(page.getByTestId('site-footer')).toHaveCount(1);
+  });
+
+  test('uses shared navigation buttons and honest header placeholders', async ({ page }) => {
+    await mockAuthor(page, 'footer-header', 0, 0);
+    await page.setViewportSize({ width: 1024, height: 900 });
+    await page.goto('/seller/footer-header');
+    const header = page.getByTestId('desktop-navigation');
+    await expect(header).toBeVisible();
+    const controls = [header.getByRole('link', { name: 'Работы', exact: true }), header.getByRole('link', { name: 'Авторы', exact: true }), header.getByRole('button', { name: 'Поиск', exact: true }), header.getByRole('button', { name: 'Корзина', exact: true }), header.getByRole('button', { name: 'Уведомления', exact: true }), header.getByRole('button', { name: 'Профиль', exact: true }), header.getByRole('button', { name: 'Создать', exact: true })];
+    let previousRight = 0;
+    for (const control of controls) {
+      const box = await control.boundingBox();
+      expect(box).not.toBeNull();
+      expect(box!.x).toBeGreaterThanOrEqual(previousRight);
+      previousRight = box!.x + box!.width;
+    }
+    expect(previousRight).toBeLessThanOrEqual(1024);
+    for (const name of ['Корзина', 'Уведомления']) {
+      const opener = header.getByRole('button', { name, exact: true });
+      await opener.click();
+      await expect(page.getByRole('dialog', { name, exact: true })).toBeVisible();
+      await expect(page.getByText('Этот раздел появится после MVP.')).toBeVisible();
+      await page.keyboard.press('Escape');
+      await expect(opener).toBeFocused();
+    }
+    await header.getByRole('link', { name: 'Авторы', exact: true }).click();
+    await expect(page).toHaveURL(/authors$/);
+    await expect(page.getByTestId('desktop-navigation').getByRole('link', { name: 'Авторы', exact: true })).toHaveAttribute('aria-current', 'page');
+  });
+
+  test('measures the desktop Home first section against frame 3139:2222', async ({ page }) => {
+    await mockAuthor(page, 'footer-composition', 0, 1);
+    const fixture = authorFixture('footer-composition', 0, 1);
+    await page.route('**/api/portfolio/home', route => route.fulfill({ json: {
+      curatorSelection: { curator: fixture.author, work: { ...fixture.works[0].work, author: fixture.author }, note: 'Выбор куратора' },
+      newWorks: fixture.works, newAuthors: [],
+    } }));
+    await page.setViewportSize({ width: 1800, height: 1000 });
+    await page.goto('/');
+    const opening = page.locator('#home-opening');
+    await expect(opening).toBeVisible();
+    await page.evaluate(() => document.fonts.ready);
+    const box = await opening.boundingBox();
+    expect(box?.x).toBe(272);
+    expect(box?.y).toBe(140);
+    expect(box?.width).toBe(1256);
+    const header = page.getByTestId('desktop-navigation');
+    await header.getByRole('link', { name: 'Работы', exact: true }).hover();
+    await page.screenshot({ path: `${w1EvidenceDir}/home-desktop-${test.info().project.name}-1800.png` });
+    await header.screenshot({ path: `${w1EvidenceDir}/header-buttons-${test.info().project.name}.png` });
+  });
+
+  test('has one responsive Home brand and keeps forms free of the page footer', async ({ page }) => {
+    await mockAuthor(page, 'footer-home', 0, 0);
+    await page.route('**/api/portfolio/home', route => route.fulfill({ json: { curatorSelection: null, newWorks: [], newAuthors: [] } }));
+    await page.goto('/');
+    await expect(page.getByText('Пока здесь тихо')).toBeVisible();
+    for (const width of [390, 1023, 1024, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      await expect(page.getByTestId('home-scroll').getByTestId('bidplace-brand-mark')).toHaveCount(width < 1024 ? 1 : 0);
+      await expect(page.getByTestId('desktop-navigation')).toHaveCount(width < 1024 ? 0 : 1);
+    }
+    const navLogo = page.getByTestId('desktop-navigation').getByTestId('bidplace-logo');
+    await expect(navLogo.locator('img')).toHaveCSS('object-fit', 'contain');
+    await navLogo.screenshot({ path: `${w1EvidenceDir}/header-logo-${test.info().project.name}.png` });
+    await page.goto('/register');
+    await expect(page.getByRole('dialog', { name: 'Регистрация' })).toBeVisible();
+    await expect(page.getByRole('textbox', { name: 'Электронная почта' })).toBeVisible();
+    await expect(page.getByTestId('site-footer')).toHaveCount(0);
   });
 });

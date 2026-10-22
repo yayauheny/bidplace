@@ -5,16 +5,17 @@ import {
   useCallback,
   useEffect,
   useId,
-  useMemo,
   useRef,
   useState,
   type ReactNode,
 } from 'react';
-import { Platform, ScrollView, useWindowDimensions, View } from 'react-native';
-import Animated from 'react-native-reanimated';
-import { scheduleOnRN } from 'react-native-worklets';
+import { Platform, ScrollView, View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useVisibleViewport } from './use-visible-viewport';
+import { isAuthDialog } from './auth-viewport-layout';
+import { AppDialogSheetMotion } from '../ui/AppDialogSheetMotion';
 
 import {
   clearAuthHistory,
@@ -36,19 +37,15 @@ import {
   type AuthSheetGuard,
 } from '../../features/auth/auth-sheet-context';
 import type { SafeRedirect } from '../../features/auth/auth-redirect';
-import { sheetEnter, sheetExit } from '../../lib/layout-transition';
 import { BidplaceMark, BidplaceWordmark } from '../branding/BidplaceBrand';
 import { AppText } from '../ui';
 import { SheetDragSurface, SheetDragHandle } from '../ui/SheetDragSurface';
 import { FigmaIcon } from '../figma/FigmaIcon';
 import { useAppTheme } from '../../providers/theme-provider';
 import { AppDialogFrame, AppDialogOverlay } from '../ui/app-dialog-layer';
-import {
-  appDialogHostStyle,
-  sheetWidthConstraint,
-} from '../ui/app-dialog-host-style';
+import { appDialogHostStyle } from '../ui/app-dialog-host-style';
 import { MotionPressable } from '../ui/MotionPressable';
-import { useReturnFocus } from '../ui/use-return-focus';
+import { focusDialogAfterEnter, useReturnFocus } from '../ui/use-return-focus';
 
 function screenBrandInset() {
   return {
@@ -101,7 +98,8 @@ export function AuthViewport(props: AuthViewportProps) {
   const navigation = useNavigation();
   const focused = useIsFocused();
   const historyId = useId();
-  const { height, width } = useWindowDimensions();
+  const { height, width, offsetTop } = useVisibleViewport();
+  const insets = useSafeAreaInsets();
   const [screenContentHeight, setScreenContentHeight] = useState(0);
   const [guard, setGuard] = useState<AuthSheetGuard>({
     dirty: false,
@@ -109,6 +107,7 @@ export function AuthViewport(props: AuthViewportProps) {
   });
   const [confirm, setConfirm] = useState(false);
   const [released, setReleased] = useState(false);
+  const [closing, setClosing] = useState(false);
   const screenScrollRef = useRef<ScrollView>(null);
   const pendingAction = useRef<NavigationAction | null>(null);
   const browserLeavePath = useRef<string | null>(null);
@@ -135,7 +134,7 @@ export function AuthViewport(props: AuthViewportProps) {
       typeof document === 'undefined'
         ? null
         : document.querySelector<HTMLElement>(
-            '[data-testid="figma-floating-dock"] a[href], [data-testid="figma-floating-dock"] [role="button"]',
+            '[data-testid="figma-floating-dock"] a[href], [data-testid="figma-floating-dock"] [role="button"], [data-testid="desktop-navigation"] a[href], [data-testid="desktop-navigation"] [role="button"]',
           ),
   });
   const focusedRef = useRef(focused);
@@ -203,18 +202,14 @@ export function AuthViewport(props: AuthViewportProps) {
     [router],
   );
 
-  const commitLeave = useCallback(() => {
-    if (releasedRef.current) return;
-    allowRestoreRef.current = true;
+  const finishLeave = useCallback(() => {
+    if (!releasedRef.current || !allowRestoreRef.current) return;
     const action = pendingAction.current;
     const left = browserLeavePath.current;
     const traversal = browserLeaveTraversal.current;
     pendingAction.current = null;
     browserLeavePath.current = null;
     browserLeaveTraversal.current = null;
-    releasedRef.current = true;
-    setReleased(true);
-    setConfirm(false);
     const commit = authLeaveCommit({ hasNavigationAction: action !== null });
     if (commit === 'dispatch' && action) {
       navigation.dispatch(action as never);
@@ -230,6 +225,15 @@ export function AuthViewport(props: AuthViewportProps) {
       (left ? authBrowserLeaveTarget(left) : destination) as Href,
     );
   }, [destination, navigation, router]);
+
+  const commitLeave = useCallback(() => {
+    if (releasedRef.current) return;
+    allowRestoreRef.current = true;
+    releasedRef.current = true;
+    setReleased(true);
+    setConfirm(false);
+    setClosing(true);
+  }, []);
 
   const requestDismiss = useCallback(() => {
     if (!focusedRef.current || releasedRef.current) return;
@@ -299,6 +303,12 @@ export function AuthViewport(props: AuthViewportProps) {
     const onFocusIn = (event: FocusEvent) => {
       const target = event.target;
       if (!(target instanceof HTMLElement)) return;
+      const sheet = document.getElementById('auth-sheet');
+      // Radix can restore its container after enter; it is not a form control.
+      if (!releasedRef.current && sheet && target === sheet.closest('[role="dialog"]') && !sheet.closest('[inert]')) {
+        const previous = returnFocus.current;
+        focusDialogAfterEnter(previous?.isConnected && sheet.contains(previous) ? previous : sheet.querySelector<HTMLElement>('input'));
+      }
       if (target.closest('#auth-sheet')) returnFocus.current = target;
     };
     document.addEventListener('focusin', onFocusIn);
@@ -326,19 +336,11 @@ export function AuthViewport(props: AuthViewportProps) {
     if (!focusedRef.current || releasedRef.current) return;
     const sheet = document.getElementById('auth-sheet');
     if (!sheet) return;
-    if (sheet.contains(document.activeElement)) return;
-    sheet.querySelector<HTMLElement>('input')?.focus({ preventScroll: true });
+    focusDialogAfterEnter(sheet.querySelector<HTMLElement>('input'));
   }, []);
 
-  const entering = useMemo(
-    () =>
-      sheetEnter((finished) => {
-        'worklet';
-        if (finished) scheduleOnRN(focusAfterEnter);
-      }),
-    [focusAfterEnter],
-  );
   const screen = presentation === 'screen';
+  const desktopDialog = !screen && isAuthDialog(width);
   const brandInset = screenBrandInset();
   const screenBandHeight = screen
     ? height -
@@ -360,18 +362,27 @@ export function AuthViewport(props: AuthViewportProps) {
   const screenCentered = !screenMeasured || screenOffset === screenIdeal;
   const contentGap = screen
     ? designTokens.auth.screenGap
-    : tone === 'login'
-      ? designTokens.auth.loginGap
-      : designTokens.auth.sectionGap;
+    : desktopDialog
+      ? designTokens.auth.dialogSectionGap
+      : tone === 'login'
+        ? designTokens.auth.loginGap
+        : designTokens.auth.sectionGap;
   const formGap =
     tone === 'login'
       ? designTokens.auth.loginFormGap
       : designTokens.auth.formGap;
-  const frameStyle = appDialogHostStyle({
-    presentation: 'sheet',
-    viewportGutter: designTokens.space.x5,
-    viewportWidth: width,
-  });
+  const frameStyle = {
+    ...appDialogHostStyle({
+      presentation: desktopDialog ? 'dialog' : 'sheet',
+      viewportGutter: designTokens.space.x5,
+      viewportWidth: width,
+    }),
+    width: '100%' as const,
+    maxWidth: '100%' as const,
+    height,
+    top: offsetTop,
+    bottom: undefined,
+  };
 
   return (
     <View
@@ -418,190 +429,229 @@ export function AuthViewport(props: AuthViewportProps) {
                 />
               )}
               <AppDialogFrame style={frameStyle}>
-                <Animated.View
-                  entering={entering}
-                  exiting={sheetExit}
-                  style={{ width: '100%' }}
+                <View
+                  style={{
+                    width: '100%',
+                    maxWidth: desktopDialog
+                      ? designTokens.auth.dialogMaxWidth
+                      : undefined,
+                  }}
                 >
-                  <SheetDragSurface
-                    enabled={!screen && focused && !guard.busy}
-                    onRequestClose={requestDismiss}
+                  <AppDialogSheetMotion
+                    open={focused && !closing}
+                    onExited={finishLeave}
+                    onEntered={focusAfterEnter}
                   >
-                    <Dialog.Content
-                      forceMount={Platform.OS === 'web' ? true : undefined}
-                      nativeID={focused ? 'auth-sheet' : undefined}
-                      aria-modal={focused}
-                      onOpenAutoFocus={sheetReturnFocus.onOpenAutoFocus}
-                      onCloseAutoFocus={sheetReturnFocus.onCloseAutoFocus}
-                      style={{
-                        position: 'relative',
-                        width: '100%',
-                        // Fullscreen registration keeps its own geometry; the
-                        // sheet follows the shared width policy (full width at
-                        // <=600 viewport, sheetMax column above).
-                        maxWidth: screen
-                          ? undefined
-                          : sheetWidthConstraint(width),
-                        maxHeight: screen
-                          ? height
-                          : Math.max(
-                              height - designTokens.space.x6,
-                              designTokens.size.input * 4,
-                            ),
-                        minHeight: screen ? height : undefined,
-                        overflow: 'hidden',
-                        borderTopLeftRadius: screen
-                          ? 0
-                          : designTokens.auth.sheetRadius,
-                        borderTopRightRadius: screen
-                          ? 0
-                          : designTokens.auth.sheetRadius,
-                        borderBottomLeftRadius: 0,
-                        borderBottomRightRadius: 0,
-                        backgroundColor: palette.canvas,
-                        paddingTop: screen
-                          ? designTokens.auth.screenPaddingTop
-                          : designTokens.auth.paddingTop,
-                        paddingHorizontal: screen
-                          ? designTokens.auth.screenPaddingX
-                          : designTokens.auth.paddingX,
-                        paddingBottom: screen
-                          ? designTokens.auth.screenPaddingBottom
-                          : designTokens.auth.paddingBottom,
-                        zIndex: designTokens.layer.modal,
-                        justifyContent: screen ? 'flex-start' : undefined,
-                      }}
+                    <SheetDragSurface
+                      enabled={
+                        !screen &&
+                        !desktopDialog &&
+                        focused &&
+                        !closing &&
+                        !guard.busy
+                      }
+                      onRequestClose={requestDismiss}
                     >
-                      {screen ? (
-                        <View
-                          pointerEvents="none"
-                          accessibilityElementsHidden
-                          importantForAccessibility="no-hide-descendants"
-                          style={{
-                            position: 'absolute',
-                            top:
-                              designTokens.auth.markTop +
-                              designTokens.auth.screenPaddingTop,
-                            left: 0,
-                            right: 0,
-                            height: designTokens.auth.markSlotHeight,
-                            alignItems: 'center',
-                          }}
-                        >
+                      <Dialog.Content
+                        forceMount={Platform.OS === 'web' ? true : undefined}
+                        nativeID={focused ? 'auth-sheet' : undefined}
+                        aria-modal={focused}
+                        onOpenAutoFocus={sheetReturnFocus.onOpenAutoFocus}
+                        onCloseAutoFocus={sheetReturnFocus.onCloseAutoFocus}
+                        style={{
+                          position: 'relative',
+                          width: '100%',
+                          maxHeight: screen
+                            ? height
+                            : Math.max(
+                                0,
+                                height -
+                                  (desktopDialog
+                                    ? 2 * designTokens.space.x5
+                                    : insets.top + designTokens.space.x3),
+                              ),
+                          minHeight: screen ? height : undefined,
+                          overflow: 'hidden',
+                          borderTopLeftRadius: screen
+                            ? 0
+                            : desktopDialog
+                              ? designTokens.auth.dialogRadius
+                              : designTokens.auth.sheetRadius,
+                          borderTopRightRadius: screen
+                            ? 0
+                            : desktopDialog
+                              ? designTokens.auth.dialogRadius
+                              : designTokens.auth.sheetRadius,
+                          borderBottomLeftRadius: desktopDialog
+                            ? designTokens.auth.dialogRadius
+                            : 0,
+                          borderBottomRightRadius: desktopDialog
+                            ? designTokens.auth.dialogRadius
+                            : 0,
+                          backgroundColor: palette.canvas,
+                          paddingTop: screen
+                            ? designTokens.auth.screenPaddingTop
+                            : 0,
+                          paddingHorizontal: screen
+                            ? designTokens.auth.screenPaddingX
+                            : 0,
+                          paddingBottom: screen
+                            ? designTokens.auth.screenPaddingBottom
+                            : 0,
+                          zIndex: designTokens.layer.modal,
+                          justifyContent: screen ? 'flex-start' : undefined,
+                        }}
+                      >
+                        {screen ? (
                           <View
+                            pointerEvents="none"
+                            accessibilityElementsHidden
+                            importantForAccessibility="no-hide-descendants"
                             style={{
-                              width: designTokens.auth.markSlotWidth,
+                              position: 'absolute',
+                              top:
+                                designTokens.auth.markTop +
+                                designTokens.auth.screenPaddingTop,
+                              left: 0,
+                              right: 0,
                               height: designTokens.auth.markSlotHeight,
+                              alignItems: 'center',
                             }}
                           >
                             <View
                               style={{
-                                position: 'absolute',
-                                left: designTokens.auth.markInsetX,
-                                top: designTokens.auth.markInsetY,
-                              }}
-                            >
-                              <BidplaceMark />
-                            </View>
-                          </View>
-                        </View>
-                      ) : null}
-                      {screen ? (
-                        <View
-                          pointerEvents="none"
-                          accessibilityElementsHidden
-                          importantForAccessibility="no-hide-descendants"
-                          style={{
-                            position: 'absolute',
-                            bottom:
-                              designTokens.auth.wordmarkBottom +
-                              designTokens.auth.screenPaddingBottom,
-                            left: 0,
-                            right: 0,
-                            alignItems: 'center',
-                          }}
-                        >
-                          <BidplaceWordmark />
-                        </View>
-                      ) : null}
-                      <ScrollView
-                        ref={screen ? screenScrollRef : undefined}
-                        keyboardShouldPersistTaps="handled"
-                        keyboardDismissMode="on-drag"
-                        showsVerticalScrollIndicator={false}
-                        style={
-                          screen
-                            ? {
-                                flex: 1,
-                                marginTop: screenCentered
-                                  ? 0
-                                  : brandInset.markClearance,
-                                marginBottom: screenCentered
-                                  ? 0
-                                  : brandInset.wordmarkClearance,
-                              }
-                            : {
-                                maxHeight: Math.max(
-                                  height -
-                                    designTokens.space.x6 -
-                                    designTokens.auth.paddingTop -
-                                    designTokens.auth.paddingBottom,
-                                  designTokens.size.input * 4,
-                                ),
-                              }
-                        }
-                        contentContainerStyle={{
-                          gap: screen ? 0 : contentGap,
-                          flexGrow: screen ? 1 : undefined,
-                          justifyContent:
-                            screen && screenCentered ? 'center' : undefined,
-                        }}
-                      >
-                        {screen ? (
-                          <Dialog.Title asChild>
-                            <AppText
-                              role="sectionTitle"
-                              style={{
-                                position: 'absolute',
-                                width: 1,
-                                height: 1,
-                                overflow: 'hidden',
-                              }}
-                            >
-                              {title}
-                            </AppText>
-                          </Dialog.Title>
-                        ) : (
-                          <SheetDragHandle>
-                            <View
-                              style={{
-                                height: designTokens.auth.headerHeight,
-                                gap: designTokens.auth.titleGap,
+                                width: designTokens.auth.markSlotWidth,
+                                height: designTokens.auth.markSlotHeight,
                               }}
                             >
                               <View
                                 style={{
-                                  height: designTokens.auth.handleSlot,
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
+                                  position: 'absolute',
+                                  left: designTokens.auth.markInsetX,
+                                  top: designTokens.auth.markInsetY,
                                 }}
                               >
-                                <View
-                                  accessibilityElementsHidden
-                                  importantForAccessibility="no"
-                                  style={{
-                                    width: designTokens.auth.handleWidth,
-                                    height: designTokens.auth.handleHeight,
-                                    borderRadius: designTokens.radius.pill,
-                                    backgroundColor: palette.quietFill,
-                                  }}
-                                />
+                                <BidplaceMark />
                               </View>
+                            </View>
+                          </View>
+                        ) : null}
+                        {screen ? (
+                          <View
+                            pointerEvents="none"
+                            accessibilityElementsHidden
+                            importantForAccessibility="no-hide-descendants"
+                            style={{
+                              position: 'absolute',
+                              bottom:
+                                designTokens.auth.wordmarkBottom +
+                                designTokens.auth.screenPaddingBottom,
+                              left: 0,
+                              right: 0,
+                              alignItems: 'center',
+                            }}
+                          >
+                            <BidplaceWordmark />
+                          </View>
+                        ) : null}
+                        {!screen && !desktopDialog ? (
+                          <SheetDragHandle>
+                            <View
+                              testID="auth-sheet-handle"
+                              style={{
+                                paddingTop: designTokens.auth.paddingTop,
+                                paddingBottom: designTokens.auth.titleGap,
+                                alignItems: 'center',
+                                justifyContent: 'flex-start',
+                                height:
+                                  designTokens.auth.paddingTop +
+                                  designTokens.auth.handleSlot +
+                                  designTokens.auth.titleGap,
+                              }}
+                            >
+                              <View
+                                aria-hidden
+                                style={{
+                                  width: designTokens.auth.handleWidth,
+                                  height: designTokens.auth.handleHeight,
+                                  borderRadius: designTokens.radius.pill,
+                                  backgroundColor: palette.quietFill,
+                                }}
+                              />
+                            </View>
+                          </SheetDragHandle>
+                        ) : null}
+                        <ScrollView
+                          ref={screen ? screenScrollRef : undefined}
+                          keyboardShouldPersistTaps="handled"
+                          keyboardDismissMode="on-drag"
+                          showsVerticalScrollIndicator={false}
+                          style={
+                            screen
+                              ? {
+                                  flex: 1,
+                                  marginTop: screenCentered
+                                    ? 0
+                                    : brandInset.markClearance,
+                                  marginBottom: screenCentered
+                                    ? 0
+                                    : brandInset.wordmarkClearance,
+                                }
+                              : { flexShrink: 1, minHeight: 0 }
+                          }
+                          contentContainerStyle={{
+                            paddingTop:
+                              !screen && desktopDialog
+                                ? designTokens.auth.paddingX
+                                : 0,
+                            paddingHorizontal: screen
+                              ? 0
+                              : designTokens.auth.paddingX,
+                            paddingBottom: screen
+                              ? 0
+                              : Math.max(
+                                  designTokens.auth.paddingBottom,
+                                  insets.bottom,
+                                ),
+                            gap: screen ? 0 : contentGap,
+                            flexGrow: screen ? 1 : undefined,
+                            justifyContent:
+                              screen && screenCentered ? 'center' : undefined,
+                          }}
+                        >
+                          {screen ? (
+                            <Dialog.Title asChild>
+                              <AppText
+                                role="sectionTitle"
+                                style={{
+                                  position: 'absolute',
+                                  width: 1,
+                                  height: 1,
+                                  overflow: 'hidden',
+                                }}
+                              >
+                                {title}
+                              </AppText>
+                            </Dialog.Title>
+                          ) : (
+                            <View
+                              style={
+                                desktopDialog
+                                  ? {
+                                      paddingTop: designTokens.space.x1 + 2,
+                                      paddingBottom: designTokens.space.x3,
+                                      paddingHorizontal:
+                                        designTokens.auth.titleGap,
+                                    }
+                                  : undefined
+                              }
+                            >
                               <View
                                 style={{
-                                  height:
-                                    designTokens.typography.authSheetTitle
-                                      .lineHeight,
+                                  minHeight: desktopDialog
+                                    ? designTokens.size.icon + 2
+                                    : designTokens.typography.authSheetTitle
+                                        .lineHeight,
                                   justifyContent: 'center',
                                 }}
                               >
@@ -610,86 +660,117 @@ export function AuthViewport(props: AuthViewportProps) {
                                     role="sectionTitle"
                                     style={{
                                       color: palette.fieldValue,
-                                      ...designTokens.typography.authSheetTitle,
-                                      paddingRight: 36,
+                                      ...(desktopDialog
+                                        ? designTokens.typography
+                                            .authDialogTitle
+                                        : designTokens.typography
+                                            .authSheetTitle),
+                                      paddingRight: desktopDialog
+                                        ? designTokens.size.touch
+                                        : 0,
                                     }}
                                   >
                                     {title}
                                   </AppText>
                                 </Dialog.Title>
-                                <MotionPressable
-                                  accessibilityRole="button"
-                                  accessibilityLabel="Закрыть"
-                                  onPress={requestDismiss}
-                                  preset="icon"
-                                  style={{
-                                    position: 'absolute',
-                                    right: 0,
-                                    top:
-                                      (designTokens.typography.authSheetTitle
-                                        .lineHeight -
-                                        32) /
-                                      2,
-                                    width: 32,
-                                    height: 32,
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                  }}
-                                >
-                                  <FigmaIcon name="x" size={22} />
-                                </MotionPressable>
+                                {desktopDialog ? (
+                                  <MotionPressable
+                                    accessibilityRole="button"
+                                    accessibilityLabel="Закрыть"
+                                    onPress={requestDismiss}
+                                    preset="icon"
+                                    style={{
+                                      position: 'absolute',
+                                      right: -designTokens.space.x2,
+                                      width: designTokens.size.touch,
+                                      height: designTokens.size.touch,
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                    }}
+                                  >
+                                    <FigmaIcon name="x" size={26} />
+                                  </MotionPressable>
+                                ) : null}
                               </View>
                             </View>
-                          </SheetDragHandle>
-                        )}
-                        <View
-                          onLayout={(event) => {
-                            if (!screen) return;
-                            const next = event.nativeEvent.layout.height;
-                            setScreenContentHeight((current) =>
-                              current === next ? current : next,
-                            );
-                          }}
-                          style={{
-                            gap: screen ? 0 : formGap,
-                            width: '100%',
-                            // The sheet form fills the available inner width at
-                            // <=600 viewports; fullscreen registration and the
-                            // wide desktop sheet keep the measured 350 column.
-                            maxWidth:
-                              screen ||
-                              width > designTokens.layout.sheetFillViewportMax
-                                ? 350
-                                : undefined,
-                            alignSelf: 'center',
-                          }}
-                        >
-                          {children}
-                        </View>
-                      </ScrollView>
-                      {screen ? (
-                        <MotionPressable
-                          accessibilityRole="button"
-                          accessibilityLabel="Закрыть"
-                          onPress={requestDismiss}
-                          preset="icon"
-                          style={{
-                            position: 'absolute',
-                            top: designTokens.auth.screenPaddingTop,
-                            right: designTokens.auth.screenPaddingX,
-                            width: designTokens.size.touch,
-                            height: designTokens.size.touch,
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            zIndex: designTokens.layer.modal,
-                          }}
-                        >
-                          <FigmaIcon name="x" size={22} />
-                        </MotionPressable>
-                      ) : null}
-                    </Dialog.Content>
-                  </SheetDragSurface>
-                </Animated.View>
+                          )}
+                          <View
+                            onLayout={(event) => {
+                              if (!screen) return;
+                              const next = event.nativeEvent.layout.height;
+                              setScreenContentHeight((current) =>
+                                current === next ? current : next,
+                              );
+                            }}
+                            style={{
+                              gap: screen ? 0 : formGap,
+                              width: '100%',
+                              // The sheet form fills the available inner width at
+                              // <=600 viewports; fullscreen registration and the
+                              // wide desktop sheet keep the measured 350 column.
+                              maxWidth: screen ? 350 : undefined,
+                              alignSelf: 'center',
+                            }}
+                          >
+                            {children}
+                          </View>
+                        </ScrollView>
+                        {!screen && !desktopDialog ? (
+                          <MotionPressable
+                            accessibilityRole="button"
+                            accessibilityLabel="Закрыть"
+                            onPress={requestDismiss}
+                            preset="icon"
+                            style={({ focused: closeFocused }) =>
+                              closeFocused
+                                ? {
+                                    position: 'absolute',
+                                    top: designTokens.auth.paddingTop,
+                                    right: designTokens.auth.paddingX,
+                                    width: designTokens.size.touch,
+                                    height: designTokens.size.touch,
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    backgroundColor: palette.canvas,
+                                    zIndex: designTokens.layer.modal,
+                                  }
+                                : {
+                                    position: 'absolute',
+                                    width: 1,
+                                    height: 1,
+                                    overflow: 'hidden',
+                                    opacity: 0,
+                                    pointerEvents: 'none',
+                                  }
+                            }
+                          >
+                            <FigmaIcon name="x" size={26} />
+                          </MotionPressable>
+                        ) : null}
+                        {screen ? (
+                          <MotionPressable
+                            accessibilityRole="button"
+                            accessibilityLabel="Закрыть"
+                            onPress={requestDismiss}
+                            preset="icon"
+                            style={{
+                              position: 'absolute',
+                              top: designTokens.auth.screenPaddingTop,
+                              right: designTokens.auth.screenPaddingX,
+                              width: designTokens.size.touch,
+                              height: designTokens.size.touch,
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              zIndex: designTokens.layer.modal,
+                            }}
+                          >
+                            <FigmaIcon name="x" size={22} />
+                          </MotionPressable>
+                        ) : null}
+                      </Dialog.Content>
+                    </SheetDragSurface>
+                  </AppDialogSheetMotion>
+                </View>
               </AppDialogFrame>
             </View>
           </Dialog.Portal>

@@ -7,7 +7,8 @@
 
 Первый MVP зафиксирован как публичное портфолио автора без commerce. Прежние D01–D03
 по offer, non-payment/second chance и handoff не потеряны: они перенесены в
-[`15-POST-MVP-BACKLOG.md`](15-POST-MVP-BACKLOG.md).
+[`15-POST-MVP-BACKLOG.md`](15-POST-MVP-BACKLOG.md) и
+[`99-POST-MVP-BACKLOG.md`](../archive/tasks/2026-09-06-reconciliation/99-POST-MVP-BACKLOG.md).
 Они не блокируют portfolio launch.
 
 ## Founder decision: optional achievements on the first application

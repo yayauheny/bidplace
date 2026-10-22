@@ -6,12 +6,12 @@ import {
   type ReactNode,
 } from 'react';
 import {
-  Animated,
   PanResponder,
   View,
   type GestureResponderHandlers,
 } from 'react-native';
-import { useReducedMotion } from '../../lib/reduced-motion';
+import { cancelAnimation } from 'react-native-reanimated';
+import { useSheetMotion } from './sheet-motion-context';
 import { shouldDismissSheet } from './sheet-dismissal';
 
 const DragContext = createContext<GestureResponderHandlers>({});
@@ -25,8 +25,7 @@ export function SheetDragSurface({
   enabled: boolean;
   onRequestClose: () => void;
 }) {
-  const reducedMotion = useReducedMotion();
-  const offset = useRef(new Animated.Value(0)).current;
+  const { position, cancelDrag, dismissDrag } = useSheetMotion();
   const close = useRef(onRequestClose);
   close.current = onRequestClose;
   const responder = useMemo(
@@ -34,36 +33,22 @@ export function SheetDragSurface({
       PanResponder.create({
         onMoveShouldSetPanResponder: (_, gesture) =>
           enabled && gesture.dy > 6 && gesture.dy > Math.abs(gesture.dx),
-        onPanResponderMove: (_, gesture) =>
-          offset.setValue(Math.max(0, gesture.dy)),
+        onPanResponderMove: (_, gesture) => {
+          cancelAnimation(position);
+          position.value = Math.max(0, gesture.dy);
+        },
         onPanResponderRelease: (_, gesture) => {
-          if (reducedMotion) offset.setValue(0);
-          else
-            Animated.spring(offset, {
-              toValue: 0,
-              useNativeDriver: true,
-            }).start();
           if (shouldDismissSheet(gesture.dx, gesture.dy, gesture.vy))
-            close.current();
+            dismissDrag(() => close.current());
+          else cancelDrag();
         },
-        onPanResponderTerminate: () => {
-          if (reducedMotion) offset.setValue(0);
-          else
-            Animated.spring(offset, {
-              toValue: 0,
-              useNativeDriver: true,
-            }).start();
-        },
+        onPanResponderTerminate: cancelDrag,
       }),
-    [enabled, offset, reducedMotion],
+    [enabled, position, cancelDrag, dismissDrag],
   );
   return (
     <DragContext.Provider value={enabled ? responder.panHandlers : {}}>
-      <Animated.View
-        style={{ width: '100%', transform: [{ translateY: offset }] }}
-      >
-        {children}
-      </Animated.View>
+      <View style={{ width: '100%' }}>{children}</View>
     </DragContext.Provider>
   );
 }

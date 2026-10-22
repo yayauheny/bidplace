@@ -2,10 +2,8 @@ import { describe, expect, it } from 'vitest';
 
 import { gridColumnsFromWidth } from './grid-columns';
 
-// Авторская сетка работ: gap 12 (space.x3), минимальная карточка 320.
-// 390 → 1 колонка (карточка 366), поведение прежних брейкпоинтов 700/1000
-// сохранено: 700 → 2, 1000 → 3.
-const authorGrid = { minCardWidth: 320, gap: 12, max: 3 as const };
+// Author Works4861:7803: four columns at the canonical1280px container.
+const authorGrid = { minCardWidth: 264, gap: 12, max: 4 as const };
 
 describe('gridColumnsFromWidth', () => {
   it('keeps a single column at 390', () => {
@@ -17,8 +15,9 @@ describe('gridColumnsFromWidth', () => {
     expect(gridColumnsFromWidth(1000, authorGrid)).toBe(3);
   });
 
-  it('clamps to max on wide containers', () => {
-    expect(gridColumnsFromWidth(2560, authorGrid)).toBe(3);
+  it('fits four author cards at the canonical desktop container and clamps beyond it', () => {
+    expect(gridColumnsFromWidth(1280, authorGrid)).toBe(4);
+    expect(gridColumnsFromWidth(2560, authorGrid)).toBe(4);
   });
 
   it('falls back to one column before the first layout pass', () => {

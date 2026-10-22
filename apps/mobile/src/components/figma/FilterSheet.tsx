@@ -11,6 +11,7 @@ import { appDialogSheetBottomSpace } from '../ui/app-dialog-host-style';
 import { AppText } from '../ui/AppText';
 import { MotionPressable } from '../ui/MotionPressable';
 import { useAppTheme } from '../../providers/theme-provider';
+import { BackButton } from './BackButton';
 import { FigmaButton } from './FigmaButton';
 import { FigmaIcon } from './FigmaIcon';
 import { FilterSheetActionRow } from './FilterSheetActionRow';
@@ -100,7 +101,11 @@ export function FilterSheet({
               compact
                 ? {
                     width: '100%',
-                    minHeight: title ? 22 : 0,
+                    minHeight: showBack
+                      ? designTokens.size.touch
+                      : title
+                        ? 22
+                        : 0,
                     flexDirection: 'row',
                     alignItems: 'center',
                   }
@@ -113,12 +118,14 @@ export function FilterSheet({
                 : null,
             ]}
           >
-            {!compact ? (
+            {showBack ? (
+              <BackButton onPress={onBack ?? onClose} />
+            ) : !compact ? (
               <MotionPressable
                 accessibilityRole="button"
-                accessibilityLabel={showBack ? 'Назад' : 'Закрыть'}
+                accessibilityLabel="Закрыть"
                 hitSlop={designTokens.space.headerIconHitSlop}
-                onPress={showBack ? (onBack ?? onClose) : onClose}
+                onPress={onClose}
                 preset="icon"
                 style={{
                   width: designTokens.size.buttonIconFrame,
@@ -128,7 +135,7 @@ export function FilterSheet({
                 }}
               >
                 <FigmaIcon
-                  name={showBack ? 'arrow-left-01' : 'x'}
+                  name="x"
                   size={designTokens.size.buttonIconFrame}
                   strokeWidthPx={
                     titleVariant === 'directions' && showBack ? 2 : undefined
@@ -142,16 +149,14 @@ export function FilterSheet({
                   nativeID={titleId}
                   role={
                     compact
-                      ? 'body'
+                      ? 'pickerTitle'
                       : showBack
                         ? 'profileHeading'
                         : 'screenTitle'
                   }
                   numberOfLines={1}
                   style={[
-                    compact
-                      ? { fontSize: 18, fontWeight: '600' as const }
-                      : filterSheetTitleStyle(),
+                    filterSheetTitleStyle(),
                     titleVariant === 'directions'
                       ? designTokens.typography.directionsSheetTitle
                       : null,
@@ -202,6 +207,7 @@ export function FilterSheet({
                 ),
           }}
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
           {children}
         </ScrollView>

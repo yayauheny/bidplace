@@ -8,6 +8,7 @@ export default defineConfig({
     'auth-focus-restore.spec.ts',
     'search-overlay.spec.ts',
     'account-presentation.spec.ts',
+    'author-static-header.spec.ts',
   ],
   timeout: 60000,
   use: { baseURL: process.env.SHEET_TEST_URL || 'http://localhost:7899' },

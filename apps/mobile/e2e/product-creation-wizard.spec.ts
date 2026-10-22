@@ -1,3 +1,6 @@
+import { mkdir } from 'node:fs/promises';
+import { resolve } from 'node:path';
+import { e2eEvidenceDir } from './support/evidence-dir';
 import { randomUUID } from 'node:crypto';
 
 import { PrismaClient } from '../../../packages/database/dist/index.js';
@@ -127,6 +130,26 @@ test.describe('Work catalog browser round-trip', () => {
       await expect(
         page.getByRole('button', { name: 'Удалить Авторский материал E2E' }),
       ).toBeVisible();
+      await page.getByRole('button', { name: 'Применить' }).click();
+      await page.getByRole('button', { name: 'Сохранить и продолжить' }).click();
+      await expect(page.getByRole('button', { name: 'Добавить изображения' })).toBeVisible();
+      await uploadFirstProductImage(page);
+      await page.getByRole('button', { name: '4. Проверка' }).click();
+      await expect(page.getByText(`Материалы: ${materialName}, Авторский материал E2E`, { exact: true })).toBeVisible();
+      await expect(page.getByText('Категория: E2E art', { exact: true })).toBeVisible();
+      for (const width of [320, 390, 440, 767, 768, 1023, 1024, 1440, 1800]) {
+        await page.setViewportSize({ width, height: 874 });
+        await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), { message: `Review has no horizontal overflow at ${width}px` }).toBe(true);
+        const submit = page.getByRole('button', { name: 'Отправить на модерацию', exact: true });
+        await submit.scrollIntoViewIfNeeded();
+        await expect(submit).toBeInViewport();
+        if (width === 390 || width === 1440) {
+          const directory = resolve(e2eEvidenceDir, 'ui-review-product');
+          await mkdir(directory, { recursive: true });
+          await page.screenshot({ path: resolve(directory, `${test.info().project.name}-${width}.png`) });
+        }
+      }
+
     } finally {
       await context.close();
     }
@@ -171,6 +194,9 @@ test.describe('product creation wizard navigation', () => {
       );
       await page.getByRole('button', { name: 'Закончить' }).click();
       await expect(page).toHaveURL(/flow=creation&step=4$/);
+      await expect(
+        page.getByText('Wizard regression draft.', { exact: true }),
+      ).toBeVisible();
 
       await page.getByRole('button', { name: '1. О работе' }).click();
       await expect(page).toHaveURL(/flow=creation&step=1$/);
@@ -459,6 +485,9 @@ test.describe('product creation wizard navigation', () => {
         title: currentTitle,
       });
       await expect(page).toHaveURL(/flow=creation&step=4$/);
+      await expect(page.getByText(`Название: ${currentTitle}`, { exact: true })).toBeVisible();
+      await expect(page.getByText('Категория: E2E art', { exact: true })).toBeVisible();
+      await expect(page.getByText('Уникальность: One', { exact: true })).toBeVisible();
 
       const writes: Array<{ method: string; path: string; body?: unknown }> =
         [];

@@ -1,5 +1,10 @@
-# Tasks
+# Tasks (перенесено)
 
-Активная работа: [`docs/product/16-PORTFOLIO-ACTIVE-BACKLOG.md`](../product/16-PORTFOLIO-ACTIVE-BACKLOG.md).
+Активные execution-пакеты First MVP и reconciliation backlog перенесены в
+[`docs/archive/tasks/`](../archive/tasks/).
 
-Старые execution-пакеты сняты с дерева. Восстановление: `git show d0efc03b:docs/archive/tasks/`.
+Текущая работа и блокеры:
+
+- [`docs/product/16-PORTFOLIO-ACTIVE-BACKLOG.md`](../product/16-PORTFOLIO-ACTIVE-BACKLOG.md)
+- [`docs/audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md`](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md)
+- [`docs/audits/current/06-NEXT-REVIEWS.md`](../audits/current/06-NEXT-REVIEWS.md)

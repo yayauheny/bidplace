@@ -137,7 +137,7 @@ Before changing user-facing UI, read `docs/design/00-DESIGN-INDEX.md`, then **on
 
 After changing UI:
 
-1. Update the current-state table in `docs/design/04-DESIGN-STATUS.md`. Do not append a daily implementation log.
+1. Update `docs/design/04-DESIGN-STATUS.md`.
 2. Update `docs/design/03-DESIGN-SYSTEM.md` when shared components or tokens changed.
 3. Update `docs/design/02-USER-FLOWS-AND-SCREENS.md` when a user flow changed.
 4. Do not change visual principles or product flows without an explicit founder or assigned-designer decision.

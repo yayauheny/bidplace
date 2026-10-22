@@ -43,7 +43,11 @@ export type FigmaFieldVariant = 'default' | 'authorApplication';
 export function figmaFieldStyle(
   status: FigmaFieldStatus,
   multiline = false,
-  metrics: 'default' | 'authPassword' | 'authScreenPassword' = 'default',
+  metrics:
+    | 'default'
+    | 'auth'
+    | 'authPassword'
+    | 'authScreenPassword' = 'default',
   variant: FigmaFieldVariant = 'default',
   palette: SemanticColorMap,
 ) {
@@ -52,7 +56,9 @@ export function figmaFieldStyle(
   const passwordHeight =
     metrics === 'authScreenPassword'
       ? designTokens.auth.screenPasswordHeight
-      : designTokens.auth.passwordHeight;
+      : metrics === 'auth'
+        ? designTokens.auth.fieldHeight
+        : designTokens.auth.passwordHeight;
   return {
     width: '100%' as const,
     // A single-line shell has a fixed outer height. At devicePixelRatio 1 the
@@ -60,7 +66,7 @@ export function figmaFieldStyle(
     // line box grow the border box. Multiline fields keep only minHeight.
     ...(multiline
       ? { minHeight: designTokens.size.input }
-      : password
+      : password || metrics === 'auth'
         ? { height: passwordHeight, minHeight: passwordHeight }
         : {
             height: designTokens.size.input,

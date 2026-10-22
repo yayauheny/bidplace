@@ -17,8 +17,7 @@ test('account reference and responsive presentation', async ({
   for (const width of [390, 320, 414, 440]) {
     await page.setViewportSize({ width, height: 750 });
     await openPresentationAccount(page);
-    const root = page.getByTestId('form-page');
-    const cta = root.getByRole('link', { name: 'Стать автором' });
+    const cta = page.getByTestId('account-identity').getByRole('link', { name: 'Стать автором' });
     const row = await cta.evaluate((node) => {
       const cta = node.getBoundingClientRect();
       const name = [
@@ -60,14 +59,6 @@ test('account reference and responsive presentation', async ({
   await page.setViewportSize({ width: 390, height: 750 });
   await page.getByRole('button', { name: 'Настройки', exact: true }).click();
   await expect(page).toHaveURL(/account\/settings$/);
-  const title = await page
-    .getByText('Настройки', { exact: true })
-    .boundingBox();
-  expect(title).not.toBeNull();
-  expect(title!.x + title!.width / 2).toBeCloseTo(195, 0);
-  await page.screenshot({
-    path: resolve(evidence, `${info.project.name}-settings.png`),
-  });
   await page.getByRole('button', { name: 'Закрыть настройки' }).click();
   await expect(page).toHaveURL(/\/account$/);
   await page.getByRole('button', { name: 'Назад', exact: true }).click();
@@ -132,4 +123,22 @@ test('long account identity wraps and unverified users can open settings', async
   await expect(
     page.getByRole('button', { name: 'Публичный профиль', exact: true }),
   ).toBeVisible();
+});
+
+// Keep the deferred BackButton-dependent geometry separate from functional navigation.
+test('settings heading stays centered between its current controls', async ({ page }, info) => {
+  await installAccountPresentation(page);
+  await mkdir(evidence, { recursive: true });
+  await page.setViewportSize({ width: 390, height: 750 });
+  await openPresentationAccount(page);
+  await page.getByRole('button', { name: 'Настройки', exact: true }).click();
+  await expect(page).toHaveURL(/account\/settings$/);
+  const title = await page
+    .getByText('Настройки', { exact: true })
+    .boundingBox();
+  expect(title).not.toBeNull();
+  expect(title!.x + title!.width / 2).toBeCloseTo(195, 0);
+  await page.screenshot({
+    path: resolve(evidence, `${info.project.name}-settings.png`),
+  });
 });

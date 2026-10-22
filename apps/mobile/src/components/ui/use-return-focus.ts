@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useRef } from 'react';
 
 type FocusRef = { current: { focus?: () => void } | null };
 
@@ -16,6 +16,14 @@ const dialogOpeners = new WeakMap<HTMLElement, readonly StoredOpener[]>();
 // during the opening transition (the dock disappears under the auth sheet).
 // Consumed by the next dialog open; never stacked.
 let pendingOpenerSelector: string | null = null;
+
+export function focusDialogAfterEnter(target: HTMLElement | null) {
+  if (!target?.isConnected || typeof document === 'undefined') return;
+  const dialog = target.closest('[role="dialog"]');
+  // The focus trap's container fallback is not a chosen control.
+  if (document.activeElement !== dialog && dialog?.contains(document.activeElement)) return;
+  target.focus({ preventScroll: true });
+}
 
 export function rememberPendingOpener(selector: string) {
   pendingOpenerSelector = selector;
@@ -62,9 +70,7 @@ export function useReturnFocus({
   focusOnOpen,
   shouldRestore,
   fallback,
-  open,
 }: {
-  open?: boolean;
   explicitRef?: FocusRef;
   focusOnOpen?: () => HTMLElement | null;
   shouldRestore?: () => boolean;
@@ -92,23 +98,8 @@ export function useReturnFocus({
     }
     // The trigger is gone for good: land on the page's existing navigation
     // point instead of leaving focus on body.
-    if (entries.length > 0) fallback?.()?.focus?.({ preventScroll: true });
+    fallback?.()?.focus?.({ preventScroll: true });
   };
-
-  const restoreRef = useRef(restoreFocus);
-  restoreRef.current = restoreFocus;
-  const wasOpen = useRef(open);
-  useEffect(() => {
-    // Restore after the closed focus scope commits; cancel a rapid reopen.
-    const frame =
-      wasOpen.current === true && open === false
-        ? requestAnimationFrame(() => restoreRef.current())
-        : null;
-    wasOpen.current = open;
-    return () => {
-      if (frame !== null) cancelAnimationFrame(frame);
-    };
-  }, [open]);
 
   return {
     onOpenAutoFocus: (event: Event) => {

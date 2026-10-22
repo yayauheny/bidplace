@@ -18,7 +18,30 @@ export function getMobileCreateHref({
     } as Href;
   }
 
-  return (sellerStatus === 'APPROVED'
-    ? '/products/new'
-    : '/profile') as Href;
+  return (sellerStatus === 'APPROVED' ? '/products/new' : '/profile') as Href;
+}
+
+export function getProfileHref({
+  isAdmin,
+  isAuthenticated,
+  returnPath,
+}: {
+  isAdmin: boolean;
+  isAuthenticated: boolean;
+  returnPath: string;
+}): Href {
+  if (isAdmin) return '/admin';
+  if (isAuthenticated) return '/account';
+  return returnPath === '/'
+    ? '/login'
+    : { pathname: '/login', params: { redirectTo: returnPath } };
+}
+
+// Founder-approved adaptation of the 1800px Figma header.
+export function hasDesktopNavigation(
+  platform: string,
+  width: number,
+  isPublic: boolean,
+) {
+  return isPublic && platform === 'web' && width >= 1024;
 }

@@ -21,7 +21,7 @@
 | **SecondaryButton** | `ui/Button.tsx`             | `variant="outline"`.                                                                                                                |
 | **TextButton**      | `ui/Button.tsx`             | `variant="ghost"`.                                                                                                                  |
 | **FigmaIconButton** | `figma/FigmaIconButton.tsx` | Иконка без текста: `surface="plain"` по умолчанию, `surface="muted"` для круглых 42px кнопок из Figma.                              |
-| **BackButton**      | `figma/BackButton.tsx`      | Единая кнопка «Назад»: варианты `glass` (страница работы), `muted` (шапка автора), `chrome` (визард).                               |
+| **BackButton**      | `figma/BackButton.tsx`      | Единая круглая muted-кнопка «Назад», normal/pressed/disabled, для всех экранов.                               |
 | **MotionPressable** | `ui/MotionPressable.tsx`    | Низкоуровневое нажатие с пресетами анимации; для кастомных ячеек, не для типовых CTA.                                               |
 
 `width`: у обёрток допустимо `block` (= `full` у `FigmaButton`).
@@ -60,7 +60,7 @@
 
 | Компонент         | Путь                       | Назначение                                                                                                                                         |
 | ----------------- | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **AppShell**      | `layout/AppShell.tsx`      | Единый fluid-контейнер 1280/12, Safe Area, `FloatingDock` и `bottomAction`; нижний резерв — `useDockInset`.                                        |
+| **AppShell**      | `layout/AppShell.tsx`      | Safe Area, общая навигация и bottomAction. `contentLayout="bleed"` отдаёт viewport прокрутке; `PageColumn` внутри неё использует тот же fluid-контейнер 1280/12. Нижний резерв — `useDockInset`.                                        |
 | **FormPageShell** | `layout/FormPageShell.tsx` | Прокручиваемая форма с отступами и опциональным `bottomAction`.                                                                                    |
 | **PaddedGrid**    | `figma/PaddedGrid.tsx`     | Построчная flex-сетка с гаттером; `gridColumnsFromWidth(width, {minCardWidth, gap, max})` — колонки из измеренной ширины, без device-брейкпоинтов. |
 | **FigmaTabs**     | `figma/FigmaTabs.tsx`      | Единый таб-бар (RN-реализация на обеих платформах); `fill` — равные колонки.                                                                       |
@@ -102,3 +102,21 @@
 Web uses React Aria; `.native` uses the Expo-compatible system picker. Its string
 value preserves month/year or day/month/year; owner forms retain validation and
 write guards. Do not replace date-only values with UTC timestamps.
+
+
+PublicNavigationProvider scopes desktop navigation to public routes. AppShell
+selects DesktopHeader from1024 CSS px on web; FloatingDock remains below it and
+on native. use-app-navigation owns destinations/search/auth opener for both.
+PaddedGrid supports1–4 measured columns. FigmaButton forwards its ref to the
+existing MotionPressable for the same dialog focus-return owner as icon triggers.
+
+
+### Ordinary page chrome (2026-10-21)
+
+`AppShell` owns desktop/dock visibility; `PageScrollView` composes the existing
+`PageColumn`, `SiteFooter` and dock clearance in one scrollport. Its branded
+variant owns the responsive central mark. `SiteFooter` shares the wide-layout
+policy with navigation and uses existing auth/create routes and legal IDs.
+`FormPageShell` includes it for account/settings only by default. Full-screen
+forms and overlays retain their existing layout. `BidplaceLogo` is the shared
+contain-fitted combined SVG for header/footer.

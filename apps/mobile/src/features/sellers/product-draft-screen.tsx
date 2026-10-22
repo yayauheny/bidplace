@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
-import { FormProvider, useForm, useWatch } from 'react-hook-form';
+import { FormProvider, useForm } from 'react-hook-form';
 
 import type { SellerProductDetailResponse, User } from '@bidplace/contracts';
 
@@ -91,7 +91,6 @@ export function ProductDraftScreen({
     mode: 'onChange',
     shouldUnregister: false,
   });
-  const draftTitle = useWatch({ control: form.control, name: 'title' });
 
   const data = useProductDraftData({
     api,
@@ -293,15 +292,11 @@ export function ProductDraftScreen({
             storyWizardView={storyWizardView}
             wizardSubmitted={data.wizardSubmitted}
             wizardStep={wizardStep}
-            draftTitle={draftTitle}
             hasExistingProduct={Boolean(existingProduct)}
             canOpenStep={(step) =>
               !uploadBusy && canOpenProductWizardStep(step, wizardDraft)
             }
             onStepPress={(step) => void wizardNavigation.moveToWizardStep(step)}
-            onBackToImages={() =>
-              void wizardNavigation.moveToWizardStep(productWizardStep.images)
-            }
             storyBarDisabled={
               storyEditor.pending || session.inputsLocked || uploadBusy
             }
@@ -496,10 +491,18 @@ export function ProductDraftScreen({
           wizardStep === productWizardStep.review &&
           existingProduct ? (
             <ProductDraftReviewStep
+              categories={data.categories.data.categories}
+              selection={productDetail.data?.selection}
+              catalog={{
+                materialTerms: data.materialsCatalog.data?.terms ?? [],
+                techniqueTerms: data.techniquesCatalog.data?.terms ?? [],
+              }}
+              productId={existingProduct.id}
+              sessionEpoch={authEpoch}
+              images={existingProduct.images}
+              blocks={storyEditor.blocks}
               editable={editable && !session.inputsLocked}
-              existingProductImagesLength={existingProduct.images.length}
               submitLabel={submitLabel}
-              hasStory={storyEditor.blocks.length > 0}
               wizardSubmitted={data.wizardSubmitted}
               submitPending={
                 session.submit.isPending ||

@@ -4,6 +4,8 @@ import { HugeiconsIcon } from '@hugeicons/react-native';
 import { Platform } from 'react-native';
 import {
   AiMagicIcon,
+  BellIcon,
+  ShoppingBag01Icon,
   ArrowDown01Icon,
   ArrowLeft01Icon,
   ArrowRight01Icon,
@@ -12,6 +14,8 @@ import {
   AtSignIcon,
   Calendar01Icon,
   Home01Icon,
+  HeadingIcon,
+  TextIcon,
   Cancel01Icon,
   Clock04Icon,
   Copy01Icon,
@@ -65,6 +69,8 @@ const checkIcon = [
 ] as const satisfies typeof Search01Icon;
 
 const icons = {
+  bell: BellIcon,
+  'shopping-bag-01': ShoppingBag01Icon,
   'filter-horizontal': FilterHorizontalIcon,
   'arrow-up-down': ArrowUpDownIcon,
   'search-01': Search01Icon,
@@ -101,6 +107,8 @@ const icons = {
   user: UserIcon,
   'shopping-basket-01': ShoppingBasket01Icon,
   'image-add-02': ImageAdd02Icon,
+  heading: HeadingIcon,
+  text: TextIcon,
   check: checkIcon,
   'setting-07': Setting07Icon,
   'log-out': LogOutIcon,

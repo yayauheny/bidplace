@@ -6,14 +6,38 @@
 | --- | --- |
 | Активный backlog | [`16-PORTFOLIO-ACTIVE-BACKLOG.md`](16-PORTFOLIO-ACTIVE-BACKLOG.md) |
 | Релизные блокеры и приёмка | [`docs/audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md`](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md) |
-| Очередь bounded review | [`16-PORTFOLIO-ACTIVE-BACKLOG.md`](16-PORTFOLIO-ACTIVE-BACKLOG.md) |
+| Очередь bounded review | [`docs/audits/current/06-NEXT-REVIEWS.md`](../audits/current/06-NEXT-REVIEWS.md) |
 | Дизайн-статус | [`docs/design/04-DESIGN-STATUS.md`](../design/04-DESIGN-STATUS.md) |
 | Решения | [`12-DECISION-LOG.md`](12-DECISION-LOG.md) |
-| Записи до 2026-10-19 | `git show d0efc03b:docs/archive/product/11-PROJECT-STATUS-historical.md` |
+| Записи до 2026-10-19 | [`docs/archive/product/11-PROJECT-STATUS-historical.md`](../archive/product/11-PROJECT-STATUS-historical.md) |
 
 > Упоминания Pen до 2026-10-13 — история (DEC-119).
 
 После изменения кода: добавьте **одну** датированную секцию в начало (ниже этой таблицы) со статусом `Implemented` / `Partial` / `Needs verification` и ссылками на модули и тесты. Не дублируйте длинные аудиты; переносите детали в owner audit или decision log.
+
+## 2026-10-22 — Слияние responsive portfolio UI в MVP
+
+**Implemented:** responsive AuthViewport и общий Reanimated sheet motion;
+четыре этапа создания работы и редактор блоков без commerce; desktop-навигация
+от1024px, общие footer/brand/layout, страница автора и ограничение empty-state CTA.
+Доработки ревью: подписанные метаданные Review из формы/каталогов, фактическая
+видимость dock, стабильные header/footer image nodes и восстановление фокуса.
+Сохранены DEC-124/125: одно подтверждение регистрации, чтение документов не
+блокирует её; API, права, медиа и ревизии UI-правками не менялись.
+
+**Partial:** визуальное центрирование заголовка настроек оставлено по явному
+исключению BackButton/FigmaIconButton; физический iPhone, реальный zoom200% и
+увеличение текста — Needs verification. Последние проверки исходной UI-ветки:
+mobile988/988, editor E2E26/26, UI68 passed/2 settings-center failures,
+WebKit focus/motion20/20. На объединённой ветке полный `pnpm verify` прошёл:
+mobile988, API integration155 passed/28 skipped, typecheck/lint и8 build tasks,
+включая Expo web/iOS/Android export. Проверка184 Markdown-файлов прошла.
+Исправление API legal-pack assertion `cc4911e5` уже присутствует в MVP.
+
+Подробности: [UI completion](../audits/current/2026-10-21-UI-COMPLETION.md),
+[author parity](../audits/current/2026-10-21-AUTHOR-PROFILE-PARITY.md),
+[shared footer](../audits/current/2026-10-21-SHARED-FOOTER.md),
+[independent review](../audits/current/2026-10-21-INDEPENDENT-UI-REVIEW.md).
 
 ## 2026-10-21 — Repository cleanup (docs only)
 
@@ -48,7 +72,7 @@ provisional, пользовательское включение темы не �
 Проверки: guard1/1 без БД; Search/avatar4/4 Chromium/WebKit, включая click→буква,
 загрузку обеих копий фото vex и blur15px/opacity0.5; восстановленные пять демо-фото
 проверены в обоих движках. Typecheck/lint — чисто. Полный suite/build не повторялись
-для тестовых изменений. Причины и границы — в аудите `2026-10-20-DATE-SELECTION` (`git show d0efc03b:docs/audits/2026-10-20-DATE-SELECTION.md`).
+для тестовых изменений. Причины и границы — в [аудите](../audits/2026-10-20-DATE-SELECTION.md).
 
 ## 2026-10-20 — UI после общего календаря
 
@@ -64,7 +88,7 @@ Chromium/WebKit: 8/8 адресных browser checks; ширины320/390/765, �
 overflow, clean-close, dirty-cancel и клавиатурный возврат. Pointer click и
 input→click не показывают focus ring; клавиатурный Tab/Shift+Tab сохраняет его по
 дизайн-системе §6.4. API/данные и палитра focus не изменены. Подробности и evidence:
-аудит `2026-10-20-DATE-SELECTION` (`git show d0efc03b:docs/audits/2026-10-20-DATE-SELECTION.md`).
+[аудит](../audits/2026-10-20-DATE-SELECTION.md).
 **Needs verification:** физический iPhone, реальный browser zoom, увеличенный
 системный текст; новых утверждённых desktop-макетов нет.
 
@@ -88,7 +112,7 @@ picker на устройствах/симуляторе не запускалс�
 
 Проверки: owner/state/modal unit65/65, typecheck/lint/diff-check, production web
 export. Browser gate6/6 Chromium/WebKit (дата, реальная запись/публикация,
-auth confirm, Home/share;320/390/440 и короткий viewport), evidence — в аудите `2026-10-20-DATE-SELECTION` (`git show d0efc03b:docs/audits/2026-10-20-DATE-SELECTION.md`).
+auth confirm, Home/share;320/390/440 и короткий viewport), evidence — в [аудите](../audits/2026-10-20-DATE-SELECTION.md).
 Полный suite, реальный browser zoom и физический iPhone не проверялись.
 
 ## 2026-10-20 — Домик в общем floating dock
@@ -160,7 +184,7 @@ production browser Chromium/WebKit (полный register201→verify-email по
 публичный test widget Cloudflare с реальным201 и verify-email. Production
 challenge не проверялся; local/test адаптер принимает официальный dummy token
 только в явно разрешённом test/local профиле.
-Аудит `2026-10-20-REGISTRATION-DOCUMENT-ACCESS` (`git show d0efc03b:docs/audits/2026-10-20-REGISTRATION-DOCUMENT-ACCESS.md`).
+[Аудит](../audits/2026-10-20-REGISTRATION-DOCUMENT-ACCESS.md).
 
 ## 2026-10-20 — Подтверждённые реквизиты оператора в legal pack
 
@@ -204,7 +228,7 @@ production export, адресный browser gate Chromium/WebKit на320/390/440
 eslint и diff-check. Серверная публикация юридических документов остаётся
 отдельным блокером: локальный GET /auth/legal возвращает503 при незаполненных
 реквизитах; эта правка не подставляет фиктивные документы в runtime.
-Приёмка `2026-10-20-REGISTRATION-LAYOUT` (`git show d0efc03b:docs/audits/2026-10-20-REGISTRATION-LAYOUT.md`).
+[Приёмка](../audits/2026-10-20-REGISTRATION-LAYOUT.md).
 
 ## 2026-10-20 — Account: финальная приёмка и исправления
 
@@ -219,7 +243,7 @@ API, права, БД и backend удаления не менялись.
 production browser6/6 Chromium+WebKit (320/390/414/440, long identity,
 unverified settings, published identity, scroll8works, close→Back),
 eslint/format/diff-check. Backend e2e/full suite не повторялись.
-Итоговый аудит `2026-10-20-ACCOUNT-FINAL-ACCEPTANCE` (`git show d0efc03b:docs/audits/2026-10-20-ACCOUNT-FINAL-ACCEPTANCE.md`).
+[Итоговый аудит и evidence](../audits/2026-10-20-ACCOUNT-FINAL-ACCEPTANCE.md).
 Delete-план дополнен реальной Worker JSON cache policy; реализация удаления —
 отдельная волна. Desktop1024/1440 и black parity: NEEDS-FIGMA.
 
@@ -275,7 +299,7 @@ product images остаются `immutable`), аналитическая «от�
 снята. Consumer specs 14/14, адресные 28/28. Визуальные детали
 (CTA width, insets) сознательно оставлены для измеренной приёмки
 следующего этапа по сохранённому intake ace4a323.
-Файл выполнения `2026-10-19-ACCOUNT-FOUNDATION-PROGRESS` (`git show d0efc03b:docs/audits/2026-10-19-ACCOUNT-FOUNDATION-PROGRESS.md`).
+[Файл выполнения](../audits/2026-10-19-ACCOUNT-FOUNDATION-PROGRESS.md).
 
 **Implemented (волны 1–2, ветка `fix/account-foundation`).** Единая политика
 ширины для AuthViewport и общего AppDialog: viewport ≤600 CSS px — sheet во всю
@@ -306,103 +330,33 @@ tsc/eslint чисто. Коммиты `ba00fb37`, `2eed81dd`, `6e89f8b9`, `d1473
 возвращают (pinned gate). Browser zoom 200% / увеличение текста — Needs
 verification (ручные шаги переданы ранее). Волна 3 (/account) не начата — ждёт
 Figma intake. Push/merge/deploy не выполнялись.
-Файл выполнения `2026-10-19-ACCOUNT-FOUNDATION-PROGRESS` (`git show d0efc03b:docs/audits/2026-10-19-ACCOUNT-FOUNDATION-PROGRESS.md`).
+[Файл выполнения](../audits/2026-10-19-ACCOUNT-FOUNDATION-PROGRESS.md).
 
 
 
-## 2026-10-22 — Автоматическая оптимизация и пофайловая загрузка фото
+## 2026-10-23 — Синхронизация фото с актуальным MVP (PR #59)
 
-**Partial** — реализация и автоматические проверки; приёмка на физических
-устройствах и live R2/CDN остаётся отдельным release gate.
+**Partial (local verification passed).** Обычный merge `origin/feature/portfolio-mvp-release`
+в `fix/photo-upload`; новая сетка фото, wizard, авторские экраны и исправления
+MVP сохраняются. Фото используют `ImageProcessor`/Sharp, нормализованный
+приватный SOURCE до 5 МиБ, вход галереи до 25 МиБ/8192px/50M, сохранённый мастер
+до 4096px, компактные 16-bit PNG, JPEG/PNG/WebP, EXIF-поворот и удаление
+метаданных из публичных производных. Пофайловая отправка сохраняет прогресс,
+частичный успех, abort/timeout и idempotency; legacy-повторы проверяются под
+блокировкой Work. Старые p1 и новые p2 media-контракты поддерживаются.
 
-- `images/ImageProcessor` / `core/media/media-pipeline.ts`: единый адаптер Sharp,
-  нормализованный SOURCE до 5 МиБ (портрет до 2 МиБ), ограниченные попытки
-  кодирования/уменьшения без обрезки и потери прозрачности; PREVIEW/FULL из мастера.
-- `WorkImageUploadInterceptor` принимает до 25 МиБ только по одному файлу с
-  idempotency key; legacy batch и история сохраняют вход 5 МиБ. Общий бюджет
-  галереи проверяется по сохранённым байтам. Пиксельные лимиты не повышались.
-- `media_operations.input_checksum` и provenance NORMALIZED разделяют входную
-  идентичность и сохранённые байты. Миграция `20261022120000_normalized_media_source`
-  обязательна до выкладки API; существующие SOURCE/p1 и legacy import совместимы.
-- `product-draft-image-actions.ts` / `product-draft-images.tsx`: последовательное
-  чтение, локальные превью, частичный успех, повтор текущего файла прежним ключом,
-  deadline/abort и защита сессии. Портрет использует Expo-подготовку из PR #56.
-- Регрессии: `media-pipeline.spec.ts`, `images.service.spec.ts`,
-  `work-media-http.integration.spec.ts`, `media-lifecycle.integration.spec.ts`,
-  `product-draft-submit-lifecycle.spec.ts`, `seller-profile-submit.spec.ts`.
-- MVP-контракт обновлён по явному решению DEC-128; история сохраняет лимиты §10.
-  HEIC/RAW и расширение пиксельного бюджета не реализованы. Production throughput
-  и визуальная точность на физических устройствах не заявляются проверенными.
+Миграции `20261022120000_normalized_media_source` и
+`20261022180000_legacy_image_upload_identity` обязательны перед выпуском API.
+Историческая документация восстановлена из release; добавлены только сведения
+по фото. DEC-131/132 — прежние фото-решения DEC-128/129, перенумерованные из-за
+коллизии с UI-решениями release. Production migration/deploy не выполняются.
 
-Проверено локально: API typecheck/lint/build, mobile typecheck/lint/web export;
-88 API unit, 225 mobile owner/error/preparation tests, 47 API-client и 46 contracts tests.
-Интеграции выполнены на отдельной временной PostgreSQL: lifecycle/recovery,
-transport, upload safety и HTTP-загрузка 7 МиБ с повтором после нормализации —
-28 integration tests, включая старые p1-операции без input checksum.
-Chromium и WebKit подтвердили частичный успех и повтор только второго файла;
-проверена доступность сценария без горизонтального переполнения на 390/1024/1440.
-Скриншоты сохранены в локальных артефактах задачи (`photo-upload/`).
-Expo export для iOS и Android также прошёл; это проверка JS/Hermes-сборки, а не
-приёмка нативного image picker. Live Figma parity и реальные
-устройства не заявляются проверенными. Production migration/deploy не выполнялись.
-
-
-## 2026-10-23 — Исправления ревью загрузки фотографий
-
-**Partial.** `SharpImageProcessor` разделяет вход галереи (8192px/50M/25 МиБ)
-и сохраняемый мастер (4096px/5 МиБ), сохраняет компактные 16-битные PNG,
-автоматически сжимает большие прозрачные изображения без уменьшения ниже
-1600px. Портретный Expo fallback сохраняет 640px вместо 256px.
-`useProductDraftImageActions` рассчитывает таймаут по размеру и показывает
-понятную ошибку; wizard/native/browser Back и beforeunload учитывают отправку.
-Legacy `ImagesService` сохраняет ключ/контрольную сумму в `ProductImage`,
-повторно проверяет их под блокировкой Work и хранит публичный вариант без EXIF.
-Миграция `20261022180000_legacy_image_upload_identity` обязательна до API-релиза.
-
-Проверки: `media-pipeline.spec.ts` (48MP JPEG, 16-bit PNG, noisy alpha),
-`product-draft-submit-lifecycle.spec.ts` (блокировка и таймаут/повтор),
-`product-draft-browser-guard.spec.ts`, `prepare-image-upload.spec.ts`,
-`product-write-atomicity.integration.spec.ts` (конкурентный повтор,
-конфликт байтов/ревизии, отсутствие EXIF); прежние media lifecycle/HTTP проверки.
-Итог проверок: 161 тест (81 API unit, 46 mobile unit, 32 PostgreSQL integration,
-2 Chromium/WebKit), typecheck API/mobile, lint, сборки database/API/web и
-проверка ссылок документации прошли.
-Реальные устройства, R2/CDN, визуальный Figma-паритет и пиковая память
-production-контейнера при одновременном декодировании 48MP остаются Needs verification.
-
-
-## 2026-10-23 — Проверка форматов и сценариев загрузки
-
-**Implemented (automated coverage); live provider/native acceptance remains Partial.**
-В `media-pipeline.spec.ts` добавлена единая матрица JPEG/PNG/WebP: EXIF-поворот,
-сохранение прозрачности, удаление публичных метаданных, воспроизводимость
-производных, повреждённые данные и несовпадение MIME. Крупные JPEG/WebP
-проверяются реальными кодированными данными свыше 5 МиБ; крупный PNG уже
-покрыт шумным прозрачным изображением, 48MP JPEG и 16-bit PNG сохранены.
-`work-media-http.integration.spec.ts` проверяет multipart-загрузку трёх форматов,
-чтение/декодирование результата, приватный cache-control и повтор без дублей.
-Проверка сохранности SOURCE привязана к автору, чтобы соседние сценарии не
-влияли на количество объектов.
-
-`product-draft-submit-lifecycle.spec.ts` дополнен отменой выбора, прерыванием
-активной отправки при уходе/смене сессии и прекращением очереди.
-`work-media-lifecycle.spec.ts` загружает смешанную JPEG/PNG/WebP подборку,
-проверяет декодирование всех трёх превью и сохранность после reload.
-Фикстуры JPEG и прозрачного WebP находятся в `e2e/fixtures/work-photo.*`.
-
-Прогон: 118 проверок — 39 pipeline/policy, 51 mobile owner/preparation/errors,
-4 api-client, 20 HTTP/PostgreSQL safety/replay, 4 Chromium/WebKit mixed/retry.
-Все прошли. Физические iOS/Android, HEIC/RAW галереи и настоящий R2/CDN этим
-прогоном не подтверждены; новых форматов в продуктовый контракт не добавлено.
-
-
-Дополнительная проверка общего CI: старый media integration-прогон выявил
-утечку фоновых таймеров сервисов между сценариями с разными MemoryStore и
-общей БД. `media-lifecycle.integration.spec.ts` теперь останавливает все
-созданные сервисы в afterEach. Таймауты и утверждения о сохранности/удалении
-объектов не ослаблены. Полная API integration suite прошла: 159 passed,
-28 ранее пропущенных сценариев; тестовая БД использует ICU Unicode locale
-(локальная C locale не поддерживала существующую проверку кириллицы ILIKE).
-Итого проверено 257 тестов: 39 pipeline/policy, 51 mobile, 4 api-client,
-159 PostgreSQL integration и 4 Chromium/WebKit. Typecheck API/mobile, lint
-изменённых файлов и markdown links прошли.
+Проверки объединённого дерева прошли: `pnpm verify` (typecheck, lint,
+479 API unit, 1023 mobile tests, 159 integration, остальные package/ops tests,
+web/iOS/Android export); все 6 media E2E в Chromium/WebKit; `pnpm build:web`
+для production API-origin с публичным тестовым Turnstile key, как в CI;
+markdown links (184 файла). 28 существующих integration skip не изменялись.
+Моки двух owner-spec дополнены ActivityIndicator под release UI; assertions
+и таймауты не ослаблены. CI точного merge SHA проверяется в PR #59 перед
+объявлением готовности. Физические устройства и live R2/CDN остаются отдельными
+release gates; миграции/deploy production не выполнялись.

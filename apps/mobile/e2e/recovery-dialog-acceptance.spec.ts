@@ -131,6 +131,10 @@ test('recovered story copy: the manual-copy dialog shows the long text, scrolls,
     await page.getByRole('button', { name: 'Отправить на модерацию' }).click();
     expect((await patchResponse).ok()).toBeTruthy();
 
+    // Unmount the editor before seeding storage so its final draft flush cannot
+    // replace the stale copy being tested.
+    await page.goto('/');
+
     // Seed a stale copy of the previous revision with a long text.
     const longText = Array.from(
       { length: 40 },
@@ -250,7 +254,9 @@ test('short dialog and sheet stay usable on a short viewport and across resize',
 
     // Short dialog on a 390x400 viewport: everything reachable, no
     // horizontal page overflow.
-    await page.getByRole('button', { name: 'Удалить изображение' }).click();
+    const image = page.locator('[data-editor-block="image"]').first();
+    await image.getByRole('button', { name: 'Действия с изображением', exact: true }).click();
+    await image.getByRole('button', { name: 'Удалить', exact: true }).click();
     const shortDialog = page.getByRole('dialog');
     await expect(shortDialog).toBeVisible();
     await expect(

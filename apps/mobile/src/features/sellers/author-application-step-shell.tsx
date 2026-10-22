@@ -43,32 +43,32 @@ export function AuthorApplicationStepShell({
       <View style={{ gap: chrome.headerBlockGap }}>
         <View
           style={{
-            height: chrome.chromeFrame,
+            minHeight: designTokens.size.touch,
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',
           }}
         >
-          {showBack ? (
-            <BackButton
-              variant="chrome"
-              disabled={backDisabled || onBack === undefined}
-              onPress={() => onBack?.()}
-            />
-          ) : (
-            <View style={{ width: chrome.chromeFrame }} />
-          )}
+          <View
+            style={{ width: designTokens.size.touch, alignItems: 'center' }}
+          >
+            {showBack ? (
+              <BackButton
+                disabled={backDisabled || onBack === undefined}
+                onPress={() => onBack?.()}
+              />
+            ) : null}
+          </View>
           <SellerProfileCreationStepSelector profileStep={profileStep} />
           <MotionPressable
             accessibilityRole="button"
             accessibilityLabel="Закрыть"
             disabled={closeDisabled}
-            hitSlop={(designTokens.size.touch - chrome.chromeFrame) / 2}
             onPress={onClose}
             preset="icon"
             style={{
-              width: chrome.chromeFrame,
-              height: chrome.chromeFrame,
+              width: designTokens.size.touch,
+              height: designTokens.size.touch,
               alignItems: 'center',
               justifyContent: 'center',
             }}
