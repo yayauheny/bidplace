@@ -571,4 +571,30 @@ principal resolver, current User role/status/version and absolute 12h expiry.
 Late session saves cannot bypass logout/reset/admin version invalidation.
 Bootstrap owns session middleware and CSRF origin/custom-header checks; api-client
 uses cookies and marks mutations. JWT issuer and bearer client transport removed.
-Google/Telegram/email-code remain subsequent work, not implemented by this wave.
+SocialAuthModule extends this transport through one AuthFlowService and
+OidcProvidersService. openid-client owns discovery, client-secret Basic auth,
+PKCE, state/nonce and signed ID-token validation for Google and Telegram. AuthFlow
+rows bind one attempt to the digest of an opaque browser SID, with a ten-minute
+TTL and transactional stage transitions. ExternalIdentity keys are issuer/subject
+and user/provider; no email auto-link or provider tokens are persisted.
+
+Social creation writes a real email, nullable password, nickname, legal evidence
+and identity atomically. Only authoritative Google email can skip email proof;
+other identities remain pending without a principal. The existing abuse/OTP
+store binds HMAC codes to purpose, user, email, flow and session version. Its
+shared mail budgets and pauses include email-login. A separate neutral
+email_login_request ledger records browser resend admission equally for known
+and unknown addresses; it grants no authentication or SMTP-delivery claim.
+
+Completed domain proof transitions through ready/issuing before SID rotation.
+A failed session save restores the anonymous flow for a bounded retry without
+repeating domain writes. Account switching cancels older browser-bound flows;
+completion rechecks cancellation after save. Password reset closes pending
+proofs and identities; version checks protect logout/ban/admin revocation.
+
+Web login/code/onboarding and settings use shared contracts/api-client and
+AuthProvider's existing epoch installation. Private auth queries live under the
+purged user namespace; public provider availability is separate. Native provider
+login and exact new Figma compositions are outside this wave. Local verification
+and remaining external acceptance: 11-PROJECT-STATUS.md and
+[rollout runbook](../ops/WEB-AUTH-ROLLOUT.md).

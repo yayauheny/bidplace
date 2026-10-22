@@ -22,11 +22,15 @@ function fixture(overrides: Record<string, unknown> = {}) {
     sessionVersion: 2,
     ...overrides,
   };
-  const prisma = { user: { findUnique: vi.fn().mockResolvedValue(user) } };
+  const prisma = {
+    authFlow: { updateMany: vi.fn().mockResolvedValue({ count: 0 }) },
+    user: { findUnique: vi.fn().mockResolvedValue(user) },
+  };
   const service = new SessionService(syntheticServerEnv(), prisma as never);
   services.push(service);
   const request = {
     headers: {},
+    sessionID: 'synthetic-session-id',
     session: {
       principal: {
         userId: user.id,

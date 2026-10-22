@@ -8,6 +8,7 @@ export function syntheticServerEnv(
     APP_ENV: 'local',
     DATABASE_URL: 'postgresql://synthetic:synthetic@127.0.0.1:5432/synthetic',
     SESSION_SECRET: 'synthetic-test-secret',
+    OTP_HASH_SECRET: 'synthetic-otp-hash-key-for-tests-only',
     PASSWORD_RESET_URL_BASE: 'http://localhost:8081',
     ...overrides,
   });

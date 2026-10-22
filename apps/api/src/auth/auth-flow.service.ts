@@ -1,0 +1,821 @@
+import {
+  type AuthProvider,
+  type EmailLoginRequest,
+  type OnboardingRequest,
+} from '@bidplace/contracts';
+import { type AuthFlow, type Prisma } from '@bidplace/database';
+import {
+  ConflictException,
+  Inject,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { createHash } from 'node:crypto';
+import * as oidc from 'openid-client';
+import { AuthAbuseService } from '../auth-abuse/auth-abuse.service';
+import {
+  cooldownAfterSends,
+  OTP_TTL_MS,
+} from '../auth-abuse/auth-abuse.policy';
+import { lockAbuseUser, otpCodeHash } from '../auth-abuse/auth-abuse.store';
+import { SERVER_ENV, type ServerEnv } from '../core/config';
+import { PrismaService, isPrismaUniqueConstraintError } from '../core/database';
+import { OtpService } from '../otp/otp.service';
+import { AuthService } from './auth.service';
+import { readRegistrationLegalVersion } from './legal-documents';
+import { OidcProvidersService } from './oidc-providers.service';
+import { SessionService, type SessionRequest } from './session.service';
+
+const FLOW_TTL_MS = 10 * 60_000;
+const LINK_FRESHNESS_MS = 5 * 60_000;
+const terminalStages = ['complete', 'cancelled', 'failed'];
+const digest = (value: string) =>
+  createHash('sha256').update(value).digest('hex');
+
+export function safeAuthReturnPath(value: string): string {
+  if (
+    !value.startsWith('/') ||
+    value.startsWith('//') ||
+    value.includes('\\') ||
+    [...value].some((character) => character.charCodeAt(0) < 32)
+  )
+    throw new ConflictException('Invalid return path');
+  return value;
+}
+
+@Injectable()
+export class AuthFlowService {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly providers: OidcProvidersService,
+    private readonly sessions: SessionService,
+    private readonly auth: AuthService,
+    private readonly abuse: AuthAbuseService,
+    private readonly otp: OtpService,
+    @Inject(SERVER_ENV) private readonly env: ServerEnv,
+  ) {}
+
+  private async begin(
+    request: SessionRequest,
+    data: Pick<Prisma.AuthFlowCreateInput, 'intent' | 'stage' | 'returnPath'> &
+      Partial<Prisma.AuthFlowCreateInput>,
+  ): Promise<AuthFlow> {
+    const browserHash = digest(request.sessionID);
+    const now = new Date();
+    const flow = await this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`auth-flow:${browserHash}`}, 0))`;
+      await tx.authFlow.updateMany({
+        where: { browserHash, stage: { notIn: terminalStages } },
+        data: { stage: 'cancelled', verifier: null, nonce: null },
+      });
+      return tx.authFlow.create({
+        data: {
+          ...data,
+          browserHash,
+          expiresAt: new Date(now.getTime() + FLOW_TTL_MS),
+        },
+      });
+    });
+    request.session.flowId = flow.id;
+    await this.sessions.save(request);
+    const stale = await this.prisma.authFlow.findMany({
+      where: { expiresAt: { lt: new Date(now.getTime() - 86_400_000) } },
+      select: { id: true },
+      take: 50,
+    });
+    if (stale.length)
+      await this.prisma.authFlow.deleteMany({
+        where: { id: { in: stale.map((row) => row.id) } },
+      });
+    return flow;
+  }
+
+  private async flow(
+    request: SessionRequest,
+    stages: string[],
+  ): Promise<AuthFlow> {
+    const id = request.session.flowId;
+    if (!id)
+      throw new UnauthorizedException('Попытка входа завершена. Начните снова');
+    const flow = await this.prisma.authFlow.findFirst({
+      where: {
+        id,
+        browserHash: digest(request.sessionID),
+        stage: { in: stages },
+        expiresAt: { gt: new Date() },
+      },
+    });
+    if (!flow)
+      throw new UnauthorizedException('Попытка входа завершена. Начните снова');
+    return flow;
+  }
+
+  private async lockFlow(
+    tx: Prisma.TransactionClient,
+    flow: AuthFlow,
+    stages: string[],
+    checkUser = true,
+  ): Promise<AuthFlow> {
+    if (flow.userId) await lockAbuseUser(tx, flow.userId);
+    await tx.$queryRaw`SELECT id FROM auth_flows WHERE id = CAST(${flow.id} AS uuid) FOR UPDATE`;
+    const current = await tx.authFlow.findUniqueOrThrow({
+      where: { id: flow.id },
+    });
+    if (
+      !stages.includes(current.stage) ||
+      current.expiresAt <= new Date() ||
+      current.browserHash !== flow.browserHash
+    )
+      throw new UnauthorizedException('Попытка входа завершена');
+    if (current.userId && checkUser) {
+      const user = await tx.user.findUnique({
+        where: { id: current.userId },
+        select: { sessionVersion: true, status: true },
+      });
+      if (
+        !user ||
+        user.status !== 'active' ||
+        user.sessionVersion !== current.version
+      )
+        throw new UnauthorizedException('Доступ отозван');
+    }
+    return current;
+  }
+
+  private async finish(request: SessionRequest, flow: AuthFlow): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      const current = await this.lockFlow(tx, flow, ['ready']);
+      if (!current.userId || current.version === null)
+        throw new UnauthorizedException('Нет подтверждения входа');
+      await tx.authFlow.update({
+        where: { id: flow.id },
+        data: { stage: 'issuing' },
+      });
+    });
+    try {
+      await this.sessions.login(request, flow.userId!, flow.version!, flow.id);
+    } catch (error) {
+      await this.prisma.authFlow.updateMany({
+        where: { id: flow.id, stage: 'issuing' },
+        data: { stage: 'ready' },
+      });
+      throw error;
+    }
+    const completed = await this.prisma.authFlow.updateMany({
+      where: { id: flow.id, stage: 'issuing' },
+      data: { stage: 'complete' },
+    });
+    if (completed.count !== 1) {
+      await this.sessions.destroy(request);
+      throw new UnauthorizedException('Попытка отменена');
+    }
+  }
+
+  async start(
+    request: SessionRequest,
+    provider: AuthProvider,
+    intent: 'login' | 'link',
+    returnPath: string,
+  ) {
+    this.providers.settings(provider);
+    if (intent === 'link') {
+      await this.sessions.authenticate(request);
+      if (
+        Date.now() - request.session.principal!.authenticatedAt >
+        LINK_FRESHNESS_MS
+      )
+        throw new UnauthorizedException(
+          'Для подключения войдите в аккаунт заново',
+        );
+    } else if (request.session.principal) {
+      throw new ConflictException(
+        'Выйдите из текущего аккаунта перед новым входом',
+      );
+    }
+    const state = oidc.randomState();
+    const nonce = oidc.randomNonce();
+    const verifier = oidc.randomPKCECodeVerifier();
+    const url = await this.providers.authorization(
+      provider,
+      state,
+      nonce,
+      verifier,
+    );
+    await this.begin(request, {
+      provider,
+      intent,
+      stage: 'provider',
+      returnPath: safeAuthReturnPath(returnPath),
+      stateHash: digest(state),
+      nonce,
+      verifier,
+      ...(intent === 'link'
+        ? { userId: request.auth!.sub, version: request.auth!.sessionVersion }
+        : {}),
+    });
+    return { url };
+  }
+
+  async callback(
+    request: SessionRequest,
+    provider: AuthProvider,
+  ): Promise<string> {
+    const flow = await this.flow(request, ['provider', 'ready']);
+    const query = new URL(request.originalUrl, 'http://local.invalid')
+      .searchParams;
+    const state = query.get('state');
+    if (
+      !state ||
+      state.length > 512 ||
+      flow.provider !== provider ||
+      !flow.stateHash ||
+      flow.stateHash !== digest(state)
+    )
+      throw new UnauthorizedException('Недействительная попытка входа');
+    if (flow.stage === 'ready' && flow.intent === 'login') {
+      await this.finish(request, flow);
+      return flow.returnPath;
+    }
+    if (!flow.nonce || !flow.verifier)
+      throw new UnauthorizedException('Попытка завершена');
+    if (query.has('error')) {
+      await this.cancel(request);
+      return '/login?authError=cancelled';
+    }
+    if (flow.intent === 'link') {
+      await this.sessions.authenticate(request);
+      if (
+        request.auth!.sub !== flow.userId ||
+        request.auth!.sessionVersion !== flow.version ||
+        Date.now() - request.session.principal!.authenticatedAt >
+          LINK_FRESHNESS_MS
+      )
+        throw new UnauthorizedException('Повторите подключение после входа');
+    }
+    const claimed = await this.prisma.authFlow.updateMany({
+      where: { id: flow.id, stage: 'provider', expiresAt: { gt: new Date() } },
+      data: { stage: 'exchanging' },
+    });
+    if (claimed.count !== 1)
+      throw new UnauthorizedException('Попытка уже использована');
+    let proof;
+    try {
+      proof = await this.providers.exchange(
+        provider,
+        query.toString(),
+        state,
+        flow.nonce,
+        flow.verifier,
+      );
+    } catch (error) {
+      await this.prisma.authFlow.updateMany({
+        where: { id: flow.id, stage: 'exchanging' },
+        data: { stage: 'failed', verifier: null, nonce: null },
+      });
+      throw error;
+    }
+    const result = await this.prisma.$transaction(async (tx) => {
+      const current = await this.lockFlow(tx, flow, ['exchanging']);
+      const identity = await tx.externalIdentity.findUnique({
+        where: {
+          issuer_subject: { issuer: proof.issuer, subject: proof.subject },
+        },
+        include: { user: true },
+      });
+      const proofData = {
+        issuer: proof.issuer,
+        subject: proof.subject,
+        email: proof.email,
+        emailProof: proof.emailProof,
+        verifier: null,
+        nonce: null,
+      };
+      if (flow.intent === 'link') {
+        const user = await tx.user.findUniqueOrThrow({
+          where: { id: current.userId! },
+        });
+        if (!user.emailVerifiedAt)
+          throw new ConflictException('Сначала подтвердите почту аккаунта');
+        if (identity && identity.userId !== user.id)
+          throw new ConflictException(
+            'Этот способ входа уже подключён к другому аккаунту',
+          );
+        if (!identity)
+          await tx.externalIdentity.create({
+            data: {
+              userId: user.id,
+              provider,
+              issuer: proof.issuer,
+              subject: proof.subject,
+              activatedAt: new Date(),
+              pendingVersion: user.sessionVersion,
+            },
+          });
+        else if (!identity.activatedAt)
+          await tx.externalIdentity.update({
+            where: { id: identity.id },
+            data: {
+              activatedAt: new Date(),
+              pendingVersion: user.sessionVersion,
+            },
+          });
+        await tx.authFlow.update({
+          where: { id: flow.id },
+          data: { ...proofData, stage: 'complete' },
+        });
+        return { userId: null, version: null, redirect: flow.returnPath };
+      }
+      if (identity) {
+        if (identity.user.status !== 'active')
+          throw new UnauthorizedException('Вход недоступен');
+        if (identity.activatedAt && identity.user.emailVerifiedAt) {
+          await tx.authFlow.update({
+            where: { id: flow.id },
+            data: {
+              ...proofData,
+              stage: 'ready',
+              userId: identity.userId,
+              version: identity.user.sessionVersion,
+            },
+          });
+          return {
+            userId: identity.userId,
+            version: identity.user.sessionVersion,
+            redirect: flow.returnPath,
+          };
+        }
+        if (identity.pendingVersion !== identity.user.sessionVersion)
+          throw new UnauthorizedException(
+            'Войдите прежним способом и подключите провайдера заново',
+          );
+        await tx.authFlow.update({
+          where: { id: flow.id },
+          data: {
+            ...proofData,
+            stage: 'email',
+            userId: identity.userId,
+            version: identity.user.sessionVersion,
+            email: identity.user.email,
+          },
+        });
+        return { userId: null, version: null, redirect: '/auth/complete' };
+      }
+      if (
+        proof.emailProof &&
+        (await tx.user.findUnique({
+          where: { email: proof.emailProof },
+          select: { id: true },
+        }))
+      ) {
+        await tx.authFlow.update({
+          where: { id: flow.id },
+          data: { verifier: null, nonce: null, stage: 'cancelled' },
+        });
+        return {
+          userId: null,
+          version: null,
+          redirect: '/login?authError=link_required',
+        };
+      }
+      await tx.authFlow.update({
+        where: { id: flow.id },
+        data: { ...proofData, stage: 'profile' },
+      });
+      return { userId: null, version: null, redirect: '/auth/complete' };
+    });
+    if (result.userId && result.version !== null)
+      await this.finish(request, {
+        ...flow,
+        userId: result.userId,
+        version: result.version,
+      });
+    return result.redirect;
+  }
+
+  async state(request: SessionRequest) {
+    const flow = await this.flow(request, ['profile', 'email', 'ready']);
+    if (flow.userId) {
+      const user = await this.prisma.user.findUnique({
+        where: { id: flow.userId },
+        select: { email: true, sessionVersion: true, status: true },
+      });
+      if (
+        !user ||
+        user.status !== 'active' ||
+        user.sessionVersion !== flow.version
+      )
+        throw new UnauthorizedException('Попытка завершена');
+      return {
+        stage: flow.stage,
+        provider: flow.provider,
+        email: user.email,
+        returnPath: flow.returnPath,
+      };
+    }
+    return {
+      stage: flow.stage,
+      provider: flow.provider,
+      email: flow.email,
+      returnPath: flow.returnPath,
+    };
+  }
+
+  async resume(request: SessionRequest) {
+    const flow = await this.flow(request, ['ready']);
+    if (!flow.provider || flow.intent !== 'login')
+      throw new UnauthorizedException('Нет подтверждения провайдера');
+    await this.finish(request, flow);
+    return {
+      next: 'authenticated' as const,
+      user: await this.auth.me(flow.userId!),
+      returnPath: flow.returnPath,
+    };
+  }
+
+  async complete(
+    request: SessionRequest,
+    input: OnboardingRequest,
+    ip: string,
+  ) {
+    const flow = await this.flow(request, ['profile', 'ready']);
+    if (flow.stage === 'ready') {
+      await this.finish(request, flow);
+      return {
+        next: 'authenticated' as const,
+        user: await this.auth.me(flow.userId!),
+        returnPath: flow.returnPath,
+      };
+    }
+    if (!flow.provider || !flow.issuer || !flow.subject)
+      throw new UnauthorizedException('Нет подтверждения провайдера');
+    const email = input.email.trim().toLowerCase();
+    const version = readRegistrationLegalVersion();
+    if (
+      [
+        input.legal.agreement,
+        input.legal.privacy,
+        input.legal.dataConsent,
+      ].some((item) => item.version !== undefined && item.version !== version)
+    )
+      throw new ConflictException('Версия документов обновилась');
+    await this.abuse.assertRegistration({
+      email,
+      turnstileToken: input.turnstileToken,
+      ip,
+    });
+    const verified = email === flow.emailProof;
+    let result;
+    try {
+      result = await this.prisma.$transaction(async (tx) => {
+        await this.lockFlow(tx, flow, ['profile']);
+        const now = new Date();
+        const user = await tx.user.create({
+          data: {
+            email,
+            slug: input.slug,
+            passwordHash: null,
+            emailVerifiedAt: verified ? now : null,
+            registrationLegalEvidence: {
+              create: {
+                agreementVersion: version,
+                agreementAcceptedAt: now,
+                privacyVersion: version,
+                privacyAcknowledgedAt: now,
+                dataConsentVersion: version,
+                dataConsentedAt: now,
+                age18ConfirmedAt: now,
+              },
+            },
+          },
+        });
+        await tx.externalIdentity.create({
+          data: {
+            userId: user.id,
+            provider: flow.provider!,
+            issuer: flow.issuer!,
+            subject: flow.subject!,
+            activatedAt: verified ? now : null,
+            pendingVersion: user.sessionVersion,
+          },
+        });
+        await tx.authFlow.update({
+          where: { id: flow.id },
+          data: {
+            stage: verified ? 'ready' : 'email',
+            userId: user.id,
+            email,
+            version: user.sessionVersion,
+          },
+        });
+        return user;
+      });
+    } catch (error) {
+      if (isPrismaUniqueConstraintError(error)) {
+        if (
+          await this.prisma.user.findUnique({
+            where: { email },
+            select: { id: true },
+          })
+        )
+          await this.cancel(request);
+        throw new ConflictException(
+          'Почта или ник уже используются. Войдите в существующий аккаунт и подключите провайдера в настройках',
+        );
+      }
+      throw error;
+    }
+    if (!verified) return { next: 'email' as const };
+    await this.finish(request, {
+      ...flow,
+      userId: result.id,
+      version: result.sessionVersion,
+    });
+    return {
+      next: 'authenticated' as const,
+      user: await this.auth.me(result.id),
+      returnPath: flow.returnPath,
+    };
+  }
+
+  async requestVerification(
+    request: SessionRequest,
+    input: { idempotencyKey: string; turnstileToken: string },
+    ip: string,
+  ) {
+    const flow = await this.flow(request, ['email']);
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: flow.userId! },
+    });
+    if (
+      user.emailVerifiedAt ||
+      user.sessionVersion !== flow.version ||
+      user.status !== 'active'
+    )
+      throw new UnauthorizedException('Повторите вход');
+    return this.otp.request(user.id, { ...input, flowId: flow.id, ip });
+  }
+
+  async verificationState(request: SessionRequest) {
+    const flow = await this.flow(request, ['email']);
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: flow.userId! },
+      select: { sessionVersion: true, status: true },
+    });
+    if (user.sessionVersion !== flow.version || user.status !== 'active')
+      throw new UnauthorizedException('Доступ отозван');
+    return this.otp.state(flow.userId!);
+  }
+
+  async verifyOnboarding(
+    request: SessionRequest,
+    code: string,
+    idempotencyKey: string,
+    ip: string,
+  ) {
+    const flow = await this.flow(request, ['email', 'ready']);
+    await this.otp.verify(flow.userId!, code, {
+      idempotencyKey,
+      flowId: flow.id,
+      ip,
+    });
+    const user = await this.prisma.$transaction(async (tx) => {
+      await this.lockFlow(tx, flow, ['email', 'ready']);
+      const current = await tx.user.findUniqueOrThrow({
+        where: { id: flow.userId! },
+      });
+      const consumed = await tx.emailVerificationCode.findFirst({
+        where: {
+          userId: current.id,
+          purpose: 'email_verification',
+          flowId: flow.id,
+          version: current.sessionVersion,
+          codeHash: otpCodeHash(
+            this.env.OTP_HASH_SECRET,
+            current.id,
+            current.email,
+            code,
+            'email_verification',
+            flow.id,
+          ),
+          usedAt: { not: null },
+          expiresAt: { gt: new Date() },
+        },
+      });
+      if (!consumed || !current.emailVerifiedAt)
+        throw new UnauthorizedException('Нет подтверждения почты этой попытки');
+      if (flow.stage === 'ready') return current;
+      const activated = await tx.externalIdentity.updateMany({
+        where: {
+          userId: current.id,
+          issuer: flow.issuer!,
+          subject: flow.subject!,
+          activatedAt: null,
+          pendingVersion: current.sessionVersion,
+        },
+        data: { activatedAt: new Date() },
+      });
+      if (activated.count !== 1)
+        throw new UnauthorizedException('Подключение недоступно');
+      await tx.authFlow.update({
+        where: { id: flow.id },
+        data: { stage: 'ready' },
+      });
+      return current;
+    });
+    await this.finish(request, {
+      ...flow,
+      userId: user.id,
+      version: user.sessionVersion,
+    });
+    return {
+      next: 'authenticated' as const,
+      user: await this.auth.me(user.id),
+      returnPath: flow.returnPath,
+    };
+  }
+
+  async requestLoginCode(
+    request: SessionRequest,
+    input: EmailLoginRequest,
+    ip: string,
+  ) {
+    const email = input.email.trim().toLowerCase();
+    if (request.session.principal) throw new ConflictException('Вы уже вошли');
+    const existing = request.session.flowId
+      ? await this.prisma.authFlow.findFirst({
+          where: {
+            id: request.session.flowId,
+            browserHash: digest(request.sessionID),
+            stage: 'email_login',
+            email,
+            expiresAt: { gt: new Date() },
+          },
+        })
+      : null;
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+      select: {
+        id: true,
+        sessionVersion: true,
+        emailVerifiedAt: true,
+        status: true,
+      },
+    });
+    const eligible = user?.emailVerifiedAt && user.status === 'active';
+    const flow =
+      existing ??
+      (await this.begin(request, {
+        intent: 'email_login',
+        stage: 'email_login',
+        returnPath: '/',
+        email,
+        userId: eligible ? user.id : null,
+        version: eligible ? user.sessionVersion : null,
+      }));
+    // This browser-only ledger is identical for known and unknown addresses.
+    const admission = await this.prisma.$transaction(async (tx) => {
+      await this.lockFlow(tx, flow, ['email_login'], false);
+      const contentHash = digest(flow.id + '\0' + email);
+      const previous = await tx.authAbuseOperation.findUnique({
+        where: {
+          purpose_idempotencyKey: {
+            purpose: 'email_login_request',
+            idempotencyKey: input.idempotencyKey,
+          },
+        },
+      });
+      if (previous && previous.contentHash !== contentHash)
+        throw new ConflictException('Ключ запроса уже использован');
+      const sends = await tx.authAbuseOperation.findMany({
+        where: { purpose: 'email_login_request', contentHash },
+        orderBy: { createdAt: 'desc' },
+      });
+      const last = sends[0];
+      const retryAt = last
+        ? new Date(last.createdAt.getTime() + cooldownAfterSends(sends.length))
+        : new Date();
+      if (!previous && retryAt > new Date()) return { send: false, retryAt };
+      if (!previous)
+        await tx.authAbuseOperation.create({
+          data: {
+            purpose: 'email_login_request',
+            idempotencyKey: input.idempotencyKey,
+            contentHash,
+            email,
+            status: 'accepted',
+          },
+        });
+      return {
+        send: true,
+        retryAt: previous
+          ? retryAt
+          : new Date(Date.now() + cooldownAfterSends(sends.length + 1)),
+      };
+    });
+    if (admission.send)
+      await this.abuse.sendEmailLogin({ ...input, email, flowId: flow.id, ip });
+    return {
+      ok: true as const,
+      serverNow: new Date().toISOString(),
+      resendAvailableAt: admission.retryAt.toISOString(),
+    };
+  }
+
+  async loginCodeState(request: SessionRequest) {
+    const flow = await this.flow(request, ['email_login', 'ready']);
+    const sends = await this.prisma.authAbuseOperation.findMany({
+      where: {
+        purpose: 'email_login_request',
+        contentHash: digest(flow.id + '\0' + flow.email),
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    const last = sends[0];
+    return {
+      email: flow.email!,
+      serverNow: new Date().toISOString(),
+      resendAvailableAt: last
+        ? new Date(
+            last.createdAt.getTime() + cooldownAfterSends(sends.length),
+          ).toISOString()
+        : null,
+      codeExpiresAt: last
+        ? new Date(last.createdAt.getTime() + OTP_TTL_MS).toISOString()
+        : null,
+    };
+  }
+
+  async verifyLogin(
+    request: SessionRequest,
+    code: string,
+    idempotencyKey: string,
+  ) {
+    const flow = await this.flow(request, ['email_login', 'ready']);
+    if (!flow.userId)
+      throw new UnauthorizedException('Код недействителен или истёк');
+    await this.abuse.verifyEmailCode({
+      userId: flow.userId,
+      purpose: 'email_login',
+      flowId: flow.id,
+      code,
+      idempotencyKey,
+    });
+    await this.prisma.$transaction(async (tx) => {
+      await this.lockFlow(tx, flow, ['email_login', 'ready']);
+      const user = await tx.user.findUniqueOrThrow({
+        where: { id: flow.userId! },
+      });
+      if (!user.emailVerifiedAt || user.email !== flow.email)
+        throw new UnauthorizedException('Почта аккаунта изменилась');
+      const consumed = await tx.emailVerificationCode.findFirst({
+        where: {
+          userId: user.id,
+          purpose: 'email_login',
+          flowId: flow.id,
+          version: user.sessionVersion,
+          codeHash: otpCodeHash(
+            this.env.OTP_HASH_SECRET,
+            user.id,
+            user.email,
+            code,
+            'email_login',
+            flow.id,
+          ),
+          usedAt: { not: null },
+          expiresAt: { gt: new Date() },
+        },
+      });
+      if (!consumed)
+        throw new UnauthorizedException('Код недействителен или истёк');
+      await tx.authFlow.update({
+        where: { id: flow.id },
+        data: { stage: 'ready' },
+      });
+    });
+    await this.finish(request, flow);
+    return { user: await this.auth.me(flow.userId) };
+  }
+
+  async connections(request: SessionRequest) {
+    await this.sessions.authenticate(request);
+    const rows = await this.prisma.externalIdentity.findMany({
+      where: { userId: request.auth!.sub, activatedAt: { not: null } },
+      select: { provider: true },
+    });
+    return { connections: rows };
+  }
+
+  async cancel(request: SessionRequest): Promise<void> {
+    if (request.session.flowId)
+      await this.prisma.authFlow.updateMany({
+        where: {
+          id: request.session.flowId,
+          browserHash: digest(request.sessionID),
+          stage: { notIn: terminalStages },
+        },
+        data: { stage: 'cancelled', verifier: null, nonce: null },
+      });
+    delete request.session.flowId;
+    await this.sessions.save(request);
+  }
+}

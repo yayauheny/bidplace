@@ -22,11 +22,13 @@ const PRODUCTION_SESSION_SECRET = 'test-only-production-jwt-secret-32';
 const localEnv = {
   DATABASE_URL,
   SESSION_SECRET: LOCAL_SESSION_SECRET,
+  OTP_HASH_SECRET: 'synthetic-otp-hash-key-for-tests-only',
 } as const;
 
 const productionSecurityEnv = {
   DATABASE_URL,
   SESSION_SECRET: PRODUCTION_SESSION_SECRET,
+  OTP_HASH_SECRET: 'synthetic-otp-hash-key-for-tests-only',
   SMTP_HOST: 'smtp.example.com',
   SMTP_PORT: '465',
   SMTP_SECURE: 'true',
@@ -231,6 +233,7 @@ describe('NODE_ENV × APP_ENV matrix', () => {
         APP_ENV: 'production',
         DATABASE_URL,
         SESSION_SECRET: PRODUCTION_SESSION_SECRET,
+        OTP_HASH_SECRET: 'synthetic-otp-hash-key-for-tests-only',
         SMTP_PORT: '465',
         SMTP_SECURE: 'true',
         SMTP_FROM: 'no-reply@example.com',
@@ -252,6 +255,7 @@ describe('NODE_ENV × APP_ENV matrix', () => {
         APP_ENV: 'production',
         DATABASE_URL,
         SESSION_SECRET: PRODUCTION_SESSION_SECRET,
+        OTP_HASH_SECRET: 'synthetic-otp-hash-key-for-tests-only',
         SMTP_HOST: 'smtp.example.com',
         SMTP_PORT: '587',
         SMTP_SECURE: 'false',
@@ -362,6 +366,7 @@ describe('NODE_ENV × APP_ENV matrix', () => {
         APP_ENV: 'local',
         DATABASE_URL,
         SESSION_SECRET: LOCAL_SESSION_SECRET,
+        OTP_HASH_SECRET: 'synthetic-otp-hash-key-for-tests-only',
         SMTP_HOST: 'mailpit',
         SMTP_PORT: '1025',
         SMTP_SECURE: 'false',
@@ -463,7 +468,10 @@ function loadSyntheticServerEnv(
   vi.stubEnv('BIDPLACE_ENV_FILE', writeSyntheticServerEnv(contents));
 
   try {
-    return loadServerEnv(env);
+    return loadServerEnv({
+      OTP_HASH_SECRET: 'synthetic-otp-hash-key-for-tests-only',
+      ...env,
+    });
   } finally {
     for (const key of Object.keys(process.env)) {
       if (!before.has(key)) {

@@ -39,11 +39,17 @@ investigations. Those stay in [`09-TRUST-AND-AUCTION-INTEGRITY.md`](09-TRUST-AND
 | Malformed-session handling | Implemented locally | Signed opaque SID through express-session. Optional auth rejects invalid supplied credentials with401; anonymous media remains public. Logout clears invalid cookies without revoking another account. Session owner units + auth-transport integration. |
 | Neutral forgot-password (no email enumeration) | Implemented | `password-reset/` + `password-reset.integration.spec.ts` |
 | Reset token stored as SHA-256 only; single-use + session bump in one TX | Implemented | `password-reset.service.ts` |
+| OIDC signature, state, nonce and S256 PKCE | Implemented locally | `oidc-providers.service.ts` uses openid-client; PostgreSQL browser-bound one-use flows; signed test IdP HTTP coverage |
+| Explicit identity linking | Implemented locally | `auth-flow.service.ts`; fresh authentication, current User/version and browser binding; no email auto-merge; logout/account switch cancels pending link |
+| Email-code login and pending social email | Implemented locally | Shared auth-abuse engine; purpose/flow/version-bound HMAC; neutral request, shared mail quota, replay/pause/expiry; pending identity has no ordinary principal |
+| Recovery invalidates pending provider proofs | Implemented locally | Reset transaction increments version and cancels pending flows/identities/codes; social-auth HTTP owner covers stale proof rejection |
 | SMTP single-recipient guard | Implemented | `core/email/smtp-transport.ts` |
 
 **Pros:** predictable auth surface; banned/compromised users cannot keep old cookies.  
 **Cons:** no MFA, device binding, or breach-password list yet.  
 **Revisit when:** real pilot abuse, credential stuffing, or compliance asks for step-up auth.
+
+Provider configuration and external acceptance are owned by [Web auth rollout](../ops/WEB-AUTH-ROLLOUT.md). Real Google/Telegram smoke is still required.
 
 ## 3. Admin emergency controls
 
@@ -218,14 +224,14 @@ Env parsing rejects inconsistent pairs before bootstrap:
 | `development` or `test` | `production` | Rejected: `APP_ENV=production requires NODE_ENV=production` |
 | `production` | `local` (including default) | Rejected: `NODE_ENV=production requires APP_ENV=production or APP_ENV=staging` |
 
-Production security (`NODE_ENV=production` or `APP_ENV=production`) requires SMTP, service rules, `PASSWORD_RESET_URL_BASE`, S3 media configuration, and `JWT_SECRET` of at least 32 characters. `TEST_EMAIL_BYPASS` cannot be enabled. Session cookies use `secure` on that profile. Local mail transport and default service-rules text cannot run there.
+Production security (`NODE_ENV=production` or `APP_ENV=production`) requires SMTP, service rules, `PASSWORD_RESET_URL_BASE`, S3 media configuration, and `SESSION_SECRET` / `OTP_HASH_SECRET` of at least 32 characters. `TEST_EMAIL_BYPASS` cannot be enabled. Session cookies use `secure` on that profile. Local mail transport and default service-rules text cannot run there.
 
 Destructive demo seed remains `NODE_ENV=development|test`, `APP_ENV=local`, and `ALLOW_DESTRUCTIVE_DEMO_SEED=true` only.
 
 Coverage: `env-profile.spec.ts`, `env.spec.ts` matrix, `rules.spec.ts`, `local-mail-transport.spec.ts`, `auth.controller.spec.ts`, `seed-contract.integration.spec.ts`.
 
 **Pros:** `APP_ENV=production` cannot boot with a development/test Node profile; bypass/seed stay local-test-only.
-**Cons:** Compose `app` profile must set `APP_ENV=production`; short JWT secrets fail production parse.
+**Cons:** Compose `app` profile must set `APP_ENV=production`; short session/OTP secrets fail production parse.
 **Revisit when:** staging gets its own owner rule (SMTP/JWT policy distinct from production).
 
 ## 8. Deferred ops/security (post-pilot)

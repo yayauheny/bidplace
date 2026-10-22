@@ -117,6 +117,7 @@ describe('server env ownership', () => {
       NODE_ENV: 'test',
       APP_ENV: 'local',
       SESSION_SECRET: 'from-explicit-env',
+      OTP_HASH_SECRET: 'synthetic-otp-hash-key-for-tests-only',
       ANALYTICS_INGEST_ENABLED: 'false',
     } as const;
 
@@ -241,6 +242,8 @@ describe('server env ownership', () => {
       expect(localApp.get(ImageStore)).toBeInstanceOf(PostgresImageStore);
       expect(productionApp.get(ImageStore)).toBeInstanceOf(S3ImageStore);
 
+      vi.spyOn(localApp.get(PrismaService).authFlow, 'updateMany').mockResolvedValue({ count: 0 });
+      vi.spyOn(productionApp.get(PrismaService).authFlow, 'updateMany').mockResolvedValue({ count: 0 });
       const localResponse = { clearCookie: vi.fn() };
       await localApp
         .select(AuthModule)
@@ -248,6 +251,7 @@ describe('server env ownership', () => {
         .logout(
           undefined,
           {
+            sessionID: 'synthetic-config-session',
             session: { destroy: (callback: () => void) => callback() },
           } as never,
           localResponse,
@@ -264,6 +268,7 @@ describe('server env ownership', () => {
         .logout(
           undefined,
           {
+            sessionID: 'synthetic-config-session',
             session: { destroy: (callback: () => void) => callback() },
           } as never,
           productionResponse,

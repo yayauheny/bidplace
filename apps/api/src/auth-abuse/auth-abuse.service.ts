@@ -106,6 +106,7 @@ export class AuthAbuseService {
 
   async sendEmailVerification(input: {
     userId: string;
+    flowId?: string;
     idempotencyKey: string;
     turnstileToken: string;
     ip: string;
@@ -115,17 +116,31 @@ export class AuthAbuseService {
       select: { id: true, email: true, emailVerifiedAt: true },
     });
     if (!user) {
-      throw abuseError(HttpStatus.FORBIDDEN, ApiErrorCode.FORBIDDEN, 'User is not available');
+      throw abuseError(
+        HttpStatus.FORBIDDEN,
+        ApiErrorCode.FORBIDDEN,
+        'User is not available',
+      );
     }
 
     this.assertIdempotencyKey(input.idempotencyKey);
-    const hash = mailContentHash('email_verification_send', user.id, user.email);
+    const hash = mailContentHash(
+      'email_verification_send',
+      user.id,
+      user.email,
+      input.flowId,
+    );
     const existing = await this.store.findByKey(
       'email_verification_send',
       input.idempotencyKey,
     );
     if (existing) {
-      this.assertSameContent(existing.contentHash, hash, existing.ownerUserId, user.id);
+      this.assertSameContent(
+        existing.contentHash,
+        hash,
+        existing.ownerUserId,
+        user.id,
+      );
       if (existing.status === 'rejected') {
         throw abuseError(
           HttpStatus.SERVICE_UNAVAILABLE,
@@ -148,12 +163,18 @@ export class AuthAbuseService {
       return { delivery: 'already_verified' };
     }
 
-    await this.requireTurnstile('email_verification', input.turnstileToken, input.ip, {
-      operationKey: input.idempotencyKey,
-      contentHash: hash,
-    });
+    await this.requireTurnstile(
+      'email_verification',
+      input.turnstileToken,
+      input.ip,
+      {
+        operationKey: input.idempotencyKey,
+        contentHash: hash,
+      },
+    );
     const reserved = await this.store.reserveMail({
       purpose: 'email_verification_send',
+      ...(input.flowId ? { flowId: input.flowId } : {}),
       idempotencyKey: input.idempotencyKey,
       ownerUserId: user.id,
       contentHash: hash,
@@ -194,21 +215,78 @@ export class AuthAbuseService {
     });
   }
 
+  async sendEmailLogin(input: {
+    email: string;
+    flowId: string;
+    idempotencyKey: string;
+    turnstileToken: string;
+    ip: string;
+  }): Promise<void> {
+    this.assertIdempotencyKey(input.idempotencyKey);
+    await this.requireTurnstile('email_login', input.turnstileToken, input.ip, {
+      operationKey: input.idempotencyKey,
+      contentHash: resetContentHash(input.email),
+    });
+    const user = await this.prisma.user.findUnique({
+      where: { email: normalizeEmail(input.email) },
+      select: { id: true, email: true, emailVerifiedAt: true, status: true },
+    });
+    if (!user || !user.emailVerifiedAt || user.status !== 'active') return;
+    const reserved = await this.store.reserveMail({
+      purpose: 'email_login_send',
+      flowId: input.flowId,
+      idempotencyKey: input.idempotencyKey,
+      ownerUserId: user.id,
+      contentHash: mailContentHash(
+        'email_login_send',
+        user.id,
+        user.email,
+        input.flowId,
+      ),
+      now: new Date(),
+      dailyBudget: this.env.AUTH_MAIL_DAILY_BUDGET,
+      monthlyBudget: this.env.AUTH_MAIL_MONTHLY_BUDGET,
+    });
+    if (reserved.kind !== 'reserved') return;
+    await this.finishSend({
+      operationId: reserved.operationId,
+      purpose: 'email_login_send',
+      neutral: true,
+      message: {
+        to: user.email,
+        subject: 'Код для входа в bidplace',
+        text: `Код для входа в bidplace: ${reserved.rawSecret}. Если вы не запрашивали вход, никому не сообщайте этот код.`,
+      },
+    });
+  }
+
   async verifyEmailCode(input: {
     userId: string;
     code: string;
     idempotencyKey: string;
+    purpose?: 'email_verification' | 'email_login';
+    flowId?: string;
   }): Promise<void> {
     this.assertIdempotencyKey(input.idempotencyKey);
     const decision = await this.store.verifyEmailCode({
       userId: input.userId,
       code: input.code,
       idempotencyKey: input.idempotencyKey,
+      ...(input.purpose ? { purpose: input.purpose } : {}),
+      ...(input.flowId ? { flowId: input.flowId } : {}),
     });
 
-    if (decision.outcome === 'verified' || decision.outcome === 'already_verified') return;
+    if (
+      decision.outcome === 'verified' ||
+      decision.outcome === 'already_verified'
+    )
+      return;
     if (decision.outcome === 'missing') {
-      throw abuseError(HttpStatus.FORBIDDEN, ApiErrorCode.FORBIDDEN, 'User is not available');
+      throw abuseError(
+        HttpStatus.FORBIDDEN,
+        ApiErrorCode.FORBIDDEN,
+        'User is not available',
+      );
     }
     if (decision.outcome === 'conflict') {
       throw abuseError(
@@ -218,21 +296,38 @@ export class AuthAbuseService {
       );
     }
     if (decision.outcome === 'expired') {
-      throw abuseError(HttpStatus.FORBIDDEN, ApiErrorCode.OTP_EXPIRED, 'OTP has expired');
+      throw abuseError(
+        HttpStatus.FORBIDDEN,
+        ApiErrorCode.OTP_EXPIRED,
+        'OTP has expired',
+      );
     }
     if (decision.outcome === 'paused') {
-      throw abuseError(HttpStatus.TOO_MANY_REQUESTS, ApiErrorCode.OTP_PAUSED, 'OTP retry pause is active', {
-        pausedUntil: decision.pausedUntil.toISOString(),
-      });
+      throw abuseError(
+        HttpStatus.TOO_MANY_REQUESTS,
+        ApiErrorCode.OTP_PAUSED,
+        'OTP retry pause is active',
+        {
+          pausedUntil: decision.pausedUntil.toISOString(),
+        },
+      );
     }
-    throw abuseError(HttpStatus.FORBIDDEN, ApiErrorCode.OTP_INVALID, 'OTP is invalid');
+    throw abuseError(
+      HttpStatus.FORBIDDEN,
+      ApiErrorCode.OTP_INVALID,
+      'OTP is invalid',
+    );
   }
 
   async readVerificationState(userId: string) {
     const now = new Date();
     const state = await this.store.readVerificationState(userId, now);
     if (!state) {
-      throw abuseError(HttpStatus.FORBIDDEN, ApiErrorCode.FORBIDDEN, 'User is not available');
+      throw abuseError(
+        HttpStatus.FORBIDDEN,
+        ApiErrorCode.FORBIDDEN,
+        'User is not available',
+      );
     }
     return {
       serverNow: now.toISOString(),
@@ -261,7 +356,11 @@ export class AuthAbuseService {
       now: new Date(),
     });
     if (decision.outcome === 'missing') {
-      throw abuseError(HttpStatus.FORBIDDEN, ApiErrorCode.FORBIDDEN, 'User is not available');
+      throw abuseError(
+        HttpStatus.FORBIDDEN,
+        ApiErrorCode.FORBIDDEN,
+        'User is not available',
+      );
     }
     if (decision.outcome === 'verified') {
       throw abuseError(
@@ -271,7 +370,11 @@ export class AuthAbuseService {
       );
     }
     if (decision.outcome === 'taken') {
-      throw abuseError(HttpStatus.CONFLICT, ApiErrorCode.CONFLICT, 'Email or phone already in use');
+      throw abuseError(
+        HttpStatus.CONFLICT,
+        ApiErrorCode.CONFLICT,
+        'Email or phone already in use',
+      );
     }
   }
 
@@ -284,16 +387,24 @@ export class AuthAbuseService {
     const email = normalizeEmail(input.email);
     this.assertIdempotencyKey(input.idempotencyKey);
     const hash = resetContentHash(email);
-    const existing = await this.store.findByKey('password_reset_send', input.idempotencyKey);
+    const existing = await this.store.findByKey(
+      'password_reset_send',
+      input.idempotencyKey,
+    );
     if (existing) {
       if (existing.contentHash !== hash) this.throwContentConflict();
       return;
     }
 
-    await this.requireTurnstile('password_reset', input.turnstileToken, input.ip, {
-      operationKey: input.idempotencyKey,
-      contentHash: hash,
-    });
+    await this.requireTurnstile(
+      'password_reset',
+      input.turnstileToken,
+      input.ip,
+      {
+        operationKey: input.idempotencyKey,
+        contentHash: hash,
+      },
+    );
     const user = await this.prisma.user.findUnique({
       where: { email },
       select: { id: true, email: true, status: true },
@@ -322,14 +433,17 @@ export class AuthAbuseService {
     if (reserved.kind === 'conflict') throw this.reservationError(reserved);
     if (reserved.kind !== 'reserved') return;
 
-    const resetUrlBase = this.env.PASSWORD_RESET_URL_BASE ?? resolveCorsOrigin(this.env);
+    const resetUrlBase =
+      this.env.PASSWORD_RESET_URL_BASE ?? resolveCorsOrigin(this.env);
     if (!resetUrlBase) {
       await this.store.completeMail({
         operationId: reserved.operationId,
         outcome: 'rejected',
         purpose: 'password_reset_send',
       });
-      this.logger.error('Password reset link base URL is not configured; reservation released');
+      this.logger.error(
+        'Password reset link base URL is not configured; reservation released',
+      );
       return;
     }
 
@@ -347,7 +461,10 @@ export class AuthAbuseService {
 
   private async finishSend(input: {
     operationId: string;
-    purpose: 'email_verification_send' | 'password_reset_send';
+    purpose:
+      | 'email_verification_send'
+      | 'password_reset_send'
+      | 'email_login_send';
     message: { to: string; subject: string; text: string };
     neutral?: boolean;
   }): Promise<{ delivery: MailDelivery }> {
@@ -372,7 +489,8 @@ export class AuthAbuseService {
           ? `Email send outcome=${outcome} at=${location}`
           : `Email send outcome=${outcome}`,
       );
-      if (outcome === 'unknown' || input.neutral) return { delivery: 'unknown' };
+      if (outcome === 'unknown' || input.neutral)
+        return { delivery: 'unknown' };
       throw abuseError(
         HttpStatus.SERVICE_UNAVAILABLE,
         ApiErrorCode.MAIL_REJECTED,

@@ -1,6 +1,7 @@
 export const requiredSecrets = [
   'DATABASE_URL',
   'SESSION_SECRET',
+  'OTP_HASH_SECRET',
   'S3_ACCESS_KEY_ID',
   'S3_SECRET_ACCESS_KEY',
   'SMTP_USERNAME',
@@ -52,10 +53,22 @@ export const containerVariables = [
   'CLOUDFLARE_ZONE_ID',
 ] as const;
 
-export type RuntimeEnvironment = Record<
-  (typeof requiredSecrets)[number] | (typeof containerVariables)[number],
-  string
->;
+export const optionalContainerSettings = [
+  'GOOGLE_CLIENT_ID',
+  'GOOGLE_CLIENT_SECRET',
+  'GOOGLE_REDIRECT_URI',
+  'TELEGRAM_CLIENT_ID',
+  'TELEGRAM_CLIENT_SECRET',
+  'TELEGRAM_REDIRECT_URI',
+] as const;
+
+export type RuntimeEnvironment = Partial<
+  Record<(typeof optionalContainerSettings)[number], string>
+> &
+  Record<
+    (typeof requiredSecrets)[number] | (typeof containerVariables)[number],
+    string
+  >;
 
 export function containerEnvironment(
   env: RuntimeEnvironment,
@@ -66,6 +79,9 @@ export function containerEnvironment(
       throw new Error(`Missing Container setting: ${name}`);
     }
     result[name] = env[name];
+  }
+  for (const name of optionalContainerSettings) {
+    if (env[name]) result[name] = env[name];
   }
   return result;
 }

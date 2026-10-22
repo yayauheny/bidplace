@@ -50,6 +50,14 @@ const serverEnvSchema = z
       .positive()
       .default(40 * 1024 * 1024),
     SESSION_SECRET: z.string().min(1),
+    OTP_HASH_SECRET: z.string().min(32),
+    GOOGLE_CLIENT_ID: optionalNonEmptyStringEnvSchema,
+    GOOGLE_CLIENT_SECRET: optionalNonEmptyStringEnvSchema,
+    GOOGLE_REDIRECT_URI: z.string().url().optional(),
+    TELEGRAM_CLIENT_ID: optionalNonEmptyStringEnvSchema,
+    TELEGRAM_CLIENT_SECRET: optionalNonEmptyStringEnvSchema,
+    TELEGRAM_REDIRECT_URI: z.string().url().optional(),
+    OIDC_TEST_ISSUER: z.string().url().optional(),
     SMTP_HOST: optionalNonEmptyStringEnvSchema,
     SMTP_PORT: z.coerce.number().int().positive().optional(),
     SMTP_SECURE: booleanEnvSchema.optional(),
@@ -107,6 +115,43 @@ const serverEnvSchema = z
     },
   )
   .superRefine((env, context) => {
+    for (const provider of ['GOOGLE', 'TELEGRAM'] as const) {
+      const values = [
+        env[`${provider}_CLIENT_ID`],
+        env[`${provider}_CLIENT_SECRET`],
+        env[`${provider}_REDIRECT_URI`],
+      ];
+      if (values.some(Boolean) && !values.every(Boolean))
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [`${provider}_CLIENT_ID`],
+          message: `${provider} configuration must be complete`,
+        });
+      const redirect = env[`${provider}_REDIRECT_URI`];
+      if (
+        redirect &&
+        requiresProductionSecurity(env) &&
+        new URL(redirect).protocol !== 'https:'
+      )
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [`${provider}_REDIRECT_URI`],
+          message: 'Provider redirect must use HTTPS',
+        });
+    }
+    if (
+      env.OIDC_TEST_ISSUER &&
+      (!isExplicitLocalTestProfile(env) ||
+        !['127.0.0.1', 'localhost'].includes(
+          new URL(env.OIDC_TEST_ISSUER).hostname,
+        ))
+    )
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['OIDC_TEST_ISSUER'],
+        message:
+          'Test issuer requires explicit local test profile and loopback',
+      });
     const hasUsername = env.SMTP_USERNAME !== undefined;
     const hasPassword = env.SMTP_PASSWORD !== undefined;
 

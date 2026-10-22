@@ -145,3 +145,5 @@ export class HttpTestClient {
 export async function responseJson(response: Response): Promise<unknown> {
   return response.json();
 }
+
+process.env.OTP_HASH_SECRET ??= 'synthetic-otp-hash-key-for-tests-only';

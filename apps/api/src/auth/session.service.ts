@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import type { AuthPrincipal } from '@bidplace/contracts';
 import {
   Inject,
@@ -137,11 +138,33 @@ export class SessionService implements OnModuleDestroy {
     return true;
   }
 
+  private async cancelFlows(
+    request: SessionRequest,
+    completingFlowId?: string,
+  ): Promise<void> {
+    await this.prisma.authFlow.updateMany({
+      where: {
+        browserHash: createHash('sha256')
+          .update(request.sessionID)
+          .digest('hex'),
+        stage: { notIn: ['complete', 'cancelled', 'failed'] },
+        ...(completingFlowId ? { id: { not: completingFlowId } } : {}),
+      },
+      data: { stage: 'cancelled', verifier: null, nonce: null },
+    });
+  }
+
   async login(
     request: SessionRequest,
     userId: string,
     version: number,
+    completingFlowId?: string,
   ): Promise<void> {
+    await this.cancelFlows(request, completingFlowId);
+    const pending =
+      !request.session.principal && request.session.flowId
+        ? { id: request.sessionID, session: request.session }
+        : null;
     await new Promise<void>((resolve, reject) =>
       request.session.regenerate((error: unknown) =>
         error
@@ -160,6 +183,11 @@ export class SessionService implements OnModuleDestroy {
       await this.save(request);
     } catch (error) {
       delete request.session.principal;
+      if (pending) {
+        request.sessionID = pending.id;
+        request.session = pending.session;
+        await this.save(request);
+      }
       throw error;
     }
   }
@@ -174,7 +202,8 @@ export class SessionService implements OnModuleDestroy {
     );
   }
 
-  destroy(request: SessionRequest): Promise<void> {
+  async destroy(request: SessionRequest): Promise<void> {
+    await this.cancelFlows(request);
     return new Promise((resolve, reject) =>
       request.session.destroy((error: unknown) =>
         error

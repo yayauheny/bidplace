@@ -95,7 +95,7 @@ enum AuditTargetType {
 model User {
   id                String                @id @default(uuid()) @db.Uuid
   email             String                @unique @db.VarChar(255)
-  passwordHash      String                @map("password_hash") @db.VarChar(255)
+  passwordHash      String?               @map("password_hash") @db.VarChar(255)
   phone             String?               @unique @db.VarChar(32)
   emailVerifiedAt   DateTime?             @map("email_verified_at")
   phoneVerifiedAt   DateTime?             @map("phone_verified_at")
@@ -112,6 +112,7 @@ model User {
   buyerOrders       Order[]               @relation("OrderBuyer")
   sellerOrders      Order[]               @relation("OrderSeller")
   phoneCodes        PhoneVerificationCode[]
+  externalIdentities ExternalIdentity[]
   emailCodes        EmailVerificationCode[]
   passwordResetTokens PasswordResetToken[]
   termsAcceptances   TermsAcceptance[]
@@ -502,6 +503,9 @@ model EmailVerificationCode {
   id        String   @id @default(uuid()) @db.Uuid
   userId    String   @map("user_id") @db.Uuid
   codeHash  String   @map("code_hash") @db.Char(64)
+  purpose   String   @default("email_verification") @db.VarChar(32)
+  flowId    String?  @map("flow_id") @db.Uuid
+  version   Int      @default(0)
   expiresAt DateTime @map("expires_at")
   usedAt    DateTime? @map("used_at")
   attempts  Int      @default(0)
@@ -912,4 +916,44 @@ model AuthSession {
 
   @@index([expire])
   @@map("auth_sessions")
+}
+
+model ExternalIdentity {
+  id             String    @id @default(uuid()) @db.Uuid
+  userId         String    @map("user_id") @db.Uuid
+  provider       String    @db.VarChar(16)
+  issuer         String    @db.VarChar(255)
+  subject        String    @db.VarChar(255)
+  activatedAt    DateTime?  @map("activated_at")
+  pendingVersion Int       @default(0) @map("pending_version")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([issuer, subject])
+  @@unique([userId, provider])
+  @@map("external_identities")
+}
+
+model AuthFlow {
+  id          String   @id @default(uuid()) @db.Uuid
+  browserHash String   @map("browser_hash") @db.Char(64)
+  provider    String?  @db.VarChar(16)
+  intent      String   @db.VarChar(24)
+  stage       String   @db.VarChar(24)
+  returnPath  String   @map("return_path") @db.VarChar(2048)
+  stateHash   String?  @map("state_hash") @db.Char(64)
+  nonce       String?  @db.VarChar(255)
+  verifier    String?
+  issuer      String?  @db.VarChar(255)
+  subject     String?  @db.VarChar(255)
+  emailProof  String?  @map("email_proof") @db.VarChar(255)
+  email       String?  @db.VarChar(255)
+  userId      String?  @map("user_id") @db.Uuid
+  version     Int?
+  expiresAt   DateTime @map("expires_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([browserHash, stage])
+  @@index([expiresAt])
+  @@map("auth_flows")
 }

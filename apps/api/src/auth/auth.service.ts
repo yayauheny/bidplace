@@ -196,7 +196,7 @@ export class AuthService {
       select: authCredentialsSelect,
     });
     let passwordAccepted = false;
-    if (user && toContractUser(user).status === 'active') {
+    if (user?.passwordHash && toContractUser(user).status === 'active') {
       passwordAccepted = await this.passwordHasher.verify(
         user.passwordHash,
         input.password,

@@ -24,7 +24,8 @@ jobs:
       NODE_ENV: test
       APP_ENV: local
       DATABASE_URL: postgresql://auction:auction@localhost:5432/bidplace_integration?schema=public
-      JWT_SECRET: ci-release-gate-verify-jwt-secret
+      SESSION_SECRET: ci-release-gate-verify-jwt-secret
+      OTP_HASH_SECRET: synthetic-ci-otp-key-at-least-32-characters
       TEST_EMAIL_BYPASS: 'false'
       CORS_ORIGIN: http://localhost:8081
     steps:
@@ -66,7 +67,8 @@ jobs:
       APP_ENV: local
       E2E_DATABASE_URL: postgresql://auction:auction@localhost:5432/bidplace_e2e?schema=public
       DATABASE_URL: postgresql://auction:auction@localhost:5432/bidplace_e2e?schema=public
-      JWT_SECRET: ci-release-gate-browser-jwt-secret
+      SESSION_SECRET: ci-release-gate-browser-jwt-secret
+      OTP_HASH_SECRET: synthetic-ci-otp-key-at-least-32-characters
       TEST_EMAIL_BYPASS: 'false'
       CORS_ORIGIN: http://localhost:8081
     steps:

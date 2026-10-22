@@ -79,7 +79,8 @@ Ensure root `.env` includes the production keys the API container validates when
 `NODE_ENV=production` and `APP_ENV=production` (copy from [`.env.example`](../../.env.example) if needed):
 
 - `APP_ENV=production` (Compose `app` profile sets this; `APP_ENV=local` is rejected)
-- `JWT_SECRET` (at least 32 characters; the value is never logged)
+- `SESSION_SECRET` (at least 32 characters; the value is never logged)
+- `OTP_HASH_SECRET` (independent key, at least 32 characters)
 - `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_AUTH_MODE`, `SMTP_FROM`
 - `PASSWORD_RESET_URL_BASE`
 - `SERVICE_RULES_OWNER`, `SERVICE_RULES_CONTACT`, `SERVICE_RULES_TEXT`
@@ -249,3 +250,6 @@ pnpm ops:staging-smoke
 - Full browser/device/a11y CI matrix
 
 See also [`docs/product/13-APPLICATION-SECURITY.md`](../product/13-APPLICATION-SECURITY.md) for backup encryption and multi-instance rate-limit notes.
+
+Google/Telegram settings and the coordinated session cutover are described in
+[Web auth rollout](WEB-AUTH-ROLLOUT.md).

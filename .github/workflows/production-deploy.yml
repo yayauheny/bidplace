@@ -129,7 +129,14 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           NEON_DIRECT_URL: ${{ secrets.NEON_DIRECT_URL }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
+          OTP_HASH_SECRET: ${{ secrets.OTP_HASH_SECRET }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REDIRECT_URI: ${{ secrets.GOOGLE_REDIRECT_URI }}
+          TELEGRAM_CLIENT_ID: ${{ secrets.TELEGRAM_CLIENT_ID }}
+          TELEGRAM_CLIENT_SECRET: ${{ secrets.TELEGRAM_CLIENT_SECRET }}
+          TELEGRAM_REDIRECT_URI: ${{ secrets.TELEGRAM_REDIRECT_URI }}
           S3_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY_ID }}
           S3_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
@@ -145,7 +152,8 @@ jobs:
               "CLOUDFLARE_API_TOKEN",
               "DATABASE_URL",
               "NEON_DIRECT_URL",
-              "JWT_SECRET",
+              "SESSION_SECRET",
+              "OTP_HASH_SECRET",
               "S3_ACCESS_KEY_ID",
               "S3_SECRET_ACCESS_KEY",
               "SMTP_PASSWORD",
@@ -156,6 +164,15 @@ jobs:
           missing = [name for name in required if not os.environ.get(name, "").strip()]
           if missing:
               raise SystemExit("Missing production settings: " + ", ".join(missing))
+
+          for name in ("SESSION_SECRET", "OTP_HASH_SECRET"):
+              if len(os.environ[name]) < 32:
+                  raise SystemExit(f"{name} must be at least 32 characters")
+          for provider in ("GOOGLE", "TELEGRAM"):
+              names = [f"{provider}_{suffix}" for suffix in ("CLIENT_ID", "CLIENT_SECRET", "REDIRECT_URI")]
+              configured = [bool(os.environ.get(name, "").strip()) for name in names]
+              if any(configured) and not all(configured):
+                  raise SystemExit(f"{provider} configuration must be complete")
 
           def endpoint(hostname):
               label = hostname.split(".")[0]
@@ -217,7 +234,14 @@ jobs:
           SERVICE_RULES_CONTACT: ${{ vars.SERVICE_RULES_CONTACT }}
           SERVICE_RULES_TEXT: ${{ vars.SERVICE_RULES_TEXT }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
+          OTP_HASH_SECRET: ${{ secrets.OTP_HASH_SECRET }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REDIRECT_URI: ${{ secrets.GOOGLE_REDIRECT_URI }}
+          TELEGRAM_CLIENT_ID: ${{ secrets.TELEGRAM_CLIENT_ID }}
+          TELEGRAM_CLIENT_SECRET: ${{ secrets.TELEGRAM_CLIENT_SECRET }}
+          TELEGRAM_REDIRECT_URI: ${{ secrets.TELEGRAM_REDIRECT_URI }}
           S3_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY_ID }}
           S3_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
@@ -241,7 +265,8 @@ jobs:
           path = os.environ["SECRETS_FILE"]
           names = [
               "DATABASE_URL",
-              "JWT_SECRET",
+              "SESSION_SECRET",
+              "OTP_HASH_SECRET",
               "S3_ACCESS_KEY_ID",
               "S3_SECRET_ACCESS_KEY",
               "SMTP_PASSWORD",
@@ -253,6 +278,12 @@ jobs:
           if missing:
               raise SystemExit("Missing deployment secret names: " + ", ".join(missing))
           payload = {name: os.environ[name] for name in names}
+          for provider in ("GOOGLE", "TELEGRAM"):
+              optional = [provider + suffix for suffix in ("_CLIENT_ID", "_CLIENT_SECRET", "_REDIRECT_URI")]
+              configured = [name for name in optional if os.environ.get(name, "").strip()]
+              if configured and len(configured) != len(optional):
+                  raise SystemExit(provider + " configuration must be complete")
+              payload.update({name: os.environ[name] for name in configured})
           payload["SMTP_USERNAME"] = "api_token"
           with open(path, "w", encoding="utf-8") as handle:
               json.dump(payload, handle)

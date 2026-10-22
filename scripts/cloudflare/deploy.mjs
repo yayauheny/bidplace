@@ -10,7 +10,10 @@ import {
 import { tmpdir } from 'node:os';
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { workerSecrets } from '../../deploy/cloudflare/src/environment.ts';
+import {
+  workerSecrets,
+  optionalContainerSettings,
+} from '../../deploy/cloudflare/src/environment.ts';
 import {
   containerReleaseReady,
   databaseGuardFailure,
@@ -27,6 +30,7 @@ const RELEASE_BRANCH = 'feature/portfolio-mvp-release';
 const PRODUCTION_SESSION_SECRET_MIN_LENGTH = 32;
 const GATE_ONLY_ENV = [
   ...workerSecrets,
+  ...optionalContainerSettings,
   'DATABASE_URL_UNPOOLED',
   'NEON_DIRECT_URL',
   'CLOUDFLARE_API_TOKEN',
@@ -90,7 +94,9 @@ export function assertSecretsFile(file, checkoutRoot) {
       'Secrets file must be a JSON object; contents are not logged',
     );
   }
-  const keys = Object.keys(parsed).sort();
+  const keys = Object.keys(parsed)
+    .filter((key) => !optionalContainerSettings.includes(key))
+    .sort();
   const expected = [...workerSecrets].sort();
   if (JSON.stringify(keys) !== JSON.stringify(expected)) {
     throw new Error(
@@ -109,6 +115,22 @@ export function assertSecretsFile(file, checkoutRoot) {
     throw new Error(
       `SESSION_SECRET must be at least ${PRODUCTION_SESSION_SECRET_MIN_LENGTH} characters`,
     );
+  }
+  if (parsed.OTP_HASH_SECRET.length < 32)
+    throw new Error('OTP_HASH_SECRET must be at least 32 characters');
+  for (const provider of ['GOOGLE', 'TELEGRAM']) {
+    const names = optionalContainerSettings.filter((name) =>
+      name.startsWith(provider),
+    );
+    const configured = names.filter((name) => parsed[name] !== undefined);
+    if (
+      configured.length &&
+      (configured.length !== names.length ||
+        configured.some(
+          (name) => typeof parsed[name] !== 'string' || !parsed[name].trim(),
+        ))
+    )
+      throw new Error(`${provider} configuration must be complete`);
   }
   if (parsed.RELEASE_CONTROL.length < PRODUCTION_SESSION_SECRET_MIN_LENGTH) {
     throw new Error(

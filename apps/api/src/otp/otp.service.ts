@@ -1,18 +1,23 @@
 import { ApiErrorCode } from '@bidplace/contracts';
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 
-import { AuthAbuseService, type MailDelivery } from '../auth-abuse/auth-abuse.service';
+import {
+  AuthAbuseService,
+  type MailDelivery,
+} from '../auth-abuse/auth-abuse.service';
 import { resolveClientIp, type ClientIpRequest } from '../auth-abuse/client-ip';
 import { SERVER_ENV, type ServerEnv } from '../core/config';
 import { AppException } from '../core/errors';
 import { RateLimitService } from '../core/rate-limit';
 
 export type OtpRequestContext = ClientIpRequest & {
+  flowId?: string;
   idempotencyKey: string;
   turnstileToken: string;
 };
 
 export type OtpVerifyContext = ClientIpRequest & {
+  flowId?: string;
   idempotencyKey: string;
 };
 
@@ -24,7 +29,10 @@ export class OtpService {
     @Inject(SERVER_ENV) private readonly env: ServerEnv,
   ) {}
 
-  async request(userId: string, context: OtpRequestContext): Promise<{ delivery: MailDelivery }> {
+  async request(
+    userId: string,
+    context: OtpRequestContext,
+  ): Promise<{ delivery: MailDelivery }> {
     const ip = resolveClientIp(context, this.env.TRUST_PROXY);
     if (!this.rateLimits.consume(`email-otp:request:ip:${ip}`, 10, 60_000)) {
       throw new AppException({
@@ -36,13 +44,18 @@ export class OtpService {
 
     return this.abuse.sendEmailVerification({
       userId,
+      ...(context.flowId ? { flowId: context.flowId } : {}),
       idempotencyKey: context.idempotencyKey,
       turnstileToken: context.turnstileToken,
       ip,
     });
   }
 
-  async verify(userId: string, code: string, context: OtpVerifyContext): Promise<void> {
+  async verify(
+    userId: string,
+    code: string,
+    context: OtpVerifyContext,
+  ): Promise<void> {
     const ip = resolveClientIp(context, this.env.TRUST_PROXY);
     if (!this.rateLimits.consume(`email-otp:verify:ip:${ip}`, 20, 60_000)) {
       throw new AppException({
@@ -55,6 +68,7 @@ export class OtpService {
     await this.abuse.verifyEmailCode({
       userId,
       code,
+      ...(context.flowId ? { flowId: context.flowId } : {}),
       idempotencyKey: context.idempotencyKey,
     });
   }

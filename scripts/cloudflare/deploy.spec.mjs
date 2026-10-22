@@ -10,7 +10,10 @@ import {
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import test from 'node:test';
-import { workerSecrets } from '../../deploy/cloudflare/src/environment.ts';
+import {
+  workerSecrets,
+  optionalContainerSettings,
+} from '../../deploy/cloudflare/src/environment.ts';
 import { containerReleaseReady } from '../../deploy/cloudflare/src/release-gate.ts';
 import { root } from './config.mjs';
 import {
@@ -26,7 +29,8 @@ const canary = 'local-secret-canary';
 function secrets(overrides = {}) {
   return {
     DATABASE_URL: `postgresql://role:${canary}@ep-test-pooler.eu-central-1.aws.neon.tech/neondb?sslmode=require`,
-    SESSION_SECRET: 'local-secret-canary-jwt-value-32',
+    SESSION_SECRET: 'local-secret-canary-session-value-32',
+    OTP_HASH_SECRET: 'local-secret-canary-otp-value-at-least-32',
     S3_ACCESS_KEY_ID: `${canary}-access`,
     S3_SECRET_ACCESS_KEY: `${canary}-r2`,
     SMTP_USERNAME: 'api_token',
@@ -67,6 +71,9 @@ test('production deploy rejects a non-release branch without printing credential
 
 test('gate environment removes runtime and deploy credentials', () => {
   const env = gateEnvironment({
+    ...Object.fromEntries(
+      optionalContainerSettings.map((name) => [name, canary]),
+    ),
     PATH: '/usr/bin',
     DATABASE_URL: canary,
     DATABASE_URL_UNPOOLED: canary,
@@ -85,6 +92,7 @@ test('gate environment removes runtime and deploy credentials', () => {
   assert.equal(env.CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV, 'false');
   for (const name of [
     ...workerSecrets,
+    ...optionalContainerSettings,
     'DATABASE_URL_UNPOOLED',
     'NEON_DIRECT_URL',
     'CLOUDFLARE_API_TOKEN',
@@ -97,7 +105,13 @@ test('gate environment removes runtime and deploy credentials', () => {
 });
 
 test('secrets file accepts the runtime contract and rejects unsafe files without printing values', () => {
-  const valid = writeSecrets(secrets());
+  const valid = writeSecrets(
+    secrets(
+      Object.fromEntries(
+        optionalContainerSettings.map((name) => [name, canary]),
+      ),
+    ),
+  );
   try {
     assertSecretsFile(valid.file, root);
   } finally {
@@ -113,6 +127,19 @@ test('secrets file accepts the runtime contract and rejects unsafe files without
     ],
     [secrets({ SMTP_USERNAME: 'other-user' }), /api_token/],
     [secrets({ SESSION_SECRET: canary }), /SESSION_SECRET must be at least/],
+    [secrets({ OTP_HASH_SECRET: canary }), /OTP_HASH_SECRET must be at least/],
+    [
+      secrets({ GOOGLE_CLIENT_ID: canary }),
+      /GOOGLE configuration must be complete/,
+    ],
+    [
+      secrets({
+        TELEGRAM_CLIENT_ID: canary,
+        TELEGRAM_CLIENT_SECRET: canary,
+        TELEGRAM_REDIRECT_URI: '',
+      }),
+      /TELEGRAM configuration must be complete/,
+    ],
     [secrets({ RELEASE_CONTROL: canary }), /RELEASE_CONTROL must be at least/],
     [{ ...secrets(), DATABASE_URL_UNPOOLED: canary }, /runtime contract/],
     [{ ...secrets(), NEON_DIRECT_URL: canary }, /runtime contract/],
