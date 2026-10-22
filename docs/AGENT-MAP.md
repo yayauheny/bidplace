@@ -1,38 +1,25 @@
-# Agent map (read first)
+# Agent map
 
-**Scope:** portfolio-first public MVP — author portfolio, Work lifecycle, auth, moderation. Commerce/auction code may exist but is not the launch contract (`05-MVP-RFC.md`).
+**Scope:** portfolio-first public MVP: author portfolio, Work lifecycle, auth and moderation. Commerce code is not the launch contract. Root `AGENTS.md` owns workflow/security/verification rules.
 
-## Always-on constraints
+Read this map, choose one row, then open only relevant headings in its owner. Do not load the product index, full RFC, architecture, status or decision history for every task. Before product-changing code also read product foundation and the relevant RFC sections.
 
-- Product value boundary: `docs/product/01-PRODUCT-FOUNDATION.md` (when changing product behavior).
-- Verification: run checks for the affected graph; see `AGENTS.md` §Verification.
-- Security-sensitive work: `docs/product/13-APPLICATION-SECURITY.md` + `security` skill — not every task.
-- Figma is visual source (`pAPQo6cADmG5XzVmBX76EE`); local `design/figma-handoff` may be stale.
-
-## Pick by task type
-
-| Area | Start here |
+| Task | Owner / next read |
 | --- | --- |
-| Release / blockers | `docs/audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md` |
-| Next reviews | `docs/audits/current/06-NEXT-REVIEWS.md` |
-| Implementation status (recent) | `docs/product/11-PROJECT-STATUS.md` |
-| Architecture | `docs/product/10-CODE-ARCHITECTURE.md` |
-| MVP contract | `docs/product/05-MVP-RFC.md` |
-| UI in `apps/mobile` | `bidplace-ui` skill → `03-DESIGN-SYSTEM.md` + component README; grep `04-DESIGN-STATUS` / release audit, do not read whole files |
-| Active backlog (not archive tasks) | `docs/product/16-PORTFOLIO-ACTIVE-BACKLOG.md` |
-| Nest/API | `nest` skill + `10-CODE-ARCHITECTURE.md` |
-| Deploy / ops | `docs/ops/00-RELEASE-AND-BACKUP.md`, `docs/ops/CLOUDFLARE-DEPLOYMENT.md` |
-| Legal publish | `docs/legal/00-FINAL-LEGAL-AUDIT.md` |
-| Decisions (lookup only) | `docs/product/12-DECISION-LOG.md` — search/grep, do not read whole file |
+| Next work / missing feature | [Active backlog](product/16-PORTFOLIO-ACTIVE-BACKLOG.md) |
+| Release / checks / external blockers | [Release audit](audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md) |
+| Current implementation | [Project status](product/11-PROJECT-STATUS.md) |
+| Product contract / ownership | [RFC](product/05-MVP-RFC.md) / [product index](product/00-PROJECT-INDEX.md) |
+| Architecture / API | `nest` + relevant [architecture](product/10-CODE-ARCHITECTURE.md) sections |
+| UI in `apps/mobile` | `bidplace-ui` + component README + relevant [design-system](design/03-DESIGN-SYSTEM.md) sections; screen row in [design status](design/04-DESIGN-STATUS.md) |
+| Sensitive behavior | `security` + [application security](product/13-APPLICATION-SECURITY.md), together with domain skill |
+| Deploy / operations | [Release/backup](ops/00-RELEASE-AND-BACKUP.md), [Cloudflare](ops/CLOUDFLARE-DEPLOYMENT.md) |
+| Legal publication | [Final legal audit](legal/00-FINAL-LEGAL-AUDIT.md) |
+| Decision / revision lookup | Search heading/ID in [Decision Log](product/12-DECISION-LOG.md), then read the whole matching entry and any later revisions |
+| Sales / auctions after launch | [Post-MVP backlog](product/15-POST-MVP-BACKLOG.md), including its owner map and open mechanics |
 
-## Do not load unless asked
+For large owners, first `rg -n '^##|<topic>' <owner>` and read the matching section range. A search hit alone does not establish the latest decision: follow Revises/Supersedes and later revisions inside that entry.
 
-- `docs/archive/**` — historical status, old execution roadmaps, First MVP task packs.
-- `docs/audits/**/evidence/**` — acceptance screenshots (removed from tree; see `docs/archive/README.md`).
-- `docs/audits/current/00-EXECUTION-ROADMAP.md` — pointer only; full log is archived.
-- `docs/research/raw/**` — immutable research archive.
-- `design/bidplace-v2-visual-exploration/` — exploration, not production spec.
+Do not load by default: `docs/archive/**`, audit evidence, dated audits, Pen plans/logs, `docs/research/raw/**`, design exploration, or full skill rulebooks. These are provenance, not current tasks. Current screenshots/videos remain in the tree; older removed evidence has recovery instructions in [archive](archive/README.md).
 
-## Skills
-
-Load **one** domain skill per task (`bidplace-ui`, `nest`, `security`, `ui`, …). Do not inline entire skill corpora (e.g. full React Native rulebooks) unless debugging that layer.
+Figma is read-only and controls visuals; exact source priority and `NEEDS-FIGMA` rules are in `AGENTS.md`. Load only applicable skills; security + domain/review combinations remain mandatory when relevant.

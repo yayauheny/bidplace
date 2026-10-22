@@ -3763,7 +3763,7 @@ build-web` (4 successful tasks), `make test` and dev smoke passed. Production
   [`00-FIRST-MVP-BACKLOG.md`](../../archive/tasks/2026-09-06-reconciliation/00-FIRST-MVP-BACKLOG.md).
 - `Prepared, not implemented`: эти launch gaps собраны в восемь self-contained
   implementation/review prompts с dependencies, success criteria и checks в
-  [`00-EXECUTION-ORDER.md`](../../archive/tasks/2026-09-08-first-mvp/00-EXECUTION-ORDER.md).
+  [`00-EXECUTION-ORDER.md`](https://github.com/yayauheny/bidplace/blob/872f22fc/docs/archive/tasks/2026-09-08-first-mvp/00-EXECUTION-ORDER.md).
 - `Deferred`: seller history, auction lifecycle residuals, fixed/offer, handoff and the
   completed creator-commerce research are preserved in
   [`99-POST-MVP-BACKLOG.md`](../../archive/tasks/2026-09-06-reconciliation/99-POST-MVP-BACKLOG.md).
