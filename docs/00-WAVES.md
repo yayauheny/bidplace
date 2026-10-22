@@ -7,7 +7,7 @@
 Публичные профили авторов и Work без commerce: onboarding/moderation, создание работы,
 Home/Works/Authors/search, простые filters, страница автора и Work, share и QR, legal/
 security/operations gate. Точный контракт: [`product/05-MVP-RFC.md`](product/05-MVP-RFC.md).
-Активные задачи: [`archive/tasks/2026-09-06-reconciliation/00-FIRST-MVP-BACKLOG.md`](archive/tasks/2026-09-06-reconciliation/00-FIRST-MVP-BACKLOG.md).
+Активные задачи: [active backlog](product/16-PORTFOLIO-ACTIVE-BACKLOG.md).
 
 ## Волна 2 — улучшение портфолио и commerce
 

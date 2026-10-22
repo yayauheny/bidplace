@@ -425,8 +425,11 @@ transaction. Owner, admin, and public author DTOs include selected term,
 category, and direction metadata, including hidden rows. `GET /categories` and
 `GET /catalog/terms` stay active-only. `normalizeCatalogName` is the only name
 identity; writers set `normalizedName`, and the column has no SQL default or
-insert trigger. The mobile and admin clients still speak the previous contracts,
-including the removed free-text materials and technique writes.
+insert trigger. The earlier client-cutover warning described the 2026-10-11
+checkpoint. The current mobile story owner calls `api.products.replaceCreation`
+with revision blocks; client/API integration and its verification are tracked in
+[project status](11-PROJECT-STATUS.md) and the
+[UI completion audit](../audits/current/2026-10-21-UI-COMPLETION.md).
 
 Contracts belong to [05-MVP-RFC.md](05-MVP-RFC.md); affected consumers, migration
 and API work are in [the backend plan](../archive/tasks/2026-10-11-author-story-backend/PLAN.md).
