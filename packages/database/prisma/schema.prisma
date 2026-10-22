@@ -754,6 +754,7 @@ enum MediaPurpose {
   STORY_IMAGE
 }
 enum MediaProvenance {
+  NORMALIZED
   ORIGINAL
   LEGACY_NORMALIZED
 }
@@ -838,6 +839,7 @@ model MediaOperation {
   kind MediaOperationKind
   state MediaOperationState @default(PENDING)
   identity String @unique @db.VarChar(255)
+  inputChecksum String? @map("input_checksum") @db.Char(64)
   profileId String? @map("profile_id") @db.Uuid
   productId String? @map("product_id") @db.Uuid
   revisionId String? @map("revision_id") @db.Uuid

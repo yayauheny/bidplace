@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import sharp from 'sharp';
@@ -186,7 +186,15 @@ describe('Work media lifecycle over authenticated HTTP and PostgreSQL', () => {
     expect(created.status).toBe(201);
     const work = (await created.json()).product;
     const imagePath = `/products/${work.id}/images`;
-    const add = (client: HttpTestClient, body = bytes, key = 'first-upload') =>
+    const largeInput = Buffer.concat([
+      bytes,
+      Buffer.alloc(7 * 1024 * 1024 - bytes.length),
+    ]);
+    const add = (
+      client: HttpTestClient,
+      body = largeInput,
+      key = 'first-upload',
+    ) =>
       client.request(imagePath, {
         method: 'POST',
         headers: { 'Idempotency-Key': key },
@@ -211,6 +219,16 @@ describe('Work media lifecycle over authenticated HTTP and PostgreSQL', () => {
     ).toBe(400);
     expect((await add(author.client)).status).toBe(201);
     expect((await add(author.client)).status).toBe(201);
+    const normalized = await db.prisma.mediaObject.findFirstOrThrow({
+      where: {
+        variant: 'SOURCE',
+        asset: { images: { some: { productId: work.id } } },
+      },
+    });
+    expect(normalized.byteLength).toBeLessThanOrEqual(5 * 1024 * 1024);
+    expect(normalized.sha256).not.toBe(
+      createHash('sha256').update(largeInput).digest('hex'),
+    );
     expect(
       await db.prisma.productImage.count({ where: { productId: work.id } }),
     ).toBe(1);
@@ -464,7 +482,10 @@ describe('Work media lifecycle over authenticated HTTP and PostgreSQL', () => {
     });
     await db.prisma.product.update({
       where: { id: product.id },
-      data: { editingRevisionId: revision.id, publishedRevisionId: revision.id },
+      data: {
+        editingRevisionId: revision.id,
+        publishedRevisionId: revision.id,
+      },
     });
     async function previewAsset(purpose: 'STORY_IMAGE') {
       const key = `story/${randomUUID()}`;
@@ -526,7 +547,9 @@ describe('Work media lifecycle over authenticated HTTP and PostgreSQL', () => {
     const heldPath = `/products/${product.id}/story-images/${heldAsset.id}`;
     const published = await guest.get(publishedPath);
     expect(published.status).toBe(200);
-    expect(published.headers.get('cache-control')).not.toBe('private, no-store');
+    expect(published.headers.get('cache-control')).not.toBe(
+      'private, no-store',
+    );
     expect((await guest.get(heldPath)).status).toBe(404);
     const owned = await owner.client.get(heldPath);
     expect(owned.status).toBe(200);

@@ -71,6 +71,7 @@ vi.mock('./product-catalog-term-sheet', () => ({
 }));
 
 vi.mock('react-native', () => ({
+  Image: ({ source, accessibilityLabel }: { source: { uri: string }; accessibilityLabel: string }) => createElement('img', { src: source.uri, alt: accessibilityLabel }),
   Platform: { OS: 'web' },
   View: ({ children }: { children?: ReactNode }) =>
     createElement('div', null, children),

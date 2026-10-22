@@ -6,6 +6,7 @@ import {
 import { ApiErrorCode } from '@bidplace/contracts';
 
 import { isInfrastructureError } from './classify';
+import { getImageUploadErrorMessage } from './image-upload-error';
 import {
   AUTH_CREDENTIALS_COPY,
   AUTH_DISPOSABLE_EMAIL_COPY,
@@ -43,9 +44,9 @@ export function getUserFacingErrorMessage(
   error: unknown,
   fallbackMessage: string,
 ): string {
-  if (isInfrastructureError(error)) {
-    return INFRASTRUCTURE_ERROR_COPY;
-  }
+  const imageMessage = getImageUploadErrorMessage(error);
+  if (imageMessage) return imageMessage;
+  if (isInfrastructureError(error)) return INFRASTRUCTURE_ERROR_COPY;
 
   if (error instanceof ApiClientError) {
     if (publicMessageKinds.has(error.kind) && error.message.trim()) {

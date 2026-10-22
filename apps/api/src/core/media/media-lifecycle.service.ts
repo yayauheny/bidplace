@@ -15,8 +15,12 @@ import type { MediaOperation, MediaPurpose, Prisma } from '@bidplace/database';
 import { SERVER_ENV, type ServerEnv } from '../config';
 import { PrismaService, runReadCommittedTransaction } from '../database';
 import type { RawImageUpload } from '../../images/image-policy';
-import { buildMediaPipeline } from './media-pipeline';
-import { mediaChecksum, MediaObjectStore } from './media-object-store';
+import { ImageProcessor } from '../../images/image-processor';
+import {
+  mediaChecksum,
+  mediaInputChecksum,
+  MediaObjectStore,
+} from './media-object-store';
 import { PublicMediaCache, publicMediaUrl } from './public-media-cache';
 
 const activeStates = ['PENDING', 'RUNNING', 'FAILED'] as const;
@@ -49,6 +53,7 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
     private readonly store: MediaObjectStore,
     private readonly cache: PublicMediaCache,
     @Inject(SERVER_ENV) private readonly env: ServerEnv,
+    @Inject(ImageProcessor) private readonly imageProcessor: ImageProcessor,
   ) {
     this.enabled = Boolean(env.S3_PUBLIC_BUCKET);
   }
@@ -177,21 +182,32 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
     purpose: MediaPurpose,
     file: RawImageUpload,
     idempotencyKey: string = randomUUID(),
+    preserveSource = false,
   ) {
     if (!this.enabled) throw new Error('Media lifecycle is disabled');
     if (!/^[a-zA-Z0-9:_-]{1,100}$/.test(idempotencyKey))
       throw new ConflictException('Invalid media idempotency identity');
-    const pipeline = await buildMediaPipeline(file, purpose);
     const identity = mediaUploadIdentity(userId, purpose, idempotencyKey);
     let operation = await this.prisma.mediaOperation.findUnique({
       where: { identity },
       include: objectInclude,
     });
+    const keepSource = preserveSource || Boolean(operation?.objects.some(
+      ({ object }) => object.variant === 'PREVIEW' && object.pipelineVersion === 'p1',
+    ));
+    const pipeline = await this.imageProcessor.process(file, purpose, keepSource);
+    const pipelineVersion = keepSource ? 'p1' : 'p2';
     if (!operation) {
       try {
         operation = await this.prisma.$transaction(async (tx) => {
           const asset = await tx.mediaAsset.create({
-            data: { ownerUserId: userId, purpose },
+            data: {
+              ownerUserId: userId,
+              purpose,
+              sourceProvenance: preserveSource
+                ? 'LEGACY_NORMALIZED'
+                : 'NORMALIZED',
+            },
           });
           const objects = [];
           for (const item of pipeline)
@@ -201,8 +217,9 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
                   assetId: asset.id,
                   variant: item.variant,
                   tier: 'PRIVATE',
-                  pipelineVersion: item.variant === 'SOURCE' ? 'source' : 'p1',
-                  objectKey: `assets/${asset.id}/${item.variant === 'SOURCE' ? `source.${item.extension}` : `p1/${item.variant.toLowerCase()}.webp`}`,
+                  pipelineVersion:
+                    item.variant === 'SOURCE' ? 'source' : pipelineVersion,
+                  objectKey: `assets/${asset.id}/${item.variant === 'SOURCE' ? `source.${item.extension}` : `${pipelineVersion}/${item.variant.toLowerCase()}.webp`}`,
                   mimeType: item.mimeType,
                   byteLength: item.bytes.byteLength,
                   sha256: item.sha256,
@@ -215,6 +232,7 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
             data: {
               kind: 'UPLOAD',
               identity,
+              inputChecksum: mediaInputChecksum(file),
               objects: {
                 create: objects.map((object) => ({ objectId: object.id })),
               },
@@ -242,8 +260,10 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
     )?.object;
     if (
       !source ||
-      source.sha256 !== mediaChecksum(file.buffer) ||
-      source.mimeType !== file.mimetype
+      (operation.inputChecksum
+        ? operation.inputChecksum !== mediaInputChecksum(file)
+        : source.sha256 !== mediaChecksum(file.buffer) ||
+          source.mimeType !== file.mimetype)
     )
       throw new ConflictException('Idempotency identity has different content');
     if (operation.state === 'CANCELLED')
@@ -753,9 +773,10 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
         const asset = await this.prisma.mediaAsset.findUniqueOrThrow({
           where: { id: source.assetId },
         });
-        const values = await buildMediaPipeline(
+        const values = await this.imageProcessor.process(
           { buffer: Buffer.from(bytes.bytes), mimetype: source.mimeType },
           asset.purpose,
+          true,
         );
         for (const item of operation.objects) {
           const value = values.find((x) => x.variant === item.object.variant);

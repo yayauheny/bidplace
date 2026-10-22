@@ -308,3 +308,40 @@ verification (ручные шаги переданы ранее). Волна 3 (
 Figma intake. Push/merge/deploy не выполнялись.
 Файл выполнения `2026-10-19-ACCOUNT-FOUNDATION-PROGRESS` (`git show d0efc03b:docs/audits/2026-10-19-ACCOUNT-FOUNDATION-PROGRESS.md`).
 
+
+
+## 2026-10-22 — Автоматическая оптимизация и пофайловая загрузка фото
+
+**Partial** — реализация и автоматические проверки; приёмка на физических
+устройствах и live R2/CDN остаётся отдельным release gate.
+
+- `images/ImageProcessor` / `core/media/media-pipeline.ts`: единый адаптер Sharp,
+  нормализованный SOURCE до 5 МиБ (портрет до 2 МиБ), ограниченные попытки
+  кодирования/уменьшения без обрезки и потери прозрачности; PREVIEW/FULL из мастера.
+- `WorkImageUploadInterceptor` принимает до 25 МиБ только по одному файлу с
+  idempotency key; legacy batch и история сохраняют вход 5 МиБ. Общий бюджет
+  галереи проверяется по сохранённым байтам. Пиксельные лимиты не повышались.
+- `media_operations.input_checksum` и provenance NORMALIZED разделяют входную
+  идентичность и сохранённые байты. Миграция `20261022120000_normalized_media_source`
+  обязательна до выкладки API; существующие SOURCE/p1 и legacy import совместимы.
+- `product-draft-image-actions.ts` / `product-draft-images.tsx`: последовательное
+  чтение, локальные превью, частичный успех, повтор текущего файла прежним ключом,
+  deadline/abort и защита сессии. Портрет использует Expo-подготовку из PR #56.
+- Регрессии: `media-pipeline.spec.ts`, `images.service.spec.ts`,
+  `work-media-http.integration.spec.ts`, `media-lifecycle.integration.spec.ts`,
+  `product-draft-submit-lifecycle.spec.ts`, `seller-profile-submit.spec.ts`.
+- MVP-контракт обновлён по явному решению DEC-128; история сохраняет лимиты §10.
+  HEIC/RAW и расширение пиксельного бюджета не реализованы. Production throughput
+  и визуальная точность на физических устройствах не заявляются проверенными.
+
+Проверено локально: API typecheck/lint/build, mobile typecheck/lint/web export;
+88 API unit, 225 mobile owner/error/preparation tests, 47 API-client и 46 contracts tests.
+Интеграции выполнены на отдельной временной PostgreSQL: lifecycle/recovery,
+transport, upload safety и HTTP-загрузка 7 МиБ с повтором после нормализации —
+28 integration tests, включая старые p1-операции без input checksum.
+Chromium и WebKit подтвердили частичный успех и повтор только второго файла;
+проверена доступность сценария без горизонтального переполнения на 390/1024/1440.
+Скриншоты сохранены в локальных артефактах задачи (`photo-upload/`).
+Expo export для iOS и Android также прошёл; это проверка JS/Hermes-сборки, а не
+приёмка нативного image picker. Live Figma parity и реальные
+устройства не заявляются проверенными. Production migration/deploy не выполнялись.

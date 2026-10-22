@@ -29,6 +29,7 @@ export type AuthorApplicationPhoto = {
   local: boolean;
   failed: boolean;
   disabled: boolean;
+  preparing?: boolean;
   onChoose: () => void;
   onFailed: () => void;
 };
@@ -129,6 +130,7 @@ function AuthorPhotoBlock({ photo }: { photo: AuthorApplicationPhoto }) {
             label={hasPhoto ? 'Изменить фото' : 'Загрузить фото'}
             disabled={photo.disabled}
             alignSelf="center"
+            loading={photo.preparing}
             onPress={photo.onChoose}
           />
           {hasPhoto ? null : (

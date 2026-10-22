@@ -32,6 +32,7 @@ import {
   productImageUploadLimits,
   type RawImageUpload,
 } from './image-policy';
+import { WorkImageUploadInterceptor } from './work-image-upload.interceptor';
 import { ImagesService } from './images.service';
 
 @Controller()
@@ -42,20 +43,11 @@ export class ImagesController {
   @UseGuards(BearerAuthGuard, VerifiedEmailGuard, RateLimitGuard)
   @RateLimit({
     keyPrefix: 'images:product-upload',
-    limit: 10,
+    limit: 20,
     windowMs: 60_000,
     scope: 'user',
   })
-  @UseInterceptors(
-    FilesInterceptor('images', productImageUploadLimits.maxFiles, {
-      limits: {
-        fileSize: productImageUploadLimits.maxFileBytes,
-        files: productImageUploadLimits.maxFiles,
-      },
-      fileFilter: (_request, file, done) =>
-        acceptSupportedUploadMimeType(file.mimetype, done),
-    }),
-  )
+  @UseInterceptors(WorkImageUploadInterceptor)
   async add(
     @CurrentUser() auth: { sub: string },
     @Param('productId', new ParseUUIDPipe({ version: '4' }))

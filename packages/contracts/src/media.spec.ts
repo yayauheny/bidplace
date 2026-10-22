@@ -16,3 +16,7 @@ describe('public media contract', () => {
       expect(publicMediaUrlSchema.safeParse(value).success).toBe(false);
   });
 });
+
+it('accepts p2 derivatives while retaining p1 compatibility', () => {
+  for (const version of ['p1', 'p2']) expect(publicMediaUrlSchema.safeParse(`https://media.example.test/assets/11111111-1111-4111-a111-111111111111/${version}/preview.webp`).success).toBe(true);
+});

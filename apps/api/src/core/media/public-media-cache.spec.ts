@@ -24,6 +24,7 @@ describe('public media cache', () => {
     expect(publicMediaUrl('https://media.example.com', key)).toBe(
       `https://media.example.com/${key}`,
     );
+    expect(publicMediaUrl('https://media.example.com', key.replace('/p1/', '/p2/'))).toContain('/p2/preview.webp');
     expect(() =>
       publicMediaUrl(
         'https://media.example.com',

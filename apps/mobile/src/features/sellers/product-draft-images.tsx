@@ -1,4 +1,4 @@
-import { View } from 'react-native';
+import { Image as LocalPreviewImage, View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
@@ -13,9 +13,11 @@ import {
 import { getApiAssetUrl } from '../../lib/environment';
 import { useAppTheme } from '../../providers/theme-provider';
 
+import type { UploadImageState } from './product-draft-image-actions';
 import { productWizardStep } from './product-draft-wizard';
 
 export type DraftImageRowProps = {
+  local?: boolean;
   url: string;
   position: number;
   editable: boolean;
@@ -27,6 +29,7 @@ export type DraftImageRowProps = {
 };
 
 export function DraftImageRow({
+  local = false,
   url,
   position,
   editable,
@@ -52,14 +55,23 @@ export function DraftImageRow({
         gap: designTokens.space.x3,
       }}
     >
-      <ResilientRemoteImage
-        uri={getApiAssetUrl(url)}
-        component="ProductGallery"
-        accessibilityLabel={`Изображение предмета ${position + 1}`}
-        fallbackLabel={`Изображение ${position + 1} недоступно`}
-        style={mediaStyle}
-        contentFit="contain"
-      />
+      {local ? (
+        <LocalPreviewImage
+          source={{ uri: url }}
+          style={mediaStyle}
+          resizeMode="contain"
+          accessibilityLabel={`Выбранное изображение ${position + 1}`}
+        />
+      ) : (
+        <ResilientRemoteImage
+          uri={getApiAssetUrl(url)}
+          component="ProductGallery"
+          accessibilityLabel={`Изображение предмета ${position + 1}`}
+          fallbackLabel={`Изображение ${position + 1} недоступно`}
+          style={mediaStyle}
+          contentFit="contain"
+        />
+      )}
       {editable ? (
         <View style={{ flex: 1, minWidth: 0, gap: designTokens.space.x1 }}>
           <TextButton
@@ -99,6 +111,7 @@ export type ProductDraftImagesStepProps = {
 
   reorderPending: boolean;
   removePending: boolean;
+  uploadFiles?: UploadImageState[];
   uploadPending: boolean;
   uploadError: boolean;
   uploadMessage?: string | null;
@@ -124,6 +137,7 @@ export function ProductDraftImagesStep({
   reorderPending,
   removePending,
   uploadPending,
+  uploadFiles = [],
   uploadError,
   uploadMessage,
   imageSelectionError,
@@ -162,19 +176,62 @@ export function ProductDraftImagesStep({
             onDelete={() => onDeleteImage(image.id)}
           />
         ))}
+        {uploadFiles.map((file, index) => (
+          <View key={file.key} style={{ gap: designTokens.space.x1 }}>
+            {file.status !== 'done' ? (
+              <DraftImageRow
+                local
+                url={file.uri}
+                position={index}
+                editable={false}
+                isLast={false}
+                isReordering={false}
+                isRemoving={false}
+                onMove={() => undefined}
+                onDelete={() => undefined}
+              />
+            ) : null}
+            <AppText
+              role="bodySmall"
+              tone={file.status === 'error' ? 'danger' : 'secondary'}
+              accessibilityLiveRegion="polite"
+            >
+              {file.status === 'queued'
+                ? `Изображение ${index + 1}: ожидает загрузки`
+                : file.status === 'preparing'
+                  ? `Подготовка ${index + 1} из ${uploadFiles.length}…`
+                  : file.status === 'uploading'
+                    ? `Загрузка ${index + 1} из ${uploadFiles.length}…`
+                    : file.status === 'done'
+                      ? `Изображение ${index + 1}: загружено`
+                      : `Изображение ${index + 1}: не удалось загрузить`}
+            </AppText>
+          </View>
+        ))}
         {editable ? (
           <SecondaryButton
             label="Добавить изображения"
             loading={uploadPending}
+            disabled={uploadPending || images.length >= 10}
             onPress={() => onChooseImages()}
           />
         ) : null}
         {uploadError || uploadMessage ? (
-          <AppText role="bodySmall" tone="danger" accessibilityLiveRegion="polite">
+          <AppText
+            role="bodySmall"
+            tone="danger"
+            accessibilityLiveRegion="polite"
+          >
             {uploadMessage ?? 'Не удалось загрузить изображения.'}
           </AppText>
         ) : null}
-        {uploadError && onRetryUpload ? <SecondaryButton label="Повторить загрузку" disabled={uploadPending || !editable} onPress={onRetryUpload} /> : null}
+        {uploadError && onRetryUpload ? (
+          <SecondaryButton
+            label="Повторить загрузку"
+            disabled={uploadPending || !editable}
+            onPress={onRetryUpload}
+          />
+        ) : null}
         {imageSelectionError ? (
           <AppText role="bodySmall" tone="danger">
             {imageSelectionError}

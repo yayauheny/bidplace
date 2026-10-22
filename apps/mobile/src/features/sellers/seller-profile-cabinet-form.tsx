@@ -40,6 +40,7 @@ export function SellerProfileCabinetForm({
     local: boolean;
     failed: boolean;
     disabled: boolean;
+    preparing?: boolean;
     onChoose: () => void;
     onFailed: () => void;
   };
@@ -107,6 +108,7 @@ export function SellerProfileCabinetForm({
               label={photo.uri ? 'Изменить фото' : 'Добавить фото'}
               disabled={!fieldsEditable}
               width="block"
+              loading={photo.preparing}
               onPress={photo.onChoose}
             />
           </FormSection>

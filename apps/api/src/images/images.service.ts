@@ -15,11 +15,16 @@ import {
   MediaLifecycleService,
   mediaUploadIdentity,
 } from '../core/media/media-lifecycle.service';
-import { mediaChecksum } from '../core/media/media-object-store';
+import {
+  mediaChecksum,
+  mediaInputChecksum,
+} from '../core/media/media-object-store';
 import { PrismaService, runReadCommittedTransaction } from '../core/database';
 import { emptyImageBytes, ImageStore, imageKey } from '../core/image-store';
 import {
   assertProductImageCapacity,
+  assertProductImageCount,
+  productImageUploadLimits,
   type RawImageUpload,
   validateAndNormalizeProductImageUploads,
 } from './image-policy';
@@ -177,10 +182,15 @@ export class ImagesService {
     ) {
       return { ok: true as const };
     }
-    assertProductImageCapacity(
-      product.images,
-      files.map((file) => ({ byteLength: file.buffer.byteLength })),
-    );
+    assertProductImageCount(product.images.length, files.length);
+    if (
+      product.images.reduce((total, image) => total + image.byteLength, 0) >=
+      productImageUploadLimits.maxTotalBytes
+    ) {
+      throw new BadRequestException(
+        `A Product cannot exceed ${productImageUploadLimits.maxTotalBytes} total image bytes`,
+      );
+    }
     const scopedKey = idempotencyKey
       ? createHash('sha256')
           .update(`${productId}:${idempotencyKey}`)
@@ -284,8 +294,10 @@ export class ImagesService {
     )?.object;
     if (
       !source ||
-      source.sha256 !== mediaChecksum(file.buffer) ||
-      source.mimeType !== file.mimetype
+      (operation.inputChecksum
+        ? operation.inputChecksum !== mediaInputChecksum(file)
+        : source.sha256 !== mediaChecksum(file.buffer) ||
+          source.mimeType !== file.mimetype)
     ) {
       throw new ConflictException('Idempotency identity has different content');
     }

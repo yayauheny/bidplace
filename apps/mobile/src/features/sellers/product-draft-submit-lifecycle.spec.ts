@@ -88,6 +88,7 @@ vi.mock('./product-catalog-term-sheet', () => ({
 }));
 
 vi.mock('react-native', () => ({
+  Image: ({ source, accessibilityLabel }: { source: { uri: string }; accessibilityLabel: string }) => createElement('img', { src: source.uri, alt: accessibilityLabel }),
   Platform: { OS: 'web' },
   View: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
 }));
@@ -591,8 +592,76 @@ describe('product draft submit lifecycle', () => {
     await flush();
     expect(harness.launchImageLibraryAsync).toHaveBeenCalledTimes(1);
     expect(harness.addImages).toHaveBeenCalledTimes(2);
-    expect(harness.addImages.mock.calls[1]).toEqual(harness.addImages.mock.calls[0]);
+    expect(harness.addImages.mock.calls[1]?.slice(0, 3)).toEqual(harness.addImages.mock.calls[0]?.slice(0, 3));
     expect(harness.addImages.mock.calls[0]?.[2]).toEqual(expect.any(String));
+    vi.unstubAllGlobals();
+    view.unmount();
+  });
+
+  it('shows preparation, reads one file at a time, and retries only the unfinished file', async () => {
+    const images = [
+      new Blob(['first'], { type: 'image/png' }),
+      new Blob(['second'], { type: 'image/png' }),
+    ];
+    harness.launchImageLibraryAsync.mockResolvedValue({
+      canceled: false,
+      assets: [{ uri: 'blob:first' }, { uri: 'blob:second' }],
+    });
+    let finishFirst: () => void = () => undefined;
+    harness.addImages
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            finishFirst = () => resolve({ ok: true });
+          }),
+      )
+      .mockRejectedValueOnce(new Error('response lost'))
+      .mockResolvedValue({ ok: true });
+    const read = vi.fn(async (uri: string) => ({
+      ok: true,
+      blob: async () => images[uri === 'blob:first' ? 0 : 1],
+    }));
+    vi.stubGlobal('fetch', read);
+    const view = mount();
+    await until(
+      view.container,
+      () => Boolean(button(view.container, 'Добавить изображения')),
+      'images',
+    );
+    act(() => button(view.container, 'Добавить изображения')?.click());
+    await until(
+      view.container,
+      () => harness.addImages.mock.calls.length === 1,
+      'first upload',
+    );
+    expect(read).toHaveBeenCalledTimes(1);
+    expect(view.container.textContent).toContain('Загрузка 1 из 2');
+    await act(async () => {
+      finishFirst();
+      await Promise.resolve();
+    });
+    await until(
+      view.container,
+      () => Boolean(button(view.container, 'Повторить загрузку')),
+      'second failed',
+    );
+    expect(view.container.textContent).toContain('Изображение 1: загружено');
+    expect(harness.getProduct.mock.calls.length).toBeGreaterThan(1);
+    const secondKey = harness.addImages.mock.calls[1]?.[2];
+    act(() => button(view.container, 'Повторить загрузку')?.click());
+    await until(
+      view.container,
+      () => harness.addImages.mock.calls.length === 3,
+      'retry second',
+    );
+    await flush();
+    expect(harness.addImages.mock.calls.map((call) => call[1])).toEqual([
+      [images[0]],
+      [images[1]],
+      [images[1]],
+    ]);
+    expect(harness.addImages.mock.calls[2]?.[2]).toBe(secondKey);
+    expect(read).toHaveBeenCalledTimes(2);
     vi.unstubAllGlobals();
     view.unmount();
   });

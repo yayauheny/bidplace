@@ -1,6 +1,8 @@
 import { Global, Module } from '@nestjs/common';
 import { SERVER_ENV, type ServerEnv } from '../config';
 import { DatabaseModule } from '../database';
+import { ImageProcessor } from '../../images/image-processor';
+import { SharpImageProcessor } from './media-pipeline';
 import { MediaLifecycleService } from './media-lifecycle.service';
 import { MediaObjectStore, S3MediaObjectStore } from './media-object-store';
 import {
@@ -12,6 +14,7 @@ import {
   imports: [DatabaseModule],
   providers: [
     MediaLifecycleService,
+    { provide: ImageProcessor, useClass: SharpImageProcessor },
     {
       provide: MediaObjectStore,
       useFactory: (env: ServerEnv) =>

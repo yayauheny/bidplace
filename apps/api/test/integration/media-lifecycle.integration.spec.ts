@@ -1,3 +1,4 @@
+import { SharpImageProcessor } from '../../src/core/media/media-pipeline';
 import { randomUUID } from 'node:crypto';
 import {
   afterAll,
@@ -101,7 +102,7 @@ function setup(store = new MemoryStore(), cache = new MemoryCache()) {
   return {
     store,
     cache,
-    media: new MediaLifecycleService(prisma as never, store, cache, env),
+    media: new MediaLifecycleService(prisma as never, store, cache, env, new SharpImageProcessor()),
   };
 }
 async function author(media: MediaLifecycleService) {
@@ -511,20 +512,26 @@ describe('durable media lifecycle on PostgreSQL', () => {
       ).publishedRevisionId,
     ).toBeNull();
   });
-  it('reuses identical upload identity and rejects changed bytes', async () => {
+  it.each([false, true])('reuses upload identity and rejects changed bytes (legacy=%s)', async (legacy) => {
     const s = setup();
     const f = await author(s.media);
     const key = randomUUID();
+    const input = legacy ? Buffer.concat([bytes, Buffer.alloc(1024)]) : bytes;
     const a = await s.media.stage(
       f.user.id,
       'WORK_IMAGE',
-      { buffer: bytes, mimetype: 'image/png' },
+      { buffer: input, mimetype: 'image/png' },
       key,
+      legacy,
     );
+    if (legacy) await prisma.mediaOperation.updateMany({
+      where: { kind: 'UPLOAD', objects: { some: { object: { assetId: a.id } } } },
+      data: { inputChecksum: null },
+    });
     const b = await s.media.stage(
       f.user.id,
       'WORK_IMAGE',
-      { buffer: bytes, mimetype: 'image/png' },
+      { buffer: input, mimetype: 'image/png' },
       key,
     );
     expect(a.id).toBe(b.id);
