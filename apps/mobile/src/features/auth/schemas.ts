@@ -17,7 +17,6 @@ export const registerFormSchema = z
     email: emailField,
     password: passwordSchema,
     confirmPassword: z.string({ required_error: 'Подтвердите пароль' }).min(1, 'Подтвердите пароль'),
-    phone: z.string().trim().transform((value) => value || null).nullable().optional(),
     slug: newAccountSlugSchema,
     agreementAccepted: z.boolean().refine(Boolean, 'Примите пользовательское соглашение'),
     privacyAcknowledged: z.boolean().refine(Boolean, 'Подтвердите ознакомление с политикой'),

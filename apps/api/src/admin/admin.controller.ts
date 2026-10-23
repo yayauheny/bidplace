@@ -35,7 +35,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 
-import { BearerAuthGuard, CurrentUser } from '../auth';
+import { SessionAuthGuard, CurrentUser } from '../auth';
 import { CatalogService } from '../catalog/catalog.service';
 import { Clock } from '../core/time';
 import { parseBody, parseQuery } from '../core/validation';
@@ -48,7 +48,7 @@ import { AdminModerationService } from './admin-moderation.service';
 import { AdminUserService } from './admin-user.service';
 
 @Controller('admin')
-@UseGuards(BearerAuthGuard, AdminGuard)
+@UseGuards(SessionAuthGuard, AdminGuard)
 export class AdminController {
   constructor(
     private readonly moderation: AdminModerationService,

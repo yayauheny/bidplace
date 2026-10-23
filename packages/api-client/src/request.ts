@@ -11,7 +11,6 @@ type FetchLike = typeof fetch;
 
 export type ApiClientOptions = {
   baseUrl: string;
-  getAccessToken?: () => string | null | undefined;
   fetchImpl?: FetchLike;
   credentials?: RequestCredentials;
 };
@@ -45,7 +44,6 @@ export function signalRequestOptions(
 
 export type RequestContext = {
   baseUrl: string;
-  getAccessToken?: () => string | null | undefined;
   fetchImpl: FetchLike;
   credentials?: RequestCredentials;
 };
@@ -69,19 +67,8 @@ function requestUrl(
   return url.toString();
 }
 
-function requestHeaders(
-  context: RequestContext,
-  headersInit?: HeadersInit,
-): Headers {
+function requestHeaders(headersInit?: HeadersInit): Headers {
   const headers = new Headers(headersInit);
-
-  if (context.getAccessToken) {
-    const accessToken = context.getAccessToken();
-
-    if (accessToken) {
-      headers.set('Authorization', `Bearer ${accessToken}`);
-    }
-  }
 
   return headers;
 }
@@ -126,10 +113,7 @@ export function createRequestContext(
   return {
     baseUrl: normalizeBaseUrl(options.baseUrl),
     fetchImpl: (input, init) => fetchImpl(input, init),
-    ...(options.getAccessToken
-      ? { getAccessToken: options.getAccessToken }
-      : {}),
-    ...(options.credentials ? { credentials: options.credentials } : {}),
+    credentials: options.credentials ?? 'include',
   };
 }
 
@@ -140,7 +124,7 @@ export async function requestJson<TSchema extends ZodType>(
   options: RequestOptions = {},
 ): Promise<z.output<TSchema>> {
   const url = requestUrl(context, path, options.query);
-  const headers = requestHeaders(context, options.headers);
+  const headers = requestHeaders(options.headers);
 
   let body: BodyInit | undefined;
 
@@ -182,6 +166,9 @@ export async function requestJson<TSchema extends ZodType>(
       body = JSON.stringify(options.body);
     }
   }
+
+  if (!['GET', 'HEAD', 'OPTIONS'].includes(options.method ?? 'GET'))
+    headers.set('X-Bidplace-Request', '1');
 
   const init: RequestInit = {
     method: options.method ?? 'GET',
@@ -227,7 +214,10 @@ export async function requestBlob(
   options: RequestOptions = {},
 ): Promise<Blob> {
   const url = requestUrl(context, path, options.query);
-  const headers = requestHeaders(context, options.headers);
+  const headers = requestHeaders(options.headers);
+  if (!['GET', 'HEAD', 'OPTIONS'].includes(options.method ?? 'GET'))
+    headers.set('X-Bidplace-Request', '1');
+
   const init: RequestInit = {
     method: options.method ?? 'GET',
     headers,

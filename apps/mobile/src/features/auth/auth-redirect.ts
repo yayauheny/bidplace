@@ -5,6 +5,8 @@ const DEFAULT_REDIRECT: SafeRedirect = '/';
 const INTERNAL_ORIGIN = 'https://bidplace.local';
 
 const AUTH_PATHS = new Set([
+  '/email-login',
+  '/auth/complete',
   '/login',
   '/register',
   '/forgot-password',

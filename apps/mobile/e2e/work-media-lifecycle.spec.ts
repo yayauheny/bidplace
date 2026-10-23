@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 import { e2eEvidenceDir } from './support/evidence-dir';
 import { expect, test, type Page } from '@playwright/test';
 import { PrismaClient } from '../../../packages/database/dist/index.js';
-import { authenticatedPage } from './support/auth-session';
+import { authenticatedPage, e2eRequestHeaders } from './support/auth-session';
 import { fillControl } from './support/fill-control';
 import {
   createSellerFixture,
@@ -51,7 +51,10 @@ test('Work waits for CDN media, publishes revisions atomically, loads FULL only 
   const { admin } = await createAdminModerationFixture();
   const { context, page } = await authenticatedPage(browser, buyer);
   const { context: adminContext } = await authenticatedPage(browser, admin);
-  const guest = await browser.newPage({ baseURL: e2eWebBaseURL });
+  const guest = await browser.newPage({
+    baseURL: e2eWebBaseURL,
+    extraHTTPHeaders: e2eRequestHeaders,
+  });
   const prisma = new PrismaClient({
     datasources: { db: { url: e2eDatabaseURL } },
   });

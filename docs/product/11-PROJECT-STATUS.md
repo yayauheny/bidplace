@@ -8,7 +8,7 @@
 | Область | Статус и основание |
 | --- | --- |
 | Portfolio discovery, author/Work lifecycle и moderation | Implemented для проверенного локального среза: `portfolio`, `products`, `sellers`, `admin-moderation` в `apps/api/src`; revision/public guards и HTTP/media tests. Live acceptance остаётся отдельной. |
-| Auth и согласие | Implemented: одно явное подтверждение (DEC-124/125), атомарный User+evidence, lazy legal GET не блокирует регистрацию; [приёмка](../audits/2026-10-20-REGISTRATION-DOCUMENT-ACCESS.md). Это не юридическая готовность пакета. |
+| Auth и согласие | Partial (PR #58 синхронизируется и проверяется): серверные сессии, email-code/OIDC и proof до создания пользователя добавлены локально; полная CI-приёмка текущего merge ещё не завершена. Сохранены: одно явное подтверждение (DEC-124/125), атомарный User+evidence, lazy legal GET не блокирует регистрацию; [приёмка](../audits/2026-10-20-REGISTRATION-DOCUMENT-ACCESS.md). Это не юридическая готовность пакета. |
 | Author Story / каталоги / история Work | Implemented для проверенного client/API cutover: `use-product-story-editor.ts` вызывает `api.products.replaceCreation`, `ProductsController` → `ProductsService.replaceCreationStory`, revision-owned blocks; [UI completion](../audits/current/2026-10-21-UI-COMPLETION.md), [review](../audits/current/2026-10-21-INDEPENDENT-UI-REVIEW.md). Архивное «B6 не начат» — исторический checkpoint. |
 | Responsive UI, account/settings, author/header/footer | Partial: реализация и browser evidence есть; настройки имеют исключённое смещение заголовка, физические устройства/zoom и точный desktop parity не закрыты. [Design status](../design/04-DESIGN-STATUS.md). |
 | Фото Work и автора (DEC-131/132) | Partial: `ImageProcessor`/Sharp и пофайловый upload объединены с release wizard; local verify/media E2E прошли. Live R2/CDN, устройства и Figma новых статусов — Needs verification. |
@@ -47,3 +47,36 @@ PR #59. CI точного merge SHA в этой документационной
 После изменения поведения обновить нужную строку и добавить одну короткую запись
 со статусом, owner-модулями и фактически выполненными проверками. Детали приёмки
 оставлять по ссылке в owner audit; не копировать его целиком сюда.
+
+
+## 2026-10-23 — PR #58: auth + фото на актуальной MVP
+
+**Partial (local verification passed; production gates remain).** База `7d0dc179`
+объединена с auth `2e6fc2d1` в `feature/web-auth`. Сохранены SessionService,
+EmailProofService/AuthAbuseService, normalized SOURCE/ImageProcessor, upload API
+и новые auth/media migrations. Upgrade с MVP проверен с сохранением пользователя
+и SOURCE; существующие security/media owners прошли полный `pnpm verify`; 32/32
+Chromium/WebKit auth/media browser checks прошли. E2E API-транспорт получил
+обязательные Origin/CSRF headers без изменения assertions/timeouts.
+CI startup Expo воспроизвёл ошибку React Native из-за `NODE_ENV=test`:
+только dev server получает development-окружение; workflow очищает группы
+Expo/Vitest/Playwright при завершении и показывает Expo log при сбое.
+Auth DEC-133–135 не перекрывают фото DEC-131/132. DEC-136 фиксирует синхронный
+SMTP и открытый request timing; verify оценивается отдельно.
+
+[Проверки, измерения, причины выбора SMTP и оставшиеся gates](../audits/current/2026-10-23-PR58-MERGE-VERIFICATION.md).
+Ready — только после полного зелёного CI итогового SHA; merge/deploy не выполняются.
+
+## 2026-10-23 — PR #58: SMTP rejection/replay
+
+**Partial (release gates remain).** `EmailProofService` воспроизводил ложный
+успех replay после SMTP rejection и раздельную запись outcome/очистки кода.
+Исправление связывает replay с ledger операции, атомарно снимает код/cooldown
+только её активного ключа, сохраняет расход трёх flow attempts и общие квоты.
+`AuthFlowService` читает согласованный email state; `OnboardingForm` обновляет
+rejected state и меняет ключ без reload, сохраняя ключ при неопределённом сбое.
+HTTP owner покрывает delayed SMTP, поздние outcomes, rollback и потерю commit
+acknowledgement; client submit owner — три класса отказа. Результаты итогового
+SHA и CI — [PR #58](https://github.com/yayauheny/bidplace/pull/58) и
+[отчёт](../audits/current/2026-10-23-PR58-MERGE-VERIFICATION.md).
+DEC-136 и production gates сохраняются; merge/deploy не выполняются.

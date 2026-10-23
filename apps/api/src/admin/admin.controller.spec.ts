@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { adminModerationListQuerySchema } from '@bidplace/contracts';
 
-import { BearerAuthGuard } from '../auth';
+import { SessionAuthGuard } from '../auth';
 import { AdminController } from './admin.controller';
 import { AdminGuard } from './admin.guard';
 
@@ -24,7 +24,7 @@ describe('AdminController', () => {
       | undefined;
 
     expect(guards).toEqual(
-      expect.arrayContaining([BearerAuthGuard, AdminGuard]),
+      expect.arrayContaining([SessionAuthGuard, AdminGuard]),
     );
   });
 

@@ -10,6 +10,7 @@ import {
 
 import type {
   AuthResponse,
+  EmailOtpVerifyRequest,
   LoginRequest,
   RegisterRequest,
   User,
@@ -47,6 +48,10 @@ type AuthContextValue = {
   readonly canModerate: boolean;
   readonly login: (
     input: LoginRequest,
+    options?: AuthCallOptions,
+  ) => Promise<AuthResponse>;
+  readonly verifyLoginCode: (
+    input: EmailOtpVerifyRequest,
     options?: AuthCallOptions,
   ) => Promise<AuthResponse>;
   readonly register: (
@@ -255,6 +260,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [queryClient],
   );
 
+  const installLogin = useCallback(
+    async (
+      send: (options: AuthCallOptions) => Promise<AuthResponse>,
+      options?: AuthCallOptions,
+    ): Promise<AuthResponse> => {
+      const flight = beginAuthWrite(authWrite, queryClient, options?.signal);
+      try {
+        if (flight.waits) {
+          await flight.ready;
+          if (authWrite.current !== flight || flight.controller.signal.aborted)
+            throw abortError();
+        }
+        const response = await send({
+          signal: flight.controller.signal,
+        });
+        assertAuthWriteCurrent(authWrite, flight, queryClient);
+        await trackInstall(flight, () =>
+          setAuthenticatedSession(response.user),
+        );
+        const installed =
+          queryClient.getQueryData<User | null>(authKeys.session) ?? null;
+        if (
+          !ownEpochSettled(authWrite, flight, queryClient) ||
+          installed?.id !== response.user.id
+        ) {
+          throw abortError();
+        }
+        return response;
+      } finally {
+        releaseAuthWrite(authWrite, flight);
+      }
+    },
+    [queryClient, setAuthenticatedSession],
+  );
+
   const value = useMemo<AuthContextValue>(
     () => ({
       status,
@@ -264,37 +304,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAuthenticated: user !== null,
       isAdmin: user?.role === 'admin',
       canModerate: user?.role === 'admin',
-      login: async (input: LoginRequest, options?: AuthCallOptions) => {
-        const flight = beginAuthWrite(authWrite, queryClient, options?.signal);
-        try {
-          if (flight.waits) {
-            await flight.ready;
-            if (
-              authWrite.current !== flight ||
-              flight.controller.signal.aborted
-            )
-              throw abortError();
-          }
-          const response = await api.auth.login(input, {
-            signal: flight.controller.signal,
-          });
-          assertAuthWriteCurrent(authWrite, flight, queryClient);
-          await trackInstall(flight, () =>
-            setAuthenticatedSession(response.user),
-          );
-          const installed =
-            queryClient.getQueryData<User | null>(authKeys.session) ?? null;
-          if (
-            !ownEpochSettled(authWrite, flight, queryClient) ||
-            installed?.id !== response.user.id
-          ) {
-            throw abortError();
-          }
-          return response;
-        } finally {
-          releaseAuthWrite(authWrite, flight);
-        }
-      },
+      login: (input, options) =>
+        installLogin(
+          (callOptions) => api.auth.login(input, callOptions),
+          options,
+        ),
+      verifyLoginCode: (input, options) =>
+        installLogin(
+          (callOptions) => api.auth.verifyLoginCode(input, callOptions),
+          options,
+        ),
       register: async (input: RegisterRequest, options?: AuthCallOptions) => {
         const flight = beginAuthWrite(authWrite, queryClient, options?.signal);
         try {
@@ -419,6 +438,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }),
     [
       api,
+      installLogin,
       clearSession,
       queryClient,
       ready,

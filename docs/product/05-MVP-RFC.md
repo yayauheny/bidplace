@@ -258,9 +258,18 @@ cart. Блок `Другие работы автора` не содержит к
 - forgot/reset password;
 - neutral responses для recovery, rate limits и session revocation.
 
-Telegram OAuth, Google OAuth и passwordless email code отложены. Generic buyer
-registration не продвигается, потому что у посетителя пока нет отдельного account-only
-действия.
+Telegram OAuth, Google OAuth и passwordless email code не входят в исходный
+portfolio-релиз. Основатель подтвердил их следующую web auth-волну: код для
+зарегистрированных пользователей, пароль как альтернатива, только явная привязка
+провайдеров, реальный обязательный email и social-вход без обязательного пароля.
+См. DEC-133 в [реестре решений](12-DECISION-LOG.md) и
+[задание auth/media](../tasks/2026-10-22-auth-media-handoff.md).
+Уточнение основателя 2026-10-22: подтверждение email предшествует созданию
+пользователя и social identity; авторитетный проверенный email провайдера может
+служить доказательством. Совпадение с существующим аккаунтом не даёт автопривязку.
+См. DEC-135.
+Статус реализации web auth: Partial (локальная реализация; live providers/SMTP требуют приёмки). Generic buyer registration не продвигается,
+потому что у посетителя пока нет отдельного account-only действия.
 
 ## 13. Legal UX и moderation
 

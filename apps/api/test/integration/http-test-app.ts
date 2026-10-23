@@ -15,13 +15,14 @@ export async function createHttpTestApp(
   databaseUrl: string,
   corsOrigin = 'http://localhost:8081',
 ): Promise<HttpTestApp> {
-  process.env.BIDPLACE_ENV_FILE ??= '/private/tmp/bidplace-missing-auth-abuse-env';
+  process.env.BIDPLACE_ENV_FILE ??=
+    '/private/tmp/bidplace-missing-auth-abuse-env';
   process.env.NODE_ENV = 'test';
   process.env.APP_ENV = 'local';
   process.env.DATABASE_URL = databaseUrl;
   process.env.CORS_ORIGIN = corsOrigin;
   process.env.TRUST_PROXY = 'true';
-  process.env.JWT_SECRET = 'wave-3-http-test-secret';
+  process.env.SESSION_SECRET = 'wave-3-http-test-secret';
   process.env.TEST_EMAIL_BYPASS = 'false';
   process.env.TURNSTILE_VERIFIER = 'test';
   process.env.TURNSTILE_HOSTNAME = 'localhost';
@@ -66,7 +67,9 @@ export class HttpTestClient {
     const cookie = this.cookieHeader();
 
     if (cookie) headers.set('cookie', cookie);
-    if (this.origin) headers.set('origin', this.origin);
+    headers.set('origin', this.origin ?? 'http://localhost:8081');
+    if (!['GET', 'HEAD', 'OPTIONS'].includes(init.method ?? 'GET'))
+      headers.set('X-Bidplace-Request', '1');
     if (this.forwardedFor) headers.set('x-forwarded-for', this.forwardedFor);
 
     let body = init.body;
@@ -142,3 +145,5 @@ export class HttpTestClient {
 export async function responseJson(response: Response): Promise<unknown> {
   return response.json();
 }
+
+process.env.OTP_HASH_SECRET ??= 'synthetic-otp-hash-key-for-tests-only';

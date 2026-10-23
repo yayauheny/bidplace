@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { isInfrastructureError } from './classify';
 import { INFRASTRUCTURE_ERROR_COPY } from './copy';
-import { getUserFacingErrorMessage, logInfrastructureError } from './policy';
+import { authRequestMessage, getUserFacingErrorMessage, logInfrastructureError } from './policy';
 
 describe('mobile infrastructure error policy', () => {
   it('maps network, server and unexpected kinds to canonical copy', () => {
@@ -99,4 +99,13 @@ describe('mobile infrastructure error policy', () => {
     warnSpy.mockRestore();
     infoSpy.mockRestore();
   });
+  it.each([
+    [ApiErrorCode.EMAIL_LOGIN_REJECTED, 'Не удалось подтвердить вход'],
+    [ApiErrorCode.OTP_INVALID, 'Код не подошёл'],
+    [ApiErrorCode.OTP_EXPIRED, 'Срок этого кода истёк'],
+    [ApiErrorCode.OTP_PAUSED, 'Проверка кода приостановлена'],
+  ])('explains %s without showing protocol text', (code, copy) => {
+    expect(authRequestMessage(new ApiClientError('Protocol text', { kind: 'forbidden', status: 403, code }))).toContain(copy);
+  });
+
 });

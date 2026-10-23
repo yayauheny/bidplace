@@ -71,11 +71,20 @@ describe('PasswordResetService', () => {
   });
 
   it('reads the prototype ip getter for a forgot request', async () => {
-    const request = Object.assign(Object.create({ get ip() { return '203.0.113.50'; } }), {
-      socket: { remoteAddress: '10.0.0.9' },
-    });
+    const request = Object.assign(
+      Object.create({
+        get ip() {
+          return '203.0.113.50';
+        },
+      }),
+      {
+        socket: { remoteAddress: '10.0.0.9' },
+      },
+    );
     expect({ ...request }.ip).toBeUndefined();
-    const controller = new PasswordResetController({ requestReset: abuse.sendPasswordReset } as never);
+    const controller = new PasswordResetController({
+      requestReset: abuse.sendPasswordReset,
+    } as never);
     await controller.forgot(
       {
         email: 'person@example.com',
@@ -86,7 +95,10 @@ describe('PasswordResetService', () => {
     );
     expect(abuse.sendPasswordReset).toHaveBeenCalledWith(
       'person@example.com',
-      expect.objectContaining({ ip: '203.0.113.50', socket: { remoteAddress: '10.0.0.9' } }),
+      expect.objectContaining({
+        ip: '203.0.113.50',
+        socket: { remoteAddress: '10.0.0.9' },
+      }),
     );
   });
 
@@ -112,6 +124,9 @@ describe('PasswordResetService', () => {
 
   it('increments sessionVersion and marks the token used on success', async () => {
     const tx = {
+      emailVerificationCode: { updateMany: vi.fn() },
+      authFlow: { updateMany: vi.fn() },
+      externalIdentity: { deleteMany: vi.fn() },
       $executeRaw: vi.fn().mockResolvedValue(0),
       $queryRaw: vi.fn().mockResolvedValue([{ id: 'user-1' }]),
       passwordResetToken: {
@@ -140,8 +155,9 @@ describe('PasswordResetService', () => {
           user: { id: 'user-1', status: 'active' },
         }),
       },
-      $transaction: vi.fn(async (callback: (client: typeof tx) => Promise<unknown>) =>
-        callback(tx),
+      $transaction: vi.fn(
+        async (callback: (client: typeof tx) => Promise<unknown>) =>
+          callback(tx),
       ),
     };
 
@@ -164,6 +180,9 @@ describe('PasswordResetService', () => {
     const late = early + 10_000;
     vi.useFakeTimers({ now: early });
     const tx = {
+      emailVerificationCode: { updateMany: vi.fn() },
+      authFlow: { updateMany: vi.fn() },
+      externalIdentity: { deleteMany: vi.fn() },
       $executeRaw: vi.fn().mockResolvedValue(0),
       $queryRaw: vi.fn().mockResolvedValue([{ id: 'user-1' }]),
       passwordResetToken: {
@@ -187,7 +206,10 @@ describe('PasswordResetService', () => {
           user: { id: 'user-1', status: 'active' },
         }),
       },
-      $transaction: vi.fn(async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx)),
+      $transaction: vi.fn(
+        async (callback: (client: typeof tx) => Promise<unknown>) =>
+          callback(tx),
+      ),
     };
     passwordHasher.hash.mockImplementation(async () => {
       vi.setSystemTime(late);
@@ -195,7 +217,9 @@ describe('PasswordResetService', () => {
     });
 
     try {
-      await expect(createService(prisma).resetPassword('raw-token', 'new-password123')).rejects.toMatchObject({
+      await expect(
+        createService(prisma).resetPassword('raw-token', 'new-password123'),
+      ).rejects.toMatchObject({
         apiCode: ApiErrorCode.PASSWORD_RESET_INVALID,
       });
       expect(tx.user.update).not.toHaveBeenCalled();
@@ -207,6 +231,9 @@ describe('PasswordResetService', () => {
 
   it('does not change the password when the locked user is inactive', async () => {
     const tx = {
+      emailVerificationCode: { updateMany: vi.fn() },
+      authFlow: { updateMany: vi.fn() },
+      externalIdentity: { deleteMany: vi.fn() },
       $executeRaw: vi.fn().mockResolvedValue(0),
       $queryRaw: vi.fn().mockResolvedValue([{ id: 'user-1' }]),
       passwordResetToken: {
@@ -230,10 +257,15 @@ describe('PasswordResetService', () => {
           user: { id: 'user-1', status: 'active' },
         }),
       },
-      $transaction: vi.fn(async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx)),
+      $transaction: vi.fn(
+        async (callback: (client: typeof tx) => Promise<unknown>) =>
+          callback(tx),
+      ),
     };
 
-    await expect(createService(prisma).resetPassword('raw-token', 'new-password123')).rejects.toMatchObject({
+    await expect(
+      createService(prisma).resetPassword('raw-token', 'new-password123'),
+    ).rejects.toMatchObject({
       apiCode: ApiErrorCode.PASSWORD_RESET_INVALID,
     });
     expect(tx.passwordResetToken.updateMany).not.toHaveBeenCalled();
@@ -244,10 +276,9 @@ describe('PasswordResetService', () => {
     rateLimits.consume.mockReturnValueOnce(false);
 
     await expect(
-      createService({ passwordResetToken: { findUnique: vi.fn() } }).resetPassword(
-        'raw-token',
-        'new-password123',
-      ),
+      createService({
+        passwordResetToken: { findUnique: vi.fn() },
+      }).resetPassword('raw-token', 'new-password123'),
     ).rejects.toBeInstanceOf(AppException);
   });
 });

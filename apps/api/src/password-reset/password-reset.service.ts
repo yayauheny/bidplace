@@ -129,6 +129,20 @@ export class PasswordResetService {
         data: { usedAt: consumedAt },
       });
 
+      await tx.emailVerificationCode.updateMany({
+        where: { userId: record.userId, usedAt: null },
+        data: { usedAt: consumedAt },
+      });
+      await tx.authFlow.updateMany({
+        where: {
+          userId: record.userId,
+          stage: { notIn: ['complete', 'cancelled', 'failed'] },
+        },
+        data: { stage: 'cancelled', verifier: null, nonce: null },
+      });
+      await tx.externalIdentity.deleteMany({
+        where: { userId: record.userId, activatedAt: null },
+      });
       await tx.user.update({
         where: { id: record.userId },
         data: {
@@ -150,7 +164,11 @@ export class PasswordResetService {
   }
 
   private consumeForgotIpLimit(ip: string): boolean {
-    return this.rateLimits.consume(`password-reset:request:ip:${ip}`, 10, 60_000);
+    return this.rateLimits.consume(
+      `password-reset:request:ip:${ip}`,
+      10,
+      60_000,
+    );
   }
 
   private consumeResetLimits(ip: string): void {

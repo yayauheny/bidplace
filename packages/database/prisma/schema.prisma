@@ -95,7 +95,7 @@ enum AuditTargetType {
 model User {
   id                String                @id @default(uuid()) @db.Uuid
   email             String                @unique @db.VarChar(255)
-  passwordHash      String                @map("password_hash") @db.VarChar(255)
+  passwordHash      String?               @map("password_hash") @db.VarChar(255)
   phone             String?               @unique @db.VarChar(32)
   emailVerifiedAt   DateTime?             @map("email_verified_at")
   phoneVerifiedAt   DateTime?             @map("phone_verified_at")
@@ -112,6 +112,7 @@ model User {
   buyerOrders       Order[]               @relation("OrderBuyer")
   sellerOrders      Order[]               @relation("OrderSeller")
   phoneCodes        PhoneVerificationCode[]
+  externalIdentities ExternalIdentity[]
   emailCodes        EmailVerificationCode[]
   passwordResetTokens PasswordResetToken[]
   termsAcceptances   TermsAcceptance[]
@@ -504,6 +505,9 @@ model EmailVerificationCode {
   id        String   @id @default(uuid()) @db.Uuid
   userId    String   @map("user_id") @db.Uuid
   codeHash  String   @map("code_hash") @db.Char(64)
+  purpose   String   @default("email_verification") @db.VarChar(32)
+  flowId    String?  @map("flow_id") @db.Uuid
+  version   Int      @default(0)
   expiresAt DateTime @map("expires_at")
   usedAt    DateTime? @map("used_at")
   attempts  Int      @default(0)
@@ -880,6 +884,7 @@ model AuthAbuseOperation {
   @@unique([purpose, idempotencyKey])
   @@index([ownerUserId, purpose, createdAt])
   @@index([email, purpose, createdAt])
+  @@index([purpose, contentHash, createdAt])
   @@index([purpose, status, createdAt])
   @@map("auth_abuse_operations")
 }
@@ -906,4 +911,65 @@ model MediaOperationObject {
   object MediaObject @relation(fields: [objectId], references: [id], onDelete: Restrict)
   @@id([operationId, objectId])
   @@map("media_operation_objects")
+}
+
+// express-session store; table creation belongs to migrations, never runtime DDL.
+model AuthSession {
+  sid    String   @id @db.VarChar(255)
+  sess   Json     @db.Json
+  expire DateTime @db.Timestamp(6)
+
+  @@index([expire])
+  @@map("auth_sessions")
+}
+
+model ExternalIdentity {
+  id             String    @id @default(uuid()) @db.Uuid
+  userId         String    @map("user_id") @db.Uuid
+  provider       String    @db.VarChar(16)
+  issuer         String    @db.VarChar(255)
+  subject        String    @db.VarChar(255)
+  activatedAt    DateTime?  @map("activated_at")
+  pendingVersion Int       @default(0) @map("pending_version")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([issuer, subject])
+  @@unique([userId, provider])
+  @@map("external_identities")
+}
+
+model AuthFlow {
+  id          String   @id @default(uuid()) @db.Uuid
+  browserHash String   @map("browser_hash") @db.Char(64)
+  provider    String?  @db.VarChar(16)
+  intent      String   @db.VarChar(24)
+  stage       String   @db.VarChar(24)
+  returnPath  String   @map("return_path") @db.VarChar(2048)
+  stateHash   String?  @map("state_hash") @db.Char(64)
+  nonce       String?  @db.VarChar(255)
+  verifier    String?
+  issuer      String?  @db.VarChar(255)
+  subject     String?  @db.VarChar(255)
+  emailProof  String?  @map("email_proof") @db.VarChar(255)
+  email       String?  @db.VarChar(255)
+  codeHash    String?  @map("code_hash") @db.Char(64)
+  codeExpiresAt DateTime? @map("code_expires_at")
+  codeSentAt  DateTime? @map("code_sent_at")
+  codeAttempts Int @default(0) @map("code_attempts")
+  codeSends Int @default(0) @map("code_sends")
+  emailProvedAt DateTime? @map("email_proved_at")
+  codeRequestKey String? @map("code_request_key") @db.VarChar(80)
+  profileSlug String? @map("profile_slug") @db.VarChar(120)
+  legalVersion String? @map("legal_version") @db.VarChar(120)
+  legalAcceptedAt DateTime? @map("legal_accepted_at")
+  userId      String?  @map("user_id") @db.Uuid
+  version     Int?
+  expiresAt   DateTime @map("expires_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([browserHash, stage])
+  @@index([email, codeSentAt])
+  @@index([expiresAt])
+  @@map("auth_flows")
 }

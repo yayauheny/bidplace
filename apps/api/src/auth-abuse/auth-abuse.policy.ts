@@ -13,7 +13,10 @@ export const RESET_TOKEN_TTL_MS = 60 * 60 * 1000;
 export const MAIL_PURPOSES = [
   'email_verification_send',
   'password_reset_send',
+  'email_login_send',
 ] as const;
+
+export const MAIL_BUDGET_PURPOSES = [...MAIL_PURPOSES, 'email_proof_send'] as const;
 
 /** Reservations that spend quota, including an unfinished or unknown send. */
 export const MAIL_SPEND_STATUSES = ['reserved', 'accepted', 'unknown'] as const;
@@ -30,7 +33,10 @@ export function normalizeEmail(email: string): string {
 }
 
 /** Failures strictly younger than 15 minutes, capped at the challenge threshold. */
-export function recentLoginFailures(timestamps: readonly Date[], now: Date): Date[] {
+export function recentLoginFailures(
+  timestamps: readonly Date[],
+  now: Date,
+): Date[] {
   const oldestKept = now.getTime() - LOGIN_WINDOW_MS;
   return timestamps
     .filter((timestamp) => timestamp.getTime() > oldestKept)
@@ -39,13 +45,15 @@ export function recentLoginFailures(timestamps: readonly Date[], now: Date): Dat
 }
 
 /** Latest moment an exhausted account or address scope becomes available again. */
-export function latestExhaustedQuotaReset(scopes: ReadonlyArray<readonly Date[]>): Date | null {
+export function latestExhaustedQuotaReset(
+  scopes: ReadonlyArray<readonly Date[]>,
+): Date | null {
   let latest: number | null = null;
   for (const scope of scopes) {
     if (scope.length < PERSONAL_MAIL_LIMIT) continue;
-    const boundary = [...scope].sort((left, right) => left.getTime() - right.getTime())[
-      scope.length - PERSONAL_MAIL_LIMIT
-    ];
+    const boundary = [...scope].sort(
+      (left, right) => left.getTime() - right.getTime(),
+    )[scope.length - PERSONAL_MAIL_LIMIT];
     if (!boundary) continue;
     const resetsAt = boundary.getTime() + PERSONAL_MAIL_WINDOW_MS;
     if (latest === null || resetsAt > latest) latest = resetsAt;

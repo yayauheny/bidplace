@@ -8,7 +8,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ApiErrorCode } from '@bidplace/contracts';
 import { ApiClientError } from '@bidplace/api-client';
 
-import { flush } from '../../testing/dom';
+import { flush, waitFor } from '../../testing/dom';
 import {
   AUTH_CREDENTIALS_COPY,
   AUTH_RATE_LIMIT_COPY,
@@ -18,6 +18,8 @@ import {
 import { advanceAuthEpoch, authKeys } from '../../lib/query-cache';
 import { ForgotPasswordForm } from './forgot-password-form';
 import { LoginForm } from './auth-form';
+import { useAuthFlowAction } from './use-auth-flow-action';
+import { OnboardingForm } from './onboarding-form';
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
@@ -47,6 +49,15 @@ const harness = vi.hoisted(() => ({
   login: vi.fn(),
   forgot: vi.fn(),
   replace: vi.fn(),
+  onboarding: vi.fn(),
+  onboardingEmailState: vi.fn(),
+  requestOnboardingEmail: vi.fn(),
+  navigation: {
+    addListener(event: string, listener: () => void) {
+      if (event === 'blur') harness.emitBlur = listener;
+      return () => undefined;
+    },
+  },
 }));
 
 vi.mock('react-native-svg', () => ({
@@ -79,12 +90,7 @@ vi.mock('react-native', () => ({
 vi.mock('expo-router', () => ({
   useRouter: () => ({ replace: harness.replace, push: vi.fn() }),
   useIsFocused: () => harness.focused,
-  useNavigation: () => ({
-    addListener: (event: string, listener: () => void) => {
-      if (event === 'blur') harness.emitBlur = listener;
-      return () => undefined;
-    },
-  }),
+  useNavigation: () => harness.navigation,
   Link: ({ children }: { children?: ReactNode }) => createElement('a', null, children),
 }));
 
@@ -109,6 +115,9 @@ vi.mock('../../providers/api-provider', () => ({
     auth: {
       getRules: async () => ({ rules: { text: 'Published rules text' } }),
       forgotPassword: harness.forgot,
+      onboarding: harness.onboarding,
+      onboardingEmailState: harness.onboardingEmailState,
+      requestOnboardingEmail: harness.requestOnboardingEmail,
     },
   }),
 }));
@@ -135,6 +144,7 @@ vi.mock('./auth-password-field', () => ({
 }));
 
 vi.mock('./auth-google-icon', () => ({ AuthGoogleIcon: () => null }));
+vi.mock('./auth-code-field', () => ({ AuthCodeField: () => createElement('input', { 'aria-label': 'Код из письма' }) }));
 vi.mock('./auth-telegram-icon', () => ({ AuthTelegramIcon: () => null }));
 vi.mock('./auth-legal-text', () => ({
   AUTH_POLICY_STUB_TITLE: 'policy',
@@ -160,10 +170,12 @@ vi.mock('../../components/ui', () => ({
   TextButton: ({
     label,
     onPress,
+    disabled,
   }: {
     label: string;
     onPress?: () => void;
-  }) => createElement('button', { type: 'button', onClick: () => onPress?.() }, label),
+    disabled?: boolean;
+  }) => createElement('button', { type: 'button', disabled, onClick: () => onPress?.() }, label),
   TextField: ({
     label,
     value,
@@ -262,6 +274,60 @@ afterEach(() => {
   harness.login.mockReset();
   harness.forgot.mockReset();
   harness.replace.mockReset();
+  harness.onboarding.mockReset();
+  harness.onboardingEmailState.mockReset();
+  harness.requestOnboardingEmail.mockReset();
+});
+
+describe('onboarding email send outcomes', () => {
+  it.each(['rejected', 'network', 'server'] as const)(
+    'uses a fresh operation only after confirmed %s mail failure and recovers without reload',
+    async (outcome) => {
+      harness.proof = 'synthetic-proof';
+      harness.onboarding.mockResolvedValue({ stage: 'email', email: 'proof@example.test' });
+      const state = {
+        serverNow: new Date().toISOString(), email: 'proof@example.test', verified: false,
+        sendStatus: 'none', codeExpiresAt: null, resendAvailableAt: null,
+        pausedUntil: null, quotaResetsAt: null,
+      };
+      harness.onboardingEmailState.mockResolvedValue(state);
+      harness.requestOnboardingEmail.mockRejectedValueOnce(new ApiClientError('Synthetic mail failure', {
+        kind: outcome === 'network' ? 'network' : 'server',
+        status: outcome === 'network' ? 0 : 503,
+        code: outcome === 'rejected' ? ApiErrorCode.MAIL_REJECTED : null,
+      }));
+      const view = mount(createElement(OnboardingForm));
+      try {
+        await waitFor(() => {
+          const send = [...view.container.querySelectorAll('button')].find((node) => node.textContent === 'Запросить код');
+          expect(send?.disabled).toBe(false);
+        });
+        harness.onboardingEmailState.mockResolvedValue({ ...state, sendStatus: 'rejected' });
+        click(view.container, 'Запросить код');
+        await waitFor(() => expect(harness.requestOnboardingEmail).toHaveBeenCalledTimes(1));
+        await flush();
+        const firstKey = harness.requestOnboardingEmail.mock.calls[0]![0].idempotencyKey;
+        if (outcome === 'rejected') {
+          await waitFor(() => expect(view.container.textContent).toContain('Запрос отклонён. Код не отправлялся.'));
+          expect(harness.onboardingEmailState).toHaveBeenCalledTimes(2);
+        } else {
+          expect(harness.onboardingEmailState).toHaveBeenCalledTimes(1);
+        }
+        const button = [...view.container.querySelectorAll('button')].find((node) => node.textContent === 'Запросить код');
+        expect(button?.disabled).toBe(false);
+        harness.requestOnboardingEmail.mockResolvedValueOnce({ ok: true, delivery: 'accepted' });
+        harness.onboardingEmailState.mockResolvedValue({ ...state, sendStatus: 'accepted', resendAvailableAt: new Date(Date.now() + 60_000).toISOString() });
+        click(view.container, 'Запросить код');
+        await waitFor(() => expect(harness.requestOnboardingEmail).toHaveBeenCalledTimes(2));
+        const nextKey = harness.requestOnboardingEmail.mock.calls[1]![0].idempotencyKey;
+        if (outcome === 'rejected') expect(nextKey).not.toBe(firstKey);
+        else expect(nextKey).toBe(firstKey);
+        await waitFor(() => expect(view.container.textContent).toContain('Почтовый сервер принял письмо.'));
+      } finally {
+        view.unmount();
+      }
+    },
+  );
 });
 
 describe('login submit ownership', () => {
@@ -592,6 +658,32 @@ describe('recovery submit ownership', () => {
     expect(view.container.isConnected).toBe(true);
     randomUUID.mockRestore();
     getRandomValues.mockRestore();
+    view.unmount();
+  });
+});
+
+
+describe('provider action ownership', () => {
+  it('allows a new action after an aborted request settles while the route is blurred', async () => {
+    const pending = defer<void>();
+    const work = vi.fn(() => pending.promise);
+    function Probe() {
+      useSyncExternalStore(authBridge.subscribe, authBridge.revision, authBridge.revision);
+      const action = useAuthFlowAction();
+      return createElement('button', { disabled: action.busy, onClick: () => void action.run(work, () => undefined) }, 'Start provider');
+    }
+    const view = mount(createElement(Probe));
+    click(view.container, 'Start provider');
+    expect(view.container.querySelector('button')?.disabled).toBe(true);
+    act(() => { harness.focused = false; harness.emitBlur(); harness.bump(); });
+    pending.reject(new DOMException('Aborted', 'AbortError'));
+    await flush();
+    act(() => { harness.focused = true; harness.bump(); });
+    await flush();
+    expect(view.container.querySelector('button')?.disabled).toBe(false);
+    click(view.container, 'Start provider');
+    expect(work).toHaveBeenCalledTimes(2);
+    await flush();
     view.unmount();
   });
 });
