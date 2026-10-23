@@ -16,6 +16,15 @@
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
 | Commerce, избранное/подписки, смена email/password из settings | Not implemented в launch scope / post-MVP; [следующая волна](15-POST-MVP-BACKLOG.md). Старый commerce runtime не разрешает включать продажи. |
 
+## 2026-10-24 — Mobile moderation UI
+
+**Partial (final verification pending).** `AdminModerationScreen` uses opt-in
+summary cards; protected detail routes share gallery, vertical comparison,
+history and captured-target decisions. Existing Users/catalog actions remain.
+Admin dock separates `/admin`, `/analytics`, `/account`; ordinary dock unchanged.
+Mobile source/UX review fixes and local checks are in the [UI audit](../audits/current/2026-10-24-ADMIN-MODERATION-UI.md).
+No role/migration/deploy. Hardware/exact desktop parity remain unverified.
+
 ## 2026-10-24 — Moderation filter contract clarification
 
 **Implemented (local verification passed).** `adminQueueQuerySchema` now describes existing overlapping

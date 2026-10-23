@@ -886,3 +886,18 @@ Scoped source: Figma `HRRtDp0bQlukw7ptTkuEZg`; exact nodes and mapping are in th
   390px yields177×236. Tile states remain local, action footer stays outside scroll.
 - `SiteFooter` stays owned by `PageScrollView` on ordinary public/legal pages;
   auth, creation/editing and overlays exclude it. No duplicate footer renderer.
+
+
+### Administrative navigation and review composition — 2026-10-24
+
+Explicit founder adaptation: ordinary dock keeps four Home/Search/Add/Profile
+controls; admin replaces Add with Moderation and adds Analytics before Profile.
+Reuse FloatingDockFrame, icon/control dimensions, gaps, glass, Safe Area and motion;
+five controls naturally use the existing wider capsule geometry. No cart. Profile
+opens `/account`; Moderation `/admin`, Analytics `/analytics`, each with separate
+active/access inputs. DesktopHeader reuses icon buttons for these destinations.
+`WorkGallery` optionally renders private images and selectable thumbnails; existing
+public default is unchanged. `FormPageColumns layout="adaptive"` derives two panes
+from container width using existing cardWidth/sectionGap; default stays stacked.
+New admin compositions use these controls, not a second design system; exact
+new admin/tablet/desktop Figma parity is not claimed.

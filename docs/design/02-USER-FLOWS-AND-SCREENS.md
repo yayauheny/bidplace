@@ -552,3 +552,15 @@ The proof step reuses AuthCodeField and existing auth actions; resend uses the
 server deadline and change-email returns to the email step. Social onboarding
 without a trusted email proof likewise creates the account only after the code.
 Existing-account collisions require signing in and explicit provider linking.
+
+
+## 2026-10-24 — Administrative review routes
+
+Admin Home/Search stay shared. Dock Moderation opens `/admin` (Works/Authors/Users);
+Analytics opens `/analytics`; Profile opens `/account` and settings. Ordinary user
+navigation stays unchanged. Queue section/filter/search live in route params;
+`/admin/products/[id]` and `/admin/authors/[id]` push detail on the same protected
+stack, preserving Back to the queue. Detail has Preview/Changes/History and
+confirmed captured-target decisions; parent visibility restoration is separate.
+No public view tracking or public preview endpoints for pending content. Current
+admin role only; future moderation and analytics grants remain separate concerns.

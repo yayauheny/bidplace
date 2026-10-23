@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   dockItemAccessibility,
+  getFigmaDockItems,
   figmaDockItemIds,
   figmaDockItems,
   isFigmaDockItemSelected,
@@ -45,4 +46,15 @@ describe('Figma floating dock', () => {
       accessibilityState: {},
     });
   });
+});
+
+it('shows administrative destinations independently and leaves ordinary navigation unchanged', () => {
+  expect(getFigmaDockItems({canModerate:false,canReadAnalytics:false})).toBe(figmaDockItems);
+  expect(getFigmaDockItems({canModerate:true,canReadAnalytics:true}).map(item=>item.id)).toEqual(['home','search','moderation','analytics','profile']);
+  expect(getFigmaDockItems({canModerate:true,canReadAnalytics:false}).map(item=>item.id)).not.toContain('analytics');
+  expect(getFigmaDockItems({canModerate:false,canReadAnalytics:true}).map(item=>item.id)).not.toContain('moderation');
+  expect(isFigmaDockItemSelected('moderation','/admin/products/id')).toBe(true);
+  expect(isFigmaDockItemSelected('analytics','/analytics')).toBe(true);
+  expect(isFigmaDockItemSelected('profile','/admin')).toBe(false);
+  expect(isFigmaDockItemSelected('profile','/account')).toBe(true);
 });

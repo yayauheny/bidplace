@@ -1,3 +1,4 @@
+import { mkdirSync } from 'node:fs';
 import { expect, type Locator, type Page, test } from '@playwright/test';
 
 import { e2eApiBaseURL } from './support/e2e-env';
@@ -52,6 +53,7 @@ async function expectImageResponse(
 test('admin reviews a pending seller revision without exposing it publicly', async ({
   browser,
 }) => {
+  mkdirSync('/private/tmp/bidplace-admin-ui-evidence',{recursive:true});
   const fixture = await createRevisionModerationFixture();
   const guest = await browser.newPage();
   await guest.goto(`/authors/${fixture.slug}`);
@@ -85,27 +87,30 @@ test('admin reviews a pending seller revision without exposing it publicly', asy
     browser,
     fixture.admin,
   );
+  await page.setViewportSize({width:390,height:844});
   const revisionPhoto = page.waitForResponse((response) =>
     response.url().includes(`/revisions/${fixture.revisionId}/photo`),
   );
-  await page.goto('/admin');
-  await page.getByLabel('Найти автора').fill(fixture.pendingName);
+  await page.goto('/admin?section=authors');
+  await page.getByLabel('Поиск в очереди').fill(fixture.pendingName);
+  await page.getByRole('link', { name: `Проверить: ${fixture.pendingName}` }).click();
   await expect(page.getByText(fixture.pendingName).first()).toBeVisible();
-  await expect(page.getByText('Публикация:').first()).toBeVisible();
-  await expect(page.getByText('Проверка:').first()).toBeVisible();
+  await expect(page.getByText('Сущность:').first()).toBeVisible();
+  await expect(page.getByText('Редакция:').first()).toBeVisible();
   const revisionResponse = await revisionPhoto;
   expect(revisionResponse.status()).toBe(200);
   expect(revisionResponse.headers()['content-type']).toContain('image/png');
   expect(Buffer.from(await revisionResponse.body())).toEqual(fixture.pendingPhoto);
   await expect(page.getByText('Фото ревизии недоступно')).toHaveCount(0);
   await expectDecoded(
-    page.getByRole('img', { name: `Фото ревизии: ${fixture.pendingName}` }),
+    page.getByRole('img', { name: `Фото автора ${fixture.pendingName}` }),
     [fixture.pendingPhotoSize],
   );
   await expect(page.getByText(fixture.pendingAchievement.body).first()).toBeVisible();
   await expect(page.getByText(fixture.publishedAchievement.body)).toHaveCount(0);
   await expect(page.getByText('Изображение достижения недоступно')).toHaveCount(0);
-  await expectDecoded(page.getByRole('img', { name: 'Достижение', exact: true }), [
+  await page.getByRole('img', { name: `Достижение: ${fixture.pendingAchievement.body}`, exact: true }).scrollIntoViewIfNeeded();
+  await expectDecoded(page.getByRole('img', { name: `Достижение: ${fixture.pendingAchievement.body}`, exact: true }), [
     {
       width: fixture.pendingAchievement.width,
       height: fixture.pendingAchievement.height,
@@ -121,13 +126,10 @@ test('admin reviews a pending seller revision without exposing it publicly', asy
     [fixture.publishedPhotoSize],
   );
 
-  const card = page
-    .locator('div')
-    .filter({ hasText: fixture.pendingName })
-    .filter({ has: page.getByRole('button', { name: 'Одобрить' }) })
-    .last();
-  await card.getByRole('button', { name: 'Одобрить' }).click();
-  await expect(page.getByText(fixture.pendingName)).toHaveCount(0);
+  await page.getByRole('button', { name: 'Одобрить', exact: true }).click();
+  await page.screenshot({path:`/private/tmp/bidplace-admin-ui-evidence/confirm-${test.info().project.name}-${fixture.publicId}.png`});
+  await page.getByRole('button', { name: 'Подтвердить решение' }).click();
+  await expect(page.getByText('Решение принято.', {exact:false})).toBeVisible();
 
   await guest.reload();
   await expect(guest.getByText(fixture.pendingName).first()).toBeVisible();
@@ -154,6 +156,7 @@ test('admin reviews a pending seller revision without exposing it publicly', asy
 test('admin reviews a pending product revision without exposing its gallery publicly', async ({
   browser,
 }) => {
+  mkdirSync('/private/tmp/bidplace-admin-ui-evidence',{recursive:true});
   const fixture = await createRevisionModerationFixture();
   const guest = await browser.newPage();
   await guest.goto(`/product/${fixture.publicId}`);
@@ -193,34 +196,34 @@ test('admin reviews a pending product revision without exposing its gallery publ
     browser,
     fixture.admin,
   );
+  await page.setViewportSize({width:390,height:844});
   await page.goto('/admin');
-  await page.getByRole('button', { name: 'Работы' }).click();
-  await page.getByLabel('Найти работу').fill(fixture.pendingTitle);
+  await page.getByLabel('Поиск в очереди').fill(fixture.pendingTitle);
+  await page.getByRole('link', { name: `Проверить: ${fixture.pendingTitle}` }).click();
   await expect(page.getByText(fixture.pendingTitle).first()).toBeVisible();
-  const card = page
-    .locator('div')
-    .filter({ hasText: fixture.pendingTitle })
-    .filter({ has: page.getByRole('button', { name: 'Одобрить' }) })
-    .last();
-  // The moderation card renders the resolved category name (owner contract:
-  // selection?.category?.name ?? content.categoryId), not the raw id. Both
-  // checks are scoped to this card: the published category name must not
-  // appear in the pending card even though it exists elsewhere on /admin
-  // (filters), and the names differ by construction (TCF-01).
-  await expect(card.getByText(fixture.pendingCategoryName)).toBeVisible();
-  await expect(card.getByText(fixture.publishedCategoryName)).toHaveCount(0);
-  await expect(card.getByText(fixture.publishedTitle)).toHaveCount(0);
+  await expect(page.getByText(`Категория: ${fixture.pendingCategoryName}`, { exact: true })).toBeVisible();
+  await expect(page.getByText(fixture.publishedCategoryName, {exact:true})).toHaveCount(0);
+  await expect(page.getByTestId('admin-moderation-detail').getByText(fixture.publishedTitle, {exact:true})).toHaveCount(0);
   await expect(
     page.getByText(`Изображение недоступно: ${fixture.pendingTitle}`),
   ).toHaveCount(0);
   await expectDecoded(
-    page.getByRole('img', { name: `Предмет: ${fixture.pendingTitle}` }),
+    page.getByTestId('admin-moderation-detail').getByTestId('work-gallery-media').getByRole('img'),
     fixture.pendingGallery.map((image) => ({
       width: image.width,
       height: image.height,
     })),
   );
 
+  const evidence = '/private/tmp/bidplace-admin-ui-evidence';
+  mkdirSync(evidence,{recursive:true});
+  await page.screenshot({path:`${evidence}/work-mobile-${test.info().project.name}.png`});
+  await page.getByRole('tab',{name:'Изменения',exact:true}).click();
+  await expect(page.getByText(`Было: ${fixture.publishedTitle}`,{exact:true})).toBeVisible();
+  await page.screenshot({path:`${evidence}/changes-mobile-${test.info().project.name}.png`});
+  await page.getByRole('tab',{name:'История',exact:true}).click();
+  await page.screenshot({path:`${evidence}/history-mobile-${test.info().project.name}.png`});
+  await page.getByRole('tab',{name:'Просмотр',exact:true}).click();
   await guest.reload();
   await expect(guest.getByText(fixture.publishedTitle).first()).toBeVisible();
   await expect(guest.getByText(fixture.pendingTitle)).toHaveCount(0);
@@ -232,8 +235,10 @@ test('admin reviews a pending product revision without exposing its gallery publ
     fixture.pendingGallery[0].bytes,
   );
 
-  await card.getByRole('button', { name: 'Одобрить' }).click();
-  await expect(page.getByText(fixture.pendingTitle)).toHaveCount(0);
+  await page.getByRole('button', { name: 'Одобрить', exact: true }).click();
+  await page.screenshot({path:`/private/tmp/bidplace-admin-ui-evidence/confirm-${test.info().project.name}-${fixture.publicId}.png`});
+  await page.getByRole('button', { name: 'Подтвердить решение' }).click();
+  await expect(page.getByText('Решение принято.', {exact:false})).toBeVisible();
 
   await guest.reload();
   await expect(guest.getByText(fixture.pendingTitle).first()).toBeVisible();
@@ -326,3 +331,70 @@ async function expectGallery(page: Page, title: string, images: RevisionImage[])
     ),
   );
 }
+
+
+test('mobile queue navigation preserves filters and supports compact states', async ({browser}) => {
+  test.setTimeout(180_000);
+  const fixture=await createRevisionModerationFixture();
+  const {context,page}=await authenticatedPage(browser,fixture.admin);
+  const evidence='/private/tmp/bidplace-admin-ui-evidence';mkdirSync(evidence,{recursive:true});
+  const detailRequests:string[]=[];
+  page.on('request',req=>{if(/\/api\/admin\/(products|seller-profiles)\/[0-9a-f-]{36}$/.test(req.url())) detailRequests.push(req.url());});
+  try {
+    await page.setViewportSize({width:390,height:844});
+    await page.goto(`/admin?q=${encodeURIComponent(fixture.pendingTitle)}`);
+    const card=page.getByRole('link',{name:`Проверить: ${fixture.pendingTitle}`});
+    await expect(card).toBeVisible();expect(detailRequests).toHaveLength(0);
+    for(const width of [320,360,390,430]) {
+      await page.setViewportSize({width,height:844});
+      await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+      await page.screenshot({path:`${evidence}/queue-${test.info().project.name}-${width}.png`});
+    }
+    await page.setViewportSize({width:390,height:844});
+    await card.click();await expect(page.getByTestId('admin-moderation-detail')).toBeVisible();
+    const gallery=page.getByTestId('admin-moderation-detail').getByTestId('work-gallery');
+    await expect(gallery.getByRole('button',{name:'Фото 2: выбрать'})).toBeVisible();
+    const media=gallery.getByTestId('work-gallery-media');
+    await expect.poll(async()=> (await media.boundingBox())?.height??0).toBeGreaterThan(300);
+    await gallery.getByRole('button',{name:'Открыть фото 1',exact:true}).click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await page.getByRole('button',{name:'Закрыть окно',exact:true}).click();
+    await page.getByTestId('admin-moderation-detail').getByRole('button',{name:'Назад',exact:true}).click();
+    await expect(card).toBeVisible();await expect(page.getByLabel('Поиск в очереди')).toHaveValue(fixture.pendingTitle);
+    await page.getByLabel('Поиск в очереди').fill('no-results-fixture');
+    await expect(page.getByText('Заявок по выбранным условиям нет.')).toBeVisible();
+    await page.screenshot({path:`${evidence}/empty-${test.info().project.name}-390.png`});
+    await page.route('**/api/admin/products/summary?**',route=>route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({message:'fixture unavailable'})}));
+    await page.reload();
+    await expect(page.getByTestId('infrastructure-error-state-page')).toBeVisible();
+    await page.screenshot({path:`${evidence}/error-${test.info().project.name}-390.png`});
+    await page.unroute('**/api/admin/products/summary?**');
+    await page.getByRole('button',{name:'Повторить',exact:true}).click();
+    await expect(page.getByText('Заявок по выбранным условиям нет.')).toBeVisible();
+    await page.goto(`/admin?section=authors&q=${encodeURIComponent(fixture.pendingName)}`);
+    await page.getByRole('link',{name:`Проверить: ${fixture.pendingName}`}).click();
+    await expect(page.getByRole('img',{name:`Фото автора ${fixture.pendingName}`})).toBeVisible();
+    await page.screenshot({path:`${evidence}/author-${test.info().project.name}-390.png`});
+  } finally {await context.close();}
+});
+
+
+test('moderation adapts after mobile acceptance without losing decision text', async ({browser}) => {
+ const fixture=await createRevisionModerationFixture();const {context,page}=await authenticatedPage(browser,fixture.admin);
+ const evidence='/private/tmp/bidplace-admin-ui-evidence';mkdirSync(evidence,{recursive:true});
+ try {
+  await page.setViewportSize({width:390,height:844});await page.goto(`/admin?q=${encodeURIComponent(fixture.pendingTitle)}`);
+  await page.getByRole('link',{name:`Проверить: ${fixture.pendingTitle}`}).click();
+  for(const width of [768,1024,1440,390]) {
+   await page.setViewportSize({width,height:1000});
+   await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+   const gallery=page.getByTestId('admin-moderation-detail').getByTestId('work-gallery');
+   const box=await gallery.boundingBox();expect(box?.width).toBeLessThan(width);
+   await page.screenshot({path:`${evidence}/work-adaptive-${test.info().project.name}-${width}.png`});
+  }
+  await page.getByRole('button',{name:'Исправления',exact:true}).click();await page.getByLabel('Причина решения').fill('Сохранённая причина при изменении окна');
+  for(const width of [320,1440,390]) {await page.setViewportSize({width,height:844});await expect(page.getByLabel('Причина решения')).toHaveValue('Сохранённая причина при изменении окна');}
+  await page.getByRole('button',{name:'Отмена',exact:true}).click();
+  await page.getByRole('button',{name:'Исправления',exact:true}).click();await expect(page.getByLabel('Причина решения')).toHaveValue('Сохранённая причина при изменении окна');
+ } finally {await context.close();}
+});

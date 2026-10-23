@@ -126,7 +126,7 @@ vi.mock('../../components/ui', () => {
 
 import { authKeys } from '../../lib/query-cache';
 import { VerifyEmailForm } from './verify-email-form';
-import { AdminModerationScreen } from '../admin/admin-moderation-screen';
+import { AccountLogoutButton } from './AccountLogoutButton';
 import { AuthorCabinetScreen } from '../sellers/author-cabinet-screen';
 
 function seller(status: 'APPROVED' | 'SUSPENDED') {
@@ -208,10 +208,10 @@ describe('account logout reachability', () => {
     view.unmount();
   });
 
-  it('shows logout on the admin moderation destination', async () => {
+  it('shows logout on the account destination used by the admin profile', async () => {
     harness.listSellerProfiles.mockResolvedValue({ sellerProfiles: [] });
-    const view = mount(createElement(AdminModerationScreen));
-    await until(view.container, 'Модерация');
+    const view = mount(createElement(AccountLogoutButton));
+    await until(view.container, 'Выйти');
     expect([...view.container.querySelectorAll('button')].some((button) => button.textContent === 'Выйти')).toBe(true);
     view.unmount();
   });

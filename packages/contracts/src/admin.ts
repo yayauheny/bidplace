@@ -496,6 +496,9 @@ export function parseAdminQueueCursor(value: string): AdminQueueCursor | null {
 }
 export const adminQueueQuerySchema = z
   .object({
+    includeCard: z
+      .preprocess((value) => (value === 'true' ? true : value === 'false' ? false : value), z.boolean())
+      .optional(),
     cursor: z
       .string()
       .max(512)
@@ -507,15 +510,47 @@ export const adminQueueQuerySchema = z
       .min(1)
       .max(ADMIN_MODERATION_MAX_LIMIT)
       .default(50),
-    filter: adminModerationFilterSchema.default('PENDING_REVIEW').describe(
-      'APPROVED selects parent approval; other statuses select the editing revision (legacy parent fallback). Filters can overlap.',
-    ),
+    filter: adminModerationFilterSchema
+      .default('PENDING_REVIEW')
+      .describe(
+        'APPROVED selects parent approval; other statuses select the editing revision (legacy parent fallback). Filters can overlap.',
+      ),
     search: z.string().trim().max(ADMIN_MODERATION_MAX_SEARCH).optional(),
   })
   .strict();
 export type AdminQueueQuery = z.infer<typeof adminQueueQuerySchema>;
 export const adminModerationSummarySchema = z
   .object({
+    card: z
+      .object({
+        author: z
+          .object({ fullName: z.string(), slug: z.string() })
+          .strict()
+          .nullable(),
+        reviewKind: z.enum(['first', 'repeat', 'unknown']),
+        thumbnail: z
+          .discriminatedUnion('kind', [
+            z
+              .object({
+                kind: z.literal('product-image'),
+                id: uuidSchema,
+                checksum: z.string().length(64),
+              })
+              .strict(),
+            z
+              .object({
+                kind: z.literal('seller-photo'),
+                revisionId: uuidSchema,
+                updatedAt: isoDateTimeSchema,
+                checksum: z.string().length(64),
+              })
+              .strict(),
+          ])
+          .nullable(),
+        publication: mediaDeliverySchema.optional(),
+      })
+      .strict()
+      .optional(),
     id: uuidSchema,
     label: z.string().nullable(),
     parentStatus: z.union([sellerStatusSchema, productStatusSchema]),

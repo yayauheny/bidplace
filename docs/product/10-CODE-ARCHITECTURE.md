@@ -65,6 +65,19 @@ provider acceptance and release integration regression. The historical single-bu
 description below applies to legacy records, not the target production topology.
 See [`11-PROJECT-STATUS.md`](11-PROJECT-STATUS.md) for remaining gates.
 
+## 2026-10-24 — Protected moderation UI reads
+
+`includeCard=true` adds optional bounded thumbnail identity, author and review-kind/
+delivery metadata to summary items. Default strict response shapes stay unchanged.
+The existing service reads ID page and narrow selectors in one RepeatableRead
+transaction; no detail hydration per card. Media stays behind authenticated reads.
+`AdminModerationScreen` owns queue route/query state; detail routes own preview/
+comparison/history and captured-target decisions. `WorkGallery` accepts an optional
+private renderer/thumbnails; existing public consumers retain their presentation.
+`FormPageColumns` adaptive opt-in keeps the same children/state through resize.
+Navigation is still FloatingDock/DesktopHeader/useAppNavigation, with independent
+moderation/analytics access inputs and admin-only grants. Profile goes to account.
+
 ## 2026-10-23 — Admin moderation foundation
 
 `AdminModerationService` retains mutation ownership; protected summary/detail/

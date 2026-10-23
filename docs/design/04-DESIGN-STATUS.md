@@ -96,3 +96,13 @@ retry и явная отмена остатка доступны на плитк
 2026-10-23 final review P3: после partial upload error переход к истории/проверке
 блокируется до retry/cancel незавершённого остатка, включая точки шагов. Retry,
 cancel и Back остаются доступны; состояние очереди не подменяет uploadBusy.
+
+
+## 2026-10-24 — Mobile moderation and administrative navigation
+
+**Partial.** Existing Bidplace primitives compose queue/detail/vertical changes,
+private gallery/history and confirmed decisions. Mobile Chromium/WebKit states
+and independent source/UX review completed; adaptive/final verification pending.
+Admin uses five existing dock controls (no cart), ordinary users keep four; profile
+is account, moderation/analytics have separate selection. [Audit](../audits/current/2026-10-24-ADMIN-MODERATION-UI.md).
+Hardware keyboard/Safe Area/text scaling and exact desktop Figma parity unverified.

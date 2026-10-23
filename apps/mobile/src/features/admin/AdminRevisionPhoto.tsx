@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { Image } from 'expo-image';
+import { Image, type ImageStyle } from 'expo-image';
+import type { StyleProp } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
@@ -48,6 +49,7 @@ function AdminObjectImage({
   pendingLabel,
   errorLabel,
   contentFit,
+  style,
 }: {
   label: string;
   uri: string | null;
@@ -56,6 +58,7 @@ function AdminObjectImage({
   pendingLabel: string;
   errorLabel: string;
   contentFit: 'cover' | 'contain';
+  style?: StyleProp<ImageStyle>;
 }) {
   if (failed) {
     return (
@@ -77,11 +80,13 @@ function AdminObjectImage({
       accessibilityLabel={label}
       onError={onDecodeError}
       contentFit={contentFit}
-      style={{
-        width: 96,
-        height: 96,
-        borderRadius: designTokens.radius.image,
-      }}
+      style={[
+        {
+          ...(style ? {} : { width: 96, height: 96 }),
+          borderRadius: designTokens.radius.image,
+        },
+        style,
+      ]}
     />
   );
 }
@@ -92,12 +97,14 @@ export function AdminRevisionPhoto({
   updatedAt,
   checksum,
   label,
+  style,
 }: {
   profileId: string;
   revisionId: string;
   updatedAt: string;
   checksum: string;
   label: string;
+  style?: StyleProp<ImageStyle>;
 }) {
   const api = useApiClient();
   const view = useAdminObjectUrl(
@@ -110,6 +117,7 @@ export function AdminRevisionPhoto({
       label={label}
       pendingLabel="Загрузка фото ревизии"
       errorLabel="Фото ревизии недоступно"
+      style={style}
       contentFit="cover"
     />
   );
@@ -120,11 +128,13 @@ export function AdminReviewImage({
   checksum,
   label,
   fallbackLabel,
+  style,
 }: {
   imageId: string;
   checksum: string;
   label: string;
   fallbackLabel: string;
+  style?: StyleProp<ImageStyle>;
 }) {
   const api = useApiClient();
   const view = useAdminObjectUrl(`${imageId}:${checksum}`, () =>
@@ -136,7 +146,14 @@ export function AdminReviewImage({
       label={label}
       pendingLabel="Загрузка изображения"
       errorLabel={fallbackLabel}
+      style={style}
       contentFit="contain"
     />
   );
+}
+
+export function AdminAchievementImage({ id, checksum, label, style }: { id: string; checksum: string; label: string; style?: StyleProp<ImageStyle> }) {
+  const api = useApiClient();
+  const view = useAdminObjectUrl(`${id}:${checksum}`, () => api.admin.getAchievementImage(id));
+  return <AdminObjectImage {...view} label={label} style={style} pendingLabel="Загрузка достижения" errorLabel="Изображение достижения недоступно" contentFit="contain" />;
 }
