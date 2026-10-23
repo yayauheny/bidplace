@@ -27,12 +27,17 @@ is restricted to explicit local/test profile plus loopback.
 3. Apply additive migrations through the normal separate migration step. Preserve
    User IDs, works, media and legal evidence. Do not reset/seed or edit old migrations.
    The new social-auth migration invalidates outstanding old verification codes.
+   The combined tree includes `20261022010000_server_sessions`,
+   `20261022020000_social_auth`, `20261022030000_email_login_request_lookup`,
+   `20261022040000_auth_email_proof`, `20261022120000_normalized_media_source`
+   and `20261022180000_legacy_image_upload_identity`. Apply only pending migrations;
+   existing normalized SOURCE, User IDs and media remain intact.
 4. Deploy the matching API image and SPA, then verify health/readiness, password
    login, private reads, logout/revocation and new auth flows before reopening.
 5. Require users to log in again: old JWTs are intentionally unsupported. Do not
    roll back applied migrations with table drops.
 
-This task does not execute these production steps or push/merge code.
+PR preparation does not execute these production steps or authorize merging the PR.
 
 ## External acceptance
 
@@ -43,5 +48,13 @@ and email-to-Google identity continuity. Confirm provider settings/keys stay out
 SPA assets, URLs and logs. Test IdP covers HTTP protocol and signed tokens locally;
 it cannot prove provider registration or real email delivery.
 
-PR56 media integration is separate. Native provider login and new Figma composition
+Photo changes from MVP/PR #59 are integrated; auth and media must be verified
+on the combined image/schema. Native provider login and new Figma composition
 approval are not claimed by this implementation.
+
+Synchronous SMTP remains the accepted MVP limitation in DEC-136. A known-address
+code request can wait for SMTP while an unknown address returns earlier; equal
+HTTP bodies do not close that enumeration channel. Local measurements and
+Cloudflare outbox trade-offs are in the [PR #58 verification](../audits/current/2026-10-23-PR58-MERGE-VERIFICATION.md).
+Production readiness requires a separate timing/security acceptance on the target
+infrastructure, as well as real provider/mail/Turnstile and migration/rollback gates.

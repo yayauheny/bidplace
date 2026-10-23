@@ -14,6 +14,7 @@ const cases: Array<() => void> = [];
 
 function mount(flags: {
   isDirty: boolean;
+  uploadPending?: boolean;
   storyDirty: boolean;
   storyPending: boolean;
 }) {
@@ -29,6 +30,7 @@ function mount(flags: {
   function Harness() {
     useProductDraftBrowserHistoryGuard({
       isDirty: current.isDirty,
+      uploadPending: current.uploadPending,
       storyDirty: current.storyDirty,
       storyPending: current.storyPending,
       productId: 'work-1',
@@ -92,4 +94,20 @@ it('arms one sentinel per dirty episode and retires it when clean', () => {
   view.rerender({ isDirty: true, storyDirty: false, storyPending: false });
   expect(window.history.length).toBe(armedLength + 1);
   expect(guardArmed()).toBe(true);
+});
+
+it('keeps browser Back on the screen during an upload and warns before unloading', () => {
+  const go = vi.spyOn(window.history, 'go').mockImplementation(() => undefined);
+  const view = mount({ isDirty: false, storyDirty: false, storyPending: false, uploadPending: true });
+  const sentinel = window.history.state;
+  expect(guardArmed()).toBe(true);
+  const unload = new Event('beforeunload', { cancelable: true });
+  window.dispatchEvent(unload);
+  expect(unload.defaultPrevented).toBe(true);
+  act(() => {
+    window.dispatchEvent(new PopStateEvent('popstate', { state: {} }));
+    window.dispatchEvent(new PopStateEvent('popstate', { state: sentinel }));
+  });
+  expect(go.mock.calls).toEqual([[1]]);
+  view.rerender({ isDirty: false, storyDirty: false, storyPending: false, uploadPending: false });
 });

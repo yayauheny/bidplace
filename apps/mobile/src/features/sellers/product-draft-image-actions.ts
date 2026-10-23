@@ -2,7 +2,12 @@ import { useEffect, useRef, useState } from 'react';
 import { useMutation, type QueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 
-import type { ProductStatus } from '@bidplace/contracts';
+import { ImagePreparationError } from '../../lib/media/prepare-image-upload';
+
+import {
+  workImageMaxInputBytes,
+  type ProductStatus,
+} from '@bidplace/contracts';
 
 import type { ApiClient } from '@bidplace/api-client';
 
@@ -10,6 +15,22 @@ import { canWritePrivateCache, currentAuthEpoch } from '../../lib/query-cache';
 import { invalidateOwnerWorks } from './owner-work-query';
 import type { ProductDraftSaveSession } from './product-draft-save';
 import type { ProductStoryEditor } from './use-product-story-editor';
+
+export type UploadImageState = {
+  key: string;
+  uri: string;
+  status: 'queued' | 'preparing' | 'uploading' | 'done' | 'error';
+};
+
+type UploadBatch = {
+  assets: Array<ImagePicker.ImagePickerAsset | null>;
+  next: number;
+  blob: Blob | undefined;
+  key: string;
+  productId: string;
+  epoch: number;
+  operation: number;
+};
 
 /**
  * Image mutations and pickers for the product draft screen: upload, remove,
@@ -36,7 +57,11 @@ export function useProductDraftImageActions({
   const seenAuthEpoch = useRef(authEpoch);
   const deleteConfirmLock = useRef(false);
   const imageSelection = useRef(0);
-  const pendingUpload = useRef<{ images: Blob[]; key: string } | null>(null);
+  const pendingUpload = useRef<UploadBatch | null>(null);
+  const pickerLock = useRef(false);
+  const uploadController = useRef<AbortController | null>(null);
+  const [uploadFiles, setUploadFiles] = useState<UploadImageState[]>([]);
+  const [choosingImages, setChoosingImages] = useState(false);
   const [deleteConfirmLocked, setDeleteConfirmLocked] = useState(false);
   const [imagePendingDelete, setImagePendingDelete] = useState<string | null>(
     null,
@@ -49,24 +74,97 @@ export function useProductDraftImageActions({
     if (seenAuthEpoch.current === authEpoch) return;
     seenAuthEpoch.current = authEpoch;
     pendingUpload.current = null;
+    uploadController.current?.abort();
+    pickerLock.current = false;
+    setChoosingImages(false);
+    setUploadFiles([]);
+    setImageSelectionError(null);
+    upload.reset();
     imageSelection.current += 1;
   }, [authEpoch]);
 
-  const upload = useMutation({
-    mutationFn: async (images: Blob[]) => {
-      const epoch = currentAuthEpoch(queryClient);
-      const id = session.persistedProductId();
-      if (!id) throw new Error('Product is not saved');
-      const key = pendingUpload.current?.key;
-      await api.images.add(id, images, key);
-      return epoch;
+  useEffect(
+    () => () => {
+      uploadController.current?.abort();
     },
-    onSuccess: (epoch) => {
-      if (!canWritePrivateCache(queryClient, epoch)) return;
-      pendingUpload.current = null;
-      const id = session.persistedProductId();
-      if (!id) return;
-      return invalidateOwnerWorks(queryClient, id);
+    [],
+  );
+
+  const ownsBatch = (batch: UploadBatch) =>
+    pendingUpload.current === batch &&
+    session.isCurrentOperation(batch.operation) &&
+    !session.transitionLock.current &&
+    session.persistedProductId() === batch.productId &&
+    canWritePrivateCache(queryClient, batch.epoch);
+
+  const upload = useMutation({
+    mutationFn: async (batch: UploadBatch) => {
+      const setStatus = (status: UploadImageState['status']) => {
+        const currentIndex = batch.next;
+        if (ownsBatch(batch))
+          setUploadFiles((files) =>
+            files.map((file, index) =>
+              index === currentIndex ? { ...file, status } : file,
+            ),
+          );
+      };
+      while (batch.next < batch.assets.length && ownsBatch(batch)) {
+        try {
+          const asset = batch.assets[batch.next]!;
+          setStatus('preparing');
+          if (
+            asset.fileSize !== undefined &&
+            asset.fileSize > workImageMaxInputBytes
+          )
+            throw new ImagePreparationError('SOURCE_TOO_LARGE');
+          if (!batch.blob) {
+            if (asset.file) batch.blob = asset.file;
+            else {
+              const response = await fetch(asset.uri);
+              if (!response.ok) throw new ImagePreparationError('READ_FAILED');
+              batch.blob = await response.blob();
+            }
+          }
+          if (!ownsBatch(batch)) return;
+          if (batch.blob.size > workImageMaxInputBytes)
+            throw new ImagePreparationError('SOURCE_TOO_LARGE');
+          if (!batch.blob.size) throw new ImagePreparationError('EMPTY_FILE');
+          setStatus('uploading');
+          const controller = new AbortController();
+          uploadController.current = controller;
+          let timedOut = false;
+          const deadline = setTimeout(() => {
+            timedOut = true;
+            controller.abort();
+          }, 60_000 + Math.ceil(batch.blob.size / (64 * 1024)) * 1000);
+          try {
+            await api.images.add(
+              batch.productId,
+              [batch.blob],
+              `${batch.key}:${batch.next}`,
+              { signal: controller.signal },
+            );
+          } catch (error) {
+            if (timedOut) throw new ImagePreparationError('UPLOAD_TIMEOUT');
+            throw error;
+          } finally {
+            clearTimeout(deadline);
+            if (uploadController.current === controller)
+              uploadController.current = null;
+          }
+          if (!ownsBatch(batch)) return;
+          setStatus('done');
+          batch.assets[batch.next] = null;
+          batch.next += 1;
+          batch.blob = undefined;
+          await invalidateOwnerWorks(queryClient, batch.productId);
+        } catch (error) {
+          if (!ownsBatch(batch)) return;
+          setStatus('error');
+          throw error;
+        }
+      }
+      if (ownsBatch(batch)) pendingUpload.current = null;
     },
   });
   const removeImage = useMutation({
@@ -112,43 +210,65 @@ export function useProductDraftImageActions({
   };
 
   const chooseImages = async () => {
-    if (session.transitionLock.current || !existingProduct) return;
+    if (
+      session.transitionLock.current ||
+      !existingProduct ||
+      pickerLock.current ||
+      upload.isPending
+    )
+      return;
+    pickerLock.current = true;
+    setChoosingImages(true);
     const epoch = currentAuthEpoch(queryClient);
     const operation = session.snapshotOperation();
-    const selection = imageSelection.current + 1;
-    imageSelection.current = selection;
+    const selection = ++imageSelection.current;
     const stillOwnsImages = () =>
       selection === imageSelection.current &&
       !session.transitionLock.current &&
       session.isCurrentOperation(operation) &&
       canWritePrivateCache(queryClient, epoch);
-    if (!(await persistApprovedSnapshot())) return;
-    if (!stillOwnsImages()) return;
-    setImageSelectionError(null);
     try {
+      if (!(await persistApprovedSnapshot()) || !stillOwnsImages()) return;
+      setImageSelectionError(null);
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
         allowsMultipleSelection: true,
-        selectionLimit: 10,
+        selectionLimit: Math.max(1, 10 - existingProduct.images.length),
         quality: 1,
       });
-      if (!stillOwnsImages()) return;
-      if (result.canceled) return;
-      const images = await Promise.all(
-        result.assets.map(async (asset) => {
-          const response = await fetch(asset.uri);
-          if (!response.ok) throw new Error('Selected image could not be read');
-          return response.blob();
-        }),
+      if (!stillOwnsImages() || result.canceled || !result.assets.length)
+        return;
+      const id = session.persistedProductId();
+      if (!id) return;
+      const key = crypto.randomUUID();
+      const batch: UploadBatch = {
+        assets: [...result.assets],
+        next: 0,
+        blob: undefined,
+        key,
+        productId: id,
+        epoch,
+        operation,
+      };
+      pendingUpload.current = batch;
+      setUploadFiles(
+        result.assets.map((asset, index) => ({
+          key: `${key}:${index}`,
+          uri: asset.uri,
+          status: 'queued',
+        })),
       );
-      if (!stillOwnsImages()) return;
-      pendingUpload.current = { images, key: crypto.randomUUID() };
-      upload.mutate(images);
+      upload.mutate(batch);
     } catch {
-      if (!stillOwnsImages()) return;
-      setImageSelectionError(
-        'Не удалось прочитать выбранные изображения. Выберите файлы ещё раз.',
-      );
+      if (stillOwnsImages())
+        setImageSelectionError(
+          'Не удалось прочитать выбранные изображения. Выберите файлы ещё раз.',
+        );
+    } finally {
+      if (selection === imageSelection.current) {
+        pickerLock.current = false;
+        setChoosingImages(false);
+      }
     }
   };
 
@@ -229,11 +349,13 @@ export function useProductDraftImageActions({
       !upload.isPending &&
       !session.transitionLock.current
     )
-      upload.mutate(pendingUpload.current.images);
+      upload.mutate(pendingUpload.current);
   };
 
   return {
     upload,
+    uploadFiles,
+    choosingImages,
     removeImage,
     reorderImages,
     imageSelectionError,

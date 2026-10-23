@@ -11,6 +11,7 @@ const productDraftHistoryGuardKey = '__bidplaceProductDraftGuard';
  */
 export function useProductDraftBrowserHistoryGuard({
   isDirty,
+  uploadPending = false,
   storyDirty,
   storyPending,
   draftEffectivelyClean,
@@ -18,6 +19,7 @@ export function useProductDraftBrowserHistoryGuard({
   session,
 }: {
   isDirty: boolean;
+  uploadPending?: boolean;
   storyDirty: boolean;
   storyPending: boolean;
   draftEffectivelyClean?: () => boolean;
@@ -35,7 +37,9 @@ export function useProductDraftBrowserHistoryGuard({
   // never pass through an all-clean moment, so arming must not re-run on each
   // individual toggle while the guard is already up.
   const guardArmed = useRef(false);
-  const needsGuard = isDirty || storyDirty || storyPending;
+  const uploadSlot = useRef(uploadPending);
+  uploadSlot.current = uploadPending;
+  const needsGuard = isDirty || storyDirty || storyPending || uploadPending;
 
   const retireBrowserGuard = async () => {
     const guard = browserNavigation.current;
@@ -68,7 +72,7 @@ export function useProductDraftBrowserHistoryGuard({
     // landed between render and this effect. Arming on stale dirty state
     // pushes a sentinel whose retirement popstate then triggers the
     // persist-and-continue path (history corruption).
-    if (draftEffectivelyClean?.()) return;
+    if (!uploadSlot.current && draftEffectivelyClean?.()) return;
     guardArmed.current = true;
     browserNavigation.current = guard;
     const armedUrl = window.location.href;
@@ -82,6 +86,7 @@ export function useProductDraftBrowserHistoryGuard({
     );
 
     const persistAndContinueBrowserBack = () => {
+      if (uploadSlot.current) return;
       guard.allow = true;
       guard.persisting = true;
       const operation = sessionSlot.current.snapshotOperation();
@@ -158,14 +163,14 @@ export function useProductDraftBrowserHistoryGuard({
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    if (!isDirty && !storyDirty && !storyPending) return;
+    if (!needsGuard) return;
     const warnBeforeUnload = (event: BeforeUnloadEvent) => {
       event.preventDefault();
       event.returnValue = '';
     };
     window.addEventListener('beforeunload', warnBeforeUnload);
     return () => window.removeEventListener('beforeunload', warnBeforeUnload);
-  }, [isDirty, storyDirty, storyPending]);
+  }, [needsGuard]);
 
   return { retireBrowserGuard };
 }

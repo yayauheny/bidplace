@@ -183,7 +183,21 @@ export function ProductDraftScreen({
   });
   storyEditorSlot.current = storyEditor;
 
+  const imageActions = useProductDraftImageActions({
+    api,
+    queryClient,
+    authEpoch,
+    existingProduct,
+    editorStatus,
+    session,
+    storyEditor,
+  });
+
+  const uploadBusy =
+    imageActions.choosingImages || imageActions.upload.isPending;
+
   const browserGuard = useProductDraftBrowserHistoryGuard({
+    uploadPending: uploadBusy,
     isDirty: form.formState.isDirty,
     storyDirty: storyEditor.dirty,
     storyPending: storyEditor.pending,
@@ -196,17 +210,8 @@ export function ProductDraftScreen({
 
   const isCreationFlow = flow === 'creation' || !productId;
 
-  const imageActions = useProductDraftImageActions({
-    api,
-    queryClient,
-    authEpoch,
-    existingProduct,
-    editorStatus,
-    session,
-    storyEditor,
-  });
-
   const wizardNavigation = useProductDraftNavigation({
+    uploadBusy,
     productId,
     stepParam,
     isCreationFlow,
@@ -288,9 +293,13 @@ export function ProductDraftScreen({
             wizardSubmitted={data.wizardSubmitted}
             wizardStep={wizardStep}
             hasExistingProduct={Boolean(existingProduct)}
-            canOpenStep={(step) => canOpenProductWizardStep(step, wizardDraft)}
+            canOpenStep={(step) =>
+              !uploadBusy && canOpenProductWizardStep(step, wizardDraft)
+            }
             onStepPress={(step) => void wizardNavigation.moveToWizardStep(step)}
-            storyBarDisabled={storyEditor.pending || session.inputsLocked}
+            storyBarDisabled={
+              storyEditor.pending || session.inputsLocked || uploadBusy
+            }
             closeLabel={
               form.formState.isDirty || storyEditor.dirty
                 ? 'Сохранить и закрыть'
@@ -299,6 +308,7 @@ export function ProductDraftScreen({
             closeLoading={session.save.isPending || storyEditor.pending}
             closeDisabled={
               session.submit.isPending ||
+              uploadBusy ||
               storyEditor.pending ||
               session.inputsLocked
             }
@@ -314,6 +324,7 @@ export function ProductDraftScreen({
               existingProduct
                 ? existingProduct.images.length < 1 ||
                   session.save.isPending ||
+                  uploadBusy ||
                   session.inputsLocked
                 : false
             }
@@ -400,13 +411,16 @@ export function ProductDraftScreen({
               editable={editable && !session.inputsLocked}
               isCreationFlow={isCreationFlow}
               wizardStep={wizardStep}
-              wizardCanOpenStory={canOpenProductWizardStep(
-                productWizardStep.story,
-                wizardDraft,
-              )}
+              wizardCanOpenStory={
+                !uploadBusy &&
+                canOpenProductWizardStep(productWizardStep.story, wizardDraft)
+              }
               reorderPending={imageActions.reorderImages.isPending}
               removePending={imageActions.removeImage.isPending}
-              uploadPending={imageActions.upload.isPending}
+              uploadPending={
+                imageActions.upload.isPending || imageActions.choosingImages
+              }
+              uploadFiles={imageActions.uploadFiles}
               uploadError={imageActions.upload.isError}
               uploadMessage={
                 imageActions.upload.error

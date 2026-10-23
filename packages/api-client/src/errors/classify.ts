@@ -77,6 +77,8 @@ export function classifyApiError(
       return 'not_found';
     case 409:
       return 'conflict';
+    case 413:
+      return 'bad_request';
     case 429:
       return 'rate_limited';
     default:

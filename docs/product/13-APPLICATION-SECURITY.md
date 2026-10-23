@@ -5,7 +5,7 @@
 
 ## 2026-10-05 — Cloudflare deployment boundary (Partial)
 
-The deployment Worker preserves Nest JWT/session/role/ownership checks. It
+The deployment Worker preserves Nest session/role/ownership checks. It
 routes API only through the private Container binding; public JSON caching is
 allowlisted and bypasses credentials, private routes, mutations and unsafe
 responses. Forwarding strips client-supplied proxy headers and uses Cloudflare's
@@ -84,16 +84,16 @@ Provider configuration and external acceptance are owned by [Web auth rollout](.
 | --- | --- | --- |
 | Authz before decode | Implemented | `ImagesService` runs owner + editable product + listing lock + `assertApprovedSeller` before Sharp; the persist TX repeats that guard under `SELECT … FOR UPDATE` |
 | Static images only | Implemented | Reject `image/gif` and animated WebP/PNG (`pages`/`frames`/`delay`) |
-| Pixel budgets | Implemented | Max edge **4096px**, max **16_777_216** pixels (`productImagePixelBudgets`) |
+| Pixel budgets | Implemented | Gallery input: **8192px / 50_331_648** pixels (`workImageInputPixelBudgets`); stored masters and other purposes: **4096px / 16_777_216** pixels (`productImagePixelBudgets`) |
 | Byte/file caps | Implemented | Existing `productImageUploadLimits` unchanged |
 | Decode outside TX | Implemented | Normalize outside the persist TX; short locked TX for status/listing/capacity check + insert |
 | Sequential bounded normalize | Implemented | Metadata gate (`animated: true` for detection) → `rotate().toFormat(jpeg\|png)` with `limitInputPixels`; normalize uses `animated: false` |
-| Upload rate limit | Implemented | `@RateLimit` 10/min per user on product and creation-step upload POSTs, author achievement upload/delete, and profile photo create/update. Author, achievement, and work decode share one process-local admission of two operations. |
+| Upload rate limit | Implemented | `@RateLimit` 20/min per user on gallery upload POSTs; 10/min on creation-step uploads, author achievement upload/delete, and profile photo create/update. Author, achievement, and work decode share one process-local admission of two operations. |
 | Achievement / revision photo visibility | Implemented | Public achievement GET only from the published revision; owner/admin can read draft; anonymous/stranger draft reads 404. Owner application photo is private `no-store`. |
 | Active author visibility | Implemented | Public Work/Author queries, catalogs and binary media require active author user in addition to existing APPROVED/published-revision guards. Admin private photo reads use `private, no-store`; `work-media-http.integration.spec.ts` + `sellers.controller.spec.ts`. |
 | Catalog hydration visibility | Implemented | Catalog hydration repeats APPROVED/active/published checks after selecting IDs. Controlled PostgreSQL hide/suspend/ban interleavings in `portfolio-filters.integration.spec.ts` exclude revoked records. Counts retain the first-query snapshot. |
-| Work upload replay | Implemented | Single-file HTTP key is scoped by owner/purpose/Work. A new upload over gallery count or total bytes is rejected before Sharp/R2; the locked attach transaction repeats that check. Replay of bytes already attached to the current revision does not create another image. Checksum conflict and earlier-revision attachment reject with 409 before the capacity short-circuit. `work-media-http.integration.spec.ts`, `upload-safety.integration.spec.ts`. |
-| Canonical storage | Partial | Private SOURCE and metadata-stripped public WebP derivatives are implemented in `core/media`; existing ImageStore serves legacy records until verified cutover. Live R2/CDN/restore acceptance remains pending. Architecture owner: `10-CODE-ARCHITECTURE.md`. |
+| Work upload replay | Implemented | Single-file HTTP key is scoped by owner/purpose/Work. A new upload over gallery count or into an already full byte budget is rejected before Sharp/R2; the locked attach transaction checks actual normalized SOURCE bytes. Large gallery input is single-file and requires an idempotency key; legacy batches retain 5 MiB per file. Replay of bytes already attached to the current revision does not create another image. Checksum conflict and earlier-revision attachment reject with 409 before the capacity short-circuit. `work-media-http.integration.spec.ts`, `upload-safety.integration.spec.ts`. Legacy ImageStore replay persists on ProductImage and is rechecked under the product lock; public fallback bytes strip metadata (`product-write-atomicity.integration.spec.ts`). |
+| Canonical storage | Partial | Private SOURCE and metadata-stripped public WebP derivatives are implemented in `core/media` (new SOURCE is a normalized master; original input identity is retained separately); existing ImageStore serves legacy records until verified cutover. Live R2/CDN/restore acceptance remains pending. Architecture owner: `10-CODE-ARCHITECTURE.md`. |
 
 Primary code: `apps/api/src/images/image-policy.ts`, `images.service.ts`, `images.controller.ts`, `portfolio.controller.ts`, `sellers.service.ts`.
 Tests: `image-policy.spec.ts`, `image-processing-admission.spec.ts`, `sellers.profile-upload-limit.spec.ts`, `image-upload-safety.integration.spec.ts`, `upload-safety.integration.spec.ts`, `seller-permissions.integration.spec.ts`, `portfolio-published-revision.integration.spec.ts`.
@@ -166,7 +166,7 @@ pause, same-key replay, revoke and successful fresh proof.
 valid browser-bound Google/Telegram proof, so it has no second registration
 CAPTCHA. Real email policy, legal evidence, TTL, single-use transitions and
 pending-email restrictions remain server-side. Password registration, mail
-requests and adaptive password-login CAPTCHA remain enabled. See DEC-132.
+requests and adaptive password-login CAPTCHA remain enabled. See DEC-134.
 
 **SMTP outcome truth:** `accepted` means the transport completed without a
 classified failure. `rejected` is definite only for the single-recipient guard
@@ -218,7 +218,7 @@ specs that delegate to the module.
 | --- | --- | --- | --- | --- |
 | MVP static-only product images | Implemented | Predictable catalog; lower decode risk | No GIF/motion for creators | Explicit product ask for motion |
 | Authz-before-decode uploads | Implemented | Forbidden before CPU spend | Slightly more service logic | N/A unless upload path splits |
-| 4096 / 16M pixel budgets | Implemented | Blocks common bombs | May reject very large art scans | Creator uploads exceed budget in pilot |
+| Separate input/output pixel budgets | Implemented | Gallery admits 48MP within 8192px/50M input; stored masters stay within 4096px/16M | Concurrent 48MP decoding on production container needs verification | Creator uploads exceed budget in pilot |
 | Admin self/admin incident guards | Implemented | Prevents founder lockout | Stricter emergency ops | Never without alternate break-glass |
 | S3-compatible binary image storage | Partial | Keeps binary outside PostgreSQL in production | Needs production bucket and restore drill | Before public launch |
 
@@ -249,7 +249,7 @@ Coverage: `env-profile.spec.ts`, `env.spec.ts` matrix, `rules.spec.ts`, `local-m
 
 **Pros:** `APP_ENV=production` cannot boot with a development/test Node profile; bypass/seed stay local-test-only.
 **Cons:** Compose `app` profile must set `APP_ENV=production`; short session/OTP secrets fail production parse.
-**Revisit when:** staging gets its own owner rule (SMTP/JWT policy distinct from production).
+**Revisit when:** staging gets its own owner rule (SMTP/session policy distinct from production).
 
 ## 8. Deferred ops/security (post-pilot)
 
@@ -280,7 +280,7 @@ claim. Production Cloudflare Siteverify/action/hostname/expiry checks unchanged.
 
 ## 2026-10-22 — Email proof before account creation
 
-Implemented locally (DEC-133): password registration requires a browser-bound
+Implemented locally (DEC-135): password registration requires a browser-bound
 proof for the exact email before creating User/legal evidence; unproved social
 onboarding creates neither User nor ExternalIdentity. A trusted provider email
 proof remains valid. Email collisions are disclosed only after ownership proof;
@@ -298,3 +298,18 @@ covers equal outcomes, five-failure pause, expiry, cancellation, browser binding
 mail budgets and pre-proof absence of users. CI requires the isolated abuse DB
 and runs the browser owner on Draft auth PRs too. Production timing, live
 Google/Telegram/SMTP/Turnstile remain Needs verification.
+
+
+## 2026-10-23 — Принятое SMTP timing-ограничение (DEC-136)
+
+`AuthAbuseService.sendEmailLogin` ожидает транспорт для известного активного
+аккаунта, но возвращает нейтральный ответ без отправки для неизвестного адреса.
+Разница времени request остаётся каналом email enumeration, даже при одинаковом
+статусе/JSON. Это принятое ограничение MVP, а не доказанная нейтральность SMTP.
+Путь verify имеет отдельные SQL/counter/pause-инварианты и проверяется отдельно.
+
+Остаются обязательными browser/purpose/version binding, одноразовость кодов,
+CSRF/origin, идемпотентность, shared quotas и accepted/rejected/unknown outcomes.
+Для production нужны реальные SMTP/Turnstile/provider проверки и отдельная оценка
+timing на целевой инфраструктуре. Асинхронный outbox без надёжного пробуждения
+scale-to-zero контейнера не добавляется; причины и альтернативы — DEC-136.

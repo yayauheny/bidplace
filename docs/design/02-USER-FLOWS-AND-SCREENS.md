@@ -524,7 +524,7 @@ post-MVP placeholders opening the shared compact feedback sheet (close/Escape,
 return focus). They do not start a purchase or create notification state.
 
 
-## 2026-10-22 — Registration email proof (DEC-133)
+## 2026-10-22 — Registration email proof (DEC-135)
 
 Password registration: email/legal consent → nickname → password → email code
 → verified account/session → safe destination. No User is created before proof.

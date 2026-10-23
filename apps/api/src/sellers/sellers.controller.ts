@@ -30,7 +30,7 @@ import { RateLimit, RateLimitGuard } from '../core/rate-limit';
 import {
   getImageCacheControl,
   productImageUploadLimits,
-  supportedImageMimeTypes,
+  acceptSupportedUploadMimeType,
   type RawImageUpload,
   validateProductImageUploads,
 } from '../images/image-policy';
@@ -65,7 +65,7 @@ export class SellersController {
         files: 1,
       },
       fileFilter: (_request, file, done) =>
-        done(null, supportedImageMimeTypes.includes(file.mimetype as never)),
+        acceptSupportedUploadMimeType(file.mimetype, done),
     }),
   )
   async create(
@@ -106,7 +106,7 @@ export class SellersController {
         files: 1,
       },
       fileFilter: (_request, file, done) =>
-        done(null, supportedImageMimeTypes.includes(file.mimetype as never)),
+        acceptSupportedUploadMimeType(file.mimetype, done),
     }),
   )
   async update(

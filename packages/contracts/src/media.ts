@@ -1,4 +1,6 @@
 import { z } from 'zod';
+
+export const workImageMaxInputBytes = 25 * 1024 * 1024;
 export const publicMediaUrlSchema = z
   .string()
   .url()
@@ -11,7 +13,7 @@ export const publicMediaUrlSchema = z
       !url.search &&
       !url.hash &&
       !url.hostname.endsWith('.r2.dev') &&
-      /^\/assets\/[a-f0-9-]{36}\/p1\/(preview|full)\.webp$/.test(url.pathname)
+      /^\/assets\/[a-f0-9-]{36}\/p[12]\/(preview|full)\.webp$/.test(url.pathname)
     );
   }, 'Expected an HTTPS public derivative URL');
 export const mediaDeliverySchema = z

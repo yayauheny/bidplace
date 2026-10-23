@@ -1,57 +1,32 @@
-# bidplace — открытые решения первого portfolio MVP
+# bidplace — открытые решения portfolio MVP
 
-Дата: 2026-09-14
-Статус: одна продуктовая развилка по первой заявке автора; contract-blockers для
-одобренного автора нет
-Решения: `DEC-082`–`DEC-084`
+Сверено: 2026-10-23. Portfolio-only граница не менялась. Текущая работа и
+непроверенные gates находятся в [active backlog](16-PORTFOLIO-ACTIVE-BACKLOG.md)
+и [release audit](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md).
 
-Первый MVP зафиксирован как публичное портфолио автора без commerce. Прежние D01–D03
-по offer, non-payment/second chance и handoff не потеряны: они перенесены в
-[`15-POST-MVP-BACKLOG.md`](15-POST-MVP-BACKLOG.md) и
-[`99-POST-MVP-BACKLOG.md`](../archive/tasks/2026-09-06-reconciliation/99-POST-MVP-BACKLOG.md).
-Они не блокируют portfolio launch.
+## Первая заявка: прежний вопрос больше не текущий blocker
 
-## Founder decision: optional achievements on the first application
+Сентябрьское разночтение immediate-submit vs draft не описывает текущий код:
+`SellersService.create` создаёт `DRAFT`, RFC §8 требует сохранять незавершённую
+заявку; четырёхэтапный flow и проверки представлены в
+[design status](../design/04-DESIGN-STATUS.md) и
+[истории реализации](../archive/product/11-PROJECT-STATUS-historical.md).
+Эта документационная сверка не создаёт нового founder decision и не заменяет
+device/visual acceptance. Не запрашивать прежний выбор заново только по старому
+checkpoint; при новом конфликте указать конкретный код и действующий контракт.
 
-`docs/design/02-USER-FLOWS-AND-SCREENS.md` §8 допускает четыре визуальных шага заявки,
-включая optional achievements, и сохранение непустого draft до отправки. Текущий
-create пишет revision сразу как `PENDING_REVIEW`, а `ensureEditableEditingRevision`
-блокирует add/delete на время модерации. В результате кандидат не может добавить
-optional achievements до первой проверки.
+## Оставшиеся внешние вопросы
 
-Нужно явное решение основателя, без молчаливого нового workflow:
+- [Final legal audit](../legal/00-FINAL-LEGAL-AUDIT.md) владеет вопросом об
+  основании текущей персональной аналитики, publication facts и controls.
+  Закрытые юридические вопросы не открывать заново.
+- Cloudflare/R2/SMTP/Neon уже выбраны; публичные provider/country/backup facts,
+  live acceptance и rollout — ops/release gates, а не новый выбор архитектуры.
+- Механики offer/non-payment/second chance/handoff и продаж остаются в
+  [post-MVP плане](15-POST-MVP-BACKLOG.md) и его
+  [execution backlog](../archive/tasks/2026-09-06-reconciliation/99-POST-MVP-BACKLOG.md).
+  Они не блокируют portfolio launch.
 
-1. Оставить текущий immediate submit: create → `PENDING_REVIEW` → модерация; optional
-   achievements только после approve через editing `DRAFT`.
-2. Реализовать уже документированный draft / четвёртый шаг: create сохраняет
-   `DRAFT`, UI показывает optional achievements до «Отправить на проверку», submit
-   переводит revision в `PENDING_REVIEW`.
-
-Это меняет first-application flow, revision status на create и e2e, которые ждут
-«На модерации» сразу после «Создать профиль». Пока решение не принято, участок
-помечен `Partial` в [`11-PROJECT-STATUS.md`](11-PROJECT-STATUS.md).
-
-## Что ещё требует внешнего ответа
-
-Это не продуктовые решения основателя:
-
-- юридические решения и publication gates сведены в
-  [единый аудит](../legal/00-FINAL-LEGAL-AUDIT.md): DEC-078 подтверждён, сроки приняты
-  как target policy. Основатель оставил юристу конкретный вопрос об основании
-  текущей персональной аналитики без отдельного выбора;
-- Cloudflare/R2/Email и Neon уже выбраны; остаются полные публичные реквизиты,
-  provider/country/backup facts и проверка обязательных требований к публикации;
-- implementation review определяет точную migration для Work revisions и object
-  storage, не меняя RFC;
-- read-only Figma handoff должен быть versioned перед UI implementation.
-
-Актуальные вопросы юристу находятся в
-[итоговый юридический аудит](../legal/00-FINAL-LEGAL-AUDIT.md).
-Технические варианты находятся в
-[`../audits/01-OPEN-ARCHITECTURE-GAPS.md`](../audits/01-OPEN-ARCHITECTURE-GAPS.md).
-
-## Правило открытия новой развилки
-
-Добавлять сюда только вопрос, который реально меняет первый portfolio flow, schema,
-permissions или public data. Commerce-вопросы остаются во втором backlog до решения
-начать соответствующую волну.
+Новый вопрос добавлять только при реальном изменении portfolio flow, schema,
+permissions или public data. Незакрытый план удаления Work по DEC-123 остаётся
+в active backlog; его технические/permission варианты требуют review перед кодом.

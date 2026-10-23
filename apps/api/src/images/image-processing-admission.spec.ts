@@ -2,7 +2,7 @@ import { ServiceUnavailableException } from '@nestjs/common';
 import sharp from 'sharp';
 import { describe, expect, it } from 'vitest';
 
-import { buildMediaPipeline } from '../core/media/media-pipeline';
+import { SharpImageProcessor } from '../core/media/media-pipeline';
 import { validateAndNormalizeProductImageUploads } from './image-policy';
 import { withImageProcessingAdmission } from './image-processing-admission';
 
@@ -31,6 +31,8 @@ async function holdAdmission() {
   return { release: () => release(), task };
 }
 
+const processor = new SharpImageProcessor();
+
 describe('image processing admission', () => {
   it('releases a slot after failure so later work can enter', async () => {
     await expect(
@@ -39,7 +41,7 @@ describe('image processing admission', () => {
       ]),
     ).rejects.toThrow('Unsupported image type');
     await expect(
-      buildMediaPipeline(
+      processor.process(
         { buffer: Buffer.from('broken image'), mimetype: 'image/jpeg' },
         'WORK_IMAGE',
       ),
@@ -53,7 +55,7 @@ describe('image processing admission', () => {
     await Promise.all(held.map((admission) => admission.task));
 
     const source = await png();
-    const result = await buildMediaPipeline(
+    const result = await processor.process(
       { buffer: source, mimetype: 'image/png' },
       'ACHIEVEMENT',
     );
@@ -70,7 +72,7 @@ describe('image processing admission', () => {
       ]),
     ).rejects.toBeInstanceOf(ServiceUnavailableException);
     await expect(
-      buildMediaPipeline(
+      processor.process(
         { buffer: source, mimetype: 'image/png' },
         'AUTHOR_PHOTO',
       ),
@@ -90,7 +92,7 @@ describe('image processing admission', () => {
       releaseOuter = resolve;
     });
     const outer = withImageProcessingAdmission(async () => {
-      await buildMediaPipeline(
+      await processor.process(
         { buffer: source, mimetype: 'image/png' },
         'AUTHOR_PHOTO',
       );

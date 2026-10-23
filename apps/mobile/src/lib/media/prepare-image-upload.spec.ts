@@ -1,0 +1,277 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import {
+  ImagePreparationError,
+  containedDimensions,
+  prepareImageUpload,
+} from './prepare-image-upload';
+
+const renderer = vi.hoisted(() => ({
+  resize: vi.fn(),
+  save: vi.fn(),
+  renderRelease: vi.fn(),
+  contextRelease: vi.fn(),
+  manipulate: vi.fn(),
+}));
+
+vi.mock('expo-image-manipulator', () => ({
+  SaveFormat: { JPEG: 'jpeg', PNG: 'png' },
+  ImageManipulator: { manipulate: renderer.manipulate },
+}));
+
+const options = {
+  maxDimension: 1600,
+  maxBytes: 2 * 1024 * 1024,
+  maxSourceBytes: 25 * 1024 * 1024,
+  quality: 0.85,
+};
+
+describe('image upload preparation', () => {
+  beforeEach(() => vi.clearAllMocks());
+  it('maintains aspect ratio without upscaling', () => {
+    expect(containedDimensions(6000, 4000, 1600)).toEqual({
+      width: 1600,
+      height: 1067,
+    });
+    expect(containedDimensions(200, 400, 1600)).toEqual({
+      width: 200,
+      height: 400,
+    });
+  });
+
+  it.each(['jpeg', 'png', 'webp'])('keeps small supported %s files unchanged', async (format) => {
+    const file = new File(['small'], `photo.${format}`, { type: `image/${format}` });
+    const input = { uri: 'blob:small', width: 800, height: 600, file };
+    await expect(prepareImageUpload(input, options)).resolves.toEqual({
+      uri: 'blob:small',
+      blob: file,
+    });
+    expect(renderer.manipulate).not.toHaveBeenCalled();
+  });
+
+  it('rejects an oversized source before decoding it', async () => {
+    const file = new File([new Uint8Array(25 * 1024 * 1024 + 1)], 'huge.jpg', {
+      type: 'image/jpeg',
+    });
+    await expect(
+      prepareImageUpload(
+        { uri: 'blob:huge', width: 200, height: 200, file },
+        options,
+      ),
+    ).rejects.toBeInstanceOf(ImagePreparationError);
+  });
+
+  it('converts unsupported formats and downsizes large images', async () => {
+    const input = new File(['heic'], 'image.heic', { type: 'image/heic' });
+    const output = new Blob(['jpeg'], { type: 'image/jpeg' });
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      blob: async () => output,
+    } as Response);
+    renderer.save.mockResolvedValue({ uri: 'blob:converted' });
+    renderer.manipulate.mockReturnValue({
+      resize: renderer.resize,
+      renderAsync: async () => ({
+        saveAsync: renderer.save,
+        release: renderer.renderRelease,
+      }),
+      release: renderer.contextRelease,
+    });
+
+    try {
+      const result = await prepareImageUpload(
+        {
+          uri: 'blob:heic',
+          width: 4000,
+          height: 3000,
+          file: input,
+        },
+        options,
+      );
+      expect(renderer.resize).toHaveBeenCalledWith({
+        width: 1600,
+        height: 1200,
+      });
+      expect(renderer.renderRelease).toHaveBeenCalled();
+      expect(renderer.contextRelease).toHaveBeenCalled();
+      expect(result.blob.type).toBe('image/jpeg');
+      expect(result.uri).toBe('blob:converted');
+    } finally {
+      fetchSpy.mockRestore();
+    }
+  });
+
+  it('automatically falls back to a small portrait when larger attempts exceed the byte budget', async () => {
+    const file = new File(['source'], 'portrait.png', { type: 'image/png' });
+    const oversized = new Blob([new Uint8Array(options.maxBytes + 1)], {
+      type: 'image/png',
+    });
+    const compact = new Blob(['compact'], { type: 'image/png' });
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce({
+        ok: true,
+        blob: async () => oversized,
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        blob: async () => oversized,
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        blob: async () => oversized,
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        blob: async () => compact,
+      } as Response);
+    renderer.save.mockResolvedValue({ uri: 'blob:prepared' });
+    renderer.manipulate.mockReturnValue({
+      resize: renderer.resize,
+      renderAsync: async () => ({
+        saveAsync: renderer.save,
+        release: renderer.renderRelease,
+      }),
+      release: renderer.contextRelease,
+    });
+    try {
+      const result = await prepareImageUpload(
+        { uri: 'blob:source', width: 4000, height: 3000, file },
+        options,
+      );
+      expect(result.blob.size).toBe(compact.size);
+      expect(renderer.resize).toHaveBeenLastCalledWith({
+        width: 640,
+        height: 480,
+      });
+      expect(renderer.contextRelease).toHaveBeenCalledTimes(4);
+    } finally {
+      fetchSpy.mockRestore();
+    }
+  });
+  it('honors a requested output format even for small inputs', async () => {
+    const file = new File(['jpeg'], 'photo.jpg', { type: 'image/jpeg' });
+    const output = new Blob(['png'], { type: 'image/png' });
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      blob: async () => output,
+    } as Response);
+    renderer.save.mockResolvedValue({ uri: 'blob:png' });
+    renderer.manipulate.mockReturnValue({
+      resize: renderer.resize,
+      renderAsync: async () => ({
+        saveAsync: renderer.save,
+        release: renderer.renderRelease,
+      }),
+      release: renderer.contextRelease,
+    });
+    try {
+      const prepared = await prepareImageUpload(
+        { uri: 'blob:jpeg', width: 300, height: 200, file },
+        { ...options, format: 'png' },
+      );
+      expect(renderer.save).toHaveBeenCalledWith({
+        format: 'png',
+        compress: options.quality,
+      });
+      expect(prepared.blob.type).toBe('image/png');
+    } finally {
+      fetchSpy.mockRestore();
+    }
+  });
+
+  it('supports lossless PNG output for callers that need transparency', async () => {
+    const input = new File(['heic'], 'image.heic', { type: 'image/heic' });
+    const output = new Blob(['png'], { type: 'image/png' });
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      blob: async () => output,
+    } as Response);
+    renderer.save.mockResolvedValue({ uri: 'blob:png' });
+    renderer.manipulate.mockReturnValue({
+      resize: renderer.resize,
+      renderAsync: async () => ({
+        saveAsync: renderer.save,
+        release: renderer.renderRelease,
+      }),
+      release: renderer.contextRelease,
+    });
+    try {
+      const result = await prepareImageUpload(
+        { uri: 'blob:heic', width: 2000, height: 1200, file: input },
+        { ...options, format: 'png' },
+      );
+      expect(renderer.save).toHaveBeenCalledWith({
+        format: 'png',
+        compress: options.quality,
+      });
+      expect(result.blob.type).toBe('image/png');
+    } finally {
+      fetchSpy.mockRestore();
+    }
+  });
+
+  it('rejects invalid dimensions instead of bypassing the pixel limit', async () => {
+    const file = new File(['small'], 'photo.png', { type: 'image/png' });
+    await expect(
+      prepareImageUpload(
+        { uri: 'blob:invalid', width: 0, height: 600, file },
+        options,
+      ),
+    ).rejects.toMatchObject({ code: 'INVALID_DIMENSIONS' });
+    expect(renderer.manipulate).not.toHaveBeenCalled();
+  });
+
+  it('rejects an oversized picker asset without fetching the entire source', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    try {
+      await expect(
+        prepareImageUpload(
+          {
+            uri: 'blob:large',
+            width: 500,
+            height: 500,
+            fileSize: options.maxSourceBytes + 1,
+          },
+          options,
+        ),
+      ).rejects.toMatchObject({ code: 'SOURCE_TOO_LARGE' });
+      expect(fetchSpy).not.toHaveBeenCalled();
+    } finally {
+      fetchSpy.mockRestore();
+    }
+  });
+
+  it('keeps transparency when resizing an oversized PNG by default', async () => {
+    const file = new File(['png-input'], 'transparent.png', {
+      type: 'image/png',
+    });
+    const output = new Blob(['png-output'], { type: 'image/png' });
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      blob: async () => output,
+    } as Response);
+    renderer.save.mockResolvedValue({ uri: 'blob:resized-png' });
+    renderer.manipulate.mockReturnValue({
+      resize: renderer.resize,
+      renderAsync: async () => ({
+        saveAsync: renderer.save,
+        release: renderer.renderRelease,
+      }),
+      release: renderer.contextRelease,
+    });
+    try {
+      const prepared = await prepareImageUpload(
+        { uri: 'blob:large-png', width: 2500, height: 1600, file },
+        options,
+      );
+      expect(renderer.save).toHaveBeenCalledWith({
+        format: 'png',
+        compress: options.quality,
+      });
+      expect(prepared.blob.type).toBe('image/png');
+    } finally {
+      fetchSpy.mockRestore();
+    }
+  });
+});

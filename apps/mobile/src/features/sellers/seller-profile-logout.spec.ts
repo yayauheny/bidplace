@@ -423,11 +423,11 @@ describe('seller profile logout', () => {
   it('does not logout immediately when only the photo changed', async () => {
     harness.launchImageLibraryAsync.mockResolvedValue({
       canceled: false,
-      assets: [{ uri: 'blob:photo' }],
+      assets: [{ uri: 'blob:photo', width: 500, height: 500 }],
     });
     vi.stubGlobal(
       'fetch',
-      vi.fn(async () => ({ blob: async () => new Blob(['photo']) })),
+      vi.fn(async () => ({ blob: async () => new Blob(['photo'], { type: 'image/png' }) })),
     );
     const view = mount();
     await until(

@@ -1,5 +1,7 @@
 # Заявка автора и история Work — план адаптации backend
 
+> HISTORICAL: B6/client status ниже относится к backend checkpoint 2026-10-11. Client/API cutover и browser acceptance уже записаны в [текущем статусе](../../../product/11-PROJECT-STATUS.md) и [UI completion](../../../audits/current/2026-10-21-UI-COMPLETION.md); не исполнять старый план заново.
+
 Дата: 2026-10-11
 Статус: Backend API реализован, первое и повторное ревью закрыты на `fix/author-story-review`. Чтение `materials` и `technique` во всех затронутых ответах идёт из терминов ревизии, которую представляет конкретный DTO. UI и API client не переведены. Пользовательский сценарий остаётся Partial до этой интеграции. Совместный выпуск backend и клиентов — отдельный release gate. Старый write-контракт с полями `materials` и `technique` несовместим и не является временным вторым источником.
 

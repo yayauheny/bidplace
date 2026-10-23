@@ -60,6 +60,7 @@ export async function importLegacyMedia(
       record.purpose,
       { buffer: Buffer.from(stored.bytes), mimetype: record.mimeType },
       `legacy:${mediaChecksum(Buffer.from(record.key))}`,
+      true,
     );
     await runReadCommittedTransaction(prisma, async (tx) => {
       const result = await record.attach(tx, asset.id);

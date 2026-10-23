@@ -486,7 +486,7 @@ export function SellerProfileScreen() {
     savePending: submission.saveMutation.isPending,
     accountBusy: accountLogout.busy,
     revisionSubmitActive: submission.revisionSubmitActive,
-    inputsLocked: guard.inputsLocked,
+    inputsLocked: guard.inputsLocked || photo.preparing,
     achievementWriteActive,
   };
   const basicsAction = (
@@ -498,7 +498,7 @@ export function SellerProfileScreen() {
         accountLogout.busy ||
         submission.revisionSubmitActive ||
         guard.inputsLocked ||
-        achievementWriteActive
+        achievementWriteActive || photo.preparing
       }
       onPress={() => void submission.continueFromStep(1)}
       label="Продолжить"
@@ -517,7 +517,7 @@ export function SellerProfileScreen() {
         accountLogout.busy ||
         submission.revisionSubmitActive ||
         guard.inputsLocked ||
-        achievementWriteActive
+        achievementWriteActive || photo.preparing
       }
       onPress={() => void submission.continueFromStep(2)}
       label="Продолжить"
@@ -536,7 +536,7 @@ export function SellerProfileScreen() {
         accountLogout.busy ||
         submission.revisionSubmitActive ||
         guard.inputsLocked ||
-        achievementWriteActive
+        achievementWriteActive || photo.preparing
       }
       onPress={() => {
         const missing: Array<'shortDescription'> = [];
@@ -587,7 +587,8 @@ export function SellerProfileScreen() {
     uri: photo.preview,
     local: photo.photoBlob !== null,
     failed: photo.photoFailed,
-    disabled: !fieldsEditable,
+    disabled: !fieldsEditable || photo.preparing,
+    preparing: photo.preparing,
     onChoose: () => void photo.choosePhoto(),
     onFailed: () => photo.setPhotoFailed(true),
   };
@@ -611,7 +612,7 @@ export function SellerProfileScreen() {
     !canSave ||
     accountLogout.busy ||
     guard.inputsLocked ||
-    achievementWriteActive;
+    achievementWriteActive || photo.preparing;
   const wizardSubmitDisabled = submitDisabled || achievementDraftDirty;
 
   return (
@@ -685,7 +686,7 @@ export function SellerProfileScreen() {
                         disabled={
                           submission.revisionSubmitActive ||
                           guard.inputsLocked ||
-                          achievementWriteActive
+                          achievementWriteActive || photo.preparing
                         }
                         onPress={() => requestExit('home')}
                       />
@@ -748,7 +749,7 @@ export function SellerProfileScreen() {
                       accountLogout.busy ||
                       submission.revisionSubmitActive ||
                       guard.inputsLocked ||
-                      achievementWriteActive
+                      achievementWriteActive || photo.preparing
                     }
                     onSave={requestSave}
                     canSubmitRevision={canSubmitRevision}

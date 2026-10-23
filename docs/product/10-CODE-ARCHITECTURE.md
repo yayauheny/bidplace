@@ -31,8 +31,8 @@ owns exact results and blockers. Migration is a separate operator step, never co
 process reconciles persisted operations without another worker or queue service.
 Short DB transactions record intent/attach/switch; tiered S3 writes happen outside
 transactions. Operations claim exact objects with renewable leases, so restore
-cannot overlap an unfinished DELETE of the same object. SOURCE is private and
-byte-identical; metadata-stripped WebP derivatives use immutable asset/pipeline
+cannot overlap an unfinished DELETE of the same object. SOURCE is private; new uploads store a normalized master up to 5 MiB
+(2 MiB for author photos), while existing/imported sources retain their bytes; metadata-stripped WebP derivatives use immutable asset/pipeline
 keys. Cloudflare purge is a separate `PublicMediaCache` boundary.
 
 `S3_BUCKET` is private; `S3_PUBLIC_BUCKET` must differ. HTTPS
@@ -40,7 +40,7 @@ keys. Cloudflare purge is a separate `PublicMediaCache` boundary.
 `CLOUDFLARE_CACHE_TOKEN` configure exact-URL purge; no secrets enter contracts.
 Public objects use browser revalidation and a separate edge TTL. SOURCE uses
 `pipelineVersion=source` as a non-null identity discriminator; derivatives use
-`p1`. SQL constraints prevent public SOURCE and invalid dimensions.
+`p2` for normalized uploads and `p1` for existing/imported objects. SQL constraints prevent public SOURCE and invalid dimensions.
 
 `POST /api/products/:id/images` optionally accepts `Idempotency-Key` for one
 image. Client selections retain one key per file across retries; server stage
@@ -163,7 +163,7 @@ See [`11-PROJECT-STATUS.md`](11-PROJECT-STATUS.md) for remaining gates.
 - Mobile author application (`apps/mobile/src/features/sellers/seller-profile-screen.tsx`, `author-application-*-step.tsx`, `AuthorApplicationAchievements.tsx`) renders four URL-owned steps against portfolio application reads/writes. Shared Zod in `seller-profile.ts` describes DTO and write payloads (for example `shortDescription: null` clears on PATCH); step UI and local hints are not readiness or stage authority. Server clamp, `applicationStage`, and validation errors remain authoritative. Achievement append/delete are JSON writes validated on the API (`z.output`); Work creation-story media and steps stay on the separate Product path.
 - `packages/database` owns Prisma schema, additive migrations and deterministic local/test seed. Demo seed may run only with `NODE_ENV=development|test`, `APP_ENV=local` and `ALLOW_DESTRUCTIVE_DEMO_SEED=true`; production-like profiles fail before writes. Local seed is the Figma Home catalog (four public authors plus `pixelp`, nine public works including two demo vex works, no Listing/Bid/Order rows). User-facing seed copy is production-quality (`DEC-092`). `CuratorSelection` points at Dali (`daliEstate1` / `pixelp`) with curator `vex` and the Figma `note`. Pre-production amendment of the unreleased `curator_selections` CREATE TABLE (`note TEXT`, `curator_seller_profile_id`, `DEC-090`/`DEC-091`) is the only in-place migration edit; after first production apply, further columns are additive. Seller `biography` is an additive column (`20260914200000_add_seller_biography`). This does not authorize editing commerce/baseline migrations (`DEC-087`). `scripts/ops/commerce-inventory.mjs` is a read-only leftover-listing inventory; it is not a write path and is not a staging/production dry-run unless that environment is the connected target.
 - `packages/config` owns env-file parsing through Node `util.parseEnv`. One leading U+FEFF is removed from the file text before that parse; a later BOM, including one inside a quoted value, stays. A missing file is an empty record. Explicit process env overrides file values. `apps/api/src/core/config/env.ts` validates that merge once and freezes the result. `ServerEnvModule.forRoot` provides that same object as `SERVER_ENV` for one Nest application context. `main.ts` and `apps/api/test/integration/http-test-app.ts` are the bootstrap loaders. Analytics, auth, OTP, password reset, mail, image storage, and rate limits inject the snapshot. `loadServerEnv` still copies unset keys into `process.env`, because `PrismaService` constructs `PrismaClient` without a datasource argument and Prisma reads `DATABASE_URL` from the process environment. A second application context gets its own snapshot through its own `ServerEnvModule.forRoot` call. The provider is the existing Nest dynamic module.
-- `apps/api/src/core/config/env-profile.ts` owns the `NODE_ENV` × `APP_ENV` predicates. `APP_ENV=production` requires `NODE_ENV=production`; `NODE_ENV=production` cannot combine with `APP_ENV=local`. Production SMTP, service rules, password-reset URL, session-secret length and test-bypass prohibitions apply when either variable is `production`. Staging keeps its previous requirement shape: production security only when `NODE_ENV=production`.
+- `apps/api/src/core/config/env-profile.ts` owns the `NODE_ENV` × `APP_ENV` predicates. `APP_ENV=production` requires `NODE_ENV=production`; `NODE_ENV=production` cannot combine with `APP_ENV=local`. Production SMTP, service rules, password-reset URL, session/OTP key length and test-bypass prohibitions apply when either variable is `production`. Staging keeps its previous requirement shape: production security only when `NODE_ENV=production`.
 - Release automation is deliberately layered: root `pnpm verify` is the local and
   standard automatic CI gate (including mobile unit tests and the E2E database
   fence). Full browser E2E is not run automatically on pull requests or pushes:
@@ -296,14 +296,14 @@ SellerProfile
   interleaves published non-cover `ProductImage` rows between paragraphs.
   `ProductCreationStep` remains owner-only and is not a public History CMS;
 - persisted entities expose `createdAt` and `updatedAt`; append-only audit records retain immutable business facts;
-- buyer accepts a versioned service-rules text; `auth.service.ts` stores the acceptance and `POST /api/auth/rules/accept` returns the canonical `{ user }` auth response. Mobile derives session capability from one React Query `['user', 'me']` record. A structured 401 from any query or mutation clears that record and user/seller/admin caches once; 403 and infrastructure errors preserve the authenticated state. Password registration and forgot-password require Turnstile proof; login accepts an optional adaptive Turnstile token after challenge. **Idempotency keys are required only** on email OTP send, OTP verify, and forgot-password (`packages/contracts/src/auth.ts`, `packages/api-client/src/auth.ts`); register/login do not take idempotency keys. Email verification state exposes `serverNow`, `sendStatus`, and deadline fields from the API; mobile `use-email-verification.ts` drives copy and local countdown ticks only and does not auto-send mail. OTP send/verify and password-reset send delegate durable quotas, pauses, operation replay, and SMTP outcome classification to `AuthAbuseService`; cheap per-IP limits stay in `RateLimitService`. Mail still flows through shared `MailTransport` (`SmtpMailTransport` on the production security profile, `LocalMailTransport` otherwise) with a test-only OTP bypass only for `NODE_ENV=test` and `APP_ENV=local`. Unverified email correction and OTP verify share the same user row lock and expiry recheck as reset completion. Policy numbers and SMTP/Turnstile rules are owned by [`13-APPLICATION-SECURITY.md`](13-APPLICATION-SECURITY.md) (**DEC-109**);
+- buyer accepts a versioned service-rules text; `auth.service.ts` stores the acceptance and `POST /api/auth/rules/accept` returns the canonical `{ user }` auth response. Mobile derives session capability from one React Query `['user', 'me']` record. A structured 401 from any query or mutation clears that record and user/seller/admin caches once; 403 and infrastructure errors preserve the authenticated state. Registration and forgot-password require Turnstile proof; login accepts an optional adaptive Turnstile token after challenge. **Idempotency keys are required only** on email OTP send, OTP verify, and forgot-password (`packages/contracts/src/auth.ts`, `packages/api-client/src/auth.ts`); register/login do not take idempotency keys. Email verification state exposes `serverNow`, `sendStatus`, and deadline fields from the API; mobile `use-email-verification.ts` drives copy and local countdown ticks only and does not auto-send mail. OTP send/verify and password-reset send delegate durable quotas, pauses, operation replay, and SMTP outcome classification to `AuthAbuseService`; cheap per-IP limits stay in `RateLimitService`. Mail still flows through shared `MailTransport` (`SmtpMailTransport` on the production security profile, `LocalMailTransport` otherwise) with a test-only OTP bypass only for `NODE_ENV=test` and `APP_ENV=local`. Unverified email correction and OTP verify share the same user row lock and expiry recheck as reset completion. Policy numbers and SMTP/Turnstile rules are owned by [`13-APPLICATION-SECURITY.md`](13-APPLICATION-SECURITY.md) (**DEC-109**);
 - leftover Listing/Bid/Order rows remain in Prisma. Hide/unhide and admin
   seller/product moderation still fail closed when a `SCHEDULED` or `LIVE`
   Listing exists (`hasBlockingListing`). There is no listing/bid/order HTTP,
   no Socket.IO, no ScheduleModule lifecycle, and no `COMMERCE_ENABLED` gate.
   Ops leftover inventory is `scripts/ops/commerce-inventory.mjs`. The removed
   application code stays on `feature/commerce-runtime-archive` @ `19eb40e`.
-- password recovery lives in `apps/api/src/password-reset/`: forgot has neutral response bodies; SMTP timing remains a separate verification concern; per-IP forgot limits run before user lookup; durable reset-send ledger, cooldowns, and Turnstile run through `AuthAbuseService`; reset consumes a hashed single-use token, invalidates sibling tokens, updates `passwordHash` and increments `sessionVersion` atomically under the user lock; `MailTransport` sends reset links; `core/email/smtp-transport.ts` builds Nodemailer options with single-address recipient guard; production requires `PASSWORD_RESET_URL_BASE` for reset links and local dev may fall back to `resolveCorsOrigin()`;
+- password recovery lives in `apps/api/src/password-reset/`: forgot is neutral and never enumerates accounts; per-IP forgot limits run before user lookup; durable reset-send ledger, cooldowns, and Turnstile run through `AuthAbuseService`; reset consumes a hashed single-use token, invalidates sibling tokens, updates `passwordHash` and increments `sessionVersion` atomically under the user lock; `MailTransport` sends reset links; `core/email/smtp-transport.ts` builds Nodemailer options with single-address recipient guard; production requires `PASSWORD_RESET_URL_BASE` for reset links and local dev may fall back to `resolveCorsOrigin()`;
 - admin emergency controls live in `apps/api/src/admin/admin-user.service.ts`: exact email user lookup, reasoned ban/unban with `sessionVersion++` on ban, and session revoke. Listing emergency cancel, needs-order recovery and order replacement HTTP are not on the active boot graph.
 - Production SMTP transport must either use implicit TLS or STARTTLS with `requireTLS: true`. `SMTP_AUTH_MODE` explicitly selects `none` or `login`; login requires both `SMTP_USERNAME` and `SMTP_PASSWORD`, while none omits Nodemailer auth. Empty local relay credentials normalize to absent values and production configuration still fails closed for invalid partial auth.
 - automatic winner replacement and AI-assisted evidence assessment are outside MVP and have no approved future workflow.
@@ -347,9 +347,9 @@ SellerProfile
   then `ImageStore.get`. Per-user upload rate limits apply to product, creation-step,
   achievement, and profile-photo uploads. Author, achievement, and work decode share
   one process-local admission of two operations; nested pipeline validation reuses
-  that slot and releases it on failure. A new Work upload that already exceeds gallery
-  count or total bytes is rejected before Sharp/R2. The locked transaction repeats
-  the capacity check. Replaying bytes already attached to the current revision does
+  that slot and releases it on failure. A new Work upload that exceeds gallery count or targets an already full byte
+  budget is rejected before Sharp/R2. The locked transaction checks the remaining
+  capacity against the normalized SOURCE. Replaying bytes already attached to the current revision does
   not create another image. See
   `13-APPLICATION-SECURITY.md` and `apps/api/src/images/image-policy.ts`.
 - Publication is confirmed in the request that enqueued it. HTTP success means the
@@ -390,7 +390,7 @@ The admin seller photo uses the same identity plus the photo checksum, so a
 resubmitted revision replaces the displayed bytes. Work and achievement image
 reads use the existing endpoints. The mobile API client sends the session
 cookie with `credentials: 'include'` and does not attach an Authorization
-opaque session cookie. `OptionalSessionAuthGuard` validates that cookie; supplied bearer credentials are rejected.
+bearer token. `OptionalBearerAuthGuard` accepts that cookie or a bearer token.
 Public and owner projections stay on their existing records.
 
 The active API is an HTTP process. There is no scheduler or Socket.IO adapter on the boot graph. Do not add future sale types, payments, delivery or automatic winner replacement until a product decision requires them. Commerce application code is not restored from leftover Prisma tables; the archive branch is `feature/commerce-runtime-archive` @ `19eb40e`.
@@ -425,8 +425,11 @@ transaction. Owner, admin, and public author DTOs include selected term,
 category, and direction metadata, including hidden rows. `GET /categories` and
 `GET /catalog/terms` stay active-only. `normalizeCatalogName` is the only name
 identity; writers set `normalizedName`, and the column has no SQL default or
-insert trigger. The mobile and admin clients still speak the previous contracts,
-including the removed free-text materials and technique writes.
+insert trigger. The earlier client-cutover warning described the 2026-10-11
+checkpoint. The current mobile story owner calls `api.products.replaceCreation`
+with revision blocks; client/API integration and its verification are tracked in
+[project status](11-PROJECT-STATUS.md) and the
+[UI completion audit](../audits/current/2026-10-21-UI-COMPLETION.md).
 
 Contracts belong to [05-MVP-RFC.md](05-MVP-RFC.md); affected consumers, migration
 and API work are in [the backend plan](../archive/tasks/2026-10-11-author-story-backend/PLAN.md).
@@ -444,7 +447,7 @@ Pilot operations are documented in [`docs/ops/00-RELEASE-AND-BACKUP.md`](../ops/
 
 ### Author email verification boundary
 
-`VerifiedEmailGuard` runs after `SessionAuthGuard` on authenticated Author
+`VerifiedEmailGuard` runs after `BearerAuthGuard` on authenticated Author
 application, Work, and related media mutations. It reads `User.emailVerifiedAt`
 from persistence and returns 403 for an unverified session; read/public routes
 remain outside this boundary. Mobile keeps `/me` in `['user','me']` as the sole
@@ -560,6 +563,55 @@ UI review follow-up (2026-10-21): the existing PageChromeContext carries actual
 for dock clearance; screens do not independently derive navigation visibility.
 No server, persistence or API boundary changed. Focus-after-enter lives in the
 existing use-return-focus module and is shared by auth and general dialogs.
+
+## 2026-10-22 — Normalized image processing boundary
+
+`images/ImageProcessor` is the Nest DI contract; `core/media/SharpImageProcessor`
+in `media-pipeline.ts` owns all Sharp calls, including the legacy normalization
+entry point re-exported by `image-policy.ts`. Controllers and business services
+use the contract/policy rather than codec APIs. Normalization is bounded: preserve
+compact inputs or use a smaller lossless result, then progressively encode and
+resize oversized sources without cropping or flattening alpha. Derivatives are
+built from the persisted master, so upload recovery can reproduce their checksums.
+
+An idempotent gallery request accepts one JPEG/PNG/WebP up to 25 MiB; legacy
+multi-file requests and story uploads retain the 5 MiB input limit. Gallery input is bounded at 8192px per edge / 50_331_648 pixels;
+stored masters and other purposes retain 4096px / 16_777_216 pixels. `WorkImageUploadInterceptor` keeps large
+input single-file, avoiding a ten-file 250 MiB buffered request. Gallery admission
+allows 20 requests/minute for the initial ten files and manual retries; the shared
+process admission remains two image-processing operations.
+
+`MediaOperation.inputChecksum` hashes the submitted MIME and bytes independently
+of the normalized object checksum. Nullable values preserve old replay behavior;
+new assets use `MediaProvenance.NORMALIZED`. Apply migration
+`20261022120000_normalized_media_source` before the new API release. No existing
+objects are rewritten. Both p1 and p2 URLs remain accepted by transport/contracts.
+
+The Work hook reads/uploads one asset at a time, releases confirmed Blob/File
+references, invalidates owner queries after each confirmation, and retains the
+current file/key for retry. Its size-based deadline (60 seconds plus one second
+per 64 KiB; 460 seconds at 25 MiB), explicit timeout message and session/unmount
+abort preserve unknown-response replay. Wizard, native Back and browser
+Back/unload are guarded during preparation/upload. Preparation and per-file
+results use existing UI components; portrait preparation uses the Expo helper
+from PR #56, with a final 640px fallback instead of 256px.
+
+Review corrections (2026-10-23): gallery input is bounded at 8192px per edge /
+50_331_648 pixels; stored masters and other purposes retain 4096px / 16_777_216
+pixels. Compact 16-bit PNGs remain byte-identical. Oversized artwork is encoded
+at quality 90/82/70, then resized to 2560/1600px with a final 1600px quality-60
+attempt; no 800/256px gallery fallback remains.
+
+Legacy ImageStore uploads persist a nullable unique owner/Work/key hash and
+submitted MIME/byte checksum on ProductImage. Replay runs before processing
+and again under the product row lock; conflicting bytes or an earlier revision
+return 409. Only metadata-stripped PREVIEW bytes are stored in this publicly
+served fallback. Lifecycle-enabled uploads check legacy identities too,
+preserving retries across cutover. Apply migration
+`20261022180000_legacy_image_upload_identity` before the API release.
+
+Upload retries reuse a verified persisted SOURCE when available, so encoder
+policy changes do not alter a partially written operation manifest.
 
 ## Server sessions (2026-10-22)
 

@@ -1,5 +1,9 @@
 import { useState, type ReactNode } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Image as LocalPreviewImage,
+  View,
+} from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
@@ -20,9 +24,11 @@ import { MotionPressable } from '../../components/ui/MotionPressable';
 import { FigmaIcon } from '../../components/figma/FigmaIcon';
 import { ProductBlockActions } from './product-block-actions';
 import { productMediaStyle } from '../../components/ui/product-media-style';
+import type { UploadImageState } from './product-draft-image-actions';
 import { productWizardStep } from './product-draft-wizard';
 
 export type DraftImageRowProps = {
+  local?: boolean;
   url: string;
   position: number;
   editable: boolean;
@@ -34,6 +40,7 @@ export type DraftImageRowProps = {
 };
 
 export function DraftImageRow({
+  local = false,
   url,
   position,
   editable,
@@ -54,17 +61,29 @@ export function DraftImageRow({
       onMove={onMove}
       onDelete={onDelete}
     >
-      <ResilientRemoteImage
-        uri={getApiAssetUrl(url)}
-        component="ProductGallery"
-        accessibilityLabel={`Изображение предмета ${position + 1}`}
-        fallbackLabel={`Изображение ${position + 1} недоступно`}
-        style={{
-          ...productMediaStyle('100%', palette),
-          borderRadius: designTokens.radius.mediaTile,
-        }}
-        contentFit="contain"
-      />
+      {local ? (
+        <LocalPreviewImage
+          source={{ uri: url }}
+          accessibilityLabel={`Выбранное изображение ${position + 1}`}
+          resizeMode="contain"
+          style={{
+            ...productMediaStyle('100%', palette),
+            borderRadius: designTokens.radius.mediaTile,
+          }}
+        />
+      ) : (
+        <ResilientRemoteImage
+          uri={getApiAssetUrl(url)}
+          component="ProductGallery"
+          accessibilityLabel={`Изображение предмета ${position + 1}`}
+          fallbackLabel={`Изображение ${position + 1} недоступно`}
+          style={{
+            ...productMediaStyle('100%', palette),
+            borderRadius: designTokens.radius.mediaTile,
+          }}
+          contentFit="contain"
+        />
+      )}
     </ProductBlockActions>
   );
 }
@@ -129,6 +148,7 @@ export type ProductDraftImagesStepProps = {
   reorderPending: boolean;
   removePending: boolean;
   uploadPending: boolean;
+  uploadFiles?: UploadImageState[];
   uploadError: boolean;
   uploadMessage?: string | null;
   imageSelectionError: string | null;
@@ -153,6 +173,7 @@ export function ProductDraftImagesStep({
   reorderPending,
   removePending,
   uploadPending,
+  uploadFiles = [],
   uploadError,
   uploadMessage,
   imageSelectionError,
@@ -165,6 +186,16 @@ export function ProductDraftImagesStep({
   onContinueToStory,
 }: ProductDraftImagesStepProps) {
   const palette = useAppTheme();
+  const displayImages = [
+    ...images,
+    ...uploadFiles
+      .filter((file) => file.status !== 'done')
+      .map((file, index) => ({
+        id: file.key,
+        url: file.uri,
+        position: images.length + index,
+      })),
+  ];
   const showWizardNavigation =
     isCreationFlow && wizardStep === productWizardStep.images;
 
@@ -183,7 +214,7 @@ export function ProductDraftImagesStep({
           </AppText>
         ) : null}
         <DraftImageGrid
-          images={images}
+          images={displayImages}
           addAction={
             editable && images.length < 10 ? (
               <MotionPressable
@@ -215,7 +246,12 @@ export function ProductDraftImagesStep({
               key={image.id}
               url={image.url}
               position={image.position}
-              editable={editable}
+              local={uploadFiles.some((file) => file.key === image.id)}
+              editable={
+                editable &&
+                !uploadPending &&
+                !uploadFiles.some((file) => file.key === image.id)
+              }
               isLast={image.position === images.length - 1}
               isReordering={reorderPending}
               isRemoving={removePending}
@@ -224,6 +260,24 @@ export function ProductDraftImagesStep({
             />
           )}
         />
+        {uploadFiles.map((file, index) => (
+          <AppText
+            key={file.key}
+            role="bodySmall"
+            tone={file.status === 'error' ? 'danger' : 'secondary'}
+            accessibilityLiveRegion="polite"
+          >
+            {file.status === 'queued'
+              ? `Изображение ${index + 1}: ожидает загрузки`
+              : file.status === 'preparing'
+                ? `Подготовка ${index + 1} из ${uploadFiles.length}…`
+                : file.status === 'uploading'
+                  ? `Загрузка ${index + 1} из ${uploadFiles.length}…`
+                  : file.status === 'done'
+                    ? `Изображение ${index + 1}: загружено`
+                    : `Изображение ${index + 1}: не удалось загрузить`}
+          </AppText>
+        ))}
         {uploadError || uploadMessage ? (
           <AppText
             role="bodySmall"
@@ -260,6 +314,7 @@ export function ProductDraftImagesStep({
           </AppText>
           <SecondaryButton
             label="Назад к описанию"
+            disabled={uploadPending}
             onPress={() => onBackToAbout()}
           />
           <PrimaryButton
