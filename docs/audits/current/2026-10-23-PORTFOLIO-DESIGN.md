@@ -178,3 +178,19 @@ Independent code/lifecycle/responsive reviews accepted after correcting terminal
 error recovery and narrow-screen error layout. Evidence delivered under
 `upload-review/{chromium,webkit}-upload-partial-{width}.png`. Native acceptance
 and precise Figma error-state references remain outside this check.
+
+
+## PR61 CI teardown follow-up
+
+Verify run39964251769 reached1032 passing mobile assertions but failed on an
+unhandled React scheduler exception (`window is not defined`) after the author
+characterization fixture disposed its jsdom environment. The fixture's inherited
+cleanup removed DOM nodes without unmounting most React roots or clearing their
+QueryClients. The existing owner now tracks mounted-view disposers, unmounts all
+roots, clears clients and flushes queued work before teardown. Explicit per-test
+unmount removes its disposer, avoiding duplicate cleanup. No production code,
+assertions, error handling or runner thresholds were weakened.
+
+Validation:10 characterization cases and full144 files/1032 tests withCI=true
+and2 workers PASS without unhandled errors; mobile typecheck/lint and independent
+review PASS. The next remote CI run remains the acceptance check for this fix.

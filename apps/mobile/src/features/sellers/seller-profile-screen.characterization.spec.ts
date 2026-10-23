@@ -346,6 +346,8 @@ function response(parentStatus: string, revisionStatus: string, stage: Stage) {
   };
 }
 
+const mountedViews = new Set<() => void>();
+
 function mount() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
@@ -357,6 +359,13 @@ function mount() {
   const container = document.createElement('div');
   document.body.append(container);
   const root: Root = createRoot(container);
+  const unmount = () => {
+    act(() => root.unmount());
+    queryClient.clear();
+    container.remove();
+    mountedViews.delete(unmount);
+  };
+  mountedViews.add(unmount);
   const render = () =>
     createElement(
       QueryClientProvider,
@@ -369,12 +378,7 @@ function mount() {
   return {
     container,
     queryClient,
-    unmount() {
-      act(() => {
-        root.unmount();
-      });
-      container.remove();
-    },
+    unmount,
   };
 }
 
@@ -430,7 +434,9 @@ beforeEach(() => {
   });
 });
 
-afterEach(() => {
+afterEach(async () => {
+  for (const unmount of mountedViews) unmount();
+  await flush();
   vi.unstubAllGlobals();
   document.body.replaceChildren();
 });
