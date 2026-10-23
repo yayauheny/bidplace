@@ -127,8 +127,13 @@ vi.mock('../../providers/api-provider', () => ({
 vi.mock('../../components/layout', () => ({
   AppShell: ({ children }: { children?: ReactNode }) =>
     createElement('div', null, children),
-  FormPageShell: ({ children }: { children?: ReactNode }) =>
-    createElement('div', null, children),
+  FormPageShell: ({
+    children,
+    bottomAction,
+  }: {
+    children?: ReactNode;
+    bottomAction?: ReactNode;
+  }) => createElement('div', null, children, bottomAction),
   FormPageColumns: ({
     children,
     sidebar,
@@ -1490,7 +1495,10 @@ describe('seller profile save reconciliation', () => {
     view.unmount();
 
     await act(async () => {
-      finishPicker({ canceled: false, assets: [{ uri: 'blob:late', width: 500, height: 500 }] });
+      finishPicker({
+        canceled: false,
+        assets: [{ uri: 'blob:late', width: 500, height: 500 }],
+      });
       await Promise.resolve();
     });
     expect(readBlob).not.toHaveBeenCalled();
@@ -1539,12 +1547,18 @@ describe('seller profile save reconciliation', () => {
     click(view.container, 'Изменить фото');
     click(view.container, 'Изменить фото');
     await act(async () => {
-      resolveSecond({ canceled: false, assets: [{ uri: 'blob:second', width: 500, height: 500 }] });
+      resolveSecond({
+        canceled: false,
+        assets: [{ uri: 'blob:second', width: 500, height: 500 }],
+      });
       await Promise.resolve();
     });
     await flush();
     await act(async () => {
-      resolveFirst({ canceled: false, assets: [{ uri: 'blob:first', width: 500, height: 500 }] });
+      resolveFirst({
+        canceled: false,
+        assets: [{ uri: 'blob:first', width: 500, height: 500 }],
+      });
       await Promise.resolve();
     });
     await flush();
@@ -1556,6 +1570,7 @@ describe('seller profile save reconciliation', () => {
   });
 
   it('preserves the claimed slug when the auth epoch resets the draft', async () => {
+    harness.params = { step: '1' };
     harness.authSlug = 'claimed-author';
     harness.getMyProfile.mockRejectedValue(
       new ApiClientError('missing', { kind: 'not_found', status: 404 }),
@@ -1582,6 +1597,7 @@ describe('seller profile save reconciliation', () => {
   });
 
   it('hydrates only the new session slug even if the auth context is stale', async () => {
+    harness.params = { step: '1' };
     harness.authSlug = 'previous-author';
     harness.getMyProfile.mockRejectedValue(
       new ApiClientError('missing', { kind: 'not_found', status: 404 }),
@@ -1618,6 +1634,7 @@ describe('seller profile save reconciliation', () => {
   });
 
   it('does not restore the old slug and keeps the new account nickname editable', async () => {
+    harness.params = { step: '1' };
     harness.authSlug = 'previous-author';
     harness.getMyProfile.mockRejectedValue(
       new ApiClientError('missing', { kind: 'not_found', status: 404 }),
@@ -1721,7 +1738,10 @@ describe('seller profile save reconciliation', () => {
       () => harness.push.mock.calls.length === 1,
       'next step',
     );
-    expect(harness.push).toHaveBeenCalledWith({ pathname: '/profile', params: { step: '3' } });
+    expect(harness.push).toHaveBeenCalledWith({
+      pathname: '/profile',
+      params: { step: '3' },
+    });
     await act(async () => {
       finishOldRead(draft);
       await Promise.resolve();
@@ -1786,7 +1806,10 @@ describe('seller profile save reconciliation', () => {
     click(view.container, 'Продолжить');
     await flush();
     expect(harness.updateProfile).toHaveBeenCalledTimes(2);
-    expect(harness.push).toHaveBeenCalledWith({ pathname: '/profile', params: { step: '2' } });
+    expect(harness.push).toHaveBeenCalledWith({
+      pathname: '/profile',
+      params: { step: '2' },
+    });
     view.unmount();
   });
 
@@ -2099,7 +2122,10 @@ describe('seller profile save reconciliation', () => {
         () => new Promise(() => undefined),
       );
       await act(async () => {
-        resolvePicker({ canceled: false, assets: [{ uri: 'blob:photo-a', width: 500, height: 500 }] });
+        resolvePicker({
+          canceled: false,
+          assets: [{ uri: 'blob:photo-a', width: 500, height: 500 }],
+        });
         await Promise.resolve();
       });
       await flush();
@@ -2515,7 +2541,10 @@ describe('seller profile validation freshness', () => {
     expect(harness.updateProfile.mock.calls[0]?.[0]).toEqual(
       expect.objectContaining({ telegramUrl: 'https://t.me/maker_art' }),
     );
-    expect(harness.push).toHaveBeenCalledWith({ pathname: '/profile', params: { step: '1' } });
+    expect(harness.push).toHaveBeenCalledWith({
+      pathname: '/profile',
+      params: { step: '1' },
+    });
     view.unmount();
   });
 
@@ -2542,7 +2571,103 @@ describe('seller profile validation freshness', () => {
         publicEmail: null,
       }),
     );
-    expect(harness.push).toHaveBeenCalledWith({ pathname: '/profile', params: { step: '3' } });
+    expect(harness.push).toHaveBeenCalledWith({
+      pathname: '/profile',
+      params: { step: '3' },
+    });
+    view.unmount();
+  });
+
+  it('keeps the photo and values across UI steps and a failed create, then reconciles a lost response before retry', async () => {
+    const photo = new Blob(['portrait'], { type: 'image/png' });
+    harness.params = { step: 'photo' };
+    harness.getMyProfile.mockRejectedValue(
+      new ApiClientError('missing', { kind: 'not_found', status: 404 }),
+    );
+    harness.launchImageLibraryAsync.mockResolvedValue({
+      canceled: false,
+      assets: [{ uri: 'blob:portrait', width: 500, height: 500 }],
+    });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({ blob: async () => photo })),
+    );
+    const view = mount();
+    await until(
+      view.container,
+      () => Boolean(findButton(view.container, 'Загрузить фото')),
+      'photo step',
+    );
+    click(view.container, 'Загрузить фото');
+    await until(
+      view.container,
+      () => Boolean(findButton(view.container, 'Изменить фото')),
+      'selected photo',
+    );
+    expect(harness.createProfile).not.toHaveBeenCalled();
+    click(view.container, 'Продолжить');
+    expect(harness.setParams).toHaveBeenLastCalledWith({ step: '1' });
+    harness.params = { step: '1' };
+    view.rerender();
+    setInput(view.container, 'Никнейм', 'synthetic-author');
+    setInput(view.container, 'Имя или название', 'Synthetic Author');
+    selectCountry(view.container, 'Беларусь');
+    harness.params = { step: 'photo' };
+    view.rerender();
+    expect(findButton(view.container, 'Изменить фото')).toBeInstanceOf(
+      HTMLButtonElement,
+    );
+    harness.params = { step: '1' };
+    view.rerender();
+    expect(inputValue(view.container, 'Имя или название')).toBe(
+      'Synthetic Author',
+    );
+    harness.claimSlug.mockResolvedValue({ slug: 'synthetic-author' });
+    harness.createProfile.mockRejectedValueOnce(new Error('response lost'));
+    await until(
+      view.container,
+      () => !buttonDisabled(view.container, 'Продолжить'),
+      'ready',
+    );
+    click(view.container, 'Продолжить');
+    click(view.container, 'Продолжить');
+    await until(
+      view.container,
+      () =>
+        view.container.textContent?.includes('response lost') === true ||
+        harness.createProfile.mock.calls.length === 1,
+      'create error',
+    );
+    await flush();
+    expect(harness.createProfile).toHaveBeenCalledTimes(1);
+    expect(harness.createProfile.mock.calls[0]?.[1]).toBe(photo);
+    expect(inputValue(view.container, 'Имя или название')).toBe(
+      'Synthetic Author',
+    );
+    expect(findButton(view.container, 'Изменить фото')).toBeInstanceOf(
+      HTMLButtonElement,
+    );
+    const recovered = response('DRAFT', 'DRAFT');
+    harness.getMyProfile.mockResolvedValue(recovered);
+    harness.updateProfile
+      .mockRejectedValueOnce(new Error('update response lost'))
+      .mockResolvedValue(recovered);
+    click(view.container, 'Продолжить');
+    await until(
+      view.container,
+      () => harness.updateProfile.mock.calls.length === 1,
+      'reconciled retry',
+    );
+    await flush();
+    click(view.container, 'Продолжить');
+    await until(
+      view.container,
+      () => harness.updateProfile.mock.calls.length === 2,
+      'second reconciled retry',
+    );
+    expect(harness.createProfile).toHaveBeenCalledTimes(1);
+    expect(harness.updateProfile.mock.calls[0]?.[1]).toBe(photo);
+    expect(harness.updateProfile.mock.calls[1]?.[1]).toBe(photo);
     view.unmount();
   });
 
@@ -2630,7 +2755,10 @@ describe('seller profile validation freshness', () => {
       city: 'Minsk',
     });
     expect(harness.createProfile.mock.calls[0]?.[1]).toBe(photo);
-    expect(harness.push).toHaveBeenCalledWith({ pathname: '/profile', params: { step: '2' } });
+    expect(harness.push).toHaveBeenCalledWith({
+      pathname: '/profile',
+      params: { step: '2' },
+    });
     vi.unstubAllGlobals();
     view.unmount();
   });
@@ -2833,7 +2961,10 @@ describe('seller profile validation freshness', () => {
       () => harness.updateProfile.mock.calls.length === 1,
       'about save',
     );
-    expect(harness.push).toHaveBeenCalledWith({ pathname: '/profile', params: { step: '4' } });
+    expect(harness.push).toHaveBeenCalledWith({
+      pathname: '/profile',
+      params: { step: '4' },
+    });
     view.unmount();
   });
 

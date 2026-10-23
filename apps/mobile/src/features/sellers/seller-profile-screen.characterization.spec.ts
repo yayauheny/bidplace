@@ -136,8 +136,13 @@ vi.mock('../../providers/api-provider', () => ({
 vi.mock('../../components/layout', () => ({
   AppShell: ({ children }: { children?: ReactNode }) =>
     createElement('div', null, children),
-  FormPageShell: ({ children }: { children?: ReactNode }) =>
-    createElement('div', null, children),
+  FormPageShell: ({
+    children,
+    bottomAction,
+  }: {
+    children?: ReactNode;
+    bottomAction?: ReactNode;
+  }) => createElement('div', null, children, bottomAction),
   FormPageColumns: ({
     children,
     sidebar,
@@ -182,17 +187,14 @@ vi.mock('./author-application-basics-step', () => ({
     createElement(
       'div',
       null,
-      createElement(
-        'button',
-        {
-          type: 'button',
-          'aria-label': 'Закрыть',
-          disabled: closeDisabled,
-          onClick: () => {
-            if (!closeDisabled) onClose();
-          },
+      createElement('button', {
+        type: 'button',
+        'aria-label': 'Закрыть',
+        disabled: closeDisabled,
+        onClick: () => {
+          if (!closeDisabled) onClose();
         },
-      ),
+      }),
       createElement(
         'button',
         {
@@ -249,7 +251,11 @@ vi.mock('../../components/ui', () => {
       children?: ReactNode;
     }) =>
       open
-        ? createElement('div', { role: 'dialog', 'aria-label': title }, children)
+        ? createElement(
+            'div',
+            { role: 'dialog', 'aria-label': title },
+            children,
+          )
         : null,
     AppText: ({ children }: { children?: ReactNode }) =>
       createElement('span', null, children),
@@ -340,6 +346,8 @@ function response(parentStatus: string, revisionStatus: string, stage: Stage) {
   };
 }
 
+const mountedViews = new Set<() => void>();
+
 function mount() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
@@ -351,6 +359,13 @@ function mount() {
   const container = document.createElement('div');
   document.body.append(container);
   const root: Root = createRoot(container);
+  const unmount = () => {
+    act(() => root.unmount());
+    queryClient.clear();
+    container.remove();
+    mountedViews.delete(unmount);
+  };
+  mountedViews.add(unmount);
   const render = () =>
     createElement(
       QueryClientProvider,
@@ -363,12 +378,7 @@ function mount() {
   return {
     container,
     queryClient,
-    unmount() {
-      act(() => {
-        root.unmount();
-      });
-      container.remove();
-    },
+    unmount,
   };
 }
 
@@ -424,7 +434,9 @@ beforeEach(() => {
   });
 });
 
-afterEach(() => {
+afterEach(async () => {
+  for (const unmount of mountedViews) unmount();
+  await flush();
   vi.unstubAllGlobals();
   document.body.replaceChildren();
 });
@@ -438,6 +450,32 @@ describe('SellerProfileScreen render contract', () => {
       () => container.textContent?.includes('loading') ?? false,
       'loading status',
     );
+  });
+
+  it('waits for a cold existing profile before choosing the initial UI step', async () => {
+    let finish: (value: ReturnType<typeof response>) => void = () => undefined;
+    harness.getMyProfile.mockReturnValueOnce(
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+    );
+    const view = mount();
+    await flush();
+    expect(harness.setParams).not.toHaveBeenCalledWith({ step: 'photo' });
+    const saved = response('DRAFT', 'DRAFT', 'ABOUT');
+    await act(async () => {
+      finish(saved);
+      await Promise.resolve();
+    });
+    await until(
+      view.container,
+      () =>
+        view.container.textContent?.includes('Раскройте себя как автора') ===
+        true,
+      'server resume',
+    );
+    expect(harness.setParams).not.toHaveBeenCalledWith({ step: 'photo' });
+    view.unmount();
   });
 
   it('starts the application wizard at step 1 when the profile is missing', async () => {
@@ -532,9 +570,7 @@ describe('SellerProfileScreen render contract', () => {
   });
 
   it('renders the editable cabinet with save, submit and create actions for APPROVED', async () => {
-    harness.getMyProfile.mockResolvedValue(
-      response('APPROVED', 'DRAFT', null),
-    );
+    harness.getMyProfile.mockResolvedValue(response('APPROVED', 'DRAFT', null));
     const { container } = mount();
     await until(
       container,

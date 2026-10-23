@@ -140,11 +140,12 @@ test('cover frost keeps Figma regions and samples artwork once on web', async ({
   expect(authorTopMetrics.zoneHeight).toBe(56);
   expect(authorBottomMetrics.zoneHeight).toBe(76);
   expect(workMetrics.outerBlurPx).toBeCloseTo(30, 1);
-  expect(authorTopMetrics.outerBlurPx).toBeCloseTo(20, 1);
+  expect(authorTopMetrics.outerBlurPx).toBe(0);
+  expect(authorTopMetrics.blurLayers).toBe(0);
   expect(authorBottomMetrics.outerBlurPx).toBeCloseTo(30, 1);
-  expect(workMetrics.maskImage).toContain('linear-gradient');
-  expect(authorTopMetrics.maskImage).toContain('linear-gradient');
-  expect(authorBottomMetrics.maskImage).toContain('linear-gradient');
+  expect(workMetrics.maskImage).toBe('none');
+  expect(authorTopMetrics.maskImage).toBe('none');
+  expect(authorBottomMetrics.maskImage).toBe('none');
   expect(workMetrics.gradientImage).toContain('linear-gradient');
   expect(authorTopMetrics.gradientImage).toContain('linear-gradient');
   expect(authorBottomMetrics.gradientImage).toContain('linear-gradient');
@@ -164,6 +165,7 @@ test('cover frost keeps Figma regions and samples artwork once on web', async ({
   await expect(workCard).toHaveCSS('border-radius', '24px');
   await expect(authorCard).toHaveCSS('border-radius', '24px');
 
+  await authorCard.screenshot({ path: resolve(artifactDir, `${engine(page)}-author-frost-390.png`) });
   const frostShot = await workFrost.screenshot();
   await workCard.screenshot({
     path: resolve(artifactDir, `${engine(page)}-cover-frost-390.png`),
@@ -201,7 +203,8 @@ async function readFrost(locator: Locator) {
     const blurLayers = [...element.children].filter((child) =>
       getComputedStyle(child).backdropFilter.startsWith('blur('),
     );
-    const blurPx = (layer: Element) => {
+    const blurPx = (layer: Element | undefined) => {
+      if (!layer) return 0;
       const match =
         getComputedStyle(layer).backdropFilter.match(/blur\(([0-9.]+)px\)/);
       return match ? Number(match[1]) : 0;
@@ -236,7 +239,7 @@ async function readFrost(locator: Locator) {
         Math.abs(frostBox.top - zoneBox.top) < 0.5,
       zoneHeight: Math.round(zoneBox.height),
       outerBlurPx: blurPx(blurLayers.at(-1)!),
-      maskImage: getComputedStyle(blurLayers[0]!).maskImage,
+      maskImage: blurLayers[0] ? getComputedStyle(blurLayers[0]).maskImage : 'none',
       gradientImage: getComputedStyle(gradientLayers[0]!).backgroundImage,
     };
   });

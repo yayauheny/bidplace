@@ -9,9 +9,9 @@ import { designTokens } from '@bidplace/design-tokens';
 
 import {
   AppText,
-  PrimaryButton,
   ResilientRemoteImage,
   SecondaryButton,
+  TextButton,
 } from '../../components/ui';
 import { getApiAssetUrl } from '../../lib/environment';
 import { useAppTheme } from '../../providers/theme-provider';
@@ -26,6 +26,9 @@ import { ProductBlockActions } from './product-block-actions';
 import { productMediaStyle } from '../../components/ui/product-media-style';
 import type { UploadImageState } from './product-draft-image-actions';
 import { productWizardStep } from './product-draft-wizard';
+
+// Figma4551:31373: unique gallery tile geometry.
+const photoTile = { radius: 22, emptyWidth: 177, minWidth: 140 };
 
 export type DraftImageRowProps = {
   local?: boolean;
@@ -54,6 +57,7 @@ export function DraftImageRow({
   return (
     <ProductBlockActions
       kind="image"
+      presentation="mediaTile"
       editable={editable}
       disabled={isReordering || isRemoving}
       first={position === 0}
@@ -65,10 +69,10 @@ export function DraftImageRow({
         <LocalPreviewImage
           source={{ uri: url }}
           accessibilityLabel={`Выбранное изображение ${position + 1}`}
-          resizeMode="contain"
+          resizeMode="cover"
           style={{
             ...productMediaStyle('100%', palette),
-            borderRadius: designTokens.radius.mediaTile,
+            borderRadius: photoTile.radius,
           }}
         />
       ) : (
@@ -79,9 +83,9 @@ export function DraftImageRow({
           fallbackLabel={`Изображение ${position + 1} недоступно`}
           style={{
             ...productMediaStyle('100%', palette),
-            borderRadius: designTokens.radius.mediaTile,
+            borderRadius: photoTile.radius,
           }}
-          contentFit="contain"
+          contentFit="cover"
         />
       )}
     </ProductBlockActions>
@@ -109,14 +113,20 @@ export function DraftImageGrid({
       style={{ gap: designTokens.space.x3 }}
     >
       {images.length === 0 && addAction ? (
-        <View style={{ width: 177, maxWidth: '100%', alignSelf: 'center' }}>
+        <View
+          style={{
+            width: photoTile.emptyWidth,
+            maxWidth: '100%',
+            alignSelf: 'center',
+          }}
+        >
           {addAction}
         </View>
       ) : (
         <PaddedGrid
           items={items}
           columns={gridColumnsFromWidth(width, {
-            minCardWidth: 177,
+            minCardWidth: photoTile.minWidth,
             gap: designTokens.space.x3,
             max: 3,
           })}
@@ -143,7 +153,6 @@ export type ProductDraftImagesStepProps = {
   editable: boolean;
   isCreationFlow: boolean;
   wizardStep: number;
-  wizardCanOpenStory: boolean;
 
   reorderPending: boolean;
   removePending: boolean;
@@ -156,11 +165,9 @@ export type ProductDraftImagesStepProps = {
 
   onChooseImages: () => void;
   onRetryUpload?: () => void;
+  onCancelUpload?: () => void;
   onMoveImage: (imageId: string, direction: -1 | 1) => void;
   onDeleteImage: (imageId: string) => void;
-
-  onBackToAbout: () => void;
-  onContinueToStory: () => void;
 };
 
 export function ProductDraftImagesStep({
@@ -169,7 +176,6 @@ export function ProductDraftImagesStep({
   editable,
   isCreationFlow,
   wizardStep,
-  wizardCanOpenStory,
   reorderPending,
   removePending,
   uploadPending,
@@ -180,21 +186,21 @@ export function ProductDraftImagesStep({
   removeOrReorderError,
   onChooseImages,
   onRetryUpload,
+  onCancelUpload,
   onMoveImage,
   onDeleteImage,
-  onBackToAbout,
-  onContinueToStory,
 }: ProductDraftImagesStepProps) {
   const palette = useAppTheme();
+  const unfinishedUploadFiles = uploadFiles.filter(
+    (file) => file.status !== 'done',
+  );
   const displayImages = [
     ...images,
-    ...uploadFiles
-      .filter((file) => file.status !== 'done')
-      .map((file, index) => ({
-        id: file.key,
-        url: file.uri,
-        position: images.length + index,
-      })),
+    ...unfinishedUploadFiles.map((file, index) => ({
+      id: file.key,
+      url: file.uri,
+      position: images.length + index,
+    })),
   ];
   const showWizardNavigation =
     isCreationFlow && wizardStep === productWizardStep.images;
@@ -205,9 +211,11 @@ export function ProductDraftImagesStep({
         {!showWizardNavigation ? (
           <AppText role="workTitle">Фотографии</AppText>
         ) : null}
-        <AppText role="bodySmall" tone="secondary">
-          {images.length}/10 изображений
-        </AppText>
+        {!showWizardNavigation ? (
+          <AppText role="bodySmall" tone="secondary">
+            {images.length}/10 изображений
+          </AppText>
+        ) : null}
         {productStatus === 'PENDING_REVIEW' ? (
           <AppText role="bodySmall" tone="secondary">
             Изображения нельзя изменить во время модерации.
@@ -216,16 +224,21 @@ export function ProductDraftImagesStep({
         <DraftImageGrid
           images={displayImages}
           addAction={
-            editable && images.length < 10 ? (
+            editable && displayImages.length < 10 ? (
               <MotionPressable
                 accessibilityRole="button"
                 accessibilityLabel="Добавить изображения"
-                disabled={uploadPending || reorderPending || removePending}
+                disabled={
+                  uploadPending ||
+                  unfinishedUploadFiles.length > 0 ||
+                  reorderPending ||
+                  removePending
+                }
                 onPress={onChooseImages}
                 preset="card"
                 style={{
                   aspectRatio: designTokens.ratio.productPortrait,
-                  borderRadius: designTokens.radius.mediaTile,
+                  borderRadius: photoTile.radius,
                   backgroundColor: palette.surfaceMuted,
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -241,44 +254,78 @@ export function ProductDraftImagesStep({
               </MotionPressable>
             ) : undefined
           }
-          renderItem={(image) => (
-            <DraftImageRow
-              key={image.id}
-              url={image.url}
-              position={image.position}
-              local={uploadFiles.some((file) => file.key === image.id)}
-              editable={
-                editable &&
-                !uploadPending &&
-                !uploadFiles.some((file) => file.key === image.id)
-              }
-              isLast={image.position === images.length - 1}
-              isReordering={reorderPending}
-              isRemoving={removePending}
-              onMove={(direction) => onMoveImage(image.id, direction)}
-              onDelete={() => onDeleteImage(image.id)}
-            />
-          )}
+          renderItem={(image) => {
+            const file = uploadFiles.find((entry) => entry.key === image.id);
+            return (
+              <View style={{ position: 'relative' }}>
+                <DraftImageRow
+                  key={image.id}
+                  url={image.url}
+                  position={image.position}
+                  local={uploadFiles.some((file) => file.key === image.id)}
+                  editable={
+                    editable &&
+                    !uploadPending &&
+                    !uploadFiles.some((file) => file.key === image.id)
+                  }
+                  isLast={image.position === images.length - 1}
+                  isReordering={reorderPending}
+                  isRemoving={removePending}
+                  onMove={(direction) => onMoveImage(image.id, direction)}
+                  onDelete={() => onDeleteImage(image.id)}
+                />
+                {file && file.status !== 'done' ? (
+                  <View
+                    style={{
+                      ...(file.status === 'error'
+                        ? { marginTop: designTokens.space.x2 }
+                        : {
+                            position: 'absolute',
+                            left: designTokens.space.x2,
+                            right: designTokens.space.x2,
+                            bottom: designTokens.space.x2,
+                          }),
+                      padding: designTokens.space.x2,
+                      borderRadius: designTokens.radius.small,
+                      backgroundColor: palette.surfaceStrong,
+                      gap: designTokens.space.x2,
+                    }}
+                  >
+                    <AppText
+                      role="bodySmall"
+                      tone={file.status === 'error' ? 'danger' : 'secondary'}
+                      accessibilityLiveRegion="polite"
+                    >
+                      {file.status === 'error'
+                        ? (uploadMessage ?? 'Не удалось загрузить фото')
+                        : file.status === 'queued'
+                          ? 'Ожидает загрузки'
+                          : file.status === 'preparing'
+                            ? 'Подготовка фото…'
+                            : 'Загрузка фото…'}
+                    </AppText>
+                    {file.status === 'error' && onRetryUpload ? (
+                      <SecondaryButton
+                        label="Повторить загрузку"
+                        disabled={uploadPending || !editable}
+                        onPress={onRetryUpload}
+                      />
+                    ) : null}
+                    {file.status === 'error' && onCancelUpload ? (
+                      <TextButton
+                        label="Отменить загрузку"
+                        disabled={uploadPending || !editable}
+                        onPress={onCancelUpload}
+                      />
+                    ) : null}
+                  </View>
+                ) : null}
+              </View>
+            );
+          }}
         />
-        {uploadFiles.map((file, index) => (
-          <AppText
-            key={file.key}
-            role="bodySmall"
-            tone={file.status === 'error' ? 'danger' : 'secondary'}
-            accessibilityLiveRegion="polite"
-          >
-            {file.status === 'queued'
-              ? `Изображение ${index + 1}: ожидает загрузки`
-              : file.status === 'preparing'
-                ? `Подготовка ${index + 1} из ${uploadFiles.length}…`
-                : file.status === 'uploading'
-                  ? `Загрузка ${index + 1} из ${uploadFiles.length}…`
-                  : file.status === 'done'
-                    ? `Изображение ${index + 1}: загружено`
-                    : `Изображение ${index + 1}: не удалось загрузить`}
-          </AppText>
-        ))}
-        {uploadError || uploadMessage ? (
+        {(uploadError || uploadMessage) &&
+        !uploadFiles.some((file) => file.status === 'error') ? (
           <AppText
             role="bodySmall"
             tone="danger"
@@ -286,13 +333,6 @@ export function ProductDraftImagesStep({
           >
             {uploadMessage ?? 'Не удалось загрузить изображения.'}
           </AppText>
-        ) : null}
-        {uploadError && onRetryUpload ? (
-          <SecondaryButton
-            label="Повторить загрузку"
-            disabled={uploadPending || !editable}
-            onPress={onRetryUpload}
-          />
         ) : null}
         {imageSelectionError ? (
           <AppText role="bodySmall" tone="danger">
@@ -305,25 +345,6 @@ export function ProductDraftImagesStep({
           </AppText>
         ) : null}
       </View>
-
-      {showWizardNavigation ? (
-        <View style={{ gap: designTokens.space.x3 }}>
-          <AppText role="bodySmall" tone="secondary">
-            Первое изображение обязательно. До 10 изображений можно заменить,
-            удалить и переставить местами до отправки на модерацию.
-          </AppText>
-          <SecondaryButton
-            label="Назад к описанию"
-            disabled={uploadPending}
-            onPress={() => onBackToAbout()}
-          />
-          <PrimaryButton
-            label="Продолжить к истории создания"
-            disabled={!wizardCanOpenStory}
-            onPress={() => onContinueToStory()}
-          />
-        </View>
-      ) : null}
     </View>
   );
 }

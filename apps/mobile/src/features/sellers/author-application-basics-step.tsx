@@ -13,15 +13,15 @@ import {
 } from '../../components/ui';
 import { AuthorApplicationStepShell } from './author-application-step-shell';
 
-// Geometry of the basic-information frame (Figma 527:16416, 390 px wide). Each value is used by one element only.
-const photoWidth = 135.3;
-const photoHeight = 180.4;
-const photoRadius = 18.12;
-const photoIconSize = 65.23;
-const photoIconStrokePx = 2.42;
+// Figma5067:25914: portrait guides are local to this photo step.
+const photoWidth = 177;
+const photoHeight = 236;
+const photoRadius = 22;
+const photoIconSize = 40;
+const photoIconStrokePx = 1.5;
 const photoGuideStrokePx = 0.72;
-const photoGuideHorizontalY = [35.03, 146.17];
-const photoGuideVerticalX = [12.08, 123.22];
+const photoGuideHorizontalY = [45.83, 191.22];
+const photoGuideVerticalX = [15.8, 161.2];
 
 export type AuthorApplicationPhoto = {
   /** Local data URI for a just-picked photo, remote asset URL for the saved one, or null. */
@@ -42,6 +42,9 @@ export function AuthorApplicationBasicsStep({
   formAlert,
   action,
   footer,
+  photoStep = false,
+  onBack,
+  backDisabled,
 }: {
   closeDisabled: boolean;
   onClose: () => void;
@@ -50,19 +53,30 @@ export function AuthorApplicationBasicsStep({
   formAlert: ReactNode;
   action: ReactNode;
   footer: ReactNode;
+  photoStep?: boolean;
+  onBack?: () => void;
+  backDisabled?: boolean;
 }) {
   return (
     <AuthorApplicationStepShell
-      profileStep={1}
+      profileStep={photoStep ? 0 : 1}
       closeDisabled={closeDisabled}
       onClose={onClose}
-      headerToBodyGap={designTokens.authorApplication.headerToBodyBasics}
-      title="Основная информация"
-      subtitle="Город можно не указывать"
+      onBack={onBack}
+      backDisabled={backDisabled}
+      headerToBodyGap={
+        photoStep
+          ? designTokens.space.x5
+          : designTokens.authorApplication.headerToBodyBasics
+      }
+      headerBlockGap={photoStep ? designTokens.space.x2 : undefined}
+      titleRole={photoStep ? 'workTitle' : undefined}
+      title={photoStep ? 'Фото профиля' : 'Основная информация'}
+      subtitle={photoStep ? undefined : 'Город можно не указывать'}
       footer={footer}
     >
       <View style={{ gap: 32 }}>
-        <AuthorPhotoBlock photo={photo} />
+        {photoStep ? <AuthorPhotoBlock photo={photo} /> : null}
         <View style={{ gap: designTokens.authorApplication.bodyFieldGap }}>
           {fields}
           {formAlert}
@@ -79,15 +93,13 @@ function AuthorPhotoBlock({ photo }: { photo: AuthorApplicationPhoto }) {
   const hasPhoto = uri !== null;
   return (
     <View style={{ gap: 12 }}>
-      <AppText role="formLabel" tone="strong" style={{ textAlign: 'center' }}>
-        Фото профиля
-      </AppText>
       <View style={{ gap: 14 }}>
         <View
           style={{
             alignSelf: 'center',
             width: photoWidth,
-            height: photoHeight,
+            maxWidth: '100%',
+            aspectRatio: photoWidth / photoHeight,
             borderRadius: photoRadius,
             backgroundColor: palette.mutedFill,
             overflow: 'hidden',
@@ -122,6 +134,9 @@ function AuthorPhotoBlock({ photo }: { photo: AuthorApplicationPhoto }) {
                 strokeWidthPx={photoIconStrokePx}
                 color={palette.inkStrong}
               />
+              <AppText role="body" style={{ marginTop: designTokens.space.x3 }}>
+                Добавить фото
+              </AppText>
             </>
           )}
         </View>
@@ -148,8 +163,9 @@ function PhotoGuides() {
   const palette = useAppTheme();
   return (
     <Svg
-      width={photoWidth}
-      height={photoHeight}
+      width="100%"
+      height="100%"
+      viewBox={`0 0 ${photoWidth} ${photoHeight}`}
       style={{ position: 'absolute', left: 0, top: 0 }}
     >
       {photoGuideHorizontalY.map((y) => (

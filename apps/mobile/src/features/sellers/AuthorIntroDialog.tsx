@@ -19,8 +19,8 @@ export function AuthorIntroDialog({
     <AppDialog
       open={open}
       presentation="mediaSheet"
-      title="Стать автором на Bidplace"
-      description="Начните продавать свои картины и предметы искусства которые вы создаете сами, пройдите процесс создания профиля автора"
+      title="Стать автором"
+      description="Создайте профиль автора и соберите портфолио своих картин и предметов искусства."
       onClose={onClose}
       media={
         <Image

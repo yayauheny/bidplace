@@ -161,8 +161,8 @@ vi.mock('../../providers/api-provider', () => ({
 vi.mock('../../components/layout', () => ({
   AppShell: ({ children }: { children?: ReactNode }) =>
     createElement('div', null, children),
-  FormPageShell: ({ children }: { children?: ReactNode }) =>
-    createElement('div', null, children),
+  FormPageShell: ({ children, bottomAction }: { children?: ReactNode; bottomAction?: ReactNode }) =>
+    createElement('div', null, children, bottomAction),
   FormPageColumns: ({
     children,
     sidebar,
@@ -845,8 +845,7 @@ describe('product draft save reconciliation', () => {
     click(view.container, 'Сохранить изменения');
     await flush();
     expect(harness.updateProduct).toHaveBeenCalledTimes(1);
-    click(view.container, 'Действия с изображением');
-    click(view.container, 'Удалить');
+    click(view.container, 'Удалить фото');
     await flush();
     click(view.container, 'Удалить изображение');
     click(view.container, 'Удалить изображение');
@@ -903,8 +902,7 @@ describe('product draft save reconciliation', () => {
     setInput(view.container, 'Название', 'Revised title');
     click(view.container, 'Сохранить изменения');
     await flush();
-    click(view.container, 'Действия с изображением');
-    click(view.container, 'Удалить');
+    click(view.container, 'Удалить фото');
     await flush();
     click(view.container, 'Удалить изображение');
     await act(async () => {
@@ -958,8 +956,7 @@ describe('product draft save reconciliation', () => {
     setInput(view.container, 'Название', 'Revised title');
     click(view.container, 'Сохранить изменения');
     await flush();
-    click(view.container, 'Действия с изображением');
-    click(view.container, 'Удалить');
+    click(view.container, 'Удалить фото');
     await flush();
     click(view.container, 'Удалить изображение');
     await act(async () => {

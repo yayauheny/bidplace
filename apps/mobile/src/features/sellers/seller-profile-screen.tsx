@@ -31,7 +31,11 @@ import { AuthorApplicationAchievements } from './AuthorApplicationAchievements';
 import { AuthorApplicationExitConfirm } from './author-application-exit-confirm';
 import { AuthorDirectionsPickerSheet } from './author-directions-picker-sheet';
 import { AuthorIntroDialog } from './AuthorIntroDialog';
-import { useProfileData, toFields, classifySellerProfileQuery } from './seller-profile-data';
+import {
+  useProfileData,
+  toFields,
+  classifySellerProfileQuery,
+} from './seller-profile-data';
 import {
   profileDraftAllowsSave,
   profileDraftFieldsSchema,
@@ -175,6 +179,12 @@ export function SellerProfileScreen() {
     reportError: profileForm.reportError,
     clearAlert: () => profileForm.setFormAlert(null),
   });
+  const photoStep =
+    isApplicationWizard &&
+    (step === 'photo' || (missingProfile && step === undefined));
+  useEffect(() => {
+    if (photoStep && step !== 'photo') router.setParams({ step: 'photo' });
+  }, [photoStep, step, router]);
   const setAchievementWrite = (token: number, active: boolean) => {
     if (active) {
       achievementWriteToken.current = token;
@@ -244,7 +254,11 @@ export function SellerProfileScreen() {
   }, [authEpoch]);
 
   useEffect(() => {
-    if (typeof step === 'string' && String(requestedStep) !== step) {
+    if (
+      typeof step === 'string' &&
+      step !== 'photo' &&
+      String(requestedStep) !== step
+    ) {
       router.setParams({ step: String(requestedStep) });
     }
   }, [requestedStep, router, step]);
@@ -327,6 +341,16 @@ export function SellerProfileScreen() {
     }
   };
   const goToPreviousStep = async () => {
+    if (
+      profileStep === 1 &&
+      !photoStep &&
+      !guard.transitionLock.current &&
+      !submission.saveInFlight.current &&
+      !photo.preparing
+    ) {
+      router.setParams({ step: 'photo' });
+      return;
+    }
     if (
       achievementWriteBlocksParent() ||
       guard.transitionLock.current ||
@@ -498,11 +522,12 @@ export function SellerProfileScreen() {
         accountLogout.busy ||
         submission.revisionSubmitActive ||
         guard.inputsLocked ||
-        achievementWriteActive || photo.preparing
+        achievementWriteActive ||
+        photo.preparing
       }
       onPress={() => void submission.continueFromStep(1)}
       label="Продолжить"
-      size="auth"
+      size="creationAction"
       width="block"
     />
   );
@@ -517,11 +542,12 @@ export function SellerProfileScreen() {
         accountLogout.busy ||
         submission.revisionSubmitActive ||
         guard.inputsLocked ||
-        achievementWriteActive || photo.preparing
+        achievementWriteActive ||
+        photo.preparing
       }
       onPress={() => void submission.continueFromStep(2)}
       label="Продолжить"
-      size="auth"
+      size="creationAction"
       width="block"
     />
   );
@@ -536,7 +562,8 @@ export function SellerProfileScreen() {
         accountLogout.busy ||
         submission.revisionSubmitActive ||
         guard.inputsLocked ||
-        achievementWriteActive || photo.preparing
+        achievementWriteActive ||
+        photo.preparing
       }
       onPress={() => {
         const missing: Array<'shortDescription'> = [];
@@ -552,7 +579,7 @@ export function SellerProfileScreen() {
         void submission.continueFromStep(3);
       }}
       label="Продолжить"
-      size="auth"
+      size="creationAction"
       width="block"
     />
   );
@@ -572,15 +599,17 @@ export function SellerProfileScreen() {
     profileStep,
   );
   const wizardStep = isApplicationWizard
-    ? basicsStep
-      ? ('basics' as const)
-      : contactsStep
-        ? ('contacts' as const)
-        : aboutStep
-          ? ('about' as const)
-          : achievementsStep
-            ? ('achievements' as const)
-            : null
+    ? photoStep
+      ? ('photo' as const)
+      : basicsStep
+        ? ('basics' as const)
+        : contactsStep
+          ? ('contacts' as const)
+          : aboutStep
+            ? ('about' as const)
+            : achievementsStep
+              ? ('achievements' as const)
+              : null
     : null;
   const slugEditable = fieldsEditable && !profile && !sessionSlug;
   const stepPhoto = {
@@ -612,8 +641,42 @@ export function SellerProfileScreen() {
     !canSave ||
     accountLogout.busy ||
     guard.inputsLocked ||
-    achievementWriteActive || photo.preparing;
+    achievementWriteActive ||
+    photo.preparing;
   const wizardSubmitDisabled = submitDisabled || achievementDraftDirty;
+
+  const wizardAction =
+    wizardStep === 'photo' ? (
+      <PrimaryButton
+        label="Продолжить"
+        size="creationAction"
+        width="block"
+        disabled={
+          !photo.preview ||
+          photo.photoFailed ||
+          stepPhoto.disabled ||
+          submission.saveMutation.isPending
+        }
+        onPress={() => router.setParams({ step: '1' })}
+      />
+    ) : wizardStep === 'basics' ? (
+      basicsAction
+    ) : wizardStep === 'contacts' ? (
+      contactsAction
+    ) : wizardStep === 'about' ? (
+      aboutAction
+    ) : wizardStep === 'achievements' && editable && canSubmitRevision ? (
+      <PrimaryButton
+        label="Сохранить и завершить"
+        size="creationAction"
+        width="block"
+        loading={
+          submission.submitMutation.isPending || submission.revisionSubmitActive
+        }
+        disabled={wizardSubmitDisabled}
+        onPress={() => void submission.submitRevision()}
+      />
+    ) : undefined;
 
   return (
     <View style={{ flex: 1, display: isFocused ? 'flex' : 'none' }}>
@@ -626,6 +689,9 @@ export function SellerProfileScreen() {
             <FormPageShell
               hideDock={isApplicationWizard}
               variant={isApplicationWizard ? 'authorApplication' : 'default'}
+              bottomAction={
+                isApplicationWizard && !introOpen ? wizardAction : undefined
+              }
             >
               <View style={{ gap: designTokens.space.x5 }}>
                 {(restore.storageError ?? achievementStorageError) ? (
@@ -686,7 +752,8 @@ export function SellerProfileScreen() {
                         disabled={
                           submission.revisionSubmitActive ||
                           guard.inputsLocked ||
-                          achievementWriteActive || photo.preparing
+                          achievementWriteActive ||
+                          photo.preparing
                         }
                         onPress={() => requestExit('home')}
                       />
@@ -709,23 +776,12 @@ export function SellerProfileScreen() {
                   slugEditable={slugEditable}
                   photo={stepPhoto}
                   formAlert={profileForm.formAlertText}
-                  basicsAction={basicsAction}
-                  contactsAction={contactsAction}
-                  aboutAction={aboutAction}
                   directionLabels={directions.directionLabels}
                   directionsError={directions.directionsError}
                   onRemoveDirection={directions.removeDirection}
                   onOpenDirections={directions.openDirectionsPicker}
                   achievements={achievements}
                   achievementsVisible={achievementsVisible}
-                  editable={editable}
-                  canSubmitRevision={canSubmitRevision}
-                  submitPending={
-                    submission.submitMutation.isPending ||
-                    submission.revisionSubmitActive
-                  }
-                  submitDisabled={wizardSubmitDisabled}
-                  onSubmit={() => void submission.submitRevision()}
                   achievementDraftDirty={achievementDraftDirty}
                 />
                 {!isApplicationWizard ? (
@@ -749,7 +805,8 @@ export function SellerProfileScreen() {
                       accountLogout.busy ||
                       submission.revisionSubmitActive ||
                       guard.inputsLocked ||
-                      achievementWriteActive || photo.preparing
+                      achievementWriteActive ||
+                      photo.preparing
                     }
                     onSave={requestSave}
                     canSubmitRevision={canSubmitRevision}
@@ -780,7 +837,9 @@ export function SellerProfileScreen() {
                 />
                 <AuthorIntroDialog
                   open={introOpen}
-                  onStart={() => router.replace(createSellerProfileHref(1))}
+                  onStart={() =>
+                    router.setParams({ intro: undefined, step: 'photo' })
+                  }
                   onClose={() => router.replace('/profile')}
                 />
                 {exitDialog}

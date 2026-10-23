@@ -193,6 +193,9 @@ export function ProductDraftScreen({
     storyEditor,
   });
 
+  const uploadUnfinished = imageActions.uploadFiles.some(
+    (file) => file.status !== 'done',
+  );
   const uploadBusy =
     imageActions.choosingImages || imageActions.upload.isPending;
 
@@ -212,6 +215,7 @@ export function ProductDraftScreen({
 
   const wizardNavigation = useProductDraftNavigation({
     uploadBusy,
+    uploadUnfinished,
     productId,
     stepParam,
     isCreationFlow,
@@ -286,7 +290,33 @@ export function ProductDraftScreen({
   return (
     <FormProvider {...form}>
       <ProductDraftWriteGuard guard={session.transitionLock}>
-        <FormPageShell hideDock>
+        <FormPageShell
+          hideDock
+          variant={isCreationFlow ? 'creation' : 'default'}
+          bottomAction={
+            isCreationFlow && wizardStep === productWizardStep.images ? (
+              <PrimaryButton
+                label="Продолжить"
+                width="block"
+                size="creationAction"
+                disabled={
+                  uploadBusy ||
+                  session.inputsLocked ||
+                  !canOpenProductWizardStep(
+                    productWizardStep.story,
+                    wizardDraft,
+                    uploadUnfinished,
+                  )
+                }
+                onPress={() =>
+                  void wizardNavigation.moveToWizardStep(
+                    productWizardStep.story,
+                  )
+                }
+              />
+            ) : undefined
+          }
+        >
           <ProductDraftScreenChrome
             isCreationFlow={isCreationFlow}
             storyWizardView={storyWizardView}
@@ -294,7 +324,7 @@ export function ProductDraftScreen({
             wizardStep={wizardStep}
             hasExistingProduct={Boolean(existingProduct)}
             canOpenStep={(step) =>
-              !uploadBusy && canOpenProductWizardStep(step, wizardDraft)
+              !uploadBusy && canOpenProductWizardStep(step, wizardDraft, uploadUnfinished)
             }
             onStepPress={(step) => void wizardNavigation.moveToWizardStep(step)}
             storyBarDisabled={
@@ -411,10 +441,6 @@ export function ProductDraftScreen({
               editable={editable && !session.inputsLocked}
               isCreationFlow={isCreationFlow}
               wizardStep={wizardStep}
-              wizardCanOpenStory={
-                !uploadBusy &&
-                canOpenProductWizardStep(productWizardStep.story, wizardDraft)
-              }
               reorderPending={imageActions.reorderImages.isPending}
               removePending={imageActions.removeImage.isPending}
               uploadPending={
@@ -438,16 +464,11 @@ export function ProductDraftScreen({
                 imageActions.reorderImages.isError
               }
               onRetryUpload={() => imageActions.retryUpload()}
+              onCancelUpload={imageActions.cancelUpload}
               onChooseImages={() => void imageActions.chooseImages()}
               onMoveImage={imageActions.reorder}
               onDeleteImage={(imageId) =>
                 imageActions.setImagePendingDelete(imageId)
-              }
-              onBackToAbout={() =>
-                void wizardNavigation.moveToWizardStep(productWizardStep.about)
-              }
-              onContinueToStory={() =>
-                void wizardNavigation.moveToWizardStep(productWizardStep.story)
               }
             />
           ) : null}

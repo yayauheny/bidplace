@@ -831,7 +831,7 @@ export const designTokens = {
     dockNativeIntensity: 30,
     dockAndroidReductionFactor: 5,
     overlay: 30,
-    authorTopOverlay: 20,
+    authorTopOverlay: 0,
     atmosphere: 40,
   },
   opacity: {

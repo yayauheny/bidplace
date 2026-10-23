@@ -3,7 +3,7 @@ import { View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
-import { AppText, PrimaryButton } from '../../components/ui';
+import { AppText } from '../../components/ui';
 import { AccountLogoutButton } from '../auth/AccountLogoutButton';
 import { AuthorApplicationAboutStep } from './author-application-about-step';
 import { AuthorApplicationStepShell } from './author-application-step-shell';
@@ -16,6 +16,7 @@ import {
 } from './seller-profile-steps';
 
 export type SellerProfileWizardStep =
+  | 'photo'
   | 'basics'
   | 'contacts'
   | 'about'
@@ -50,20 +51,12 @@ export function SellerProfileApplicationSteps({
   slugEditable,
   photo,
   formAlert,
-  basicsAction,
-  contactsAction,
-  aboutAction,
   directionLabels,
   directionsError,
   onRemoveDirection,
   onOpenDirections,
   achievements,
   achievementsVisible,
-  editable,
-  canSubmitRevision,
-  submitPending,
-  submitDisabled,
-  onSubmit,
   achievementDraftDirty,
 }: {
   step: SellerProfileWizardStep | null;
@@ -75,25 +68,19 @@ export function SellerProfileApplicationSteps({
   slugEditable: boolean;
   photo: SellerProfileStepPhoto;
   formAlert: ReactNode;
-  basicsAction: ReactNode;
-  contactsAction: ReactNode;
-  aboutAction: ReactNode;
   directionLabels: SellerProfileDirectionLabel[];
   directionsError: string | undefined;
   onRemoveDirection: (id: string) => void;
   onOpenDirections: () => void;
   achievements: ReactNode;
   achievementsVisible: boolean;
-  editable: boolean;
-  canSubmitRevision: boolean;
-  submitPending: boolean;
-  submitDisabled: boolean;
-  onSubmit: () => void;
   achievementDraftDirty: boolean;
 }) {
   if (!step) return null;
   const closeDisabled =
-    busy.revisionSubmitActive || busy.inputsLocked || busy.achievementWriteActive;
+    busy.revisionSubmitActive ||
+    busy.inputsLocked ||
+    busy.achievementWriteActive;
   const backDisabled =
     busy.savePending ||
     busy.accountBusy ||
@@ -113,19 +100,24 @@ export function SellerProfileApplicationSteps({
 
   return (
     <>
-      {step === 'basics' ? (
+      {step === 'basics' || step === 'photo' ? (
         <AuthorApplicationBasicsStep
           closeDisabled={closeDisabled}
           onClose={() => requestExit('home')}
           photo={photo}
+          photoStep={step === 'photo'}
+          onBack={goToPreviousStep}
+          backDisabled={backDisabled}
           fields={
-            <ProfileBasicsFields
-              editable={fieldsEditable}
-              slugEditable={slugEditable}
-            />
+            step === 'photo' ? null : (
+              <ProfileBasicsFields
+                editable={fieldsEditable}
+                slugEditable={slugEditable}
+              />
+            )
           }
           formAlert={formAlert}
-          action={basicsAction}
+          action={null}
           footer={logoutFooter}
         />
       ) : null}
@@ -137,7 +129,7 @@ export function SellerProfileApplicationSteps({
           onClose={() => requestExit('home')}
           fields={<ProfileContactsFields editable={fieldsEditable} />}
           formAlert={formAlert}
-          action={contactsAction}
+          action={null}
           footer={logoutFooter}
         />
       ) : null}
@@ -154,7 +146,7 @@ export function SellerProfileApplicationSteps({
           onRemoveDirection={onRemoveDirection}
           onOpenDirections={onOpenDirections}
           formAlert={formAlert}
-          action={aboutAction}
+          action={null}
           footer={logoutFooter}
         />
       ) : null}
@@ -176,16 +168,6 @@ export function SellerProfileApplicationSteps({
           >
             {achievementsVisible ? achievements : null}
             {formAlert}
-            {editable && canSubmitRevision ? (
-              <PrimaryButton
-                loading={submitPending}
-                disabled={submitDisabled}
-                onPress={onSubmit}
-                label="Сохранить и завершить"
-                size="auth"
-                width="block"
-              />
-            ) : null}
             {achievementDraftDirty ? (
               <AppText role="bodySmall" tone="secondary">
                 Добавьте событие или очистите его поля, чтобы завершить заявку.

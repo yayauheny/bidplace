@@ -361,18 +361,20 @@ export function ProfileBasicsFields({
 
 export function SellerProfileCreationStepSelector({
   profileStep,
+  total = 4,
 }: {
   profileStep: number;
+  total?: number;
 }) {
   const palette = useAppTheme();
   return (
     <View
       accessibilityRole="progressbar"
-      accessibilityLabel={`Шаг ${profileStep} из 4`}
-      accessibilityValue={{ min: 1, max: 4, now: profileStep }}
+      accessibilityLabel={`Шаг ${profileStep} из ${total}`}
+      accessibilityValue={{ min: 1, max: total, now: profileStep }}
       style={{ flexDirection: 'row', gap: designTokens.space.x2 }}
     >
-      {[1, 2, 3, 4].map((step) => (
+      {Array.from({ length: total }, (_, index) => index + 1).map((step) => (
         <View
           key={step}
           style={{
@@ -380,9 +382,7 @@ export function SellerProfileCreationStepSelector({
             height: 6,
             borderRadius: 3,
             backgroundColor:
-              step === profileStep
-                ? palette.inkStrong
-                : palette.border,
+              step === profileStep ? palette.inkStrong : palette.border,
           }}
         />
       ))}

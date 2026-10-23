@@ -1,5 +1,5 @@
 import type { ComponentProps } from 'react';
-import { View } from 'react-native';
+import { Platform, View } from 'react-native';
 
 import type { ProductStatus } from '@bidplace/contracts';
 import { designTokens } from '@bidplace/design-tokens';
@@ -77,15 +77,17 @@ export function ProductDraftScreenChrome({
   return (
     <>
       {isCreationFlow ? (
-        <View style={{ gap: designTokens.space.x3 }}>
+        <View style={{ gap: designTokens.space.x2 }}>
           <View
             style={{
+              height: Platform.OS === 'web' ? designTokens.authorApplication.chromeFrame : designTokens.size.touch,
               flexDirection: 'row',
               alignItems: 'center',
               justifyContent: 'space-between',
             }}
           >
             <BackButton
+              surface="plain"
               label={wizardStep === 3 ? 'Назад к изображениям' : 'Назад'}
               disabled={storyBarDisabled || wizardSubmitted}
               onPress={() =>
