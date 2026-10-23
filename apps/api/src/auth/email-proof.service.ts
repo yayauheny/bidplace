@@ -13,7 +13,10 @@ import {
   ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
+import { ApiErrorCode } from '@bidplace/contracts';
+import type { AuthFlow, Prisma } from '@bidplace/database';
 import { PrismaService } from '../core/database';
+import { AppException } from '../core/errors';
 import { MailTransport } from '../core/mail';
 import { SERVER_ENV, type ServerEnv } from '../core/config';
 import {
@@ -32,6 +35,8 @@ const resendWaitMs = 60_000;
 const addressDailyLimit = 10;
 const browserHash = (sid: string) =>
   createHash('sha256').update(sid).digest('hex');
+const operationKey = (flowId: string, requestKey: string) =>
+  createHash('sha256').update(`${flowId}\0${requestKey}`).digest('hex');
 
 @Injectable()
 export class EmailProofService {
@@ -47,6 +52,47 @@ export class EmailProofService {
     return createHmac('sha256', this.env.OTP_HASH_SECRET)
       .update(`${flowId}\0${email}\0${code}`)
       .digest();
+  }
+
+  private assertRequestFlow(
+    flow: AuthFlow | null,
+    request: SessionRequest,
+    email: string,
+    intent: 'register' | 'onboarding',
+    now: Date,
+  ): asserts flow is AuthFlow {
+    if (
+      !flow ||
+      flow.browserHash !== browserHash(request.sessionID) ||
+      flow.stage !== 'email' ||
+      flow.email !== email ||
+      flow.expiresAt <= now ||
+      (intent === 'register'
+        ? flow.intent !== 'register'
+        : flow.intent !== 'login' || !flow.provider)
+    )
+      throw new UnauthorizedException('Email proof expired');
+  }
+
+  private replay(operation: { status: string; createdAt: Date }) {
+    if (operation.status === 'rejected') throw this.mailRejected();
+    return {
+      code: null,
+      operationId: null,
+      delivery:
+        operation.status === 'accepted'
+          ? 'accepted' as const
+          : 'unknown' as const,
+      retryAt: new Date(operation.createdAt.getTime() + resendWaitMs),
+    };
+  }
+
+  private mailRejected() {
+    return new AppException({
+      status: HttpStatus.SERVICE_UNAVAILABLE,
+      code: ApiErrorCode.MAIL_REJECTED,
+      message: 'Email was rejected by the mail server',
+    });
   }
 
   async startRegistration(
@@ -149,27 +195,26 @@ export class EmailProofService {
       throw new UnauthorizedException('Email proof expired');
     const flowId = request.session.flowId;
     const email = input.email.trim().toLowerCase();
-    const replay = await this.prisma.authFlow.findUnique({
+    const current = await this.prisma.authFlow.findUnique({
       where: { id: flowId },
     });
-    if (
-      replay?.browserHash === browserHash(request.sessionID) &&
-      replay.stage === 'email' &&
-      (input.intent === 'register'
-        ? replay.intent === 'register'
-        : replay.intent === 'login' && Boolean(replay.provider)) &&
-      replay.email === email &&
-      replay.expiresAt > new Date() &&
-      replay.codeRequestKey === input.idempotencyKey &&
-      replay.codeSentAt
-    ) {
+    this.assertRequestFlow(current, request, email, input.intent, new Date());
+    const requestKey = operationKey(flowId, input.idempotencyKey);
+    const existing = await this.prisma.authAbuseOperation.findUnique({
+      where: {
+        purpose_idempotencyKey: {
+          purpose: 'email_proof_send',
+          idempotencyKey: requestKey,
+        },
+      },
+    });
+    if (existing) {
+      const replay = this.replay(existing);
       return {
         ok: true,
-        delivery: 'unknown',
+        delivery: replay.delivery,
         serverNow: new Date().toISOString(),
-        resendAvailableAt: new Date(
-          replay.codeSentAt.getTime() + resendWaitMs,
-        ).toISOString(),
+        resendAvailableAt: replay.retryAt.toISOString(),
       };
     }
     const proof = {
@@ -186,20 +231,7 @@ export class EmailProofService {
       const flow = await tx.authFlow.findUnique({
         where: { id: flowId },
       });
-      if (
-        !flow ||
-        flow.browserHash !== browserHash(request.sessionID) ||
-        flow.stage !== 'email' ||
-        flow.email !== email ||
-        flow.expiresAt <= now ||
-        (input.intent === 'register'
-          ? flow.intent !== 'register'
-          : flow.intent !== 'login' || !flow.provider)
-      )
-        throw new UnauthorizedException('Email proof expired');
-      const requestKey = createHash('sha256')
-        .update(`${flow.id}\0${input.idempotencyKey}`)
-        .digest('hex');
+      this.assertRequestFlow(flow, request, email, input.intent, now);
       const previous = await tx.authAbuseOperation.findUnique({
         where: {
           purpose_idempotencyKey: {
@@ -208,22 +240,22 @@ export class EmailProofService {
           },
         },
       });
-      if (previous)
+      if (previous) return this.replay(previous);
+      if (flow.emailProvedAt)
         return {
           code: null,
+          retryAt: now,
           operationId: null,
-          retryAt: new Date(flow.codeSentAt!.getTime() + resendWaitMs),
+          delivery: 'unknown' as const,
         };
-      if (flow.emailProvedAt)
-        return { code: null, retryAt: now, operationId: null };
       if (
         flow.codeSentAt &&
-        (flow.codeRequestKey === input.idempotencyKey ||
-          flow.codeSentAt.getTime() + resendWaitMs > now.getTime())
+        flow.codeSentAt.getTime() + resendWaitMs > now.getTime()
       )
         return {
           code: null,
           operationId: null,
+          delivery: 'unknown' as const,
           retryAt: new Date(flow.codeSentAt.getTime() + resendWaitMs),
         };
       if (flow.codeSends >= 3)
@@ -295,37 +327,41 @@ export class EmailProofService {
       return {
         code,
         operationId: operation.id,
+        delivery: 'unknown' as const,
         retryAt: new Date(now.getTime() + resendWaitMs),
       };
     });
-    let delivery: 'accepted' | 'unknown' = 'unknown';
+    let delivery: 'accepted' | 'unknown' = result.delivery;
     if (result.code && result.operationId) {
+      const operationId = result.operationId;
+      let outcome: 'accepted' | 'unknown' | 'rejected' = 'accepted';
       try {
         await this.mail.send({
           to: email,
           subject: 'Код подтверждения почты bidplace',
           text: `Код подтверждения почты bidplace: ${result.code}. Если вы не запрашивали код, проигнорируйте письмо.`,
         });
-        delivery = 'accepted';
       } catch (error) {
-        const outcome = classifyMailFailure(error);
-        await this.prisma.authAbuseOperation.update({
-          where: { id: result.operationId },
-          data: { status: outcome, completedAt: new Date() },
-        });
-        if (outcome === 'rejected') {
-          await this.prisma.authFlow.updateMany({
-            where: { id: flowId, codeRequestKey: input.idempotencyKey },
-            data: { codeHash: null, codeExpiresAt: null },
-          });
-          throw new ServiceUnavailableException('Email delivery unavailable');
-        }
+        outcome = classifyMailFailure(error);
       }
-      if (delivery === 'accepted')
-        await this.prisma.authAbuseOperation.update({
-          where: { id: result.operationId },
-          data: { status: 'accepted', completedAt: new Date() },
+      if (outcome === 'rejected') {
+        await this.prisma.$transaction(async (tx) => {
+          await tx.authAbuseOperation.update({
+            where: { id: operationId },
+            data: { status: 'rejected', completedAt: new Date() },
+          });
+          await tx.authFlow.updateMany({
+            where: { id: flowId, codeRequestKey: input.idempotencyKey },
+            data: { codeHash: null, codeExpiresAt: null, codeSentAt: null },
+          });
         });
+        throw this.mailRejected();
+      }
+      await this.prisma.authAbuseOperation.update({
+        where: { id: operationId },
+        data: { status: outcome, completedAt: new Date() },
+      });
+      delivery = outcome;
     }
     return {
       ok: true,
@@ -335,15 +371,17 @@ export class EmailProofService {
     };
   }
 
-  async deliveryState(flowId: string, requestKey: string | null) {
+  async deliveryState(
+    flowId: string,
+    requestKey: string | null,
+    db: Pick<Prisma.TransactionClient, 'authAbuseOperation'> = this.prisma,
+  ) {
     if (!requestKey) return 'none' as const;
-    const operation = await this.prisma.authAbuseOperation.findUnique({
+    const operation = await db.authAbuseOperation.findUnique({
       where: {
         purpose_idempotencyKey: {
           purpose: 'email_proof_send',
-          idempotencyKey: createHash('sha256')
-            .update(`${flowId}\0${requestKey}`)
-            .digest('hex'),
+          idempotencyKey: operationKey(flowId, requestKey),
         },
       },
       select: { status: true },

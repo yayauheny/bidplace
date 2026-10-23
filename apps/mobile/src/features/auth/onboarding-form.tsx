@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { ApiClientError } from '@bidplace/api-client';
 import { designTokens } from '@bidplace/design-tokens';
 import {
+  ApiErrorCode,
   onboardingRequestSchema,
   type LegalDocumentId,
   type LegalDocumentsResponse,
@@ -151,6 +152,14 @@ export function OnboardingForm() {
             { signal },
           );
         } catch (failure) {
+          if (
+            !signal.aborted &&
+            failure instanceof ApiClientError &&
+            failure.code === ApiErrorCode.MAIL_REJECTED
+          ) {
+            sendKey.current = null;
+            await verification.refetch();
+          }
           if (
             failure instanceof ApiClientError &&
             failure.kind !== 'network' &&
@@ -333,7 +342,9 @@ export function OnboardingForm() {
               ? 'Почтовый сервер принял письмо. Проверьте почту и «Спам».'
               : server?.sendStatus === 'unknown'
                 ? 'Результат отправки неизвестен. Проверьте почту перед повтором.'
-                : 'Нажмите «Запросить код», чтобы получить письмо.'}
+                : server?.sendStatus === 'rejected'
+                  ? 'Запрос отклонён. Код не отправлялся.'
+                  : 'Нажмите «Запросить код», чтобы получить письмо.'}
           </AppText>
         </>
       )}

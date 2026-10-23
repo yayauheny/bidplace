@@ -69,3 +69,13 @@ PR #58 вместе с photo/upload UI MVP. Chromium/WebKit: 12 auth completion,
 E2E API-транспорт; production guards и browser assertions/timeouts сохранены.
 Native devices, live providers и точная визуальная приёмка нового proof-шага
 остаются Needs verification.
+
+## 2026-10-23 — Social onboarding: восстановление после SMTP rejection
+
+**Partial visual acceptance; owner behavior checks passed.** `OnboardingForm`
+показывает существующий rejected-copy, обновляет email state и разрешает новый
+ключ после определённого `MAIL_REJECTED` без reload. Network/неопределённый 5xx
+сохраняют ключ. Client submit owner покрывает все три исхода; layout, tokens,
+routes и shared controls не менялись. Новая Figma/native acceptance не заявляется.
+Chromium/WebKit completion owner: 14/14 passed, включая настоящий rejection
+тестового SMTP и успешный новый запрос/подтверждение на той же странице.

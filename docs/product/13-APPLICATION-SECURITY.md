@@ -292,6 +292,19 @@ flow, 60-second resend delay, shared address quota and global auth mail budgets.
 Codes are HMAC-only in PostgreSQL. Definite mail rejects invalidate the code;
 unknown outcomes retain it and do not trigger automatic resend.
 
+Email-proof replay uses the stored `(flowId, idempotencyKey)` operation, including
+older keys after a new send. Definite rejection returns 503 `MAIL_REJECTED` and
+atomically records the outcome and clears only its current code/expiry/cooldown.
+The rejected reservation still consumes one of the three flow attempts, but no
+shared mail quota; replay consumes neither. A fresh key requires fresh CAPTCHA.
+Reserved operations replay as unknown without waiting on SMTP; after the normal
+60-second cooldown a new reservation remains possible within the same limits.
+Late outcomes cannot overwrite a newer code. State reads use one repeatable-read
+snapshot; current rejection exposes `sendStatus=rejected` and null deadlines.
+An uncertain database write is an infrastructure error, never evidence of SMTP
+rejection or permission for automatic resend. Social onboarding refreshes state
+and rotates its key only after confirmed `MAIL_REJECTED`; uncertain errors retain it.
+
 Known/unknown email-login failures now use the same durable operation/counter
 path, including pause and replay, without creating dummy users. HTTP regression
 covers equal outcomes, five-failure pause, expiry, cancellation, browser binding,

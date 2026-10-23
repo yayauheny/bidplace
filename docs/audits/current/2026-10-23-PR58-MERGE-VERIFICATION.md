@@ -57,7 +57,7 @@ Request различим: известный адрес ожидает SMTP, н�
 в этом probe не использовались. Необходима отдельная security/live приёмка
 перед production.
 
-## Проверки
+## Проверки синхронизации MVP (до SMTP исправления)
 
 - Полный `pnpm verify` объединённого дерева: passed; 1 590 unit, 250 integration,
   один optional browser owner пропущен здесь и отдельно включён; ops/fence,
@@ -92,6 +92,44 @@ network error при Google start; повтор с временной диагн
 Полный manual Verify `39879403448` на merge-коммите прошёл, включая Cloudflare
 image/static checks. Результаты полного Verify и Chromium/WebKit после исправления
 browser startup для итогового SHA публикуются в PR #58; они остаются merge-gate.
+
+## 2026-10-23 — SMTP rejection/replay
+
+На `563243c9` HTTP-регрессии воспроизвели P2: replay rejected-ключа возвращал
+201, а ошибка очистки кода оставляла outcome `rejected` записанным отдельно.
+Исправление сохраняет 503 `MAIL_REJECTED` для любого ключа отвергнутой операции,
+не зависит от текущего `codeRequestKey` и повторно проверяет replay под flow lock.
+Rejection одной транзакцией фиксирует outcome и условно очищает свой код/expiry/
+cooldown; ledger и расход одной из трёх попыток flow сохраняются, общие mail-квоты
+не расходуются. Новая операция требует свежей CAPTCHA.
+
+Reserved replay не ждёт SMTP и не отправляет повторно. После обычных 60 секунд
+новый ключ может зарезервировать следующую попытку в пределах лимитов. Поздние
+accepted/unknown/rejected outcomes не меняют новый код. SMTP выполняется без
+DB-lock, его существующие timeouts не менялись. Ошибки фиксации БД остаются
+неопределёнными infrastructure failures; replay сверяет фактический ledger,
+автоматического SMTP retry нет. Email state читает согласованный repeatable-read
+snapshot. Social onboarding обновляет rejected state и меняет ключ без reload;
+network/неопределённый 5xx сохраняют прежний ключ.
+
+Управляемые gates покрывают конкуренцию во время CAPTCHA и SMTP, все поздние
+outcomes, rollback финализации, потерю commit acknowledgement и конкурентное
+чтение state. Unit submit owner покрывает rejected/network/server failures.
+Полный локальный `pnpm verify` исправленного дерева прошёл: 1 593 unit,
+263 integration (включая 28 abuse), ops/fence, typecheck, lint без autofix,
+API и web/iOS/Android сборки. `pnpm cloudflare:check` прошёл; первый sandbox run
+упёрся в localhost listen EPERM и был повторён с разрешённым listen без изменения
+тестов. Browser owner дополнен recovery-сценарием с rejection тестового SMTP:
+14/14 Chromium/WebKit и 68/68 всего HTTP/browser owner прошли локально.
+Первый запуск нового browser case заполнял email старой login-формы во время
+provider redirect; добавлено ожидание `/auth/complete`, как в существующем owner.
+Assertions, retries и timeouts не ослаблялись. В первой постановке CAPTCHA race
+не было сохранённой browser cookie и создавались два flow; сценарий переведён
+на уже установленную onboarding-сессию, проверка одной reservation сохранена.
+Полный GitHub Verify итогового SHA и его результаты публикуются в PR #58.
+
+Timing-замеры выше относятся к синхронизации MVP; здесь SMTP timing не
+устранялся и заново не измерялся. DEC-136 и production acceptance сохраняются.
 
 ## Граница готовности
 

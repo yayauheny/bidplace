@@ -491,6 +491,46 @@ test('web auth completion: delayed state preserves an edited email and resend us
   await expect(page.getByRole('textbox', { name: 'Код из письма', exact: true })).toHaveCount(0);
 });
 
+test('web auth completion: a rejected proof email refreshes state and retries with a new key without reload', async ({ page }) => {
+  await installTurnstileFixture(page);
+  await page.goto('/login?redirectTo=/account');
+  await page.getByRole('button', { name: 'Войти с Telegram', exact: true }).click();
+  await expect(page).toHaveURL(/\/auth\/complete$/);
+  await page.getByRole('textbox', { name: 'Электронная почта', exact: true }).fill(`smtp-${randomUUID()}@example.test`);
+  await page.getByRole('textbox', { name: 'Никнейм', exact: true }).fill(`smtp-${randomUUID().slice(0, 8)}`);
+  await page.getByRole('checkbox', { name: /Мне есть 18 лет/ }).click();
+  await page.getByRole('button', { name: 'Завершить регистрацию', exact: true }).click();
+  await expectTurnstileReady(page, 'email_verification');
+  const keys: string[] = [];
+  await page.route('**/api/auth/onboarding/email/request', async route => {
+    keys.push(route.request().postDataJSON().idempotencyKey);
+    await route.continue(keys.length === 1 ? {
+      headers: { ...route.request().headers(), 'x-test-proof-mail-outcome': 'rejected' },
+    } : {});
+  });
+  const send = page.getByRole('button', { name: 'Запросить код', exact: true });
+  const rejected = page.waitForResponse(response => response.url().endsWith('/api/auth/onboarding/email/request') && response.request().method() === 'POST');
+  await send.click();
+  expect((await rejected).status()).toBe(503);
+  expect((await (await rejected).json()).code).toBe('MAIL_REJECTED');
+  await expect(page.getByText('Запрос отклонён. Код не отправлялся.', { exact: true })).toBeVisible();
+  const state = await (await page.request.get('/api/auth/onboarding/email/state')).json();
+  expect(state).toMatchObject({ sendStatus: 'rejected', resendAvailableAt: null, codeExpiresAt: null });
+  expect(keys).toHaveLength(1);
+  await expectTurnstileReady(page, 'email_verification');
+  await expect(send).toBeEnabled();
+  const accepted = page.waitForResponse(response => response.url().endsWith('/api/auth/onboarding/email/request') && response.request().method() === 'POST');
+  await send.click();
+  expect((await accepted).status()).toBe(201);
+  expect(keys).toHaveLength(2);
+  expect(keys[1]).not.toBe(keys[0]);
+  const proof = await (await page.request.get('/__test/mail')).json();
+  await page.getByRole('textbox', { name: 'Код из письма', exact: true }).fill(proof.code);
+  await page.getByRole('button', { name: 'Подтвердить и войти', exact: true }).click();
+  await expect.poll(() => new URL(page.url()).pathname).toBe('/account');
+  expect((await page.request.get('/api/auth/me')).status()).toBe(200);
+});
+
 
 test('web auth completion: code form preserves focus and edits through responsive resize', async ({ page }) => {
   await installTurnstileFixture(page);

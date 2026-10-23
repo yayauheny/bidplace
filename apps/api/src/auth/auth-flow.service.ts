@@ -111,11 +111,12 @@ export class AuthFlowService {
   private async flow(
     request: SessionRequest,
     stages: string[],
+    db: Pick<Prisma.TransactionClient, 'authFlow'> = this.prisma,
   ): Promise<AuthFlow> {
     const id = request.session.flowId;
     if (!id)
       throw new UnauthorizedException('Попытка входа завершена. Начните снова');
-    const flow = await this.prisma.authFlow.findFirst({
+    const flow = await db.authFlow.findFirst({
       where: {
         id,
         browserHash: digest(request.sessionID),
@@ -577,19 +578,26 @@ export class AuthFlowService {
   }
 
   async verificationState(request: SessionRequest) {
-    const flow = await this.flow(request, ['email']);
-    return {
-      serverNow: new Date().toISOString(),
-      email: flow.email!,
-      verified: Boolean(flow.emailProvedAt),
-      sendStatus: await this.emailProof.deliveryState(flow.id, flow.codeRequestKey),
-      codeExpiresAt: flow.codeExpiresAt?.toISOString() ?? null,
-      resendAvailableAt: flow.codeSentAt
-        ? new Date(flow.codeSentAt.getTime() + 60_000).toISOString()
-        : null,
-      pausedUntil: null,
-      quotaResetsAt: null,
-    };
+    return this.prisma.$transaction(
+      async (tx) => {
+        const flow = await this.flow(request, ['email'], tx);
+        return {
+          serverNow: new Date().toISOString(),
+          email: flow.email!,
+          verified: Boolean(flow.emailProvedAt),
+          sendStatus: await this.emailProof.deliveryState(
+            flow.id, flow.codeRequestKey, tx,
+          ),
+          codeExpiresAt: flow.codeExpiresAt?.toISOString() ?? null,
+          resendAvailableAt: flow.codeSentAt
+            ? new Date(flow.codeSentAt.getTime() + 60_000).toISOString()
+            : null,
+          pausedUntil: null,
+          quotaResetsAt: null,
+        };
+      },
+      { isolationLevel: 'RepeatableRead' },
+    );
   }
 
   async verifyOnboarding(

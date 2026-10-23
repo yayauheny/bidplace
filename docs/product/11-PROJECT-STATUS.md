@@ -66,3 +66,17 @@ SMTP и открытый request timing; verify оценивается отде�
 
 [Проверки, измерения, причины выбора SMTP и оставшиеся gates](../audits/current/2026-10-23-PR58-MERGE-VERIFICATION.md).
 Ready — только после полного зелёного CI итогового SHA; merge/deploy не выполняются.
+
+## 2026-10-23 — PR #58: SMTP rejection/replay
+
+**Partial (release gates remain).** `EmailProofService` воспроизводил ложный
+успех replay после SMTP rejection и раздельную запись outcome/очистки кода.
+Исправление связывает replay с ledger операции, атомарно снимает код/cooldown
+только её активного ключа, сохраняет расход трёх flow attempts и общие квоты.
+`AuthFlowService` читает согласованный email state; `OnboardingForm` обновляет
+rejected state и меняет ключ без reload, сохраняя ключ при неопределённом сбое.
+HTTP owner покрывает delayed SMTP, поздние outcomes, rollback и потерю commit
+acknowledgement; client submit owner — три класса отказа. Результаты итогового
+SHA и CI — [PR #58](https://github.com/yayauheny/bidplace/pull/58) и
+[отчёт](../audits/current/2026-10-23-PR58-MERGE-VERIFICATION.md).
+DEC-136 и production gates сохраняются; merge/deploy не выполняются.

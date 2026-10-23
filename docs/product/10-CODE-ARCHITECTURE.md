@@ -688,6 +688,12 @@ Proof mail reserves `email_proof_send` in the common abuse ledger under the
 existing global mail lock; account/address quotas and global budgets include it.
 Delivery status distinguishes accepted, rejected and unknown; definite reject
 invalidates the pending code. Session flow, purpose, address and TTL bind proof.
+Replay is owned by the flow-scoped abuse operation, not the flow's current code
+pointer. Rejection outcome and conditional code/cooldown cleanup commit together;
+SMTP holds no database lock. Reserved replay never waits for transport, and late
+finalization updates only its own operation/code. Onboarding state reads flow and
+current mail outcome in a repeatable-read transaction. Existing error/state
+contracts carry rejection; no queue, schema or public type is added.
 The additive `20261022040000_auth_email_proof` migration must precede API rollout.
 
 Email-login refusal uses the same counter, operation replay, code lookup and

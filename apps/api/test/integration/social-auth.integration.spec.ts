@@ -27,6 +27,10 @@ import { SessionService } from '../../src/auth/session.service';
 import { ServiceUnavailableException } from '@nestjs/common';
 import { ApiErrorCode } from '@bidplace/contracts';
 import { MailTransport } from '../../src/core/mail';
+import { PrismaService } from '../../src/core/database';
+import { MAIL_SPEND_STATUSES } from '../../src/auth-abuse/auth-abuse.policy';
+import { EmailProofService } from '../../src/auth/email-proof.service';
+import { AuthAbuseService } from '../../src/auth-abuse/auth-abuse.service';
 
 const legal = {
   agreement: { confirmed: true },
@@ -47,6 +51,7 @@ let http: HttpTestApp;
 let provider: Awaited<ReturnType<typeof createTestIdentityProvider>>;
 let client: HttpTestClient;
 let mail: Array<{ to: string; text: string }> = [];
+let rejectNextProofMail = false;
 
 beforeAll(async () => {
   database = await createIntegrationDatabaseContext(
@@ -72,6 +77,10 @@ beforeAll(async () => {
   http = await createHttpTestApp(database.databaseUrl);
   vi.spyOn(http.app.get(MailTransport), 'send').mockImplementation(
     async (message) => {
+      if (rejectNextProofMail) {
+        rejectNextProofMail = false;
+        throw Object.assign(new Error('Synthetic browser SMTP refusal'), { responseCode: 550 });
+      }
       mail.push({ to: message.to, text: message.text });
     },
   );
@@ -83,6 +92,7 @@ beforeEach(() => {
     `192.0.2.${Math.floor(Math.random() * 200) + 1}`,
   );
   mail = [];
+  rejectNextProofMail = false;
 });
 afterAll(async () => {
   await http?.close();
@@ -131,6 +141,341 @@ async function signup(kind: 'google' | 'telegram', email: string) {
 }
 
 describe('OIDC, email login and explicit account linking', () => {
+  async function proofRequest(intent: 'register' | 'onboarding') {
+    const email = `proof-retry-${randomUUID()}@example.test`;
+    if (intent === 'onboarding') await signup('telegram', email);
+    return {
+      email,
+      path: intent === 'register' ? '/auth/register/email' : '/auth/onboarding/email',
+      input: (key = idempotencyKey(), token?: string) => ({
+        ...(intent === 'register' ? { email } : {}),
+        idempotencyKey: key,
+        turnstileToken: token ?? turnstileToken(intent === 'register' ? 'register' : 'email_verification'),
+      }),
+      flow: () => database.prisma.authFlow.findFirstOrThrow({ where: { email, stage: 'email' } }),
+      operations: () => database.prisma.authAbuseOperation.findMany({ where: { email, purpose: 'email_proof_send' } }),
+    };
+  }
+
+  const smtpRejection = () => Object.assign(new Error('Synthetic SMTP refusal'), { responseCode: 550 });
+  const deferred = () => {
+    let resolve!: () => void;
+    const promise = new Promise<void>((done) => { resolve = done; });
+    return { promise, resolve };
+  };
+
+  it.each(['register', 'onboarding'] as const)(
+    'replays a rejected %s proof and immediately accepts a fresh operation without creating an account before proof',
+    async (intent) => {
+      const proof = await proofRequest(intent);
+      const input = proof.input();
+      const send = vi.mocked(http.app.get(MailTransport).send);
+      send.mockRejectedValueOnce(smtpRejection());
+      const rejected = await client.post(proof.path + '/request', input);
+      expect(rejected.status).toBe(503);
+      expect((await rejected.json()).code).toBe(ApiErrorCode.MAIL_REJECTED);
+      const failedFlow = await proof.flow();
+      expect(failedFlow).toMatchObject({ codeHash: null, codeExpiresAt: null, codeSentAt: null, codeSends: 1, codeRequestKey: input.idempotencyKey });
+      if (intent === 'onboarding') {
+        expect(await (await client.get(proof.path + '/state')).json()).toMatchObject({
+          sendStatus: 'rejected', resendAvailableAt: null, codeExpiresAt: null,
+        });
+      }
+      const replay = await client.post(proof.path + '/request', proof.input(input.idempotencyKey, 'invalid-proof'));
+      expect(replay.status).toBe(503);
+      expect((await replay.json()).code).toBe(ApiErrorCode.MAIL_REJECTED);
+      expect((await proof.flow()).codeSends).toBe(1);
+      expect(await proof.operations()).toHaveLength(1);
+      expect(mail).toHaveLength(0);
+      expect((await client.post(proof.path + '/request', proof.input(undefined, 'invalid-proof'))).status).toBe(403);
+      expect((await client.post(proof.path + '/request', proof.input())).status).toBe(201);
+      const nextFlow = await proof.flow();
+      expect(nextFlow.codeSends).toBe(2);
+      expect(nextFlow.codeHash).not.toBeNull();
+      expect(mail).toHaveLength(1);
+      expect((await client.post(proof.path + '/request', proof.input(input.idempotencyKey, 'invalid-proof'))).status).toBe(503);
+      expect(await proof.flow()).toEqual(nextFlow);
+      expect(await database.prisma.authAbuseOperation.count({ where: {
+        email: proof.email, purpose: 'email_proof_send', status: { in: [...MAIL_SPEND_STATUSES] },
+      } })).toBe(1);
+      expect(await database.prisma.user.count({ where: { email: proof.email } })).toBe(0);
+      expect(await database.prisma.externalIdentity.count({ where: { user: { email: proof.email } } })).toBe(0);
+      expect(await database.prisma.registrationLegalEvidence.count({ where: { user: { email: proof.email } } })).toBe(0);
+      expect((await client.post(proof.path + '/verify', { code: code(), idempotencyKey: idempotencyKey() })).status).toBe(201);
+      if (intent === 'register') {
+        expect((await client.post('/auth/register', {
+          email: proof.email, slug: 'proof-' + randomUUID().slice(0, 8), password: 'synthetic-password', legal,
+        })).status).toBe(201);
+      }
+      expect(await database.prisma.user.count({ where: { email: proof.email } })).toBe(1);
+    },
+  );
+
+  it('counts three rejected reservations against the flow but not shared mail quotas', async () => {
+    const proof = await proofRequest('onboarding');
+    const keys = [idempotencyKey(), idempotencyKey(), idempotencyKey()];
+    const send = vi.mocked(http.app.get(MailTransport).send);
+    for (const key of keys) {
+      send.mockRejectedValueOnce(smtpRejection());
+      expect((await client.post(proof.path + '/request', proof.input(key))).status).toBe(503);
+      expect((await client.post(proof.path + '/request', proof.input(key, 'invalid-proof'))).status).toBe(503);
+    }
+    expect((await proof.flow()).codeSends).toBe(3);
+    expect(await proof.operations()).toHaveLength(3);
+    expect(await database.prisma.authAbuseOperation.count({ where: {
+      email: proof.email, purpose: 'email_proof_send', status: { in: [...MAIL_SPEND_STATUSES] },
+    } })).toBe(0);
+    expect((await client.post(proof.path + '/request', proof.input())).status).toBe(429);
+    for (const key of keys) {
+      const replay = await client.post(proof.path + '/request', proof.input(key, 'invalid-proof'));
+      expect(replay.status).toBe(503);
+      expect((await replay.json()).code).toBe(ApiErrorCode.MAIL_REJECTED);
+    }
+    expect((await proof.flow()).codeSends).toBe(3);
+    expect(mail).toHaveLength(0);
+  });
+
+  it.each(['accepted', 'unknown', 'rejected'] as const)(
+    'does not wait on reserved SMTP or let its late %s result damage a newer proof',
+    async (outcome) => {
+      const proof = await proofRequest('onboarding');
+      const entered = deferred();
+      const release = deferred();
+      const input = proof.input();
+      const send = vi.mocked(http.app.get(MailTransport).send);
+      send.mockImplementationOnce(async () => {
+        entered.resolve();
+        await release.promise;
+        if (outcome === 'rejected') throw smtpRejection();
+        if (outcome === 'unknown') throw Object.assign(new Error('Synthetic timeout'), { code: 'ETIMEDOUT' });
+      });
+      const pending = client.post(proof.path + '/request', input);
+      try {
+        await entered.promise;
+        expect((await proof.operations())[0]?.status).toBe('reserved');
+        const replay = await client.post(proof.path + '/request', proof.input(input.idempotencyKey, 'invalid-proof'));
+        expect(replay.status).toBe(201);
+        expect((await replay.json()).delivery).toBe('unknown');
+        expect((await client.post(proof.path + '/request', proof.input())).status).toBe(201);
+        expect((await proof.flow()).codeSends).toBe(1);
+        expect(await proof.operations()).toHaveLength(1);
+        vi.useFakeTimers({ toFake: ['Date'] });
+        vi.setSystemTime(new Date(Date.now() + 61_000));
+        expect((await client.post(proof.path + '/request', proof.input())).status).toBe(201);
+        const newer = await proof.flow();
+        expect(newer.codeSends).toBe(2);
+        expect(newer.codeHash).not.toBeNull();
+        expect(await proof.operations()).toHaveLength(2);
+        release.resolve();
+        expect((await pending).status).toBe(outcome === 'rejected' ? 503 : 201);
+        expect(await proof.flow()).toEqual(newer);
+        const old = (await proof.operations()).find((operation) => operation.idempotencyKey === createHash('sha256').update(`${newer.id}\0${input.idempotencyKey}`).digest('hex'));
+        expect(old?.status).toBe(outcome);
+        const state = await (await client.get(proof.path + '/state')).json();
+        expect(state.sendStatus).toBe('accepted');
+        expect(state.resendAvailableAt).not.toBeNull();
+        expect((await client.post(proof.path + '/verify', { code: code(), idempotencyKey: idempotencyKey() })).status).toBe(201);
+      } finally {
+        release.resolve();
+        await pending;
+        vi.useRealTimers();
+      }
+    },
+  );
+
+  it('rechecks idempotency under the flow lock when another request reserves during CAPTCHA validation', async () => {
+    const proof = await proofRequest('onboarding');
+    const input = proof.input();
+    const captchaEntered = deferred();
+    const captchaRelease = deferred();
+    const smtpEntered = deferred();
+    const smtpRelease = deferred();
+    const abuse = http.app.get(AuthAbuseService);
+    const validate = abuse.assertOnboardingEmailProof.bind(abuse);
+    const captcha = vi.spyOn(abuse, 'assertOnboardingEmailProof').mockImplementationOnce(async (...args) => {
+      await validate(...args);
+      captchaEntered.resolve();
+      await captchaRelease.promise;
+    });
+    vi.mocked(http.app.get(MailTransport).send).mockImplementationOnce(async () => {
+      smtpEntered.resolve();
+      await smtpRelease.promise;
+    });
+    const first = client.post(proof.path + '/request', input);
+    let second: Promise<Response> | undefined;
+    try {
+      await captchaEntered.promise;
+      second = client.post(proof.path + '/request', proof.input(input.idempotencyKey));
+      await smtpEntered.promise;
+      captchaRelease.resolve();
+      const replay = await first;
+      expect(replay.status).toBe(201);
+      expect(await proof.operations()).toHaveLength(1);
+      expect((await proof.flow()).codeSends).toBe(1);
+      smtpRelease.resolve();
+      expect((await second).status).toBe(201);
+      expect(await proof.operations()).toHaveLength(1);
+    } finally {
+      captchaRelease.resolve();
+      smtpRelease.resolve();
+      await first;
+      await second;
+      captcha.mockRestore();
+    }
+  });
+
+  it('rolls back rejection outcome and code invalidation together when finalization fails', async () => {
+    const proof = await proofRequest('onboarding');
+    const input = proof.input();
+    const send = vi.mocked(http.app.get(MailTransport).send);
+    await database.prisma.$executeRawUnsafe(`CREATE FUNCTION reject_proof_cleanup() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'Synthetic cleanup failure'; END $$`);
+    await database.prisma.$executeRawUnsafe(`CREATE TRIGGER reject_proof_cleanup BEFORE UPDATE ON auth_flows FOR EACH ROW WHEN (OLD.code_hash IS NOT NULL AND NEW.code_hash IS NULL) EXECUTE FUNCTION reject_proof_cleanup()`);
+    try {
+      send.mockRejectedValueOnce(smtpRejection());
+      const response = await client.post(proof.path + '/request', input);
+      expect(response.status).toBeGreaterThanOrEqual(500);
+      expect((await response.json()).code).not.toBe(ApiErrorCode.MAIL_REJECTED);
+      expect((await proof.operations())[0]?.status).toBe('reserved');
+      const flow = await proof.flow();
+      expect(flow.codeHash).not.toBeNull();
+      expect(flow.codeSentAt).not.toBeNull();
+      const replay = await client.post(proof.path + '/request', proof.input(input.idempotencyKey, 'invalid-proof'));
+      expect(replay.status).toBe(201);
+      expect((await replay.json()).delivery).toBe('unknown');
+      expect(await proof.operations()).toHaveLength(1);
+      expect((await proof.flow()).codeSends).toBe(1);
+      expect(mail).toHaveLength(0);
+    } finally {
+      await database.prisma.$executeRawUnsafe('DROP TRIGGER reject_proof_cleanup ON auth_flows');
+      await database.prisma.$executeRawUnsafe('DROP FUNCTION reject_proof_cleanup()');
+    }
+  });
+
+  it('reads a coherent proof state while rejection commits between its flow and operation reads', async () => {
+    const proof = await proofRequest('onboarding');
+    const smtpEntered = deferred();
+    const smtpRelease = deferred();
+    const stateEntered = deferred();
+    const stateRelease = deferred();
+    vi.mocked(http.app.get(MailTransport).send).mockImplementationOnce(async () => {
+      smtpEntered.resolve();
+      await smtpRelease.promise;
+      throw smtpRejection();
+    });
+    const pending = client.post(proof.path + '/request', proof.input());
+    const service = http.app.get(EmailProofService);
+    const readState = service.deliveryState.bind(service);
+    const stateSpy = vi.spyOn(service, 'deliveryState').mockImplementationOnce(async (...args) => {
+      stateEntered.resolve();
+      await stateRelease.promise;
+      return readState(...args);
+    });
+    let pendingState: Promise<Response> | undefined;
+    try {
+      await smtpEntered.promise;
+      pendingState = client.get(proof.path + '/state');
+      await stateEntered.promise;
+      smtpRelease.resolve();
+      expect((await pending).status).toBe(503);
+      stateRelease.resolve();
+      const snapshot = await (await pendingState).json();
+      expect(snapshot.sendStatus).toBe('unknown');
+      expect(snapshot.codeExpiresAt).not.toBeNull();
+      expect(snapshot.resendAvailableAt).not.toBeNull();
+      expect(await (await client.get(proof.path + '/state')).json()).toMatchObject({
+        sendStatus: 'rejected', codeExpiresAt: null, resendAvailableAt: null,
+      });
+    } finally {
+      smtpRelease.resolve();
+      stateRelease.resolve();
+      await pending;
+      await pendingState;
+      stateSpy.mockRestore();
+    }
+  });
+
+  it('reconciles a lost rejection commit acknowledgement through replay without another send', async () => {
+    const proof = await proofRequest('onboarding');
+    const input = proof.input();
+    const entered = deferred();
+    const release = deferred();
+    vi.mocked(http.app.get(MailTransport).send).mockImplementationOnce(async () => {
+      entered.resolve();
+      await release.promise;
+      throw smtpRejection();
+    });
+    const pending = client.post(proof.path + '/request', input);
+    const prisma = http.app.get(PrismaService);
+    const transact = prisma.$transaction.bind(prisma);
+    try {
+      await entered.promise;
+      const transaction = vi.spyOn(prisma, '$transaction').mockImplementationOnce(async (work, options) => {
+        await transact(work, options);
+        throw new Error('Synthetic lost commit acknowledgement');
+      });
+      try {
+        release.resolve();
+        const response = await pending;
+        expect(response.status).toBeGreaterThanOrEqual(500);
+        expect((await response.json()).code).not.toBe(ApiErrorCode.MAIL_REJECTED);
+        expect((await proof.operations())[0]?.status).toBe('rejected');
+        expect((await proof.flow()).codeSentAt).toBeNull();
+        const replay = await client.post(proof.path + '/request', proof.input(input.idempotencyKey, 'invalid-proof'));
+        expect(replay.status).toBe(503);
+        expect((await replay.json()).code).toBe(ApiErrorCode.MAIL_REJECTED);
+        expect(await proof.operations()).toHaveLength(1);
+        expect(mail).toHaveLength(0);
+      } finally {
+        transaction.mockRestore();
+      }
+    } finally {
+      release.resolve();
+      await pending;
+    }
+  });
+
+  it.each(['accepted', 'unknown'] as const)('retains a usable %s proof and replays it without another SMTP attempt', async (outcome) => {
+    const proof = await proofRequest('onboarding');
+    const input = proof.input();
+    if (outcome === 'unknown') vi.mocked(http.app.get(MailTransport).send).mockImplementationOnce(async (message) => {
+      mail.push({ to: message.to, text: message.text });
+      throw Object.assign(new Error('Synthetic SMTP timeout'), { code: 'ETIMEDOUT' });
+    });
+    const sent = await client.post(proof.path + '/request', input);
+    expect(sent.status).toBe(201);
+    expect((await sent.json()).delivery).toBe(outcome);
+    const flow = await proof.flow();
+    const replay = await client.post(proof.path + '/request', proof.input(input.idempotencyKey, 'invalid-proof'));
+    expect(replay.status).toBe(201);
+    expect((await replay.json()).delivery).toBe(outcome);
+    expect((await client.post(proof.path + '/request', proof.input())).status).toBe(201);
+    expect(await proof.flow()).toEqual(flow);
+    expect(await proof.operations()).toHaveLength(1);
+    expect(mail).toHaveLength(1);
+    expect((await client.post(proof.path + '/verify', { code: code(), idempotencyKey: idempotencyKey() })).status).toBe(201);
+  });
+
+  it('keeps a successful SMTP result uncertain when recording acceptance fails without sending again', async () => {
+    const proof = await proofRequest('onboarding');
+    const input = proof.input();
+    const update = vi.spyOn(http.app.get(PrismaService).authAbuseOperation, 'update').mockRejectedValueOnce(
+      Object.assign(new Error('Synthetic ledger outage'), { responseCode: 550 }),
+    );
+    try {
+      const response = await client.post(proof.path + '/request', input);
+      expect(response.status).toBeGreaterThanOrEqual(500);
+      expect((await response.json()).code).not.toBe(ApiErrorCode.MAIL_REJECTED);
+      expect((await proof.operations())[0]?.status).toBe('reserved');
+      const replay = await client.post(proof.path + '/request', proof.input(input.idempotencyKey, 'invalid-proof'));
+      expect(replay.status).toBe(201);
+      expect((await replay.json()).delivery).toBe('unknown');
+      expect(mail).toHaveLength(1);
+      expect((await client.post(proof.path + '/verify', { code: code(), idempotencyKey: idempotencyKey() })).status).toBe(201);
+    } finally {
+      update.mockRestore();
+    }
+  });
+
   it('creates Google Gmail account only after nickname/legal and reuses its identity', async () => {
     const email = `auth-${randomUUID()}@gmail.com`;
     const { body, url } = await signup('google', email);
@@ -1097,6 +1442,10 @@ describe('OIDC, email login and explicit account linking', () => {
     'runs Chromium and WebKit against the isolated auth HTTP harness',
     async () => {
       const proxy = createServer((request, response) => {
+        if (
+          request.url === '/api/auth/onboarding/email/request' &&
+          request.headers['x-test-proof-mail-outcome'] === 'rejected'
+        ) rejectNextProofMail = true;
         if (request.url === '/__test/mail') {
           response.setHeader('Cache-Control', 'no-store');
           response.setHeader('Content-Type', 'application/json');
