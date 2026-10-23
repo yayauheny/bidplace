@@ -16,6 +16,16 @@
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
 | Commerce, избранное/подписки, смена email/password из settings | Not implemented в launch scope / post-MVP; [следующая волна](15-POST-MVP-BACKLOG.md). Старый commerce runtime не разрешает включать продажи. |
 
+## 2026-10-24 — Moderation filter contract clarification
+
+**Implemented (local verification passed).** `adminQueueQuerySchema` now describes existing overlapping
+filters: `APPROVED` selects the parent; review filters select editing revisions.
+Extended seller/Work summary integration assertions cover approved parents with
+pending edits. No selection logic, authorization, DTO fields or UI taxonomy changed.
+17 owner HTTP/PostgreSQL tests, 47 contracts tests, contracts/API typecheck, API
+lint/build with dependencies, docs links and diff checks passed. Independent
+review has no substantial open findings; remote CI is recorded in PR #62.
+
 ## 2026-10-23 — Admin foundation
 
 **Implemented (local verification passed).** Protected summary/detail/history API in

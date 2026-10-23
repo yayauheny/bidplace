@@ -1067,6 +1067,14 @@ it('pages summaries by revision submission time with unknown times last and keep
     cursor = body.nextCursor;
   } while (cursor);
   expect(found).toEqual(ids);
+  const approved = await api.get(
+    `/admin/seller-profiles/summary?${new URLSearchParams({ search: label, filter: 'APPROVED' })}`,
+  );
+  expect(approved.status).toBe(200);
+  expect(await approved.json()).toMatchObject({
+    items: [{ id: ids[0], parentStatus: 'APPROVED', reviewStatus: 'PENDING_REVIEW' }],
+    nextCursor: null,
+  });
   expect(
     (await client('203.0.113.68').get('/admin/products/summary')).status,
   ).toBe(401);
@@ -1137,8 +1145,10 @@ it('returns separate Work snapshots without tracking public page views', async (
   expect(await response.json()).toMatchObject({ entity: { parentStatus: 'APPROVED' },
     publishedRevision: { id: publishedId, content: { title: 'Approved snapshot' } },
     reviewRevision: { id: reviewId, content: { title: label } }, decisionTarget: { kind: 'revision', id: reviewId } });
-  const summaries = await api.get(`/admin/products/summary?search=${label}&limit=1`);
-  expect(summaries.status).toBe(200);
-  expect(await summaries.json()).toMatchObject({ items: [{ id: productId, parentStatus: 'APPROVED', reviewStatus: 'PENDING_REVIEW' }] });
+  for (const filter of ['PENDING_REVIEW', 'APPROVED']) {
+    const summaries = await api.get(`/admin/products/summary?search=${label}&limit=1&filter=${filter}`);
+    expect(summaries.status).toBe(200);
+    expect(await summaries.json()).toMatchObject({ items: [{ id: productId, parentStatus: 'APPROVED', reviewStatus: 'PENDING_REVIEW' }] });
+  }
   expect(await prisma.analyticsEvent.count()).toBe(0);
 });

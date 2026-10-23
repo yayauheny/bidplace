@@ -70,7 +70,10 @@ See [`11-PROJECT-STATUS.md`](11-PROJECT-STATUS.md) for remaining gates.
 `AdminModerationService` retains mutation ownership; protected summary/detail/
 history reads extend `AdminController` and the shared contracts/client. Summary
 SQL uses revision submission time and revision ID, with unknown times explicitly
-last. Legacy list/cursor contracts are preserved. Detail reuses revision selectors
+last. Summary filters are non-exclusive: `APPROVED` tests parent status, other
+statuses test the editing revision with legacy parent fallback, and `ALL` does
+not constrain status. Parent approval does not itself guarantee public visibility;
+consumers keep parent/review statuses separate. Legacy list/cursor contracts are preserved. Detail reuses revision selectors
 and mappers, with separate published/review snapshots and decision target.
 
 `AuditEvent` adds nullable action/revision/operation/generation metadata and an

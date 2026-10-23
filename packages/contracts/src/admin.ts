@@ -507,7 +507,9 @@ export const adminQueueQuerySchema = z
       .min(1)
       .max(ADMIN_MODERATION_MAX_LIMIT)
       .default(50),
-    filter: adminModerationFilterSchema.default('PENDING_REVIEW'),
+    filter: adminModerationFilterSchema.default('PENDING_REVIEW').describe(
+      'APPROVED selects parent approval; other statuses select the editing revision (legacy parent fallback). Filters can overlap.',
+    ),
     search: z.string().trim().max(ADMIN_MODERATION_MAX_SEARCH).optional(),
   })
   .strict();

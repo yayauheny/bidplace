@@ -31,6 +31,15 @@ parent ID only as the stable unknown-time tie-breaker. Responses distinguish
 parent/review status and explicitly mark unknown submission time. Existing lists
 retain their original ordering/cursors for installed clients.
 
+Summary filters are deliberately non-exclusive: `APPROVED` selects the parent
+status, not the latest editing revision or guaranteed public visibility. Other
+status filters select the editing revision (legacy parent fallback when absent);
+`ALL` does not constrain status. An approved parent with a pending edit therefore
+belongs to both `APPROVED` and `PENDING_REVIEW`. Consumers must use the separate
+`parentStatus` and `reviewStatus`, not render these filters as one exclusive queue
+state. The summary contract describes this boundary; seller/Work integration
+regressions preserve it. No UI taxonomy or legacy behavior is changed.
+
 New `GET /api/admin/{seller-profiles,products}/:id` returns `entity`,
 `publishedRevision`, `reviewRevision` and an explicit `decisionTarget`. Shared
 selectors/mappers normalize snapshot content, catalog links and gallery order.
@@ -89,3 +98,11 @@ guest published/pending text, gallery identities and private image HTTP checks
 remain unchanged. `pnpm docs:link-check` and `git diff --check` passed. Chromium/WebKit moderation E2E passed (4 tests). Final HEAD/CI
 results are recorded in the PR. Production migrations,
 real object storage/CDN acceptance and deployment are outside this PR.
+
+2026-10-24 review follow-up: clarified the existing non-exclusive filter semantics
+and extended the owner HTTP assertions for approved parents with pending edits.
+17 owner HTTP/PostgreSQL tests, 47 contracts tests, contracts/API typecheck, API
+lint/build with dependencies, docs links and diff checks passed. An initial local
+integration attempt used stale database build artifacts from the analytics branch;
+a dependency rebuild and repeat passed. Independent follow-up review has no
+substantial open findings. Exact-HEAD remote CI is recorded in PR #62.
