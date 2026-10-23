@@ -48,94 +48,109 @@ export function AdminAnalyticsGrowth({
         label="Метрика динамики"
         panelId="analytics-growth"
       />
-      <AppText role="caption" tone="secondary">
-        Одна метрика по дням UTC. Авторы и работы — первые публикации.
-      </AppText>
-      {available ? (
-        <>
-          <AppText role="caption" tone="secondary">
-            Шкала: 0 — {max}
-          </AppText>
-          <View
-            testID="analytics-chart"
-            accessible
-            accessibilityRole="image"
-            accessibilityLabel={`${label} по дням UTC, максимум ${max}. Точные значения доступны в выборе дня ниже.`}
-            onLayout={(event) => setWidth(event.nativeEvent.layout.width)}
-            style={{ width: '100%', height: HEIGHT }}
-          >
-            {width > PAD * 2 ? (
-              <Svg width={width} height={HEIGHT}>
-                <Line
-                  x1={PAD}
-                  y1={HEIGHT - PAD}
-                  x2={width - PAD}
-                  y2={HEIGHT - PAD}
-                  stroke={palette.border}
-                />
-                <Circle
-                  cx={
-                    rows.length === 1
-                      ? width / 2
-                      : PAD +
-                        (Math.max(
-                          0,
-                          rows.findIndex((row) => row.date === selected?.date),
-                        ) *
-                          (width - PAD * 2)) /
-                          (rows.length - 1)
-                  }
-                  cy={
-                    HEIGHT -
-                    PAD -
-                    ((selected?.[metric] ?? 0) / max) * (HEIGHT - PAD * 2)
-                  }
-                  r={3}
-                  fill={palette.ink}
-                />
-                <Polyline
-                  points={points}
-                  fill="none"
-                  stroke={palette.ink}
-                  strokeWidth={2}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </Svg>
-            ) : null}
-          </View>
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              gap: designTokens.space.x2,
-            }}
-          >
-            <AppText role="caption">{rows[0]!.date}</AppText>
-            <AppText role="caption">{rows.at(-1)!.date}</AppText>
-          </View>
-          <FigmaTabs
-            tabs={rows.map((row) => ({
-              value: row.date,
-              label: row.date.slice(5),
-            }))}
-            value={selected?.date ?? ''}
-            onChange={setSelectedDate}
-            label="День динамики"
-            panelId="analytics-day"
-          />
-          <AppText role="bodySmall" accessibilityLiveRegion="polite">
-            {selected?.date}: {label} — {selected?.[metric] ?? '—'}
-          </AppText>
-          {rows.every((row) => row[metric] === 0) ? (
-            <AppText role="bodySmall" tone="secondary">
-              В выбранном периоде наблюдений этой метрики нет.
+      <View
+        nativeID="analytics-growth"
+        role="tabpanel"
+        aria-labelledby={`analytics-growth-${metric}`}
+        style={{ gap: designTokens.space.x3 }}
+      >
+        <AppText role="caption" tone="secondary">
+          Одна метрика по дням UTC. Авторы и работы — первые публикации.
+        </AppText>
+        {available ? (
+          <>
+            <AppText role="caption" tone="secondary">
+              Шкала: 0 — {max}
             </AppText>
-          ) : null}
-        </>
-      ) : (
-        <AppText role="bodySmall">Дневные значения недоступны.</AppText>
-      )}
+            <View
+              testID="analytics-chart"
+              accessible
+              accessibilityRole="image"
+              accessibilityLabel={`${label} по дням UTC, максимум ${max}. Точные значения доступны в выборе дня ниже.`}
+              onLayout={(event) => setWidth(event.nativeEvent.layout.width)}
+              style={{ width: '100%', height: HEIGHT }}
+            >
+              {width > PAD * 2 ? (
+                <Svg width={width} height={HEIGHT}>
+                  <Line
+                    x1={PAD}
+                    y1={HEIGHT - PAD}
+                    x2={width - PAD}
+                    y2={HEIGHT - PAD}
+                    stroke={palette.border}
+                  />
+                  <Circle
+                    cx={
+                      rows.length === 1
+                        ? width / 2
+                        : PAD +
+                          (Math.max(
+                            0,
+                            rows.findIndex(
+                              (row) => row.date === selected?.date,
+                            ),
+                          ) *
+                            (width - PAD * 2)) /
+                            (rows.length - 1)
+                    }
+                    cy={
+                      HEIGHT -
+                      PAD -
+                      ((selected?.[metric] ?? 0) / max) * (HEIGHT - PAD * 2)
+                    }
+                    r={3}
+                    fill={palette.ink}
+                  />
+                  <Polyline
+                    points={points}
+                    fill="none"
+                    stroke={palette.ink}
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </Svg>
+              ) : null}
+            </View>
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                gap: designTokens.space.x2,
+              }}
+            >
+              <AppText role="caption">{rows[0]!.date}</AppText>
+              <AppText role="caption">{rows.at(-1)!.date}</AppText>
+            </View>
+            <FigmaTabs
+              tabs={rows.map((row) => ({
+                value: row.date,
+                label: row.date.slice(5),
+              }))}
+              value={selected?.date ?? ''}
+              onChange={setSelectedDate}
+              label="День динамики"
+              panelId="analytics-day"
+            />
+            <View
+              nativeID="analytics-day"
+              role="tabpanel"
+              aria-labelledby={`analytics-day-${selected?.date ?? ''}`}
+            >
+              <AppText role="bodySmall" accessibilityLiveRegion="polite">
+                {selected?.date}: {label} — {selected?.[metric] ?? '—'}
+              </AppText>
+            </View>
+            {rows.every((row) => row[metric] === 0) ? (
+              <AppText role="bodySmall" tone="secondary">
+                В выбранном периоде наблюдений этой метрики нет.
+              </AppText>
+            ) : null}
+          </>
+        ) : (
+          <AppText role="bodySmall">Дневные значения недоступны.</AppText>
+        )}
+      </View>
     </View>
   );
 }

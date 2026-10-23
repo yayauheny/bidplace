@@ -144,3 +144,6 @@ opt-in activity fields; no persistence/dependency changes. Server collection
 permission and client build collector are distinct; unknown history/coverage and
 immature/empty cohorts stay explicit. PostgreSQL19 owner tests, period11 and client49
 pass. Mobile screenshots/review and final checks: [audit](../audits/current/2026-10-24-ADMIN-ANALYTICS-UI.md).
+
+Analytics UI accessibility follow-up: labelled period/metric/day panels and
+keyboard/DOM associations use the existing public-screen pattern; no API change.

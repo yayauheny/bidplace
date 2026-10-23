@@ -106,3 +106,6 @@ dates and retry. Independent source/mobile screenshot review found no substantia
 blockers. Exact new admin/desktop composition has no supplied Figma frame
 (**NEEDS-FIGMA**); physical iOS/Android, keyboard and screen reader remain
 **Needs verification**. [Evidence/checks](../audits/current/2026-10-24-ADMIN-ANALYTICS-UI.md).
+
+Analytics accessibility follow-up links period/metric/day tabs to real labelled
+panels; DOM and keyboard acceptance extend the existing browser owner spec.

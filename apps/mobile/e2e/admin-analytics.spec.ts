@@ -121,6 +121,26 @@ test('mobile analytics uses protected activity reads, one metric and valid UTC p
     await chart.scrollIntoViewIfNeeded();
     await screen.getByRole('tab', { name: 'Сессии', exact: true }).click();
     await expect(chart).toHaveAttribute('aria-label', /Сессии по дням/);
+    await screen.getByRole('tab', { name: 'Сессии', exact: true }).focus();
+    await page.keyboard.press('ArrowRight');
+    await expect(chart).toHaveAttribute('aria-label', /Просмотры по дням/);
+    await page.keyboard.press('ArrowLeft');
+    await expect(chart).toHaveAttribute('aria-label', /Сессии по дням/);
+    const selectedTabs = screen.locator('[role="tab"][aria-selected="true"]');
+    await expect(selectedTabs).toHaveCount(3);
+    expect(
+      await selectedTabs.evaluateAll((tabs) =>
+        tabs.every((tab) => {
+          const id = tab.getAttribute('aria-controls');
+          const panel = id ? document.getElementById(id) : null;
+          return (
+            panel?.getAttribute('role') === 'tabpanel' &&
+            panel.getAttribute('aria-labelledby') === tab.id
+          );
+        }),
+      ),
+    ).toBe(true);
+
     await page.screenshot({
       path: `${evidence}/growth-${browserName}-390.png`,
     });

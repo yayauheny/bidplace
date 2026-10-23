@@ -76,3 +76,8 @@ Final local graph: typecheck/lint (zero warnings),247 integration pass/29 existi
 skips, API470/mobile1047/contracts47/client49/config8/database1 unit checks, ops31,
 E2E fence, all-platform build/export and docs links passed. No failing required
 local check remains. CI belongs to the exact published HEAD and is recorded in PR.
+
+Accessibility follow-up: period, selected metric and selected day now link to real
+labelled panels using the existing public Work/author pattern. Browser acceptance
+checks selected-tab associations and keyboard ArrowRight/ArrowLeft. No visual or
+metric behavior change.
