@@ -14,7 +14,7 @@ export function publicAnalyticsPage(
   if (pathname === '/works') return { page: 'works' };
   if (pathname === '/authors') return { page: 'authors' };
   const work = /^\/product\/([^/]+)$/.exec(pathname);
-  const author = /^\/authors\/([^/]+)$/.exec(pathname);
+  const author = /^\/seller\/([^/]+)$/.exec(pathname);
   const result = publicPageSchema.safeParse(
     work
       ? { page: 'work', publicId: work[1] }
@@ -51,6 +51,7 @@ export function webAttribution(
 export class WebAnalyticsCollector {
   private readonly queue: WebAnalyticsRequest['events'] = [];
   private firstAttribution: WebAnalyticsRequest['attribution'] | null = null;
+  private delivery: Promise<void> = Promise.resolve();
   constructor(
     private readonly ingest: (body: WebAnalyticsRequest) => Promise<unknown>,
   ) {}
@@ -61,7 +62,7 @@ export class WebAnalyticsCollector {
     if (this.firstAttribution === null)
       this.firstAttribution = attribution ?? {};
     this.queue.push({ eventId: crypto.randomUUID(), page });
-    await navigator.locks.request('bidplace-web-analytics-v2', async () => {
+    const flush = async () => {
       while (this.queue.length) {
         const events = this.queue.slice(0, 25);
         await this.ingest({
@@ -72,6 +73,13 @@ export class WebAnalyticsCollector {
         });
         this.queue.splice(0, events.length);
       }
-    });
+    };
+    const send = () =>
+      navigator.locks
+        ? navigator.locks.request('bidplace-web-analytics-v2', flush)
+        : flush();
+    // shortcut: cold tabs can split browser identities without Web Locks; require cross-tab coordination if exact first-visit counts become necessary.
+    this.delivery = this.delivery.then(send, send);
+    await this.delivery;
   }
 }

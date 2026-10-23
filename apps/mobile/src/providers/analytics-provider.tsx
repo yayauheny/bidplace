@@ -61,10 +61,6 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
     }
     if (lastWebPage.current === pathname) return;
     lastWebPage.current = pathname;
-    if (!navigator.locks) {
-      console.warn('Web analytics requires browser locks');
-      return;
-    }
     void webCollector
       .view(page, webAttribution(window.location.href, document.referrer))
       .catch(() =>

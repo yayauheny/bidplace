@@ -75,8 +75,12 @@ No new service/table/queue. Three actual account-creation boundaries link proof
 after saving the user; attribution failure cannot roll back registration. Login
 and legacy identify do not link the new relation.
 
-`AnalyticsProvider` observes allowlisted public pathname changes; Web Locks
-serialize tab requests/initial cookie response. Server/client flags are independent
+`AnalyticsProvider` observes allowlisted public pathname changes; canonical author
+views use `/seller/[slug]`, while the share alias forwards UTM/preview without an
+event of its own. Web Locks
+serialize tab requests/initial cookie response. Without them, per-tab delivery
+continues sequentially; simultaneous cold tabs can establish separate identities
+before the browser saves a cookie. Server/client flags are independent
 and default off. Cloudflare forwards the optional server flag and explicitly
 builds the separate client flag as false unless configured. Existing v1 DTOs and
 collection remain; legacy acquisition queries exclude v2. Corrected product,

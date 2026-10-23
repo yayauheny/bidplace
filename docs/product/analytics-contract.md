@@ -18,7 +18,9 @@ trusted `ServerEnv.APP_ENV`, collection version is 2. A database unique key on
 
 `AnalyticsProvider` observes pathname changes. Re-renders and query/hash changes
 do not add views; full opens, reloads and navigation do. Admin/account/editor/auth
-routes and `preview` query contexts are excluded. Native collection is unchanged.
+routes and `preview` query contexts are excluded. Author views use canonical
+`/seller/[slug]`; `/authors/[slug]` redirects without creating its own event.
+Native collection is unchanged.
 There is no heartbeat, action stream or session timer.
 
 The server creates an opaque browser UUID and signs it with an environment-bound,
@@ -33,8 +35,11 @@ cookie response. The existing acquisition row is the canonical shared state:
 `sessionId,lastEventAt`, updated under a row lock using server time. The next new
 tracked event after **at least 30 minutes** of inactivity starts a new session.
 Duplicate deliveries do not extend inactivity. Tabs/reloads use the same cookie
-and row. Web Locks and a secure browser context are prerequisites; unsupported
-browsers emit a diagnostic and do not start this collector. Queued events are
+and row. Without Web Locks, requests are serialized within each tab and collection
+continues. Simultaneous first visits in tabs without an existing cookie may create
+separate browser identities/sessions before the last cookie response wins; their
+visitor/session/attribution counts are best-effort. Later requests share the saved
+cookie and server row. A secure browser context is required. Queued events are
 retained in memory after delivery failure and retried on the next public view;
 closing/reloading before successful delivery can lose them. No durable delivery
 queue or new synchronization service is introduced.

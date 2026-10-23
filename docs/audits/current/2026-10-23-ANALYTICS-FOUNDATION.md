@@ -95,3 +95,16 @@ portfolio reads, and publication time belongs to the existing publication
 transactions. Compatibility retains two DTO/semantics versions; it does not
 introduce a second metrics service or historical guessing. The PR reports exact
 added/deleted lines, contract changes, duplication and compatibility cost.
+
+## 2026-10-24 — Review corrections
+
+Canonical author views use `/seller/[slug]`; the `/authors/[slug]` redirect does
+not emit another view. Collection now continues without Web Locks with sequential
+per-tab delivery and existing server dedupe/session locking. Concurrent cold tabs
+without a cookie can establish separate identities; this explicit best-effort
+limit replaces the prior unsupported-browser exclusion. No dependencies or new
+synchronization service. Owner unit and Chromium/WebKit regressions cover the
+canonical route, redirect (including UTM/empty preview), retry and no-lock delivery.
+All 1036 mobile unit tests, eight Chromium/WebKit opt-in/off cases, mobile
+typecheck/lint, web build, docs links and diff checks passed. A second independent
+review has no substantial open findings. Remote CI for the updated HEAD is in PR #63.

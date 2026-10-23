@@ -7,16 +7,33 @@ import {
 } from '../../../features/search/search-overlay-route';
 
 export default function AuthorShareAlias() {
-  const { slug, sort, category, categories, overlay, oq, otab } =
-    useLocalSearchParams<{
-      slug: string;
-      sort?: string;
-      category?: string;
-      categories?: string;
-      overlay?: string;
-      oq?: string;
-      otab?: string;
-    }>();
+  const {
+    slug,
+    sort,
+    category,
+    categories,
+    overlay,
+    oq,
+    otab,
+    utm_source,
+    utm_medium,
+    utm_campaign,
+    utm_content,
+    preview,
+  } = useLocalSearchParams<{
+    slug: string;
+    sort?: string;
+    category?: string;
+    categories?: string;
+    overlay?: string;
+    oq?: string;
+    otab?: string;
+    utm_source?: string;
+    utm_medium?: string;
+    utm_campaign?: string;
+    utm_content?: string;
+    preview?: string;
+  }>();
   return (
     <Redirect
       href={{
@@ -31,6 +48,11 @@ export default function AuthorShareAlias() {
           ...(overlay ? { [SEARCH_OVERLAY_PARAM]: overlay } : {}),
           ...(oq ? { [SEARCH_OVERLAY_QUERY_PARAM]: oq } : {}),
           ...(otab ? { [SEARCH_OVERLAY_TAB_PARAM]: otab } : {}),
+          ...(utm_source ? { utm_source } : {}),
+          ...(utm_medium ? { utm_medium } : {}),
+          ...(utm_campaign ? { utm_campaign } : {}),
+          ...(utm_content ? { utm_content } : {}),
+          ...(preview !== undefined ? { preview } : {}),
         },
       }}
     />

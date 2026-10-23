@@ -16,6 +16,16 @@
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
 | Commerce, избранное/подписки, смена email/password из settings | Not implemented в launch scope / post-MVP; [следующая волна](15-POST-MVP-BACKLOG.md). Старый commerce runtime не разрешает включать продажи. |
 
+## 2026-10-24 — Analytics review corrections
+
+**Partial (local verification passed; production prerequisites remain).** `publicAnalyticsPage` now follows canonical `/seller/[slug]`
+and excludes its redirect alias. `WebAnalyticsCollector` preserves delivery without
+Web Locks using one in-tab queue; simultaneous cold tabs can establish separate
+browser identities. Extended owner units and navigation browser checks cover both
+modes: 1036 mobile unit tests and eight Chromium/WebKit scenarios passed, as did
+typecheck, lint, web build and docs links. Independent review has no substantial
+open findings; remote CI is recorded in PR #63. No production enablement.
+
 ## 2026-10-23 — Analytics foundation
 
 **Partial (local verification passed; production prerequisites remain).** Additive version 2 web ingestion in

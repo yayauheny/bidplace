@@ -211,12 +211,17 @@ describe('public web analytics foundation', () => {
     expect(
       publicAnalyticsPage('/product/abcdefghijk', '?category=secret'),
     ).toEqual({ page: 'work', publicId: 'abcdefghijk' });
+    expect(publicAnalyticsPage('/seller/artist-name', '')).toEqual({
+      page: 'author',
+      slug: 'artist-name',
+    });
     for (const path of [
       '/admin',
       '/account',
       '/author/application',
       '/product/abcdefghijk/edit',
       '/login',
+      '/authors/artist-name',
     ])
       expect(publicAnalyticsPage(path, '')).toBeNull();
     expect(
@@ -242,33 +247,75 @@ describe('public web analytics foundation', () => {
       ),
     ).toEqual({});
   });
-  it('retains the original event ids and first touch when delivery is retried under a browser lock', async () => {
-    const { WebAnalyticsCollector } = await import('./web-analytics');
-    const payloads: unknown[] = [];
-    let fail = true;
-    vi.stubGlobal('navigator', {
-      locks: {
-        request: async (_name: string, callback: () => Promise<void>) =>
-          callback(),
-      },
-    });
-    try {
-      const collector = new WebAnalyticsCollector(async (body) => {
-        payloads.push(structuredClone(body));
-        if (fail) throw new Error('fixture offline');
+  it.each([true, false])(
+    'retains event ids and first touch on retry with Web Locks available=%s',
+    async (locksAvailable) => {
+      const { WebAnalyticsCollector } = await import('./web-analytics');
+      const payloads: unknown[] = [];
+      let fail = true;
+      vi.stubGlobal('navigator', {
+        locks: locksAvailable
+          ? {
+              request: async (_name: string, callback: () => Promise<void>) =>
+                callback(),
+            }
+          : undefined,
       });
-      await expect(
-        collector.view({ page: 'home' }, { source: 'first' }),
-      ).rejects.toThrow('fixture offline');
-      fail = false;
-      await collector.view({ page: 'works' }, { source: 'later' });
-      const [first, second] = payloads as Array<{
-        events: Array<{ eventId: string }>;
-        attribution: { source: string };
-      }>;
-      expect(second!.events[0]!.eventId).toBe(first!.events[0]!.eventId);
-      expect(second!.events).toHaveLength(2);
-      expect(second!.attribution.source).toBe('first');
+      try {
+        const collector = new WebAnalyticsCollector(async (body) => {
+          payloads.push(structuredClone(body));
+          if (fail) throw new Error('fixture offline');
+        });
+        await expect(
+          collector.view({ page: 'home' }, { source: 'first' }),
+        ).rejects.toThrow('fixture offline');
+        fail = false;
+        await collector.view({ page: 'works' }, { source: 'later' });
+        const [first, second] = payloads as Array<{
+          events: Array<{ eventId: string }>;
+          attribution: { source: string };
+        }>;
+        expect(second!.events[0]!.eventId).toBe(first!.events[0]!.eventId);
+        expect(second!.events).toHaveLength(2);
+        expect(second!.attribution.source).toBe('first');
+      } finally {
+        vi.unstubAllGlobals();
+      }
+    },
+  );
+  it('serializes concurrent views within a tab without Web Locks', async () => {
+    const { WebAnalyticsCollector } = await import('./web-analytics');
+    vi.stubGlobal('navigator', {});
+    let finishFirst: () => void = () => {
+      throw new Error('delivery not started');
+    };
+    const firstDelivery = new Promise<void>((resolve) => {
+      finishFirst = resolve;
+    });
+    const ingest = vi
+      .fn()
+      .mockImplementationOnce(() => firstDelivery)
+      .mockResolvedValue(undefined);
+    try {
+      const collector = new WebAnalyticsCollector(ingest);
+      const first = collector.view({ page: 'home' }, {});
+      await vi.waitFor(() => expect(ingest).toHaveBeenCalledTimes(1));
+      const second = collector.view(
+        { page: 'author', slug: 'artist-name' },
+        {},
+      );
+      expect(ingest).toHaveBeenCalledTimes(1);
+      finishFirst();
+      await Promise.all([first, second]);
+      expect(ingest).toHaveBeenCalledTimes(2);
+      expect(
+        ingest.mock.calls.map(([body]) =>
+          body.events.map((event: { page: unknown }) => event.page),
+        ),
+      ).toEqual([
+        [{ page: 'home' }],
+        [{ page: 'author', slug: 'artist-name' }],
+      ]);
     } finally {
       vi.unstubAllGlobals();
     }
