@@ -193,6 +193,9 @@ export function ProductDraftScreen({
     storyEditor,
   });
 
+  const uploadUnfinished = imageActions.uploadFiles.some(
+    (file) => file.status !== 'done',
+  );
   const uploadBusy =
     imageActions.choosingImages || imageActions.upload.isPending;
 
@@ -212,6 +215,7 @@ export function ProductDraftScreen({
 
   const wizardNavigation = useProductDraftNavigation({
     uploadBusy,
+    uploadUnfinished,
     productId,
     stepParam,
     isCreationFlow,
@@ -301,6 +305,7 @@ export function ProductDraftScreen({
                   !canOpenProductWizardStep(
                     productWizardStep.story,
                     wizardDraft,
+                    uploadUnfinished,
                   )
                 }
                 onPress={() =>
@@ -319,7 +324,7 @@ export function ProductDraftScreen({
             wizardStep={wizardStep}
             hasExistingProduct={Boolean(existingProduct)}
             canOpenStep={(step) =>
-              !uploadBusy && canOpenProductWizardStep(step, wizardDraft)
+              !uploadBusy && canOpenProductWizardStep(step, wizardDraft, uploadUnfinished)
             }
             onStepPress={(step) => void wizardNavigation.moveToWizardStep(step)}
             storyBarDisabled={

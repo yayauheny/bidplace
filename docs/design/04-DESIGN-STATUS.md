@@ -91,3 +91,8 @@ Chromium/WebKit completion owner: 14/14 passed, включая настоящи�
 retry и явная отмена остатка доступны на плитке. AuthorIntroDialog использует portfolio-only copy.
 Геометрия/shared controls не менялись; проверки и ограничения —
 [portfolio audit](../audits/current/2026-10-23-PORTFOLIO-DESIGN.md).
+
+
+2026-10-23 final review P3: после partial upload error переход к истории/проверке
+блокируется до retry/cancel незавершённого остатка, включая точки шагов. Retry,
+cancel и Back остаются доступны; состояние очереди не подменяет uploadBusy.

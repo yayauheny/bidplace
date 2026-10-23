@@ -542,6 +542,9 @@ test('shows a partial gallery upload and retries only the unfinished photo', asy
       page.getByRole('img', { name: /^Изображение предмета \d+$/ }),
     ).toHaveCount(1);
     await expect(page.getByRole('button', { name: 'Добавить изображения', exact: true })).toBeDisabled();
+    await expect(page.getByRole('button', { name: 'Продолжить', exact: true })).toBeDisabled();
+    await expect(page.getByRole('button', { name: '3. История создания', exact: true })).toBeDisabled();
+    await expect(page.getByRole('button', { name: '4. Проверка', exact: true })).toBeDisabled();
     for (const width of [320, 390, 414, 440, 1024, 1440]) {
       await page.setViewportSize({ width, height: 900 });
       await expect
@@ -580,6 +583,9 @@ test('shows a partial gallery upload and retries only the unfinished photo', asy
     expect(attempts).toBe(3);
     expect(keys[2]).toBe(keys[1]);
     expect(keys[1]).not.toBe(keys[0]);
+    await expect(page.getByRole('button', { name: 'Продолжить', exact: true })).toBeEnabled();
+    await page.getByRole('button', { name: 'Продолжить', exact: true }).click();
+    await expect(page).toHaveURL(/step=3/);
   } finally {
     await context.close();
   }

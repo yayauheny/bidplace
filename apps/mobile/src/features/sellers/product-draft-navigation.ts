@@ -31,6 +31,7 @@ import type { ProductStoryEditor } from './use-product-story-editor';
 export function useProductDraftNavigation({
   productId,
   uploadBusy = false,
+  uploadUnfinished = false,
   stepParam,
   isCreationFlow,
   existingProduct,
@@ -42,6 +43,7 @@ export function useProductDraftNavigation({
 }: {
   productId?: string;
   uploadBusy?: boolean;
+  uploadUnfinished?: boolean;
   stepParam?: ProductWizardStepParam;
   isCreationFlow: boolean;
   existingProduct?: Product;
@@ -124,7 +126,7 @@ export function useProductDraftNavigation({
   const moveToWizardStep = async (nextStep: number) => {
     if (uploadBusy || session.transitionLock.current || storyEditor.pending) return;
     if (!existingProduct) return;
-    if (!canOpenProductWizardStep(nextStep, wizardDraft)) return;
+    if (!canOpenProductWizardStep(nextStep, wizardDraft, uploadUnfinished)) return;
     if (nextStep === wizardStep) return;
     const operation = session.snapshotOperation();
     if (form.formState.isDirty || storyEditor.dirty) {
@@ -199,6 +201,7 @@ export function useProductDraftNavigation({
   };
 
   const saveStoryAndContinue = async () => {
+    if (isCreationFlow && uploadUnfinished) return;
     if (uploadBusy || session.transitionLock.current || storyEditor.pending) return;
     const operation = session.snapshotOperation();
     const persisted = await session.persistAll('transition');

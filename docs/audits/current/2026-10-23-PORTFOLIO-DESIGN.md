@@ -194,3 +194,20 @@ assertions, error handling or runner thresholds were weakened.
 Validation:10 characterization cases and full144 files/1032 tests withCI=true
 and2 workers PASS without unhandled errors; mobile typecheck/lint and independent
 review PASS. The next remote CI run remains the acceptance check for this fix.
+
+
+## PR61 final review P3: finish pending gallery before continuing
+
+Story/review navigation now requires retry success or explicit cancellation of
+the unfinished upload remainder. The existing wizard availability helper owns
+the rule for Continue, step controls and the navigation handler. Back, Close,
+Retry and Cancel retain their existing availability; saved photos are untouched.
+No server contract, idempotency key or media lifecycle changes.
+
+Validation: full mobile144 files/1032 tests PASS, including the existing owner
+regressions for blocked navigation and retry/cancel recovery; all9 Turborepo
+typecheck/lint/build tasks PASS. All6 media browser scenarios PASS in Chromium
+and WebKit, including disabled Continue/steps3–4 after a partial failure and
+working Continue after retry. Existing responsive checks cover
+320/390/414/440/1024/1440px. Independent review ACCEPT, no new actionable findings.
+Remote CI on the resulting commit is still pending at this record.

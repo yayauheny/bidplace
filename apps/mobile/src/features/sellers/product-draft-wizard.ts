@@ -56,6 +56,7 @@ export function clampProductWizardStep(step: number): ProductWizardStep {
 export function canOpenProductWizardStep(
   step: number,
   draft: ProductWizardDraft,
+  uploadUnfinished = false,
 ): boolean {
   const normalized = clampProductWizardStep(step);
   switch (normalized) {
@@ -65,7 +66,7 @@ export function canOpenProductWizardStep(
       return draft.hasProduct;
     case productWizardStep.story:
     case productWizardStep.review:
-      return draft.hasProduct && draft.imageCount > 0;
+      return draft.hasProduct && draft.imageCount > 0 && !uploadUnfinished;
     default:
       return false;
   }

@@ -132,7 +132,7 @@ vi.mock('../../providers/api-provider', () => ({
 
 vi.mock('../../components/layout', () => ({
   AppShell: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
-  FormPageShell: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
+  FormPageShell: ({ children, bottomAction }: { children?: ReactNode; bottomAction?: ReactNode }) => createElement('div', null, children, bottomAction),
   FormPageColumns: ({ children, sidebar }: { children?: ReactNode; sidebar?: ReactNode }) =>
     createElement('div', null, sidebar, children),
 }));
@@ -679,7 +679,7 @@ describe('product draft submit lifecycle', () => {
       blob: async () => images[uri === 'blob:first' ? 0 : 1],
     }));
     vi.stubGlobal('fetch', read);
-    const view = mount();
+    const view = mount({ flow: 'creation', stepParam: '2' });
     await until(
       view.container,
       () => Boolean(button(view.container, 'Добавить изображения')),
@@ -710,6 +710,13 @@ describe('product draft submit lifecycle', () => {
     act(() => add.click());
     expect(harness.launchImageLibraryAsync).toHaveBeenCalledTimes(1);
     expect(harness.addImages).toHaveBeenCalledTimes(2);
+    expect(button(view.container, 'Продолжить')?.disabled).toBe(true);
+    expect(button(view.container, '3. История создания')?.disabled).toBe(true);
+    expect(button(view.container, '4. Проверка')?.disabled).toBe(true);
+    expect(button(view.container, 'Назад')?.disabled).toBe(false);
+    harness.setParams.mockClear();
+    act(() => button(view.container, 'Продолжить')?.click());
+    expect(harness.setParams).not.toHaveBeenCalled();
     act(() => button(view.container, 'Повторить загрузку')?.click());
     await until(
       view.container,
@@ -729,6 +736,9 @@ describe('product draft submit lifecycle', () => {
     act(() => add.click());
     await until(view.container, () => harness.launchImageLibraryAsync.mock.calls.length === 2, 'another selection');
     expect(harness.addImages).toHaveBeenCalledTimes(3);
+    await until(view.container, () => button(view.container, 'Продолжить')?.disabled === false, 'continue after retry');
+    act(() => button(view.container, 'Продолжить')?.click());
+    await until(view.container, () => harness.setParams.mock.calls.some(([params]) => params.step === '3'), 'story navigation');
     vi.unstubAllGlobals();
     view.unmount();
   });
@@ -756,17 +766,19 @@ describe('product draft submit lifecycle', () => {
         { uri: 'blob:queued', file: image },
       ],
     });
-    const view = mount();
+    const view = mount({ flow: 'creation', stepParam: '2' });
     try {
       await until(view.container, () => Boolean(button(view.container, 'Добавить изображения')), 'images');
       act(() => button(view.container, 'Добавить изображения')?.click());
       await until(view.container, () => Boolean(button(view.container, 'Отменить загрузку')) &&
         !(button(view.container, 'Отменить загрузку') as HTMLButtonElement).disabled, 'terminal failure');
       expect(harness.addImages).toHaveBeenCalledTimes(1);
+      expect(button(view.container, 'Продолжить')?.disabled).toBe(true);
       expect((button(view.container, 'Добавить изображения') as HTMLButtonElement).disabled).toBe(true);
       act(() => button(view.container, 'Отменить загрузку')?.click());
       await until(view.container, () => !(button(view.container, 'Добавить изображения') as HTMLButtonElement).disabled, 'another selection enabled');
       expect(button(view.container, 'Повторить загрузку')).toBeNull();
+      expect(button(view.container, 'Продолжить')?.disabled).toBe(false);
       expect(view.container.querySelectorAll('img[alt^="Выбранное изображение"]')).toHaveLength(0);
       expect(view.queryClient.getQueryData(ownerWorkQueryKeys.detail(productId))).toEqual(saved);
       harness.launchImageLibraryAsync.mockResolvedValue({ canceled: true, assets: [] });

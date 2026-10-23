@@ -102,3 +102,12 @@ Add до её завершения либо явной отмены остатк
 разрешение выбора. Интро автора приглашает создать portfolio без обещания продаж.
 Backend/API/media contract не изменены; детали проверок —
 [portfolio audit](../audits/current/2026-10-23-PORTFOLIO-DESIGN.md).
+
+
+## 2026-10-23 — Завершение галереи перед продолжением
+
+**Implemented (client flow guard).** `canOpenProductWizardStep` и
+`useProductDraftNavigation` блокируют последующие шаги при незавершённой upload
+очереди. Continue/step selector используют то же правило; после retry/cancel
+переход разрешён. Lifecycle/media browser owners проверяют ошибку, retry и отмену;
+серверный контракт и возможность сохранить частичный draft не менялись.
