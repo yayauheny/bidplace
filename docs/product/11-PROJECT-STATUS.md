@@ -16,6 +16,18 @@
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
 | Commerce, избранное/подписки, смена email/password из settings | Not implemented в launch scope / post-MVP; [следующая волна](15-POST-MVP-BACKLOG.md). Старый commerce runtime не разрешает включать продажи. |
 
+## 2026-10-23 — Analytics foundation
+
+**Partial (local verification passed; production prerequisites remain).** Additive version 2 web ingestion in
+AnalyticsService/AnalyticsProvider, signed browser proof, database dedupe/shared
+inactivity sessions, three registration creation boundaries and protected
+`/api/admin/analytics/foundation` with UTC/cohort/first-publication metrics.
+Existing collection/dashboard remain legacy; new flags default off. Additive
+migration only; no production enabling, policy publication or consent UI.
+Full workspace verify, Cloudflare checks and Chromium/WebKit opt-in/off scenarios
+passed; independent review has no remaining substantial findings.
+[Definitions](analytics-metrics.md), [scope/checks](../audits/current/2026-10-23-ANALYTICS-FOUNDATION.md).
+
 ## 2026-10-23 — Оптимизация документации
 
 **Implemented (docs only).** Сокращены `AGENTS.md`, карта чтения и product index;

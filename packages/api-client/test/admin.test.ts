@@ -187,3 +187,26 @@ describe('admin client', () => {
     expect(called).toBe(false);
   });
 });
+
+it('sends new public web events through the additive endpoint without accepting a client environment', async () => {
+  let requested = '';
+  const sessionId = '00000000-0000-4000-8000-000000000001';
+  const client = createApiClient({
+    baseUrl: 'https://api.example.test',
+    credentials: 'include',
+    fetchImpl: async (url, init) => {
+      requested = String(url);
+      expect(init?.credentials).toBe('include');
+      expect(JSON.parse(String(init?.body))).toEqual({
+        events: [{ eventId: sessionId, page: { page: 'home' } }],
+      });
+      return Response.json({ accepted: 1, sessionId });
+    },
+  });
+  expect(
+    await client.analytics.ingestWeb({
+      events: [{ eventId: sessionId, page: { page: 'home' } }],
+    }),
+  ).toEqual({ accepted: 1, sessionId });
+  expect(requested).toBe('https://api.example.test/api/analytics/web-events');
+});

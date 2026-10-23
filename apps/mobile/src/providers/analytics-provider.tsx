@@ -1,3 +1,9 @@
+import { usePathname } from 'expo-router';
+import {
+  WebAnalyticsCollector,
+  publicAnalyticsPage,
+  webAttribution,
+} from '../lib/analytics/web-analytics';
 import {
   createContext,
   useContext,
@@ -35,6 +41,38 @@ function isAnalyticsEnabled(): boolean {
 
 export function AnalyticsProvider({ children }: { children: ReactNode }) {
   const api = useApiClient();
+  const pathname = usePathname();
+  const lastWebPage = useRef<string | null>(null);
+  const webCollector = useMemo(
+    () => new WebAnalyticsCollector((body) => api.analytics.ingestWeb(body)),
+    [api],
+  );
+  useEffect(() => {
+    if (
+      Platform.OS !== 'web' ||
+      process.env.EXPO_PUBLIC_ANALYTICS_WEB_ENABLED !== 'true' ||
+      typeof window === 'undefined'
+    )
+      return;
+    const page = publicAnalyticsPage(pathname, window.location.search);
+    if (!page) {
+      lastWebPage.current = null;
+      return;
+    }
+    if (lastWebPage.current === pathname) return;
+    lastWebPage.current = pathname;
+    if (!navigator.locks) {
+      console.warn('Web analytics requires browser locks');
+      return;
+    }
+    void webCollector
+      .view(page, webAttribution(window.location.href, document.referrer))
+      .catch(() =>
+        console.warn(
+          'Web analytics delivery failed; events retained until the next public view',
+        ),
+      );
+  }, [pathname, webCollector]);
   const auth = useAuth();
   const hadUserRef = useRef(false);
 

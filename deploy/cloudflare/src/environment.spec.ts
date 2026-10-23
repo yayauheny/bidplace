@@ -40,3 +40,24 @@ it.each(requiredSecrets)(
     );
   },
 );
+
+it('passes the new analytics server flag only when explicitly configured', () => {
+  const env = Object.fromEntries(
+    [...containerVariables, ...requiredSecrets].map((key) => [key, 'fixture']),
+  );
+  expect(containerEnvironment(env as RuntimeEnvironment)).not.toHaveProperty(
+    'ANALYTICS_WEB_ENABLED',
+  );
+  expect(
+    containerEnvironment({
+      ...env,
+      ANALYTICS_WEB_ENABLED: 'true',
+    } as RuntimeEnvironment).ANALYTICS_WEB_ENABLED,
+  ).toBe('true');
+  expect(
+    containerEnvironment({
+      ...env,
+      EXPO_PUBLIC_ANALYTICS_WEB_ENABLED: 'true',
+    } as RuntimeEnvironment),
+  ).not.toHaveProperty('EXPO_PUBLIC_ANALYTICS_WEB_ENABLED');
+});

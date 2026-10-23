@@ -1,3 +1,4 @@
+import { portfolioProductContentSql } from '../products/public-visibility';
 import { Prisma } from '@bidplace/database';
 
 const users = Prisma.sql`"users"`;
@@ -91,7 +92,7 @@ export function acquisitionBySourceSql(from: Date, to: Date): Prisma.Sql {
                AND ${inUtcPeriod(linkedAt, from, to)}
            ) AS "signups"
     FROM ${attributions}
-    WHERE ${inUtcPeriod(capturedAt, from, to)}
+    WHERE "collection_version" = 1 AND ${inUtcPeriod(capturedAt, from, to)}
     GROUP BY COALESCE("source", 'direct')
   `;
 }
@@ -116,4 +117,106 @@ export function sellerCreationDaySql(from: Date, to: Date): Prisma.Sql {
 
 export function publishedWorkDaySql(from: Date, to: Date): Prisma.Sql {
   return utcDayCounts(products, publishedAt, from, to);
+}
+
+export function inUtcWindow(
+  column: Prisma.Sql,
+  from: Date,
+  to: Date,
+): Prisma.Sql {
+  return Prisma.sql`${column} >= (${from}::timestamptz AT TIME ZONE 'UTC')
+    AND ${column} < (${to}::timestamptz AT TIME ZONE 'UTC')`;
+}
+export function foundationCountsSql(
+  from: Date,
+  to: Date,
+  environment: string,
+  now: Date,
+): Prisma.Sql {
+  const stuck = new Date(now.getTime() - 7 * 86_400_000);
+  return Prisma.sql`
+    WITH views AS (
+      SELECT anonymous_id, session_id FROM analytics_events
+      WHERE collection_version = 2 AND environment = ${environment}
+        AND ${inUtcWindow(Prisma.sql`created_at`, from, to)}
+    ), authors AS (
+      SELECT p.*, u.status AS user_status, r.status::text AS review_status, r.submitted_at
+      FROM seller_profiles p JOIN users u ON u.id = p.user_id
+      LEFT JOIN seller_profile_revisions r ON r.id = p.editing_revision_id
+    ), works AS (
+      SELECT p.*, a.status AS author_status, a.user_status, r.status::text AS review_status, r.submitted_at
+      FROM products p JOIN authors a ON a.id = p.seller_profile_id
+      LEFT JOIN product_revisions r ON r.id = p.editing_revision_id
+    ), pending_authors AS (
+      SELECT * FROM authors WHERE review_status = 'PENDING_REVIEW' OR (editing_revision_id IS NULL AND status::text = 'PENDING_REVIEW')
+    ), pending_works AS (
+      SELECT * FROM works WHERE review_status = 'PENDING_REVIEW' OR (editing_revision_id IS NULL AND status::text = 'PENDING_REVIEW')
+    ) SELECT
+      (SELECT COUNT(*) FROM views) AS views,
+      (SELECT COUNT(DISTINCT anonymous_id) FROM views) AS visitors,
+      (SELECT COUNT(DISTINCT session_id) FROM views) AS sessions,
+      (SELECT COUNT(*) FROM authors WHERE ${inUtcWindow(Prisma.sql`first_published_at`, from, to)}) AS "firstAuthors",
+      (SELECT COUNT(*) FROM works WHERE ${inUtcWindow(Prisma.sql`published_at`, from, to)}) AS "firstWorks",
+      (SELECT COUNT(*) FROM users WHERE ${inUtcWindow(Prisma.sql`created_at`, from, to)}) AS registrations,
+      (SELECT COUNT(*) FROM authors WHERE status::text = 'APPROVED' AND user_status = 'active') AS "currentAuthors",
+      (SELECT COUNT(*) FROM works p WHERE p.status::text = 'APPROVED'
+        AND p.author_status::text = 'APPROVED' AND p.user_status = 'active' AND ${portfolioProductContentSql}) AS "currentWorks",
+      (SELECT COUNT(*) FROM pending_authors) AS "pendingAuthors",
+      (SELECT COUNT(*) FROM pending_works) AS "pendingWorks",
+      (SELECT COUNT(*) FROM pending_authors WHERE submitted_at < (${stuck}::timestamptz AT TIME ZONE 'UTC')) AS "stuckAuthors",
+      (SELECT COUNT(*) FROM pending_works WHERE submitted_at < (${stuck}::timestamptz AT TIME ZONE 'UTC')) AS "stuckWorks",
+      (SELECT COUNT(*) FROM pending_authors WHERE submitted_at IS NULL) AS "unknownAuthorSubmissionTime",
+      (SELECT COUNT(*) FROM pending_works WHERE submitted_at IS NULL) AS "unknownWorkSubmissionTime",
+      (SELECT COUNT(*) FROM authors WHERE status::text = 'APPROVED' AND user_status = 'active' AND first_published_at IS NULL) AS "unknownAuthorFirstPublication"
+  `;
+}
+export function foundationAcquisitionSql(
+  from: Date,
+  to: Date,
+  environment: string,
+  now: Date,
+): Prisma.Sql {
+  return Prisma.sql`
+    SELECT a.source, COUNT(*) AS visitors,
+      COUNT(*) FILTER (WHERE u.created_at >= a.captured_at
+        AND u.created_at <= a.captured_at + INTERVAL '30 days'
+        AND u.created_at <= (${now}::timestamptz AT TIME ZONE 'UTC')) AS registrations
+    FROM acquisition_attributions a LEFT JOIN users u ON u.id = a.registered_user_id
+    WHERE a.collection_version = 2 AND a.environment = ${environment}
+      AND ${inUtcWindow(Prisma.sql`a.captured_at`, from, to)}
+      AND EXISTS (SELECT 1 FROM analytics_events e WHERE e.anonymous_id = a.anonymous_id
+        AND e.collection_version = 2 AND e.environment = ${environment})
+    GROUP BY a.source ORDER BY visitors DESC, a.source ASC
+  `;
+}
+
+export function foundationGrowthSql(
+  from: Date,
+  to: Date,
+  environment: string,
+): Prisma.Sql {
+  return Prisma.sql`
+    WITH days AS (
+      SELECT generate_series(date_trunc('day', (${from}::timestamptz AT TIME ZONE 'UTC')),
+        (${to}::timestamptz AT TIME ZONE 'UTC') - INTERVAL '1 millisecond', INTERVAL '1 day')::date AS day
+    ), counts AS (
+      SELECT created_at::date AS day, COUNT(*) AS views, COUNT(DISTINCT anonymous_id) AS visitors,
+        0::bigint AS registrations, 0::bigint AS authors, 0::bigint AS works
+      FROM analytics_events WHERE collection_version = 2 AND environment = ${environment}
+        AND ${inUtcWindow(Prisma.sql`created_at`, from, to)} GROUP BY 1
+      UNION ALL
+      SELECT created_at::date, 0, 0, COUNT(*), 0, 0 FROM users
+        WHERE ${inUtcWindow(Prisma.sql`created_at`, from, to)} GROUP BY 1
+      UNION ALL
+      SELECT first_published_at::date, 0, 0, 0, COUNT(*), 0 FROM seller_profiles
+        WHERE ${inUtcWindow(Prisma.sql`first_published_at`, from, to)} GROUP BY 1
+      UNION ALL
+      SELECT published_at::date, 0, 0, 0, 0, COUNT(*) FROM products
+        WHERE ${inUtcWindow(Prisma.sql`published_at`, from, to)} GROUP BY 1
+    ) SELECT to_char(d.day, 'YYYY-MM-DD') AS date,
+      COALESCE(SUM(c.views), 0)::bigint AS views, COALESCE(SUM(c.visitors), 0)::bigint AS visitors,
+      COALESCE(SUM(c.registrations), 0)::bigint AS registrations,
+      COALESCE(SUM(c.authors), 0)::bigint AS "firstAuthors", COALESCE(SUM(c.works), 0)::bigint AS "firstWorks"
+    FROM days d LEFT JOIN counts c ON c.day = d.day GROUP BY d.day ORDER BY d.day
+  `;
 }

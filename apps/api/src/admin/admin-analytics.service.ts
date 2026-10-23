@@ -1,4 +1,5 @@
 import {
+  analyticsFoundationResponseSchema,
   type AdminAnalyticsOverview,
   type AdminAnalyticsQuery,
   adminAnalyticsOverviewSchema,
@@ -7,6 +8,9 @@ import { Injectable } from '@nestjs/common';
 
 import { PrismaService } from '../core/database';
 import {
+  foundationCountsSql,
+  foundationAcquisitionSql,
+  foundationGrowthSql,
   acquisitionBySourceSql,
   countActiveUsersSql,
   listingViewDaySql,
@@ -105,6 +109,105 @@ function compareSources(
 @Injectable()
 export class AdminAnalyticsService {
   constructor(private readonly prisma: PrismaService) {}
+
+  async buildFoundation(
+    query: { from: string; to: string },
+    now: Date,
+    environment: string,
+  ) {
+    const from = new Date(query.from),
+      to = new Date(query.to);
+    const [rows, sources, visitCoverage, publicationCoverage, growthRows] =
+      await Promise.all([
+        this.prisma.$queryRaw<Array<Record<string, number | bigint>>>(
+          foundationCountsSql(from, to, environment, now),
+        ),
+        this.prisma.$queryRaw<
+          Array<{
+            source: string;
+            visitors: number | bigint;
+            registrations: number | bigint;
+          }>
+        >(foundationAcquisitionSql(from, to, environment, now)),
+        this.prisma.acquisitionAttribution.aggregate({
+          where: { collectionVersion: 2, environment },
+          _min: { capturedAt: true },
+        }),
+        this.prisma.sellerProfile.aggregate({
+          _min: { firstPublishedAt: true },
+        }),
+        this.prisma.$queryRaw<
+          Array<{
+            date: string;
+            views: bigint;
+            visitors: bigint;
+            registrations: bigint;
+            firstAuthors: bigint;
+            firstWorks: bigint;
+          }>
+        >(foundationGrowthSql(from, to, environment)),
+      ]);
+    const counts = rows[0];
+    if (!counts) throw new Error('Analytics aggregate result is missing');
+    const bySource = sources.map((row) => ({
+      source: row.source,
+      visitors: readSqlCount(row.visitors),
+      registrations: readSqlCount(row.registrations),
+    }));
+    const visitors = bySource.reduce((sum, row) => sum + row.visitors, 0);
+    const registrations = bySource.reduce(
+      (sum, row) => sum + row.registrations,
+      0,
+    );
+    const product = Object.fromEntries(
+      ['views', 'visitors', 'sessions', 'firstAuthors', 'firstWorks'].map(
+        (key) => [key, readSqlCount(counts[key])],
+      ),
+    );
+    const operational = Object.fromEntries(
+      [
+        'registrations',
+        'currentAuthors',
+        'currentWorks',
+        'pendingAuthors',
+        'pendingWorks',
+        'stuckAuthors',
+        'stuckWorks',
+        'unknownAuthorSubmissionTime',
+        'unknownWorkSubmissionTime',
+        'unknownAuthorFirstPublication',
+      ].map((key) => [key, readSqlCount(counts[key])]),
+    );
+    return analyticsFoundationResponseSchema.parse({
+      from: query.from,
+      to: query.to,
+      environment,
+      coverage: {
+        firstVisitAt: visitCoverage._min.capturedAt?.toISOString() ?? null,
+        firstAuthorPublicationAt:
+          publicationCoverage._min.firstPublishedAt?.toISOString() ?? null,
+        legacyExcluded: true,
+      },
+      growth: growthRows.map(({ date, ...counts }) => ({
+        date,
+        ...Object.fromEntries(
+          Object.entries(counts).map(([key, value]) => [
+            key,
+            readSqlCount(value),
+          ]),
+        ),
+      })),
+      product,
+      operational,
+      acquisition: {
+        visitors,
+        registrations,
+        rate: rate(registrations, visitors),
+        mature: to.getTime() + 30 * DAY_MS <= now.getTime(),
+        bySource,
+      },
+    });
+  }
 
   async buildOverview(
     query: AdminAnalyticsQuery,

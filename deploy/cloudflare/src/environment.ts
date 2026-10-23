@@ -54,6 +54,7 @@ export const containerVariables = [
 ] as const;
 
 export const optionalContainerSettings = [
+  'ANALYTICS_WEB_ENABLED',
   'GOOGLE_CLIENT_ID',
   'GOOGLE_CLIENT_SECRET',
   'GOOGLE_REDIRECT_URI',

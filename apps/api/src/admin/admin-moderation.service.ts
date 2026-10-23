@@ -369,6 +369,12 @@ export class AdminModerationService {
                   where: { id: sellerProfileId },
                   data: {
                     ...publishedSellerProfileData(editingRevision),
+                    firstPublishedAt:
+                      sellerProfile.firstPublishedAt ??
+                      (sellerProfile.publishedRevisionId === null &&
+                      sellerProfile.status === 'PENDING_REVIEW'
+                        ? new Date()
+                        : null),
                     ...approvedPhoto,
                     status:
                       sellerProfile.status === 'PENDING_REVIEW'

@@ -22,6 +22,10 @@ const result = spawnSync(
       EXPO_NO_DOTENV: '1',
       EXPO_PUBLIC_API_URL: config.vars.API_URL,
       EXPO_PUBLIC_APP_ENV: target,
+      EXPO_PUBLIC_ANALYTICS_WEB_ENABLED:
+        config.vars.EXPO_PUBLIC_ANALYTICS_WEB_ENABLED === 'true'
+          ? 'true'
+          : 'false',
       EXPO_PUBLIC_ANALYTICS_ENABLED: config.vars.ANALYTICS_INGEST_ENABLED,
       EXPO_PUBLIC_TURNSTILE_SITE_KEY: siteKey,
       SESSION_SECRET: secretCanary,

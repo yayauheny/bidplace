@@ -610,3 +610,21 @@ describe('public media deployment configuration', () => {
     ).toThrow('custom-domain');
   });
 });
+
+describe('ANALYTICS_WEB_ENABLED', () => {
+  it.each([undefined, 'false', 'true'])(
+    'requires explicit true for the new collection boundary: %s',
+    (flag) => {
+      stubMissingEnvFile();
+      const settings = {
+        ...localEnv,
+        NODE_ENV: 'test',
+        APP_ENV: 'local',
+        ...(flag ? { ANALYTICS_WEB_ENABLED: flag } : {}),
+      };
+      expect(loadServerEnv(settings).ANALYTICS_WEB_ENABLED).toBe(
+        flag === 'true',
+      );
+    },
+  );
+});

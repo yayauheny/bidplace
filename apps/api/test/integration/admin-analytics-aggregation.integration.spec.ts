@@ -843,3 +843,534 @@ describe('admin analytics database aggregation', () => {
     ).toBe(true);
   });
 });
+
+async function webAnalytics(nowValue: () => Date, enabled = true) {
+  const { AnalyticsService } =
+    await import('../../src/analytics/analytics.service');
+  const { syntheticServerEnv } =
+    await import('../../src/core/config/synthetic-server-env');
+  const env = syntheticServerEnv({
+    ANALYTICS_WEB_ENABLED: enabled ? 'true' : 'false',
+    CORS_ORIGIN: 'https://bidplace.test',
+  });
+  return {
+    service: new AnalyticsService(
+      prisma as never,
+      { now: nowValue } as never,
+      env,
+    ),
+    env,
+  };
+}
+
+it.each([
+  [undefined, 'direct'],
+  [{ source: 'artist', referrerHost: 'external.test' }, 'artist'],
+  [{ campaign: 'launch', referrerHost: 'external.test' }, 'utm'],
+  [{ referrerHost: 'external.test' }, 'external.test'],
+  [{ referrerHost: 'bidplace.test' }, 'direct'],
+] as const)(
+  'stores immutable server-time first touch for %j',
+  async (attribution, expected) => {
+    let instant = new Date('2026-10-01T12:00:00Z');
+    const { service } = await webAnalytics(() => instant);
+    const first = await service.ingestWeb(
+      {
+        events: [{ eventId: randomUUID(), page: { page: 'home' } }],
+        ...(attribution ? { attribution } : {}),
+      },
+      null,
+    );
+    instant = new Date('2026-10-03T00:00:00Z');
+    await service.ingestWeb(
+      {
+        events: [{ eventId: randomUUID(), page: { page: 'works' } }],
+        attribution: { source: 'later' },
+      },
+      first.browserId,
+    );
+    const row = await prisma.acquisitionAttribution.findUniqueOrThrow({
+      where: { anonymousId: first.browserId! },
+    });
+    expect(row).toMatchObject({
+      source: expected,
+      capturedAt: new Date('2026-10-01T12:00:00Z'),
+      collectionVersion: 2,
+      environment: 'local',
+      registeredUserId: null,
+    });
+  },
+);
+
+it('deduplicates deliveries in PostgreSQL and shares inactivity sessions across concurrent tabs and reloads', async () => {
+  let instant = new Date('2026-10-01T12:00:00Z');
+  const { service } = await webAnalytics(() => instant);
+  const event = { eventId: randomUUID(), page: { page: 'home' as const } };
+  const first = await service.ingestWeb({ events: [event] }, null);
+  instant = new Date('2026-10-01T12:29:00Z');
+  expect(
+    await service.ingestWeb({ events: [event] }, first.browserId),
+  ).toMatchObject({ accepted: 0, sessionId: first.sessionId });
+  instant = new Date('2026-10-01T12:30:00Z');
+  const [tab, reload] = await Promise.all(
+    ['works', 'authors'].map((page) =>
+      service.ingestWeb(
+        {
+          events: [
+            {
+              eventId: randomUUID(),
+              page: { page } as { page: 'works' | 'authors' },
+            },
+          ],
+        },
+        first.browserId,
+      ),
+    ),
+  );
+  expect(tab!.sessionId).toBe(reload!.sessionId);
+  expect(tab!.sessionId).not.toBe(first.sessionId);
+  expect(await prisma.analyticsEvent.count()).toBe(3);
+  await expect(
+    prisma.analyticsEvent.create({
+      data: {
+        eventId: event.eventId,
+        collectionVersion: 2,
+        eventName: 'public_page_viewed',
+        anonymousId: first.browserId!,
+        environment: 'local',
+        properties: {},
+      },
+    }),
+  ).rejects.toMatchObject({ code: 'P2002' });
+});
+
+it('excludes unproven login claims from 30-day conversion and preserves registration independently', async () => {
+  const visitAt = new Date('2026-08-01T00:00:00Z');
+  const { service, env } = await webAnalytics(() => visitAt);
+  const first = await service.ingestWeb(
+    { events: [{ eventId: randomUUID(), page: { page: 'home' } }] },
+    null,
+  );
+  const user = await prisma.user.create({
+    data: {
+      email: 'registered@analytics.test',
+      passwordHash: 'unusable',
+      createdAt: new Date('2026-08-10T00:00:00Z'),
+    },
+  });
+  await prisma.acquisitionAttribution.update({
+    where: { anonymousId: first.browserId! },
+    data: { userId: user.id, linkedAt: user.createdAt },
+  });
+  const analytics = new AdminAnalyticsService(prisma as never);
+  const interval = {
+    from: '2026-08-01T00:00:00.000Z',
+    to: '2026-08-02T00:00:00.000Z',
+  };
+  expect(
+    (
+      await analytics.buildFoundation(
+        interval,
+        new Date('2026-08-12T00:00:00Z'),
+        'local',
+      )
+    ).acquisition,
+  ).toMatchObject({ visitors: 1, registrations: 0, rate: 0, mature: false });
+  const {
+    recordAnalyticsRegistration,
+    signAnalyticsBrowser,
+    ANALYTICS_BROWSER_COOKIE,
+  } = await import('../../src/analytics/browser-attribution');
+  await recordAnalyticsRegistration(
+    prisma as never,
+    env,
+    `${ANALYTICS_BROWSER_COOKIE}=${first.browserId}`,
+    user.id,
+  );
+  expect(
+    (
+      await prisma.acquisitionAttribution.findUniqueOrThrow({
+        where: { anonymousId: first.browserId! },
+      })
+    ).registeredUserId,
+  ).toBeNull();
+  await recordAnalyticsRegistration(
+    prisma as never,
+    env,
+    `${ANALYTICS_BROWSER_COOKIE}=${signAnalyticsBrowser(first.browserId!, env)}`,
+    user.id,
+  );
+  expect(
+    (
+      await analytics.buildFoundation(
+        interval,
+        new Date('2026-09-10T00:00:00Z'),
+        'local',
+      )
+    ).acquisition,
+  ).toMatchObject({ visitors: 1, registrations: 1, rate: 1, mature: true });
+  expect(
+    (
+      await analytics.buildFoundation(
+        interval,
+        new Date('2026-09-10T00:00:00Z'),
+        'staging',
+      )
+    ).acquisition.visitors,
+  ).toBe(0);
+  const other = await service.ingestWeb(
+    { events: [{ eventId: randomUUID(), page: { page: 'works' } }] },
+    null,
+  );
+  await recordAnalyticsRegistration(
+    prisma as never,
+    env,
+    `${ANALYTICS_BROWSER_COOKIE}=${signAnalyticsBrowser(other.browserId!, env)}`,
+    user.id,
+  );
+  expect(
+    await prisma.acquisitionAttribution.count({
+      where: { registeredUserId: user.id },
+    }),
+  ).toBe(1);
+  expect(await prisma.user.count({ where: { id: user.id } })).toBe(1);
+  const late = await prisma.user.create({
+    data: {
+      email: 'late-signup@analytics.test',
+      passwordHash: 'unusable',
+      createdAt: new Date('2026-09-01T00:00:00Z'),
+    },
+  });
+  await recordAnalyticsRegistration(
+    prisma as never,
+    env,
+    `${ANALYTICS_BROWSER_COOKIE}=${signAnalyticsBrowser(other.browserId!, env)}`,
+    late.id,
+  );
+  expect(
+    (
+      await analytics.buildFoundation(
+        interval,
+        new Date('2026-09-10T00:00:00Z'),
+        'local',
+      )
+    ).acquisition,
+  ).toMatchObject({ visitors: 2, registrations: 1, rate: 0.5, mature: true });
+});
+
+it('keeps new collection disabled by default and rejects client identity/time/environment or private page data', async () => {
+  const { service } = await webAnalytics(() => new Date(), false);
+  expect(
+    await service.ingestWeb(
+      { events: [{ eventId: randomUUID(), page: { page: 'home' } }] },
+      null,
+    ),
+  ).toEqual({ accepted: 0, sessionId: null, browserId: null });
+  expect(await prisma.analyticsEvent.count()).toBe(0);
+  const { webAnalyticsRequestSchema } = await import('@bidplace/contracts');
+  for (const extra of [
+    { anonymousId: randomUUID() },
+    { environment: 'production' },
+    { clientCapturedAt: new Date().toISOString() },
+  ]) {
+    expect(
+      webAnalyticsRequestSchema.safeParse({
+        events: [{ eventId: randomUUID(), page: { page: 'home' } }],
+        ...extra,
+      }).success,
+    ).toBe(false);
+  }
+  expect(
+    webAnalyticsRequestSchema.safeParse({
+      events: [
+        {
+          eventId: randomUUID(),
+          page: { page: 'admin', url: '/admin?email=private' },
+        },
+      ],
+    }).success,
+  ).toBe(false);
+});
+
+it('counts first publications and waiting revisions, separates unknown times, and keeps UTC growth stable', async () => {
+  const owner = await prisma.user.create({
+    data: { email: 'public@analytics.test', passwordHash: 'unusable' },
+  });
+  const profile = await prisma.sellerProfile.create({
+    data: {
+      userId: owner.id,
+      slug: 'analytics-public',
+      fullName: 'Public',
+      sellerType: 'creator',
+      country: 'BY',
+      profilePhotoMimeType: 'image/png',
+      profilePhotoByteLength: profilePhoto.byteLength,
+      profilePhotoChecksum: '0'.repeat(64),
+      profilePhotoData: profilePhoto,
+      status: 'APPROVED',
+      firstPublishedAt: new Date('2026-10-01T23:59:59.999Z'),
+    },
+  });
+  const revision = await prisma.sellerProfileRevision.create({
+    data: {
+      sellerProfileId: profile.id,
+      version: 1,
+      status: 'PENDING_REVIEW',
+      slug: profile.slug,
+      fullName: profile.fullName,
+      country: 'BY',
+      submittedAt: new Date('2026-09-01T00:00:00Z'),
+    },
+  });
+  await prisma.sellerProfile.update({
+    where: { id: profile.id },
+    data: { editingRevisionId: revision.id },
+  });
+  const work = await prisma.product.create({
+    data: {
+      publicId: 'abcdefghijk',
+      sellerProfileId: profile.id,
+      status: 'APPROVED',
+      publishedAt: new Date('2026-10-02T00:00:00Z'),
+    },
+  });
+  const workRevision = await prisma.productRevision.create({
+    data: {
+      productId: work.id,
+      version: 1,
+      status: 'PENDING_REVIEW',
+      title: 'Waiting',
+      submittedAt: null,
+    },
+  });
+  await prisma.product.update({
+    where: { id: work.id },
+    data: { editingRevisionId: workRevision.id },
+  });
+  const user2 = await prisma.user.create({
+    data: { email: 'legacy@analytics.test', passwordHash: 'unusable' },
+  });
+  await prisma.sellerProfile.create({
+    data: {
+      userId: user2.id,
+      slug: 'legacy',
+      fullName: 'Legacy',
+      sellerType: 'creator',
+      country: 'BY',
+      profilePhotoMimeType: 'image/png',
+      profilePhotoByteLength: profilePhoto.byteLength,
+      profilePhotoChecksum: '0'.repeat(64),
+      profilePhotoData: profilePhoto,
+      status: 'APPROVED',
+    },
+  });
+  const interval = {
+    from: '2026-10-01T00:00:00.000Z',
+    to: '2026-10-03T00:00:00.000Z',
+  };
+  const instant = new Date('2026-10-10T00:00:00Z');
+  const overview = await new AdminAnalyticsService(
+    prisma as never,
+  ).buildFoundation(interval, instant, 'local');
+  expect(overview.product).toMatchObject({ firstAuthors: 1, firstWorks: 1 });
+  expect(overview.operational).toMatchObject({
+    currentAuthors: 2,
+    pendingAuthors: 1,
+    stuckAuthors: 1,
+    pendingWorks: 1,
+    stuckWorks: 0,
+    unknownWorkSubmissionTime: 1,
+    unknownAuthorFirstPublication: 1,
+  });
+  expect(
+    overview.growth.map((day) => [day.date, day.firstAuthors, day.firstWorks]),
+  ).toEqual([
+    ['2026-10-01', 1, 0],
+    ['2026-10-02', 0, 1],
+  ]);
+  const changedZone = await prisma.$transaction(async (tx) => {
+    await tx.$executeRaw`SET LOCAL TIME ZONE 'Pacific/Honolulu'`;
+    return new AdminAnalyticsService(tx as never).buildFoundation(
+      interval,
+      instant,
+      'local',
+    );
+  });
+  expect(changedZone).toEqual(overview);
+  await prisma.user.update({
+    where: { id: owner.id },
+    data: { status: 'banned' },
+  });
+  expect(
+    (
+      await new AdminAnalyticsService(prisma as never).buildFoundation(
+        interval,
+        instant,
+        'local',
+      )
+    ).operational.currentAuthors,
+  ).toBe(1);
+  expect(
+    (
+      await new AdminAnalyticsService(prisma as never).buildFoundation(
+        interval,
+        instant,
+        'local',
+      )
+    ).product.firstAuthors,
+  ).toBe(1);
+});
+
+it('keeps disabled HTTP collection inert, binds actual registration with an HttpOnly proof and ignores ordinary login', async () => {
+  const disabled = new HttpTestClient(http.baseUrl, 'http://localhost:8081');
+  const disabledResponse = await disabled.post('/analytics/web-events', {
+    events: [{ eventId: randomUUID(), page: { page: 'home' } }],
+  });
+  expect(disabledResponse.status).toBe(201);
+  expect(await disabledResponse.json()).toEqual({
+    accepted: 0,
+    sessionId: null,
+  });
+  expect(disabledResponse.headers.get('set-cookie')).toBeNull();
+  const previous = process.env.ANALYTICS_WEB_ENABLED;
+  let enabled: HttpTestApp | undefined;
+  try {
+    process.env.ANALYTICS_WEB_ENABLED = 'true';
+    enabled = await createHttpTestApp(database.databaseUrl);
+    const browser = new HttpTestClient(
+      enabled.baseUrl,
+      'http://localhost:8081',
+    );
+    const first = await browser.post('/analytics/web-events', {
+      events: [{ eventId: randomUUID(), page: { page: 'home' } }],
+    });
+    expect(first.status).toBe(201);
+    expect(first.headers.get('cache-control')).toBe('private, no-store');
+    const cookie = first.headers.get('set-cookie')!;
+    expect(cookie).toContain('HttpOnly');
+    expect(cookie).toContain('SameSite=Lax');
+    const account = await prisma.user.create({
+      data: {
+        email: 'ordinary-login@example.com',
+        passwordHash: fixturePasswordHash,
+        role: 'admin',
+      },
+    });
+    expect(
+      (
+        await browser.post('/auth/login', {
+          email: account.email,
+          password: 'password123',
+        })
+      ).status,
+    ).toBe(201);
+    expect(
+      await prisma.acquisitionAttribution.count({
+        where: { registeredUserId: account.id },
+      }),
+    ).toBe(0);
+    const { AuthService } = await import('../../src/auth/auth.service');
+    const created = await enabled.app
+      .get(AuthService)
+      .register(
+        {
+          email: 'new-registration@example.com',
+          password: 'password123',
+          slug: 'web-registration',
+          legal: {
+            agreement: { confirmed: true },
+            privacy: { confirmed: true },
+            dataConsent: { confirmed: true },
+            age18Confirmed: true,
+          },
+        },
+        cookie.split(';')[0],
+      );
+    const attributed = await prisma.acquisitionAttribution.findFirstOrThrow({
+      where: { registeredUserId: created.user.id },
+    });
+    const storedUser = await prisma.user.findUniqueOrThrow({
+      where: { id: created.user.id },
+    });
+    expect(attributed.capturedAt.getTime()).toBeLessThanOrEqual(
+      storedUser.createdAt.getTime(),
+    );
+    const path =
+      '/admin/analytics/foundation?from=2026-01-01T00%3A00%3A00.000Z&to=2026-01-02T00%3A00%3A00.000Z';
+    const response = await browser.get(path);
+    expect(response.status).toBe(200);
+    expect(response.headers.get('cache-control')).toBe('private, no-store');
+    expect(
+      (
+        await new HttpTestClient(enabled.baseUrl, 'http://localhost:8081').get(
+          path,
+        )
+      ).status,
+    ).toBe(401);
+    const malformed = await browser.post('/analytics/web-events', {
+      events: [
+        { eventId: randomUUID(), page: { page: 'home', url: '/private' } },
+      ],
+    });
+    expect(malformed.status).toBe(400);
+    const privateTarget = await browser.post('/analytics/web-events', { events: [
+      { eventId: randomUUID(), page: { page: 'work', publicId: 'missing0001' } },
+      { eventId: randomUUID(), page: { page: 'author', slug: 'missing-author' } },
+    ] });
+    expect(await privateTarget.json()).toMatchObject({ accepted: 0 });
+    expect(await prisma.analyticsEvent.count({ where: { eventName: 'public_page_viewed' } })).toBe(1);
+
+  } finally {
+    if (previous === undefined) delete process.env.ANALYTICS_WEB_ENABLED;
+    else process.env.ANALYTICS_WEB_ENABLED = previous;
+    await enabled?.close();
+  }
+});
+
+it('measures bounded new aggregates on isolated synthetic event data before proposing indexes', async () => {
+  const browserIds = Array.from({ length: 200 }, () => randomUUID());
+  await prisma.acquisitionAttribution.createMany({
+    data: browserIds.map((anonymousId) => ({
+      anonymousId,
+      collectionVersion: 2,
+      environment: 'local',
+      source: 'synthetic',
+      capturedAt: new Date('2026-10-01T00:00:00Z'),
+    })),
+  });
+  await prisma.analyticsEvent.createMany({
+    data: Array.from({ length: 5000 }, (_, index) => ({
+      anonymousId: browserIds[index % browserIds.length]!,
+      eventId: randomUUID(),
+      sessionId: browserIds[index % browserIds.length]!,
+      collectionVersion: 2,
+      environment: 'local',
+      eventName: 'public_page_viewed',
+      properties: { page: 'home' },
+      createdAt: new Date('2026-10-01T12:00:00Z'),
+    })),
+  });
+  const { foundationCountsSql, foundationAcquisitionSql, foundationGrowthSql } =
+    await import('../../src/admin/admin-analytics.query');
+  const from = new Date('2026-10-01T00:00:00Z'),
+    to = new Date('2026-10-03T00:00:00Z');
+  const measurements: Record<string, number> = {};
+  for (const [name, query, rows] of [
+    ['counts', foundationCountsSql(from, to, 'local', to), 1],
+    ['cohort', foundationAcquisitionSql(from, to, 'local', to), 1],
+    ['growth', foundationGrowthSql(from, to, 'local'), 2],
+  ] as const) {
+    const result = await prisma.$queryRaw<
+      Array<{
+        'QUERY PLAN': Array<{
+          Plan: { 'Actual Rows': number };
+          'Execution Time': number;
+        }>;
+      }>
+    >(Prisma.sql`EXPLAIN (ANALYZE, FORMAT JSON) ${query}`);
+    const plan = result[0]!['QUERY PLAN'][0]!;
+    expect(plan.Plan['Actual Rows']).toBe(rows);
+    measurements[name] = plan['Execution Time'];
+  }
+  process.stdout.write(`Analytics synthetic query milliseconds (5000 events, 200 browsers): ${JSON.stringify(measurements)}\n`);
+});

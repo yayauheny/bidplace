@@ -251,6 +251,7 @@ vi.mock('@react-native-async-storage/async-storage', () => ({
 
 
 vi.mock('expo-router', () => ({
+  usePathname: () => '/',
   useRouter: () => ({
     canGoBack: () => false,
     back: () => undefined,

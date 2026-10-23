@@ -65,6 +65,26 @@ provider acceptance and release integration regression. The historical single-bu
 description below applies to legacy records, not the target production topology.
 See [`11-PROJECT-STATUS.md`](11-PROJECT-STATUS.md) for remaining gates.
 
+## 2026-10-23 — Version 2 web analytics foundation
+
+The existing AnalyticsService ingests additive `/api/analytics/web-events` into
+`AnalyticsEvent`; environment/eventId uniqueness deduplicates delivery. Existing
+`AcquisitionAttribution` owns immutable server first touch, browser cookie proof,
+row-locked inactivity sessions and a separate proven `registeredUserId` relation.
+No new service/table/queue. Three actual account-creation boundaries link proof
+after saving the user; attribution failure cannot roll back registration. Login
+and legacy identify do not link the new relation.
+
+`AnalyticsProvider` observes allowlisted public pathname changes; Web Locks
+serialize tab requests/initial cookie response. Server/client flags are independent
+and default off. Cloudflare forwards the optional server flag and explicitly
+builds the separate client flag as false unless configured. Existing v1 DTOs and
+collection remain; legacy acquisition queries exclude v2. Corrected product,
+cohort, UTC growth and revision-age operations use a new protected foundation
+read in AdminAnalyticsService. `SellerProfile.firstPublishedAt` records only known
+first publication; no historical backfill. [Contracts/configuration](analytics-contract.md),
+[metric definitions](analytics-metrics.md), [audit](../audits/current/2026-10-23-ANALYTICS-FOUNDATION.md).
+
 ## Applications and shared boundaries
 
 - `apps/api` is the authoritative NestJS HTTP process. Controllers parse shared Zod contracts; services own business rules and Prisma transactions. Its active product modules are Health, Auth, Auth Abuse, Analytics, Products, OTP, Password Reset, Admin, Images, Sellers and Portfolio; Categories and core database/mail/time/public-id/image-store modules support that graph. `AppModule` imports global `AuthAbuseModule` (`apps/api/src/auth-abuse/`). Listing, Bid, Order, Discovery, Activity, lifecycle and Socket.IO application modules are not on the default boot graph.

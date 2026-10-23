@@ -254,3 +254,89 @@ async function expectSearchOverlay(page: Page, expectedViewportWidth: number) {
       viewportHeight: 844,
     });
 }
+
+test('public web analytics respects opt-in and shares sessions across tabs, reloads and navigation', async ({
+  browser,
+}) => {
+  const context = await browser.newContext();
+  const requests: Array<{
+    events: Array<{ eventId: string; page: { page: string } }>;
+  }> = [];
+  const responses: Array<{ accepted: number; sessionId: string | null }> = [];
+  context.on('request', (request) => {
+    if (request.url().endsWith('/api/analytics/web-events'))
+      requests.push(request.postDataJSON());
+  });
+  context.on('response', async (response) => {
+    if (response.url().endsWith('/api/analytics/web-events'))
+      responses.push(await response.json());
+  });
+  try {
+    const first = await context.newPage();
+    if (process.env.EXPO_PUBLIC_ANALYTICS_WEB_ENABLED !== 'true') {
+      await first.goto('/', { waitUntil: 'networkidle' });
+      expect(requests).toHaveLength(0);
+      return;
+    }
+    const second = await context.newPage();
+    await Promise.all([first.goto('/'), second.goto('/')]);
+    await expect.poll(() => responses.length).toBe(2);
+    if (process.env.ANALYTICS_WEB_ENABLED !== 'true') {
+      expect(
+        responses.every(
+          (response) => response.accepted === 0 && response.sessionId === null,
+        ),
+      ).toBe(true);
+      expect(
+        (await context.cookies()).some(
+          (cookie) => cookie.name === 'bp_web_analytics',
+        ),
+      ).toBe(false);
+      return;
+    }
+    expect(responses[0]!.sessionId).toBeTruthy();
+    expect(responses[0]!.sessionId).toBe(responses[1]!.sessionId);
+    const cookie = (await context.cookies()).filter(
+      (item) => item.name === 'bp_web_analytics',
+    );
+    expect(cookie).toHaveLength(1);
+    expect(cookie[0]!.httpOnly).toBe(true);
+    expect(
+      await first.evaluate(() => document.cookie.includes('bp_web_analytics')),
+    ).toBe(false);
+    await first.reload();
+    await expect.poll(() => responses.length).toBe(3);
+    await first
+      .getByRole('link', { name: 'Работы', exact: true })
+      .first()
+      .click();
+    await expect(first).toHaveURL(/\/works/);
+    await expect.poll(() => responses.length).toBe(4);
+    await first.evaluate(() => {
+      history.replaceState({}, '', `${location.pathname}?q=private#secret`);
+      dispatchEvent(new PopStateEvent('popstate'));
+    });
+    await first.goto('/login', { waitUntil: 'networkidle' });
+    await first.goto('/product/daliEstate1?preview=1', {
+      waitUntil: 'networkidle',
+    });
+    expect(requests).toHaveLength(4);
+    expect(
+      new Set(
+        requests.flatMap((request) =>
+          request.events.map((event) => event.eventId),
+        ),
+      ).size,
+    ).toBe(4);
+    expect(
+      responses.every(
+        (response) => response.sessionId === responses[0]!.sessionId,
+      ),
+    ).toBe(true);
+    expect(JSON.stringify(requests)).not.toMatch(
+      /private|secret|clientCapturedAt|anonymousId/,
+    );
+  } finally {
+    await context.close();
+  }
+});

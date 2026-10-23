@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { apiErrorCodeSchema } from './error';
-import { isoDateTimeSchema, uuidSchema } from './primitives';
+import { isoDateTimeSchema, uuidSchema, slugSchema } from './primitives';
 
 export const ANALYTICS_EVENT_NAMES = [
   'listing_viewed',
@@ -296,3 +296,128 @@ export const adminAnalyticsOverviewSchema = z
 export type AdminAnalyticsOverview = z.infer<
   typeof adminAnalyticsOverviewSchema
 >;
+
+export const publicPageSchema = z.discriminatedUnion('page', [
+  z.object({ page: z.literal('home') }).strict(),
+  z.object({ page: z.literal('works') }).strict(),
+  z.object({ page: z.literal('authors') }).strict(),
+  z
+    .object({
+      page: z.literal('work'),
+      publicId: z.string().regex(/^[A-Za-z0-9_-]{11}$/),
+    })
+    .strict(),
+  z.object({ page: z.literal('author'), slug: slugSchema.max(120) }).strict(),
+]);
+export type PublicAnalyticsPage = z.infer<typeof publicPageSchema>;
+const acquisitionLabelSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(120)
+  .regex(/^[\p{L}\p{N}_. -]+$/u);
+export const webAnalyticsRequestSchema = z
+  .object({
+    events: z
+      .array(z.object({ eventId: uuidSchema, page: publicPageSchema }).strict())
+      .min(1)
+      .max(25),
+    attribution: z
+      .object({
+        source: acquisitionLabelSchema.optional(),
+        medium: acquisitionLabelSchema.optional(),
+        campaign: acquisitionLabelSchema.optional(),
+        content: acquisitionLabelSchema.optional(),
+        referrerHost: z
+          .string()
+          .max(253)
+          .regex(/^[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?$/i)
+          .optional(),
+      })
+      .strict()
+      .optional(),
+  })
+  .strict();
+export type WebAnalyticsRequest = z.infer<typeof webAnalyticsRequestSchema>;
+export const webAnalyticsResponseSchema = z
+  .object({
+    accepted: z.number().int().nonnegative(),
+    sessionId: uuidSchema.nullable(),
+  })
+  .strict();
+export const analyticsFoundationQuerySchema = z
+  .object({ from: isoDateTimeSchema, to: isoDateTimeSchema })
+  .strict()
+  .refine(
+    ({ from, to }) =>
+      Date.parse(from) < Date.parse(to) &&
+      Date.parse(to) - Date.parse(from) <= 93 * 86_400_000,
+    'Expected a positive UTC interval of at most 93 days',
+  );
+const count = z.number().int().nonnegative();
+export const analyticsFoundationResponseSchema = z
+  .object({
+    from: isoDateTimeSchema,
+    to: isoDateTimeSchema,
+    environment: z.string(),
+    coverage: z
+      .object({
+        firstVisitAt: isoDateTimeSchema.nullable(),
+        firstAuthorPublicationAt: isoDateTimeSchema.nullable(),
+        legacyExcluded: z.literal(true),
+      })
+      .strict(),
+    product: z
+      .object({
+        views: count,
+        visitors: count,
+        sessions: count,
+        firstAuthors: count,
+        firstWorks: count,
+      })
+      .strict(),
+    growth: z.array(
+      z
+        .object({
+          date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+          views: count,
+          visitors: count,
+          registrations: count,
+          firstAuthors: count,
+          firstWorks: count,
+        })
+        .strict(),
+    ),
+    operational: z
+      .object({
+        registrations: count,
+        currentAuthors: count,
+        currentWorks: count,
+        pendingAuthors: count,
+        pendingWorks: count,
+        stuckAuthors: count,
+        stuckWorks: count,
+        unknownAuthorSubmissionTime: count,
+        unknownWorkSubmissionTime: count,
+        unknownAuthorFirstPublication: count,
+      })
+      .strict(),
+    acquisition: z
+      .object({
+        visitors: count,
+        registrations: count,
+        rate: z.number().min(0).max(1).nullable(),
+        mature: z.boolean(),
+        bySource: z.array(
+          z
+            .object({
+              source: z.string(),
+              visitors: count,
+              registrations: count,
+            })
+            .strict(),
+        ),
+      })
+      .strict(),
+  })
+  .strict();
