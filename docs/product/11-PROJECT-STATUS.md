@@ -58,6 +58,9 @@ EmailProofService/AuthAbuseService, normalized SOURCE/ImageProcessor, upload API
 и SOURCE; существующие security/media owners прошли полный `pnpm verify`; 32/32
 Chromium/WebKit auth/media browser checks прошли. E2E API-транспорт получил
 обязательные Origin/CSRF headers без изменения assertions/timeouts.
+CI startup Expo воспроизвёл ошибку React Native из-за `NODE_ENV=test`:
+только dev server получает development-окружение; workflow очищает группы
+Expo/Vitest/Playwright при завершении и показывает Expo log при сбое.
 Auth DEC-133–135 не перекрывают фото DEC-131/132. DEC-136 фиксирует синхронный
 SMTP и открытый request timing; verify оценивается отдельно.
 

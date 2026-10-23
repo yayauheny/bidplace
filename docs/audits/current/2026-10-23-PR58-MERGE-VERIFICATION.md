@@ -77,7 +77,21 @@ photo harness получил воспроизводимый 403 на login и у
 его API-транспорт не передавал обязательные Origin/X-Bidplace-Request. Общий
 `auth-session.ts` и guest setup photo harness приведены к session/CSRF-контракту;
 production guard не ослаблялся. После этого те же 6 media-сценариев прошли.
-Если повторный CI воспроизведёт проблему, исправление ограничивается её причиной.
+Повторный CI `39879397004` установил браузеры, но Expo не открыл порт 55441.
+Локальный запуск с тем же окружением воспроизвёл причину: унаследованный
+`NODE_ENV=test` включает test-only запрет React Native `DefaultToolLauncher`.
+Только Expo запускается с `NODE_ENV=development` через существующий `web` script
+(он также собирает shared packages); API/Vitest сохраняют test-окружение.
+EXIT/INT/TERM cleanup завершает отдельные группы Expo и Vitest/Playwright,
+а при ошибке выводит хвост Expo log. Assertions и бюджеты ожидания не меняются.
+Cleanup проверен в Linux при success/error/SIGTERM: группы завершены, exit codes
+0/7/143 сохранены. Локальный повтор с исправленным Expo прошёл 55/55 integration,
+включая 12/12 Chromium/WebKit. Первый запуск дал 11/12: WebKit один раз показал
+network error при Google start; повтор с временной диагностикой transport прошёл,
+причина единичного сбоя не установлена; диагностика удалена, retries не добавлены.
+Полный manual Verify `39879403448` на merge-коммите прошёл, включая Cloudflare
+image/static checks; после исправления browser startup требуется новый полный
+Verify и Chromium/WebKit на новом итоговом SHA.
 
 ## Граница готовности
 

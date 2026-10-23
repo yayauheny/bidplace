@@ -156,6 +156,25 @@ jobs:
           EXPO_PUBLIC_TURNSTILE_SITE_KEY: 1x00000000000000000000AA
         run: |
           pnpm --filter @bidplace/mobile exec playwright install --with-deps chromium webkit
-          pnpm --filter @bidplace/mobile exec expo start --offline --web --port 55441 > /tmp/bidplace-auth-expo.log 2>&1 &
+          cleanup() {
+            status=$?
+            trap - EXIT
+            for pid in ${expo_pid:-} ${test_pid:-}; do
+              if kill -0 -- "-$pid" 2>/dev/null; then
+                kill -TERM -- "-$pid"
+              fi
+            done
+            if [ "$status" -ne 0 ]; then
+              tail -100 /tmp/bidplace-auth-expo.log
+            fi
+            exit "$status"
+          }
+          trap cleanup EXIT
+          trap 'exit 130' INT
+          trap 'exit 143' TERM
+          setsid env NODE_ENV=development pnpm --filter @bidplace/mobile run web --offline --port 55441 > /tmp/bidplace-auth-expo.log 2>&1 &
+          expo_pid=$!
           curl --fail --retry 30 --retry-delay 2 --retry-connrefused http://127.0.0.1:55441/ > /dev/null
-          pnpm --filter @bidplace/api exec vitest run --config vitest.integration.config.ts test/integration/social-auth.integration.spec.ts
+          setsid pnpm --filter @bidplace/api exec vitest run --config vitest.integration.config.ts test/integration/social-auth.integration.spec.ts &
+          test_pid=$!
+          wait "$test_pid"
