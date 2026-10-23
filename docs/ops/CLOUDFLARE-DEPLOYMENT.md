@@ -126,7 +126,8 @@ MEDIA_PUBLIC_BASE_URL. Названия/правила публичны и се�
 | Name | Назначение |
 |---|---|
 | DATABASE_URL | Neon pooler URL; отдельный для каждого environment |
-| JWT_SECRET | Независимый случайный secret, минимум 32 chars |
+| SESSION_SECRET | Независимый случайный secret, минимум 32 chars |
+| OTP_HASH_SECRET | Отдельный случайный ключ HMAC для OTP, минимум 32 chars |
 | S3_ACCESS_KEY_ID / S3_SECRET_ACCESS_KEY | R2 Object Read & Write, только два buckets данного environment |
 | SMTP_USERNAME / SMTP_PASSWORD | Cloudflare Email Service SMTP. Username — литерал `api_token`. Password — отдельный API token с Email Sending: Edit |
 | CLOUDFLARE_CACHE_TOKEN | Zone → Cache Purge только для зоны `bid.place` |
@@ -138,7 +139,7 @@ tokens для диагностики/rotation, но ограничение ко�
 [R2 bucket-scoped credentials](https://developers.cloudflare.com/r2/api/tokens/).
 
 Для каждого имени выполнить interactive command, например:
-`pnpm exec wrangler secret put JWT_SECRET --config deploy/cloudflare/wrangler.jsonc --env staging`.
+`pnpm exec wrangler secret put SESSION_SECRET --config deploy/cloudflare/wrangler.jsonc --env staging`.
 Повторить отдельно для production. CLI first-time secret setup может создать
 пустой Worker; он ещё не application deployment. Required secret declarations
 есть в обоих environments. `envVars` передаёт allowlist в Container при старте;
@@ -493,3 +494,6 @@ Live acceptance после реального production deploy. Локальн�
 - успешный пустой recovery прекращает SQL-чтения;
 - самостоятельное пробуждение спящего процесса только ради снятого срока не
   требуется. Старый публичный URL может работать до успешного восстановления.
+
+Google/Telegram settings and the coordinated session cutover are described in
+[Web auth rollout](WEB-AUTH-ROLLOUT.md).

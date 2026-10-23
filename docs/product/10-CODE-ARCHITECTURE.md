@@ -163,7 +163,7 @@ See [`11-PROJECT-STATUS.md`](11-PROJECT-STATUS.md) for remaining gates.
 - Mobile author application (`apps/mobile/src/features/sellers/seller-profile-screen.tsx`, `author-application-*-step.tsx`, `AuthorApplicationAchievements.tsx`) renders four URL-owned steps against portfolio application reads/writes. Shared Zod in `seller-profile.ts` describes DTO and write payloads (for example `shortDescription: null` clears on PATCH); step UI and local hints are not readiness or stage authority. Server clamp, `applicationStage`, and validation errors remain authoritative. Achievement append/delete are JSON writes validated on the API (`z.output`); Work creation-story media and steps stay on the separate Product path.
 - `packages/database` owns Prisma schema, additive migrations and deterministic local/test seed. Demo seed may run only with `NODE_ENV=development|test`, `APP_ENV=local` and `ALLOW_DESTRUCTIVE_DEMO_SEED=true`; production-like profiles fail before writes. Local seed is the Figma Home catalog (four public authors plus `pixelp`, nine public works including two demo vex works, no Listing/Bid/Order rows). User-facing seed copy is production-quality (`DEC-092`). `CuratorSelection` points at Dali (`daliEstate1` / `pixelp`) with curator `vex` and the Figma `note`. Pre-production amendment of the unreleased `curator_selections` CREATE TABLE (`note TEXT`, `curator_seller_profile_id`, `DEC-090`/`DEC-091`) is the only in-place migration edit; after first production apply, further columns are additive. Seller `biography` is an additive column (`20260914200000_add_seller_biography`). This does not authorize editing commerce/baseline migrations (`DEC-087`). `scripts/ops/commerce-inventory.mjs` is a read-only leftover-listing inventory; it is not a write path and is not a staging/production dry-run unless that environment is the connected target.
 - `packages/config` owns env-file parsing through Node `util.parseEnv`. One leading U+FEFF is removed from the file text before that parse; a later BOM, including one inside a quoted value, stays. A missing file is an empty record. Explicit process env overrides file values. `apps/api/src/core/config/env.ts` validates that merge once and freezes the result. `ServerEnvModule.forRoot` provides that same object as `SERVER_ENV` for one Nest application context. `main.ts` and `apps/api/test/integration/http-test-app.ts` are the bootstrap loaders. Analytics, auth, OTP, password reset, mail, image storage, and rate limits inject the snapshot. `loadServerEnv` still copies unset keys into `process.env`, because `PrismaService` constructs `PrismaClient` without a datasource argument and Prisma reads `DATABASE_URL` from the process environment. A second application context gets its own snapshot through its own `ServerEnvModule.forRoot` call. The provider is the existing Nest dynamic module.
-- `apps/api/src/core/config/env-profile.ts` owns the `NODE_ENV` × `APP_ENV` predicates. `APP_ENV=production` requires `NODE_ENV=production`; `NODE_ENV=production` cannot combine with `APP_ENV=local`. Production SMTP, service rules, password-reset URL, JWT length and test-bypass prohibitions apply when either variable is `production`. Staging keeps its previous requirement shape: production security only when `NODE_ENV=production`.
+- `apps/api/src/core/config/env-profile.ts` owns the `NODE_ENV` × `APP_ENV` predicates. `APP_ENV=production` requires `NODE_ENV=production`; `NODE_ENV=production` cannot combine with `APP_ENV=local`. Production SMTP, service rules, password-reset URL, session/OTP key length and test-bypass prohibitions apply when either variable is `production`. Staging keeps its previous requirement shape: production security only when `NODE_ENV=production`.
 - Release automation is deliberately layered: root `pnpm verify` is the local and
   standard automatic CI gate (including mobile unit tests and the E2E database
   fence). Full browser E2E is not run automatically on pull requests or pushes:
@@ -612,3 +612,92 @@ preserving retries across cutover. Apply migration
 
 Upload retries reuse a verified persisted SOURCE when available, so encoder
 policy changes do not alter a partially written operation manifest.
+
+## Server sessions (2026-10-22)
+
+AuthService returns the existing user and current sessionVersion internally;
+SessionService rotates/saves an opaque SID with express-session/connect-pg-simple.
+AuthSession migration owns auth_sessions; store runtime DDL is disabled and its
+schema follows DATABASE_URL. SessionAuthGuard and optional/logout guards use one
+principal resolver, current User role/status/version and absolute 12h expiry.
+Late session saves cannot bypass logout/reset/admin version invalidation.
+Flow creation, account switching and logout hold a PostgreSQL advisory lock on
+the browser SID while saving session state. Before a delayed request writes, it
+rechecks that its previously loaded SID still exists, so an old request cannot
+recreate a session after rotation or logout. The lock is shared across API
+workers and is released after the session write.
+Bootstrap owns session middleware and CSRF origin/custom-header checks; api-client
+uses cookies and marks mutations. JWT issuer and bearer client transport removed.
+SocialAuthModule extends this transport through one AuthFlowService and
+OidcProvidersService. openid-client owns discovery, client-secret Basic auth,
+PKCE, state/nonce and signed ID-token validation for Google and Telegram. AuthFlow
+rows bind one attempt to the digest of an opaque browser SID, with a ten-minute
+TTL and transactional stage transitions. ExternalIdentity keys are issuer/subject
+and user/provider; no email auto-link or provider tokens are persisted.
+
+Social creation writes a real email, nullable password, nickname, legal evidence
+and identity atomically. Only authoritative Google email can skip email proof;
+other identities remain pending without a principal. The existing abuse/OTP
+store binds HMAC codes to purpose, user, email, flow and session version. Its
+shared mail budgets and pauses include email-login. A separate neutral
+email_login_request ledger records resend admission equally for known and unknown
+addresses. AuthAbuseService owns its CAPTCHA, admission, cooldown and state. The
+ledger binds browser SID digest plus email, independently of a credential flow;
+rotation after revoke preserves cooldown and replay. Turnstile succeeds before
+admission is recorded. OTP/real mail operations still bind their own flow/version.
+The neutral ledger grants no authentication or SMTP-delivery claim.
+Email-login resend reads only the three newest ledger rows through the
+`purpose, contentHash, createdAt` index; the cooldown policy needs no older
+history.
+
+Email-login verify exposes one typed EMAIL_LOGIN_REJECTED for all credential
+refusals, including unknown/ineligible/expired/paused/revoked attempts; durable
+OTP counters and private outcomes remain unchanged, and infrastructure 5xx are
+not masked. A new request replaces a stale eligible flow before issuing fresh
+proof. Provider cancellation/failure retains the safe server-owned returnPath.
+Social profile completion requires its browser-bound OIDC proof, email policy,
+nickname and legal consent, without a second registration CAPTCHA. Anonymous
+mail requests and password registration retain their CAPTCHA checks.
+
+Completed domain proof transitions through ready/issuing before SID rotation.
+A failed session save restores the anonymous flow for a bounded retry without
+repeating domain writes. Account switching cancels older browser-bound flows;
+completion rechecks cancellation after save. Password reset closes pending
+proofs and identities; version checks protect logout/ban/admin revocation.
+
+Web login/code/onboarding and settings use shared contracts/api-client and
+AuthProvider's existing epoch installation. Private auth queries live under the
+purged user namespace; public provider availability is separate. Native provider
+login and exact new Figma compositions are outside this wave. Local verification
+and remaining external acceptance: 11-PROJECT-STATUS.md and
+[rollout runbook](../ops/WEB-AUTH-ROLLOUT.md).
+
+
+## 2026-10-22 — Pre-account email proof and neutral verify
+
+`EmailProofService` owns browser-bound email proof in `auth_flows`: hashed code,
+10-minute flow/code lifetime, five guesses per code, three sends per flow,
+60-second resend delay. `auth/register/email/request` and `verify` precede
+`auth/register`; the latter creates a verified user and legal evidence.
+The public registration contract no longer accepts phone or a second CAPTCHA;
+CAPTCHA is required before sending the proof. API client and registration UI
+change together. No User or ExternalIdentity is written for unproved social
+onboarding. Existing pending identities remain bound to their user/version.
+
+Proof mail reserves `email_proof_send` in the common abuse ledger under the
+existing global mail lock; account/address quotas and global budgets include it.
+Delivery status distinguishes accepted, rejected and unknown; definite reject
+invalidates the pending code. Session flow, purpose, address and TTL bind proof.
+Replay is owned by the flow-scoped abuse operation, not the flow's current code
+pointer. Rejection outcome and conditional code/cooldown cleanup commit together;
+SMTP holds no database lock. Reserved replay never waits for transport, and late
+finalization updates only its own operation/code. Onboarding state reads flow and
+current mail outcome in a repeatable-read transaction. Existing error/state
+contracts carry rejection; no queue, schema or public type is added.
+The additive `20261022040000_auth_email_proof` migration must precede API rollout.
+
+Email-login refusal uses the same counter, operation replay, code lookup and
+pause writes for registered and unregistered subjects. Unregistered subjects
+use their flow UUID, never a synthetic User row; their ledger owner is null and
+they cannot authenticate. Shared existing OTP policy remains the owner. This
+keeps account counters durable without a response sleep or a second auth engine.

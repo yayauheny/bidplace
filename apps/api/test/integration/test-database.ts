@@ -47,8 +47,8 @@ function assertSafeIntegrationDatabaseUrl(databaseUrl: string): URL {
   return url;
 }
 
-function createSchemaName(): string {
-  return `${INTEGRATION_SCHEMA_PREFIX}${randomUUID().replace(/-/g, '')}`;
+function createSchemaName(prefix: string): string {
+  return `${prefix}${randomUUID().replace(/-/g, '')}`;
 }
 
 function buildSchemaUrl(url: URL, schemaName: string): string {
@@ -147,11 +147,11 @@ async function dropSchema(databaseUrl: URL, schemaName: string): Promise<void> {
   }
 }
 
-export async function createIntegrationDatabaseContext(): Promise<IntegrationDatabaseContext> {
+export async function createIntegrationDatabaseContext(schemaPrefix: 'itest_' | 'auth_browser_' = INTEGRATION_SCHEMA_PREFIX): Promise<IntegrationDatabaseContext> {
   const baseUrl = assertSafeIntegrationDatabaseUrl(
     process.env.INTEGRATION_DATABASE_URL ?? DEFAULT_INTEGRATION_DATABASE_URL,
   );
-  const schemaName = createSchemaName();
+  const schemaName = createSchemaName(schemaPrefix);
   const databaseUrl = buildSchemaUrl(baseUrl, schemaName);
 
   await ensureDatabaseExists(baseUrl);

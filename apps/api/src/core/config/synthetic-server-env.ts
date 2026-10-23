@@ -7,7 +7,8 @@ export function syntheticServerEnv(
     NODE_ENV: 'test',
     APP_ENV: 'local',
     DATABASE_URL: 'postgresql://synthetic:synthetic@127.0.0.1:5432/synthetic',
-    JWT_SECRET: 'synthetic-test-secret',
+    SESSION_SECRET: 'synthetic-test-secret',
+    OTP_HASH_SECRET: 'synthetic-otp-hash-key-for-tests-only',
     PASSWORD_RESET_URL_BASE: 'http://localhost:8081',
     ...overrides,
   });
@@ -19,7 +20,7 @@ export function syntheticProductionServerEnv(
   return syntheticServerEnv({
     NODE_ENV: 'production',
     APP_ENV: 'production',
-    JWT_SECRET: 'synthetic-production-jwt-secret-32',
+    SESSION_SECRET: 'synthetic-production-jwt-secret-32',
     SMTP_HOST: 'smtp.example.com',
     SMTP_PORT: '465',
     SMTP_SECURE: 'true',

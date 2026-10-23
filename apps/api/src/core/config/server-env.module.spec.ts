@@ -12,7 +12,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AnalyticsModule } from '../../analytics/analytics.module';
 import { AnalyticsService } from '../../analytics/analytics.service';
 import { AppModule } from '../../app.module';
-import { AUTH_TOKEN_SECRET } from '../../auth/auth.constants';
+import { SessionService } from '../../auth/session.service';
 import { AuthController } from '../../auth/auth.controller';
 import { AuthModule } from '../../auth/auth.module';
 import { AuthService } from '../../auth/auth.service';
@@ -90,9 +90,10 @@ describe('server env ownership', () => {
       loadServerEnv({
         NODE_ENV: 'test',
         APP_ENV: 'local',
-        DATABASE_URL: 'postgresql://synthetic:synthetic@127.0.0.1:5432/synthetic',
+        DATABASE_URL:
+          'postgresql://synthetic:synthetic@127.0.0.1:5432/synthetic',
       }),
-    ).toThrow(/JWT_SECRET/);
+    ).toThrow(/SESSION_SECRET/);
   });
 
   it('loads the env file once and keeps that snapshot for later requests', async () => {
@@ -101,16 +102,22 @@ describe('server env ownership', () => {
     const replacementUrl =
       'postgresql://synthetic:synthetic@127.0.0.1:5432/replaced';
     const filePath = writeSyntheticEnv(
-      [`DATABASE_URL=${databaseUrl}`, 'JWT_SECRET=from-file'].join('\n'),
+      [`DATABASE_URL=${databaseUrl}`, 'SESSION_SECRET=from-file'].join('\n'),
     );
-    const keys = ['DATABASE_URL', 'NODE_ENV', 'APP_ENV', 'JWT_SECRET'] as const;
+    const keys = [
+      'DATABASE_URL',
+      'NODE_ENV',
+      'APP_ENV',
+      'SESSION_SECRET',
+    ] as const;
     const saved = new Map(keys.map((key) => [key, process.env[key]]));
     delete process.env.DATABASE_URL;
     vi.stubEnv('BIDPLACE_ENV_FILE', filePath);
     const explicitEnv = {
       NODE_ENV: 'test',
       APP_ENV: 'local',
-      JWT_SECRET: 'from-explicit-env',
+      SESSION_SECRET: 'from-explicit-env',
+      OTP_HASH_SECRET: 'synthetic-otp-hash-key-for-tests-only',
       ANALYTICS_INGEST_ENABLED: 'false',
     } as const;
 
@@ -118,12 +125,14 @@ describe('server env ownership', () => {
       const env = loadServerEnv(explicitEnv);
 
       expect(env.DATABASE_URL).toBe(databaseUrl);
-      expect(env.JWT_SECRET).toBe('from-explicit-env');
+      expect(env.SESSION_SECRET).toBe('from-explicit-env');
       expect(process.env.DATABASE_URL).toBe(databaseUrl);
 
       fs.writeFileSync(
         filePath,
-        [`DATABASE_URL=${replacementUrl}`, 'JWT_SECRET=from-file'].join('\n'),
+        [`DATABASE_URL=${replacementUrl}`, 'SESSION_SECRET=from-file'].join(
+          '\n',
+        ),
       );
 
       const prisma = new PrismaClient();
@@ -140,7 +149,9 @@ describe('server env ownership', () => {
       expect(datasource.value).toBeNull();
       await prisma.$disconnect();
 
-      vi.spyOn(PrismaService.prototype, '$connect').mockResolvedValue(undefined);
+      vi.spyOn(PrismaService.prototype, '$connect').mockResolvedValue(
+        undefined,
+      );
       vi.spyOn(PrismaService.prototype, '$disconnect').mockResolvedValue(
         undefined,
       );
@@ -153,7 +164,10 @@ describe('server env ownership', () => {
       try {
         expect(app.get(SERVER_ENV)).toBe(env);
 
-        await app.select(AuthModule).get(AuthService, { strict: true }).getRules();
+        await app
+          .select(AuthModule)
+          .get(AuthService, { strict: true })
+          .getRules();
         await app
           .select(AnalyticsModule)
           .get(AnalyticsService, { strict: true })
@@ -187,15 +201,17 @@ describe('server env ownership', () => {
     vi.stubEnv('NODE_ENV', 'development');
     vi.stubEnv('APP_ENV', 'local');
     vi.spyOn(PrismaService.prototype, '$connect').mockResolvedValue(undefined);
-    vi.spyOn(PrismaService.prototype, '$disconnect').mockResolvedValue(undefined);
+    vi.spyOn(PrismaService.prototype, '$disconnect').mockResolvedValue(
+      undefined,
+    );
 
     const localEnv = syntheticServerEnv({
-      JWT_SECRET: 'synthetic-context-a',
+      SESSION_SECRET: 'synthetic-context-a',
       TRUST_PROXY: 'true',
       ANALYTICS_INGEST_ENABLED: 'false',
     });
     const productionEnv = syntheticProductionServerEnv({
-      JWT_SECRET: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+      SESSION_SECRET: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
       RATE_LIMIT_MAX_BUCKETS: '1',
     });
     const localApp = await NestFactory.createApplicationContext(
@@ -214,24 +230,34 @@ describe('server env ownership', () => {
       expect(Object.isFrozen(localApp.get(SERVER_ENV))).toBe(true);
 
       expect(
-        localApp.select(AuthModule).get(AUTH_TOKEN_SECRET, { strict: true }),
-      ).toBe('synthetic-context-a');
-      expect(
-        productionApp.select(AuthModule).get(AUTH_TOKEN_SECRET, {
-          strict: true,
-        }),
-      ).toBe('bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb');
+        localApp.select(AuthModule).get(SessionService, { strict: true }),
+      ).not.toBe(
+        productionApp.select(AuthModule).get(SessionService, { strict: true }),
+      );
 
       expect(localApp.get(MailTransport)).toBeInstanceOf(LocalMailTransport);
-      expect(productionApp.get(MailTransport)).toBeInstanceOf(SmtpMailTransport);
+      expect(productionApp.get(MailTransport)).toBeInstanceOf(
+        SmtpMailTransport,
+      );
       expect(localApp.get(ImageStore)).toBeInstanceOf(PostgresImageStore);
       expect(productionApp.get(ImageStore)).toBeInstanceOf(S3ImageStore);
 
+      vi.spyOn(localApp.get(PrismaService).authFlow, 'updateMany').mockResolvedValue({ count: 0 });
+      vi.spyOn(productionApp.get(PrismaService).authFlow, 'updateMany').mockResolvedValue({ count: 0 });
+      vi.spyOn(localApp.get(SessionService), 'withLease').mockImplementation(async (_request, operation) => operation());
+      vi.spyOn(productionApp.get(SessionService), 'withLease').mockImplementation(async (_request, operation) => operation());
       const localResponse = { clearCookie: vi.fn() };
       await localApp
         .select(AuthModule)
         .get(AuthController, { strict: true })
-        .logout(undefined, localResponse);
+        .logout(
+          undefined,
+          {
+            sessionID: 'synthetic-config-session',
+            session: { destroy: (callback: () => void) => callback() },
+          } as never,
+          localResponse,
+        );
       expect(localResponse.clearCookie).toHaveBeenCalledWith(
         'bidplace_session',
         expect.objectContaining({ secure: false }),
@@ -241,7 +267,14 @@ describe('server env ownership', () => {
       await productionApp
         .select(AuthModule)
         .get(AuthController, { strict: true })
-        .logout(undefined, productionResponse);
+        .logout(
+          undefined,
+          {
+            sessionID: 'synthetic-config-session',
+            session: { destroy: (callback: () => void) => callback() },
+          } as never,
+          productionResponse,
+        );
       expect(productionResponse.clearCookie).toHaveBeenCalledWith(
         'bidplace_session',
         expect.objectContaining({ secure: true }),
@@ -275,7 +308,6 @@ describe('server env ownership', () => {
       expect(limits.consume('bucket-a', 1, 60_000, 1_000)).toBe(true);
       expect(limits.consume('bucket-b', 1, 60_000, 1_000)).toBe(true);
       expect(limits.consume('bucket-a', 1, 60_000, 1_000)).toBe(true);
-
     } finally {
       await productionApp.close();
       await localApp.close();

@@ -1,4 +1,10 @@
-import { Link, useIsFocused, useNavigation, useRouter, type Href } from 'expo-router';
+import {
+  Link,
+  useIsFocused,
+  useNavigation,
+  useRouter,
+  type Href,
+} from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -6,22 +12,36 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useWindowDimensions, View, type ViewStyle } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
 import { isAuthDialog } from '../../components/layout/auth-viewport-layout';
-import { ApiErrorCode, newAccountSlugSchema, type User, type LegalDocumentId, type LegalDocumentsResponse } from '@bidplace/contracts';
-import { AppText, PrimaryButton, TextField } from '../../components/ui';
+import {
+  ApiErrorCode,
+  newAccountSlugSchema,
+  type User,
+  type LegalDocumentId,
+  type LegalDocumentsResponse,
+} from '@bidplace/contracts';
+import { AppText, PrimaryButton, TextButton, TextField } from '../../components/ui';
 import { FigmaButton } from '../../components/figma/FigmaButton';
 import { MotionPressable } from '../../components/ui/MotionPressable';
 import { AuthConsentCheckbox } from './auth-consent-checkbox';
 import { AuthPasswordField } from './auth-password-field';
+import { AuthCodeField } from './auth-code-field';
+import { createOperationKey } from './recovery-operation';
 import { registerSubmission } from './auth-dismissal';
 import { useAuthSheetComplete, useAuthSheetGuard } from './auth-sheet-context';
-import { AuthGoogleIcon } from './auth-google-icon';
-import { AuthLegalText, RegistrationLegalText, registrationConsentLabel } from './auth-legal-text';
+import { ProviderButtons } from './provider-buttons';
+import {
+  AuthLegalText,
+  RegistrationLegalText,
+  registrationConsentLabel,
+} from './auth-legal-text';
 import { LegalDocumentViewer } from './legal-document-viewer';
-import { AuthTelegramIcon } from './auth-telegram-icon';
 import { useAnalytics } from '../../providers/analytics-provider';
 import { useAppTheme } from '../../providers/theme-provider';
 import { useApiClient } from '../../providers/api-provider';
-import { registerSessionChangeIsOwn, useAuth } from '../../providers/auth-provider';
+import {
+  registerSessionChangeIsOwn,
+  useAuth,
+} from '../../providers/auth-provider';
 import {
   useSlugAvailability,
   visibleSlugAvailability,
@@ -51,7 +71,10 @@ import {
   type RegisterFormValues,
 } from './schemas';
 import type { SafeRedirect } from './auth-redirect';
-import { TurnstileWidget, type TurnstileAvailability } from './turnstile-widget';
+import {
+  TurnstileWidget,
+  type TurnstileAvailability,
+} from './turnstile-widget';
 
 const registrationConfirmationFields = [
   'agreementAccepted',
@@ -104,7 +127,8 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [challengeEmail, setChallengeEmail] = useState<string | null>(null);
   const [proof, setProof] = useState<string | null>(null);
-  const [proofAvailability, setProofAvailability] = useState<TurnstileAvailability>('ready');
+  const [proofAvailability, setProofAvailability] =
+    useState<TurnstileAvailability>('ready');
   const [widgetGeneration, setWidgetGeneration] = useState(0);
   const transport = useRef<AbortController | null>(null);
   const loginReceipt = useRef<LoginSuccessReceipt | null>(null);
@@ -112,9 +136,10 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
   const mounted = useRef(true);
   const focusedRef = useRef(focused);
   const privateCacheEpoch = usePrivateCacheEpoch(queryClient);
-  const [providerNotice, setProviderNotice] = useState<string | null>(null);
   const [legalOpen, setLegalOpen] = useState<LegalDocumentId | null>(null);
-  const [loginLegal, setLoginLegal] = useState<LegalDocumentsResponse | null>(null);
+  const [loginLegal, setLoginLegal] = useState<LegalDocumentsResponse | null>(
+    null,
+  );
   const [legalError, setLegalError] = useState<string | null>(null);
   const [legalPending, setLegalPending] = useState(false);
   const legalTransport = useRef<AbortController | null>(null);
@@ -125,12 +150,18 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
   const emailValue = form.watch('email');
   const passwordValue = form.watch('password');
   const normalizedEmail = emailValue.trim().toLowerCase();
-  const challenge = challengeEmail !== null && challengeEmail === normalizedEmail;
-  const submittedValues = useRef<{ email: string; password: string } | null>(null);
+  const challenge =
+    challengeEmail !== null && challengeEmail === normalizedEmail;
+  const submittedValues = useRef<{ email: string; password: string } | null>(
+    null,
+  );
   const onProof = useCallback((token: string | null) => setProof(token), []);
-  const onProofAvailability = useCallback((availability: TurnstileAvailability) => {
-    setProofAvailability(availability);
-  }, []);
+  const onProofAvailability = useCallback(
+    (availability: TurnstileAvailability) => {
+      setProofAvailability(availability);
+    },
+    [],
+  );
   useEffect(() => {
     mounted.current = true;
     return () => {
@@ -152,7 +183,8 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
   useEffect(() => {
     const current = submittedValues.current;
     if (!current || !transport.current) return;
-    if (current.email !== emailValue || current.password !== passwordValue) transport.current.abort();
+    if (current.email !== emailValue || current.password !== passwordValue)
+      transport.current.abort();
   }, [emailValue, passwordValue]);
   useEffect(() => {
     if (challengeEmail === null || normalizedEmail === challengeEmail) return;
@@ -178,7 +210,11 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
   const admitLoginReceipt = useCallback(
     (receipt: LoginSuccessReceipt) => {
       const { controller } = receipt;
-      if (controller.signal.aborted || !mounted.current || !focusedRef.current) {
+      if (
+        controller.signal.aborted ||
+        !mounted.current ||
+        !focusedRef.current
+      ) {
         dropLoginReceipt(controller);
         return;
       }
@@ -186,7 +222,9 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
         dropLoginReceipt(controller);
         return;
       }
-      if (!loginValuesMatch(submittedValues.current, emailValue, passwordValue)) {
+      if (
+        !loginValuesMatch(submittedValues.current, emailValue, passwordValue)
+      ) {
         dropLoginReceipt(controller);
         return;
       }
@@ -257,9 +295,11 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
     setLegalPending(true);
     const controller = new AbortController();
     legalTransport.current = controller;
-    void api.auth.getLegalDocuments({ signal: controller.signal })
+    void api.auth
+      .getLegalDocuments({ signal: controller.signal })
       .then((documents) => {
-        if (!controller.signal.aborted && mounted.current) setLoginLegal(documents);
+        if (!controller.signal.aborted && mounted.current)
+          setLoginLegal(documents);
       })
       .catch(() => {
         if (!controller.signal.aborted && mounted.current) {
@@ -267,8 +307,10 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
         }
       })
       .finally(() => {
-        if (legalTransport.current === controller) legalTransport.current = null;
-        if (!controller.signal.aborted && mounted.current) setLegalPending(false);
+        if (legalTransport.current === controller)
+          legalTransport.current = null;
+        if (!controller.signal.aborted && mounted.current)
+          setLegalPending(false);
       });
   };
   const openPolicy = () => openLoginLegal('privacy');
@@ -287,7 +329,10 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
     transport.current?.abort();
     const controller = new AbortController();
     transport.current = controller;
-    submittedValues.current = { email: values.email, password: values.password };
+    submittedValues.current = {
+      email: values.email,
+      password: values.password,
+    };
     const token = proof;
     if (challenge) {
       setProof(null);
@@ -295,12 +340,20 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
     }
     try {
       const response = await auth.login(
-        { email: values.email, password: values.password, ...(token ? { turnstileToken: token } : {}) },
+        {
+          email: values.email,
+          password: values.password,
+          ...(token ? { turnstileToken: token } : {}),
+        },
         { signal: controller.signal },
       );
       const installed = queryClient.getQueryData<User | null>(authKeys.session);
       const epoch = readAuthEpoch(queryClient);
-      const sameValues = loginValuesMatch(submittedValues.current, emailValue, passwordValue);
+      const sameValues = loginValuesMatch(
+        submittedValues.current,
+        emailValue,
+        passwordValue,
+      );
       if (
         controller.signal.aborted ||
         !mounted.current ||
@@ -344,7 +397,10 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
       applyFormFailure(form, failure, ['email', 'password']);
       setSubmitError(failure.formMessage);
     } finally {
-      if (transport.current === controller && loginReceipt.current?.controller !== controller) {
+      if (
+        transport.current === controller &&
+        loginReceipt.current?.controller !== controller
+      ) {
         transport.current = null;
         submittedValues.current = null;
       }
@@ -379,13 +435,20 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
       </View>
     );
   return (
-      <View style={{ gap: desktop ? designTokens.auth.dialogSectionGap : designTokens.auth.loginGap }}>
+    <View
+      style={{
+        gap: desktop
+          ? designTokens.auth.dialogSectionGap
+          : designTokens.auth.loginGap,
+      }}
+    >
       <View style={{ gap: designTokens.auth.loginFormGap }}>
         <Controller
           control={form.control}
           name="email"
           render={({ field }) => (
-            <TextField ref={field.ref}
+            <TextField
+              ref={field.ref}
               metrics="auth"
               label="Электронная почта"
               value={field.value ?? ''}
@@ -428,7 +491,10 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
               onPress={() => undefined}
               style={{ alignSelf: 'flex-end' }}
             >
-              <AppText role="fieldError" style={{ color: palette.textSubdued, fontSize: 12 }}>
+              <AppText
+                role="fieldError"
+                style={{ color: palette.textSubdued, fontSize: 12 }}
+              >
                 Забыли пароль?
               </AppText>
             </MotionPressable>
@@ -451,17 +517,19 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
             {submitError}
           </AppText>
         ) : null}
-        {providerNotice ? (
-          <AppText role="bodySmall" accessibilityLiveRegion="polite">
-            {providerNotice}
-          </AppText>
-        ) : null}
         <PrimaryButton
           label="Войти"
           size={actionSize}
           width="full"
           loading={form.formState.isSubmitting}
           onPress={submit}
+        />
+        <FigmaButton
+          label="Войти по коду из письма"
+          variant="outline"
+          size={actionSize}
+          width="full"
+          href={{ pathname: '/email-login', params: { redirectTo } }}
         />
         <FigmaButton
           label="Регистрация"
@@ -473,51 +541,48 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
             params: redirectTo !== '/' ? { redirectTo } : undefined,
           }}
         />
-        </View>
-        {!desktop ? (
-          <AppText role="authOr" style={{ textAlign: 'center', color: palette.textSubdued }}>или</AppText>
-        ) : null}
-        <View style={{ gap: designTokens.auth.loginFormGap }}>
-        <FigmaButton
-          label="Войти с Telegram"
-          iconNode={<AuthTelegramIcon />}
-          variant="outline"
-          size={actionSize}
-          width="full"
-          onPress={() => setProviderNotice('Вход через Telegram пока недоступен')}
-        />
-        <FigmaButton
-          label="Войти с Google"
-          iconNode={<AuthGoogleIcon />}
-          variant="outline"
-          size={actionSize}
-          width="full"
-          onPress={() => setProviderNotice('Вход через Google пока недоступен')}
-        />
-        </View>
-        <AuthLegalText
-          variant="login"
-          textAlign="center"
-          onOpenPolicy={openPolicy}
-          onOpenRules={openRules}
-        />
-        {legalError ? (
-          <AppText role="bodySmall" tone="danger" accessibilityLiveRegion="polite">{legalError}</AppText>
-        ) : null}
-        <View pointerEvents="box-none" style={dialogHostStyle}>
-          <LegalDocumentViewer
-            selected={legalOpen}
-            documents={loginLegal}
-            loading={legalPending}
-            onClose={() => setLegalOpen(null)}
-          />
-        </View>
       </View>
+      {!desktop ? (
+        <AppText
+          role="authOr"
+          style={{ textAlign: 'center', color: palette.textSubdued }}
+        >
+          или
+        </AppText>
+      ) : null}
+      <ProviderButtons returnPath={redirectTo} size={actionSize} />
+      <AuthLegalText
+        variant="login"
+        textAlign="center"
+        onOpenPolicy={openPolicy}
+        onOpenRules={openRules}
+      />
+      {legalError ? (
+        <AppText
+          role="bodySmall"
+          tone="danger"
+          accessibilityLiveRegion="polite"
+        >
+          {legalError}
+        </AppText>
+      ) : null}
+      <View pointerEvents="box-none" style={dialogHostStyle}>
+        <LegalDocumentViewer
+          selected={legalOpen}
+          documents={loginLegal}
+          loading={legalPending}
+          onClose={() => setLegalOpen(null)}
+        />
+      </View>
+    </View>
   );
 }
-type RegistrationStep = 'email' | 'nickname' | 'password';
+type RegistrationStep = 'email' | 'nickname' | 'password' | 'proof';
 
-const registrationCopy: Record<RegistrationStep, { title: string; caption: string }> = {
+const registrationCopy: Record<
+  RegistrationStep,
+  { title: string; caption: string }
+> = {
   email: {
     title: 'Введите вашу почту',
     caption: 'Зарегистрируйтесь или войдите',
@@ -529,6 +594,10 @@ const registrationCopy: Record<RegistrationStep, { title: string; caption: strin
   password: {
     title: 'Создайте пароль',
     caption: 'Пусть он будет надежный',
+  },
+  proof: {
+    title: 'Подтвердите почту',
+    caption: 'Введите шестизначный код из письма',
   },
 };
 
@@ -620,20 +689,32 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
   const registerTransport = useRef<AbortController | null>(null);
   const registerSnapshot = useRef<string | null>(null);
   const registerSubmitting = useRef(false);
+  const emailProved = useRef(false);
+  const [registrationCode, setRegistrationCode] = useState('');
+  const [resendAvailableAt, setResendAvailableAt] = useState(0);
+  const [proofNow, setProofNow] = useState(Date.now());
+  const [resendingCode, setResendingCode] = useState(false);
   const [proof, setProof] = useState<string | null>(null);
-  const [proofAvailability, setProofAvailability] = useState<TurnstileAvailability>('ready');
+  const [proofAvailability, setProofAvailability] =
+    useState<TurnstileAvailability>('ready');
   const [widgetGeneration, setWidgetGeneration] = useState(0);
   const onProof = useCallback((token: string | null) => setProof(token), []);
-  const onProofAvailability = useCallback((availability: TurnstileAvailability) => {
-    setProofAvailability(availability);
-  }, []);
+  const onProofAvailability = useCallback(
+    (availability: TurnstileAvailability) => {
+      setProofAvailability(availability);
+    },
+    [],
+  );
   const focused = useIsFocused();
   const navigation = useNavigation();
   const focusedRef = useRef(focused);
   const wasFocused = useRef(focused);
-  const [legalDocuments, setLegalDocuments] = useState<LegalDocumentsResponse | null>(null);
-  const [registrationLegalPending, setRegistrationLegalPending] = useState(false);
-  const [registrationLegalOpen, setRegistrationLegalOpen] = useState<LegalDocumentId | null>(null);
+  const [legalDocuments, setLegalDocuments] =
+    useState<LegalDocumentsResponse | null>(null);
+  const [registrationLegalPending, setRegistrationLegalPending] =
+    useState(false);
+  const [registrationLegalOpen, setRegistrationLegalOpen] =
+    useState<LegalDocumentId | null>(null);
   const legalRequest = useRef(0);
   const registrationLegalTransport = useRef<AbortController | null>(null);
   const [suggestions, setSuggestions] = useState<NicknameSuggestions>(() =>
@@ -646,7 +727,6 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
       slug: '',
       password: '',
       confirmPassword: '',
-      phone: '',
       agreementAccepted: false,
       privacyAcknowledged: false,
       dataConsentGiven: false,
@@ -654,6 +734,11 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
     },
   });
   const watched = form.watch();
+  useEffect(() => {
+    if (step !== 'proof') return;
+    const timer = setInterval(() => setProofNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [step]);
   const registrationValuesSnapshot = JSON.stringify(watched);
   const {
     check: checkSlugAvailability,
@@ -668,49 +753,71 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
   const sessionUser = () =>
     queryClient.getQueryData<User | null>(authKeys.session) ?? null;
   const routeOwns = (operation: number) =>
-    mounted.current && focusedRef.current && sessionOperation.current === operation;
+    mounted.current &&
+    focusedRef.current &&
+    sessionOperation.current === operation;
   const anonymousOwns = (operation: number, epoch: number) =>
     routeOwns(operation) &&
     (sessionUser()?.id ?? null) === null &&
     currentAuthEpoch(queryClient) === epoch;
-  const finishRegistration = useCallback((user: User, operation?: number) => {
-    if (!mounted.current || !focusedRef.current || completed.current) return;
-    if (operation !== undefined && sessionOperation.current !== operation) return;
-    completed.current = true;
-    const next = user.emailVerifiedAt
-      ? redirectTo
-      : (`/verify-email?redirectTo=${encodeURIComponent(redirectTo)}` as SafeRedirect);
-    if (complete) complete(next);
-    else router.replace(next as Href);
-  }, [complete, redirectTo, router]);
+  const finishRegistration = useCallback(
+    (user: User, operation?: number) => {
+      if (!mounted.current || !focusedRef.current || completed.current) return;
+      if (operation !== undefined && sessionOperation.current !== operation)
+        return;
+      completed.current = true;
+      const next = user.emailVerifiedAt
+        ? redirectTo
+        : (`/verify-email?redirectTo=${encodeURIComponent(redirectTo)}` as SafeRedirect);
+      if (complete) complete(next);
+      else router.replace(next as Href);
+    },
+    [complete, redirectTo, router],
+  );
   useEffect(() => {
     const receipt = registrationReceipt.current;
     if (!receipt) return;
     const epoch = readAuthEpoch(queryClient);
     if (
-      receipt.controller.signal.aborted || !mounted.current || !focusedRef.current ||
-      sessionOperation.current !== receipt.operation || epoch.id !== receipt.epoch ||
+      receipt.controller.signal.aborted ||
+      !mounted.current ||
+      !focusedRef.current ||
+      sessionOperation.current !== receipt.operation ||
+      epoch.id !== receipt.epoch ||
       !epoch.writesOpen ||
-      queryClient.getQueryData<User | null>(authKeys.session)?.id !== receipt.user.id
+      queryClient.getQueryData<User | null>(authKeys.session)?.id !==
+        receipt.user.id
     ) {
       registrationReceipt.current = null;
       return;
     }
-    if (!auth.isAuthenticated || auth.user?.id !== receipt.user.id || form.formState.isSubmitting) return;
+    if (
+      !auth.isAuthenticated ||
+      auth.user?.id !== receipt.user.id ||
+      form.formState.isSubmitting
+    )
+      return;
     registrationReceipt.current = null;
     finishRegistration(receipt.user, receipt.operation);
-  }, [auth.isAuthenticated, auth.user?.id, authEpoch, form.formState.isSubmitting, finishRegistration, queryClient]);
+  }, [
+    auth.isAuthenticated,
+    auth.user?.id,
+    authEpoch,
+    form.formState.isSubmitting,
+    finishRegistration,
+    queryClient,
+  ]);
 
   useAuthSheetGuard({
     dirty: Boolean(
       watched.slug ||
-        watched.email ||
-        watched.password ||
-        watched.confirmPassword ||
-        watched.agreementAccepted ||
-        watched.privacyAcknowledged ||
-        watched.dataConsentGiven ||
-        watched.age18Confirmed,
+      watched.email ||
+      watched.password ||
+      watched.confirmPassword ||
+      watched.agreementAccepted ||
+      watched.privacyAcknowledged ||
+      watched.dataConsentGiven ||
+      watched.age18Confirmed,
     ),
     busy: form.formState.isSubmitting,
   });
@@ -723,7 +830,11 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
     };
   }, []);
   useEffect(() => {
-    if (registerSnapshot.current && registerTransport.current && registrationValuesSnapshot !== registerSnapshot.current) {
+    if (
+      registerSnapshot.current &&
+      registerTransport.current &&
+      registrationValuesSnapshot !== registerSnapshot.current
+    ) {
       registerTransport.current.abort();
     }
   }, [registrationValuesSnapshot]);
@@ -788,24 +899,37 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
     registrationLegalTransport.current = controller;
     setLegalDocuments(null);
     setRegistrationLegalPending(true);
-    void api.auth.getLegalDocuments({ signal: controller.signal })
+    void api.auth
+      .getLegalDocuments({ signal: controller.signal })
       .then((documents) => {
-        if (!mounted.current || controller.signal.aborted || request !== legalRequest.current) return;
+        if (
+          !mounted.current ||
+          controller.signal.aborted ||
+          request !== legalRequest.current
+        )
+          return;
         setLegalDocuments(documents);
         setRegistrationLegalPending(false);
       })
       .catch(() => {
-        if (!mounted.current || controller.signal.aborted || request !== legalRequest.current) return;
+        if (
+          !mounted.current ||
+          controller.signal.aborted ||
+          request !== legalRequest.current
+        )
+          return;
         setLegalDocuments(null);
         setRegistrationLegalPending(false);
       })
       .finally(() => {
-        if (registrationLegalTransport.current === controller) registrationLegalTransport.current = null;
+        if (registrationLegalTransport.current === controller)
+          registrationLegalTransport.current = null;
       });
   };
   const openRegistrationLegal = (id: LegalDocumentId) => {
     setRegistrationLegalOpen(id);
-    if (!legalDocuments && !registrationLegalTransport.current) loadRegistrationLegal();
+    if (!legalDocuments && !registrationLegalTransport.current)
+      loadRegistrationLegal();
   };
 
   const submitRegistration = form.handleSubmit(async (values) => {
@@ -813,11 +937,11 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
     const operation = sessionOperation.current;
     const epoch = currentAuthEpoch(queryClient);
     if (!anonymousOwns(operation, epoch)) return;
-    if (proofAvailability === 'unavailable') {
+    if (step === 'password' && !emailProved.current && proofAvailability === 'unavailable') {
       setSubmitError(AUTH_TURNSTILE_UNAVAILABLE_COPY);
       return;
     }
-    if (!proof) {
+    if (step === 'password' && !emailProved.current && !proof) {
       setSubmitError(AUTH_TURNSTILE_REQUIRED_COPY);
       return;
     }
@@ -826,11 +950,37 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
     registerTransport.current = controller;
     registerSnapshot.current = JSON.stringify(form.getValues());
     const token = proof;
-    setProof(null);
-    setWidgetGeneration((generation) => generation + 1);
+    if (step === 'password' && !emailProved.current) {
+      setProof(null);
+      setWidgetGeneration((generation) => generation + 1);
+    }
     try {
+      if (step === 'password' && !emailProved.current) {
+        const result = await api.auth.requestRegistrationEmail(
+          {
+            email: values.email,
+            turnstileToken: token!,
+            idempotencyKey: createOperationKey(),
+          },
+          { signal: controller.signal },
+        );
+        if (controller.signal.aborted || !routeOwns(operation)) return;
+        setResendAvailableAt(
+          Date.now() + Date.parse(result.resendAvailableAt) - Date.parse(result.serverNow),
+        );
+        setStep('proof');
+        return;
+      }
+      if (step === 'proof' && !emailProved.current) {
+        await api.auth.verifyRegistrationEmail(
+          { code: registrationCode, idempotencyKey: createOperationKey() },
+          { signal: controller.signal },
+        );
+        if (controller.signal.aborted || !routeOwns(operation)) return;
+        emailProved.current = true;
+      }
       const response = await auth.register(
-        { ...registerSubmission(values), turnstileToken: token },
+        registerSubmission(values),
         { signal: controller.signal },
       );
       if (controller.signal.aborted || !routeOwns(operation)) return;
@@ -853,12 +1003,18 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
         setSubmitError(message);
         return;
       }
-      const failure = readFormFailure(error, ['email', 'slug', 'password', 'phone']);
+      const failure = readFormFailure(error, [
+        'email',
+        'slug',
+        'password',
+      ]);
       if (failure.disposition === 'passthrough') {
-        setSubmitError(getUserFacingErrorMessage(error, 'Не удалось зарегистрироваться'));
+        setSubmitError(
+          getUserFacingErrorMessage(error, 'Не удалось зарегистрироваться'),
+        );
         return;
       }
-      applyFormFailure(form, failure, ['email', 'slug', 'password', 'phone']);
+      applyFormFailure(form, failure, ['email', 'slug', 'password']);
       if (failure.fields.slug) {
         nicknameAdvanceOperation.current += 1;
         nicknameAdvancePending.current = false;
@@ -874,6 +1030,36 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
       }
     }
   });
+  const resendRegistrationCode = async () => {
+    if (resendingCode || proofNow < resendAvailableAt) return;
+    if (!proof) {
+      setSubmitError(AUTH_TURNSTILE_REQUIRED_COPY);
+      return;
+    }
+    const token = proof;
+    setProof(null);
+    setWidgetGeneration((generation) => generation + 1);
+    setResendingCode(true);
+    setSubmitError(null);
+    const operation = sessionOperation.current;
+    const epoch = currentAuthEpoch(queryClient);
+    try {
+      const result = await api.auth.requestRegistrationEmail({
+        email: form.getValues('email'),
+        turnstileToken: token,
+        idempotencyKey: createOperationKey(),
+      });
+      if (!anonymousOwns(operation, epoch)) return;
+      setResendAvailableAt(
+        Date.now() + Date.parse(result.resendAvailableAt) - Date.parse(result.serverNow),
+      );
+    } catch (error) {
+      if (anonymousOwns(operation, epoch))
+        setSubmitError(getUserFacingErrorMessage(error, 'Не удалось отправить код'));
+    } finally {
+      setResendingCode(false);
+    }
+  };
   const submit = () => {
     if (registerSubmitting.current) return;
     registerSubmitting.current = true;
@@ -881,7 +1067,9 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
       registerSubmitting.current = false;
     });
   };
-  const registrationConsentsReady = registrationConfirmationFields.every((key) => watched[key]);
+  const registrationConsentsReady = registrationConfirmationFields.every(
+    (key) => watched[key],
+  );
   const goNext = async () => {
     if (!mounted.current || !focusedRef.current) return;
     setSubmitError(null);
@@ -937,6 +1125,7 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
       }
       return;
     }
+    if (step === 'proof' && registrationCode.length !== 6) return;
     if (registerSubmitting.current) return;
     await submit();
   };
@@ -987,207 +1176,263 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
       : null;
   const nextAction = (
     <PrimaryButton
-      label="Дальше"
+      label={step === 'proof' ? 'Подтвердить и зарегистрироваться' : 'Дальше'}
       size="auth"
       width="full"
       loading={
-        form.formState.isSubmitting ||
-        slugAvailability?.status === 'checking'
+        form.formState.isSubmitting || slugAvailability?.status === 'checking'
       }
-      disabled={step === 'email' && !registrationConsentsReady}
-      accessibilityHint={step === 'email' && !registrationConsentsReady ? 'Подтвердите документы и возраст 18+.' : undefined}
+      disabled={
+        (step === 'email' && !registrationConsentsReady) ||
+        (step === 'proof' && registrationCode.length !== 6)
+      }
+      accessibilityHint={
+        step === 'email' && !registrationConsentsReady
+          ? 'Подтвердите документы и возраст 18+.'
+          : undefined
+      }
       onPress={() => void goNext()}
     />
   );
   const submitFeedback = submitError ? (
-    <AppText
-      role="bodySmall"
-      tone="danger"
-      accessibilityLiveRegion="polite"
-    >
+    <AppText role="bodySmall" tone="danger" accessibilityLiveRegion="polite">
       {submitError}
     </AppText>
   ) : null;
   return (
-      <View style={{ gap: designTokens.auth.screenGap, width: '100%' }}>
-        <View style={{ gap: designTokens.auth.titleGap }}>
-          <AppText role="sectionTitle" style={{ textAlign: 'center', color: palette.fieldValue, ...designTokens.typography.authScreenTitle }}>
-            {copy.title}
-          </AppText>
-          <AppText role="bodySmall" style={{ textAlign: 'center', color: palette.textSubdued, ...designTokens.typography.authCaption, letterSpacing: 0 }}>
-            {copy.caption}
-          </AppText>
-          {step === 'nickname' ? (
-            <View
-              nativeID="nickname-status-slot"
-              style={{
-                // Reserve exactly one authStatus line so an appearing status
-                // doesn't shift the field/button; minHeight still lets long
-                // errors wrap and grow the area.
-                minHeight: designTokens.typography.authStatus.lineHeight,
-                width: '100%',
-                alignItems: 'center',
-              }}
-            >
-              {nicknameStatus ? (
-                <AppText
-                  nativeID="nickname-availability-status"
-                  role="authStatus"
-                  accessibilityLiveRegion="polite"
-                  style={{
-                    color: nicknameStatus.color,
-                    textAlign: 'center',
-                  }}
-                >
-                  {nicknameStatus.text}
-                </AppText>
-              ) : null}
-            </View>
-          ) : null}
-        </View>
+    <View style={{ gap: designTokens.auth.screenGap, width: '100%' }}>
+      <View style={{ gap: designTokens.auth.titleGap }}>
+        <AppText
+          role="sectionTitle"
+          style={{
+            textAlign: 'center',
+            color: palette.fieldValue,
+            ...designTokens.typography.authScreenTitle,
+          }}
+        >
+          {copy.title}
+        </AppText>
+        <AppText
+          role="bodySmall"
+          style={{
+            textAlign: 'center',
+            color: palette.textSubdued,
+            ...designTokens.typography.authCaption,
+            letterSpacing: 0,
+          }}
+        >
+          {copy.caption}
+        </AppText>
         {step === 'nickname' ? (
-          <View style={{ gap: designTokens.space.x6, width: '100%' }}>
-            <View style={{ gap: designTokens.auth.formGap, width: '100%' }}>
+          <View
+            nativeID="nickname-status-slot"
+            style={{
+              // Reserve exactly one authStatus line so an appearing status
+              // doesn't shift the field/button; minHeight still lets long
+              // errors wrap and grow the area.
+              minHeight: designTokens.typography.authStatus.lineHeight,
+              width: '100%',
+              alignItems: 'center',
+            }}
+          >
+            {nicknameStatus ? (
+              <AppText
+                nativeID="nickname-availability-status"
+                role="authStatus"
+                accessibilityLiveRegion="polite"
+                style={{
+                  color: nicknameStatus.color,
+                  textAlign: 'center',
+                }}
+              >
+                {nicknameStatus.text}
+              </AppText>
+            ) : null}
+          </View>
+        ) : null}
+      </View>
+      {step === 'nickname' ? (
+        <View style={{ gap: designTokens.space.x6, width: '100%' }}>
+          <View style={{ gap: designTokens.auth.formGap, width: '100%' }}>
+            <Controller
+              control={form.control}
+              name="slug"
+              render={({ field }) => (
+                <TextField
+                  ref={field.ref}
+                  label="Никнейм"
+                  icon="at-sign"
+                  iconColor={palette.fieldIcon}
+                  value={field.value}
+                  onChangeText={(value) => {
+                    nicknameAdvanceOperation.current += 1;
+                    nicknameAdvancePending.current = false;
+                    invalidateSlugAvailability();
+                    field.onChange(value.replace(/^@+/, ''));
+                  }}
+                  onBlur={field.onBlur}
+                  placeholder="Никнейм"
+                  autoCapitalize="none"
+                  autoComplete="username"
+                  error={form.formState.errors.slug?.message}
+                />
+              )}
+            />
+            {submitFeedback}
+            {nextAction}
+          </View>
+          <NicknameSuggestionList
+            suggestions={suggestions}
+            onSelect={(suggestion) => {
+              nicknameAdvanceOperation.current += 1;
+              nicknameAdvancePending.current = false;
+              invalidateSlugAvailability();
+              form.clearErrors('slug');
+              form.setValue('slug', suggestion, {
+                shouldDirty: true,
+                shouldTouch: true,
+                shouldValidate: true,
+              });
+            }}
+          />
+        </View>
+      ) : (
+        <View style={{ gap: designTokens.auth.formGap, width: '100%' }}>
+          {step === 'email' ? (
+            <Controller
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <TextField
+                  ref={field.ref}
+                  label="Электронная почта"
+                  value={field.value}
+                  onChangeText={(value) => {
+                    emailProved.current = false;
+                    setRegistrationCode('');
+                    field.onChange(value);
+                  }}
+                  onBlur={field.onBlur}
+                  placeholder="example@gmail.com"
+                  autoComplete="email"
+                  keyboardType="email-address"
+                  error={form.formState.errors.email?.message}
+                />
+              )}
+            />
+          ) : null}
+          {step === 'password' ? (
+            <>
               <Controller
                 control={form.control}
-                name="slug"
+                name="password"
                 render={({ field }) => (
-                  <TextField ref={field.ref}
-                    label="Никнейм"
-                    icon="at-sign"
-                    iconColor={palette.fieldIcon}
+                  <AuthPasswordField
+                    label="Введите пароль"
                     value={field.value}
-                    onChangeText={(value) => {
-                      nicknameAdvanceOperation.current += 1;
-                      nicknameAdvancePending.current = false;
-                      invalidateSlugAvailability();
-                      field.onChange(value.replace(/^@+/, ''));
-                    }}
+                    onChangeText={field.onChange}
                     onBlur={field.onBlur}
-                    placeholder="Никнейм"
-                    autoCapitalize="none"
-                    autoComplete="username"
-                    error={form.formState.errors.slug?.message}
+                    autoComplete="new-password"
+                    metrics="authScreenPassword"
+                    editable={!form.formState.isSubmitting}
+                    error={form.formState.errors.password?.message}
                   />
                 )}
               />
-              {submitFeedback}
-              {nextAction}
-            </View>
-            <NicknameSuggestionList
-              suggestions={suggestions}
-              onSelect={(suggestion) => {
-                nicknameAdvanceOperation.current += 1;
-                nicknameAdvancePending.current = false;
-                invalidateSlugAvailability();
-                form.clearErrors('slug');
-                form.setValue('slug', suggestion, {
-                  shouldDirty: true,
-                  shouldTouch: true,
-                  shouldValidate: true,
-                });
-              }}
-            />
-          </View>
-        ) : (
-        <View style={{ gap: designTokens.auth.formGap, width: '100%' }}>
-        {step === 'email' ? (
-          <Controller
-            control={form.control}
-            name="email"
-            render={({ field }) => (
-              <TextField ref={field.ref}
-                label="Электронная почта"
-                value={field.value}
-                onChangeText={field.onChange}
-                onBlur={field.onBlur}
-                placeholder="example@gmail.com"
-                autoComplete="email"
-                keyboardType="email-address"
-                error={form.formState.errors.email?.message}
+              <Controller
+                control={form.control}
+                name="confirmPassword"
+                render={({ field }) => (
+                  <AuthPasswordField
+                    label="Подтвердите пароль"
+                    value={field.value}
+                    onChangeText={field.onChange}
+                    onBlur={field.onBlur}
+                    autoComplete="new-password"
+                    metrics="authScreenPassword"
+                    editable={!form.formState.isSubmitting}
+                    error={form.formState.errors.confirmPassword?.message}
+                  />
+                )}
               />
-            )}
-          />
-        ) : null}
-        {step === 'password' ? (
-          <>
-            <Controller
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <AuthPasswordField
-                  label="Введите пароль"
-                  value={field.value}
-                  onChangeText={field.onChange}
-                  onBlur={field.onBlur}
-                  autoComplete="new-password"
-                  metrics="authScreenPassword"
-                  editable={!form.formState.isSubmitting}
-                  error={form.formState.errors.password?.message}
-                />
-              )}
-            />
-            <Controller
-              control={form.control}
-              name="confirmPassword"
-              render={({ field }) => (
-                <AuthPasswordField
-                  label="Подтвердите пароль"
-                  value={field.value}
-                  onChangeText={field.onChange}
-                  onBlur={field.onBlur}
-                  autoComplete="new-password"
-                  metrics="authScreenPassword"
-                  editable={!form.formState.isSubmitting}
-                  error={form.formState.errors.confirmPassword?.message}
-                />
-              )}
-            />
-            <TurnstileWidget
+              <TurnstileWidget
                 key={widgetGeneration}
                 action="register"
                 onToken={onProof}
                 onAvailability={onProofAvailability}
               />
-          </>
-        ) : null}
-        {submitFeedback}
-        {nextAction}
-        {step === 'email' ? (
-          <View style={{ gap: designTokens.space.x3 }}>
-            <AuthConsentCheckbox
-              checked={registrationConfirmationFields.every((key) => watched[key])}
-              label={registrationConsentLabel}
-              onChange={(checked) => {
-                for (const key of registrationConfirmationFields) {
-                  form.setValue(key, checked, {
-                    shouldDirty: true,
-                    shouldValidate: true,
-                  });
+            </>
+          ) : null}
+          {step === 'proof' ? (
+            <>
+              <AppText role="bodySmall">Код отправлен на {watched.email}.</AppText>
+              <AuthCodeField
+                value={registrationCode}
+                onChangeText={setRegistrationCode}
+                editable={!form.formState.isSubmitting}
+              />
+              <TurnstileWidget
+                key={widgetGeneration}
+                action="register"
+                onToken={onProof}
+                onAvailability={onProofAvailability}
+              />
+              <TextButton
+                label={proofNow < resendAvailableAt
+                  ? `Отправить код снова через ${Math.ceil((resendAvailableAt - proofNow) / 1000)} с`
+                  : 'Отправить код снова'}
+                disabled={resendingCode || proofNow < resendAvailableAt || proofAvailability === 'unavailable'}
+                onPress={() => void resendRegistrationCode()}
+              />
+              <TextButton
+                label="Изменить почту"
+                onPress={() => {
+                  emailProved.current = false;
+                  setRegistrationCode('');
+                  setStep('email');
+                }}
+              />
+            </>
+          ) : null}
+          {submitFeedback}
+          {nextAction}
+          {step === 'email' ? (
+            <View style={{ gap: designTokens.space.x3 }}>
+              <AuthConsentCheckbox
+                checked={registrationConfirmationFields.every(
+                  (key) => watched[key],
+                )}
+                label={registrationConsentLabel}
+                onChange={(checked) => {
+                  for (const key of registrationConfirmationFields) {
+                    form.setValue(key, checked, {
+                      shouldDirty: true,
+                      shouldValidate: true,
+                    });
+                  }
+                }}
+                error={
+                  registrationConfirmationFields.some(
+                    (key) => form.formState.errors[key],
+                  )
+                    ? 'Подтвердите документы и возраст 18+.'
+                    : undefined
                 }
-              }}
-              error={
-                registrationConfirmationFields.some((key) => form.formState.errors[key])
-                  ? 'Подтвердите документы и возраст 18+.'
-                  : undefined
-              }
-            >
-              <RegistrationLegalText onOpenDocument={openRegistrationLegal} />
-            </AuthConsentCheckbox>
-
+              >
+                <RegistrationLegalText onOpenDocument={openRegistrationLegal} />
+              </AuthConsentCheckbox>
+            </View>
+          ) : null}
+          <View pointerEvents="box-none" style={dialogHostStyle}>
+            <LegalDocumentViewer
+              selected={registrationLegalOpen}
+              documents={legalDocuments}
+              loading={registrationLegalPending}
+              onClose={() => setRegistrationLegalOpen(null)}
+            />
           </View>
-        ) : null}
-        <View pointerEvents="box-none" style={dialogHostStyle}>
-          <LegalDocumentViewer
-            selected={registrationLegalOpen}
-            documents={legalDocuments}
-            loading={registrationLegalPending}
-            onClose={() => setRegistrationLegalOpen(null)}
-          />
         </View>
-        </View>
-        )}
-      </View>
+      )}
+    </View>
   );
 }
-

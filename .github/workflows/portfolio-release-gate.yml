@@ -14,7 +14,7 @@ jobs:
           POSTGRES_USER: auction
           POSTGRES_PASSWORD: auction
           POSTGRES_DB: bidplace_integration
-        ports: ['5432:5432']
+        ports: ['5432:5432', '55440:5432']
         options: >-
           --health-cmd "pg_isready -U auction -d bidplace_integration"
           --health-interval 5s
@@ -24,7 +24,9 @@ jobs:
       NODE_ENV: test
       APP_ENV: local
       DATABASE_URL: postgresql://auction:auction@localhost:5432/bidplace_integration?schema=public
-      JWT_SECRET: ci-release-gate-verify-jwt-secret
+      AUTH_ABUSE_TEST_DATABASE_URL: postgresql://auction:auction@127.0.0.1:55440/bidplace_auth_abuse_test
+      SESSION_SECRET: ci-release-gate-verify-jwt-secret
+      OTP_HASH_SECRET: synthetic-ci-otp-key-at-least-32-characters
       TEST_EMAIL_BYPASS: 'false'
       CORS_ORIGIN: http://localhost:8081
     steps:
@@ -36,6 +38,8 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Create isolated auth abuse test database
+        run: docker exec "${{ job.services.postgres.id }}" createdb -U auction bidplace_auth_abuse_test
       - name: Root verification
         run: pnpm verify
 
@@ -66,7 +70,8 @@ jobs:
       APP_ENV: local
       E2E_DATABASE_URL: postgresql://auction:auction@localhost:5432/bidplace_e2e?schema=public
       DATABASE_URL: postgresql://auction:auction@localhost:5432/bidplace_e2e?schema=public
-      JWT_SECRET: ci-release-gate-browser-jwt-secret
+      SESSION_SECRET: ci-release-gate-browser-jwt-secret
+      OTP_HASH_SECRET: synthetic-ci-otp-key-at-least-32-characters
       TEST_EMAIL_BYPASS: 'false'
       CORS_ORIGIN: http://localhost:8081
     steps:

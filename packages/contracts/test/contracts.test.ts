@@ -8,6 +8,7 @@ import {
   forgotPasswordRequestSchema,
   loginRequestSchema,
   registerRequestSchema,
+  registrationEmailRequestSchema,
   claimSlugRequestSchema,
   claimSlugResponseSchema,
   newAccountSlugSchema,
@@ -51,7 +52,6 @@ describe('shared contracts', () => {
           email: 'author@example.com',
           password: 'password123',
           slug,
-          turnstileToken: 'synthetic-turnstile-proof',
           legal: registrationLegal,
         }).success,
       ).toBe(valid);
@@ -734,7 +734,7 @@ describe('auth challenge requests', () => {
     });
   });
 
-  it('requires a Turnstile proof for registration and keeps it optional for login', () => {
+  it('requires proof on registration email send and keeps it optional for password login', () => {
     expect(
       registerRequestSchema.safeParse({
         email: 'author@example.com',
@@ -742,28 +742,22 @@ describe('auth challenge requests', () => {
         slug: 'author',
       }).success,
     ).toBe(false);
-    expect(
-      registerRequestSchema.parse({
-        email: 'author@example.com',
-        password: 'password123',
-        slug: 'author',
-        turnstileToken: proof,
-        legal: registrationLegal,
-      }).turnstileToken,
-    ).toBe(proof);
+    expect(registrationEmailRequestSchema.safeParse({ email: 'author@example.com', idempotencyKey: key }).success).toBe(false);
+    expect(registrationEmailRequestSchema.parse({ email: 'author@example.com', idempotencyKey: key, turnstileToken: proof }).turnstileToken).toBe(proof);
+    expect(registerRequestSchema.parse({
+      email: 'author@example.com', password: 'password123', slug: 'author', legal: registrationLegal,
+    })).not.toHaveProperty('turnstileToken');
 
     expect(registerRequestSchema.safeParse({
       email: 'author@example.com',
       password: 'password123',
       slug: 'author',
-      turnstileToken: proof,
       legal: { ...registrationLegal, age18Confirmed: false },
     }).success).toBe(false);
     expect(registerRequestSchema.safeParse({
       email: 'author@example.com',
       password: 'password123',
       slug: 'author',
-      turnstileToken: proof,
       legal: { ...registrationLegal, dataConsent: { version: registrationLegal.dataConsent.version, confirmed: false } },
     }).success).toBe(false);
 

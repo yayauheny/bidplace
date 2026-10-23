@@ -5,8 +5,8 @@ import type { MailMessage } from './mail-message';
 import { MailTransport } from './mail-transport';
 
 function extractOtpCode(text: string): string | undefined {
-  const match = text.match(/verification code is (\d{6})/);
-  return match?.[1];
+  const match = text.match(/verification code is (\d{6})|Код подтверждения почты bidplace: (\d{6})/);
+  return match?.[1] ?? match?.[2];
 }
 
 function extractPasswordResetToken(text: string): string | undefined {
@@ -44,7 +44,7 @@ export class LocalMailTransport extends MailTransport {
       text: message.text,
     };
 
-    if (message.subject.includes('verification')) {
+    if (message.subject.includes('verification') || message.subject.includes('Код подтверждения')) {
       const code = extractOtpCode(message.text);
       if (code) {
         payload.email = message.to;

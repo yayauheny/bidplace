@@ -1,16 +1,22 @@
 import type { INestApplication } from '@nestjs/common';
+import { SessionService } from './auth/session.service';
+import { CsrfMiddleware } from './auth/csrf.middleware';
 
 import type { ServerEnv } from './core/config';
 
 export function configureHttpApp(
   app: INestApplication,
-  runtimeEnv: Pick<ServerEnv, 'CORS_ORIGIN' | 'TRUST_PROXY'>,
+  runtimeEnv: ServerEnv,
 ): void {
   app.setGlobalPrefix('api');
 
   if (runtimeEnv.TRUST_PROXY) {
-    app.getHttpAdapter().getInstance().set('trust proxy', true);
+    app.getHttpAdapter().getInstance().set('trust proxy', 1);
   }
+
+  app.use(app.get(SessionService).middleware);
+  const csrf = new CsrfMiddleware(runtimeEnv);
+  app.use(csrf.use.bind(csrf));
 
   if (runtimeEnv.CORS_ORIGIN) {
     app.enableCors({

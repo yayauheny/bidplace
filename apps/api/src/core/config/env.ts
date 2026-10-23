@@ -5,7 +5,7 @@ import { z } from 'zod';
 
 import {
   ENV_PROFILE_ERROR,
-  PRODUCTION_JWT_SECRET_MIN_LENGTH,
+  PRODUCTION_SESSION_SECRET_MIN_LENGTH,
   isExplicitLocalDevelopmentProfile,
   isExplicitLocalTestProfile,
   requiresProductionSecurity,
@@ -49,7 +49,15 @@ const serverEnvSchema = z
       .int()
       .positive()
       .default(40 * 1024 * 1024),
-    JWT_SECRET: z.string().min(1),
+    SESSION_SECRET: z.string().min(1),
+    OTP_HASH_SECRET: z.string().min(32),
+    GOOGLE_CLIENT_ID: optionalNonEmptyStringEnvSchema,
+    GOOGLE_CLIENT_SECRET: optionalNonEmptyStringEnvSchema,
+    GOOGLE_REDIRECT_URI: z.string().url().optional(),
+    TELEGRAM_CLIENT_ID: optionalNonEmptyStringEnvSchema,
+    TELEGRAM_CLIENT_SECRET: optionalNonEmptyStringEnvSchema,
+    TELEGRAM_REDIRECT_URI: z.string().url().optional(),
+    OIDC_TEST_ISSUER: z.string().url().optional(),
     SMTP_HOST: optionalNonEmptyStringEnvSchema,
     SMTP_PORT: z.coerce.number().int().positive().optional(),
     SMTP_SECURE: booleanEnvSchema.optional(),
@@ -107,6 +115,43 @@ const serverEnvSchema = z
     },
   )
   .superRefine((env, context) => {
+    for (const provider of ['GOOGLE', 'TELEGRAM'] as const) {
+      const values = [
+        env[`${provider}_CLIENT_ID`],
+        env[`${provider}_CLIENT_SECRET`],
+        env[`${provider}_REDIRECT_URI`],
+      ];
+      if (values.some(Boolean) && !values.every(Boolean))
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [`${provider}_CLIENT_ID`],
+          message: `${provider} configuration must be complete`,
+        });
+      const redirect = env[`${provider}_REDIRECT_URI`];
+      if (
+        redirect &&
+        requiresProductionSecurity(env) &&
+        new URL(redirect).protocol !== 'https:'
+      )
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [`${provider}_REDIRECT_URI`],
+          message: 'Provider redirect must use HTTPS',
+        });
+    }
+    if (
+      env.OIDC_TEST_ISSUER &&
+      (!isExplicitLocalTestProfile(env) ||
+        !['127.0.0.1', 'localhost'].includes(
+          new URL(env.OIDC_TEST_ISSUER).hostname,
+        ))
+    )
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['OIDC_TEST_ISSUER'],
+        message:
+          'Test issuer requires explicit local test profile and loopback',
+      });
     const hasUsername = env.SMTP_USERNAME !== undefined;
     const hasPassword = env.SMTP_PASSWORD !== undefined;
 
@@ -176,11 +221,11 @@ const serverEnvSchema = z
         }
       }
 
-      if (env.JWT_SECRET.length < PRODUCTION_JWT_SECRET_MIN_LENGTH) {
+      if (env.SESSION_SECRET.length < PRODUCTION_SESSION_SECRET_MIN_LENGTH) {
         context.addIssue({
           code: z.ZodIssueCode.custom,
-          path: ['JWT_SECRET'],
-          message: ENV_PROFILE_ERROR.jwtSecretTooShortInProduction,
+          path: ['SESSION_SECRET'],
+          message: ENV_PROFILE_ERROR.sessionSecretTooShortInProduction,
         });
       }
 
@@ -208,7 +253,10 @@ const serverEnvSchema = z
         });
       }
     } else {
-      if (env.TURNSTILE_VERIFIER === 'test' && !isExplicitLocalTestProfile(env)) {
+      if (
+        env.TURNSTILE_VERIFIER === 'test' &&
+        !isExplicitLocalTestProfile(env)
+      ) {
         context.addIssue({
           code: z.ZodIssueCode.custom,
           path: ['TURNSTILE_VERIFIER'],

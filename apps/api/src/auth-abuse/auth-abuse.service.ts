@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { ApiErrorCode } from '@bidplace/contracts';
 import { HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
 
@@ -12,7 +13,11 @@ import { AppException } from '../core/errors';
 import { MailTransport } from '../core/mail';
 import { safeFailureLocation } from '../core/request-context/safe-request-log';
 import { buildPasswordResetLink } from '../password-reset/password-reset-link';
-import { normalizeEmail } from './auth-abuse.policy';
+import {
+  cooldownAfterSends,
+  normalizeEmail,
+  OTP_TTL_MS,
+} from './auth-abuse.policy';
 import {
   AuthAbuseStore,
   type LoginDecision,
@@ -59,7 +64,24 @@ export class AuthAbuseService {
     ip: string;
   }): Promise<void> {
     await this.requireTurnstile('register', input.turnstileToken, input.ip);
-    if (this.disposable.contains(input.email)) {
+    this.assertRegistrationEmail(input.email);
+  }
+
+  async assertOnboardingEmailProof(input: {
+    email: string;
+    turnstileToken: string;
+    ip: string;
+  }): Promise<void> {
+    await this.requireTurnstile(
+      'email_verification',
+      input.turnstileToken,
+      input.ip,
+    );
+    this.assertRegistrationEmail(input.email);
+  }
+
+  assertRegistrationEmail(email: string): void {
+    if (this.disposable.contains(email)) {
       throw abuseError(
         HttpStatus.BAD_REQUEST,
         ApiErrorCode.DISPOSABLE_EMAIL,
@@ -106,6 +128,7 @@ export class AuthAbuseService {
 
   async sendEmailVerification(input: {
     userId: string;
+    flowId?: string;
     idempotencyKey: string;
     turnstileToken: string;
     ip: string;
@@ -115,17 +138,31 @@ export class AuthAbuseService {
       select: { id: true, email: true, emailVerifiedAt: true },
     });
     if (!user) {
-      throw abuseError(HttpStatus.FORBIDDEN, ApiErrorCode.FORBIDDEN, 'User is not available');
+      throw abuseError(
+        HttpStatus.FORBIDDEN,
+        ApiErrorCode.FORBIDDEN,
+        'User is not available',
+      );
     }
 
     this.assertIdempotencyKey(input.idempotencyKey);
-    const hash = mailContentHash('email_verification_send', user.id, user.email);
+    const hash = mailContentHash(
+      'email_verification_send',
+      user.id,
+      user.email,
+      input.flowId,
+    );
     const existing = await this.store.findByKey(
       'email_verification_send',
       input.idempotencyKey,
     );
     if (existing) {
-      this.assertSameContent(existing.contentHash, hash, existing.ownerUserId, user.id);
+      this.assertSameContent(
+        existing.contentHash,
+        hash,
+        existing.ownerUserId,
+        user.id,
+      );
       if (existing.status === 'rejected') {
         throw abuseError(
           HttpStatus.SERVICE_UNAVAILABLE,
@@ -148,12 +185,18 @@ export class AuthAbuseService {
       return { delivery: 'already_verified' };
     }
 
-    await this.requireTurnstile('email_verification', input.turnstileToken, input.ip, {
-      operationKey: input.idempotencyKey,
-      contentHash: hash,
-    });
+    await this.requireTurnstile(
+      'email_verification',
+      input.turnstileToken,
+      input.ip,
+      {
+        operationKey: input.idempotencyKey,
+        contentHash: hash,
+      },
+    );
     const reserved = await this.store.reserveMail({
       purpose: 'email_verification_send',
+      ...(input.flowId ? { flowId: input.flowId } : {}),
       idempotencyKey: input.idempotencyKey,
       ownerUserId: user.id,
       contentHash: hash,
@@ -194,21 +237,181 @@ export class AuthAbuseService {
     });
   }
 
+  async sendEmailLogin(input: {
+    email: string;
+    flowId: string;
+    idempotencyKey: string;
+    turnstileToken: string;
+    ip: string;
+  }): Promise<Date> {
+    this.assertIdempotencyKey(input.idempotencyKey);
+    await this.requireTurnstile('email_login', input.turnstileToken, input.ip, {
+      operationKey: input.idempotencyKey,
+      contentHash: resetContentHash(input.email),
+    });
+    const admission = await this.admitEmailLoginRequest(input);
+    if (!admission.send) return admission.retryAt;
+    const user = await this.prisma.user.findUnique({
+      where: { email: normalizeEmail(input.email) },
+      select: { id: true, email: true, emailVerifiedAt: true, status: true },
+    });
+    if (!user || !user.emailVerifiedAt || user.status !== 'active')
+      return admission.retryAt;
+    const reserved = await this.store.reserveMail({
+      purpose: 'email_login_send',
+      flowId: input.flowId,
+      idempotencyKey: input.idempotencyKey,
+      ownerUserId: user.id,
+      contentHash: mailContentHash(
+        'email_login_send',
+        user.id,
+        user.email,
+        input.flowId,
+      ),
+      now: new Date(),
+      dailyBudget: this.env.AUTH_MAIL_DAILY_BUDGET,
+      monthlyBudget: this.env.AUTH_MAIL_MONTHLY_BUDGET,
+    });
+    if (reserved.kind !== 'reserved') return admission.retryAt;
+    await this.finishSend({
+      operationId: reserved.operationId,
+      purpose: 'email_login_send',
+      neutral: true,
+      message: {
+        to: user.email,
+        subject: 'Код для входа в bidplace',
+        text: `Код для входа в bidplace: ${reserved.rawSecret}. Если вы не запрашивали вход, никому не сообщайте этот код.`,
+      },
+    });
+    return admission.retryAt;
+  }
+
+  private loginRequestHash(browserHash: string, email: string): string {
+    return createHash('sha256')
+      .update(browserHash + '\0' + email)
+      .digest('hex');
+  }
+
+  private async admitEmailLoginRequest(input: {
+    flowId: string;
+    email: string;
+    idempotencyKey: string;
+  }) {
+    return this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM auth_flows WHERE id = CAST(${input.flowId} AS uuid) FOR UPDATE`;
+      const flow = await tx.authFlow.findUnique({
+        where: { id: input.flowId },
+      });
+      if (
+        !flow ||
+        flow.intent !== 'email_login' ||
+        flow.stage !== 'email_login' ||
+        flow.email !== input.email ||
+        flow.expiresAt <= new Date()
+      ) {
+        throw abuseError(
+          HttpStatus.UNAUTHORIZED,
+          ApiErrorCode.UNAUTHORIZED,
+          'Попытка входа завершена',
+        );
+      }
+      const contentHash = this.loginRequestHash(flow.browserHash, input.email);
+      const previous = await tx.authAbuseOperation.findUnique({
+        where: {
+          purpose_idempotencyKey: {
+            purpose: 'email_login_request',
+            idempotencyKey: input.idempotencyKey,
+          },
+        },
+      });
+      if (previous && previous.contentHash !== contentHash)
+        this.throwContentConflict();
+      const sends = await tx.authAbuseOperation.findMany({
+        where: { purpose: 'email_login_request', contentHash },
+        orderBy: { createdAt: 'desc' },
+        take: 3,
+      });
+      const last = sends[0];
+      const retryAt = last
+        ? new Date(last.createdAt.getTime() + cooldownAfterSends(sends.length))
+        : new Date();
+      if (!previous && retryAt > new Date()) return { send: false, retryAt };
+      const admittedAt = new Date();
+      if (!previous)
+        await tx.authAbuseOperation.create({
+          data: {
+            purpose: 'email_login_request',
+            idempotencyKey: input.idempotencyKey,
+            contentHash,
+            email: input.email,
+            status: 'accepted',
+            createdAt: admittedAt,
+          },
+        });
+      return {
+        send: true,
+        retryAt: previous
+          ? retryAt
+          : new Date(
+              admittedAt.getTime() + cooldownAfterSends(sends.length + 1),
+            ),
+      };
+    });
+  }
+
+  async readEmailLoginState(browserHash: string, email: string) {
+    const sends = await this.prisma.authAbuseOperation.findMany({
+      where: {
+        purpose: 'email_login_request',
+        contentHash: this.loginRequestHash(browserHash, email),
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 3,
+    });
+    const last = sends[0];
+    return {
+      email,
+      serverNow: new Date().toISOString(),
+      resendAvailableAt: last
+        ? new Date(
+            last.createdAt.getTime() + cooldownAfterSends(sends.length),
+          ).toISOString()
+        : null,
+      codeExpiresAt: last
+        ? new Date(last.createdAt.getTime() + OTP_TTL_MS).toISOString()
+        : null,
+    };
+  }
+
   async verifyEmailCode(input: {
     userId: string;
+    unregisteredEmail?: string;
     code: string;
     idempotencyKey: string;
+    purpose?: 'email_verification' | 'email_login';
+    flowId?: string;
   }): Promise<void> {
     this.assertIdempotencyKey(input.idempotencyKey);
     const decision = await this.store.verifyEmailCode({
       userId: input.userId,
+      ...(input.unregisteredEmail ? { unregisteredEmail: input.unregisteredEmail } : {}),
       code: input.code,
       idempotencyKey: input.idempotencyKey,
+      ...(input.purpose ? { purpose: input.purpose } : {}),
+      ...(input.flowId ? { flowId: input.flowId } : {}),
     });
 
-    if (decision.outcome === 'verified' || decision.outcome === 'already_verified') return;
+    if (
+      decision.outcome === 'verified' ||
+      decision.outcome === 'already_verified'
+    )
+      return;
     if (decision.outcome === 'missing') {
-      throw abuseError(HttpStatus.FORBIDDEN, ApiErrorCode.FORBIDDEN, 'User is not available');
+      throw abuseError(
+        HttpStatus.FORBIDDEN,
+        ApiErrorCode.FORBIDDEN,
+        'User is not available',
+      );
     }
     if (decision.outcome === 'conflict') {
       throw abuseError(
@@ -218,21 +421,38 @@ export class AuthAbuseService {
       );
     }
     if (decision.outcome === 'expired') {
-      throw abuseError(HttpStatus.FORBIDDEN, ApiErrorCode.OTP_EXPIRED, 'OTP has expired');
+      throw abuseError(
+        HttpStatus.FORBIDDEN,
+        ApiErrorCode.OTP_EXPIRED,
+        'OTP has expired',
+      );
     }
     if (decision.outcome === 'paused') {
-      throw abuseError(HttpStatus.TOO_MANY_REQUESTS, ApiErrorCode.OTP_PAUSED, 'OTP retry pause is active', {
-        pausedUntil: decision.pausedUntil.toISOString(),
-      });
+      throw abuseError(
+        HttpStatus.TOO_MANY_REQUESTS,
+        ApiErrorCode.OTP_PAUSED,
+        'OTP retry pause is active',
+        {
+          pausedUntil: decision.pausedUntil.toISOString(),
+        },
+      );
     }
-    throw abuseError(HttpStatus.FORBIDDEN, ApiErrorCode.OTP_INVALID, 'OTP is invalid');
+    throw abuseError(
+      HttpStatus.FORBIDDEN,
+      ApiErrorCode.OTP_INVALID,
+      'OTP is invalid',
+    );
   }
 
   async readVerificationState(userId: string) {
     const now = new Date();
     const state = await this.store.readVerificationState(userId, now);
     if (!state) {
-      throw abuseError(HttpStatus.FORBIDDEN, ApiErrorCode.FORBIDDEN, 'User is not available');
+      throw abuseError(
+        HttpStatus.FORBIDDEN,
+        ApiErrorCode.FORBIDDEN,
+        'User is not available',
+      );
     }
     return {
       serverNow: now.toISOString(),
@@ -261,7 +481,11 @@ export class AuthAbuseService {
       now: new Date(),
     });
     if (decision.outcome === 'missing') {
-      throw abuseError(HttpStatus.FORBIDDEN, ApiErrorCode.FORBIDDEN, 'User is not available');
+      throw abuseError(
+        HttpStatus.FORBIDDEN,
+        ApiErrorCode.FORBIDDEN,
+        'User is not available',
+      );
     }
     if (decision.outcome === 'verified') {
       throw abuseError(
@@ -271,7 +495,11 @@ export class AuthAbuseService {
       );
     }
     if (decision.outcome === 'taken') {
-      throw abuseError(HttpStatus.CONFLICT, ApiErrorCode.CONFLICT, 'Email or phone already in use');
+      throw abuseError(
+        HttpStatus.CONFLICT,
+        ApiErrorCode.CONFLICT,
+        'Email or phone already in use',
+      );
     }
   }
 
@@ -284,16 +512,24 @@ export class AuthAbuseService {
     const email = normalizeEmail(input.email);
     this.assertIdempotencyKey(input.idempotencyKey);
     const hash = resetContentHash(email);
-    const existing = await this.store.findByKey('password_reset_send', input.idempotencyKey);
+    const existing = await this.store.findByKey(
+      'password_reset_send',
+      input.idempotencyKey,
+    );
     if (existing) {
       if (existing.contentHash !== hash) this.throwContentConflict();
       return;
     }
 
-    await this.requireTurnstile('password_reset', input.turnstileToken, input.ip, {
-      operationKey: input.idempotencyKey,
-      contentHash: hash,
-    });
+    await this.requireTurnstile(
+      'password_reset',
+      input.turnstileToken,
+      input.ip,
+      {
+        operationKey: input.idempotencyKey,
+        contentHash: hash,
+      },
+    );
     const user = await this.prisma.user.findUnique({
       where: { email },
       select: { id: true, email: true, status: true },
@@ -322,14 +558,17 @@ export class AuthAbuseService {
     if (reserved.kind === 'conflict') throw this.reservationError(reserved);
     if (reserved.kind !== 'reserved') return;
 
-    const resetUrlBase = this.env.PASSWORD_RESET_URL_BASE ?? resolveCorsOrigin(this.env);
+    const resetUrlBase =
+      this.env.PASSWORD_RESET_URL_BASE ?? resolveCorsOrigin(this.env);
     if (!resetUrlBase) {
       await this.store.completeMail({
         operationId: reserved.operationId,
         outcome: 'rejected',
         purpose: 'password_reset_send',
       });
-      this.logger.error('Password reset link base URL is not configured; reservation released');
+      this.logger.error(
+        'Password reset link base URL is not configured; reservation released',
+      );
       return;
     }
 
@@ -347,7 +586,10 @@ export class AuthAbuseService {
 
   private async finishSend(input: {
     operationId: string;
-    purpose: 'email_verification_send' | 'password_reset_send';
+    purpose:
+      | 'email_verification_send'
+      | 'password_reset_send'
+      | 'email_login_send';
     message: { to: string; subject: string; text: string };
     neutral?: boolean;
   }): Promise<{ delivery: MailDelivery }> {
@@ -372,7 +614,8 @@ export class AuthAbuseService {
           ? `Email send outcome=${outcome} at=${location}`
           : `Email send outcome=${outcome}`,
       );
-      if (outcome === 'unknown' || input.neutral) return { delivery: 'unknown' };
+      if (outcome === 'unknown' || input.neutral)
+        return { delivery: 'unknown' };
       throw abuseError(
         HttpStatus.SERVICE_UNAVAILABLE,
         ApiErrorCode.MAIL_REJECTED,

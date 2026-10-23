@@ -50,6 +50,7 @@ const defaultErrorMessages: Record<ApiErrorCodeValue, string> = {
   [ApiErrorCode.MAIL_QUOTA]: 'Email quota is exhausted',
   [ApiErrorCode.MAIL_BUDGET]: 'Email budget is exhausted',
   [ApiErrorCode.MAIL_REJECTED]: 'Email was rejected by the mail server',
+  [ApiErrorCode.EMAIL_LOGIN_REJECTED]: 'Email login could not be verified',
   [ApiErrorCode.OTP_INVALID]: 'OTP is invalid',
   [ApiErrorCode.OTP_EXPIRED]: 'OTP has expired',
   [ApiErrorCode.OTP_PAUSED]: 'OTP retry pause is active',

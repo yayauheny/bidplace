@@ -73,13 +73,7 @@ describe('registration form validation', () => {
     }
   });
 
-  it.each([
-    [undefined, undefined],
-    [null, null],
-    ['', null],
-    [' \t\n ', null],
-    ['  +375291234567  ', '+375291234567'],
-  ])('normalizes optional phone %j to %j before the API request', (phone, expected) => {
+  it('sends only fields required for registration after email proof', () => {
     const registration = registerFormSchema.parse({
       email: 'author@example.com',
       password: 'password123',
@@ -89,20 +83,12 @@ describe('registration form validation', () => {
       privacyAcknowledged: true,
       dataConsentGiven: true,
       age18Confirmed: true,
-      phone,
     });
-
-    expect(registration.phone).toBe(expected);
     const submission = registerSubmission(registration);
     expect(submission).not.toHaveProperty('confirmPassword');
     expect(submission).not.toHaveProperty('turnstileToken');
-    expect(registerRequestSchema.safeParse(submission).success).toBe(false);
-    expect(
-      registerRequestSchema.safeParse({
-        ...submission,
-        turnstileToken: 'synthetic-turnstile-proof',
-      }).success,
-    ).toBe(true);
+    expect(submission).not.toHaveProperty('phone');
+    expect(registerRequestSchema.safeParse(submission).success).toBe(true);
   });
 
   it.each(['agreementAccepted', 'privacyAcknowledged', 'dataConsentGiven', 'age18Confirmed'] as const)(

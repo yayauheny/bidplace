@@ -19,7 +19,7 @@ describe('smtp transport', () => {
         SERVICE_RULES_CONTACT: 'support@example.com',
         SERVICE_RULES_TEXT: 'Rules text',
         DATABASE_URL: 'postgres://user:pass@localhost:5432/bidplace',
-        JWT_SECRET: 'secret',
+        SESSION_SECRET: 'secret',
       } as never).requireTLS,
     ).toBe(true);
 
@@ -36,7 +36,7 @@ describe('smtp transport', () => {
         SERVICE_RULES_CONTACT: 'support@example.com',
         SERVICE_RULES_TEXT: 'Rules text',
         DATABASE_URL: 'postgres://user:pass@localhost:5432/bidplace',
-        JWT_SECRET: 'secret',
+        SESSION_SECRET: 'secret',
       } as never),
     ).toThrow('SMTP_USERNAME and SMTP_PASSWORD must be configured together');
   });

@@ -20,9 +20,9 @@ import {
 
 import { parseBody, parseQuery } from '../core/validation';
 import {
-  BearerAuthGuard,
+  SessionAuthGuard,
   CurrentUser,
-  OptionalBearerAuthGuard,
+  OptionalSessionAuthGuard,
   VerifiedEmailGuard,
 } from '../auth';
 import { RateLimit, RateLimitGuard } from '../core/rate-limit';
@@ -71,25 +71,25 @@ export class PortfolioController {
   }
 
   @Get('author/application')
-  @UseGuards(BearerAuthGuard)
+  @UseGuards(SessionAuthGuard)
   application(@CurrentUser() auth: { sub: string }) {
     return this.portfolio.getApplication(auth.sub);
   }
 
   @Post('author/application/submit')
-  @UseGuards(BearerAuthGuard, VerifiedEmailGuard)
+  @UseGuards(SessionAuthGuard, VerifiedEmailGuard)
   submitApplication(@CurrentUser() auth: { sub: string }) {
     return this.portfolio.submitApplication(auth.sub);
   }
 
   @Post('author/application/advance')
-  @UseGuards(BearerAuthGuard, VerifiedEmailGuard)
+  @UseGuards(SessionAuthGuard, VerifiedEmailGuard)
   advanceApplication(@CurrentUser() auth: { sub: string }) {
     return this.portfolio.advanceApplication(auth.sub);
   }
 
   @Get('author/application/photo')
-  @UseGuards(BearerAuthGuard)
+  @UseGuards(SessionAuthGuard)
   async getApplicationPhoto(
     @CurrentUser() auth: { sub: string },
     @Res()
@@ -109,17 +109,14 @@ export class PortfolioController {
   }
 
   @Post('author/application/achievements')
-  @UseGuards(BearerAuthGuard, VerifiedEmailGuard, RateLimitGuard)
+  @UseGuards(SessionAuthGuard, VerifiedEmailGuard, RateLimitGuard)
   @RateLimit({
     keyPrefix: 'author:achievement',
     limit: 10,
     windowMs: 60_000,
     scope: 'user',
   })
-  addAchievement(
-    @CurrentUser() auth: { sub: string },
-    @Body() body: unknown,
-  ) {
+  addAchievement(@CurrentUser() auth: { sub: string }, @Body() body: unknown) {
     return this.portfolio.addAchievement(
       auth.sub,
       parseBody(portfolioAchievementWriteRequestSchema, body),
@@ -127,7 +124,7 @@ export class PortfolioController {
   }
 
   @Delete('author/application/achievements/:id')
-  @UseGuards(BearerAuthGuard, VerifiedEmailGuard, RateLimitGuard)
+  @UseGuards(SessionAuthGuard, VerifiedEmailGuard, RateLimitGuard)
   @RateLimit({
     keyPrefix: 'images:achievement-delete',
     limit: 10,
@@ -142,7 +139,7 @@ export class PortfolioController {
   }
 
   @Get('author-achievements/:id/image')
-  @UseGuards(OptionalBearerAuthGuard)
+  @UseGuards(OptionalSessionAuthGuard)
   async getAchievementImage(
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
     @CurrentUser() auth: { sub: string; role: string } | undefined,
@@ -167,7 +164,7 @@ export class PortfolioController {
   }
 
   @Get('author/cabinet/works')
-  @UseGuards(BearerAuthGuard)
+  @UseGuards(SessionAuthGuard)
   cabinetWorks(@CurrentUser() auth: { sub: string }, @Query() query: unknown) {
     return this.portfolio.listCabinetWorks(
       auth.sub,

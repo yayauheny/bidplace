@@ -8,7 +8,7 @@ export type { ServerEnv } from './env';
 export { ServerEnvModule } from './server-env.module';
 export {
   ENV_PROFILE_ERROR,
-  PRODUCTION_JWT_SECRET_MIN_LENGTH,
+  PRODUCTION_SESSION_SECRET_MIN_LENGTH,
   isExplicitLocalDevelopmentProfile,
   isExplicitLocalTestProfile,
   isTestEmailBypassEnabled,

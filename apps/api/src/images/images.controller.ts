@@ -18,9 +18,9 @@ import { Buffer } from 'node:buffer';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { productImageOrderRequestSchema } from '@bidplace/contracts';
 import {
-  BearerAuthGuard,
+  SessionAuthGuard,
   CurrentUser,
-  OptionalBearerAuthGuard,
+  OptionalSessionAuthGuard,
   VerifiedEmailGuard,
 } from '../auth';
 import { parseBody } from '../core/validation';
@@ -40,7 +40,7 @@ export class ImagesController {
   constructor(private readonly images: ImagesService) {}
 
   @Post('products/:productId/images')
-  @UseGuards(BearerAuthGuard, VerifiedEmailGuard, RateLimitGuard)
+  @UseGuards(SessionAuthGuard, VerifiedEmailGuard, RateLimitGuard)
   @RateLimit({
     keyPrefix: 'images:product-upload',
     limit: 20,
@@ -61,7 +61,7 @@ export class ImagesController {
   }
 
   @Post('products/:productId/story-images')
-  @UseGuards(BearerAuthGuard, VerifiedEmailGuard, RateLimitGuard)
+  @UseGuards(SessionAuthGuard, VerifiedEmailGuard, RateLimitGuard)
   @RateLimit({
     keyPrefix: 'images:story-upload',
     limit: 10,
@@ -85,7 +85,8 @@ export class ImagesController {
     @UploadedFiles() files: RawImageUpload[] = [],
     @Headers('idempotency-key') idempotencyKey?: string,
   ) {
-    if (files.length !== 1) throw new BadRequestException('An image is required');
+    if (files.length !== 1)
+      throw new BadRequestException('An image is required');
     return this.images.addStoryImage(
       auth.sub,
       productId,
@@ -95,7 +96,7 @@ export class ImagesController {
   }
 
   @Delete('products/:productId/story-images/:assetId')
-  @UseGuards(BearerAuthGuard, VerifiedEmailGuard)
+  @UseGuards(SessionAuthGuard, VerifiedEmailGuard)
   removeStoryImage(
     @CurrentUser() auth: { sub: string },
     @Param('productId', new ParseUUIDPipe({ version: '4' }))
@@ -106,7 +107,7 @@ export class ImagesController {
   }
 
   @Get('products/:productId/story-images/:assetId')
-  @UseGuards(OptionalBearerAuthGuard)
+  @UseGuards(OptionalSessionAuthGuard)
   async getStoryImage(
     @Param('productId', new ParseUUIDPipe({ version: '4' }))
     productId: string,
@@ -134,7 +135,7 @@ export class ImagesController {
   }
 
   @Post('products/:productId/creation-steps/:stepId/image')
-  @UseGuards(BearerAuthGuard, VerifiedEmailGuard, RateLimitGuard)
+  @UseGuards(SessionAuthGuard, VerifiedEmailGuard, RateLimitGuard)
   @RateLimit({
     keyPrefix: 'images:creation-step-upload',
     limit: 10,
@@ -168,7 +169,7 @@ export class ImagesController {
   }
 
   @Delete('products/:productId/images/:imageId')
-  @UseGuards(BearerAuthGuard, VerifiedEmailGuard)
+  @UseGuards(SessionAuthGuard, VerifiedEmailGuard)
   remove(
     @CurrentUser() auth: { sub: string },
     @Param('productId', new ParseUUIDPipe({ version: '4' }))
@@ -179,7 +180,7 @@ export class ImagesController {
   }
 
   @Patch('products/:productId/images/order')
-  @UseGuards(BearerAuthGuard, VerifiedEmailGuard)
+  @UseGuards(SessionAuthGuard, VerifiedEmailGuard)
   reorder(
     @CurrentUser() auth: { sub: string },
     @Param('productId', new ParseUUIDPipe({ version: '4' }))
@@ -194,7 +195,7 @@ export class ImagesController {
   }
 
   @Get('images/:id')
-  @UseGuards(OptionalBearerAuthGuard)
+  @UseGuards(OptionalSessionAuthGuard)
   async get(
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
     @CurrentUser() auth: { sub: string; role: string } | undefined,
@@ -215,7 +216,7 @@ export class ImagesController {
   }
 
   @Get('creation-steps/:stepId/image')
-  @UseGuards(OptionalBearerAuthGuard)
+  @UseGuards(OptionalSessionAuthGuard)
   async getCreationStepImage(
     @Param('stepId', new ParseUUIDPipe({ version: '4' })) stepId: string,
     @CurrentUser() auth: { sub: string; role: string } | undefined,

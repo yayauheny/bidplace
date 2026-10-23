@@ -15,10 +15,12 @@ export function AuthCodeField({
   value,
   onChangeText,
   error,
+  editable = true,
 }: {
   value: string;
   onChangeText: (value: string) => void;
   error?: string;
+  editable?: boolean;
 }) {
   const [focused, setFocused] = useState(false);
   const palette = useAppTheme();
@@ -81,6 +83,7 @@ export function AuthCodeField({
           keyboardType="number-pad"
           maxLength={6}
           value={value}
+          editable={editable}
           onChangeText={(next) =>
             onChangeText(normalizeEmailVerificationCode(next))
           }

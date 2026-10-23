@@ -132,3 +132,23 @@ preload prevented reading dotenv files; no stored credentials were inspected.
   and exports do not prove those results.
 - Live R2/CDN conditions remain a separate release gate; local media transport
   tests passed. No new backend dependency was needed for the photo UI substep.
+
+
+## Subsequent release synchronization — 2026-10-23
+
+Merged actual `origin/feature/portfolio-mvp-release`
+`8b737c1bb73e3f97c16fcc2e7ea0bf6cfeb91142` after design commit8596aaf4.
+Only textual conflict:04-DESIGN-STATUS; both portfolio and upstream auth entries
+retained. Work media E2E merged the upstream CSRF headers with design selectors.
+No own backend/API/schema edits were added on top of release.
+
+Merged-tree checks: mobile1031, API464, api-client47, contracts46, config8 and
+database1 unit tests PASS. Turborepo typecheck/lint/build17 tasks PASS, including
+web/iOS/Android exports. Chromium/WebKit media6 and focused design4 browser
+cases PASS. Docs link check186 files and diff whitespace PASS.
+
+Local preparation: regenerate Expo route types for new upstream auth routes;
+use synthetic OTP hash setting for media tests; disable dotenv loading only in
+an external database test config. Initial local preparation failures were
+resolved without changing production code or weakening assertions. Full live
+OIDC/provider/native acceptance is not claimed by this synchronization.

@@ -5,7 +5,7 @@
 
 ## 2026-10-05 — Cloudflare deployment boundary (Partial)
 
-The deployment Worker preserves Nest JWT/session/role/ownership checks. It
+The deployment Worker preserves Nest session/role/ownership checks. It
 routes API only through the private Container binding; public JSON caching is
 allowlisted and bypasses credentials, private routes, mutations and unsafe
 responses. Forwarding strips client-supplied proxy headers and uses Cloudflare's
@@ -35,15 +35,21 @@ investigations. Those stay in [`09-TRUST-AND-AUCTION-INTEGRITY.md`](09-TRUST-AND
 | Control | Status | Modules / tests |
 | --- | --- | --- |
 | Password hashing (Argon2) | Implemented | `apps/api/src/auth/` |
-| Session JWT with current status, session version and role | Implemented | `auth-token.service.ts`, `bearer-auth.guard.ts`, `optional-bearer-auth.guard.ts` |
-| Strict JWT encoding and malformed-session handling | Implemented | Exactly three base64url segments; canonical signature comparison. Optional auth rejects malformed supplied credentials with 401; anonymous media remains public. Logout clears malformed cookies without revoking another account. Token/optional/logout units + `auth-transport.integration.spec.ts`. |
+| Server session with current status, session version and role | Implemented locally | `session.service.ts`, `session-auth.guard.ts`, `optional-session-auth.guard.ts`; absolute 12h expiry, PostgreSQL store, SID rotation, version invalidation |
+| Malformed-session handling | Implemented locally | Signed opaque SID through express-session. Optional auth rejects invalid supplied credentials with401; anonymous media remains public. Logout clears invalid cookies without revoking another account. Session owner units + auth-transport integration. |
 | Neutral forgot-password (no email enumeration) | Implemented | `password-reset/` + `password-reset.integration.spec.ts` |
 | Reset token stored as SHA-256 only; single-use + session bump in one TX | Implemented | `password-reset.service.ts` |
+| OIDC signature, state, nonce and S256 PKCE | Implemented locally | `oidc-providers.service.ts` uses openid-client; PostgreSQL browser-bound one-use flows; signed test IdP HTTP coverage |
+| Explicit identity linking | Implemented locally | `auth-flow.service.ts`; fresh authentication, current User/version and browser binding; no email auto-merge; logout/account switch cancels pending link |
+| Email-code login and pending social email | Implemented locally | Shared auth-abuse engine; purpose/flow/version-bound HMAC; neutral request, shared mail quota, replay/pause/expiry; pending identity has no ordinary principal |
+| Recovery invalidates pending provider proofs | Implemented locally | Reset transaction increments version and cancels pending flows/identities/codes; social-auth HTTP owner covers stale proof rejection |
 | SMTP single-recipient guard | Implemented | `core/email/smtp-transport.ts` |
 
 **Pros:** predictable auth surface; banned/compromised users cannot keep old cookies.  
 **Cons:** no MFA, device binding, or breach-password list yet.  
 **Revisit when:** real pilot abuse, credential stuffing, or compliance asks for step-up auth.
+
+Provider configuration and external acceptance are owned by [Web auth rollout](../ops/WEB-AUTH-ROLLOUT.md). Real Google/Telegram smoke is still required.
 
 ## 3. Admin emergency controls
 
@@ -134,9 +140,9 @@ outside the database transaction.
 
 | Mechanism | Detail |
 | --- | --- |
-| Mail purposes | `email_verification_send`, `password_reset_send` (combined for quotas); verify ledger purpose `email_verification_verify` |
+| Mail purposes | `email_verification_send`, `password_reset_send`, `email_login_send` share quotas; verification and email-login have separate verify purposes |
 | Global mail budgets | `AUTH_MAIL_DAILY_BUDGET` default **200** spends / rolling 24h; `AUTH_MAIL_MONTHLY_BUDGET` default **3000** spends / rolling 31 days (`env.ts`; counts all `MAIL_PURPOSES` with spend statuses) |
-| Personal mail quota | **10** spends per rolling 24h **per account and per address** together (`PERSONAL_MAIL_LIMIT` / `PERSONAL_MAIL_WINDOW_MS`); verification and recovery sends share this pool, not separate per-purpose allowances |
+| Personal mail quota | **10** spends per rolling 24h **per account and per address** together (`PERSONAL_MAIL_LIMIT` / `PERSONAL_MAIL_WINDOW_MS`); verification, recovery and email-login sends share this pool, not separate per-purpose allowances |
 | Send spacing | After 1st/2nd/3rd+ **reserved** spend on the same owner+purpose: 60s / 120s / 300s (`cooldownAfterSends`); not gated on SMTP `accepted` alone |
 | Quota spend | `reserved`, `accepted`, and `unknown` spend; definite `rejected` does not |
 | OTP code TTL | 5 minutes; one active unused code per send cycle |
@@ -144,8 +150,23 @@ outside the database transaction.
 | Login Turnstile | After 5 failed password attempts on an email within 15 minutes (distributed email counter) |
 | Login pair pause | After 10 failed attempts on the email+IP pair: 5 minute pause only |
 | Reset token TTL | 1 hour (unchanged product window) |
-| Idempotency | Required on OTP send, OTP verify, and forgot-password send only (not register/login). Same `(purpose, idempotencyKey)` replays stored outcome without a second SMTP send or verify-attempt recharge |
+| Idempotency | Required on OTP send, OTP verify, and forgot-password send only (not password register/login). Same `(purpose, idempotencyKey)` replays stored outcome without a second SMTP send or verify-attempt recharge |
 | Content binding | Send hashes bind owner, purpose, and address; verify hash includes the six-digit code (`verifyContentHash`). Same key with changed content is rejected |
+
+**Email-login boundary (2026-10-22):** CAPTCHA is checked once before neutral
+browser/email admission. Rejected/unavailable CAPTCHA spends no cooldown; SMTP
+unknown replay never sends twice. Browser admission survives credential-flow
+rotation after revoke, while OTP proofs keep their flow/version binding.
+Credential refusals return the same 403 EMAIL_LOGIN_REJECTED with no account,
+pause or provider details; account OTP counters remain durable. Infrastructure
+failures retain 5xx. `social-auth.integration.spec.ts` covers eligibility, expiry,
+pause, same-key replay, revoke and successful fresh proof.
+
+**MVP CAPTCHA simplification:** social profile completion already requires a
+valid browser-bound Google/Telegram proof, so it has no second registration
+CAPTCHA. Real email policy, legal evidence, TTL, single-use transitions and
+pending-email restrictions remain server-side. Password registration, mail
+requests and adaptive password-login CAPTCHA remain enabled. See DEC-134.
 
 **SMTP outcome truth:** `accepted` means the transport completed without a
 classified failure. `rejected` is definite only for the single-recipient guard
@@ -167,6 +188,8 @@ registration (registration starts at `0`). Logout, password reset completion,
 ban, and admin revoke are the current bump paths. Wrong-password, unknown-account,
 and foreign login attempts do not revoke existing sessions; they may trigger
 Turnstile challenge and email+IP pair pause only.
+Flow creation, login and logout serialize on a PostgreSQL lock for the browser
+SID and reject a delayed write when the old SID was rotated or removed.
 
 **Turnstile:** server-side Siteverify only; `TURNSTILE_SECRET_KEY` and
 `TURNSTILE_HOSTNAME` are required on the production security profile. Each check
@@ -218,15 +241,15 @@ Env parsing rejects inconsistent pairs before bootstrap:
 | `development` or `test` | `production` | Rejected: `APP_ENV=production requires NODE_ENV=production` |
 | `production` | `local` (including default) | Rejected: `NODE_ENV=production requires APP_ENV=production or APP_ENV=staging` |
 
-Production security (`NODE_ENV=production` or `APP_ENV=production`) requires SMTP, service rules, `PASSWORD_RESET_URL_BASE`, S3 media configuration, and `JWT_SECRET` of at least 32 characters. `TEST_EMAIL_BYPASS` cannot be enabled. Session cookies use `secure` on that profile. Local mail transport and default service-rules text cannot run there.
+Production security (`NODE_ENV=production` or `APP_ENV=production`) requires SMTP, service rules, `PASSWORD_RESET_URL_BASE`, S3 media configuration, and `SESSION_SECRET` / `OTP_HASH_SECRET` of at least 32 characters. `TEST_EMAIL_BYPASS` cannot be enabled. Session cookies use `secure` on that profile. Local mail transport and default service-rules text cannot run there.
 
 Destructive demo seed remains `NODE_ENV=development|test`, `APP_ENV=local`, and `ALLOW_DESTRUCTIVE_DEMO_SEED=true` only.
 
 Coverage: `env-profile.spec.ts`, `env.spec.ts` matrix, `rules.spec.ts`, `local-mail-transport.spec.ts`, `auth.controller.spec.ts`, `seed-contract.integration.spec.ts`.
 
 **Pros:** `APP_ENV=production` cannot boot with a development/test Node profile; bypass/seed stay local-test-only.
-**Cons:** Compose `app` profile must set `APP_ENV=production`; short JWT secrets fail production parse.
-**Revisit when:** staging gets its own owner rule (SMTP/JWT policy distinct from production).
+**Cons:** Compose `app` profile must set `APP_ENV=production`; short session/OTP secrets fail production parse.
+**Revisit when:** staging gets its own owner rule (SMTP/session policy distinct from production).
 
 ## 8. Deferred ops/security (post-pilot)
 
@@ -253,3 +276,53 @@ official public dummy token only through the existing test/local factory gate.
 Development/staging/production profiles do not enable this verifier. Dummy
 tokens have no real action/hostname proof and are not a security-verification
 claim. Production Cloudflare Siteverify/action/hostname/expiry checks unchanged.
+
+
+## 2026-10-22 — Email proof before account creation
+
+Implemented locally (DEC-135): password registration requires a browser-bound
+proof for the exact email before creating User/legal evidence; unproved social
+onboarding creates neither User nor ExternalIdentity. A trusted provider email
+proof remains valid. Email collisions are disclosed only after ownership proof;
+no automatic linking occurs. Explicit link still requires the current verified
+account session and provider proof.
+
+`EmailProofService` enforces 10-minute expiry, five guesses, three sends per
+flow, 60-second resend delay, shared address quota and global auth mail budgets.
+Codes are HMAC-only in PostgreSQL. Definite mail rejects invalidate the code;
+unknown outcomes retain it and do not trigger automatic resend.
+
+Email-proof replay uses the stored `(flowId, idempotencyKey)` operation, including
+older keys after a new send. Definite rejection returns 503 `MAIL_REJECTED` and
+atomically records the outcome and clears only its current code/expiry/cooldown.
+The rejected reservation still consumes one of the three flow attempts, but no
+shared mail quota; replay consumes neither. A fresh key requires fresh CAPTCHA.
+Reserved operations replay as unknown without waiting on SMTP; after the normal
+60-second cooldown a new reservation remains possible within the same limits.
+Late outcomes cannot overwrite a newer code. State reads use one repeatable-read
+snapshot; current rejection exposes `sendStatus=rejected` and null deadlines.
+An uncertain database write is an infrastructure error, never evidence of SMTP
+rejection or permission for automatic resend. Social onboarding refreshes state
+and rotates its key only after confirmed `MAIL_REJECTED`; uncertain errors retain it.
+
+Known/unknown email-login failures now use the same durable operation/counter
+path, including pause and replay, without creating dummy users. HTTP regression
+covers equal outcomes, five-failure pause, expiry, cancellation, browser binding,
+mail budgets and pre-proof absence of users. CI requires the isolated abuse DB
+and runs the browser owner on Draft auth PRs too. Production timing, live
+Google/Telegram/SMTP/Turnstile remain Needs verification.
+
+
+## 2026-10-23 — Принятое SMTP timing-ограничение (DEC-136)
+
+`AuthAbuseService.sendEmailLogin` ожидает транспорт для известного активного
+аккаунта, но возвращает нейтральный ответ без отправки для неизвестного адреса.
+Разница времени request остаётся каналом email enumeration, даже при одинаковом
+статусе/JSON. Это принятое ограничение MVP, а не доказанная нейтральность SMTP.
+Путь verify имеет отдельные SQL/counter/pause-инварианты и проверяется отдельно.
+
+Остаются обязательными browser/purpose/version binding, одноразовость кодов,
+CSRF/origin, идемпотентность, shared quotas и accepted/rejected/unknown outcomes.
+Для production нужны реальные SMTP/Turnstile/provider проверки и отдельная оценка
+timing на целевой инфраструктуре. Асинхронный outbox без надёжного пробуждения
+scale-to-zero контейнера не добавляется; причины и альтернативы — DEC-136.

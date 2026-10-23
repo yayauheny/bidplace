@@ -3,6 +3,8 @@ import type { RegisterRequest } from '@bidplace/contracts';
 import { getSafeRedirect, type SafeRedirect } from './auth-redirect';
 
 const AUTH_ROUTES = new Set([
+  'email-login',
+  'auth/complete',
   'login',
   'register',
   'forgot-password',
@@ -10,7 +12,13 @@ const AUTH_ROUTES = new Set([
   'verify-email',
 ]);
 
-const PUBLIC_PREFIXES = ['/works', '/authors', '/search', '/product', '/seller'];
+const PUBLIC_PREFIXES = [
+  '/works',
+  '/authors',
+  '/search',
+  '/product',
+  '/seller',
+];
 
 export type AuthDismissal = 'allow' | 'confirm' | 'keep';
 
@@ -42,24 +50,31 @@ export function authRouteFromLocation(path: string) {
   return AUTH_ROUTES.has(name) ? name : undefined;
 }
 
-function focusedRouteName(state: NavigationNode | undefined): string | undefined {
-  if (!state || !Array.isArray(state.routes) || typeof state.index !== 'number') return undefined;
+function focusedRouteName(
+  state: NavigationNode | undefined,
+): string | undefined {
+  if (!state || !Array.isArray(state.routes) || typeof state.index !== 'number')
+    return undefined;
   const route = state.routes[state.index];
   if (!route) return undefined;
   const nested = focusedRouteName(route.state);
   if (nested) return nested;
   if (typeof route.path === 'string') {
-    const fromPath = authRouteFromLocation(route.path.startsWith('/') ? route.path : `/${route.path}`);
+    const fromPath = authRouteFromLocation(
+      route.path.startsWith('/') ? route.path : `/${route.path}`,
+    );
     if (fromPath) return fromPath;
   }
   if (typeof route.params?.screen === 'string') return route.params.screen;
-  if (typeof route.name === 'string' && !route.name.startsWith('(')) return route.name;
+  if (typeof route.name === 'string' && !route.name.startsWith('('))
+    return route.name;
   return undefined;
 }
 
 export function authNavigationTarget(action: NavigationAction | undefined) {
   const payload = action?.payload;
-  if (payload && Array.isArray(payload.routes)) return focusedRouteName(payload);
+  if (payload && Array.isArray(payload.routes))
+    return focusedRouteName(payload);
   const screen = payload?.params?.screen;
   if (typeof screen === 'string') return screen;
   const name = payload?.name;
@@ -94,7 +109,11 @@ export function authBrowserLeaveTarget(path: string): SafeRedirect {
 export function authLeaveDestination(redirectTo: SafeRedirect): SafeRedirect {
   const path = redirectTo.split(/[?#]/)[0] || '/';
   if (path === '/') return '/';
-  if (PUBLIC_PREFIXES.some((prefix) => path === prefix || path.startsWith(`${prefix}/`))) {
+  if (
+    PUBLIC_PREFIXES.some(
+      (prefix) => path === prefix || path.startsWith(`${prefix}/`),
+    )
+  ) {
     return redirectTo;
   }
   return '/';
@@ -104,17 +123,21 @@ export function registerSubmission(values: {
   email: string;
   password: string;
   slug: string;
-  phone?: string | null;
   confirmPassword: string;
   agreementAccepted: boolean;
   privacyAcknowledged: boolean;
   dataConsentGiven: boolean;
   age18Confirmed: boolean;
-}): Omit<RegisterRequest, 'turnstileToken'> {
-  if (!values.agreementAccepted || !values.privacyAcknowledged || !values.dataConsentGiven || !values.age18Confirmed) {
+}): RegisterRequest {
+  if (
+    !values.agreementAccepted ||
+    !values.privacyAcknowledged ||
+    !values.dataConsentGiven ||
+    !values.age18Confirmed
+  ) {
     throw new Error('Registration requires all legal confirmations');
   }
-  const request: Omit<RegisterRequest, 'turnstileToken'> = {
+  const request: RegisterRequest = {
     email: values.email,
     password: values.password,
     slug: values.slug,
@@ -125,6 +148,5 @@ export function registerSubmission(values: {
       age18Confirmed: true,
     },
   };
-  if (values.phone !== undefined) request.phone = values.phone;
   return request;
 }

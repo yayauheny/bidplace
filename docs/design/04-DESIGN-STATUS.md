@@ -54,3 +54,34 @@ shared CoverFrost и destructive controls обновлены, существую
 без второго владельца. [Audit и ограничения](../audits/current/2026-10-23-PORTFOLIO-DESIGN.md).
 Точный desktop/black parity для новых frames — NEEDS-FIGMA; физическая клавиатура
 мобильного устройства, системный text scaling и native rendering не подтверждены.
+## 2026-10-22 — Registration before account creation
+
+Implemented locally: DEC-135 adds email proof before password/social account
+creation, reusing AuthCodeField and auth layout/actions. Registration retains
+legal consent through a failed submission; resend/change-address remain explicit.
+The consent checkbox supports web Space activation. Chromium/WebKit lifecycle
+14/14 and OIDC/email-code/link smoke 12/12 passed on isolated schemas with a test
+IdP; registration keyboard consent and code-form responsive resize are included.
+Exact visual acceptance of the added registration step and native device QA
+remain Needs verification; existing design tokens and composition are reused.
+
+
+## 2026-10-23 — Совместная проверка auth и фото
+
+**Partial visual acceptance; local behavior checks passed.** Сохранены cookie
+bootstrap, password/email-code/provider формы и явные connections settings из
+PR #58 вместе с photo/upload UI MVP. Chromium/WebKit: 12 auth completion,
+14 auth lifecycle и 6 media checks прошли. CSRF headers добавлены только в
+E2E API-транспорт; production guards и browser assertions/timeouts сохранены.
+Native devices, live providers и точная визуальная приёмка нового proof-шага
+остаются Needs verification.
+
+## 2026-10-23 — Social onboarding: восстановление после SMTP rejection
+
+**Partial visual acceptance; owner behavior checks passed.** `OnboardingForm`
+показывает существующий rejected-copy, обновляет email state и разрешает новый
+ключ после определённого `MAIL_REJECTED` без reload. Network/неопределённый 5xx
+сохраняют ключ. Client submit owner покрывает все три исхода; layout, tokens,
+routes и shared controls не менялись. Новая Figma/native acceptance не заявляется.
+Chromium/WebKit completion owner: 14/14 passed, включая настоящий rejection
+тестового SMTP и успешный новый запрос/подтверждение на той же странице.
