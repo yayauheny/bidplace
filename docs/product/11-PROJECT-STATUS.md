@@ -51,7 +51,7 @@ PR #59. CI точного merge SHA в этой документационной
 
 ## 2026-10-23 — PR #58: auth + фото на актуальной MVP
 
-**Partial (local verification passed; CI gate pending).** База `7d0dc179`
+**Partial (local verification passed; production gates remain).** База `7d0dc179`
 объединена с auth `2e6fc2d1` в `feature/web-auth`. Сохранены SessionService,
 EmailProofService/AuthAbuseService, normalized SOURCE/ImageProcessor, upload API
 и новые auth/media migrations. Upgrade с MVP проверен с сохранением пользователя

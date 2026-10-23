@@ -90,8 +90,8 @@ Cleanup проверен в Linux при success/error/SIGTERM: группы з�
 network error при Google start; повтор с временной диагностикой transport прошёл,
 причина единичного сбоя не установлена; диагностика удалена, retries не добавлены.
 Полный manual Verify `39879403448` на merge-коммите прошёл, включая Cloudflare
-image/static checks; после исправления browser startup требуется новый полный
-Verify и Chromium/WebKit на новом итоговом SHA.
+image/static checks. Результаты полного Verify и Chromium/WebKit после исправления
+browser startup для итогового SHA публикуются в PR #58; они остаются merge-gate.
 
 ## Граница готовности
 
