@@ -16,6 +16,18 @@
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
 | Commerce, избранное/подписки, смена email/password из settings | Not implemented в launch scope / post-MVP; [следующая волна](15-POST-MVP-BACKLOG.md). Старый commerce runtime не разрешает включать продажи. |
 
+## 2026-10-23 — Admin foundation
+
+**Implemented (local verification passed).** Protected summary/detail/history API in
+`AdminController`/`AdminModerationService`, revision submission cursor with unknown
+time, separate snapshots, additive audit metadata and restore generations.
+Seller restore, replay and media completion/deletion ownership corrected in the
+existing lifecycle. Owner integration specs cover three restore cycles, outage,
+lease takeover, UTC/history and private preview. Full `pnpm verify` passed;
+follow-up API checks passed after the final inline-history correction.
+No production migration/deploy.
+[Scope, compatibility and verification](../audits/current/2026-10-23-ADMIN-FOUNDATION.md).
+
 ## 2026-10-23 — Оптимизация документации
 
 **Implemented (docs only).** Сокращены `AGENTS.md`, карта чтения и product index;

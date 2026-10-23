@@ -201,7 +201,7 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
     expect(await auditFor('SELLER_PROFILE', profile.id)).toHaveLength(0);
   });
 
-  it('persists seller moderation transitions, reasons and exactly one audit per accepted transition', async () => {
+  it('persists seller submissions, decisions and publication completions', async () => {
     const fixture = await createPermissionFixture(prisma);
     const { admin, adminClient, applicantClient } =
       await adminAndApplicant(fixture);
@@ -219,6 +219,8 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
       ).status,
     ).toBe(200);
     expect(await auditFor('SELLER_PROFILE', profile.id)).toEqual([
+      { actorUserId: fixture.buyer.id, targetType: 'SELLER_PROFILE', targetId: profile.id,
+        oldStatus: 'DRAFT', newStatus: 'PENDING_REVIEW', reason: null },
       {
         actorUserId: admin.id,
         targetType: 'SELLER_PROFILE',
@@ -227,6 +229,8 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
         newStatus: 'APPROVED',
         reason: null,
       },
+      { actorUserId: admin.id, targetType: 'SELLER_PROFILE', targetId: profile.id,
+        oldStatus: null, newStatus: 'APPROVED', reason: null },
     ]);
 
     expect(
@@ -254,8 +258,8 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
         )
       ).status,
     ).toBe(200);
-    expect(await auditFor('SELLER_PROFILE', profile.id)).toHaveLength(2);
-    expect((await auditFor('SELLER_PROFILE', profile.id))[1]).toMatchObject({
+    expect(await auditFor('SELLER_PROFILE', profile.id)).toHaveLength(5);
+    expect((await auditFor('SELLER_PROFILE', profile.id))[4]).toMatchObject({
       actorUserId: admin.id,
       oldStatus: 'PENDING_REVIEW',
       newStatus: 'CHANGES_REQUESTED',
@@ -277,7 +281,7 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
       ).status,
     ).toBe(409);
     expect(await permissionState(prisma)).toEqual(repeatBefore);
-    expect(await auditFor('SELLER_PROFILE', profile.id)).toHaveLength(2);
+    expect(await auditFor('SELLER_PROFILE', profile.id)).toHaveLength(5);
 
     expect(
       (
@@ -309,7 +313,7 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
       ).status,
     ).toBe(400);
     expect(await permissionState(prisma)).toEqual(missingReasonBefore);
-    expect(await auditFor('SELLER_PROFILE', profile.id)).toHaveLength(3);
+    expect(await auditFor('SELLER_PROFILE', profile.id)).toHaveLength(8);
 
     expect(
       (
@@ -331,7 +335,7 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
         })
       ).status,
     ).toBe('SUSPENDED');
-    expect(await auditFor('SELLER_PROFILE', profile.id)).toHaveLength(4);
+    expect(await auditFor('SELLER_PROFILE', profile.id)).toHaveLength(9);
 
     const rejectedSellerBefore = await permissionState(prisma);
     expect(
@@ -460,6 +464,8 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
         newStatus: 'APPROVED',
         reason: null,
       },
+      { actorUserId: admin.id, targetType: 'PRODUCT', targetId: fixture.approvedDraftProductId,
+        oldStatus: null, newStatus: 'APPROVED', reason: null },
     ]);
 
     const ownerClient = new HttpTestClient(
@@ -499,7 +505,7 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
     ).toBe(200);
     expect(
       await auditFor('PRODUCT', fixture.approvedDraftProductId),
-    ).toHaveLength(3);
+    ).toHaveLength(4);
 
     const productRepeatBefore = await permissionState(prisma);
     expect(
@@ -518,7 +524,7 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
     expect(await permissionState(prisma)).toEqual(productRepeatBefore);
     expect(
       await auditFor('PRODUCT', fixture.approvedDraftProductId),
-    ).toHaveLength(3);
+    ).toHaveLength(4);
 
     const rejectedProductBefore = await permissionState(prisma);
     expect(
@@ -536,7 +542,7 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
     expect(await permissionState(prisma)).toEqual(rejectedProductBefore);
     expect(
       await auditFor('PRODUCT', fixture.approvedDraftProductId),
-    ).toHaveLength(3);
+    ).toHaveLength(4);
 
     expect(
       (
@@ -576,8 +582,8 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
       'PRODUCT',
       fixture.approvedDraftProductId,
     );
-    expect(rejectedProductAudit).toHaveLength(5);
-    expect(rejectedProductAudit[4]).toEqual({
+    expect(rejectedProductAudit).toHaveLength(6);
+    expect(rejectedProductAudit[5]).toEqual({
       actorUserId: admin.id,
       targetType: 'PRODUCT',
       targetId: fixture.approvedDraftProductId,

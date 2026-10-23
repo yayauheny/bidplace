@@ -626,6 +626,17 @@ export class SellersService {
         where: { id: revision.id },
         data: { status: 'PENDING_REVIEW', submittedAt: new Date() },
       });
+      await tx.auditEvent.create({
+        data: {
+          actorUserId: userId,
+          targetType: 'SELLER_PROFILE',
+          targetId: profile.id,
+          action: 'SUBMITTED',
+          revisionId: revision.id,
+          oldStatus: revision.status,
+          newStatus: 'PENDING_REVIEW',
+        },
+      });
       if (profile.status !== 'APPROVED') {
         await tx.sellerProfile.update({
           where: { id: profile.id },

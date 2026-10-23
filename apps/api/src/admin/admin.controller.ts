@@ -1,4 +1,6 @@
 import {
+  adminQueueQuerySchema,
+  adminHistoryQuerySchema,
   adminAnalyticsQuerySchema,
   adminModerationListQuerySchema,
   adminCuratorSelectionRequestSchema,
@@ -25,6 +27,7 @@ import {
   Controller,
   Delete,
   Get,
+  Header,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -71,6 +74,62 @@ export class AdminController {
   async listSellers(@Query() query: unknown) {
     return this.moderation.listSellerProfiles(
       parseQuery(adminModerationListQuerySchema, query),
+    );
+  }
+
+  @Get('seller-profiles/summary')
+  @Header('Cache-Control', PRIVATE_IMAGE_CACHE_CONTROL)
+  sellerSummaries(@Query() query: unknown) {
+    return this.moderation.summaries(
+      'SELLER_PROFILE',
+      parseQuery(adminQueueQuerySchema, query),
+    );
+  }
+
+  @Get('products/summary')
+  @Header('Cache-Control', PRIVATE_IMAGE_CACHE_CONTROL)
+  productSummaries(@Query() query: unknown) {
+    return this.moderation.summaries(
+      'PRODUCT',
+      parseQuery(adminQueueQuerySchema, query),
+    );
+  }
+
+  @Get('seller-profiles/:id')
+  @Header('Cache-Control', PRIVATE_IMAGE_CACHE_CONTROL)
+  sellerDetail(@Param('id', new ParseUUIDPipe({ version: '4' })) id: string) {
+    return this.moderation.sellerDetail(id);
+  }
+
+  @Get('products/:id')
+  @Header('Cache-Control', PRIVATE_IMAGE_CACHE_CONTROL)
+  productDetail(@Param('id', new ParseUUIDPipe({ version: '4' })) id: string) {
+    return this.moderation.productDetail(id);
+  }
+
+  @Get('seller-profiles/:id/history')
+  @Header('Cache-Control', PRIVATE_IMAGE_CACHE_CONTROL)
+  sellerHistory(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Query() query: unknown,
+  ) {
+    return this.moderation.history(
+      'SELLER_PROFILE',
+      id,
+      parseQuery(adminHistoryQuerySchema, query),
+    );
+  }
+
+  @Get('products/:id/history')
+  @Header('Cache-Control', PRIVATE_IMAGE_CACHE_CONTROL)
+  productHistory(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Query() query: unknown,
+  ) {
+    return this.moderation.history(
+      'PRODUCT',
+      id,
+      parseQuery(adminHistoryQuerySchema, query),
     );
   }
 

@@ -187,3 +187,32 @@ describe('admin client', () => {
     expect(called).toBe(false);
   });
 });
+
+it('uses the bounded summary and history routes with authenticated read options', async () => {
+  const paths: string[] = [];
+  const client = createApiClient({
+    baseUrl: 'https://api.example.test',
+    credentials: 'include',
+    fetchImpl: async (url, init) => {
+      const path = new URL(String(url));
+      paths.push(path.pathname);
+      expect(init?.credentials).toBe('include');
+      expect(path.searchParams.get('limit')).toBe('1');
+      return Response.json(
+        path.pathname.endsWith('history')
+          ? { events: [], nextCursor: null }
+          : { items: [], nextCursor: null },
+      );
+    },
+  });
+  await client.admin.listSellerSummaries({ limit: 1 });
+  await client.admin.listProductSummaries({ limit: 1 });
+  await client.admin.getSellerHistory(sellerId, { limit: 1 });
+  await client.admin.getProductHistory(sellerId, { limit: 1 });
+  expect(paths).toEqual([
+    '/api/admin/seller-profiles/summary',
+    '/api/admin/products/summary',
+    `/api/admin/seller-profiles/${sellerId}/history`,
+    `/api/admin/products/${sellerId}/history`,
+  ]);
+});

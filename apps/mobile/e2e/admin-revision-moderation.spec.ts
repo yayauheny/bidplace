@@ -209,7 +209,7 @@ test('admin reviews a pending product revision without exposing its gallery publ
   // (filters), and the names differ by construction (TCF-01).
   await expect(card.getByText(fixture.pendingCategoryName)).toBeVisible();
   await expect(card.getByText(fixture.publishedCategoryName)).toHaveCount(0);
-  await expect(page.getByText(fixture.publishedTitle)).toHaveCount(0);
+  await expect(card.getByText(fixture.publishedTitle)).toHaveCount(0);
   await expect(
     page.getByText(`Изображение недоступно: ${fixture.pendingTitle}`),
   ).toHaveCount(0);
