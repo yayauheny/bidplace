@@ -346,7 +346,14 @@ export const webAnalyticsResponseSchema = z
   })
   .strict();
 export const analyticsFoundationQuerySchema = z
-  .object({ from: isoDateTimeSchema, to: isoDateTimeSchema })
+  .object({
+    from: isoDateTimeSchema,
+    to: isoDateTimeSchema,
+    includeActivity: z.preprocess(
+      (value) => (value === 'true' ? true : value === 'false' ? false : value),
+      z.boolean().optional(),
+    ),
+  })
   .strict()
   .refine(
     ({ from, to }) =>
@@ -360,6 +367,7 @@ export const analyticsFoundationResponseSchema = z
     from: isoDateTimeSchema,
     to: isoDateTimeSchema,
     environment: z.string(),
+    serverCollectionEnabled: z.boolean().optional(),
     coverage: z
       .object({
         firstVisitAt: isoDateTimeSchema.nullable(),
@@ -380,6 +388,7 @@ export const analyticsFoundationResponseSchema = z
       z
         .object({
           date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+          sessions: count.optional(),
           views: count,
           visitors: count,
           registrations: count,
@@ -421,3 +430,10 @@ export const analyticsFoundationResponseSchema = z
       .strict(),
   })
   .strict();
+
+export type AnalyticsFoundationQuery = z.infer<
+  typeof analyticsFoundationQuerySchema
+>;
+export type AnalyticsFoundationResponse = z.infer<
+  typeof analyticsFoundationResponseSchema
+>;

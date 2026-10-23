@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import {
   analyticsFoundationQuerySchema,
+  type AnalyticsFoundationQuery,
   analyticsFoundationResponseSchema,
   adminAnalyticsOverviewSchema,
   catalogTermSchema,
@@ -102,12 +103,18 @@ export function createAdminClient(context: RequestContext) {
         signalRequestOptions(options),
       );
     },
-    getAnalyticsFoundation(query: { from: string; to: string }) {
+    getAnalyticsFoundation(
+      query: AnalyticsFoundationQuery,
+      options?: ReadCallOptions,
+    ) {
       return requestJson(
         context,
         '/api/admin/analytics/foundation',
         analyticsFoundationResponseSchema,
-        { query: analyticsFoundationQuerySchema.parse(query) },
+        {
+          query: analyticsFoundationQuerySchema.parse(query),
+          ...signalRequestOptions(options),
+        },
       );
     },
     getAnalyticsOverview(query: AdminAnalyticsQuery = { period: '7d' }) {

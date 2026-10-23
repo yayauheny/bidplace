@@ -40,6 +40,37 @@ function sellerResponse() {
 }
 
 describe('admin client', () => {
+  it('opts into protected activity reads and forwards cancellation', async () => {
+    let requestedUrl = '';
+    let requestedSignal: AbortSignal | null | undefined;
+    const client = createApiClient({
+      baseUrl: 'https://api.example.test',
+      credentials: 'include',
+      fetchImpl: async (url, init) => {
+        requestedUrl = String(url);
+        requestedSignal = init?.signal;
+        return new Response(JSON.stringify({ message: 'Forbidden' }), {
+          status: 403,
+          headers: { 'content-type': 'application/json' },
+        });
+      },
+    });
+    const signal = new AbortController().signal;
+    await expect(
+      client.admin.getAnalyticsFoundation(
+        {
+          from: '2026-10-01T00:00:00.000Z',
+          to: '2026-10-02T00:00:00.000Z',
+          includeActivity: true,
+        },
+        { signal },
+      ),
+    ).rejects.toMatchObject({ status: 403 });
+    expect(new URL(requestedUrl).searchParams.get('includeActivity')).toBe(
+      'true',
+    );
+    expect(requestedSignal).toBe(signal);
+  });
   it('sends an explicit seller target and keeps the profile response envelope', async () => {
     let requestBody = '';
     const client = createApiClient({

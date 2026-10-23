@@ -200,21 +200,22 @@ export function foundationGrowthSql(
       SELECT generate_series(date_trunc('day', (${from}::timestamptz AT TIME ZONE 'UTC')),
         (${to}::timestamptz AT TIME ZONE 'UTC') - INTERVAL '1 millisecond', INTERVAL '1 day')::date AS day
     ), counts AS (
-      SELECT created_at::date AS day, COUNT(*) AS views, COUNT(DISTINCT anonymous_id) AS visitors,
+      SELECT created_at::date AS day, COUNT(*) AS views, COUNT(DISTINCT anonymous_id) AS visitors, COUNT(DISTINCT session_id) AS sessions,
         0::bigint AS registrations, 0::bigint AS authors, 0::bigint AS works
       FROM analytics_events WHERE collection_version = 2 AND environment = ${environment}
         AND ${inUtcWindow(Prisma.sql`created_at`, from, to)} GROUP BY 1
       UNION ALL
-      SELECT created_at::date, 0, 0, COUNT(*), 0, 0 FROM users
+      SELECT created_at::date, 0, 0, 0, COUNT(*), 0, 0 FROM users
         WHERE ${inUtcWindow(Prisma.sql`created_at`, from, to)} GROUP BY 1
       UNION ALL
-      SELECT first_published_at::date, 0, 0, 0, COUNT(*), 0 FROM seller_profiles
+      SELECT first_published_at::date, 0, 0, 0, 0, COUNT(*), 0 FROM seller_profiles
         WHERE ${inUtcWindow(Prisma.sql`first_published_at`, from, to)} GROUP BY 1
       UNION ALL
-      SELECT published_at::date, 0, 0, 0, 0, COUNT(*) FROM products
+      SELECT published_at::date, 0, 0, 0, 0, 0, COUNT(*) FROM products
         WHERE ${inUtcWindow(Prisma.sql`published_at`, from, to)} GROUP BY 1
     ) SELECT to_char(d.day, 'YYYY-MM-DD') AS date,
       COALESCE(SUM(c.views), 0)::bigint AS views, COALESCE(SUM(c.visitors), 0)::bigint AS visitors,
+      COALESCE(SUM(c.sessions), 0)::bigint AS sessions,
       COALESCE(SUM(c.registrations), 0)::bigint AS registrations,
       COALESCE(SUM(c.authors), 0)::bigint AS "firstAuthors", COALESCE(SUM(c.works), 0)::bigint AS "firstWorks"
     FROM days d LEFT JOIN counts c ON c.day = d.day GROUP BY d.day ORDER BY d.day

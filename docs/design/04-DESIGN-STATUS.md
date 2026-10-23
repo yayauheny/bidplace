@@ -96,3 +96,13 @@ retry и явная отмена остатка доступны на плитк
 2026-10-23 final review P3: после partial upload error переход к истории/проверке
 блокируется до retry/cancel незавершённого остатка, включая точки шагов. Retry,
 cancel и Back остаются доступны; состояние очереди не подменяет uploadBusy.
+
+## 2026-10-24 — Administrative analytics
+
+**Partial.** Mobile-first foundation analytics reuses FormPageShell, FigmaTabs,
+TextField, PaddedGrid and typography/tokens; one feature-owned SVG series uses the
+installed library. Screens cover truthful collection/coverage/cohort states, UTC
+dates and retry. Independent source/mobile screenshot review found no substantial
+blockers. Exact new admin/desktop composition has no supplied Figma frame
+(**NEEDS-FIGMA**); physical iOS/Android, keyboard and screen reader remain
+**Needs verification**. [Evidence/checks](../audits/current/2026-10-24-ADMIN-ANALYTICS-UI.md).

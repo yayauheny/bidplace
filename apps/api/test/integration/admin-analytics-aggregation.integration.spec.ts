@@ -944,6 +944,29 @@ it('deduplicates deliveries in PostgreSQL and shares inactivity sessions across 
   ).rejects.toMatchObject({ code: 'P2002' });
 });
 
+it('counts a session once per active UTC day while retaining the period distinct count and legacy response shape', async () => {
+  let instant = new Date('2026-10-01T23:55:00Z');
+  const { service } = await webAnalytics(() => instant);
+  const first = await service.ingestWeb({ events: [{ eventId: randomUUID(), page: { page: 'home' } }] }, null);
+  instant = new Date('2026-10-02T00:05:00Z');
+  const second = await service.ingestWeb({ events: [{ eventId: randomUUID(), page: { page: 'works' } }] }, first.browserId);
+  expect(second.sessionId).toBe(first.sessionId);
+  const interval = { from: '2026-10-01T00:00:00.000Z', to: '2026-10-03T00:00:00.000Z' };
+  const analytics = new AdminAnalyticsService(prisma as never);
+  const legacy = await analytics.buildFoundation(interval, instant, 'local');
+  expect(legacy).not.toHaveProperty('serverCollectionEnabled');
+  expect(legacy.growth.every((row) => !('sessions' in row))).toBe(true);
+  const detail = await analytics.buildFoundation({ ...interval, includeActivity: true }, instant, 'local', true);
+  expect(detail.serverCollectionEnabled).toBe(true);
+  expect(detail.product.sessions).toBe(1);
+  expect(detail.growth.map((row) => row.sessions)).toEqual([1, 1]);
+  const changedZone = await prisma.$transaction(async (tx) => {
+    await tx.$executeRaw`SET LOCAL TIME ZONE 'Pacific/Honolulu'`;
+    return new AdminAnalyticsService(tx as never).buildFoundation({ ...interval, includeActivity: true }, instant, 'local', false);
+  });
+  expect(changedZone).toEqual({ ...detail, serverCollectionEnabled: false });
+});
+
 it('excludes unproven login claims from 30-day conversion and preserves registration independently', async () => {
   const visitAt = new Date('2026-08-01T00:00:00Z');
   const { service, env } = await webAnalytics(() => visitAt);
@@ -1300,6 +1323,14 @@ it('keeps disabled HTTP collection inert, binds actual registration with an Http
     const response = await browser.get(path);
     expect(response.status).toBe(200);
     expect(response.headers.get('cache-control')).toBe('private, no-store');
+    expect(await response.json()).not.toHaveProperty('serverCollectionEnabled');
+    const activity = await browser.get(`${path}&includeActivity=true`);
+    expect(activity.status).toBe(200);
+    expect(await activity.json()).toMatchObject({ serverCollectionEnabled: true, growth: [{ sessions: 0 }] });
+    expect((await browser.get(`${path}&includeActivity=invalid`)).status).toBe(400);
+    expect((await disabled.post('/auth/login', { email: account.email, password: 'password123' })).status).toBe(201);
+    expect(await (await disabled.get(`${path}&includeActivity=true`)).json()).toMatchObject({ serverCollectionEnabled: false });
+
     expect(
       (
         await new HttpTestClient(enabled.baseUrl, 'http://localhost:8081').get(

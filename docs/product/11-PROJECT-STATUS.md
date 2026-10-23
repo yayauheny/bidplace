@@ -133,3 +133,14 @@ Backend/API/media contract не изменены; детали проверок 
 очереди. Continue/step selector используют то же правило; после retry/cancel
 переход разрешён. Lifecycle/media browser owners проверяют ошибку, retry и отмену;
 серверный контракт и возможность сохранить частичный draft не менялись.
+
+## 2026-10-24 — Mobile analytics UI
+
+**Partial (local API/mobile/adaptive acceptance and builds passed; CI/hardware pending).**
+`AdminAnalyticsScreen` replaces legacy overview consumption with the protected
+foundation API: browsers/sessions/views/all registrations, proven 30-day cohort,
+first-publication growth and current moderation. Existing read contract accepts
+opt-in activity fields; no persistence/dependency changes. Server collection
+permission and client build collector are distinct; unknown history/coverage and
+immature/empty cohorts stay explicit. PostgreSQL19 owner tests, period11 and client49
+pass. Mobile screenshots/review and final checks: [audit](../audits/current/2026-10-24-ADMIN-ANALYTICS-UI.md).

@@ -71,6 +71,7 @@ export class AdminController {
       parseQuery(analyticsFoundationQuerySchema, query),
       this.clock.now(),
       this.env.APP_ENV,
+      this.env.ANALYTICS_WEB_ENABLED,
     );
   }
 
