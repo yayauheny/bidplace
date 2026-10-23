@@ -243,7 +243,13 @@ export function AdminModerationDetail({
       ));
   const actions = (
     <View
-      style={{ gap: designTokens.space.x2, paddingTop: designTokens.space.x2, width: '100%', maxWidth: designTokens.layout.actionColumnMax, alignSelf: 'flex-end' }}
+      style={{
+        gap: designTokens.space.x2,
+        paddingTop: designTokens.space.x2,
+        width: '100%',
+        maxWidth: designTokens.layout.actionColumnMax,
+        alignSelf: 'flex-end',
+      }}
     >
       {canDecide ? (
         <PrimaryButton
@@ -364,200 +370,215 @@ export function AdminModerationDetail({
           label="Просмотр заявки"
           panelId="moderation-detail"
         />
-        {tab === 'preview' ? (
-          <>
-            <FormPageColumns
-              layout="adaptive"
-              sidebar={<ReviewMedia detail={detail} />}
-            >
-              <View style={{ gap: designTokens.space.sectionGap }}>
-                {detail.kind === 'products' && detail.data.reviewRevision ? (
-                  <FormSection title="Каталог">
-                    <AppText role="body">
-                      Категория:{' '}
-                      {detail.data.reviewRevision.selection.category?.name ??
-                        'Не выбрана'}
-                    </AppText>
-                    <AppText role="bodySmall">
-                      Материалы:{' '}
-                      {detail.data.reviewRevision.selection.materialTerms
-                        .map((term) => term.name)
-                        .join(', ') || 'Не указаны'}
-                    </AppText>
-                    <AppText role="bodySmall">
-                      Техники:{' '}
-                      {detail.data.reviewRevision.selection.techniqueTerms
-                        .map((term) => term.name)
-                        .join(', ') || 'Не указаны'}
-                    </AppText>
-                  </FormSection>
-                ) : null}
-                {detail.kind === 'authors' ? (
-                  <AuthorAchievements detail={detail.data} />
-                ) : null}
-                <FormSection title="Сведения">
-                  {fields.map((field) => (
-                    <View
-                      key={field.key}
-                      style={{ gap: designTokens.space.x1 }}
-                    >
-                      <AppText role="label">{field.label}</AppText>
-                      <AppText role="body">{field.after}</AppText>
-                    </View>
-                  ))}
-                </FormSection>
-                {detail.kind === 'products' && detail.data.reviewRevision ? (
-                  <>
-                    <AdminWorkCatalogProposals
-                      proposals={detail.data.reviewRevision.selection.proposals}
-                      onChanged={() => void refresh()}
-                    />
-                    <FormSection title="Этапы создания">
-                      {detail.data.reviewRevision.story.blocks.length ? (
-                        detail.data.reviewRevision.story.blocks.map((block) => (
-                          <View key={block.id}>
-                            {block.type === 'IMAGE' ? (
-                              <PrivateStoryImage
-                                productId={id}
-                                mediaAssetId={block.mediaAssetId}
-                                sessionEpoch={currentAuthEpoch(queryClient)}
-                                label={block.altText ?? 'Этап создания'}
-                                style={{
-                                  width: '100%',
-                                  aspectRatio:
-                                    designTokens.ratio.productPortrait,
-                                }}
-                              />
-                            ) : (
-                              <AppText role="body">{block.text}</AppText>
-                            )}
-                          </View>
-                        ))
-                      ) : (
-                        <AppText role="bodySmall">
-                          Дополнительные этапы не указаны.
-                        </AppText>
-                      )}
-                    </FormSection>
-                  </>
-                ) : null}
-                {entity.lastModerationReason ? (
-                  <FormSection title="Предыдущее решение">
-                    <AppText role="body">{entity.lastModerationReason}</AppText>
-                  </FormSection>
-                ) : null}
-                {entity.parentStatus === 'APPROVED' &&
-                !entity.hasBlockingListing ? (
-                  <SecondaryButton
-                    label={
-                      detail.kind === 'products'
-                        ? 'Скрыть работу'
-                        : 'Приостановить автора'
-                    }
-                    onPress={() =>
-                      open(
-                        detail.kind === 'products' ? 'ARCHIVED' : 'SUSPENDED',
-                      )
-                    }
-                  />
-                ) : null}
-              </View>
-            </FormPageColumns>
-          </>
-        ) : tab === 'changes' ? (
-          <>
-            <AppText role="bodySmall" tone="secondary">
-              {published
-                ? 'Сравнение с опубликованной редакцией'
-                : 'Опубликованный снимок отсутствует. Показана новая редакция; исторические данные не восстанавливаются.'}
-            </AppText>
-            <TextButton
-              label={showAll ? 'Только изменения' : 'Показать все поля'}
-              onPress={() => setShowAll(!showAll)}
-            />
-            {fields
-              .filter((field) => showAll || field.changed)
-              .map((field) => (
-                <FormSection key={field.key} title={field.label}>
-                  {published ? (
-                    <AppText role="bodySmall" tone="secondary">
-                      Было: {field.before}
-                    </AppText>
-                  ) : null}
-                  <AppText role="body">
-                    {published ? 'Стало: ' : ''}
-                    {field.after}
-                  </AppText>
-                </FormSection>
-              ))}
-            {fields.every((field) => !field.changed) ? (
-              <AppText role="bodySmall">Текстовые поля не изменились.</AppText>
-            ) : null}
-            <StoryComparison detail={detail} showAll={showAll} />
-            <CatalogComparison detail={detail} showAll={showAll} />
-            <PhotoComparison detail={detail} />
-          </>
-        ) : (
-          <FormSection title="История модерации">
-            {history.isPending || history.isError ? (
-              <InfrastructurePageStatus
-                status={history.isError ? 'error' : 'loading'}
-                onRetry={() => void history.refetch()}
-              />
-            ) : history.data?.pages.every(
-                (page) => page.events.length === 0,
-              ) ? (
-              <AppText role="body">История решений отсутствует.</AppText>
-            ) : (
-              history.data?.pages
-                .flatMap((page) => page.events)
-                .map((event) => (
-                  <View key={event.id} style={{ gap: designTokens.space.x1 }}>
-                    <AppText role="label">
-                      {event.action === 'SUBMITTED'
-                        ? 'Редакция отправлена'
-                        : event.action === 'DECISION'
-                          ? 'Решение администратора'
-                          : event.action === 'PUBLICATION_COMPLETED'
-                            ? event.oldStatus === 'ARCHIVED' ||
-                              event.oldStatus === 'SUSPENDED'
-                              ? 'Публикация восстановлена'
-                              : 'Публикация завершена'
-                            : 'Историческое событие'}
-                    </AppText>
-                    <AppText role="caption">
-                      {new Date(event.createdAt).toLocaleString('ru-RU')}
-                    </AppText>
-                    {event.newStatus ? (
+        <View
+          nativeID="moderation-detail"
+          role="tabpanel"
+          aria-labelledby={`moderation-detail-${tab}`}
+          style={{ gap: designTokens.space.sectionGap }}
+        >
+          {tab === 'preview' ? (
+            <>
+              <FormPageColumns
+                layout="adaptive"
+                sidebar={<ReviewMedia detail={detail} />}
+              >
+                <View style={{ gap: designTokens.space.sectionGap }}>
+                  {detail.kind === 'products' && detail.data.reviewRevision ? (
+                    <FormSection title="Каталог">
+                      <AppText role="body">
+                        Категория:{' '}
+                        {detail.data.reviewRevision.selection.category?.name ??
+                          'Не выбрана'}
+                      </AppText>
                       <AppText role="bodySmall">
-                        {presentEnum(
-                          event.newStatus,
-                          detail.kind === 'products'
-                            ? productStatusLabels
-                            : sellerStatusLabels,
-                          'Статус неизвестен',
+                        Материалы:{' '}
+                        {detail.data.reviewRevision.selection.materialTerms
+                          .map((term) => term.name)
+                          .join(', ') || 'Не указаны'}
+                      </AppText>
+                      <AppText role="bodySmall">
+                        Техники:{' '}
+                        {detail.data.reviewRevision.selection.techniqueTerms
+                          .map((term) => term.name)
+                          .join(', ') || 'Не указаны'}
+                      </AppText>
+                    </FormSection>
+                  ) : null}
+                  {detail.kind === 'authors' ? (
+                    <AuthorAchievements detail={detail.data} />
+                  ) : null}
+                  <FormSection title="Сведения">
+                    {fields.map((field) => (
+                      <View
+                        key={field.key}
+                        style={{ gap: designTokens.space.x1 }}
+                      >
+                        <AppText role="label">{field.label}</AppText>
+                        <AppText role="body">{field.after}</AppText>
+                      </View>
+                    ))}
+                  </FormSection>
+                  {detail.kind === 'products' && detail.data.reviewRevision ? (
+                    <>
+                      <AdminWorkCatalogProposals
+                        proposals={
+                          detail.data.reviewRevision.selection.proposals
+                        }
+                        onChanged={() => void refresh()}
+                      />
+                      <FormSection title="Этапы создания">
+                        {detail.data.reviewRevision.story.blocks.length ? (
+                          detail.data.reviewRevision.story.blocks.map(
+                            (block) => (
+                              <View key={block.id}>
+                                {block.type === 'IMAGE' ? (
+                                  <PrivateStoryImage
+                                    productId={id}
+                                    mediaAssetId={block.mediaAssetId}
+                                    sessionEpoch={currentAuthEpoch(queryClient)}
+                                    label={block.altText ?? 'Этап создания'}
+                                    style={{
+                                      width: '100%',
+                                      aspectRatio:
+                                        designTokens.ratio.productPortrait,
+                                    }}
+                                  />
+                                ) : (
+                                  <AppText role="body">{block.text}</AppText>
+                                )}
+                              </View>
+                            ),
+                          )
+                        ) : (
+                          <AppText role="bodySmall">
+                            Дополнительные этапы не указаны.
+                          </AppText>
                         )}
+                      </FormSection>
+                    </>
+                  ) : null}
+                  {entity.lastModerationReason ? (
+                    <FormSection title="Предыдущее решение">
+                      <AppText role="body">
+                        {entity.lastModerationReason}
+                      </AppText>
+                    </FormSection>
+                  ) : null}
+                  {entity.parentStatus === 'APPROVED' &&
+                  !entity.hasBlockingListing ? (
+                    <SecondaryButton
+                      label={
+                        detail.kind === 'products'
+                          ? 'Скрыть работу'
+                          : 'Приостановить автора'
+                      }
+                      onPress={() =>
+                        open(
+                          detail.kind === 'products' ? 'ARCHIVED' : 'SUSPENDED',
+                        )
+                      }
+                    />
+                  ) : null}
+                </View>
+              </FormPageColumns>
+            </>
+          ) : tab === 'changes' ? (
+            <>
+              <AppText role="bodySmall" tone="secondary">
+                {published
+                  ? 'Сравнение с опубликованной редакцией'
+                  : 'Опубликованный снимок отсутствует. Показана новая редакция; исторические данные не восстанавливаются.'}
+              </AppText>
+              <TextButton
+                label={showAll ? 'Только изменения' : 'Показать все поля'}
+                onPress={() => setShowAll(!showAll)}
+              />
+              {fields
+                .filter((field) => showAll || field.changed)
+                .map((field) => (
+                  <FormSection key={field.key} title={field.label}>
+                    {published ? (
+                      <AppText role="bodySmall" tone="secondary">
+                        Было: {field.before}
                       </AppText>
                     ) : null}
-                    <AppText role="caption" tone="secondary">
-                      Проверяющий: {event.actorUserId ?? 'неизвестен'} ·
-                      Редакция: {event.revisionId ?? 'неизвестна'}
+                    <AppText role="body">
+                      {published ? 'Стало: ' : ''}
+                      {field.after}
                     </AppText>
-                    {event.reason ? (
-                      <AppText role="body">{event.reason}</AppText>
-                    ) : null}
-                  </View>
-                ))
-            )}
-            {history.hasNextPage ? (
-              <SecondaryButton
-                label="Ещё события"
-                loading={history.isFetchingNextPage}
-                onPress={() => void history.fetchNextPage()}
-              />
-            ) : null}
-          </FormSection>
-        )}
+                  </FormSection>
+                ))}
+              {fields.every((field) => !field.changed) ? (
+                <AppText role="bodySmall">
+                  Текстовые поля не изменились.
+                </AppText>
+              ) : null}
+              <StoryComparison detail={detail} showAll={showAll} />
+              <CatalogComparison detail={detail} showAll={showAll} />
+              <PhotoComparison detail={detail} />
+            </>
+          ) : (
+            <FormSection title="История модерации">
+              {history.isPending || history.isError ? (
+                <InfrastructurePageStatus
+                  status={history.isError ? 'error' : 'loading'}
+                  onRetry={() => void history.refetch()}
+                />
+              ) : history.data?.pages.every(
+                  (page) => page.events.length === 0,
+                ) ? (
+                <AppText role="body">История решений отсутствует.</AppText>
+              ) : (
+                history.data?.pages
+                  .flatMap((page) => page.events)
+                  .map((event) => (
+                    <View key={event.id} style={{ gap: designTokens.space.x1 }}>
+                      <AppText role="label">
+                        {event.action === 'SUBMITTED'
+                          ? 'Редакция отправлена'
+                          : event.action === 'DECISION'
+                            ? 'Решение администратора'
+                            : event.action === 'PUBLICATION_COMPLETED'
+                              ? event.oldStatus === 'ARCHIVED' ||
+                                event.oldStatus === 'SUSPENDED'
+                                ? 'Публикация восстановлена'
+                                : 'Публикация завершена'
+                              : 'Историческое событие'}
+                      </AppText>
+                      <AppText role="caption">
+                        {new Date(event.createdAt).toLocaleString('ru-RU')}
+                      </AppText>
+                      {event.newStatus ? (
+                        <AppText role="bodySmall">
+                          {presentEnum(
+                            event.newStatus,
+                            detail.kind === 'products'
+                              ? productStatusLabels
+                              : sellerStatusLabels,
+                            'Статус неизвестен',
+                          )}
+                        </AppText>
+                      ) : null}
+                      <AppText role="caption" tone="secondary">
+                        Проверяющий: {event.actorUserId ?? 'неизвестен'} ·
+                        Редакция: {event.revisionId ?? 'неизвестна'}
+                      </AppText>
+                      {event.reason ? (
+                        <AppText role="body">{event.reason}</AppText>
+                      ) : null}
+                    </View>
+                  ))
+              )}
+              {history.hasNextPage ? (
+                <SecondaryButton
+                  label="Ещё события"
+                  loading={history.isFetchingNextPage}
+                  onPress={() => void history.fetchNextPage()}
+                />
+              ) : null}
+            </FormSection>
+          )}
+        </View>
         {nextError ? (
           <AppText role="bodySmall" tone="danger">
             Не удалось загрузить следующую заявку. Повторите переход или

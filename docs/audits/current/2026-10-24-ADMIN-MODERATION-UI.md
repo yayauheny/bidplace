@@ -87,3 +87,8 @@ Exact line/services/contracts/dependencies/compatibility comparison belongs to P
 Final independent adaptive review found no substantial new issues (source and Chromium768/1440; reviewer did not run runtime/WebKit/Figma parity). Queue pagination errors now preserve cards and expose retry; owner regression passes14 tests. Full graph typecheck/lint pass. API unit464, contracts47, API client49, mobile1024, database1 and config8 pass. Integration241 pass/29 skipped (existing S3-dependent suite); ops31 and E2E fence pass. Repository env-path tests were run separately without the synthetic env override, which otherwise changes their expected resolution; production config was not read. Adaptive follow-up4/4 Chromium/WebKit passed.
 
 Committed screenshot evidence: [mobile queue](../evidence/2026-10-24-admin-moderation/queue-chromium-390.png), [Work](../evidence/2026-10-24-admin-moderation/work-mobile-chromium.png), [changes](../evidence/2026-10-24-admin-moderation/changes-mobile-chromium.png), [history](../evidence/2026-10-24-admin-moderation/history-mobile-chromium.png), [author](../evidence/2026-10-24-admin-moderation/author-chromium-390.png), [desktop](../evidence/2026-10-24-admin-moderation/work-adaptive-chromium-1440.png).
+
+Final accessibility review found missing tab-panel associations. Detail now links
+its labelled panel; queue selectors use the existing visual rail with explicit
+selection-toolbar semantics and pressed state. No new navigation or layout.
+Shared owner units and browser DOM/keyboard acceptance verify these associations.

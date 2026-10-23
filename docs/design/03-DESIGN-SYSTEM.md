@@ -901,3 +901,8 @@ public default is unchanged. `FormPageColumns layout="adaptive"` derives two pan
 from container width using existing cardWidth/sectionGap; default stays stacked.
 New admin compositions use these controls, not a second design system; exact
 new admin/tablet/desktop Figma parity is not claimed.
+
+FigmaTabs `selection` reuses the same visual rail for filter toolbars: pressed buttons,
+no tab-panel references. Default tabs retain their linked panel/keyboard behavior.
+Moderation detail owns its labelled tabpanel; queue selectors retain the scrolling
+FlatList header without inventing empty panels.

@@ -218,6 +218,9 @@ test('admin reviews a pending product revision without exposing its gallery publ
   const evidence = '/private/tmp/bidplace-admin-ui-evidence';
   mkdirSync(evidence,{recursive:true});
   await page.screenshot({path:`${evidence}/work-mobile-${test.info().project.name}.png`});
+  await page.getByRole('tab',{name:'Просмотр',exact:true}).focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(page.getByRole('tabpanel',{name:'Изменения',exact:true})).toBeVisible();
   await page.getByRole('tab',{name:'Изменения',exact:true}).click();
   await expect(page.getByText(`Было: ${fixture.publishedTitle}`,{exact:true})).toBeVisible();
   await page.screenshot({path:`${evidence}/changes-mobile-${test.info().project.name}.png`});
@@ -343,6 +346,9 @@ test('mobile queue navigation preserves filters and supports compact states', as
   try {
     await page.setViewportSize({width:390,height:844});
     await page.goto(`/admin?q=${encodeURIComponent(fixture.pendingTitle)}`);
+    const choices=page.getByRole('toolbar',{name:'Раздел модерации'});
+    await expect(choices.getByRole('button',{name:'Работы',exact:true})).toHaveAttribute('aria-pressed','true');
+    await expect(choices.locator('[aria-controls]')).toHaveCount(0);
     const card=page.getByRole('link',{name:`Проверить: ${fixture.pendingTitle}`});
     await expect(card).toBeVisible();expect(detailRequests).toHaveLength(0);
     for(const width of [320,360,390,430]) {

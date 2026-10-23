@@ -142,3 +142,8 @@ Backend/API/media contract не изменены; детали проверок 
 очереди. Continue/step selector используют то же правило; после retry/cancel
 переход разрешён. Lifecycle/media browser owners проверяют ошибку, retry и отмену;
 серверный контракт и возможность сохранить частичный draft не менялись.
+
+Moderation UI accessibility follow-up: labelled detail tabpanel and queue selection
+toolbars replace dangling references; web keyboard/DOM acceptance4/4 passes. Native
+selected-state branches are covered by owner units; physical screen reader remains
+Needs verification.

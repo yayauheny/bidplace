@@ -95,6 +95,7 @@ export function AdminModerationScreen() {
       <PageHeader title="Модерация" description="Проверка работ и авторов" />
       <AccountLogoutButton />
       <FigmaTabs
+        selection
         tabs={tabs}
         value={section}
         onChange={(value) => {
@@ -113,6 +114,7 @@ export function AdminModerationScreen() {
             error={searchError ? 'Поиск не длиннее 200 символов' : undefined}
           />
           <FigmaTabs
+            selection
             tabs={filters}
             value={filter}
             onChange={(value) => {
