@@ -43,7 +43,9 @@ async function uploadFirstProductImage(page: Page) {
   const chooserPromise = page.waitForEvent('filechooser');
   await page.getByRole('button', { name: 'Добавить изображения' }).click();
   await (await chooserPromise).setFiles('e2e/fixtures/profile-photo.png');
-  await expect(page.getByText('1/10 изображений')).toBeVisible();
+  await expect(
+    page.getByRole('img', { name: 'Изображение предмета 1' }),
+  ).toBeVisible();
 }
 
 async function createEditableProduct(page: Page, title: string) {
@@ -131,25 +133,50 @@ test.describe('Work catalog browser round-trip', () => {
         page.getByRole('button', { name: 'Удалить Авторский материал E2E' }),
       ).toBeVisible();
       await page.getByRole('button', { name: 'Применить' }).click();
-      await page.getByRole('button', { name: 'Сохранить и продолжить' }).click();
-      await expect(page.getByRole('button', { name: 'Добавить изображения' })).toBeVisible();
+      await page
+        .getByRole('button', { name: 'Сохранить и продолжить' })
+        .click();
+      await expect(
+        page.getByRole('button', { name: 'Добавить изображения' }),
+      ).toBeVisible();
       await uploadFirstProductImage(page);
       await page.getByRole('button', { name: '4. Проверка' }).click();
-      await expect(page.getByText(`Материалы: ${materialName}, Авторский материал E2E`, { exact: true })).toBeVisible();
-      await expect(page.getByText('Категория: E2E art', { exact: true })).toBeVisible();
+      await expect(
+        page.getByText(`Материалы: ${materialName}, Авторский материал E2E`, {
+          exact: true,
+        }),
+      ).toBeVisible();
+      await expect(
+        page.getByText('Категория: E2E art', { exact: true }),
+      ).toBeVisible();
       for (const width of [320, 390, 440, 767, 768, 1023, 1024, 1440, 1800]) {
         await page.setViewportSize({ width, height: 874 });
-        await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), { message: `Review has no horizontal overflow at ${width}px` }).toBe(true);
-        const submit = page.getByRole('button', { name: 'Отправить на модерацию', exact: true });
+        await expect
+          .poll(
+            () =>
+              page.evaluate(
+                () => document.documentElement.scrollWidth <= innerWidth,
+              ),
+            { message: `Review has no horizontal overflow at ${width}px` },
+          )
+          .toBe(true);
+        const submit = page.getByRole('button', {
+          name: 'Отправить на модерацию',
+          exact: true,
+        });
         await submit.scrollIntoViewIfNeeded();
         await expect(submit).toBeInViewport();
         if (width === 390 || width === 1440) {
           const directory = resolve(e2eEvidenceDir, 'ui-review-product');
           await mkdir(directory, { recursive: true });
-          await page.screenshot({ path: resolve(directory, `${test.info().project.name}-${width}.png`) });
+          await page.screenshot({
+            path: resolve(
+              directory,
+              `${test.info().project.name}-${width}.png`,
+            ),
+          });
         }
       }
-
     } finally {
       await context.close();
     }
@@ -184,7 +211,7 @@ test.describe('product creation wizard navigation', () => {
       await expect(page).toHaveURL(/flow=creation&step=2$/);
 
       await page
-        .getByRole('button', { name: 'Продолжить к истории создания' })
+        .getByRole('button', { name: 'Продолжить', exact: true })
         .click();
       await expect(page).toHaveURL(/flow=creation&step=3$/);
       await page.getByRole('button', { name: 'Добавить текст' }).click();
@@ -263,7 +290,7 @@ test.describe('product creation wizard navigation', () => {
       const product = await createDraftThroughStepOne(page);
       await uploadFirstProductImage(page);
       await page
-        .getByRole('button', { name: 'Продолжить к истории создания' })
+        .getByRole('button', { name: 'Продолжить', exact: true })
         .click();
       // The story step has no step tabs (Figma 7008:27134): go back to the
       // images step first, then open step 1 from its tab list.
@@ -391,7 +418,7 @@ test.describe('product creation wizard navigation', () => {
       const product = await createDraftThroughStepOne(page);
       await uploadFirstProductImage(page);
       await page
-        .getByRole('button', { name: 'Продолжить к истории создания' })
+        .getByRole('button', { name: 'Продолжить', exact: true })
         .click();
       // The story step has no step tabs (Figma 7008:27134): go back to the
       // images step first, then open step 1 from its tab list.
@@ -485,9 +512,15 @@ test.describe('product creation wizard navigation', () => {
         title: currentTitle,
       });
       await expect(page).toHaveURL(/flow=creation&step=4$/);
-      await expect(page.getByText(`Название: ${currentTitle}`, { exact: true })).toBeVisible();
-      await expect(page.getByText('Категория: E2E art', { exact: true })).toBeVisible();
-      await expect(page.getByText('Уникальность: One', { exact: true })).toBeVisible();
+      await expect(
+        page.getByText(`Название: ${currentTitle}`, { exact: true }),
+      ).toBeVisible();
+      await expect(
+        page.getByText('Категория: E2E art', { exact: true }),
+      ).toBeVisible();
+      await expect(
+        page.getByText('Уникальность: One', { exact: true }),
+      ).toBeVisible();
 
       const writes: Array<{ method: string; path: string; body?: unknown }> =
         [];
@@ -663,4 +696,150 @@ test.describe('product creation wizard navigation', () => {
       await context.close();
     }
   });
+});
+
+test('photo grid keeps Figma geometry, actions and continuation across viewport sizes', async ({
+  page,
+}) => {
+  const now = '2026-10-23T00:00:00.000Z';
+  const workId = '11111111-1111-4111-8111-111111111111';
+  const categoryId = '33333333-3333-4333-8333-333333333333';
+  const fixture = {
+    product: {
+      id: workId,
+      publicId: 'draftwork01',
+      sellerProfileId: '44444444-4444-4444-8444-444444444444',
+      categoryId,
+      title: 'Фотографии работы',
+      story: null,
+      technique: null,
+      materials: null,
+      dimensions: null,
+      weight: null,
+      year: null,
+      condition: null,
+      uniqueness: null,
+      provenance: null,
+      city: null,
+      packaging: null,
+      deliveryInfo: null,
+      publishedAt: null,
+      status: 'DRAFT',
+      images: Array.from({ length: 5 }, (_, index) => ({
+        id: `55555555-5555-4555-8555-55555555555${index}`,
+        position: index,
+        url: `/api/images/55555555-5555-4555-8555-55555555555${index}`,
+        mimeType: 'image/jpeg',
+        byteLength: 100,
+        checksum: 'a'.repeat(64),
+        width: 600,
+        height: 800,
+      })),
+      createdAt: now,
+      updatedAt: now,
+    },
+    editingRevision: {
+      id: '22222222-2222-4222-8222-222222222222',
+      version: 1,
+      status: 'DRAFT',
+      updatedAt: now,
+    },
+    creationIntro: null,
+    creationSteps: [],
+    lastModerationReason: null,
+    story: { blocks: [], storyToken: 0 },
+    selection: {
+      category: null,
+      materialTermIds: [],
+      techniqueTermIds: [],
+      materialTerms: [],
+      techniqueTerms: [],
+      proposals: [],
+    },
+  };
+  await page.route('**/api/**', async (route) => {
+    const path = new URL(route.request().url()).pathname;
+    if (path === '/api/auth/me')
+      return route.fulfill({
+        json: {
+          user: {
+            id: workId,
+            email: 'visual@bidplace.test',
+            phone: null,
+            emailVerifiedAt: now,
+            phoneVerifiedAt: null,
+            acceptedRulesVersion: null,
+            displayName: 'Автор',
+            slug: 'visual-author',
+            role: 'user',
+            status: 'active',
+            createdAt: now,
+            updatedAt: now,
+          },
+        },
+      });
+    if (path === `/api/seller/products/${workId}`)
+      return route.fulfill({ json: fixture });
+    if (path === '/api/categories')
+      return route.fulfill({ json: { categories: [] } });
+    if (path.startsWith('/api/images/'))
+      return route.fulfill({
+        path: `e2e/fixtures/portfolio-photo-${Number(path.at(-1)) + 1}.png`,
+        contentType: 'image/png',
+      });
+    return route.fulfill({
+      status: 404,
+      json: { code: 'not_found', message: 'Not found' },
+    });
+  });
+  await page.setViewportSize({ width: 390, height: 824 });
+  await page.goto(`/products/${workId}?flow=creation&step=2`);
+  const image = page.getByRole('img', {
+    name: 'Изображение предмета 1',
+    exact: true,
+  });
+  await expect(image).toBeVisible();
+  const imageBox = await image.boundingBox();
+  expect(imageBox?.width).toBeCloseTo(177, 0);
+  expect(imageBox?.height).toBeCloseTo(236, 0);
+  expect(imageBox?.y).toBeCloseTo(114.216, 0);
+  const second = await page.getByRole('img', { name: 'Изображение предмета 2', exact: true }).boundingBox();
+  expect((second?.x ?? 0) - (imageBox?.x ?? 0) - (imageBox?.width ?? 0)).toBeCloseTo(12, 0);
+  expect((await page.getByRole('button', { name: 'Продолжить', exact: true }).boundingBox())?.height).toBeCloseTo(55, 0);
+  await expect(
+    page.getByRole('button', { name: 'Продолжить', exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Удалить фото', exact: true }),
+  ).toHaveCount(5);
+  await expect(page.getByTestId('site-footer')).toHaveCount(0);
+  await mkdir(resolve(e2eEvidenceDir, 'portfolio-design'), { recursive: true });
+  for (const width of [320, 390, 414, 440, 1024, 1440]) {
+    await page.setViewportSize({ width, height: width === 440 ? 480 : 824 });
+    await page.getByTestId('form-page').evaluate(node => { node.scrollTop = 0; });
+    await expect(
+      page.getByRole('button', { name: 'Продолжить', exact: true }),
+    ).toBeVisible();
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () => document.documentElement.scrollWidth <= window.innerWidth,
+        ),
+      )
+      .toBe(true);
+    await page.screenshot({
+      path: resolve(
+        e2eEvidenceDir,
+        'portfolio-design',
+        `photos-${test.info().project.name}-${width}.png`,
+      ),
+    });
+    const add = page.getByRole('button', { name: 'Добавить изображения', exact: true });
+    await add.scrollIntoViewIfNeeded();
+    const lastTile = await add.boundingBox();
+    const continueAction = await page.getByRole('button', { name: 'Продолжить', exact: true }).boundingBox();
+    expect(lastTile).not.toBeNull();
+    // Browser scrollTop rounds to CSS pixels while 3:4 flex tiles retain fractional bounds.
+    expect(Math.round((lastTile?.y ?? 0) + (lastTile?.height ?? 0))).toBeLessThanOrEqual(Math.round(continueAction?.y ?? 0));
+  }
 });

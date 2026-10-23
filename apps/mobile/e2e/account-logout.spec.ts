@@ -47,10 +47,10 @@ test('author without a profile closes the intro and then logs out', async ({ bro
   try {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/profile?intro=1');
-    const intro = page.getByRole('dialog', { name: 'Стать автором на Bidplace' });
+    const intro = page.getByRole('dialog', { name: 'Стать автором' });
     await expect(intro.getByRole('button', { name: 'Выйти' })).toHaveCount(0);
     await intro.getByRole('button', { name: 'Закрыть окно' }).click();
-    await expect(page).toHaveURL(/\/profile$/);
+    await expect(page).toHaveURL(/\/profile\?step=photo$/);
     await expect(intro).toHaveCount(0);
     await page.getByRole('button', { name: 'Выйти' }).click();
     await expect(page).toHaveURL(/\/$/);

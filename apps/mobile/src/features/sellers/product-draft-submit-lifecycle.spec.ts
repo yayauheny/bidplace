@@ -334,6 +334,7 @@ describe('product draft submit lifecycle', () => {
         await Promise.resolve();
       });
       await until(view.container, () => Boolean(button(view.container, 'Повторить загрузку')), 'retry');
+      await until(view.container, () => Boolean(view.container.textContent?.includes('Загрузка заняла слишком много времени')), 'timeout feedback');
       expect(view.container.textContent).toContain('Загрузка заняла слишком много времени');
       act(() => button(view.container, 'Повторить загрузку')?.click());
       await until(view.container, () => harness.addImages.mock.calls.length === 2, 'second upload');
@@ -350,12 +351,12 @@ describe('product draft submit lifecycle', () => {
       await until(view.container, () => Boolean(button(view.container, 'Добавить изображения')), 'images');
       act(() => button(view.container, 'Добавить изображения')?.click());
       await until(view.container, () => harness.addImages.mock.calls.length === 1, 'upload');
-      expect(button(view.container, 'Назад к описанию')?.disabled).toBe(true);
+      expect(button(view.container, 'Назад')?.disabled).toBe(true);
       harness.setParams.mockClear();
-      act(() => button(view.container, 'Назад к описанию')?.click());
+      act(() => button(view.container, 'Назад')?.click());
       expect(harness.setParams).not.toHaveBeenCalled();
       await act(async () => { finish(); await Promise.resolve(); });
-      await until(view.container, () => !button(view.container, 'Назад к описанию')?.disabled, 'unlock');
+      await until(view.container, () => !button(view.container, 'Назад')?.disabled, 'unlock');
     } finally { view.unmount(); }
   });
 
@@ -690,7 +691,7 @@ describe('product draft submit lifecycle', () => {
       'first upload',
     );
     expect(read).toHaveBeenCalledTimes(1);
-    expect(view.container.textContent).toContain('Загрузка 1 из 2');
+    expect(view.container.textContent).toContain('Загрузка фото…');
     await act(async () => {
       finishFirst();
       await Promise.resolve();
@@ -700,7 +701,7 @@ describe('product draft submit lifecycle', () => {
       () => Boolean(button(view.container, 'Повторить загрузку')),
       'second failed',
     );
-    expect(view.container.textContent).toContain('Изображение 1: загружено');
+    expect(view.container.textContent).not.toContain('Изображение 1: загружено');
     expect(harness.getProduct.mock.calls.length).toBeGreaterThan(1);
     const secondKey = harness.addImages.mock.calls[1]?.[2];
     act(() => button(view.container, 'Повторить загрузку')?.click());

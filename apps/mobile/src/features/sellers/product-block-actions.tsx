@@ -15,6 +15,7 @@ export function ProductBlockActions({
   onMove,
   onDelete,
   details,
+  presentation = 'menu',
 }: {
   children: ReactNode;
   kind: 'text' | 'image';
@@ -25,6 +26,7 @@ export function ProductBlockActions({
   onMove: (direction: -1 | 1) => void;
   onDelete: () => void;
   details?: ReactNode;
+  presentation?: 'menu' | 'mediaTile';
 }) {
   const [open, setOpen] = useState(false);
   const run = (action: () => void) => {
@@ -39,6 +41,28 @@ export function ProductBlockActions({
     >
       <View style={{ position: 'relative' }}>
         {children}
+        {editable && presentation === 'mediaTile' ? (
+          <View
+            style={{
+              position: 'absolute',
+              // Center the 38px visual inside native hit bounds, retaining its 8px inset.
+              bottom: designTokens.space.x2 - (designTokens.size.touch - 38) / 2,
+              right: designTokens.space.x2 - (designTokens.size.touch - 38) / 2,
+              width: designTokens.size.touch,
+              height: designTokens.size.touch,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <FigmaIconButton
+              icon="delete-02"
+              label="Удалить фото"
+              surface="destructive"
+              disabled={disabled}
+              onPress={() => run(onDelete)}
+            />
+          </View>
+        ) : null}
         {editable ? (
           <View
             {...(Platform.OS === 'web'
@@ -87,12 +111,14 @@ export function ProductBlockActions({
               disabled={disabled || last}
               onPress={() => run(() => onMove(1))}
             />
-            <SecondaryButton
-              label="Удалить"
-              icon="delete-02"
-              disabled={disabled}
-              onPress={() => run(onDelete)}
-            />
+            {presentation === 'menu' ? (
+              <SecondaryButton
+                label="Удалить"
+                icon="delete-02"
+                disabled={disabled}
+                onPress={() => run(onDelete)}
+              />
+            ) : null}
           </View>
           {details}
         </View>

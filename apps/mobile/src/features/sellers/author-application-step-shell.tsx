@@ -1,5 +1,5 @@
 import { type ReactNode } from 'react';
-import { View } from 'react-native';
+import { Platform, View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
@@ -19,6 +19,8 @@ export function AuthorApplicationStepShell({
   onBack,
   backDisabled = false,
   headerToBodyGap = chrome.headerToBodyStep,
+  headerBlockGap = chrome.headerBlockGap,
+  titleRole = 'mediaSheetTitle',
   title,
   subtitle,
   children,
@@ -30,36 +32,51 @@ export function AuthorApplicationStepShell({
   onBack?: () => void;
   backDisabled?: boolean;
   headerToBodyGap?: number;
+  headerBlockGap?: number;
+  titleRole?: 'workTitle' | 'mediaSheetTitle';
   title: string;
   subtitle?: string;
   children: ReactNode;
   footer?: ReactNode;
 }) {
   const palette = useAppTheme();
-  const showBack = profileStep > 1;
+  const showBack = profileStep > 0;
 
   return (
     <View style={{ gap: headerToBodyGap }}>
-      <View style={{ gap: chrome.headerBlockGap }}>
+      <View style={{ gap: headerBlockGap }}>
         <View
           style={{
-            minHeight: designTokens.size.touch,
+            // Native hit testing requires the parent to include the full control.
+            height:
+              Platform.OS === 'web'
+                ? chrome.chromeFrame
+                : designTokens.size.touch,
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',
           }}
         >
           <View
-            style={{ width: designTokens.size.touch, alignItems: 'center' }}
+            style={{
+              width: designTokens.size.touch,
+              height: designTokens.size.touch,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
           >
             {showBack ? (
               <BackButton
+                surface="plain"
                 disabled={backDisabled || onBack === undefined}
                 onPress={() => onBack?.()}
               />
             ) : null}
           </View>
-          <SellerProfileCreationStepSelector profileStep={profileStep} />
+          <SellerProfileCreationStepSelector
+            profileStep={profileStep + 1}
+            total={5}
+          />
           <MotionPressable
             accessibilityRole="button"
             accessibilityLabel="Закрыть"
@@ -83,7 +100,7 @@ export function AuthorApplicationStepShell({
         </View>
         <View style={{ gap: chrome.titleStackGap }}>
           <AppText
-            role="mediaSheetTitle"
+            role={titleRole}
             tone="strong"
             accessibilityRole="header"
             style={{ textAlign: 'center' }}

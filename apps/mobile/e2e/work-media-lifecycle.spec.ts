@@ -203,8 +203,8 @@ test('Work waits for CDN media, publishes revisions atomically, loads FULL only 
       .getByRole('button', { name: 'Повторить загрузку', exact: true })
       .click();
     await expect(
-      page.getByText('2/10 изображений', { exact: true }),
-    ).toBeVisible();
+      page.getByRole('img', { name: /^Изображение предмета \d+$/ }),
+    ).toHaveCount(2);
     expect(
       await prisma.productImage.count({ where: { productId: work.id } }),
     ).toBe(2);
@@ -392,27 +392,28 @@ test('Work waits for CDN media, publishes revisions atomically, loads FULL only 
       .click();
     for (const remaining of [1, 0]) {
       const image = page.locator('[data-editor-block="image"]').first();
-      await image.getByRole('button', { name: 'Действия с изображением', exact: true }).click();
-      await image.getByRole('button', { name: 'Удалить', exact: true }).click();
+      await image
+        .getByRole('button', { name: 'Удалить фото', exact: true })
+        .click();
       await page
         .getByRole('dialog')
         .getByRole('button', { name: 'Удалить изображение', exact: true })
         .click();
       await expect(
-        page.getByText(`${remaining}/10 изображений`, { exact: true }),
-      ).toBeVisible();
+        page.getByRole('img', { name: /^Изображение предмета \d+$/ }),
+      ).toHaveCount(remaining);
     }
     await expect(
-      page.getByText('0/10 изображений', { exact: true }),
-    ).toBeVisible();
+      page.getByRole('img', { name: /^Изображение предмета \d+$/ }),
+    ).toHaveCount(0);
     const nextChooser = page.waitForEvent('filechooser');
     await page
       .getByRole('button', { name: 'Добавить изображения', exact: true })
       .click();
     await (await nextChooser).setFiles('e2e/fixtures/profile-photo.png');
     await expect(
-      page.getByText('1/10 изображений', { exact: true }),
-    ).toBeVisible();
+      page.getByRole('img', { name: /^Изображение предмета \d+$/ }),
+    ).toHaveCount(1);
     await page
       .getByRole('button', { name: 'Отправить на модерацию', exact: true })
       .click();
@@ -532,11 +533,11 @@ test('shows a partial gallery upload and retries only the unfinished photo', asy
       page.getByRole('button', { name: 'Повторить загрузку' }),
     ).toBeVisible();
     await expect(
-      page.getByText('Изображение 1: загружено', { exact: true }),
+      page.getByRole('img', { name: 'Изображение предмета 1', exact: true }),
     ).toBeVisible();
     await expect(
-      page.getByText('1/10 изображений', { exact: true }),
-    ).toBeVisible();
+      page.getByRole('img', { name: /^Изображение предмета \d+$/ }),
+    ).toHaveCount(1);
     for (const width of [390, 1024, 1440]) {
       await page.setViewportSize({ width, height: 900 });
       await expect
@@ -553,10 +554,10 @@ test('shows a partial gallery upload and retries only the unfinished photo', asy
     }
     await page.getByRole('button', { name: 'Повторить загрузку' }).click();
     await expect(
-      page.getByText('2/10 изображений', { exact: true }),
-    ).toBeVisible();
+      page.getByRole('img', { name: /^Изображение предмета \d+$/ }),
+    ).toHaveCount(2);
     await expect(
-      page.getByText('Изображение 2: загружено', { exact: true }),
+      page.getByRole('img', { name: 'Изображение предмета 2', exact: true }),
     ).toBeVisible();
     expect(attempts).toBe(3);
     expect(keys[2]).toBe(keys[1]);
@@ -565,7 +566,6 @@ test('shows a partial gallery upload and retries only the unfinished photo', asy
     await context.close();
   }
 });
-
 
 test('uploads a mixed JPEG PNG WebP selection and renders every saved photo', async ({
   browser,
@@ -602,13 +602,13 @@ test('uploads a mixed JPEG PNG WebP selection and renders every saved photo', as
       'e2e/fixtures/work-photo.webp',
     ]);
     await expect(
-      page.getByText('3/10 изображений', { exact: true }),
+      page.getByRole('img', { name: /^Изображение предмета \d+$/ }),
+    ).toHaveCount(3);
+    await expect(
+      page.getByRole('img', { name: 'Изображение предмета 3', exact: true }),
     ).toBeVisible();
     await expect(
-      page.getByText('Изображение 3: загружено', { exact: true }),
-    ).toBeVisible();
-    await expect(
-      page.getByRole('button', { name: 'Назад к описанию', exact: true }),
+      page.getByRole('button', { name: 'Назад', exact: true }),
     ).toBeEnabled();
     for (const index of [1, 2, 3]) {
       const preview = page.locator(
@@ -632,8 +632,8 @@ test('uploads a mixed JPEG PNG WebP selection and renders every saved photo', as
     expect(new Set(requests).size).toBe(3);
     await page.reload();
     await expect(
-      page.getByText('3/10 изображений', { exact: true }),
-    ).toBeVisible();
+      page.getByRole('img', { name: /^Изображение предмета \d+$/ }),
+    ).toHaveCount(3);
   } finally {
     await context.close();
   }

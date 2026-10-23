@@ -111,8 +111,8 @@ vi.mock('../../providers/api-provider', () => ({
 vi.mock('../../components/layout', () => ({
   AppShell: ({ children }: { children?: ReactNode }) =>
     createElement('div', null, children),
-  FormPageShell: ({ children }: { children?: ReactNode }) =>
-    createElement('div', null, children),
+  FormPageShell: ({ children, bottomAction }: { children?: ReactNode; bottomAction?: ReactNode }) =>
+    createElement('div', null, children, bottomAction),
   FormPageColumns: ({
     children,
     sidebar,

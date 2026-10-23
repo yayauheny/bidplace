@@ -82,6 +82,7 @@ describe('figma button matrix', () => {
 
   it('keeps auth and nickname suggestion heights on the shared padding formula', () => {
     expect(figmaButtonContentHeight()).toBe(43);
+    expect(figmaButtonContentHeight('creationAction')).toBe(55);
     expect(figmaButtonContentHeight('auth')).toBe(
       designTokens.auth.actionHeight,
     );

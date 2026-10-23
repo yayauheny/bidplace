@@ -20,7 +20,7 @@ export function FormPageShell({
   maxWidth?: number;
   hideDock?: boolean;
   footer?: boolean;
-  variant?: 'default' | 'authorApplication' | 'account' | 'settings';
+  variant?: 'default' | 'authorApplication' | 'creation' | 'account' | 'settings';
 }) {
   const { reserve } = useDockInset();
   const Scroller = footer ? PageScrollView : ScrollView;
@@ -42,7 +42,7 @@ export function FormPageShell({
                 ? designTokens.space.x8
                 : reserve,
           paddingTop:
-            variant === 'authorApplication'
+            (variant === 'authorApplication' || variant === 'creation')
               ? designTokens.authorApplication.contentTop
               : variant === 'account'
                 ? designTokens.space.x3
@@ -59,7 +59,7 @@ export function FormPageShell({
             width: '100%',
             maxWidth,
             alignSelf: maxWidth ? 'center' : undefined,
-            gap: designTokens.space.sectionGap,
+            gap: variant === 'creation' ? designTokens.space.x5 : designTokens.space.sectionGap,
           }}
         >
           {children}

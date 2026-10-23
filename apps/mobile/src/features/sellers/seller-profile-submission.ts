@@ -14,6 +14,7 @@ import {
 import type { useApiClient } from '../../providers/api-provider';
 import {
   sellerProfileQueryKey,
+  fetchSellerProfile,
   profileFieldsToUpdate,
   profileFieldsToCreate,
   withSubmittedRevision,
@@ -63,6 +64,7 @@ export function useProfileSubmission({
   const router = useRouter();
   const { form, reportError, rememberSaved } = profileForm;
   const saveInFlight = useRef(false);
+  const uncertainCreate = useRef(false);
   const revisionSubmitInFlight = useRef(false);
   const [revisionSubmitActive, setRevisionSubmitActive] = useState(false);
   const seenAuthEpoch = useRef(guard.authEpoch);
@@ -81,12 +83,18 @@ export function useProfileSubmission({
     mutationFn: async (
       variables: ProfileSaveVariables,
     ): Promise<ProfileSaveResult> => {
-      const current = queryClient.getQueryData<SellerProfileResponse | null>(
+      let current = queryClient.getQueryData<SellerProfileResponse | null>(
         sellerProfileQueryKey,
       );
+      if (uncertainCreate.current) {
+        current = await fetchSellerProfile(api.sellers, queryClient);
+        if (!guard.sessionStillOwns(variables.operation, variables.authEpoch))
+          throw new Error('Session changed');
+      }
       if (current?.sellerProfile) {
         return {
           outcome: 'saved',
+          created: uncertainCreate.current || undefined,
           profile: await api.sellers.updateProfile(
             profileFieldsToUpdate(variables.fields),
             variables.photo ?? undefined,
@@ -110,14 +118,14 @@ export function useProfileSubmission({
           return { outcome: 'stored-slug', slug: claimed.slug };
         }
       }
-      return {
-        outcome: 'saved',
-        created: true,
-        profile: await api.sellers.createProfile(
-          profileFieldsToCreate(variables.fields),
-          variables.photo,
-        ),
-      };
+      uncertainCreate.current = true;
+      const created = await api.sellers.createProfile(
+        profileFieldsToCreate(variables.fields),
+        variables.photo,
+      );
+      if (guard.sessionStillOwns(variables.operation, variables.authEpoch))
+        uncertainCreate.current = false;
+      return { outcome: 'saved', created: true, profile: created };
     },
     onSuccess: (result, variables) => {
       if (result.outcome !== 'saved') return;
@@ -125,6 +133,7 @@ export function useProfileSubmission({
       if (!guard.sessionStillOwns(variables.operation, variables.authEpoch))
         return;
       const saved = result.profile;
+      uncertainCreate.current = false;
       rememberSaved(saved, variables.fields);
       photo.clearIfCurrent(variables.photo);
       queryClient.setQueryData(sellerProfileQueryKey, saved);
@@ -175,6 +184,7 @@ export function useProfileSubmission({
     if (seenAuthEpoch.current === guard.authEpoch) return;
     seenAuthEpoch.current = guard.authEpoch;
     saveInFlight.current = false;
+    uncertainCreate.current = false;
     saveMutation.reset();
     revisionSubmitInFlight.current = false;
     setRevisionSubmitActive(false);

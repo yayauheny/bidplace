@@ -32,7 +32,7 @@ export function FigmaIconButton({
   expanded?: boolean;
   iconSize?: number;
   strokeWidthPx?: number;
-  surface?: 'plain' | 'muted' | 'outline';
+  surface?: 'plain' | 'muted' | 'outline' | 'destructive';
   size?: 'default' | 'settingsHeader';
 }) {
   const palette = useAppTheme();
@@ -63,7 +63,13 @@ export function FigmaIconButton({
         name={icon}
         size={iconSize}
         strokeWidthPx={strokeWidthPx}
-        color={selected ? palette.solid : palette.ink}
+        color={
+          surface === 'destructive'
+            ? palette.white
+            : selected
+              ? palette.solid
+              : palette.ink
+        }
       />
     </MotionPressable>
   );

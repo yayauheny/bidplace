@@ -45,6 +45,20 @@ describe('Figma icon button styles', () => {
     ).toBe(designTokens.color.ghostHover);
   });
 
+  it('uses the captured destructive surface without changing neutral actions', () => {
+    expect(
+      figmaIconButtonStyle(false, 'destructive', designTokens.color),
+    ).toMatchObject({
+      width: 38,
+      height: 38,
+      backgroundColor: designTokens.color.destructiveFill,
+    });
+    expect(
+      figmaIconButtonStyle(true, 'destructive', designTokens.color)
+        .backgroundColor,
+    ).toBe(designTokens.color.dangerHover);
+  });
+
   it('shows feedback without adding a permanent white plate', () => {
     expect(
       figmaIconButtonStyle(true, 'plain', designTokens.color).backgroundColor,

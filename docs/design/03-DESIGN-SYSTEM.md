@@ -647,8 +647,8 @@ and no local style.
 
 ### Author application shared chrome (mobile)
 
-All four steps compose `AuthorApplicationStepShell` (`author-application-step-shell.tsx`)
-for header chrome, step selector, back/close and footer slot (basics included).
+All five visual steps compose `AuthorApplicationStepShell` (`author-application-step-shell.tsx`)
+for header chrome, step selector and back/close. Actions use `FormPageShell.bottomAction`.
 Picker triggers use `FigmaSelectField` (`FigmaSelectField.tsx`) on the same
 `authorApplication` field variant as text inputs. `FigmaTextField` with that variant
 passes `stroke.authorApplicationFieldPx` into trailing field icons (at-sign, search,
@@ -864,3 +864,25 @@ while inactive chrome uses inert/accessibility hiding; changing a role would
 replace RN Web's native DOM tag and remount images. After-enter focus preserves
 an active descendant control but moves a container fallback to the intended
 input/close target. Existing overlay/focus owners remain the only mechanism.
+
+
+### Portfolio design source update — 2026-10-23
+
+Scoped source: Figma `HRRtDp0bQlukw7ptTkuEZg`; exact nodes and mapping are in the
+[portfolio audit](../audits/current/2026-10-23-PORTFOLIO-DESIGN.md). Other handoffs remain applicable.
+
+- `CoverFrost` owns bottom artwork blur30 and scrim without a progressive mask;
+  author top uses only the scrim. Bottom card region clips to 12px upper corners.
+  Card references do not define the full public author page geometry.
+- `FigmaIconButton` destructive surface uses semantic `destructiveFill` and white
+  glyphs; `ProductBlockActions` media presentation combines direct delete with the
+  existing reorder menu. Safe replacement remains a separate functional dependency.
+- `FigmaButton` creationAction uses55px from4551:31379; auth remains51px.
+- `BackButton` plain surface is opt-in for creation chrome; default muted remains.
+  Header controls retain 44px targets (native row44, web row28 with overflowing
+  targets). `FormPageShell` creation variant shares the author content start and
+  owns the work wizard spacing; unique photo tile geometry stays local.
+- Work photo grid uses existing `PaddedGrid`, two 3:4 columns from 320px, gap12;
+  390px yields177×236. Tile states remain local, action footer stays outside scroll.
+- `SiteFooter` stays owned by `PageScrollView` on ordinary public/legal pages;
+  auth, creation/editing and overlays exclude it. No duplicate footer renderer.

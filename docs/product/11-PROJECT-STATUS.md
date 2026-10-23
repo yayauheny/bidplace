@@ -39,6 +39,16 @@ abort/timeout/idempotency и совместимость p1/p2.
 exports), 6 media E2E Chromium/WebKit и production web build прошли по записи
 PR #59. CI точного merge SHA в этой документационной задаче не перепроверялся.
 
+## 2026-10-23 — Portfolio design
+
+**Browser-verified; native/live acceptance remains Partial.** `ProductDraftImagesStep`
+использует адаптивные media tiles и bottomAction; автор — пять визуальных шагов
+без изменения numeric URL/API стадий, с сохранением фото и сверкой после потерянного
+ответа create. Общие CoverFrost, icon-button surface и creation chrome обновлены;
+существующий footer проверен на нужных routes. Backend/API/media lifecycle не менялись.
+Проверки, независимые ревью, Figma mapping и ограничения —
+[portfolio audit](../audits/current/2026-10-23-PORTFOLIO-DESIGN.md).
+
 ## История и обновление
 
 - [Полный журнал 20–23 октября](../archive/product/11-PROJECT-STATUS-2026-10-20-23.md).

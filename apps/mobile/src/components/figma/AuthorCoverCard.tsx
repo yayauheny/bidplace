@@ -80,7 +80,7 @@ export function AuthorCoverCard({
                 contentFit="cover"
               />
             </View>
-            <View pointerEvents="none" style={coverFrostZoneStyle()}>
+            <View pointerEvents="none" style={coverFrostZoneStyle('top')}>
               <CoverFrost imageUrl={imageUrl} placement="authorTop" />
               <View style={authorCoverNameZoneStyle()}>
                 <Text

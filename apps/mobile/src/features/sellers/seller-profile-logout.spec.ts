@@ -99,8 +99,8 @@ vi.mock('../../providers/api-provider', () => ({
 vi.mock('../../components/layout', () => ({
   AppShell: ({ children }: { children?: ReactNode }) =>
     createElement('div', null, children),
-  FormPageShell: ({ children }: { children?: ReactNode }) =>
-    createElement('div', null, children),
+  FormPageShell: ({ children, bottomAction }: { children?: ReactNode; bottomAction?: ReactNode }) =>
+    createElement('div', null, children, bottomAction),
   FormPageColumns: ({
     children,
     sidebar,
@@ -727,7 +727,7 @@ describe('seller profile logout', () => {
       missing.container,
       () =>
         dialog(missing.container)?.getAttribute('aria-label') ===
-        'Стать автором на Bidplace',
+        'Стать автором',
       'intro dialog',
     );
     const introButtons = [

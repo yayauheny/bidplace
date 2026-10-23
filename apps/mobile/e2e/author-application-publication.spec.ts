@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { designTokens } from '@bidplace/design-tokens';
 
 import { authenticatedPage } from './support/auth-session';
 import { moderateSeller } from './support/admin-moderation';
@@ -21,10 +22,15 @@ async function readAccountNickname(page: Page): Promise<string> {
   return nickname.inputValue();
 }
 
-async function completeBasics(page: Page, city: string): Promise<string> {
+async function choosePhoto(page: Page) {
   const chooserPromise = page.waitForEvent('filechooser');
   await page.getByRole('button', { name: 'Загрузить фото' }).click();
   await (await chooserPromise).setFiles('e2e/fixtures/profile-photo.png');
+  await page.getByRole('button', { name: 'Продолжить', exact: true }).click();
+  await expect(page).toHaveURL(/step=1/);
+}
+
+async function completeBasics(page: Page, city: string): Promise<string> {
   await page
     .getByRole('textbox', { name: 'Имя или название', exact: true })
     .fill('Автор с городом');
@@ -34,7 +40,7 @@ async function completeBasics(page: Page, city: string): Promise<string> {
   await page.getByRole('button', { name: 'Продолжить' }).click();
   await expect(page).toHaveURL(/\/profile\?step=2/);
   await expect(
-    page.getByRole('progressbar', { name: 'Шаг 2 из 4' }),
+    page.getByRole('progressbar', { name: 'Шаг 3 из 5' }),
   ).toBeVisible();
   return slug;
 }
@@ -50,6 +56,7 @@ test('author application without city continues and stores the city as null', as
     const chooserPromise = page.waitForEvent('filechooser');
     await page.getByRole('button', { name: 'Загрузить фото' }).click();
     await (await chooserPromise).setFiles('e2e/fixtures/profile-photo.png');
+    await page.getByRole('button', { name: 'Продолжить', exact: true }).click();
     await page
       .getByRole('textbox', { name: 'Имя или название', exact: true })
       .fill('Без города');
@@ -81,11 +88,12 @@ for (const city of ['Минск', '']) {
 
     try {
       await page.goto('/profile');
+      await choosePhoto(page);
       const slug = await completeBasics(page, city);
       await page.getByRole('button', { name: 'Закрыть' }).click();
       await page.goto('/profile');
       await expect(
-        page.getByRole('progressbar', { name: 'Шаг 2 из 4' }),
+        page.getByRole('progressbar', { name: 'Шаг 3 из 5' }),
       ).toBeVisible();
       await page
         .getByRole('textbox', { name: 'Telegram', exact: true })
@@ -95,7 +103,7 @@ for (const city of ['Минск', '']) {
       await expect(page).toHaveURL(/\/$/);
       await page.goto('/profile');
       await expect(
-        page.getByRole('progressbar', { name: 'Шаг 2 из 4' }),
+        page.getByRole('progressbar', { name: 'Шаг 3 из 5' }),
       ).toBeVisible();
       await expect(
         page.getByRole('textbox', { name: 'Telegram', exact: true }),
@@ -120,9 +128,9 @@ for (const city of ['Минск', '']) {
       await expect(page).toHaveURL(/\/$/);
       await page.goto('/profile');
       await expect(
-        page.getByRole('progressbar', { name: 'Шаг 3 из 4' }),
+        page.getByRole('progressbar', { name: 'Шаг 4 из 5' }),
       ).toBeVisible();
-      await expect(page.getByText('Керамика')).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Удалить Керамика', exact: true })).toBeVisible();
       await page.getByRole('button', { name: 'Продолжить' }).click();
       await expect(page).toHaveURL(/\/profile\?step=4/);
       await expect(
@@ -186,7 +194,7 @@ test('author onboarding matches source geometry and preserves entered data throu
     const box = await page
       .getByRole(role, { name: label, exact: true })
       .evaluate((control, type) => (type === 'button' ? control : control.parentElement)?.getBoundingClientRect().height, role);
-    expect(box).toBeCloseTo(51, 1);
+    expect(box).toBeCloseTo(designTokens.size.input, 1);
   }
   async function expectAuthorFieldIconPhysicalStroke(label: string, role: 'textbox' | 'button' = 'textbox') {
     const physical = await page
@@ -213,8 +221,9 @@ test('author onboarding matches source geometry and preserves entered data throu
       const close = await page
         .getByRole('button', { name: 'Закрыть', exact: true })
         .boundingBox();
-      expect(close?.width).toBeCloseTo(28, 1);
-      expect(close?.x).toBeCloseTo((width - 390) / 2 + 350, 1);
+      expect(close?.width).toBeCloseTo(44, 1);
+      const columnWidth = Math.min(width, designTokens.layout.contentMax + 2 * designTokens.layout.gutter);
+      expect(close?.x).toBeCloseTo((width - columnWidth) / 2 + columnWidth - designTokens.layout.gutter - 44, 1);
       await captureIdle(`${label}-${width}`);
     }
     await page.setViewportSize({ width: 390, height: 874 });
@@ -254,8 +263,24 @@ test('author onboarding matches source geometry and preserves entered data throu
     await intro.getByRole('button', { name: 'Начать', exact: true }).click();
     await expect(intro).toHaveCount(0);
     await expect(
-      page.getByRole('progressbar', { name: 'Шаг 1 из 4' }),
+      page.getByRole('progressbar', { name: 'Шаг 1 из 5' }),
     ).toBeVisible();
+    const icon = page.locator('svg[width="40"]');
+    await expect(icon).toHaveCount(1);
+    expect(
+      await icon
+        .locator('path')
+        .evaluateAll((paths) =>
+          paths.every(
+            (path) =>
+              getComputedStyle(path).strokeLinecap === 'round' &&
+              getComputedStyle(path).strokeLinejoin === 'round',
+          ),
+        ),
+    ).toBe(true);
+    await responsive('photo');
+    await choosePhoto(page);
+    await expect(page.getByRole('progressbar', { name: 'Шаг 2 из 5' })).toBeVisible();
     const country = page.getByRole('button', { name: 'Страна', exact: true });
     await expect(country.locator('input')).toHaveCount(0);
     await country.focus();
@@ -270,19 +295,6 @@ test('author onboarding matches source geometry and preserves entered data throu
       page.getByRole('textbox', { name: 'Город', exact: true }),
     ).toBeFocused();
     await fieldHeight('Имя или название');
-    const icon = page.locator('svg[width="65.23"]');
-    await expect(icon).toHaveCount(1);
-    expect(
-      await icon
-        .locator('path')
-        .evaluateAll((paths) =>
-          paths.every(
-            (path) =>
-              getComputedStyle(path).strokeLinecap === 'round' &&
-              getComputedStyle(path).strokeLinejoin === 'round',
-          ),
-        ),
-    ).toBe(true);
     await responsive('basics');
     await completeBasics(page, '');
     await expectAuthorFieldIconPhysicalStroke('Instagram');
@@ -300,7 +312,7 @@ test('author onboarding matches source geometry and preserves entered data throu
     await page.getByRole('button', { name: 'Продолжить', exact: true }).click();
     await expect(page).toHaveURL(/step=2/);
     await expect(
-      page.getByRole('progressbar', { name: 'Шаг 2 из 4' }),
+      page.getByRole('progressbar', { name: 'Шаг 3 из 5' }),
     ).toBeVisible();
     await expect(
       page.getByRole('textbox', { name: 'Telegram', exact: true }),
@@ -323,15 +335,16 @@ test('author onboarding matches source geometry and preserves entered data throu
       exact: true,
     });
     await expect(directions).toBeVisible();
-    const backSvg = directions.locator('svg').first();
-    await expect(backSvg).toHaveAttribute('width', '26');
+    const backSvg = directions.getByRole('button', { name: 'Назад', exact: true }).locator('svg');
+    await expect(backSvg).toHaveAttribute('width', '20');
     const search = page.getByRole('textbox', { name: 'Поиск', exact: true });
     await expectAuthorFieldIconPhysicalStroke('Поиск');
     await fieldHeight('Поиск');
     const firstRow = page.getByRole('checkbox').first();
     const firstRowBox = await firstRow.boundingBox();
-    expect(firstRowBox?.height).toBeCloseTo(38, 1);
-    expect(firstRowBox?.y).toBeCloseTo(140, 1);
+    expect(firstRowBox?.height).toBeCloseTo(designTokens.size.filterOptionRow, 1);
+    const searchBottom = await search.evaluate(control => control.parentElement?.getBoundingClientRect().bottom);
+    expect(firstRowBox?.y).toBeCloseTo((searchBottom ?? 0) + designTokens.authorApplication.directionsListGap, 1);
     await search.fill('керам');
     await expect(
       page.getByRole('checkbox', { name: 'Керамика', exact: true }),

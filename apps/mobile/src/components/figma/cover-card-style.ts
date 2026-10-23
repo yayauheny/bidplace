@@ -71,10 +71,11 @@ export function coverChipRowStyle(): ViewStyle {
 }
 
 // Overlay zone: hugs its text; `CoverFrost` fills it absolutely.
-export function coverFrostZoneStyle(): ViewStyle {
+export function coverFrostZoneStyle(edge: 'top' | 'bottom' = 'bottom'): ViewStyle {
   return {
     alignSelf: 'stretch',
     position: 'relative',
+    ...(edge === 'bottom' ? { borderTopLeftRadius: designTokens.radius.overlay, borderTopRightRadius: designTokens.radius.overlay, overflow: 'hidden' as const } : {}),
   };
 }
 

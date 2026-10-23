@@ -286,7 +286,32 @@ export function ProductDraftScreen({
   return (
     <FormProvider {...form}>
       <ProductDraftWriteGuard guard={session.transitionLock}>
-        <FormPageShell hideDock>
+        <FormPageShell
+          hideDock
+          variant={isCreationFlow ? 'creation' : 'default'}
+          bottomAction={
+            isCreationFlow && wizardStep === productWizardStep.images ? (
+              <PrimaryButton
+                label="Продолжить"
+                width="block"
+                size="creationAction"
+                disabled={
+                  uploadBusy ||
+                  session.inputsLocked ||
+                  !canOpenProductWizardStep(
+                    productWizardStep.story,
+                    wizardDraft,
+                  )
+                }
+                onPress={() =>
+                  void wizardNavigation.moveToWizardStep(
+                    productWizardStep.story,
+                  )
+                }
+              />
+            ) : undefined
+          }
+        >
           <ProductDraftScreenChrome
             isCreationFlow={isCreationFlow}
             storyWizardView={storyWizardView}
@@ -411,10 +436,6 @@ export function ProductDraftScreen({
               editable={editable && !session.inputsLocked}
               isCreationFlow={isCreationFlow}
               wizardStep={wizardStep}
-              wizardCanOpenStory={
-                !uploadBusy &&
-                canOpenProductWizardStep(productWizardStep.story, wizardDraft)
-              }
               reorderPending={imageActions.reorderImages.isPending}
               removePending={imageActions.removeImage.isPending}
               uploadPending={
@@ -442,12 +463,6 @@ export function ProductDraftScreen({
               onMoveImage={imageActions.reorder}
               onDeleteImage={(imageId) =>
                 imageActions.setImagePendingDelete(imageId)
-              }
-              onBackToAbout={() =>
-                void wizardNavigation.moveToWizardStep(productWizardStep.about)
-              }
-              onContinueToStory={() =>
-                void wizardNavigation.moveToWizardStep(productWizardStep.story)
               }
             />
           ) : null}

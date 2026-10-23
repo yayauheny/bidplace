@@ -112,8 +112,8 @@ vi.mock('../../providers/api-provider', () => ({
 vi.mock('../../components/layout', () => ({
   AppShell: ({ children }: { children?: ReactNode }) =>
     createElement('div', null, children),
-  FormPageShell: ({ children }: { children?: ReactNode }) =>
-    createElement('div', null, children),
+  FormPageShell: ({ children, bottomAction }: { children?: ReactNode; bottomAction?: ReactNode }) =>
+    createElement('div', null, children, bottomAction),
   FormPageColumns: ({
     children,
     sidebar,
@@ -403,6 +403,20 @@ describe('ProductDraftScreen render contract', () => {
     }
     expect(titleInput(container)).toBeInstanceOf(HTMLInputElement);
     expect(hasButton(container, 'Закрыть')).toBe(true);
+  });
+
+  it('keeps the photo continuation outside its grid and exposes deletion without a replacement pencil', async () => {
+    const { container } = mount({ flow: 'creation', stepParam: '2' });
+    await until(
+      container,
+      () => hasButton(container, 'Продолжить'),
+      'photo continuation',
+    );
+    expect(hasButton(container, 'Удалить фото')).toBe(true);
+    expect(hasButton(container, 'Действия с изображением')).toBe(true);
+    expect(container.textContent).not.toContain('1/10 изображений');
+    expect(container.textContent).not.toContain('Назад к описанию');
+    expect(container.textContent).not.toContain('Изображение 1: загружено');
   });
 
   it('renders the editable edit flow with status and submit action', async () => {

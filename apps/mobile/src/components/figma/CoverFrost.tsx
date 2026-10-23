@@ -24,19 +24,21 @@ export function CoverFrost({
       testID="figma-cover-frost"
       style={[StyleSheet.absoluteFill, { overflow: 'hidden' }]}
     >
-      <Image
-        accessible={false}
-        source={{ uri: getApiAssetUrl(imageUrl) }}
-        blurRadius={spec.runtimeBlur}
-        contentFit="cover"
-        style={{
-          position: 'absolute',
-          left: 0,
-          right: 0,
-          [spec.top ? 'top' : 'bottom']: 0,
-          aspectRatio: spec.artworkAspectRatio,
-        }}
-      />
+      {!spec.top ? (
+        <Image
+          accessible={false}
+          source={{ uri: getApiAssetUrl(imageUrl) }}
+          blurRadius={spec.runtimeBlur}
+          contentFit="cover"
+          style={{
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            [spec.top ? 'top' : 'bottom']: 0,
+            aspectRatio: spec.artworkAspectRatio,
+          }}
+        />
+      ) : null}
       <LinearGradient
         colors={
           spec.top

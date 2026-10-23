@@ -2,19 +2,19 @@ import { designTokens, type SemanticColorMap } from '@bidplace/design-tokens';
 
 export function figmaIconButtonStyle(
   pressed: boolean,
-  surface: 'plain' | 'muted' | 'outline' = 'plain',
+  surface: 'plain' | 'muted' | 'outline' | 'destructive' = 'plain',
   palette: SemanticColorMap,
 ) {
   // Header action frame 4980:15197 is 38px including its inside stroke.
   return {
     width:
-      surface === 'outline'
+      surface === 'outline' || surface === 'destructive'
         ? 38
         : surface === 'muted'
           ? 42
           : designTokens.size.iconButton,
     height:
-      surface === 'outline'
+      surface === 'outline' || surface === 'destructive'
         ? 38
         : surface === 'muted'
           ? 42
@@ -28,11 +28,16 @@ export function figmaIconButtonStyle(
         }
       : {}),
     borderRadius: designTokens.radius.pill,
-    backgroundColor: pressed
-      ? palette.ghostHover
-      : surface === 'muted'
-        ? palette.headerControl
-        : 'transparent',
+    backgroundColor:
+      surface === 'destructive'
+        ? pressed
+          ? palette.dangerHover
+          : palette.destructiveFill
+        : pressed
+          ? palette.ghostHover
+          : surface === 'muted'
+            ? palette.headerControl
+            : 'transparent',
   };
 }
 

@@ -12,6 +12,7 @@ async function completeAuthorApplication(page: Page) {
   const chooserPromise = page.waitForEvent('filechooser');
   await page.getByRole('button', { name: 'Загрузить фото' }).click();
   await (await chooserPromise).setFiles('e2e/fixtures/profile-photo.png');
+  await page.getByRole('button', { name: 'Продолжить', exact: true }).click();
   await page
     .getByRole('textbox', { name: 'Имя или название', exact: true })
     .fill('Новый автор');
@@ -25,7 +26,7 @@ async function completeAuthorApplication(page: Page) {
   await page.getByRole('button', { name: 'Продолжить' }).click();
   await expect(page).toHaveURL(/\/profile\?step=2/);
   await expect(
-    page.getByRole('progressbar', { name: 'Шаг 2 из 4' }),
+    page.getByRole('progressbar', { name: 'Шаг 3 из 5' }),
   ).toBeVisible();
   await page.getByRole('button', { name: 'Продолжить' }).click();
   await expect(page).toHaveURL(/\/profile\?step=3/);
@@ -61,7 +62,7 @@ async function completeAuthorApplication(page: Page) {
   ).toHaveCount(0);
 }
 
-test('new author submits the four-step application', async ({ browser }) => {
+test('new author submits the five-stage application', async ({ browser }) => {
   test.setTimeout(90_000);
   const { buyer } = await createBuyerFixture();
   const { context, page } = await authenticatedPage(browser, buyer);
@@ -110,7 +111,7 @@ test('approved author submits an editing revision without changing the public pa
 
     const guest = await browser.newPage();
     await guest.goto(`/authors/${author.slug}`);
-    await expect(guest.getByText(author.fullName)).toBeVisible();
+    await expect(guest.getByTestId('creator-meta').getByText(author.fullName, { exact: true })).toBeVisible();
     await expect(guest.getByText(draftName)).toHaveCount(0);
     await guest.close();
 
@@ -121,7 +122,7 @@ test('approved author submits an editing revision without changing the public pa
     await adminContext.close();
 
     await page.goto(`/authors/${author.slug}`);
-    await expect(page.getByText(draftName)).toBeVisible();
+    await expect(page.getByTestId('creator-meta').getByText(draftName, { exact: true })).toBeVisible();
   } finally {
     await context.close();
   }

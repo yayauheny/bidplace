@@ -2,11 +2,12 @@ import { mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import { expect, test, type Page } from '@playwright/test';
+import { e2eEvidenceDir } from './support/evidence-dir';
 
 const checksum = 'a'.repeat(64);
 const categoryId = '10000000-0000-4000-8000-000000000099';
 const secondCategoryId = '10000000-0000-4000-8000-000000000098';
-const w1EvidenceDir = '/tmp/w1-fix-shots';
+const w1EvidenceDir = resolve(e2eEvidenceDir, 'portfolio-design');
 mkdirSync(w1EvidenceDir, { recursive: true });
 
 function authorFixture(slug: string, socials: 0 | 2 | 3, works: number) {
@@ -468,7 +469,7 @@ test('measures author composition and preserves identity across responsive layou
   await page.goto('/seller/author-parity');
   await expect(page.getByTestId('creator-avatar')).toBeVisible();
   await page.getByTestId('creator-avatar').evaluate((node) => node.setAttribute('data-continuity', 'same'));
-  for (const width of [320, 390, 440, 1024, 1440, 1800]) {
+  for (const width of [320, 390, 414, 440, 1024, 1440, 1800]) {
     await page.setViewportSize({ width, height: 874 });
     await page.evaluate(() => document.fonts.ready);
     const avatar = page.getByTestId('creator-avatar');
@@ -527,7 +528,7 @@ test.describe('shared footer and responsive brand', () => {
   test('renders full-width footer with usable real links from mobile through desktop', async ({ page }) => {
     await mockAuthor(page, 'footer-author', 2, 3);
     await page.goto('/seller/footer-author');
-    for (const width of [320, 390, 440, 1024, 1440, 1800]) {
+    for (const width of [320, 390, 414, 440, 1024, 1440, 1800]) {
       await page.setViewportSize({ width, height: 900 });
       const footer = page.getByTestId('site-footer');
       await expect(page.getByTestId('creator-avatar')).toBeVisible();
