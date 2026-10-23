@@ -459,6 +459,7 @@ export function ProductDraftScreen({
                 imageActions.reorderImages.isError
               }
               onRetryUpload={() => imageActions.retryUpload()}
+              onCancelUpload={imageActions.cancelUpload}
               onChooseImages={() => void imageActions.chooseImages()}
               onMoveImage={imageActions.reorder}
               onDeleteImage={(imageId) =>

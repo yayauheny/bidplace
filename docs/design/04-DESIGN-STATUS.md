@@ -85,3 +85,9 @@ Native devices, live providers и точная визуальная приёмк
 routes и shared controls не менялись. Новая Figma/native acceptance не заявляется.
 Chromium/WebKit completion owner: 14/14 passed, включая настоящий rejection
 тестового SMTP и успешный новый запрос/подтверждение на той же странице.
+
+
+2026-10-23 review follow-up: Add в галерее заблокирован при незавершённой пачке,
+retry и явная отмена остатка доступны на плитке. AuthorIntroDialog использует portfolio-only copy.
+Геометрия/shared controls не менялись; проверки и ограничения —
+[portfolio audit](../audits/current/2026-10-23-PORTFOLIO-DESIGN.md).

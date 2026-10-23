@@ -152,3 +152,29 @@ use synthetic OTP hash setting for media tests; disable dotenv loading only in
 an external database test config. Initial local preparation failures were
 resolved without changing production code or weakening assertions. Full live
 OIDC/provider/native acceptance is not claimed by this synchronization.
+
+
+## Review follow-up — unfinished upload batch
+
+A new picker previously replaced `pendingUpload` after a partial failure.
+`chooseImages` now guards the retained batch; Add is disabled while unfinished
+files exist. Retry uses the same Blob/key and skips successful files. An explicit
+Cancel action clears only the unsaved remainder and mutation feedback, without
+removing saved images or changing the server/media contract. Cancellation stays
+blocked during upload, picker activity and guarded transitions.
+
+Terminal errors (e.g. source too large) can therefore be discarded before
+selecting another file. Error feedback participates in normal flow under its
+preview; two actions and long text no longer overrun the portrait tile into the
+header at320px. Other uploading overlays retain their existing layout.
+AuthorIntroDialog copy now invites portfolio creation without promising sales.
+
+Verification:21 upload lifecycle owner tests, full mobile144 files/1032 tests,
+9 Turborepo typecheck/lint/build tasks,6 media browser cases and2 focused
+Chromium/WebKit responsive retry/cancel cases PASS. Both actions are below their
+preview and within viewport bounds at320/390/414/440/1024/1440; resize assertions
+wait for the measured grid layout, without increasing screenshot tolerance.
+Independent code/lifecycle/responsive reviews accepted after correcting terminal
+error recovery and narrow-screen error layout. Evidence delivered under
+`upload-review/{chromium,webkit}-upload-partial-{width}.png`. Native acceptance
+and precise Figma error-state references remain outside this check.

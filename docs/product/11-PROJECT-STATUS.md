@@ -90,3 +90,15 @@ acknowledgement; client submit owner — три класса отказа. Ре�
 SHA и CI — [PR #58](https://github.com/yayauheny/bidplace/pull/58) и
 [отчёт](../audits/current/2026-10-23-PR58-MERGE-VERIFICATION.md).
 DEC-136 и production gates сохраняются; merge/deploy не выполняются.
+
+
+## 2026-10-23 — Сохранение незавершённого upload retry
+
+**Implemented (client guard).** `useProductDraftImageActions` не открывает новый
+picker, пока сохранена незавершённая пачка; `ProductDraftImagesStep` блокирует
+Add до её завершения либо явной отмены остатка. Отмена не удаляет сохранённые
+фотографии. Retry сохраняет Blob/ключ и не повторяет успешные файлы;
+существующие lifecycle unit/media browser owners проверяют блокировку и повторное
+разрешение выбора. Интро автора приглашает создать portfolio без обещания продаж.
+Backend/API/media contract не изменены; детали проверок —
+[portfolio audit](../audits/current/2026-10-23-PORTFOLIO-DESIGN.md).

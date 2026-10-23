@@ -541,7 +541,8 @@ test('shows a partial gallery upload and retries only the unfinished photo', asy
     await expect(
       page.getByRole('img', { name: /^Изображение предмета \d+$/ }),
     ).toHaveCount(1);
-    for (const width of [390, 1024, 1440]) {
+    await expect(page.getByRole('button', { name: 'Добавить изображения', exact: true })).toBeDisabled();
+    for (const width of [320, 390, 414, 440, 1024, 1440]) {
       await page.setViewportSize({ width, height: 900 });
       await expect
         .poll(() =>
@@ -550,6 +551,19 @@ test('shows a partial gallery upload and retries only the unfinished photo', asy
           ),
         )
         .toBe(true);
+      const preview = page.getByRole('img', { name: 'Выбранное изображение 2', exact: true });
+      await expect(preview).toBeVisible();
+      for (const name of ['Повторить загрузку', 'Отменить загрузку']) {
+        const action = page.getByRole('button', { name, exact: true });
+        await expect(action).toBeInViewport();
+        const bounds = await action.boundingBox();
+        await expect.poll(async () => {
+          const [image, button] = await Promise.all([preview.boundingBox(), action.boundingBox()]);
+          return image && button ? button.y - image.y - image.height : Number.NEGATIVE_INFINITY;
+        }).toBeGreaterThanOrEqual(0);
+        expect(bounds?.x).toBeGreaterThanOrEqual(0);
+        expect((bounds?.x ?? 0) + (bounds?.width ?? 0)).toBeLessThanOrEqual(width);
+      }
       await page.screenshot({
         path: testInfo.outputPath(`upload-partial-${width}.png`),
         fullPage: true,
@@ -562,6 +576,7 @@ test('shows a partial gallery upload and retries only the unfinished photo', asy
     await expect(
       page.getByRole('img', { name: 'Изображение предмета 2', exact: true }),
     ).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Добавить изображения', exact: true })).toBeEnabled();
     expect(attempts).toBe(3);
     expect(keys[2]).toBe(keys[1]);
     expect(keys[1]).not.toBe(keys[0]);

@@ -214,6 +214,7 @@ export function useProductDraftImageActions({
       session.transitionLock.current ||
       !existingProduct ||
       pickerLock.current ||
+      pendingUpload.current !== null ||
       upload.isPending
     )
       return;
@@ -343,6 +344,14 @@ export function useProductDraftImageActions({
     })();
   };
 
+  const cancelUpload = () => {
+    if (upload.isPending || pickerLock.current || session.transitionLock.current)
+      return;
+    pendingUpload.current = null;
+    setUploadFiles([]);
+    upload.reset();
+  };
+
   const retryUpload = () => {
     if (
       pendingUpload.current &&
@@ -367,5 +376,6 @@ export function useProductDraftImageActions({
     reorder,
     confirmImageDelete,
     retryUpload,
+    cancelUpload,
   };
 }

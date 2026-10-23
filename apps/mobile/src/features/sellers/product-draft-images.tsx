@@ -11,6 +11,7 @@ import {
   AppText,
   ResilientRemoteImage,
   SecondaryButton,
+  TextButton,
 } from '../../components/ui';
 import { getApiAssetUrl } from '../../lib/environment';
 import { useAppTheme } from '../../providers/theme-provider';
@@ -164,6 +165,7 @@ export type ProductDraftImagesStepProps = {
 
   onChooseImages: () => void;
   onRetryUpload?: () => void;
+  onCancelUpload?: () => void;
   onMoveImage: (imageId: string, direction: -1 | 1) => void;
   onDeleteImage: (imageId: string) => void;
 };
@@ -184,19 +186,21 @@ export function ProductDraftImagesStep({
   removeOrReorderError,
   onChooseImages,
   onRetryUpload,
+  onCancelUpload,
   onMoveImage,
   onDeleteImage,
 }: ProductDraftImagesStepProps) {
   const palette = useAppTheme();
+  const unfinishedUploadFiles = uploadFiles.filter(
+    (file) => file.status !== 'done',
+  );
   const displayImages = [
     ...images,
-    ...uploadFiles
-      .filter((file) => file.status !== 'done')
-      .map((file, index) => ({
-        id: file.key,
-        url: file.uri,
-        position: images.length + index,
-      })),
+    ...unfinishedUploadFiles.map((file, index) => ({
+      id: file.key,
+      url: file.uri,
+      position: images.length + index,
+    })),
   ];
   const showWizardNavigation =
     isCreationFlow && wizardStep === productWizardStep.images;
@@ -224,7 +228,12 @@ export function ProductDraftImagesStep({
               <MotionPressable
                 accessibilityRole="button"
                 accessibilityLabel="Добавить изображения"
-                disabled={uploadPending || reorderPending || removePending}
+                disabled={
+                  uploadPending ||
+                  unfinishedUploadFiles.length > 0 ||
+                  reorderPending ||
+                  removePending
+                }
                 onPress={onChooseImages}
                 preset="card"
                 style={{
@@ -268,10 +277,14 @@ export function ProductDraftImagesStep({
                 {file && file.status !== 'done' ? (
                   <View
                     style={{
-                      position: 'absolute',
-                      left: designTokens.space.x2,
-                      right: designTokens.space.x2,
-                      bottom: designTokens.space.x2,
+                      ...(file.status === 'error'
+                        ? { marginTop: designTokens.space.x2 }
+                        : {
+                            position: 'absolute',
+                            left: designTokens.space.x2,
+                            right: designTokens.space.x2,
+                            bottom: designTokens.space.x2,
+                          }),
                       padding: designTokens.space.x2,
                       borderRadius: designTokens.radius.small,
                       backgroundColor: palette.surfaceStrong,
@@ -296,6 +309,13 @@ export function ProductDraftImagesStep({
                         label="Повторить загрузку"
                         disabled={uploadPending || !editable}
                         onPress={onRetryUpload}
+                      />
+                    ) : null}
+                    {file.status === 'error' && onCancelUpload ? (
+                      <TextButton
+                        label="Отменить загрузку"
+                        disabled={uploadPending || !editable}
+                        onPress={onCancelUpload}
                       />
                     ) : null}
                   </View>
