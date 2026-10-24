@@ -818,6 +818,10 @@ flexes and wraps; optionLabel15/20 and pickerTitle18/22 are measured from curren
 author Figma4594:35522 in HRRtDp0bQlukw7ptTkuEZg. Minimum row44px preserves
 touch access. Scroll indicators are hidden; scrolling remains available. Compact
 FilterSheet leaves bottom padding to AppDialog, with20px for author categories.
+Radio groups may opt into `FilterOptionRow`'s `nativeID`, web `tabIndex` and
+`onNavigate`: the group owns stable ordering, one Tab entry and arrow/Home/End
+selection/focus. Space/Enter confirms through the existing press handler.
+Checkboxes and consumers without navigation retain their existing behavior.
 BackButton is one muted round FigmaIconButton with disabled/pressed feedback;
 former glass/chrome/settings variants are removed by the founder's global request.
 

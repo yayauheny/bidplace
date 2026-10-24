@@ -145,5 +145,15 @@ permission and client build collector are distinct; unknown history/coverage and
 immature/empty cohorts stay explicit. PostgreSQL19 owner tests, period11 and client49
 pass. Mobile screenshots/review and final checks: [audit](../audits/current/2026-10-24-ADMIN-ANALYTICS-UI.md).
 
-Analytics UI accessibility follow-up: labelled period/metric/day panels and
+Analytics UI accessibility follow-up: labelled period/metric panels and
 keyboard/DOM associations use the existing public-screen pattern; no API change.
+
+## 2026-10-24 — Analytics day selection review
+
+**Partial (local browser/typecheck/lint passed; hardware/production remain open).**
+`AdminAnalyticsGrowth` replaces up to 90 inline day tabs with one existing
+`FigmaSelectField` and compact searchable `FilterSheet`. `FilterOptionRow` adds
+opt-in radio navigation; the group preserves ordering, one Tab entry and focus
+return. Independent source review found no remaining actionable issues.
+No API, service, table, migration or dependency changes in this correction.
+Checks and evidence: [analytics audit](../audits/current/2026-10-24-ADMIN-ANALYTICS-UI.md).

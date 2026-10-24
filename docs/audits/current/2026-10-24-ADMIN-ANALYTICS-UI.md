@@ -81,3 +81,36 @@ Accessibility follow-up: period, selected metric and selected day now link to re
 labelled panels using the existing public Work/author pattern. Browser acceptance
 checks selected-tab associations and keyboard ArrowRight/ArrowLeft. No visual or
 metric behavior change.
+
+## Review correction — 2026-10-24
+
+Supersedes the inline day tabs and day panel described above: the growth view now
+has one existing `FigmaSelectField`, opening compact `FilterSheet` with date search
+and `FilterOptionRow`. The selected day starts first; ordering remains stable
+while open. One Tab entry, arrows/Home/End selection and Space/Enter confirmation
+retain keyboard access without walking 90 controls. Closing returns focus to the
+trigger. Empty search is explicit; changing width retains the selected day.
+
+Durable fix chosen: compose existing picker primitives and add opt-in navigation
+to their row owner. A scroll-only tab rail is an acceptable workaround that still
+requires traversing many dates; a new calendar/chart dependency would add needless
+ownership and compatibility cost. No API, service, contract, table, migration or
+dependency changes in this correction; existing row consumers keep defaults.
+
+Independent source review identified missing radio arrow navigation, then verified
+the correction with no remaining actionable findings. The reviewer did not run
+runtime checks. Browser acceptance now covers the 90-day picker, search/empty,
+one Tab entry, arrows/Home/End, selection, return focus and 320/390/1440 resize.
+Final check results follow below. Local browser fixtures use an isolated temporary
+PostgreSQL18 cluster because Docker's existing volume is full; no Docker data was
+deleted. Remote CI retains its PostgreSQL16 service.
+
+Local repeat: Chromium/WebKit10/10 passed, then final picker2/2 passed after
+reserving floating-label space inside the scroll content and adding Enter
+confirmation. Full graph typecheck/lint and mobile1047 units passed; docs links
+and diff check passed. No assertions, timeouts or retries were relaxed. The first
+repeat could not start without the test OTP hash setting; rerun used an explicit
+synthetic value without reading local secrets. Final build/CI evidence is in PR.
+[Compact day picker](../evidence/2026-10-24-admin-analytics/day-picker-chromium-390.png)
+is a synthetic development-browser capture; a transient Expo development indicator
+is visible. Physical keyboard, screen reader and native devices remain unverified.

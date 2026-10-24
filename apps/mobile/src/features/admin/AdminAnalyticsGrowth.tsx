@@ -1,9 +1,13 @@
-import { useState } from 'react';
-import { View } from 'react-native';
+import { useRef, useState, type ElementRef } from 'react';
+import { Platform, View } from 'react-native';
 import { Svg, Circle, Line, Polyline } from 'react-native-svg';
 import type { AnalyticsFoundationResponse } from '@bidplace/contracts';
 import { designTokens } from '@bidplace/design-tokens';
 import { FigmaTabs } from '../../components/figma/FigmaTabs';
+import { FigmaSelectField } from '../../components/figma/FigmaSelectField';
+import { FilterSheet } from '../../components/figma/FilterSheet';
+import { FilterSearchField } from '../../components/figma/FilterSearchField';
+import { FilterOptionRow } from '../../components/figma/FilterOptionRow';
 import { AppText } from '../../components/ui';
 import { useAppTheme } from '../../providers/theme-provider';
 
@@ -27,12 +31,24 @@ export function AdminAnalyticsGrowth({
   const [metric, setMetric] = useState<Metric>('visitors');
   const [width, setWidth] = useState(0);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [dayOpen, setDayOpen] = useState(false);
+  const [daySearch, setDaySearch] = useState('');
+  const [initialDay, setInitialDay] = useState<string>();
+  const dayTrigger = useRef<ElementRef<typeof FigmaSelectField>>(null);
   const palette = useAppTheme();
   const available =
     rows.length > 0 && rows.every((row) => row[metric] !== undefined);
   const max = Math.max(1, ...rows.map((row) => row[metric] ?? 0));
   const selected = rows.find((row) => row.date === selectedDate) ?? rows.at(-1);
   const label = metrics.find((item) => item.value === metric)!.label;
+  const days = [...rows].reverse();
+  const firstDay = days.find((row) => row.date === initialDay);
+  const orderedDays = firstDay
+    ? [firstDay, ...days.filter((row) => row.date !== firstDay.date)]
+    : days;
+  const visibleDays = orderedDays.filter((row) =>
+    row.date.includes(daySearch.trim()),
+  );
   const points = rows
     .map(
       (row, index) =>
@@ -122,25 +138,90 @@ export function AdminAnalyticsGrowth({
               <AppText role="caption">{rows[0]!.date}</AppText>
               <AppText role="caption">{rows.at(-1)!.date}</AppText>
             </View>
-            <FigmaTabs
-              tabs={rows.map((row) => ({
-                value: row.date,
-                label: row.date.slice(5),
-              }))}
-              value={selected?.date ?? ''}
-              onChange={setSelectedDate}
+            <FigmaSelectField
+              ref={dayTrigger}
               label="День динамики"
-              panelId="analytics-day"
+              placeholder="Выбрать день"
+              value={selected?.date ?? ''}
+              icon="calendar-01"
+              onPress={() => {
+                setDaySearch('');
+                setInitialDay(selected?.date);
+                setDayOpen(true);
+              }}
             />
-            <View
-              nativeID="analytics-day"
-              role="tabpanel"
-              aria-labelledby={`analytics-day-${selected?.date ?? ''}`}
+            <FilterSheet
+              open={dayOpen}
+              onClose={() => setDayOpen(false)}
+              title="День динамики"
+              presentation="compact"
+              returnFocusRef={dayTrigger}
             >
-              <AppText role="bodySmall" accessibilityLiveRegion="polite">
-                {selected?.date}: {label} — {selected?.[metric] ?? '—'}
-              </AppText>
-            </View>
+              <View
+                style={{
+                  paddingTop: designTokens.space.x2,
+                  marginBottom: designTokens.space.x2,
+                }}
+              >
+                <FilterSearchField
+                  value={daySearch}
+                  onChangeText={setDaySearch}
+                  placeholder="Найти дату (ГГГГ-ММ-ДД)"
+                />
+              </View>
+              <View
+                accessibilityRole="radiogroup"
+                accessibilityLabel="Дни выбранного периода"
+              >
+                {visibleDays.length ? (
+                  visibleDays.map((row, index) => (
+                    <FilterOptionRow
+                      key={row.date}
+                      nativeID={`analytics-day-${row.date}`}
+                      label={row.date}
+                      mode="radio"
+                      selected={row.date === selected?.date}
+                      tabIndex={
+                        row.date === selected?.date ||
+                        (!visibleDays.some((day) => day.date === selected?.date) &&
+                          index === 0)
+                          ? 0
+                          : -1
+                      }
+                      onNavigate={(direction) => {
+                        const nextIndex =
+                          direction === 'first'
+                            ? 0
+                            : direction === 'last'
+                              ? visibleDays.length - 1
+                              : (index +
+                                  (direction === 'next' ? 1 : -1) +
+                                  visibleDays.length) %
+                                visibleDays.length;
+                        const next = visibleDays[nextIndex]!;
+                        setSelectedDate(next.date);
+                        if (Platform.OS === 'web') {
+                          document
+                            .getElementById(`analytics-day-${next.date}`)
+                            ?.focus();
+                        }
+                      }}
+                      onPress={() => {
+                        setSelectedDate(row.date);
+                        setDayOpen(false);
+                      }}
+                    />
+                  ))
+                ) : (
+                  <AppText role="bodySmall">
+                    В этом периоде нет такого дня.
+                  </AppText>
+                )}
+              </View>
+            </FilterSheet>
+            <AppText role="bodySmall" accessibilityLiveRegion="polite">
+              {selected?.date}: {label} — {selected?.[metric] ?? '—'}
+            </AppText>
             {rows.every((row) => row[metric] === 0) ? (
               <AppText role="bodySmall" tone="secondary">
                 В выбранном периоде наблюдений этой метрики нет.
