@@ -87,6 +87,7 @@ const serverEnvSchema = z
     ),
     TELEGRAM_BOT_TOKEN: z.string().optional(),
     TELEGRAM_WEBAPP_URL: z.string().url().optional(),
+    ANALYTICS_WEB_ENABLED: z.enum(['true', 'false']).optional(),
     ANALYTICS_INGEST_ENABLED: z.preprocess(
       (value) => (value === '' ? undefined : value),
       z.enum(['true', 'false']).optional(),
@@ -343,6 +344,7 @@ const serverEnvSchema = z
   })
   .transform((env) => ({
     ...env,
+    ANALYTICS_WEB_ENABLED: env.ANALYTICS_WEB_ENABLED === 'true',
     ANALYTICS_INGEST_ENABLED:
       env.ANALYTICS_INGEST_ENABLED === undefined
         ? env.NODE_ENV !== 'test'

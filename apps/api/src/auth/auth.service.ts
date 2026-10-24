@@ -1,3 +1,4 @@
+import { recordAnalyticsRegistration } from '../analytics/browser-attribution';
 import {
   type AcceptRulesRequest,
   ApiErrorCode,
@@ -64,6 +65,7 @@ export class AuthService {
 
   async register(
     input: RegisterRequest & { ip?: string },
+    analyticsCookie?: string,
   ): Promise<AuthSessionResult> {
     const registrationVersion = readRegistrationLegalVersion();
     const { agreement, privacy, dataConsent } = input.legal;
@@ -119,6 +121,12 @@ export class AuthService {
         select: authCredentialsSelect,
       });
 
+      await recordAnalyticsRegistration(
+        this.prisma,
+        this.env,
+        analyticsCookie,
+        user.id,
+      );
       return this.createAuthResponse(user);
     } catch (error: unknown) {
       if (isPrismaUniqueConstraintError(error)) {

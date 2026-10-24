@@ -200,3 +200,124 @@ describe('AnalyticsClient track', () => {
     ]);
   });
 });
+
+describe('public web analytics foundation', () => {
+  it('captures only public route identifiers and strips query/hash and private contexts', async () => {
+    const { publicAnalyticsPage, webAttribution } =
+      await import('./web-analytics');
+    expect(publicAnalyticsPage('/', '?utm_source=artist')).toEqual({
+      page: 'home',
+    });
+    expect(
+      publicAnalyticsPage('/product/abcdefghijk', '?category=secret'),
+    ).toEqual({ page: 'work', publicId: 'abcdefghijk' });
+    expect(publicAnalyticsPage('/seller/artist-name', '')).toEqual({
+      page: 'author',
+      slug: 'artist-name',
+    });
+    for (const path of [
+      '/admin',
+      '/account',
+      '/author/application',
+      '/product/abcdefghijk/edit',
+      '/login',
+      '/authors/artist-name',
+    ])
+      expect(publicAnalyticsPage(path, '')).toBeNull();
+    expect(
+      publicAnalyticsPage('/product/abcdefghijk', '?preview=true'),
+    ).toBeNull();
+    expect(
+      webAttribution(
+        'https://bidplace.test/?utm_source=artist&utm_campaign=first&q=private#form',
+        'https://example.test/private?q=secret',
+      ),
+    ).toEqual({
+      source: 'artist',
+      campaign: 'first',
+      referrerHost: 'example.test',
+    });
+    expect(
+      webAttribution('https://bidplace.test/', 'https://bidplace.test/secret'),
+    ).toEqual({});
+    expect(
+      webAttribution(
+        'https://bidplace.test/?utm_source=user@example.com',
+        'malformed',
+      ),
+    ).toEqual({});
+  });
+  it.each([true, false])(
+    'retains event ids and first touch on retry with Web Locks available=%s',
+    async (locksAvailable) => {
+      const { WebAnalyticsCollector } = await import('./web-analytics');
+      const payloads: unknown[] = [];
+      let fail = true;
+      vi.stubGlobal('navigator', {
+        locks: locksAvailable
+          ? {
+              request: async (_name: string, callback: () => Promise<void>) =>
+                callback(),
+            }
+          : undefined,
+      });
+      try {
+        const collector = new WebAnalyticsCollector(async (body) => {
+          payloads.push(structuredClone(body));
+          if (fail) throw new Error('fixture offline');
+        });
+        await expect(
+          collector.view({ page: 'home' }, { source: 'first' }),
+        ).rejects.toThrow('fixture offline');
+        fail = false;
+        await collector.view({ page: 'works' }, { source: 'later' });
+        const [first, second] = payloads as Array<{
+          events: Array<{ eventId: string }>;
+          attribution: { source: string };
+        }>;
+        expect(second!.events[0]!.eventId).toBe(first!.events[0]!.eventId);
+        expect(second!.events).toHaveLength(2);
+        expect(second!.attribution.source).toBe('first');
+      } finally {
+        vi.unstubAllGlobals();
+      }
+    },
+  );
+  it('serializes concurrent views within a tab without Web Locks', async () => {
+    const { WebAnalyticsCollector } = await import('./web-analytics');
+    vi.stubGlobal('navigator', {});
+    let finishFirst: () => void = () => {
+      throw new Error('delivery not started');
+    };
+    const firstDelivery = new Promise<void>((resolve) => {
+      finishFirst = resolve;
+    });
+    const ingest = vi
+      .fn()
+      .mockImplementationOnce(() => firstDelivery)
+      .mockResolvedValue(undefined);
+    try {
+      const collector = new WebAnalyticsCollector(ingest);
+      const first = collector.view({ page: 'home' }, {});
+      await vi.waitFor(() => expect(ingest).toHaveBeenCalledTimes(1));
+      const second = collector.view(
+        { page: 'author', slug: 'artist-name' },
+        {},
+      );
+      expect(ingest).toHaveBeenCalledTimes(1);
+      finishFirst();
+      await Promise.all([first, second]);
+      expect(ingest).toHaveBeenCalledTimes(2);
+      expect(
+        ingest.mock.calls.map(([body]) =>
+          body.events.map((event: { page: unknown }) => event.page),
+        ),
+      ).toEqual([
+        [{ page: 'home' }],
+        [{ page: 'author', slug: 'artist-name' }],
+      ]);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+});

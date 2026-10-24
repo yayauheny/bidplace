@@ -1,4 +1,6 @@
+import { SERVER_ENV, type ServerEnv } from '../core/config';
 import {
+  analyticsFoundationQuerySchema,
   adminQueueQuerySchema,
   adminHistoryQuerySchema,
   adminAnalyticsQuerySchema,
@@ -28,6 +30,7 @@ import {
   Delete,
   Get,
   Header,
+  Inject,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -60,7 +63,18 @@ export class AdminController {
     private readonly portfolio: PortfolioService,
     private readonly catalog: CatalogService,
     private readonly clock: Clock,
+    @Inject(SERVER_ENV) private readonly env: ServerEnv,
   ) {}
+
+  @Get('analytics/foundation')
+  @Header('Cache-Control', 'private, no-store')
+  analyticsFoundation(@Query() query: unknown) {
+    return this.analytics.buildFoundation(
+      parseQuery(analyticsFoundationQuerySchema, query),
+      this.clock.now(),
+      this.env.APP_ENV,
+    );
+  }
 
   @Get('analytics/overview')
   async analyticsOverview(@Query() query: unknown) {

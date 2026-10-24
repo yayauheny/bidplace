@@ -772,3 +772,34 @@ describe('auth challenge requests', () => {
     ).toBe(false);
   });
 });
+
+it('bounds new analytics windows and forbids raw paths, identities and timestamps', async () => {
+  const { analyticsFoundationQuerySchema, webAnalyticsRequestSchema } =
+    await import('../src/analytics');
+  expect(
+    analyticsFoundationQuerySchema.safeParse({
+      from: '2026-01-01T00:00:00.000Z',
+      to: '2027-01-01T00:00:00.000Z',
+    }).success,
+  ).toBe(false);
+  for (const payload of [
+    {
+      events: [
+        {
+          eventId: '00000000-0000-4000-8000-000000000001',
+          page: { page: 'home', url: '/?q=private' },
+        },
+      ],
+    },
+    { events: [], environment: 'production' },
+    {
+      events: [
+        {
+          eventId: '00000000-0000-4000-8000-000000000001',
+          page: { page: 'author', slug: 'x'.repeat(121) },
+        },
+      ],
+    },
+  ])
+    expect(webAnalyticsRequestSchema.safeParse(payload).success).toBe(false);
+});

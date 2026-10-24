@@ -186,7 +186,7 @@ function fakePnpm() {
   writeFileSync(
     join(bin, 'pnpm'),
     `#!/bin/sh
-printf '%s\\n' "$EXPO_PUBLIC_TURNSTILE_SITE_KEY" "$TURNSTILE_SECRET_KEY" > "$BIDPLACE_BUILD_CAPTURE"
+printf '%s\\n' "$EXPO_PUBLIC_TURNSTILE_SITE_KEY" "$TURNSTILE_SECRET_KEY" "$EXPO_PUBLIC_ANALYTICS_WEB_ENABLED" > "$BIDPLACE_BUILD_CAPTURE"
 exit 1
 `,
   );
@@ -240,13 +240,18 @@ test('cloudflare web build forwards the caller site key and replaces the backend
       BIDPLACE_BUILD_CAPTURE: capture,
       TURNSTILE_SITE_KEY: `  ${siteKey}  `,
       TURNSTILE_SECRET_KEY: parentSecret,
+      EXPO_PUBLIC_ANALYTICS_WEB_ENABLED: 'true',
     });
     assert.notEqual(result.status, 0);
     assert.doesNotMatch(
       `${result.stdout}${result.stderr}`,
       new RegExp(`${siteKey}|${parentSecret}`),
     );
-    const [forwarded, isolated] = readFileSync(capture, 'utf8').split('\n');
+    const [forwarded, isolated, analytics] = readFileSync(
+      capture,
+      'utf8',
+    ).split('\n');
+    assert.equal(analytics, 'false');
     assert.equal(forwarded, siteKey);
     assert.ok(isolated);
     assert.notEqual(isolated, parentSecret);

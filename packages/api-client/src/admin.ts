@@ -1,6 +1,8 @@
 import { z } from 'zod';
 
 import {
+  analyticsFoundationQuerySchema,
+  analyticsFoundationResponseSchema,
   adminAnalyticsOverviewSchema,
   adminQueueQuerySchema,
   adminHistoryQuerySchema,
@@ -182,6 +184,14 @@ export function createAdminClient(context: RequestContext) {
         context,
         `/api/images/${imageId}`,
         signalRequestOptions(options),
+      );
+    },
+    getAnalyticsFoundation(query: { from: string; to: string }) {
+      return requestJson(
+        context,
+        '/api/admin/analytics/foundation',
+        analyticsFoundationResponseSchema,
+        { query: analyticsFoundationQuerySchema.parse(query) },
       );
     },
     getAnalyticsOverview(query: AdminAnalyticsQuery = { period: '7d' }) {

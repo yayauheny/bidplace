@@ -326,8 +326,11 @@ describe('AnalyticsService', () => {
     });
     const loggerWarn = vi
       .spyOn(
-        (service as unknown as { logger: { warn: (...args: unknown[]) => void } })
-          .logger,
+        (
+          service as unknown as {
+            logger: { warn: (...args: unknown[]) => void };
+          }
+        ).logger,
         'warn',
       )
       .mockImplementation(() => undefined);
@@ -377,8 +380,11 @@ describe('AnalyticsService', () => {
     });
     const loggerWarn = vi
       .spyOn(
-        (service as unknown as { logger: { warn: (...args: unknown[]) => void } })
-          .logger,
+        (
+          service as unknown as {
+            logger: { warn: (...args: unknown[]) => void };
+          }
+        ).logger,
         'warn',
       )
       .mockImplementation(() => undefined);
@@ -405,4 +411,46 @@ describe('AnalyticsService', () => {
     expect(logged).not.toContain(anonymousId);
     loggerWarn.mockRestore();
   });
+});
+
+it('uses only signed server browser proof and keeps registration successful when attribution storage fails', async () => {
+  const {
+    analyticsBrowserId,
+    signAnalyticsBrowser,
+    recordAnalyticsRegistration,
+    ANALYTICS_BROWSER_COOKIE,
+  } = await import('./browser-attribution');
+  const { syntheticServerEnv } =
+    await import('../core/config/synthetic-server-env');
+  const env = syntheticServerEnv({ ANALYTICS_WEB_ENABLED: 'true' });
+  const id = '00000000-0000-4000-8000-000000000001';
+  const proof = `${ANALYTICS_BROWSER_COOKIE}=${signAnalyticsBrowser(id, env)}`;
+  expect(analyticsBrowserId(proof, env)).toBe(id);
+  for (const value of [
+    id,
+    `${id}.${'é'.repeat(43)}`,
+    '%bad',
+    `${id}.${'x'.repeat(43)}`,
+  ]) {
+    expect(
+      analyticsBrowserId(`${ANALYTICS_BROWSER_COOKIE}=${value}`, env),
+    ).toBeNull();
+  }
+  expect(
+    analyticsBrowserId(
+      proof,
+      syntheticServerEnv({ ANALYTICS_WEB_ENABLED: 'true', APP_ENV: 'staging' }),
+    ),
+  ).toBeNull();
+  expect(analyticsBrowserId(proof, syntheticServerEnv())).toBeNull();
+  const prisma = {
+    user: {
+      findUniqueOrThrow: vi.fn().mockRejectedValue(new Error('fixture outage')),
+    },
+    acquisitionAttribution: { updateMany: vi.fn() },
+  };
+  await expect(
+    recordAnalyticsRegistration(prisma as never, env, proof, id),
+  ).resolves.toBeUndefined();
+  expect(prisma.acquisitionAttribution.updateMany).not.toHaveBeenCalled();
 });

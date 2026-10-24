@@ -1025,6 +1025,13 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
             ? profile.profilePhotoData
             : new Uint8Array(0),
           publishedRevisionId: revision.id,
+          firstPublishedAt:
+            profile.firstPublishedAt ??
+            (!operation.restore &&
+            profile.publishedRevisionId === null &&
+            profile.status === 'PENDING_REVIEW'
+              ? new Date()
+              : null),
           status: 'APPROVED',
         },
       });

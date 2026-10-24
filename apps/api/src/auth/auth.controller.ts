@@ -91,10 +91,13 @@ export class AuthController {
   async register(@Body() body: unknown, @Req() request: SessionRequest) {
     const parsed = parseBody(registerRequestSchema, body);
     await this.emailProof.assertRegistrationReady(request, parsed.email);
-    const session = await this.authService.register({
-      ...parsed,
-      ip: resolveClientIp(request, this.env.TRUST_PROXY),
-    });
+    const session = await this.authService.register(
+      {
+        ...parsed,
+        ip: resolveClientIp(request, this.env.TRUST_PROXY),
+      },
+      request.headers.cookie,
+    );
     await this.emailProof.completeRegistration(request);
     await this.sessions.login(request, session.user.id, session.sessionVersion);
 

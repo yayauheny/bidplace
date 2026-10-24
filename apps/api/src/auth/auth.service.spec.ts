@@ -467,3 +467,46 @@ describe('AuthService', () => {
     });
   });
 });
+
+it.each(['malformed', 'storage failure'])(
+  'preserves a new account when analytics attribution has %s',
+  async (failure) => {
+    const { signAnalyticsBrowser, ANALYTICS_BROWSER_COOKIE } =
+      await import('../analytics/browser-attribution');
+    const env = syntheticServerEnv({ ANALYTICS_WEB_ENABLED: 'true' });
+    const user = createPrismaUser();
+    const prisma = {
+      user: {
+        findFirst: vi.fn().mockResolvedValue(null),
+        create: vi.fn().mockResolvedValue(user),
+        findUniqueOrThrow: vi
+          .fn()
+          .mockRejectedValue(new Error('fixture storage failure')),
+      },
+      acquisitionAttribution: { updateMany: vi.fn() },
+    };
+    const service = new AuthService(
+      prisma as never,
+      { hash: vi.fn().mockResolvedValue('fixture hash') } as never,
+      { assertRegistrationEmail: vi.fn() } as never,
+      env,
+    );
+    const id = '00000000-0000-4000-8000-000000000001';
+    const proof =
+      failure === 'malformed'
+        ? `${id}.${'é'.repeat(43)}`
+        : signAnalyticsBrowser(id, env);
+    const result = await service.register(
+      {
+        email: 'created@example.com',
+        password: 'password123',
+        slug: 'created',
+        legal,
+      },
+      `${ANALYTICS_BROWSER_COOKIE}=${proof}`,
+    );
+    expect(prisma.user.create).toHaveBeenCalledOnce();
+    expect(result.user.id).toBe(user.id);
+    expect(prisma.acquisitionAttribution.updateMany).not.toHaveBeenCalled();
+  },
+);

@@ -47,6 +47,28 @@ follow-up API checks passed after the final inline-history correction.
 No production migration/deploy.
 [Scope, compatibility and verification](../audits/current/2026-10-23-ADMIN-FOUNDATION.md).
 
+## 2026-10-24 — Analytics review corrections
+
+**Partial (local verification passed; production prerequisites remain).** `publicAnalyticsPage` now follows canonical `/seller/[slug]`
+and excludes its redirect alias. `WebAnalyticsCollector` preserves delivery without
+Web Locks using one in-tab queue; simultaneous cold tabs can establish separate
+browser identities. Extended owner units and navigation browser checks cover both
+modes: 1036 mobile unit tests and eight Chromium/WebKit scenarios passed, as did
+typecheck, lint, web build and docs links. Independent review has no substantial
+open findings; remote CI is recorded in PR #63. No production enablement.
+
+## 2026-10-23 — Analytics foundation
+
+**Partial (local verification passed; production prerequisites remain).** Additive version 2 web ingestion in
+AnalyticsService/AnalyticsProvider, signed browser proof, database dedupe/shared
+inactivity sessions, three registration creation boundaries and protected
+`/api/admin/analytics/foundation` with UTC/cohort/first-publication metrics.
+Existing collection/dashboard remain legacy; new flags default off. Additive
+migration only; no production enabling, policy publication or consent UI.
+Full workspace verify, Cloudflare checks and Chromium/WebKit opt-in/off scenarios
+passed; independent review has no remaining substantial findings.
+[Definitions](analytics-metrics.md), [scope/checks](../audits/current/2026-10-23-ANALYTICS-FOUNDATION.md).
+
 ## 2026-10-23 — Оптимизация документации
 
 **Implemented (docs only).** Сокращены `AGENTS.md`, карта чтения и product index;

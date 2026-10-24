@@ -218,6 +218,13 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
         )
       ).status,
     ).toBe(200);
+    const firstPublication = (
+      await prisma.sellerProfile.findUniqueOrThrow({
+        where: { id: profile.id },
+        select: { firstPublishedAt: true },
+      })
+    ).firstPublishedAt;
+    expect(firstPublication).toBeInstanceOf(Date);
     expect(await auditFor('SELLER_PROFILE', profile.id)).toEqual([
       { actorUserId: fixture.buyer.id, targetType: 'SELLER_PROFILE', targetId: profile.id,
         oldStatus: 'DRAFT', newStatus: 'PENDING_REVIEW', reason: null },
@@ -303,6 +310,14 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
         )
       ).status,
     ).toBe(200);
+    expect(
+      (
+        await prisma.sellerProfile.findUniqueOrThrow({
+          where: { id: profile.id },
+          select: { firstPublishedAt: true },
+        })
+      ).firstPublishedAt,
+    ).toEqual(firstPublication);
     const missingReasonBefore = await permissionState(prisma);
     expect(
       (

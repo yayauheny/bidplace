@@ -1,3 +1,4 @@
+import { recordAnalyticsRegistration } from '../analytics/browser-attribution';
 import {
   ApiErrorCode,
   type AuthProvider,
@@ -549,6 +550,12 @@ export class AuthFlowService {
       }
       throw error;
     }
+    await recordAnalyticsRegistration(
+      this.prisma,
+      this.env,
+      request.headers.cookie,
+      result.id,
+    );
     await this.finish(request, {
       ...flow,
       userId: result.id,
@@ -607,6 +614,7 @@ export class AuthFlowService {
     const flow = await this.flow(request, ['email', 'ready']);
     if (flow.stage === 'email') await this.emailProof.verify(request, code);
     let user;
+    let registeredUserId: string | undefined;
     try {
       user = await this.prisma.$transaction(async (tx) => {
         await this.lockFlow(tx, flow, ['email', 'ready']);
@@ -670,6 +678,7 @@ export class AuthFlowService {
           where: { id: flow.id },
           data: { stage: 'ready', userId: created.id, version: created.sessionVersion },
         });
+        registeredUserId = created.id;
         return created;
       });
     } catch (error) {
@@ -679,6 +688,13 @@ export class AuthFlowService {
         );
       throw error;
     }
+    if (registeredUserId)
+      await recordAnalyticsRegistration(
+        this.prisma,
+        this.env,
+        request.headers.cookie,
+        registeredUserId,
+      );
     await this.finish(request, {
       ...flow,
       userId: user.id,

@@ -326,3 +326,16 @@ CSRF/origin, идемпотентность, shared quotas и accepted/rejected/
 Для production нужны реальные SMTP/Turnstile/provider проверки и отдельная оценка
 timing на целевой инфраструктуре. Асинхронный outbox без надёжного пробуждения
 scale-to-zero контейнера не добавляется; причины и альтернативы — DEC-136.
+
+
+## 2026-10-23 — Opt-in web analytics proof
+
+New web collection is off without both explicit client and API configuration.
+The server verifies an environment/purpose-bound signed HttpOnly browser cookie;
+malformed proofs never prevent a saved registration. Only actual account creation
+can associate the new cohort relation, independently of legacy claims/login.
+Page properties and attribution are bounded/allowlisted; no arbitrary URLs,
+queries, forms, client timestamps, user identity or environment are accepted.
+Database uniqueness/row locks own deduplication and inactivity sessions. New admin
+reports require the existing session/admin guards and private no-store responses.
+[Proof, configuration and production prerequisites](analytics-contract.md).
