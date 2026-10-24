@@ -174,6 +174,9 @@ export function createAdminClient(context: RequestContext) {
         signalRequestOptions(options),
       );
     },
+    getAchievementImage(id: string, options?: ReadCallOptions) {
+      return requestBlob(context, `/api/author-achievements/${id}/image`, signalRequestOptions(options));
+    },
     getProductImage(imageId: string, options?: ReadCallOptions) {
       return requestBlob(
         context,

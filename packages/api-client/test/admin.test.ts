@@ -216,3 +216,15 @@ it('uses the bounded summary and history routes with authenticated read options'
     `/api/admin/products/${sellerId}/history`,
   ]);
 });
+
+it('opts into queue card metadata and reads achievement media through authenticated transport', async () => {
+  const requests: URL[] = [];
+  const client = createApiClient({baseUrl:'https://api.example.test',credentials:'include',fetchImpl:async(url,init)=>{
+    const path=new URL(String(url));requests.push(path);expect(init?.credentials).toBe('include');
+    return path.pathname.endsWith('/image') ? new Response(new Uint8Array([1]),{headers:{'content-type':'image/png'}}) : Response.json({items:[],nextCursor:null});
+  }});
+  await client.admin.listProductSummaries({includeCard:true,limit:15});
+  await client.admin.getAchievementImage(sellerId);
+  expect(requests[0]!.searchParams.get('includeCard')).toBe('true');
+  expect(requests[1]!.pathname).toBe(`/api/author-achievements/${sellerId}/image`);
+});

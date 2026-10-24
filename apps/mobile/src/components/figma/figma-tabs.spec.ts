@@ -1,7 +1,12 @@
 /**
  * @vitest-environment jsdom
  */
-import { act, createElement, type ReactNode } from 'react';
+import {
+  act,
+  createElement,
+  type ReactNode,
+  type ButtonHTMLAttributes,
+} from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -11,6 +16,7 @@ import { figmaTabLabelColor } from './figma-tabs';
 import { FigmaTabs } from './FigmaTabs';
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+const platform = vi.hoisted(() => ({ OS: 'web' }));
 
 vi.mock('expo-router', () => ({
   DefaultTheme: { colors: {} },
@@ -38,7 +44,7 @@ function domStyle(style?: Record<string, unknown> | null) {
 }
 
 vi.mock('react-native', () => ({
-  Platform: { OS: 'web' },
+  Platform: platform,
   View: ({
     children,
     style,
@@ -53,6 +59,7 @@ vi.mock('react-native', () => ({
   }: {
     children?: ReactNode;
     accessibilityRole?: string;
+    accessibilityState?: { selected: boolean };
     contentContainerStyle?: Record<string, unknown>;
   }) =>
     createElement(
@@ -73,16 +80,39 @@ vi.mock('../ui', () => ({
     children,
     nativeID,
     onPress,
-  }: {
-    children?: ReactNode;
+    accessibilityRole,
+    accessibilityState,
+    'aria-controls': controls,
+    'aria-selected': selected,
+    'aria-pressed': pressed,
+    tabIndex,
+    onKeyDown,
+  }: ButtonHTMLAttributes<HTMLButtonElement> & {
     nativeID?: string;
     onPress?: () => void;
-  }) => createElement('button', { id: nativeID, onClick: onPress }, children),
+    accessibilityRole?: string;
+    accessibilityState?: { selected: boolean };
+  }) =>
+    createElement(
+      'button',
+      {
+        id: nativeID,
+        onClick: onPress,
+        role: accessibilityRole,
+        'data-native-selected': accessibilityState?.selected,
+        'aria-controls': controls,
+        'aria-selected': selected,
+        'aria-pressed': pressed,
+        tabIndex,
+        onKeyDown,
+      },
+      children,
+    ),
 }));
 
 const mounted: Array<{ unmount: () => void }> = [];
 
-function mountTabs(contentInset?: number) {
+function mountTabs(contentInset?: number, selection = false) {
   const container = document.createElement('div');
   document.body.append(container);
   const root: Root = createRoot(container);
@@ -109,6 +139,7 @@ function mountTabs(contentInset?: number) {
         label: 'Информация о работе',
         panelId: 'work-panel',
         fill: true,
+        selection,
         ...(contentInset === undefined ? {} : { contentInset }),
       }),
     );
@@ -117,11 +148,47 @@ function mountTabs(contentInset?: number) {
 }
 
 afterEach(() => {
+  platform.OS = 'web';
   for (const entry of mounted.splice(0)) entry.unmount();
   document.body.replaceChildren();
 });
 
 describe('Figma tabs', () => {
+  it.each(['ios', 'android'])('exposes native selected state on %s', (os) => {
+    platform.OS = os;
+    const view = mountTabs(undefined, true);
+    const buttons = view.container.querySelectorAll('[role="button"]');
+    expect(buttons[0].getAttribute('data-native-selected')).toBe('true');
+    expect(buttons[1].getAttribute('data-native-selected')).toBe('false');
+    expect(view.container.querySelector('[aria-pressed]')).toBeNull();
+  });
+
+  it('uses pressed selection buttons without references to nonexistent panels', () => {
+    const view = mountTabs(undefined, true);
+    expect(view.container.querySelector('[role="toolbar"]')).toBeTruthy();
+    const buttons = view.container.querySelectorAll('[role="button"]');
+    expect(buttons).toHaveLength(2);
+    expect(buttons[0].getAttribute('aria-pressed')).toBe('true');
+    expect(buttons[1].getAttribute('aria-pressed')).toBe('false');
+    expect(view.container.querySelector('[aria-controls]')).toBeNull();
+    expect(view.container.querySelector('[aria-selected]')).toBeNull();
+  });
+
+  it('preserves the default tab-panel association and keyboard selection', () => {
+    const view = mountTabs();
+    const first =
+      view.container.querySelector<HTMLButtonElement>('#work-panel-story')!;
+    expect(first.getAttribute('role')).toBe('tab');
+    expect(first.getAttribute('aria-controls')).toBe('work-panel');
+    expect(first.getAttribute('aria-selected')).toBe('true');
+    act(() =>
+      first.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }),
+      ),
+    );
+    expect(document.activeElement?.id).toBe('work-panel-details');
+  });
+
   it('uses the author-page inactive ink from 621:19524', () => {
     expect(figmaTabLabelColor(true, designTokens.color)).toBe(
       designTokens.color.ink,

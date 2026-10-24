@@ -8,6 +8,7 @@ export type FigmaTabsProps = {
   label: string;
   panelId: string;
   align?: 'start' | 'center';
+  selection?: boolean;
   contentInset?: number;
   /** Таб-бар с фоном canvas и разделителем (веб-шапка). */
   fill?: boolean;

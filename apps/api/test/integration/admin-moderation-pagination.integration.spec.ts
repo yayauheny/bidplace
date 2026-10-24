@@ -1067,6 +1067,9 @@ it('pages summaries by revision submission time with unknown times last and keep
     cursor = body.nextCursor;
   } while (cursor);
   expect(found).toEqual(ids);
+  const enriched = await api.get(`/admin/seller-profiles/summary?${new URLSearchParams({search:label,includeCard:'true'})}`);
+  expect(enriched.status).toBe(200);
+  expect((await enriched.json()).items[0].card).toMatchObject({author:null,reviewKind:'unknown',thumbnail:{kind:'seller-photo',revisionId:revisions[0],checksum:'0'.repeat(64)}});
   const approved = await api.get(
     `/admin/seller-profiles/summary?${new URLSearchParams({ search: label, filter: 'APPROVED' })}`,
   );
@@ -1145,10 +1148,15 @@ it('returns separate Work snapshots without tracking public page views', async (
   expect(await response.json()).toMatchObject({ entity: { parentStatus: 'APPROVED' },
     publishedRevision: { id: publishedId, content: { title: 'Approved snapshot' } },
     reviewRevision: { id: reviewId, content: { title: label } }, decisionTarget: { kind: 'revision', id: reviewId } });
+  const enriched = await api.get(`/admin/products/summary?search=${label}&includeCard=true`);
+  expect(enriched.status).toBe(200);
+  expect((await enriched.json()).items[0].card).toMatchObject({ author: { fullName:label,slug:label }, reviewKind:'repeat', thumbnail:null });
   for (const filter of ['PENDING_REVIEW', 'APPROVED']) {
     const summaries = await api.get(`/admin/products/summary?search=${label}&limit=1&filter=${filter}`);
     expect(summaries.status).toBe(200);
-    expect(await summaries.json()).toMatchObject({ items: [{ id: productId, parentStatus: 'APPROVED', reviewStatus: 'PENDING_REVIEW' }] });
+    const body = await summaries.json();
+    expect(body).toMatchObject({ items: [{ id: productId, parentStatus: 'APPROVED', reviewStatus: 'PENDING_REVIEW' }] });
+    expect(body.items[0]).not.toHaveProperty('card');
   }
   expect(await prisma.analyticsEvent.count()).toBe(0);
 });

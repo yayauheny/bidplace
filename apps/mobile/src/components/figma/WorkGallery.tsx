@@ -1,5 +1,10 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { ScrollView, View } from 'react-native';
+import {
+  ScrollView,
+  View,
+  type StyleProp,
+  type ImageStyle,
+} from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
 import {
   AppDialog,
@@ -28,11 +33,18 @@ export function WorkGallery({
   label,
   leadingAction,
   action,
+  renderImage,
+  thumbnails = false,
 }: {
   images: readonly [GalleryImage, ...GalleryImage[]];
   label: string;
   leadingAction?: ReactNode;
   action?: ReactNode;
+  thumbnails?: boolean;
+  renderImage?: (
+    image: GalleryImage,
+    style: StyleProp<ImageStyle>,
+  ) => ReactNode;
 }) {
   const [width, setWidth] = useState(0);
   const [active, setActive] = useState(0);
@@ -100,16 +112,23 @@ export function WorkGallery({
               accessibilityLabel={`Открыть фото ${index + 1}`}
               onPress={() => setViewerIndex(index)}
             >
-              <ResilientRemoteImage
-                uri={getApiAssetUrl(image.url)}
-                component="ProductGallery"
-                accessibilityLabel={`${label}, фото ${index + 1} из ${images.length}`}
-                fallbackLabel="Изображение недоступно"
-                style={{
+              {renderImage ? (
+                renderImage(image, {
                   width,
                   aspectRatio: designTokens.ratio.productPortrait,
-                }}
-              />
+                })
+              ) : (
+                <ResilientRemoteImage
+                  uri={getApiAssetUrl(image.url)}
+                  component="ProductGallery"
+                  accessibilityLabel={`${label}, фото ${index + 1} из ${images.length}`}
+                  fallbackLabel="Изображение недоступно"
+                  style={{
+                    width,
+                    aspectRatio: designTokens.ratio.productPortrait,
+                  }}
+                />
+              )}
             </MotionPressable>
           ))}
         </ScrollView>
@@ -156,17 +175,24 @@ export function WorkGallery({
           title={`${label}, фото ${viewerIndex + 1} из ${images.length}`}
           onClose={() => setViewerIndex(null)}
         >
-          <ResilientRemoteImage
-            uri={getApiAssetUrl(viewerImage.full?.url ?? viewerImage.url)}
-            component="ProductGallery"
-            accessibilityLabel={`${label}, увеличенное фото`}
-            fallbackLabel="Изображение недоступно"
-            contentFit="contain"
-            style={{
+          {renderImage ? (
+            renderImage(viewerImage, {
               width: '100%',
               aspectRatio: designTokens.ratio.productPortrait,
-            }}
-          />
+            })
+          ) : (
+            <ResilientRemoteImage
+              uri={getApiAssetUrl(viewerImage.full?.url ?? viewerImage.url)}
+              component="ProductGallery"
+              accessibilityLabel={`${label}, увеличенное фото`}
+              fallbackLabel="Изображение недоступно"
+              contentFit="contain"
+              style={{
+                width: '100%',
+                aspectRatio: designTokens.ratio.productPortrait,
+              }}
+            />
+          )}
           {images.length > 1 ? (
             <View
               style={{
@@ -188,6 +214,47 @@ export function WorkGallery({
             </View>
           ) : null}
         </AppDialog>
+      ) : null}
+      {thumbnails ? (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ gap: designTokens.space.x2 }}
+        >
+          {images.map((image, index) => (
+            <MotionPressable
+              key={image.id}
+              accessibilityRole="button"
+              accessibilityLabel={`Фото ${index + 1}: выбрать`}
+              accessibilityState={{ selected: active === index }}
+              onPress={() => show(index)}
+              style={{
+                borderWidth: 1,
+                borderColor: active === index ? palette.ink : palette.border,
+                borderRadius: designTokens.radius.image,
+                overflow: 'hidden',
+              }}
+            >
+              {renderImage ? (
+                renderImage(image, {
+                  width: designTokens.size.control,
+                  height: designTokens.size.control,
+                })
+              ) : (
+                <ResilientRemoteImage
+                  uri={getApiAssetUrl(image.url)}
+                  component="ProductGallery"
+                  accessibilityLabel={`Миниатюра ${index + 1}`}
+                  fallbackLabel="Фото недоступно"
+                  style={{
+                    width: designTokens.size.control,
+                    height: designTokens.size.control,
+                  }}
+                />
+              )}
+            </MotionPressable>
+          ))}
+        </ScrollView>
       ) : null}
       {images.length > 1 ? (
         <View

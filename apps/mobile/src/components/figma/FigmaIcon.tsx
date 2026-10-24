@@ -4,6 +4,8 @@ import { HugeiconsIcon } from '@hugeicons/react-native';
 import { Platform } from 'react-native';
 import {
   AiMagicIcon,
+  ClipboardCheckIcon,
+  ChartLineData01Icon,
   BellIcon,
   ShoppingBag01Icon,
   ArrowDown01Icon,
@@ -110,6 +112,8 @@ const icons = {
   heading: HeadingIcon,
   text: TextIcon,
   check: checkIcon,
+  'clipboard-check': ClipboardCheckIcon,
+  chart: ChartLineData01Icon,
   'setting-07': Setting07Icon,
   'log-out': LogOutIcon,
 } as const satisfies Record<FigmaIconName, typeof Search01Icon>;
