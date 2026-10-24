@@ -1,5 +1,6 @@
 import {
   analyticsFoundationResponseSchema,
+  type AnalyticsFoundationQuery,
   type AdminAnalyticsOverview,
   type AdminAnalyticsQuery,
   adminAnalyticsOverviewSchema,
@@ -111,9 +112,10 @@ export class AdminAnalyticsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async buildFoundation(
-    query: { from: string; to: string },
+    query: AnalyticsFoundationQuery,
     now: Date,
     environment: string,
+    serverCollectionEnabled = false,
   ) {
     const from = new Date(query.from),
       to = new Date(query.to);
@@ -139,6 +141,7 @@ export class AdminAnalyticsService {
         this.prisma.$queryRaw<
           Array<{
             date: string;
+            sessions: bigint;
             views: bigint;
             visitors: bigint;
             registrations: bigint;
@@ -182,6 +185,7 @@ export class AdminAnalyticsService {
       from: query.from,
       to: query.to,
       environment,
+      ...(query.includeActivity ? { serverCollectionEnabled } : {}),
       coverage: {
         firstVisitAt: visitCoverage._min.capturedAt?.toISOString() ?? null,
         firstAuthorPublicationAt:
@@ -191,10 +195,9 @@ export class AdminAnalyticsService {
       growth: growthRows.map(({ date, ...counts }) => ({
         date,
         ...Object.fromEntries(
-          Object.entries(counts).map(([key, value]) => [
-            key,
-            readSqlCount(value),
-          ]),
+          Object.entries(counts)
+            .filter(([key]) => query.includeActivity || key !== 'sessions')
+            .map(([key, value]) => [key, readSqlCount(value)]),
         ),
       })),
       product,

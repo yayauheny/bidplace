@@ -97,6 +97,22 @@ retry и явная отмена остатка доступны на плитк
 блокируется до retry/cancel незавершённого остатка, включая точки шагов. Retry,
 cancel и Back остаются доступны; состояние очереди не подменяет uploadBusy.
 
+## 2026-10-24 — Administrative analytics
+
+**Partial.** Mobile-first foundation analytics reuses FormPageShell, FigmaTabs,
+TextField, PaddedGrid and typography/tokens; one feature-owned SVG series uses the
+installed library. Screens cover truthful collection/coverage/cohort states, UTC
+dates and retry. Independent source/mobile screenshot review found no substantial
+blockers. Exact new admin/desktop composition has no supplied Figma frame
+(**NEEDS-FIGMA**); physical iOS/Android, keyboard and screen reader remain
+**Needs verification**. [Evidence/checks](../audits/current/2026-10-24-ADMIN-ANALYTICS-UI.md).
+
+Analytics accessibility follow-up links period/metric tabs to real labelled
+panels. The 90-day growth view now uses one `FigmaSelectField` and the existing
+compact searchable `FilterSheet`, replacing the inline day tabs. Its radio list
+has one Tab entry, stable ordering, arrow/Home/End selection and Space/Enter
+confirmation with return focus; browser acceptance extends the existing owner.
+
 
 ## 2026-10-24 — Mobile moderation and administrative navigation
 

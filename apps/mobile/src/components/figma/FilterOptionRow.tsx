@@ -19,6 +19,9 @@ export function FilterOptionRow({
   disabled = false,
   variant = 'default',
   onPress,
+  nativeID,
+  tabIndex,
+  onNavigate,
 }: {
   label: string;
   mode: FilterOptionMode;
@@ -26,19 +29,41 @@ export function FilterOptionRow({
   disabled?: boolean;
   variant?: 'default' | 'directions';
   onPress: () => void;
+  nativeID?: string;
+  tabIndex?: number;
+  onNavigate?: (direction: 'previous' | 'next' | 'first' | 'last') => void;
 }) {
   const handleWebKeyDown = (event: {
     key: string;
     preventDefault: () => void;
   }) => {
     // React Native Web Pressable already activates Enter for non-button roles.
-    if (disabled || event.key !== ' ') return;
+    if (disabled) return;
+    if (mode === 'radio' && onNavigate) {
+      const direction =
+        event.key === 'ArrowUp' || event.key === 'ArrowLeft'
+          ? 'previous'
+          : event.key === 'ArrowDown' || event.key === 'ArrowRight'
+            ? 'next'
+            : event.key === 'Home'
+              ? 'first'
+              : event.key === 'End'
+                ? 'last'
+                : undefined;
+      if (direction) {
+        event.preventDefault();
+        onNavigate(direction);
+        return;
+      }
+    }
+    if (event.key !== ' ') return;
     event.preventDefault();
     onPress();
   };
 
   return (
     <MotionPressable
+      nativeID={nativeID}
       accessibilityRole={mode === 'radio' ? 'radio' : 'checkbox'}
       accessibilityState={{ checked: selected, disabled }}
       accessibilityLabel={label}
@@ -46,6 +71,7 @@ export function FilterOptionRow({
         ? ({
             'aria-checked': selected,
             onKeyDown: handleWebKeyDown,
+            ...(tabIndex === undefined ? {} : { tabIndex }),
           } as object)
         : {})}
       disabled={disabled}

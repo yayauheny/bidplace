@@ -125,7 +125,7 @@ first publication; no historical backfill. [Contracts/configuration](analytics-c
 ## Applications and shared boundaries
 
 - `apps/api` is the authoritative NestJS HTTP process. Controllers parse shared Zod contracts; services own business rules and Prisma transactions. Its active product modules are Health, Auth, Auth Abuse, Analytics, Products, OTP, Password Reset, Admin, Images, Sellers and Portfolio; Categories and core database/mail/time/public-id/image-store modules support that graph. `AppModule` imports global `AuthAbuseModule` (`apps/api/src/auth-abuse/`). Listing, Bid, Order, Discovery, Activity, lifecycle and Socket.IO application modules are not on the default boot graph.
-- First-party product analytics ingest lives in `apps/api/src/analytics` (`POST /api/analytics/events`) and persists `AnalyticsEvent` / `AcquisitionAttribution` without duplicating leftover Bid/Order tables. Admin aggregates are served by `GET /api/admin/analytics/overview` and rendered in Expo admin `/(admin)/analytics`. The overview covers users, authors, published works, acquisition and stuck moderation. Auction/bid/order marketplace metrics are not part of the active overview.
+- First-party product analytics ingest lives in `apps/api/src/analytics` (`POST /api/analytics/events`) and persists `AnalyticsEvent` / `AcquisitionAttribution` without duplicating leftover Bid/Order tables. Legacy admin aggregates remain at `GET /api/admin/analytics/overview`. Expo admin `/(admin)/analytics` now reads only protected `GET /api/admin/analytics/foundation`, including opt-in daily sessions and server collection permission, through the existing service/query owners. Auction/bid/order marketplace metrics are not part of the active overview.
 - HTTP requests receive a server-generated `X-Request-Id`. An inbound `X-Request-Id` is not accepted. The same id is returned on the response and written to the request summary and unexpected-error log.
 - `apps/api/src/sellers` owns the authenticated seller detail boundary `GET /api/seller/products/:id`; it verifies product ownership before returning the shared detail contract, including persisted creation-story steps, process-photo metadata and the latest non-null product moderation reason. `apps/mobile/src/features/sellers/ProductDraftScreen` hydrates from this owner detail before initializing the editable wizard, including `REJECTED` recovery on the same Product.
 - `apps/api/src/portfolio` owns strict portfolio-only Home, Work, Author, facets and
@@ -758,3 +758,13 @@ pause writes for registered and unregistered subjects. Unregistered subjects
 use their flow UUID, never a synthetic User row; their ledger owner is null and
 they cannot authenticate. Shared existing OTP policy remains the owner. This
 keeps account counters durable without a response sleep or a second auth engine.
+
+## 2026-10-24 — Mobile analytics read extension
+
+`analyticsFoundationQuerySchema.includeActivity` opts into optional
+`serverCollectionEnabled` and `growth[].sessions`. Existing default responses stay
+unchanged for strict clients; the API client forwards AbortSignal. The controller
+supplies server `ANALYTICS_WEB_ENABLED`, separate from public client configuration.
+Existing PostgreSQL growth aggregation counts distinct sessions per active UTC day;
+no table, migration, service or dependency is added. The feature-owned period helper
+and single-series SVG view reuse Bidplace shells, tabs, fields and PaddedGrid.

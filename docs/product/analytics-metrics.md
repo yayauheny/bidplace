@@ -7,7 +7,11 @@ Status: Confirmed for the accepted foundation scope, 2026-10-23.
 ## Canonical foundation API
 
 Protected `GET /api/admin/analytics/foundation?from=...&to=...` accepts a positive
-interval of at most 93 days. All period metrics use UTC **[from,to)**; daily growth
+interval of at most 93 days. Optional `includeActivity=true` adds the current server
+`ANALYTICS_WEB_ENABLED` permission as `serverCollectionEnabled` and per-day
+`sessions`; the default response omits both for existing strict clients. This
+permission does not enable the client build collector or prove continuous past
+collection. All period metrics use UTC **[from,to)**; daily growth
 uses UTC calendar dates and fills empty dates with zero. All-time operational
 counts are explicitly separate. The API environment comes from server config;
 there is no client environment override. Deployments require separate application
@@ -33,7 +37,7 @@ and environment in SQL, including mixed synthetic fixtures.
 | `acquisition.rate` | Proven cohort registrations / cohort browsers | Null for an empty cohort; registrations may occur after the report interval |
 | `acquisition.bySource` | Same cohort numerator/denominator grouped by immutable first-touch source | UTM → external hostname → direct; no arbitrary referrer URL |
 | `acquisition.mature` | Interval end plus 30 days is no later than report now | False means a partially observed cohort; no mature-rate claim |
-| `growth` | Per UTC date: views/visitors, all account creations, first author/Work publications | Same sources/period semantics as above; not approval counts |
+| `growth` | Per UTC date: views/visitors, optional distinct observed sessions, all account creations, first author/Work publications | Same sources/period semantics as above; not approval counts. A session spanning midnight appears in each active day; daily sums need not equal period distinct sessions. |
 | `coverage.firstVisitAt` | Earliest stored version 2 first-touch time in current environment | Earliest observation, not proof of collection before it |
 | `coverage.firstAuthorPublicationAt` | Earliest stored non-null author first-publication time | Earliest reliable observation; old records are not backfilled |
 | `coverage.legacyExcluded` | Always true for new web/cohort metrics | Explicit semantic boundary |

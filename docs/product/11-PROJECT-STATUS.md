@@ -165,6 +165,30 @@ Backend/API/media contract не изменены; детали проверок 
 переход разрешён. Lifecycle/media browser owners проверяют ошибку, retry и отмену;
 серверный контракт и возможность сохранить частичный draft не менялись.
 
+## 2026-10-24 — Mobile analytics UI
+
+**Partial (local API/mobile/adaptive acceptance and builds passed; CI/hardware pending).**
+`AdminAnalyticsScreen` replaces legacy overview consumption with the protected
+foundation API: browsers/sessions/views/all registrations, proven 30-day cohort,
+first-publication growth and current moderation. Existing read contract accepts
+opt-in activity fields; no persistence/dependency changes. Server collection
+permission and client build collector are distinct; unknown history/coverage and
+immature/empty cohorts stay explicit. PostgreSQL19 owner tests, period11 and client49
+pass. Mobile screenshots/review and final checks: [audit](../audits/current/2026-10-24-ADMIN-ANALYTICS-UI.md).
+
+Analytics UI accessibility follow-up: labelled period/metric panels and
+keyboard/DOM associations use the existing public-screen pattern; no API change.
+
+## 2026-10-24 — Analytics day selection review
+
+**Partial (local browser/typecheck/lint passed; hardware/production remain open).**
+`AdminAnalyticsGrowth` replaces up to 90 inline day tabs with one existing
+`FigmaSelectField` and compact searchable `FilterSheet`. `FilterOptionRow` adds
+opt-in radio navigation; the group preserves ordering, one Tab entry and focus
+return. Independent source review found no remaining actionable issues.
+No API, service, table, migration or dependency changes in this correction.
+Checks and evidence: [analytics audit](../audits/current/2026-10-24-ADMIN-ANALYTICS-UI.md).
+
 Moderation UI accessibility follow-up: labelled detail tabpanel and queue selection
 toolbars replace dangling references; web keyboard/DOM acceptance4/4 passes. Native
 selected-state branches are covered by owner units; physical screen reader remains
