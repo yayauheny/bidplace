@@ -1,7 +1,9 @@
-import type { CSSProperties } from 'react';
+import type { CSSProperties, RefObject } from 'react';
+import type { View } from 'react-native';
 
 import { useAppTheme } from '../../providers/theme-provider';
 import {
+  coverFrostProgressiveMask,
   coverFrostBlur,
   coverFrostSpec,
   type CoverFrostPlacement,
@@ -9,6 +11,7 @@ import {
 
 type FrostLayerStyle = CSSProperties & {
   WebkitBackdropFilter?: string;
+  WebkitMaskImage?: string;
 };
 
 export function CoverFrost({
@@ -16,6 +19,7 @@ export function CoverFrost({
 }: {
   imageUrl: string;
   placement: CoverFrostPlacement;
+  blurTarget?: RefObject<View | null>;
 }) {
   const palette = useAppTheme();
   const spec = coverFrostSpec(placement, palette);
@@ -40,6 +44,8 @@ export function CoverFrost({
               inset: 0,
               backdropFilter: blur,
               WebkitBackdropFilter: blur,
+              maskImage: coverFrostProgressiveMask,
+              WebkitMaskImage: coverFrostProgressiveMask,
             } satisfies FrostLayerStyle
           }
         />

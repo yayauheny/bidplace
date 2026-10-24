@@ -1,5 +1,7 @@
 import { Link } from 'expo-router';
-import { Text, View } from 'react-native';
+import { BlurTargetView } from 'expo-blur';
+import { useRef } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
@@ -81,6 +83,7 @@ export function WorkCoverCard({
   onPress?: () => void;
 }) {
   const overlay = getWorkCoverOverlay({ title, authorSlug });
+  const blurTarget = useRef<View | null>(null);
   const reducedMotion = useReducedMotion();
   const palette = useAppTheme();
   const captionAuthor = authorLabel ?? overlay.authorSlug;
@@ -145,32 +148,32 @@ export function WorkCoverCard({
       >
         {({ hovered, focused }) => (
           <>
-            <View
-              style={coverArtworkFrameStyle(
-                !reducedMotion && (hovered || focused),
-              )}
-            >
-              <ResilientRemoteImage
-                uri={getApiAssetUrl(imageUrl)}
-                component="WorkCoverCard"
-                accessibilityLabel={imageLabel}
-                fallbackLabel={`Изображение недоступно: ${overlay.title}`}
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  right: 0,
-                  bottom: 0,
-                  left: 0,
-                }}
-                contentFit="cover"
-              />
-            </View>
+            <BlurTargetView ref={blurTarget} style={StyleSheet.absoluteFill}>
+              <View
+                style={coverArtworkFrameStyle(
+                  !reducedMotion && (hovered || focused),
+                )}
+              >
+                <ResilientRemoteImage
+                  uri={getApiAssetUrl(imageUrl)}
+                  component="WorkCoverCard"
+                  accessibilityLabel={imageLabel}
+                  fallbackLabel={`Изображение недоступно: ${overlay.title}`}
+                  style={StyleSheet.absoluteFill}
+                  contentFit="cover"
+                />
+              </View>
+            </BlurTargetView>
             <View
               pointerEvents="none"
               style={{ flex: 1, justifyContent: 'flex-end' }}
             >
               <View style={coverFrostZoneStyle()}>
-                <CoverFrost imageUrl={imageUrl} placement="workBottom" />
+                <CoverFrost
+                  imageUrl={imageUrl}
+                  placement="workBottom"
+                  blurTarget={blurTarget}
+                />
                 <View style={coverOverlayPadStyle()}>
                   <Text
                     numberOfLines={2}

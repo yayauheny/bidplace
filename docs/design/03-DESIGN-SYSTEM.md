@@ -875,8 +875,9 @@ input/close target. Existing overlay/focus owners remain the only mechanism.
 Scoped source: Figma `HRRtDp0bQlukw7ptTkuEZg`; exact nodes and mapping are in the
 [portfolio audit](../audits/current/2026-10-23-PORTFOLIO-DESIGN.md). Other handoffs remain applicable.
 
-- `CoverFrost` owns bottom artwork blur30 and scrim without a progressive mask;
-  author top uses only the scrim. Bottom card region clips to 12px upper corners.
+- `CoverFrost` owns a progressive bottom artwork blur60 layer and the existing
+  scrim; the author top uses only the scrim. Bottom card region clips to 12px
+  upper corners.
   Card references do not define the full public author page geometry.
 - `FigmaIconButton` destructive surface uses semantic `destructiveFill` and white
   glyphs; `ProductBlockActions` media presentation combines direct delete with the

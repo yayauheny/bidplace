@@ -16,6 +16,15 @@
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
 | Commerce, избранное/подписки, смена email/password из settings | Not implemented в launch scope / post-MVP; [следующая волна](15-POST-MVP-BACKLOG.md). Старый commerce runtime не разрешает включать продажи. |
 
+## 2026-10-24 — Progressive cover blur
+
+**Partial (local verification pending).** `CoverFrost` keeps the shared card
+composition while switching bottom work/author zones to a Figma-aligned
+progressive 60px web mask and the existing native blur primitive, limited to the
+SDK 31+ Android method for catalog performance. Author top remains a scrim. No
+API, backend, upload or business logic changed; device and visual Figma
+comparison remain to be verified.
+
 ## 2026-10-24 — Mobile moderation UI
 
 **Partial (final verification pending).** `AdminModerationScreen` uses opt-in

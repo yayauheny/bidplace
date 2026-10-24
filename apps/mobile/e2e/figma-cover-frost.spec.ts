@@ -139,13 +139,15 @@ test('cover frost keeps Figma regions and samples artwork once on web', async ({
   expect(workMetrics.zoneHeight).toBe(78);
   expect(authorTopMetrics.zoneHeight).toBe(56);
   expect(authorBottomMetrics.zoneHeight).toBe(76);
-  expect(workMetrics.outerBlurPx).toBeCloseTo(30, 1);
+  expect(workMetrics.outerBlurPx).toBeCloseTo(60, 1);
   expect(authorTopMetrics.outerBlurPx).toBe(0);
   expect(authorTopMetrics.blurLayers).toBe(0);
-  expect(authorBottomMetrics.outerBlurPx).toBeCloseTo(30, 1);
-  expect(workMetrics.maskImage).toBe('none');
+  expect(authorBottomMetrics.outerBlurPx).toBeCloseTo(60, 1);
+  expect(workMetrics.maskImage).toContain('linear-gradient');
+  expect(workMetrics.maskImage).toContain('transparent');
+  expect(workMetrics.maskImage).toContain('black');
   expect(authorTopMetrics.maskImage).toBe('none');
-  expect(authorBottomMetrics.maskImage).toBe('none');
+  expect(authorBottomMetrics.maskImage).toContain('linear-gradient');
   expect(workMetrics.gradientImage).toContain('linear-gradient');
   expect(authorTopMetrics.gradientImage).toContain('linear-gradient');
   expect(authorBottomMetrics.gradientImage).toContain('linear-gradient');
@@ -239,7 +241,9 @@ async function readFrost(locator: Locator) {
         Math.abs(frostBox.top - zoneBox.top) < 0.5,
       zoneHeight: Math.round(zoneBox.height),
       outerBlurPx: blurPx(blurLayers.at(-1)!),
-      maskImage: blurLayers[0] ? getComputedStyle(blurLayers[0]).maskImage : 'none',
+      maskImage: blurLayers[0]
+        ? `${getComputedStyle(blurLayers[0]).maskImage} ${getComputedStyle(blurLayers[0]).webkitMaskImage}`
+        : 'none',
       gradientImage: getComputedStyle(gradientLayers[0]!).backgroundImage,
     };
   });
