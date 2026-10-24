@@ -508,6 +508,8 @@ export class ProductsService {
             targetType: 'PRODUCT',
             targetId: updated.id,
             oldStatus: editingRevision.status,
+            action: 'SUBMITTED',
+            revisionId: current.editingRevisionId,
             newStatus: 'PENDING_REVIEW',
             reason: null,
           },
@@ -575,6 +577,8 @@ export class ProductsService {
           targetType: 'PRODUCT',
           targetId: updated.id,
           oldStatus: current.status,
+          action: 'SUBMITTED',
+          revisionId: current.editingRevisionId,
           newStatus: 'PENDING_REVIEW',
           reason: null,
         },
@@ -665,11 +669,20 @@ export class ProductsService {
             actorUserId: userId,
             targetType: 'PRODUCT',
             targetId: id,
+            action: 'DECISION',
+            revisionId: product.publishedRevisionId,
             oldStatus: product.status,
             newStatus: nextStatus,
             reason: null,
           },
         });
+        if (nextStatus === 'APPROVED') {
+          await tx.auditEvent.create({ data: {
+            actorUserId: userId, targetType: 'PRODUCT', targetId: id,
+            action: 'PUBLICATION_COMPLETED', revisionId: product.publishedRevisionId,
+            oldStatus: product.status, newStatus: 'APPROVED',
+          } });
+        }
 
         const updated = await tx.product.findUniqueOrThrow({
           where: { id },

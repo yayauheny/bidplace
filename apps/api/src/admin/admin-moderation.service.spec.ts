@@ -25,7 +25,7 @@ function moderationService(prisma: object) {
 function transactionPrisma(tx: object) {
   return {
     $transaction: vi.fn(
-      async (callback: (client: object) => Promise<unknown>) => callback(tx),
+      async (callback: (client: object) => Promise<unknown>) => callback({ $queryRaw: vi.fn().mockResolvedValue([]), ...tx }),
     ),
   };
 }

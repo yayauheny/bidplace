@@ -65,6 +65,26 @@ provider acceptance and release integration regression. The historical single-bu
 description below applies to legacy records, not the target production topology.
 See [`11-PROJECT-STATUS.md`](11-PROJECT-STATUS.md) for remaining gates.
 
+## 2026-10-23 — Admin moderation foundation
+
+`AdminModerationService` retains mutation ownership; protected summary/detail/
+history reads extend `AdminController` and the shared contracts/client. Summary
+SQL uses revision submission time and revision ID, with unknown times explicitly
+last. Summary filters are non-exclusive: `APPROVED` tests parent status, other
+statuses test the editing revision with legacy parent fallback, and `ALL` does
+not constrain status. Parent approval does not itself guarantee public visibility;
+consumers keep parent/review statuses separate. Legacy list/cursor contracts are preserved. Detail reuses revision selectors
+and mappers, with separate published/review snapshots and decision target.
+
+`AuditEvent` adds nullable action/revision/operation/generation metadata and an
+optional unique event key; legacy rows remain unknown. Submission, decision and
+publication completion are distinct facts in their existing owner transactions.
+`MediaOperation.generation` identifies reopened restore cycles; retry keeps it.
+Restore refreshes actor/manifest. Finalization locks target then operation and
+checks fresh ownership; bounded DELETE/purge renew leases between objects.
+Existing delivery DTOs stay unchanged and select by latest operation update.
+Migration, compatibility and evidence: [admin foundation audit](../audits/current/2026-10-23-ADMIN-FOUNDATION.md).
+
 ## Applications and shared boundaries
 
 - `apps/api` is the authoritative NestJS HTTP process. Controllers parse shared Zod contracts; services own business rules and Prisma transactions. Its active product modules are Health, Auth, Auth Abuse, Analytics, Products, OTP, Password Reset, Admin, Images, Sellers and Portfolio; Categories and core database/mail/time/public-id/image-store modules support that graph. `AppModule` imports global `AuthAbuseModule` (`apps/api/src/auth-abuse/`). Listing, Bid, Order, Discovery, Activity, lifecycle and Socket.IO application modules are not on the default boot graph.

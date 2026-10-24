@@ -355,10 +355,13 @@ export function toAdminSellerProfile(
   seller: AdminSellerListRecord,
   lastModerationReason: string | null,
   hasBlockingListing: boolean,
+  revisionPhotoOnly = false,
 ) {
   const revision = seller.editingRevision;
   const photo = revision
-    ? selectSellerRevisionPhotoSource(revision, seller)
+    ? revisionPhotoOnly
+      ? completePhoto(revision)
+      : selectSellerRevisionPhotoSource(revision, seller)
     : null;
   return {
     ...(seller.mediaOperations?.[0]

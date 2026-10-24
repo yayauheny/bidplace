@@ -2,9 +2,10 @@ import { randomUUID } from 'node:crypto';
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { Prisma, type PrismaClient } from '@bidplace/database';
-import { adminModerationListQuerySchema } from '@bidplace/contracts';
+import { adminModerationListQuerySchema, adminQueueQuerySchema, encodeAdminQueueCursor } from '@bidplace/contracts';
 
 import { AdminModerationService } from '../../src/admin/admin-moderation.service';
+import { moderationSummarySql } from '../../src/admin/admin-moderation-summary';
 import { latestModerationReasonSql } from '../../src/admin/admin-moderation-list';
 import {
   createHttpTestApp,
@@ -984,10 +985,7 @@ describe('admin moderation search cursor time zones', () => {
           await tx.$queryRaw(
             Prisma.sql`SELECT set_config('TimeZone', ${zone}, true)`,
           );
-          const service = new AdminModerationService(
-            tx as never,
-            {} as never,
-          );
+          const service = new AdminModerationService(tx as never, {} as never);
           const received: string[] = [];
           let cursor: string | undefined;
           let ended = false;
@@ -1021,4 +1019,136 @@ describe('admin moderation search cursor time zones', () => {
       });
     }
   }
+});
+
+it('pages summaries by revision submission time with unknown times last and keeps preview private', async () => {
+  const admin = await createUser('admin', 'summary-admin');
+  const api = client('203.0.113.67');
+  await login(api, admin);
+  const label = `summary-${randomUUID().slice(0, 8)}`;
+  const ids = [randomUUID(), randomUUID(), randomUUID()];
+  const revisions = [randomUUID(), randomUUID(), randomUUID()];
+  for (let i = 0; i < 3; i++) {
+    await createSeller({
+      id: ids[i]!,
+      slug: `${label}-${i}`,
+      fullName: label,
+      status: i === 0 ? 'APPROVED' : 'PENDING_REVIEW',
+      createdAt: new Date(`2026-09-0${3 - i}T00:00:00Z`),
+      revision: {
+        id: revisions[i]!,
+        fullName: label,
+        status: 'PENDING_REVIEW',
+      },
+    });
+    await prisma.sellerProfileRevision.update({
+      where: { id: revisions[i]! },
+      data: {
+        submittedAt: i === 2 ? null : new Date(`2026-10-0${i + 1}T00:00:00Z`),
+      },
+    });
+  }
+  const found: string[] = [];
+  let cursor: string | null = null;
+  do {
+    const params = new URLSearchParams({
+      search: label,
+      limit: '1',
+      ...(cursor ? { cursor } : {}),
+    });
+    const response = await api.get(`/admin/seller-profiles/summary?${params}`);
+    expect(response.status).toBe(200);
+    expect(response.headers.get('cache-control')).toBe('private, no-store');
+    const body = await response.json();
+    const item = body.items[0];
+    expect(item.submissionTimeUnknown).toBe(found.length === 2);
+    expect(item.reviewStatus).toBe('PENDING_REVIEW');
+    found.push(item.id);
+    cursor = body.nextCursor;
+  } while (cursor);
+  expect(found).toEqual(ids);
+  const approved = await api.get(
+    `/admin/seller-profiles/summary?${new URLSearchParams({ search: label, filter: 'APPROVED' })}`,
+  );
+  expect(approved.status).toBe(200);
+  expect(await approved.json()).toMatchObject({
+    items: [{ id: ids[0], parentStatus: 'APPROVED', reviewStatus: 'PENDING_REVIEW' }],
+    nextCursor: null,
+  });
+  expect(
+    (await client('203.0.113.68').get('/admin/products/summary')).status,
+  ).toBe(401);
+  const detail = await api.get(`/admin/seller-profiles/${ids[0]}`);
+  expect(detail.status).toBe(200);
+  expect(await detail.json()).toMatchObject({
+    publishedRevision: null,
+    reviewRevision: { id: revisions[0] },
+    decisionTarget: { kind: 'revision', id: revisions[0] },
+  });
+  const history = await api.get(
+    `/admin/seller-profiles/${ids[0]}/history?limit=1`,
+  );
+  expect(history.status).toBe(200);
+  expect(await history.json()).toEqual({ events: [], nextCursor: null });
+});
+
+
+it('uses UTC and revision ids for tied summary cursors, and preserves unknown historical metadata', async () => {
+  const admin = await createUser('admin', 'history-admin');
+  const api = client('203.0.113.69');
+  await login(api, admin);
+  const sellerId = randomUUID();
+  const revisionId = randomUUID();
+  const label = `utc-${randomUUID().slice(0, 8)}`;
+  const instant = new Date('2026-10-23T10:30:00.000Z');
+  await createSeller({ id: sellerId, slug: label, fullName: label, status: 'PENDING_REVIEW',
+    createdAt: new Date('2026-01-01T00:00:00Z'), revision: { id: revisionId, fullName: label, status: 'PENDING_REVIEW' } });
+  await prisma.sellerProfileRevision.update({ where: { id: revisionId }, data: { submittedAt: instant } });
+  const query = adminQueueQuerySchema.parse({ search: label,
+    cursor: encodeAdminQueueCursor({ submittedAt: instant.toISOString(), id: revisionId }) });
+  const rows = await prisma.$transaction(async (tx) => {
+    await tx.$executeRaw`SET LOCAL TIME ZONE 'Pacific/Honolulu'`;
+    return tx.$queryRaw(moderationSummarySql('SELLER_PROFILE', query));
+  });
+  expect(rows).toEqual([]);
+  const ids = [randomUUID(), randomUUID()].sort();
+  for (const id of ids) await prisma.auditEvent.create({ data: {
+    id, targetType: 'SELLER_PROFILE', targetId: sellerId, createdAt: instant,
+    oldStatus: 'PENDING_REVIEW', newStatus: 'REJECTED',
+  } });
+  const first = await api.get(`/admin/seller-profiles/${sellerId}/history?limit=1`);
+  const page = await first.json();
+  expect(page.events[0]).toMatchObject({ id: ids[0], revisionId: null, action: null, operationGeneration: null, mediaOperationId: null });
+  const second = await api.get(`/admin/seller-profiles/${sellerId}/history?limit=1&cursor=${page.nextCursor}`);
+  expect(await second.json()).toMatchObject({ events: [{ id: ids[1] }], nextCursor: null });
+  expect(await prisma.analyticsEvent.count()).toBe(0);
+});
+
+it('returns separate Work snapshots without tracking public page views', async () => {
+  const admin = await createUser('admin', 'work-detail-admin');
+  const api = client('203.0.113.70');
+  await login(api, admin);
+  const sellerId = randomUUID();
+  const productId = randomUUID();
+  const reviewId = randomUUID();
+  const publishedId = randomUUID();
+  const label = `snapshot-${randomUUID().slice(0, 8)}`;
+  await createSeller({ id: sellerId, fullName: label, slug: label, status: 'APPROVED', createdAt: new Date() });
+  await createProduct({ id: productId, publicId: randomUUID().replace(/-/g, '').slice(0, 11), sellerProfileId: sellerId,
+    title: 'Mutable parent', status: 'APPROVED', createdAt: new Date(),
+    revision: { id: reviewId, title: ` ${label} `, status: 'PENDING_REVIEW' } });
+  await prisma.productRevision.update({ where: { id: reviewId }, data: { version: 2, submittedAt: new Date() } });
+  await prisma.productRevision.create({ data: { id: publishedId, productId, version: 1, status: 'APPROVED', title: 'Approved snapshot' } });
+  await prisma.product.update({ where: { id: productId }, data: { publishedRevisionId: publishedId } });
+  const response = await api.get(`/admin/products/${productId}`);
+  expect(response.status).toBe(200);
+  expect(await response.json()).toMatchObject({ entity: { parentStatus: 'APPROVED' },
+    publishedRevision: { id: publishedId, content: { title: 'Approved snapshot' } },
+    reviewRevision: { id: reviewId, content: { title: label } }, decisionTarget: { kind: 'revision', id: reviewId } });
+  for (const filter of ['PENDING_REVIEW', 'APPROVED']) {
+    const summaries = await api.get(`/admin/products/summary?search=${label}&limit=1&filter=${filter}`);
+    expect(summaries.status).toBe(200);
+    expect(await summaries.json()).toMatchObject({ items: [{ id: productId, parentStatus: 'APPROVED', reviewStatus: 'PENDING_REVIEW' }] });
+  }
+  expect(await prisma.analyticsEvent.count()).toBe(0);
 });
