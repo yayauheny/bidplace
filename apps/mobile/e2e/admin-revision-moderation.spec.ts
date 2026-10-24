@@ -345,7 +345,7 @@ test('mobile queue navigation preserves filters and supports compact states', as
   page.on('request',req=>{if(/\/api\/admin\/(products|seller-profiles)\/[0-9a-f-]{36}$/.test(req.url())) detailRequests.push(req.url());});
   try {
     await page.setViewportSize({width:390,height:844});
-    await page.goto(`/admin?q=${encodeURIComponent(fixture.pendingTitle)}`);
+    await page.goto(`/admin?filter=ALL&q=${encodeURIComponent(fixture.pendingTitle)}`);
     const choices=page.getByRole('toolbar',{name:'Раздел модерации'});
     await expect(choices.getByRole('button',{name:'Работы',exact:true})).toHaveAttribute('aria-pressed','true');
     await expect(choices.locator('[aria-controls]')).toHaveCount(0);
@@ -365,7 +365,12 @@ test('mobile queue navigation preserves filters and supports compact states', as
     await gallery.getByRole('button',{name:'Открыть фото 1',exact:true}).click();
     await expect(page.getByRole('dialog')).toBeVisible();
     await page.getByRole('button',{name:'Закрыть окно',exact:true}).click();
-    await page.getByTestId('admin-moderation-detail').getByRole('button',{name:'Назад',exact:true}).click();
+    await page.getByTestId('admin-moderation-detail').getByRole('button',{name:'Исправления',exact:true}).click();
+    await page.getByRole('dialog').getByLabel('Причина решения').fill('Уточните описание работы');
+    await page.getByRole('dialog').getByRole('button',{name:'Подтвердить решение',exact:true}).click();
+    await expect(page.getByTestId('admin-moderation-detail').getByText('Решение принято. Фактический статус публикации показан ниже.',{exact:true})).toBeVisible();
+    await page.getByTestId('admin-moderation-detail').getByRole('button',{name:'Вернуться',exact:true}).click();
+    await expect(page).toHaveURL(/filter=ALL/);
     await expect(card).toBeVisible();await expect(page.getByLabel('Поиск в очереди')).toHaveValue(fixture.pendingTitle);
     await page.getByLabel('Поиск в очереди').fill('no-results-fixture');
     await expect(page.getByText('Заявок по выбранным условиям нет.')).toBeVisible();
@@ -403,4 +408,33 @@ test('moderation adapts after mobile acceptance without losing decision text', a
   await page.getByRole('button',{name:'Отмена',exact:true}).click();
   await page.getByRole('button',{name:'Исправления',exact:true}).click();await expect(page.getByLabel('Причина решения')).toHaveValue('Сохранённая причина при изменении окна');
  } finally {await context.close();}
+});
+
+
+test('accepted publication shows processing without new review actions and retains failure recovery', async ({browser}) => {
+  mkdirSync('/private/tmp/bidplace-admin-ui-evidence', {recursive:true});
+  const fixture = await createRevisionModerationFixture();
+  const {context,page} = await authenticatedPage(browser,fixture.admin);
+  let state: 'PENDING' | 'RUNNING' | 'FAILED' = 'PENDING';
+  try {
+    await page.route(`**/api/admin/products/${fixture.productId}`, async route => {
+      const response = await route.fetch();
+      const detail = await response.json();
+      detail.entity.publication = { id: fixture.productId, kind: 'PUBLISH', state, attemptCount: 1 };
+      await route.fulfill({response,json:detail});
+    });
+    await page.setViewportSize({width:390,height:844});
+    await page.goto(`/admin/products/${fixture.productId}`);
+    const screen = page.getByTestId('admin-moderation-detail');
+    await expect(screen.getByText(/Публикация обрабатывается/)).toBeVisible();
+    for(const label of ['Одобрить','Исправления','Отклонить']) await expect(screen.getByRole('button',{name:label,exact:true})).toHaveCount(0);
+    state = 'RUNNING';
+    await screen.getByRole('button',{name:'Обновить статус публикации',exact:true}).click();
+    await expect(screen.getByText(/Публикация обрабатывается/)).toBeVisible();
+    await page.screenshot({path:`/private/tmp/bidplace-admin-ui-evidence/processing-${test.info().project.name}-390.png`});
+    state = 'FAILED';
+    await screen.getByRole('button',{name:'Обновить статус публикации',exact:true}).click();
+    await expect(screen.getByRole('button',{name:'Одобрить',exact:true})).toBeEnabled();
+    await expect(screen.getByText(/Доставка медиа не выполнена/)).toBeVisible();
+  } finally { await context.close(); }
 });

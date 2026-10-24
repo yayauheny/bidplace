@@ -106,3 +106,8 @@ and independent source/UX review completed; adaptive/final verification pending.
 Admin uses five existing dock controls (no cart), ordinary users keep four; profile
 is account, moderation/analytics have separate selection. [Audit](../audits/current/2026-10-24-ADMIN-MODERATION-UI.md).
 Hardware keyboard/Safe Area/text scaling and exact desktop Figma parity unverified.
+
+Moderation review follow-up: decision success offers an explicit return to the
+previous page; active publication offers processing/status refresh instead of
+another review decision. Existing controls/tokens/restore flow reused; no new
+visual system. Browser evidence and CI belong to PR #64.

@@ -147,3 +147,13 @@ Moderation UI accessibility follow-up: labelled detail tabpanel and queue select
 toolbars replace dangling references; web keyboard/DOM acceptance4/4 passes. Native
 selected-state branches are covered by owner units; physical screen reader remains
 Needs verification.
+
+## 2026-10-24 — Moderation UI review follow-up
+
+**Partial (checks in progress).** `AdminModerationDetail` returns through existing
+navigation after a decision, preserving a mounted queue/search/filter/scroll
+instead of querying an unrelated default next item. Existing PUBLISH
+PENDING/RUNNING metadata blocks further revision decisions and exposes status
+refresh; FAILED retry and parent restoration keep their existing server rules.
+No API, persistence or permission changes. Owner19 tests and independent source
+review passed; browser/CI results are recorded in PR #64.

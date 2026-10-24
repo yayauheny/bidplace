@@ -502,6 +502,151 @@ describe('mobile moderation detail', () => {
     });
     await act(async () => finish());
     await waitFor('Решение принято');
+    await click('Вернуться');
+    expect(h.back).toHaveBeenCalledOnce();
+    expect(h.replace).not.toHaveBeenCalled();
+    expect(h.admin.listProductSummaries).not.toHaveBeenCalled();
+    expect(h.admin.listSellerSummaries).not.toHaveBeenCalled();
+  });
+  it('does not offer a repeated decision when accepted approval readback fails', async () => {
+    const detail = workDetail();
+    h.admin.getProductDetail
+      .mockResolvedValueOnce(detail)
+      .mockRejectedValue(new Error('offline'));
+    await mount(
+      createElement(AdminModerationDetail, { id: productId, kind: 'products' }),
+    );
+    await waitFor('Pending work');
+    await click('Одобрить');
+    await click('Подтвердить решение');
+    await waitFor('Актуальный статус публикации не подтверждён');
+    expect(container.textContent).not.toContain('Публикация обрабатывается');
+    expect(
+      Array.from(container.querySelectorAll('button')).find(
+        (button) => button.textContent === 'Одобрить',
+      ),
+    ).toBeUndefined();
+    expect(h.admin.updateProductStatus).toHaveBeenCalledOnce();
+    h.admin.getProductDetail.mockResolvedValue({
+      ...detail,
+      entity: {
+        ...detail.entity,
+        publication: {
+          id: revisionId,
+          kind: 'PUBLISH',
+          state: 'FAILED',
+          attemptCount: 1,
+        },
+      },
+    });
+    await click('Обновить статус публикации');
+    await waitFor('Доставка медиа не выполнена');
+    expect(
+      Array.from(container.querySelectorAll('button')).find(
+        (button) => button.textContent === 'Одобрить',
+      )!.disabled,
+    ).toBe(false);
+  });
+  it.each(['products', 'authors'] as const)(
+    'blocks new %s review decisions during media publication, then refreshes',
+    async (kind) => {
+      const detail = kind === 'products' ? workDetail() : authorDetail();
+      const publication = {
+        id: revisionId,
+        kind: 'PUBLISH',
+        state: 'PENDING',
+        attemptCount: 0,
+      };
+      Object.assign(detail.entity, { publication });
+      const read =
+        kind === 'products'
+          ? h.admin.getProductDetail
+          : h.admin.getSellerDetail;
+      read.mockImplementation(async () => structuredClone(detail));
+      await mount(
+        createElement(AdminModerationDetail, {
+          id: kind === 'products' ? productId : sellerId,
+          kind,
+        }),
+      );
+      await waitFor('Публикация обрабатывается');
+      for (const label of ['Одобрить', 'Исправления', 'Отклонить'])
+        expect(
+          Array.from(container.querySelectorAll('button')).find(
+            (button) => button.textContent === label,
+          ),
+        ).toBeUndefined();
+      publication.state = 'RUNNING';
+      await click('Обновить статус публикации');
+      await waitFor('Публикация обрабатывается');
+      publication.state = 'DONE';
+      Object.assign(detail.reviewRevision, { status: 'APPROVED' });
+      await click('Обновить статус публикации');
+      await vi.waitFor(() =>
+        expect(container.textContent).not.toContain(
+          'Публикация обрабатывается',
+        ),
+      );
+      expect(h.admin.updateProductStatus).not.toHaveBeenCalled();
+      expect(h.admin.updateSellerStatus).not.toHaveBeenCalled();
+    },
+  );
+  it('keeps failed-publication retry and parent restoration available', async () => {
+    const detail = workDetail();
+    Object.assign(detail.entity, {
+      parentStatus: 'ARCHIVED',
+      publication: {
+        id: revisionId,
+        kind: 'PUBLISH',
+        state: 'FAILED',
+        attemptCount: 1,
+      },
+    });
+    h.admin.getProductDetail.mockResolvedValue(detail);
+    await mount(
+      createElement(AdminModerationDetail, { id: productId, kind: 'products' }),
+    );
+    await waitFor('Pending work');
+    expect(
+      Array.from(container.querySelectorAll('button')).find(
+        (button) => button.textContent === 'Одобрить',
+      )!.disabled,
+    ).toBe(false);
+    await click('Восстановить публикацию');
+    await click('Подтвердить решение');
+    await waitFor('Решение принято');
+    expect(h.admin.updateProductStatus).toHaveBeenCalledWith(
+      productId,
+      expect.objectContaining({
+        target: { kind: 'parent', status: 'ARCHIVED', updatedAt: seenAt },
+      }),
+    );
+  });
+  it('does not block parent restoration while another publication is running', async () => {
+    const detail = workDetail();
+    Object.assign(detail.entity, {
+      parentStatus: 'ARCHIVED',
+      publication: {
+        id: revisionId,
+        kind: 'PUBLISH',
+        state: 'RUNNING',
+        attemptCount: 1,
+      },
+    });
+    h.admin.getProductDetail.mockResolvedValue(detail);
+    await mount(
+      createElement(AdminModerationDetail, { id: productId, kind: 'products' }),
+    );
+    await waitFor('Публикация обрабатывается');
+    await click('Восстановить публикацию');
+    await click('Подтвердить решение');
+    await waitFor('Решение принято');
+    expect(h.admin.updateProductStatus).toHaveBeenCalledWith(
+      productId,
+      expect.objectContaining({
+        target: { kind: 'parent', status: 'ARCHIVED', updatedAt: seenAt },
+      }),
+    );
   });
   it('retains reason on a conflict, requires refresh and never retries automatically', async () => {
     h.admin.getSellerDetail.mockResolvedValue(authorDetail());

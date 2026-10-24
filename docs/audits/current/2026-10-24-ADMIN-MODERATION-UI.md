@@ -92,3 +92,23 @@ Final accessibility review found missing tab-panel associations. Detail now link
 its labelled panel; queue selectors use the existing visual rail with explicit
 selection-toolbar semantics and pressed state. No new navigation or layout.
 Shared owner units and browser DOM/keyboard acceptance verify these associations.
+
+## Review follow-up — 2026-10-24
+
+Removed the unscoped next-item request; explicit «Вернуться» follows the existing
+detail Back path, preserving queue state when entered from that queue. This is
+the smallest durable choice within the accepted alternative; automatic next
+selection would need queue-position/cursor context and is no longer offered.
+Existing PUBLISH PENDING/RUNNING blocks the three revision decisions and shows
+processing with status refresh. FAILED delivery is not globally blocked; retry
+and parent restoration retain existing backend rules. Successful approval also
+blocks repeat decisions while authoritative readback is in flight or failed.
+No generation counter, endpoint, contract or backend change. Independent source
+review found no substantial open issue. Owner19 tests pass; final checks in PR.
+
+Review follow-up acceptance: full mobile1032 passed before the last additional
+readback-error case; final owner19, graph typecheck/lint/docs and browser4/4 passed.
+Browser cases verify decision return with ALL/search retained and publication
+processing→failure recovery. Docker storage was full; tests used a disposable
+native PostgreSQL18 cluster without deleting Docker data. Remote CI uses the
+repository PostgreSQL16 service. [Processing screenshot](../evidence/2026-10-24-admin-moderation/processing-chromium-390.png).

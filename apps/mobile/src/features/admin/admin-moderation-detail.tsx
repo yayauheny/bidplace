@@ -96,7 +96,6 @@ export function AdminModerationDetail({
   const [reason, setReason] = useState('');
   const [failure, setFailure] = useState<string | null>(null);
   const [stale, setStale] = useState(false);
-  const [nextError, setNextError] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
   const saving = useRef(false);
   const queryKey = ['admin', 'detail', kind, id];
@@ -125,6 +124,10 @@ export function AdminModerationDetail({
     getNextPageParam: (page) => page.nextCursor ?? undefined,
     enabled: tab === 'history',
   });
+  const publication = query.data?.data.entity.publication;
+  const publishing =
+    publication?.kind === 'PUBLISH' &&
+    ['PENDING', 'RUNNING'].includes(publication.state);
   const decision = useMutation({
     mutationFn: async ({
       detail,
@@ -171,6 +174,17 @@ export function AdminModerationDetail({
   };
   const submit = async () => {
     if (!confirmation || saving.current || stale) return;
+    if (
+      publishing &&
+      ['APPROVED', 'CHANGES_REQUESTED', 'REJECTED'].includes(
+        confirmation.action,
+      )
+    ) {
+      setFailure(
+        'Публикация обрабатывается. Обновите статус перед новым решением.',
+      );
+      return;
+    }
     if (
       !['APPROVED', 'RESTORE'].includes(confirmation.action) &&
       !reason.trim()
@@ -223,7 +237,13 @@ export function AdminModerationDetail({
   const title =
     'title' in content ? (content.title ?? 'Без названия') : content.fullName;
   const fields = moderationComparison(published?.content ?? null, content);
+  const awaitingApprovalStatus =
+    decision.isSuccess &&
+    decision.variables?.action === 'APPROVED' &&
+    (query.isFetching || query.isError);
   const canDecide =
+    !publishing &&
+    !awaitingApprovalStatus &&
     !entity.hasBlockingListing &&
     (review?.status === 'PENDING_REVIEW' ||
       (!review && entity.parentStatus === 'PENDING_REVIEW'));
@@ -349,7 +369,20 @@ export function AdminModerationDetail({
               ? `Отправлено ${new Date(review.submittedAt).toLocaleString('ru-RU')}`
               : 'Дата отправки неизвестна'}
           </AppText>
-          {entity.publication ? (
+          {publishing || awaitingApprovalStatus ? (
+            <View style={{ gap: designTokens.space.x2 }}>
+              <AppText role="bodySmall" accessibilityLiveRegion="polite">
+                {publishing
+                  ? 'Решение принято. Публикация обрабатывается; статус ещё не подтверждён.'
+                  : 'Решение принято. Актуальный статус публикации не подтверждён; обновите данные.'}
+              </AppText>
+              <SecondaryButton
+                label="Обновить статус публикации"
+                loading={query.isFetching}
+                onPress={() => void refresh()}
+              />
+            </View>
+          ) : entity.publication ? (
             <MediaDeliveryNotice delivery={entity.publication} />
           ) : null}
           {entity.hasBlockingListing ? (
@@ -579,39 +612,8 @@ export function AdminModerationDetail({
             </FormSection>
           )}
         </View>
-        {nextError ? (
-          <AppText role="bodySmall" tone="danger">
-            Не удалось загрузить следующую заявку. Повторите переход или
-            вернитесь к очереди.
-          </AppText>
-        ) : null}
         {success ? (
-          <SecondaryButton
-            label="Следующая заявка"
-            onPress={async () => {
-              setNextError(false);
-              const epoch = currentAuthEpoch(queryClient);
-              try {
-                const page =
-                  detail.kind === 'products'
-                    ? await api.admin.listProductSummaries({ limit: 2 })
-                    : await api.admin.listSellerSummaries({ limit: 2 });
-                if (currentAuthEpoch(queryClient) !== epoch) return;
-                const next = page.items.find((item) => item.id !== id);
-                if (next)
-                  router.replace({
-                    pathname:
-                      detail.kind === 'products'
-                        ? '/admin/products/[id]'
-                        : '/admin/authors/[id]',
-                    params: { id: next.id },
-                  });
-                else router.back();
-              } catch {
-                setNextError(true);
-              }
-            }}
-          />
+          <SecondaryButton label="Вернуться" onPress={() => router.back()} />
         ) : null}
         <AppDialog
           open={confirmation !== null}

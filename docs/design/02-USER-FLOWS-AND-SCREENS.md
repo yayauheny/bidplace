@@ -564,3 +564,11 @@ stack, preserving Back to the queue. Detail has Preview/Changes/History and
 confirmed captured-target decisions; parent visibility restoration is separate.
 No public view tracking or public preview endpoints for pending content. Current
 admin role only; future moderation and analytics grants remain separate concerns.
+
+### Moderation decision return (2026-10-24)
+
+After a decision, «Вернуться» uses the same Back navigation as the detail header.
+From a queue this preserves its route-owned search/filter and mounted scroll; a
+direct detail entry returns to its actual previous page. There is no implicit
+next-item jump into a default queue. PUBLISH PENDING/RUNNING shows processing and
+status refresh; failed delivery and parent restore retain server-owned actions.
