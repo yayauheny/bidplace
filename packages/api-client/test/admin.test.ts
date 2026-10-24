@@ -241,3 +241,44 @@ it('sends new public web events through the additive endpoint without accepting 
   ).toEqual({ accepted: 1, sessionId });
   expect(requested).toBe('https://api.example.test/api/analytics/web-events');
 });
+
+it('uses the bounded summary and history routes with authenticated read options', async () => {
+  const paths: string[] = [];
+  const client = createApiClient({
+    baseUrl: 'https://api.example.test',
+    credentials: 'include',
+    fetchImpl: async (url, init) => {
+      const path = new URL(String(url));
+      paths.push(path.pathname);
+      expect(init?.credentials).toBe('include');
+      expect(path.searchParams.get('limit')).toBe('1');
+      return Response.json(
+        path.pathname.endsWith('history')
+          ? { events: [], nextCursor: null }
+          : { items: [], nextCursor: null },
+      );
+    },
+  });
+  await client.admin.listSellerSummaries({ limit: 1 });
+  await client.admin.listProductSummaries({ limit: 1 });
+  await client.admin.getSellerHistory(sellerId, { limit: 1 });
+  await client.admin.getProductHistory(sellerId, { limit: 1 });
+  expect(paths).toEqual([
+    '/api/admin/seller-profiles/summary',
+    '/api/admin/products/summary',
+    `/api/admin/seller-profiles/${sellerId}/history`,
+    `/api/admin/products/${sellerId}/history`,
+  ]);
+});
+
+it('opts into queue card metadata and reads achievement media through authenticated transport', async () => {
+  const requests: URL[] = [];
+  const client = createApiClient({baseUrl:'https://api.example.test',credentials:'include',fetchImpl:async(url,init)=>{
+    const path=new URL(String(url));requests.push(path);expect(init?.credentials).toBe('include');
+    return path.pathname.endsWith('/image') ? new Response(new Uint8Array([1]),{headers:{'content-type':'image/png'}}) : Response.json({items:[],nextCursor:null});
+  }});
+  await client.admin.listProductSummaries({includeCard:true,limit:15});
+  await client.admin.getAchievementImage(sellerId);
+  expect(requests[0]!.searchParams.get('includeCard')).toBe('true');
+  expect(requests[1]!.pathname).toBe(`/api/author-achievements/${sellerId}/image`);
+});

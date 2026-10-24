@@ -571,6 +571,11 @@ model AuditEvent {
   oldStatus   String?         @map("old_status") @db.VarChar(64)
   newStatus   String?         @map("new_status") @db.VarChar(64)
   reason      String?         @db.Text
+  action      String?         @db.VarChar(40)
+  revisionId  String?         @map("revision_id") @db.Uuid
+  mediaOperationId String?    @map("media_operation_id") @db.Uuid
+  operationGeneration Int?   @map("operation_generation")
+  eventKey    String?         @unique @map("event_key") @db.VarChar(255)
   createdAt   DateTime        @default(now()) @map("created_at")
 
   actor User? @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: Restrict)
@@ -863,6 +868,7 @@ model MediaOperation {
   revisionId String? @map("revision_id") @db.Uuid
   expectedRevisionAt DateTime? @map("expected_revision_at")
   restore Boolean @default(false)
+  generation Int @default(0)
   previousRevisionId String? @map("previous_revision_id") @db.Uuid
   actorUserId String? @map("actor_user_id") @db.Uuid
   attemptCount Int @default(0) @map("attempt_count")

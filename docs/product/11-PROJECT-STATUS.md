@@ -16,6 +16,37 @@
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
 | Commerce, избранное/подписки, смена email/password из settings | Not implemented в launch scope / post-MVP; [следующая волна](15-POST-MVP-BACKLOG.md). Старый commerce runtime не разрешает включать продажи. |
 
+## 2026-10-24 — Mobile moderation UI
+
+**Partial (final verification pending).** `AdminModerationScreen` uses opt-in
+summary cards; protected detail routes share gallery, vertical comparison,
+history and captured-target decisions. Existing Users/catalog actions remain.
+Admin dock separates `/admin`, `/analytics`, `/account`; ordinary dock unchanged.
+Mobile source/UX review fixes and local checks are in the [UI audit](../audits/current/2026-10-24-ADMIN-MODERATION-UI.md).
+No role/migration/deploy. Hardware/exact desktop parity remain unverified.
+
+## 2026-10-24 — Moderation filter contract clarification
+
+**Implemented (local verification passed).** `adminQueueQuerySchema` now describes existing overlapping
+filters: `APPROVED` selects the parent; review filters select editing revisions.
+Extended seller/Work summary integration assertions cover approved parents with
+pending edits. No selection logic, authorization, DTO fields or UI taxonomy changed.
+17 owner HTTP/PostgreSQL tests, 47 contracts tests, contracts/API typecheck, API
+lint/build with dependencies, docs links and diff checks passed. Independent
+review has no substantial open findings; remote CI is recorded in PR #62.
+
+## 2026-10-23 — Admin foundation
+
+**Implemented (local verification passed).** Protected summary/detail/history API in
+`AdminController`/`AdminModerationService`, revision submission cursor with unknown
+time, separate snapshots, additive audit metadata and restore generations.
+Seller restore, replay and media completion/deletion ownership corrected in the
+existing lifecycle. Owner integration specs cover three restore cycles, outage,
+lease takeover, UTC/history and private preview. Full `pnpm verify` passed;
+follow-up API checks passed after the final inline-history correction.
+No production migration/deploy.
+[Scope, compatibility and verification](../audits/current/2026-10-23-ADMIN-FOUNDATION.md).
+
 ## 2026-10-24 — Analytics review corrections
 
 **Partial (local verification passed; production prerequisites remain).** `publicAnalyticsPage` now follows canonical `/seller/[slug]`
@@ -157,3 +188,18 @@ opt-in radio navigation; the group preserves ordering, one Tab entry and focus
 return. Independent source review found no remaining actionable issues.
 No API, service, table, migration or dependency changes in this correction.
 Checks and evidence: [analytics audit](../audits/current/2026-10-24-ADMIN-ANALYTICS-UI.md).
+
+Moderation UI accessibility follow-up: labelled detail tabpanel and queue selection
+toolbars replace dangling references; web keyboard/DOM acceptance4/4 passes. Native
+selected-state branches are covered by owner units; physical screen reader remains
+Needs verification.
+
+## 2026-10-24 — Moderation UI review follow-up
+
+**Partial (checks in progress).** `AdminModerationDetail` returns through existing
+navigation after a decision, preserving a mounted queue/search/filter/scroll
+instead of querying an unrelated default next item. Existing PUBLISH
+PENDING/RUNNING metadata blocks further revision decisions and exposes status
+refresh; FAILED retry and parent restoration keep their existing server rules.
+No API, persistence or permission changes. Owner19 tests and independent source
+review passed; browser/CI results are recorded in PR #64.

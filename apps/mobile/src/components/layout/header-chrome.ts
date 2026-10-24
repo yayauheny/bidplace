@@ -30,7 +30,7 @@ export function getProfileHref({
   isAuthenticated: boolean;
   returnPath: string;
 }): Href {
-  if (isAdmin) return '/admin';
+  if (isAdmin) return '/account';
   if (isAuthenticated) return '/account';
   return returnPath === '/'
     ? '/login'

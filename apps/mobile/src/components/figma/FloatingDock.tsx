@@ -13,7 +13,7 @@ import { FloatingDockFrame } from './FloatingDockFrame';
 import {
   SEARCH_DOCK_BUTTON_ID,
   dockItemAccessibility,
-  figmaDockItems,
+  getFigmaDockItems,
   isFigmaDockItemSelected,
   type FigmaDockItem,
 } from './floating-dock';
@@ -29,9 +29,7 @@ export function FloatingDock({
   const navigation = useAppNavigation('figma-floating-dock');
   const { pathname, search } = navigation;
   const { bottom } = useDockInset();
-  const items = navigation.isAdmin
-    ? figmaDockItems.filter((item) => item.id !== 'plus')
-    : figmaDockItems;
+  const items = getFigmaDockItems(navigation);
   const buttons = items.map((item) => (
     <DockItem
       key={item.id}
@@ -42,11 +40,12 @@ export function FloatingDock({
           : !search.isOpen && isFigmaDockItemSelected(item.id, pathname)
       }
       href={
-        item.id === 'home'
+        item.href ??
+        (item.id === 'home'
           ? '/'
           : item.id === 'profile'
             ? navigation.profileHref
-            : undefined
+            : undefined)
       }
       onPress={
         item.id === 'search'

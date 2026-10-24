@@ -67,7 +67,7 @@ describe('shared public navigation', () => {
   it('preserves the requested destination for guest onboarding and returns admins to their cabinet', () => {
     expect(getMobileCreateHref({ isAuthenticated: false, sellerStatus: null, returnPath: '/profile' })).toEqual({ pathname: '/login', params: { redirectTo: '/profile' } });
     expect(getMobileCreateHref({ isAuthenticated: false, sellerStatus: null, returnPath: '/works' })).toEqual({ pathname: '/login', params: { redirectTo: '/works' } });
-    expect(getProfileHref({ isAdmin: true, isAuthenticated: true, returnPath: '/works' })).toBe('/admin');
+    expect(getProfileHref({ isAdmin: true, isAuthenticated: true, returnPath: '/works' })).toBe('/account');
   });
 
   it.each([
@@ -79,7 +79,7 @@ describe('shared public navigation', () => {
       { pathname: '/login', params: { redirectTo: '/seller/vex' } },
     ],
     [false, true, '/works', '/account'],
-    [true, true, '/works', '/admin'],
+    [true, true, '/works', '/account'],
   ] as const)(
     'preserves profile destination for admin=%s authenticated=%s',
     (isAdmin, isAuthenticated, returnPath, expected) => {

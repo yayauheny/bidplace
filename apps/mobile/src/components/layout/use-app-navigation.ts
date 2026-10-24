@@ -34,6 +34,8 @@ export function useAppNavigation(hostTestID: string) {
     pathname,
     search,
     isAdmin: auth.isAdmin,
+    canModerate: auth.canModerate,
+    canReadAnalytics: auth.isAdmin,
     authorHref: getMobileCreateHref({
       isAuthenticated: auth.isAuthenticated,
       sellerStatus: null,

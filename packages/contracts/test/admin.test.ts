@@ -178,3 +178,25 @@ describe('admin moderation contracts', () => {
     ).toBeNull();
   });
 });
+
+it('validates bounded queue cursors without inventing an unknown submission date', async () => {
+  const {
+    adminQueueQuerySchema,
+    encodeAdminQueueCursor,
+    parseAdminQueueCursor,
+  } = await import('../src/admin');
+  const cursor = encodeAdminQueueCursor({ id: revisionId, submittedAt: null });
+  expect(parseAdminQueueCursor(cursor)).toEqual({
+    id: revisionId,
+    submittedAt: null,
+  });
+  expect(adminQueueQuerySchema.parse({ cursor }).filter).toBe('PENDING_REVIEW');
+  for (const query of [
+    { limit: 101 },
+    { cursor: 'bad' },
+    { cursor: 'x'.repeat(513) },
+    { search: 'x'.repeat(201) },
+  ]) {
+    expect(adminQueueQuerySchema.safeParse(query).success).toBe(false);
+  }
+});

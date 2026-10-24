@@ -355,10 +355,13 @@ export function toAdminSellerProfile(
   seller: AdminSellerListRecord,
   lastModerationReason: string | null,
   hasBlockingListing: boolean,
+  revisionPhotoOnly = false,
 ) {
   const revision = seller.editingRevision;
   const photo = revision
-    ? selectSellerRevisionPhotoSource(revision, seller)
+    ? revisionPhotoOnly
+      ? completePhoto(revision)
+      : selectSellerRevisionPhotoSource(revision, seller)
     : null;
   return {
     ...(seller.mediaOperations?.[0]
@@ -453,5 +456,99 @@ export function toAdminProduct(
       : null,
     hasBlockingListing: product.listings.length > 0,
     lastModerationReason,
+  };
+}
+
+const summaryPhotoSelect = {
+  mediaOperations: mediaDeliverySelect,
+  id: true,
+  publishedRevisionId: true,
+  status: true,
+  ...sellerPhotoMetaSelect,
+  editingRevision: {
+    select: { id: true, updatedAt: true, ...sellerPhotoMetaSelect },
+  },
+} satisfies Prisma.SellerProfileSelect;
+
+export const adminSellerSummarySelect = summaryPhotoSelect;
+export const adminProductSummarySelect = {
+  id: true,
+  status: true,
+  publishedRevisionId: true,
+  sellerProfile: { select: { fullName: true, slug: true } },
+  images: {
+    take: 1,
+    orderBy: { position: 'asc' as const },
+    select: { id: true, checksum: true },
+  },
+  editingRevision: {
+    select: {
+      images: {
+        take: 1,
+        orderBy: { position: 'asc' as const },
+        select: { image: { select: { id: true, checksum: true } } },
+      },
+    },
+  },
+  mediaOperations: mediaDeliverySelect,
+} satisfies Prisma.ProductSelect;
+
+function summaryReviewKind(record: {
+  publishedRevisionId: string | null;
+  status: string;
+}) {
+  return record.publishedRevisionId
+    ? ('repeat' as const)
+    : record.status === 'PENDING_REVIEW'
+      ? ('first' as const)
+      : ('unknown' as const);
+}
+
+export function toSellerSummaryCard(
+  record: Prisma.SellerProfileGetPayload<{
+    select: typeof adminSellerSummarySelect;
+  }>,
+) {
+  const revision = record.editingRevision;
+  const photo = revision
+    ? selectSellerRevisionPhotoSource(revision, record)
+    : null;
+  return {
+    author: null,
+    reviewKind: summaryReviewKind(record),
+    ...(record.mediaOperations[0] ? { publication: record.mediaOperations[0] } : {}),
+    thumbnail:
+      revision && photo
+        ? {
+            kind: 'seller-photo' as const,
+            revisionId: revision.id,
+            updatedAt: revision.updatedAt.toISOString(),
+            checksum: photo.checksum,
+          }
+        : null,
+  };
+}
+
+export function toProductSummaryCard(
+  record: Prisma.ProductGetPayload<{
+    select: typeof adminProductSummarySelect;
+  }>,
+) {
+  const image = record.editingRevision
+    ? record.editingRevision.images[0]?.image
+    : record.images[0];
+  return {
+    author: record.sellerProfile,
+    reviewKind: summaryReviewKind(record),
+    thumbnail: image
+      ? {
+          kind: 'product-image' as const,
+          id: image.id,
+          checksum: image.checksum,
+        }
+      : null,
+    ...(record.mediaOperations[0]
+      ? { publication: record.mediaOperations[0] }
+      : {}),
   };
 }

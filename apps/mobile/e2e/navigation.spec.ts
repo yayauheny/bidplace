@@ -102,7 +102,7 @@ test('approved seller plus opens the existing create-work flow', async ({
   }
 });
 
-test('admin dock hides plus and opens admin from profile', async ({
+test('admin dock separates moderation analytics and account without exposing create', async ({
   browser,
 }) => {
   const { admin } = await createAdminModerationFixture();
@@ -116,8 +116,15 @@ test('admin dock hides plus and opens admin from profile', async ({
     await expect(dock.getByLabel('Поиск')).toBeVisible();
     await expect(dock.getByLabel('Профиль')).toBeVisible();
     await expect(dock.getByLabel('Добавить')).toHaveCount(0);
-    await dock.getByLabel('Профиль').click();
+    await dock.getByLabel('Модерация').click();
     await expect(page).toHaveURL(/\/admin/);
+    await page.getByTestId('figma-floating-dock').getByLabel('Аналитика').click();
+    await expect(page).toHaveURL(/\/analytics/);
+    await page.getByTestId('figma-floating-dock').getByLabel('Профиль').click();
+    await expect(page).toHaveURL(/\/account/);
+    await page.getByRole('button',{name:'Настройки',exact:true}).click();
+    await expect(page).toHaveURL(/\/account\/settings/);
+    await expect(page.getByRole('button',{name:'Выйти',exact:true})).toBeVisible();
   } finally {
     await context.close();
   }

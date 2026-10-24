@@ -1,10 +1,17 @@
 import { z } from 'zod';
 
 import {
-  analyticsFoundationQuerySchema,
   type AnalyticsFoundationQuery,
+  analyticsFoundationQuerySchema,
   analyticsFoundationResponseSchema,
   adminAnalyticsOverviewSchema,
+  adminQueueQuerySchema,
+  adminHistoryQuerySchema,
+  adminHistoryResponseSchema,
+  adminModerationSummariesSchema,
+  adminSellerDetailSchema,
+  adminProductDetailSchema,
+  type AdminQueueQuery,
   catalogTermSchema,
   catalogTermWriteSchema,
   catalogCategoryWriteSchema,
@@ -57,6 +64,80 @@ function moderationListQuery(query: AdminModerationListQueryInput) {
 
 export function createAdminClient(context: RequestContext) {
   return {
+    listSellerSummaries(
+      query: Partial<AdminQueueQuery> = {},
+      options?: ReadCallOptions,
+    ) {
+      return requestJson(
+        context,
+        '/api/admin/seller-profiles/summary',
+        adminModerationSummariesSchema,
+        {
+          query: adminQueueQuerySchema.parse(query),
+          ...signalRequestOptions(options),
+        },
+      );
+    },
+    listProductSummaries(
+      query: Partial<AdminQueueQuery> = {},
+      options?: ReadCallOptions,
+    ) {
+      return requestJson(
+        context,
+        '/api/admin/products/summary',
+        adminModerationSummariesSchema,
+        {
+          query: adminQueueQuerySchema.parse(query),
+          ...signalRequestOptions(options),
+        },
+      );
+    },
+    getSellerDetail(id: string, options?: ReadCallOptions) {
+      return requestJson(
+        context,
+        `/api/admin/seller-profiles/${id}`,
+        adminSellerDetailSchema,
+        signalRequestOptions(options),
+      );
+    },
+    getProductDetail(id: string, options?: ReadCallOptions) {
+      return requestJson(
+        context,
+        `/api/admin/products/${id}`,
+        adminProductDetailSchema,
+        signalRequestOptions(options),
+      );
+    },
+    getSellerHistory(
+      id: string,
+      query: { limit?: number; cursor?: string } = {},
+      options?: ReadCallOptions,
+    ) {
+      return requestJson(
+        context,
+        `/api/admin/seller-profiles/${id}/history`,
+        adminHistoryResponseSchema,
+        {
+          query: adminHistoryQuerySchema.parse(query),
+          ...signalRequestOptions(options),
+        },
+      );
+    },
+    getProductHistory(
+      id: string,
+      query: { limit?: number; cursor?: string } = {},
+      options?: ReadCallOptions,
+    ) {
+      return requestJson(
+        context,
+        `/api/admin/products/${id}/history`,
+        adminHistoryResponseSchema,
+        {
+          query: adminHistoryQuerySchema.parse(query),
+          ...signalRequestOptions(options),
+        },
+      );
+    },
     listSellerProfiles(
       query: AdminModerationListQueryInput = {},
       options?: ReadCallOptions,
@@ -95,6 +176,9 @@ export function createAdminClient(context: RequestContext) {
         `/api/admin/seller-profiles/${profileId}/revisions/${revisionId}/photo`,
         signalRequestOptions(options),
       );
+    },
+    getAchievementImage(id: string, options?: ReadCallOptions) {
+      return requestBlob(context, `/api/author-achievements/${id}/image`, signalRequestOptions(options));
     },
     getProductImage(imageId: string, options?: ReadCallOptions) {
       return requestBlob(
