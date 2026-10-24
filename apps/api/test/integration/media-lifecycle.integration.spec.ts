@@ -1404,3 +1404,124 @@ describe('scheduled media recovery on PostgreSQL', () => {
     s.media.onModuleDestroy();
   });
 });
+
+it('records one decision and completion per restore cycle, preserves retries, and updates the restore actor', async () => {
+  const s = setup();
+  const fixture = await author(s.media);
+  const moderation = new AdminModerationService(
+    prisma as never,
+    new PostgresImageStore(prisma as never),
+    s.media,
+  );
+  await approve(s.media, fixture.profile, fixture.user.id);
+  await approve(s.media, fixture.profile, fixture.user.id);
+  const secondActor = await prisma.user.create({
+    data: {
+      email: `restore-${randomUUID()}@example.com`,
+      passwordHash: 'unusable',
+    },
+  });
+  for (let cycle = 0; cycle < 3; cycle++) {
+    let profile = await prisma.sellerProfile.findUniqueOrThrow({
+      where: { id: fixture.profile.id },
+    });
+    await moderation.updateSellerStatus(fixture.user.id, profile.id, {
+      status: 'SUSPENDED',
+      reason: 'fixture revoke',
+      target: {
+        kind: 'parent',
+        status: 'APPROVED',
+        updatedAt: profile.updatedAt.toISOString(),
+      },
+    });
+    profile = await prisma.sellerProfile.findUniqueOrThrow({
+      where: { id: profile.id },
+    });
+    s.store.failPublic = true;
+    const actor = cycle === 2 ? secondActor.id : fixture.user.id;
+    const input = {
+      status: 'APPROVED' as const,
+      target: {
+        kind: 'parent' as const,
+        status: 'SUSPENDED' as const,
+        updatedAt: profile.updatedAt.toISOString(),
+      },
+    };
+    await expect(
+      moderation.updateSellerStatus(actor, profile.id, input),
+    ).rejects.toThrow('Media delivery failed');
+    expect(
+      (
+        await prisma.sellerProfile.findUniqueOrThrow({
+          where: { id: profile.id },
+        })
+      ).status,
+    ).toBe('SUSPENDED');
+    s.store.failPublic = false;
+    await moderation.updateSellerStatus(actor, profile.id, input);
+    const operation = await prisma.mediaOperation.findFirstOrThrow({
+      where: { profileId: profile.id, restore: true },
+    });
+    expect(operation.generation).toBe(cycle);
+    expect(operation.actorUserId).toBe(actor);
+    await s.media.deliver(operation.id);
+    const events = await prisma.auditEvent.findMany({
+      where: { mediaOperationId: operation.id, operationGeneration: cycle },
+      orderBy: { createdAt: 'asc' },
+    });
+    expect(events.map((event) => event.action)).toEqual([
+      'DECISION',
+      'PUBLICATION_COMPLETED',
+    ]);
+    expect(
+      events.every(
+        (event) =>
+          event.actorUserId === actor &&
+          event.revisionId === fixture.profile.revision.id,
+      ),
+    ).toBe(true);
+  }
+  const initial = await prisma.auditEvent.count({
+    where: { targetId: fixture.profile.id, action: 'PUBLICATION_COMPLETED' },
+  });
+  expect(initial).toBe(4);
+});
+
+it('rejects a completion from a worker whose publication lease was taken over', async () => {
+  const s = setup();
+  const fixture = await author(s.media);
+  s.store.afterPublicPut = async () => {
+    await prisma.mediaOperation.updateMany({ where: { profileId: fixture.profile.id, kind: 'PUBLISH', state: 'RUNNING' },
+      data: { leaseToken: randomUUID(), leaseUntil: new Date(0) } });
+  };
+  await expect(approve(s.media, fixture.profile, fixture.user.id)).rejects.toThrow();
+  expect((await prisma.sellerProfile.findUniqueOrThrow({ where: { id: fixture.profile.id } })).publishedRevisionId).toBeNull();
+  expect(await prisma.auditEvent.count({ where: { targetId: fixture.profile.id, action: 'PUBLICATION_COMPLETED' } })).toBe(0);
+  const operation = await prisma.mediaOperation.findFirstOrThrow({ where: { profileId: fixture.profile.id, kind: 'PUBLISH' } });
+  await s.media.deliver(operation.id);
+  expect(await prisma.auditEvent.count({ where: { mediaOperationId: operation.id, action: 'PUBLICATION_COMPLETED' } })).toBe(1);
+});
+
+it('stops a revoke after its lease expires instead of deleting more objects', async () => {
+  const s = setup();
+  const fixture = await author(s.media);
+  await approve(s.media, fixture.profile, fixture.user.id);
+  const second = await author(s.media);
+  await approve(s.media, second.profile, second.user.id);
+  await prisma.$transaction(async (tx) => {
+    await tx.sellerProfile.update({ where: { id: fixture.profile.id }, data: { status: 'SUSPENDED' } });
+    await s.media.enqueueRevoke(tx, { profileId: fixture.profile.id });
+  });
+  const revoke = await prisma.mediaOperation.findFirstOrThrow({ where: { profileId: fixture.profile.id, kind: 'REVOKE' }, orderBy: { createdAt: 'desc' } });
+  await prisma.sellerProfile.update({ where: { id: second.profile.id }, data: { status: 'SUSPENDED' } });
+  const secondObject = await prisma.mediaObject.findFirstOrThrow({ where: { assetId: second.asset.id, tier: 'PUBLIC' } });
+  await prisma.mediaOperationObject.create({ data: { operationId: revoke.id, objectId: secondObject.id } });
+  s.store.beforeDelete = async () => {
+    await prisma.mediaOperation.update({ where: { id: revoke.id }, data: { leaseUntil: new Date(0) } });
+  };
+  await s.media.run(revoke.id);
+  expect((await prisma.mediaOperation.findUniqueOrThrow({ where: { id: revoke.id } })).state).toBe('FAILED');
+  expect([...s.store.objects.keys()].filter((key) => key.startsWith('PUBLIC:'))).toHaveLength(1);
+  await s.media.deliver(revoke.id);
+  expect([...s.store.objects.keys()].filter((key) => key.startsWith('PUBLIC:'))).toHaveLength(0);
+});

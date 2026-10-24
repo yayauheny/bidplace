@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { ScrollView, View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
@@ -20,7 +20,12 @@ export function FormPageShell({
   maxWidth?: number;
   hideDock?: boolean;
   footer?: boolean;
-  variant?: 'default' | 'authorApplication' | 'creation' | 'account' | 'settings';
+  variant?:
+    | 'default'
+    | 'authorApplication'
+    | 'creation'
+    | 'account'
+    | 'settings';
 }) {
   const { reserve } = useDockInset();
   const Scroller = footer ? PageScrollView : ScrollView;
@@ -42,7 +47,7 @@ export function FormPageShell({
                 ? designTokens.space.x8
                 : reserve,
           paddingTop:
-            (variant === 'authorApplication' || variant === 'creation')
+            variant === 'authorApplication' || variant === 'creation'
               ? designTokens.authorApplication.contentTop
               : variant === 'account'
                 ? designTokens.space.x3
@@ -59,7 +64,10 @@ export function FormPageShell({
             width: '100%',
             maxWidth,
             alignSelf: maxWidth ? 'center' : undefined,
-            gap: variant === 'creation' ? designTokens.space.x5 : designTokens.space.sectionGap,
+            gap:
+              variant === 'creation'
+                ? designTokens.space.x5
+                : designTokens.space.sectionGap,
           }}
         >
           {children}
@@ -73,11 +81,36 @@ export function FormPageColumns({
   children,
   sidebar,
   sidebarFirstOnCompact = true,
+  layout = 'stack',
 }: {
   children: ReactNode;
   sidebar: ReactNode;
   sidebarFirstOnCompact?: boolean;
+  layout?: 'stack' | 'adaptive';
 }) {
+  const [width, setWidth] = useState(0);
+  if (layout === 'adaptive')
+    return (
+      <View
+        onLayout={(event) => setWidth(event.nativeEvent.layout.width)}
+        style={{
+          flexDirection:
+            width >=
+            designTokens.layout.cardWidth * 2 + designTokens.space.sectionGap
+              ? 'row'
+              : 'column',
+          gap: designTokens.space.sectionGap,
+          alignItems: 'stretch',
+        }}
+      >
+        <View key="sidebar" style={{ flex: 1, minWidth: 0 }}>
+          {sidebarFirstOnCompact ? sidebar : children}
+        </View>
+        <View key="content" style={{ flex: 1, minWidth: 0 }}>
+          {sidebarFirstOnCompact ? children : sidebar}
+        </View>
+      </View>
+    );
   return (
     <View style={{ gap: designTokens.space.sectionGap }}>
       {sidebarFirstOnCompact ? sidebar : children}

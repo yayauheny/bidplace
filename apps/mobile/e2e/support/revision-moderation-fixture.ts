@@ -36,6 +36,7 @@ export type RevisionModerationFixture = {
   sellerProfileId: string;
   revisionId: string;
   publicId: string;
+  productId: string;
   publishedTitle: string;
   pendingTitle: string;
   publishedCategoryId: string;
@@ -377,6 +378,7 @@ export async function createRevisionModerationFixture(): Promise<RevisionModerat
       sellerProfileId: profile.id,
       revisionId: editingRevision.id,
       publicId: product.publicId,
+      productId: product.id,
       publishedTitle,
       pendingTitle,
       publishedCategoryId: art.id,

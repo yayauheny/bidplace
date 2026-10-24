@@ -1,10 +1,21 @@
 import {
+  moderationSummarySql,
+  type ModerationResource,
+  type ModerationSummaryRow,
+} from './admin-moderation-summary';
+import {
   publishedProductData,
   publishedSellerProfileData,
 } from '../core/media/publication-fields';
 import { createHash } from 'node:crypto';
 
 import {
+  adminHistoryResponseSchema,
+  adminModerationSummariesSchema,
+  adminProductDetailSchema,
+  adminSellerDetailSchema,
+  encodeAdminQueueCursor,
+  type AdminQueueQuery,
   type AdminModerationCursor,
   type AdminModerationListQuery,
   type AdminProductStatusUpdateRequest,
@@ -44,6 +55,7 @@ import { assertSellerProfileRevisionTransition } from '../sellers/seller-profile
 import {
   latestModerationReasonSql,
   moderationListOrderBy,
+  moderationKeysetWhere,
   moderationPage,
   orderRowsByIds,
   productModerationSearchSql,
@@ -53,6 +65,10 @@ import {
   sellerModerationWhere,
 } from './admin-moderation-list';
 import {
+  adminProductSummarySelect,
+  adminSellerSummarySelect,
+  toProductSummaryCard,
+  toSellerSummaryCard,
   adminProductListSelect,
   adminSellerListSelect,
   adminSellerRevisionSelect,
@@ -71,6 +87,157 @@ export class AdminModerationService {
     @Inject(MediaLifecycleService)
     private readonly media?: MediaLifecycleService,
   ) {}
+
+  async summaries(resource: ModerationResource, query: AdminQueueQuery) {
+    return this.prisma.$transaction(async (tx) => {
+    const rows = await tx.$queryRaw<ModerationSummaryRow[]>(
+      moderationSummarySql(resource, query),
+    );
+    const page = rows.slice(0, query.limit);
+    const last = page.at(-1);
+    const cards = new Map<string, unknown>();
+    if (query.includeCard && page.length) {
+      const where = { id: { in: page.map((row) => row.id) } };
+      if (resource === 'PRODUCT') {
+        for (const record of await tx.product.findMany({ where, select: adminProductSummarySelect })) cards.set(record.id, toProductSummaryCard(record));
+      } else {
+        for (const record of await tx.sellerProfile.findMany({ where, select: adminSellerSummarySelect })) cards.set(record.id, toSellerSummaryCard(record));
+      }
+    }
+    return adminModerationSummariesSchema.parse({
+      items: page.map((row) => ({
+        ...(query.includeCard ? { card: cards.get(row.id) } : {}),
+        id: row.id, label: row.label, parentStatus: row.parentStatus,
+        reviewStatus: row.reviewStatus, reviewRevisionId: row.reviewRevisionId,
+        submittedAt: row.submittedAt?.toISOString() ?? null,
+        submissionTimeUnknown: row.submittedAt === null,
+      })),
+      nextCursor:
+        rows.length > query.limit && last
+          ? encodeAdminQueueCursor({
+              submittedAt: last.submittedAt?.toISOString() ?? null,
+              id: last.sortId,
+            })
+          : null,
+    });
+    }, { isolationLevel: 'RepeatableRead' });
+  }
+
+  async sellerDetail(id: string) {
+    const seller = await this.prisma.sellerProfile.findUnique({
+      where: { id },
+      select: {
+        ...adminSellerListSelect,
+        publishedRevision: { select: adminSellerRevisionSelect },
+        products: {
+          where: {
+            listings: { some: { status: { in: ['SCHEDULED', 'LIVE'] } } },
+          },
+          select: { id: true },
+          take: 1,
+        },
+      },
+    });
+    if (!seller) throw new NotFoundException('Seller profile not found');
+    const reasons = await this.latestModerationReasons('SELLER_PROFILE', [id]);
+    const entity = toAdminSellerProfile(
+      seller,
+      reasons.get(id) ?? null,
+      seller.products.length > 0,
+    );
+    const revision = entity.reviewTarget;
+    return adminSellerDetailSchema.parse({
+      entity,
+      reviewRevision: revision,
+      publishedRevision: seller.publishedRevision
+        ? toAdminSellerProfile(
+            { ...seller, editingRevision: seller.publishedRevision },
+            null,
+            false,
+            true,
+          ).reviewTarget
+        : null,
+      decisionTarget:
+        revision?.status === 'PENDING_REVIEW'
+          ? { kind: 'revision', id: revision.id, updatedAt: revision.updatedAt }
+          : {
+              kind: 'parent',
+              status: seller.status,
+              updatedAt: seller.updatedAt.toISOString(),
+            },
+    });
+  }
+
+  async productDetail(id: string) {
+    const product = await this.prisma.product.findUnique({
+      where: { id },
+      select: {
+        ...adminProductListSelect,
+        publishedRevision: {
+          select: adminProductListSelect.editingRevision.select,
+        },
+      },
+    });
+    if (!product) throw new NotFoundException('Product not found');
+    const reasons = await this.latestModerationReasons('PRODUCT', [id]);
+    const entity = toAdminProduct(product, reasons.get(id) ?? null);
+    const revision = entity.reviewTarget;
+    return adminProductDetailSchema.parse({
+      entity,
+      reviewRevision: revision,
+      publishedRevision: product.publishedRevision
+        ? toAdminProduct(
+            { ...product, editingRevision: product.publishedRevision },
+            null,
+          ).reviewTarget
+        : null,
+      decisionTarget:
+        revision?.status === 'PENDING_REVIEW'
+          ? { kind: 'revision', id: revision.id, updatedAt: revision.updatedAt }
+          : {
+              kind: 'parent',
+              status: product.status,
+              updatedAt: product.updatedAt.toISOString(),
+            },
+    });
+  }
+
+  async history(
+    resource: ModerationResource,
+    id: string,
+    query: { cursor?: string | undefined; limit: number },
+  ) {
+    const cursor = readModerationCursor(query.cursor);
+    const rows = await this.prisma.auditEvent.findMany({
+      where: {
+        targetType: resource,
+        targetId: id,
+        ...moderationKeysetWhere(cursor),
+      },
+      orderBy: moderationListOrderBy,
+      take: query.limit + 1,
+      select: {
+        id: true,
+        createdAt: true,
+        actorUserId: true,
+        action: true,
+        revisionId: true,
+        mediaOperationId: true,
+        operationGeneration: true,
+        oldStatus: true,
+        newStatus: true,
+        reason: true,
+      },
+    });
+    const { page, nextCursor } = moderationPage(rows, query.limit);
+    return adminHistoryResponseSchema.parse({
+      events: page.map((row) => ({
+        ...row,
+        createdAt: row.createdAt.toISOString(),
+      })),
+      nextCursor,
+    });
+  }
 
   async listSellerProfiles(query: AdminModerationListQuery) {
     const cursor = readModerationCursor(query.cursor);
@@ -250,6 +417,7 @@ export class AdminModerationService {
     const sellerProfile = await runSerializableTransaction(
       this.prisma,
       async (tx) => {
+        await tx.$queryRaw`SELECT id FROM seller_profiles WHERE id = ${sellerProfileId}::uuid FOR UPDATE`;
         const sellerProfile = await tx.sellerProfile.findUnique({
           where: { id: sellerProfileId },
           include: { editingRevision: true },
@@ -266,6 +434,28 @@ export class AdminModerationService {
           (sellerProfile.status === 'APPROVED' &&
             input.status === 'SUSPENDED') ||
           (sellerProfile.status === 'SUSPENDED' && input.status === 'APPROVED');
+        if (
+          this.media?.enabled &&
+          sellerProfile.status === 'APPROVED' &&
+          input.status === 'APPROVED' &&
+          input.target.kind === 'revision' &&
+          sellerProfile.publishedRevisionId === input.target.id
+        ) {
+          const delivered = await tx.mediaOperation.findUnique({
+            where: {
+              identity: `publish:${input.target.id}:${new Date(input.target.updatedAt).toISOString()}`,
+            },
+            select: { profileId: true, state: true },
+          });
+          if (
+            delivered?.profileId === sellerProfileId &&
+            delivered.state === 'DONE'
+          )
+            return tx.sellerProfile.findUniqueOrThrow({
+              where: { id: sellerProfileId },
+              select: sellerProfileResponseSelect,
+            });
+        }
         this.assertFreshSellerTarget(sellerProfile, input);
 
         if (
@@ -347,6 +537,8 @@ export class AdminModerationService {
               editingRevision,
               sellerProfile.publishedRevisionId,
               adminUserId,
+              false,
+              input.reason ?? null,
             );
             deliveryId = operation.id;
             return tx.sellerProfile.findUniqueOrThrow({
@@ -400,11 +592,26 @@ export class AdminModerationService {
               actorUserId: adminUserId,
               targetType: 'SELLER_PROFILE',
               targetId: sellerProfile.id,
+              action: 'DECISION',
+              revisionId: editingRevision.id,
               oldStatus: editingRevision.status,
               newStatus: input.status,
               reason: input.reason ?? null,
             },
           });
+
+          if (input.status === 'APPROVED') {
+            await tx.auditEvent.create({
+              data: {
+                actorUserId: adminUserId,
+                targetType: 'SELLER_PROFILE',
+                targetId: sellerProfile.id,
+                action: 'PUBLICATION_COMPLETED',
+                revisionId: editingRevision.id,
+                newStatus: 'APPROVED',
+              },
+            });
+          }
 
           return updated;
         }
@@ -427,6 +634,8 @@ export class AdminModerationService {
             );
           }
           this.assertSellerApprovalRequirements(sellerProfile);
+        }
+        if (input.status === 'APPROVED') {
           if (this.media?.enabled && sellerProfile.publishedRevisionId) {
             const revision = await tx.sellerProfileRevision.findUniqueOrThrow({
               where: { id: sellerProfile.publishedRevisionId },
@@ -438,6 +647,7 @@ export class AdminModerationService {
               sellerProfile.publishedRevisionId,
               adminUserId,
               true,
+              input.reason ?? null,
             );
             deliveryId = operation.id;
             return tx.sellerProfile.findUniqueOrThrow({
@@ -458,11 +668,20 @@ export class AdminModerationService {
             actorUserId: adminUserId,
             targetType: 'SELLER_PROFILE',
             targetId: sellerProfile.id,
+            action: 'DECISION',
+            revisionId: sellerProfile.publishedRevisionId,
             oldStatus: sellerProfile.status,
             newStatus: input.status,
             reason: input.reason ?? null,
           },
         });
+        if (input.status === 'APPROVED') {
+          await tx.auditEvent.create({ data: {
+            actorUserId: adminUserId, targetType: 'SELLER_PROFILE', targetId: sellerProfile.id,
+            action: 'PUBLICATION_COMPLETED', revisionId: sellerProfile.publishedRevisionId,
+            oldStatus: sellerProfile.status, newStatus: 'APPROVED',
+          } });
+        }
 
         return updated;
       },
@@ -586,6 +805,8 @@ export class AdminModerationService {
               editingRevision,
               product.publishedRevisionId,
               adminUserId,
+              false,
+              input.reason ?? null,
             );
             deliveryId = operation.id;
             return product;
@@ -620,11 +841,25 @@ export class AdminModerationService {
               actorUserId: adminUserId,
               targetType: 'PRODUCT',
               targetId: product.id,
+              action: 'DECISION',
+              revisionId: editingRevision.id,
               oldStatus: editingRevision.status,
               newStatus: input.status,
               reason: input.reason ?? null,
             },
           });
+          if (input.status === 'APPROVED') {
+            await tx.auditEvent.create({
+              data: {
+                actorUserId: adminUserId,
+                targetType: 'PRODUCT',
+                targetId: product.id,
+                action: 'PUBLICATION_COMPLETED',
+                revisionId: editingRevision.id,
+                newStatus: 'APPROVED',
+              },
+            });
+          }
           return updated;
         }
 
@@ -646,6 +881,7 @@ export class AdminModerationService {
             product.publishedRevisionId,
             adminUserId,
             true,
+            input.reason ?? null,
           );
           deliveryId = operation.id;
           return product;
@@ -660,11 +896,20 @@ export class AdminModerationService {
             actorUserId: adminUserId,
             targetType: 'PRODUCT',
             targetId: product.id,
+            action: 'DECISION',
+            revisionId: product.publishedRevisionId,
             oldStatus: product.status,
             newStatus: input.status,
             reason: input.reason ?? null,
           },
         });
+        if (input.status === 'APPROVED') {
+          await tx.auditEvent.create({ data: {
+            actorUserId: adminUserId, targetType: 'PRODUCT', targetId: product.id,
+            action: 'PUBLICATION_COMPLETED', revisionId: product.publishedRevisionId,
+            oldStatus: product.status, newStatus: 'APPROVED',
+          } });
+        }
 
         return updated;
       },
@@ -1002,6 +1247,8 @@ export class AdminModerationService {
             actorUserId: adminUserId,
             targetType: 'PRODUCT',
             targetId: revision.productId,
+            action: 'DECISION',
+            revisionId: revision.id,
             oldStatus: 'PENDING_REVIEW',
             newStatus: 'CHANGES_REQUESTED',
             reason: target.reason,

@@ -65,6 +65,39 @@ provider acceptance and release integration regression. The historical single-bu
 description below applies to legacy records, not the target production topology.
 See [`11-PROJECT-STATUS.md`](11-PROJECT-STATUS.md) for remaining gates.
 
+## 2026-10-24 — Protected moderation UI reads
+
+`includeCard=true` adds optional bounded thumbnail identity, author and review-kind/
+delivery metadata to summary items. Default strict response shapes stay unchanged.
+The existing service reads ID page and narrow selectors in one RepeatableRead
+transaction; no detail hydration per card. Media stays behind authenticated reads.
+`AdminModerationScreen` owns queue route/query state; detail routes own preview/
+comparison/history and captured-target decisions. `WorkGallery` accepts an optional
+private renderer/thumbnails; existing public consumers retain their presentation.
+`FormPageColumns` adaptive opt-in keeps the same children/state through resize.
+Navigation is still FloatingDock/DesktopHeader/useAppNavigation, with independent
+moderation/analytics access inputs and admin-only grants. Profile goes to account.
+
+## 2026-10-23 — Admin moderation foundation
+
+`AdminModerationService` retains mutation ownership; protected summary/detail/
+history reads extend `AdminController` and the shared contracts/client. Summary
+SQL uses revision submission time and revision ID, with unknown times explicitly
+last. Summary filters are non-exclusive: `APPROVED` tests parent status, other
+statuses test the editing revision with legacy parent fallback, and `ALL` does
+not constrain status. Parent approval does not itself guarantee public visibility;
+consumers keep parent/review statuses separate. Legacy list/cursor contracts are preserved. Detail reuses revision selectors
+and mappers, with separate published/review snapshots and decision target.
+
+`AuditEvent` adds nullable action/revision/operation/generation metadata and an
+optional unique event key; legacy rows remain unknown. Submission, decision and
+publication completion are distinct facts in their existing owner transactions.
+`MediaOperation.generation` identifies reopened restore cycles; retry keeps it.
+Restore refreshes actor/manifest. Finalization locks target then operation and
+checks fresh ownership; bounded DELETE/purge renew leases between objects.
+Existing delivery DTOs stay unchanged and select by latest operation update.
+Migration, compatibility and evidence: [admin foundation audit](../audits/current/2026-10-23-ADMIN-FOUNDATION.md).
+
 ## 2026-10-23 — Version 2 web analytics foundation
 
 The existing AnalyticsService ingests additive `/api/analytics/web-events` into

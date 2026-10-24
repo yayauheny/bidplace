@@ -38,7 +38,7 @@ export function publicVariant(
 
 export const mediaDeliverySelect = {
   where: { kind: 'PUBLISH' as const },
-  orderBy: { createdAt: 'desc' as const },
+  orderBy: [{ updatedAt: 'desc' as const }, { id: 'desc' as const }],
   take: 1,
   select: { id: true, kind: true, state: true, attemptCount: true },
 } satisfies Prisma.MediaOperationFindManyArgs;

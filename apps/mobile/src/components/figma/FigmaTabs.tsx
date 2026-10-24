@@ -20,6 +20,7 @@ export function FigmaTabs({
   align = 'start',
   contentInset = 0,
   fill = false,
+  selection = false,
 }: FigmaTabsProps) {
   const palette = useAppTheme();
   const select = (index: number) => {
@@ -61,7 +62,7 @@ export function FigmaTabs({
     >
       <ScrollView
         horizontal
-        accessibilityRole="tablist"
+        accessibilityRole={selection ? 'toolbar' : 'tablist'}
         accessibilityLabel={label}
         contentContainerStyle={{
           gap: designTokens.space.x2,
@@ -73,14 +74,22 @@ export function FigmaTabs({
         {tabs.map((tab, index) => (
           <MotionPressable
             key={tab.value}
-            accessibilityRole="tab"
-            accessibilityState={{ selected: value === tab.value }}
+            accessibilityRole={selection ? 'button' : 'tab'}
+            accessibilityState={
+              selection && Platform.OS === 'web'
+                ? undefined
+                : { selected: value === tab.value }
+            }
             nativeID={`${panelId}-${tab.value}`}
             onPress={() => onChange(tab.value)}
             {...(Platform.OS === 'web'
               ? ({
-                  'aria-controls': panelId,
-                  'aria-selected': value === tab.value,
+                  ...(selection
+                    ? { 'aria-pressed': value === tab.value }
+                    : {
+                        'aria-controls': panelId,
+                        'aria-selected': value === tab.value,
+                      }),
                   tabIndex: value === tab.value ? 0 : -1,
                   onKeyDown: (event: {
                     key: string;

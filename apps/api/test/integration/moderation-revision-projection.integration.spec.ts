@@ -520,7 +520,7 @@ describe('moderation revision projection', () => {
         select: { status: true },
       }),
     ).toEqual({ status: 'PENDING_REVIEW' });
-    expect(await auditCount('SELLER_PROFILE', backed.id)).toBe(0);
+    expect(await prisma.auditEvent.findMany({ where: { targetType: 'SELLER_PROFILE', targetId: backed.id }, select: { action: true } })).toEqual([{ action: 'SUBMITTED' }]);
   });
 
   it('serves one photo source and hides pending media from guests and strangers', async () => {

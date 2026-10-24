@@ -86,6 +86,9 @@ export function DesktopHeader({ active }: { active: boolean }) {
           </AppText>
         </MotionPressable>
         <View style={[styles.group, styles.actions]}>
+          {navigation.canModerate ? <FigmaIconButton icon="clipboard-check" label="Модерация" surface="outline" iconSize={18} onPress={()=>router.push('/admin')} /> : null}
+          {navigation.canReadAnalytics ? <FigmaIconButton icon="chart" label="Аналитика" surface="outline" iconSize={18} onPress={()=>router.push('/analytics')} /> : null}
+          {!navigation.isAdmin ? <>
           <FigmaIconButton
             icon="shopping-bag-01"
             label="Корзина"
@@ -100,6 +103,7 @@ export function DesktopHeader({ active }: { active: boolean }) {
             iconSize={18}
             onPress={() => setUnavailable('Уведомления')}
           />
+          </> : null}
           <FigmaIconButton
             icon="user"
             surface="outline"

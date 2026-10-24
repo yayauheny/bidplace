@@ -259,7 +259,7 @@ export const adminProductRevisionContentSchema = productSchema
   })
   .strict();
 
-const adminSellerReviewTargetSchema = z
+export const adminSellerReviewTargetSchema = z
   .object({
     id: uuidSchema,
     version: z.number().int().positive(),
@@ -270,7 +270,7 @@ const adminSellerReviewTargetSchema = z
   })
   .strict();
 
-const adminProductReviewTargetSchema = z
+export const adminProductReviewTargetSchema = z
   .object({
     id: uuidSchema,
     version: z.number().int().positive(),
@@ -473,3 +473,147 @@ export type AdminSellerProfilesResponse = z.infer<
 >;
 export type AdminProduct = z.infer<typeof adminProductSchema>;
 export type AdminProductsResponse = z.infer<typeof adminProductsResponseSchema>;
+
+const adminQueueCursorValueSchema = z
+  .object({
+    submittedAt: isoDateTimeSchema.nullable(),
+    id: uuidSchema,
+  })
+  .strict();
+export type AdminQueueCursor = z.infer<typeof adminQueueCursorValueSchema>;
+export function encodeAdminQueueCursor(cursor: AdminQueueCursor): string {
+  return encodeBase64Url(JSON.stringify(cursor));
+}
+export function parseAdminQueueCursor(value: string): AdminQueueCursor | null {
+  const decoded = decodeBase64Url(value);
+  if (decoded === null) return null;
+  try {
+    const parsed = adminQueueCursorValueSchema.safeParse(JSON.parse(decoded));
+    return parsed.success ? parsed.data : null;
+  } catch {
+    return null;
+  }
+}
+export const adminQueueQuerySchema = z
+  .object({
+    includeCard: z
+      .preprocess((value) => (value === 'true' ? true : value === 'false' ? false : value), z.boolean())
+      .optional(),
+    cursor: z
+      .string()
+      .max(512)
+      .refine((value) => parseAdminQueueCursor(value) !== null)
+      .optional(),
+    limit: z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(ADMIN_MODERATION_MAX_LIMIT)
+      .default(50),
+    filter: adminModerationFilterSchema
+      .default('PENDING_REVIEW')
+      .describe(
+        'APPROVED selects parent approval; other statuses select the editing revision (legacy parent fallback). Filters can overlap.',
+      ),
+    search: z.string().trim().max(ADMIN_MODERATION_MAX_SEARCH).optional(),
+  })
+  .strict();
+export type AdminQueueQuery = z.infer<typeof adminQueueQuerySchema>;
+export const adminModerationSummarySchema = z
+  .object({
+    card: z
+      .object({
+        author: z
+          .object({ fullName: z.string(), slug: z.string() })
+          .strict()
+          .nullable(),
+        reviewKind: z.enum(['first', 'repeat', 'unknown']),
+        thumbnail: z
+          .discriminatedUnion('kind', [
+            z
+              .object({
+                kind: z.literal('product-image'),
+                id: uuidSchema,
+                checksum: z.string().length(64),
+              })
+              .strict(),
+            z
+              .object({
+                kind: z.literal('seller-photo'),
+                revisionId: uuidSchema,
+                updatedAt: isoDateTimeSchema,
+                checksum: z.string().length(64),
+              })
+              .strict(),
+          ])
+          .nullable(),
+        publication: mediaDeliverySchema.optional(),
+      })
+      .strict()
+      .optional(),
+    id: uuidSchema,
+    label: z.string().nullable(),
+    parentStatus: z.union([sellerStatusSchema, productStatusSchema]),
+    reviewStatus: z
+      .union([sellerProfileRevisionStatusSchema, productStatusSchema])
+      .nullable(),
+    reviewRevisionId: uuidSchema.nullable(),
+    submittedAt: isoDateTimeSchema.nullable(),
+    submissionTimeUnknown: z.boolean(),
+  })
+  .strict();
+export const adminModerationSummariesSchema = z
+  .object({
+    items: z.array(adminModerationSummarySchema),
+    nextCursor: z.string().nullable(),
+  })
+  .strict();
+export const adminSellerDetailSchema = z
+  .object({
+    entity: adminSellerProfileSchema,
+    publishedRevision: adminSellerReviewTargetSchema.nullable(),
+    reviewRevision: adminSellerReviewTargetSchema.nullable(),
+    decisionTarget: z.discriminatedUnion('kind', [
+      adminRevisionTargetSchema,
+      adminSellerParentTargetSchema,
+    ]),
+  })
+  .strict();
+export const adminProductDetailSchema = z
+  .object({
+    entity: adminProductSchema,
+    publishedRevision: adminProductReviewTargetSchema.nullable(),
+    reviewRevision: adminProductReviewTargetSchema.nullable(),
+    decisionTarget: z.discriminatedUnion('kind', [
+      adminRevisionTargetSchema,
+      adminProductParentTargetSchema,
+    ]),
+  })
+  .strict();
+export const adminHistoryQuerySchema = z
+  .object({
+    cursor: adminModerationCursorSchema.optional(),
+    limit: z.coerce.number().int().min(1).max(100).default(50),
+  })
+  .strict();
+export const adminHistoryResponseSchema = z
+  .object({
+    events: z.array(
+      z
+        .object({
+          id: uuidSchema,
+          createdAt: isoDateTimeSchema,
+          actorUserId: uuidSchema.nullable(),
+          action: z.string().nullable(),
+          revisionId: uuidSchema.nullable(),
+          mediaOperationId: uuidSchema.nullable(),
+          operationGeneration: z.number().int().nonnegative().nullable(),
+          oldStatus: z.string().nullable(),
+          newStatus: z.string().nullable(),
+          reason: z.string().nullable(),
+        })
+        .strict(),
+    ),
+    nextCursor: z.string().nullable(),
+  })
+  .strict();
