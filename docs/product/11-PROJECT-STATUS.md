@@ -16,14 +16,20 @@
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
 | Commerce, избранное/подписки, смена email/password из settings | Not implemented в launch scope / post-MVP; [следующая волна](15-POST-MVP-BACKLOG.md). Старый commerce runtime не разрешает включать продажи. |
 
-## 2026-10-24 — Progressive cover blur
+## 2026-10-25 — Final cover glass
 
-**Partial (local verification pending).** `CoverFrost` keeps the shared card
-composition while switching bottom work/author zones to a Figma-aligned
-progressive 60px web mask and the existing native blur primitive, limited to the
-SDK 31+ Android method for catalog performance. Author top remains a scrim. No
-API, backend, upload or business logic changed; device and visual Figma
-comparison remain to be verified.
+**Implemented for verified web states; native device acceptance Needs verification.**
+`CoverFrost.web`, `cover-frost-style` and
+shared blur tokens replace the 2026-10-24 blur60 experiment with approved
+Dock-style Blur16/saturate115%/Mask35 for work/author bottoms, retaining the
+independent scrim, content-driven panels and sharp controls. `AuthorCoverCard`
+top stays a gradient. Unused image props/spec fields were removed; one source
+image and the existing native BlurTargetView/BlurView intensity60 path remain.
+Owner style/browser regressions updated;1049 mobile tests, contracts48/client51,
+Chromium/WebKit E2E2/2,12 real catalog/viewport checks, lint/typecheck and
+web/iOS/Android exports passed. [Acceptance](../audits/current/2026-10-25-COVER-GLASS.md).
+No API, media pipeline, Dock or compact format changes; physical iOS/Android
+and exact desktop Figma parity remain open.
 
 ## 2026-10-24 — Mobile moderation UI
 

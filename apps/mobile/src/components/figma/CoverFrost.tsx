@@ -1,4 +1,5 @@
 import { BlurView } from 'expo-blur';
+import { designTokens } from '@bidplace/design-tokens';
 import type { RefObject } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -10,7 +11,6 @@ export function CoverFrost({
   blurTarget,
   placement,
 }: {
-  imageUrl: string;
   placement: CoverFrostPlacement;
   blurTarget?: RefObject<View | null>;
 }) {
@@ -29,7 +29,7 @@ export function CoverFrost({
         <BlurView
           pointerEvents="none"
           blurTarget={blurTarget}
-          intensity={spec.runtimeBlur}
+          intensity={designTokens.blur.coverNativeIntensity}
           tint="default"
           blurMethod={
             Platform.OS === 'android' ? 'dimezisBlurViewSdk31Plus' : undefined

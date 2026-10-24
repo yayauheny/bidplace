@@ -3,8 +3,8 @@ import type { View } from 'react-native';
 
 import { useAppTheme } from '../../providers/theme-provider';
 import {
-  coverFrostProgressiveMask,
-  coverFrostBlur,
+  coverFrostMask,
+  coverFrostBackdropFilter,
   coverFrostSpec,
   type CoverFrostPlacement,
 } from './cover-frost-style';
@@ -17,13 +17,11 @@ type FrostLayerStyle = CSSProperties & {
 export function CoverFrost({
   placement,
 }: {
-  imageUrl: string;
   placement: CoverFrostPlacement;
   blurTarget?: RefObject<View | null>;
 }) {
   const palette = useAppTheme();
   const spec = coverFrostSpec(placement, palette);
-  const blur = coverFrostBlur(spec.runtimeBlur);
 
   return (
     <div
@@ -42,10 +40,10 @@ export function CoverFrost({
             {
               position: 'absolute',
               inset: 0,
-              backdropFilter: blur,
-              WebkitBackdropFilter: blur,
-              maskImage: coverFrostProgressiveMask,
-              WebkitMaskImage: coverFrostProgressiveMask,
+              backdropFilter: coverFrostBackdropFilter,
+              WebkitBackdropFilter: coverFrostBackdropFilter,
+              maskImage: coverFrostMask,
+              WebkitMaskImage: coverFrostMask,
             } satisfies FrostLayerStyle
           }
         />

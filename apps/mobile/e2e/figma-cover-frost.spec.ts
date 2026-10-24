@@ -12,6 +12,9 @@ test('cover frost keeps Figma regions and samples artwork once on web', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
+  let title = 'Работа с живым фоном';
+  let workImageRequests = 0;
+  let authorImageRequests = 0;
   await page.route('**/api/auth/me', async (route) => {
     await route.fulfill({ status: 401, json: { message: 'Unauthorized' } });
   });
@@ -25,7 +28,7 @@ test('cover frost keeps Figma regions and samples artwork once on web', async ({
             work: {
               id: '10000000-0000-4000-8000-000000000002',
               publicId: 'ABCDEFGHIJK',
-              title: 'Работа с живым фоном',
+              title,
               story: null,
               categoryId: '10000000-0000-4000-8000-000000000003',
               technique: null,
@@ -90,6 +93,7 @@ test('cover frost keeps Figma regions and samples artwork once on web', async ({
     });
   });
   await page.route(`**/api/images/${workImageId}`, async (route) => {
+    workImageRequests += 1;
     await route.fulfill({
       status: 200,
       contentType: 'image/svg+xml',
@@ -97,6 +101,7 @@ test('cover frost keeps Figma regions and samples artwork once on web', async ({
     });
   });
   await page.route('**/api/sellers/frost-author/photo', async (route) => {
+    authorImageRequests += 1;
     await route.fulfill({
       status: 200,
       contentType: 'image/svg+xml',
@@ -139,13 +144,15 @@ test('cover frost keeps Figma regions and samples artwork once on web', async ({
   expect(workMetrics.zoneHeight).toBe(78);
   expect(authorTopMetrics.zoneHeight).toBe(56);
   expect(authorBottomMetrics.zoneHeight).toBe(76);
-  expect(workMetrics.outerBlurPx).toBeCloseTo(60, 1);
+  expect(workMetrics.outerBlurPx).toBeCloseTo(16, 1);
   expect(authorTopMetrics.outerBlurPx).toBe(0);
   expect(authorTopMetrics.blurLayers).toBe(0);
-  expect(authorBottomMetrics.outerBlurPx).toBeCloseTo(60, 1);
+  expect(authorBottomMetrics.outerBlurPx).toBeCloseTo(16, 1);
   expect(workMetrics.maskImage).toContain('linear-gradient');
-  expect(workMetrics.maskImage).toContain('transparent');
-  expect(workMetrics.maskImage).toContain('black');
+  expect(workMetrics.maskImage).toContain('rgba(0, 0, 0, 0) 0%');
+  expect(workMetrics.maskImage).toContain('35%');
+  expect(workMetrics.backdropFilter).toBe('blur(16px) saturate(1.15)');
+  expect(authorBottomMetrics.backdropFilter).toBe(workMetrics.backdropFilter);
   expect(authorTopMetrics.maskImage).toBe('none');
   expect(authorBottomMetrics.maskImage).toContain('linear-gradient');
   expect(workMetrics.gradientImage).toContain('linear-gradient');
@@ -191,6 +198,57 @@ test('cover frost keeps Figma regions and samples artwork once on web', async ({
     const withoutBlur = await workFrost.screenshot();
     expect(frostShot.equals(withoutBlur)).toBe(false);
   }
+
+  expect(workImageRequests).toBe(1);
+  expect(authorImageRequests).toBe(1);
+  await expect(workCard.locator('img')).toHaveCount(1);
+  await expect(authorCard.locator('img')).toHaveCount(1);
+  title = 'Длинное название работы, которое занимает две строки в карточке';
+  await page.reload();
+  await expect(page.getByText(title)).toBeVisible();
+  await expect.poll(async () => (await readFrost(workFrost)).zoneHeight).toBe(100);
+  await workCard.screenshot({
+    path: resolve(artifactDir, `${engine(page)}-cover-frost-long-title.png`),
+  });
+
+  const { promise: imageGate, resolve: releaseImage } =
+    Promise.withResolvers<void>();
+  await page.route(`**/api/images/${workImageId}*`, async (route) => {
+    await imageGate;
+    await route.fulfill({ status: 503, body: 'Image unavailable' });
+  });
+  await page.route('**/api/sellers/frost-author/photo*', async (route) => {
+    await imageGate;
+    await route.fulfill({ status: 503, body: 'Image unavailable' });
+  });
+  await page.reload();
+  await expect(workFrost).toBeVisible();
+  await expect(page.getByText(title)).toBeVisible();
+  await workCard.screenshot({
+    path: resolve(artifactDir, `${engine(page)}-cover-frost-loading.png`),
+  });
+  releaseImage();
+  await expect(
+    page.getByRole('img', {
+      name: `Изображение недоступно: ${title}`,
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(page.getByText(title, { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole('img', {
+      name: 'Фото автора недоступно: Автор с ореолом',
+      exact: true,
+    }),
+  ).toBeVisible();
+  expect((await readFrost(workFrost)).zoneHeight).toBe(100);
+  expect((await readFrost(authorBottom)).zoneHeight).toBe(76);
+  await workCard.screenshot({
+    path: resolve(artifactDir, `${engine(page)}-cover-frost-error.png`),
+  });
+  await authorCard.screenshot({
+    path: resolve(artifactDir, `${engine(page)}-author-frost-error.png`),
+  });
 });
 
 async function readFrost(locator: Locator) {
@@ -241,6 +299,9 @@ async function readFrost(locator: Locator) {
         Math.abs(frostBox.top - zoneBox.top) < 0.5,
       zoneHeight: Math.round(zoneBox.height),
       outerBlurPx: blurPx(blurLayers.at(-1)!),
+      backdropFilter: blurLayers[0]
+        ? getComputedStyle(blurLayers[0]).backdropFilter
+        : 'none',
       maskImage: blurLayers[0]
         ? `${getComputedStyle(blurLayers[0]).maskImage} ${getComputedStyle(blurLayers[0]).webkitMaskImage}`
         : 'none',

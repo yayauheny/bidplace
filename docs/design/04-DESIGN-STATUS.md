@@ -38,12 +38,18 @@
 
 ## Последние результаты и правило обновления
 
-2026-10-24: shared `CoverFrost` now matches the Figma progressive bottom blur
-(`radius 60`, top-to-bottom mask) on web and uses the existing native `BlurView`
-for the mobile approximation, with the Android SDK 31+ method and a reduced-load
-fallback on older Android. Author top remains a non-blurred scrim. Automated
-style and browser assertions were updated; physical-device rendering and exact
-Figma screenshot parity remain Needs verification.
+2026-10-25: **Implemented for verified web states; native Needs verification.**
+Work/author `CoverFrost` uses
+approved Dock-style Blur16/saturate115%/Mask35 on web with the independent
+Figma two-stop scrim and content-driven lower panel. This supersedes the
+2026-10-24 blur60 experiment; exact Progressive Blur parity is not claimed.
+Author top remains unblurred. Native preserves intensity60 `BlurView` over one
+existing image, SDK31+ Android blur and older-Android tint/scrim fallback.
+Chromium/WebKit owner E2E 2/2, real catalogs at390/1024/1440, visible WebKit
+OS captures,1049 mobile unit tests, lint/typecheck and web/iOS/Android exports
+passed; [acceptance and screenshots](../audits/current/2026-10-25-COVER-GLASS.md).
+Physical-device rendering remains Needs verification; wider exact Figma
+composition remains NEEDS-FIGMA.
 
 MVP merge 2026-10-22: полный verify green, API legal-pack assertion исправлен
 `cc4911e5`; старое «full verify red» описывает UI-ветку до merge. UI evidence:

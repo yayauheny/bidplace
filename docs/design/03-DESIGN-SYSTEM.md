@@ -875,9 +875,15 @@ input/close target. Existing overlay/focus owners remain the only mechanism.
 Scoped source: Figma `HRRtDp0bQlukw7ptTkuEZg`; exact nodes and mapping are in the
 [portfolio audit](../audits/current/2026-10-23-PORTFOLIO-DESIGN.md). Other handoffs remain applicable.
 
-- `CoverFrost` owns a progressive bottom artwork blur60 layer and the existing
-  scrim; the author top uses only the scrim. Bottom card region clips to 12px
-  upper corners.
+- `CoverFrost` owns one web `backdrop-filter: blur(16px) saturate(115%)`
+  layer, masked from transparent to opaque at 35% of the content-driven panel.
+  This approved Dock-style approximation replaces the blur60 experiment; it is
+  not exact Figma Progressive Blur. The independent two-stop scrim is retained;
+  author top uses only its existing scrim. Bottom regions clip to 12px upper
+  corners, with sharp text/controls outside the effect and one source image.
+  Native keeps `BlurView` intensity60 over the existing `BlurTargetView` image;
+  Android SDK31+ blurs, older Android uses the library tint plus scrim fallback.
+  Native intensity is not a CSS pixel radius; no native progressive mask is claimed.
   Card references do not define the full public author page geometry.
 - `FigmaIconButton` destructive surface uses semantic `destructiveFill` and white
   glyphs; `ProductBlockActions` media presentation combines direct delete with the

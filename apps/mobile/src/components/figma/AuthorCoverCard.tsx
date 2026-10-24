@@ -81,7 +81,6 @@ export function AuthorCoverCard({
             </BlurTargetView>
             <View pointerEvents="none" style={coverFrostZoneStyle('top')}>
               <CoverFrost
-                imageUrl={imageUrl}
                 placement="authorTop"
                 blurTarget={blurTarget}
               />
@@ -102,7 +101,6 @@ export function AuthorCoverCard({
             </View>
             <View pointerEvents="none" style={coverFrostZoneStyle()}>
               <CoverFrost
-                imageUrl={imageUrl}
                 placement="authorBottom"
                 blurTarget={blurTarget}
               />

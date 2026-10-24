@@ -170,7 +170,6 @@ export function WorkCoverCard({
             >
               <View style={coverFrostZoneStyle()}>
                 <CoverFrost
-                  imageUrl={imageUrl}
                   placement="workBottom"
                   blurTarget={blurTarget}
                 />
