@@ -16,6 +16,17 @@
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
 | Commerce, избранное/подписки, смена email/password из settings | Not implemented в launch scope / post-MVP; [следующая волна](15-POST-MVP-BACKLOG.md). Старый commerce runtime не разрешает включать продажи. |
 
+## 2026-10-26 — Share action feedback
+
+**Partial — verified locally on web; native devices pending.** ShareSheet uses
+one local action hook and existing FigmaButton/Reanimated/reduced-motion owners.
+Success/error stays inside the button, preserving428px composition and focus.
+Web confirms download launch; native confirms prepared PNG, with no saved-file
+claim. Lifetime/version/busy guards prevent stale completions and overlapping
+exports.1076 mobile units,34 Chromium/WebKit cases, graph typecheck/lint and
+all-platform exports passed; independent review accepted. No dependencies added
+for this follow-up. Native screen-reader/OS/camera acceptance remains unverified.
+
 ## 2026-10-26 — Work QR sharing
 
 **Partial — implemented and verified on local web; native device acceptance pending.**

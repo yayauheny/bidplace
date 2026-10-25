@@ -720,3 +720,11 @@ describe('button href/onPress type contract', () => {
 });
 
 vi.mock('../figma/FigmaGlassSurface', () => ({ FigmaGlassSurface: () => null }));
+
+vi.mock('react-native-reanimated', () => ({
+  default: { View: ({ children }: { children?: ReactNode }) => createElement('div', null, children) },
+  useSharedValue: (value: number) => ({ value }),
+  useAnimatedStyle: (style: () => object) => style(),
+  withTiming: (value: number) => value,
+  cancelAnimation: vi.fn(),
+}));

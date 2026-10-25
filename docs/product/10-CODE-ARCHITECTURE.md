@@ -12,7 +12,11 @@ clipboard/download and Expo Clipboard/FileSystem/Sharing on native. URL/path
 validation stays in `public-share`, with one established native web origin.
 Native exports keep a deterministic public PNG in OS cache so receiving apps
 can consume its URI after the sharing dialog resolves; same-turn exports are
-serialized. No server, DTO or persistence changes. Device acceptance pending.
+serialized. `useShareAction` owns close/unmount versions, busy state and1800ms
+confirmation timers; FigmaButton owns the opt-in160ms content motion and result
+announcements. ShareContent remains mounted for the shared exit motion, with
+actions disabled/reset at close. No new notification system, server, DTO or
+persistence changes. Device acceptance pending.
 
 ## 2026-10-26 — Auth cancellation navigation
 

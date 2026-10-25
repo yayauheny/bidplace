@@ -336,3 +336,199 @@ for (const method of ['backdrop', 'swipe'] as const) {
     await expectClosed(page);
   });
 }
+
+async function openFeedbackSheet(page: Page) {
+  await page.setViewportSize({ width: 390, height: 874 });
+  await mockWork(page);
+  await page.goto(`/product/${PUBLIC_ID}`);
+  await page.getByRole('button', { name: 'Поделиться работой' }).click();
+  await expect(
+    page.getByRole('img', { name: 'QR-код публичной страницы' }),
+  ).toBeVisible();
+}
+
+async function mockClipboard(
+  page: Page,
+  mode: 'success' | 'failure' | 'pending',
+) {
+  await page.addInitScript((mode) => {
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: {
+        writeText: async () => {
+          document.documentElement.dataset.copyCount = String(
+            Number(document.documentElement.dataset.copyCount ?? 0) + 1,
+          );
+          if (
+            mode === 'failure' &&
+            document.documentElement.dataset.copyAllowed !== 'true'
+          )
+            throw new Error('Clipboard denied');
+          if (mode === 'pending')
+            await new Promise<void>((resolve) =>
+              document.addEventListener('release-copy', () => resolve(), {
+                once: true,
+              }),
+            );
+        },
+      },
+    });
+    document.execCommand = () => false;
+  }, mode);
+}
+
+test('copy confirms inline for 1800ms without changing geometry or keyboard focus', async ({
+  page,
+}) => {
+  await mockClipboard(page, 'success');
+  await openFeedbackSheet(page);
+  const bounds = await dialog(page).boundingBox();
+  const copy = page.getByRole('button', {
+    name: 'Копировать ссылку',
+    exact: true,
+  });
+  await copy.focus();
+  const buttonBounds = await copy.boundingBox();
+  await copy.press('Enter');
+  const copied = page.getByRole('button', { name: 'Скопировано', exact: true });
+  await expect(copied).toBeFocused();
+  await expect(copied.getByTestId('button-feedback-result')).toHaveCSS(
+    'opacity',
+    '1',
+  );
+  expect(await copied.boundingBox()).toEqual(buttonBounds);
+  expect(await dialog(page).boundingBox()).toEqual(bounds);
+  await expect(
+    page.getByText('Ссылка скопирована.', { exact: true }),
+  ).toHaveCount(0);
+  await expect(copy).toBeFocused();
+  await expect(copy.getByTestId('button-feedback-original')).toHaveCSS(
+    'opacity',
+    '1',
+  );
+});
+
+test('clipboard failure stays inline, never confirms, and can be retried', async ({
+  page,
+}) => {
+  await mockClipboard(page, 'failure');
+  await openFeedbackSheet(page);
+  const bounds = await dialog(page).boundingBox();
+  await page
+    .getByRole('button', { name: 'Копировать ссылку', exact: true })
+    .click();
+  const failed = page.getByRole('button', {
+    name: 'Не скопировано. Повторить',
+    exact: true,
+  });
+  await expect(failed).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Скопировано', exact: true }),
+  ).toHaveCount(0);
+  expect(await dialog(page).boundingBox()).toEqual(bounds);
+  await page.evaluate(() => {
+    document.documentElement.dataset.copyAllowed = 'true';
+  });
+  await failed.click();
+  await expect(
+    page.getByRole('button', { name: 'Скопировано', exact: true }),
+  ).toBeVisible();
+});
+
+test('rapid presses deduplicate, and closing a pending action cannot confirm a reopened sheet', async ({
+  page,
+}) => {
+  await mockClipboard(page, 'pending');
+  await openFeedbackSheet(page);
+  await page
+    .getByRole('button', { name: 'Копировать ссылку', exact: true })
+    .evaluate((button) => {
+      (button as HTMLElement).click();
+      (button as HTMLElement).click();
+    });
+  await expect
+    .poll(() => page.locator('html').getAttribute('data-copy-count'))
+    .toBe('1');
+  await page.keyboard.press('Escape');
+  await expectClosed(page);
+  await page.getByRole('button', { name: 'Поделиться работой' }).click();
+  await expect(
+    page.getByRole('button', { name: 'Копировать ссылку', exact: true }),
+  ).toBeVisible();
+  await page.evaluate(() => document.dispatchEvent(new Event('release-copy')));
+  await expect(
+    page.getByRole('button', { name: 'Скопировано', exact: true }),
+  ).toHaveCount(0);
+});
+
+test('reduced motion applies confirmation without opacity or scale movement', async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await mockClipboard(page, 'success');
+  await openFeedbackSheet(page);
+  await page
+    .getByRole('button', { name: 'Копировать ссылку', exact: true })
+    .click();
+  const layer = page
+    .getByRole('button', { name: 'Скопировано', exact: true })
+    .getByTestId('button-feedback-result');
+  await expect(layer).toHaveCSS('opacity', '1');
+  await expect(layer).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, 0)');
+});
+
+test('QR feedback confirms only the download launch, and exposes a retry on failure', async ({
+  page,
+}) => {
+  await openFeedbackSheet(page);
+  const bounds = await dialog(page).boundingBox();
+  const downloading = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Скачать QR', exact: true }).click();
+  await downloading;
+  await expect(
+    page.getByRole('button', { name: 'Загрузка начата', exact: true }),
+  ).toBeVisible();
+  expect(await dialog(page).boundingBox()).toEqual(bounds);
+  const action = page.getByRole('button', { name: 'Скачать QR', exact: true });
+  await expect(action).toBeVisible();
+  await page.evaluate(() => {
+    URL.createObjectURL = () => {
+      throw new Error('Download unavailable');
+    };
+  });
+  await action.click();
+  await expect(
+    page.getByRole('button', { name: 'Не скачано. Повторить', exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Загрузка начата', exact: true }),
+  ).toHaveCount(0);
+  expect(await dialog(page).boundingBox()).toEqual(bounds);
+});
+
+test('clipboard fallback confirms only when the fallback copy succeeds', async ({ page }) => {
+  await mockClipboard(page, 'failure');
+  await page.addInitScript(() => {
+    document.execCommand = () => {
+      const input = document.querySelector('textarea');
+      document.documentElement.dataset.fallbackUrl = input?.value ?? '';
+      return true;
+    };
+  });
+  await openFeedbackSheet(page);
+  await page.getByRole('button', { name: 'Копировать ссылку', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Скопировано', exact: true })).toBeVisible();
+  await expect.poll(() => page.locator('html').getAttribute('data-fallback-url')).toBe(`http://localhost:8081/works/${PUBLIC_ID}`);
+});
+
+test('closing during feedback animation reopens with clean idle controls', async ({ page }) => {
+  await mockClipboard(page, 'success');
+  await openFeedbackSheet(page);
+  await page.getByRole('button', { name: 'Копировать ссылку', exact: true }).click();
+  await page.keyboard.press('Escape');
+  await expectClosed(page);
+  await page.getByRole('button', { name: 'Поделиться работой' }).click();
+  await expect(page.getByRole('button', { name: 'Копировать ссылку', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Скопировано', exact: true })).toHaveCount(0);
+  expect((await dialog(page).boundingBox())?.height).toBe(428);
+});

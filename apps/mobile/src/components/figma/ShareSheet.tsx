@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { Platform, View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
@@ -6,6 +6,7 @@ import { designTokens } from '@bidplace/design-tokens';
 import { AppDialog } from '../ui/AppDialog';
 import { AppText, SecondaryButton } from '../ui';
 import { useAppTheme } from '../../providers/theme-provider';
+import { useShareAction } from './use-share-action';
 import { ShareQr } from './ShareQr';
 import { FigmaButton } from './FigmaButton';
 import {
@@ -33,18 +34,24 @@ export function ShareSheet({
       title="Поделиться"
       onClose={onClose}
     >
-      {open ? <ShareContent key={sharePath} sharePath={sharePath} /> : null}
+      {/* Keep geometry through exit motion; active resets feedback on close. */}
+      <ShareContent key={sharePath} sharePath={sharePath} active={open} />
     </AppDialog>
   );
 }
 
-function ShareContent({ sharePath }: { sharePath: string }) {
+function ShareContent({
+  sharePath,
+  active,
+}: {
+  sharePath: string;
+  active: boolean;
+}) {
   const [qr, setQr] = useState<string>();
   const [error, setError] = useState('');
-  const [message, setMessage] = useState('');
   const [attempt, setAttempt] = useState(0);
-  const [downloading, setDownloading] = useState(false);
-  const downloadBusy = useRef(false);
+  const copyAction = useShareAction(active);
+  const downloadAction = useShareAction(active);
   const palette = useAppTheme();
   let target: ReturnType<typeof publicShareTarget> | undefined;
   try {
@@ -52,7 +59,6 @@ function ShareContent({ sharePath }: { sharePath: string }) {
   } catch {
     target = undefined;
   }
-  const url = target?.url;
   if (!target)
     return (
       <AppText role="bodySmall" tone="danger">
@@ -60,32 +66,11 @@ function ShareContent({ sharePath }: { sharePath: string }) {
       </AppText>
     );
   const { filename } = target;
-  const copy = async () => {
-    try {
-      await copyPublicLink(target.url);
-      setMessage('Ссылка скопирована.');
-    } catch {
-      setMessage('Не удалось скопировать ссылку. Ссылка доступна ниже.');
-    }
+  const copy = () => void copyAction.run(() => copyPublicLink(target.url));
+  const download = () => {
+    if (qr) void downloadAction.run(() => downloadQrPng(qr, filename));
   };
-  const download = async () => {
-    if (!qr || downloadBusy.current) return;
-    downloadBusy.current = true;
-    setDownloading(true);
-    try {
-      await downloadQrPng(qr, filename);
-      setMessage(
-        Platform.OS === 'web'
-          ? 'Скачивание QR началось.'
-          : 'Меню сохранения QR закрыто.',
-      );
-    } catch {
-      setMessage('Не удалось скачать QR. Попробуйте ещё раз.');
-    } finally {
-      downloadBusy.current = false;
-      setDownloading(false);
-    }
-  };
+
   return (
     <View style={{ gap: shareContentGap }}>
       <View
@@ -138,8 +123,18 @@ function ShareContent({ sharePath }: { sharePath: string }) {
           icon="qr-code-01"
           width="full"
           disabled={!qr}
-          loading={downloading}
-          onPress={() => void download()}
+          onPress={download}
+          feedback={{
+            active: downloadAction.status !== 'idle',
+            label:
+              downloadAction.status === 'error'
+                ? 'Не скачано. Повторить'
+                : Platform.OS === 'web'
+                  ? 'Загрузка начата'
+                  : 'PNG подготовлен',
+            icon: downloadAction.status === 'error' ? 'qr-code-01' : 'check',
+          }}
+          accessibilityHint={downloadAction.status === 'error' ? 'Не удалось скачать QR. Нажмите, чтобы повторить.' : Platform.OS === 'web' ? 'Открыть загрузку PNG в браузере.' : 'Выберите место сохранения PNG в системном меню.'}
         />
         <FigmaButton
           label="Копировать ссылку"
@@ -147,31 +142,22 @@ function ShareContent({ sharePath }: { sharePath: string }) {
           size="sheetAction"
           icon="copy"
           width="full"
-          onPress={() => void copy()}
+          onPress={copy}
+          feedback={{
+            active: copyAction.status !== 'idle',
+            label:
+              copyAction.status === 'error'
+                ? 'Не скопировано. Повторить'
+                : 'Скопировано',
+            icon: copyAction.status === 'error' ? 'copy' : 'check',
+          }}
+          accessibilityHint={
+            copyAction.status === 'error'
+              ? 'Не удалось скопировать ссылку. Нажмите, чтобы повторить.'
+              : undefined
+          }
         />
       </View>
-      {message ? (
-        <View style={{ gap: designTokens.space.x1 }}>
-          <AppText
-            role="caption"
-            accessibilityLiveRegion="polite"
-            style={{ textAlign: 'center' }}
-          >
-            {message}
-          </AppText>
-          {message.startsWith('Не удалось скопировать') ? (
-            <AppText
-              role="caption"
-              selectable
-              numberOfLines={1}
-              ellipsizeMode="middle"
-              style={{ maxWidth: '100%', textAlign: 'center' }}
-            >
-              {url}
-            </AppText>
-          ) : null}
-        </View>
-      ) : null}
     </View>
   );
 }

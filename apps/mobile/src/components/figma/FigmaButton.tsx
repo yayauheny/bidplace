@@ -1,6 +1,25 @@
 import { Link, type Href } from 'expo-router';
-import type { ElementRef, ReactNode, Ref } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import {
+  useEffect,
+  useRef,
+  type ElementRef,
+  type ReactNode,
+  type Ref,
+} from 'react';
+import {
+  AccessibilityInfo,
+  ActivityIndicator,
+  Platform,
+  StyleSheet,
+  View,
+} from 'react-native';
+import Animated, {
+  cancelAnimation,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
+import { useReducedMotion } from '../../lib/reduced-motion';
 
 import {
   figmaButtonContentHeight,
@@ -26,6 +45,8 @@ import {
 import { FigmaButtonSurface } from './FigmaButtonSurface';
 import { useCssBorderBox } from './use-css-border-box';
 
+type ButtonFeedback = { active: boolean; label: string; icon: FigmaIconName };
+
 type FigmaButtonContentAlign = 'center' | 'navigation';
 
 type FigmaButtonVisualContentProps = {
@@ -40,6 +61,7 @@ type FigmaButtonVisualContentProps = {
   iconNode?: ReactNode;
   iconPosition?: 'left' | 'right';
   presentational?: boolean;
+  feedback?: ButtonFeedback;
 };
 
 function FigmaButtonVisualContent({
@@ -54,25 +76,23 @@ function FigmaButtonVisualContent({
   iconNode,
   iconPosition = 'left',
   presentational = false,
+  feedback,
 }: FigmaButtonVisualContentProps) {
   const palette = useAppTheme();
   const textColor = figmaButtonLabelColor(variant, size, palette);
   const navigation = contentAlign === 'navigation';
-  const iconElement = icon ? (
-    <View style={styles.iconFrame}>
-      <FigmaIcon name={icon} color={textColor} />
-    </View>
-  ) : null;
 
-  return (
-    <>
-      <FigmaButtonSurface
-        variant={variant}
-        size={size}
-        interaction={interaction}
-        width={layout.width}
-        height={layout.height}
-      />
+  const content = (
+    shownLabel: string,
+    shownIcon: FigmaIconName | undefined,
+  ) => {
+    const iconElement = shownIcon ? (
+      <View style={styles.iconFrame}>
+        <FigmaIcon name={shownIcon} color={textColor} />
+      </View>
+    ) : null;
+
+    return (
       <View
         importantForAccessibility={
           presentational ? 'no-hide-descendants' : undefined
@@ -85,7 +105,7 @@ function FigmaButtonVisualContent({
           alignSelf: navigation ? 'stretch' : undefined,
           width: navigation ? '100%' : undefined,
           gap:
-            iconNode || icon
+            iconNode || shownIcon
               ? size === 'event' || size === 'sheetAction'
                 ? 2
                 : designTokens.space.x2
@@ -106,10 +126,32 @@ function FigmaButtonVisualContent({
             ...figmaButtonSizeMetrics(size).typography,
           }}
         >
-          {label}
+          {shownLabel}
         </AppText>
         {iconPosition === 'right' ? iconElement : null}
       </View>
+    );
+  };
+
+  return (
+    <>
+      <FigmaButtonSurface
+        variant={variant}
+        size={size}
+        interaction={interaction}
+        width={layout.width}
+        height={layout.height}
+      />
+      {feedback ? (
+        <ButtonFeedbackContent
+          active={feedback.active}
+          label={feedback.label}
+          original={content(label, icon)}
+          result={content(feedback.label, feedback.icon)}
+        />
+      ) : (
+        content(label, icon)
+      )}
       {loading ? (
         <ActivityIndicator
           color={textColor}
@@ -118,6 +160,76 @@ function FigmaButtonVisualContent({
         />
       ) : null}
     </>
+  );
+}
+
+function ButtonFeedbackContent({
+  active,
+  label,
+  original,
+  result,
+}: {
+  active: boolean;
+  label: string;
+  original: ReactNode;
+  result: ReactNode;
+}) {
+  const reduced = useReducedMotion();
+  const progress = useSharedValue(active ? 1 : 0);
+  const previousLabel = useRef(label);
+  useEffect(() => {
+    if (active && previousLabel.current !== label) progress.value = 0;
+    previousLabel.current = label;
+    progress.value = withTiming(active ? 1 : 0, {
+      duration: reduced ? 0 : designTokens.motion.fast,
+    });
+    if (active && Platform.OS !== 'web')
+      AccessibilityInfo.announceForAccessibility(label);
+    return () => cancelAnimation(progress);
+  }, [active, label, progress, reduced]);
+  const originalStyle = useAnimatedStyle(() => ({
+    opacity: 1 - progress.value,
+    transform: [{ scale: reduced ? 1 : 1 - progress.value * 0.03 }],
+  }));
+  const resultStyle = useAnimatedStyle(() => ({
+    opacity: progress.value,
+    transform: [{ scale: reduced ? 1 : 0.97 + progress.value * 0.03 }],
+  }));
+  return (
+    <View pointerEvents="none" style={{ width: '100%' }}>
+      <Animated.View
+        testID="button-feedback-original"
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
+        style={originalStyle}
+      >
+        {original}
+      </Animated.View>
+      <Animated.View
+        testID="button-feedback-result"
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
+        style={[
+          { position: 'absolute', inset: 0, justifyContent: 'center' },
+          resultStyle,
+        ]}
+      >
+        {result}
+      </Animated.View>
+      <AppText
+        role="caption"
+        accessibilityLiveRegion={Platform.OS === 'web' ? 'polite' : undefined}
+        style={{
+          position: 'absolute',
+          width: 1,
+          height: 1,
+          overflow: 'hidden',
+          opacity: 0,
+        }}
+      >
+        {active ? label : ''}
+      </AppText>
+    </View>
   );
 }
 
@@ -136,6 +248,7 @@ type FigmaButtonBaseProps = {
   size?: FigmaButtonSize;
   contentAlign?: FigmaButtonContentAlign;
   testID?: string;
+  feedback?: ButtonFeedback;
 };
 
 type FigmaButtonPressAction = {
@@ -216,6 +329,7 @@ export function FigmaButton(
     width = 'content',
     size = 'matrix',
     contentAlign = 'center',
+    feedback,
     testID,
   } = props;
   const inactive = disabled || loading;
@@ -234,7 +348,7 @@ export function FigmaButton(
       ref={props.ref}
       testID={testID}
       accessibilityRole={props.href ? 'link' : 'button'}
-      accessibilityLabel={label}
+      accessibilityLabel={feedback?.active ? feedback.label : label}
       accessibilityHint={accessibilityHint}
       {...{ 'aria-current': props.accessibilityCurrent }}
       accessibilityState={{ disabled: inactive, busy: Boolean(loading) }}
@@ -271,6 +385,7 @@ export function FigmaButton(
             label={label}
             layout={layout}
             size={size}
+            feedback={feedback}
             contentAlign={contentAlign}
             loading={loading}
             icon={icon}

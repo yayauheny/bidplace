@@ -5,6 +5,17 @@
 Полный прежний журнал, включая ограничения ранних экранов:
 [история](../archive/design/04-DESIGN-STATUS-through-2026-10-23.md).
 
+## 2026-10-26 — Share inline feedback
+
+**Partial — verified locally on web; native device acceptance pending.** Existing
+FigmaButton content transitions160ms and restores after1800ms; copy shows check/
+“Скопировано”, download accurately reports launch/preparation. No success row,
+spinner or geometry change; errors retry inline. Timers, repeated presses, close/
+reopen, focus and reduced motion covered by1076 mobile units and34 Chromium/
+WebKit checks; graph typecheck/lint and all-platform exports passed. Independent
+review accepted; [frames](../audits/evidence/2026-10-26-work-share/README.md).
+Native screen readers and actual OS operations remain unverified.
+
 ## 2026-10-26 — Work share sheet / Figma597:18875
 
 **Partial — mobile web matched; native devices pending.** Shared AppDialog

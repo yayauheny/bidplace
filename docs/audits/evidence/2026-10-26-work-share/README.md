@@ -36,3 +36,25 @@ behavior; native dialog focus/Back and file/clipboard adapters have unit coverag
 Independent review accepted after44px handle hit-area and native export race fixes.
 Native devices, actual OS save destinations/clipboard and phone camera remain
 unverified. Native modules require a rebuilt custom development client.
+
+## Inline feedback follow-up
+
+Local frame sequence: `feedback-0-idle.png` → `feedback-1-copied.png` →
+`feedback-2-reset.png`; `feedback-3-download-started.png` and
+`feedback-4-copy-error.png` cover download initiation and inline retry.
+The short recording is retained locally under `/tmp/bidplace-share-feedback-video/`.
+Mouse is moved off controls before capture to distinguish hover from feedback.
+All states retain x0,y446,390×428 at390×874. Button surfaces and typography do
+not change; content crossfades/scales over160ms and confirmation resets after1800ms.
+
+`useShareAction` serializes repeated presses and clears timer/lifetime state on
+close/unmount. ShareContent stays through shared exit motion, with inactive
+feedback reset on close; rapid reopen cannot receive an older completion.
+Errors use the same button with a retry label, without a check or extra row.
+Web confirms “Загрузка начата”; native confirms “PNG подготовлен”, without
+claiming that the OS saved a file. No immediate loading spinner or success toast.
+
+Passed:1076 mobile units,34 Chromium/WebKit share checks, graph typecheck/lint,
+web/iOS/Android exports, E2E fence and link/diff checks. Independent follow-up
+review accepted, including47 targeted units and4 Chromium regressions.
+Native device/VoiceOver/TalkBack/save-destination acceptance remains unverified.

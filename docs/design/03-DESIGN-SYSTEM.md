@@ -650,6 +650,14 @@ shell stays the only ring. `apps/mobile/global.css` still draws
 `[role='textbox']:focus-visible` for controls outside that component.
 The field success border stays `color.success` `#039600`.
 
+Share action feedback (2026-10-26): FigmaButton's opt-in controlled feedback
+crossfades/scales content only with existing motion.fast160/reduced-motion
+policy; the original measurement remains. Confirmation lasts1800ms. Inline
+copy/download errors offer retry without a separate status row; focused
+pressable stays mounted. Web live status and native accessibility announcements
+convey results. Download feedback describes initiation/preparation, not saved
+files. Share action lifetime state belongs to `useShareAction`; no toast system.
+
 ### Author application field variant
 
 `FigmaTextField` and `TextField` take `variant="authorApplication"` (`FigmaFieldVariant`
