@@ -114,7 +114,7 @@ function DockItem({
         name={item.icon}
         variant={
           selected &&
-          (item.id === 'home' || item.id === 'search' || item.id === 'profile')
+          (item.id === 'home' || item.id === 'profile')
             ? 'filled'
             : 'outline'
         }

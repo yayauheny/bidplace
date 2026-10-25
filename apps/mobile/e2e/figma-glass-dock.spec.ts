@@ -327,7 +327,7 @@ async function mockPortfolioHome(page: Page) {
 }
 
 
-test('dock fills the current destination and follows navigation history without changing geometry', async ({ page }) => {
+test('dock fills Home and Profile and keeps Search outlined through navigation history', async ({ page }) => {
   await installAccountPresentation(page);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
@@ -338,10 +338,14 @@ test('dock fills the current destination and follows navigation history without 
     for (const label of labels) {
       const item = dock.getByLabel(label, { exact: true });
       const icon = item.locator('svg');
-      await expect(icon).toHaveAttribute('fill', label === selected ? '#2A2A2A' : 'none');
+      await expect(icon).toHaveAttribute('fill', label === selected && label !== 'Поиск' ? '#2A2A2A' : 'none');
       await expect(icon).toHaveAttribute('width', '24');
       await expect(icon).toHaveAttribute('height', '24');
     }
+    const searchStroke = await dock.getByLabel('Поиск', { exact: true }).locator('svg path').first().getAttribute('stroke-width');
+    const plusStroke = await dock.getByLabel('Добавить', { exact: true }).locator('svg path').first().getAttribute('stroke-width');
+    expect(Number(searchStroke)).toBeCloseTo(1.6, 8);
+    expect(Number(searchStroke)).toBe(Number(plusStroke));
     expect((await dock.boundingBox())!.width).toBe(232);
     expect((await dock.boundingBox())!.height).toBe(64);
   };

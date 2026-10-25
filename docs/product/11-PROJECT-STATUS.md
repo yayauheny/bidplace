@@ -16,10 +16,21 @@
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
 | Commerce, избранное/подписки, смена email/password из settings | Not implemented в launch scope / post-MVP; [следующая волна](15-POST-MVP-BACKLOG.md). Старый commerce runtime не разрешает включать продажи. |
 
+## 2026-10-25 — Dock Search outline revision
+
+**Implemented (local browser verification passed).** Founder revision: `FloatingDock` fills only
+active Home/Profile. Search keeps its original 24px outline at 1.6px, identical
+to Add, on active/inactive routes; existing navigation state is preserved.
+Source: working-copy Figma `7272:2707`, dock Search `7272:2790`. Owner E2E checks
+compare Search/Add physical strokes through navigation, reload and Back/Forward.
+Passed: six Chromium/WebKit dock E2E, 1051 mobile unit tests, typecheck/lint,
+web build, docs links and diff checks. Physical devices not checked.
+
 ## 2026-10-25 — Filled active dock icons
 
 **Implemented (local browser verification passed).** `FloatingDock` passes its
-existing selected state to `FigmaIcon` for filled Home/Search/Profile glyphs.
+existing selected state to `FigmaIcon` for filled Home/Profile glyphs; Search
+was subsequently revised to retain its outline (see entry above).
 No route/API/auth/permission or navigation-state changes. Passed: 1051 mobile
 unit tests, six Chromium/WebKit dock E2E, typecheck/lint and web build. Older dock
 fixtures were checked against `8318f956`: direct login now hides the dock and

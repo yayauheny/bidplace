@@ -8,7 +8,9 @@
 ## 2026-10-25 — Filled active dock icons
 
 **Implemented for verified local browser states.** `FloatingDock` uses filled
-Hugeicons for active Home/Search/Profile through `FigmaIcon variant="filled"`.
+Hugeicons for active Home/Profile through `FigmaIcon variant="filled"`. Search
+stays outlined at 1.6px/24px, matching Add, including when Explore is active
+(founder revision, working-copy source `7272:2707`).
 Source `6WWy0IkFqsajKxErNsH3bQ` / `5685:190` inspected in read-only browser;
 MCP access unavailable. Six Chromium/WebKit dock checks cover selection, reload,
 Back/Forward, reduced motion, unchanged glass/232×64/24px geometry and focus.
