@@ -16,15 +16,22 @@
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
 | Commerce, избранное/подписки, смена email/password из settings | Not implemented в launch scope / post-MVP; [следующая волна](15-POST-MVP-BACKLOG.md). Старый commerce runtime не разрешает включать продажи. |
 
+## 2026-10-25 — Dock Search simplification
+
+**Implemented (local checks passed).** Founder
+returned Search to the original outline: 24px and 1.6px in every state, matching
+Add (`DEC-145`). Removed masks, cutout/per-part rendering and experimental active
+stroke tokens from `FigmaIcon`/`FloatingDock`/design tokens. Home/Profile retain
+selected fill; routes/accessibility are unchanged. Owner dock E2E again compares
+Search/Add strokes across selection, reload and Back/Forward. Six Chromium/WebKit
+E2E, 1051 mobile unit tests, typecheck/lint, web build, docs links and diff checks
+passed. Physical devices not checked.
+
 ## 2026-10-25 — Dock Search outline revision
 
 **Implemented (local browser verification passed).** Founder revision: `FloatingDock` fills only
-active Home/Profile. Search keeps its original 24px outline; active ring/handle strokes are 3.6px/2.6px for visual acceptance,
-while inactive stroke is 1.3px and Add remains 1.6px. Existing navigation state is preserved.
-Latest founder trial (`DEC-142`): Search uses 1.3px while inactive and a 3.6px
-ring/2.6px handle while active, preserving the 24px outline. `FigmaIcon emphasized`
-reuses both original Hugeicons paths; no SVG parsing or replacement geometry.
-`stroke.iconActiveRing`/`iconActive` own the values; Add remains 1.6px.
+active Home/Profile. Search keeps its original 24px outline at 1.6px, identical
+to Add, on active/inactive routes; existing navigation state is preserved.
 Source: working-copy Figma `7272:2707`, dock Search `7272:2790`. Owner E2E checks
 compare Search/Add physical strokes through navigation, reload and Back/Forward.
 Passed: six Chromium/WebKit dock E2E, 1051 mobile unit tests, typecheck/lint,

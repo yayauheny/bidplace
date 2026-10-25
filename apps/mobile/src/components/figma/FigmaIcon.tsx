@@ -131,7 +131,7 @@ export function FigmaIcon({
   variant = 'outline',
 }: {
   name: FigmaIconName;
-  variant?: 'outline' | 'filled' | 'emphasized';
+  variant?: 'outline' | 'filled';
   size?: number;
   /** Explicit caller color wins; the default follows the active theme. */
   color?: string;
@@ -142,25 +142,6 @@ export function FigmaIcon({
   const themeColors = useAppTheme();
   const resolvedColor = color ?? themeColors.ink;
   const strokeWidth = strokeWidthPx ?? figmaIconStrokeWidth(size);
-  const emphasizedSearch = name === 'search-01' && variant === 'emphasized';
-  // A global strokeWidth would override the individual Hugeicons path strokes.
-  const icon = emphasizedSearch
-    ? Search01Icon.map(
-        ([tag, attributes]) =>
-          [
-            tag,
-            {
-              ...attributes,
-              strokeWidth:
-                ((attributes.key === '1'
-                  ? designTokens.stroke.iconActiveRing
-                  : strokeWidth) *
-                  iconGridSize) /
-                size,
-            },
-          ] as const,
-      )
-    : icons[name];
   if (name === 'internet') {
     // Hugeicons RN 1.0.16 drops ellipse nodes; preserve the source glyph.
     const elements = { circle: Circle, ellipse: Ellipse, path: Path };
@@ -186,10 +167,10 @@ export function FigmaIcon({
   }
   return (
     <HugeiconsIcon
-      icon={icon}
+      icon={icons[name]}
       size={size}
       color={resolvedColor}
-      strokeWidth={emphasizedSearch ? undefined : strokeWidth}
+      strokeWidth={strokeWidth}
       absoluteStrokeWidth
       fill={variant === 'filled' ? resolvedColor : 'none'}
       {...(label

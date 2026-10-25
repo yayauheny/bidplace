@@ -9,11 +9,8 @@
 
 **Implemented for verified local browser states.** `FloatingDock` uses filled
 Hugeicons for active Home/Profile through `FigmaIcon variant="filled"`. Search
-stays outlined at 24px: 1.3px inactive; active ring 3.6px and handle 2.6px for
-founder visual acceptance (`DEC-142`; working-copy geometry `7272:2707`).
-The existing Hugeicons paths receive separate strokes via `FigmaIcon emphasized`;
-browser checks verify both widths and that neither stroke clips the SVG frame.
-Add stays 1.6px.
+stays outlined at 1.6px/24px, matching Add, including when Explore is active
+(final founder choice `DEC-145`; working-copy source `7272:2707`).
 Source `6WWy0IkFqsajKxErNsH3bQ` / `5685:190` inspected in read-only browser;
 MCP access unavailable. Six Chromium/WebKit dock checks cover selection, reload,
 Back/Forward, reduced motion, unchanged glass/232×64/24px geometry and focus.
