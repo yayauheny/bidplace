@@ -6,6 +6,7 @@ import { AppShell } from '../../components/layout';
 import { PageColumn } from '../../components/layout/PageColumn';
 import { PageScrollView } from '../../components/layout/PageScrollView';
 import { navigateBack } from '../../components/layout/navigate-back';
+import { WorkViewToggle } from '../../components/figma/WorkViewToggle';
 import { FigmaTabs } from '../../components/figma/FigmaTabs';
 import { SEARCH_DEBOUNCE_MS, useDebouncedValue } from '../search/search-query';
 import { ExploreHeader } from './ExploreHeader';
@@ -70,6 +71,14 @@ export function ExploreScreen() {
     <ExploreFilters
       key={state.section}
       state={state}
+      trailing={
+        state.section === 'works' ? (
+          <WorkViewToggle
+            value={explore.workView}
+            onChange={explore.setWorkView}
+          />
+        ) : undefined
+      }
       onChange={(next) => explore.update(next, true)}
       onSheetOpenChange={setSheetOpen}
     />
@@ -135,7 +144,11 @@ export function ExploreScreen() {
             : {})}
         >
           {state.section === 'works' ? (
-            <WorksPane state={{ ...state.works, q }} controls={controls} />
+            <WorksPane
+              state={{ ...state.works, q }}
+              controls={controls}
+              viewMode={explore.workView}
+            />
           ) : state.section === 'authors' ? (
             <AuthorsPane state={{ ...state.authors, q }} controls={controls} />
           ) : (

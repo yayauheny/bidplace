@@ -1,3 +1,4 @@
+import type { WorkViewMode } from '../../components/figma/WorkViewToggle';
 import { InfrastructureErrorState } from '../../components/shared/InfrastructureErrorState';
 import type { PortfolioWorksRouteState } from '../products/portfolio-works-query';
 import { View } from 'react-native';
@@ -14,9 +15,11 @@ import { SearchPaneStatus } from '../search/panes/search-pane-status';
 export function WorksPane({
   state,
   controls,
+  viewMode = 'compact',
 }: {
   state: PortfolioWorksRouteState;
   controls?: ReactNode;
+  viewMode?: WorkViewMode;
 }) {
   const works = usePortfolioWorks(state);
   return (
@@ -27,10 +30,14 @@ export function WorksPane({
       isEmpty={works.items.length === 0}
       controls={controls}
       keepControlsOnEmpty={Boolean(state.category || state.material)}
-      loading={<WorksSkeleton />}
+      loading={<WorksSkeleton viewMode={viewMode} />}
     >
       <View style={{ gap: designTokens.space.x3 }}>
-        <WorkCoverCardGrid items={works.items} columns={2} variant="caption" />
+        <WorkCoverCardGrid
+          items={works.items}
+          columns={viewMode === 'compact' ? 2 : 1}
+          variant={viewMode === 'compact' ? 'compact' : 'overlay'}
+        />
         {works.isError ? (
           <InfrastructureErrorState
             presentation="inline"
@@ -55,14 +62,14 @@ export function WorksPane({
   );
 }
 
-function WorksSkeleton() {
+function WorksSkeleton({ viewMode }: { viewMode: WorkViewMode }) {
   return (
     <View
       accessibilityRole="progressbar"
-      style={{ flexDirection: 'row', gap: designTokens.space.x2 }}
+      style={{ flexDirection: 'row', gap: designTokens.space.x3 }}
     >
       <SkeletonCover />
-      <SkeletonCover />
+      {viewMode === 'compact' ? <SkeletonCover /> : null}
     </View>
   );
 }

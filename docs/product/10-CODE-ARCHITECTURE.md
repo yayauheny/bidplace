@@ -147,7 +147,11 @@ first publication; no historical backfill. [Contracts/configuration](analytics-c
   discovery has one canonical `/explore` route (`DEC-137`), composed by
   `features/explore/explore-screen.tsx` with one active Works/Authors/Categories
   pane. `use-explore-state.ts` owns URL state, independent section drafts and
-  navigation-entry session offsets. A new independent Search entry starts from
+  navigation-entry session offsets and work view mode (compact/large, DEC-148).
+  `WorkViewToggle` is controlled/reusable; only Explore connects it. View mode
+  changes reuse `WorkCoverCardGrid` and cached pages without changing URL/API
+  queries. Switching mode resets the Works offset; detail Back restores the mode.
+  A new independent Search entry starts from
   canonical defaults; no process-global last query is carried between entries.
   Existing entry Back/Forward still restores its drafts and offsets. Infinite pages stay in the existing React
   Query cache; no duplicated result store or new API is introduced. `/works`,

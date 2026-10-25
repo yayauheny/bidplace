@@ -24,7 +24,7 @@ export function WorkCoverCardGrid({
 }: {
   items: WorkCoverCardGridItem[];
   columns?: 1 | 2;
-  variant?: 'overlay' | 'caption';
+  variant?: 'overlay' | 'caption' | 'compact';
   onItemPress?: () => void;
 }) {
   if (columns === 1) {
@@ -43,11 +43,19 @@ export function WorkCoverCardGrid({
   }
 
   return (
-    <View style={{ width: '100%', gap: designTokens.space.x2 }}>
+    <View
+      style={{
+        width: '100%',
+        gap:
+          variant === 'compact' ? designTokens.space.x7 : designTokens.space.x2,
+      }}
+    >
       <PaddedGrid
         items={items}
         columns={columns}
-        gap={designTokens.space.x2}
+        gap={
+          variant === 'compact' ? designTokens.space.x3 : designTokens.space.x2
+        }
         keyExtractor={(item) => item.work.publicId}
         renderItem={(item) => (
           <WorkCoverGridCard
@@ -67,7 +75,7 @@ function WorkCoverGridCard({
   variant,
 }: {
   item: WorkCoverCardGridItem;
-  variant: 'overlay' | 'caption';
+  variant: 'overlay' | 'caption' | 'compact';
   onItemPress?: () => void;
 }) {
   const image = item.work.images[0];

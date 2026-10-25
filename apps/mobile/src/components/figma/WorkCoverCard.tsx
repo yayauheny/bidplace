@@ -79,7 +79,7 @@ export function WorkCoverCard({
   authorSlug: string;
   /** Честный отображаемый автор caption-варианта (может быть fullName). */
   authorLabel?: string;
-  variant?: 'overlay' | 'caption';
+  variant?: 'overlay' | 'caption' | 'compact';
   onPress?: () => void;
 }) {
   const overlay = getWorkCoverOverlay({ title, authorSlug });
@@ -88,7 +88,7 @@ export function WorkCoverCard({
   const palette = useAppTheme();
   const captionAuthor = authorLabel ?? overlay.authorSlug;
 
-  if (variant === 'caption') {
+  if (variant !== 'overlay') {
     return (
       <Link href={href} asChild>
         <MotionPressable
@@ -104,7 +104,7 @@ export function WorkCoverCard({
           {({ hovered, focused }) => (
             <>
               <View
-                style={coverCaptionCardFrameStyle(palette)}
+                style={coverCaptionCardFrameStyle(palette, variant)}
               >
                 <View
                   style={coverArtworkFrameStyle(
@@ -128,7 +128,10 @@ export function WorkCoverCard({
                   />
                 </View>
               </View>
-              <WorkCoverCaption author={captionAuthor} title={overlay.title} />
+              <WorkCoverCaption
+                author={variant === 'compact' && !authorLabel ? `@${captionAuthor}` : captionAuthor}
+                title={overlay.title}
+              />
             </>
           )}
         </MotionPressable>

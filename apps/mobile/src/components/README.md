@@ -72,6 +72,11 @@
 | **WorkCoverCard**     | `figma/WorkCoverCard.tsx`     | Обложка работы с навигацией на `/product/:id`.                                                                                                                                                    |
 | **WorkCoverCardGrid** | `figma/WorkCoverCardGrid.tsx` | Сетка cover-карточек: `columns` 1 (построчно) или 2 (через `PaddedGrid`). Публичный профиль собирает `CreatorWorkCard` через `PaddedGrid` + `gridColumnsFromWidth` (другая роль: owner-действия). |
 
+`WorkViewToggle` (`figma/WorkViewToggle.tsx`) — controlled compact/large switch,
+currently connected only in Explore. `WorkCoverCard variant="compact"` reuses
+caption/media with responsive3:4; `WorkCoverCardGrid` owns12px columns/28px rows.
+Existing caption and overlay variants retain their defaults.
+
 ## Текст, состояния, медиа
 
 | Компонент                      | Путь                              | Назначение                                      |

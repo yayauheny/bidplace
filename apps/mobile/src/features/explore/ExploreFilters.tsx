@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
+import { designTokens } from '@bidplace/design-tokens';
 import { View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { FilterSortBar, FilterSortSheet } from '../../components/figma';
@@ -18,7 +19,9 @@ export function ExploreFilters({
   state,
   onChange,
   onSheetOpenChange,
+  trailing,
 }: {
+  trailing?: ReactNode;
   state: ExploreRoute;
   onChange: (state: ExploreRoute) => void;
   onSheetOpenChange: (open: boolean) => void;
@@ -117,13 +120,26 @@ export function ExploreFilters({
   };
   return (
     <View>
-      <FilterSortBar
-        filterPresentation="icon"
-        filterActive={sections.some((item) => Boolean(item.value))}
-        sortActive={active.sort !== (works ? 'newest' : 'added')}
-        onPressFilter={() => changeSheet('filter')}
-        onPressSort={() => changeSheet('sort')}
-      />
+      <View
+        style={{
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+          gap: designTokens.space.x2,
+        }}
+      >
+        <FilterSortBar
+          filterPresentation="icon"
+          filterActive={sections.some((item) => Boolean(item.value))}
+          sortActive={active.sort !== (works ? 'newest' : 'added')}
+          onPressFilter={() => changeSheet('filter')}
+          onPressSort={() => changeSheet('sort')}
+        />
+        {trailing != null ? (
+          <View style={{ marginLeft: 'auto' }}>{trailing}</View>
+        ) : null}
+      </View>
       <CatalogFilterSheet
         open={sheet === 'filter'}
         sections={sections}

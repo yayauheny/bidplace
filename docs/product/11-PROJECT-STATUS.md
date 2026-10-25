@@ -16,6 +16,21 @@
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
 | Commerce, избранное/подписки, смена email/password из settings | Not implemented в launch scope / post-MVP; [следующая волна](15-POST-MVP-BACKLOG.md). Старый commerce runtime не разрешает включать продажи. |
 
+## 2026-10-25 — Compact/large Work view (DEC-148)
+
+**Partial — implemented and verified locally on web; native device acceptance pending.** `WorkViewToggle`, `WorkCoverCard compact`,
+`WorkCoverCardGrid` and Explore controls reuse existing media/navigation/query
+owners. Compact defaults to two columns, gap12, radius16 and adaptive3:4;
+large uses the existing overlay. Detailed evidence and the earlier intermittent
+Chromium header/media check are recorded in [design status](../design/04-DESIGN-STATUS.md). Navigation-entry sessions retain the mode on
+section changes and detail Back. Author/other lists stay unchanged; no commerce
+fields/API/timers added. Passed:1055 mobile unit tests, dependency-graph typecheck/lint,52 Chromium/WebKit
+Explore checks (320/390/768/1024/1440, keyboard/focus, doubled text, long text,
+media failure, navigation/session and request preservation), E2E fence,192 docs
+links and diff check. Web/iOS/Android Expo export passed on Node22; independent
+review accepted after focus-clipping and enlarged-text toolbar fixes. Physical iOS/Android and exact desktop Figma parity remain
+Needs verification / NEEDS-FIGMA.
+
 ## 2026-10-25 — PR #67 final MVP integration
 
 **Implemented for verified local web states; final-SHA CI tracked in PR #67.** Merged `068af087` (PR #66) normally

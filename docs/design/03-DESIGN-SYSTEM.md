@@ -399,8 +399,8 @@ content reserve. 1024/1440 Figma compositions remain `NEEDS-FIGMA`.
 Профиль. Search opens canonical `/explore` with its inline field active
 (`DEC-137`, replaces the fullscreen overlay portion of `DEC-096`). Explore source
 is Figma `7240:2491` variant 1: compact Works `7240:2492`, expanded search
-`7240:2652`, Categories `7240:2620`, Authors `7240:2580`. Commerce and view-mode
-controls in those mockups are excluded by the portfolio contract.
+`7240:2652`, Categories `7240:2620`, Authors `7240:2580`. Commerce controls in those mockups remain excluded by the portfolio contract.
+Work view switching is enabled only in Explore by DEC-148.
 
 `ExploreHeader` reserves a constant 52px slot. When opening search, only header layers animate;
 TextInput, tabs and result ancestry stay stable. A single Reanimated progress
@@ -414,8 +414,13 @@ its default underline variant keeps existing consumers. The semantic
 `filterPresentation="icon"` exposes the existing round filter trigger, while
 sort keeps its label; existing consumers retain label defaults. `FilterSearchField`
 remains the floating-label catalog field; Explore does not duplicate query inside
-filter sheets. `WorkCoverCardGrid variant="caption" columns={2}` uses existing
-image/card components without blur; default overlay consumers keep their behavior.
+filter sheets. `WorkViewToggle` (Figma7271:2719/2722) composes `FigmaGlassSurface` filterControl,
+`MotionPressable` and Hugeicons square/grid-view. It offers compact/large modes;
+Explore alone integrates it beside filters/sort. `WorkCoverCardGrid variant="compact"
+columns={2}` reuses caption rendering and resilient media with adaptive3:4,
+radius16, horizontal gap12 and row gap28 (founder-confirmed detailed card/grid).
+Large uses the existing single-column overlay. Existing caption/overlay consumers
+retain their geometry. Commerce fields remain absent.
 Author/Category/Work hits retain shared hover fill and visible keyboard focus.
 The 64×64 search FAB and the
 288×64 five-icon cart pill are unused variants (`DEC-088`). Web portals the
@@ -933,7 +938,7 @@ and large glyphs use 1.6 physical px. Fractional SVG export values are not token
 `FigmaIcon` uses Hugeicons `absoluteStrokeWidth` on its original 24-unit grid, preserving
 proportions and final stroke thickness at every size. `FigmaIconButton` uses the
 heavy role; the round `FilterSortBar` trigger is 42×42 with a 24px glyph at 1.6px.
-The portfolio Explore has no view-mode toggle; this update does not add one.
+This refinement did not add a view-mode toggle; DEC-148 subsequently enables it only in Explore.
 Back navigation uses Hugeicons `arrow-left-02`; gallery/calendar chevrons retain
 their separate meaning.
 

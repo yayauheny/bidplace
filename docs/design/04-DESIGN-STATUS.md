@@ -5,6 +5,31 @@
 Полный прежний журнал, включая ограничения ранних экранов:
 [история](../archive/design/04-DESIGN-STATUS-through-2026-10-23.md).
 
+## 2026-10-25 — Compact/large Work view (DEC-148)
+
+**Partial — implemented and verified locally on web; native device acceptance pending.** `WorkViewToggle`, `WorkCoverCard compact`,
+`WorkCoverCardGrid` and Explore controls reuse existing media/navigation/query
+owners. Compact defaults to two columns, gap12, radius16 and adaptive3:4;
+large uses the existing overlay. Navigation-entry sessions retain the mode on
+section changes and detail Back. Author/other lists stay unchanged; no commerce
+fields/API/timers added. Passed:1055 mobile unit tests, dependency-graph typecheck/lint,52 Chromium/WebKit
+Explore checks (320/390/768/1024/1440, keyboard/focus, doubled text, long text,
+media failure, navigation/session and request preservation), E2E fence,192 docs
+links and diff check. Web/iOS/Android Expo export passed on Node22; independent
+review accepted after focus-clipping and enlarged-text toolbar fixes. Physical iOS/Android and exact desktop Figma parity remain
+Needs verification / NEEDS-FIGMA.
+
+Evidence: [compact390](../audits/evidence/2026-10-25-compact-work-card/chromium-compact-390.png),
+[large390](../audits/evidence/2026-10-25-compact-work-card/chromium-large-390.png),
+[compact1440](../audits/evidence/2026-10-25-compact-work-card/chromium-compact-1440.png),
+[large1440](../audits/evidence/2026-10-25-compact-work-card/chromium-large-1440.png).
+Earlier concurrent-build runs intermittently failed the existing Chromium
+header/image DOM identity case; the final52-case run and separate19-case
+Chromium run passed with unchanged preservation assertions (expanded failure
+diagnostics only). Cause unconfirmed. Baseline comparison could not run because
+the temporary checkout's shared dependencies failed Metro Babel resolution;
+this is not evidence of a baseline failure. No retry/timeout/golden was relaxed.
+
 ## 2026-10-25 — Explore / Blur16 integration
 
 **Implemented for verified local web states; Native Needs verification.** Normal merge `87a2ab68` incorporates MVP

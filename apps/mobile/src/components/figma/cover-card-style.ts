@@ -97,10 +97,15 @@ export function coverOverlayPadStyle(): ViewStyle {
 }
 
 // Caption-variant card (account cabinet grid): media 179/236, caption below.
-export function coverCaptionCardFrameStyle(palette: SemanticColorMap): ViewStyle {
+export function coverCaptionCardFrameStyle(
+  palette: SemanticColorMap,
+  variant: 'caption' | 'compact' = 'caption',
+): ViewStyle {
   return {
     width: '100%',
-    aspectRatio: designTokens.ratio.ownerCardMedia,
+    aspectRatio: variant === 'compact'
+      ? designTokens.size.coverWidth / designTokens.size.coverHeight
+      : designTokens.ratio.ownerCardMedia,
     overflow: 'hidden',
     borderRadius: designTokens.radius.ownerCard,
     backgroundColor: palette.mutedFill,
