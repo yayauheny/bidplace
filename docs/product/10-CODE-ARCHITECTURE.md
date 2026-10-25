@@ -143,31 +143,27 @@ first publication; no historical backfill. [Contracts/configuration](analytics-c
   fields. Commerce application runtime is archived at
   `feature/commerce-runtime-archive` (`19eb40e`); Prisma Listing/Bid/Order tables
   remain as leftover safety data.
-- `apps/mobile` is an Expo Router client. React Query holds server state. There is
-  no Socket.IO client in the mobile runtime. Public Search is a feature overlay
-  (`apps/mobile/src/features/search/SearchOverlay.tsx`) with one
-  `SearchOverlayHost` in the root layout. `SearchOverlayProvider` is the only
-  owner of Search session state: it is reconstructed from the current route
-  (`overlay=search`, `oq`, `otab`; `/search?q=` is the compatibility alias).
-  Overlay focus trap lives in `useOverlayFocusTrap` for Search; `FilterSheet`
-  uses the shared `AppDialog` focus and dismissal lifecycle. Search reuses
-  `GET /api/works`, `GET /api/authors` and `GET /api/categories`.
-  There is no `/search` API and no second catalog fetch layer. `/search` is a
-  compatibility route that opens the same overlay. On web the overlay host
-  paints through a synchronous `document.body` portal
-  (`search-overlay-surface.web.tsx`); native keeps RN `Modal`. This is so
-  Back restores Search in the same commit as the revealed route, not a
-  later Modal mount. Installed `expo-router@57.0.4` web `NativeStackView`
-  has no public option to keep inactive screens laid out (`freezeOnBlur`
-  is iOS/Android only; `@react-navigation/native-stack` is not a direct
-  dependency). `patches/expo-router@57.0.4.patch` keeps inactive web
-  screens in layout (`display: flex`, `opacity: 0`, `pointerEvents: none`)
-  and sets `inert` on the Screen boundary. Search outside click is owned
-  only by `useDismissibleOverlay`; the Search dimmer is visual. `AppShell`
-  `useIsFocused()` only mounts `FloatingDock` (body portal); it must not
-  change page content. Public Back controls use
-  `navigateBack({ fallbackHref })` from history, including Works catalog
-  (`router.canGoBack()`).
+- `apps/mobile` is an Expo Router client. React Query holds server state. Public
+  discovery has one canonical `/explore` route (`DEC-137`), composed by
+  `features/explore/explore-screen.tsx` with one active Works/Authors/Categories
+  pane. `use-explore-state.ts` owns URL state, independent section drafts and
+  navigation-entry session offsets. A new independent Search entry starts from
+  canonical defaults; no process-global last query is carried between entries.
+  Existing entry Back/Forward still restores its drafts and offsets. Infinite pages stay in the existing React
+  Query cache; no duplicated result store or new API is introduced. `/works`,
+  `/authors` and `/search` redirect with validated supported params. Root
+  `LegacySearchRedirect` translates old `overlay=search&oq&otab` links after share
+  aliases resolve; it removes only those legacy params from the origin entry.
+  Search opening, typing, section changes and X use `router.setParams` (replace).
+  X clears only the active query, preserving filters and sort. Category selection
+  pushes a logical Works transition; detail Back restores the navigation entry.
+  `ExploreHeader` uses layout-measured Reanimated progress without changing the
+  result tree. Search is inline; sheets retain shared `AppDialog` lifecycle.
+  Existing `GET /api/works`, `/api/authors`, `/api/categories` and
+  `/api/portfolio/facets` are reused unchanged. There is no `/search` API.
+  `patches/expo-router@57.0.4.patch` still keeps inactive web screens laid out and
+  inert; `AppShell` focus only controls dock mounting. History-first Back uses
+  `navigateBack`, with Home as direct Explore fallback.
 - `apps/mobile/src/components/layout/AppShell.tsx` owns the shared safe-area responsive shell. `AppHeader` is one horizontal, role-aware composition with desktop navigation and a compact mobile navigation row; route screens remain responsible for their own scroll/content and business interactions.
 - `apps/mobile/src/components/ui` is the only runtime component system.
   Text-button geometry and the 16-cell visual matrix live in

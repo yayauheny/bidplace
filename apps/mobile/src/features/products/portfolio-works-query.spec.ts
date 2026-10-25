@@ -32,12 +32,12 @@ describe('portfolio works list query', () => {
   });
 
   it('builds the canonical Works catalog href from category id', () => {
-    expect(toPortfolioWorksHref({})).toBe('/works');
+    expect(toPortfolioWorksHref({})).toBe('/explore?section=works');
     expect(
       toPortfolioWorksHref({
         category: '3c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
       }),
-    ).toBe('/works?category=3c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1');
-    expect(toPortfolioWorksHref({ sort: 'newest' })).toBe('/works');
+    ).toBe('/explore?section=works&category=3c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1');
+    expect(toPortfolioWorksHref({ sort: 'newest' })).toBe('/explore?section=works');
   });
 });

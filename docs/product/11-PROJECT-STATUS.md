@@ -16,6 +16,63 @@
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
 | Commerce, избранное/подписки, смена email/password из settings | Not implemented в launch scope / post-MVP; [следующая волна](15-POST-MVP-BACKLOG.md). Старый commerce runtime не разрешает включать продажи. |
 
+## 2026-10-25 — PR #67 final MVP integration
+
+**Implemented for verified local web states; final-SHA CI tracked in PR #67.** Merged `068af087` (PR #66) normally
+into Explore at `87a2ab68`. One conflict in this status owner retained both tasks.
+`tokens.ts` retains Blur16/Native60 and icon1.3/heavy1.6/active2.5; deleted legacy
+blur tokens remain absent. Overlay cards use the new CoverFrost; caption Works
+remain without blur. Removed global `lastState` from `use-explore-state.ts` after
+both browsers reproduced stale queries on independent Home → Search entry.
+Owner unit/E2E regressions cover fresh entries and retained same-entry Back state.
+Passed: 1053 mobile unit tests, graph typecheck/lint, 46 Chromium/WebKit E2E plus
+six strengthened responsive checks, E2E fence, 192 docs links and diff check.
+Web/iOS/Android export results and final-SHA CI are recorded in PR #67.
+Native devices, exact desktop parity and blur background/resume remain unverified.
+
+## 2026-10-25 — Dock Search simplification
+
+**Implemented (local checks passed).** Founder
+returned Search to the original 24px outline. Latest selection clarification:
+inactive 1.3px, selected/pressed 2.5px; Add uses the same 2.5px while pressed
+and 1.6px at rest (`DEC-147`, revises `DEC-146`). Removed masks, cutout/per-part rendering and previous 2.6/3.6px trials. The shared
+`stroke.iconActive` is now 2.5px for selected Search and pressed Search/Add. Home/Profile retain
+selected fill; routes/accessibility are unchanged. Owner dock E2E again compares
+Search/Add strokes across selection, reload and Back/Forward. Six Chromium/WebKit
+E2E, 1051 mobile unit tests, typecheck/lint, web build, docs links and diff checks
+passed. Physical devices not checked.
+
+## 2026-10-25 — Dock Search outline revision
+
+**Implemented (local browser verification passed).** Founder revision: `FloatingDock` fills only
+active Home/Profile. Search keeps its original 24px outline: selected/pressed 2.5px like pressed Add, inactive 1.3px; existing navigation state is preserved.
+Source: working-copy Figma `7272:2707`, dock Search `7272:2790`. Owner E2E checks
+compare Search/Add physical strokes through navigation, reload and Back/Forward.
+Passed: six Chromium/WebKit dock E2E, 1051 mobile unit tests, typecheck/lint,
+web build, docs links and diff checks. Physical devices not checked.
+
+## 2026-10-25 — Filled active dock icons
+
+**Implemented (local browser verification passed).** `FloatingDock` passes its
+existing selected state to `FigmaIcon` for filled Home/Profile glyphs; Search
+was subsequently revised to retain its outline (see entry above).
+No route/API/auth/permission or navigation-state changes. Passed: 1051 mobile
+unit tests, six Chromium/WebKit dock E2E, typecheck/lint and web build. Older dock
+fixtures were checked against `8318f956`: direct login now hides the dock and
+Home/footer have separate brand links; test routes/selectors were corrected
+without weakening geometry, blur or focus assertions. Native devices not checked.
+
+## 2026-10-25 — Explore acceptance refinements
+
+**Implemented (local browser verification passed).** `FigmaTabs` moves one selection fill with
+Reanimated and reduced motion; `FigmaIcon` owns constant physical 1.3/1.6px strokes
+and the full Back arrow. Explore panes use the Figma empty-search state via
+`SearchPaneStatus`/`PageState`; viewport content keeps the footer below the first
+screen and active filters remain accessible. No API/schema/route changes.
+Passed: 1051 mobile unit tests, 36 Chromium/WebKit E2E, typecheck/lint,
+web/iOS/Android exports, 191 docs links and diff checks. Physical native
+keyboard/Back/motion and exact desktop parity remain unverified.
+
 ## 2026-10-25 — Final cover glass
 
 **Implemented for verified web states; native device acceptance Needs verification.**
@@ -39,8 +96,9 @@ phone catalog smoothness and exact desktop Figma parity remain open.
 2026-10-25 review follow-up: **Needs verification** for device load/replacement,
 scroll/details return and background/resume (installed expo-blur 57.0.3;
 upstream #51845/#51848). Device tooling is unavailable on this host. The
-[acceptance owner](../audits/current/2026-10-25-COVER-GLASS.md) records the pending
-Blur-to-MVP then Explore synchronization procedure and both token sets to retain.
+[acceptance owner](../audits/current/2026-10-25-COVER-GLASS.md) records the original
+Blur-to-MVP then Explore synchronization procedure; normal merge `87a2ab68` now
+executes it and preserves both token sets.
 No dependency patch, Explore edit, merge or Native risk acceptance is recorded.
 Verify/GitGuardian also passed on pre-follow-up documentation SHA `6633a3cd`.
 
@@ -231,3 +289,15 @@ PENDING/RUNNING metadata blocks further revision decisions and exposes status
 refresh; FAILED retry and parent restoration keep their existing server rules.
 No API, persistence or permission changes. Owner19 tests and independent source
 review passed; browser/CI results are recorded in PR #64.
+
+## 2026-10-25 — Unified Explore
+
+**Partial / Needs verification.** `apps/mobile/src/features/explore` owns one
+canonical route, URL codec, navigation-entry drafts/scroll, inline Reanimated
+header and three panes reusing `usePortfolioWorks`, `usePortfolioAuthors` and
+`categoryKeys.all`. Works/Authors/Search aliases and Dock/Home/Desktop/footer
+are migrated; old overlay/provider/surfaces and standalone catalogs removed.
+No backend/API/auth/media changes. Owner regressions cover X/filter separation,
+section drafts, reload/Back/Forward, pagination/retry and result-tree identity.
+Verified:1047 mobile unit tests, typecheck/lint,70 Chromium/WebKit E2E +8 geometry checks, Web/iOS/Android exports, fence and docs links. PR44 reconciliation and remaining device/design gaps:
+[Explore report](../audits/current/2026-10-25-EXPLORE.md).

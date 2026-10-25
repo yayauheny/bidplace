@@ -64,7 +64,7 @@ export function HomeScreen({ hideDock = false }: { hideDock?: boolean }) {
               <PrimaryButton
                 label="Все авторы"
                 width="full"
-                onPress={() => router.push('/authors')}
+                onPress={() => router.push('/explore?section=authors')}
               />
             </View>
           ) : null}
@@ -86,12 +86,12 @@ export function HomeScreen({ hideDock = false }: { hideDock?: boolean }) {
                 <PrimaryButton
                   label="Все работы"
                   width="full"
-                  onPress={() => router.push('/works')}
+                  onPress={() => router.push('/explore?section=works')}
                 />
                 <PrimaryButton
                   label="Все авторы"
                   width="full"
-                  onPress={() => router.push('/authors')}
+                  onPress={() => router.push('/explore?section=authors')}
                 />
               </View>
             </View>

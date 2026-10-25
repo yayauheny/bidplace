@@ -129,7 +129,7 @@ export function CatalogFilterSheet({
           key={section.id}
           label={section.label}
           valuePreview={sectionPreview(section, draftValues[section.id])}
-          disabled={section.state !== 'ready'}
+          disabled={section.state === 'loading' || section.state === 'empty'}
           onPress={() => setActiveSectionId(section.id)}
         />
       ))}

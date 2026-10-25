@@ -11,10 +11,11 @@ import { createApiClient } from '@bidplace/api-client';
 import { ApiProvider } from '../providers/api-provider';
 import { AnalyticsProvider } from '../providers/analytics-provider';
 import { authKeys, categoryKeys } from './query-cache';
-import { ProductListScreen } from '../features/products/product-list-screen';
+import { ExploreFilters } from '../features/explore/ExploreFilters';
+import { parseExploreRoute } from '../features/explore/explore-route';
 import { ProductDraftScreen } from '../features/sellers/product-draft-screen';
 import { PublicSellerScreen } from '../features/sellers/public-seller-screen';
-import { CategoriesSearchPane } from '../features/search/panes/CategoriesSearchPane';
+import { CategoriesPane } from '../features/explore/CategoriesPane';
 
 // Query ownership is independent of page chrome and dialogs.
 vi.mock('../components/ui/AppDialog', () => ({ AppDialog: () => null }));
@@ -351,7 +352,7 @@ vi.mock('../components/ui', () => ({
 
 vi.mock('../components/figma', () => ({
   FigmaButton: ({ label }: { label: string }) => createElement('button', { type: 'button' }, label),
-  FilterSortBar: () => createElement('div', { 'data-marker': 'filter-sort' }),
+  FilterSortBar: () => createElement('div', { 'data-marker': 'filter-sort' }, 'Сортировка'),
   FilterSortSheet: () => null,
   WorkCoverCardGrid: ({
     items,
@@ -685,10 +686,10 @@ afterEach(() => {
 describe('category query identity', () => {
   it.each([
     {
-      consumer: 'ProductListScreen',
-      node: createElement(ProductListScreen, { state: { sort: 'newest' } }),
-      paths: ['/api/categories', '/api/portfolio/facets', '/api/works'],
-      readyText: 'Glass bowl',
+      consumer: 'ExploreFilters',
+      node: createElement(ExploreFilters, { state: parseExploreRoute({}), onChange: () => undefined, onSheetOpenChange: () => undefined }),
+      paths: ['/api/categories', '/api/portfolio/facets'],
+      readyText: 'Сортировка',
     },
     {
       consumer: 'ProductDraftScreen',
@@ -703,8 +704,8 @@ describe('category query identity', () => {
       readyText: 'Maker 1',
     },
     {
-      consumer: 'CategoriesSearchPane',
-      node: createElement(CategoriesSearchPane, { query: '' }),
+      consumer: 'CategoriesPane',
+      node: createElement(CategoriesPane, { query: '' }),
       paths: ['/api/categories'],
       readyText: 'Glass',
     },

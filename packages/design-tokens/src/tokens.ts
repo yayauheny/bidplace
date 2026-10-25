@@ -92,7 +92,7 @@ export const designTokens = {
     contentTop: 34.22,
     chromeFrame: 28,
     chromeGlyph: 18.67,
-    chromeStroke: 1.5,
+    chromeStroke: 1.6,
     headerBlockGap: 24,
     titleStackGap: 8,
     headerToBodyBasics: 33,
@@ -210,6 +210,13 @@ export const designTokens = {
       letterSpacing: -1.12,
       fontWeight: '600' as const,
     },
+    navigationTitle: {
+      fontFamily: 'Inter_600SemiBold',
+      fontSize: 16,
+      lineHeight: 20,
+      letterSpacing: -0.32,
+      fontWeight: '600' as const,
+    },
     screenTitle: {
       fontFamily: 'Inter_500Medium',
       fontSize: 20,
@@ -258,6 +265,20 @@ export const designTokens = {
       fontFamily: 'Inter_400Regular',
       fontSize: 16,
       lineHeight: 24,
+      fontWeight: '400' as const,
+    },
+    emptyStateTitle: {
+      fontFamily: 'Inter_600SemiBold',
+      fontSize: 18,
+      lineHeight: 22,
+      letterSpacing: -0.36,
+      fontWeight: '600' as const,
+    },
+    emptyStateBody: {
+      fontFamily: 'Inter_400Regular',
+      fontSize: 14,
+      lineHeight: 20,
+      letterSpacing: -0.28,
       fontWeight: '400' as const,
     },
     bodySmall: {
@@ -841,14 +862,14 @@ export const designTokens = {
     quietBorder: 0.16,
   },
   stroke: {
-    icon: 1.13,
-    iconHeavy: 1.25,
+    icon: 1.3,
+    iconHeavy: 1.6,
+    iconActive: 2.5,
     /** 18 px author-application field glyphs (at-sign, search, calendar) at 1.3 px physical stroke. */
     authorApplicationFieldPx: 1.3,
-    dockIcon: 1.5,
-    filterOptionCheck: 1.5,
+    filterOptionCheck: 1.3,
     // Final rendered px for the media sheet close glyph (not icon-grid units).
-    mediaSheetClosePx: 2,
+    mediaSheetClosePx: 1.6,
   },
   // Shared Creator/Work top chrome. Distinct from `size.dock*` bottom nav.
   // controlTop = space.x3, controlSize = size.header, controlInset = space.x5.

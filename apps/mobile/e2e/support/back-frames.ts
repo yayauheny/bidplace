@@ -60,7 +60,7 @@ export async function recordBackFrames(page: Page, click: () => Promise<void>) {
       home: vis('home-scroll'),
       work: vis('product-scroll-view'),
       author: vis('creator-scroll'),
-      overlay: vis('search-overlay'),
+      overlay: vis('explore-header'),
       loading: vis('infrastructure-page-status-loading'),
       gallery: vis('work-gallery'),
     });

@@ -1,19 +1,14 @@
+import { exploreSections } from '../features/explore/explore-route';
 import { describe, expect, it } from 'vitest';
 
-import {
-  AUTHORS_CATALOG_INTRO,
-  RESET_PASSWORD_SUCCESS_DESCRIPTION,
-  WORKS_CATALOG_INTRO,
-} from './portfolio-copy';
+import { RESET_PASSWORD_SUCCESS_DESCRIPTION } from './portfolio-copy';
 
-const COMMERCE_LEXICON =
-  /покупа|ставк|аукцион|\bлот\b|торг|продавц/i;
+const COMMERCE_LEXICON = /покупа|ставк|аукцион|\bлот\b|торг|продавц/i;
 
 describe('portfolio public copy', () => {
   it('keeps discovery and account strings free of commerce lexicon', () => {
     const strings = [
-      WORKS_CATALOG_INTRO,
-      AUTHORS_CATALOG_INTRO,
+      ...exploreSections.map((section) => section.label),
       RESET_PASSWORD_SUCCESS_DESCRIPTION,
     ];
 

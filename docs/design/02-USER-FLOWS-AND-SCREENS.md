@@ -226,27 +226,30 @@ appearance; пока переход по тегу не включён, они с
 Кнопка результата использует `работ`, не `лотов`. Unsupported placeholder filters не
 рендерятся. Popularity/price/availability sorting отсутствует.
 
-`/works` and `/authors` share title → intro → Filter/Sort → cards. Catalog-segment
-tabs (`874:5421` / `526:13314`) stay hidden (`HIDE_FOR_FIRST_MVP`). Catalog intro
-copy is the approved MVP strings; the visual role is `bodySmall` default ink
-14/20/400/−1% `#2A2A2A` (`526:12957`, `526:13308`), not `textSecondary`.
+`/explore` unifies Categories / Authors / Works with the rounded segmented
+navigation from Figma `7240:2491`, variant 1 (`DEC-137`). Header and tabs stay
+mounted; the 52px header turns into a search field using Reanimated and real
+layout width. X clears the active query and closes search, preserving section,
+filters and sort. Escape/Android Back close a sheet first, then search, then
+follow navigation. Browser Back/Forward follows URL history.
 
-На mobile web `/works` и `/authors` коммитят фильтры и сортировку в URL только
-после `Применить`; sheet хранит локальный draft до Apply/Reset. Dock Search
-opens a fullscreen overlay over the current public page (`DEC-096`). Empty
-query shows the active tab’s public list; typing live-filters Categories
-client-side and sends `q` to Works/Authors after 300ms. `/search` remains a
-thin deep-link host for the same overlay. Opening Search adds one history
-entry on the current route; query/tab edits replace it. X and Escape return
-to the underlying entry. Back from an Author/Work/category result restores
-that Search session. Direct `/search` close falls back to Home. Work and
-Author detail Back follow history first (`navigateBack`), with `/works` or
-`/authors` only when the stack is empty. Works catalog shows the same
-history-first Back when `router.canGoBack()`, and hides it on a direct
-`/works` load. Active-tab infrastructure failure
-is one inline Retry; header, field and tabs stay. Category tiles have no
-production media yet. Work `?tab=`
-is URL-owned; Author About is local state and is not a `?tab=` contract.
+Dock Search opens the same Explore with search active. Home/Desktop/footer
+catalog entries select Works or Authors. `/works`, `/authors`, `/search?q&otab`
+and old `overlay=search&oq&otab` links remain compatible. Query/filter/sort and
+section edits replace the current entry; category selection pushes Works so Back
+returns to Categories. Section drafts and offsets survive detail Back for the
+navigation session; loaded pages remain in React Query. Reload restores active
+URL state, without promising hidden drafts. Server query debounce is 300ms.
+
+Works uses two caption columns without blur or a view-mode switch. Filters:
+category/material, newest/oldest. Authors uses existing rows, tag/city,
+added/name. Categories uses two columns and no filter toolbar. Production
+category media remains unavailable; existing placeholders are retained.
+Loading/empty/error/retry and load-more failures stay inside the content pane.
+Work `?tab=` remains URL-owned; Author About is local state.
+
+Exact desktop/native visual parity remains NEEDS-FIGMA; responsive browser
+verification and physical-device acceptance are separate claims.
 
 ## 6. Creator profile
 

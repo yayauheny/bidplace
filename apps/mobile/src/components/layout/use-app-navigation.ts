@@ -7,7 +7,8 @@ import {
 import { Platform } from 'react-native';
 
 import { getRouteSearchRedirect } from '../../features/auth/auth-redirect';
-import { useSearchOverlay } from '../../features/search/search-overlay-provider';
+import { parseExploreRoute } from '../../features/explore/explore-route';
+import { exploreSearchHref } from '../../features/explore/use-explore-state';
 import { useSellerCapability } from '../../hooks/use-seller-capability';
 import { useAuth } from '../../providers/auth-provider';
 import { rememberPendingOpener } from '../ui/use-return-focus';
@@ -20,7 +21,13 @@ export function useAppNavigation(hostTestID: string) {
   const router = useRouter();
   const auth = useAuth();
   const capability = useSellerCapability();
-  const search = useSearchOverlay();
+  const search = {
+    isOpen: pathname === '/explore',
+    open: () => {
+      if (pathname === '/explore') router.setParams({ search: '1' });
+      else router.navigate(exploreSearchHref());
+    },
+  };
   const returnPath = getRouteSearchRedirect(pathname, segments, params);
   const rememberAuthOpener = (label: string) => {
     if (Platform.OS === 'web' && !auth.isAuthenticated && !auth.isAdmin) {
@@ -32,6 +39,7 @@ export function useAppNavigation(hostTestID: string) {
 
   return {
     pathname,
+    section: parseExploreRoute(params).section,
     search,
     isAdmin: auth.isAdmin,
     canModerate: auth.canModerate,

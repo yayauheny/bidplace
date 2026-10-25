@@ -1,31 +1,32 @@
+import { InfrastructureErrorState } from '../../components/shared/InfrastructureErrorState';
+import type { PortfolioAuthorsRouteState } from '../sellers/portfolio-authors-query';
 import { View } from 'react-native';
+import type { ReactNode } from 'react';
 
 import { designTokens } from '@bidplace/design-tokens';
 
-import { useAppTheme } from '../../../providers/theme-provider';
-import { usePortfolioAuthors } from '../../sellers/use-portfolio-authors';
-import { AuthorSearchRow } from '../AuthorSearchRow';
-import { FigmaButton } from '../../../components/figma/FigmaButton';
-import { SearchPaneStatus } from './search-pane-status';
+import { useAppTheme } from '../../providers/theme-provider';
+import { usePortfolioAuthors } from '../sellers/use-portfolio-authors';
+import { AuthorSearchRow } from '../search/AuthorSearchRow';
+import { FigmaButton } from '../../components/figma/FigmaButton';
+import { SearchPaneStatus } from '../search/panes/search-pane-status';
 
-export function AuthorsSearchPane({
-  query,
+export function AuthorsPane({
+  state,
+  controls,
 }: {
-  query?: string;
+  state: PortfolioAuthorsRouteState;
+  controls?: ReactNode;
 }) {
-  const authors = usePortfolioAuthors(
-    {
-      ...(query ? { q: query } : {}),
-      sort: 'added',
-    },
-  );
+  const authors = usePortfolioAuthors(state);
   return (
     <SearchPaneStatus
       isPending={authors.isPending}
-      isError={authors.isError}
+      isError={authors.isError && authors.items.length === 0}
       onRetry={() => void authors.refetch()}
-      isEmpty={Boolean(query) && authors.items.length === 0}
-      emptyTitle="Авторы не найдены"
+      isEmpty={authors.items.length === 0}
+      controls={controls}
+      keepControlsOnEmpty={Boolean(state.tag || state.city)}
       loading={<AuthorSkeleton />}
     >
       <View style={{ width: '100%', gap: designTokens.space.identityGap }}>
@@ -37,7 +38,17 @@ export function AuthorsSearchPane({
             shortDescription={item.author.shortDescription}
           />
         ))}
-        {authors.hasNextPage ? (
+        {authors.isError ? (
+          <InfrastructureErrorState
+            presentation="inline"
+            onRetry={() =>
+              void (authors.isFetchNextPageError
+                ? authors.fetchNextPage()
+                : authors.refetch())
+            }
+          />
+        ) : null}
+        {authors.hasNextPage && !authors.isFetchNextPageError ? (
           <FigmaButton
             label="Показать ещё"
             variant="outline"

@@ -24,7 +24,7 @@ export function CategorySearchTile({
 }) {
   const palette = useAppTheme();
   return (
-    <Link href={toPortfolioWorksHref({ category: id })} asChild>
+    <Link href={toPortfolioWorksHref({ category: id })} push asChild>
       <MotionPressable
         accessibilityRole="link"
         accessibilityLabel={name}
@@ -42,7 +42,7 @@ export function CategorySearchTile({
         <View
           style={{
             width: '100%',
-            aspectRatio: 120.67 / 121.89,
+            aspectRatio: 264 / 352,
             borderRadius: designTokens.radius.small,
             overflow: 'hidden',
             backgroundColor: palette.mutedFill,

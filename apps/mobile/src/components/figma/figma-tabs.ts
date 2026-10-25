@@ -3,6 +3,7 @@ import type { SemanticColorMap } from '@bidplace/design-tokens';
 export type FigmaTab = { value: string; label: string; count?: number };
 export type FigmaTabsProps = {
   tabs: readonly FigmaTab[];
+  variant?: 'underline' | 'segmented';
   value: string;
   onChange: (value: string) => void;
   label: string;

@@ -53,6 +53,7 @@ export default defineConfig({
         DATABASE_URL: databaseUrl,
         E2E_DATABASE_URL: databaseUrl,
         SESSION_SECRET: 'e2e-jwt-secret',
+        OTP_HASH_SECRET: 'e2e-only-otp-hash-placeholder-20261025',
         TEST_EMAIL_FILE: 'apps/mobile/e2e/.email.jsonl',
         TURNSTILE_VERIFIER: 'test',
         TURNSTILE_HOSTNAME: 'localhost',

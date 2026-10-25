@@ -18,10 +18,26 @@ import { FigmaTabs } from './FigmaTabs';
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 const platform = vi.hoisted(() => ({ OS: 'web' }));
 
+vi.mock('../../lib/layout-transition', () => ({
+  sheetTimingConfig: { duration: 200 },
+}));
+vi.mock('../../lib/reduced-motion', () => ({ useReducedMotion: () => false }));
+vi.mock('react-native-reanimated', () => ({
+  default: {
+    View: ({ children }: { children?: ReactNode }) =>
+      createElement('div', null, children),
+  },
+  useSharedValue: (value: number) => ({ value }),
+  useAnimatedStyle: (style: () => object) => style(),
+  withTiming: (value: number) => value,
+}));
+
 vi.mock('expo-router', () => ({
   DefaultTheme: { colors: {} },
   ThemeProvider: ({ children }: { children?: ReactNode }) => children,
 }));
+
+vi.mock('./FigmaSearchGlass', () => ({ FigmaSearchGlass: ({ children }: { children?: ReactNode }) => createElement('div', { 'data-kind': 'rail' }, children) }));
 
 // RN-примитивы прокидываем в DOM только с теми стилями, что проверяет спека.
 function domStyle(style?: Record<string, unknown> | null) {
@@ -112,7 +128,7 @@ vi.mock('../ui', () => ({
 
 const mounted: Array<{ unmount: () => void }> = [];
 
-function mountTabs(contentInset?: number, selection = false) {
+function mountTabs(contentInset?: number, selection = false, variant: 'underline' | 'segmented' = 'underline') {
   const container = document.createElement('div');
   document.body.append(container);
   const root: Root = createRoot(container);
@@ -139,6 +155,7 @@ function mountTabs(contentInset?: number, selection = false) {
         label: 'Информация о работе',
         panelId: 'work-panel',
         fill: true,
+        variant,
         selection,
         ...(contentInset === undefined ? {} : { contentInset }),
       }),
@@ -174,8 +191,9 @@ describe('Figma tabs', () => {
     expect(view.container.querySelector('[aria-selected]')).toBeNull();
   });
 
-  it('preserves the default tab-panel association and keyboard selection', () => {
-    const view = mountTabs();
+  it.each(['underline', 'segmented'] as const)('preserves %s tab-panel association and keyboard selection', (variant) => {
+    const view = mountTabs(undefined, false, variant);
+    expect(Boolean(view.container.querySelector('[data-kind="rail"]'))).toBe(variant === 'segmented');
     const first =
       view.container.querySelector<HTMLButtonElement>('#work-panel-story')!;
     expect(first.getAttribute('role')).toBe('tab');

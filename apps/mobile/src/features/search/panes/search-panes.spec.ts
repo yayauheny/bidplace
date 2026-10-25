@@ -29,6 +29,7 @@ const worksState = vi.hoisted(() => ({
   isFetchingNextPage: false,
   isPending: false,
   isError: false,
+  isFetchNextPageError: false,
   fetchNextPage: vi.fn(async () => undefined),
   refetch: vi.fn(async () => undefined),
   lastState: null as { q?: string; sort: string } | null,
@@ -40,6 +41,7 @@ const authorsState = vi.hoisted(() => ({
   isFetchingNextPage: false,
   isPending: false,
   isError: false,
+  isFetchNextPageError: false,
   fetchNextPage: vi.fn(async () => undefined),
   refetch: vi.fn(async () => undefined),
   lastState: null as { q?: string; sort: string } | null,
@@ -113,8 +115,8 @@ vi.mock('../../sellers/use-portfolio-authors', () => ({
   },
 }));
 
-import { AuthorsSearchPane } from './AuthorsSearchPane';
-import { WorksSearchPane } from './WorksSearchPane';
+import { AuthorsPane } from '../../explore/AuthorsPane';
+import { WorksPane } from '../../explore/WorksPane';
 
 const workItem: WorkItem = { work: { id: 'work-1', title: 'Ваза' } };
 const authorItem: AuthorItem = {
@@ -135,6 +137,7 @@ describe('search panes', () => {
     worksState.isFetchingNextPage = false;
     worksState.isPending = false;
     worksState.isError = false;
+    worksState.isFetchNextPageError = false;
     worksState.lastState = null;
     worksState.fetchNextPage.mockClear();
     worksState.refetch.mockClear();
@@ -144,6 +147,7 @@ describe('search panes', () => {
     authorsState.isFetchingNextPage = false;
     authorsState.isPending = false;
     authorsState.isError = false;
+    authorsState.isFetchNextPageError = false;
     authorsState.lastState = null;
     authorsState.fetchNextPage.mockClear();
     authorsState.refetch.mockClear();
@@ -173,7 +177,7 @@ describe('search panes', () => {
   }
 
   it('renders work items and keeps the newest query identity', () => {
-    render(createElement(WorksSearchPane, { query: 'ми' }));
+    render(createElement(WorksPane, { state: { q: 'ми', sort: 'newest' } }));
 
     expect(container.querySelector('li')?.textContent).toBe('Ваза');
     expect(worksState.lastState).toEqual({ q: 'ми', sort: 'newest' });
@@ -183,7 +187,7 @@ describe('search panes', () => {
 
   it('loads the next works page once and hides the action when no page remains', () => {
     worksState.hasNextPage = true;
-    render(createElement(WorksSearchPane, { query: 'ми' }));
+    render(createElement(WorksPane, { state: { q: 'ми', sort: 'newest' } }));
     const button = loadMoreButton();
     expect(button?.textContent).toBe('Показать ещё');
 
@@ -193,14 +197,14 @@ describe('search panes', () => {
     expect(worksState.fetchNextPage).toHaveBeenCalledTimes(1);
 
     worksState.hasNextPage = false;
-    render(createElement(WorksSearchPane, { query: 'ми' }));
+    render(createElement(WorksPane, { state: { q: 'ми', sort: 'newest' } }));
     expect(loadMoreButton()).toBeUndefined();
   });
 
   it('does not fetch another works page while the next page is already loading', () => {
     worksState.hasNextPage = true;
     worksState.isFetchingNextPage = true;
-    render(createElement(WorksSearchPane));
+    render(createElement(WorksPane, { state: { sort: 'newest' } }));
     const button = loadMoreButton() as HTMLButtonElement | undefined;
 
     expect(button?.disabled).toBe(true);
@@ -213,17 +217,17 @@ describe('search panes', () => {
 
   it('keeps works loading, empty, and error states ahead of the result list', () => {
     worksState.isPending = true;
-    render(createElement(WorksSearchPane, { query: 'ми' }));
+    render(createElement(WorksPane, { state: { q: 'ми', sort: 'newest' } }));
     expect(container.querySelector('[role="progressbar"]')).not.toBeNull();
     expect(container.textContent).not.toContain('Ваза');
 
     worksState.isPending = false;
     worksState.items = [];
-    render(createElement(WorksSearchPane, { query: 'ми' }));
-    expect(container.textContent).toContain('Работы не найдены');
+    render(createElement(WorksPane, { state: { q: 'ми', sort: 'newest' } }));
+    expect(container.textContent).toContain('Ничего не найдено');
 
     worksState.isError = true;
-    render(createElement(WorksSearchPane, { query: 'ми' }));
+    render(createElement(WorksPane, { state: { q: 'ми', sort: 'newest' } }));
     const retry = [...container.querySelectorAll('button')].find(
       (button) => button.textContent === 'Повторить',
     );
@@ -235,7 +239,7 @@ describe('search panes', () => {
   });
 
   it('renders author items and keeps the added query identity', () => {
-    render(createElement(AuthorsSearchPane, { query: 'ми' }));
+    render(createElement(AuthorsPane, { state: { q: 'ми', sort: 'added' } }));
 
     expect(container.querySelector('article')?.textContent).toBe('ada');
     expect(authorsState.lastState).toEqual({ q: 'ми', sort: 'added' });
@@ -245,7 +249,7 @@ describe('search panes', () => {
 
   it('loads the next authors page and skips it while that page is loading', () => {
     authorsState.hasNextPage = true;
-    render(createElement(AuthorsSearchPane));
+    render(createElement(AuthorsPane, { state: { sort: 'added' } }));
     const button = loadMoreButton();
     act(() => {
       button?.click();
@@ -255,7 +259,7 @@ describe('search panes', () => {
 
     authorsState.isFetchingNextPage = true;
     authorsState.fetchNextPage.mockClear();
-    render(createElement(AuthorsSearchPane));
+    render(createElement(AuthorsPane, { state: { sort: 'added' } }));
     const loadingButton = loadMoreButton() as HTMLButtonElement | undefined;
     expect(loadingButton?.disabled).toBe(true);
     act(() => {
@@ -265,23 +269,23 @@ describe('search panes', () => {
 
     authorsState.hasNextPage = false;
     authorsState.isFetchingNextPage = false;
-    render(createElement(AuthorsSearchPane, { query: 'ми' }));
+    render(createElement(AuthorsPane, { state: { q: 'ми', sort: 'added' } }));
     expect(loadMoreButton()).toBeUndefined();
   });
 
   it('keeps author loading, empty, and error states ahead of the result list', () => {
     authorsState.isPending = true;
-    render(createElement(AuthorsSearchPane, { query: 'ми' }));
+    render(createElement(AuthorsPane, { state: { q: 'ми', sort: 'added' } }));
     expect(container.querySelector('[role="progressbar"]')).not.toBeNull();
     expect(container.textContent).not.toContain('ada');
 
     authorsState.isPending = false;
     authorsState.items = [];
-    render(createElement(AuthorsSearchPane, { query: 'ми' }));
-    expect(container.textContent).toContain('Авторы не найдены');
+    render(createElement(AuthorsPane, { state: { q: 'ми', sort: 'added' } }));
+    expect(container.textContent).toContain('Ничего не найдено');
 
     authorsState.isError = true;
-    render(createElement(AuthorsSearchPane, { query: 'ми' }));
+    render(createElement(AuthorsPane, { state: { q: 'ми', sort: 'added' } }));
     const retry = [...container.querySelectorAll('button')].find(
       (button) => button.textContent === 'Повторить',
     );
@@ -290,4 +294,36 @@ describe('search panes', () => {
     });
     expect(authorsState.refetch).toHaveBeenCalledTimes(1);
   });
+  it.each([
+    { name: 'works', state: worksState, node: () => createElement(WorksPane, { state: { sort: 'oldest', material: 'Clay' } }), content: 'Ваза' },
+    { name: 'authors', state: authorsState, node: () => createElement(AuthorsPane, { state: { sort: 'name', city: 'Minsk' } }), content: 'ada' },
+  ])('keeps cached $name visible and retries only the failed next page', ({ state, node, content }) => {
+    state.hasNextPage = true;
+    state.isError = true;
+    state.isFetchNextPageError = true;
+    render(node());
+    expect(container.textContent).toContain(content);
+    expect(loadMoreButton()).toBeUndefined();
+    const retry = [...container.querySelectorAll('button')].find((button) => button.textContent === 'Повторить');
+    expect(retry).toBeTruthy();
+    act(() => retry?.click());
+    expect(state.fetchNextPage).toHaveBeenCalledTimes(1);
+    expect(state.refetch).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { name: 'works', state: worksState, node: () => createElement(WorksPane, { state: { sort: 'newest' } }), content: 'Ваза' },
+    { name: 'authors', state: authorsState, node: () => createElement(AuthorsPane, { state: { sort: 'added' } }), content: 'ada' },
+  ])('keeps cached $name visible and offers Retry after background refresh fails', ({ state, node, content }) => {
+    state.isError = true;
+    state.isFetchNextPageError = false;
+    render(node());
+    expect(container.textContent).toContain(content);
+    const retry = [...container.querySelectorAll('button')].find((button) => button.textContent === 'Повторить');
+    expect(retry).toBeTruthy();
+    act(() => retry?.click());
+    expect(state.refetch).toHaveBeenCalledTimes(1);
+    expect(state.fetchNextPage).not.toHaveBeenCalled();
+  });
+
 });

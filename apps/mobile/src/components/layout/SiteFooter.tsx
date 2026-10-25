@@ -65,6 +65,7 @@ export function SiteFooter() {
           <View
             style={{
               flexDirection: wide ? 'row' : 'column',
+              flexWrap: 'wrap',
               gap: 40,
               justifyContent: 'space-between',
             }}
@@ -74,6 +75,7 @@ export function SiteFooter() {
                 justifyContent: 'space-between',
                 gap: 40,
                 minWidth: 0,
+                maxWidth: '100%',
                 alignItems: wide ? 'flex-start' : 'center',
               }}
             >
@@ -91,7 +93,7 @@ export function SiteFooter() {
               {wide ? legal : null}
             </View>
             <View
-              style={{ flexDirection: 'row', gap: wide ? metrics.wideGap : 30 }}
+              style={{ flexDirection: 'row', flexWrap: 'wrap', maxWidth: '100%', gap: wide ? metrics.wideGap : 30 }}
             >
               <View
                 style={[
@@ -106,8 +108,8 @@ export function SiteFooter() {
                   Основное
                 </AppText>
                 <View style={styles.links}>
-                  <FooterLink label="Все работы" href="/works" />
-                  <FooterLink label="Все авторы" href="/authors" />
+                  <FooterLink label="Все работы" href="/explore?section=works" />
+                  <FooterLink label="Все авторы" href="/explore?section=authors" />
                   {!navigation.isAdmin ? (
                     <>
                       <FooterLink

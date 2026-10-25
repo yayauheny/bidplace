@@ -46,11 +46,13 @@ test('guest dock search, home, profile and plus stay inside the capsule', async 
 
   const dock = page.getByTestId('figma-floating-dock');
   await dock.getByLabel('Поиск').click();
-  await expect(page).toHaveURL(/overlay=search/);
-  await expect(page.getByTestId('search-overlay')).toBeVisible();
+  await expect(page).toHaveURL(/search=1/);
+  await expect(page.getByTestId('explore-header')).toBeVisible();
   await page.getByRole('button', { name: 'Закрыть поиск' }).click();
-  await expect(page.getByTestId('search-overlay')).toHaveCount(0);
-  await expect(page).not.toHaveURL(/overlay=search/);
+  await expect(
+    page.getByRole('button', { name: 'Открыть поиск' }),
+  ).toBeVisible();
+  await expect(page).not.toHaveURL(/search=1/);
 
   await dock.getByLabel('Главная').click();
   await expect(page).toHaveURL(/\/$/);
@@ -118,13 +120,18 @@ test('admin dock separates moderation analytics and account without exposing cre
     await expect(dock.getByLabel('Добавить')).toHaveCount(0);
     await dock.getByLabel('Модерация').click();
     await expect(page).toHaveURL(/\/admin/);
-    await page.getByTestId('figma-floating-dock').getByLabel('Аналитика').click();
+    await page
+      .getByTestId('figma-floating-dock')
+      .getByLabel('Аналитика')
+      .click();
     await expect(page).toHaveURL(/\/analytics/);
     await page.getByTestId('figma-floating-dock').getByLabel('Профиль').click();
     await expect(page).toHaveURL(/\/account/);
-    await page.getByRole('button',{name:'Настройки',exact:true}).click();
+    await page.getByRole('button', { name: 'Настройки', exact: true }).click();
     await expect(page).toHaveURL(/\/account\/settings/);
-    await expect(page.getByRole('button',{name:'Выйти',exact:true})).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: 'Выйти', exact: true }),
+    ).toBeVisible();
   } finally {
     await context.close();
   }
@@ -159,13 +166,12 @@ test('public shell stays fluid without horizontal overflow across accepted W2 vi
     {
       name: 'authors',
       path: '/authors',
-      ready: (page: Page) =>
-        page.getByText('Креативные и проверенные авторы на Bidplace'),
+      ready: (page: Page) => page.getByTestId('explore-header'),
     },
     {
       name: 'works',
       path: '/works',
-      ready: (page: Page) => page.getByTestId('catalog-scroll-view'),
+      ready: (page: Page) => page.getByTestId('explore-header'),
     },
     {
       name: 'work',
@@ -187,7 +193,12 @@ test('public shell stays fluid without horizontal overflow across accepted W2 vi
     for (const route of routes) {
       await page.goto(route.path);
       await expect(route.ready(page)).toBeVisible();
-      await expectFluidShell(page, expectedContentWidth);
+      // Branded Home already owns 24px desktop gutters; ordinary columns use 12px.
+      const innerWidth =
+        route.name === 'home' && width >= 1024
+          ? expectedContentWidth - 24
+          : expectedContentWidth;
+      await expectFluidShell(page, innerWidth);
       if (route.name === 'work' && width === 390) {
         await expect(page.getByTestId('work-gallery')).toHaveJSProperty(
           'clientWidth',
@@ -203,7 +214,8 @@ test('public shell stays fluid without horizontal overflow across accepted W2 vi
     }
 
     await page.goto('/');
-    await page.getByTestId('figma-floating-dock').getByLabel('Поиск').click();
+    const navigation = page.getByTestId(width >= 1024 ? 'desktop-navigation' : 'figma-floating-dock');
+    await navigation.getByRole('button', { name: 'Поиск', exact: true }).click();
     await expectSearchOverlay(page, width);
     if (screenshotWidths.has(width)) {
       await page.screenshot({
@@ -215,19 +227,19 @@ test('public shell stays fluid without horizontal overflow across accepted W2 vi
 });
 
 async function expectFluidShell(page: Page, expectedContentWidth: number) {
+  const column = page.locator(
+    '[data-testid="page-content-column"]:not([inert] *)',
+  );
   await expect
     .poll(() =>
-      page
-        .getByTestId('app-shell-content')
-        .first()
-        .evaluate((node) => {
-          const style = getComputedStyle(node);
-          return (
-            node.getBoundingClientRect().width -
-            Number.parseFloat(style.paddingLeft) -
-            Number.parseFloat(style.paddingRight)
-          );
-        }),
+      column.evaluate((node) => {
+        const style = getComputedStyle(node);
+        return (
+          node.getBoundingClientRect().width -
+          Number.parseFloat(style.paddingLeft) -
+          Number.parseFloat(style.paddingRight)
+        );
+      }),
     )
     .toBe(expectedContentWidth);
   await expect
@@ -238,28 +250,11 @@ async function expectFluidShell(page: Page, expectedContentWidth: number) {
 }
 
 async function expectSearchOverlay(page: Page, expectedViewportWidth: number) {
-  const overlay = page.getByTestId('search-overlay');
-  await expect(overlay).toBeVisible();
-  await expect
-    .poll(() =>
-      overlay.evaluate((node) => {
-        const box = node.getBoundingClientRect();
-        return {
-          width: box.width,
-          height: box.height,
-          scrollWidth: document.documentElement.scrollWidth,
-          viewportWidth: innerWidth,
-          viewportHeight: innerHeight,
-        };
-      }),
-    )
-    .toEqual({
-      width: expectedViewportWidth,
-      height: 844,
-      scrollWidth: expectedViewportWidth,
-      viewportWidth: expectedViewportWidth,
-      viewportHeight: 844,
-    });
+  await expect(page.getByTestId('explore-header')).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(
+    expectedViewportWidth,
+  );
+  await expect(page.getByTestId('explore-query')).toBeEditable();
 }
 
 for (const locksAvailable of [true, false]) {
@@ -338,7 +333,7 @@ for (const locksAvailable of [true, false]) {
         .getByRole('link', { name: 'Работы', exact: true })
         .first()
         .click();
-      await expect(first).toHaveURL(/\/works/);
+      await expect(first).toHaveURL(/\/explore\?section=works/);
       await expect.poll(() => responses.length).toBe(4);
       await first.evaluate(() => {
         history.replaceState({}, '', `${location.pathname}?q=private#secret`);

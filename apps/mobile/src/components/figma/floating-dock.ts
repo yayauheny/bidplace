@@ -80,7 +80,7 @@ export function isFigmaDockItemSelected(id: FigmaDockItemId, pathname: string) {
     case 'home':
       return pathname === '/' || pathname === '';
     case 'search':
-      return pathname === '/search' || pathname.startsWith('/search/');
+      return pathname === '/explore' || pathname === '/search' || pathname.startsWith('/search/');
     case 'plus':
       return (
         pathname === '/products/new' || pathname.startsWith('/products/new')

@@ -13,9 +13,8 @@ export function BackButton({
 }) {
   return (
     <FigmaIconButton
-      icon="arrow-left-01"
+      icon="arrow-left-02"
       iconSize={20}
-      strokeWidthPx={1.5}
       surface={surface}
       label={label}
       disabled={disabled}

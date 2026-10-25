@@ -3200,3 +3200,159 @@ Nest добавляет до минуты ожидания до отправки
 считается гарантией запуска background-задач; fire-and-forget и искусственная
 задержка ответа не используются как исправление. Merge/deploy отдельно;
 самостоятельное слияние PR #58 не разрешено.
+
+## DEC-137 — Единый Explore вместо отдельных каталогов и Search overlay
+
+Date: 2026-10-25
+Status: Confirmed
+Source: explicit founder implementation request «Bidplace — реализация единого Explore»
+Revises: fullscreen Search overlay/navigation portion of `DEC-096` only.
+Preserves: portfolio-only restrictions of `DEC-083`, `DEC-087`.
+
+### Decision
+
+One `/explore` owns Categories / Authors / Works, rounded segmented variant1 from
+Figma `7240:2491`. Dock opens its inline animated search. X closes and clears the
+active query, retaining section, filters and sort via URL replace. Independent
+drafts may survive section switching; detail Back must restore state, pagination
+and scroll. Reload restores active URL state. Legacy URLs remain compatible.
+Works uses existing two-column caption cards without blur; large-card experiment,
+commerce and view-mode controls are excluded. Existing query hooks/cache/API stay.
+
+### Alternatives
+
+Separate overlay over catalogs and hidden competing result trees are rejected.
+PR44 must be reconciled selectively against current MVP, without merge/cherry-pick
+or a second filter implementation. Exact desktop/native design acceptance remains
+separate from responsive verification.
+
+
+## DEC-138 — Единая толщина линий иконок
+
+**Дата:** 2026-10-25. **Статус:** Confirmed. **Источник:** явное решение founder
+в приёмке Explore.
+
+Обычные иконки — 1.3 физических px; отдельные icon-only кнопки и крупные иконки —
+1.6 физических px. Дробные 1.13/1.25 из масштабированных Figma SVG не являются
+токенами. Сохраняем исходные пропорции Hugeicons и явно компенсируем размер
+24-unit grid, чтобы контейнер не менял толщину штриха. Круглые кнопки вида и
+фильтров должны иметь одинаковый контейнер, визуальный размер и 1.6px stroke.
+Используем существующие Hugeicons/FigmaIcon/FigmaIconButton; новую систему не вводим.
+Правило заменяет прежние export-derived значения толщины; исключённые из MVP
+контролы не добавляются этим решением. Визуальные роли принадлежат
+[design system](../design/03-DESIGN-SYSTEM.md).
+
+
+## DEC-139 — Контурная лупа Dock во всех состояниях
+
+**Дата:** 2026-10-25. **Статус:** Confirmed. **Источник:** явная founder-правка
+приёмки Dock; рабочая копия Figma `7272:2707`, иконка `7272:2790`.
+
+Лупа поиска в Dock остаётся контурной при активном и неактивном разделе:
+24px, физическая линия 1.6px, как у плюса (`DEC-138`). Залитая лупа отклонена;
+новый набор иконок не нужен. Заливка активных Home/Profile сохраняется.
+Маршруты и accessibility selected state не меняются. Визуальный владелец —
+[design system](../design/03-DESIGN-SYSTEM.md).
+
+
+## DEC-140 — Утолщение активной лупы Dock
+
+**Дата:** 2026-10-25. **Статус:** Confirmed. **Revises:** `DEC-139` только в
+части одинаковой толщины обоих состояний. **Источник:** founder уточнил, что
+при переключении лупа должна становиться жирнее, сохраняя размер.
+
+Неактивный Search — контур 1.3px, активный — контур 1.6px, как у плюса
+(`DEC-138`). Размер 24px и исходная геометрия Hugeicons не меняются. Заливки
+лупы нет. Существующий selected route управляет толщиной без нового состояния.
+Home/Profile сохраняют активную заливку. Владелец —
+[design system](../design/03-DESIGN-SYSTEM.md).
+
+
+## DEC-141 — Проба активной лупы Dock с линией 2.6px
+
+**Дата:** 2026-10-25. **Статус:** Confirmed for local visual trial; final visual
+acceptance pending. **Revises:** активные 1.6px из `DEC-140`.
+**Источник:** явное founder «в два раза попробуй, до 2.6».
+
+Активный Search — контур 2.6px (`stroke.iconActive`), неактивный — 1.3px.
+Размер 24px, заливки нет; плюс сохраняет 1.6px. Новый штрих вдвое толще
+неактивного. Маршруты, selected state, Home/Profile и остальные иконки неизменны.
+Визуальный владелец — [design system](../design/03-DESIGN-SYSTEM.md).
+
+
+## DEC-142 — Проба отдельного утолщения кольца Search
+
+**Дата:** 2026-10-25. **Статус:** Confirmed for local visual trial; final visual
+acceptance pending. **Revises:** одинаковую активную толщину двух путей `DEC-141`.
+**Источник:** founder согласился попробовать предложенные кольцо 3.6px и ручку 2.6px.
+
+Активный Search использует исходные Hugeicons paths: кольцо 3.6px, ручка 2.6px;
+неактивный остаётся 1.3px для обоих. Frame 24px, заливки нет, внутренний просвет
+уменьшается. SVG не парсится и не перерисовывается. Остальные иконки и маршруты
+не меняются. Владелец — [design system](../design/03-DESIGN-SYSTEM.md).
+
+
+## DEC-143 — Заливка внутрь линзы Search с прозрачным отверстием
+
+**Дата:** 2026-10-25. **Статус:** Confirmed for local visual trial; final visual
+acceptance pending. **Revises:** разные толщины путей из `DEC-142`.
+**Источник:** founder уточнил: добавляем чёрное только внутрь, снаружи не расширяем;
+если невозможно — оставить оба штриха 2.6px.
+
+Реализуемый вариант: исходные контуры Hugeicons и оба штриха 2.6px сохраняются;
+линза заполняется цветом иконки, luminance mask вырезает прозрачный круг диаметром
+6px (начальная визуальная проба). Иконка 24px, неактивная — контурная 1.3px.
+Перерисовки/парсинга SVG нет; вариант с отдельным штрихом кольца 3.6px удаляется.
+Владелец — [design system](../design/03-DESIGN-SYSTEM.md).
+
+
+## DEC-144 — Уменьшить внутреннюю заливку Search вдвое
+
+**Дата:** 2026-10-25. **Статус:** Confirmed for local visual trial; final visual
+acceptance pending. **Revises:** объём внутренней заливки из `DEC-143`.
+**Источник:** founder попросил вдвое уменьшить именно толщину добавленной заливки.
+
+При радиусе исходной линзы 8 и штрихе 2.6 внутренний край контура находится на
+радиусе 6.7. Вместо отверстия радиусом 3 используем 4.85 = 6.7 − (6.7 − 3) / 2:
+добавленная внутрь чёрная полоса уменьшается с 3.7 до 1.85px. Прозрачное отверстие
+имеет диаметр 9.7px. Снаружи геометрия и оба штриха 2.6px не меняются; frame 24px.
+Владелец — [design system](../design/03-DESIGN-SYSTEM.md).
+
+
+## DEC-145 — Окончательно вернуть обычную контурную лупу Dock
+
+**Дата:** 2026-10-25. **Статус:** Confirmed. **Supersedes:** `DEC-140`–`144`;
+восстанавливает простой вариант `DEC-139`. **Источник:** founder «верни как было
+и сделай толщину такой же, как у плюса ... без внутренних заливок».
+
+Search — исходный Hugeicons outline, frame 24px, линия 1.6px в активном и
+неактивном состоянии, как у Add. Маски, внутренние заливки, отдельные штрихи
+кольца и активные 2.6/3.6px отменены; экспериментальные варианты и токены удаляются.
+Home/Profile сохраняют активную заливку. Владелец —
+[design system](../design/03-DESIGN-SYSTEM.md).
+
+
+## DEC-146 — Активная лупа имеет толщину плюса
+
+**Дата:** 2026-10-25. **Статус:** Confirmed. **Revises:** одинаковые состояния
+Search из `DEC-145`; отмена внутренних заливок и экспериментов сохраняется.
+**Источник:** founder попросил при выборе лупы сделать толщину как у плюса.
+
+В Dock неактивная лупа — 1.3px, активная — 1.6px (равна Add). Исходная форма
+Hugeicons и frame 24px сохраняются; заливки и масок нет. Существующий selected
+route управляет толщиной. Add остаётся 1.6px; Home/Profile — без изменений.
+Владелец — [design system](../design/03-DESIGN-SYSTEM.md).
+
+
+## DEC-147 — Толщина активных символов по жирному плюсу из макета
+
+**Дата:** 2026-10-25. **Статус:** Confirmed for local visual acceptance.
+**Revises:** неверный эталон 1.6px из `DEC-146`.
+**Источник:** founder показал жирный Plus из `5685:190` и попросил исправить.
+
+Выбранное значение — 2.5px: оценка по предоставленному скриншоту (не выдаётся за
+прочитанный Figma Stroke). Панель Frame36 подтверждает 36px/6px padding/24px glyph,
+но не Stroke. Search selected/pressed и Add pressed используют один `iconActive`.
+Неактивный Search — 1.3px, Add в покое — 1.6px; оба frame 24px. Исходные Hugeicons
+outline, без заливок и масок; используется existing MotionPressable pressed state.
+Владелец — [design system](../design/03-DESIGN-SYSTEM.md).

@@ -9,8 +9,7 @@ import { afterAll, afterEach, describe, expect, it, vi } from 'vitest';
 import { createApiClient } from '@bidplace/api-client';
 
 import { ApiProvider } from '../../providers/api-provider';
-import { WORKS_CATALOG_INTRO } from '../../lib/portfolio-copy';
-import { ProductListScreen } from './product-list-screen';
+import { WorksPane } from '../explore/WorksPane';
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
@@ -179,7 +178,7 @@ vi.mock('../../components/layout', () => ({
   AppShell: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
 }));
 
-vi.mock('../../components/figma', () => ({
+vi.mock('../../components/figma/WorkCoverCardGrid', () => ({
   FigmaButton: ({ label }: { label: string }) => createElement('button', { type: 'button' }, label),
   FilterSortBar: ({
     filterLabel = 'Фильтры',
@@ -305,9 +304,8 @@ function mountCatalog() {
         createElement(
           ApiProvider,
           null,
-          createElement(ProductListScreen, {
+          createElement(WorksPane, {
             state: { sort: 'newest', category: categoryId },
-            title: 'Каталог работ на Bidplace',
           }),
         ),
       ),
@@ -332,38 +330,11 @@ afterEach(() => {
   document.body.replaceChildren();
 });
 
-describe('Works catalog chrome', () => {
-  it('hides the HIDE_FOR_FIRST_MVP catalog-segment tab', async () => {
+describe('Explore works catalog', () => {
+  it('renders the filtered public works using the existing API and cache', async () => {
     const view = mountCatalog();
-    await act(async () => {
-      await vi.waitFor(() => {
-        expect(nodeWithText(view.container, 'Glass bowl')).toBeTruthy();
-      });
-    });
-
-    expect(view.container.textContent).not.toContain('Все работы');
-    expect(view.container.querySelector('[role="tablist"]')).toBeNull();
-    expect(view.container.querySelector('[role="tab"]')).toBeNull();
-  });
-
-  it('keeps title, intro, Filter/Sort, then cards', async () => {
-    const view = mountCatalog();
-    await act(async () => {
-      await vi.waitFor(() => {
-        expect(nodeWithText(view.container, 'Glass bowl')).toBeTruthy();
-      });
-    });
-
-    const title = nodeWithText(view.container, 'Каталог работ на Bidplace');
-    const intro = nodeWithText(view.container, WORKS_CATALOG_INTRO);
-    const filterSort = view.container.querySelector('[data-marker="filter-sort"]');
-    const card = nodeWithText(view.container, 'Glass bowl');
-    expect(title).toBeTruthy();
-    expect(intro).toBeTruthy();
-    expect(filterSort).toBeTruthy();
-    expect(card).toBeTruthy();
-    expect(title!.compareDocumentPosition(intro!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(intro!.compareDocumentPosition(filterSort!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(filterSort!.compareDocumentPosition(card!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    await act(async () => { await vi.waitFor(() => expect(nodeWithText(view.container, 'Glass bowl')).toBeTruthy()); });
+    const queries = view.queryClient.getQueryCache().getAll();
+    expect(queries.some((query) => query.queryKey[0] === 'portfolio-works')).toBe(true);
   });
 });

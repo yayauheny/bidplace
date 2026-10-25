@@ -1,3 +1,4 @@
+import { useState, type Ref } from 'react';
 import { ScrollView, View, type ScrollViewProps } from 'react-native';
 import Animated from 'react-native-reanimated';
 
@@ -18,22 +19,37 @@ export function PageScrollView({
   reserveDock = true,
   animated = false,
   variant = 'default',
+  onLayout,
   ...props
 }: ScrollViewProps & {
+  ref?: Ref<ScrollView>;
   reserveDock?: boolean;
   animated?: boolean;
-  variant?: 'default' | 'branded';
+  variant?: 'default' | 'branded' | 'viewport';
 }) {
+  const [viewportHeight, setViewportHeight] = useState(0);
   const desktop = usePageDesktopChrome();
   const dockVisible = usePageDockVisible();
   const { reserve } = useDockInset();
   const Scroller = animated ? Animated.ScrollView : ScrollView;
   return (
-    <Scroller {...props} contentContainerStyle={{ flexGrow: 1 }}>
+    <Scroller
+      {...props}
+      onLayout={(event) => {
+        if (variant === 'viewport')
+          setViewportHeight(event.nativeEvent.layout.height);
+        onLayout?.(event);
+      }}
+      contentContainerStyle={{ flexGrow: 1 }}
+    >
       <PageColumn
         testID="page-content-column"
         style={[
           { flexGrow: 1 },
+          variant === 'viewport' && {
+            minHeight: viewportHeight,
+            paddingBottom: dockVisible ? reserve : 0,
+          },
           variant === 'branded' && {
             paddingTop: desktop
               ? brandedPage.wideTop
@@ -57,7 +73,10 @@ export function PageScrollView({
         {children}
       </PageColumn>
       <SiteFooter />
-      <View aria-hidden style={{ height: reserveDock && dockVisible ? reserve : 0 }} />
+      <View
+        aria-hidden
+        style={{ height: reserveDock && dockVisible ? reserve : 0 }}
+      />
     </Scroller>
   );
 }
