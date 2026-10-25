@@ -19,8 +19,10 @@
 ## 2026-10-25 — Dock Search outline revision
 
 **Implemented (local browser verification passed).** Founder revision: `FloatingDock` fills only
-active Home/Profile. Search keeps its original 24px outline at 1.6px, identical
-to Add, on active/inactive routes; existing navigation state is preserved.
+active Home/Profile. Search keeps its original 24px outline; active stroke is 1.6px, identical
+to Add, while inactive stroke is 1.3px. Existing navigation state is preserved.
+Latest founder clarification (`DEC-140`): Search uses 1.3px while inactive and
+1.6px while active, preserving 24px and the outline in both states.
 Source: working-copy Figma `7272:2707`, dock Search `7272:2790`. Owner E2E checks
 compare Search/Add physical strokes through navigation, reload and Back/Forward.
 Passed: six Chromium/WebKit dock E2E, 1051 mobile unit tests, typecheck/lint,

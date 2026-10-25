@@ -327,7 +327,7 @@ async function mockPortfolioHome(page: Page) {
 }
 
 
-test('dock fills Home and Profile and keeps Search outlined through navigation history', async ({ page }) => {
+test('dock fills Home and Profile and thickens the outlined active Search through navigation history', async ({ page }) => {
   await installAccountPresentation(page);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
@@ -344,12 +344,18 @@ test('dock fills Home and Profile and keeps Search outlined through navigation h
     }
     const searchStroke = await dock.getByLabel('Поиск', { exact: true }).locator('svg path').first().getAttribute('stroke-width');
     const plusStroke = await dock.getByLabel('Добавить', { exact: true }).locator('svg path').first().getAttribute('stroke-width');
-    expect(Number(searchStroke)).toBeCloseTo(1.6, 8);
-    expect(Number(searchStroke)).toBe(Number(plusStroke));
+    expect(Number(searchStroke)).toBeCloseTo(selected === 'Поиск' ? 1.6 : 1.3, 8);
+    expect(Number(plusStroke)).toBeCloseTo(1.6, 8);
+    if (selected === 'Поиск') {
+      expect(Number(searchStroke)).toBe(Number(plusStroke));
+    } else {
+      expect(Number(searchStroke)).toBeLessThan(Number(plusStroke));
+    }
     expect((await dock.boundingBox())!.width).toBe(232);
     expect((await dock.boundingBox())!.height).toBe(64);
   };
   await expectSelected('Главная');
+  await dock.screenshot({ path: '/private/tmp/bidplace-dock-search-inactive.png' });
   await expect(dock.getByLabel('Главная', { exact: true })).toHaveAttribute('aria-current', 'page');
   await dock.getByLabel('Поиск', { exact: true }).click();
   await expect(page).toHaveURL(/\/explore\?/);
