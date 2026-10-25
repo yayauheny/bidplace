@@ -177,6 +177,11 @@ first publication; no historical backfill. [Contracts/configuration](analytics-c
   it does not reuse the text-button matrix or the dock glass stroke.
   Product tabs are controlled by Expo Router URL state, and related Product/
   Creator grids reuse `WorkCoverCardGrid` rather than duplicating card anatomy.
+  Cover effects share `CoverFrost` and semantic blur tokens. PR #66 replaces
+  the release-base Native blurred image copy with `BlurTargetView` around the
+  original image and a subsequent `BlurView`; Web uses one masked backdrop
+  filter. Native intensity is separate from the web pixel radius; Android
+  below SDK31 uses tint/scrim fallback. Device runtime remains unverified.
   Cross-platform UI motion uses `react-native-reanimated`. Creator and Work
   share `stickyDock.*` metrics. Sticky physics stay screen-specific: Creator
   parks with CSS `top: -(heroHeight - stickyDock.actionHeight)` and restyles

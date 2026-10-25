@@ -59,6 +59,34 @@ Passed: 1051 mobile unit tests, 36 Chromium/WebKit E2E, typecheck/lint,
 web/iOS/Android exports, 191 docs links and diff checks. Physical native
 keyboard/Back/motion and exact desktop parity remain unverified.
 
+## 2026-10-25 — Final cover glass
+
+**Implemented for verified web states; native device acceptance Needs verification.**
+`CoverFrost.web`, `cover-frost-style` and
+shared blur tokens replace the 2026-10-24 blur60 experiment with approved
+Dock-style Blur16/saturate115%/Mask35 for work/author bottoms, retaining the
+independent scrim, content-driven panels and sharp controls. `AuthorCoverCard`
+top stays a gradient. Unused image props/spec fields were removed. Relative to
+PR #66 release base `bfab5198`, Native replaces the second `Image blurRadius=30`
+with one original image in `BlurTargetView` and a lower `BlurView` intensity60.
+The migration is part of this PR; the earlier comparison used intermediate
+`66575248`. Its missing theme mock export was introduced and fixed within the
+PR; the release-base theme test passes8/8.
+Owner style/browser regressions updated;1049 mobile tests, contracts48/client51,
+Chromium/WebKit E2E2/2,12 real catalog/viewport checks, lint/typecheck and
+web/iOS/Android exports passed. [Acceptance](../audits/current/2026-10-25-COVER-GLASS.md).
+Review rerun:38 relevant unit tests passed; Verify/GitGuardian are green on
+runtime SHA `85ac01e0` (not a result for later documentation commits).
+No API, media pipeline, Dock or compact format changes; physical iOS/Android,
+phone catalog smoothness and exact desktop Figma parity remain open.
+2026-10-25 review follow-up: **Needs verification** for device load/replacement,
+scroll/details return and background/resume (installed expo-blur 57.0.3;
+upstream #51845/#51848). Device tooling is unavailable on this host. The
+[acceptance owner](../audits/current/2026-10-25-COVER-GLASS.md) records the pending
+Blur-to-MVP then Explore synchronization procedure and both token sets to retain.
+No dependency patch, Explore edit, merge or Native risk acceptance is recorded.
+Verify/GitGuardian also passed on pre-follow-up documentation SHA `6633a3cd`.
+
 ## 2026-10-24 — Mobile moderation UI
 
 **Partial (final verification pending).** `AdminModerationScreen` uses opt-in

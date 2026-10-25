@@ -2,7 +2,7 @@ import { designTokens, type SemanticColorMap } from '@bidplace/design-tokens';
 
 export type CoverFrostPlacement = 'workBottom' | 'authorBottom' | 'authorTop';
 
-// Figma874:5474/5555: bottom blur30;874:5553: top scrim without blur.
+// Figma 874:5474 / 874:5553 scrims; approved web approximation: Blur16 / Mask35.
 export function coverFrostSpec(
   placement: CoverFrostPlacement,
   palette: SemanticColorMap,
@@ -11,17 +11,13 @@ export function coverFrostSpec(
 
   return {
     top,
-    runtimeBlur: top
-      ? designTokens.blur.authorTopOverlay
-      : designTokens.blur.overlay,
     // The fully transparent gradient anchor is independent of the active theme.
     gradientStart: 'rgba(0, 0, 0, 0)',
     gradientEnd: top ? palette.overlayScrim : palette.overlay,
-    artworkAspectRatio:
-      designTokens.size.coverWidth / designTokens.size.coverHeight,
   };
 }
 
-export function coverFrostBlur(runtimeBlur: number) {
-  return `blur(${runtimeBlur}px)`;
-}
+export const coverFrostBackdropFilter = `blur(${designTokens.blur.cover}px) saturate(115%)`;
+
+export const coverFrostMask =
+  'linear-gradient(to bottom, transparent 0%, black 35%, black 100%)';

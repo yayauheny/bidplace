@@ -176,6 +176,8 @@ vi.mock('expo-linear-gradient', () => ({
 // The figma barrel re-exports glass surfaces built on expo-blur; the blur
 // itself is a separate owner and only needs to render children here.
 vi.mock('expo-blur', () => ({
+  BlurTargetView: ({ children }: { children?: ReactNode }) =>
+    createElement('div', null, children),
   BlurView: ({ children }: { children?: ReactNode }) =>
     createElement('div', null, children),
 }));

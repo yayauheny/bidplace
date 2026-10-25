@@ -1,5 +1,7 @@
 import { Link } from 'expo-router';
-import { Text, View } from 'react-native';
+import { BlurTargetView } from 'expo-blur';
+import { useRef } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
@@ -44,6 +46,7 @@ export function AuthorCoverCard({
   const reducedMotion = useReducedMotion();
   const palette = useAppTheme();
   const emphasizeArtwork = interaction !== 'static' && !reducedMotion;
+  const blurTarget = useRef<View | null>(null);
 
   return (
     <Link href={`/seller/${slug}`} asChild>
@@ -59,29 +62,28 @@ export function AuthorCoverCard({
       >
         {({ hovered, focused }) => (
           <>
-            <View
-              style={coverArtworkFrameStyle(
-                emphasizeArtwork && (hovered || focused),
-                frameRadius,
-              )}
-            >
-              <ResilientRemoteImage
-                uri={getApiAssetUrl(imageUrl)}
-                component="AuthorCoverCard"
-                accessibilityLabel={`Фото автора ${fullName}`}
-                fallbackLabel={`Фото автора недоступно: ${fullName}`}
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  right: 0,
-                  bottom: 0,
-                  left: 0,
-                }}
-                contentFit="cover"
-              />
-            </View>
+            <BlurTargetView ref={blurTarget} style={StyleSheet.absoluteFill}>
+              <View
+                style={coverArtworkFrameStyle(
+                  emphasizeArtwork && (hovered || focused),
+                  frameRadius,
+                )}
+              >
+                <ResilientRemoteImage
+                  uri={getApiAssetUrl(imageUrl)}
+                  component="AuthorCoverCard"
+                  accessibilityLabel={`Фото автора ${fullName}`}
+                  fallbackLabel={`Фото автора недоступно: ${fullName}`}
+                  style={StyleSheet.absoluteFill}
+                  contentFit="cover"
+                />
+              </View>
+            </BlurTargetView>
             <View pointerEvents="none" style={coverFrostZoneStyle('top')}>
-              <CoverFrost imageUrl={imageUrl} placement="authorTop" />
+              <CoverFrost
+                placement="authorTop"
+                blurTarget={blurTarget}
+              />
               <View style={authorCoverNameZoneStyle()}>
                 <Text
                   numberOfLines={1}
@@ -98,7 +100,10 @@ export function AuthorCoverCard({
               </View>
             </View>
             <View pointerEvents="none" style={coverFrostZoneStyle()}>
-              <CoverFrost imageUrl={imageUrl} placement="authorBottom" />
+              <CoverFrost
+                placement="authorBottom"
+                blurTarget={blurTarget}
+              />
               <View style={coverOverlayPadStyle()}>
                 <Text
                   numberOfLines={1}

@@ -1,17 +1,18 @@
-import { Image } from 'expo-image';
-import { StyleSheet, View } from 'react-native';
+import { BlurView } from 'expo-blur';
+import { designTokens } from '@bidplace/design-tokens';
+import type { RefObject } from 'react';
+import { Platform, StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
-import { getApiAssetUrl } from '../../lib/environment';
 import { useAppTheme } from '../../providers/theme-provider';
 import { coverFrostSpec, type CoverFrostPlacement } from './cover-frost-style';
 
 export function CoverFrost({
-  imageUrl,
+  blurTarget,
   placement,
 }: {
-  imageUrl: string;
   placement: CoverFrostPlacement;
+  blurTarget?: RefObject<View | null>;
 }) {
   const palette = useAppTheme();
   const spec = coverFrostSpec(placement, palette);
@@ -25,18 +26,15 @@ export function CoverFrost({
       style={[StyleSheet.absoluteFill, { overflow: 'hidden' }]}
     >
       {!spec.top ? (
-        <Image
-          accessible={false}
-          source={{ uri: getApiAssetUrl(imageUrl) }}
-          blurRadius={spec.runtimeBlur}
-          contentFit="cover"
-          style={{
-            position: 'absolute',
-            left: 0,
-            right: 0,
-            [spec.top ? 'top' : 'bottom']: 0,
-            aspectRatio: spec.artworkAspectRatio,
-          }}
+        <BlurView
+          pointerEvents="none"
+          blurTarget={blurTarget}
+          intensity={designTokens.blur.coverNativeIntensity}
+          tint="default"
+          blurMethod={
+            Platform.OS === 'android' ? 'dimezisBlurViewSdk31Plus' : undefined
+          }
+          style={StyleSheet.absoluteFill}
         />
       ) : null}
       <LinearGradient

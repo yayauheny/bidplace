@@ -2,31 +2,37 @@ import { describe, expect, it } from 'vitest';
 
 import { designTokens } from '@bidplace/design-tokens';
 
-import { coverFrostBlur, coverFrostSpec } from './cover-frost-style';
+import {
+  coverFrostBackdropFilter,
+  coverFrostMask,
+  coverFrostSpec,
+} from './cover-frost-style';
 
 describe('Cover frost', () => {
   it.each([
-    ['workBottom', 30, false, designTokens.color.overlay],
-    ['authorBottom', 30, false, designTokens.color.overlay],
-    ['authorTop', 0, true, designTokens.color.overlayScrim],
+    ['workBottom', false, designTokens.color.overlay],
+    ['authorBottom', false, designTokens.color.overlay],
+    ['authorTop', true, designTokens.color.overlayScrim],
   ] as const)(
     'fills the text-hugging overlay zone for %s without a fixed height',
-    (placement, blur, top, gradientEnd) => {
+    (placement, top, gradientEnd) => {
       const spec = coverFrostSpec(placement, designTokens.color);
       expect(spec).toMatchObject({
-        runtimeBlur: blur,
         top,
         gradientEnd,
-        artworkAspectRatio: 0.75,
+        gradientStart: 'rgba(0, 0, 0, 0)',
       });
       expect(spec).not.toHaveProperty('heightPercent');
     },
   );
 
-  it('keeps the documented runtime blur in px', () => {
-    expect(coverFrostBlur(designTokens.blur.overlay)).toBe('blur(30px)');
-    expect(coverFrostBlur(designTokens.blur.authorTopOverlay)).toBe(
-      'blur(0px)',
+  it('uses one moderate backdrop filter shared by work and author bottoms', () => {
+    expect(coverFrostBackdropFilter).toBe('blur(16px) saturate(115%)');
+  });
+
+  it('reaches full blur at 35% of the content-driven panel', () => {
+    expect(coverFrostMask).toBe(
+      'linear-gradient(to bottom, transparent 0%, black 35%, black 100%)',
     );
   });
 });
