@@ -23,7 +23,7 @@ export function WorkViewToggle({
   const palette = useAppTheme();
   const compact = value === 'compact';
   return (
-    <FigmaGlassSurface preset="filterControl" style={{ overflow: 'visible' }}>
+    <FigmaGlassSurface preset="filterControl">
       <MotionPressable
         {...interactiveHitDataset()}
         interactionStyle={(state) =>

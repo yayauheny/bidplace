@@ -5,6 +5,19 @@
 Полный прежний журнал, включая ограничения ранних экранов:
 [история](../archive/design/04-DESIGN-STATUS-through-2026-10-23.md).
 
+## 2026-10-25 — Explore control visual correction / PR68
+
+**Partial — local web correction; native device acceptance pending.** Live Figma
+`7245:2519/2502/2812/2818`, `7271:2719/2722` corrects FilterSortBar gap8,
+label14/26/500 gray,18px filter glyph, capsule80 and uniform0.5px contours.
+FigmaGlassSurface filterControl separates clipped material and visible focus;
+other glass presets unchanged. Compact cards, media/query/nav owners and empty
+control policy retained.1056 unit tests, graph typecheck/lint, all platform exports
+passed;56 Chromium/WebKit checks (320/375/390/414/768/1024/1440), E2E fence,
+193 docs links and diff check passed; independent review accepted. Evidence is in
+[visual review](../audits/current/2026-10-25-EXPLORE-VISUAL-REVIEW.md). Exact desktop/native parity remains unverified;
+auth-dismissal issue deliberately remains outside this correction.
+
 ## 2026-10-25 — Compact/large Work view (DEC-148)
 
 **Partial — implemented and verified locally on web; native device acceptance pending.** `WorkViewToggle`, `WorkCoverCard compact`,

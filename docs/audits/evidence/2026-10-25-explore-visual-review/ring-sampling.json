@@ -1,0 +1,30 @@
+{
+  "before": {
+    "top": {
+      "min_channel": 226,
+      "max_channel": 226,
+      "nonwhite_columns": 140,
+      "columns": 140
+    },
+    "bottom": {
+      "min_channel": 255,
+      "max_channel": 255,
+      "nonwhite_columns": 0,
+      "columns": 140
+    }
+  },
+  "after": {
+    "top": {
+      "min_channel": 209,
+      "max_channel": 209,
+      "nonwhite_columns": 140,
+      "columns": 140
+    },
+    "bottom": {
+      "min_channel": 209,
+      "max_channel": 209,
+      "nonwhite_columns": 140,
+      "columns": 140
+    }
+  }
+}

@@ -15,16 +15,14 @@ test('Explore retains fractional glass strokes, typography and the measured segm
   const close = page.getByTestId('explore-close-glass');
   const rail = page.getByTestId('segmented-tabs');
   await expect(field).toBeVisible();
-  const ids: string[] = [];
   for (const [locator, kind] of [
     [field, 'field'],
     [close, 'close'],
     [rail, 'rail'],
   ] as const) {
     const size = await cssBorderBox(locator);
-    ids.push(await expectGradient(locator, kind, size.width, size.height));
+    await expectStroke(locator, kind, size.width, size.height);
   }
-  expect(new Set(ids).size).toBe(3);
   expect((await field.boundingBox())!.height).toBe(52);
   expect((await close.boundingBox())!.width).toBe(52);
   expect((await rail.boundingBox())!.height).toBe(50);
@@ -36,6 +34,31 @@ test('Explore retains fractional glass strokes, typography and the measured segm
     .boundingBox();
   expect(filterBox!.width).toBe(42);
   expect(filterBox!.height).toBe(42);
+  const filter = page.getByRole('button', { name: 'Фильтры', exact: true });
+  const sort = page.getByRole('button', { name: 'Сортировка', exact: true });
+  const sortBox = await sort.boundingBox();
+  expect(sortBox!.x - filterBox!.x - filterBox!.width).toBe(8);
+  expect(sortBox!.y).toBe(filterBox!.y);
+  expect(sortBox!.height).toBe(42);
+  await expect(filter.locator('svg')).toHaveAttribute('width', '18');
+  const sortLabel = sort.getByText('Сортировка', { exact: true });
+  await expect(sortLabel).toHaveCSS('font-family', 'Inter_500Medium');
+  await expect(sortLabel).toHaveCSS('font-size', '14px');
+  await expect(sortLabel).toHaveCSS('font-weight', '500');
+  await expect(sortLabel).toHaveCSS('line-height', '26px');
+  await expect(sortLabel).toHaveCSS('letter-spacing', '-0.28px');
+  await expect(sortLabel).toHaveCSS('color', 'rgb(86, 86, 86)');
+  const surface = sort.locator('..').locator('..');
+  await expect(surface).toHaveClass(/figma-glass-control/);
+  await expect(surface).toHaveCSS('border-radius', '80px');
+  await expect(surface.locator('.figma-glass-material')).toHaveCSS('overflow', 'hidden');
+  await expect(surface.locator('.figma-glass-material')).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+  await expect(surface.locator('.figma-glass-material')).toHaveCSS('backdrop-filter', 'blur(50px)');
+  await expect(surface.locator('.figma-glass-stroke')).toHaveCSS('box-shadow', 'rgb(209, 209, 209) 0px 0px 0px 0.5px inset');
+  await sort.focus();
+  await expect(sort).toHaveCSS('outline-style', 'solid');
+  await expect(surface).toHaveCSS('overflow', 'visible');
+
   const tabs = page.getByRole('tab');
   const widths = await tabs.evaluateAll((nodes) =>
     nodes.map((node) => node.getBoundingClientRect().width),
@@ -54,7 +77,7 @@ test('Explore retains fractional glass strokes, typography and the measured segm
   await expect(tabs.first()).toHaveCSS('height', '41px');
 });
 
-async function expectGradient(
+async function expectStroke(
   locator: ReturnType<Page['getByTestId']>,
   kind: 'field' | 'close' | 'rail',
   width: number,
@@ -64,20 +87,12 @@ async function expectGradient(
   const frame = searchChromeStrokeViewport(kind, width, height, lightColorMap);
   const half = searchChromeTokens.strokeWidth / 2;
   const measured = await locator
-    .locator('svg:has(linearGradient)')
+    .locator('svg:has(rect[stroke])')
     .evaluate((node) => {
-      const gradient = node.querySelector('linearGradient');
       const rect = node.querySelector('rect');
-      const stops = [...(gradient?.querySelectorAll('stop') ?? [])].map(
-        (stop) => stop.getAttribute('stop-color'),
-      );
       return {
-        id: gradient?.id ?? '',
-        x1: Number(gradient?.getAttribute('x1')),
-        y1: Number(gradient?.getAttribute('y1')),
-        x2: Number(gradient?.getAttribute('x2')),
-        y2: Number(gradient?.getAttribute('y2')),
-        stops,
+        color: rect?.getAttribute('stroke'),
+        stroke: Number(rect?.getAttribute('stroke-width')),
         rx: Number(rect?.getAttribute('rx')),
         ry: Number(rect?.getAttribute('ry')),
         rectX: Number(rect?.getAttribute('x')),
@@ -88,17 +103,8 @@ async function expectGradient(
         svgHeight: Number(node.getAttribute('height')),
       };
     });
-  expect(measured.stops).toEqual(['#D1D1D1', '#EBEBEB']);
-  expect(measured.x2 - measured.x1).toBeCloseTo(
-    paint.axis.x2 - paint.axis.x1,
-    1,
-  );
-  expect(measured.y2 - measured.y1).toBeCloseTo(
-    paint.axis.y2 - paint.axis.y1,
-    1,
-  );
-  expect(measured.x1).toBeCloseTo(frame.axis.x1, 1);
-  expect(measured.y1).toBeCloseTo(frame.axis.y1, 1);
+  expect(measured.color).toBe(lightColorMap.toolbarBorder);
+  expect(measured.stroke).toBe(0.5);
   expect(measured.rx).toBeCloseTo(paint.rx, 1);
   expect(measured.ry).toBe(measured.rx);
   expect(measured.rectWidth).toBeCloseTo(paint.width, 1);
@@ -113,8 +119,6 @@ async function expectGradient(
   );
   expect(measured.svgWidth).toBeCloseTo(frame.width, 2);
   expect(measured.svgHeight).toBeCloseTo(frame.height, 2);
-  expect(measured.id.length).toBeGreaterThan(0);
-  return measured.id;
 }
 
 async function cssBorderBox(locator: ReturnType<Page['getByTestId']>) {
@@ -273,7 +277,7 @@ test('empty state remains centered and reachable across viewport sizes', async (
   );
   const filter = page.getByRole('button', { name: 'Фильтры', exact: true });
   await expect(filter).toBeVisible();
-  await expect(filter.locator('svg')).toHaveAttribute('width', '24');
+  await expect(filter.locator('svg')).toHaveAttribute('width', '18');
   const sortIcon = page
     .getByRole('button', { name: 'Сортировка', exact: true })
     .locator('svg');
@@ -286,8 +290,11 @@ test('empty state remains centered and reachable across viewport sizes', async (
     ),
   ).toBeCloseTo(1.3, 8);
   expect(
-    Number(
-      await filter.locator('svg path').first().getAttribute('stroke-width'),
+    await filter.locator('svg').evaluate(
+      (svg) =>
+        (Number(svg.querySelector('path')!.getAttribute('stroke-width')) *
+          svg.getBoundingClientRect().width) /
+        24,
     ),
   ).toBeCloseTo(1.6, 8);
 });

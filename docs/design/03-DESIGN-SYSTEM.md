@@ -407,7 +407,9 @@ TextInput, tabs and result ancestry stay stable. A single Reanimated progress
 moves the magnifier, expands the glass background from right to left, fades the
 title/close, and uses shared reduced-motion policy. Hidden controls are inert
 and aria-hidden on web. The field/close reuse `FigmaSearchGlass` and existing
-`searchChromeTokens` (52px, 60% white, CSS blur6, SVG stroke).
+`searchChromeTokens` (52px, 60% white, CSS blur6); live Explore nodes
+`7245:2502/2812/2818` use a uniform0.5px `toolbarBorder` SVG stroke.
+The older popup gradient is not applied to these current Explore surfaces.
 `FigmaTabs variant="segmented"` owns the rounded rail and keyboard navigation;
 its default underline variant keeps existing consumers. The semantic
 `navigationTitle` typography is Inter Semibold16/20/−2%. `FilterSortBar`
@@ -937,7 +939,8 @@ Founder iconography rule: ordinary icons use 1.3 physical px; icon-only controls
 and large glyphs use 1.6 physical px. Fractional SVG export values are not tokens.
 `FigmaIcon` uses Hugeicons `absoluteStrokeWidth` on its original 24-unit grid, preserving
 proportions and final stroke thickness at every size. `FigmaIconButton` uses the
-heavy role; the round `FilterSortBar` trigger is 42×42 with a 24px glyph at 1.6px.
+heavy role; the round `FilterSortBar` trigger is42×42 with an18px glyph
+at1.6 physical px (live `7245:2520`, visual correction after PR#68 review).
 This refinement did not add a view-mode toggle; DEC-148 subsequently enables it only in Explore.
 Back navigation uses Hugeicons `arrow-left-02`; gallery/calendar chevrons retain
 their separate meaning.
@@ -988,3 +991,28 @@ The confirmed separate-row header/segmented animation is unchanged. Independent
 Search entry starts fresh; only the same navigation entry restores drafts,
 filters, query, cached pages and scroll. Physical Native blur, return and
 background/resume acceptance remain Needs verification.
+
+
+### 2026-10-25 — Explore control visual correction
+
+Live `7245:2519/2520/2521`, `7271:2719/2722`: filter/sort gap8,
+Inter Medium14/26/−0.28 in `textSubdued` (existing `authButton` role),
+26px glyph frame,2px icon/label gap and16px horizontal padding. Filter
+and view controls use42px hit frames with shared44px hit slop;18px filter
+glyph preserves the founder's1.6px physical stroke. Figma's43px paint frame
+includes the outside stroke; runtime retains the established42px control frame.
+
+`FigmaGlassSurface filterControl` alone uses radius80, opaque `surface`,
+`toolbarBorder` (#D1D1D1 light) and `blur.control=50`. Web separates its
+clipped rounded material from the focusable content and paints a uniform
+0.5px inset ring above it; no fractional mask subtraction for this preset.
+Native separates rounded BlurView, content and non-interactive border.
+`navigation`/`controlGroup` retain their former material and stroke owners.
+`WorkViewToggle` no longer overrides surface clipping locally.
+
+At normal text sizes the measured toolbar is one row from320 through1440;
+wrapping remains intentional for enlarged text instead of clipping controls.
+Empty search retains its existing hidden-inactive/recoverable-active control
+contract (`7240:2730`). Compact media/typography and navigation sessions are
+unchanged. See [visual review](../audits/current/2026-10-25-EXPLORE-VISUAL-REVIEW.md)
+for exact source/runtime differences and platform acceptance limits.

@@ -112,6 +112,34 @@ textarea:focus-visible,
   box-shadow: none;
 }
 
+/* Opaque control material clips independently from its keyboard focus ring. */
+.figma-glass-control {
+  overflow: visible;
+  background: transparent;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.figma-glass-material {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+  background: var(--figma-glass-background);
+  -webkit-backdrop-filter: blur(var(--figma-glass-blur));
+  backdrop-filter: blur(var(--figma-glass-blur));
+}
+
+.figma-glass-control > .figma-glass-stroke {
+  z-index: 3;
+  padding: 0;
+  background: none;
+  -webkit-mask: none;
+  mask: none;
+  box-shadow: inset 0 0 0 var(--figma-glass-stroke-width) var(--figma-glass-border-start);
+}
+
 .figma-dock-items {
   display: flex;
   flex-direction: row;

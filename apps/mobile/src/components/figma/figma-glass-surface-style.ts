@@ -14,14 +14,20 @@ export function figmaGlassSurfaceSpec(
 ) {
   const filterControl = preset === 'filterControl';
   return {
-    blur: designTokens.blur.dock,
-    nativeIntensity: designTokens.blur.dockNativeIntensity,
+    blur: filterControl ? designTokens.blur.control : designTokens.blur.dock,
+    nativeIntensity: filterControl
+      ? designTokens.blur.controlNativeIntensity
+      : designTokens.blur.dockNativeIntensity,
     borderWidth: 0.5,
     borderRadius: filterControl
       ? designTokens.radius.filterSort
       : designTokens.radius.dock,
-    background: preset === 'navigation' ? palette.glass : palette.glassStrong,
-    borderStart: filterControl ? palette.divider : palette.glassBorder,
-    borderEnd: filterControl ? palette.divider : palette.glassBorderEnd,
+    background: filterControl
+      ? palette.surface
+      : preset === 'navigation'
+        ? palette.glass
+        : palette.glassStrong,
+    borderStart: filterControl ? palette.toolbarBorder : palette.glassBorder,
+    borderEnd: filterControl ? palette.toolbarBorder : palette.glassBorderEnd,
   } as const;
 }

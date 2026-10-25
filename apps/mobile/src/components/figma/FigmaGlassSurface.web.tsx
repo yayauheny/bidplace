@@ -54,7 +54,18 @@ export function FigmaGlassSurface({
   };
 
   return (
-    <div className="figma-glass" data-testid={testID} style={glassStyle}>
+    <div
+      className={
+        preset === 'filterControl'
+          ? 'figma-glass figma-glass-control'
+          : 'figma-glass'
+      }
+      data-testid={testID}
+      style={glassStyle}
+    >
+      {preset === 'filterControl' ? (
+        <div className="figma-glass-material" aria-hidden="true" />
+      ) : null}
       <div
         className="figma-glass-stroke"
         data-testid="figma-glass-stroke"

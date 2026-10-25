@@ -401,7 +401,7 @@ test('an independent Search entry does not inherit queries or hidden drafts from
   await expect(page).not.toHaveURL(/previous-|city=Minsk|sort=name/);
 });
 
-for (const width of [320, 390, 768, 1024, 1440]) {
+for (const width of [320, 375, 390, 414, 768, 1024, 1440]) {
   test(`work view toggle preserves results and fits the container at ${width}px`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height: 900 });
     let requests = 0;
@@ -421,6 +421,14 @@ for (const width of [320, 390, 768, 1024, 1440]) {
     expect(second!.x - first!.x - first!.width).toBeCloseTo(12, 1);
     await expect(media).toHaveCSS('border-radius', '16px');
     const large = page.getByRole('button', { name: 'Показать крупные карточки' });
+    const filter = await page.getByRole('button', { name: 'Фильтры', exact: true }).boundingBox();
+    const sort = await page.getByRole('button', { name: 'Сортировка', exact: true }).boundingBox();
+    const toggle = await large.boundingBox();
+    expect(sort!.x - filter!.x - filter!.width).toBe(8);
+    expect(sort!.y + sort!.height / 2).toBe(filter!.y + filter!.height / 2);
+    expect(toggle!.y + toggle!.height / 2).toBe(filter!.y + filter!.height / 2);
+    expect(toggle!.x + toggle!.width).toBeCloseTo(Math.min(width - 12, (width + 1280) / 2), 1);
+
     await large.focus();
     await page.keyboard.press('Enter');
     const compact = page.getByRole('button', { name: 'Показать компактные карточки' });

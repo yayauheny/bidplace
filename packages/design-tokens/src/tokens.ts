@@ -132,7 +132,7 @@ export const designTokens = {
     mediaSheet: 32,
     workGallery: 20,
     statusDot: 20,
-    filterSort: 14,
+    filterSort: 80,
     // Account header avatar (Figma account screen 100×100 round).
     ownerCard: 16,
     // Settings group surface (Figma settings screen).
@@ -848,6 +848,8 @@ export const designTokens = {
   },
   layer: { content: 0, chrome: 10, popover: 20, dock: 40, modal: 50 },
   blur: {
+    control: 50,
+    controlNativeIntensity: 100,
     dock: 6,
     dockNativeIntensity: 30,
     dockAndroidReductionFactor: 5,
