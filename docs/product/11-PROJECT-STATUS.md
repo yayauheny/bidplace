@@ -19,11 +19,12 @@
 ## 2026-10-25 — Dock Search outline revision
 
 **Implemented (local browser verification passed).** Founder revision: `FloatingDock` fills only
-active Home/Profile. Search keeps its original 24px outline; active stroke is 2.6px for visual acceptance,
+active Home/Profile. Search keeps its original 24px outline; active ring/handle strokes are 3.6px/2.6px for visual acceptance,
 while inactive stroke is 1.3px and Add remains 1.6px. Existing navigation state is preserved.
-Latest founder trial (`DEC-141`): Search uses 1.3px while inactive and
-2.6px while active, preserving 24px and the outline in both states.
-`stroke.iconActive` owns the trial value; Add remains 1.6px.
+Latest founder trial (`DEC-142`): Search uses 1.3px while inactive and a 3.6px
+ring/2.6px handle while active, preserving the 24px outline. `FigmaIcon emphasized`
+reuses both original Hugeicons paths; no SVG parsing or replacement geometry.
+`stroke.iconActiveRing`/`iconActive` own the values; Add remains 1.6px.
 Source: working-copy Figma `7272:2707`, dock Search `7272:2790`. Owner E2E checks
 compare Search/Add physical strokes through navigation, reload and Back/Forward.
 Passed: six Chromium/WebKit dock E2E, 1051 mobile unit tests, typecheck/lint,

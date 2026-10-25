@@ -113,10 +113,11 @@ function DockItem({
       <FigmaIcon
         name={item.icon}
         variant={
-          selected &&
-          (item.id === 'home' || item.id === 'profile')
-            ? 'filled'
-            : 'outline'
+          selected && item.id === 'search'
+            ? 'emphasized'
+            : selected && (item.id === 'home' || item.id === 'profile')
+              ? 'filled'
+              : 'outline'
         }
         strokeWidthPx={
           item.id === 'search'

@@ -343,12 +343,29 @@ test('dock fills Home and Profile and thickens the outlined active Search throug
       await expect(icon).toHaveAttribute('height', '24');
     }
     const searchStroke = await dock.getByLabel('Поиск', { exact: true }).locator('svg path').first().getAttribute('stroke-width');
+    const ringStroke = await dock.getByLabel('Поиск', { exact: true }).locator('svg path').nth(1).getAttribute('stroke-width');
+    expect(Number(ringStroke)).toBeCloseTo(selected === 'Поиск' ? 3.6 : 1.3, 8);
     const plusStroke = await dock.getByLabel('Добавить', { exact: true }).locator('svg path').first().getAttribute('stroke-width');
     expect(Number(searchStroke)).toBeCloseTo(selected === 'Поиск' ? 2.6 : 1.3, 8);
     expect(Number(plusStroke)).toBeCloseTo(1.6, 8);
     if (selected === 'Поиск') {
       expect(Number(searchStroke)).toBeGreaterThan(Number(plusStroke));
       expect(Number(searchStroke)).toBeCloseTo(2 * 1.3, 8);
+      const bounds = await dock.getByLabel('Поиск', { exact: true }).locator('svg').evaluate((svg) =>
+        [...svg.querySelectorAll('path')].map((path) => {
+          const box = path.getBBox();
+          const half = Number(path.getAttribute('stroke-width')) / 2;
+          return { left: box.x - half, top: box.y - half,
+            right: box.x + box.width + half, bottom: box.y + box.height + half };
+        }),
+      );
+      expect(bounds).toHaveLength(2);
+      for (const box of bounds) {
+        expect(box.left).toBeGreaterThanOrEqual(0);
+        expect(box.top).toBeGreaterThanOrEqual(0);
+        expect(box.right).toBeLessThanOrEqual(24);
+        expect(box.bottom).toBeLessThanOrEqual(24);
+      }
     } else {
       expect(Number(searchStroke)).toBeLessThan(Number(plusStroke));
     }

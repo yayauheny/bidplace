@@ -864,6 +864,7 @@ export const designTokens = {
     icon: 1.3,
     iconHeavy: 1.6,
     iconActive: 2.6,
+    iconActiveRing: 3.6,
     /** 18 px author-application field glyphs (at-sign, search, calendar) at 1.3 px physical stroke. */
     authorApplicationFieldPx: 1.3,
     filterOptionCheck: 1.3,
