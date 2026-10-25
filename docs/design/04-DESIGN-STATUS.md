@@ -5,6 +5,16 @@
 Полный прежний журнал, включая ограничения ранних экранов:
 [история](../archive/design/04-DESIGN-STATUS-through-2026-10-23.md).
 
+## 2026-10-25 — Filled active dock icons
+
+**Implemented for verified local browser states.** `FloatingDock` uses filled
+Hugeicons for active Home/Search/Profile through `FigmaIcon variant="filled"`.
+Source `6WWy0IkFqsajKxErNsH3bQ` / `5685:190` inspected in read-only browser;
+MCP access unavailable. Six Chromium/WebKit dock checks cover selection, reload,
+Back/Forward, reduced motion, unchanged glass/232×64/24px geometry and focus.
+1051 mobile unit tests, typecheck/lint and web build passed. Physical native
+rendering and filled administrative glyphs remain unverified/undefined.
+
 ## 2026-10-25 — Explore acceptance refinements
 
 **Partial — local browser checks passed.** Empty search follows live Figma `7240:2730`;

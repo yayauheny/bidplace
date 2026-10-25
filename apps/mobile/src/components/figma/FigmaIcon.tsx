@@ -128,8 +128,10 @@ export function FigmaIcon({
   color,
   label,
   strokeWidthPx,
+  variant = 'outline',
 }: {
   name: FigmaIconName;
+  variant?: 'outline' | 'filled';
   size?: number;
   /** Explicit caller color wins; the default follows the active theme. */
   color?: string;
@@ -148,7 +150,7 @@ export function FigmaIcon({
         width={size}
         height={size}
         viewBox="0 0 24 24"
-        fill="none"
+        fill={variant === 'filled' ? resolvedColor : 'none'}
         color={resolvedColor}
         aria-hidden={label ? undefined : true}
         accessibilityLabel={label}
@@ -170,6 +172,7 @@ export function FigmaIcon({
       color={resolvedColor}
       strokeWidth={strokeWidth}
       absoluteStrokeWidth
+      fill={variant === 'filled' ? resolvedColor : 'none'}
       {...(label
         ? { accessibilityLabel: label }
         : Platform.OS === 'web'

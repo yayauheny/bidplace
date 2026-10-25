@@ -16,6 +16,16 @@
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
 | Commerce, избранное/подписки, смена email/password из settings | Not implemented в launch scope / post-MVP; [следующая волна](15-POST-MVP-BACKLOG.md). Старый commerce runtime не разрешает включать продажи. |
 
+## 2026-10-25 — Filled active dock icons
+
+**Implemented (local browser verification passed).** `FloatingDock` passes its
+existing selected state to `FigmaIcon` for filled Home/Search/Profile glyphs.
+No route/API/auth/permission or navigation-state changes. Passed: 1051 mobile
+unit tests, six Chromium/WebKit dock E2E, typecheck/lint and web build. Older dock
+fixtures were checked against `8318f956`: direct login now hides the dock and
+Home/footer have separate brand links; test routes/selectors were corrected
+without weakening geometry, blur or focus assertions. Native devices not checked.
+
 ## 2026-10-25 — Explore acceptance refinements
 
 **Implemented (local browser verification passed).** `FigmaTabs` moves one selection fill with

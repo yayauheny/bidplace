@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
+import { installAccountPresentation } from './support/account-presentation-fixture';
 
 const imageId = '10000000-0000-4000-8000-000000000001';
 
@@ -6,7 +7,7 @@ test('floating dock is one glass capsule with live blur and no icon halo', async
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto('/login');
+  await page.goto('/');
 
   const dock = page.getByTestId('figma-floating-dock');
   await expect(dock).toBeVisible();
@@ -30,8 +31,8 @@ test('floating dock is one glass capsule with live blur and no icon halo', async
   expect(chrome.labels).toEqual(['Главная', 'Поиск', 'Добавить', 'Профиль']);
   expect(chrome.fabCount).toBe(0);
 
-  const home = page.getByLabel('Главная');
-  const profile = page.getByLabel('Профиль');
+  const home = dock.getByLabel('Главная', { exact: true });
+  const profile = dock.getByLabel('Профиль', { exact: true });
   expect(await readItemSurface(home)).toMatchObject({
     borderRadius: '999px',
     boxShadow: 'none',
@@ -94,7 +95,7 @@ test('dock glass samples page content without a split search FAB', async ({
   await expect(page.getByLabel('Поиск')).toBeVisible();
   await expect(page.getByTestId('figma-floating-dock')).toHaveCount(1);
 
-  const brandLogo = page.getByRole('link', {
+  const brandLogo = page.getByTestId('page-content-column').getByRole('link', {
     name: 'bidplace — на главную',
     exact: true,
   });
@@ -324,3 +325,51 @@ async function mockPortfolioHome(page: Page) {
     });
   });
 }
+
+
+test('dock fills the current destination and follows navigation history without changing geometry', async ({ page }) => {
+  await installAccountPresentation(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  const dock = page.getByTestId('figma-floating-dock');
+  const labels = ['Главная', 'Поиск', 'Добавить', 'Профиль'];
+  const expectSelected = async (selected: string) => {
+    await expect(dock).toBeVisible();
+    for (const label of labels) {
+      const item = dock.getByLabel(label, { exact: true });
+      const icon = item.locator('svg');
+      await expect(icon).toHaveAttribute('fill', label === selected ? '#2A2A2A' : 'none');
+      await expect(icon).toHaveAttribute('width', '24');
+      await expect(icon).toHaveAttribute('height', '24');
+    }
+    expect((await dock.boundingBox())!.width).toBe(232);
+    expect((await dock.boundingBox())!.height).toBe(64);
+  };
+  await expectSelected('Главная');
+  await expect(dock.getByLabel('Главная', { exact: true })).toHaveAttribute('aria-current', 'page');
+  await dock.getByLabel('Поиск', { exact: true }).click();
+  await expect(page).toHaveURL(/\/explore\?/);
+  await expectSelected('Поиск');
+  await page.getByRole('button', { name: 'Закрыть поиск' }).click();
+  await expectSelected('Поиск');
+  await page.reload();
+  await expectSelected('Поиск');
+  await dock.screenshot({ path: '/private/tmp/bidplace-dock-search.png' });
+  await dock.getByLabel('Главная', { exact: true }).click();
+  await expectSelected('Главная');
+  await page.goBack();
+  await expectSelected('Поиск');
+  await page.goForward();
+  await expectSelected('Главная');
+  await dock.screenshot({ path: '/private/tmp/bidplace-dock-home.png' });
+  await dock.getByLabel('Профиль', { exact: true }).click();
+  await expect(page).toHaveURL(/\/account$/);
+  await expectSelected('Профиль');
+  await page.reload();
+  await expectSelected('Профиль');
+  await dock.screenshot({ path: '/private/tmp/bidplace-dock-profile.png' });
+  await expect(dock.getByLabel('Профиль', { exact: true })).toHaveAttribute('aria-current', 'page');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await dock.getByLabel('Главная', { exact: true }).click();
+  await expectSelected('Главная');
+});

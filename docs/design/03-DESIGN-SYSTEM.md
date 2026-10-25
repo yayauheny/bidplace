@@ -938,3 +938,17 @@ is 20.1px above the full viewport midpoint. Explore balances its measured fixed
 chrome in the content padding; `PageScrollView variant="viewport"` keeps the
 footer below the viewport. Empty search hides inactive filter chrome; active
 filters remain available for recovery. Controls stay mounted to preserve sheets.
+
+
+### 2026-10-25 — Filled active dock icons
+
+Founder source: Figma `6WWy0IkFqsajKxErNsH3bQ`, node `5685:190`, inspected
+read-only in the browser at 100%; MCP reported no access. Only the filled glyph
+states are adopted; the existing four-item portfolio dock remains unchanged.
+`FigmaIcon variant="filled"` fills the existing Hugeicons geometry with the theme
+ink; `outline` is the default for all other consumers. `FloatingDock` derives
+Home/Search/Profile fill from its existing selected route/search state. Add stays
+an action; administrative glyphs retain their current outline presentation because
+this reference does not define their filled variants. No new paths/assets/library,
+click state, route or permission changes. 24px glyphs and the 232×64 capsule,
+1.6px physical stroke, glass, keyboard focus and press feedback remain unchanged.

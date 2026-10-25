@@ -112,6 +112,12 @@ function DockItem({
     >
       <FigmaIcon
         name={item.icon}
+        variant={
+          selected &&
+          (item.id === 'home' || item.id === 'search' || item.id === 'profile')
+            ? 'filled'
+            : 'outline'
+        }
         size={designTokens.size.dockIcon}
         color={palette.ink}
       />
