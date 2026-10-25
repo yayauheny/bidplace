@@ -84,8 +84,8 @@ test('Search → Author → Back restores Search without a naked Home frame', as
 }) => {
   await page.goto('/');
   await page.getByTestId('figma-floating-dock').getByLabel('Поиск').click();
-  const overlay = page.getByTestId('search-overlay');
-  await expect(overlay).toBeVisible();
+  const overlay = page.getByTestId('app-shell-content').filter({ has: page.getByTestId('explore-header') });
+  await expect(page.getByTestId('explore-header')).toBeVisible();
   await overlay.getByRole('tab', { name: 'Авторы' }).click();
   await overlay.getByRole('link', { name: /^@/ }).first().click();
   await expect(page).toHaveURL(/\/seller\//);
@@ -106,10 +106,11 @@ test('Search → Author → Back restores Search without a naked Home frame', as
   ).toBe(false);
 });
 
-test('direct Works catalog has no history Back control', async ({ page }) => {
+test('direct Works alias opens Explore with a Home fallback', async ({ page }) => {
   await page.goto('/works');
-  await expect(page.getByTestId('catalog-scroll-view')).toBeVisible();
-  await expect(page.getByTestId('works-back')).toHaveCount(0);
+  await expect(page.getByTestId('explore-scroll')).toBeVisible();
+  await page.getByRole('button', { name: 'Назад' }).click();
+  await expect(page).toHaveURL(/\/$/);
 });
 
 test('Search → Work → Back restores Search without a Work flash after overlay', async ({
@@ -117,8 +118,8 @@ test('Search → Work → Back restores Search without a Work flash after overla
 }) => {
   await page.goto('/');
   await page.getByTestId('figma-floating-dock').getByLabel('Поиск').click();
-  const overlay = page.getByTestId('search-overlay');
-  await expect(overlay).toBeVisible();
+  const overlay = page.getByTestId('app-shell-content').filter({ has: page.getByTestId('explore-header') });
+  await expect(page.getByTestId('explore-header')).toBeVisible();
   await overlay.getByRole('tab', { name: 'Работы' }).click();
   await overlay.locator('a[href^="/product/"]').first().click();
   await expect(page).toHaveURL(/\/product\//);

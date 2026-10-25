@@ -20,9 +20,11 @@ export function WorkCoverCardGrid({
   items,
   columns = 1,
   onItemPress,
+  variant = 'overlay',
 }: {
   items: WorkCoverCardGridItem[];
   columns?: 1 | 2;
+  variant?: 'overlay' | 'caption';
   onItemPress?: () => void;
 }) {
   if (columns === 1) {
@@ -33,6 +35,7 @@ export function WorkCoverCardGrid({
             key={item.work.publicId}
             item={item}
             onItemPress={onItemPress}
+            variant={variant}
           />
         ))}
       </View>
@@ -47,7 +50,11 @@ export function WorkCoverCardGrid({
         gap={designTokens.space.x2}
         keyExtractor={(item) => item.work.publicId}
         renderItem={(item) => (
-          <WorkCoverGridCard item={item} onItemPress={onItemPress} />
+          <WorkCoverGridCard
+            item={item}
+            onItemPress={onItemPress}
+            variant={variant}
+          />
         )}
       />
     </View>
@@ -57,13 +64,16 @@ export function WorkCoverCardGrid({
 function WorkCoverGridCard({
   item,
   onItemPress,
+  variant,
 }: {
   item: WorkCoverCardGridItem;
+  variant: 'overlay' | 'caption';
   onItemPress?: () => void;
 }) {
   const image = item.work.images[0];
   return (
     <WorkCoverCard
+      variant={variant}
       href={`/product/${item.work.publicId}`}
       imageUrl={image?.url ?? ''}
       imageLabel={item.work.title}

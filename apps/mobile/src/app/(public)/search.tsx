@@ -1,5 +1,6 @@
-import { SearchScreen } from '../../features/search/search-screen';
-
-export default function SearchRoute() {
-  return <SearchScreen />;
+import { Redirect, useLocalSearchParams } from 'expo-router';
+import { legacyExploreHref } from '../../features/explore/explore-route';
+export default function LegacyRoute() {
+  const params = useLocalSearchParams();
+  return <Redirect href={legacyExploreHref('search', params)} />;
 }

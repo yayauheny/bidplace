@@ -108,7 +108,7 @@ export function HomeNewAuthors({ authors }: { authors: HomeAuthor[] }) {
       <PrimaryButton
         label="Смотреть все"
         width="full"
-        onPress={() => push('/authors')}
+        onPress={() => push('/explore?section=authors')}
       />
     </View>
   );

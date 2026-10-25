@@ -21,8 +21,10 @@ export function FilterSortBar({
   onPressFilter,
   onPressSort,
   disabled,
+  filterPresentation = 'label',
 }: {
   filterLabel?: string;
+  filterPresentation?: 'label' | 'icon';
   sortLabel?: string;
   filterActive?: boolean;
   sortActive?: boolean;
@@ -35,6 +37,7 @@ export function FilterSortBar({
       <FilterSortBarTrigger
         icon="filter-horizontal"
         label={filterLabel}
+        iconOnly={filterPresentation === 'icon'}
         active={filterActive}
         disabled={disabled?.filter}
         onPress={onPressFilter}
@@ -53,11 +56,13 @@ export function FilterSortBar({
 function FilterSortBarTrigger({
   icon,
   label,
+  iconOnly,
   active,
   disabled,
   onPress,
 }: {
   icon: 'filter-horizontal' | 'arrow-up-down';
+  iconOnly?: boolean;
   label: string;
   active: boolean;
   disabled?: boolean;
@@ -76,7 +81,19 @@ function FilterSortBarTrigger({
         disabled={disabled}
         onPress={onPress}
         preset="icon"
-        style={filterSortPillStyle()}
+        hitSlop={iconOnly ? (designTokens.size.touch - designTokens.size.filterSortPill) / 2 : undefined}
+        style={[
+          filterSortPillStyle(),
+          iconOnly
+            ? {
+                width: designTokens.size.filterSortPill,
+                  height: designTokens.size.filterSortPill,
+                  paddingVertical: 0,
+                paddingHorizontal: 0,
+                justifyContent: 'center',
+              }
+            : null,
+        ]}
       >
         <View
           style={{
@@ -88,9 +105,11 @@ function FilterSortBarTrigger({
         >
           <FigmaIcon name={icon} size={designTokens.size.icon} />
         </View>
-        <AppText role="nav" style={filterSortPillLabelStyle(palette)}>
-          {label}
-        </AppText>
+        {!iconOnly ? (
+          <AppText role="nav" style={filterSortPillLabelStyle(palette)}>
+            {label}
+          </AppText>
+        ) : null}
       </MotionPressable>
     </FigmaGlassSurface>
   );

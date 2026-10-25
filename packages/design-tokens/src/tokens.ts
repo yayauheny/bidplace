@@ -210,6 +210,13 @@ export const designTokens = {
       letterSpacing: -1.12,
       fontWeight: '600' as const,
     },
+    navigationTitle: {
+      fontFamily: 'Inter_600SemiBold',
+      fontSize: 16,
+      lineHeight: 20,
+      letterSpacing: -0.32,
+      fontWeight: '600' as const,
+    },
     screenTitle: {
       fontFamily: 'Inter_500Medium',
       fontSize: 20,

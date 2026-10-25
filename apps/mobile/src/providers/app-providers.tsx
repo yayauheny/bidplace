@@ -8,7 +8,6 @@ import { AuthProvider } from './auth-provider';
 import { QueryProvider } from './query-provider';
 import { ThemeProvider } from './theme-provider';
 import { SheetBackdropProvider } from '../components/ui/sheet-backdrop';
-import { SearchOverlayProvider } from '../features/search/search-overlay-provider';
 
 export function AppProviders({ children }: { children: ReactNode }) {
   return (
@@ -20,7 +19,7 @@ export function AppProviders({ children }: { children: ReactNode }) {
               <QueryProvider>
                 <AuthProvider>
                   <AnalyticsProvider>
-                    <SearchOverlayProvider>{children}</SearchOverlayProvider>
+                    {children}
                   </AnalyticsProvider>
                 </AuthProvider>
               </QueryProvider>

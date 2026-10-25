@@ -53,10 +53,10 @@ export function DesktopHeader({ active }: { active: boolean }) {
           {(['works', 'authors'] as const).map((route) => (
             <FigmaButton
               key={route}
-              href={route === 'works' ? '/works' : '/authors'}
+              href={`/explore?section=${route}`}
               variant="ghost"
               accessibilityCurrent={
-                navigation.pathname.startsWith(`/${route}`) ? 'page' : undefined
+                navigation.pathname === '/explore' && navigation.section === route ? 'page' : undefined
               }
               label={route === 'works' ? 'Работы' : 'Авторы'}
             />
@@ -74,7 +74,6 @@ export function DesktopHeader({ active }: { active: boolean }) {
               backgroundColor: palette.canvas,
             },
           ]}
-          {...{ 'aria-haspopup': 'dialog' }}
         >
           <FigmaIcon name="search-01" size={18} color={palette.fieldIcon} />
           <AppText
@@ -143,12 +142,15 @@ export function DesktopHeader({ active }: { active: boolean }) {
 
 const styles = StyleSheet.create({
   surface: {
-    height: header.height,
+    minHeight: header.height,
+    justifyContent: 'center',
     borderBottomWidth: designTokens.size.fieldBorder,
     flexShrink: 0,
   },
   row: {
-    height: '100%',
+    paddingVertical: designTokens.space.x1,
+    flexWrap: 'wrap',
+    rowGap: designTokens.space.x2,
     width: '100%',
     maxWidth: designTokens.layout.contentMax + 2 * designTokens.layout.gutter,
     paddingHorizontal: designTokens.layout.gutter,

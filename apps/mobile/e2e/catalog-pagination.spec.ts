@@ -39,10 +39,10 @@ test('isolated works category and material require a second page', async ({
       ),
     ).toBe(false);
 
-    const workLinks = page.locator('a[href^="/product/"]');
+    const workLinks = page.getByTestId('explore-scroll').locator('a[href^="/product/"]');
     await expect(workLinks).toHaveCount(12);
     await expect(
-      page.locator(`a[href="/product/${fixture.pageTwoPublicId}"]`),
+      page.getByTestId('explore-scroll').locator(`a[href="/product/${fixture.pageTwoPublicId}"]`),
     ).toHaveCount(0);
 
     const secondPageResponse = page.waitForResponse((response) => {
@@ -75,6 +75,17 @@ test('isolated works category and material require a second page', async ({
     await expect(page.getByRole('button', { name: 'Показать ещё' })).toHaveCount(
       0,
     );
+    const last = page.getByTestId('explore-scroll').locator(`a[href="/product/${fixture.pageTwoPublicId}"]`);
+    await last.scrollIntoViewIfNeeded();
+    const offset = await page.getByTestId('explore-scroll').evaluate((node) => node.scrollTop);
+    expect(offset).toBeGreaterThan(0);
+    await last.click();
+    await expect(page).toHaveURL(new RegExp(`/product/${fixture.pageTwoPublicId}`));
+    await page.goBack();
+    await expect(page).toHaveURL(new RegExp(`category=${fixture.categoryId}`));
+    await expect(workLinks).toHaveCount(13);
+    await expect.poll(() => page.getByTestId('explore-scroll').evaluate((node) => node.scrollTop)).toBe(offset);
+
   } finally {
     await fixture.cleanup();
   }
@@ -106,10 +117,10 @@ test('isolated authors tag and city require a second page', async ({ page }) => 
       firstPage.authors.some((item) => item.author.slug === fixture.pageTwoSlug),
     ).toBe(false);
 
-    const authorLinks = page.locator('a[href^="/seller/"]');
+    const authorLinks = page.getByTestId('explore-scroll').locator('a[href^="/seller/"]');
     await expect(authorLinks).toHaveCount(8);
     await expect(
-      page.locator(`a[href="/seller/${fixture.pageTwoSlug}"]`),
+      page.getByTestId('explore-scroll').locator(`a[href="/seller/${fixture.pageTwoSlug}"]`),
     ).toHaveCount(0);
 
     const secondPageResponse = page.waitForResponse((response) => {

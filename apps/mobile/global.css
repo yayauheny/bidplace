@@ -147,3 +147,8 @@ textarea:focus-visible,
     pointer-events: auto;
   }
 }
+
+/* Inactive routes retain layout for Back, but cannot enlarge the active scrollport. */
+[inert][aria-hidden='true'] {
+  overflow: clip;
+}

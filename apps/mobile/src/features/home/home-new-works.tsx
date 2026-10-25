@@ -33,7 +33,7 @@ export function HomeNewWorks({ works }: { works: HomeWorkItem[] }) {
         <FigmaButton
           label="Смотреть все"
           variant="muted"
-          onPress={() => push('/works')}
+          onPress={() => push('/explore?section=works')}
         />
       </View>
       <View

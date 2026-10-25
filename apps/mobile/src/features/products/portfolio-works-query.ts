@@ -53,12 +53,12 @@ export function toPortfolioWorksHref(
   input: Partial<
     Pick<PortfolioWorksRouteState, 'q' | 'category' | 'material' | 'sort'>
   >,
-): '/works' | `/works?${string}` {
-  const params = new URLSearchParams();
+): `/explore?${string}` {
+  const params = new URLSearchParams({ section: 'works' });
   if (input.q) params.set('q', input.q);
   if (input.category) params.set('category', input.category);
   if (input.material) params.set('material', input.material);
   if (input.sort && input.sort !== 'newest') params.set('sort', input.sort);
   const query = params.toString();
-  return query ? `/works?${query}` : '/works';
+  return `/explore?${query}`;
 }

@@ -9,7 +9,7 @@ import { StatusBar } from 'expo-status-bar';
 import { View } from 'react-native';
 
 import { ensureAuthBrowserHistory } from '../features/auth/auth-browser-history';
-import { SearchOverlayHost } from '../features/search/search-overlay-host';
+import { LegacySearchRedirect } from '../features/explore/LegacySearchRedirect';
 import { AppProviders } from '../providers/app-providers';
 import { useAppTheme } from '../providers/theme-provider';
 import '../../global.css';
@@ -48,7 +48,7 @@ export default function RootLayout() {
         <Stack.Screen name="(account)" />
         <Stack.Screen name="(admin)" />
       </Stack>
-      <SearchOverlayHost />
+      <LegacySearchRedirect />
     </AppProviders>
   );
 }

@@ -1,3 +1,4 @@
+import type { Ref } from 'react';
 import { ScrollView, View, type ScrollViewProps } from 'react-native';
 import Animated from 'react-native-reanimated';
 
@@ -20,6 +21,7 @@ export function PageScrollView({
   variant = 'default',
   ...props
 }: ScrollViewProps & {
+  ref?: Ref<ScrollView>;
   reserveDock?: boolean;
   animated?: boolean;
   variant?: 'default' | 'branded';
@@ -57,7 +59,10 @@ export function PageScrollView({
         {children}
       </PageColumn>
       <SiteFooter />
-      <View aria-hidden style={{ height: reserveDock && dockVisible ? reserve : 0 }} />
+      <View
+        aria-hidden
+        style={{ height: reserveDock && dockVisible ? reserve : 0 }}
+      />
     </Scroller>
   );
 }

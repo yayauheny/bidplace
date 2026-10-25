@@ -69,8 +69,8 @@ for (const scenario of cases) {
     try {
       await page.setViewportSize({ width: 390, height: 844 });
       await page.goto('/search');
-      const overlay = page.getByTestId('search-overlay');
-      await expect(overlay).toBeVisible();
+      const overlay = page.getByTestId('app-shell-content').filter({ has: page.getByTestId('explore-header') });
+      await expect(page.getByTestId('explore-header')).toBeVisible();
       await overlay.getByRole('tab', { name: scenario.tab }).click();
       const responseForPage = (expectedPage: number) =>
         page.waitForResponse((response) => {
@@ -84,7 +84,7 @@ for (const scenario of cases) {
           );
         });
       const firstResponse = responseForPage(1);
-      await overlay.getByTestId('search-overlay-query').fill(fixture.query);
+      await overlay.getByTestId('explore-query').fill(fixture.query);
       const first = scenario.parse(await (await firstResponse).json());
       expect(first.pagination).toEqual({
         page: 1,
@@ -113,7 +113,7 @@ for (const scenario of cases) {
       await expect(
         overlay.getByRole('button', { name: 'Показать ещё' }),
       ).toHaveCount(0);
-      await expect(overlay.getByTestId('search-overlay-query')).toHaveValue(
+      await expect(overlay.getByTestId('explore-query')).toHaveValue(
         fixture.query,
       );
     } finally {
