@@ -41,7 +41,7 @@ type AppDialogBaseProps = {
 type AppDialogProps = AppDialogBaseProps &
   (
     | {
-        presentation?: 'dialog' | 'sheet';
+        presentation?: 'dialog' | 'sheet' | 'compactSheet';
         media?: never;
       }
     | { presentation: 'mediaSheet'; media: ReactNode }
@@ -101,6 +101,9 @@ export function AppDialog({
   const isSheet = presentation !== 'dialog';
   const sharedBackdrop = useSharedSheetBackdrop(open && isSheet);
   const isMediaSheet = presentation === 'mediaSheet';
+  const compact = presentation === 'compactSheet';
+  const mobileCompact =
+    compact && width <= designTokens.layout.sheetFillViewportMax;
   const overlay = (
     <AppDialogOverlay
       forceMount={isSheet ? true : undefined}
@@ -126,24 +129,40 @@ export function AppDialog({
       accessibilityLabel="Закрыть окно"
       onPress={onClose}
       preset="icon"
-      hitSlop={isMediaSheet ? mediaSheetCloseHitSlop : undefined}
-      style={
+      hitSlop={
         isMediaSheet
+          ? mediaSheetCloseHitSlop
+          : compact && !mobileCompact
+            ? 6
+            : undefined
+      }
+      style={
+        mobileCompact
           ? {
-              width: designTokens.size.mediaSheetClose,
-              height: designTokens.size.mediaSheetClose,
+              position: 'absolute',
+              top: -designTokens.space.x3,
+              width: designTokens.size.touch,
+              height: designTokens.size.touch,
+              alignSelf: 'center',
               alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: designTokens.radius.pill,
+              paddingTop: designTokens.space.x3,
             }
-          : {
-              width: 32,
-              height: 32,
-              flexShrink: 0,
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: designTokens.radius.pill,
-            }
+          : isMediaSheet
+            ? {
+                width: designTokens.size.mediaSheetClose,
+                height: designTokens.size.mediaSheetClose,
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: designTokens.radius.pill,
+              }
+            : {
+                width: 32,
+                height: 32,
+                flexShrink: 0,
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: designTokens.radius.pill,
+              }
       }
       interactionStyle={({ hovered, pressed }) => ({
         backgroundColor:
@@ -154,7 +173,16 @@ export function AppDialog({
               : 'transparent',
       })}
     >
-      {isMediaSheet ? (
+      {mobileCompact ? (
+        <View
+          style={{
+            width: designTokens.auth.handleWidth,
+            height: designTokens.auth.handleHeight,
+            borderRadius: designTokens.radius.pill,
+            backgroundColor: palette.quietFill,
+          }}
+        />
+      ) : isMediaSheet ? (
         <FigmaIcon
           name="x"
           size={designTokens.size.buttonIconFrame}
@@ -168,6 +196,46 @@ export function AppDialog({
   );
   const body = bare ? (
     children
+  ) : compact ? (
+    <>
+      <SheetDragHandle>
+        <View
+          style={{ gap: designTokens.space.x1 + designTokens.space.x1 / 2 }}
+        >
+          <View
+            style={{
+              height: designTokens.auth.handleSlot,
+              alignItems: 'center',
+              zIndex: 1,
+            }}
+          >
+            {mobileCompact ? (
+              closeButton
+            ) : (
+              <View
+                style={{
+                  width: designTokens.auth.handleWidth,
+                  height: designTokens.auth.handleHeight,
+                  borderRadius: designTokens.radius.pill,
+                  backgroundColor: palette.quietFill,
+                }}
+              />
+            )}
+          </View>
+          <Dialog.Title asChild>
+            <AppText role="sheetTitle" style={centeredTextStyle}>
+              {title}
+            </AppText>
+          </Dialog.Title>
+          {!mobileCompact ? (
+            <View style={{ position: 'absolute', right: 0, top: 0 }}>
+              {closeButton}
+            </View>
+          ) : null}
+        </View>
+      </SheetDragHandle>
+      {children}
+    </>
   ) : isMediaSheet ? (
     <>
       <View>
@@ -284,25 +352,32 @@ export function AppDialog({
         flexShrink: Platform.OS === 'web' ? 1 : undefined,
         ...(Platform.OS === 'web' ? { pointerEvents: 'auto' as const } : {}),
         zIndex: designTokens.layer.modal,
-        borderWidth: isMediaSheet || bare ? 0 : 1,
+        borderWidth: isMediaSheet || compact || bare ? 0 : 1,
         borderColor: palette.dialogBorder,
-        borderRadius: isMediaSheet
-          ? designTokens.radius.mediaSheet
-          : isSheet
-            ? designTokens.radius.shareSheet
-            : designTokens.radius.dialog,
+        borderRadius:
+          isMediaSheet || compact
+            ? designTokens.radius.mediaSheet
+            : isSheet
+              ? designTokens.radius.shareSheet
+              : designTokens.radius.dialog,
         ...(isSheet
           ? { borderBottomLeftRadius: 0, borderBottomRightRadius: 0 }
           : {}),
         backgroundColor: palette.dialogSurface,
         padding:
-          isMediaSheet || bare
+          isMediaSheet || compact || bare
             ? 0
             : isSheet
               ? designTokens.layout.gutter
               : width >= 600
                 ? designTokens.space.x8
                 : designTokens.space.x5,
+        ...(compact
+          ? {
+              paddingHorizontal: designTokens.space.x5,
+              paddingTop: designTokens.space.x3,
+            }
+          : {}),
         ...(isSheet
           ? {
               paddingBottom:
@@ -311,7 +386,9 @@ export function AppDialog({
                   : 0,
             }
           : {}),
-        ...(isMediaSheet || bare ? {} : { boxShadow: palette.floatingShadow }),
+        ...(isMediaSheet || compact || bare
+          ? {}
+          : { boxShadow: palette.floatingShadow }),
       }}
     >
       {bare ? (
@@ -328,26 +405,35 @@ export function AppDialog({
               : { minWidth: 0, width: '100%' }
           }
           contentContainerStyle={
-            isMediaSheet
+            compact
               ? {
-                  gap: designTokens.space.x5,
+                  gap: designTokens.space.x3 + designTokens.space.x1 / 2,
                   paddingBottom: appDialogSheetBottomSpace(
-                    bottomSpace ?? designTokens.space.x5,
+                    bottomSpace ?? designTokens.space.x10,
                     insets.bottom,
                   ),
                   minWidth: 0,
                 }
-              : {
-                  gap: designTokens.space.x4,
-                  paddingBottom: isSheet
-                    ? appDialogSheetBottomSpace(
-                        bottomSpace ??
-                          designTokens.layout.gutter + designTokens.space.x1,
-                        insets.bottom,
-                      )
-                    : designTokens.space.x1,
-                  minWidth: 0,
-                }
+              : isMediaSheet
+                ? {
+                    gap: designTokens.space.x5,
+                    paddingBottom: appDialogSheetBottomSpace(
+                      bottomSpace ?? designTokens.space.x5,
+                      insets.bottom,
+                    ),
+                    minWidth: 0,
+                  }
+                : {
+                    gap: designTokens.space.x4,
+                    paddingBottom: isSheet
+                      ? appDialogSheetBottomSpace(
+                          bottomSpace ??
+                            designTokens.layout.gutter + designTokens.space.x1,
+                          insets.bottom,
+                        )
+                      : designTokens.space.x1,
+                    minWidth: 0,
+                  }
           }
         >
           {body}

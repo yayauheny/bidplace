@@ -468,10 +468,18 @@ faces are not faux-bolded.
 
 Shared `ShareSheet` renders a copy action and a downloadable PNG QR for
 validated public `/works/:id` and `/authors/:slug` paths on the current
-origin. Work and Creator open the same `AppDialog` sheet. A sheet enters
+origin. Work and Creator QR use the same `AppDialog compactSheet` (Figma
+`597:18875`): upper radius32, inset20/top12/bottom max(40,safe inset), gap14,
+centered `sheetTitle`18/22/600/−0.36 and accessible36×4 drag handle. Mobile
+handle owns a44×44 close target; wide screens retain a cross. `sheetAction`
+reuses FigmaButton geometry55/14/26/500,18px icons and2px content gap; solid
+uses inkStrong, glass action uses50% white/50px blur/white0.5px border. Default
+button/dialog presets retain their existing paint and geometry. A sheet enters
 from below, exits downward, and the backdrop fades (`motion.control`,
-`cubic-bezier(0.2, 0, 0, 1)`, reduced motion). Geometry is unchanged. The
-native branch is a stub.
+`cubic-bezier(0.2, 0, 0, 1)`, reduced motion). Existing QRCode generates web
+PNG656 with margin4/correction M; native uses its matrix through existing SVG,
+with fixed black/white QR tokens independent of theme. Expo Clipboard/FileSystem/
+Sharing adapters provide native copy/export; physical device acceptance pending.
 
 Ordinary web AppDialog sheets share one visual `SheetBackdropProvider` installed
 under ThemeProvider in AppProviders. FilterSheet/ShareSheet/mediaSheet inherit it;

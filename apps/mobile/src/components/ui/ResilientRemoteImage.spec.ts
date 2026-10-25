@@ -442,3 +442,5 @@ describe('ResilientRemoteImage lifetime', () => {
     view.unmount();
   });
 });
+
+vi.mock('../figma/FigmaGlassSurface', () => ({ FigmaGlassSurface: () => null }));

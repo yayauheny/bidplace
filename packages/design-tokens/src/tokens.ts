@@ -104,6 +104,8 @@ export const designTokens = {
     directionsListGap: 7,
     directionsContentInset: 1,
   },
+  // QR encoding stays black-on-white independently of the active UI theme.
+  qr: { foreground: '#000000', background: '#FFFFFF' },
   radius: {
     small: 12,
     control: 18,
@@ -239,6 +241,13 @@ export const designTokens = {
       lineHeight: 24,
       fontWeight: '600',
       letterSpacing: -0.15,
+    },
+    sheetTitle: {
+      fontFamily: 'Inter_600SemiBold',
+      fontSize: 18,
+      lineHeight: 22,
+      letterSpacing: -0.36,
+      fontWeight: '600' as const,
     },
     mediaSheetTitle: {
       fontFamily: 'Inter_600SemiBold',

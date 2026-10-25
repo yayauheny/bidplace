@@ -211,3 +211,5 @@ describe('FigmaButton disabled shell opacity', () => {
     view.unmount();
   });
 });
+
+vi.mock('../figma/FigmaGlassSurface', () => ({ FigmaGlassSurface: () => null }));

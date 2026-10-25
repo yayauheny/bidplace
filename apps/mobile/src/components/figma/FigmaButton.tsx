@@ -68,6 +68,7 @@ function FigmaButtonVisualContent({
     <>
       <FigmaButtonSurface
         variant={variant}
+        size={size}
         interaction={interaction}
         width={layout.width}
         height={layout.height}
@@ -85,7 +86,7 @@ function FigmaButtonVisualContent({
           width: navigation ? '100%' : undefined,
           gap:
             iconNode || icon
-              ? size === 'event'
+              ? size === 'event' || size === 'sheetAction'
                 ? 2
                 : designTokens.space.x2
               : 0,

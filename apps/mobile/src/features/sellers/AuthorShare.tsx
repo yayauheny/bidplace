@@ -8,6 +8,7 @@ import { FilterSheet } from '../../components/figma/FilterSheet';
 import {
   copyPublicLink,
   publicShareTarget,
+  publicShareOrigin,
 } from '../../components/figma/public-share';
 import { AppText, MotionPressable } from '../../components/ui';
 import { useAppTheme } from '../../providers/theme-provider';
@@ -34,8 +35,7 @@ export function AuthorShare({
 
   const shareLink = async () => {
     try {
-      const origin =
-        Platform.OS === 'web' ? window.location.origin : 'https://bid.place';
+      const origin = publicShareOrigin();
       const url = publicShareTarget(sharePath, origin).url;
       if (Platform.OS === 'web') {
         await copyPublicLink(url);

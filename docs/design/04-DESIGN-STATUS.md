@@ -5,6 +5,17 @@
 Полный прежний журнал, включая ограничения ранних экранов:
 [история](../archive/design/04-DESIGN-STATUS-through-2026-10-23.md).
 
+## 2026-10-26 — Work share sheet / Figma597:18875
+
+**Partial — mobile web matched; native devices pending.** Shared AppDialog
+`compactSheet` and FigmaButton `sheetAction` match390×428, title18/22/600,
+QR188-slot/164-image and350×55 actions. Existing QR engine retained; native
+SVG/Clipboard/FileSystem/Sharing replace the stub.1070 mobile units,20 Chromium/
+WebKit share checks, graph typecheck/lint and all-platform exports passed.
+Independent review accepted; [evidence](../audits/evidence/2026-10-26-work-share/README.md).
+Physical phone scanning and native OS actions unverified; exact wide Figma
+composition remains NEEDS-FIGMA. Other dialog/button presets unchanged.
+
 ## 2026-10-26 — Shared auth cancellation
 
 **Partial — verified locally on web; native device acceptance pending.** Shared `AuthViewport`

@@ -4,6 +4,7 @@ export const figmaGlassSurfacePresets = [
   'navigation',
   'controlGroup',
   'filterControl',
+  'action',
 ] as const;
 
 export type FigmaGlassSurfacePreset = (typeof figmaGlassSurfacePresets)[number];
@@ -13,21 +14,33 @@ export function figmaGlassSurfaceSpec(
   palette: SemanticColorMap,
 ) {
   const filterControl = preset === 'filterControl';
+  const action = preset === 'action';
+  const control = filterControl || action;
   return {
-    blur: filterControl ? designTokens.blur.control : designTokens.blur.dock,
-    nativeIntensity: filterControl
+    blur: control ? designTokens.blur.control : designTokens.blur.dock,
+    nativeIntensity: control
       ? designTokens.blur.controlNativeIntensity
       : designTokens.blur.dockNativeIntensity,
     borderWidth: 0.5,
-    borderRadius: filterControl
+    borderRadius: control
       ? designTokens.radius.filterSort
       : designTokens.radius.dock,
-    background: filterControl
-      ? palette.surface
-      : preset === 'navigation'
-        ? palette.glass
-        : palette.glassStrong,
-    borderStart: filterControl ? palette.toolbarBorder : palette.glassBorder,
-    borderEnd: filterControl ? palette.toolbarBorder : palette.glassBorderEnd,
+    background: action
+      ? palette.actionGlass
+      : filterControl
+        ? palette.surface
+        : preset === 'navigation'
+          ? palette.glass
+          : palette.glassStrong,
+    borderStart: action
+      ? palette.white
+      : filterControl
+        ? palette.toolbarBorder
+        : palette.glassBorder,
+    borderEnd: action
+      ? palette.white
+      : filterControl
+        ? palette.toolbarBorder
+        : palette.glassBorderEnd,
   } as const;
 }

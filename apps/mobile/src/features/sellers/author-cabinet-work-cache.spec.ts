@@ -506,3 +506,5 @@ describe('owner work cache', () => {
     view.unmount();
   });
 });
+
+vi.mock('../../components/figma/FigmaGlassSurface', () => ({ FigmaGlassSurface: () => null }));

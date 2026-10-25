@@ -3,6 +3,17 @@
 Последнее обновление: 2026-10-10
 Статус: Confirmed technical boundaries for the portfolio-first MVP implementation.
 
+## 2026-10-26 — Public QR sharing adapters
+
+ShareSheet reuses AppDialog's compactSheet presentation and the shared button/
+glass primitives. `ShareQr` and `share-platform` use Metro platform resolution:
+existing QRCode canvas on web, its matrix through existing native SVG; web DOM
+clipboard/download and Expo Clipboard/FileSystem/Sharing on native. URL/path
+validation stays in `public-share`, with one established native web origin.
+Native exports keep a deterministic public PNG in OS cache so receiving apps
+can consume its URI after the sharing dialog resolves; same-turn exports are
+serialized. No server, DTO or persistence changes. Device acceptance pending.
+
 ## 2026-10-26 — Auth cancellation navigation
 
 `AuthViewport` closes the whole `(auth)` group through Expo Router's root

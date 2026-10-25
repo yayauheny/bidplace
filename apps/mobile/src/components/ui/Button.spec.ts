@@ -718,3 +718,5 @@ describe('button href/onPress type contract', () => {
     expectTypeOf(labelOnly).not.toMatchTypeOf<PrimaryProps>();
   });
 });
+
+vi.mock('../figma/FigmaGlassSurface', () => ({ FigmaGlassSurface: () => null }));

@@ -43,7 +43,7 @@ export function FigmaGlassSurface({
   const nativeRole =
     accessibilityRole === 'navigation' ? undefined : accessibilityRole;
 
-  if (preset === 'filterControl') {
+  if (preset === 'filterControl' || preset === 'action') {
     return (
       <View
         testID={testID}
@@ -62,7 +62,13 @@ export function FigmaGlassSurface({
           tint="default"
           style={[
             StyleSheet.absoluteFill,
-            { borderRadius: spec.borderRadius, overflow: 'hidden' },
+            {
+              borderRadius: spec.borderRadius,
+              overflow: 'hidden',
+              ...(Platform.OS === 'web' && preset === 'action'
+                ? { backdropFilter: `blur(${spec.blur}px)` }
+                : {}),
+            },
           ]}
         >
           <View

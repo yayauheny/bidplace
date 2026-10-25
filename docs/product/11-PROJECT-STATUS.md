@@ -16,6 +16,18 @@
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
 | Commerce, избранное/подписки, смена email/password из settings | Not implemented в launch scope / post-MVP; [следующая волна](15-POST-MVP-BACKLOG.md). Старый commerce runtime не разрешает включать продажи. |
 
+## 2026-10-26 — Work QR sharing
+
+**Partial — implemented and verified on local web; native device acceptance pending.**
+ShareSheet uses existing AppDialog/FigmaButton with Figma597:18875 composition.
+The same validated API sharePath supplies QR and copy. PNG656×656 decoded by
+Apple Vision;20 Chromium/WebKit share checks and1070 mobile units passed,
+with graph typecheck/lint and web/iOS/Android exports. Native SVG export and
+Expo Clipboard/FileSystem/Sharing adapters have source/unit coverage; public
+PNG remains in OS cache for receivers. Independent review accepted. Physical
+phone scanning/native save and clipboard remain unverified.
+[Evidence](../audits/evidence/2026-10-26-work-share/README.md).
+
 ## 2026-10-26 — Shared auth cancellation
 
 **Partial — implemented and verified locally on web; native device acceptance pending.** `AuthViewport` and

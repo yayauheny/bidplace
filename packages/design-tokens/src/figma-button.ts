@@ -20,6 +20,7 @@ export const figmaButtonSizes = [
   'navigation',
   'exitConfirm',
   'creationAction',
+  'sheetAction',
   'event',
   'pickerAction',
 ] as const;
@@ -248,7 +249,7 @@ export function figmaButtonSizeMetrics(size: FigmaButtonSize = 'matrix') {
       },
     };
   }
-  if (size === 'exitConfirm' || size === 'creationAction') {
+  if (size === 'exitConfirm' || size === 'creationAction' || size === 'sheetAction') {
     return {
       paddingX: 14,
       paddingY: 14,

@@ -31,4 +31,12 @@ describe('Figma glass surface spec', () => {
       figmaGlassSurfaceSpec('controlGroup', designTokens.color).background,
     ).toBe(designTokens.color.glassStrong);
   });
+  it('matches the translucent action surface from Figma 597:19025', () => {
+    expect(figmaGlassSurfaceSpec('action', designTokens.color)).toEqual({
+      blur: 50, nativeIntensity: 100, borderWidth: 0.5, borderRadius: 80,
+      background: designTokens.color.actionGlass,
+      borderStart: designTokens.color.white, borderEnd: designTokens.color.white,
+    });
+  });
+
 });
