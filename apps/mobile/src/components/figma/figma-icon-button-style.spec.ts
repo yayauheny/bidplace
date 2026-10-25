@@ -84,6 +84,23 @@ describe('Figma icon button styles', () => {
   );
 });
 
+it('keeps the active share surface dark with stable geometry in both themes', () => {
+  for (const palette of [designTokens.color, blackColorMap]) {
+    expect(figmaIconButtonStyle(false, 'active', palette)).toMatchObject({
+      width: 42,
+      height: 42,
+      backgroundColor: palette.overlayScrim,
+    });
+    expect(
+      figmaIconButtonStyle(false, 'active', palette, 'navigation'),
+    ).toMatchObject({
+      width: 48,
+      height: 48,
+      backgroundColor: palette.overlayScrim,
+    });
+  }
+});
+
 vi.mock('./FigmaIconButton', () => ({ FigmaIconButton: () => null }));
 import { BackButton } from './BackButton';
 

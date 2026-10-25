@@ -2,7 +2,13 @@ import { designTokens, type SemanticColorMap } from '@bidplace/design-tokens';
 
 export function figmaIconButtonStyle(
   pressed: boolean,
-  surface: 'plain' | 'muted' | 'outline' | 'destructive' | 'glass' = 'plain',
+  surface:
+    | 'plain'
+    | 'muted'
+    | 'outline'
+    | 'destructive'
+    | 'glass'
+    | 'active' = 'plain',
   palette: SemanticColorMap,
   size: 'default' | 'settingsHeader' | 'navigation' = 'default',
 ) {
@@ -13,7 +19,7 @@ export function figmaIconButtonStyle(
         ? designTokens.size.navigationControl
         : surface === 'outline' || surface === 'destructive'
           ? 38
-          : surface === 'muted'
+          : surface === 'muted' || surface === 'active'
             ? 42
             : designTokens.size.iconButton,
     height:
@@ -21,7 +27,7 @@ export function figmaIconButtonStyle(
         ? designTokens.size.navigationControl
         : surface === 'outline' || surface === 'destructive'
           ? 38
-          : surface === 'muted'
+          : surface === 'muted' || surface === 'active'
             ? 42
             : designTokens.size.iconButton,
     alignItems: 'center' as const,
@@ -34,17 +40,19 @@ export function figmaIconButtonStyle(
       : {}),
     borderRadius: designTokens.radius.pill,
     backgroundColor:
-      surface === 'glass'
-        ? 'transparent'
-        : surface === 'destructive'
-          ? pressed
-            ? palette.dangerHover
-            : palette.destructiveFill
-          : size !== 'navigation' && pressed
-            ? palette.ghostHover
-            : surface === 'muted'
-              ? palette.headerControl
-              : 'transparent',
+      surface === 'active'
+        ? palette.overlayScrim
+        : surface === 'glass'
+          ? 'transparent'
+          : surface === 'destructive'
+            ? pressed
+              ? palette.dangerHover
+              : palette.destructiveFill
+            : size !== 'navigation' && pressed
+              ? palette.ghostHover
+              : surface === 'muted'
+                ? palette.headerControl
+                : 'transparent',
   };
 }
 

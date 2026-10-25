@@ -16,6 +16,18 @@
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
 | Commerce, избранное/подписки, смена email/password из settings | Not implemented в launch scope / post-MVP; [следующая волна](15-POST-MVP-BACKLOG.md). Старый commerce runtime не разрешает включать продажи. |
 
+## 2026-10-26 — Work toolbar and future favorite control
+
+**Partial — local web verified; native devices pending.** WorkHeader reuses the
+shared Back and two48px FigmaIconButtons in a98×48 group. Work/Author share-03
+tracks the real modal open state with white ink on a dark token surface. Heart
+only explains that favorites are unavailable; no persistence/API/selected state.
+WorkGallery overlay arrows removed; paging, dots, image/cache owner and viewer
+retained. Web scroll synchronizes dots and arrow keys move photo focus. Existing
+ShareSheet/QR/feedback unchanged.1079 mobile units,54 Chromium/WebKit Share/
+toolbar cases, graph typecheck/lint and web/iOS/Android exports passed; independent
+review accepted. [Before/after and limits](../audits/evidence/2026-10-26-work-toolbar/README.md).
+
 ## 2026-10-26 — Shared Back UI
 
 **Partial — verified locally on web; native devices pending.** BackButton

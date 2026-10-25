@@ -506,7 +506,9 @@ test('QR feedback confirms only the download launch, and exposes a retry on fail
   expect(await dialog(page).boundingBox()).toEqual(bounds);
 });
 
-test('clipboard fallback confirms only when the fallback copy succeeds', async ({ page }) => {
+test('clipboard fallback confirms only when the fallback copy succeeds', async ({
+  page,
+}) => {
   await mockClipboard(page, 'failure');
   await page.addInitScript(() => {
     document.execCommand = () => {
@@ -516,19 +518,207 @@ test('clipboard fallback confirms only when the fallback copy succeeds', async (
     };
   });
   await openFeedbackSheet(page);
-  await page.getByRole('button', { name: 'Копировать ссылку', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Скопировано', exact: true })).toBeVisible();
-  await expect.poll(() => page.locator('html').getAttribute('data-fallback-url')).toBe(`http://localhost:8081/works/${PUBLIC_ID}`);
+  await page
+    .getByRole('button', { name: 'Копировать ссылку', exact: true })
+    .click();
+  await expect(
+    page.getByRole('button', { name: 'Скопировано', exact: true }),
+  ).toBeVisible();
+  await expect
+    .poll(() => page.locator('html').getAttribute('data-fallback-url'))
+    .toBe(`http://localhost:8081/works/${PUBLIC_ID}`);
 });
 
-test('closing during feedback animation reopens with clean idle controls', async ({ page }) => {
+test('closing during feedback animation reopens with clean idle controls', async ({
+  page,
+}) => {
   await mockClipboard(page, 'success');
   await openFeedbackSheet(page);
-  await page.getByRole('button', { name: 'Копировать ссылку', exact: true }).click();
+  await page
+    .getByRole('button', { name: 'Копировать ссылку', exact: true })
+    .click();
   await page.keyboard.press('Escape');
   await expectClosed(page);
   await page.getByRole('button', { name: 'Поделиться работой' }).click();
-  await expect(page.getByRole('button', { name: 'Копировать ссылку', exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Скопировано', exact: true })).toHaveCount(0);
+  await expect(
+    page.getByRole('button', { name: 'Копировать ссылку', exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Скопировано', exact: true }),
+  ).toHaveCount(0);
   expect((await dialog(page).boundingBox())?.height).toBe(428);
+});
+
+for (const width of [320, 375, 390, 414, 1440]) {
+  test(`Work toolbar groups Heart and share03 without gallery arrows at ${width}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 874 });
+    await mockWork(page);
+    await page.goto(`/product/${PUBLIC_ID}`);
+    const group = page.getByTestId('work-share');
+    await expect(group).toBeVisible();
+    const bounds = await group.boundingBox();
+    expect(bounds?.width).toBe(98);
+    expect(bounds?.height).toBe(48);
+    for (const name of ['В избранное', 'Поделиться работой']) {
+      const button = group.getByRole('button', { name, exact: true });
+      expect((await button.boundingBox())?.width).toBe(48);
+      expect((await button.boundingBox())?.height).toBe(48);
+    }
+    await expect(page.getByTestId('work-gallery-arrows')).toHaveCount(0);
+    await expect(page.getByTestId('work-gallery-dots')).toBeVisible();
+    const share = group.getByRole('button', {
+      name: 'Поделиться работой',
+      exact: true,
+    });
+    await share.click();
+    await expect(dialog(page)).toBeVisible();
+    // The parent page is inert under the modal; inspect the same trigger node.
+    const trigger = group.locator('[aria-label="Поделиться работой"]');
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    await expect(trigger.locator('svg path').first()).toHaveCSS(
+      'stroke',
+      'rgb(255, 255, 255)',
+    );
+    await expect(trigger).not.toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+    await page.keyboard.press('Escape');
+    await expect(share).toHaveAttribute('aria-expanded', 'false');
+    await expect(share.locator('svg path').first()).toHaveCSS(
+      'stroke',
+      'rgb(42, 42, 42)',
+    );
+  });
+}
+
+test('Work favorites is an honest placeholder and never creates selected state', async ({
+  page,
+}) => {
+  await mockWork(page);
+  await page.goto(`/product/${PUBLIC_ID}`);
+  await page.getByRole('button', { name: 'В избранное', exact: true }).click();
+  await expect(
+    page.getByRole('dialog', { name: 'Скоро появится' }),
+  ).toBeVisible();
+  await expect(
+    page.getByText(
+      'Избранное пока недоступно. Мы добавим эту возможность позже.',
+      { exact: true },
+    ),
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'Понятно', exact: true }).click();
+  await expect(
+    page.getByRole('button', { name: 'В избранное', exact: true }),
+  ).toBeFocused();
+  await expect(
+    page.getByRole('button', { name: 'Удалить из избранного', exact: true }),
+  ).toHaveCount(0);
+});
+
+test('gallery keyboard selection and full image viewer survive removal of overlay arrows', async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await mockWork(page);
+  await page.goto(`/product/${PUBLIC_ID}`);
+  const first = page.getByRole('button', {
+    name: 'Открыть фото 1',
+    exact: true,
+  });
+  await first.focus();
+  await first.press('ArrowRight');
+  const second = page.getByRole('button', {
+    name: 'Открыть фото 2',
+    exact: true,
+  });
+  await expect(second).toBeFocused();
+  await expect(page.getByTestId('work-gallery-dots')).toHaveAttribute(
+    'aria-label',
+    'Фото 2 из 2',
+  );
+  await second.press('Enter');
+  await expect(page.getByRole('dialog')).toContainText('фото 2 из 2');
+  await page
+    .getByRole('button', { name: 'Предыдущее фото в просмотре', exact: true })
+    .press('ArrowLeft');
+  await expect(page.getByTestId('work-gallery-dots')).toHaveAttribute(
+    'aria-label',
+    'Фото 2 из 2',
+  );
+  await page.keyboard.press('Escape');
+  await expect(second).toBeFocused();
+  await second.press('ArrowLeft');
+  await expect(first).toBeFocused();
+  await expect(page.getByTestId('work-gallery-dots')).toHaveAttribute(
+    'aria-label',
+    'Фото 1 из 2',
+  );
+});
+
+test('single image gallery has no pagination or overlay arrows', async ({
+  page,
+}) => {
+  await mockWork(page);
+  await page.route(`**/api/works/${PUBLIC_ID}`, (route) => {
+    const payload = workFixture();
+    payload.work.images = payload.work.images.slice(0, 1);
+    return route.fulfill({ json: payload });
+  });
+  await page.goto(`/product/${PUBLIC_ID}`);
+  await expect(
+    page.getByRole('button', { name: 'Открыть фото 1', exact: true }),
+  ).toBeVisible();
+  await expect(page.getByTestId('work-gallery-dots')).toHaveCount(0);
+  await expect(page.getByTestId('work-gallery-arrows')).toHaveCount(0);
+});
+
+test('Work and Author share the same icon and use the actual open state', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 874 });
+  await mockWork(page);
+  await page.goto(`/product/${PUBLIC_ID}`);
+  const workShare = page.getByRole('button', {
+    name: 'Поделиться работой',
+    exact: true,
+  });
+  const paths = await workShare
+    .locator('svg path')
+    .evaluateAll((nodes) => nodes.map((node) => node.getAttribute('d')));
+  await mockAuthor(page, 'motion-share');
+  await page.goto('/seller/motion-share');
+  const authorShare = page.getByRole('button', {
+    name: 'Поделиться профилем',
+    exact: true,
+  });
+  expect(
+    await authorShare
+      .locator('svg path')
+      .evaluateAll((nodes) => nodes.map((node) => node.getAttribute('d'))),
+  ).toEqual(paths);
+  const handle = page.locator('[aria-label="Поделиться профилем"]');
+  await authorShare.click();
+  await expect(handle).toHaveAttribute('aria-expanded', 'true');
+  await expect(handle.locator('svg path').first()).toHaveCSS(
+    'stroke',
+    'rgb(255, 255, 255)',
+  );
+  await page.keyboard.press('Escape');
+  await expect(authorShare).toHaveAttribute('aria-expanded', 'false');
+});
+
+test('gallery still responds to horizontal scrolling after arrow removal', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 874 });
+  await mockWork(page);
+  await page.goto(`/product/${PUBLIC_ID}`);
+  await page
+    .getByRole('button', { name: 'Открыть фото 1', exact: true })
+    .hover();
+  await page.mouse.wheel(390, 0);
+  await expect(page.getByTestId('work-gallery-dots')).toHaveAttribute(
+    'aria-label',
+    'Фото 2 из 2',
+  );
 });

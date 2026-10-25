@@ -5,6 +5,18 @@
 Полный прежний журнал, включая ограничения ранних экранов:
 [история](../archive/design/04-DESIGN-STATUS-through-2026-10-23.md).
 
+## 2026-10-26 — Work toolbar / gallery
+
+**Partial — local web verified; native devices pending.** WorkHeader reuses the
+shared Back and two48px FigmaIconButtons in a98×48 group. Work/Author share-03
+tracks the real modal open state with white ink on a dark token surface. Heart
+only explains that favorites are unavailable; no persistence/API/selected state.
+WorkGallery overlay arrows removed; paging, dots, image/cache owner and viewer
+retained. Web scroll synchronizes dots and arrow keys move photo focus. Existing
+ShareSheet/QR/feedback unchanged.1079 mobile units,54 Chromium/WebKit Share/
+toolbar cases, graph typecheck/lint and web/iOS/Android exports passed; independent
+review accepted. [Before/after and limits](../audits/evidence/2026-10-26-work-toolbar/README.md).
+
 ## 2026-10-26 — Back button standard
 
 **Partial — local web verification; native devices pending.** Shared BackButton

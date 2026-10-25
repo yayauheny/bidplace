@@ -56,7 +56,7 @@ export function AuthorShare({
         <FigmaButton
           ref={triggerRef}
           label="Поделиться"
-          variant="muted"
+          variant={open ? 'solid' : 'muted'}
           icon="share-03"
           iconPosition="right"
           onPress={() => {
@@ -69,7 +69,8 @@ export function AuthorShare({
           ref={triggerRef}
           icon="share-03"
           iconSize={20}
-          surface="muted"
+          surface={open ? 'active' : 'muted'}
+          expanded={open}
           label="Поделиться профилем"
           onPress={() => {
             setMessage('');
@@ -126,11 +127,7 @@ export function AuthorShare({
               <AppText role="bodySmall" style={{ color: palette.report }}>
                 Пожаловаться
               </AppText>
-              <FigmaIcon
-                name="flag-01"
-                size={20}
-                color={palette.report}
-              />
+              <FigmaIcon name="flag-01" size={20} color={palette.report} />
             </MotionPressable>
           </>
         )}

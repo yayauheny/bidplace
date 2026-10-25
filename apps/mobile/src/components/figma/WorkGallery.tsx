@@ -1,9 +1,19 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+  type ElementRef,
+  type KeyboardEvent,
+} from 'react';
+import {
+  Platform,
   ScrollView,
   View,
   type StyleProp,
   type ImageStyle,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
 } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
 import {
@@ -15,9 +25,6 @@ import {
 import { getApiAssetUrl } from '../../lib/environment';
 import { useReducedMotion } from '../../lib/reduced-motion';
 import { useAppTheme } from '../../providers/theme-provider';
-import { FigmaGlassSurface } from './FigmaGlassSurface';
-import { FigmaIconButton } from './FigmaIconButton';
-import { workGalleryShowsArrows } from './work-gallery-arrows';
 import {
   workGalleryChromeStyle,
   workGalleryDotStyle,
@@ -54,6 +61,9 @@ export function WorkGallery({
       ? null
       : images[Math.min(viewerIndex, images.length - 1)];
   const scroll = useRef<ScrollView>(null);
+  const photoButtons = useRef<Array<ElementRef<typeof MotionPressable> | null>>(
+    [],
+  );
   const reduced = useReducedMotion();
   const palette = useAppTheme();
   useEffect(() => {
@@ -68,7 +78,21 @@ export function WorkGallery({
     setActive(page);
     scroll.current?.scrollTo({ x: width * page, animated: !reduced });
   };
-  const showArrows = images.length > 1 && workGalleryShowsArrows(width);
+  const updateActivePhoto = (
+    event: NativeSyntheticEvent<NativeScrollEvent>,
+  ) => {
+    if (width > 0)
+      setActive(
+        Math.max(
+          0,
+          Math.min(
+            images.length - 1,
+            Math.round(event.nativeEvent.contentOffset.x / width),
+          ),
+        ),
+      );
+  };
+
   return (
     <View
       testID="work-gallery"
@@ -92,22 +116,43 @@ export function WorkGallery({
           horizontal
           pagingEnabled
           showsHorizontalScrollIndicator={false}
-          onMomentumScrollEnd={(event) =>
-            width > 0 &&
-            setActive(
-              Math.max(
-                0,
-                Math.min(
-                  images.length - 1,
-                  Math.round(event.nativeEvent.contentOffset.x / width),
-                ),
-              ),
-            )
-          }
+          onMomentumScrollEnd={updateActivePhoto}
+          // RN Web emits scroll events instead of native momentum-end callbacks.
+          onScroll={Platform.OS === 'web' ? updateActivePhoto : undefined}
+          scrollEventThrottle={Platform.OS === 'web' ? 16 : undefined}
         >
           {images.map((image, index) => (
             <MotionPressable
               key={image.id}
+              ref={(node) => {
+                photoButtons.current[index] = node;
+              }}
+              {...(Platform.OS === 'web'
+                ? {
+                    onKeyDown: (event: KeyboardEvent<HTMLElement>) => {
+                      if (
+                        event.altKey ||
+                        event.metaKey ||
+                        event.ctrlKey ||
+                        (event.key !== 'ArrowLeft' &&
+                          event.key !== 'ArrowRight')
+                      )
+                        return;
+                      event.preventDefault();
+                      const next = Math.max(
+                        0,
+                        Math.min(
+                          images.length - 1,
+                          index + (event.key === 'ArrowRight' ? 1 : -1),
+                        ),
+                      );
+                      show(next);
+                      const button = photoButtons.current[next];
+                      if (button instanceof HTMLElement)
+                        button.focus({ preventScroll: true });
+                    },
+                  }
+                : {})}
               accessibilityRole="button"
               accessibilityLabel={`Открыть фото ${index + 1}`}
               onPress={() => setViewerIndex(index)}
@@ -132,36 +177,6 @@ export function WorkGallery({
             </MotionPressable>
           ))}
         </ScrollView>
-        {showArrows ? (
-          <View
-            testID="work-gallery-arrows"
-            style={{
-              position: 'absolute',
-              bottom: designTokens.space.x3,
-              left: designTokens.space.x3,
-              right: designTokens.space.x3,
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-            }}
-          >
-            <FigmaGlassSurface preset="controlGroup">
-              <FigmaIconButton
-                icon="arrow-left-01"
-                label="Предыдущее фото"
-                disabled={active === 0}
-                onPress={() => show(active - 1)}
-              />
-            </FigmaGlassSurface>
-            <FigmaGlassSurface preset="controlGroup">
-              <FigmaIconButton
-                icon="arrow-right-01"
-                label="Следующее фото"
-                disabled={active === images.length - 1}
-                onPress={() => show(active + 1)}
-              />
-            </FigmaGlassSurface>
-          </View>
-        ) : null}
       </View>
       {leadingAction || action ? (
         <View testID="work-gallery-chrome" style={workGalleryChromeStyle()}>

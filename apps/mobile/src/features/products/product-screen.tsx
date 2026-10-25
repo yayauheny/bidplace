@@ -16,6 +16,7 @@ import {
 import { WorkCoverCard } from '../../components/figma/WorkCoverCard';
 import { WorkFactsList } from '../../components/figma/WorkFactsList';
 import { FigmaButton } from '../../components/figma/FigmaButton';
+import { FilterSheet } from '../../components/figma/FilterSheet';
 import { ShareSheet } from '../../components/figma/ShareSheet';
 import { getApiAssetUrl } from '../../lib/environment';
 import { useTrackWorkView } from '../../lib/analytics/use-track-views';
@@ -37,6 +38,7 @@ export function ProductScreen({ publicId }: { publicId: string }) {
   const panelId = useId();
   const palette = useAppTheme();
   const [shareOpen, setShareOpen] = useState(false);
+  const [favoriteNotice, setFavoriteNotice] = useState(false);
   const query = useQuery({
     queryKey: ['portfolio-work', publicId],
     queryFn: ({ signal }) => api.portfolio.getWork(publicId, { signal }),
@@ -122,6 +124,8 @@ export function ProductScreen({ publicId }: { publicId: string }) {
           panelId={panelId}
           onBack={() => navigateWorkPageBack(router)}
           onShare={() => setShareOpen(true)}
+          shareOpen={shareOpen}
+          onFavorite={() => setFavoriteNotice(true)}
         >
           <View
             style={{
@@ -221,6 +225,20 @@ export function ProductScreen({ publicId }: { publicId: string }) {
           </View>
         </WorkHeader>
       </PageScrollView>
+      <FilterSheet
+        presentation="compact"
+        open={favoriteNotice}
+        title="Скоро появится"
+        onClose={() => setFavoriteNotice(false)}
+        primaryAction={{
+          label: 'Понятно',
+          onPress: () => setFavoriteNotice(false),
+        }}
+      >
+        <AppText role="bodySmall">
+          Избранное пока недоступно. Мы добавим эту возможность позже.
+        </AppText>
+      </FilterSheet>
       <ShareSheet
         open={shareOpen}
         onClose={() => setShareOpen(false)}

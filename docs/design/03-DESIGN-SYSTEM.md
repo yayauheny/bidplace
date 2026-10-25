@@ -471,8 +471,12 @@ Public catalog intros (`526:12957`, `526:13308`) reuse `bodySmall` default ink
 `textSecondary` `#8A8A8A`. `/works` does not render catalog-segment tabs
 (`874:5421` / `526:13314`); order matches `/authors`: title → intro →
 Filter/Sort → cards. Work hero chrome (`745:21332`) is a 48×48 glass Back
-plus Share, 12px from the web hero top (Figma y 62 minus the 50px status
-bar). Like stays hidden. Inactive gallery dots (`745:21219`) use
+plus a 98×48 Heart/Share group, 12px from the web hero top (Figma y 62 minus
+the 50px status bar). Heart is an explicit future-feature notice only (founder
+override, 2026-10-26), with no selected state or storage. Work and Author use
+share-03; actual open state uses white ink on the existing dark overlayScrim
+surface for contrast. Gallery keeps paging/dots and Web keyboard selection,
+without overlay arrows. Inactive gallery dots (`745:21219`) use
 `color.border` `#DEDEDE`, not `divider` `#E2E2E2`.
 
 On web, `global.css` sets `html { font-synthesis: none }` so expo-font Inter

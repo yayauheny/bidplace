@@ -37,7 +37,7 @@ export function FigmaIconButton({
   expanded?: boolean;
   iconSize?: number;
   strokeWidthPx?: number;
-  surface?: 'plain' | 'muted' | 'outline' | 'destructive' | 'glass';
+  surface?: 'plain' | 'muted' | 'outline' | 'destructive' | 'glass' | 'active';
   size?: 'default' | 'settingsHeader' | 'navigation';
   accessibilityHint?: string;
 }) {
@@ -52,6 +52,7 @@ export function FigmaIconButton({
       accessibilityLabel={label}
       accessibilityHint={accessibilityHint}
       accessibilityState={{ disabled, selected, expanded }}
+      aria-expanded={expanded}
       disabled={disabled}
       hitSlop={
         navigation
@@ -112,19 +113,22 @@ export function FigmaIconButton({
               ]}
             />
           ) : null}
-          <View pointerEvents="none" style={surface === 'glass' ? { zIndex: 1 } : undefined}>
-          <FigmaIcon
-            name={icon}
-            size={iconSize}
-            strokeWidthPx={strokeWidthPx}
-            color={
-              surface === 'destructive'
-                ? palette.white
-                : selected
-                  ? palette.solid
-                  : palette.ink
-            }
-          />
+          <View
+            pointerEvents="none"
+            style={surface === 'glass' ? { zIndex: 1 } : undefined}
+          >
+            <FigmaIcon
+              name={icon}
+              size={iconSize}
+              strokeWidthPx={strokeWidthPx}
+              color={
+                surface === 'destructive' || surface === 'active'
+                  ? palette.white
+                  : selected
+                    ? palette.solid
+                    : palette.ink
+              }
+            />
           </View>
         </>
       )}
