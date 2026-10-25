@@ -3,6 +3,16 @@
 Последнее обновление: 2026-10-10
 Статус: Confirmed technical boundaries for the portfolio-first MVP implementation.
 
+## 2026-10-26 — Auth cancellation navigation
+
+`AuthViewport` closes the whole `(auth)` group through Expo Router's root
+navigation stack. The preceding `(public)` route (or root `index`) owns the
+cancellation origin, including its nested state/query; new public routes need
+no URL whitelist. Missing/non-public origins fall back to `/`. `redirectTo`
+remains the independently validated successful-login target. Existing dirty/busy
+guards, intercepted browser traversals and session-completion ownership remain
+unchanged. No server/contracts/persistence changes.
+
 ## 2026-10-05 — Cloudflare application deployment (Partial)
 
 `deploy/cloudflare` owns the thin Worker routing `/api/*` to one private Nest
@@ -542,8 +552,8 @@ Automated verification counts and browser evidence for this branch are owned by
 Expo Router root anchor `index` and transparent auth presentation preserve the
 existing background screen. The auth layout also owns one persistent visual dimmer;
 AuthViewport retains only the transparent dismissal overlay, so child auth routes
-do not tear down and restart background dimming (2026-10-19). AuthViewport owns auth close guards and dismisses to
-its return target; it no longer renders HomeScreen as a second background.
+do not tear down and restart background dimming (2026-10-19). AuthViewport owns auth close guards and pops to
+its saved public root-stack origin (2026-10-26); it no longer renders HomeScreen as a second background.
 SheetDragSurface owns only gesture detection/translation, with web Pointer Events
 and a native PanResponder adapter. AppDialog, FilterSheet and AuthViewport declare
 the draggable header and supply the existing close callback. This avoids separate

@@ -44,7 +44,10 @@ for (const close of ['Escape', 'cross', 'swipe'] as const) {
     if (close === 'Escape') {
       await page.keyboard.press('Escape');
     } else if (close === 'cross') {
-      const closeButton = page.getByRole('button', { name: 'Закрыть', exact: true });
+      const closeButton = page.getByRole('button', {
+        name: 'Закрыть',
+        exact: true,
+      });
       await closeButton.focus();
       await closeButton.press('Enter');
     } else {
@@ -123,14 +126,28 @@ test('dirty exit-confirm cancel returns focus into the form', async ({
 test('registration close returns to its public origin and preserves the dirty guard', async ({
   page,
 }) => {
-  await page.goto('/register?redirectTo=%2Fseller%2Fvex');
+  await page.setViewportSize({ width: 390, height: 874 });
+  await page.goto('/seller/local-author-1');
+  await page
+    .getByTestId('figma-floating-dock')
+    .getByLabel('Профиль', { exact: true })
+    .click();
+  await page.getByRole('link', { name: 'Регистрация', exact: true }).click();
   await expect(
-    page.getByLabel('Электронная почта', { exact: true }),
+    page.getByRole('textbox', { name: 'Электронная почта', exact: true }),
   ).toBeFocused();
   await page.getByRole('button', { name: 'Закрыть', exact: true }).click();
-  await expect(page).toHaveURL(/\/seller\/vex$/);
-  await page.goto('/register?redirectTo=%2Fseller%2Fvex');
-  const email = page.getByLabel('Электронная почта', { exact: true });
+  await expect(page).toHaveURL('http://localhost:8081/seller/local-author-1');
+  await page.goto('/seller/local-author-1');
+  await page
+    .getByTestId('figma-floating-dock')
+    .getByLabel('Профиль', { exact: true })
+    .click();
+  await page.getByRole('link', { name: 'Регистрация', exact: true }).click();
+  const email = page.getByRole('textbox', {
+    name: 'Электронная почта',
+    exact: true,
+  });
   await expect(email).toBeFocused();
   await email.fill('dirty@example.com');
   await page.getByRole('button', { name: 'Закрыть', exact: true }).click();
@@ -142,4 +159,195 @@ test('registration close returns to its public origin and preserves the dirty gu
   await expect(
     page.getByRole('button', { name: 'Закрыть', exact: true }),
   ).toBeFocused();
+});
+
+const EXPLORE_ORIGIN =
+  '/explore?section=works&material=Glass&sort=oldest';
+
+async function openExploreAuth(
+  page: Page,
+  trigger: 'Профиль' | 'Добавить' = 'Профиль',
+) {
+  await page.setViewportSize({ width: 390, height: 874 });
+  await page.goto(EXPLORE_ORIGIN);
+  await page
+    .getByTestId('figma-floating-dock')
+    .getByLabel(trigger, { exact: true })
+    .click();
+  await expect(page.locator('#auth-sheet')).toBeVisible();
+}
+
+for (const close of ['Escape', 'cross', 'backdrop'] as const) {
+  test(`Explore profile preserves the original route and query after ${close}`, async ({
+    page,
+  }) => {
+    await openExploreAuth(page);
+    if (close === 'Escape') await page.keyboard.press('Escape');
+    else if (close === 'cross') {
+      const button = page.getByRole('button', { name: 'Закрыть', exact: true });
+      await button.focus();
+      await button.press('Enter');
+    } else await page.mouse.click(10, 10);
+    await expect(page).toHaveURL(`http://localhost:8081${EXPLORE_ORIGIN}`);
+    await expect(page.locator('#auth-sheet')).toHaveCount(0);
+  });
+}
+
+for (const step of [
+  'Забыли пароль?',
+  'Войти по коду из письма',
+  'Регистрация',
+] as const) {
+  test(`Explore create preserves its origin when closing ${step}`, async ({
+    page,
+  }) => {
+    await openExploreAuth(page, 'Добавить');
+    await page.getByRole('link', { name: step, exact: true }).click();
+    await expect(page).not.toHaveURL(/\/login\?/);
+    await page.keyboard.press('Escape');
+    await expect(page).toHaveURL(`http://localhost:8081${EXPLORE_ORIGIN}`);
+  });
+}
+
+test('browser Back still visits the previous auth step before the public origin', async ({
+  page,
+}) => {
+  await openExploreAuth(page);
+  await page.getByRole('link', { name: 'Забыли пароль?', exact: true }).click();
+  await expect(page).toHaveURL(/\/forgot-password\?/);
+  await page.goBack();
+  await expect(page).toHaveURL(/\/login\?/);
+  await page.goBack();
+  await expect(page).toHaveURL(`http://localhost:8081${EXPLORE_ORIGIN}`);
+});
+
+for (const redirectTo of [
+  '/profile',
+  'https://evil.example/path',
+  '/explore?section=works',
+]) {
+  test(`direct auth has a safe dismissal fallback for ${redirectTo}`, async ({
+    page,
+  }) => {
+    await page.goto(`/login?redirectTo=${encodeURIComponent(redirectTo)}`);
+    await expect(page.locator('#auth-sheet')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page).toHaveURL('http://localhost:8081/');
+  });
+}
+
+test('become author keeps the success target separate from the cancellation origin', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto('/seller/local-author-1');
+  const becomeAuthor = page.getByRole('link', {
+    name: 'Стать автором',
+    exact: true,
+  });
+  await becomeAuthor.scrollIntoViewIfNeeded();
+  await becomeAuthor.click();
+  await expect(page).toHaveURL(/\/login\?redirectTo=%2Fprofile$/);
+  await page.keyboard.press('Escape');
+  await expect(page).toHaveURL('http://localhost:8081/seller/local-author-1');
+});
+
+for (const origin of ['/product/aliceGlass1']) {
+  test(`auth dismissal uses the saved public route for ${origin}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await page.goto(origin);
+    await page
+      .getByTestId('desktop-navigation')
+      .getByLabel('Профиль', { exact: true })
+      .click();
+    await expect(page.locator('#auth-sheet')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page).toHaveURL(`http://localhost:8081${origin}`);
+  });
+}
+
+test('direct auth transitions still dismiss safely without a public history entry', async ({
+  page,
+}) => {
+  await page.goto('/login?redirectTo=%2Fprofile');
+  await page.getByRole('link', { name: 'Забыли пароль?', exact: true }).click();
+  await expect(page).toHaveURL(/forgot-password/);
+  await page.keyboard.press('Escape');
+  await expect(page).toHaveURL('http://localhost:8081/');
+});
+
+for (const entry of ['profile', 'become-author'] as const) {
+  test(`successful ${entry} login retains its own target`, async ({ page }) => {
+    const timestamp = '2026-10-25T12:00:00.000Z';
+    const user = {
+      id: 'f1991d27-5991-40a2-8913-f5d9940c61ee',
+      email: 'navigation@bidplace.test',
+      phone: null,
+      emailVerifiedAt: timestamp,
+      phoneVerifiedAt: null,
+      acceptedRulesVersion: '2026-10-01',
+      displayName: 'Navigation test',
+      slug: 'navigation-test',
+      role: 'user',
+      status: 'active',
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    };
+    let authenticated = false;
+    await page.route('**/api/auth/me', (route) =>
+      route.fulfill(
+        authenticated
+          ? { json: { user } }
+          : {
+              status: 401,
+              json: {
+                status: 401,
+                code: 'unauthorized',
+                message: 'Authentication required',
+              },
+            },
+      ),
+    );
+    await page.route('**/api/auth/login', (route) => {
+      authenticated = true;
+      return route.fulfill({ status: 201, json: { user } });
+    });
+    if (entry === 'profile') await openExploreAuth(page);
+    else {
+      await page.setViewportSize({ width: 1440, height: 1000 });
+      await page.goto('/seller/local-author-1');
+      await page
+        .getByRole('link', { name: 'Стать автором', exact: true })
+        .click();
+    }
+    const email = page.getByRole('textbox', {
+      name: 'Электронная почта',
+      exact: true,
+    });
+    await expect(email).toBeFocused();
+    await email.pressSequentially(user.email);
+    await page
+      .getByLabel('Пароль', { exact: true })
+      .pressSequentially('navigation-test-password');
+    await page.getByRole('button', { name: 'Войти', exact: true }).click();
+    await expect(page).toHaveURL(
+      `http://localhost:8081${entry === 'profile' ? EXPLORE_ORIGIN : '/profile'}`,
+    );
+    await expect(page.locator('#auth-sheet')).toHaveCount(0);
+  });
+}
+
+test('confirmed dirty registration exit restores the original Explore state', async ({
+  page,
+}) => {
+  await openExploreAuth(page);
+  await page.getByRole('link', { name: 'Регистрация', exact: true }).click();
+  await page
+    .getByRole('textbox', { name: 'Электронная почта', exact: true })
+    .fill('cancel@bidplace.test');
+  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: 'Прервать', exact: true }).click();
+  await expect(page).toHaveURL(`http://localhost:8081${EXPLORE_ORIGIN}`);
 });

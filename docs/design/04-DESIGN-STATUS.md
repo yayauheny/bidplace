@@ -5,6 +5,17 @@
 Полный прежний журнал, включая ограничения ранних экранов:
 [история](../archive/design/04-DESIGN-STATUS-through-2026-10-23.md).
 
+## 2026-10-26 — Shared auth cancellation
+
+**Partial — verified locally on web; native device acceptance pending.** Shared `AuthViewport`
+closes the root auth group to its public origin with route/query preserved;
+X/Escape/backdrop/swipe share the guarded close path. No geometry/style changes.
+Login/registration/recovery/code and “Стать автором” regressions are covered in
+`auth-focus-restore.spec.ts`:46 Chromium/WebKit checks passed;1064 mobile units
+and dependency-graph typecheck/lint passed; web/iOS/Android exports passed.
+Independent review found no issues.
+Physical native acceptance remains unverified.
+
 ## 2026-10-25 — Explore control visual correction / PR68
 
 **Partial — local web correction; native device acceptance pending.** Live Figma

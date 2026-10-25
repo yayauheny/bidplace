@@ -4,6 +4,16 @@
 Статус: Confirmed product/UI scope for mobile-web 390 Figma cutover
 Product contract: [`../product/05-MVP-RFC.md`](../product/05-MVP-RFC.md)
 
+### Auth cancellation —2026-10-26
+
+X, Escape, backdrop and swipe close the auth flow to its saved public origin
+through the root navigation stack, preserving route/query. Login, registration,
+recovery and email-code transitions retain that origin. “Стать автором” still
+completes at `/profile`, while cancellation returns to the opening page.
+A direct auth entry without an origin falls back to Home; `redirectTo` is only
+the successful-login target. Dirty/busy guards and Browser Back retain their
+existing behavior. No visual geometry changes.
+
 ## 1. Источник и граница
 
 Новый оригинальный Figma-файл `NM63j9lwRMqpo2HvAiYNll` — read-only visual target

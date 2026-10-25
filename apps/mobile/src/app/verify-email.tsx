@@ -20,7 +20,6 @@ function VerifyEmailScreen() {
       title="Проверьте код на почте"
       tone="section"
       presentation="screen"
-      redirectTo="/"
     >
       <VerifyEmailForm redirectTo={safeRedirect} />
     </AuthViewport>

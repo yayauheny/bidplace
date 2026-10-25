@@ -11,7 +11,6 @@ export default function LoginScreen() {
   return (
     <AuthViewport
       title="Вход на Bidplace"
-      redirectTo={getSafeRedirect(redirectTo)}
     >
       {authError ? (
         <AppText

@@ -24,7 +24,7 @@ import {
 import {
   authBrowserLeaveTarget,
   authLeaveCommit,
-  authLeaveDestination,
+  canDismissAuthToOrigin,
   authNavigationDismissal,
   authNavigationTarget,
 } from '../../features/auth/auth-dismissal';
@@ -75,7 +75,6 @@ type NavigationAction = {
 type AuthViewportProps = {
   title: string;
   children: ReactNode;
-  redirectTo?: SafeRedirect;
   tone?: 'login' | 'section';
   presentation?: 'sheet' | 'screen';
 } & (
@@ -87,7 +86,6 @@ export function AuthViewport(props: AuthViewportProps) {
   const {
     title,
     children,
-    redirectTo = '/',
     tone = 'login',
     presentation = 'sheet',
   } = props;
@@ -96,6 +94,7 @@ export function AuthViewport(props: AuthViewportProps) {
   const palette = useAppTheme();
   const router = useRouter();
   const navigation = useNavigation();
+  const rootNavigation = useNavigation('/');
   const focused = useIsFocused();
   const historyId = useId();
   const { height, width, offsetTop } = useVisibleViewport();
@@ -151,7 +150,6 @@ export function AuthViewport(props: AuthViewportProps) {
         : next,
     );
   }, []);
-  const destination = authLeaveDestination(redirectTo);
 
   const openConfirm = useCallback(() => {
     if (
@@ -221,10 +219,17 @@ export function AuthViewport(props: AuthViewportProps) {
       window.history.go(-traversal.delta);
       return;
     }
-    router.dismissTo(
-      (left ? authBrowserLeaveTarget(left) : destination) as Href,
-    );
-  }, [destination, navigation, router]);
+    if (left) {
+      router.dismissTo(authBrowserLeaveTarget(left) as Href);
+      return;
+    }
+    // Pop the whole auth flow, preserving the originating public route state.
+    if (canDismissAuthToOrigin(rootNavigation.getState())) {
+      rootNavigation.goBack();
+      return;
+    }
+    router.replace('/');
+  }, [navigation, rootNavigation, router]);
 
   const commitLeave = useCallback(() => {
     if (releasedRef.current) return;

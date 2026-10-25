@@ -10,7 +10,6 @@ export default function EmailLoginScreen() {
   return (
     <AuthViewport
       title="Вход по коду"
-      redirectTo={destination}
       protectEnteredData
       exit={{
         title: 'Прервать вход',

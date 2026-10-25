@@ -14,7 +14,6 @@ export default function ForgotPasswordScreen() {
     <AuthViewport
       title="Восстановление пароля"
       tone="section"
-      redirectTo={safeRedirect}
     >
       <ForgotPasswordForm redirectTo={safeRedirect} />
     </AuthViewport>

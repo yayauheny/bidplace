@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   authBrowserLeaveTarget,
   authLeaveCommit,
-  authLeaveDestination,
+  canDismissAuthToOrigin,
   authNavigationDismissal,
   authNavigationTarget,
   authRouteFromLocation,
@@ -103,13 +103,59 @@ describe('auth sheet dismissal', () => {
     expect(authBrowserLeaveTarget('/login')).toBe('/');
   });
 
-  it('returns only a public page when the saved destination is protected', () => {
-    expect(authLeaveDestination('/works/public-work')).toBe('/works/public-work');
-    expect(authLeaveDestination('/seller/vex')).toBe('/seller/vex');
-    expect(authLeaveDestination('/authors/vex?sort=popular')).toBe(
-      '/authors/vex?sort=popular',
-    );
-    expect(authLeaveDestination('/profile')).toBe('/');
+  it.each(['(public)', 'index'])(
+    'dismisses the entire auth flow to the saved %s route without interpreting URL params',
+    (origin) => {
+      expect(
+        canDismissAuthToOrigin({
+          index: 1,
+          routes: [
+            { name: origin },
+            {
+              name: '(auth)',
+              state: {
+                index: 2,
+                routes: [
+                  { name: 'login' },
+                  { name: 'forgot-password' },
+                  { name: 'register' },
+                ],
+              },
+            },
+          ],
+        }),
+      ).toBe(true);
+    },
+  );
+
+  it.each([
+    '(account)',
+    '(seller)',
+    '(admin)',
+    'verify-email',
+    '(auth)',
+    undefined,
+  ])('uses the safe fallback instead of returning to %s', (origin) => {
+    expect(
+      canDismissAuthToOrigin({
+        index: 1,
+        routes: [{ name: origin }, { name: '(auth)' }],
+      }),
+    ).toBe(false);
+  });
+
+  it('uses the safe fallback without an origin or outside the auth group', () => {
+    expect(canDismissAuthToOrigin(undefined)).toBe(false);
+    expect(canDismissAuthToOrigin({})).toBe(false);
+    expect(
+      canDismissAuthToOrigin({ index: 0, routes: [{ name: '(auth)' }] }),
+    ).toBe(false);
+    expect(
+      canDismissAuthToOrigin({
+        index: 1,
+        routes: [{ name: '(public)' }, { name: 'verify-email' }],
+      }),
+    ).toBe(false);
   });
 });
 

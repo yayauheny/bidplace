@@ -16,6 +16,20 @@
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
 | Commerce, избранное/подписки, смена email/password из settings | Not implemented в launch scope / post-MVP; [следующая волна](15-POST-MVP-BACKLOG.md). Старый commerce runtime не разрешает включать продажи. |
 
+## 2026-10-26 — Shared auth cancellation
+
+**Partial — implemented and verified locally on web; native device acceptance pending.** `AuthViewport` and
+`auth-dismissal` use the root `(auth)` stack origin instead of successful-login
+`redirectTo`; URL whitelist removed. Public nested route/query state survives
+all close controls and auth-step transitions; protected/missing origins use Home.
+Forms keep successful-login targets, including “Стать автором” → `/profile`.
+Owner unit specs and `auth-focus-restore.spec.ts` cover origin, guards, Back,
+direct entry, unsafe redirects and successful completion. Passed:1064 mobile
+unit tests,46 Chromium/WebKit checks, dependency-graph typecheck/lint, E2E fence,
+193 docs links and diff check; web/iOS/Android Expo exports passed.
+Independent review found no issues. Native source
+review completed; physical iOS/Android acceptance pending.
+
 ## 2026-10-25 — Explore control visual correction / PR68
 
 **Partial — local web correction; native device acceptance pending.** Live Figma
