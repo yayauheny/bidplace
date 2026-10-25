@@ -86,6 +86,63 @@ owned by existing cards and tokens without a new renderer or format API.
   Needs verification; exports, request counts and desktop screenshots do not
   satisfy these checks.
 
+## Native acceptance follow-up — 2026-10-25
+
+**Needs verification.** Device access could not be established on this host:
+`adb` is absent from PATH and standard Android SDK locations;
+`xcode-select -p` points to `/Library/Developer/CommandLineTools`, and
+`xcrun --find devicectl` reports the utility unavailable. No physical-device
+runtime test was run. Export/browser results above do not replace it.
+
+Installed `expo-blur` is 57.0.3. Upstream
+[issue #51845](https://github.com/expo/expo/issues/51845) reports an Android
+Modal/explicit-target backdrop becoming stale after background/resume on this
+version. [Fix #51848](https://github.com/expo/expo/pull/51848) is still draft as of
+2026-10-25. That reproduction does not establish a defect in these inline cards.
+No dependency patch, upgrade or speculative resume/remount workaround is applied.
+
+Physical iOS/Android acceptance must cover:
+
+| Scenario | Expected result | Result |
+| --- | --- | --- |
+| Cold/delayed image load | Frost updates to the loaded photograph; text stays sharp | Needs verification |
+| Photograph replacement in a mounted card | Sharp image and frost use the new photograph without stale content | Needs verification |
+| Scroll through multiple cards, away and back | Correct photographs/backdrops, usable scrolling without persistent stalls | Needs verification |
+| Open details and return/re-enter catalog | Card image, crop and frost restore correctly | Needs verification |
+| Background the app and resume repeatedly, then scroll | No launch artwork, stale snapshot or disappearing blur; card controls still work | Needs verification |
+| Android below SDK31 | Tint/scrim fallback remains readable without enabling the expensive blur path | Needs verification |
+
+Web-first merge consideration must retain this explicit Native risk; this report
+neither records founder acceptance of that risk nor establishes Native release
+readiness. A simultaneous Native release still requires device acceptance.
+
+## Explore integration procedure — pending execution
+
+Read-only comparison at `feature/explore-unification` SHA `b4e1d8e2` found five
+shared files relative to release base `bfab5198`: `packages/design-tokens/src/tokens.ts`,
+`docs/design/03-DESIGN-SYSTEM.md`, `docs/design/04-DESIGN-STATUS.md`,
+`docs/product/10-CODE-ARCHITECTURE.md` and `docs/product/11-PROJECT-STATUS.md`.
+These intersections are integration work, not a demonstrated runtime conflict.
+
+1. After PR #66 is merged into `feature/portfolio-mvp-release`, synchronize
+   `feature/explore-unification` with that updated MVP branch through its normal
+   integration workflow. Do not manually copy the blur implementation first.
+2. Preserve both token changes: `blur.cover=16`, `blur.coverNativeIntensity=60`
+   from PR #66 and `stroke.icon=1.3`, `stroke.iconHeavy=1.6` from Explore.
+   Do not restore removed `blur.authorTopOverlay` / `blur.coverProgressive` or
+   discard unrelated Explore token changes when resolving the shared file.
+3. Reconcile the four shared owner documents with both features and their actual
+   verification results. Retain Native Needs verification until devices pass.
+4. Run affected dependency-graph lint/typecheck/unit checks and the mobile build;
+   run the existing cover-frost and Explore browser regressions in Chromium and
+   WebKit. Verify Work/Author cards in the resulting Explore catalog use
+   Blur16/Mask35 and the updated icon strokes.
+
+No merge, Explore edits or integration verification was performed in this
+follow-up. CI Verify and GitGuardian are green on pre-follow-up SHA `6633a3cd`:
+[Verify](https://github.com/yayauheny/bidplace/actions/runs/40197074993/job/121180124822).
+This is not a CI result for subsequent documentation commits.
+
 ## Screenshots
 
 Chromium at390, same photographs as the Figma card references:

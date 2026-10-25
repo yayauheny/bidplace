@@ -36,6 +36,13 @@ Review rerun:38 relevant unit tests passed; Verify/GitGuardian are green on
 runtime SHA `85ac01e0` (not a result for later documentation commits).
 No API, media pipeline, Dock or compact format changes; physical iOS/Android,
 phone catalog smoothness and exact desktop Figma parity remain open.
+2026-10-25 review follow-up: **Needs verification** for device load/replacement,
+scroll/details return and background/resume (installed expo-blur 57.0.3;
+upstream #51845/#51848). Device tooling is unavailable on this host. The
+[acceptance owner](../audits/current/2026-10-25-COVER-GLASS.md) records the pending
+Blur-to-MVP then Explore synchronization procedure and both token sets to retain.
+No dependency patch, Explore edit, merge or Native risk acceptance is recorded.
+Verify/GitGuardian also passed on pre-follow-up documentation SHA `6633a3cd`.
 
 ## 2026-10-24 — Mobile moderation UI
 

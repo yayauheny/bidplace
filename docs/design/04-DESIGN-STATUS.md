@@ -52,6 +52,10 @@ OS captures,1049 mobile unit tests, lint/typecheck and web/iOS/Android exports
 passed; [acceptance and screenshots](../audits/current/2026-10-25-COVER-GLASS.md).
 Physical-device rendering and phone catalog smoothness remain Needs verification;
 wider exact Figma composition remains NEEDS-FIGMA.
+Review follow-up 2026-10-25: device tooling unavailable; Native acceptance now
+explicitly includes details return and background/resume, tracking Expo #51845/#51848
+without claiming reproduction in these cards. The acceptance owner also records
+pending MVP-to-Explore integration with both blur and icon-stroke tokens preserved.
 
 MVP merge 2026-10-22: полный verify green, API legal-pack assertion исправлен
 `cc4911e5`; старое «full verify red» описывает UI-ветку до merge. UI evidence:
