@@ -224,7 +224,7 @@ describe('search panes', () => {
     worksState.isPending = false;
     worksState.items = [];
     render(createElement(WorksPane, { state: { q: 'ми', sort: 'newest' } }));
-    expect(container.textContent).toContain('Работы не найдены');
+    expect(container.textContent).toContain('Ничего не найдено');
 
     worksState.isError = true;
     render(createElement(WorksPane, { state: { q: 'ми', sort: 'newest' } }));
@@ -282,7 +282,7 @@ describe('search panes', () => {
     authorsState.isPending = false;
     authorsState.items = [];
     render(createElement(AuthorsPane, { state: { q: 'ми', sort: 'added' } }));
-    expect(container.textContent).toContain('Авторы не найдены');
+    expect(container.textContent).toContain('Ничего не найдено');
 
     authorsState.isError = true;
     render(createElement(AuthorsPane, { state: { q: 'ми', sort: 'added' } }));

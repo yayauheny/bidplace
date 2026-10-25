@@ -138,7 +138,9 @@ export function FilterSheet({
                   name="x"
                   size={designTokens.size.buttonIconFrame}
                   strokeWidthPx={
-                    titleVariant === 'directions' && showBack ? 2 : undefined
+                    titleVariant === 'directions' && showBack
+                      ? designTokens.stroke.iconHeavy
+                      : undefined
                   }
                 />
               </MotionPressable>

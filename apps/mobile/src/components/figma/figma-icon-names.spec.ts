@@ -11,6 +11,7 @@ describe('Figma icon registry', () => {
       'delete-02',
       'x',
       'arrow-left-01',
+      'arrow-left-02',
       'arrow-right-01',
       'arrow-up-01',
       'arrow-down-01',

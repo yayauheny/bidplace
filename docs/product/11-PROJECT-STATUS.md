@@ -16,6 +16,17 @@
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
 | Commerce, избранное/подписки, смена email/password из settings | Not implemented в launch scope / post-MVP; [следующая волна](15-POST-MVP-BACKLOG.md). Старый commerce runtime не разрешает включать продажи. |
 
+## 2026-10-25 — Explore acceptance refinements
+
+**Implemented (local browser verification passed).** `FigmaTabs` moves one selection fill with
+Reanimated and reduced motion; `FigmaIcon` owns constant physical 1.3/1.6px strokes
+and the full Back arrow. Explore panes use the Figma empty-search state via
+`SearchPaneStatus`/`PageState`; viewport content keeps the footer below the first
+screen and active filters remain accessible. No API/schema/route changes.
+Passed: 1051 mobile unit tests, 36 Chromium/WebKit E2E, typecheck/lint,
+web/iOS/Android exports, 191 docs links and diff checks. Physical native
+keyboard/Back/motion and exact desktop parity remain unverified.
+
 ## 2026-10-24 — Mobile moderation UI
 
 **Partial (final verification pending).** `AdminModerationScreen` uses opt-in

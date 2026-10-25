@@ -103,7 +103,17 @@ function FilterSortBarTrigger({
             justifyContent: 'center',
           }}
         >
-          <FigmaIcon name={icon} size={designTokens.size.icon} />
+          <FigmaIcon
+            name={icon}
+            size={
+              iconOnly ? designTokens.size.dockIcon : designTokens.size.icon
+            }
+            strokeWidthPx={
+              iconOnly
+                ? designTokens.stroke.iconHeavy
+                : designTokens.stroke.icon
+            }
+          />
         </View>
         {!iconOnly ? (
           <AppText role="nav" style={filterSortPillLabelStyle(palette)}>

@@ -21,7 +21,7 @@ test('Dock opens canonical Explore; X clears only search and replaces history', 
   await expect(page).toHaveURL(/\/explore\?/);
   await expect(query(page)).toBeFocused();
   await query(page).fill('no-results-zzzz');
-  await expect(page.getByText('Работы не найдены')).toBeVisible();
+  await expect(page.getByText('Ничего не найдено')).toBeVisible();
   const historyLength = await page.evaluate(() => history.length);
   await page.getByRole('button', { name: 'Закрыть поиск' }).click();
   await expect(
@@ -188,7 +188,7 @@ test('empty results, initial infrastructure failure and Retry retain header and 
     scroll(page).locator('a[href^="/seller/"]').first(),
   ).toBeVisible();
   await query(page).fill('no-results-zzzz');
-  await expect(page.getByText('Авторы не найдены')).toBeVisible();
+  await expect(page.getByText('Ничего не найдено')).toBeVisible();
 });
 
 test('header animation keeps list and image instances, requests and scroll stable', async ({

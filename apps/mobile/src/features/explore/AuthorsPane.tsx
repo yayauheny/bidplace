@@ -1,6 +1,7 @@
 import { InfrastructureErrorState } from '../../components/shared/InfrastructureErrorState';
 import type { PortfolioAuthorsRouteState } from '../sellers/portfolio-authors-query';
 import { View } from 'react-native';
+import type { ReactNode } from 'react';
 
 import { designTokens } from '@bidplace/design-tokens';
 
@@ -10,16 +11,22 @@ import { AuthorSearchRow } from '../search/AuthorSearchRow';
 import { FigmaButton } from '../../components/figma/FigmaButton';
 import { SearchPaneStatus } from '../search/panes/search-pane-status';
 
-export function AuthorsPane({ state }: { state: PortfolioAuthorsRouteState }) {
+export function AuthorsPane({
+  state,
+  controls,
+}: {
+  state: PortfolioAuthorsRouteState;
+  controls?: ReactNode;
+}) {
   const authors = usePortfolioAuthors(state);
-  const query = state.q;
   return (
     <SearchPaneStatus
       isPending={authors.isPending}
       isError={authors.isError && authors.items.length === 0}
       onRetry={() => void authors.refetch()}
       isEmpty={authors.items.length === 0}
-      emptyTitle={query ? 'Авторы не найдены' : 'Пока нет авторов'}
+      controls={controls}
+      keepControlsOnEmpty={Boolean(state.tag || state.city)}
       loading={<AuthorSkeleton />}
     >
       <View style={{ width: '100%', gap: designTokens.space.identityGap }}>

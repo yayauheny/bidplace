@@ -91,7 +91,7 @@ export function ExploreHeader({
           }}
           {...(Platform.OS === 'web' && open ? { tabIndex: -1 } : {})}
         >
-          <FigmaIcon name="arrow-left-01" size={designTokens.size.dockIcon} />
+          <FigmaIcon name="arrow-left-02" size={designTokens.size.dockIcon} />
         </MotionPressable>
         <AppText role="navigationTitle">Исследовать</AppText>
         <View style={{ width: height }} />

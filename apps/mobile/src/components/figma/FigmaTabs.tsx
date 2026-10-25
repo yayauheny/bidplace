@@ -1,4 +1,13 @@
+import { useEffect } from 'react';
 import { Platform, ScrollView, View } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
+import { sheetTimingConfig } from '../../lib/layout-transition';
+import { useReducedMotion } from '../../lib/reduced-motion';
+import { useCssBorderBox } from './use-css-border-box';
 import { designTokens, searchChromeTokens } from '@bidplace/design-tokens';
 import { useAppTheme } from '../../providers/theme-provider';
 import { AppText, MotionPressable } from '../ui';
@@ -26,6 +35,32 @@ export function FigmaTabs({
 }: FigmaTabsProps) {
   const palette = useAppTheme();
   const segmented = variant === 'segmented';
+  const { layout, onLayout } = useCssBorderBox();
+  const reduced = useReducedMotion();
+  const index = Math.max(
+    0,
+    tabs.findIndex((tab) => tab.value === value),
+  );
+  const position = useSharedValue(index);
+  useEffect(() => {
+    if (!segmented) return;
+    position.value = withTiming(index, {
+      ...sheetTimingConfig,
+      duration: reduced ? 0 : designTokens.motion.control,
+    });
+  }, [index, position, reduced, segmented]);
+  const width = Math.max(
+    0,
+    (layout.width -
+      2 * searchChromeTokens.rail.padding -
+      (tabs.length - 1) * searchChromeTokens.rail.gap) /
+      tabs.length,
+  );
+  const indicatorStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: position.value * (width + searchChromeTokens.rail.gap) },
+    ],
+  }));
   const select = (index: number) => {
     onChange(tabs[index].value);
     if (Platform.OS === 'web') {
@@ -54,6 +89,7 @@ export function FigmaTabs({
   const content = (
     <ScrollView
       horizontal
+      onLayout={segmented ? onLayout : undefined}
       accessibilityRole={selection ? 'toolbar' : 'tablist'}
       accessibilityLabel={label}
       contentContainerStyle={{
@@ -66,6 +102,24 @@ export function FigmaTabs({
         paddingVertical: segmented ? searchChromeTokens.rail.padding : 0,
       }}
     >
+      {segmented && width > 0 ? (
+        <Animated.View
+          testID="segmented-tab-indicator"
+          pointerEvents="none"
+          style={[
+            {
+              position: 'absolute',
+              left: searchChromeTokens.rail.padding,
+              top: searchChromeTokens.rail.padding,
+              width,
+              height: searchChromeTokens.tab.height,
+              borderRadius: searchChromeTokens.tab.radius,
+              backgroundColor: palette.mutedFill,
+            },
+            indicatorStyle,
+          ]}
+        />
+      ) : null}
       {tabs.map((tab, index) => (
         <MotionPressable
           key={tab.value}
@@ -103,8 +157,7 @@ export function FigmaTabs({
                   borderColor: palette.surface,
                   alignItems: 'center',
                   justifyContent: 'center',
-                  backgroundColor:
-                    value === tab.value ? palette.mutedFill : palette.surface,
+                  backgroundColor: 'transparent',
                 }
               : {
                   paddingBottom: designTokens.space.x1,

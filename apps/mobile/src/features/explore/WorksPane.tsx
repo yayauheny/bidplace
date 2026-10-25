@@ -1,6 +1,7 @@
 import { InfrastructureErrorState } from '../../components/shared/InfrastructureErrorState';
 import type { PortfolioWorksRouteState } from '../products/portfolio-works-query';
 import { View } from 'react-native';
+import type { ReactNode } from 'react';
 
 import { designTokens } from '@bidplace/design-tokens';
 
@@ -10,16 +11,22 @@ import { useAppTheme } from '../../providers/theme-provider';
 import { usePortfolioWorks } from '../products/use-portfolio-works';
 import { SearchPaneStatus } from '../search/panes/search-pane-status';
 
-export function WorksPane({ state }: { state: PortfolioWorksRouteState }) {
+export function WorksPane({
+  state,
+  controls,
+}: {
+  state: PortfolioWorksRouteState;
+  controls?: ReactNode;
+}) {
   const works = usePortfolioWorks(state);
-  const query = state.q;
   return (
     <SearchPaneStatus
       isPending={works.isPending}
       isError={works.isError && works.items.length === 0}
       onRetry={() => void works.refetch()}
       isEmpty={works.items.length === 0}
-      emptyTitle={query ? 'Работы не найдены' : 'Пока нет работ'}
+      controls={controls}
+      keepControlsOnEmpty={Boolean(state.category || state.material)}
       loading={<WorksSkeleton />}
     >
       <View style={{ gap: designTokens.space.x3 }}>

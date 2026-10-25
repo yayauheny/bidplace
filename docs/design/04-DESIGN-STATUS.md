@@ -5,6 +5,18 @@
 Полный прежний журнал, включая ограничения ранних экранов:
 [история](../archive/design/04-DESIGN-STATUS-through-2026-10-23.md).
 
+## 2026-10-25 — Explore acceptance refinements
+
+**Partial — local browser checks passed.** Empty search follows live Figma `7240:2730`;
+shared icon strokes follow the founder's 1.3/1.6px rule, Back uses the full arrow,
+and segmented selection slides with Reanimated/reduced motion. Runtime owners:
+`PageState`, `FigmaIcon`, `FigmaTabs`, `PageScrollView`, Explore panes. Active
+filters remain recoverable. Passed: 36 Chromium/WebKit E2E, 1051 mobile unit tests,
+typecheck/lint, web/iOS/Android exports, docs links and diff checks. Screenshots
+390/1024/1440 were inspected; 390 empty-state geometry matches the source.
+Exact desktop parity stays NEEDS-FIGMA; physical
+native keyboard/motion remains unverified.
+
 ## 2026-10-25 — Explore unification
 
 **Partial / Needs verification.** `/explore`, inline animated search, rounded

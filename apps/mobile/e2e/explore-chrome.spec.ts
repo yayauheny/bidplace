@@ -31,7 +31,9 @@ test('Explore retains fractional glass strokes, typography and the measured segm
   expect((await rail.boundingBox())!.width).toBe(366);
   await expect(field).toHaveCSS('backdrop-filter', 'blur(6px)');
   await expect(field).toHaveCSS('background-color', 'rgba(255, 255, 255, 0.6)');
-  const filterBox = await page.getByRole('button', { name: 'Фильтры', exact: true }).boundingBox();
+  const filterBox = await page
+    .getByRole('button', { name: 'Фильтры', exact: true })
+    .boundingBox();
   expect(filterBox!.width).toBe(42);
   expect(filterBox!.height).toBe(42);
   const tabs = page.getByRole('tab');
@@ -124,3 +126,168 @@ async function cssBorderBox(locator: ReturnType<Page['getByTestId']>) {
     };
   });
 }
+
+test('segmented selection slides in both directions and snaps under reduced motion', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/explore?section=categories');
+  const indicator = page.getByTestId('segmented-tab-indicator');
+  await expect(indicator).toBeVisible();
+  const sample = () =>
+    page.evaluate(async () => {
+      const pill = document.querySelector(
+        '[data-testid="segmented-tab-indicator"]',
+      )!;
+      const target = [...document.querySelectorAll('[role="tab"]')].find(
+        (tab) => tab.textContent === 'Работы',
+      ) as HTMLElement;
+      const positions = [pill.getBoundingClientRect().x];
+      target.click();
+      const start = performance.now();
+      while (performance.now() - start < 350) {
+        await new Promise(requestAnimationFrame);
+        positions.push(pill.getBoundingClientRect().x);
+      }
+      return positions;
+    });
+  const positions = await sample();
+  const first = positions[0];
+  const last = positions.at(-1)!;
+  expect(last).toBeGreaterThan(first + 100);
+  expect(positions.some((x) => x > first + 1 && x < last - 1)).toBe(true);
+  await page.getByRole('tab', { name: 'Категории', exact: true }).click();
+  await expect
+    .poll(async () => (await indicator.boundingBox())!.x)
+    .toBeCloseTo(first, 1);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  const reduced = await sample();
+  expect(reduced.some((x) => x > first + 1 && x < last - 1)).toBe(false);
+  await page.setViewportSize({ width: 1024, height: 768 });
+  const selected = page.getByRole('tab', { name: 'Работы', exact: true });
+  await expect
+    .poll(async () =>
+      Math.abs(
+        (await selected.boundingBox())!.x - (await indicator.boundingBox())!.x,
+      ),
+    )
+    .toBeLessThan(0.1);
+  expect(
+    Math.abs(
+      (await selected.boundingBox())!.width -
+        (await indicator.boundingBox())!.width,
+    ),
+  ).toBeLessThan(0.1);
+});
+
+test('empty Explore uses the Figma search state and keeps active filters recoverable', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  for (const section of ['works', 'authors', 'categories']) {
+    await page.goto(`/explore?section=${section}&search=1&q=no-results-zzzz`);
+    const empty = page.getByTestId('search-empty-state');
+    await expect(empty).toBeVisible();
+    await expect(
+      empty.getByText('Ничего не найдено', { exact: true }),
+    ).toHaveCSS('font-size', '18px');
+    await expect(
+      empty.getByText('Попробуйте изменить запрос или выбрать другой раздел'),
+    ).toHaveCSS('line-height', '20px');
+    await expect(
+      page.getByRole('button', { name: 'Фильтры', exact: true }),
+    ).toHaveCount(0);
+    expect(
+      Number(
+        await empty.locator('svg path').first().getAttribute('stroke-width'),
+      ),
+    ).toBeCloseTo(1.6, 8);
+    const footer = page.getByRole('contentinfo');
+    expect((await footer.boundingBox())!.y).toBeGreaterThanOrEqual(844);
+  }
+  await page.goto(
+    '/explore?section=works&search=1&q=no-results-zzzz&material=Clay',
+  );
+  await expect(page.getByTestId('search-empty-state')).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Фильтры', exact: true }),
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'Фильтры', exact: true }).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+});
+
+test('empty state remains centered and reachable across viewport sizes', async ({
+  page,
+}) => {
+  await page.goto('/explore?section=works&search=1&q=no-results-zzzz');
+  const empty = page.getByTestId('search-empty-state');
+  for (const width of [390, 1024, 1440]) {
+    await page.setViewportSize({ width, height: 844 });
+    await expect(empty).toBeVisible();
+    await expect
+      .poll(async () => (await empty.boundingBox())!.width)
+      .toBeGreaterThan(300);
+    const activeTab = page.getByRole('tab', { name: 'Работы', exact: true });
+    const indicator = page.getByTestId('segmented-tab-indicator');
+    await expect
+      .poll(async () =>
+        Math.abs(
+          (await activeTab.boundingBox())!.x -
+            (await indicator.boundingBox())!.x,
+        ),
+      )
+      .toBeLessThan(0.1);
+    await expect
+      .poll(async () =>
+        Math.abs(
+          (await activeTab.boundingBox())!.width -
+            (await indicator.boundingBox())!.width,
+        ),
+      )
+      .toBeLessThan(0.1);
+    const icon = page
+      .getByTestId('explore-header')
+      .locator('[aria-label="Открыть поиск"] svg');
+    const field = page.getByTestId('explore-field-glass');
+    await expect
+      .poll(async () =>
+        Math.abs(
+          (await icon.boundingBox())!.x - (await field.boundingBox())!.x - 14,
+        ),
+      )
+      .toBeLessThan(1);
+    await page.screenshot({ path: `/private/tmp/explore-empty-${width}.png` });
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth),
+    ).toBeLessThanOrEqual(width);
+  }
+  await page.setViewportSize({ width: 390, height: 420 });
+  await expect(
+    empty.getByText('Ничего не найдено', { exact: true }),
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'Закрыть поиск' }).click();
+  const back = page.getByRole('button', { name: 'Назад', exact: true });
+  await expect(back.locator('svg path').first()).toHaveAttribute(
+    'd',
+    'M5.5 12.002H19',
+  );
+  const filter = page.getByRole('button', { name: 'Фильтры', exact: true });
+  await expect(filter).toBeVisible();
+  await expect(filter.locator('svg')).toHaveAttribute('width', '24');
+  const sortIcon = page
+    .getByRole('button', { name: 'Сортировка', exact: true })
+    .locator('svg');
+  expect(
+    await sortIcon.evaluate(
+      (svg) =>
+        (Number(svg.querySelector('path')!.getAttribute('stroke-width')) *
+          svg.getBoundingClientRect().width) /
+        24,
+    ),
+  ).toBeCloseTo(1.3, 8);
+  expect(
+    Number(
+      await filter.locator('svg path').first().getAttribute('stroke-width'),
+    ),
+  ).toBeCloseTo(1.6, 8);
+});

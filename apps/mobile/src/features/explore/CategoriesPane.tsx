@@ -10,7 +10,6 @@ import { useApiClient } from '../../providers/api-provider';
 import { useAppTheme } from '../../providers/theme-provider';
 import { CategorySearchTile } from '../search/CategorySearchTile';
 import { filterCategoriesByQuery } from '../search/filter-categories';
-import { searchRequestQuery } from '../search/search-query';
 import { SearchPaneStatus } from '../search/panes/search-pane-status';
 
 export function CategoriesPane({ query }: { query: string }) {
@@ -24,7 +23,6 @@ export function CategoriesPane({ query }: { query: string }) {
     categories.data?.categories ?? [],
     query,
   );
-  const requestQuery = searchRequestQuery(query);
 
   return (
     <SearchPaneStatus
@@ -32,7 +30,6 @@ export function CategoriesPane({ query }: { query: string }) {
       isError={categories.isError}
       onRetry={() => void categories.refetch()}
       isEmpty={items.length === 0}
-      emptyTitle={requestQuery ? 'Категории не найдены' : 'Пока нет категорий'}
       loading={<CategorySkeleton />}
     >
       <View style={{ width: '100%', gap: designTokens.space.x2 }}>

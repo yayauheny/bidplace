@@ -18,6 +18,20 @@ import { FigmaTabs } from './FigmaTabs';
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 const platform = vi.hoisted(() => ({ OS: 'web' }));
 
+vi.mock('../../lib/layout-transition', () => ({
+  sheetTimingConfig: { duration: 200 },
+}));
+vi.mock('../../lib/reduced-motion', () => ({ useReducedMotion: () => false }));
+vi.mock('react-native-reanimated', () => ({
+  default: {
+    View: ({ children }: { children?: ReactNode }) =>
+      createElement('div', null, children),
+  },
+  useSharedValue: (value: number) => ({ value }),
+  useAnimatedStyle: (style: () => object) => style(),
+  withTiming: (value: number) => value,
+}));
+
 vi.mock('expo-router', () => ({
   DefaultTheme: { colors: {} },
   ThemeProvider: ({ children }: { children?: ReactNode }) => children,

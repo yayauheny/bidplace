@@ -70,7 +70,7 @@ or one real state, never both; the neutral initial state makes no availability
 claim. These roles are shared variants/tokens, not route-local values.
 The nickname field reuses `FigmaIcon` `at-sign` for
 `I4547:24184;303:8697`: 22×22 slot (2px padding), 18×18 glyph,
-`stroke.icon` 1.13 and semantic `color.fieldIcon` `#858585`. Its input starts
+`stroke.icon` 1.3 and semantic `color.fieldIcon` `#858585`. Its input starts
 at source local x=38.5. At browser DPR 1 the 0.5 shell stroke snaps to 1px, so
 the measured input edge is x=39; slot and glyph dimensions remain exact. The
 prior text `@` prefix is not the source icon.
@@ -402,7 +402,7 @@ is Figma `7240:2491` variant 1: compact Works `7240:2492`, expanded search
 `7240:2652`, Categories `7240:2620`, Authors `7240:2580`. Commerce and view-mode
 controls in those mockups are excluded by the portfolio contract.
 
-`ExploreHeader` reserves a constant 52px slot. Only header layers animate;
+`ExploreHeader` reserves a constant 52px slot. When opening search, only header layers animate;
 TextInput, tabs and result ancestry stay stable. A single Reanimated progress
 moves the magnifier, expands the glass background from right to left, fades the
 title/close, and uses shared reduced-motion policy. Hidden controls are inert
@@ -915,3 +915,26 @@ FigmaTabs `selection` reuses the same visual rail for filter toolbars: pressed b
 no tab-panel references. Default tabs retain their linked panel/keyboard behavior.
 Moderation detail owns its labelled tabpanel; queue selectors retain the scrolling
 FlatList header without inventing empty panels.
+
+
+### 2026-10-25 — Explore acceptance refinements
+
+Founder iconography rule: ordinary icons use 1.3 physical px; icon-only controls
+and large glyphs use 1.6 physical px. Fractional SVG export values are not tokens.
+`FigmaIcon` uses Hugeicons `absoluteStrokeWidth` on its original 24-unit grid, preserving
+proportions and final stroke thickness at every size. `FigmaIconButton` uses the
+heavy role; the round `FilterSortBar` trigger is 42×42 with a 24px glyph at 1.6px.
+The portfolio Explore has no view-mode toggle; this update does not add one.
+Back navigation uses Hugeicons `arrow-left-02`; gallery/calendar chevrons retain
+their separate meaning.
+
+`FigmaTabs` segmented selection uses one persistent, measured Reanimated fill,
+`motion.control` and the shared easing. Reduced motion snaps directly. Resize
+remeasures the rail; underline consumers keep their existing presentation.
+`PageState variant="search"` matches empty-search `7240:2730` / `7245:2983–2993`:
+24px magnifier, 306px maximum text width, `emptyStateTitle` 18/22 semibold,
+`emptyStateBody` 14/20 regular, 10px icon/text and 7px text gaps. Its optical center
+is 20.1px above the full viewport midpoint. Explore balances its measured fixed
+chrome in the content padding; `PageScrollView variant="viewport"` keeps the
+footer below the viewport. Empty search hides inactive filter chrome; active
+filters remain available for recovery. Controls stay mounted to preserve sheets.

@@ -3225,3 +3225,19 @@ Separate overlay over catalogs and hidden competing result trees are rejected.
 PR44 must be reconciled selectively against current MVP, without merge/cherry-pick
 or a second filter implementation. Exact desktop/native design acceptance remains
 separate from responsive verification.
+
+
+## DEC-138 — Единая толщина линий иконок
+
+**Дата:** 2026-10-25. **Статус:** Confirmed. **Источник:** явное решение founder
+в приёмке Explore.
+
+Обычные иконки — 1.3 физических px; отдельные icon-only кнопки и крупные иконки —
+1.6 физических px. Дробные 1.13/1.25 из масштабированных Figma SVG не являются
+токенами. Сохраняем исходные пропорции Hugeicons и явно компенсируем размер
+24-unit grid, чтобы контейнер не менял толщину штриха. Круглые кнопки вида и
+фильтров должны иметь одинаковый контейнер, визуальный размер и 1.6px stroke.
+Используем существующие Hugeicons/FigmaIcon/FigmaIconButton; новую систему не вводим.
+Правило заменяет прежние export-derived значения толщины; исключённые из MVP
+контролы не добавляются этим решением. Визуальные роли принадлежат
+[design system](../design/03-DESIGN-SYSTEM.md).

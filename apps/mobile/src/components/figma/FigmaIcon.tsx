@@ -10,6 +10,7 @@ import {
   ShoppingBag01Icon,
   ArrowDown01Icon,
   ArrowLeft01Icon,
+  ArrowLeft02Icon,
   ArrowRight01Icon,
   ArrowUp01Icon,
   ArrowUpDownIcon,
@@ -79,6 +80,7 @@ const icons = {
   'delete-02': Delete02Icon,
   x: Cancel01Icon,
   'arrow-left-01': ArrowLeft01Icon,
+  'arrow-left-02': ArrowLeft02Icon,
   'arrow-right-01': ArrowRight01Icon,
   'arrow-up-01': ArrowUp01Icon,
   'arrow-down-01': ArrowDown01Icon,
@@ -132,16 +134,12 @@ export function FigmaIcon({
   /** Explicit caller color wins; the default follows the active theme. */
   color?: string;
   label?: string;
-  /** Final rendered stroke in px; replaces the per-icon grid stroke policy. */
+  /** Final rendered stroke in px, independent of the icon size. */
   strokeWidthPx?: number;
 }) {
   const themeColors = useAppTheme();
   const resolvedColor = color ?? themeColors.ink;
-  // Hugeicons strokes live on the 24-unit grid, so a px value is scaled to it.
-  const strokeWidth =
-    strokeWidthPx === undefined
-      ? figmaIconStrokeWidth(name, size)
-      : (strokeWidthPx * iconGridSize) / size;
+  const strokeWidth = strokeWidthPx ?? figmaIconStrokeWidth(size);
   if (name === 'internet') {
     // Hugeicons RN 1.0.16 drops ellipse nodes; preserve the source glyph.
     const elements = { circle: Circle, ellipse: Ellipse, path: Path };
@@ -159,7 +157,7 @@ export function FigmaIcon({
           createElement(elements[tag as keyof typeof elements], {
             ...attributes,
             key,
-            strokeWidth,
+            strokeWidth: (strokeWidth * iconGridSize) / size,
           }),
         )}
       </Svg>
@@ -171,6 +169,7 @@ export function FigmaIcon({
       size={size}
       color={resolvedColor}
       strokeWidth={strokeWidth}
+      absoluteStrokeWidth
       {...(label
         ? { accessibilityLabel: label }
         : Platform.OS === 'web'

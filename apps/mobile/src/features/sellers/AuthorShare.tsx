@@ -69,7 +69,6 @@ export function AuthorShare({
           ref={triggerRef}
           icon="share-03"
           iconSize={20}
-          strokeWidthPx={1.5}
           surface="muted"
           label="Поделиться профилем"
           onPress={() => {
@@ -99,7 +98,7 @@ export function AuthorShare({
           }}
         >
           <AppText role="bodySmall">Ссылка на профиль</AppText>
-          <FigmaIcon name="link-01" size={20} strokeWidthPx={1.5} />
+          <FigmaIcon name="link-01" size={20} />
         </MotionPressable>
         {message ? (
           <AppText role="caption" accessibilityLiveRegion="polite">
@@ -130,7 +129,6 @@ export function AuthorShare({
               <FigmaIcon
                 name="flag-01"
                 size={20}
-                strokeWidthPx={1.5}
                 color={palette.report}
               />
             </MotionPressable>

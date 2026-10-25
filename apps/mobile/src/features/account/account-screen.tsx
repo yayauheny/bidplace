@@ -173,7 +173,6 @@ export function AccountScreen() {
               <FigmaIconButton
                 icon="share-03"
                 iconSize={20}
-                strokeWidthPx={1.5}
                 surface="muted"
                 label="Поделиться профилем"
                 onPress={() => setClaimNoticeOpen(true)}
@@ -182,7 +181,6 @@ export function AccountScreen() {
             <FigmaIconButton
               icon="setting-07"
               iconSize={20}
-              strokeWidthPx={1.5}
               surface="muted"
               label="Настройки"
               onPress={() => router.push('/account/settings')}

@@ -92,7 +92,7 @@ export function CreatorWorkCard({
           preset="icon"
           style={actionStyle(palette)}
         >
-          <FigmaIcon name="heart" size={20} strokeWidthPx={1.5} />
+          <FigmaIcon name="heart" size={20} strokeWidthPx={designTokens.stroke.iconHeavy} />
         </MotionPressable>
       </View>
     </View>

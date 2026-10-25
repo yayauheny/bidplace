@@ -23,6 +23,7 @@ export function ExploreScreen() {
   const { state } = explore;
   const scroller = useRef<ScrollView>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [chromeHeight, setChromeHeight] = useState(0);
   const active = state[state.section];
   const searchInput = useMemo(
     () => ({ section: state.section, q: active.q }),
@@ -65,9 +66,18 @@ export function ExploreScreen() {
       return () => subscription.remove();
     }, [sheetOpen, state.searchOpen, explore.closeSearch]),
   );
+  const controls = (
+    <ExploreFilters
+      key={state.section}
+      state={state}
+      onChange={(next) => explore.update(next, true)}
+      onSheetOpenChange={setSheetOpen}
+    />
+  );
   return (
     <AppShell contentLayout="bleed">
       <PageColumn
+        onLayout={(event) => setChromeHeight(event.nativeEvent.layout.height)}
         style={{
           paddingTop: designTokens.space.x1,
           gap: searchChromeTokens.railOffset,
@@ -94,6 +104,7 @@ export function ExploreScreen() {
       </PageColumn>
       <PageScrollView
         ref={scroller}
+        variant="viewport"
         testID="explore-scroll"
         keyboardShouldPersistTaps="handled"
         scrollEventThrottle={16}
@@ -108,19 +119,14 @@ export function ExploreScreen() {
         }
         contentContainerStyle={{
           paddingTop: designTokens.space.x4,
+          // Balance fixed chrome so the empty state centers in the full viewport.
+          paddingBottom: chromeHeight + designTokens.space.x4,
           gap: designTokens.space.x5,
         }}
       >
-        {state.section !== 'categories' ? (
-          <ExploreFilters
-            key={state.section}
-            state={state}
-            onChange={(next) => explore.update(next, true)}
-            onSheetOpenChange={setSheetOpen}
-          />
-        ) : null}
         <View
           nativeID="explore-results"
+          style={{ flexGrow: 1 }}
           {...(Platform.OS === 'web'
             ? ({
                 role: 'tabpanel',
@@ -129,9 +135,9 @@ export function ExploreScreen() {
             : {})}
         >
           {state.section === 'works' ? (
-            <WorksPane state={{ ...state.works, q }} />
+            <WorksPane state={{ ...state.works, q }} controls={controls} />
           ) : state.section === 'authors' ? (
-            <AuthorsPane state={{ ...state.authors, q }} />
+            <AuthorsPane state={{ ...state.authors, q }} controls={controls} />
           ) : (
             <CategoriesPane query={active.q ?? ''} />
           )}

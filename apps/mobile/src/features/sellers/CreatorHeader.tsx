@@ -153,7 +153,6 @@ export function CreatorHeader({
               <FigmaIconButton
                 icon="heart"
                 iconSize={20}
-                strokeWidthPx={1.5}
                 surface="muted"
                 label="Добавить автора в избранное"
                 onPress={() => onUnavailable('Избранные авторы')}
@@ -190,7 +189,6 @@ export function CreatorHeader({
             <FigmaIconButton
               icon="more-vertical"
               iconSize={20}
-              strokeWidthPx={1.5}
               surface="muted"
               label="Действия с профилем"
               onPress={() => setMenuOpen(true)}

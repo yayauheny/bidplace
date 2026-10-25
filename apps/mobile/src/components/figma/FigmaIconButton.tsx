@@ -19,7 +19,7 @@ export function FigmaIconButton({
   selected = false,
   expanded,
   iconSize = designTokens.size.icon,
-  strokeWidthPx,
+  strokeWidthPx = designTokens.stroke.iconHeavy,
   surface = 'plain',
   size = 'default',
 }: {
