@@ -41,6 +41,33 @@ afterEach(() => {
   harness.params = {};
 });
 describe('Explore navigation session', () => {
+  it('starts independent Search and direct URL entries without previous queries, hidden drafts or scroll', () => {
+    harness.params = { section: 'authors', search: '1', q: 'old-author', city: 'Minsk', sort: 'name' };
+    mount();
+    act(() => latest.saveScroll(160));
+    act(() => latest.selectSection('works'));
+    act(() => latest.changeQuery('old-work'));
+    act(() => latest.saveScroll(640));
+    const fresh = exploreSearchHref();
+    expect(fresh).toContain('search=1');
+    expect(fresh).not.toMatch(/old-|Minsk|sort=name/);
+    unmount();
+    harness.key += '-independent';
+    harness.params = Object.fromEntries(new URL(fresh, 'https://test.local').searchParams);
+    mount();
+    expect(latest.state.works.q).toBeUndefined();
+    expect(latest.state.authors).toEqual({ sort: 'added' });
+    expect(latest.scroll).toEqual({});
+    unmount();
+    harness.key += '-direct';
+    harness.params = {};
+    mount();
+    expect(latest.state.searchOpen).toBe(false);
+    expect(latest.state.works.q).toBeUndefined();
+    expect(latest.state.authors.q).toBeUndefined();
+    expect(latest.scroll).toEqual({});
+  });
+
   it('keeps independent drafts, filters and scroll through section changes and unmount/Back', () => {
     harness.params = {
       section: 'works',
@@ -71,7 +98,7 @@ describe('Explore navigation session', () => {
       sort: 'name',
     });
     expect(latest.scroll.authors).toBe(120);
-    expect(exploreSearchHref()).toContain('city=Minsk');
+    expect(exploreSearchHref()).not.toMatch(/city=|q=|sort=name/);
     expect(exploreSearchHref()).toContain('search=1');
     act(() => latest.selectSection('works'));
     expect(latest.state.works).toEqual({

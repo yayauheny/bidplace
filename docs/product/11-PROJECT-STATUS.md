@@ -16,6 +16,20 @@
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
 | Commerce, избранное/подписки, смена email/password из settings | Not implemented в launch scope / post-MVP; [следующая волна](15-POST-MVP-BACKLOG.md). Старый commerce runtime не разрешает включать продажи. |
 
+## 2026-10-25 — PR #67 final MVP integration
+
+**Implemented for verified local web states; final-SHA CI tracked in PR #67.** Merged `068af087` (PR #66) normally
+into Explore at `87a2ab68`. One conflict in this status owner retained both tasks.
+`tokens.ts` retains Blur16/Native60 and icon1.3/heavy1.6/active2.5; deleted legacy
+blur tokens remain absent. Overlay cards use the new CoverFrost; caption Works
+remain without blur. Removed global `lastState` from `use-explore-state.ts` after
+both browsers reproduced stale queries on independent Home → Search entry.
+Owner unit/E2E regressions cover fresh entries and retained same-entry Back state.
+Passed: 1053 mobile unit tests, graph typecheck/lint, 46 Chromium/WebKit E2E plus
+six strengthened responsive checks, E2E fence, 192 docs links and diff check.
+Web/iOS/Android export results and final-SHA CI are recorded in PR #67.
+Native devices, exact desktop parity and blur background/resume remain unverified.
+
 ## 2026-10-25 — Dock Search simplification
 
 **Implemented (local checks passed).** Founder
@@ -82,8 +96,9 @@ phone catalog smoothness and exact desktop Figma parity remain open.
 2026-10-25 review follow-up: **Needs verification** for device load/replacement,
 scroll/details return and background/resume (installed expo-blur 57.0.3;
 upstream #51845/#51848). Device tooling is unavailable on this host. The
-[acceptance owner](../audits/current/2026-10-25-COVER-GLASS.md) records the pending
-Blur-to-MVP then Explore synchronization procedure and both token sets to retain.
+[acceptance owner](../audits/current/2026-10-25-COVER-GLASS.md) records the original
+Blur-to-MVP then Explore synchronization procedure; normal merge `87a2ab68` now
+executes it and preserves both token sets.
 No dependency patch, Explore edit, merge or Native risk acceptance is recorded.
 Verify/GitGuardian also passed on pre-follow-up documentation SHA `6633a3cd`.
 

@@ -147,7 +147,9 @@ first publication; no historical backfill. [Contracts/configuration](analytics-c
   discovery has one canonical `/explore` route (`DEC-137`), composed by
   `features/explore/explore-screen.tsx` with one active Works/Authors/Categories
   pane. `use-explore-state.ts` owns URL state, independent section drafts and
-  navigation-entry session offsets. Infinite pages stay in the existing React
+  navigation-entry session offsets. A new independent Search entry starts from
+  canonical defaults; no process-global last query is carried between entries.
+  Existing entry Back/Forward still restores its drafts and offsets. Infinite pages stay in the existing React
   Query cache; no duplicated result store or new API is introduced. `/works`,
   `/authors` and `/search` redirect with validated supported params. Root
   `LegacySearchRedirect` translates old `overlay=search&oq&otab` links after share

@@ -116,9 +116,9 @@ Web-first merge consideration must retain this explicit Native risk; this report
 neither records founder acceptance of that risk nor establishes Native release
 readiness. A simultaneous Native release still requires device acceptance.
 
-## Explore integration procedure — pending execution
+## Explore integration procedure — executed 2026-10-25
 
-Read-only comparison at `feature/explore-unification` SHA `b4e1d8e2` found five
+Initial read-only comparison at `feature/explore-unification` SHA `b4e1d8e2` found five
 shared files relative to release base `bfab5198`: `packages/design-tokens/src/tokens.ts`,
 `docs/design/03-DESIGN-SYSTEM.md`, `docs/design/04-DESIGN-STATUS.md`,
 `docs/product/10-CODE-ARCHITECTURE.md` and `docs/product/11-PROJECT-STATUS.md`.
@@ -138,8 +138,11 @@ These intersections are integration work, not a demonstrated runtime conflict.
    WebKit. Verify Work/Author cards in the resulting Explore catalog use
    Blur16/Mask35 and the updated icon strokes.
 
-No merge, Explore edits or integration verification was performed in this
-follow-up. CI Verify and GitGuardian are green on pre-follow-up SHA `6633a3cd`:
+The original follow-up did not perform a merge. Subsequent PR #67 integration
+merged MVP `068af087` normally at `87a2ab68`: Blur16/Native60 and all Explore
+icon roles are retained, old blur tokens absent, caption Works remain unfrosted.
+Final integration checks are recorded in the [Explore audit](2026-10-25-EXPLORE.md).
+Native device caveats above still apply. CI Verify and GitGuardian are green on pre-follow-up SHA `6633a3cd`:
 [Verify](https://github.com/yayauheny/bidplace/actions/runs/40197074993/job/121180124822).
 This is not a CI result for subsequent documentation commits.
 

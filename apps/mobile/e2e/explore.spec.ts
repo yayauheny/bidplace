@@ -286,6 +286,7 @@ for (const width of [390, 1024, 1440]) {
           ),
       )
       .toBe(true);
+    await expect(scroll(page).getByTestId('figma-cover-frost')).toHaveCount(0);
     if (width >= 1024) await expect(page.getByTestId('desktop-navigation')).toHaveCSS('height', '68px');
     const evidence = join(e2eEvidenceDir, 'explore');
     mkdirSync(evidence, { recursive: true });
@@ -309,6 +310,8 @@ for (const width of [390, 1024, 1440]) {
     await expect(
       page.getByRole('tab', { name: 'Авторы', exact: true }),
     ).toHaveAttribute('aria-selected', 'true');
+    await expect(scroll(page).locator('a[href^="/seller/"]').first()).toBeVisible();
+    await page.screenshot({ path: join(evidence, `${info.project.name}-${width}-authors.png`) });
     await expect
       .poll(() =>
         page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
@@ -376,4 +379,20 @@ test('legacy catalog overlay preserves the independent origin query and filters 
   await expect(page).toHaveURL(/material=Clay/);
   await expect(query(page)).toHaveValue('catalog');
   await expect(page).not.toHaveURL(/overlay=/);
+});
+
+test('an independent Search entry does not inherit queries or hidden drafts from the previous Explore session', async ({ page }) => {
+  await page.goto('/explore?section=authors&search=1&q=previous-author-query&city=Minsk&sort=name');
+  await expect(query(page)).toHaveValue('previous-author-query');
+  await page.getByRole('tab', { name: 'Работы', exact: true }).click();
+  await query(page).fill('previous-work-query');
+  await expect(page).toHaveURL(/q=previous-work-query/);
+  await page.getByTestId('figma-floating-dock').getByLabel('Главная', { exact: true }).click();
+  await expect(page).toHaveURL(/\/$/);
+  await page.getByTestId('figma-floating-dock').getByLabel('Поиск', { exact: true }).click();
+  await expect(query(page)).toHaveValue('');
+  await expect(page).not.toHaveURL(/previous-|city=Minsk|sort=name/);
+  await page.getByRole('tab', { name: 'Авторы', exact: true }).click();
+  await expect(query(page)).toHaveValue('');
+  await expect(page).not.toHaveURL(/previous-|city=Minsk|sort=name/);
 });

@@ -5,6 +5,20 @@
 Полный прежний журнал, включая ограничения ранних экранов:
 [история](../archive/design/04-DESIGN-STATUS-through-2026-10-23.md).
 
+## 2026-10-25 — Explore / Blur16 integration
+
+**Implemented for verified local web states; Native Needs verification.** Normal merge `87a2ab68` incorporates MVP
+`068af087` / PR #66, preserving Blur16/Native60/Mask35 and agreed icon strokes.
+Only product status conflicted; both feature entries and Native caveats retained.
+Removed global `lastState`: Chromium/WebKit reproduced a previous query leaking
+into a new Home → Search entry; fresh Search now starts from URL defaults.
+Navigation-entry session restore remains unchanged. Header/animations unchanged;
+caption Works have no frost. Passed: 1053 mobile unit tests, graph typecheck/lint,
+46 Chromium/WebKit E2E plus six strengthened 390/1024/1440 responsive checks,
+E2E fence and 192 docs links. Web/iOS/Android export and final-SHA CI results
+are tracked in PR #67; export does not establish device acceptance.
+Physical Native remains Needs verification.
+
 ## 2026-10-25 — Filled active dock icons
 
 **Implemented for verified local browser states.** `FloatingDock` uses filled
@@ -89,7 +103,8 @@ wider exact Figma composition remains NEEDS-FIGMA.
 Review follow-up 2026-10-25: device tooling unavailable; Native acceptance now
 explicitly includes details return and background/resume, tracking Expo #51845/#51848
 without claiming reproduction in these cards. The acceptance owner also records
-pending MVP-to-Explore integration with both blur and icon-stroke tokens preserved.
+the original MVP-to-Explore integration procedure; it was executed in normal
+merge `87a2ab68` with both blur and icon-stroke tokens preserved.
 
 MVP merge 2026-10-22: полный verify green, API legal-pack assertion исправлен
 `cc4911e5`; старое «full verify red» описывает UI-ветку до merge. UI evidence:

@@ -970,3 +970,16 @@ The founder cancelled the subsequent stroke/fill experiments (`DEC-140`–`144`)
 Search uses the original outline with the shared 2.5px active stroke; inactive
 Search is 1.3px. No mask, cutout or per-path stroke rendering remains. Existing
 MotionPressable pressed state drives the weight without extra state/listeners.
+
+
+### 2026-10-25 — Explore integration with Portfolio MVP / PR #66
+
+MVP `068af087` was merged normally into Explore (`87a2ab68`). Preserve
+`blur.cover=16`, `blur.coverNativeIntensity=60` and web Mask35 with Explore
+`stroke.icon=1.3`, `iconHeavy=1.6` and the agreed 2.5px selected/pressed role.
+Overlay Work/Author cards use the PR #66 `CoverFrost` owner. Explore caption
+Works stay without frost and Authors reuse their existing identity rows.
+The confirmed separate-row header/segmented animation is unchanged. Independent
+Search entry starts fresh; only the same navigation entry restores drafts,
+filters, query, cached pages and scroll. Physical Native blur, return and
+background/resume acceptance remain Needs verification.

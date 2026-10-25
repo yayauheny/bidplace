@@ -20,10 +20,9 @@ type ExploreSession = {
 };
 // Navigation entries own drafts/offsets; server pages stay in React Query.
 const sessions = new Map<string, ExploreSession>();
-let lastState: ExploreRoute | undefined;
 export function exploreSearchHref() {
   return exploreHref({
-    ...(lastState ?? parseExploreRoute({})),
+    ...parseExploreRoute({}),
     searchOpen: true,
   });
 }
@@ -69,7 +68,6 @@ export function useExploreState() {
   }, [urlKey]);
   useEffect(() => {
     sessions.set(entryKey, session);
-    lastState = session.state;
     // Discard entries removed from this navigator's history.
     const stack = navigation.getState();
     if (!stack) return;
@@ -85,7 +83,6 @@ export function useExploreState() {
     };
     current.current = next;
     sessions.set(entryKey, next);
-    lastState = state;
     setSession(next);
     const serialized = exploreParams(state);
     writtenUrl.current = JSON.stringify(serialized);
