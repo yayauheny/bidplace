@@ -396,22 +396,27 @@ Safe Area; `useDockInset` owns the bottom inset once for both dock position and
 content reserve. 1024/1440 Figma compositions remain `NEEDS-FIGMA`.
 
 `FloatingDock` is one 232×64 glass capsule: Главная / Поиск / Добавить /
-Профиль. Search is an item inside that capsule. Dock Search opens a fullscreen
-`SearchOverlay` over the current page (`DEC-096`) using the `FilterSheet` Modal
-pattern and the shared overlay focus trap. The popup chrome follows
-`search/2026-10-10-search-popup` (`456:8298`), not the older portfolio stroke
-`#DEDEDE → #F3F3F3`. Field `456:8369` and close `456:8375` are 52px tall, white
-at 60% with backdrop blur 12 (CSS `blur(6px)`), and the SVG gradient
-`#D1D1D1 → #EBEBEB`. The tab capsule `4306:9061` is 50px with that same stroke
-and no blur. Its tabs are 41px, Inter Medium 14/20, white or selected
-`#F3F3F3`, with a white 0.5 stroke. They are not the 43px text-button matrix.
-`search-chrome.ts` owns the SVG stroke paths and axes; `searchChromeStrokeViewport`
-includes the outer half of the 0.5px stroke. `FigmaSearchGlass` and tab shells
-use `useCssBorderBox` (same helper as text buttons) so web `Svg` sizes match the
-fractional CSS border-box, not rounded `onLayout`.
-`FilterSearchField` stays the catalog field (floating label, radius 18). Author/Category/Work hits use a shared hover fill/ring
-(`ghostHover` / inset `border`) without changing layout.
-`WorkCoverCardGrid` may render one catalog column or a two-column overlay grid.
+Профиль. Search opens canonical `/explore` with its inline field active
+(`DEC-137`, replaces the fullscreen overlay portion of `DEC-096`). Explore source
+is Figma `7240:2491` variant 1: compact Works `7240:2492`, expanded search
+`7240:2652`, Categories `7240:2620`, Authors `7240:2580`. Commerce and view-mode
+controls in those mockups are excluded by the portfolio contract.
+
+`ExploreHeader` reserves a constant 52px slot. Only header layers animate;
+TextInput, tabs and result ancestry stay stable. A single Reanimated progress
+moves the magnifier, expands the glass background from right to left, fades the
+title/close, and uses shared reduced-motion policy. Hidden controls are inert
+and aria-hidden on web. The field/close reuse `FigmaSearchGlass` and existing
+`searchChromeTokens` (52px, 60% white, CSS blur6, SVG stroke).
+`FigmaTabs variant="segmented"` owns the rounded rail and keyboard navigation;
+its default underline variant keeps existing consumers. The semantic
+`navigationTitle` typography is Inter Semibold16/20/−2%. `FilterSortBar`
+`filterPresentation="icon"` exposes the existing round filter trigger, while
+sort keeps its label; existing consumers retain label defaults. `FilterSearchField`
+remains the floating-label catalog field; Explore does not duplicate query inside
+filter sheets. `WorkCoverCardGrid variant="caption" columns={2}` uses existing
+image/card components without blur; default overlay consumers keep their behavior.
+Author/Category/Work hits retain shared hover fill and visible keyboard focus.
 The 64×64 search FAB and the
 288×64 five-icon cart pill are unused variants (`DEC-088`). Web portals the
 dock to `document.body` and uses CSS `backdrop-filter`. Native `expo-blur`
@@ -764,7 +769,7 @@ Web/native now share AppDialogSheetMotion translation ownership; see the2026-10-
 
 ### 2026-10-20 — Search и полноэкранный AuthViewport
 
-SearchOverlayTabs растягивает rail на ширину доступной колонки, sampleWidth не
+FigmaTabs segmented растягивает rail на ширину доступной колонки, sampleWidth не
 является ограничением runtime. Интерактивная поверхность AuthorSearchRow имеет
 radius.small; постоянная геометрия передаётся статическим style, состояния —
 через interactionStyle, поскольку Link asChild не сохраняет callback-style.

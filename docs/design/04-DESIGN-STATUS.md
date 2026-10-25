@@ -5,6 +5,15 @@
 Полный прежний журнал, включая ограничения ранних экранов:
 [история](../archive/design/04-DESIGN-STATUS-through-2026-10-23.md).
 
+## 2026-10-25 — Explore unification
+
+**Partial / Needs verification.** `/explore`, inline animated search, rounded
+`FigmaTabs`, section filters and two-column caption Works replace catalog/overlay
+composition (`DEC-137`). See [implementation evidence](../audits/current/2026-10-25-EXPLORE.md).
+Browser acceptance:70 E2E +8 geometry checks, Chromium/WebKit390/1024/1440, keyboard/reduced motion/200% zoom;1047 mobile unit tests and exports passed. Source390; 1024/1440 exact parity
+NEEDS-FIGMA, physical iOS/Android keyboard/Back/motion not verified. Category artwork
+has no public media mapping and retains existing placeholders.
+
 ## Текущие экраны и общие компоненты
 
 | Область | Статус | Проверенное основание / остаток |

@@ -203,3 +203,15 @@ PENDING/RUNNING metadata blocks further revision decisions and exposes status
 refresh; FAILED retry and parent restoration keep their existing server rules.
 No API, persistence or permission changes. Owner19 tests and independent source
 review passed; browser/CI results are recorded in PR #64.
+
+## 2026-10-25 — Unified Explore
+
+**Partial / Needs verification.** `apps/mobile/src/features/explore` owns one
+canonical route, URL codec, navigation-entry drafts/scroll, inline Reanimated
+header and three panes reusing `usePortfolioWorks`, `usePortfolioAuthors` and
+`categoryKeys.all`. Works/Authors/Search aliases and Dock/Home/Desktop/footer
+are migrated; old overlay/provider/surfaces and standalone catalogs removed.
+No backend/API/auth/media changes. Owner regressions cover X/filter separation,
+section drafts, reload/Back/Forward, pagination/retry and result-tree identity.
+Verified:1047 mobile unit tests, typecheck/lint,70 Chromium/WebKit E2E +8 geometry checks, Web/iOS/Android exports, fence and docs links. PR44 reconciliation and remaining device/design gaps:
+[Explore report](../audits/current/2026-10-25-EXPLORE.md).

@@ -3200,3 +3200,28 @@ Nest добавляет до минуты ожидания до отправки
 считается гарантией запуска background-задач; fire-and-forget и искусственная
 задержка ответа не используются как исправление. Merge/deploy отдельно;
 самостоятельное слияние PR #58 не разрешено.
+
+## DEC-137 — Единый Explore вместо отдельных каталогов и Search overlay
+
+Date: 2026-10-25
+Status: Confirmed
+Source: explicit founder implementation request «Bidplace — реализация единого Explore»
+Revises: fullscreen Search overlay/navigation portion of `DEC-096` only.
+Preserves: portfolio-only restrictions of `DEC-083`, `DEC-087`.
+
+### Decision
+
+One `/explore` owns Categories / Authors / Works, rounded segmented variant1 from
+Figma `7240:2491`. Dock opens its inline animated search. X closes and clears the
+active query, retaining section, filters and sort via URL replace. Independent
+drafts may survive section switching; detail Back must restore state, pagination
+and scroll. Reload restores active URL state. Legacy URLs remain compatible.
+Works uses existing two-column caption cards without blur; large-card experiment,
+commerce and view-mode controls are excluded. Existing query hooks/cache/API stay.
+
+### Alternatives
+
+Separate overlay over catalogs and hidden competing result trees are rejected.
+PR44 must be reconciled selectively against current MVP, without merge/cherry-pick
+or a second filter implementation. Exact desktop/native design acceptance remains
+separate from responsive verification.
