@@ -613,7 +613,7 @@ export function AdminModerationDetail({
           )}
         </View>
         {success ? (
-          <SecondaryButton label="Вернуться" onPress={() => router.back()} />
+          <BackButton accessibilityHint="Вернуться к списку модерации" onPress={() => router.back()} />
         ) : null}
         <AppDialog
           open={confirmation !== null}

@@ -2,23 +2,28 @@ import { designTokens, type SemanticColorMap } from '@bidplace/design-tokens';
 
 export function figmaIconButtonStyle(
   pressed: boolean,
-  surface: 'plain' | 'muted' | 'outline' | 'destructive' = 'plain',
+  surface: 'plain' | 'muted' | 'outline' | 'destructive' | 'glass' = 'plain',
   palette: SemanticColorMap,
+  size: 'default' | 'settingsHeader' | 'navigation' = 'default',
 ) {
   // Header action frame 4980:15197 is 38px including its inside stroke.
   return {
     width:
-      surface === 'outline' || surface === 'destructive'
-        ? 38
-        : surface === 'muted'
-          ? 42
-          : designTokens.size.iconButton,
+      size === 'navigation'
+        ? designTokens.size.navigationControl
+        : surface === 'outline' || surface === 'destructive'
+          ? 38
+          : surface === 'muted'
+            ? 42
+            : designTokens.size.iconButton,
     height:
-      surface === 'outline' || surface === 'destructive'
-        ? 38
-        : surface === 'muted'
-          ? 42
-          : designTokens.size.iconButton,
+      size === 'navigation'
+        ? designTokens.size.navigationControl
+        : surface === 'outline' || surface === 'destructive'
+          ? 38
+          : surface === 'muted'
+            ? 42
+            : designTokens.size.iconButton,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
     ...(surface === 'outline'
@@ -29,15 +34,17 @@ export function figmaIconButtonStyle(
       : {}),
     borderRadius: designTokens.radius.pill,
     backgroundColor:
-      surface === 'destructive'
-        ? pressed
-          ? palette.dangerHover
-          : palette.destructiveFill
-        : pressed
-          ? palette.ghostHover
-          : surface === 'muted'
-            ? palette.headerControl
-            : 'transparent',
+      surface === 'glass'
+        ? 'transparent'
+        : surface === 'destructive'
+          ? pressed
+            ? palette.dangerHover
+            : palette.destructiveFill
+          : size !== 'navigation' && pressed
+            ? palette.ghostHover
+            : surface === 'muted'
+              ? palette.headerControl
+              : 'transparent',
   };
 }
 

@@ -16,6 +16,18 @@
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
 | Commerce, избранное/подписки, смена email/password из settings | Not implemented в launch scope / post-MVP; [следующая волна](15-POST-MVP-BACKLOG.md). Старый commerce runtime не разрешает включать продажи. |
 
+## 2026-10-26 — Shared Back UI
+
+**Partial — verified locally on web; native devices pending.** BackButton
+reuses FigmaIconButton/MotionPressable with48px frame, one full arrow and common
+states. Explore and wizard/footer Back variants migrated; route callbacks,
+query/history/fallback/auth guards unchanged.1080 mobile units,20 Chromium/
+WebKit Back cases,80 Share/auth regressions, graph typecheck/lint and
+web/iOS/Android exports passed; independent review accepted. Independent review identified
+and resolved native parent bounds and visible glass glyph stacking. No adjacent
+Author Back duplicate; gallery/calendar arrows intentionally distinct.
+[Audit](../audits/evidence/2026-10-26-back-buttons/README.md).
+
 ## 2026-10-26 — Share action feedback
 
 **Partial — verified locally on web; native devices pending.** ShareSheet uses

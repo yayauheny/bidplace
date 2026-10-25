@@ -102,14 +102,14 @@ export function FilterSheet({
                 ? {
                     width: '100%',
                     minHeight: showBack
-                      ? designTokens.size.touch
+                      ? designTokens.size.navigationControl
                       : title
                         ? 22
                         : 0,
                     flexDirection: 'row',
                     alignItems: 'center',
                   }
-                : filterSheetHeaderStyle(),
+                : { ...filterSheetHeaderStyle(), ...(showBack ? { minHeight: designTokens.size.navigationControl } : {}) },
               titleVariant === 'directions'
                 ? {
                     minHeight:

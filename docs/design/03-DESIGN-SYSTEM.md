@@ -4,6 +4,18 @@
 
 Статус: **Figma mobile-web 390 tokens and primitives are the production visual layer**
 
+## 2026-10-26 — Shared Back control
+
+BackButton is the single previous-screen control:48×48, Hugeicons arrow-left-02
+28px with physical1.6px stroke; fixed label “Назад”, optional contextual hint.
+It delegates states to FigmaIconButton navigation size and MotionPressable.
+Muted is the standard surface; Work uses existing controlGroup glass80%/blur6.
+Hover overlays semantic5% black in light; pressed reuses button feedback,
+disabled0.5, global focus-visible and reduced motion remain. Navigation callbacks
+and router/history helpers stay outside the button. Previous-month/photo and
+row disclosure arrows retain their semantics. This founder-approved standard
+supersedes route-local Back geometry, not other icon-button sizes.
+
 ## 1. Архитектура источников
 
 ### Current brand/fullscreen auth target — 2026-10-08

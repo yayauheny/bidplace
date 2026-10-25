@@ -488,7 +488,7 @@ describe('ProductDraftScreen render contract', () => {
     const { container } = mount({ flow: 'creation', stepParam: '3' });
     await until(
       container,
-      () => hasButton(container, 'Назад к изображениям'),
+      () => hasButton(container, 'Назад'),
       'story step chrome',
     );
     expect(container.textContent).not.toContain('Редактировать предмет');

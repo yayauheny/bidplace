@@ -136,3 +136,38 @@ test('Search → Work → Back restores Search without a Work flash after overla
     frames.slice(overlayIndex).some((frame) => frame.work === 'visible'),
   ).toBe(false);
 });
+
+for (const path of ['/explore?section=works', '/product/daliEstate1', '/seller/local-author-1']) {
+  test(`Back uses the shared48px full-arrow standard on ${path}`, async ({ page }) => {
+    await page.goto(path);
+    const back = page.getByRole('button', { name: 'Назад', exact: true });
+    await expect(back).toHaveCount(1);
+    await expect(back).toBeVisible();
+    expect((await back.boundingBox())?.width).toBe(48);
+    expect((await back.boundingBox())?.height).toBe(48);
+    await expect(back.locator('svg').last()).toHaveAttribute('width', '28');
+    await expect(back.locator('svg path').first()).toHaveAttribute('d', 'M5.5 12.002H19');
+    await back.focus();
+    await expect(back).toBeFocused();
+    await expect(back).toHaveCSS('outline-style', 'solid');
+    await expect(back).not.toHaveCSS('outline-width', '0px');
+    const box = await back.boundingBox();
+    await back.hover();
+    expect(await back.boundingBox()).toEqual(box);
+    await back.press('Enter');
+    await expect(page).not.toHaveURL(`http://localhost:8081${path}`);
+  });
+}
+
+test('Work Back preserves the filtered Explore route and Browser Back remains native', async ({ page }) => {
+  const origin = '/explore?section=works&sort=oldest';
+  await page.goto(origin);
+  const explore = page.getByTestId('explore-scroll');
+  await explore.locator('a[href^="/product/"]').first().click();
+  await expect(page).toHaveURL(/\/product\//);
+  await page.getByRole('button', { name: 'Назад', exact: true }).press('Space');
+  await expect(page).toHaveURL(`http://localhost:8081${origin}`);
+  await explore.locator('a[href^="/product/"]').first().click();
+  await page.goBack();
+  await expect(page).toHaveURL(`http://localhost:8081${origin}`);
+});

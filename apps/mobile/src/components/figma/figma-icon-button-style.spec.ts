@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
-import { designTokens } from '@bidplace/design-tokens';
+import { blackColorMap, designTokens } from '@bidplace/design-tokens';
 
 import {
   figmaIconButtonHitSlop,
@@ -64,4 +64,52 @@ describe('Figma icon button styles', () => {
       figmaIconButtonStyle(true, 'plain', designTokens.color).backgroundColor,
     ).toBe(designTokens.color.ghostHover);
   });
+  it.each(['muted', 'glass'] as const)(
+    'keeps navigation geometry at48px on %s',
+    (surface) => {
+      for (const palette of [designTokens.color, blackColorMap]) {
+        for (const pressed of [false, true]) {
+          expect(
+            figmaIconButtonStyle(pressed, surface, palette, 'navigation'),
+          ).toMatchObject({
+            width: 48,
+            height: 48,
+            borderRadius: designTokens.radius.pill,
+            backgroundColor:
+              surface === 'glass' ? 'transparent' : palette.headerControl,
+          });
+        }
+      }
+    },
+  );
+});
+
+vi.mock('./FigmaIconButton', () => ({ FigmaIconButton: () => null }));
+import { BackButton } from './BackButton';
+
+describe('BackButton public contract', () => {
+  it.each(['muted', 'glass'] as const)(
+    'uses one48px full-arrow configuration on %s',
+    (surface) => {
+      const onPress = vi.fn();
+      const element = BackButton({
+        onPress,
+        surface,
+        disabled: true,
+        accessibilityHint: 'Previous wizard step',
+      });
+      expect(element.props).toMatchObject({
+        label: 'Назад',
+        size: 'navigation',
+        icon: 'arrow-left-02',
+        iconSize: 28,
+        strokeWidthPx: 1.6,
+        disabled: true,
+        surface,
+        accessibilityHint: 'Previous wizard step',
+        onPress,
+      });
+      expect(onPress).not.toHaveBeenCalled();
+    },
+  );
 });

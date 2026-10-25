@@ -158,6 +158,8 @@ export const designTokens = {
     buttonIconFrame: 26,
     mediaSheetClose: 38,
     iconButton: 36,
+    navigationControl: 48,
+    navigationGlyph: 28,
     header: 48,
     mobileHeader: 48,
     icon: 18,

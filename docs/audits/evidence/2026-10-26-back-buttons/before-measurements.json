@@ -1,0 +1,72 @@
+[
+  {
+    "name": "explore",
+    "width": 390,
+    "buttons": [
+      {
+        "width": 52,
+        "height": 52,
+        "visible": true,
+        "background": "rgba(0, 0, 0, 0)",
+        "svgs": 1
+      }
+    ]
+  },
+  {
+    "name": "explore",
+    "width": 1440,
+    "buttons": [
+      {
+        "width": 52,
+        "height": 52,
+        "visible": true,
+        "background": "rgba(0, 0, 0, 0)",
+        "svgs": 1
+      }
+    ]
+  },
+  {
+    "name": "work",
+    "width": 390,
+    "buttons": [
+      {
+        "width": 42,
+        "height": 42,
+        "visible": true,
+        "background": "rgb(243, 243, 243)",
+        "svgs": 1
+      }
+    ]
+  },
+  {
+    "name": "work",
+    "width": 1440,
+    "buttons": [
+      {
+        "width": 42,
+        "height": 42,
+        "visible": true,
+        "background": "rgb(243, 243, 243)",
+        "svgs": 1
+      }
+    ]
+  },
+  {
+    "name": "author",
+    "width": 390,
+    "buttons": [
+      {
+        "width": 42,
+        "height": 42,
+        "visible": true,
+        "background": "rgb(243, 243, 243)",
+        "svgs": 1
+      }
+    ]
+  },
+  {
+    "name": "author",
+    "width": 1440,
+    "buttons": []
+  }
+]

@@ -80,15 +80,14 @@ export function ProductDraftScreenChrome({
         <View style={{ gap: designTokens.space.x2 }}>
           <View
             style={{
-              height: Platform.OS === 'web' ? designTokens.authorApplication.chromeFrame : designTokens.size.touch,
+              height: Platform.OS === 'web' ? designTokens.authorApplication.chromeFrame : designTokens.size.navigationControl,
               flexDirection: 'row',
               alignItems: 'center',
               justifyContent: 'space-between',
             }}
           >
             <BackButton
-              surface="plain"
-              label={wizardStep === 3 ? 'Назад к изображениям' : 'Назад'}
+              accessibilityHint={wizardStep === 3 ? 'Назад к изображениям' : undefined}
               disabled={storyBarDisabled || wizardSubmitted}
               onPress={() =>
                 wizardStep > 1 ? onStepPress(wizardStep - 1) : onClose()

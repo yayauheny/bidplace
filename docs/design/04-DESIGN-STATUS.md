@@ -5,6 +5,17 @@
 Полный прежний журнал, включая ограничения ранних экранов:
 [история](../archive/design/04-DESIGN-STATUS-through-2026-10-23.md).
 
+## 2026-10-26 — Back button standard
+
+**Partial — local web verification; native devices pending.** Shared BackButton
+48×48/arrow28/1.6 replaces Explore custom chrome and previous-step text controls;
+existing Work/Author/Account/Settings/Admin/Filter/application consumers inherit
+it. Only Work uses existing glass material.1080 mobile units and20 Chromium/
+WebKit navigation checks passed, plus graph typecheck/lint. 80 Share/auth overlay regressions and web/iOS/Android exports passed.
+Independent review accepted. Native parent hit bounds corrected
+to48; physical device and provisional black-palette acceptance remain unverified.
+[Audit/screenshots](../audits/evidence/2026-10-26-back-buttons/README.md).
+
 ## 2026-10-26 — Share inline feedback
 
 **Partial — verified locally on web; native device acceptance pending.** Existing
