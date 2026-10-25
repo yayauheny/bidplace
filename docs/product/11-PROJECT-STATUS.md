@@ -19,8 +19,8 @@
 ## 2026-10-25 — Dock Search simplification
 
 **Implemented (local checks passed).** Founder
-returned Search to the original outline: 24px and 1.6px in every state, matching
-Add (`DEC-145`). Removed masks, cutout/per-part rendering and experimental active
+returned Search to the original 24px outline. Latest selection clarification:
+inactive 1.3px, selected 1.6px like Add (`DEC-146`, revises `DEC-145`). Removed masks, cutout/per-part rendering and experimental active
 stroke tokens from `FigmaIcon`/`FloatingDock`/design tokens. Home/Profile retain
 selected fill; routes/accessibility are unchanged. Owner dock E2E again compares
 Search/Add strokes across selection, reload and Back/Forward. Six Chromium/WebKit
@@ -30,8 +30,7 @@ passed. Physical devices not checked.
 ## 2026-10-25 — Dock Search outline revision
 
 **Implemented (local browser verification passed).** Founder revision: `FloatingDock` fills only
-active Home/Profile. Search keeps its original 24px outline at 1.6px, identical
-to Add, on active/inactive routes; existing navigation state is preserved.
+active Home/Profile. Search keeps its original 24px outline: selected 1.6px like Add, inactive 1.3px; existing navigation state is preserved.
 Source: working-copy Figma `7272:2707`, dock Search `7272:2790`. Owner E2E checks
 compare Search/Add physical strokes through navigation, reload and Back/Forward.
 Passed: six Chromium/WebKit dock E2E, 1051 mobile unit tests, typecheck/lint,

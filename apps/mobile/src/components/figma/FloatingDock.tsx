@@ -118,6 +118,11 @@ function DockItem({
             ? 'filled'
             : 'outline'
         }
+        strokeWidthPx={
+          item.id === 'search' && !selected
+            ? designTokens.stroke.icon
+            : designTokens.stroke.iconHeavy
+        }
         size={designTokens.size.dockIcon}
         color={palette.ink}
       />
