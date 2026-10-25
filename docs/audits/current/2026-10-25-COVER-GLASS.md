@@ -1,7 +1,10 @@
 # Cover glass acceptance — 2026-10-25
 
 Status: Implemented for verified web states; physical native acceptance Needs verification.
-Base: `665752489e8c10476dadd8e42c18ed5ad2b11937`, branch `fix/progressive-cover-blur`.
+PR #66 base: `bfab51989f631936f03d06fbd8e6065339df275b`
+(`feature/portfolio-mvp-release`); branch `fix/progressive-cover-blur`.
+Intermediate experiment: `665752489e8c10476dadd8e42c18ed5ad2b11937`.
+Runtime verification below targets `85ac01e08b662eeb854795dc86f46fc0de6cb723`.
 
 ## Scope and source
 
@@ -21,11 +24,16 @@ portfolio title/author rather than commerce labels. This is an approved visual
 approximation, not exact Progressive Blur parity. Desktop composition stays
 NEEDS-FIGMA; existing full-width catalog geometry was preserved.
 
-`CoverFrost.tsx` retains supported [Expo57 BlurView](https://docs.expo.dev/versions/v57.0.0/sdk/blur-view/)
-`BlurTargetView`/`BlurView`: one
-existing image, intensity60 (not a CSS radius), Android
-`dimezisBlurViewSdk31Plus`, tint/scrim fallback below SDK31. No native mask or
-second image was introduced. Physical iOS/Android rendering remains unverified.
+Relative to the PR base, Native migrates from an additional `expo-image`
+`Image` with `blurRadius=30` to supported
+[Expo57 BlurView](https://docs.expo.dev/versions/v57.0.0/sdk/blur-view/):
+`WorkCoverCard` / `AuthorCoverCard` wrap the existing sharp image in
+`BlurTargetView`, then render the lower `BlurView` after it. Native uses
+intensity60 (a platform intensity, not a CSS pixel radius), Android
+`dimezisBlurViewSdk31Plus`, and tint/scrim fallback below SDK31. The additional
+image is removed. This migration was introduced in intermediate commit
+`66575248` and is part of PR #66; only the final tuning commit preserves that
+intermediate native path. Physical iOS/Android rendering remains unverified.
 
 Removed: unused `imageUrl` from both platform props/callers, unused frost aspect
 ratio, blur string wrapper, obsolete progressive/top-zero tokens. Native intensity
@@ -45,9 +53,16 @@ owned by existing cards and tokens without a new renderer or format API.
   lint without auto-fix. Expo startup regenerated stale ignored route types.
 - `pnpm --filter @bidplace/mobile test`:145 files,1049/1049 PASS.
   Contracts48 and API-client51 tests PASS in affected graph checks.
-- Existing theme regression failed on both base and change because its expo-blur
-  mock omitted BlurTargetView (base replay in `/private/tmp/bidplace-cover-baseline`).
-  Added the missing mock export; preserved all theme/remount assertions.
+- Theme regression passes8/8 on the actual PR base `bfab5198` (review replay in
+  `/private/tmp/bidplace-pr66-review-base`). The Native migration in intermediate
+  `66575248` introduced a missing `BlurTargetView` mock export; final runtime
+  commit `85ac01e0` fixes it without weakening theme/remount assertions.
+  The earlier `/private/tmp/bidplace-cover-baseline` replay used `66575248`,
+  not the release base, and does not establish a pre-existing release failure.
+- Review rerun on `85ac01e0`:38/38 relevant unit tests PASS. GitHub
+  [Verify](https://github.com/yayauheny/bidplace/actions/runs/40144838621/job/121023856747)
+  and GitGuardian completed successfully on that SHA; this is not a CI result
+  for later documentation commits.
 - `EXPO_NO_DOTENV=1 pnpm exec turbo run build --filter=@bidplace/mobile...`:
   4/4 PASS, web/iOS/Android exports. Successful exports do not prove device parity.
 - Owner `figma-cover-frost.spec.ts`, Chromium and WebKit:2/2 PASS. Checks one
@@ -58,11 +73,18 @@ owned by existing cards and tokens without a new renderer or format API.
 - Actual `/works` and `/authors` routes, local public API with9 works/5 authors:
   Chromium/WebKit ×390/1024/1440 =12 checks PASS. Live resize, multiple photographs,
   lower-panel hover, scrolling, one image per sampled card, zero extra hover
-  image requests, zero infinite animations or page errors. No new benchmark campaign.
+  image requests, zero infinite web animations or page errors. These desktop
+  browser checks do not establish phone frame times, native animation behavior
+  or physical-device scroll performance. No new benchmark campaign.
 - WebKit Playwright PNG omits composited backdrop blur. Verified visible WebKit
   through OS screenshots below: blur is present on both work and author bottoms.
   Computed-style assertions alone were not treated as visual proof.
 - `pnpm docs:link-check` and `git diff --check`:PASS.
+- Outstanding device acceptance: cold/delayed image load, image replacement,
+  scrolling away/back through multiple cards, and brief catalog smoothness
+  checks on physical iOS/Android. Native runtime and phone performance remain
+  Needs verification; exports, request counts and desktop screenshots do not
+  satisfy these checks.
 
 ## Screenshots
 

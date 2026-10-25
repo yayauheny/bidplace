@@ -43,13 +43,15 @@ Work/author `CoverFrost` uses
 approved Dock-style Blur16/saturate115%/Mask35 on web with the independent
 Figma two-stop scrim and content-driven lower panel. This supersedes the
 2026-10-24 blur60 experiment; exact Progressive Blur parity is not claimed.
-Author top remains unblurred. Native preserves intensity60 `BlurView` over one
-existing image, SDK31+ Android blur and older-Android tint/scrim fallback.
+Author top remains unblurred. Relative to PR #66 release base `bfab5198`,
+Native migrates from a second `Image blurRadius=30` to intensity60 `BlurView`
+over the original `BlurTargetView` image, with SDK31+ Android blur and older
+Android tint/scrim fallback. The migration belongs to this PR, not the release base.
 Chromium/WebKit owner E2E 2/2, real catalogs at390/1024/1440, visible WebKit
 OS captures,1049 mobile unit tests, lint/typecheck and web/iOS/Android exports
 passed; [acceptance and screenshots](../audits/current/2026-10-25-COVER-GLASS.md).
-Physical-device rendering remains Needs verification; wider exact Figma
-composition remains NEEDS-FIGMA.
+Physical-device rendering and phone catalog smoothness remain Needs verification;
+wider exact Figma composition remains NEEDS-FIGMA.
 
 MVP merge 2026-10-22: полный verify green, API legal-pack assertion исправлен
 `cc4911e5`; старое «full verify red» описывает UI-ветку до merge. UI evidence:

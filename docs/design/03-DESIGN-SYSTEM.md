@@ -881,8 +881,10 @@ Scoped source: Figma `HRRtDp0bQlukw7ptTkuEZg`; exact nodes and mapping are in th
   not exact Figma Progressive Blur. The independent two-stop scrim is retained;
   author top uses only its existing scrim. Bottom regions clip to 12px upper
   corners, with sharp text/controls outside the effect and one source image.
-  Native keeps `BlurView` intensity60 over the existing `BlurTargetView` image;
-  Android SDK31+ blurs, older Android uses the library tint plus scrim fallback.
+  Relative to PR #66 base `bfab5198`, Native replaces a second `Image`
+  (`blurRadius=30`) with `BlurView` intensity60 over the original image wrapped
+  in `BlurTargetView`. Android SDK31+ blurs; older Android uses the library
+  tint plus scrim fallback. Physical-device rendering remains Needs verification.
   Native intensity is not a CSS pixel radius; no native progressive mask is claimed.
   Card references do not define the full public author page geometry.
 - `FigmaIconButton` destructive surface uses semantic `destructiveFill` and white

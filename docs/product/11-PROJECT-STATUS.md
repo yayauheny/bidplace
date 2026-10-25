@@ -23,13 +23,19 @@
 shared blur tokens replace the 2026-10-24 blur60 experiment with approved
 Dock-style Blur16/saturate115%/Mask35 for work/author bottoms, retaining the
 independent scrim, content-driven panels and sharp controls. `AuthorCoverCard`
-top stays a gradient. Unused image props/spec fields were removed; one source
-image and the existing native BlurTargetView/BlurView intensity60 path remain.
+top stays a gradient. Unused image props/spec fields were removed. Relative to
+PR #66 release base `bfab5198`, Native replaces the second `Image blurRadius=30`
+with one original image in `BlurTargetView` and a lower `BlurView` intensity60.
+The migration is part of this PR; the earlier comparison used intermediate
+`66575248`. Its missing theme mock export was introduced and fixed within the
+PR; the release-base theme test passes8/8.
 Owner style/browser regressions updated;1049 mobile tests, contracts48/client51,
 Chromium/WebKit E2E2/2,12 real catalog/viewport checks, lint/typecheck and
 web/iOS/Android exports passed. [Acceptance](../audits/current/2026-10-25-COVER-GLASS.md).
-No API, media pipeline, Dock or compact format changes; physical iOS/Android
-and exact desktop Figma parity remain open.
+Review rerun:38 relevant unit tests passed; Verify/GitGuardian are green on
+runtime SHA `85ac01e0` (not a result for later documentation commits).
+No API, media pipeline, Dock or compact format changes; physical iOS/Android,
+phone catalog smoothness and exact desktop Figma parity remain open.
 
 ## 2026-10-24 — Mobile moderation UI
 
