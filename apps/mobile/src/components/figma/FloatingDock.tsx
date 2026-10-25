@@ -110,22 +110,30 @@ function DockItem({
           : null),
       }}
     >
-      <FigmaIcon
-        name={item.icon}
-        variant={
-          selected &&
-          (item.id === 'home' || item.id === 'profile')
-            ? 'filled'
-            : 'outline'
-        }
-        strokeWidthPx={
-          item.id === 'search' && !selected
-            ? designTokens.stroke.icon
-            : designTokens.stroke.iconHeavy
-        }
-        size={designTokens.size.dockIcon}
-        color={palette.ink}
-      />
+      {({ pressed }) => {
+        const activeStroke =
+          (item.id === 'search' && (selected || pressed)) ||
+          (item.id === 'plus' && pressed);
+        return (
+          <FigmaIcon
+            name={item.icon}
+            variant={
+              selected && (item.id === 'home' || item.id === 'profile')
+                ? 'filled'
+                : 'outline'
+            }
+            strokeWidthPx={
+              activeStroke
+                ? designTokens.stroke.iconActive
+                : item.id === 'search'
+                  ? designTokens.stroke.icon
+                  : designTokens.stroke.iconHeavy
+            }
+            size={designTokens.size.dockIcon}
+            color={palette.ink}
+          />
+        );
+      }}
     </MotionPressable>
   );
 

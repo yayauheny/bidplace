@@ -344,16 +344,32 @@ test('dock fills Home and Profile and matches active Search weight to Add throug
     }
     const searchStroke = await dock.getByLabel('Поиск', { exact: true }).locator('svg path').first().getAttribute('stroke-width');
     const plusStroke = await dock.getByLabel('Добавить', { exact: true }).locator('svg path').first().getAttribute('stroke-width');
-    expect(Number(searchStroke)).toBeCloseTo(selected === 'Поиск' ? 1.6 : 1.3, 8);
+    expect(Number(searchStroke)).toBeCloseTo(selected === 'Поиск' ? 2.5 : 1.3, 8);
     expect(Number(plusStroke)).toBeCloseTo(1.6, 8);
     if (selected === 'Поиск') {
-      expect(Number(searchStroke)).toBe(Number(plusStroke));
+      expect(Number(searchStroke)).toBeGreaterThan(Number(plusStroke));
     } else {
       expect(Number(searchStroke)).toBeLessThan(Number(plusStroke));
     }
     expect((await dock.boundingBox())!.width).toBe(232);
     expect((await dock.boundingBox())!.height).toBe(64);
   };
+  await expectSelected('Главная');
+  const pressWeight = async (label: string) => {
+    const item = dock.getByLabel(label, { exact: true });
+    await item.evaluate((element) => element.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+    }, { capture: true, once: true }));
+    const box = (await item.boundingBox())!;
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    await expect.poll(async () => Number(await item.locator('svg path').first().getAttribute('stroke-width'))).toBeCloseTo(2.5, 8);
+    const stroke = Number(await item.locator('svg path').first().getAttribute('stroke-width'));
+    await page.mouse.up();
+    return stroke;
+  };
+  expect(await pressWeight('Поиск')).toBe(await pressWeight('Добавить'));
   await expectSelected('Главная');
   await expect(dock.getByLabel('Главная', { exact: true })).toHaveAttribute('aria-current', 'page');
   await dock.getByLabel('Поиск', { exact: true }).click();

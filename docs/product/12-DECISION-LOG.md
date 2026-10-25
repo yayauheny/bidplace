@@ -3342,3 +3342,17 @@ Search из `DEC-145`; отмена внутренних заливок и эк�
 Hugeicons и frame 24px сохраняются; заливки и масок нет. Существующий selected
 route управляет толщиной. Add остаётся 1.6px; Home/Profile — без изменений.
 Владелец — [design system](../design/03-DESIGN-SYSTEM.md).
+
+
+## DEC-147 — Толщина активных символов по жирному плюсу из макета
+
+**Дата:** 2026-10-25. **Статус:** Confirmed for local visual acceptance.
+**Revises:** неверный эталон 1.6px из `DEC-146`.
+**Источник:** founder показал жирный Plus из `5685:190` и попросил исправить.
+
+Выбранное значение — 2.5px: оценка по предоставленному скриншоту (не выдаётся за
+прочитанный Figma Stroke). Панель Frame36 подтверждает 36px/6px padding/24px glyph,
+но не Stroke. Search selected/pressed и Add pressed используют один `iconActive`.
+Неактивный Search — 1.3px, Add в покое — 1.6px; оба frame 24px. Исходные Hugeicons
+outline, без заливок и масок; используется existing MotionPressable pressed state.
+Владелец — [design system](../design/03-DESIGN-SYSTEM.md).

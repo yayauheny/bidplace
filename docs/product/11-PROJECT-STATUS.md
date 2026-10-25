@@ -20,8 +20,9 @@
 
 **Implemented (local checks passed).** Founder
 returned Search to the original 24px outline. Latest selection clarification:
-inactive 1.3px, selected 1.6px like Add (`DEC-146`, revises `DEC-145`). Removed masks, cutout/per-part rendering and experimental active
-stroke tokens from `FigmaIcon`/`FloatingDock`/design tokens. Home/Profile retain
+inactive 1.3px, selected/pressed 2.5px; Add uses the same 2.5px while pressed
+and 1.6px at rest (`DEC-147`, revises `DEC-146`). Removed masks, cutout/per-part rendering and previous 2.6/3.6px trials. The shared
+`stroke.iconActive` is now 2.5px for selected Search and pressed Search/Add. Home/Profile retain
 selected fill; routes/accessibility are unchanged. Owner dock E2E again compares
 Search/Add strokes across selection, reload and Back/Forward. Six Chromium/WebKit
 E2E, 1051 mobile unit tests, typecheck/lint, web build, docs links and diff checks
@@ -30,7 +31,7 @@ passed. Physical devices not checked.
 ## 2026-10-25 — Dock Search outline revision
 
 **Implemented (local browser verification passed).** Founder revision: `FloatingDock` fills only
-active Home/Profile. Search keeps its original 24px outline: selected 1.6px like Add, inactive 1.3px; existing navigation state is preserved.
+active Home/Profile. Search keeps its original 24px outline: selected/pressed 2.5px like pressed Add, inactive 1.3px; existing navigation state is preserved.
 Source: working-copy Figma `7272:2707`, dock Search `7272:2790`. Owner E2E checks
 compare Search/Add physical strokes through navigation, reload and Back/Forward.
 Passed: six Chromium/WebKit dock E2E, 1051 mobile unit tests, typecheck/lint,
