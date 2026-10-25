@@ -3266,3 +3266,15 @@ separate from responsive verification.
 лупы нет. Существующий selected route управляет толщиной без нового состояния.
 Home/Profile сохраняют активную заливку. Владелец —
 [design system](../design/03-DESIGN-SYSTEM.md).
+
+
+## DEC-141 — Проба активной лупы Dock с линией 2.6px
+
+**Дата:** 2026-10-25. **Статус:** Confirmed for local visual trial; final visual
+acceptance pending. **Revises:** активные 1.6px из `DEC-140`.
+**Источник:** явное founder «в два раза попробуй, до 2.6».
+
+Активный Search — контур 2.6px (`stroke.iconActive`), неактивный — 1.3px.
+Размер 24px, заливки нет; плюс сохраняет 1.6px. Новый штрих вдвое толще
+неактивного. Маршруты, selected state, Home/Profile и остальные иконки неизменны.
+Визуальный владелец — [design system](../design/03-DESIGN-SYSTEM.md).

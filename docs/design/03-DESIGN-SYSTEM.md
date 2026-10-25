@@ -948,9 +948,11 @@ states are adopted; the existing four-item portfolio dock remains unchanged.
 `FigmaIcon variant="filled"` fills the existing Hugeicons geometry with the theme
 ink; `outline` is the default for all other consumers. `FloatingDock` derives
 Home/Profile fill from its existing selected route/search state. Search stays
-outlined at 24px in both states: 1.3px when inactive, 1.6px when active (matching
-Add). The existing selected route drives the stroke change (`DEC-140`, clarifies
-`DEC-139`; copy `7272:2707` / dock glyph `7272:2790`). Add stays
+outlined at 24px in both states: 1.3px when inactive, 2.6px when active for
+founder visual acceptance (`stroke.iconActive`, `DEC-141`, revises `DEC-140`).
+Add remains 1.6px. The selected route drives the stroke change; the working-copy
+source is `7272:2707` / dock glyph `7272:2790`, with the active stroke overridden
+by the explicit founder trial. Add stays
 an action; administrative glyphs retain their current outline presentation because
 this reference does not define their filled variants. No new paths/assets/library,
 click state, route or permission changes. 24px glyphs and the 232×64 capsule,

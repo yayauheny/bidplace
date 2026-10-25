@@ -344,10 +344,11 @@ test('dock fills Home and Profile and thickens the outlined active Search throug
     }
     const searchStroke = await dock.getByLabel('Поиск', { exact: true }).locator('svg path').first().getAttribute('stroke-width');
     const plusStroke = await dock.getByLabel('Добавить', { exact: true }).locator('svg path').first().getAttribute('stroke-width');
-    expect(Number(searchStroke)).toBeCloseTo(selected === 'Поиск' ? 1.6 : 1.3, 8);
+    expect(Number(searchStroke)).toBeCloseTo(selected === 'Поиск' ? 2.6 : 1.3, 8);
     expect(Number(plusStroke)).toBeCloseTo(1.6, 8);
     if (selected === 'Поиск') {
-      expect(Number(searchStroke)).toBe(Number(plusStroke));
+      expect(Number(searchStroke)).toBeGreaterThan(Number(plusStroke));
+      expect(Number(searchStroke)).toBeCloseTo(2 * 1.3, 8);
     } else {
       expect(Number(searchStroke)).toBeLessThan(Number(plusStroke));
     }
