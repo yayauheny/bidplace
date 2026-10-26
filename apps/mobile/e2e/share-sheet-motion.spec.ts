@@ -563,8 +563,26 @@ for (const width of [320, 375, 390, 414, 1440]) {
     expect(bounds?.height).toBe(48);
     for (const name of ['В избранное', 'Поделиться работой']) {
       const button = group.getByRole('button', { name, exact: true });
-      expect((await button.boundingBox())?.width).toBe(48);
+      expect((await button.boundingBox())?.width).toBe(49);
       expect((await button.boundingBox())?.height).toBe(48);
+    }
+    for (const [name, center] of [
+      ['В избранное', 28],
+      ['Поделиться работой', 70],
+    ] as const) {
+      const svg = group
+        .getByRole('button', { name, exact: true })
+        .locator('svg');
+      const svgBounds = await svg.boundingBox();
+      expect(svgBounds?.width).toBe(28);
+      expect(svgBounds?.height).toBe(28);
+      expect(svgBounds!.x + 14 - bounds!.x).toBe(center);
+      expect(svgBounds!.y + 14 - bounds!.y).toBe(24);
+      const slot = await svg.evaluate((element) => {
+        const bounds = element.parentElement!.getBoundingClientRect();
+        return { width: bounds.width, height: bounds.height };
+      });
+      expect(slot).toEqual({ width: 36, height: 36 });
     }
     await expect(group.locator('.figma-glass')).toHaveCount(0);
     await expect(group.locator('.figma-glass-stroke')).toHaveCount(1);
@@ -731,4 +749,43 @@ test('gallery still responds to horizontal scrolling after arrow removal', async
     'aria-label',
     'Фото 2 из 2',
   );
+});
+
+test('Work action hit targets split the pill without overlapping or dead areas', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 874 });
+  await mockWork(page);
+  await page.goto(`/product/${PUBLIC_ID}`);
+  const group = page.getByTestId('work-share');
+  await expect(group).toBeVisible();
+  const bounds = (await group.boundingBox())!;
+  const hits = await group.evaluate((element) => {
+    const r = element.getBoundingClientRect();
+    return [0, 10, 28, 48, 49, 50, 70, 88, 97].map((x) => ({
+      x,
+      label: document
+        .elementFromPoint(r.x + x, r.y + 24)
+        ?.closest('[role="button"]')
+        ?.getAttribute('aria-label'),
+    }));
+  });
+  expect(
+    hits.map(
+      ({ x, label }) =>
+        label === (x < 49 ? 'В избранное' : 'Поделиться работой'),
+    ),
+  ).not.toContain(false);
+  await page.mouse.click(bounds.x + 48, bounds.y + 24);
+  await expect(
+    page.getByRole('dialog', { name: 'Скоро появится' }),
+  ).toBeVisible();
+  await expect(dialog(page)).toHaveCount(0);
+  await page.keyboard.press('Escape');
+  await page.mouse.click(bounds.x + 50, bounds.y + 24);
+  await expect(dialog(page)).toBeVisible();
+  await expect(
+    page.getByRole('dialog', { name: 'Скоро появится' }),
+  ).toHaveCount(0);
+  await page.keyboard.press('Escape');
 });

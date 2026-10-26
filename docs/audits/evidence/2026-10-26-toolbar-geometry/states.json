@@ -1,0 +1,36 @@
+{
+  "viewport": {
+    "width": 390,
+    "height": 874
+  },
+  "group": {
+    "x": 272,
+    "y": 12,
+    "width": 98,
+    "height": 48
+  },
+  "button": {
+    "x": 272,
+    "y": 12,
+    "width": 49,
+    "height": 48
+  },
+  "metrics": {
+    "background": "rgba(255, 255, 255, 0.8)",
+    "blur": "blur(6px)",
+    "overflow": "visible",
+    "nestedGlass": 0,
+    "strokeLayers": 1
+  },
+  "pressedOpacity": 0.925115,
+  "hover": [
+    {
+      "fill": "rgba(0, 0, 0, 0.05)",
+      "opacity": "1"
+    },
+    {
+      "fill": "rgba(0, 0, 0, 0)",
+      "opacity": "1"
+    }
+  ]
+}

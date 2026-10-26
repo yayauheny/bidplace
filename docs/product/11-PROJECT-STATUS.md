@@ -16,6 +16,16 @@
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
 | Commerce, избранное/подписки, смена email/password из settings | Not implemented в launch scope / post-MVP; [следующая волна](15-POST-MVP-BACKLOG.md). Старый commerce runtime не разрешает включать продажи. |
 
+## 2026-10-26 — Exact Work action geometry
+
+**Partial — local Web verified; physical Native acceptance pending.** WorkActions
+reproduces Figma526:11497's36px slots at x10/x52,4px inset,28px SVG and1.75px
+stroke, with centers x28/x70. Separate49×48 hit regions meet at x49 without
+overlap. Shared glass and existing hover/pressed/focus/open state owners retained.
+Back24px/full-arrow standard evaluated against original chevron and retained;
+its shape differs intentionally. ShareSheet/QR/feedback unchanged.
+[Geometry, bounds and screenshots](../audits/evidence/2026-10-26-toolbar-geometry/README.md).
+
 ## 2026-10-26 — Work toolbar visual polish
 
 **Partial — local Web verified; physical Native acceptance pending.** Back's

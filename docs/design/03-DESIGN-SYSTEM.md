@@ -477,7 +477,11 @@ from the web hero top (Figma y62 minus the50px status bar). Heart is an explicit
 override, 2026-10-26), with no selected state or storage. Work and Author use
 share-03; actual open state uses white ink on the existing dark overlayScrim
 surface for contrast. Gallery keeps paging/dots and Web keyboard selection,
-without overlay arrows. Inactive gallery dots (`745:21219`) use
+without overlay arrows. Work action geometry (`526:11497`) is two36px visual
+slots at x10/x52, each with4px padding and28px SVG/1.75px stroke; centers x28/x70.
+The independent non-overlapping hit regions split the pill at x49, each49×48.
+FigmaIconButton layout/icon-container style overrides separate those hit and
+visual bounds without changing other consumers. Inactive gallery dots (`745:21219`) use
 `color.border` `#DEDEDE`, not `divider` `#E2E2E2`.
 
 On web, `global.css` sets `html { font-synthesis: none }` so expo-font Inter

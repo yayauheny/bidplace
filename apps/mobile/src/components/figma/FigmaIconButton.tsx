@@ -1,5 +1,11 @@
 import type { ElementRef, Ref } from 'react';
-import { Platform, StyleSheet, View } from 'react-native';
+import {
+  Platform,
+  StyleSheet,
+  View,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 import { FigmaGlassSurface } from './FigmaGlassSurface';
 import { designTokens } from '@bidplace/design-tokens';
 
@@ -27,6 +33,8 @@ export function FigmaIconButton({
   surface = 'plain',
   size = 'default',
   accessibilityHint,
+  style,
+  iconContainerStyle,
 }: {
   ref?: Ref<ElementRef<typeof MotionPressable>>;
   icon: FigmaIconName;
@@ -40,6 +48,8 @@ export function FigmaIconButton({
   surface?: 'plain' | 'muted' | 'outline' | 'destructive' | 'glass' | 'active';
   size?: 'default' | 'settingsHeader' | 'navigation';
   accessibilityHint?: string;
+  style?: StyleProp<ViewStyle>;
+  iconContainerStyle?: StyleProp<ViewStyle>;
 }) {
   const palette = useAppTheme();
   const reduced = useReducedMotion();
@@ -79,6 +89,7 @@ export function FigmaIconButton({
           width: designTokens.size.settingsHeaderGlyph,
           height: designTokens.size.settingsHeaderGlyph,
         },
+        style,
       ]}
     >
       {({ hovered, pressed }) => (
@@ -115,7 +126,10 @@ export function FigmaIconButton({
           ) : null}
           <View
             pointerEvents="none"
-            style={surface === 'glass' ? { zIndex: 1 } : undefined}
+            style={[
+              surface === 'glass' ? { zIndex: 1 } : undefined,
+              iconContainerStyle,
+            ]}
           >
             <FigmaIcon
               name={icon}

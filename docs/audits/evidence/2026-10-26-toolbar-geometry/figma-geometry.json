@@ -1,0 +1,68 @@
+{
+  "fileKey": "pAPQo6cADmG5XzVmBX76EE",
+  "node": "526:11497",
+  "container": {
+    "width": 98,
+    "height": 48,
+    "radius": 200,
+    "paddingX": 10,
+    "paddingY": 6,
+    "gap": 6
+  },
+  "slots": [
+    {
+      "x": 10,
+      "y": 6,
+      "width": 36,
+      "height": 36,
+      "padding": 4
+    },
+    {
+      "x": 52,
+      "y": 6,
+      "width": 36,
+      "height": 36,
+      "padding": 4
+    }
+  ],
+  "heart": {
+    "svg": 28,
+    "centerX": 28,
+    "stroke": 1.75,
+    "pathBounds": [
+      23.33333396911621,
+      19.833477020263672
+    ],
+    "inkBounds": [
+      25.083343505859375,
+      21.58349609375
+    ]
+  },
+  "share03": {
+    "source": "I4590:35101;584:17876;4597:37079",
+    "normalizedToSvg": 28,
+    "centerX": 70,
+    "stroke": 1.75,
+    "pathBounds": [
+      18.666667,
+      21
+    ],
+    "inkBounds": [
+      20.416667,
+      22.75
+    ]
+  },
+  "authorBackChevron": {
+    "source": "I4590:35098;584:17876;312:9236",
+    "svg": 20.09302520751953,
+    "pathBounds": [
+      5.023256301879883,
+      10.046512603759766
+    ],
+    "inkBounds": [
+      6.323301315307617,
+      11.3466796875
+    ],
+    "stroke": 1.2999999523162842
+  }
+}

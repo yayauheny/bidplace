@@ -5,6 +5,16 @@
 Полный прежний журнал, включая ограничения ранних экранов:
 [история](../archive/design/04-DESIGN-STATUS-through-2026-10-23.md).
 
+## 2026-10-26 — Exact Work action geometry
+
+**Partial — local Web verified; physical Native acceptance pending.** WorkActions
+reproduces Figma526:11497's36px slots at x10/x52,4px inset,28px SVG and1.75px
+stroke, with centers x28/x70. Separate49×48 hit regions meet at x49 without
+overlap. Shared glass and existing hover/pressed/focus/open state owners retained.
+Back24px/full-arrow standard evaluated against original chevron and retained;
+its shape differs intentionally. ShareSheet/QR/feedback unchanged.
+[Geometry, bounds and screenshots](../audits/evidence/2026-10-26-toolbar-geometry/README.md).
+
 ## 2026-10-26 — Work toolbar visual polish
 
 **Partial — local Web verified; physical Native acceptance pending.** Back's
