@@ -327,6 +327,7 @@ function mountImageActions(editorStatus: 'DRAFT' | 'APPROVED' = 'DRAFT') {
     persistedProductId: vi.fn(() => productId),
     inFlightSave: vi.fn(() => null),
     persistCurrentForm: vi.fn(async () => true),
+    persistDirtyForm: vi.fn(async () => true),
   };
   let actions!: ReturnType<typeof useProductDraftImageActions>;
   const root = createRoot(document.createElement('div'));
@@ -728,7 +729,7 @@ describe('product draft submit lifecycle', () => {
     try {
       const selected = (await act(() => view.actions.selectImages()))!;
       let finishSave!: (saved: boolean) => void;
-      view.session.persistCurrentForm.mockImplementation(() => new Promise((resolve) => { finishSave = resolve; }));
+      view.session.persistDirtyForm.mockImplementation(() => new Promise((resolve) => { finishSave = resolve; }));
       let start!: Promise<void>;
       act(() => { start = view.actions.startUpload(selected); });
       await act(() => view.actions.startUpload(selected));
@@ -747,7 +748,7 @@ describe('product draft submit lifecycle', () => {
       const view = mountImageActions('APPROVED');
       const selected = (await act(() => view.actions.selectImages()))!;
       let finishSave!: (saved: boolean) => void;
-      view.session.persistCurrentForm.mockImplementation(() => new Promise((resolve) => { finishSave = resolve; }));
+      view.session.persistDirtyForm.mockImplementation(() => new Promise((resolve) => { finishSave = resolve; }));
       let start!: Promise<void>;
       act(() => { start = view.actions.startUpload(selected); });
       try {

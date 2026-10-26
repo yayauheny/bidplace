@@ -10,8 +10,14 @@
 a future preparation screen can replace `selection.images` with
 `ImageUploadInput` results and defer the start. Selection retains its Work,
 session epoch, operation and generation; stale or consumed selections cannot
-start another batch. Approved form saves still precede the picker and are
-checked again before a deferred upload. Starting copies the input descriptors;
+start another batch. Approved form saves still precede the picker.
+Before upload, `product-draft-save.ts.persistDirtyForm()` waits for the active
+field save, then checks current React Hook Form field dirtiness via
+`getFieldState`. It saves remaining edits until clean, stops on failure or
+retired ownership, and does not write an unchanged form twice. No separate
+form snapshot/dirty model is stored by the image owner. Save-session unmount
+retires operation/generation, preventing late confirmation or another save.
+Starting copies the input descriptors;
 retry retains the same Blob/key and skips completed files. Only one file is read
 at a time. Unmount retires the selection/batch before aborting the request;
 abort does not guarantee server cancellation.

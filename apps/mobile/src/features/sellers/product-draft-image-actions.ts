@@ -286,7 +286,10 @@ export function useProductDraftImageActions({
     setChoosingImages(true);
     const assets = selected.images.map((image) => ({ ...image }));
     try {
-      if (!(await persistApprovedSnapshot()) || !stillOwnsSelection()) return;
+      if (
+        (editorStatus === 'APPROVED' && !(await session.persistDirtyForm())) ||
+        !stillOwnsSelection()
+      ) return;
       const key = crypto.randomUUID();
       const batch: UploadBatch = {
         assets,

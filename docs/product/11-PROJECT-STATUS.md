@@ -16,6 +16,30 @@
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
 | Commerce, избранное/подписки, смена email/password из settings | Not implemented в launch scope / post-MVP; [следующая волна](15-POST-MVP-BACKLOG.md). Старый commerce runtime не разрешает включать продажи. |
 
+## 2026-10-26 — Устранение повторного save перед photo upload
+
+**Implemented (local checks passed).** `product-draft-save.ts.persistDirtyForm()`
+ожидает активный save и проверяет актуальные dirty-поля React Hook Form;
+`startUpload()` использует его вместо безусловной записи. `selectImages()`
+сохраняет save → picker. При поздних правках владелец save сохраняет их перед
+upload, при ошибке/смене владения останавливается. Unmount завершает владение
+save operation/generation. Новая копия snapshot/dirty-state не создаётся.
+`product-draft-save-race.spec.ts` проверяет реальные `products.update` и
+`images.add` через существующую форму; lifecycle/retry owner остаётся прежним.
+UI, editor, backend и зависимости не менялись.
+
+Проверено на Node 22.20.0: 80 целевых owner-тестов; Turbo
+`typecheck lint test build --filter=@bidplace/mobile...` (1083 mobile + 48
+contracts + 51 api-client unit tests, Web/iOS/Android export); 6 media E2E
+Chromium/WebKit (`playwright.media.config.ts`, порты 3101/8181), E2E fence,
+`docs:link-check` (192 файла), `git diff --check`. Физические устройства и
+live R2/CDN остаются Needs verification. Merge/deploy не выполнялись.
+
+Целевая ветка интеграции: `feature/portfolio-mvp-release` (`origin/feature/portfolio-mvp-release`);
+база `feature/photo-preparation-core` — `ef14bfe1`, первый коммит — `b978cf50`.
+`23250a8b` (`fix/mobile-form-ux`) — контекст исходного плана, а не база этой
+реализации. Посторонние изменения не переносились; история не переписывалась.
+
 ## 2026-10-26 — Техническая основа подготовки фотографий
 
 **Implemented (local checks).** `product-draft-image-actions.ts` разделяет
