@@ -137,7 +137,8 @@ textarea:focus-visible,
   background: none;
   -webkit-mask: none;
   mask: none;
-  box-shadow: inset 0 0 0 var(--figma-glass-stroke-width) var(--figma-glass-border-start);
+  box-shadow: inset 0 0 0 var(--figma-glass-stroke-width)
+    var(--figma-glass-border-start);
 }
 
 .figma-dock-items {
@@ -179,4 +180,29 @@ textarea:focus-visible,
 /* Inactive routes retain layout for Back, but cannot enlarge the active scrollport. */
 [inert][aria-hidden='true'] {
   overflow: clip;
+}
+
+/* Touch scrollports participate too; explicit custom-drag touch rules still win. */
+@media (hover: none) and (pointer: coarse) {
+  * {
+    touch-action: manipulation;
+  }
+
+  /* RN Web sets field sizes inline; preserve the larger OTP input. */
+  input:not([autocomplete='one-time-code']),
+  textarea,
+  select,
+  [contenteditable='true'] {
+    font-size: 16px !important;
+  }
+
+  body:has(
+      input:focus:not([readonly]):not([disabled]),
+      textarea:focus:not([readonly]):not([disabled]),
+      select:focus:not([disabled]),
+      [contenteditable='true']:focus
+    )
+    .figma-dock-layer[data-viewport-reduced='true'] {
+    display: none;
+  }
 }

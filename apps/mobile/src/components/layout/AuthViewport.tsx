@@ -300,7 +300,7 @@ export function AuthViewport(props: AuthViewportProps) {
   useEffect(() => {
     if (presentation !== 'screen') return;
     screenScrollRef.current?.scrollTo({ y: 0, animated: false });
-  }, [height, presentation]);
+  }, [presentation]);
 
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof document === 'undefined' || !focused)

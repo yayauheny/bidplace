@@ -16,6 +16,18 @@
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
 | Commerce, избранное/подписки, смена email/password из settings | Not implemented в launch scope / post-MVP; [следующая волна](15-POST-MVP-BACKLOG.md). Старый commerce runtime не разрешает включать продажи. |
 
+## 2026-10-26 — Mobile Web form UX
+
+**Partial — local browser verified; physical keyboard/device acceptance pending.**
+Touch-only CSS keeps editable text16px, OTP larger and pinch enabled. Existing
+useVisibleViewport now normalizes zoom and distinguishes layout/visible bounds;
+AppShell/AppDialog reuse it, dock hides only for focused input plus occlusion.
+Fullscreen auth stops resetting scroll on every height change (also affects
+Native screen presentation). No backend, navigation, form mutation or token
+changes.1083 mobile units,23 Mobile Web checks (1 CDP-only skip),122 auth/Share/
+Back regressions, graph typecheck/lint and Web/iOS/Android exports passed;
+independent review accepted. [Audit, matrix and limits](../audits/evidence/2026-10-26-mobile-form-ux/README.md).
+
 ## 2026-10-26 — Exact Work action geometry
 
 **Partial — local Web verified; physical Native acceptance pending.** WorkActions

@@ -1,7 +1,7 @@
 import { type ReactNode, useRef } from 'react';
 import { useIsFocused } from 'expo-router';
 import { BlurTargetView } from 'expo-blur';
-import { View } from 'react-native';
+import { Platform, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { designTokens } from '@bidplace/design-tokens';
@@ -12,6 +12,7 @@ import { pageColumnStyle } from './PageColumn';
 import { DesktopHeader } from './DesktopHeader';
 import { PageChromeProvider, useDesktopNavigation } from './public-navigation';
 import { useDockInset } from './use-dock-inset';
+import { useVisibleViewport } from './use-visible-viewport';
 
 export function AppShell({
   children,
@@ -29,6 +30,7 @@ export function AppShell({
   const { reserve } = useDockInset();
   const palette = useAppTheme();
   const desktop = useDesktopNavigation();
+  const { height, offsetTop } = useVisibleViewport();
 
   return (
     <SafeAreaView
@@ -37,6 +39,9 @@ export function AppShell({
         flex: 1,
         backgroundColor: palette.canvas,
         overflow: 'visible',
+        ...(Platform.OS === 'web'
+          ? { maxHeight: height, marginTop: offsetTop }
+          : {}),
       }}
     >
       {!hideDock && desktop ? <DesktopHeader active={isFocused} /> : null}
@@ -48,7 +53,9 @@ export function AppShell({
           contentLayout === 'column' ? pageColumnStyle : null,
         ]}
       >
-        <PageChromeProvider value={{ desktop: !hideDock && desktop, dock: !hideDock && !desktop }}>
+        <PageChromeProvider
+          value={{ desktop: !hideDock && desktop, dock: !hideDock && !desktop }}
+        >
           {children}
           {bottomAction ? (
             <View

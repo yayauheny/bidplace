@@ -1,7 +1,7 @@
 import * as Dialog from '@rn-primitives/dialog';
 import type { ElementRef, ReactNode } from 'react';
 import { useCallback, useEffect, useRef } from 'react';
-import { Platform, ScrollView, useWindowDimensions, View } from 'react-native';
+import { Platform, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated from 'react-native-reanimated';
 
@@ -13,6 +13,7 @@ import {
 } from '../../lib/layout-transition';
 
 import { FigmaIcon } from '../figma/FigmaIcon';
+import { useVisibleViewport } from '../layout/use-visible-viewport';
 import { useAppTheme } from '../../providers/theme-provider';
 import { AppText } from './AppText';
 import { AppDialogSheetMotion } from './AppDialogSheetMotion';
@@ -64,7 +65,7 @@ export function AppDialog({
   bottomSpace,
   bare = false,
 }: AppDialogProps) {
-  const { height, width } = useWindowDimensions();
+  const { height, width, offsetTop } = useVisibleViewport();
   const insets = useSafeAreaInsets();
   const palette = useAppTheme();
   const viewportGutter = designTokens.space.x5;
@@ -446,6 +447,9 @@ export function AppDialog({
     viewportGutter,
     viewportWidth: width,
   });
+  if (Platform.OS === 'web') {
+    Object.assign(frameStyle, { height, top: offsetTop, bottom: undefined });
+  }
 
   return (
     <Dialog.Root

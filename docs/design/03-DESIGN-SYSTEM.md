@@ -17,6 +17,20 @@ and router/history helpers stay outside the button. Previous-month/photo and
 row disclosure arrows retain their semantics. This founder-approved standard
 supersedes route-local Back geometry, not other icon-button sizes.
 
+## 2026-10-26 — Touch Web input and visible viewport
+
+On coarse/no-hover browsers, normal UI uses touch-action manipulation; editable
+input/textarea/select/contenteditable text is16px, preserving the larger OTP.
+This browser accessibility adaptation overrides RNW inline field fonts only;
+Native/Desktop tokens and external labels stay unchanged. Custom drag rules
+still own their limited touch-action. Pinch remains available.
+Existing useVisibleViewport owns normalized/rounded visual height and layout
+height separately. Web AppShell and AppDialog use the visible bounds; dock hides
+for active editable input only while occluded, keeping its scroll reserve stable.
+Auth fullscreen scroll resets on presentation changes, never keyboard resize.
+Physical keyboard/pan and Native acceptance remains pending; see
+[verification](../audits/evidence/2026-10-26-mobile-form-ux/README.md).
+
 ## 1. Архитектура источников
 
 ### Current brand/fullscreen auth target — 2026-10-08

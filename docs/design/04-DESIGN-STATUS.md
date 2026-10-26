@@ -5,6 +5,18 @@
 Полный прежний журнал, включая ограничения ранних экранов:
 [история](../archive/design/04-DESIGN-STATUS-through-2026-10-23.md).
 
+## 2026-10-26 — Mobile Web form UX
+
+**Partial — local browser verified; physical keyboard/device acceptance pending.**
+Touch-only CSS keeps editable text16px, OTP larger and pinch enabled. Existing
+useVisibleViewport now normalizes zoom and distinguishes layout/visible bounds;
+AppShell/AppDialog reuse it, dock hides only for focused input plus occlusion.
+Fullscreen auth stops resetting scroll on every height change (also affects
+Native screen presentation). No backend, navigation, form mutation or token
+changes.1083 mobile units,23 Mobile Web checks (1 CDP-only skip),122 auth/Share/
+Back regressions, graph typecheck/lint and Web/iOS/Android exports passed;
+independent review accepted. [Audit, matrix and limits](../audits/evidence/2026-10-26-mobile-form-ux/README.md).
+
 ## 2026-10-26 — Exact Work action geometry
 
 **Partial — local Web verified; physical Native acceptance pending.** WorkActions
