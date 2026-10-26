@@ -5,6 +5,16 @@
 Полный прежний журнал, включая ограничения ранних экранов:
 [история](../archive/design/04-DESIGN-STATUS-through-2026-10-23.md).
 
+## 2026-10-27 — Photo grid acceptance cleanup
+
+**Partial.** Removed the extra grid discard button; disabled upload/error CTA
+reads «Продолжить» with unchanged availability. Existing confirmation is reached
+through Close for idle unfinished photos. Both refreshed 390×874 error images
+were visually checked: no extra action, correct disabled label, unchanged layout.
+[Evidence and checks](../audits/2026-10-26-PHOTO-WORKFLOW.md).
+Chromium/WebKit close/cancel and upload/error checks pass. Native gestures,
+200% zoom and live CDN remain unverified; no broader visual acceptance claimed.
+
 ## 2026-10-27 — Photo review corrections
 
 **Partial.** Figma `7329:704/822/823/824` reread with screenshots. Web rectangle

@@ -1176,7 +1176,7 @@ export function useProductDraftImageActions({
   };
 
   const cancelUpload = async () => {
-    if (currentPhotos().busy || pickerLock.current) return;
+    if (currentPhotos().busy || pickerLock.current) return false;
     const epoch = currentAuthEpoch(queryClient);
     try {
       for (const card of currentPhotos().cards.filter(
@@ -1188,12 +1188,12 @@ export function useProductDraftImageActions({
           card.server?.slotId,
         );
         if (!mounted.current || !canWritePrivateCache(queryClient, epoch))
-          return;
+          return false;
         if (!result.photo) {
           setImageSelectionError(
             'Ответ загрузки ещё не подтверждён. Повторите загрузку этой карточки перед отбрасыванием.',
           );
-          return;
+          return false;
         }
         if (result.photo)
           updateCard(card.id, (value) => ({
@@ -1225,7 +1225,7 @@ export function useProductDraftImageActions({
         orderConfirmed: false,
       }));
       const detail = await refreshPhotos();
-      if (!detail) return;
+      if (!detail) return false;
       updatePhotos((value) => ({
         ...value,
         cards: [...value.cards].sort(
@@ -1240,9 +1240,11 @@ export function useProductDraftImageActions({
         orderError: null,
       }));
       upload.reset();
+      return true;
     } catch (error) {
       if (mounted.current && canWritePrivateCache(queryClient, epoch))
         updatePhotos((value) => ({ ...value, orderError: error }));
+      return false;
     }
   };
   const retryUpload = (id?: string) => {

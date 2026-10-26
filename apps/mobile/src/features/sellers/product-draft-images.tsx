@@ -158,7 +158,6 @@ export type ProductDraftImagesStepProps = {
   photoCards?: WorkPhotoCard[];
   photoOrderError?: unknown;
   photoOrderConfirmed?: boolean;
-  onDiscardLocal?: () => void;
   onEditPhoto?: (id: string) => void;
   onMovePhotoTo?: (id: string, index: number) => void;
   onRemovePhoto?: (id: string) => void;
@@ -189,7 +188,6 @@ export function ProductDraftImagesStep({
   photoCards,
   photoOrderError,
   photoOrderConfirmed = true,
-  onDiscardLocal,
   onEditPhoto,
   onMovePhotoTo,
   onRemovePhoto,
@@ -464,13 +462,6 @@ export function ProductDraftImagesStep({
           >
             {imageSelectionError}
           </AppText>
-        ) : null}
-        {onDiscardLocal && photoCards.some((card) => card.status !== 'done') ? (
-          <TextButton
-            label="Отбросить локальные изменения"
-            disabled={uploadPending}
-            onPress={onDiscardLocal}
-          />
         ) : null}
         {!isCreationFlow &&
         onStartUpload &&

@@ -541,7 +541,7 @@ test('shows a partial gallery upload and retries only the unfinished photo', asy
     ).toBeEnabled();
     await expect(
       page.getByRole('button', {
-        name: 'Завершите загрузку фотографий',
+        name: 'Продолжить',
         exact: true,
       }),
     ).toBeDisabled();
@@ -862,11 +862,32 @@ test('photo editor retains settings on Work and avatar preparation failure and r
     ).toBeVisible();
     await expect.poll(() => calls).toBe(4);
     await expect(page.getByText('Загрузка', { exact: true })).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: 'Продолжить', exact: true }),
+    ).toBeDisabled();
+    await expect(
+      page.getByRole('button', {
+        name: 'Отбросить локальные изменения',
+        exact: true,
+      }),
+    ).toHaveCount(0);
     await photoEvidence(page, 'upload-error-390');
     releaseUpload();
     await expect(
       page.getByRole('button', { name: 'Добавить изображения' }),
     ).toBeEnabled();
+    await page.getByRole('button', { name: 'Закрыть', exact: true }).click();
+    const discardDialog = page.getByRole('dialog', {
+      name: 'Отбросить локальные изменения фото?',
+    });
+    await expect(discardDialog).toBeVisible();
+    await discardDialog
+      .getByRole('button', { name: 'Продолжить редактирование', exact: true })
+      .click();
+    await expect(discardDialog).not.toBeVisible();
+    await expect(
+      page.getByRole('button', { name: 'Повторить загрузку фото 2' }),
+    ).toBeVisible();
     for (const height of [874, 600]) {
       await page.setViewportSize({ width: 390, height });
       await page
@@ -876,7 +897,7 @@ test('photo editor retains settings on Work and avatar preparation failure and r
         .getByRole('button', { name: 'Удалить фото 4' })
         .boundingBox();
       const cta = await page
-        .getByRole('button', { name: 'Завершите загрузку фотографий' })
+        .getByRole('button', { name: 'Продолжить' })
         .boundingBox();
       expect(last!.y + last!.height).toBeLessThanOrEqual(cta!.y);
       expect(

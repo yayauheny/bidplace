@@ -242,7 +242,23 @@ vi.mock('../../components/ui', () => {
     );
   }
   return {
-    AppDialog: () => null,
+    AppDialog: ({
+      open,
+      title,
+      children,
+    }: {
+      open: boolean;
+      title: string;
+      children?: ReactNode;
+    }) =>
+      open
+        ? createElement(
+            'div',
+            { role: 'dialog' },
+            createElement('h2', null, title),
+            children,
+          )
+        : null,
     AppText: ({ children }: { children?: ReactNode }) =>
       createElement('span', null, children),
     PrimaryButton: PressButton,
@@ -783,7 +799,9 @@ describe('product draft submit lifecycle', () => {
       await act(() => view.actions.removePhoto('local'));
       expect(harness.removeImages).not.toHaveBeenCalled();
       expect(view.actions.photoCards).toHaveLength(1);
-      await act(() => view.actions.cancelUpload());
+      await act(async () => {
+        expect(await view.actions.cancelUpload()).toBe(false);
+      });
       expect(view.actions.photoCards).toHaveLength(1);
       harness.photoOperation.mockResolvedValue({
         photo: {
@@ -951,6 +969,66 @@ describe('product draft submit lifecycle', () => {
     }
   });
 
+  it('offers confirmed local-photo discard only when closing, and keeps edits when the dialog is cancelled', async () => {
+    const file = new File(['local'], 'local.png', { type: 'image/png' });
+    harness.launchImageLibraryAsync.mockResolvedValue({
+      canceled: false,
+      assets: [{ uri: 'blob:local', file }],
+    });
+    const view = mount({ flow: 'creation', stepParam: '2' });
+    const key = workPhotoSessionKey('user-a', productId);
+    try {
+      await until(
+        view.container,
+        () => Boolean(button(view.container, 'Добавить изображения')),
+        'images',
+      );
+      act(() => button(view.container, 'Добавить изображения')!.click());
+      await until(
+        view.container,
+        () => Boolean(button(view.container, 'Загрузить 1 фото')),
+        'local selection',
+      );
+      expect(
+        button(view.container, 'Отбросить локальные изменения'),
+      ).toBeNull();
+      expect(harness.addImages).not.toHaveBeenCalled();
+      const localId = view.queryClient
+        .getQueryData<WorkPhotoSession>(key)!
+        .cards.find((card) => card.source?.file === file)!.id;
+      act(() => button(view.container, 'Закрыть')!.click());
+      await flush();
+      expect(
+        view.container.querySelector('[role="dialog"]')?.textContent,
+      ).toContain('Отбросить локальные изменения фото?');
+      act(() => button(view.container, 'Продолжить редактирование')!.click());
+      await flush();
+      expect(view.container.querySelector('[role="dialog"]')).toBeNull();
+      expect(
+        view.queryClient
+          .getQueryData<WorkPhotoSession>(key)!
+          .cards.some((card) => card.id === localId),
+      ).toBe(true);
+      expect(harness.replace).not.toHaveBeenCalled();
+      act(() => button(view.container, 'Закрыть')!.click());
+      await flush();
+      act(() => button(view.container, 'Отбросить изменения')!.click());
+      await until(
+        view.container,
+        () => harness.replace.mock.calls.some((call) => call[0] === '/profile'),
+        'confirmed close',
+      );
+      expect(
+        view.queryClient
+          .getQueryData<WorkPhotoSession>(key)!
+          .cards.some((card) => card.id === localId),
+      ).toBe(false);
+      expect(harness.removeImages).not.toHaveBeenCalled();
+    } finally {
+      view.unmount();
+    }
+  });
+
   it('keeps closing available while a photo is being sent', async () => {
     harness.launchImageLibraryAsync.mockResolvedValue({
       canceled: false,
@@ -979,6 +1057,15 @@ describe('product draft submit lifecycle', () => {
         'upload',
       );
       expect(button(view.container, 'Закрыть')?.disabled).toBe(false);
+      await until(
+        view.container,
+        () => Boolean(button(view.container, 'Продолжить')),
+        'upload CTA label',
+      );
+      expect(button(view.container, 'Продолжить')?.disabled).toBe(true);
+      expect(
+        button(view.container, 'Завершите загрузку фотографий'),
+      ).toBeNull();
       harness.setParams.mockClear();
       act(() => button(view.container, 'Назад')?.click());
       expect(harness.setParams).not.toHaveBeenCalled();

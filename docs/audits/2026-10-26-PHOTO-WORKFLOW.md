@@ -145,3 +145,29 @@ timeouts/assertions; the prior CDN interceptor failure did not reproduce in its
 focused rerun or the final full run. All four latest screenshots above were
 refreshed from that full run. Final typecheck/lint, formatting, 193-file docs link
 check and diff check passed. No merge/deploy.
+
+
+## 2026-10-27 — Final grid acceptance cleanup above `2569f20b`
+
+Removed «Отбросить локальные изменения» from `ProductDraftImages`. The existing
+discard dialog had only that trigger, so Close now opens it for idle unfinished
+photos. Cancel preserves cards; confirm awaits the existing cleanup and closes
+only on success in the same save-session operation. `cancelUpload` reports its
+existing refusal/failure paths without changing the cleanup algorithm; unresolved
+upload responses stay recoverable and their explanation is visible in the dialog.
+Active-upload Close keeps its existing save/recovery behavior.
+
+Disabled upload/error CTA now says «Продолжить»; availability conditions are
+unchanged. No backend, architecture, dependency or layout geometry changes.
+Owner form tests cover the absent grid action, close/cancel/confirm and refused
+unknown-response discard. Actual Chromium/WebKit checks cover disabled Continue,
+absence of the old instruction/action and close/cancel retaining the error card.
+Both upload/error images in the table above are refreshed and visually checked.
+
+Node 22.20.0: full mobile suite 1105 tests / 141 files, targeted lifecycle suite
+45 tests, affected Turbo typecheck/lint and Web export passed. Four targeted media
+cases (partial gallery + retained editor settings, both browsers) passed; final
+retained-settings rerun with Close assertions passed 2/2. E2E fence, docs links,
+formatting and diff check passed. Backend tests and native exports were not rerun
+for this client-only change. Overall Partial remains: physical Native gestures,
+200% zoom and live CDN are unverified. No merge/deploy.

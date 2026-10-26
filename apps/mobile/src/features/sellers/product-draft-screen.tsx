@@ -104,7 +104,9 @@ export function ProductDraftScreen({
     data;
   const [copiedRecovery, setCopiedRecovery] = useState<string | null>(null);
   const [recoveryManualVisible, setRecoveryManualVisible] = useState(false);
-  const [discardPhotosOpen, setDiscardPhotosOpen] = useState(false);
+  const [discardPhotosOperation, setDiscardPhotosOperation] = useState<
+    number | null
+  >(null);
 
   // Read the installed session (not an auth context) so the owner specs can
   // mount the screen with only a query cache, like the rest of the save flow.
@@ -319,17 +321,19 @@ export function ProductDraftScreen({
             isCreationFlow && wizardStep === productWizardStep.images ? (
               <PrimaryButton
                 label={
-                  uploadUnfinished
-                    ? imageActions.photoCards.some(
-                        (card) => card.status === 'local',
-                      )
-                      ? `Загрузить ${imageActions.photoCards.filter((card) => card.status === 'local').length} фото`
-                      : imageActions.photoCards.some(
-                            (card) => card.status === 'error',
-                          )
-                        ? 'Завершите загрузку фотографий'
-                        : 'Сохранить порядок'
-                    : 'Продолжить'
+                  uploadBusy
+                    ? 'Продолжить'
+                    : uploadUnfinished
+                      ? imageActions.photoCards.some(
+                          (card) => card.status === 'local',
+                        )
+                        ? `Загрузить ${imageActions.photoCards.filter((card) => card.status === 'local').length} фото`
+                        : imageActions.photoCards.some(
+                              (card) => card.status === 'error',
+                            )
+                          ? 'Продолжить'
+                          : 'Сохранить порядок'
+                      : 'Продолжить'
                 }
                 width="block"
                 size="creationAction"
@@ -385,7 +389,11 @@ export function ProductDraftScreen({
               storyEditor.pending ||
               session.inputsLocked
             }
-            onClose={() => void wizardNavigation.saveAndClose()}
+            onClose={() => {
+              if (!uploadBusy && uploadUnfinished)
+                setDiscardPhotosOperation(session.snapshotOperation());
+              else void wizardNavigation.saveAndClose();
+            }}
             delivery={productDetail.data?.publication}
             moderationNotice={moderationNotice}
             editorStatus={editorStatus}
@@ -492,7 +500,6 @@ export function ProductDraftScreen({
               photoCards={imageActions.photoCards}
               photoOrderError={imageActions.photoOrderError}
               photoOrderConfirmed={imageActions.photoOrderConfirmed}
-              onDiscardLocal={() => setDiscardPhotosOpen(true)}
               onEditPhoto={(id) => void imageActions.editPhoto(id)}
               onMovePhotoTo={imageActions.movePhotoTo}
               onStartUpload={() => void imageActions.startUpload()}
@@ -604,21 +611,39 @@ export function ProductDraftScreen({
           </AppDialog>
 
           <AppDialog
-            open={discardPhotosOpen}
+            open={
+              discardPhotosOperation !== null &&
+              session.isCurrentOperation(discardPhotosOperation)
+            }
             title="Отбросить локальные изменения фото?"
             description="Принятые сервером фотографии сохранятся. Незагруженные файлы и локальные правки будут удалены."
-            onClose={() => setDiscardPhotosOpen(false)}
+            onClose={() => setDiscardPhotosOperation(null)}
           >
+            {imageActions.imageSelectionError ? (
+              <AppText role="bodySmall" tone="danger" accessibilityRole="alert">
+                {imageActions.imageSelectionError}
+              </AppText>
+            ) : null}
             <PrimaryButton
               label="Отбросить изменения"
               onPress={() => {
-                void imageActions.cancelUpload();
-                setDiscardPhotosOpen(false);
+                const operation = discardPhotosOperation;
+                if (
+                  operation === null ||
+                  !session.isCurrentOperation(operation)
+                )
+                  return;
+                void imageActions.cancelUpload().then((discarded) => {
+                  if (!discarded || !session.isCurrentOperation(operation))
+                    return;
+                  setDiscardPhotosOperation(null);
+                  void wizardNavigation.saveAndClose();
+                });
               }}
             />
             <SecondaryButton
               label="Продолжить редактирование"
-              onPress={() => setDiscardPhotosOpen(false)}
+              onPress={() => setDiscardPhotosOperation(null)}
             />
           </AppDialog>
 

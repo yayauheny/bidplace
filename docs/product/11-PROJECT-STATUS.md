@@ -16,6 +16,21 @@
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
 | Commerce, избранное/подписки, смена email/password из settings | Not implemented в launch scope / post-MVP; [следующая волна](15-POST-MVP-BACKLOG.md). Старый commerce runtime не разрешает включать продажи. |
 
+## 2026-10-27 — Photo grid acceptance cleanup
+
+**Implemented for tested local Web corrections; workflow remains Partial.**
+Above `2569f20b`, removed the standalone grid discard action and restored
+«Продолжить» on the disabled upload/error CTA, preserving its availability rules.
+Close opens the existing discard confirmation for idle unfinished photos;
+cancelling keeps local edits, confirmed successful cleanup closes the form.
+Unknown upload responses prevent closing after refused discard; session operation
+identity guards late completion. Existing active-upload close/recovery remains.
+Node 22.20.0: 1105 mobile tests, 45 targeted lifecycle tests, affected graph
+typecheck/lint, Web export, four targeted Chromium/WebKit media cases and two
+final close-dialog cases passed. [Checks and refreshed error evidence](../audits/2026-10-26-PHOTO-WORKFLOW.md).
+Backend/architecture unchanged; Native gestures, 200% zoom and live CDN remain
+Needs verification. No merge/deploy.
+
 ## 2026-10-27 — Photo workflow review corrections
 
 **Implemented for tested local Web/adapter corrections; workflow remains Partial.**
