@@ -715,16 +715,11 @@ export function useProductDraftImageActions({
     }
   };
 
-  const sameSource = async (
-    left: ImageUploadInput,
-    right: ImageUploadInput,
-  ) => {
-    const a = await readImageUpload(left, workImageMaxInputBytes);
-    const b = await readImageUpload(right, workImageMaxInputBytes);
-    if (a.size !== b.size) return false;
-    const first = new Uint8Array(await a.arrayBuffer());
-    const second = new Uint8Array(await b.arrayBuffer());
-    return first.every((value, index) => value === second[index]);
+  const sameSource = async (source: Uint8Array, previous: ImageUploadInput) => {
+    const candidate = await readImageUpload(previous, workImageMaxInputBytes);
+    if (source.byteLength !== candidate.size) return false;
+    const second = new Uint8Array(await candidate.arrayBuffer());
+    return source.every((value, index) => value === second[index]);
   };
 
   const addSelection = async (selected: SelectedWorkImages) => {
@@ -748,18 +743,24 @@ export function useProductDraftImageActions({
         let duplicate = false;
         let selectionError: unknown;
         try {
-          if (
-            source.fileSize !== undefined &&
-            source.fileSize > workImageMaxInputBytes
-          )
-            throw new ImagePreparationError('SOURCE_TOO_LARGE');
+          const bytes = new Uint8Array(
+            await (
+              await readImageUpload(source, workImageMaxInputBytes)
+            ).arrayBuffer(),
+          );
           for (const card of currentPhotos().cards) {
-            if (
-              card.selectedSource &&
-              (await sameSource(source, card.selectedSource))
-            ) {
-              duplicate = true;
-              break;
+            if (!card.selectedSource) continue;
+            try {
+              if (await sameSource(bytes, card.selectedSource)) {
+                duplicate = true;
+                break;
+              }
+            } catch {
+              // An unavailable earlier source cannot establish a duplicate.
+              updateCard(card.id, (value) => ({
+                ...value,
+                selectedSource: undefined,
+              }));
             }
           }
         } catch (error) {
@@ -788,7 +789,7 @@ export function useProductDraftImageActions({
               width: source.width,
               height: source.height,
               source,
-              selectedSource: source,
+              selectedSource: selectionError ? undefined : source,
               edit: { ...originalPhotoEdit },
               kind: 'add',
               operationKey: crypto.randomUUID(),
@@ -893,6 +894,7 @@ export function useProductDraftImageActions({
       operation = session.snapshotOperation();
     const productId = session.persistedProductId();
     const turn = ++editorTurn.current;
+    setImageSelectionError(null);
     const active = () =>
       mounted.current &&
       editorTurn.current === turn &&
@@ -957,6 +959,7 @@ export function useProductDraftImageActions({
     const turn = editorTurn.current;
     const sourceDispose = editorSourceDispose.current;
     editorPreparing.current = true;
+    setImageSelectionError(null);
     setChoosingImages(true);
     try {
       const unchangedOrientation =
@@ -1017,6 +1020,7 @@ export function useProductDraftImageActions({
 
   const closePhotoEdit = () => {
     editorTurn.current += 1;
+    setImageSelectionError(null);
     if (!editorPreparing.current) editorSourceDispose.current?.();
     editorSourceDispose.current = undefined;
     setEditingPhoto(null);

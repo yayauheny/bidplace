@@ -713,3 +713,203 @@ test('uploads a mixed JPEG PNG WebP selection and renders every saved photo', as
     await context.close();
   }
 });
+
+async function photoEvidence(page: Page, name: string) {
+  const directory = resolve(e2eEvidenceDir, '2026-10-27-photo-review');
+  await mkdir(directory, { recursive: true });
+  if (!name.startsWith('last-row'))
+    await page.getByTestId('form-page').evaluate((node) => {
+      node.scrollTop = 0;
+    });
+  await page.evaluate(() => document.fonts.ready);
+  await page.evaluate(async () => {
+    await Promise.all(
+      document
+        .getAnimations()
+        .filter(
+          (animation) => animation.effect?.getTiming().iterations !== Infinity,
+        )
+        .map((animation) => animation.finished.catch(() => undefined)),
+    );
+  });
+  await expect
+    .poll(() =>
+      page
+        .locator('.advanced-cropper-fade--visible')
+        .evaluateAll((nodes) =>
+          nodes.every((node) => getComputedStyle(node).opacity === '1'),
+        ),
+    )
+    .toBe(true);
+  await page.screenshot({
+    path: resolve(directory, `${test.info().project.name}-${name}.png`),
+    // Exclude Expo development chrome only; product content is unchanged.
+    style: '.__expo_fast_refresh { visibility: hidden; }',
+  });
+}
+
+async function failNextPhotoRender(page: Page) {
+  await page.evaluate(() => {
+    const original = HTMLCanvasElement.prototype.toBlob;
+    HTMLCanvasElement.prototype.toBlob = function () {
+      HTMLCanvasElement.prototype.toBlob = original;
+      throw new Error('Synthetic photo processing failure');
+    };
+  });
+}
+
+test('photo editor retains settings on Work and avatar preparation failure and records all photo states', async ({
+  browser,
+}) => {
+  const { seller, categoryId } = await createSellerFixture();
+  const { context, page } = await authenticatedPage(browser, seller);
+  let releaseUpload: () => void = () => undefined;
+  try {
+    await page.setViewportSize({ width: 390, height: 874 });
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    const response = await context.request.post(
+      `${e2eApiBaseURL}/api/products`,
+      { data: { title: 'Photo review', categoryId } },
+    );
+    expect(response.status()).toBe(201);
+    const { product } = await response.json();
+    await page.goto(`/products/${product.id}?flow=creation&step=2`);
+    const picker = page.waitForEvent('filechooser');
+    await page.getByRole('button', { name: 'Добавить изображения' }).click();
+    await (
+      await picker
+    ).setFiles(
+      [1, 2, 3, 4, 5].map((i) => `e2e/fixtures/portfolio-photo-${i}.png`),
+    );
+    await expect(
+      page.getByRole('button', { name: 'Загрузить 5 фото' }),
+    ).toBeEnabled();
+    await photoEvidence(page, 'preparation-390');
+    for (const height of [874, 600]) {
+      await page.setViewportSize({ width: 390, height });
+      const last = page.getByRole('button', {
+        name: 'Удалить фото 5',
+        exact: true,
+      });
+      await page.getByTestId('form-page').evaluate((node) => {
+        node.scrollTop = node.scrollHeight;
+      });
+      await expect(last).toBeInViewport();
+      const bounds = await last.boundingBox();
+      const cta = await page
+        .getByRole('button', { name: 'Загрузить 5 фото' })
+        .boundingBox();
+      expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(cta!.y);
+      await photoEvidence(page, `last-row-long-${height}`);
+    }
+    await page.setViewportSize({ width: 390, height: 874 });
+
+    await page
+      .getByRole('button', { name: 'Редактировать фото 2', exact: true })
+      .click();
+    await page.getByRole('tab', { name: 'Кадрировать', exact: true }).click();
+    await expect(
+      page.getByRole('tab', { name: 'Кадрировать', exact: true }),
+    ).toHaveAttribute('aria-selected', 'true');
+    const frame = page.getByRole('group', { name: /^Кадрирование:/ });
+    await page.getByRole('tab', { name: 'Кадрировать', exact: true }).focus();
+    // Safari's Tab targets follow system preferences; enter keyboard modality first.
+    await page.keyboard.press('Tab');
+    await frame.focus();
+    await page.keyboard.press('ArrowRight');
+    await expect(frame).toBeFocused();
+    await expect(frame).toHaveCSS('outline-style', 'solid');
+    await page.getByText('Настроить фото', { exact: true }).click();
+    await photoEvidence(page, 'editor-390');
+    await page.getByRole('button', { name: 'Повернуть 90°' }).click();
+    await failNextPhotoRender(page);
+    await page.getByRole('button', { name: 'Готово', exact: true }).click();
+    await expect(page.getByRole('alert')).toHaveText(
+      'Не удалось обработать выбранное фото.',
+    );
+    await expect(
+      page.getByText('Настроить фото', { exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: 'Готово', exact: true }),
+    ).toBeEnabled();
+    await page.getByRole('button', { name: 'Готово', exact: true }).click();
+    await expect(
+      page.getByRole('button', { name: 'Загрузить 5 фото' }),
+    ).toBeEnabled();
+    await page
+      .getByRole('button', { name: 'Удалить фото 5', exact: true })
+      .click();
+    let calls = 0;
+    const gate = new Promise<void>((resolve) => {
+      releaseUpload = resolve;
+    });
+    await page.route(`**/api/products/${product.id}/images`, async (route) => {
+      if (route.request().method() !== 'POST') return route.continue();
+      calls += 1;
+      if (calls === 2)
+        return route.fulfill({
+          status: 503,
+          contentType: 'application/json',
+          body: JSON.stringify({ message: 'Fixture failure' }),
+        });
+      if (calls === 4) await gate;
+      await route.continue();
+    });
+    await page.getByRole('button', { name: 'Загрузить 4 фото' }).click();
+    await expect(
+      page.getByRole('button', { name: 'Повторить загрузку фото 2' }),
+    ).toBeVisible();
+    await expect.poll(() => calls).toBe(4);
+    await expect(page.getByText('Загрузка', { exact: true })).toBeVisible();
+    await photoEvidence(page, 'upload-error-390');
+    releaseUpload();
+    await expect(
+      page.getByRole('button', { name: 'Добавить изображения' }),
+    ).toBeEnabled();
+    for (const height of [874, 600]) {
+      await page.setViewportSize({ width: 390, height });
+      await page
+        .getByRole('button', { name: 'Удалить фото 4' })
+        .scrollIntoViewIfNeeded();
+      const last = await page
+        .getByRole('button', { name: 'Удалить фото 4' })
+        .boundingBox();
+      const cta = await page
+        .getByRole('button', { name: 'Завершите загрузку фотографий' })
+        .boundingBox();
+      expect(last!.y + last!.height).toBeLessThanOrEqual(cta!.y);
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth <= innerWidth,
+        ),
+      ).toBe(true);
+      await photoEvidence(page, `last-row-${height}`);
+    }
+    await page.goto('/profile');
+    await page.setViewportSize({ width: 390, height: 874 });
+    const avatarPicker = page.waitForEvent('filechooser');
+    await page
+      .getByRole('button', { name: 'Изменить фото', exact: true })
+      .click();
+    await (await avatarPicker).setFiles('e2e/fixtures/author-portrait.png');
+    await expect(
+      page.getByText('Фотография автора', { exact: true }),
+    ).toBeVisible();
+    await photoEvidence(page, 'avatar-390');
+    await page.getByRole('button', { name: 'Повернуть 90°' }).click();
+    await failNextPhotoRender(page);
+    await page.getByRole('button', { name: 'Установить фото' }).click();
+    await expect(page.getByRole('alert')).toBeVisible();
+    await expect(
+      page.getByText('Фотография автора', { exact: true }),
+    ).toBeVisible();
+    await page.getByRole('button', { name: 'Установить фото' }).click();
+    await expect(
+      page.getByText('Фотография автора', { exact: true }),
+    ).not.toBeVisible();
+  } finally {
+    releaseUpload();
+    await context.close();
+  }
+});

@@ -217,10 +217,15 @@ export function ProductDraftImagesStep({
   if (photoCards) {
     const errors = photoCards.filter((card) => card.status === 'error');
     return (
-      <View style={{ gap: designTokens.space.x5 }}>
+      <View
+        style={{
+          gap: designTokens.space.x5,
+          paddingBottom: designTokens.space.x3,
+        }}
+      >
         {photoCards.some((card) => card.status !== 'local') ? (
           <AppText
-            role="feedbackTitle"
+            role="mediaCaption"
             tone="secondary"
             style={{ textAlign: 'center' }}
             accessibilityLiveRegion="polite"
@@ -237,7 +242,7 @@ export function ProductDraftImagesStep({
             position: index,
           }))}
           addAction={
-            editable && photoCards.length < 10 ? (
+            editable && !uploadPending && photoCards.length < 10 ? (
               <MotionPressable
                 accessibilityRole="button"
                 accessibilityLabel="Добавить изображения"
@@ -378,14 +383,21 @@ export function ProductDraftImagesStep({
                       }}
                     >
                       {!failed ? (
-                        <FigmaIconButton
-                          icon="pencil-edit-01"
-                          iconSize={22}
-                          surface="outline"
-                          label={`Редактировать фото ${image.position + 1}`}
-                          disabled={uploadPending || !editable}
-                          onPress={() => onEditPhoto?.(card.id)}
-                        />
+                        <View
+                          style={{
+                            backgroundColor: palette.surface,
+                            borderRadius: designTokens.radius.pill,
+                          }}
+                        >
+                          <FigmaIconButton
+                            icon="pencil-edit-01"
+                            iconSize={22}
+                            surface="outline"
+                            label={`Редактировать фото ${image.position + 1}`}
+                            disabled={uploadPending || !editable}
+                            onPress={() => onEditPhoto?.(card.id)}
+                          />
+                        </View>
                       ) : null}
                       <FigmaIconButton
                         icon="delete-02"

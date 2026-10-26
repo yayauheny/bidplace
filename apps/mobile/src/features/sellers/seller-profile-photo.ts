@@ -146,6 +146,7 @@ export function useProfilePhoto({
       });
       if (!stillOwnsPhoto()) return;
       if (result.canceled || !result.assets[0]) return;
+      clearAlert();
       rememberPendingOpener(
         '[aria-label="Изменить фото"], [aria-label="Загрузить фото"]',
       );
@@ -178,6 +179,7 @@ export function useProfilePhoto({
 
   const cancelEditor = () => {
     photoSelection.current += 1;
+    clearAlert();
     setEditor(null);
     preparingRef.current = false;
     setPreparing(false);
@@ -191,6 +193,7 @@ export function useProfilePhoto({
       !guard.transitionLock.current &&
       guard.screenStillOwns(opened.operation, opened.epoch);
     preparingRef.current = true;
+    clearAlert();
     setPreparing(true);
     try {
       const transformed = await preparePhotoEdit(opened.input, edit, 'avatar');

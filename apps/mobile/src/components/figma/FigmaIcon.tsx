@@ -6,7 +6,7 @@ import {
   AiMagicIcon,
   RotateCwSquareIcon,
   FlipHorizontalIcon,
-  ArrowReloadHorizontalIcon,
+  UndoIcon,
   Alert02Icon,
   ClipboardCheckIcon,
   ChartLineData01Icon,
@@ -78,7 +78,7 @@ const checkIcon = [
 const icons = {
   rotate: RotateCwSquareIcon,
   flip: FlipHorizontalIcon,
-  reset: ArrowReloadHorizontalIcon,
+  reset: UndoIcon,
   alert: Alert02Icon,
   bell: BellIcon,
   'shopping-bag-01': ShoppingBag01Icon,

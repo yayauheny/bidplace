@@ -302,6 +302,7 @@ export function ProductDraftScreen({
         )}
         count={imageActions.photoCards.length}
         pending={imageActions.choosingImages}
+        error={imageActions.imageSelectionError}
         onConfirm={(edit) => void imageActions.confirmPhotoEdit(edit)}
         onCancel={imageActions.closePhotoEdit}
       />

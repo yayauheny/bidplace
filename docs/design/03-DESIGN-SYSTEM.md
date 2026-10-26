@@ -994,3 +994,12 @@ Figma `7329:822–824`: `FigmaIcon` owns rotate/flip/reset/alert icons.
 uses the full media source. Photo editor reuses FormPageShell, FigmaTabs and
 shared controls. Native/zoom accessibility remains Needs verification in
 [design status](04-DESIGN-STATUS.md).
+
+### Photo review controls — 2026-10-27
+
+`FigmaTabs appearance="plain"` with segmented variant is the single-border
+42px control from `7345:722`; existing glass/underline styles retain defaults.
+`segmentLabel`/`segmentSelected` own medium/semibold 14/18 labels; `mediaCaption`
+owns regular 13/18 metadata for Work/avatar. `FigmaIcon reset` uses the installed
+Hugeicons Undo vector, matching `7342:726`; no new icon renderer. Crop library
+styles are scoped to `photo-cropper` and preserve visible keyboard focus.

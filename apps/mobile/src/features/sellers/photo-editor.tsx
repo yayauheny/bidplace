@@ -26,6 +26,7 @@ export function PhotoEditor({
   position,
   count,
   pending,
+  error,
   onConfirm,
   onCancel,
 }: {
@@ -36,6 +37,7 @@ export function PhotoEditor({
   position?: number;
   count?: number;
   pending: boolean;
+  error?: string | null;
   onConfirm: (edit: PhotoEdit) => void;
   onCancel: () => void;
 }) {
@@ -105,155 +107,179 @@ export function PhotoEditor({
         />
       }
     >
-      <View
-        style={{
-          flexDirection: 'row',
-          justifyContent: avatar ? 'flex-end' : 'flex-start',
-          minHeight: designTokens.size.touch,
-        }}
-      >
-        <FigmaIconButton
-          ref={close}
-          icon={avatar ? 'x' : 'arrow-left-02'}
-          label={avatar ? 'Закрыть редактор' : 'Назад'}
-          onPress={onCancel}
-        />
-      </View>
-      <View style={{ gap: designTokens.space.x2 }}>
-        <AppText role="workTitle" style={{ textAlign: 'center' }}>
-          {avatar ? 'Фотография автора' : 'Настроить фото'}
-        </AppText>
-        <AppText
-          role="feedbackTitle"
-          tone="secondary"
-          style={{ textAlign: 'center' }}
-        >
-          {avatar
-            ? 'Перемещайте фото внутри круга'
-            : `Фото ${(position ?? 0) + 1} из ${count ?? 1}`}
-        </AppText>
-      </View>
-      <View
-        onLayout={({ nativeEvent }) => setWidth(nativeEvent.layout.width)}
-        style={{
-          height: viewportHeight,
-          borderRadius: 22,
-          overflow: 'hidden',
-          backgroundColor: palette.surfaceStrong,
-        }}
-      >
-        <PhotoCropSurface
-          key={reset}
-          ref={editor}
-          uri={input.uri}
-          width={inputWidth}
-          height={inputHeight}
-          viewportWidth={width}
-          viewportHeight={viewportHeight}
-          openingCrop={confirmed.crop}
-          cropEnabled={cropEnabled}
-          avatar={avatar}
-          onChange={setDraft}
-        />
-      </View>
-      {!avatar ? (
-        <FigmaTabs
-          variant="segmented"
-          fill
-          label="Режим кадрирования"
-          panelId="photo-crop-mode"
-          value={cropEnabled ? 'crop' : 'original'}
-          tabs={[
-            { value: 'original', label: 'Оригинал' },
-            { value: 'crop', label: 'Кадрировать' },
-          ]}
-          onChange={(value) => setCropEnabled(value === 'crop')}
-        />
-      ) : null}
-      <View style={{ flexDirection: 'row', gap: designTokens.space.x3 }}>
-        {(
-          [
-            {
-              icon: 'rotate',
-              label: 'Повернуть 90°',
-              action: () => editor.current?.rotate(),
-            },
-            {
-              icon: 'flip',
-              label: 'Отразить',
-              action: () => editor.current?.flip(),
-            },
-            {
-              icon: 'reset',
-              label: 'Сбросить',
-              action: () => {
-                setCropEnabled(avatar || confirmed.crop !== null);
-                setDraft({ ...originalPhotoEdit, crop: confirmed.crop });
-                setReset((value) => value + 1);
-              },
-            },
-          ] as const
-        ).map((tool) => (
-          <MotionPressable
-            key={tool.icon}
-            accessibilityRole="button"
-            accessibilityLabel={tool.label}
-            disabled={pending}
-            onPress={tool.action}
-            preset="icon"
-            style={{
-              flex: 1,
-              minHeight: 64,
-              borderRadius: 16,
-              backgroundColor: palette.surfaceMuted,
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: designTokens.space.x1,
-            }}
-          >
-            <FigmaIcon name={tool.icon} size={24} />
-            <AppText role="toolLabel">{tool.label}</AppText>
-          </MotionPressable>
-        ))}
-      </View>
-      {avatar ? (
+      {/* 7329:822/824: header36, title24, caption18; OS insets belong to FormPageShell. */}
+      <View style={{ gap: 0 }}>
         <View
           style={{
-            borderWidth: 1,
-            borderColor: palette.border,
-            borderRadius: 18,
-            padding: designTokens.space.x2,
-            gap: designTokens.space.x3,
             flexDirection: 'row',
-            alignItems: 'center',
+            justifyContent: avatar ? 'flex-end' : 'flex-start',
+            height: 36,
           }}
         >
-          <CroppedPhoto
-            uri={input.uri}
-            component="AuthorPhoto"
-            accessibilityLabel="Превью фото автора"
-            fallbackLabel="Превью недоступно"
-            crop={draft.crop}
-            orientation={draft}
-            sourceWidth={inputWidth}
-            sourceHeight={inputHeight}
-            style={{
-              width: 48,
-              height: 48,
-              borderRadius: 24,
-              overflow: 'hidden',
-            }}
+          <FigmaIconButton
+            ref={close}
+            icon={avatar ? 'x' : 'arrow-left-02'}
+            label={avatar ? 'Закрыть редактор' : 'Назад'}
+            onPress={onCancel}
           />
-          <View style={{ flex: 1, gap: designTokens.space.x1 }}>
-            <AppText role="feedbackTitle">
-              Как будет выглядеть в профиле
-            </AppText>
-            <AppText role="feedbackBody" tone="secondary">
-              {name ?? ''}
-            </AppText>
-          </View>
         </View>
-      ) : null}
+        <View style={{ gap: 14, paddingBottom: avatar ? 24 : 14 }}>
+          <AppText role="workTitle" style={{ textAlign: 'center' }}>
+            {avatar ? 'Фотография автора' : 'Настроить фото'}
+          </AppText>
+          <AppText
+            role="mediaCaption"
+            tone="secondary"
+            style={{ textAlign: 'center' }}
+          >
+            {avatar
+              ? 'Перемещайте фото внутри круга'
+              : `Фото ${(position ?? 0) + 1} из ${count ?? 1}`}
+          </AppText>
+        </View>
+        <View
+          onLayout={({ nativeEvent }) => setWidth(nativeEvent.layout.width)}
+          style={{
+            height: viewportHeight,
+            borderRadius: 22,
+            overflow: 'hidden',
+            backgroundColor: palette.surfaceStrong,
+          }}
+        >
+          <PhotoCropSurface
+            key={reset}
+            ref={editor}
+            uri={input.uri}
+            width={inputWidth}
+            height={inputHeight}
+            viewportWidth={width}
+            viewportHeight={viewportHeight}
+            openingCrop={confirmed.crop}
+            cropEnabled={cropEnabled}
+            avatar={avatar}
+            onChange={setDraft}
+          />
+        </View>
+        {error ? (
+          <AppText
+            role="feedbackBody"
+            tone="danger"
+            accessibilityRole="alert"
+            accessibilityLiveRegion="polite"
+          >
+            {error}
+          </AppText>
+        ) : null}
+        {!avatar ? (
+          <View style={{ marginTop: 18 }}>
+            <FigmaTabs
+              variant="segmented"
+              fill
+              label="Режим кадрирования"
+              panelId="photo-crop-mode"
+              appearance="plain"
+              value={cropEnabled ? 'crop' : 'original'}
+              tabs={[
+                { value: 'original', label: 'Оригинал' },
+                { value: 'crop', label: 'Кадрировать' },
+              ]}
+              onChange={(value) => setCropEnabled(value === 'crop')}
+            />
+          </View>
+        ) : null}
+        <View
+          style={{
+            flexDirection: 'row',
+            gap: designTokens.space.x3,
+            marginTop: avatar ? 28 : 20,
+          }}
+        >
+          {(
+            [
+              {
+                icon: 'rotate',
+                label: 'Повернуть 90°',
+                action: () => editor.current?.rotate(),
+              },
+              {
+                icon: 'flip',
+                label: 'Отразить',
+                action: () => editor.current?.flip(),
+              },
+              {
+                icon: 'reset',
+                label: 'Сбросить',
+                action: () => {
+                  setCropEnabled(avatar || confirmed.crop !== null);
+                  setDraft({ ...originalPhotoEdit, crop: confirmed.crop });
+                  setReset((value) => value + 1);
+                },
+              },
+            ] as const
+          ).map((tool) => (
+            <MotionPressable
+              key={tool.icon}
+              accessibilityRole="button"
+              accessibilityLabel={tool.label}
+              disabled={pending}
+              onPress={tool.action}
+              preset="icon"
+              style={{
+                flex: 1,
+                minHeight: 64,
+                borderRadius: 16,
+                backgroundColor: palette.surfaceMuted,
+                alignItems: 'center',
+                justifyContent: 'flex-start',
+                paddingTop: 7,
+                gap: 10,
+              }}
+            >
+              <FigmaIcon name={tool.icon} size={24} />
+              <AppText role="toolLabel">{tool.label}</AppText>
+            </MotionPressable>
+          ))}
+        </View>
+        {avatar ? (
+          <View
+            style={{
+              borderWidth: 1,
+              borderColor: palette.border,
+              borderRadius: 16,
+              marginTop: 12,
+              padding: designTokens.space.x2,
+              gap: designTokens.space.x3,
+              flexDirection: 'row',
+              alignItems: 'center',
+            }}
+          >
+            <CroppedPhoto
+              uri={input.uri}
+              component="AuthorPhoto"
+              accessibilityLabel="Превью фото автора"
+              fallbackLabel="Превью недоступно"
+              crop={draft.crop}
+              orientation={draft}
+              sourceWidth={inputWidth}
+              sourceHeight={inputHeight}
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: 24,
+                overflow: 'hidden',
+              }}
+            />
+            <View style={{ flex: 1, gap: designTokens.space.x1 }}>
+              <AppText role="feedbackTitle">
+                Как будет выглядеть в профиле
+              </AppText>
+              <AppText role="feedbackBody" tone="secondary">
+                {name ?? ''}
+              </AppText>
+            </View>
+          </View>
+        ) : null}
+      </View>
     </FormPageShell>
   );
 }

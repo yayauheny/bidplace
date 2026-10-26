@@ -16,6 +16,29 @@
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
 | Commerce, избранное/подписки, смена email/password из settings | Not implemented в launch scope / post-MVP; [следующая волна](15-POST-MVP-BACKLOG.md). Старый commerce runtime не разрешает включать продажи. |
 
+## 2026-10-27 — Photo workflow review corrections
+
+**Implemented for tested local Web/adapter corrections; workflow remains Partial.**
+Follow-up to `43324a17` in
+`feature/photo-workflow`: new source validation is independent from prior dedup
+candidates; unreadable earlier sources are removed from comparison without
+transferring their error. `product-draft-submit-lifecycle.spec.ts` covers
+oversized/empty/unreadable → valid in a batch and separate picker selections,
+while exact-byte duplicate/reselect coverage remains.
+`PhotoEditor` renders preparation errors for both Work/avatar, retains draft
+settings and supports retry/cancel. Native crop handles update bounded geometry
+on gesture updates, with no pixel preparation until confirmation.
+Web keeps four corner handles, circle-only avatar, exact Undo icon, plain
+FigmaTabs rail and regular caption typography. Owner tests and actual rendered
+browser processing-failure/retry checks added. 1104 mobile tests, affected graph
+typecheck/lint and Web/iOS/Android export passed. Final sequential media suite:
+8/8 Chromium/WebKit E2E passed without changing assertions/timeouts. E2E fence,
+193-file docs link check, formatting and diff check passed.
+[Four-state screenshots and review](../audits/2026-10-26-PHOTO-WORKFLOW.md).
+No backend/API/persistence changes or broad hook refactoring. Native simulator
+unavailable (`xcrun simctl` missing); physical gesture/output remains Needs
+verification. No merge/deploy.
+
 ## 2026-10-26 — Photo workflow, DEC-148
 
 **Partial.** Work selection/confirmation, per-card editor, exact-byte session

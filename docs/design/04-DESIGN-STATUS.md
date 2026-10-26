@@ -5,6 +5,24 @@
 Полный прежний журнал, включая ограничения ранних экранов:
 [история](../archive/design/04-DESIGN-STATUS-through-2026-10-23.md).
 
+## 2026-10-27 — Photo review corrections
+
+**Partial.** Figma `7329:704/822/823/824` reread with screenshots. Web rectangle
+uses four 8px corner markers, white 2px lines and 40% outside dim; avatar has a
+single circular boundary. Installed Hugeicons `UndoIcon` is the exact reset
+vector. `FigmaTabs appearance="plain"` reuses tab behavior/indicator with a
+single 42px rail; default glass consumers are unchanged. Caption is Inter regular
+13/18; selected/plain tab labels are medium/semibold 14/18. Editor keeps shell
+insets once; browser screenshots exclude the Figma OS status bar. Failure is
+visible inside the open Work/avatar editor and settings survive retry.
+Representative four-state 390×874 and long/short viewport screenshots are
+[saved and visually checked](../audits/2026-10-26-PHOTO-WORKFLOW.md);
+wide checks are robustness, exact desktop parity remains NEEDS-FIGMA. Native
+resize behavior has JS-adapter coverage, device calibration remains unverified.
+Final 8/8 Chromium/WebKit media cases and 1104 mobile unit tests passed; graph
+typecheck/lint and Web/iOS/Android export passed. No full Native/200%-zoom
+acceptance is claimed.
+
 ## 2026-10-26 — Photo workflow
 
 **Partial.** Read-only Figma `pAPQo6cADmG5XzVmBX76EE`: selection `7329:704`, Work

@@ -37,7 +37,10 @@ vi.mock('expo-router', () => ({
   ThemeProvider: ({ children }: { children?: ReactNode }) => children,
 }));
 
-vi.mock('./FigmaSearchGlass', () => ({ FigmaSearchGlass: ({ children }: { children?: ReactNode }) => createElement('div', { 'data-kind': 'rail' }, children) }));
+vi.mock('./FigmaSearchGlass', () => ({
+  FigmaSearchGlass: ({ children }: { children?: ReactNode }) =>
+    createElement('div', { 'data-kind': 'rail' }, children),
+}));
 
 // RN-примитивы прокидываем в DOM только с теми стилями, что проверяет спека.
 function domStyle(style?: Record<string, unknown> | null) {
@@ -128,7 +131,12 @@ vi.mock('../ui', () => ({
 
 const mounted: Array<{ unmount: () => void }> = [];
 
-function mountTabs(contentInset?: number, selection = false, variant: 'underline' | 'segmented' = 'underline') {
+function mountTabs(
+  contentInset?: number,
+  selection = false,
+  variant: 'underline' | 'segmented' = 'underline',
+  appearance: 'glass' | 'plain' = 'glass',
+) {
   const container = document.createElement('div');
   document.body.append(container);
   const root: Root = createRoot(container);
@@ -150,6 +158,7 @@ function mountTabs(contentInset?: number, selection = false, variant: 'underline
           { value: 'story', label: 'История' },
           { value: 'details', label: 'Детали' },
         ],
+        appearance,
         value: 'story',
         onChange: () => undefined,
         label: 'Информация о работе',
@@ -191,13 +200,32 @@ describe('Figma tabs', () => {
     expect(view.container.querySelector('[aria-selected]')).toBeNull();
   });
 
-  it.each(['underline', 'segmented'] as const)('preserves %s tab-panel association and keyboard selection', (variant) => {
-    const view = mountTabs(undefined, false, variant);
-    expect(Boolean(view.container.querySelector('[data-kind="rail"]'))).toBe(variant === 'segmented');
+  it.each(['underline', 'segmented'] as const)(
+    'preserves %s tab-panel association and keyboard selection',
+    (variant) => {
+      const view = mountTabs(undefined, false, variant);
+      expect(Boolean(view.container.querySelector('[data-kind="rail"]'))).toBe(
+        variant === 'segmented',
+      );
+      const first =
+        view.container.querySelector<HTMLButtonElement>('#work-panel-story')!;
+      expect(first.getAttribute('role')).toBe('tab');
+      expect(first.getAttribute('aria-controls')).toBe('work-panel');
+      expect(first.getAttribute('aria-selected')).toBe('true');
+      act(() =>
+        first.dispatchEvent(
+          new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }),
+        ),
+      );
+      expect(document.activeElement?.id).toBe('work-panel-details');
+    },
+  );
+
+  it('uses a single plain segmented rail and retains keyboard tab selection', () => {
+    const view = mountTabs(undefined, false, 'segmented', 'plain');
+    expect(view.container.querySelector('[data-kind="rail"]')).toBeNull();
     const first =
       view.container.querySelector<HTMLButtonElement>('#work-panel-story')!;
-    expect(first.getAttribute('role')).toBe('tab');
-    expect(first.getAttribute('aria-controls')).toBe('work-panel');
     expect(first.getAttribute('aria-selected')).toBe('true');
     act(() =>
       first.dispatchEvent(

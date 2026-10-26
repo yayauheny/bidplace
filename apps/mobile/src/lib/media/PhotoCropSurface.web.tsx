@@ -5,8 +5,10 @@ import {
   type CropperRef,
 } from 'react-advanced-cropper';
 import 'react-advanced-cropper/dist/style.css';
+import './photo-crop-surface.css';
 import type { PhotoCropSurfaceProps } from './photo-crop-surface';
 import { originalPhotoEdit, transformedPhotoSize } from './photo-edit';
+import { useAppTheme } from '../../providers/theme-provider';
 
 export function PhotoCropSurface({
   ref,
@@ -20,6 +22,7 @@ export function PhotoCropSurface({
   viewportHeight,
   onChange,
 }: PhotoCropSurfaceProps) {
+  const palette = useAppTheme();
   const cropper = useRef<CropperRef>(null);
   const [edit, setEdit] = useState(originalPhotoEdit);
   const readTransforms = () => {
@@ -114,9 +117,28 @@ export function PhotoCropSurface({
           ref={cropper}
           src={uri}
           transitions={false}
-          className="photo-cropper"
-          style={{ height: '100%', background: 'transparent' }}
+          className={
+            avatar ? 'photo-cropper photo-cropper--avatar' : 'photo-cropper'
+          }
+          style={{
+            height: '100%',
+            background: 'transparent',
+            ...(avatar ? { color: palette.surfaceStrong } : {}),
+          }}
           {...(avatar ? { stencilComponent: CircleStencil } : {})}
+          defaultSize={(state) => {
+            // Initial frame proportions from 7330:729 / 7332:715; saved crop wins below.
+            const area = state.visibleArea ?? { width, height };
+            return avatar
+              ? {
+                  width: (area.width * 308) / 366,
+                  height: (area.height * 308) / 418,
+                }
+              : {
+                  width: (area.height * 302) / 436,
+                  height: (area.height * 368) / 436,
+                };
+          }}
           defaultCoordinates={
             openingCrop
               ? {
@@ -127,7 +149,43 @@ export function PhotoCropSurface({
                 }
               : undefined
           }
-          stencilProps={avatar ? { aspectRatio: 1 } : {}}
+          stencilProps={
+            avatar
+              ? {
+                  aspectRatio: 1,
+                  resizable: false,
+                  grid: false,
+                  handlers: {
+                    north: false,
+                    south: false,
+                    east: false,
+                    west: false,
+                    eastNorth: false,
+                    westNorth: false,
+                    eastSouth: false,
+                    westSouth: false,
+                  },
+                  lines: {
+                    north: false,
+                    south: false,
+                    east: false,
+                    west: false,
+                  },
+                }
+              : {
+                  handlers: {
+                    eastNorth: true,
+                    westNorth: true,
+                    eastSouth: true,
+                    westSouth: true,
+                    north: false,
+                    south: false,
+                    east: false,
+                    west: false,
+                  },
+                  grid: false,
+                }
+          }
           onChange={() => {
             setEdit(readTransforms());
             onChange?.(getEdit());

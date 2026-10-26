@@ -303,6 +303,25 @@ export const designTokens = {
       letterSpacing: -0.32,
       fontWeight: '500' as const,
     },
+    segmentLabel: {
+      fontFamily: 'Inter_500Medium',
+      fontSize: 14,
+      lineHeight: 18,
+      fontWeight: '500' as const,
+    },
+    segmentSelected: {
+      fontFamily: 'Inter_600SemiBold',
+      fontSize: 14,
+      lineHeight: 18,
+      fontWeight: '600' as const,
+    },
+    mediaCaption: {
+      fontFamily: 'Inter_400Regular',
+      fontSize: 13,
+      lineHeight: 18,
+      letterSpacing: -0.13,
+      fontWeight: '400' as const,
+    },
     feedbackTitle: {
       fontFamily: 'Inter_500Medium',
       fontSize: 13,

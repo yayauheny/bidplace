@@ -4,6 +4,7 @@ export type FigmaTab = { value: string; label: string; count?: number };
 export type FigmaTabsProps = {
   tabs: readonly FigmaTab[];
   variant?: 'underline' | 'segmented';
+  appearance?: 'glass' | 'plain';
   value: string;
   onChange: (value: string) => void;
   label: string;

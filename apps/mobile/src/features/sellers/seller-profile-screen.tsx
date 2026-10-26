@@ -688,6 +688,7 @@ export function SellerProfileScreen() {
         confirmed={originalPhotoEdit}
         name={fullName}
         pending={photo.preparing}
+        error={profileForm.formAlert}
         onConfirm={(edit) => void photo.confirmEditor(edit)}
         onCancel={photo.cancelEditor}
       />

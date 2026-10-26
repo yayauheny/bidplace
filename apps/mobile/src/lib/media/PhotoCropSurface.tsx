@@ -2,7 +2,6 @@ import { useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { Image, View } from 'react-native';
 import { Svg, Path } from 'react-native-svg';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import { runOnJS } from 'react-native-reanimated';
 import { CropZoom, type CropZoomRefType } from 'react-native-zoom-toolkit';
 import { designTokens } from '@bidplace/design-tokens';
 import { useAppTheme } from '../../providers/theme-provider';
@@ -37,6 +36,7 @@ export function PhotoCropSurface({
     width: initialWidth,
     height: initialWidth / ratio,
   });
+  const resizeStart = useRef(frame);
   useEffect(() => {
     if (!openingCrop || !zoom.current) return;
     const state = zoom.current.getState();
@@ -241,12 +241,17 @@ export function PhotoCropSurface({
             [-1, 1].map((y) => (
               <GestureDetector
                 key={`${x}:${y}`}
-                gesture={Gesture.Pan().onEnd((event) => {
-                  runOnJS(resize)(
-                    frame.width + event.translationX * x * 2,
-                    frame.height + event.translationY * y * 2,
-                  );
-                })}
+                gesture={Gesture.Pan()
+                  .runOnJS(true)
+                  .onBegin(() => {
+                    resizeStart.current = frame;
+                  })
+                  .onUpdate((event) => {
+                    resize(
+                      resizeStart.current.width + event.translationX * x * 2,
+                      resizeStart.current.height + event.translationY * y * 2,
+                    );
+                  })}
               >
                 <View
                   accessible

@@ -579,6 +579,54 @@ describe('product draft submit lifecycle', () => {
     }
   });
 
+  it.each(['oversized', 'empty', 'unreadable'] as const)(
+    'does not transfer a previous %s source error to a valid file in one batch or separate selections',
+    async (invalid) => {
+      const bad =
+        invalid === 'oversized'
+          ? { uri: 'blob:bad', fileSize: workImageMaxInputBytes + 1 }
+          : invalid === 'empty'
+            ? { uri: 'blob:bad', file: new File([], 'bad.png') }
+            : { uri: 'blob:bad' };
+      const good = {
+        uri: 'blob:valid',
+        file: new File(['valid-bytes'], 'valid.jpg', { type: 'image/jpeg' }),
+      };
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockRejectedValue(new Error('unreadable')),
+      );
+      for (const together of [true, false]) {
+        const view = mountImageActions();
+        try {
+          harness.launchImageLibraryAsync.mockResolvedValueOnce({
+            canceled: false,
+            assets: together ? [bad, good] : [bad],
+          });
+          await act(() => view.actions.chooseImages());
+          if (!together) {
+            harness.launchImageLibraryAsync.mockResolvedValueOnce({
+              canceled: false,
+              assets: [good],
+            });
+            await act(() => view.actions.chooseImages());
+          }
+          await flush();
+          expect(view.actions.photoCards.map((card) => card.status)).toEqual([
+            'error',
+            'local',
+          ]);
+          expect(view.actions.photoCards[1]!.error).toBeUndefined();
+          await act(() => view.actions.startUpload());
+          await flush();
+          expect(harness.addImages.mock.calls.at(-1)?.[1]).toEqual([good.file]);
+        } finally {
+          view.unmount();
+        }
+      }
+    },
+  );
+
   it('deduplicates exact source bytes and allows reselecting a removed file', async () => {
     const asset = (bytes: string, name: string) => ({
       uri: `blob:${name}`,
