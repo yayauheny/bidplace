@@ -119,7 +119,7 @@ describe('BackButton public contract', () => {
         label: 'Назад',
         size: 'navigation',
         icon: 'arrow-left-02',
-        iconSize: 28,
+        iconSize: 24,
         strokeWidthPx: 1.6,
         disabled: true,
         surface,

@@ -145,7 +145,13 @@ for (const path of ['/explore?section=works', '/product/daliEstate1', '/seller/l
     await expect(back).toBeVisible();
     expect((await back.boundingBox())?.width).toBe(48);
     expect((await back.boundingBox())?.height).toBe(48);
-    await expect(back.locator('svg').last()).toHaveAttribute('width', '28');
+    const glyph = back.locator('svg').last();
+    await expect(glyph).toHaveAttribute('width', '24');
+    await expect(glyph).toHaveAttribute('height', '24');
+    const controlBounds = await back.boundingBox();
+    const glyphBounds = await glyph.boundingBox();
+    expect(glyphBounds!.x + glyphBounds!.width / 2).toBe(controlBounds!.x + 24);
+    expect(glyphBounds!.y + glyphBounds!.height / 2).toBe(controlBounds!.y + 24);
     await expect(back.locator('svg path').first()).toHaveAttribute('d', 'M5.5 12.002H19');
     await back.focus();
     await expect(back).toBeFocused();

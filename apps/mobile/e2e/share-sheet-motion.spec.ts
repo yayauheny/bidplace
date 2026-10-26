@@ -566,6 +566,16 @@ for (const width of [320, 375, 390, 414, 1440]) {
       expect((await button.boundingBox())?.width).toBe(48);
       expect((await button.boundingBox())?.height).toBe(48);
     }
+    await expect(group.locator('.figma-glass')).toHaveCount(0);
+    await expect(group.locator('.figma-glass-stroke')).toHaveCount(1);
+    await expect(group).toHaveCSS('overflow', 'visible');
+    for (const name of ['В избранное', 'Поделиться работой']) {
+      const button = group.getByRole('button', { name, exact: true });
+      await expect(button).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+      await button.focus();
+      await expect(button).toBeFocused();
+      await expect(button).toHaveCSS('outline-style', 'solid');
+    }
     await expect(page.getByTestId('work-gallery-arrows')).toHaveCount(0);
     await expect(page.getByTestId('work-gallery-dots')).toBeVisible();
     const share = group.getByRole('button', {

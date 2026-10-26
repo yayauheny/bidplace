@@ -7,7 +7,8 @@
 ## 2026-10-26 — Shared Back control
 
 BackButton is the single previous-screen control:48×48, Hugeicons arrow-left-02
-28px with physical1.6px stroke; fixed label “Назад”, optional contextual hint.
+24px with physical1.6px stroke (2026-10-26 polish); fixed label “Назад”,
+optional contextual hint.
 It delegates states to FigmaIconButton navigation size and MotionPressable.
 Muted is the standard surface; Work uses existing controlGroup glass80%/blur6.
 Hover overlays semantic5% black in light; pressed reuses button feedback,
@@ -471,8 +472,8 @@ Public catalog intros (`526:12957`, `526:13308`) reuse `bodySmall` default ink
 `textSecondary` `#8A8A8A`. `/works` does not render catalog-segment tabs
 (`874:5421` / `526:13314`); order matches `/authors`: title → intro →
 Filter/Sort → cards. Work hero chrome (`745:21332`) is a 48×48 glass Back
-plus a 98×48 Heart/Share group, 12px from the web hero top (Figma y 62 minus
-the 50px status bar). Heart is an explicit future-feature notice only (founder
+plus a single controlGroup glass pill around a 98×48 Heart/Share group,12px
+from the web hero top (Figma y62 minus the50px status bar). Heart is an explicit future-feature notice only (founder
 override, 2026-10-26), with no selected state or storage. Work and Author use
 share-03; actual open state uses white ink on the existing dark overlayScrim
 surface for contrast. Gallery keeps paging/dots and Web keyboard selection,

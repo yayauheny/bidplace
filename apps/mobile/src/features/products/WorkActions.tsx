@@ -1,6 +1,7 @@
 import { View } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
 import { BackButton } from '../../components/figma/BackButton';
+import { FigmaGlassSurface } from '../../components/figma/FigmaGlassSurface';
 import { FigmaIconButton } from '../../components/figma/FigmaIconButton';
 
 export function WorkBackControl({
@@ -27,10 +28,12 @@ export function WorkShareControl({
   onFavorite: () => void;
 }) {
   return (
-    <View
+    <FigmaGlassSurface
       testID="work-share"
-      style={{
-        pointerEvents: 'auto',
+      preset="controlGroup"
+      style={{ pointerEvents: 'auto', padding: 0, overflow: 'visible' }}
+      contentStyle={{
+        display: 'flex',
         flexDirection: 'row',
         gap: designTokens.space.x1 / 2,
       }}
@@ -39,7 +42,7 @@ export function WorkShareControl({
         icon="heart"
         iconSize={20}
         size="navigation"
-        surface="glass"
+        surface="plain"
         label="В избранное"
         accessibilityHint="Избранное пока недоступно."
         onPress={onFavorite}
@@ -48,11 +51,11 @@ export function WorkShareControl({
         icon="share-03"
         iconSize={20}
         size="navigation"
-        surface={open ? 'active' : 'glass'}
+        surface={open ? 'active' : 'plain'}
         expanded={open}
         label="Поделиться работой"
         onPress={onPress}
       />
-    </View>
+    </FigmaGlassSurface>
   );
 }

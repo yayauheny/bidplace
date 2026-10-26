@@ -16,6 +16,17 @@
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
 | Commerce, избранное/подписки, смена email/password из settings | Not implemented в launch scope / post-MVP; [следующая волна](15-POST-MVP-BACKLOG.md). Старый commerce runtime не разрешает включать продажи. |
 
+## 2026-10-26 — Work toolbar visual polish
+
+**Partial — local Web verified; physical Native acceptance pending.** Back's
+exclusive `navigationGlyph` token is24px inside the unchanged48px target, with
+1.6px stroke. WorkActions now wraps two transparent48px controls in one existing
+FigmaGlassSurface controlGroup pill; actual open Share retains its dark/white
+state. Focus is not clipped; hover/pressed stay owned by FigmaIconButton.
+ShareSheet, QR, feedback, routes and gallery unchanged. Matched390×874 Work/
+Author crops and source differences are in the
+[visual evidence](../audits/evidence/2026-10-26-toolbar-polish/README.md).
+
 ## 2026-10-26 — Work toolbar and future favorite control
 
 **Partial — local web verified; native devices pending.** WorkHeader reuses the
