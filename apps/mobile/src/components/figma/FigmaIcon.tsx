@@ -4,6 +4,8 @@ import { HugeiconsIcon } from '@hugeicons/react-native';
 import { Platform } from 'react-native';
 import {
   AiMagicIcon,
+  SquareIcon,
+  GridViewIcon,
   ClipboardCheckIcon,
   ChartLineData01Icon,
   BellIcon,
@@ -72,6 +74,8 @@ const checkIcon = [
 ] as const satisfies typeof Search01Icon;
 
 const icons = {
+  square: SquareIcon,
+  'grid-view': GridViewIcon,
   bell: BellIcon,
   'shopping-bag-01': ShoppingBag01Icon,
   'filter-horizontal': FilterHorizontalIcon,

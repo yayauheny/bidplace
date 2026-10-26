@@ -6,6 +6,8 @@ vi.mock('react-native', () => ({
   Platform: { OS: 'web' },
 }));
 
+import { coverCaptionCardFrameStyle } from './cover-card-style';
+
 let coverArtworkFrameStyle: typeof import('./cover-card-style').coverArtworkFrameStyle;
 let coverFrostZoneStyle: typeof import('./cover-card-style').coverFrostZoneStyle;
 let coverCardFrameStyle: typeof import('./cover-card-style').coverCardFrameStyle;
@@ -19,6 +21,13 @@ describe('coverCardFrameStyle', () => {
   it('clips the lower frost corners without rounding the top name scrim', () => {
     expect(coverFrostZoneStyle()).toMatchObject({ borderTopLeftRadius: designTokens.radius.overlay, borderTopRightRadius: designTokens.radius.overlay, overflow: 'hidden' });
     expect(coverFrostZoneStyle('top')).not.toHaveProperty('borderTopLeftRadius');
+  });
+
+  it('uses responsive 3:4 compact media while preserving existing caption geometry', () => {
+    expect(coverCaptionCardFrameStyle(designTokens.color, 'compact')).toMatchObject({
+      width: '100%', aspectRatio: 3 / 4, borderRadius: 16, overflow: 'hidden',
+    });
+    expect(coverCaptionCardFrameStyle(designTokens.color).aspectRatio).toBe(designTokens.ratio.ownerCardMedia);
   });
 
   it('keeps the default author card on the shared cover aspect ratio', () => {

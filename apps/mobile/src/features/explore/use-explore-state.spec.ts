@@ -108,6 +108,28 @@ describe('Explore navigation session', () => {
     });
     expect(latest.scroll.works).toBe(640);
   });
+  it('restores the work view on Back and section changes without changing filters or URL', () => {
+    harness.params = { section: 'works', q: 'glass', material: 'Glass' };
+    mount();
+    expect(latest.workView).toBe('compact');
+    act(() => latest.saveScroll(640));
+    act(() => latest.setWorkView('large'));
+    expect(latest.scroll.works).toBe(0);
+    expect(latest.state.works).toEqual({ q: 'glass', material: 'Glass', sort: 'newest' });
+    expect(harness.setParams).not.toHaveBeenCalled();
+    act(() => latest.selectSection('authors'));
+    act(() => latest.selectSection('works'));
+    expect(latest.workView).toBe('large');
+    harness.params = harness.setParams.mock.lastCall?.[0];
+    unmount();
+    mount();
+    expect(latest.workView).toBe('large');
+    unmount();
+    harness.key += '-fresh';
+    mount();
+    expect(latest.workView).toBe('compact');
+  });
+
   it('X uses setParams, preserves filters/sort and does not restore the cleared query', () => {
     harness.params = {
       section: 'authors',

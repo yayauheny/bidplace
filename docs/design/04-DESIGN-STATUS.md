@@ -5,6 +5,133 @@
 Полный прежний журнал, включая ограничения ранних экранов:
 [история](../archive/design/04-DESIGN-STATUS-through-2026-10-23.md).
 
+## 2026-10-26 — Mobile Web form UX
+
+**Partial — local browser verified; physical keyboard/device acceptance pending.**
+Touch-only CSS keeps editable text16px, OTP larger and pinch enabled. Existing
+useVisibleViewport now normalizes zoom and distinguishes layout/visible bounds;
+AppShell/AppDialog reuse it, dock hides only for focused input plus occlusion.
+Fullscreen auth stops resetting scroll on every height change (also affects
+Native screen presentation). No backend, navigation, form mutation or token
+changes.1083 mobile units,23 Mobile Web checks (1 CDP-only skip),122 auth/Share/
+Back regressions, graph typecheck/lint and Web/iOS/Android exports passed;
+independent review accepted. [Audit, matrix and limits](../audits/evidence/2026-10-26-mobile-form-ux/README.md).
+
+## 2026-10-26 — Exact Work action geometry
+
+**Partial — local Web verified; physical Native acceptance pending.** WorkActions
+reproduces Figma526:11497's36px slots at x10/x52,4px inset,28px SVG and1.75px
+stroke, with centers x28/x70. Separate49×48 hit regions meet at x49 without
+overlap. Shared glass and existing hover/pressed/focus/open state owners retained.
+Back24px/full-arrow standard evaluated against original chevron and retained;
+its shape differs intentionally. ShareSheet/QR/feedback unchanged.
+[Geometry, bounds and screenshots](../audits/evidence/2026-10-26-toolbar-geometry/README.md).
+
+## 2026-10-26 — Work toolbar visual polish
+
+**Partial — local Web verified; physical Native acceptance pending.** Back's
+exclusive `navigationGlyph` token is24px inside the unchanged48px target, with
+1.6px stroke. WorkActions now wraps two transparent48px controls in one existing
+FigmaGlassSurface controlGroup pill; actual open Share retains its dark/white
+state. Focus is not clipped; hover/pressed stay owned by FigmaIconButton.
+ShareSheet, QR, feedback, routes and gallery unchanged. Matched390×874 Work/
+Author crops and source differences are in the
+[visual evidence](../audits/evidence/2026-10-26-toolbar-polish/README.md).
+
+## 2026-10-26 — Work toolbar / gallery
+
+**Partial — local web verified; native devices pending.** WorkHeader reuses the
+shared Back and two48px FigmaIconButtons in a98×48 group. Work/Author share-03
+tracks the real modal open state with white ink on a dark token surface. Heart
+only explains that favorites are unavailable; no persistence/API/selected state.
+WorkGallery overlay arrows removed; paging, dots, image/cache owner and viewer
+retained. Web scroll synchronizes dots and arrow keys move photo focus. Existing
+ShareSheet/QR/feedback unchanged.1079 mobile units,54 Chromium/WebKit Share/
+toolbar cases, graph typecheck/lint and web/iOS/Android exports passed; independent
+review accepted. [Before/after and limits](../audits/evidence/2026-10-26-work-toolbar/README.md).
+
+## 2026-10-26 — Back button standard
+
+**Partial — local web verification; native devices pending.** Shared BackButton
+48×48/arrow28/1.6 replaces Explore custom chrome and previous-step text controls;
+existing Work/Author/Account/Settings/Admin/Filter/application consumers inherit
+it. Only Work uses existing glass material.1080 mobile units and20 Chromium/
+WebKit navigation checks passed, plus graph typecheck/lint. 80 Share/auth overlay regressions and web/iOS/Android exports passed.
+Independent review accepted. Native parent hit bounds corrected
+to48; physical device and provisional black-palette acceptance remain unverified.
+[Audit/screenshots](../audits/evidence/2026-10-26-back-buttons/README.md).
+
+## 2026-10-26 — Share inline feedback
+
+**Partial — verified locally on web; native device acceptance pending.** Existing
+FigmaButton content transitions160ms and restores after1800ms; copy shows check/
+“Скопировано”, download accurately reports launch/preparation. No success row,
+spinner or geometry change; errors retry inline. Timers, repeated presses, close/
+reopen, focus and reduced motion covered by1076 mobile units and34 Chromium/
+WebKit checks; graph typecheck/lint and all-platform exports passed. Independent
+review accepted; [frames](../audits/evidence/2026-10-26-work-share/README.md).
+Native screen readers and actual OS operations remain unverified.
+
+## 2026-10-26 — Work share sheet / Figma597:18875
+
+**Partial — mobile web matched; native devices pending.** Shared AppDialog
+`compactSheet` and FigmaButton `sheetAction` match390×428, title18/22/600,
+QR188-slot/164-image and350×55 actions. Existing QR engine retained; native
+SVG/Clipboard/FileSystem/Sharing replace the stub.1070 mobile units,20 Chromium/
+WebKit share checks, graph typecheck/lint and all-platform exports passed.
+Independent review accepted; [evidence](../audits/evidence/2026-10-26-work-share/README.md).
+Physical phone scanning and native OS actions unverified; exact wide Figma
+composition remains NEEDS-FIGMA. Other dialog/button presets unchanged.
+
+## 2026-10-26 — Shared auth cancellation
+
+**Partial — verified locally on web; native device acceptance pending.** Shared `AuthViewport`
+closes the root auth group to its public origin with route/query preserved;
+X/Escape/backdrop/swipe share the guarded close path. No geometry/style changes.
+Login/registration/recovery/code and “Стать автором” regressions are covered in
+`auth-focus-restore.spec.ts`:46 Chromium/WebKit checks passed;1064 mobile units
+and dependency-graph typecheck/lint passed; web/iOS/Android exports passed.
+Independent review found no issues.
+Physical native acceptance remains unverified.
+
+## 2026-10-25 — Explore control visual correction / PR68
+
+**Partial — local web correction; native device acceptance pending.** Live Figma
+`7245:2519/2502/2812/2818`, `7271:2719/2722` corrects FilterSortBar gap8,
+label14/26/500 gray,18px filter glyph, capsule80 and uniform0.5px contours.
+FigmaGlassSurface filterControl separates clipped material and visible focus;
+other glass presets unchanged. Compact cards, media/query/nav owners and empty
+control policy retained.1056 unit tests, graph typecheck/lint, all platform exports
+passed;56 Chromium/WebKit checks (320/375/390/414/768/1024/1440), E2E fence,
+193 docs links and diff check passed; independent review accepted. Evidence is in
+[visual review](../audits/current/2026-10-25-EXPLORE-VISUAL-REVIEW.md). Exact desktop/native parity remains unverified;
+auth-dismissal issue deliberately remains outside this correction.
+
+## 2026-10-25 — Compact/large Work view (DEC-148)
+
+**Partial — implemented and verified locally on web; native device acceptance pending.** `WorkViewToggle`, `WorkCoverCard compact`,
+`WorkCoverCardGrid` and Explore controls reuse existing media/navigation/query
+owners. Compact defaults to two columns, gap12, radius16 and adaptive3:4;
+large uses the existing overlay. Navigation-entry sessions retain the mode on
+section changes and detail Back. Author/other lists stay unchanged; no commerce
+fields/API/timers added. Passed:1055 mobile unit tests, dependency-graph typecheck/lint,52 Chromium/WebKit
+Explore checks (320/390/768/1024/1440, keyboard/focus, doubled text, long text,
+media failure, navigation/session and request preservation), E2E fence,192 docs
+links and diff check. Web/iOS/Android Expo export passed on Node22; independent
+review accepted after focus-clipping and enlarged-text toolbar fixes. Physical iOS/Android and exact desktop Figma parity remain
+Needs verification / NEEDS-FIGMA.
+
+Evidence: [compact390](../audits/evidence/2026-10-25-compact-work-card/chromium-compact-390.png),
+[large390](../audits/evidence/2026-10-25-compact-work-card/chromium-large-390.png),
+[compact1440](../audits/evidence/2026-10-25-compact-work-card/chromium-compact-1440.png),
+[large1440](../audits/evidence/2026-10-25-compact-work-card/chromium-large-1440.png).
+Earlier concurrent-build runs intermittently failed the existing Chromium
+header/image DOM identity case; the final52-case run and separate19-case
+Chromium run passed with unchanged preservation assertions (expanded failure
+diagnostics only). Cause unconfirmed. Baseline comparison could not run because
+the temporary checkout's shared dependencies failed Metro Babel resolution;
+this is not evidence of a baseline failure. No retry/timeout/golden was relaxed.
+
 ## 2026-10-25 — Explore / Blur16 integration
 
 **Implemented for verified local web states; Native Needs verification.** Normal merge `87a2ab68` incorporates MVP

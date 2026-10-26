@@ -19,6 +19,8 @@ export function WorkHeader({
   panelId,
   onBack,
   onShare,
+  shareOpen,
+  onFavorite,
   children,
 }: WorkHeaderProps) {
   return (
@@ -28,7 +30,13 @@ export function WorkHeader({
           images={images}
           label={title}
           leadingAction={<WorkBackControl onPress={onBack} />}
-          action={<WorkShareControl onPress={onShare} />}
+          action={
+            <WorkShareControl
+              onPress={onShare}
+              open={shareOpen}
+              onFavorite={onFavorite}
+            />
+          }
         />
       </View>
       <View

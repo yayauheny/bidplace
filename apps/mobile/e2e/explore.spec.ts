@@ -221,10 +221,14 @@ test('header animation keeps list and image instances, requests and scroll stabl
   expect(
     await scroll(page).evaluate(
       (node) =>
-        node === Reflect.get(window, 'exploreListBefore') &&
-        node.querySelector('img') === Reflect.get(window, 'exploreImageBefore'),
+        ({
+          list: node === Reflect.get(window, 'exploreListBefore'),
+          image: node.querySelector('img') === Reflect.get(window, 'exploreImageBefore'),
+          beforeSrc: (Reflect.get(window, 'exploreImageBefore') as HTMLImageElement)?.src,
+          afterSrc: node.querySelector('img')?.src,
+        }),
     ),
-  ).toBe(true);
+  ).toMatchObject({ list: true, image: true });
   expect((await header(page).boundingBox())!.height).toBe(beforeHeader!.height);
   expect(requests).toEqual([]);
   const images = await scroll(page).evaluate((node) => {
@@ -395,4 +399,113 @@ test('an independent Search entry does not inherit queries or hidden drafts from
   await page.getByRole('tab', { name: 'Авторы', exact: true }).click();
   await expect(query(page)).toHaveValue('');
   await expect(page).not.toHaveURL(/previous-|city=Minsk|sort=name/);
+});
+
+for (const width of [320, 375, 390, 414, 768, 1024, 1440]) {
+  test(`work view toggle preserves results and fits the container at ${width}px`, async ({ page }, testInfo) => {
+    await page.setViewportSize({ width, height: 900 });
+    let requests = 0;
+    page.on('request', request => {
+      if (new URL(request.url()).pathname === '/api/works') requests++;
+    });
+    await page.goto('/explore?section=works&sort=oldest');
+    const cards = scroll(page).locator('a[href^="/product/"]');
+    await expect(cards.first()).toBeVisible();
+    await expect(cards.nth(1)).toBeVisible();
+    const hrefs = await cards.evaluateAll(nodes => nodes.map(node => node.getAttribute('href')));
+    const beforeRequests = requests;
+    const media = cards.first().locator('[style*="aspect-ratio"]').first();
+    const first = await media.boundingBox();
+    const second = await cards.nth(1).boundingBox();
+    expect(first!.width / first!.height).toBeCloseTo(3 / 4, 2);
+    expect(second!.x - first!.x - first!.width).toBeCloseTo(12, 1);
+    await expect(media).toHaveCSS('border-radius', '16px');
+    const large = page.getByRole('button', { name: 'Показать крупные карточки' });
+    const filter = await page.getByRole('button', { name: 'Фильтры', exact: true }).boundingBox();
+    const sort = await page.getByRole('button', { name: 'Сортировка', exact: true }).boundingBox();
+    const toggle = await large.boundingBox();
+    expect(sort!.x - filter!.x - filter!.width).toBe(8);
+    expect(sort!.y + sort!.height / 2).toBe(filter!.y + filter!.height / 2);
+    expect(toggle!.y + toggle!.height / 2).toBe(filter!.y + filter!.height / 2);
+    expect(toggle!.x + toggle!.width).toBeCloseTo(Math.min(width - 12, (width + 1280) / 2), 1);
+
+    await large.focus();
+    await page.keyboard.press('Enter');
+    const compact = page.getByRole('button', { name: 'Показать компактные карточки' });
+    await expect(compact).toBeFocused();
+    await expect(compact).toHaveCSS('outline-style', 'solid');
+    await expect(compact.locator('..').locator('..')).toHaveCSS('overflow', 'visible');
+    await expect(cards.first()).toHaveCSS('aspect-ratio', '0.75 / 1');
+    expect((await cards.first().boundingBox())!.width).toBeCloseTo(Math.min(width - 24, 1280), 1);
+    expect((await cards.nth(1).boundingBox())!.y).toBeGreaterThan((await cards.first().boundingBox())!.y);
+    expect(await cards.evaluateAll(nodes => nodes.map(node => node.getAttribute('href')))).toEqual(hrefs);
+    await expect(page).toHaveURL(/sort=oldest/);
+    expect(requests).toBe(beforeRequests);
+    mkdirSync(join(e2eEvidenceDir, 'compact-work-card'), { recursive: true });
+    await page.screenshot({ path: join(e2eEvidenceDir, 'compact-work-card', `${testInfo.project.name}-large-${width}.png`) });
+    await page.keyboard.press('Space');
+    await expect(large).toBeFocused();
+    await expect(media).toHaveCSS('aspect-ratio', '0.75 / 1');
+    expect(requests).toBe(beforeRequests);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.screenshot({ path: join(e2eEvidenceDir, 'compact-work-card', `${testInfo.project.name}-compact-${width}.png`) });
+    await large.click();
+    await page.getByRole('tab', { name: 'Авторы', exact: true }).click();
+    await expect(compact).toHaveCount(0);
+    await page.getByRole('tab', { name: 'Работы', exact: true }).click();
+    await expect(compact).toBeVisible();
+    await cards.first().click();
+    await expect(page).toHaveURL(/\/product\//);
+    await page.goBack();
+    await expect(compact).toBeVisible();
+    await expect(cards.first()).toHaveCSS('aspect-ratio', '0.75 / 1');
+  });
+}
+
+
+test('compact work cards contain long text and preserve unavailable image geometry', async ({ page }) => {
+  const title = 'Длинное название работы '.repeat(8).trim();
+  const slug = 'long-author-name-without-breaks';
+  await page.route('**/api/works?*', async route => {
+    const response = await route.fetch();
+    const body = await response.json();
+    body.works[0].work.title = title;
+    body.works[0].author.slug = slug;
+    await route.fulfill({ response, json: body });
+  });
+  await page.route('**/api/images/**', route => route.fulfill({ status: 404, body: '' }));
+  await page.goto('/explore?section=works');
+  const cards = scroll(page).locator('a[href^="/product/"]');
+  await expect(cards.first()).toBeVisible();
+  await expect(cards.first().getByText(`@${slug}`, { exact: true })).toBeVisible();
+  await expect(cards.nth(1).getByRole('img', { name: /^Изображение недоступно:/ })).toBeVisible();
+  const first = await cards.first().boundingBox();
+  const second = await cards.nth(1).boundingBox();
+  expect(second!.x - first!.x - first!.width).toBeCloseTo(12, 1);
+  const mediaBoxes = await Promise.all([cards.first(), cards.nth(1)].map(card => card.locator('[style*="aspect-ratio"]').first().boundingBox()));
+  expect(mediaBoxes.length).toBeGreaterThan(1);
+  for (const box of mediaBoxes) expect(box!.width / box!.height).toBeCloseTo(3 / 4, 2);
+  await expect(cards.first().getByText(title, { exact: true })).toHaveCSS('-webkit-line-clamp', '2');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.getByRole('button', { name: 'Показать крупные карточки' }).click();
+  await expect(cards.first().getByText(title, { exact: true })).toBeVisible();
+  await expect(cards.first()).toHaveCSS('aspect-ratio', '0.75 / 1');
+});
+
+
+test('work view toggle remains reachable with doubled text on a narrow screen', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 844 });
+  await page.goto('/explore?section=works');
+  const large = page.getByRole('button', { name: 'Показать крупные карточки' });
+  await expect(large).toBeVisible();
+  await page.getByRole('button', { name: 'Сортировка', exact: true }).getByText('Сортировка', { exact: true }).evaluate(node => {
+    node.style.fontSize = '28px';
+    node.style.lineHeight = '40px';
+  });
+  const box = await large.boundingBox();
+  expect(box!.x).toBeGreaterThanOrEqual(12);
+  expect(box!.x + box!.width).toBeLessThanOrEqual(308);
+  await large.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('button', { name: 'Показать компактные карточки' })).toBeFocused();
 });

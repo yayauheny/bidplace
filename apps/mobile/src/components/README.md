@@ -21,7 +21,7 @@
 | **SecondaryButton** | `ui/Button.tsx`             | `variant="outline"`.                                                                                                                |
 | **TextButton**      | `ui/Button.tsx`             | `variant="ghost"`.                                                                                                                  |
 | **FigmaIconButton** | `figma/FigmaIconButton.tsx` | Иконка без текста: `surface="plain"` по умолчанию, `surface="muted"` для круглых 42px кнопок из Figma.                              |
-| **BackButton**      | `figma/BackButton.tsx`      | Единая круглая muted-кнопка «Назад», normal/pressed/disabled, для всех экранов.                               |
+| **BackButton**      | `figma/BackButton.tsx`      | Единая кнопка «Назад»48×48, полная стрелка28/1.6, hover/pressed/focus/disabled; muted либо glass поверх изображения. Callback задаёт экран.                               |
 | **MotionPressable** | `ui/MotionPressable.tsx`    | Низкоуровневое нажатие с пресетами анимации; для кастомных ячеек, не для типовых CTA.                                               |
 
 `width`: у обёрток допустимо `block` (= `full` у `FigmaButton`).
@@ -71,6 +71,11 @@
 | --------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **WorkCoverCard**     | `figma/WorkCoverCard.tsx`     | Обложка работы с навигацией на `/product/:id`.                                                                                                                                                    |
 | **WorkCoverCardGrid** | `figma/WorkCoverCardGrid.tsx` | Сетка cover-карточек: `columns` 1 (построчно) или 2 (через `PaddedGrid`). Публичный профиль собирает `CreatorWorkCard` через `PaddedGrid` + `gridColumnsFromWidth` (другая роль: owner-действия). |
+
+`WorkViewToggle` (`figma/WorkViewToggle.tsx`) — controlled compact/large switch,
+currently connected only in Explore. `WorkCoverCard variant="compact"` reuses
+caption/media with responsive3:4; `WorkCoverCardGrid` owns12px columns/28px rows.
+Existing caption and overlay variants retain their defaults.
 
 ## Текст, состояния, медиа
 

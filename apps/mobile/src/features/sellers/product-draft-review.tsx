@@ -1,3 +1,4 @@
+import { BackButton } from '../../components/figma/BackButton';
 import type { SellerProductDetailResponse } from '@bidplace/contracts';
 import { View } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
@@ -12,7 +13,6 @@ import {
   AppText,
   FormSection,
   PrimaryButton,
-  SecondaryButton,
 } from '../../components/ui';
 import { productDraftTermLabels, type ProductDraftFormValues } from './product-draft-form';
 
@@ -147,8 +147,8 @@ export function ProductDraftReviewStep({
           и попробуйте ещё раз.
         </AppText>
       ) : null}
-      <SecondaryButton
-        label="Назад к истории создания"
+      <BackButton
+        accessibilityHint="Назад к истории создания"
         disabled={submitPending || wizardSubmitted}
         onPress={() => onBackToStory()}
       />

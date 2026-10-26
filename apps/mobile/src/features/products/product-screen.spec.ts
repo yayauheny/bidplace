@@ -254,12 +254,19 @@ describe('Work top chrome', () => {
     { platform: 'native', Header: NativeWorkHeader },
     { platform: 'web', Header: WebWorkHeader },
   ])(
-    '$platform header shows one Back and one Share and no Like',
+    '$platform header shows one Back, one Share and one favorites placeholder',
     ({ Header }) => {
       const onBack = vi.fn();
       const onShare = vi.fn();
+      const onFavorite = vi.fn();
       const view = mountHeader(
-        createElement(Header, { ...headerProps, onBack, onShare }),
+        createElement(Header, {
+          ...headerProps,
+          onBack,
+          onShare,
+          onFavorite,
+          shareOpen: false,
+        }),
       );
       const labels = actionLabels(view.container);
       const back = view.container.querySelector<HTMLButtonElement>(
@@ -276,15 +283,22 @@ describe('Work top chrome', () => {
       expect(
         labels.some((label) => /heart|like|лайк|нрав/i.test(label ?? '')),
       ).toBe(false);
+      expect(labels.filter((label) => label === 'В избранное')).toEqual([
+        'В избранное',
+      ]);
       expect(back).toBeTruthy();
       expect(share).toBeTruthy();
 
       act(() => {
         back!.click();
         share!.click();
+        view.container
+          .querySelector<HTMLButtonElement>('[aria-label="В избранное"]')!
+          .click();
       });
       expect(onBack).toHaveBeenCalledTimes(1);
       expect(onShare).toHaveBeenCalledTimes(1);
+      expect(onFavorite).toHaveBeenCalledTimes(1);
     },
   );
 });

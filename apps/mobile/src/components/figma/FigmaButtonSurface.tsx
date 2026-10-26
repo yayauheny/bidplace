@@ -1,11 +1,14 @@
 import { useId } from 'react';
+import { View } from 'react-native';
 import { Defs, LinearGradient, Rect, Stop, Svg } from 'react-native-svg';
 
 import {
   figmaButtonMatrixCell,
   figmaButtonTokens,
+  type FigmaButtonSize,
 } from '@bidplace/design-tokens';
 
+import { FigmaGlassSurface } from './FigmaGlassSurface';
 import { useAppTheme } from '../../providers/theme-provider';
 import {
   figmaButtonScaledGradientAxis,
@@ -16,11 +19,13 @@ import {
 
 export function FigmaButtonSurface({
   variant,
+  size,
   interaction,
   width,
   height,
 }: {
   variant: FigmaButtonVariant;
+  size?: FigmaButtonSize;
   interaction: FigmaButtonInteraction;
   width: number;
   height: number;
@@ -30,6 +35,22 @@ export function FigmaButtonSurface({
   if (width <= 0 || height <= 0) return null;
 
   const cell = figmaButtonMatrixCell(variant, interaction, palette);
+  if (size === 'sheetAction' && variant === 'solid') {
+    cell.fill = palette.inkStrong;
+    cell.strokeMode = 'flat';
+    cell.strokeColor = palette.borderStrong;
+  }
+  if (size === 'sheetAction' && variant === 'ghost') {
+    return (
+      <View pointerEvents="none" style={{ position: 'absolute', inset: 0 }}>
+        <FigmaGlassSurface preset="action" style={{ width, height }}>
+          {cell.overlay ? (
+            <View style={{ width, height, backgroundColor: cell.overlay }} />
+          ) : null}
+        </FigmaGlassSurface>
+      </View>
+    );
+  }
   const { metrics } = figmaButtonTokens;
   const strokeWidth = cell.strokeMode === 'none' ? 0 : metrics.strokeWidth;
   // Node 292:5046 paints an integer 82×42 frame at the original origin.

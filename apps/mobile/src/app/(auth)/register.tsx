@@ -12,7 +12,6 @@ export default function RegisterScreen() {
       title="Регистрация"
       tone="section"
       presentation="screen"
-      redirectTo={safeRedirect}
       protectEnteredData
       exit={{
         title: 'Прервать регистрацию',

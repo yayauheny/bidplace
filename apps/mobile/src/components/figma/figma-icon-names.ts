@@ -1,4 +1,6 @@
 export const figmaIconNames = [
+  'square',
+  'grid-view',
   'filter-horizontal',
   'arrow-up-down',
   'search-01',

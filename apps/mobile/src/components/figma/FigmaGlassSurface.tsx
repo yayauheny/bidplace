@@ -43,6 +43,64 @@ export function FigmaGlassSurface({
   const nativeRole =
     accessibilityRole === 'navigation' ? undefined : accessibilityRole;
 
+  if (preset === 'filterControl' || preset === 'action') {
+    return (
+      <View
+        testID={testID}
+        style={[
+          { position: 'relative', borderRadius: spec.borderRadius },
+          style,
+        ]}
+      >
+        <BlurView
+          accessible={false}
+          importantForAccessibility="no-hide-descendants"
+          blurTarget={blurTarget}
+          blurMethod={Platform.OS === 'android' ? 'dimezisBlurView' : undefined}
+          blurReductionFactor={designTokens.blur.dockAndroidReductionFactor}
+          intensity={spec.nativeIntensity}
+          tint="default"
+          style={[
+            StyleSheet.absoluteFill,
+            {
+              borderRadius: spec.borderRadius,
+              overflow: 'hidden',
+              ...(Platform.OS === 'web' && preset === 'action'
+                ? { backdropFilter: `blur(${spec.blur}px)` }
+                : {}),
+            },
+          ]}
+        >
+          <View
+            pointerEvents="none"
+            style={[
+              StyleSheet.absoluteFill,
+              { backgroundColor: spec.background },
+            ]}
+          />
+        </BlurView>
+        <View
+          accessibilityRole={nativeRole}
+          accessibilityLabel={accessibilityLabel}
+          style={contentStyle}
+        >
+          {children}
+        </View>
+        <View
+          pointerEvents="none"
+          style={[
+            StyleSheet.absoluteFill,
+            {
+              borderRadius: spec.borderRadius,
+              borderWidth: spec.borderWidth,
+              borderColor: spec.borderStart,
+            },
+          ]}
+        />
+      </View>
+    );
+  }
+
   return (
     <LinearGradient
       testID={testID}

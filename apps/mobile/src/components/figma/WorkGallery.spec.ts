@@ -10,6 +10,7 @@ vi.mock('expo-router', () => ({
   ThemeProvider: ({ children }: { children?: ReactNode }) => children,
 }));
 vi.mock('react-native', () => ({
+  Platform: { OS: 'web' },
   View: ({ children }: { children?: ReactNode }) =>
     createElement('div', null, children),
   ScrollView: forwardRef(({ children }: { children?: ReactNode }, ref) =>

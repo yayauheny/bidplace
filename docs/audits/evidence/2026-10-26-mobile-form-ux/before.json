@@ -1,0 +1,14 @@
+[
+  {
+    "label": "Электронная почта",
+    "font": "14px",
+    "height": 24,
+    "touchAction": "auto"
+  },
+  {
+    "label": "Пароль",
+    "font": "14px",
+    "height": 24,
+    "touchAction": "auto"
+  }
+]

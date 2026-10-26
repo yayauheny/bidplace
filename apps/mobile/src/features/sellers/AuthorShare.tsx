@@ -8,6 +8,7 @@ import { FilterSheet } from '../../components/figma/FilterSheet';
 import {
   copyPublicLink,
   publicShareTarget,
+  publicShareOrigin,
 } from '../../components/figma/public-share';
 import { AppText, MotionPressable } from '../../components/ui';
 import { useAppTheme } from '../../providers/theme-provider';
@@ -34,8 +35,7 @@ export function AuthorShare({
 
   const shareLink = async () => {
     try {
-      const origin =
-        Platform.OS === 'web' ? window.location.origin : 'https://bid.place';
+      const origin = publicShareOrigin();
       const url = publicShareTarget(sharePath, origin).url;
       if (Platform.OS === 'web') {
         await copyPublicLink(url);
@@ -56,7 +56,7 @@ export function AuthorShare({
         <FigmaButton
           ref={triggerRef}
           label="Поделиться"
-          variant="muted"
+          variant={open ? 'solid' : 'muted'}
           icon="share-03"
           iconPosition="right"
           onPress={() => {
@@ -69,7 +69,8 @@ export function AuthorShare({
           ref={triggerRef}
           icon="share-03"
           iconSize={20}
-          surface="muted"
+          surface={open ? 'active' : 'muted'}
+          expanded={open}
           label="Поделиться профилем"
           onPress={() => {
             setMessage('');
@@ -126,11 +127,7 @@ export function AuthorShare({
               <AppText role="bodySmall" style={{ color: palette.report }}>
                 Пожаловаться
               </AppText>
-              <FigmaIcon
-                name="flag-01"
-                size={20}
-                color={palette.report}
-              />
+              <FigmaIcon name="flag-01" size={20} color={palette.report} />
             </MotionPressable>
           </>
         )}

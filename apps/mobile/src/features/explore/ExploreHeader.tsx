@@ -6,6 +6,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { designTokens, searchChromeTokens } from '@bidplace/design-tokens';
+import { BackButton } from '../../components/figma/BackButton';
 import { FigmaIcon } from '../../components/figma/FigmaIcon';
 import { FigmaSearchGlass } from '../../components/figma/FigmaSearchGlass';
 import { AppText } from '../../components/ui/AppText';
@@ -62,7 +63,10 @@ export function ExploreHeader({
     <View
       testID="explore-header"
       onLayout={(event) => setWidth(event.nativeEvent.layout.width)}
-      style={{ height, width: '100%' }}
+      style={{
+        height: Math.max(height, designTokens.size.navigationControl),
+        width: '100%',
+      }}
     >
       <Animated.View
         pointerEvents={open ? 'none' : 'auto'}
@@ -71,7 +75,7 @@ export function ExploreHeader({
         importantForAccessibility={open ? 'no-hide-descendants' : 'auto'}
         style={[
           {
-            height,
+            height: Math.max(height, designTokens.size.navigationControl),
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -79,22 +83,9 @@ export function ExploreHeader({
           hideStyle,
         ]}
       >
-        <MotionPressable
-          accessibilityRole="button"
-          accessibilityLabel="Назад"
-          onPress={onBack}
-          style={{
-            width: height,
-            height,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-          {...(Platform.OS === 'web' && open ? { tabIndex: -1 } : {})}
-        >
-          <FigmaIcon name="arrow-left-02" size={designTokens.size.dockIcon} />
-        </MotionPressable>
+        <BackButton onPress={onBack} />
         <AppText role="navigationTitle">Исследовать</AppText>
-        <View style={{ width: height }} />
+        <View style={{ width: designTokens.size.navigationControl }} />
       </Animated.View>
       <Animated.View
         testID="explore-search-field"

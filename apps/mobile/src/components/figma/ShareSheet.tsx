@@ -1,18 +1,19 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Platform, View } from 'react-native';
-import { Image } from 'expo-image';
-import QRCode from 'qrcode';
 
 import { designTokens } from '@bidplace/design-tokens';
 
 import { AppDialog } from '../ui/AppDialog';
-import { AppText, PrimaryButton, SecondaryButton } from '../ui';
+import { AppText, SecondaryButton } from '../ui';
 import { useAppTheme } from '../../providers/theme-provider';
+import { useShareAction } from './use-share-action';
+import { ShareQr } from './ShareQr';
 import { FigmaButton } from './FigmaButton';
 import {
   copyPublicLink,
   downloadQrPng,
   publicShareTarget,
+  publicShareOrigin,
 } from './public-share';
 
 const shareContentGap = designTokens.space.x3 + designTokens.space.x1 / 2; // Figma 597:19045 — 14px.
@@ -28,50 +29,36 @@ export function ShareSheet({
 }) {
   return (
     <AppDialog
-      presentation="sheet"
+      presentation="compactSheet"
       open={open}
       title="Поделиться"
       onClose={onClose}
     >
-      {open ? <ShareContent key={sharePath} sharePath={sharePath} /> : null}
+      {/* Keep geometry through exit motion; active resets feedback on close. */}
+      <ShareContent key={sharePath} sharePath={sharePath} active={open} />
     </AppDialog>
   );
 }
 
-function ShareContent({ sharePath }: { sharePath: string }) {
+function ShareContent({
+  sharePath,
+  active,
+}: {
+  sharePath: string;
+  active: boolean;
+}) {
   const [qr, setQr] = useState<string>();
   const [error, setError] = useState('');
-  const [message, setMessage] = useState('');
   const [attempt, setAttempt] = useState(0);
+  const copyAction = useShareAction(active);
+  const downloadAction = useShareAction(active);
   const palette = useAppTheme();
   let target: ReturnType<typeof publicShareTarget> | undefined;
   try {
-    if (Platform.OS === 'web')
-      target = publicShareTarget(sharePath, window.location.origin);
+    target = publicShareTarget(sharePath, publicShareOrigin());
   } catch {
     target = undefined;
   }
-  const url = target?.url;
-  useEffect(() => {
-    if (!url) return;
-    let active = true;
-    setError('');
-    void QRCode.toDataURL(url, {
-      type: 'image/png',
-      width: 656,
-      margin: 4,
-      errorCorrectionLevel: 'M',
-    })
-      .then((image) => {
-        if (active) setQr(image);
-      })
-      .catch(() => {
-        if (active) setError('Не удалось создать QR-код.');
-      });
-    return () => {
-      active = false;
-    };
-  }, [url, attempt]);
   if (!target)
     return (
       <AppText role="bodySmall" tone="danger">
@@ -79,104 +66,98 @@ function ShareContent({ sharePath }: { sharePath: string }) {
       </AppText>
     );
   const { filename } = target;
-  const copy = async () => {
-    try {
-      await copyPublicLink(target.url);
-      setMessage('Ссылка скопирована.');
-    } catch {
-      setMessage('Не удалось скопировать ссылку. Ссылка доступна ниже.');
-    }
-  };
+  const copy = () => void copyAction.run(() => copyPublicLink(target.url));
   const download = () => {
-    if (!qr) return;
-    try {
-      downloadQrPng(qr, filename);
-      setMessage('Скачивание QR началось.');
-    } catch {
-      setMessage('Не удалось скачать QR. Попробуйте ещё раз.');
-    }
+    if (qr) void downloadAction.run(() => downloadQrPng(qr, filename));
   };
+
   return (
     <View style={{ gap: shareContentGap }}>
       <View
         style={{
-          width: designTokens.size.shareQr,
-          height: designTokens.size.shareQr,
+          width: designTokens.size.shareQr + designTokens.space.x3 * 2,
+          height: designTokens.size.shareQr + designTokens.space.x3 * 2,
+          padding: designTokens.space.x3,
           alignSelf: 'center',
           alignItems: 'center',
           justifyContent: 'center',
           overflow: 'hidden',
           borderRadius: designTokens.radius.shareSheet,
-          backgroundColor: palette.surfaceMuted,
+          backgroundColor: palette.white,
         }}
       >
-        {qr ? (
-          <Image
-            source={{ uri: qr }}
-            accessibilityLabel="QR-код публичной страницы"
-            style={{
-              width: designTokens.size.shareQr,
-              height: designTokens.size.shareQr,
-              borderRadius: designTokens.radius.shareSheet,
-            }}
-          />
-        ) : (
+        <ShareQr
+          key={attempt}
+          url={target.url}
+          onReady={setQr}
+          onError={setError}
+        />
+        {!qr ? (
           <AppText
             role="bodySmall"
             tone={error ? 'danger' : 'secondary'}
             style={{
+              position: 'absolute',
               paddingHorizontal: designTokens.space.x4,
               textAlign: 'center',
             }}
           >
             {error || 'Создаём QR-код…'}
           </AppText>
-        )}
+        ) : null}
       </View>
       {error ? (
         <SecondaryButton
           label="Повторить"
-          onPress={() => setAttempt(attempt + 1)}
+          onPress={() => {
+            setError('');
+            setAttempt(attempt + 1);
+          }}
         />
       ) : null}
       <View style={{ gap: designTokens.space.x2 }}>
-        <PrimaryButton
+        <FigmaButton
+          variant="solid"
+          size="sheetAction"
           label="Скачать QR"
           icon="qr-code-01"
           width="full"
           disabled={!qr}
           onPress={download}
+          feedback={{
+            active: downloadAction.status !== 'idle',
+            label:
+              downloadAction.status === 'error'
+                ? 'Не скачано. Повторить'
+                : Platform.OS === 'web'
+                  ? 'Загрузка начата'
+                  : 'PNG подготовлен',
+            icon: downloadAction.status === 'error' ? 'qr-code-01' : 'check',
+          }}
+          accessibilityHint={downloadAction.status === 'error' ? 'Не удалось скачать QR. Нажмите, чтобы повторить.' : Platform.OS === 'web' ? 'Открыть загрузку PNG в браузере.' : 'Выберите место сохранения PNG в системном меню.'}
         />
         <FigmaButton
           label="Копировать ссылку"
           variant="ghost"
+          size="sheetAction"
           icon="copy"
           width="full"
-          onPress={() => void copy()}
+          onPress={copy}
+          feedback={{
+            active: copyAction.status !== 'idle',
+            label:
+              copyAction.status === 'error'
+                ? 'Не скопировано. Повторить'
+                : 'Скопировано',
+            icon: copyAction.status === 'error' ? 'copy' : 'check',
+          }}
+          accessibilityHint={
+            copyAction.status === 'error'
+              ? 'Не удалось скопировать ссылку. Нажмите, чтобы повторить.'
+              : undefined
+          }
         />
       </View>
-      {message ? (
-        <View style={{ gap: designTokens.space.x1 }}>
-          <AppText
-            role="caption"
-            accessibilityLiveRegion="polite"
-            style={{ textAlign: 'center' }}
-          >
-            {message}
-          </AppText>
-          {message.startsWith('Не удалось скопировать') ? (
-            <AppText
-              role="caption"
-              selectable
-              numberOfLines={1}
-              ellipsizeMode="middle"
-              style={{ maxWidth: '100%', textAlign: 'center' }}
-            >
-              {url}
-            </AppText>
-          ) : null}
-        </View>
-      ) : null}
     </View>
   );
 }

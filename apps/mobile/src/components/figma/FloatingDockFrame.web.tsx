@@ -10,6 +10,8 @@ import type { View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
+import { useVisibleViewport } from '../layout/use-visible-viewport';
+
 import { FigmaGlassSurface } from './FigmaGlassSurface';
 
 type DockLayerStyle = CSSProperties & {
@@ -25,6 +27,7 @@ export function FloatingDockFrame({
   blurTarget: RefObject<View | null>;
   children: ReactNode;
 }) {
+  const { height, layoutHeight } = useVisibleViewport();
   const [webHost, setWebHost] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
@@ -43,7 +46,11 @@ export function FloatingDockFrame({
   };
 
   return createPortal(
-    <div className="figma-dock-layer" style={layerStyle}>
+    <div
+      className="figma-dock-layer"
+      data-viewport-reduced={height < layoutHeight ? true : undefined}
+      style={layerStyle}
+    >
       <FigmaGlassSurface
         preset="navigation"
         testID="figma-floating-dock"

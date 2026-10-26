@@ -3,6 +3,31 @@
 Последнее обновление: 2026-10-10
 Статус: Confirmed technical boundaries for the portfolio-first MVP implementation.
 
+## 2026-10-26 — Public QR sharing adapters
+
+ShareSheet reuses AppDialog's compactSheet presentation and the shared button/
+glass primitives. `ShareQr` and `share-platform` use Metro platform resolution:
+existing QRCode canvas on web, its matrix through existing native SVG; web DOM
+clipboard/download and Expo Clipboard/FileSystem/Sharing on native. URL/path
+validation stays in `public-share`, with one established native web origin.
+Native exports keep a deterministic public PNG in OS cache so receiving apps
+can consume its URI after the sharing dialog resolves; same-turn exports are
+serialized. `useShareAction` owns close/unmount versions, busy state and1800ms
+confirmation timers; FigmaButton owns the opt-in160ms content motion and result
+announcements. ShareContent remains mounted for the shared exit motion, with
+actions disabled/reset at close. No new notification system, server, DTO or
+persistence changes. Device acceptance pending.
+
+## 2026-10-26 — Auth cancellation navigation
+
+`AuthViewport` closes the whole `(auth)` group through Expo Router's root
+navigation stack. The preceding `(public)` route (or root `index`) owns the
+cancellation origin, including its nested state/query; new public routes need
+no URL whitelist. Missing/non-public origins fall back to `/`. `redirectTo`
+remains the independently validated successful-login target. Existing dirty/busy
+guards, intercepted browser traversals and session-completion ownership remain
+unchanged. No server/contracts/persistence changes.
+
 ## 2026-10-05 — Cloudflare application deployment (Partial)
 
 `deploy/cloudflare` owns the thin Worker routing `/api/*` to one private Nest
@@ -147,7 +172,11 @@ first publication; no historical backfill. [Contracts/configuration](analytics-c
   discovery has one canonical `/explore` route (`DEC-137`), composed by
   `features/explore/explore-screen.tsx` with one active Works/Authors/Categories
   pane. `use-explore-state.ts` owns URL state, independent section drafts and
-  navigation-entry session offsets. A new independent Search entry starts from
+  navigation-entry session offsets and work view mode (compact/large, DEC-148).
+  `WorkViewToggle` is controlled/reusable; only Explore connects it. View mode
+  changes reuse `WorkCoverCardGrid` and cached pages without changing URL/API
+  queries. Switching mode resets the Works offset; detail Back restores the mode.
+  A new independent Search entry starts from
   canonical defaults; no process-global last query is carried between entries.
   Existing entry Back/Forward still restores its drafts and offsets. Infinite pages stay in the existing React
   Query cache; no duplicated result store or new API is introduced. `/works`,
@@ -538,8 +567,8 @@ Automated verification counts and browser evidence for this branch are owned by
 Expo Router root anchor `index` and transparent auth presentation preserve the
 existing background screen. The auth layout also owns one persistent visual dimmer;
 AuthViewport retains only the transparent dismissal overlay, so child auth routes
-do not tear down and restart background dimming (2026-10-19). AuthViewport owns auth close guards and dismisses to
-its return target; it no longer renders HomeScreen as a second background.
+do not tear down and restart background dimming (2026-10-19). AuthViewport owns auth close guards and pops to
+its saved public root-stack origin (2026-10-26); it no longer renders HomeScreen as a second background.
 SheetDragSurface owns only gesture detection/translation, with web Pointer Events
 and a native PanResponder adapter. AppDialog, FilterSheet and AuthViewport declare
 the draggable header and supply the existing close callback. This avoids separate

@@ -16,6 +16,128 @@
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
 | Commerce, избранное/подписки, смена email/password из settings | Not implemented в launch scope / post-MVP; [следующая волна](15-POST-MVP-BACKLOG.md). Старый commerce runtime не разрешает включать продажи. |
 
+## 2026-10-26 — Mobile Web form UX
+
+**Partial — local browser verified; physical keyboard/device acceptance pending.**
+Touch-only CSS keeps editable text16px, OTP larger and pinch enabled. Existing
+useVisibleViewport now normalizes zoom and distinguishes layout/visible bounds;
+AppShell/AppDialog reuse it, dock hides only for focused input plus occlusion.
+Fullscreen auth stops resetting scroll on every height change (also affects
+Native screen presentation). No backend, navigation, form mutation or token
+changes.1083 mobile units,23 Mobile Web checks (1 CDP-only skip),122 auth/Share/
+Back regressions, graph typecheck/lint and Web/iOS/Android exports passed;
+independent review accepted. [Audit, matrix and limits](../audits/evidence/2026-10-26-mobile-form-ux/README.md).
+
+## 2026-10-26 — Exact Work action geometry
+
+**Partial — local Web verified; physical Native acceptance pending.** WorkActions
+reproduces Figma526:11497's36px slots at x10/x52,4px inset,28px SVG and1.75px
+stroke, with centers x28/x70. Separate49×48 hit regions meet at x49 without
+overlap. Shared glass and existing hover/pressed/focus/open state owners retained.
+Back24px/full-arrow standard evaluated against original chevron and retained;
+its shape differs intentionally. ShareSheet/QR/feedback unchanged.
+[Geometry, bounds and screenshots](../audits/evidence/2026-10-26-toolbar-geometry/README.md).
+
+## 2026-10-26 — Work toolbar visual polish
+
+**Partial — local Web verified; physical Native acceptance pending.** Back's
+exclusive `navigationGlyph` token is24px inside the unchanged48px target, with
+1.6px stroke. WorkActions now wraps two transparent48px controls in one existing
+FigmaGlassSurface controlGroup pill; actual open Share retains its dark/white
+state. Focus is not clipped; hover/pressed stay owned by FigmaIconButton.
+ShareSheet, QR, feedback, routes and gallery unchanged. Matched390×874 Work/
+Author crops and source differences are in the
+[visual evidence](../audits/evidence/2026-10-26-toolbar-polish/README.md).
+
+## 2026-10-26 — Work toolbar and future favorite control
+
+**Partial — local web verified; native devices pending.** WorkHeader reuses the
+shared Back and two48px FigmaIconButtons in a98×48 group. Work/Author share-03
+tracks the real modal open state with white ink on a dark token surface. Heart
+only explains that favorites are unavailable; no persistence/API/selected state.
+WorkGallery overlay arrows removed; paging, dots, image/cache owner and viewer
+retained. Web scroll synchronizes dots and arrow keys move photo focus. Existing
+ShareSheet/QR/feedback unchanged.1079 mobile units,54 Chromium/WebKit Share/
+toolbar cases, graph typecheck/lint and web/iOS/Android exports passed; independent
+review accepted. [Before/after and limits](../audits/evidence/2026-10-26-work-toolbar/README.md).
+
+## 2026-10-26 — Shared Back UI
+
+**Partial — verified locally on web; native devices pending.** BackButton
+reuses FigmaIconButton/MotionPressable with48px frame, one full arrow and common
+states. Explore and wizard/footer Back variants migrated; route callbacks,
+query/history/fallback/auth guards unchanged.1080 mobile units,20 Chromium/
+WebKit Back cases,80 Share/auth regressions, graph typecheck/lint and
+web/iOS/Android exports passed; independent review accepted. Independent review identified
+and resolved native parent bounds and visible glass glyph stacking. No adjacent
+Author Back duplicate; gallery/calendar arrows intentionally distinct.
+[Audit](../audits/evidence/2026-10-26-back-buttons/README.md).
+
+## 2026-10-26 — Share action feedback
+
+**Partial — verified locally on web; native devices pending.** ShareSheet uses
+one local action hook and existing FigmaButton/Reanimated/reduced-motion owners.
+Success/error stays inside the button, preserving428px composition and focus.
+Web confirms download launch; native confirms prepared PNG, with no saved-file
+claim. Lifetime/version/busy guards prevent stale completions and overlapping
+exports.1076 mobile units,34 Chromium/WebKit cases, graph typecheck/lint and
+all-platform exports passed; independent review accepted. No dependencies added
+for this follow-up. Native screen-reader/OS/camera acceptance remains unverified.
+
+## 2026-10-26 — Work QR sharing
+
+**Partial — implemented and verified on local web; native device acceptance pending.**
+ShareSheet uses existing AppDialog/FigmaButton with Figma597:18875 composition.
+The same validated API sharePath supplies QR and copy. PNG656×656 decoded by
+Apple Vision;20 Chromium/WebKit share checks and1070 mobile units passed,
+with graph typecheck/lint and web/iOS/Android exports. Native SVG export and
+Expo Clipboard/FileSystem/Sharing adapters have source/unit coverage; public
+PNG remains in OS cache for receivers. Independent review accepted. Physical
+phone scanning/native save and clipboard remain unverified.
+[Evidence](../audits/evidence/2026-10-26-work-share/README.md).
+
+## 2026-10-26 — Shared auth cancellation
+
+**Partial — implemented and verified locally on web; native device acceptance pending.** `AuthViewport` and
+`auth-dismissal` use the root `(auth)` stack origin instead of successful-login
+`redirectTo`; URL whitelist removed. Public nested route/query state survives
+all close controls and auth-step transitions; protected/missing origins use Home.
+Forms keep successful-login targets, including “Стать автором” → `/profile`.
+Owner unit specs and `auth-focus-restore.spec.ts` cover origin, guards, Back,
+direct entry, unsafe redirects and successful completion. Passed:1064 mobile
+unit tests,46 Chromium/WebKit checks, dependency-graph typecheck/lint, E2E fence,
+193 docs links and diff check; web/iOS/Android Expo exports passed.
+Independent review found no issues. Native source
+review completed; physical iOS/Android acceptance pending.
+
+## 2026-10-25 — Explore control visual correction / PR68
+
+**Partial — local web correction; native device acceptance pending.** Live Figma
+`7245:2519/2502/2812/2818`, `7271:2719/2722` corrects FilterSortBar gap8,
+label14/26/500 gray,18px filter glyph, capsule80 and uniform0.5px contours.
+FigmaGlassSurface filterControl separates clipped material and visible focus;
+other glass presets unchanged. Compact cards, media/query/nav owners and empty
+control policy retained.1056 unit tests, graph typecheck/lint, all platform exports
+passed;56 Chromium/WebKit checks (320/375/390/414/768/1024/1440), E2E fence,
+193 docs links and diff check passed; independent review accepted. Evidence is in
+[visual review](../audits/current/2026-10-25-EXPLORE-VISUAL-REVIEW.md). Exact desktop/native parity remains unverified;
+auth-dismissal issue deliberately remains outside this correction.
+
+## 2026-10-25 — Compact/large Work view (DEC-148)
+
+**Partial — implemented and verified locally on web; native device acceptance pending.** `WorkViewToggle`, `WorkCoverCard compact`,
+`WorkCoverCardGrid` and Explore controls reuse existing media/navigation/query
+owners. Compact defaults to two columns, gap12, radius16 and adaptive3:4;
+large uses the existing overlay. Detailed evidence and the earlier intermittent
+Chromium header/media check are recorded in [design status](../design/04-DESIGN-STATUS.md). Navigation-entry sessions retain the mode on
+section changes and detail Back. Author/other lists stay unchanged; no commerce
+fields/API/timers added. Passed:1055 mobile unit tests, dependency-graph typecheck/lint,52 Chromium/WebKit
+Explore checks (320/390/768/1024/1440, keyboard/focus, doubled text, long text,
+media failure, navigation/session and request preservation), E2E fence,192 docs
+links and diff check. Web/iOS/Android Expo export passed on Node22; independent
+review accepted after focus-clipping and enlarged-text toolbar fixes. Physical iOS/Android and exact desktop Figma parity remain
+Needs verification / NEEDS-FIGMA.
+
 ## 2026-10-25 — PR #67 final MVP integration
 
 **Implemented for verified local web states; final-SHA CI tracked in PR #67.** Merged `068af087` (PR #66) normally

@@ -85,7 +85,12 @@ vi.mock('../../components/layout', () => ({
   }) => createElement('div', null, children, bottomAction),
 }));
 vi.mock('../../components/figma/BackButton', () => ({
-  BackButton: () => null,
+  BackButton: ({ onPress }: { onPress: () => void }) =>
+    createElement(
+      'button',
+      { onClick: onPress, 'aria-label': 'Назад' },
+      'Назад',
+    ),
 }));
 vi.mock('../../components/figma/WorkGallery', () => ({
   WorkGallery: () => null,
@@ -502,7 +507,7 @@ describe('mobile moderation detail', () => {
     });
     await act(async () => finish());
     await waitFor('Решение принято');
-    await click('Вернуться');
+    await click('Назад');
     expect(h.back).toHaveBeenCalledOnce();
     expect(h.replace).not.toHaveBeenCalled();
     expect(h.admin.listProductSummaries).not.toHaveBeenCalled();

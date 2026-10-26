@@ -51,7 +51,7 @@ export function AuthorApplicationStepShell({
             height:
               Platform.OS === 'web'
                 ? chrome.chromeFrame
-                : designTokens.size.touch,
+                : designTokens.size.navigationControl,
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -59,15 +59,14 @@ export function AuthorApplicationStepShell({
         >
           <View
             style={{
-              width: designTokens.size.touch,
-              height: designTokens.size.touch,
+              width: designTokens.size.navigationControl,
+              height: designTokens.size.navigationControl,
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
             {showBack ? (
               <BackButton
-                surface="plain"
                 disabled={backDisabled || onBack === undefined}
                 onPress={() => onBack?.()}
               />
@@ -84,8 +83,8 @@ export function AuthorApplicationStepShell({
             onPress={onClose}
             preset="icon"
             style={{
-              width: designTokens.size.touch,
-              height: designTokens.size.touch,
+              width: designTokens.size.navigationControl,
+              height: designTokens.size.navigationControl,
               alignItems: 'center',
               justifyContent: 'center',
             }}

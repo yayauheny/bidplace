@@ -23,6 +23,8 @@ export function WorkHeader({
   panelId,
   onBack,
   onShare,
+  shareOpen,
+  onFavorite,
   children,
 }: WorkHeaderProps) {
   const sentinel = useRef<HTMLDivElement>(null);
@@ -191,7 +193,11 @@ export function WorkHeader({
         >
           <StickyDockActionRow testID="work-sticky-actions">
             <WorkBackControl onPress={onBack} />
-            <WorkShareControl onPress={onShare} />
+            <WorkShareControl
+              onPress={onShare}
+              open={shareOpen}
+              onFavorite={onFavorite}
+            />
           </StickyDockActionRow>
         </div>
       </div>

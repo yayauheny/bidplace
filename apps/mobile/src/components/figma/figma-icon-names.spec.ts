@@ -5,6 +5,8 @@ import { figmaIconNames } from './figma-icon-names';
 describe('Figma icon registry', () => {
   it('keeps the Компоненты icon set plus dock and author application extras', () => {
     expect(figmaIconNames).toEqual([
+      'square',
+      'grid-view',
       'filter-horizontal',
       'arrow-up-down',
       'search-01',

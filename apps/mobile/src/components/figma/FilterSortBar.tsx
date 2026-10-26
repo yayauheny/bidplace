@@ -81,15 +81,21 @@ function FilterSortBarTrigger({
         disabled={disabled}
         onPress={onPress}
         preset="icon"
-        hitSlop={iconOnly ? (designTokens.size.touch - designTokens.size.filterSortPill) / 2 : undefined}
+        hitSlop={
+          iconOnly
+            ? (designTokens.size.touch - designTokens.size.filterSortPill) / 2
+            : undefined
+        }
         style={[
           filterSortPillStyle(),
+          { borderRadius: designTokens.radius.filterSort },
           iconOnly
             ? {
                 width: designTokens.size.filterSortPill,
-                  height: designTokens.size.filterSortPill,
-                  paddingVertical: 0,
+                height: designTokens.size.filterSortPill,
+                paddingVertical: 0,
                 paddingHorizontal: 0,
+                gap: 0,
                 justifyContent: 'center',
               }
             : null,
@@ -105,9 +111,7 @@ function FilterSortBarTrigger({
         >
           <FigmaIcon
             name={icon}
-            size={
-              iconOnly ? designTokens.size.dockIcon : designTokens.size.icon
-            }
+            size={designTokens.size.icon}
             strokeWidthPx={
               iconOnly
                 ? designTokens.stroke.iconHeavy
@@ -116,7 +120,7 @@ function FilterSortBarTrigger({
           />
         </View>
         {!iconOnly ? (
-          <AppText role="nav" style={filterSortPillLabelStyle(palette)}>
+          <AppText role="authButton" style={filterSortPillLabelStyle(palette)}>
             {label}
           </AppText>
         ) : null}

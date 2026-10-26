@@ -16,7 +16,7 @@ export function appDialogHostStyle({
   viewportGutter,
   viewportWidth,
 }: {
-  presentation: 'dialog' | 'sheet' | 'mediaSheet';
+  presentation: 'dialog' | 'sheet' | 'compactSheet' | 'mediaSheet';
   viewportGutter: number;
   viewportWidth: number;
 }): ViewStyle {

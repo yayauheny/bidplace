@@ -236,7 +236,7 @@ test.describe('product creation wizard navigation', () => {
       // back to images goes through the top-bar icon button (the story
       // toolbar renders a second button with the same label further down).
       await page
-        .getByRole('button', { name: 'Назад к изображениям' })
+        .getByRole('button', { name: 'Назад', exact: true })
         .first()
         .click();
       await expect(page).toHaveURL(/flow=creation&step=2$/);
@@ -264,7 +264,7 @@ test.describe('product creation wizard navigation', () => {
       // Step 3 renders the story chrome without step tabs (Figma 7008:27134);
       // reach the review step through the images step.
       await page
-        .getByRole('button', { name: 'Назад к изображениям' })
+        .getByRole('button', { name: 'Назад', exact: true })
         .first()
         .click();
       await expect(page).toHaveURL(/flow=creation&step=2$/);
@@ -295,7 +295,7 @@ test.describe('product creation wizard navigation', () => {
       // The story step has no step tabs (Figma 7008:27134): go back to the
       // images step first, then open step 1 from its tab list.
       await page
-        .getByRole('button', { name: 'Назад к изображениям' })
+        .getByRole('button', { name: 'Назад', exact: true })
         .first()
         .click();
       await expect(page).toHaveURL(/flow=creation&step=2$/);
@@ -423,7 +423,7 @@ test.describe('product creation wizard navigation', () => {
       // The story step has no step tabs (Figma 7008:27134): go back to the
       // images step first, then open step 1 from its tab list.
       await page
-        .getByRole('button', { name: 'Назад к изображениям' })
+        .getByRole('button', { name: 'Назад', exact: true })
         .first()
         .click();
       await expect(page).toHaveURL(/flow=creation&step=2$/);

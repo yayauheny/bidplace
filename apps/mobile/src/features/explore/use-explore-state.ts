@@ -1,3 +1,4 @@
+import type { WorkViewMode } from '../../components/figma/WorkViewToggle';
 import { useEffect, useRef, useState } from 'react';
 import {
   useLocalSearchParams,
@@ -16,6 +17,7 @@ import {
 
 type ExploreSession = {
   state: ExploreRoute;
+  workView: WorkViewMode;
   scroll: Partial<Record<ExploreSection, number>>;
 };
 // Navigation entries own drafts/offsets; server pages stay in React Query.
@@ -45,7 +47,7 @@ export function useExploreState() {
             [route.section]: route[route.section],
           },
         }
-      : { state: route, scroll: {} };
+      : { state: route, scroll: {}, workView: 'compact' };
   });
   const writtenUrl = useRef<string | undefined>(undefined);
   const current = useRef(session);
@@ -76,6 +78,7 @@ export function useExploreState() {
   }, [entryKey, navigation, session]);
   const update = (state: ExploreRoute, resetScroll = false) => {
     const next = {
+      ...current.current,
       state,
       scroll: resetScroll
         ? { ...current.current.scroll, [state.section]: 0 }
@@ -90,6 +93,17 @@ export function useExploreState() {
   };
   return {
     state: session.state,
+    workView: session.workView,
+    setWorkView: (workView: WorkViewMode) => {
+      const next = {
+        ...current.current,
+        workView,
+        scroll: { ...current.current.scroll, works: 0 },
+      };
+      current.current = next;
+      sessions.set(entryKey, next);
+      setSession(next);
+    },
     update,
     selectSection: (section: ExploreSection) =>
       update({ ...session.state, section }),

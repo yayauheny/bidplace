@@ -104,6 +104,8 @@ export const designTokens = {
     directionsListGap: 7,
     directionsContentInset: 1,
   },
+  // QR encoding stays black-on-white independently of the active UI theme.
+  qr: { foreground: '#000000', background: '#FFFFFF' },
   radius: {
     small: 12,
     control: 18,
@@ -132,7 +134,7 @@ export const designTokens = {
     mediaSheet: 32,
     workGallery: 20,
     statusDot: 20,
-    filterSort: 14,
+    filterSort: 80,
     // Account header avatar (Figma account screen 100×100 round).
     ownerCard: 16,
     // Settings group surface (Figma settings screen).
@@ -156,6 +158,8 @@ export const designTokens = {
     buttonIconFrame: 26,
     mediaSheetClose: 38,
     iconButton: 36,
+    navigationControl: 48,
+    navigationGlyph: 24,
     header: 48,
     mobileHeader: 48,
     icon: 18,
@@ -239,6 +243,13 @@ export const designTokens = {
       lineHeight: 24,
       fontWeight: '600',
       letterSpacing: -0.15,
+    },
+    sheetTitle: {
+      fontFamily: 'Inter_600SemiBold',
+      fontSize: 18,
+      lineHeight: 22,
+      letterSpacing: -0.36,
+      fontWeight: '600' as const,
     },
     mediaSheetTitle: {
       fontFamily: 'Inter_600SemiBold',
@@ -848,6 +859,8 @@ export const designTokens = {
   },
   layer: { content: 0, chrome: 10, popover: 20, dock: 40, modal: 50 },
   blur: {
+    control: 50,
+    controlNativeIntensity: 100,
     dock: 6,
     dockNativeIntensity: 30,
     dockAndroidReductionFactor: 5,

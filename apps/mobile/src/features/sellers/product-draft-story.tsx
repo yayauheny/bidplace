@@ -1,3 +1,4 @@
+import { BackButton } from '../../components/figma/BackButton';
 import { useState } from 'react';
 import { TextInput, View } from 'react-native';
 
@@ -308,8 +309,8 @@ export function ProductDraftStoryStep({
           </AppText>
         ) : null}
         {isCreationFlow ? (
-          <SecondaryButton
-            label="Назад к изображениям"
+          <BackButton
+            accessibilityHint="Назад к изображениям"
             disabled={savePending}
             onPress={onBackToImages}
           />

@@ -1,22 +1,26 @@
+import { designTokens } from '@bidplace/design-tokens';
 import { FigmaIconButton } from './FigmaIconButton';
 
 export function BackButton({
   onPress,
-  label = 'Назад',
+  accessibilityHint,
   disabled = false,
   surface = 'muted',
 }: {
   onPress: () => void;
-  label?: string;
+  accessibilityHint?: string;
   disabled?: boolean;
-  surface?: 'plain' | 'muted';
+  surface?: 'muted' | 'glass';
 }) {
   return (
     <FigmaIconButton
       icon="arrow-left-02"
-      iconSize={20}
+      size="navigation"
+      iconSize={designTokens.size.navigationGlyph}
+      strokeWidthPx={designTokens.stroke.iconHeavy}
       surface={surface}
-      label={label}
+      label="Назад"
+      accessibilityHint={accessibilityHint}
       disabled={disabled}
       onPress={onPress}
     />

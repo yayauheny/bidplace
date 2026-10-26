@@ -4,6 +4,33 @@
 
 Статус: **Figma mobile-web 390 tokens and primitives are the production visual layer**
 
+## 2026-10-26 — Shared Back control
+
+BackButton is the single previous-screen control:48×48, Hugeicons arrow-left-02
+24px with physical1.6px stroke (2026-10-26 polish); fixed label “Назад”,
+optional contextual hint.
+It delegates states to FigmaIconButton navigation size and MotionPressable.
+Muted is the standard surface; Work uses existing controlGroup glass80%/blur6.
+Hover overlays semantic5% black in light; pressed reuses button feedback,
+disabled0.5, global focus-visible and reduced motion remain. Navigation callbacks
+and router/history helpers stay outside the button. Previous-month/photo and
+row disclosure arrows retain their semantics. This founder-approved standard
+supersedes route-local Back geometry, not other icon-button sizes.
+
+## 2026-10-26 — Touch Web input and visible viewport
+
+On coarse/no-hover browsers, normal UI uses touch-action manipulation; editable
+input/textarea/select/contenteditable text is16px, preserving the larger OTP.
+This browser accessibility adaptation overrides RNW inline field fonts only;
+Native/Desktop tokens and external labels stay unchanged. Custom drag rules
+still own their limited touch-action. Pinch remains available.
+Existing useVisibleViewport owns normalized/rounded visual height and layout
+height separately. Web AppShell and AppDialog use the visible bounds; dock hides
+for active editable input only while occluded, keeping its scroll reserve stable.
+Auth fullscreen scroll resets on presentation changes, never keyboard resize.
+Physical keyboard/pan and Native acceptance remains pending; see
+[verification](../audits/evidence/2026-10-26-mobile-form-ux/README.md).
+
 ## 1. Архитектура источников
 
 ### Current brand/fullscreen auth target — 2026-10-08
@@ -399,23 +426,30 @@ content reserve. 1024/1440 Figma compositions remain `NEEDS-FIGMA`.
 Профиль. Search opens canonical `/explore` with its inline field active
 (`DEC-137`, replaces the fullscreen overlay portion of `DEC-096`). Explore source
 is Figma `7240:2491` variant 1: compact Works `7240:2492`, expanded search
-`7240:2652`, Categories `7240:2620`, Authors `7240:2580`. Commerce and view-mode
-controls in those mockups are excluded by the portfolio contract.
+`7240:2652`, Categories `7240:2620`, Authors `7240:2580`. Commerce controls in those mockups remain excluded by the portfolio contract.
+Work view switching is enabled only in Explore by DEC-148.
 
 `ExploreHeader` reserves a constant 52px slot. When opening search, only header layers animate;
 TextInput, tabs and result ancestry stay stable. A single Reanimated progress
 moves the magnifier, expands the glass background from right to left, fades the
 title/close, and uses shared reduced-motion policy. Hidden controls are inert
 and aria-hidden on web. The field/close reuse `FigmaSearchGlass` and existing
-`searchChromeTokens` (52px, 60% white, CSS blur6, SVG stroke).
+`searchChromeTokens` (52px, 60% white, CSS blur6); live Explore nodes
+`7245:2502/2812/2818` use a uniform0.5px `toolbarBorder` SVG stroke.
+The older popup gradient is not applied to these current Explore surfaces.
 `FigmaTabs variant="segmented"` owns the rounded rail and keyboard navigation;
 its default underline variant keeps existing consumers. The semantic
 `navigationTitle` typography is Inter Semibold16/20/−2%. `FilterSortBar`
 `filterPresentation="icon"` exposes the existing round filter trigger, while
 sort keeps its label; existing consumers retain label defaults. `FilterSearchField`
 remains the floating-label catalog field; Explore does not duplicate query inside
-filter sheets. `WorkCoverCardGrid variant="caption" columns={2}` uses existing
-image/card components without blur; default overlay consumers keep their behavior.
+filter sheets. `WorkViewToggle` (Figma7271:2719/2722) composes `FigmaGlassSurface` filterControl,
+`MotionPressable` and Hugeicons square/grid-view. It offers compact/large modes;
+Explore alone integrates it beside filters/sort. `WorkCoverCardGrid variant="compact"
+columns={2}` reuses caption rendering and resilient media with adaptive3:4,
+radius16, horizontal gap12 and row gap28 (founder-confirmed detailed card/grid).
+Large uses the existing single-column overlay. Existing caption/overlay consumers
+retain their geometry. Commerce fields remain absent.
 Author/Category/Work hits retain shared hover fill and visible keyboard focus.
 The 64×64 search FAB and the
 288×64 five-icon cart pill are unused variants (`DEC-088`). Web portals the
@@ -452,8 +486,16 @@ Public catalog intros (`526:12957`, `526:13308`) reuse `bodySmall` default ink
 `textSecondary` `#8A8A8A`. `/works` does not render catalog-segment tabs
 (`874:5421` / `526:13314`); order matches `/authors`: title → intro →
 Filter/Sort → cards. Work hero chrome (`745:21332`) is a 48×48 glass Back
-plus Share, 12px from the web hero top (Figma y 62 minus the 50px status
-bar). Like stays hidden. Inactive gallery dots (`745:21219`) use
+plus a single controlGroup glass pill around a 98×48 Heart/Share group,12px
+from the web hero top (Figma y62 minus the50px status bar). Heart is an explicit future-feature notice only (founder
+override, 2026-10-26), with no selected state or storage. Work and Author use
+share-03; actual open state uses white ink on the existing dark overlayScrim
+surface for contrast. Gallery keeps paging/dots and Web keyboard selection,
+without overlay arrows. Work action geometry (`526:11497`) is two36px visual
+slots at x10/x52, each with4px padding and28px SVG/1.75px stroke; centers x28/x70.
+The independent non-overlapping hit regions split the pill at x49, each49×48.
+FigmaIconButton layout/icon-container style overrides separate those hit and
+visual bounds without changing other consumers. Inactive gallery dots (`745:21219`) use
 `color.border` `#DEDEDE`, not `divider` `#E2E2E2`.
 
 On web, `global.css` sets `html { font-synthesis: none }` so expo-font Inter
@@ -461,10 +503,18 @@ faces are not faux-bolded.
 
 Shared `ShareSheet` renders a copy action and a downloadable PNG QR for
 validated public `/works/:id` and `/authors/:slug` paths on the current
-origin. Work and Creator open the same `AppDialog` sheet. A sheet enters
+origin. Work and Creator QR use the same `AppDialog compactSheet` (Figma
+`597:18875`): upper radius32, inset20/top12/bottom max(40,safe inset), gap14,
+centered `sheetTitle`18/22/600/−0.36 and accessible36×4 drag handle. Mobile
+handle owns a44×44 close target; wide screens retain a cross. `sheetAction`
+reuses FigmaButton geometry55/14/26/500,18px icons and2px content gap; solid
+uses inkStrong, glass action uses50% white/50px blur/white0.5px border. Default
+button/dialog presets retain their existing paint and geometry. A sheet enters
 from below, exits downward, and the backdrop fades (`motion.control`,
-`cubic-bezier(0.2, 0, 0, 1)`, reduced motion). Geometry is unchanged. The
-native branch is a stub.
+`cubic-bezier(0.2, 0, 0, 1)`, reduced motion). Existing QRCode generates web
+PNG656 with margin4/correction M; native uses its matrix through existing SVG,
+with fixed black/white QR tokens independent of theme. Expo Clipboard/FileSystem/
+Sharing adapters provide native copy/export; physical device acceptance pending.
 
 Ordinary web AppDialog sheets share one visual `SheetBackdropProvider` installed
 under ThemeProvider in AppProviders. FilterSheet/ShareSheet/mediaSheet inherit it;
@@ -634,6 +684,14 @@ shell stays the only ring. `apps/mobile/global.css` still draws
 `input:focus-visible`, `textarea:focus-visible`, and
 `[role='textbox']:focus-visible` for controls outside that component.
 The field success border stays `color.success` `#039600`.
+
+Share action feedback (2026-10-26): FigmaButton's opt-in controlled feedback
+crossfades/scales content only with existing motion.fast160/reduced-motion
+policy; the original measurement remains. Confirmation lasts1800ms. Inline
+copy/download errors offer retry without a separate status row; focused
+pressable stays mounted. Web live status and native accessibility announcements
+convey results. Download feedback describes initiation/preparation, not saved
+files. Share action lifetime state belongs to `useShareAction`; no toast system.
 
 ### Author application field variant
 
@@ -932,8 +990,9 @@ Founder iconography rule: ordinary icons use 1.3 physical px; icon-only controls
 and large glyphs use 1.6 physical px. Fractional SVG export values are not tokens.
 `FigmaIcon` uses Hugeicons `absoluteStrokeWidth` on its original 24-unit grid, preserving
 proportions and final stroke thickness at every size. `FigmaIconButton` uses the
-heavy role; the round `FilterSortBar` trigger is 42×42 with a 24px glyph at 1.6px.
-The portfolio Explore has no view-mode toggle; this update does not add one.
+heavy role; the round `FilterSortBar` trigger is42×42 with an18px glyph
+at1.6 physical px (live `7245:2520`, visual correction after PR#68 review).
+This refinement did not add a view-mode toggle; DEC-148 subsequently enables it only in Explore.
 Back navigation uses Hugeicons `arrow-left-02`; gallery/calendar chevrons retain
 their separate meaning.
 
@@ -983,3 +1042,28 @@ The confirmed separate-row header/segmented animation is unchanged. Independent
 Search entry starts fresh; only the same navigation entry restores drafts,
 filters, query, cached pages and scroll. Physical Native blur, return and
 background/resume acceptance remain Needs verification.
+
+
+### 2026-10-25 — Explore control visual correction
+
+Live `7245:2519/2520/2521`, `7271:2719/2722`: filter/sort gap8,
+Inter Medium14/26/−0.28 in `textSubdued` (existing `authButton` role),
+26px glyph frame,2px icon/label gap and16px horizontal padding. Filter
+and view controls use42px hit frames with shared44px hit slop;18px filter
+glyph preserves the founder's1.6px physical stroke. Figma's43px paint frame
+includes the outside stroke; runtime retains the established42px control frame.
+
+`FigmaGlassSurface filterControl` alone uses radius80, opaque `surface`,
+`toolbarBorder` (#D1D1D1 light) and `blur.control=50`. Web separates its
+clipped rounded material from the focusable content and paints a uniform
+0.5px inset ring above it; no fractional mask subtraction for this preset.
+Native separates rounded BlurView, content and non-interactive border.
+`navigation`/`controlGroup` retain their former material and stroke owners.
+`WorkViewToggle` no longer overrides surface clipping locally.
+
+At normal text sizes the measured toolbar is one row from320 through1440;
+wrapping remains intentional for enlarged text instead of clipping controls.
+Empty search retains its existing hidden-inactive/recoverable-active control
+contract (`7240:2730`). Compact media/typography and navigation sessions are
+unchanged. See [visual review](../audits/current/2026-10-25-EXPLORE-VISUAL-REVIEW.md)
+for exact source/runtime differences and platform acceptance limits.

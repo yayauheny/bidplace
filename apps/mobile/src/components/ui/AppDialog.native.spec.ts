@@ -174,11 +174,12 @@ function mount(node: ReactNode) {
 }
 
 describe('AppDialog native focus fallback', () => {
-  it('moves accessibility focus through the installed dialog when it opens', async () => {
+  it.each(['dialog', 'compactSheet'] as const)('moves accessibility focus and registers hardware Back for %s', async (presentation) => {
     const view = mount(
       createElement(AppDialog, {
         open: true,
         title: 'Нативное',
+        presentation,
         onClose: () => undefined,
         children: createElement('input', { 'aria-label': 'Поле' }),
       }),
@@ -194,3 +195,11 @@ describe('AppDialog native focus fallback', () => {
     view.unmount();
   });
 });
+
+vi.mock('./AppDialogSheetMotion', () => ({
+  AppDialogSheetMotion: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
+}));
+vi.mock('./SheetDragSurface', () => ({
+  SheetDragSurface: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
+  SheetDragHandle: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
+}));

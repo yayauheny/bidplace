@@ -12,14 +12,6 @@ const AUTH_ROUTES = new Set([
   'verify-email',
 ]);
 
-const PUBLIC_PREFIXES = [
-  '/works',
-  '/authors',
-  '/search',
-  '/product',
-  '/seller',
-];
-
 export type AuthDismissal = 'allow' | 'confirm' | 'keep';
 
 type RouteNode = {
@@ -106,17 +98,16 @@ export function authBrowserLeaveTarget(path: string): SafeRedirect {
   return getSafeRedirect(path);
 }
 
-export function authLeaveDestination(redirectTo: SafeRedirect): SafeRedirect {
-  const path = redirectTo.split(/[?#]/)[0] || '/';
-  if (path === '/') return '/';
-  if (
-    PUBLIC_PREFIXES.some(
-      (prefix) => path === prefix || path.startsWith(`${prefix}/`),
-    )
-  ) {
-    return redirectTo;
-  }
-  return '/';
+export function canDismissAuthToOrigin(
+  state: NavigationNode | undefined,
+): boolean {
+  const index = state?.index ?? 0;
+  const current = state?.routes?.[index];
+  const previous = state?.routes?.[index - 1];
+  return (
+    current?.name === '(auth)' &&
+    (previous?.name === '(public)' || previous?.name === 'index')
+  );
 }
 
 export function registerSubmission(values: {
