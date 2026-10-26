@@ -2,7 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import { useMutation, type QueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 
-import { ImagePreparationError } from '../../lib/media/prepare-image-upload';
+import {
+  ImagePreparationError,
+  readImageUpload,
+  type ImageUploadInput,
+} from '../../lib/media/prepare-image-upload';
 
 import {
   workImageMaxInputBytes,
@@ -22,8 +26,16 @@ export type UploadImageState = {
   status: 'queued' | 'preparing' | 'uploading' | 'done' | 'error';
 };
 
+type SelectedWorkImages = {
+  images: readonly ImageUploadInput[];
+  productId: string;
+  epoch: number;
+  operation: number;
+  selection: number;
+};
+
 type UploadBatch = {
-  assets: Array<ImagePicker.ImagePickerAsset | null>;
+  assets: Array<ImageUploadInput | null>;
   next: number;
   blob: Blob | undefined;
   key: string;
@@ -54,6 +66,7 @@ export function useProductDraftImageActions({
   session: ProductDraftSaveSession;
   storyEditor: ProductStoryEditor;
 }) {
+  const mounted = useRef(false);
   const seenAuthEpoch = useRef(authEpoch);
   const deleteConfirmLock = useRef(false);
   const imageSelection = useRef(0);
@@ -83,14 +96,18 @@ export function useProductDraftImageActions({
     imageSelection.current += 1;
   }, [authEpoch]);
 
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      imageSelection.current += 1;
+      pendingUpload.current = null;
       uploadController.current?.abort();
-    },
-    [],
-  );
+    };
+  }, []);
 
   const ownsBatch = (batch: UploadBatch) =>
+    mounted.current &&
     pendingUpload.current === batch &&
     session.isCurrentOperation(batch.operation) &&
     !session.transitionLock.current &&
@@ -112,23 +129,9 @@ export function useProductDraftImageActions({
         try {
           const asset = batch.assets[batch.next]!;
           setStatus('preparing');
-          if (
-            asset.fileSize !== undefined &&
-            asset.fileSize > workImageMaxInputBytes
-          )
-            throw new ImagePreparationError('SOURCE_TOO_LARGE');
-          if (!batch.blob) {
-            if (asset.file) batch.blob = asset.file;
-            else {
-              const response = await fetch(asset.uri);
-              if (!response.ok) throw new ImagePreparationError('READ_FAILED');
-              batch.blob = await response.blob();
-            }
-          }
+          if (!batch.blob)
+            batch.blob = await readImageUpload(asset, workImageMaxInputBytes);
           if (!ownsBatch(batch)) return;
-          if (batch.blob.size > workImageMaxInputBytes)
-            throw new ImagePreparationError('SOURCE_TOO_LARGE');
-          if (!batch.blob.size) throw new ImagePreparationError('EMPTY_FILE');
           setStatus('uploading');
           const controller = new AbortController();
           uploadController.current = controller;
@@ -209,8 +212,9 @@ export function useProductDraftImageActions({
     return persisted;
   };
 
-  const chooseImages = async () => {
+  const selectImages = async (): Promise<SelectedWorkImages | undefined> => {
     if (
+      !mounted.current ||
       session.transitionLock.current ||
       !existingProduct ||
       pickerLock.current ||
@@ -218,15 +222,19 @@ export function useProductDraftImageActions({
       upload.isPending
     )
       return;
+    const id = session.persistedProductId();
+    if (!id) return;
     pickerLock.current = true;
     setChoosingImages(true);
     const epoch = currentAuthEpoch(queryClient);
     const operation = session.snapshotOperation();
     const selection = ++imageSelection.current;
     const stillOwnsImages = () =>
+      mounted.current &&
       selection === imageSelection.current &&
       !session.transitionLock.current &&
       session.isCurrentOperation(operation) &&
+      session.persistedProductId() === id &&
       canWritePrivateCache(queryClient, epoch);
     try {
       if (!(await persistApprovedSnapshot()) || !stillOwnsImages()) return;
@@ -239,27 +247,13 @@ export function useProductDraftImageActions({
       });
       if (!stillOwnsImages() || result.canceled || !result.assets.length)
         return;
-      const id = session.persistedProductId();
-      if (!id) return;
-      const key = crypto.randomUUID();
-      const batch: UploadBatch = {
-        assets: [...result.assets],
-        next: 0,
-        blob: undefined,
-        key,
+      return {
+        images: [...result.assets],
         productId: id,
         epoch,
         operation,
+        selection,
       };
-      pendingUpload.current = batch;
-      setUploadFiles(
-        result.assets.map((asset, index) => ({
-          key: `${key}:${index}`,
-          uri: asset.uri,
-          status: 'queued',
-        })),
-      );
-      upload.mutate(batch);
     } catch {
       if (stillOwnsImages())
         setImageSelectionError(
@@ -271,6 +265,62 @@ export function useProductDraftImageActions({
         setChoosingImages(false);
       }
     }
+  };
+
+  const startUpload = async (selected: SelectedWorkImages) => {
+    const stillOwnsSelection = () =>
+      mounted.current &&
+      selected.selection === imageSelection.current &&
+      session.isCurrentOperation(selected.operation) &&
+      !session.transitionLock.current &&
+      session.persistedProductId() === selected.productId &&
+      canWritePrivateCache(queryClient, selected.epoch);
+    if (
+      !stillOwnsSelection() ||
+      !selected.images.length ||
+      pickerLock.current ||
+      pendingUpload.current ||
+      upload.isPending
+    ) return;
+    pickerLock.current = true;
+    setChoosingImages(true);
+    const assets = selected.images.map((image) => ({ ...image }));
+    try {
+      if (!(await persistApprovedSnapshot()) || !stillOwnsSelection()) return;
+      const key = crypto.randomUUID();
+      const batch: UploadBatch = {
+        assets,
+        next: 0,
+        blob: undefined,
+        key,
+        productId: selected.productId,
+        epoch: selected.epoch,
+        operation: selected.operation,
+      };
+      pendingUpload.current = batch;
+      imageSelection.current += 1;
+      setUploadFiles(assets.map((asset, index) => ({
+        key: `${key}:${index}`,
+        uri: asset.uri,
+        status: 'queued',
+      })));
+      upload.mutate(batch);
+    } catch {
+      if (stillOwnsSelection())
+        setImageSelectionError(
+          'Не удалось прочитать выбранные изображения. Выберите файлы ещё раз.',
+        );
+    } finally {
+      if (mounted.current && canWritePrivateCache(queryClient, selected.epoch)) {
+        pickerLock.current = false;
+        setChoosingImages(false);
+      }
+    }
+  };
+
+  const chooseImages = async () => {
+    const selected = await selectImages();
+    if (selected) await startUpload(selected);
   };
 
   const chooseStoryImage = async () => {
@@ -371,6 +421,8 @@ export function useProductDraftImageActions({
     imagePendingDelete,
     setImagePendingDelete,
     deleteConfirmLocked,
+    selectImages,
+    startUpload,
     chooseImages,
     chooseStoryImage,
     reorder,

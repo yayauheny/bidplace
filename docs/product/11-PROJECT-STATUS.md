@@ -16,6 +16,26 @@
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
 | Commerce, избранное/подписки, смена email/password из settings | Not implemented в launch scope / post-MVP; [следующая волна](15-POST-MVP-BACKLOG.md). Старый commerce runtime не разрешает включать продажи. |
 
+## 2026-10-26 — Техническая основа подготовки фотографий
+
+**Implemented (local checks).** `product-draft-image-actions.ts` разделяет
+`selectImages()` и `startUpload(selection)`; существующий `chooseImages()`
+вызывает их сразу. Пачка фиксирует входы, сохраняет последовательность,
+Blob/ключ при retry, частичный успех, approved-save и session/operation guards.
+Unmount исключает поздний старт/применение результата. `readImageUpload` в
+`prepare-image-upload.ts` переиспользует чтение/byte validation без обработки
+пикселей; Work сохраняет 25 MiB, фото автора — прежние 1600px / 2 MiB и lifecycle.
+Расширены `product-draft-submit-lifecycle.spec.ts` и `prepare-image-upload.spec.ts`;
+`product-draft-save-race.spec.ts` сохраняет порядок save → picker.
+
+Проверки на Node 22: Turbo `typecheck lint test build --filter=@bidplace/mobile...`
+(1074 mobile + 48 contracts + 51 api-client unit tests; Web/iOS/Android export),
+6 media E2E Chromium/WebKit (`playwright.media.config.ts`, порты 3101/8181),
+E2E fence, docs links и diff check. API/schema/dependencies и внешний UI не менялись.
+Пригодность библиотек и точка расширения — [architecture owner](10-CODE-ARCHITECTURE.md).
+Подтверждение перед отправкой и редактор — **Not implemented**; native cropper,
+HEIC на устройствах и live R2/CDN — **Needs verification**. Merge/deploy не выполнялись.
+
 ## 2026-10-25 — PR #67 final MVP integration
 
 **Implemented for verified local web states; final-SHA CI tracked in PR #67.** Merged `068af087` (PR #66) normally

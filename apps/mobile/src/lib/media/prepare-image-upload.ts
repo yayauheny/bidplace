@@ -65,6 +65,19 @@ async function readImage(uri: string): Promise<Blob> {
   }
 }
 
+export async function readImageUpload(
+  input: ImageUploadInput,
+  maxSourceBytes: number,
+): Promise<Blob> {
+  if (input.fileSize !== undefined && input.fileSize > maxSourceBytes)
+    throw new ImagePreparationError('SOURCE_TOO_LARGE');
+  const source = input.file ?? (await readImage(input.uri));
+  if (source.size === 0) throw new ImagePreparationError('EMPTY_FILE');
+  if (source.size > maxSourceBytes)
+    throw new ImagePreparationError('SOURCE_TOO_LARGE');
+  return source;
+}
+
 /**
  * Keeps supported files unchanged when they fit the limits. Large images and
  * unsupported formats are re-encoded while preserving their aspect ratio.
@@ -90,13 +103,7 @@ export async function prepareImageUpload(
     throw new ImagePreparationError('INVALID_DIMENSIONS');
   }
 
-  const source = input.file ?? (await readImage(input.uri));
-  if (source.size === 0) {
-    throw new ImagePreparationError('EMPTY_FILE');
-  }
-  if (source.size > options.maxSourceBytes) {
-    throw new ImagePreparationError('SOURCE_TOO_LARGE');
-  }
+  const source = await readImageUpload(input, options.maxSourceBytes);
 
   const type = (source.type || input.mimeType || '').toLowerCase();
   const supported = ['image/jpeg', 'image/png', 'image/webp'].includes(type);

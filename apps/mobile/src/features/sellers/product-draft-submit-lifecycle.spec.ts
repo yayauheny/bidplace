@@ -6,6 +6,10 @@ import { createRoot, type Root } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { workImageMaxInputBytes } from '@bidplace/contracts';
+import type { ApiClient } from '@bidplace/api-client';
+import { useProductDraftImageActions } from './product-draft-image-actions';
+import type { ProductDraftSaveSession } from './product-draft-save';
+import type { ProductStoryEditor } from './use-product-story-editor';
 
 import { flush, setInput } from '../../testing/dom';
 
@@ -312,6 +316,35 @@ afterEach(() => {
   vi.unstubAllGlobals();
   document.body.replaceChildren();
 });
+
+function mountImageActions(editorStatus: 'DRAFT' | 'APPROVED' = 'DRAFT') {
+  const queryClient = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
+  queryClient.setQueryData(authKeys.session, { id: 'user-a' });
+  const session = {
+    transitionLock: { current: false },
+    snapshotOperation: () => 0,
+    isCurrentOperation: vi.fn(() => true),
+    persistedProductId: vi.fn(() => productId),
+    inFlightSave: vi.fn(() => null),
+    persistCurrentForm: vi.fn(async () => true),
+  };
+  let actions!: ReturnType<typeof useProductDraftImageActions>;
+  const root = createRoot(document.createElement('div'));
+  function Probe() {
+    actions = useProductDraftImageActions({
+      api: { images: { add: harness.addImages } } as unknown as ApiClient,
+      queryClient,
+      authEpoch: 0,
+      existingProduct: { id: productId, images: [] },
+      editorStatus,
+      session: session as unknown as ProductDraftSaveSession,
+      storyEditor: {} as ProductStoryEditor,
+    });
+    return null;
+  }
+  act(() => root.render(createElement(QueryClientProvider, { client: queryClient }, createElement(Probe))));
+  return { get actions() { return actions; }, queryClient, session, unmount: () => act(() => root.unmount()) };
+}
 
 describe('product draft submit lifecycle', () => {
   it('allows a slow large upload and retries a timed-out request with the same identity', async () => {
@@ -634,6 +667,137 @@ describe('product draft submit lifecycle', () => {
     expect(view.container.querySelector<HTMLInputElement>('[aria-label="Название"]')?.value).toBe('Approved title');
     expect(view.container.querySelector<HTMLInputElement>('[aria-label="Название"]')?.disabled).toBe(false);
     view.unmount();
+  });
+
+  it('selects without reading or uploading and freezes the inputs when upload starts', async () => {
+    const first = new File(['first'], 'first.png', { type: 'image/png' });
+    const second = new File(['second'], 'second.png', { type: 'image/png' });
+    const assets = [{ uri: 'blob:first', file: first }, { uri: 'blob:second', file: second }];
+    harness.launchImageLibraryAsync.mockResolvedValue({ canceled: false, assets });
+    const read = vi.fn();
+    vi.stubGlobal('fetch', read);
+    const view = mountImageActions();
+    try {
+      const selected = await act(() => view.actions.selectImages());
+      expect(selected).toBeDefined();
+      expect(harness.addImages).not.toHaveBeenCalled();
+      expect(read).not.toHaveBeenCalled();
+      expect(view.actions.uploadFiles).toEqual([]);
+      const selection = selected!;
+      await act(async () => {
+        const start = view.actions.startUpload(selection);
+        // A future editor may retain its input; started batches own a snapshot.
+        selection.images[1]!.file = first;
+        await Promise.all([start, view.actions.startUpload(selection)]);
+      });
+      await flush();
+      expect(harness.addImages.mock.calls.map((call) => call[1])).toEqual([[first], [second]]);
+      expect(read).not.toHaveBeenCalled();
+      await act(() => view.actions.startUpload(selection));
+      await flush();
+      expect(harness.addImages).toHaveBeenCalledTimes(2);
+    } finally { view.unmount(); }
+  });
+
+  it.each(['unmount', 'session-change', 'operation-change', 'product-change', 'new-selection'] as const)(
+    'rejects a deferred selection after %s',
+    async (reason) => {
+      harness.launchImageLibraryAsync.mockResolvedValue({ canceled: false, assets: [{ uri: 'blob:photo' }] });
+      const read = vi.fn();
+      vi.stubGlobal('fetch', read);
+      const view = mountImageActions();
+      const selected = (await act(() => view.actions.selectImages()))!;
+      try {
+        if (reason === 'unmount') view.unmount();
+        else if (reason === 'session-change') await act(() => clearAuthenticatedSession(view.queryClient));
+        else if (reason === 'operation-change') view.session.isCurrentOperation.mockReturnValue(false);
+        else if (reason === 'product-change') view.session.persistedProductId.mockReturnValue('other-work');
+        else await act(() => view.actions.selectImages());
+        await act(() => view.actions.startUpload(selected));
+        await flush();
+        expect(read).not.toHaveBeenCalled();
+        expect(harness.addImages).not.toHaveBeenCalled();
+      } finally { if (reason !== 'unmount') view.unmount(); }
+    },
+  );
+
+  it('waits for the current approved form save before starting a deferred upload', async () => {
+    const file = new File(['photo'], 'photo.png', { type: 'image/png' });
+    harness.launchImageLibraryAsync.mockResolvedValue({ canceled: false, assets: [{ uri: 'blob:photo', file }] });
+    const view = mountImageActions('APPROVED');
+    try {
+      const selected = (await act(() => view.actions.selectImages()))!;
+      let finishSave!: (saved: boolean) => void;
+      view.session.persistCurrentForm.mockImplementation(() => new Promise((resolve) => { finishSave = resolve; }));
+      let start!: Promise<void>;
+      act(() => { start = view.actions.startUpload(selected); });
+      await act(() => view.actions.startUpload(selected));
+      expect(harness.addImages).not.toHaveBeenCalled();
+      await act(async () => { finishSave(true); await start; });
+      await flush();
+      expect(harness.addImages).toHaveBeenCalledTimes(1);
+      expect(harness.addImages.mock.calls[0]?.[1]).toEqual([file]);
+    } finally { view.unmount(); }
+  });
+
+  it.each(['failed-save', 'session-change', 'unmount'] as const)(
+    'does not start a deferred upload when the approved save ends after %s',
+    async (reason) => {
+      harness.launchImageLibraryAsync.mockResolvedValue({ canceled: false, assets: [{ uri: 'blob:photo' }] });
+      const view = mountImageActions('APPROVED');
+      const selected = (await act(() => view.actions.selectImages()))!;
+      let finishSave!: (saved: boolean) => void;
+      view.session.persistCurrentForm.mockImplementation(() => new Promise((resolve) => { finishSave = resolve; }));
+      let start!: Promise<void>;
+      act(() => { start = view.actions.startUpload(selected); });
+      try {
+        if (reason === 'unmount') view.unmount();
+        else if (reason === 'session-change') await act(() => clearAuthenticatedSession(view.queryClient));
+        await act(async () => { finishSave(reason !== 'failed-save'); await start; });
+        await flush();
+        expect(harness.addImages).not.toHaveBeenCalled();
+      } finally { if (reason !== 'unmount') view.unmount(); }
+    },
+  );
+
+  it.each([
+    { fileSize: 0, message: 'Выбранный файл пустой.' },
+    { fileSize: workImageMaxInputBytes + 1, message: 'Исходный файл слишком большой.' },
+  ])('reports an invalid $fileSize-byte Work file without uploading', async ({ fileSize, message }) => {
+    harness.launchImageLibraryAsync.mockResolvedValue({
+      canceled: false,
+      assets: [{ uri: 'blob:invalid', fileSize, file: new Blob([]) }],
+    });
+    const view = mount();
+    try {
+      await until(view.container, () => Boolean(button(view.container, 'Добавить изображения')), 'images');
+      act(() => button(view.container, 'Добавить изображения')?.click());
+      await until(view.container, () => Boolean(view.container.textContent?.includes(message)), 'file error');
+      expect(harness.addImages).not.toHaveBeenCalled();
+    } finally { view.unmount(); }
+  });
+
+  it.each(['picker', 'read'] as const)('ignores a late %s result after unmount', async (phase) => {
+    const file = new Blob(['photo'], { type: 'image/png' });
+    let finish!: () => void;
+    if (phase === 'picker') {
+      harness.launchImageLibraryAsync.mockImplementation(() => new Promise((resolve) => {
+        finish = () => resolve({ canceled: false, assets: [{ uri: 'blob:photo' }] });
+      }));
+    } else {
+      harness.launchImageLibraryAsync.mockResolvedValue({ canceled: false, assets: [{ uri: 'blob:photo' }] });
+      vi.stubGlobal('fetch', vi.fn(() => new Promise((resolve) => {
+        finish = () => resolve({ ok: true, blob: async () => file });
+      })));
+    }
+    const view = mountImageActions();
+    let choosing!: Promise<void>;
+    act(() => { choosing = view.actions.chooseImages(); });
+    await flush();
+    view.unmount();
+    await act(async () => { finish(); await choosing; });
+    await flush();
+    expect(harness.addImages).not.toHaveBeenCalled();
   });
 
   it('retries an unknown upload response with the same blobs and identity without reopening the picker', async () => {

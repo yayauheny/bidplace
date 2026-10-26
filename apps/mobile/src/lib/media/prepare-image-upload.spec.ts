@@ -4,6 +4,7 @@ import {
   ImagePreparationError,
   containedDimensions,
   prepareImageUpload,
+  readImageUpload,
 } from './prepare-image-upload';
 
 const renderer = vi.hoisted(() => ({
@@ -28,6 +29,37 @@ const options = {
 
 describe('image upload preparation', () => {
   beforeEach(() => vi.clearAllMocks());
+  it.each(['png', 'jpeg', 'heic'])('reads an unchanged %s input without dimensions or pixel processing', async (format) => {
+    const file = new File(['original'], `photo.${format}`, { type: `image/${format}` });
+    await expect(readImageUpload({ uri: 'blob:original', file }, file.size)).resolves.toBe(file);
+    expect(renderer.manipulate).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { size: 0, code: 'EMPTY_FILE' },
+    { size: 11, code: 'SOURCE_TOO_LARGE' },
+  ])('rejects a source of $size bytes with $code', async ({ size, code }) => {
+    const file = new File([new Uint8Array(size)], 'photo.png');
+    await expect(readImageUpload({ uri: 'blob:invalid', file }, 10)).rejects.toMatchObject({ code });
+    expect(renderer.manipulate).not.toHaveBeenCalled();
+  });
+
+  it('rejects the picker byte limit before reading the URI', async () => {
+    const read = vi.spyOn(globalThis, 'fetch');
+    try {
+      await expect(readImageUpload({ uri: 'blob:large', fileSize: 11 }, 10)).rejects.toMatchObject({ code: 'SOURCE_TOO_LARGE' });
+      expect(read).not.toHaveBeenCalled();
+    } finally { read.mockRestore(); }
+  });
+
+  it('reports a failed local read without attempting pixel processing', async () => {
+    const read = vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('unavailable'));
+    try {
+      await expect(readImageUpload({ uri: 'blob:unavailable' }, 10)).rejects.toMatchObject({ code: 'READ_FAILED' });
+      expect(renderer.manipulate).not.toHaveBeenCalled();
+    } finally { read.mockRestore(); }
+  });
+
   it('maintains aspect ratio without upscaling', () => {
     expect(containedDimensions(6000, 4000, 1600)).toEqual({
       width: 1600,

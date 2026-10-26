@@ -3,6 +3,43 @@
 Последнее обновление: 2026-10-10
 Статус: Confirmed technical boundaries for the portfolio-first MVP implementation.
 
+## 2026-10-26 — Local photo preparation boundary
+
+`product-draft-image-actions.ts` exposes `selectImages()` and
+`startUpload(selection)`. The existing `chooseImages()` uses both immediately;
+a future preparation screen can replace `selection.images` with
+`ImageUploadInput` results and defer the start. Selection retains its Work,
+session epoch, operation and generation; stale or consumed selections cannot
+start another batch. Approved form saves still precede the picker and are
+checked again before a deferred upload. Starting copies the input descriptors;
+retry retains the same Blob/key and skips completed files. Only one file is read
+at a time. Unmount retires the selection/batch before aborting the request;
+abort does not guarantee server cancellation.
+
+`lib/media/prepare-image-upload.ts` owns `ImageUploadInput` and
+`readImageUpload(input, maxSourceBytes)`: picker-size rejection, URI/File reading,
+empty/actual-size checks, with no pixel conversion or dimension requirement.
+Work uses the contract's 25 MiB limit and passes unchanged bytes to the existing
+images API; normalized server SOURCE is not a byte-original guarantee.
+`prepareImageUpload` reuses that reader while retaining the separate author
+policy (1600px / 2 MiB, including its existing final 640px fallback).
+`seller-profile-photo.ts` still owns preview and saving. No new temporary files
+or object URLs are created; picker originals are never deleted. Existing
+ImageManipulator reference release and cache-file behavior are unchanged.
+No server endpoint, contract package or schema changes.
+
+API suitability checked on 2026-10-26; no editor dependency added:
+
+| Library | Suitability / remaining limit |
+| --- | --- |
+| Installed Expo ImagePicker 57.0.2 / ImageManipulator 57.0.21 | [SDK 57 picker](https://docs.expo.dev/versions/v57.0.0/sdk/imagepicker/) provides local inputs; [manipulator](https://docs.expo.dev/versions/v57.0.0/sdk/imagemanipulator/) provides crop/render/save on Web/iOS/Android. PNG must retain transparency; HEIC decode/device behavior remains Needs verification. |
+| react-image-crop 11.1.2 | Web candidate: [free/fixed crop, touch and keyboard support](https://github.com/dominictobias/react-image-crop); returns crop geometry and needs separate pixel output/orientation handling. React 19 is within its declared peer range; Expo Web CSS/bundling/runtime integration remains untested. |
+| react-easy-crop | [Drag/zoom/rotation API](https://github.com/ValentinH/react-easy-crop) returns crop geometry. Consider instead of react-image-crop only if the future UX requires that interaction; do not install both. |
+| @bsky.app/expo-image-crop-tool 0.5.1 | Native candidate: [API](https://github.com/bluesky-social/expo-image-crop-tool/blob/main/src/ExpoImageCropTool.types.ts) returns a processed path, MIME, size and dimensions. [Upstream development versions](https://github.com/bluesky-social/expo-image-crop-tool/blob/main/package.json) are Expo 54 / RN 0.81.5; wildcard peers do not verify our Expo 57 / RN 0.86. Reset/re-edit must retain the original; encoding, transparency, cleanup and device compatibility remain unverified. |
+
+Confirmation/editor UI, transforms and undo/reset state are not implemented.
+There is no promise of one encoding across native and web editors.
+
 ## 2026-10-05 — Cloudflare application deployment (Partial)
 
 `deploy/cloudflare` owns the thin Worker routing `/api/*` to one private Nest
