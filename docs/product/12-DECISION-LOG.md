@@ -3356,3 +3356,37 @@ route управляет толщиной. Add остаётся 1.6px; Home/Prof
 Неактивный Search — 1.3px, Add в покое — 1.6px; оба frame 24px. Исходные Hugeicons
 outline, без заливок и масок; используется existing MotionPressable pressed state.
 Владелец — [design system](../design/03-DESIGN-SYSTEM.md).
+
+## DEC-148 — Photo Workflow MVP: crop, order and recovery
+
+Date: 2026-10-26
+Status: Confirmed
+Source: explicit founder approval of Q1–Q5 in Photo Workflow implementation chat
+Extends: `DEC-131`, `DEC-132`
+
+- Work retains the full file after rotate/flip. A nullable crop belongs to the
+  image of a particular revision, in coordinates of that transformed full file;
+  the server validates it. Cards use the crop; the full-screen viewer uses the
+  complete image. Crop-only edits do not upload/re-encode the image. Published
+  revisions remain isolated through existing moderation.
+- Reset restores the state at editor opening, including its starting crop.
+  Cancel discards only the current opening's edits. Reopened saved photos start
+  from the current server version; no original/history archive is introduced.
+- File selection stays local until explicit upload. Failures do not stop other
+  files; each failed card retains its place and has its own retry. The selected
+  first card remains the cover. Removing it promotes the next card. Continue
+  requires no unresolved errors and confirmation of the saved server order.
+- Preparing/uploading/final-order saving locks composition, editing, adding and
+  reordering. Closing remains available and does not undo accepted uploads.
+- Duplicate detection compares exact original selected bytes within the current
+  preparation session only. Names/sizes are not proof. Removing a card permits
+  reselecting its file. Retry and replacing one's own slot are not additions.
+- Recovery is scoped to user/Work and the current app process (Web: until tab
+  reload). Closing retains files/order/operation keys/server IDs; explicit
+  confirmed discard clears local edits. Logout/account change clears private
+  state and owned resources. Lost responses reconcile by operation key/ID, never
+  position. After restart use the server gallery and reselect unsent files;
+  unfinished local order is not guaranteed across restart.
+
+Native device verification, crop implementation and safe replacement are
+implementation acceptance work, not confirmed completed behavior.

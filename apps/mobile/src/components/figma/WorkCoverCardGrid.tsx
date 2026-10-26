@@ -9,7 +9,12 @@ export type WorkCoverCardGridItem = {
   work: {
     publicId: string;
     title: string;
-    images: Array<{ url: string }>;
+    images: Array<{
+      url: string;
+      crop?: import('@bidplace/contracts').PhotoCrop | null;
+      width?: number | null;
+      height?: number | null;
+    }>;
   };
   author: {
     slug: string;
@@ -76,6 +81,7 @@ function WorkCoverGridCard({
       variant={variant}
       href={`/product/${item.work.publicId}`}
       imageUrl={image?.url ?? ''}
+      imagePresentation={image}
       imageLabel={item.work.title}
       title={item.work.title}
       authorSlug={item.author.slug}

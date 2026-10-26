@@ -983,3 +983,14 @@ The confirmed separate-row header/segmented animation is unchanged. Independent
 Search entry starts fresh; only the same navigation entry restores drafts,
 filters, query, cached pages and scroll. Physical Native blur, return and
 background/resume acceptance remain Needs verification.
+
+## Photo controls — 2026-10-26
+
+Figma `7329:822–824`: `FigmaIcon` owns rotate/flip/reset/alert icons.
+`feedbackTitle` (Inter medium 13/16), `feedbackBody` (regular 12/16), and
+`toolLabel` (medium 12/16) belong to design tokens; error surface/title/text use
+`feedbackDangerSurface`/`feedbackDangerTitle`/`feedbackDangerText` from `theme.ts`.
+`CroppedPhoto` owns normalized crop presentation for cards; public fullscreen
+uses the full media source. Photo editor reuses FormPageShell, FigmaTabs and
+shared controls. Native/zoom accessibility remains Needs verification in
+[design status](04-DESIGN-STATUS.md).

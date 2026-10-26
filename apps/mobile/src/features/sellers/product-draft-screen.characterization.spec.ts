@@ -23,7 +23,9 @@ import { advanceAuthEpoch, authKeys } from '../../lib/query-cache';
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
-vi.mock('../../components/shared/PrivateStoryImage', () => ({ PrivateStoryImage: () => null }));
+vi.mock('../../components/shared/PrivateStoryImage', () => ({
+  PrivateStoryImage: () => null,
+}));
 
 const productId = '11111111-1111-4111-8111-111111111111';
 const categoryId = '33333333-3333-4333-8333-333333333333';
@@ -73,7 +75,13 @@ vi.mock('./product-catalog-term-sheet', () => ({
 }));
 
 vi.mock('react-native', () => ({
-  Image: ({ source, accessibilityLabel }: { source: { uri: string }; accessibilityLabel: string }) => createElement('img', { src: source.uri, alt: accessibilityLabel }),
+  Image: ({
+    source,
+    accessibilityLabel,
+  }: {
+    source: { uri: string };
+    accessibilityLabel: string;
+  }) => createElement('img', { src: source.uri, alt: accessibilityLabel }),
   Platform: { OS: 'web' },
   View: ({ children }: { children?: ReactNode }) =>
     createElement('div', null, children),
@@ -112,8 +120,13 @@ vi.mock('../../providers/api-provider', () => ({
 vi.mock('../../components/layout', () => ({
   AppShell: ({ children }: { children?: ReactNode }) =>
     createElement('div', null, children),
-  FormPageShell: ({ children, bottomAction }: { children?: ReactNode; bottomAction?: ReactNode }) =>
-    createElement('div', null, children, bottomAction),
+  FormPageShell: ({
+    children,
+    bottomAction,
+  }: {
+    children?: ReactNode;
+    bottomAction?: ReactNode;
+  }) => createElement('div', null, children, bottomAction),
   FormPageColumns: ({
     children,
     sidebar,
@@ -262,7 +275,9 @@ function detail(status = 'DRAFT') {
   };
 }
 
-function mount(props: { productId?: string; flow?: string; stepParam?: string } = {}) {
+function mount(
+  props: { productId?: string; flow?: string; stepParam?: string } = {},
+) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
@@ -276,8 +291,7 @@ function mount(props: { productId?: string; flow?: string; stepParam?: string } 
         QueryClientProvider,
         { client: queryClient },
         createElement(ProductDraftScreen, {
-          productId:
-            'productId' in props ? props.productId : productId,
+          productId: 'productId' in props ? props.productId : productId,
           flow: props.flow,
           stepParam: props.stepParam as never,
         }),
@@ -311,8 +325,7 @@ async function until(
 function hasButton(container: ParentNode, label: string) {
   return [...container.querySelectorAll('button')].some(
     (node) =>
-      node.textContent === label ||
-      node.getAttribute('aria-label') === label,
+      node.textContent === label || node.getAttribute('aria-label') === label,
   );
 }
 
@@ -405,15 +418,15 @@ describe('ProductDraftScreen render contract', () => {
     expect(hasButton(container, 'Закрыть')).toBe(true);
   });
 
-  it('keeps the photo continuation outside its grid and exposes deletion without a replacement pencil', async () => {
+  it('keeps photo continuation outside the grid and exposes edit and delete per tile', async () => {
     const { container } = mount({ flow: 'creation', stepParam: '2' });
     await until(
       container,
       () => hasButton(container, 'Продолжить'),
       'photo continuation',
     );
-    expect(hasButton(container, 'Удалить фото')).toBe(true);
-    expect(hasButton(container, 'Действия с изображением')).toBe(true);
+    expect(hasButton(container, 'Удалить фото 1')).toBe(true);
+    expect(hasButton(container, 'Редактировать фото 1')).toBe(true);
     expect(container.textContent).not.toContain('1/10 изображений');
     expect(container.textContent).not.toContain('Назад к описанию');
     expect(container.textContent).not.toContain('Изображение 1: загружено');
@@ -437,9 +450,8 @@ describe('ProductDraftScreen render contract', () => {
     await until(
       container,
       () =>
-        container.textContent?.includes(
-          'Предмет уже нельзя редактировать',
-        ) ?? false,
+        container.textContent?.includes('Предмет уже нельзя редактировать') ??
+        false,
       'locked revision',
     );
     expect(hasButton(container, 'Отправить на модерацию')).toBe(false);
@@ -452,10 +464,16 @@ describe('ProductDraftScreen render contract', () => {
     const saved = detail();
     harness.getProduct.mockResolvedValue({
       ...saved,
-      product: { ...saved.product, dimensions: '20 × 30 см', year: 2026, uniqueness: 'Единственный экземпляр' },
+      product: {
+        ...saved.product,
+        dimensions: '20 × 30 см',
+        year: 2026,
+        uniqueness: 'Единственный экземпляр',
+      },
       selection: {
         category: { id: categoryId, name: 'Живопись', slug: 'painting' },
-        materialTermIds: [materialId], techniqueTermIds: [techniqueId],
+        materialTermIds: [materialId],
+        techniqueTermIds: [techniqueId],
         materialTerms: [{ id: materialId, name: 'Холст', active: false }],
         techniqueTerms: [{ id: techniqueId, name: 'Масло', active: false }],
         proposals: [],
@@ -463,8 +481,20 @@ describe('ProductDraftScreen render contract', () => {
     });
     harness.listCategories.mockResolvedValue({ categories: [] });
     const { container, unmount } = mount({ flow: 'creation', stepParam: '4' });
-    await until(container, () => container.textContent?.includes('Проверка перед модерацией') ?? false, 'review step');
-    for (const label of ['Категория: Живопись', 'Материалы: Холст', 'Техники: Масло', 'Размеры: 20 × 30 см', 'Год создания: 2026', 'Уникальность: Единственный экземпляр']) {
+    await until(
+      container,
+      () =>
+        container.textContent?.includes('Проверка перед модерацией') ?? false,
+      'review step',
+    );
+    for (const label of [
+      'Категория: Живопись',
+      'Материалы: Холст',
+      'Техники: Масло',
+      'Размеры: 20 × 30 см',
+      'Год создания: 2026',
+      'Уникальность: Единственный экземпляр',
+    ]) {
       expect(container.textContent).toContain(label);
     }
     expect(container.textContent).not.toContain(materialId);
@@ -476,9 +506,20 @@ describe('ProductDraftScreen render contract', () => {
 
   it('omits empty optional review values instead of rendering empty labels', async () => {
     const { container, unmount } = mount({ flow: 'creation', stepParam: '4' });
-    await until(container, () => container.textContent?.includes('Проверка перед модерацией') ?? false, 'review step');
+    await until(
+      container,
+      () =>
+        container.textContent?.includes('Проверка перед модерацией') ?? false,
+      'review step',
+    );
     expect(container.textContent).toContain('Категория: Painting');
-    for (const label of ['Материалы:', 'Техники:', 'Размеры:', 'Год создания:', 'Уникальность:']) {
+    for (const label of [
+      'Материалы:',
+      'Техники:',
+      'Размеры:',
+      'Год создания:',
+      'Уникальность:',
+    ]) {
       expect(container.textContent).not.toContain(label);
     }
     unmount();
@@ -545,7 +586,11 @@ describe('ProductDraftScreen recovered story copy', () => {
     const { container } = mount();
     await clickRecoveryCopy(container);
     expect(writeText).toHaveBeenCalledWith('RECOVERY TEXT');
-    await until(container, () => hasButton(container, 'Скопировано'), 'copied status');
+    await until(
+      container,
+      () => hasButton(container, 'Скопировано'),
+      'copied status',
+    );
   });
 
   it('offers the text for manual selection when the clipboard write rejects', async () => {
@@ -589,7 +634,11 @@ describe('ProductDraftScreen recovered story copy', () => {
     setClipboard({ writeText });
     const { container, queryClient } = mount();
     await clickRecoveryCopy(container);
-    await until(container, () => hasButton(container, 'Скопировано'), 'copied status');
+    await until(
+      container,
+      () => hasButton(container, 'Скопировано'),
+      'copied status',
+    );
     // Another recovery copy arrives for the same revision; the stale
     // "copied" label must not stick to the new payload.
     window.localStorage.setItem(
@@ -604,7 +653,11 @@ describe('ProductDraftScreen recovered story copy', () => {
     act(() => {
       advanceAuthEpoch(queryClient);
     });
-    await until(container, () => hasButton(container, copyLabel), 'reset status');
+    await until(
+      container,
+      () => hasButton(container, copyLabel),
+      'reset status',
+    );
     expect(hasButton(container, 'Скопировано')).toBe(false);
   });
 });
@@ -617,11 +670,27 @@ describe('ordered block actions', () => {
     const root = createRoot(container);
     const onMove = vi.fn();
     const onDelete = vi.fn();
-    const render = (disabled: boolean) => act(() => root.render(createElement(ProductBlockActions, {
-      kind: 'text', editable: true, disabled, first: true, last: false,
-      onMove, onDelete, children: createElement('input', { 'aria-label': 'Текст' }),
-    })));
-    const button = (label: string) => [...container.querySelectorAll('button')].find((node) => node.textContent === label || node.getAttribute('aria-label') === label)!;
+    const render = (disabled: boolean) =>
+      act(() =>
+        root.render(
+          createElement(ProductBlockActions, {
+            kind: 'text',
+            editable: true,
+            disabled,
+            first: true,
+            last: false,
+            onMove,
+            onDelete,
+            children: createElement('input', { 'aria-label': 'Текст' }),
+          }),
+        ),
+      );
+    const button = (label: string) =>
+      [...container.querySelectorAll('button')].find(
+        (node) =>
+          node.textContent === label ||
+          node.getAttribute('aria-label') === label,
+      )!;
     try {
       render(false);
       act(() => container.querySelector('input')!.focus());

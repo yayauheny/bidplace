@@ -43,6 +43,10 @@ export const figmaIconNames = [
   'check',
   'clipboard-check',
   'chart',
+  'rotate',
+  'flip',
+  'reset',
+  'alert',
   'setting-07',
   'log-out',
 ] as const;

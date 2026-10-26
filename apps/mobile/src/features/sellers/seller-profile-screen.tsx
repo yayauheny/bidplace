@@ -58,6 +58,8 @@ import {
 } from './seller-profile-wizard';
 import { useProfileOperationGuard } from './seller-profile-operation-guard';
 import { useSellerProfileForm } from './seller-profile-form';
+import { PhotoEditor } from './photo-editor';
+import { originalPhotoEdit } from '../../lib/media/photo-edit';
 import { useProfilePhoto } from './seller-profile-photo';
 import { useProfileDirections } from './seller-profile-directions';
 import { useProfileSubmission } from './seller-profile-submission';
@@ -677,6 +679,19 @@ export function SellerProfileScreen() {
         onPress={() => void submission.submitRevision()}
       />
     ) : undefined;
+
+  if (photo.editor)
+    return (
+      <PhotoEditor
+        avatar
+        input={photo.editor.input}
+        confirmed={originalPhotoEdit}
+        name={fullName}
+        pending={photo.preparing}
+        onConfirm={(edit) => void photo.confirmEditor(edit)}
+        onCancel={photo.cancelEditor}
+      />
+    );
 
   return (
     <View style={{ flex: 1, display: isFocused ? 'flex' : 'none' }}>

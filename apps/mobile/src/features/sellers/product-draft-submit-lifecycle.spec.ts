@@ -13,18 +13,41 @@ import type { ProductStoryEditor } from './use-product-story-editor';
 
 import { flush, setInput } from '../../testing/dom';
 
-import { advanceAuthEpoch, authKeys, clearAuthenticatedSession } from '../../lib/query-cache';
+import {
+  advanceAuthEpoch,
+  authKeys,
+  clearAuthenticatedSession,
+} from '../../lib/query-cache';
 import { ownerWorkQueryKeys } from './owner-work-query';
+import {
+  workPhotoSessionKey,
+  type WorkPhotoSession,
+} from './work-photo-session';
+import { originalPhotoEdit } from '../../lib/media/photo-edit';
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
-vi.mock('../../components/shared/PrivateStoryImage', () => ({ PrivateStoryImage: () => null }));
+vi.mock('../../components/shared/PrivateStoryImage', () => ({
+  PrivateStoryImage: () => null,
+}));
 vi.mock('../../components/figma/FigmaIcon', () => ({ FigmaIcon: () => null }));
 vi.mock('../../components/ui/MotionPressable', () => ({
-  MotionPressable: ({ children, accessibilityLabel, disabled, onPress }: {
-    children?: ReactNode; accessibilityLabel?: string; disabled?: boolean; onPress?: () => void;
-  }) => createElement('button', { 'aria-label': accessibilityLabel, disabled, onClick: onPress }, children),
+  MotionPressable: ({
+    children,
+    accessibilityLabel,
+    disabled,
+    onPress,
+  }: {
+    children?: ReactNode;
+    accessibilityLabel?: string;
+    disabled?: boolean;
+    onPress?: () => void;
+  }) =>
+    createElement(
+      'button',
+      { 'aria-label': accessibilityLabel, disabled, onClick: onPress },
+      children,
+    ),
 }));
-
 
 const productId = '11111111-1111-4111-8111-111111111111';
 const categoryId = '33333333-3333-4333-8333-333333333333';
@@ -39,19 +62,31 @@ const harness = vi.hoisted(() => ({
   submitProduct: vi.fn(),
   addImages: vi.fn(),
   launchImageLibraryAsync: vi.fn(),
+  reorderImages: vi.fn(),
+  photoOperation: vi.fn(),
+  removeImages: vi.fn(),
 }));
 
 vi.mock('../../components/figma/FigmaIconButton', () => ({
-  FigmaIconButton: ({ label, onPress, disabled }: {
+  FigmaIconButton: ({
+    label,
+    onPress,
+    disabled,
+  }: {
     label: string;
     onPress: () => void;
     disabled?: boolean;
-  }) => createElement('button', {
-    type: 'button',
-    'aria-label': label,
-    disabled,
-    onClick: onPress,
-  }, label),
+  }) =>
+    createElement(
+      'button',
+      {
+        type: 'button',
+        'aria-label': label,
+        disabled,
+        onClick: onPress,
+      },
+      label,
+    ),
 }));
 
 vi.mock('./product-draft-story', () => ({
@@ -69,12 +104,17 @@ vi.mock('../../components/figma/FigmaChoiceChip', () => ({
     selected: boolean;
     onPress: () => void;
     disabled?: boolean;
-  }) => createElement('button', {
-    type: 'button',
-    disabled,
-    'aria-pressed': selected,
-    onClick: onPress,
-  }, label),
+  }) =>
+    createElement(
+      'button',
+      {
+        type: 'button',
+        disabled,
+        'aria-pressed': selected,
+        onClick: onPress,
+      },
+      label,
+    ),
 }));
 
 vi.mock('../../components/figma/FigmaSelectField', () => ({
@@ -88,12 +128,17 @@ vi.mock('../../components/figma/FigmaSelectField', () => ({
     value: string;
     disabled?: boolean;
     onPress: () => void;
-  }) => createElement('button', {
-    type: 'button',
-    'aria-label': label,
-    disabled,
-    onClick: () => onPress(),
-  }, value || label),
+  }) =>
+    createElement(
+      'button',
+      {
+        type: 'button',
+        'aria-label': label,
+        disabled,
+        onClick: () => onPress(),
+      },
+      value || label,
+    ),
 }));
 
 vi.mock('./product-catalog-term-sheet', () => ({
@@ -102,9 +147,16 @@ vi.mock('./product-catalog-term-sheet', () => ({
 
 vi.mock('react-native', () => ({
   ActivityIndicator: () => createElement('span', { role: 'progressbar' }),
-  Image: ({ source, accessibilityLabel }: { source: { uri: string }; accessibilityLabel: string }) => createElement('img', { src: source.uri, alt: accessibilityLabel }),
+  Image: ({
+    source,
+    accessibilityLabel,
+  }: {
+    source: { uri: string };
+    accessibilityLabel: string;
+  }) => createElement('img', { src: source.uri, alt: accessibilityLabel }),
   Platform: { OS: 'web' },
-  View: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
+  View: ({ children }: { children?: ReactNode }) =>
+    createElement('div', null, children),
 }));
 
 vi.mock('expo-router', () => ({
@@ -130,20 +182,41 @@ vi.mock('../../providers/api-provider', () => ({
       update: harness.updateProduct,
       submit: harness.submitProduct,
     },
-    images: { add: harness.addImages, remove: vi.fn(), reorder: vi.fn() },
+    images: {
+      add: harness.addImages,
+      reorder: harness.reorderImages,
+      photoOperation: harness.photoOperation,
+      remove: harness.removeImages,
+    },
   }),
 }));
 
 vi.mock('../../components/layout', () => ({
-  AppShell: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
-  FormPageShell: ({ children, bottomAction }: { children?: ReactNode; bottomAction?: ReactNode }) => createElement('div', null, children, bottomAction),
-  FormPageColumns: ({ children, sidebar }: { children?: ReactNode; sidebar?: ReactNode }) =>
-    createElement('div', null, sidebar, children),
+  AppShell: ({ children }: { children?: ReactNode }) =>
+    createElement('div', null, children),
+  FormPageShell: ({
+    children,
+    bottomAction,
+  }: {
+    children?: ReactNode;
+    bottomAction?: ReactNode;
+  }) => createElement('div', null, children, bottomAction),
+  FormPageColumns: ({
+    children,
+    sidebar,
+  }: {
+    children?: ReactNode;
+    sidebar?: ReactNode;
+  }) => createElement('div', null, sidebar, children),
 }));
 
 vi.mock('../../components/shared/InfrastructurePageStatus', () => ({
   InfrastructurePageStatus: ({ onRetry }: { onRetry?: () => void }) =>
-    createElement('button', { type: 'button', onClick: () => onRetry?.() }, 'Повторить'),
+    createElement(
+      'button',
+      { type: 'button', onClick: () => onRetry?.() },
+      'Повторить',
+    ),
 }));
 
 vi.mock('../../components/ui', () => {
@@ -170,11 +243,13 @@ vi.mock('../../components/ui', () => {
   }
   return {
     AppDialog: () => null,
-    AppText: ({ children }: { children?: ReactNode }) => createElement('span', null, children),
+    AppText: ({ children }: { children?: ReactNode }) =>
+      createElement('span', null, children),
     PrimaryButton: PressButton,
-    FormSection: ({ children }: { children?: ReactNode }) => createElement('section', null, children),
+    FormSection: ({ children }: { children?: ReactNode }) =>
+      createElement('section', null, children),
     PageState: () => null,
-        SecondaryButton: PressButton,
+    SecondaryButton: PressButton,
     TextButton: PressButton,
     ResilientRemoteImage: () => null,
     TextField: ({
@@ -192,7 +267,8 @@ vi.mock('../../components/ui', () => {
         'aria-label': label,
         value: value ?? '',
         disabled: editable === false,
-        onChange: (event: { target: { value: string } }) => onChangeText?.(event.target.value),
+        onChange: (event: { target: { value: string } }) =>
+          onChangeText?.(event.target.value),
       }),
   };
 });
@@ -223,6 +299,9 @@ function product(status = 'DRAFT', title = 'Saved title') {
     images: [
       {
         id: '55555555-5555-4555-8555-555555555555',
+        slotId: '55555555-5555-4555-8555-555555555555',
+        slotVersion: 0,
+        crop: null,
         position: 0,
         url: '/api/images/55555555-5555-4555-8555-555555555555',
         mimeType: 'image/png',
@@ -237,7 +316,11 @@ function product(status = 'DRAFT', title = 'Saved title') {
   };
 }
 
-function detail(status = 'DRAFT', title = 'Saved title', updatedAt = '2026-09-27T00:00:00.000Z') {
+function detail(
+  status = 'DRAFT',
+  title = 'Saved title',
+  updatedAt = '2026-09-27T00:00:00.000Z',
+) {
   const next = product(status, title);
   next.updatedAt = updatedAt;
   return {
@@ -250,7 +333,8 @@ function detail(status = 'DRAFT', title = 'Saved title', updatedAt = '2026-09-27
     },
     creationIntro: null,
     creationSteps: [],
-    lastModerationReason: status === 'CHANGES_REQUESTED' ? 'Уточните название' : null,
+    lastModerationReason:
+      status === 'CHANGES_REQUESTED' ? 'Уточните название' : null,
   };
 }
 
@@ -267,7 +351,11 @@ function mount(props: { flow?: string; stepParam?: '4' | '2' } = {}) {
       createElement(
         QueryClientProvider,
         { client: queryClient },
-        createElement(ProductDraftScreen, { productId, flow: props.flow, stepParam: props.stepParam }),
+        createElement(ProductDraftScreen, {
+          productId,
+          flow: props.flow,
+          stepParam: props.stepParam,
+        }),
       ),
     );
   });
@@ -281,16 +369,27 @@ function mount(props: { flow?: string; stepParam?: '4' | '2' } = {}) {
   };
 }
 
-async function until(container: HTMLElement, predicate: () => boolean, label: string) {
+async function until(
+  container: HTMLElement,
+  predicate: () => boolean,
+  label: string,
+) {
   for (let attempt = 0; attempt < 20; attempt += 1) {
     if (predicate()) return;
     await flush();
   }
-  throw new Error(`Timed out waiting for ${label}. Body: ${container.textContent}`);
+  throw new Error(
+    `Timed out waiting for ${label}. Body: ${container.textContent}`,
+  );
 }
 
 function button(container: ParentNode, label: string) {
-  return [...container.querySelectorAll('button')].find((node) => node.textContent === label || node.getAttribute('aria-label') === label) ?? null;
+  return (
+    [...container.querySelectorAll('button')].find(
+      (node) =>
+        node.textContent === label || node.getAttribute('aria-label') === label,
+    ) ?? null
+  );
 }
 
 beforeEach(() => {
@@ -303,8 +402,39 @@ beforeEach(() => {
   harness.submitProduct.mockReset();
   harness.addImages.mockReset();
   harness.launchImageLibraryAsync.mockReset();
-  harness.addImages.mockResolvedValue({ ok: true });
-  harness.launchImageLibraryAsync.mockResolvedValue({ canceled: true, assets: [] });
+  harness.addImages.mockImplementation(async () => ({
+    ok: true,
+    photos: [
+      {
+        revisionId: '22222222-2222-4222-8222-222222222222',
+        slotId: crypto.randomUUID(),
+        imageId: crypto.randomUUID(),
+        version: 0,
+        crop: null,
+      },
+    ],
+  }));
+  harness.removeImages.mockReset();
+  harness.removeImages.mockResolvedValue({ ok: true });
+  harness.photoOperation.mockReset();
+  harness.photoOperation.mockResolvedValue({ photo: null });
+  harness.reorderImages.mockReset();
+  harness.reorderImages.mockResolvedValue({
+    ok: true,
+    photos: [
+      {
+        revisionId: '22222222-2222-4222-8222-222222222222',
+        slotId: '77777777-7777-4777-8777-777777777777',
+        imageId: '88888888-8888-4888-8888-888888888888',
+        version: 0,
+        crop: null,
+      },
+    ],
+  });
+  harness.launchImageLibraryAsync.mockResolvedValue({
+    canceled: true,
+    assets: [],
+  });
   harness.listCategories.mockResolvedValue({
     categories: [{ id: categoryId, slug: 'painting', name: 'Painting' }],
   });
@@ -317,9 +447,26 @@ afterEach(() => {
   document.body.replaceChildren();
 });
 
-function mountImageActions(editorStatus: 'DRAFT' | 'APPROVED' = 'DRAFT') {
-  const queryClient = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
+async function selectAndUpload(container: HTMLElement) {
+  act(() => button(container, 'Добавить изображения')?.click());
+  await flush();
+  const start = [...container.querySelectorAll('button')].find((node) =>
+    /^Загрузить(?: \d+)? фото$/.test(node.textContent ?? ''),
+  );
+  if (start) act(() => start.click());
+}
+
+function mountImageActions(
+  editorStatus: 'DRAFT' | 'APPROVED' = 'DRAFT',
+  retainedClient?: QueryClient,
+) {
+  const queryClient =
+    retainedClient ??
+    new QueryClient({ defaultOptions: { mutations: { retry: false } } });
   queryClient.setQueryData(authKeys.session, { id: 'user-a' });
+  const emptyDetail = detail();
+  emptyDetail.product.images = [];
+  harness.getProduct.mockResolvedValue(emptyDetail);
   const session = {
     transitionLock: { current: false },
     snapshotOperation: () => 0,
@@ -333,7 +480,15 @@ function mountImageActions(editorStatus: 'DRAFT' | 'APPROVED' = 'DRAFT') {
   const root = createRoot(document.createElement('div'));
   function Probe() {
     actions = useProductDraftImageActions({
-      api: { images: { add: harness.addImages } } as unknown as ApiClient,
+      api: {
+        sellers: { getProduct: harness.getProduct },
+        images: {
+          add: harness.addImages,
+          reorder: harness.reorderImages,
+          photoOperation: harness.photoOperation,
+          remove: harness.removeImages,
+        },
+      } as unknown as ApiClient,
       queryClient,
       authEpoch: 0,
       existingProduct: { id: productId, images: [] },
@@ -343,60 +498,460 @@ function mountImageActions(editorStatus: 'DRAFT' | 'APPROVED' = 'DRAFT') {
     });
     return null;
   }
-  act(() => root.render(createElement(QueryClientProvider, { client: queryClient }, createElement(Probe))));
-  return { get actions() { return actions; }, queryClient, session, unmount: () => act(() => root.unmount()) };
+  act(() =>
+    root.render(
+      createElement(
+        QueryClientProvider,
+        { client: queryClient },
+        createElement(Probe),
+      ),
+    ),
+  );
+  return {
+    get actions() {
+      return actions;
+    },
+    queryClient,
+    session,
+    unmount: () => act(() => root.unmount()),
+  };
 }
 
 describe('product draft submit lifecycle', () => {
+  it('recovers accepted bytes after closing while preserving the pending crop and clears resources on logout', async () => {
+    const client = new QueryClient();
+    const dispose = vi.fn();
+    const crop = { x: 0.1, y: 0.1, width: 0.7, height: 0.7 };
+    const server = {
+      revisionId: 'revision',
+      slotId: 'slot',
+      imageId: 'image',
+      version: 0,
+      crop: null,
+    };
+    const key = workPhotoSessionKey('user-a', productId);
+    client.setQueryData<WorkPhotoSession>(key, {
+      cards: [
+        {
+          id: 'local',
+          uri: 'blob:local',
+          source: { uri: 'blob:local' },
+          sourceDispose: dispose,
+          edit: { ...originalPhotoEdit, crop },
+          operationKey: 'original',
+          kind: 'add',
+          status: 'error',
+          uncertain: true,
+        },
+      ],
+      revisionId: 'revision',
+      orderConfirmed: false,
+      orderError: null,
+      busy: false,
+    });
+    harness.photoOperation.mockResolvedValue({ photo: server });
+    const view = mountImageActions('DRAFT', client);
+    try {
+      await flush();
+      const card = client.getQueryData<WorkPhotoSession>(key)!.cards[0]!;
+      expect(harness.photoOperation).toHaveBeenCalledWith(
+        productId,
+        'original:0',
+        undefined,
+      );
+      expect(card).toMatchObject({
+        server,
+        kind: 'crop',
+        status: 'local',
+        uncertain: false,
+        operationKey: 'original:crop',
+        edit: { crop },
+      });
+      expect(harness.addImages).not.toHaveBeenCalled();
+      expect(dispose).not.toHaveBeenCalled();
+      view.unmount();
+      expect(client.getQueryData(key)).toBeDefined();
+      await act(() => clearAuthenticatedSession(client));
+      expect(client.getQueryData(key)).toBeUndefined();
+      expect(dispose).toHaveBeenCalledOnce();
+    } finally {
+      client.clear();
+    }
+  });
+
+  it('deduplicates exact source bytes and allows reselecting a removed file', async () => {
+    const asset = (bytes: string, name: string) => ({
+      uri: `blob:${name}`,
+      file: new File([bytes], name, { type: 'image/png' }),
+    });
+    const first = asset('same', 'first.png');
+    harness.launchImageLibraryAsync.mockResolvedValueOnce({
+      canceled: false,
+      assets: [
+        first,
+        asset('same', 'different-name.png'),
+        asset('diff', 'first.png'),
+      ],
+    });
+    const view = mountImageActions();
+    try {
+      await act(() => view.actions.chooseImages());
+      await flush();
+      expect(view.actions.photoCards).toHaveLength(2);
+      expect(view.actions.imageSelectionError).toBe('Это фото уже выбрано.');
+      await act(() => view.actions.removePhoto(view.actions.photoCards[0]!.id));
+      harness.launchImageLibraryAsync.mockResolvedValueOnce({
+        canceled: false,
+        assets: [first],
+      });
+      await act(() => view.actions.chooseImages());
+      await flush();
+      expect(view.actions.photoCards).toHaveLength(2);
+      expect(harness.addImages).not.toHaveBeenCalled();
+    } finally {
+      view.unmount();
+    }
+  });
+
+  it('keeps pending edits bound to their revision when the server switches revision', async () => {
+    const view = mountImageActions();
+    await flush();
+    const key = workPhotoSessionKey('user-a', productId);
+    const server = {
+      revisionId: 'old-revision',
+      slotId: 'old-slot',
+      imageId: 'same-image',
+      version: 0,
+      crop: null,
+    };
+    act(() =>
+      view.queryClient.setQueryData<WorkPhotoSession>(key, {
+        cards: [
+          {
+            id: 'local',
+            uri: 'blob:local',
+            server,
+            edit: {
+              ...originalPhotoEdit,
+              crop: { x: 0, y: 0, width: 0.5, height: 1 },
+            },
+            kind: 'crop',
+            operationKey: 'edit',
+            status: 'local',
+          },
+        ],
+        revisionId: server.revisionId,
+        busy: false,
+        orderConfirmed: false,
+        orderError: null,
+      }),
+    );
+    try {
+      await act(() => view.actions.startUpload());
+      expect(harness.addImages).not.toHaveBeenCalled();
+      expect(
+        view.queryClient.getQueryData<WorkPhotoSession>(key),
+      ).toMatchObject({ cards: [{ server }], orderError: expect.any(Error) });
+    } finally {
+      view.unmount();
+    }
+  });
+
+  it('reconciles a lost upload response before removing its failed card', async () => {
+    const view = mountImageActions();
+    await flush();
+    const key = workPhotoSessionKey('user-a', productId);
+    const server = {
+      revisionId: 'revision',
+      slotId: 'accepted-slot',
+      imageId: 'accepted-image',
+      version: 0,
+      crop: null,
+    };
+    act(() =>
+      view.queryClient.setQueryData<WorkPhotoSession>(key, {
+        cards: [
+          {
+            id: 'local',
+            uri: 'blob:local',
+            edit: originalPhotoEdit,
+            kind: 'add',
+            operationKey: 'lost',
+            status: 'error',
+            uncertain: true,
+          },
+        ],
+        revisionId: null,
+        busy: false,
+        orderConfirmed: false,
+        orderError: null,
+      }),
+    );
+    harness.photoOperation.mockResolvedValue({ photo: server });
+    try {
+      await act(() => view.actions.removePhoto('local'));
+      expect(harness.photoOperation).toHaveBeenCalledWith(
+        productId,
+        'lost:0',
+        undefined,
+      );
+      expect(harness.removeImages).toHaveBeenCalledWith(
+        productId,
+        'accepted-image',
+        'revision',
+      );
+      expect(
+        view.queryClient.getQueryData<WorkPhotoSession>(key)!.cards,
+      ).toEqual([]);
+    } finally {
+      view.unmount();
+    }
+  });
+
+  it('retains an uncertain card when status is still unresolved and removes it after delayed acceptance', async () => {
+    const view = mountImageActions();
+    await flush();
+    const key = workPhotoSessionKey('user-a', productId);
+    act(() =>
+      view.queryClient.setQueryData<WorkPhotoSession>(key, {
+        cards: [
+          {
+            id: 'local',
+            uri: 'blob:local',
+            edit: originalPhotoEdit,
+            kind: 'add',
+            operationKey: 'pending',
+            status: 'error',
+            uncertain: true,
+          },
+        ],
+        revisionId: null,
+        busy: false,
+        orderConfirmed: false,
+        orderError: null,
+      }),
+    );
+    try {
+      await act(() => view.actions.removePhoto('local'));
+      expect(harness.removeImages).not.toHaveBeenCalled();
+      expect(view.actions.photoCards).toHaveLength(1);
+      await act(() => view.actions.cancelUpload());
+      expect(view.actions.photoCards).toHaveLength(1);
+      harness.photoOperation.mockResolvedValue({
+        photo: {
+          revisionId: 'revision',
+          slotId: 'slot',
+          imageId: 'accepted',
+          version: 0,
+          crop: null,
+        },
+      });
+      await act(() => view.actions.removePhoto('local'));
+      expect(harness.removeImages).toHaveBeenCalledWith(
+        productId,
+        'accepted',
+        'revision',
+      );
+      expect(
+        view.queryClient.getQueryData<WorkPhotoSession>(key)!.cards,
+      ).toHaveLength(0);
+    } finally {
+      view.unmount();
+    }
+  });
+
+  it('does not open a local editor after its operation is retired while refreshing', async () => {
+    const view = mountImageActions();
+    await flush();
+    const key = workPhotoSessionKey('user-a', productId);
+    act(() =>
+      view.queryClient.setQueryData<WorkPhotoSession>(key, {
+        cards: [
+          {
+            id: 'local',
+            uri: 'blob:local',
+            edit: originalPhotoEdit,
+            kind: 'add',
+            operationKey: 'local',
+            status: 'local',
+          },
+        ],
+        revisionId: null,
+        busy: false,
+        orderConfirmed: false,
+        orderError: null,
+      }),
+    );
+    let finish!: (value: ReturnType<typeof detail>) => void;
+    harness.getProduct.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        }),
+    );
+    let opening!: Promise<void>;
+    act(() => {
+      opening = view.actions.editPhoto('local');
+    });
+    await flush();
+    view.session.isCurrentOperation.mockReturnValue(false);
+    await act(async () => {
+      finish(detail());
+      await opening;
+    });
+    expect(view.actions.editingPhoto).toBeNull();
+    view.unmount();
+  });
+
   it('allows a slow large upload and retries a timed-out request with the same identity', async () => {
-    const image = new Blob([new Uint8Array(25 * 1024 * 1024)], { type: 'image/png' });
-    harness.launchImageLibraryAsync.mockResolvedValue({ canceled: false, assets: [{ uri: 'blob:large', file: image }] });
-    harness.addImages.mockImplementationOnce((_id, _images, _key, options) => new Promise((_resolve, reject) => {
-      options.signal.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')));
-    })).mockResolvedValue({ ok: true });
+    const image = new Blob([new Uint8Array(25 * 1024 * 1024)], {
+      type: 'image/png',
+    });
+    harness.launchImageLibraryAsync.mockResolvedValue({
+      canceled: false,
+      assets: [{ uri: 'blob:large', file: image }],
+    });
+    harness.addImages
+      .mockImplementationOnce(
+        (_id, _images, _key, options) =>
+          new Promise((_resolve, reject) => {
+            options.signal.addEventListener('abort', () =>
+              reject(new DOMException('Aborted', 'AbortError')),
+            );
+          }),
+      )
+      .mockResolvedValue({
+        ok: true,
+        photos: [
+          {
+            revisionId: '22222222-2222-4222-8222-222222222222',
+            slotId: '77777777-7777-4777-8777-777777777777',
+            imageId: '88888888-8888-4888-8888-888888888888',
+            version: 0,
+            crop: null,
+          },
+        ],
+      });
     const timer = vi.spyOn(globalThis, 'setTimeout');
     const view = mount();
     try {
-      await until(view.container, () => Boolean(button(view.container, 'Добавить изображения')), 'images');
-      act(() => button(view.container, 'Добавить изображения')?.click());
-      await until(view.container, () => harness.addImages.mock.calls.length === 1, 'upload');
+      await until(
+        view.container,
+        () => Boolean(button(view.container, 'Добавить изображения')),
+        'images',
+      );
+      await selectAndUpload(view.container);
+      await until(
+        view.container,
+        () => harness.addImages.mock.calls.length === 1,
+        'upload',
+      );
       const deadline = timer.mock.calls.find((call) => call[1] === 460_000);
       expect(deadline).toBeDefined();
       await act(async () => {
         const expire = deadline![0];
-        if (typeof expire !== 'function') throw new Error('Expected a timeout callback');
+        if (typeof expire !== 'function')
+          throw new Error('Expected a timeout callback');
         expire();
         await Promise.resolve();
       });
-      await until(view.container, () => Boolean(button(view.container, 'Повторить загрузку')), 'retry');
-      await until(view.container, () => Boolean(view.container.textContent?.includes('Загрузка заняла слишком много времени')), 'timeout feedback');
-      expect(view.container.textContent).toContain('Загрузка заняла слишком много времени');
-      act(() => button(view.container, 'Повторить загрузку')?.click());
-      await until(view.container, () => harness.addImages.mock.calls.length === 2, 'second upload');
-      expect(harness.addImages.mock.calls[1]?.slice(0, 3)).toEqual(harness.addImages.mock.calls[0]?.slice(0, 3));
-    } finally { view.unmount(); timer.mockRestore(); }
+      await until(
+        view.container,
+        () =>
+          Boolean(
+            [...view.container.querySelectorAll('button')].find((node) =>
+              node
+                .getAttribute('aria-label')
+                ?.startsWith('Повторить загрузку фото'),
+            ),
+          ),
+        'retry',
+      );
+      await until(
+        view.container,
+        () =>
+          Boolean(
+            view.container.textContent?.includes(
+              'Загрузка заняла слишком много времени',
+            ),
+          ),
+        'timeout feedback',
+      );
+      expect(view.container.textContent).toContain(
+        'Загрузка заняла слишком много времени',
+      );
+      act(() =>
+        [...view.container.querySelectorAll('button')]
+          .find((node) =>
+            node
+              .getAttribute('aria-label')
+              ?.startsWith('Повторить загрузку фото'),
+          )
+          ?.click(),
+      );
+      await until(
+        view.container,
+        () => harness.addImages.mock.calls.length === 2,
+        'second upload',
+      );
+      expect(harness.addImages.mock.calls[1]?.slice(0, 3)).toEqual(
+        harness.addImages.mock.calls[0]?.slice(0, 3),
+      );
+    } finally {
+      view.unmount();
+      timer.mockRestore();
+    }
   });
 
-  it('blocks backward navigation while an image is being sent', async () => {
-    harness.launchImageLibraryAsync.mockResolvedValue({ canceled: false, assets: [{ uri: 'blob:image', file: new Blob(['image'], { type: 'image/png' }) }] });
+  it('keeps closing available while a photo is being sent', async () => {
+    harness.launchImageLibraryAsync.mockResolvedValue({
+      canceled: false,
+      assets: [
+        { uri: 'blob:image', file: new Blob(['image'], { type: 'image/png' }) },
+      ],
+    });
     let finish: () => void = () => undefined;
-    harness.addImages.mockImplementation(() => new Promise((resolve) => { finish = () => resolve({ ok: true }); }));
+    harness.addImages.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          finish = () => resolve({ ok: true });
+        }),
+    );
     const view = mount({ flow: 'creation', stepParam: '2' });
     try {
-      await until(view.container, () => Boolean(button(view.container, 'Добавить изображения')), 'images');
-      act(() => button(view.container, 'Добавить изображения')?.click());
-      await until(view.container, () => harness.addImages.mock.calls.length === 1, 'upload');
-      expect(button(view.container, 'Назад')?.disabled).toBe(true);
+      await until(
+        view.container,
+        () => Boolean(button(view.container, 'Добавить изображения')),
+        'images',
+      );
+      await selectAndUpload(view.container);
+      await until(
+        view.container,
+        () => harness.addImages.mock.calls.length === 1,
+        'upload',
+      );
+      expect(button(view.container, 'Закрыть')?.disabled).toBe(false);
       harness.setParams.mockClear();
       act(() => button(view.container, 'Назад')?.click());
       expect(harness.setParams).not.toHaveBeenCalled();
-      await act(async () => { finish(); await Promise.resolve(); });
-      await until(view.container, () => !button(view.container, 'Назад')?.disabled, 'unlock');
-    } finally { view.unmount(); }
+      await act(async () => {
+        finish();
+        await Promise.resolve();
+      });
+      await until(
+        view.container,
+        () => !button(view.container, 'Назад')?.disabled,
+        'unlock',
+      );
+    } finally {
+      view.unmount();
+    }
   });
 
   it('keeps a submitted draft closed until a newer moderation decision arrives', async () => {
-    let resolveSubmit: (value: { product: ReturnType<typeof product> }) => void = () => undefined;
+    let resolveSubmit: (value: {
+      product: ReturnType<typeof product>;
+    }) => void = () => undefined;
     harness.submitProduct.mockImplementation(
       () =>
         new Promise((resolve) => {
@@ -404,7 +959,13 @@ describe('product draft submit lifecycle', () => {
         }),
     );
     const view = mount();
-    await until(view.container, () => button(view.container, 'Отправить на модерацию') instanceof HTMLButtonElement, 'submit');
+    await until(
+      view.container,
+      () =>
+        button(view.container, 'Отправить на модерацию') instanceof
+        HTMLButtonElement,
+      'submit',
+    );
     act(() => {
       button(view.container, 'Отправить на модерацию')?.click();
     });
@@ -415,13 +976,19 @@ describe('product draft submit lifecycle', () => {
     });
     await flush();
     await flush();
-    const cached = view.queryClient.getQueryData<{ editingRevision?: { status: string } }>(
-      ownerWorkQueryKeys.detail(productId),
-    );
+    const cached = view.queryClient.getQueryData<{
+      editingRevision?: { status: string };
+    }>(ownerWorkQueryKeys.detail(productId));
     expect(cached?.editingRevision?.status).toBe('DRAFT');
-    expect(button(view.container, 'Отправить на модерацию')?.hasAttribute('disabled')).not.toBe(false);
+    expect(
+      button(view.container, 'Отправить на модерацию')?.hasAttribute(
+        'disabled',
+      ),
+    ).not.toBe(false);
     expect(button(view.container, 'Сохранить изменения')).toBeNull();
-    const title = view.container.querySelector<HTMLInputElement>('[aria-label="Название"]');
+    const title = view.container.querySelector<HTMLInputElement>(
+      '[aria-label="Название"]',
+    );
     expect(title?.disabled).toBe(true);
     act(() => {
       view.queryClient.setQueryData(
@@ -432,15 +999,21 @@ describe('product draft submit lifecycle', () => {
     await flush();
     setInput(view.container, 'Название', 'Revised title');
     await flush();
-    expect(view.container.querySelector<HTMLInputElement>('[aria-label="Название"]')?.value).toBe(
-      'Revised title',
-    );
-    expect(view.container.querySelector<HTMLInputElement>('[aria-label="Название"]')?.disabled).toBe(false);
+    expect(
+      view.container.querySelector<HTMLInputElement>('[aria-label="Название"]')
+        ?.value,
+    ).toBe('Revised title');
+    expect(
+      view.container.querySelector<HTMLInputElement>('[aria-label="Название"]')
+        ?.disabled,
+    ).toBe(false);
     view.unmount();
   });
 
   it('enables Close after a creation submit and still accepts a later rejection', async () => {
-    let resolveSubmit: (value: { product: ReturnType<typeof product> }) => void = () => undefined;
+    let resolveSubmit: (value: {
+      product: ReturnType<typeof product>;
+    }) => void = () => undefined;
     harness.submitProduct.mockImplementation(
       () =>
         new Promise((resolve) => {
@@ -448,7 +1021,13 @@ describe('product draft submit lifecycle', () => {
         }),
     );
     const view = mount({ flow: 'creation', stepParam: '4' });
-    await until(view.container, () => button(view.container, 'Отправить на модерацию') instanceof HTMLButtonElement, 'submit');
+    await until(
+      view.container,
+      () =>
+        button(view.container, 'Отправить на модерацию') instanceof
+        HTMLButtonElement,
+      'submit',
+    );
     act(() => {
       button(view.container, 'Отправить на модерацию')?.click();
     });
@@ -470,12 +1049,16 @@ describe('product draft submit lifecycle', () => {
       );
     });
     await flush();
-    expect(button(view.container, 'Повторно отправить на модерацию')).toBeInstanceOf(HTMLButtonElement);
+    expect(
+      button(view.container, 'Повторно отправить на модерацию'),
+    ).toBeInstanceOf(HTMLButtonElement);
     view.unmount();
   });
 
   it('releases the transition lock when the post-submit refetch fails', async () => {
-    let resolveSubmit: (value: { product: ReturnType<typeof product> }) => void = () => undefined;
+    let resolveSubmit: (value: {
+      product: ReturnType<typeof product>;
+    }) => void = () => undefined;
     harness.submitProduct.mockImplementation(
       () =>
         new Promise((resolve) => {
@@ -483,7 +1066,13 @@ describe('product draft submit lifecycle', () => {
         }),
     );
     const view = mount({ flow: 'creation', stepParam: '4' });
-    await until(view.container, () => button(view.container, 'Отправить на модерацию') instanceof HTMLButtonElement, 'submit');
+    await until(
+      view.container,
+      () =>
+        button(view.container, 'Отправить на модерацию') instanceof
+        HTMLButtonElement,
+      'submit',
+    );
     act(() => {
       button(view.container, 'Отправить на модерацию')?.click();
     });
@@ -493,65 +1082,105 @@ describe('product draft submit lifecycle', () => {
       resolveSubmit({ product: product('PENDING_REVIEW') });
       await Promise.resolve();
     });
-    await until(view.container, () => button(view.container, 'Повторить') instanceof HTMLButtonElement, 'retry');
-    harness.getProduct.mockResolvedValue(detail('CHANGES_REQUESTED', 'Saved title', '2026-09-30T00:00:00.000Z'));
+    await until(
+      view.container,
+      () => button(view.container, 'Повторить') instanceof HTMLButtonElement,
+      'retry',
+    );
+    harness.getProduct.mockResolvedValue(
+      detail('CHANGES_REQUESTED', 'Saved title', '2026-09-30T00:00:00.000Z'),
+    );
     act(() => {
       button(view.container, 'Повторить')?.click();
     });
     await until(
       view.container,
-      () => button(view.container, 'Повторно отправить на модерацию') instanceof HTMLButtonElement,
+      () =>
+        button(view.container, 'Повторно отправить на модерацию') instanceof
+        HTMLButtonElement,
       'recovered submit',
     );
-    expect(button(view.container, 'Повторно отправить на модерацию')?.hasAttribute('disabled')).toBe(false);
-    expect(button(view.container, 'Закрыть')?.hasAttribute('disabled')).toBe(false);
+    expect(
+      button(view.container, 'Повторно отправить на модерацию')?.hasAttribute(
+        'disabled',
+      ),
+    ).toBe(false);
+    expect(button(view.container, 'Закрыть')?.hasAttribute('disabled')).toBe(
+      false,
+    );
     view.unmount();
   });
 
   it.each([
     ['another account', 'user-b'],
     ['the same account', 'user-a'],
-  ] as const)('does not submit a work update that finishes after login of %s', async (_label, nextUserId) => {
-    let resolveUpdate: (value: { product: ReturnType<typeof product> }) => void = () => undefined;
-    harness.updateProduct.mockImplementation(
-      () =>
-        new Promise((resolve) => {
-          resolveUpdate = resolve;
-        }),
-    );
-    const view = mount();
-    await until(view.container, () => button(view.container, 'Отправить на модерацию') instanceof HTMLButtonElement, 'submit');
-    act(() => {
-      button(view.container, 'Отправить на модерацию')?.click();
-    });
-    await flush();
-    expect(harness.updateProduct).toHaveBeenCalledTimes(1);
-    const workB = detail('DRAFT', 'User B title', '2026-09-30T00:00:00.000Z');
-    harness.getProduct.mockImplementation(() => new Promise(() => undefined));
-    await act(async () => {
-      await clearAuthenticatedSession(view.queryClient);
-      view.queryClient.setQueryData(authKeys.session, { id: nextUserId });
-      view.queryClient.setQueryData(ownerWorkQueryKeys.detail(productId), workB);
-      advanceAuthEpoch(view.queryClient);
-    });
-    await flush();
-    await act(async () => {
-      resolveUpdate({ product: product('DRAFT', 'From user A') });
-      await Promise.resolve();
-    });
-    await flush();
-    expect(harness.submitProduct).not.toHaveBeenCalled();
-    expect(view.queryClient.getQueryData(ownerWorkQueryKeys.detail(productId))).toEqual(workB);
-    expect(view.container.querySelector<HTMLInputElement>('[aria-label="Название"]')?.value).toBe('User B title');
-    view.unmount();
-  });
+  ] as const)(
+    'does not submit a work update that finishes after login of %s',
+    async (_label, nextUserId) => {
+      let resolveUpdate: (value: {
+        product: ReturnType<typeof product>;
+      }) => void = () => undefined;
+      harness.updateProduct.mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            resolveUpdate = resolve;
+          }),
+      );
+      const view = mount();
+      await until(
+        view.container,
+        () =>
+          button(view.container, 'Отправить на модерацию') instanceof
+          HTMLButtonElement,
+        'submit',
+      );
+      act(() => {
+        button(view.container, 'Отправить на модерацию')?.click();
+      });
+      await flush();
+      expect(harness.updateProduct).toHaveBeenCalledTimes(1);
+      const workB = detail('DRAFT', 'User B title', '2026-09-30T00:00:00.000Z');
+      harness.getProduct.mockImplementation(() => new Promise(() => undefined));
+      await act(async () => {
+        await clearAuthenticatedSession(view.queryClient);
+        view.queryClient.setQueryData(authKeys.session, { id: nextUserId });
+        view.queryClient.setQueryData(
+          ownerWorkQueryKeys.detail(productId),
+          workB,
+        );
+        advanceAuthEpoch(view.queryClient);
+      });
+      await flush();
+      await act(async () => {
+        resolveUpdate({ product: product('DRAFT', 'From user A') });
+        await Promise.resolve();
+      });
+      await flush();
+      expect(harness.submitProduct).not.toHaveBeenCalled();
+      expect(
+        view.queryClient.getQueryData(ownerWorkQueryKeys.detail(productId)),
+      ).toEqual(workB);
+      expect(
+        view.container.querySelector<HTMLInputElement>(
+          '[aria-label="Название"]',
+        )?.value,
+      ).toBe('User B title');
+      view.unmount();
+    },
+  );
 
   it.each(['CHANGES_REQUESTED', 'REJECTED'] as const)(
     'keeps a resubmitted %s work locked when the refetch is the previous snapshot',
     async (status) => {
-      const initial = detail(status, 'Needs changes', '2026-09-27T00:00:00.000Z');
+      const initial = detail(
+        status,
+        'Needs changes',
+        '2026-09-27T00:00:00.000Z',
+      );
       harness.getProduct.mockResolvedValue(initial);
-      let resolveSubmit: (value: { product: ReturnType<typeof product> }) => void = () => undefined;
+      let resolveSubmit: (value: {
+        product: ReturnType<typeof product>;
+      }) => void = () => undefined;
       harness.submitProduct.mockImplementation(
         () =>
           new Promise((resolve) => {
@@ -561,7 +1190,9 @@ describe('product draft submit lifecycle', () => {
       const view = mount();
       await until(
         view.container,
-        () => button(view.container, 'Повторно отправить на модерацию') instanceof HTMLButtonElement,
+        () =>
+          button(view.container, 'Повторно отправить на модерацию') instanceof
+          HTMLButtonElement,
         'resubmit',
       );
       act(() => {
@@ -574,17 +1205,31 @@ describe('product draft submit lifecycle', () => {
       });
       await flush();
       await flush();
-      expect(view.container.querySelector<HTMLInputElement>('[aria-label="Название"]')?.disabled).toBe(true);
+      expect(
+        view.container.querySelector<HTMLInputElement>(
+          '[aria-label="Название"]',
+        )?.disabled,
+      ).toBe(true);
       expect(button(view.container, 'Сохранить изменения')).toBeNull();
-      expect(button(view.container, 'Повторно отправить на модерацию')?.hasAttribute('disabled')).not.toBe(false);
+      expect(
+        button(view.container, 'Повторно отправить на модерацию')?.hasAttribute(
+          'disabled',
+        ),
+      ).not.toBe(false);
       view.unmount();
     },
   );
 
   it('opens editing after a newer approval even when the parent clock did not move', async () => {
-    const initial = detail('CHANGES_REQUESTED', 'Needs changes', '2026-09-27T00:00:00.000Z');
+    const initial = detail(
+      'CHANGES_REQUESTED',
+      'Needs changes',
+      '2026-09-27T00:00:00.000Z',
+    );
     harness.getProduct.mockResolvedValue(initial);
-    let resolveSubmit: (value: { product: ReturnType<typeof product> }) => void = () => undefined;
+    let resolveSubmit: (value: {
+      product: ReturnType<typeof product>;
+    }) => void = () => undefined;
     harness.submitProduct.mockImplementation(
       () =>
         new Promise((resolve) => {
@@ -594,14 +1239,20 @@ describe('product draft submit lifecycle', () => {
     const view = mount();
     await until(
       view.container,
-      () => button(view.container, 'Повторно отправить на модерацию') instanceof HTMLButtonElement,
+      () =>
+        button(view.container, 'Повторно отправить на модерацию') instanceof
+        HTMLButtonElement,
       'resubmit',
     );
     act(() => {
       button(view.container, 'Повторно отправить на модерацию')?.click();
     });
     await flush();
-    const approved = detail('APPROVED', 'Approved title', '2026-09-27T00:00:00.000Z');
+    const approved = detail(
+      'APPROVED',
+      'Approved title',
+      '2026-09-27T00:00:00.000Z',
+    );
     approved.editingRevision.updatedAt = '2026-09-30T00:00:00.000Z';
     approved.editingRevision.status = 'APPROVED';
     harness.getProduct.mockResolvedValue(approved);
@@ -613,18 +1264,29 @@ describe('product draft submit lifecycle', () => {
     await flush();
     setInput(view.container, 'Название', 'Edited after approval');
     await flush();
-    expect(view.container.querySelector<HTMLInputElement>('[aria-label="Название"]')?.disabled).toBe(false);
-    expect(view.container.querySelector<HTMLInputElement>('[aria-label="Название"]')?.value).toBe(
-      'Edited after approval',
-    );
+    expect(
+      view.container.querySelector<HTMLInputElement>('[aria-label="Название"]')
+        ?.disabled,
+    ).toBe(false);
+    expect(
+      view.container.querySelector<HTMLInputElement>('[aria-label="Название"]')
+        ?.value,
+    ).toBe('Edited after approval');
     view.unmount();
   });
 
   it('does not let a stale moderation snapshot replace a newer decision', async () => {
-    const initial = detail('CHANGES_REQUESTED', 'Needs changes', '2026-09-27T00:00:00.000Z');
+    const initial = detail(
+      'CHANGES_REQUESTED',
+      'Needs changes',
+      '2026-09-27T00:00:00.000Z',
+    );
     harness.getProduct.mockResolvedValue(initial);
-    let resolveSubmit: (value: { product: ReturnType<typeof product> }) => void = () => undefined;
-    let resolveRefetch: (value: ReturnType<typeof detail>) => void = () => undefined;
+    let resolveSubmit: (value: {
+      product: ReturnType<typeof product>;
+    }) => void = () => undefined;
+    let resolveRefetch: (value: ReturnType<typeof detail>) => void = () =>
+      undefined;
     harness.submitProduct.mockImplementation(
       () =>
         new Promise((resolve) => {
@@ -634,7 +1296,9 @@ describe('product draft submit lifecycle', () => {
     const view = mount();
     await until(
       view.container,
-      () => button(view.container, 'Повторно отправить на модерацию') instanceof HTMLButtonElement,
+      () =>
+        button(view.container, 'Повторно отправить на модерацию') instanceof
+        HTMLButtonElement,
       'resubmit',
     );
     harness.getProduct.mockImplementation(
@@ -652,11 +1316,18 @@ describe('product draft submit lifecycle', () => {
       await Promise.resolve();
     });
     await flush();
-    const approved = detail('APPROVED', 'Approved title', '2026-09-27T00:00:00.000Z');
+    const approved = detail(
+      'APPROVED',
+      'Approved title',
+      '2026-09-27T00:00:00.000Z',
+    );
     approved.editingRevision.updatedAt = '2026-09-30T00:00:00.000Z';
     approved.editingRevision.status = 'APPROVED';
     act(() => {
-      view.queryClient.setQueryData(ownerWorkQueryKeys.detail(productId), approved);
+      view.queryClient.setQueryData(
+        ownerWorkQueryKeys.detail(productId),
+        approved,
+      );
     });
     await flush();
     await act(async () => {
@@ -664,17 +1335,31 @@ describe('product draft submit lifecycle', () => {
       await Promise.resolve();
     });
     await flush();
-    expect(view.queryClient.getQueryData(ownerWorkQueryKeys.detail(productId))).toEqual(approved);
-    expect(view.container.querySelector<HTMLInputElement>('[aria-label="Название"]')?.value).toBe('Approved title');
-    expect(view.container.querySelector<HTMLInputElement>('[aria-label="Название"]')?.disabled).toBe(false);
+    expect(
+      view.queryClient.getQueryData(ownerWorkQueryKeys.detail(productId)),
+    ).toEqual(approved);
+    expect(
+      view.container.querySelector<HTMLInputElement>('[aria-label="Название"]')
+        ?.value,
+    ).toBe('Approved title');
+    expect(
+      view.container.querySelector<HTMLInputElement>('[aria-label="Название"]')
+        ?.disabled,
+    ).toBe(false);
     view.unmount();
   });
 
   it('selects without reading or uploading and freezes the inputs when upload starts', async () => {
     const first = new File(['first'], 'first.png', { type: 'image/png' });
     const second = new File(['second'], 'second.png', { type: 'image/png' });
-    const assets = [{ uri: 'blob:first', file: first }, { uri: 'blob:second', file: second }];
-    harness.launchImageLibraryAsync.mockResolvedValue({ canceled: false, assets });
+    const assets = [
+      { uri: 'blob:first', file: first },
+      { uri: 'blob:second', file: second },
+    ];
+    harness.launchImageLibraryAsync.mockResolvedValue({
+      canceled: false,
+      assets,
+    });
     const read = vi.fn();
     vi.stubGlobal('fetch', read);
     const view = mountImageActions();
@@ -692,266 +1377,414 @@ describe('product draft submit lifecycle', () => {
         await Promise.all([start, view.actions.startUpload(selection)]);
       });
       await flush();
-      expect(harness.addImages.mock.calls.map((call) => call[1])).toEqual([[first], [second]]);
+      expect(harness.addImages.mock.calls.map((call) => call[1])).toEqual([
+        [first],
+        [second],
+      ]);
       expect(read).not.toHaveBeenCalled();
       await act(() => view.actions.startUpload(selection));
       await flush();
       expect(harness.addImages).toHaveBeenCalledTimes(2);
-    } finally { view.unmount(); }
+    } finally {
+      view.unmount();
+    }
   });
 
-  it.each(['unmount', 'session-change', 'operation-change', 'product-change', 'new-selection'] as const)(
-    'rejects a deferred selection after %s',
-    async (reason) => {
-      harness.launchImageLibraryAsync.mockResolvedValue({ canceled: false, assets: [{ uri: 'blob:photo' }] });
-      const read = vi.fn();
-      vi.stubGlobal('fetch', read);
-      const view = mountImageActions();
-      const selected = (await act(() => view.actions.selectImages()))!;
-      try {
-        if (reason === 'unmount') view.unmount();
-        else if (reason === 'session-change') await act(() => clearAuthenticatedSession(view.queryClient));
-        else if (reason === 'operation-change') view.session.isCurrentOperation.mockReturnValue(false);
-        else if (reason === 'product-change') view.session.persistedProductId.mockReturnValue('other-work');
-        else await act(() => view.actions.selectImages());
-        await act(() => view.actions.startUpload(selected));
-        await flush();
-        expect(read).not.toHaveBeenCalled();
-        expect(harness.addImages).not.toHaveBeenCalled();
-      } finally { if (reason !== 'unmount') view.unmount(); }
-    },
-  );
+  it.each([
+    'unmount',
+    'session-change',
+    'operation-change',
+    'product-change',
+    'new-selection',
+  ] as const)('rejects a deferred selection after %s', async (reason) => {
+    harness.launchImageLibraryAsync.mockResolvedValue({
+      canceled: false,
+      assets: [{ uri: 'blob:photo' }],
+    });
+    const read = vi.fn();
+    vi.stubGlobal('fetch', read);
+    const view = mountImageActions();
+    const selected = (await act(() => view.actions.selectImages()))!;
+    try {
+      if (reason === 'unmount') view.unmount();
+      else if (reason === 'session-change')
+        await act(() => clearAuthenticatedSession(view.queryClient));
+      else if (reason === 'operation-change')
+        view.session.isCurrentOperation.mockReturnValue(false);
+      else if (reason === 'product-change')
+        view.session.persistedProductId.mockReturnValue('other-work');
+      else await act(() => view.actions.selectImages());
+      await act(() => view.actions.startUpload(selected));
+      await flush();
+      expect(read).not.toHaveBeenCalled();
+      expect(harness.addImages).not.toHaveBeenCalled();
+    } finally {
+      if (reason !== 'unmount') view.unmount();
+    }
+  });
 
   it('waits for the current approved form save before starting a deferred upload', async () => {
     const file = new File(['photo'], 'photo.png', { type: 'image/png' });
-    harness.launchImageLibraryAsync.mockResolvedValue({ canceled: false, assets: [{ uri: 'blob:photo', file }] });
+    harness.launchImageLibraryAsync.mockResolvedValue({
+      canceled: false,
+      assets: [{ uri: 'blob:photo', file }],
+    });
     const view = mountImageActions('APPROVED');
     try {
       const selected = (await act(() => view.actions.selectImages()))!;
       let finishSave!: (saved: boolean) => void;
-      view.session.persistDirtyForm.mockImplementation(() => new Promise((resolve) => { finishSave = resolve; }));
+      view.session.persistDirtyForm.mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            finishSave = resolve;
+          }),
+      );
       let start!: Promise<void>;
-      act(() => { start = view.actions.startUpload(selected); });
+      act(() => {
+        start = view.actions.startUpload(selected);
+      });
       await act(() => view.actions.startUpload(selected));
       expect(harness.addImages).not.toHaveBeenCalled();
-      await act(async () => { finishSave(true); await start; });
+      await act(async () => {
+        finishSave(true);
+        await start;
+      });
       await flush();
       expect(harness.addImages).toHaveBeenCalledTimes(1);
       expect(harness.addImages.mock.calls[0]?.[1]).toEqual([file]);
-    } finally { view.unmount(); }
+    } finally {
+      view.unmount();
+    }
   });
 
   it.each(['failed-save', 'session-change', 'unmount'] as const)(
     'does not start a deferred upload when the approved save ends after %s',
     async (reason) => {
-      harness.launchImageLibraryAsync.mockResolvedValue({ canceled: false, assets: [{ uri: 'blob:photo' }] });
+      harness.launchImageLibraryAsync.mockResolvedValue({
+        canceled: false,
+        assets: [{ uri: 'blob:photo' }],
+      });
       const view = mountImageActions('APPROVED');
       const selected = (await act(() => view.actions.selectImages()))!;
       let finishSave!: (saved: boolean) => void;
-      view.session.persistDirtyForm.mockImplementation(() => new Promise((resolve) => { finishSave = resolve; }));
+      view.session.persistDirtyForm.mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            finishSave = resolve;
+          }),
+      );
       let start!: Promise<void>;
-      act(() => { start = view.actions.startUpload(selected); });
+      act(() => {
+        start = view.actions.startUpload(selected);
+      });
+      await flush();
       try {
         if (reason === 'unmount') view.unmount();
-        else if (reason === 'session-change') await act(() => clearAuthenticatedSession(view.queryClient));
-        await act(async () => { finishSave(reason !== 'failed-save'); await start; });
+        else if (reason === 'session-change')
+          await act(() => clearAuthenticatedSession(view.queryClient));
+        await act(async () => {
+          finishSave(reason !== 'failed-save');
+          await start;
+        });
         await flush();
         expect(harness.addImages).not.toHaveBeenCalled();
-      } finally { if (reason !== 'unmount') view.unmount(); }
+      } finally {
+        if (reason !== 'unmount') view.unmount();
+      }
     },
   );
 
   it.each([
     { fileSize: 0, message: 'Выбранный файл пустой.' },
-    { fileSize: workImageMaxInputBytes + 1, message: 'Исходный файл слишком большой.' },
-  ])('reports an invalid $fileSize-byte Work file without uploading', async ({ fileSize, message }) => {
-    harness.launchImageLibraryAsync.mockResolvedValue({
-      canceled: false,
-      assets: [{ uri: 'blob:invalid', fileSize, file: new Blob([]) }],
-    });
-    const view = mount();
-    try {
-      await until(view.container, () => Boolean(button(view.container, 'Добавить изображения')), 'images');
-      act(() => button(view.container, 'Добавить изображения')?.click());
-      await until(view.container, () => Boolean(view.container.textContent?.includes(message)), 'file error');
-      expect(harness.addImages).not.toHaveBeenCalled();
-    } finally { view.unmount(); }
-  });
+    {
+      fileSize: workImageMaxInputBytes + 1,
+      message: 'Исходный файл слишком большой.',
+    },
+  ])(
+    'reports an invalid $fileSize-byte Work file without uploading',
+    async ({ fileSize, message }) => {
+      harness.launchImageLibraryAsync.mockResolvedValue({
+        canceled: false,
+        assets: [{ uri: 'blob:invalid', fileSize, file: new Blob([]) }],
+      });
+      const view = mount();
+      try {
+        await until(
+          view.container,
+          () => Boolean(button(view.container, 'Добавить изображения')),
+          'images',
+        );
+        await selectAndUpload(view.container);
+        await until(
+          view.container,
+          () => Boolean(view.container.textContent?.includes(message)),
+          'file error',
+        );
+        expect(harness.addImages).not.toHaveBeenCalled();
+      } finally {
+        view.unmount();
+      }
+    },
+  );
 
-  it.each(['picker', 'read'] as const)('ignores a late %s result after unmount', async (phase) => {
-    const file = new Blob(['photo'], { type: 'image/png' });
-    let finish!: () => void;
-    if (phase === 'picker') {
-      harness.launchImageLibraryAsync.mockImplementation(() => new Promise((resolve) => {
-        finish = () => resolve({ canceled: false, assets: [{ uri: 'blob:photo' }] });
-      }));
-    } else {
-      harness.launchImageLibraryAsync.mockResolvedValue({ canceled: false, assets: [{ uri: 'blob:photo' }] });
-      vi.stubGlobal('fetch', vi.fn(() => new Promise((resolve) => {
-        finish = () => resolve({ ok: true, blob: async () => file });
-      })));
-    }
-    const view = mountImageActions();
-    let choosing!: Promise<void>;
-    act(() => { choosing = view.actions.chooseImages(); });
-    await flush();
-    view.unmount();
-    await act(async () => { finish(); await choosing; });
-    await flush();
-    expect(harness.addImages).not.toHaveBeenCalled();
-  });
+  it.each(['picker', 'read'] as const)(
+    'ignores a late %s result after unmount',
+    async (phase) => {
+      const file = new Blob(['photo'], { type: 'image/png' });
+      let finish!: () => void;
+      if (phase === 'picker') {
+        harness.launchImageLibraryAsync.mockImplementation(
+          () =>
+            new Promise((resolve) => {
+              finish = () =>
+                resolve({ canceled: false, assets: [{ uri: 'blob:photo' }] });
+            }),
+        );
+      } else {
+        harness.launchImageLibraryAsync.mockResolvedValue({
+          canceled: false,
+          assets: [{ uri: 'blob:photo' }],
+        });
+        vi.stubGlobal(
+          'fetch',
+          vi.fn(
+            () =>
+              new Promise((resolve) => {
+                finish = () => resolve({ ok: true, blob: async () => file });
+              }),
+          ),
+        );
+      }
+      const view = mountImageActions();
+      let choosing!: Promise<void>;
+      act(() => {
+        choosing = view.actions
+          .chooseImages()
+          .then(() =>
+            phase === 'read' ? view.actions.startUpload() : undefined,
+          );
+      });
+      await flush();
+      view.unmount();
+      await act(async () => {
+        finish();
+        await choosing;
+      });
+      await flush();
+      expect(harness.addImages).not.toHaveBeenCalled();
+    },
+  );
 
   it('retries an unknown upload response with the same blobs and identity without reopening the picker', async () => {
     const image = new Blob(['image'], { type: 'image/png' });
-    harness.launchImageLibraryAsync.mockResolvedValue({ canceled: false, assets: [{ uri: 'blob:image' }] });
-    harness.addImages.mockRejectedValueOnce(new Error('response lost')).mockResolvedValue({ ok: true });
-    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, blob: async () => image })));
-    const view = mount();
-    await until(view.container, () => Boolean(button(view.container, 'Добавить изображения')), 'images');
-    act(() => button(view.container, 'Добавить изображения')?.click());
-    await until(view.container, () => Boolean(button(view.container, 'Повторить загрузку')), 'retry');
-    act(() => button(view.container, 'Повторить загрузку')?.click());
-    await flush();
-    expect(harness.launchImageLibraryAsync).toHaveBeenCalledTimes(1);
-    expect(harness.addImages).toHaveBeenCalledTimes(2);
-    expect(harness.addImages.mock.calls[1]?.slice(0, 3)).toEqual(harness.addImages.mock.calls[0]?.slice(0, 3));
-    expect(harness.addImages.mock.calls[0]?.[2]).toEqual(expect.any(String));
-    vi.unstubAllGlobals();
-    view.unmount();
-  });
-
-  it('preserves an unfinished batch until retry completes before allowing another selection', async () => {
-    const images = [
-      new Blob(['first'], { type: 'image/png' }),
-      new Blob(['second'], { type: 'image/png' }),
-    ];
     harness.launchImageLibraryAsync.mockResolvedValue({
       canceled: false,
-      assets: [{ uri: 'blob:first' }, { uri: 'blob:second' }],
+      assets: [{ uri: 'blob:image' }],
     });
-    let finishFirst: () => void = () => undefined;
     harness.addImages
-      .mockImplementationOnce(
-        () =>
-          new Promise((resolve) => {
-            finishFirst = () => resolve({ ok: true });
-          }),
-      )
       .mockRejectedValueOnce(new Error('response lost'))
-      .mockResolvedValue({ ok: true });
-    const read = vi.fn(async (uri: string) => ({
-      ok: true,
-      blob: async () => images[uri === 'blob:first' ? 0 : 1],
-    }));
-    vi.stubGlobal('fetch', read);
-    const view = mount({ flow: 'creation', stepParam: '2' });
+      .mockResolvedValue({
+        ok: true,
+        photos: [
+          {
+            revisionId: '22222222-2222-4222-8222-222222222222',
+            slotId: '77777777-7777-4777-8777-777777777777',
+            imageId: '88888888-8888-4888-8888-888888888888',
+            version: 0,
+            crop: null,
+          },
+        ],
+      });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({ ok: true, blob: async () => image })),
+    );
+    const view = mount();
     await until(
       view.container,
       () => Boolean(button(view.container, 'Добавить изображения')),
       'images',
     );
-    act(() => button(view.container, 'Добавить изображения')?.click());
+    await selectAndUpload(view.container);
     await until(
       view.container,
-      () => harness.addImages.mock.calls.length === 1,
-      'first upload',
+      () =>
+        Boolean(
+          [...view.container.querySelectorAll('button')].find((node) =>
+            node
+              .getAttribute('aria-label')
+              ?.startsWith('Повторить загрузку фото'),
+          ),
+        ),
+      'retry',
     );
-    expect(read).toHaveBeenCalledTimes(1);
-    expect(view.container.textContent).toContain('Загрузка фото…');
-    await act(async () => {
-      finishFirst();
-      await Promise.resolve();
-    });
-    await until(
-      view.container,
-      () => Boolean(button(view.container, 'Повторить загрузку')),
-      'second failed',
-    );
-    expect(view.container.textContent).not.toContain('Изображение 1: загружено');
-    expect(harness.getProduct.mock.calls.length).toBeGreaterThan(1);
-    const secondKey = harness.addImages.mock.calls[1]?.[2];
-    const add = button(view.container, 'Добавить изображения') as HTMLButtonElement;
-    expect(add.disabled).toBe(true);
-    act(() => add.click());
-    expect(harness.launchImageLibraryAsync).toHaveBeenCalledTimes(1);
-    expect(harness.addImages).toHaveBeenCalledTimes(2);
-    expect(button(view.container, 'Продолжить')?.disabled).toBe(true);
-    expect(button(view.container, '3. История создания')?.disabled).toBe(true);
-    expect(button(view.container, '4. Проверка')?.disabled).toBe(true);
-    expect(button(view.container, 'Назад')?.disabled).toBe(false);
-    harness.setParams.mockClear();
-    act(() => button(view.container, 'Продолжить')?.click());
-    expect(harness.setParams).not.toHaveBeenCalled();
-    act(() => button(view.container, 'Повторить загрузку')?.click());
-    await until(
-      view.container,
-      () => harness.addImages.mock.calls.length === 3,
-      'retry second',
+    act(() =>
+      [...view.container.querySelectorAll('button')]
+        .find((node) =>
+          node
+            .getAttribute('aria-label')
+            ?.startsWith('Повторить загрузку фото'),
+        )
+        ?.click(),
     );
     await flush();
-    expect(harness.addImages.mock.calls.map((call) => call[1])).toEqual([
-      [images[0]],
-      [images[1]],
-      [images[1]],
-    ]);
-    expect(harness.addImages.mock.calls[2]?.[2]).toBe(secondKey);
-    expect(read).toHaveBeenCalledTimes(2);
-    await until(view.container, () => !add.disabled, 'another selection enabled');
-    harness.launchImageLibraryAsync.mockResolvedValue({ canceled: true, assets: [] });
-    act(() => add.click());
-    await until(view.container, () => harness.launchImageLibraryAsync.mock.calls.length === 2, 'another selection');
-    expect(harness.addImages).toHaveBeenCalledTimes(3);
-    await until(view.container, () => button(view.container, 'Продолжить')?.disabled === false, 'continue after retry');
-    act(() => button(view.container, 'Продолжить')?.click());
-    await until(view.container, () => harness.setParams.mock.calls.some(([params]) => params.step === '3'), 'story navigation');
+    expect(harness.launchImageLibraryAsync).toHaveBeenCalledTimes(1);
+    expect(harness.addImages).toHaveBeenCalledTimes(2);
+    expect(harness.addImages.mock.calls[1]?.slice(0, 3)).toEqual(
+      harness.addImages.mock.calls[0]?.slice(0, 3),
+    );
+    expect(harness.addImages.mock.calls[0]?.[2]).toEqual(expect.any(String));
     vi.unstubAllGlobals();
     view.unmount();
   });
 
-  it('discards a terminal failed queue without removing already saved photos', async () => {
-    const image = new Blob(['first'], { type: 'image/png' });
+  it('continues after a failed photo and retries only that photo before confirming the selected order', async () => {
+    const files = ['first', 'second', 'third'].map(
+      (text) => new File([text], `${text}.png`, { type: 'image/png' }),
+    );
     const initial = detail();
-    const saved = detail();
-    saved.product.images.push({
-      ...saved.product.images[0]!,
-      id: '66666666-6666-4666-8666-666666666666',
-      position: 1,
-      url: '/api/images/66666666-6666-4666-8666-666666666666',
+    const results = files.map((_, index) => ({
+      revisionId: initial.editingRevision.id,
+      slotId: `77777777-7777-4777-8777-77777777777${index}`,
+      imageId: `88888888-8888-4888-8888-88888888888${index}`,
+      version: 0,
+      crop: null,
+    }));
+    const serverImages = [...initial.product.images];
+    harness.getProduct.mockImplementation(async () => ({
+      ...initial,
+      product: { ...initial.product, images: [...serverImages] },
+    }));
+    harness.launchImageLibraryAsync.mockResolvedValue({
+      canceled: false,
+      assets: files.map((file, i) => ({ uri: `blob:${i}`, file })),
     });
-    harness.getProduct.mockResolvedValue(initial);
-    harness.addImages.mockImplementationOnce(async () => {
-      harness.getProduct.mockResolvedValue(saved);
+    let failed = false;
+    harness.addImages.mockImplementation(async (_id, [file]) => {
+      const index = files.indexOf(file);
+      if (index === 1 && !failed) {
+        failed = true;
+        throw new Error('response lost');
+      }
+      const result = results[index]!;
+      serverImages.push({
+        ...initial.product.images[0]!,
+        id: result.imageId,
+        slotId: result.slotId,
+        position: serverImages.length,
+      });
+      return { ok: true, photos: [result] };
+    });
+    harness.reorderImages.mockImplementation(async (_id, ids) => {
+      serverImages.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
       return { ok: true };
     });
+    const view = mount({ flow: 'creation', stepParam: '2' });
+    try {
+      await until(
+        view.container,
+        () => Boolean(button(view.container, 'Добавить изображения')),
+        'images',
+      );
+      await selectAndUpload(view.container);
+      await until(
+        view.container,
+        () => harness.addImages.mock.calls.length === 3,
+        'other files continued',
+      );
+      await flush();
+      expect(harness.addImages.mock.calls.map((call) => call[1])).toEqual([
+        [files[0]],
+        [files[1]],
+        [files[2]],
+      ]);
+      expect(harness.reorderImages).not.toHaveBeenCalled();
+      expect(button(view.container, '3. История создания')?.disabled).toBe(
+        true,
+      );
+      expect(button(view.container, 'Добавить изображения')?.disabled).toBe(
+        false,
+      );
+      const retry = button(view.container, 'Повторить загрузку фото 3');
+      expect(retry).toBeDefined();
+      act(() => retry?.click());
+      await until(
+        view.container,
+        () => harness.addImages.mock.calls.length === 4,
+        'addressed retry',
+      );
+      await until(
+        view.container,
+        () => button(view.container, 'Продолжить')?.disabled === false,
+        'confirmed order',
+      );
+      expect(harness.addImages.mock.calls[3]?.slice(0, 3)).toEqual(
+        harness.addImages.mock.calls[1]?.slice(0, 3),
+      );
+      expect(harness.reorderImages.mock.calls[0]?.[1]).toEqual([
+        initial.product.images[0]!.id,
+        ...results.map((result) => result.imageId),
+      ]);
+      act(() => button(view.container, 'Продолжить')?.click());
+      await until(
+        view.container,
+        () =>
+          harness.setParams.mock.calls.some(([params]) => params.step === '3'),
+        'story',
+      );
+    } finally {
+      view.unmount();
+    }
+  });
+
+  it('removes only a terminal failed card and permits selecting its source again', async () => {
+    const image = new File(['valid'], 'photo.png', { type: 'image/png' });
     harness.launchImageLibraryAsync.mockResolvedValue({
       canceled: false,
       assets: [
         { uri: 'blob:first', file: image },
         { uri: 'blob:too-large', fileSize: workImageMaxInputBytes + 1 },
-        { uri: 'blob:queued', file: image },
       ],
     });
     const view = mount({ flow: 'creation', stepParam: '2' });
     try {
-      await until(view.container, () => Boolean(button(view.container, 'Добавить изображения')), 'images');
-      act(() => button(view.container, 'Добавить изображения')?.click());
-      await until(view.container, () => Boolean(button(view.container, 'Отменить загрузку')) &&
-        !(button(view.container, 'Отменить загрузку') as HTMLButtonElement).disabled, 'terminal failure');
+      await until(
+        view.container,
+        () => Boolean(button(view.container, 'Добавить изображения')),
+        'images',
+      );
+      await selectAndUpload(view.container);
+      await until(
+        view.container,
+        () => harness.addImages.mock.calls.length === 1,
+        'valid photo uploaded',
+      );
+      await flush();
+      expect(view.container.textContent).toContain(
+        'Исходный файл слишком большой',
+      );
+      expect(button(view.container, 'Повторить загрузку фото 3')).toBeNull();
+      await until(
+        view.container,
+        () => button(view.container, 'Удалить фото 3')?.disabled === false,
+        'delete enabled',
+      );
+      act(() => button(view.container, 'Удалить фото 3')?.click());
+      await until(
+        view.container,
+        () =>
+          !view.container.textContent?.includes(
+            'Исходный файл слишком большой',
+          ),
+        'failed card removed',
+      );
+      expect(view.container.textContent).not.toContain(
+        'Исходный файл слишком большой',
+      );
       expect(harness.addImages).toHaveBeenCalledTimes(1);
-      expect(button(view.container, 'Продолжить')?.disabled).toBe(true);
-      expect((button(view.container, 'Добавить изображения') as HTMLButtonElement).disabled).toBe(true);
-      act(() => button(view.container, 'Отменить загрузку')?.click());
-      await until(view.container, () => !(button(view.container, 'Добавить изображения') as HTMLButtonElement).disabled, 'another selection enabled');
-      expect(button(view.container, 'Повторить загрузку')).toBeNull();
-      expect(button(view.container, 'Продолжить')?.disabled).toBe(false);
-      expect(view.container.querySelectorAll('img[alt^="Выбранное изображение"]')).toHaveLength(0);
-      expect(view.queryClient.getQueryData(ownerWorkQueryKeys.detail(productId))).toEqual(saved);
-      harness.launchImageLibraryAsync.mockResolvedValue({ canceled: true, assets: [] });
-      act(() => button(view.container, 'Добавить изображения')?.click());
-      await until(view.container, () => harness.launchImageLibraryAsync.mock.calls.length === 2, 'another selection');
-      expect(harness.addImages).toHaveBeenCalledTimes(1);
-      expect(view.queryClient.getQueryData(ownerWorkQueryKeys.detail(productId))).toEqual(saved);
-    } finally { view.unmount(); }
+    } finally {
+      view.unmount();
+    }
   });
 
   it.each(['unmount', 'session-change'] as const)(
@@ -981,13 +1814,14 @@ describe('product draft submit lifecycle', () => {
           () => Boolean(button(view.container, 'Добавить изображения')),
           'images',
         );
-        act(() => button(view.container, 'Добавить изображения')?.click());
+        await selectAndUpload(view.container);
         await until(
           view.container,
           () => harness.addImages.mock.calls.length === 1,
           'first request',
         );
-        const signal = harness.addImages.mock.calls[0]![3].signal as AbortSignal;
+        const signal = harness.addImages.mock.calls[0]![3]
+          .signal as AbortSignal;
         expect(signal.aborted).toBe(false);
         if (reason === 'unmount') {
           view.unmount();
@@ -1013,11 +1847,17 @@ describe('product draft submit lifecycle', () => {
         () => Boolean(button(view.container, 'Добавить изображения')),
         'images',
       );
-      act(() => button(view.container, 'Добавить изображения')?.click());
+      await selectAndUpload(view.container);
       await flush();
       expect(harness.launchImageLibraryAsync).toHaveBeenCalledTimes(1);
       expect(harness.addImages).not.toHaveBeenCalled();
-      expect(button(view.container, 'Повторить загрузку')).toBeNull();
+      expect(
+        [...view.container.querySelectorAll('button')].find((node) =>
+          node
+            .getAttribute('aria-label')
+            ?.startsWith('Повторить загрузку фото'),
+        ),
+      ).toBeUndefined();
       expect(button(view.container, 'Добавить изображения')?.disabled).toBe(
         false,
       );
@@ -1028,18 +1868,26 @@ describe('product draft submit lifecycle', () => {
 
   it('does not upload a work image chosen by the previous session', async () => {
     const imageA = new Blob(['image-a'], { type: 'image/png' });
-    let resolvePicker: (value: { canceled: boolean; assets: Array<{ uri: string }> }) => void = () => undefined;
+    let resolvePicker: (value: {
+      canceled: boolean;
+      assets: Array<{ uri: string }>;
+    }) => void = () => undefined;
     harness.launchImageLibraryAsync.mockImplementation(
       () =>
         new Promise((resolve) => {
           resolvePicker = resolve;
         }),
     );
-    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, blob: async () => imageA })));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({ ok: true, blob: async () => imageA })),
+    );
     const view = mount();
     await until(
       view.container,
-      () => button(view.container, 'Добавить изображения') instanceof HTMLButtonElement,
+      () =>
+        button(view.container, 'Добавить изображения') instanceof
+        HTMLButtonElement,
       'images',
     );
     act(() => {
@@ -1051,7 +1899,10 @@ describe('product draft submit lifecycle', () => {
     await act(async () => {
       await clearAuthenticatedSession(view.queryClient);
       view.queryClient.setQueryData(authKeys.session, { id: 'user-b' });
-      view.queryClient.setQueryData(ownerWorkQueryKeys.detail(productId), workB);
+      view.queryClient.setQueryData(
+        ownerWorkQueryKeys.detail(productId),
+        workB,
+      );
       advanceAuthEpoch(view.queryClient);
     });
     await flush();
@@ -1084,7 +1935,9 @@ describe('product draft submit lifecycle', () => {
     const view = mount();
     await until(
       view.container,
-      () => button(view.container, 'Добавить изображения') instanceof HTMLButtonElement,
+      () =>
+        button(view.container, 'Добавить изображения') instanceof
+        HTMLButtonElement,
       'images',
     );
     act(() => {
@@ -1096,7 +1949,10 @@ describe('product draft submit lifecycle', () => {
     await act(async () => {
       await clearAuthenticatedSession(view.queryClient);
       view.queryClient.setQueryData(authKeys.session, { id: 'user-a' });
-      view.queryClient.setQueryData(ownerWorkQueryKeys.detail(productId), workB);
+      view.queryClient.setQueryData(
+        ownerWorkQueryKeys.detail(productId),
+        workB,
+      );
       advanceAuthEpoch(view.queryClient);
     });
     await flush();
@@ -1113,9 +1969,15 @@ describe('product draft submit lifecycle', () => {
   it.each(['CHANGES_REQUESTED', 'REJECTED'] as const)(
     'stays locked when a %s snapshot saved before submit arrives after submit',
     async (status) => {
-      const initial = detail(status, 'Needs changes', '2026-09-27T00:00:00.000Z');
+      const initial = detail(
+        status,
+        'Needs changes',
+        '2026-09-27T00:00:00.000Z',
+      );
       harness.getProduct.mockResolvedValue(initial);
-      let resolveSubmit: (value: { product: ReturnType<typeof product> }) => void = () => undefined;
+      let resolveSubmit: (value: {
+        product: ReturnType<typeof product>;
+      }) => void = () => undefined;
       const reads: Array<(value: ReturnType<typeof detail>) => void> = [];
       harness.submitProduct.mockImplementation(
         () =>
@@ -1126,7 +1988,9 @@ describe('product draft submit lifecycle', () => {
       const view = mount();
       await until(
         view.container,
-        () => button(view.container, 'Повторно отправить на модерацию') instanceof HTMLButtonElement,
+        () =>
+          button(view.container, 'Повторно отправить на модерацию') instanceof
+          HTMLButtonElement,
         'resubmit',
       );
       harness.getProduct.mockImplementation(
@@ -1143,7 +2007,11 @@ describe('product draft submit lifecycle', () => {
         button(view.container, 'Повторно отправить на модерацию')?.click();
       });
       await flush();
-      const savedDuringSubmit = detail(status, 'Needs changes', '2026-09-28T00:00:00.000Z');
+      const savedDuringSubmit = detail(
+        status,
+        'Needs changes',
+        '2026-09-28T00:00:00.000Z',
+      );
       await act(async () => {
         resolveSubmit({ product: product('PENDING_REVIEW', 'Needs changes') });
         reads[0]?.(savedDuringSubmit);
@@ -1151,10 +2019,20 @@ describe('product draft submit lifecycle', () => {
       });
       await flush();
       await flush();
-      expect(view.container.querySelector<HTMLInputElement>('[aria-label="Название"]')?.disabled).toBe(true);
+      expect(
+        view.container.querySelector<HTMLInputElement>(
+          '[aria-label="Название"]',
+        )?.disabled,
+      ).toBe(true);
       expect(button(view.container, 'Сохранить изменения')).toBeNull();
-      expect(button(view.container, 'Повторно отправить на модерацию')).toBeNull();
-      const pending = detail('PENDING_REVIEW', 'Needs changes', '2026-09-29T00:00:00.000Z');
+      expect(
+        button(view.container, 'Повторно отправить на модерацию'),
+      ).toBeNull();
+      const pending = detail(
+        'PENDING_REVIEW',
+        'Needs changes',
+        '2026-09-29T00:00:00.000Z',
+      );
       const pendingRead = reads.at(-1);
       expect(pendingRead).toBeTypeOf('function');
       await act(async () => {
@@ -1162,10 +2040,18 @@ describe('product draft submit lifecycle', () => {
         await Promise.resolve();
       });
       await flush();
-      expect(view.queryClient.getQueryData(ownerWorkQueryKeys.detail(productId))).toEqual(pending);
-      expect(view.container.querySelector<HTMLInputElement>('[aria-label="Название"]')?.disabled).toBe(true);
+      expect(
+        view.queryClient.getQueryData(ownerWorkQueryKeys.detail(productId)),
+      ).toEqual(pending);
+      expect(
+        view.container.querySelector<HTMLInputElement>(
+          '[aria-label="Название"]',
+        )?.disabled,
+      ).toBe(true);
       expect(button(view.container, 'Сохранить изменения')).toBeNull();
-      expect(button(view.container, 'Повторно отправить на модерацию')).toBeNull();
+      expect(
+        button(view.container, 'Повторно отправить на модерацию'),
+      ).toBeNull();
       act(() => {
         view.queryClient.setQueryData(
           ownerWorkQueryKeys.detail(productId),
@@ -1173,8 +2059,14 @@ describe('product draft submit lifecycle', () => {
         );
       });
       await flush();
-      expect(button(view.container, 'Повторно отправить на модерацию')).toBeInstanceOf(HTMLButtonElement);
-      expect(view.container.querySelector<HTMLInputElement>('[aria-label="Название"]')?.disabled).toBe(false);
+      expect(
+        button(view.container, 'Повторно отправить на модерацию'),
+      ).toBeInstanceOf(HTMLButtonElement);
+      expect(
+        view.container.querySelector<HTMLInputElement>(
+          '[aria-label="Название"]',
+        )?.disabled,
+      ).toBe(false);
       view.unmount();
     },
   );

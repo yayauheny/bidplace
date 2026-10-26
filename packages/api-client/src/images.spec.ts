@@ -27,9 +27,28 @@ describe('Work upload identity', () => {
       .mockImplementation(async (_url, init) => {
         requests.push(init!);
         if (requests.length === 2) throw new Error('response lost');
-        return new Response(JSON.stringify({ ok: true }), {
-          headers: { 'Content-Type': 'application/json' },
-        });
+        const index = new Headers(init?.headers)
+          .get('Idempotency-Key')
+          ?.endsWith(':1')
+          ? '2'
+          : '1';
+        return new Response(
+          JSON.stringify({
+            ok: true,
+            photos: [
+              {
+                revisionId: '81111111-1111-4111-8111-111111111111',
+                slotId: `82222222-2222-4222-8222-22222222222${index}`,
+                imageId: `83333333-3333-4333-8333-33333333333${index}`,
+                version: 0,
+                crop: null,
+              },
+            ],
+          }),
+          {
+            headers: { 'Content-Type': 'application/json' },
+          },
+        );
       });
     const client = createImagesClient(
       createRequestContext({ baseUrl: 'https://api.example.test', fetchImpl }),

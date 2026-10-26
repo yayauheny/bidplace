@@ -12,6 +12,8 @@ import {
   ResilientRemoteImage,
   SecondaryButton,
 } from '../ui';
+import type { PhotoCrop } from '@bidplace/contracts';
+import { CroppedPhoto } from '../shared/CroppedPhoto';
 import { getApiAssetUrl } from '../../lib/environment';
 import { useReducedMotion } from '../../lib/reduced-motion';
 import { useAppTheme } from '../../providers/theme-provider';
@@ -26,6 +28,9 @@ import {
 type GalleryImage = {
   id: string;
   url: string;
+  crop?: PhotoCrop | null;
+  width?: number | null;
+  height?: number | null;
   full?: { url: string; width: number | null; height: number | null };
 };
 export function WorkGallery({
@@ -118,7 +123,10 @@ export function WorkGallery({
                   aspectRatio: designTokens.ratio.productPortrait,
                 })
               ) : (
-                <ResilientRemoteImage
+                <CroppedPhoto
+                  crop={image.crop}
+                  sourceWidth={image.width}
+                  sourceHeight={image.height}
                   uri={getApiAssetUrl(image.url)}
                   component="ProductGallery"
                   accessibilityLabel={`${label}, фото ${index + 1} из ${images.length}`}

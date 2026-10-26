@@ -5,6 +5,21 @@
 Полный прежний журнал, включая ограничения ранних экранов:
 [история](../archive/design/04-DESIGN-STATUS-through-2026-10-23.md).
 
+## 2026-10-26 — Photo workflow
+
+**Partial.** Read-only Figma `pAPQo6cADmG5XzVmBX76EE`: selection `7329:704`, Work
+editor `7329:822`, upload/error `7329:823`, avatar editor `7329:824`, handoff
+`7388:723`. Existing FormPageShell/PaddedGrid/FigmaTabs/buttons/icons are reused;
+shared `CroppedPhoto` carries revision crop through Work cards/gallery. New rotate,
+flip/reset/alert icons use FigmaIcon; feedback/tool text roles and error palette
+belong to design tokens. Existing four-step product wizard is retained; the
+six-dot sample does not change product routes. No Figma edits.
+Six Chromium/WebKit media E2E passed; real editor reset/cancel/focus, crop-only
+save and 390/1024/1440 overflow checks passed. Error tiles checked at 320–1440.
+[Evidence](../audits/2026-10-26-PHOTO-WORKFLOW.md). Native gestures/device
+output, accessibility at 200% zoom and exact visual parity remain Needs verification.
+Only 390px reference frames exist here; exact 1024/1440 parity is NEEDS-FIGMA.
+
 ## 2026-10-25 — Explore / Blur16 integration
 
 **Implemented for verified local web states; Native Needs verification.** Normal merge `87a2ab68` incorporates MVP

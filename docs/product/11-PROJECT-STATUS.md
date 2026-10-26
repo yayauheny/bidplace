@@ -16,6 +16,36 @@
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
 | Commerce, избранное/подписки, смена email/password из settings | Not implemented в launch scope / post-MVP; [следующая волна](15-POST-MVP-BACKLOG.md). Старый commerce runtime не разрешает включать продажи. |
 
+## 2026-10-26 — Photo workflow, DEC-148
+
+**Partial.** Work selection/confirmation, per-card editor, exact-byte session
+deduplication, addressed retry, composition lock, server-confirmed order and
+in-process recovery implemented in `product-draft-image-actions.ts`,
+`work-photo-session.ts`, `photo-editor.tsx`; avatar uses the same editor before
+existing save. Revision crop/slot/version and replacement are owned by
+`ImagesService`, contracts and migration `20261026160000_work_photo_slots`.
+Cards consume crop; fullscreen retains full pixels. Immutable operation ledger,
+owner-only SOURCE, transactional slot switch and cleanup/attach serialization
+preserve revision/privacy boundaries. [Architecture](10-CODE-ARCHITECTURE.md).
+
+Node 22.20.0: 1097 mobile unit tests, 470 API unit tests, 7 upload-safety integration
+tests, 48 contracts / 51 api-client / 1 database unit tests, affected Turbo
+typecheck/lint and API build passed. Web/iOS/Android export passed. Integration
+includes crop-only without
+stage, stable keyed replay, stale revision/order/delete, concurrent replacements,
+staging rollback, controlled cleanup/attach and preserved published FULL. Six
+Chromium/WebKit media E2E passed with original timeouts; 390/1024/1440 editor and
+320–1440 error-layout evidence captured. E2E fence, docs links (193 files) and
+diff check passed. [Evidence and limits](../audits/2026-10-26-PHOTO-WORKFLOW.md).
+Native device gestures, HEIC, 200% zoom, full visual parity and live R2/CDN remain
+Needs verification; wider exact parity is NEEDS-FIGMA.
+No merge/deploy. Branch `feature/photo-workflow` starts at `9ef59acd` of
+`feature/photo-preparation-core`; integration target remains
+`origin/feature/portfolio-mvp-release` (implementation base `ef14bfe1`).
+`23250a8b` is original plan context, not an integration base. Earlier preparation
+entries below describe their historical cut; this entry supersedes their editor
+and API absence statements. Founder Q1–Q5 are Confirmed in DEC-148.
+
 ## 2026-10-26 — Устранение повторного save перед photo upload
 
 **Implemented (local checks passed).** `product-draft-save.ts.persistDirtyForm()`

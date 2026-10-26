@@ -1,50 +1,58 @@
 # bidplace — архитектура кода
 
-Последнее обновление: 2026-10-10
+Последнее обновление: 2026-10-26
 Статус: Confirmed technical boundaries for the portfolio-first MVP implementation.
 
-## 2026-10-26 — Local photo preparation boundary
+## 2026-10-26 — Photo workflow (DEC-148)
 
-`product-draft-image-actions.ts` exposes `selectImages()` and
-`startUpload(selection)`. The existing `chooseImages()` uses both immediately;
-a future preparation screen can replace `selection.images` with
-`ImageUploadInput` results and defer the start. Selection retains its Work,
-session epoch, operation and generation; stale or consumed selections cannot
-start another batch. Approved form saves still precede the picker.
-Before upload, `product-draft-save.ts.persistDirtyForm()` waits for the active
-field save, then checks current React Hook Form field dirtiness via
-`getFieldState`. It saves remaining edits until clean, stops on failure or
-retired ownership, and does not write an unchanged form twice. No separate
-form snapshot/dirty model is stored by the image owner. Save-session unmount
-retires operation/generation, preventing late confirmation or another save.
-Starting copies the input descriptors;
-retry retains the same Blob/key and skips completed files. Only one file is read
-at a time. Unmount retires the selection/batch before aborting the request;
-abort does not guarantee server cancellation.
+`product-draft-image-actions.ts` owns selection, exact-byte session deduplication,
+sequential preparation/upload, addressed retry and confirmed server order.
+`chooseImages()` now adds local cards; `startUpload()` is explicit. Save remains
+before picker; `persistDirtyForm()` waits for active saves and current React Hook
+Form dirtiness before delayed upload without duplicating the form state model.
+Session/operation/product guards retire late work. Composition is locked during
+active batches and order writes; closing retains the per-user/Work React Query
+session. Logout removes private queries and generated resources. Picker files
+are never deleted. Recovery lasts for this process/tab only; uncertain writes
+are reconciled by operation identity rather than array position.
 
-`lib/media/prepare-image-upload.ts` owns `ImageUploadInput` and
-`readImageUpload(input, maxSourceBytes)`: picker-size rejection, URI/File reading,
-empty/actual-size checks, with no pixel conversion or dimension requirement.
-Work uses the contract's 25 MiB limit and passes unchanged bytes to the existing
-images API; normalized server SOURCE is not a byte-original guarantee.
-`prepareImageUpload` reuses that reader while retaining the separate author
-policy (1600px / 2 MiB, including its existing final 640px fallback).
-`seller-profile-photo.ts` still owns preview and saving. No new temporary files
-or object URLs are created; picker originals are never deleted. Existing
-ImageManipulator reference release and cache-file behavior are unchanged.
-No server endpoint, contract package or schema changes.
+`photo-editor.tsx` reuses FormPageShell, FigmaTabs and shared controls.
+`PhotoCropSurface.web.tsx` uses react-advanced-cropper 0.20.1; Native uses
+react-native-zoom-toolkit 5.1.1 CropZoom and existing gesture/reanimated owners.
+`photo-edit.ts` applies confirmed flips/quarter-turns once from the retained
+opening source. Work crop remains normalized metadata over the full transformed
+file; crop-only never reencodes/uploads bytes. Avatar crop produces pixels before
+the existing 1600px/2 MiB preparation policy. Reset restores the editor opening,
+cancel leaves confirmed state unchanged. Generated object URLs/cache files have
+explicit disposal. Native runtime, HEIC and hardware gestures need verification.
 
-API suitability checked on 2026-10-26; no editor dependency added:
+`ProductRevisionImage` owns unique `slotId`, optimistic `version` and nullable
+validated `crop`; revision fork copies crop but creates new slots. Physical
+ProductImage changes on replacement; slot/position persist. Published revision
+references keep their original files/crop. `MediaOperation.photoResult` is an
+immutable replay ledger, populated conditionally for older keyed uploads.
+`ImagesService.editPhoto` stages outside the transaction, then locks Product and
+rechecks owner/revision/version before switching; rollback queues staged cleanup.
+Cleanup retires an unreferenced asset under its row lock before external deletion;
+attach only accepts STAGING/READY. Legacy nontransactional storage rejects replace.
 
-| Library | Suitability / remaining limit |
-| --- | --- |
-| Installed Expo ImagePicker 57.0.2 / ImageManipulator 57.0.21 | [SDK 57 picker](https://docs.expo.dev/versions/v57.0.0/sdk/imagepicker/) provides local inputs; [manipulator](https://docs.expo.dev/versions/v57.0.0/sdk/imagemanipulator/) provides crop/render/save on Web/iOS/Android. PNG must retain transparency; HEIC decode/device behavior remains Needs verification. |
-| react-image-crop 11.1.2 | Web candidate: [free/fixed crop, touch and keyboard support](https://github.com/dominictobias/react-image-crop); returns crop geometry and needs separate pixel output/orientation handling. React 19 is within its declared peer range; Expo Web CSS/bundling/runtime integration remains untested. |
-| react-easy-crop | [Drag/zoom/rotation API](https://github.com/ValentinH/react-easy-crop) returns crop geometry. Consider instead of react-image-crop only if the future UX requires that interaction; do not install both. |
-| @bsky.app/expo-image-crop-tool 0.5.1 | Native candidate: [API](https://github.com/bluesky-social/expo-image-crop-tool/blob/main/src/ExpoImageCropTool.types.ts) returns a processed path, MIME, size and dimensions. [Upstream development versions](https://github.com/bluesky-social/expo-image-crop-tool/blob/main/package.json) are Expo 54 / RN 0.81.5; wildcard peers do not verify our Expo 57 / RN 0.86. Reset/re-edit must retain the original; encoding, transparency, cleanup and device compatibility remain unverified. |
+API: owner GET `products/:id/image-operations/:key`, PATCH (crop JSON) / POST
+(multipart replacement) `products/:id/photos/:slotId`; request carries revision,
+version and operation key. Upload negotiates slot results with `X-Photo-Response:
+slots`; old clients retain `{ok:true}`. `X-Photo-Revision` guards add; optional
+revision guards also cover reorder/delete. `images/:id?source=true` is owner/admin
+only and no-store; legacy files may have only normalized preview bytes. Public
+cards use CroppedPhoto; fullscreen continues to use full media.
+Migration: `20261026160000_work_photo_slots` (slot/version/crop, bounds CHECK,
+operation result). Apply migration and deploy API/client together: new image
+metadata extends strict product contracts; upload-response negotiation alone does
+not make older product clients compatible. No new service or background infrastructure.
 
-Confirmation/editor UI, transforms and undo/reset state are not implemented.
-There is no promise of one encoding across native and web editors.
+Prototype selection: advanced-cropper supports resizable frame, pan/zoom, rotate,
+flip and keyboard; react-image-crop lacks pan/zoom and easy-crop lacks the required
+resizable frame. Native CropZoom embeds the approved screen; a modal-only native
+cropper would replace it. Chromium/WebKit isolated prototype checked transform,
+reset/cancel, crop output and PNG transparency. Device calibration remains open.
 
 ## 2026-10-05 — Cloudflare application deployment (Partial)
 

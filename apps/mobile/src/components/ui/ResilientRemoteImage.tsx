@@ -42,6 +42,7 @@ export type ResilientRemoteImageComponent =
 
 type ResilientRemoteImageProps = {
   uri: string;
+  onDimensions?: (size: { width: number; height: number }) => void;
   component: ResilientRemoteImageComponent;
   accessibilityLabel: string;
   fallbackLabel: string;
@@ -78,6 +79,7 @@ function RemoteImageLifetime({
   blurRadius,
   retryable = true,
   fallback = 'labelled',
+  onDimensions,
 }: ResilientRemoteImageProps) {
   const [recovery, setRecovery] = useState(() => createMediaRecoveryState(uri));
   const recoveryRef = useRef(recovery);
@@ -124,8 +126,15 @@ function RemoteImageLifetime({
 
   const sourceUri = addMediaCacheBust(uri, recovery.requestVersion);
 
-  const handleLoad = () => {
+  const handleLoad = (event?: {
+    source: { width: number; height: number };
+  }) => {
     if (!mountedRef.current) return;
+    if (event?.source.width && event.source.height)
+      onDimensions?.({
+        width: event.source.width,
+        height: event.source.height,
+      });
     commit(markMediaLoaded(recoveryRef.current));
   };
 

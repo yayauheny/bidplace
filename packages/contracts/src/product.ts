@@ -22,9 +22,52 @@ export function isEditableProductStatus(
 
 const optionalText = z.string().trim().min(1).nullable();
 
+export const photoCropSchema = z
+  .object({
+    x: z.number().finite().min(0).max(1),
+    y: z.number().finite().min(0).max(1),
+    width: z.number().finite().positive().max(1),
+    height: z.number().finite().positive().max(1),
+  })
+  .strict()
+  .refine(
+    (crop) => crop.x + crop.width <= 1 && crop.y + crop.height <= 1,
+    'Crop must fit the transformed full image',
+  );
+export type PhotoCrop = z.infer<typeof photoCropSchema>;
+
+export const workPhotoResultSchema = z
+  .object({
+    revisionId: uuidSchema,
+    slotId: uuidSchema,
+    imageId: uuidSchema,
+    version: z.number().int().nonnegative(),
+    crop: photoCropSchema.nullable(),
+  })
+  .strict();
+export type WorkPhotoResult = z.infer<typeof workPhotoResultSchema>;
+export const workPhotoUploadResponseSchema = z
+  .object({
+    ok: z.literal(true),
+    photos: z.array(workPhotoResultSchema).nonempty().max(10),
+  })
+  .strict();
+export const workPhotoEditRequestSchema = z
+  .object({
+    revisionId: uuidSchema,
+    version: z.number().int().nonnegative(),
+    crop: photoCropSchema.nullable(),
+    operationKey: z.string().regex(/^[a-zA-Z0-9:_-]{1,100}$/),
+  })
+  .strict();
+export type WorkPhotoEditRequest = z.infer<typeof workPhotoEditRequestSchema>;
+
 export const productImageSchema = z
   .object({
     id: uuidSchema,
+    slotId: uuidSchema.optional(),
+    slotVersion: z.number().int().nonnegative().optional(),
+    crop: photoCropSchema.nullable().optional(),
     mediaAssetId: uuidSchema.nullable().optional(),
     position: z.number().int().nonnegative(),
     full: z
@@ -75,7 +118,10 @@ export const creationStepSchema = z
   .strict();
 
 export const productImageOrderRequestSchema = z
-  .object({ imageIds: z.array(uuidSchema).min(1).max(10) })
+  .object({
+    imageIds: z.array(uuidSchema).min(1).max(10),
+    revisionId: uuidSchema.optional(),
+  })
   .strict();
 
 export const productSchema = z

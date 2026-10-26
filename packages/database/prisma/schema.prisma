@@ -367,6 +367,11 @@ model ProductImage {
 }
 
 model ProductRevisionImage {
+  slotId String @unique @default(dbgenerated("gen_random_uuid()")) @map("slot_id") @db.Uuid
+  version Int @default(0)
+  crop Json? @db.JsonB
+  operationKey String? @map("operation_key") @db.Char(64)
+  operationChecksum String? @map("operation_checksum") @db.Char(64)
   revisionId String          @map("revision_id") @db.Uuid
   imageId    String          @map("image_id") @db.Uuid
   position   Int
@@ -858,6 +863,8 @@ model MediaObject {
   @@map("media_objects")
 }
 model MediaOperation {
+  photoResult Json? @map("photo_result") @db.JsonB
+  photoRequestChecksum String? @map("photo_request_checksum") @db.Char(64)
   id String @id @default(uuid()) @db.Uuid
   kind MediaOperationKind
   state MediaOperationState @default(PENDING)

@@ -49,6 +49,10 @@ describe('Figma icon registry', () => {
       'check',
       'clipboard-check',
       'chart',
+      'rotate',
+      'flip',
+      'reset',
+      'alert',
       'setting-07',
       'log-out',
     ]);

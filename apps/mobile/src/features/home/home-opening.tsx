@@ -18,7 +18,11 @@ const openingBioWebClamp = {
   whiteSpace: 'pre-line',
 } as unknown as TextStyle;
 
-export function HomeOpening({ selection }: { selection: HomeCuratorSelection }) {
+export function HomeOpening({
+  selection,
+}: {
+  selection: HomeCuratorSelection;
+}) {
   const router = useRouter();
   const image = selection.work.images[0];
   const note = selection.note?.trim() || null;
@@ -100,7 +104,9 @@ export function HomeOpening({ selection }: { selection: HomeCuratorSelection }) 
                     tone="subtle"
                     numberOfLines={Platform.OS === 'web' ? undefined : 1}
                     ellipsizeMode="tail"
-                    style={Platform.OS === 'web' ? openingBioWebClamp : undefined}
+                    style={
+                      Platform.OS === 'web' ? openingBioWebClamp : undefined
+                    }
                   >
                     {selection.curator.shortDescription}
                   </AppText>
@@ -140,6 +146,7 @@ export function HomeOpening({ selection }: { selection: HomeCuratorSelection }) 
             <WorkCoverCard
               href={`/product/${selection.work.publicId}`}
               imageUrl={image?.url ?? ''}
+              imagePresentation={image}
               imageLabel={selection.work.title}
               title={selection.work.title}
               authorSlug={selection.work.author.slug}

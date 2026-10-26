@@ -110,10 +110,8 @@ export function useProductDraftNavigation({
     form.formState.isDirty ||
       storyEditor.dirty ||
       storyEditor.pending ||
-      uploadBusy ||
       session.inputsLocked,
     ({ data }) => {
-      if (uploadBusy) return;
       const operation = session.snapshotOperation();
       void session.persistAll('transition').then((persisted) => {
         if (!session.isCurrentOperation(operation) || !persisted) return;
@@ -124,9 +122,11 @@ export function useProductDraftNavigation({
   );
 
   const moveToWizardStep = async (nextStep: number) => {
-    if (uploadBusy || session.transitionLock.current || storyEditor.pending) return;
+    if (uploadBusy || session.transitionLock.current || storyEditor.pending)
+      return;
     if (!existingProduct) return;
-    if (!canOpenProductWizardStep(nextStep, wizardDraft, uploadUnfinished)) return;
+    if (!canOpenProductWizardStep(nextStep, wizardDraft, uploadUnfinished))
+      return;
     if (nextStep === wizardStep) return;
     const operation = session.snapshotOperation();
     if (form.formState.isDirty || storyEditor.dirty) {
@@ -202,7 +202,8 @@ export function useProductDraftNavigation({
 
   const saveStoryAndContinue = async () => {
     if (isCreationFlow && uploadUnfinished) return;
-    if (uploadBusy || session.transitionLock.current || storyEditor.pending) return;
+    if (uploadBusy || session.transitionLock.current || storyEditor.pending)
+      return;
     const operation = session.snapshotOperation();
     const persisted = await session.persistAll('transition');
     if (!persisted) return;

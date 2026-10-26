@@ -1277,6 +1277,10 @@ describe('seller profile save reconciliation', () => {
     await flush();
     click(view.container, 'Изменить фото');
     await flush();
+    if (findButton(view.container, 'Установить фото')) {
+      click(view.container, 'Установить фото');
+      await flush();
+    }
     await act(async () => {
       resolveSave(savedProfile());
       await Promise.resolve();
@@ -1463,6 +1467,8 @@ describe('seller profile save reconciliation', () => {
         true,
       'photo picker retry',
     );
+    click(view.container, 'Установить фото');
+    await flush();
     click(view.container, 'Сохранить');
     await flush();
     expect(harness.updateProfile.mock.calls[0]?.[1]).toBe(replacementPhoto);
@@ -1561,6 +1567,8 @@ describe('seller profile save reconciliation', () => {
       });
       await Promise.resolve();
     });
+    await flush();
+    click(view.container, 'Установить фото');
     await flush();
     click(view.container, 'Сохранить');
     await flush();
@@ -2167,6 +2175,10 @@ describe('seller profile save reconciliation', () => {
     );
     click(view.container, 'Изменить фото');
     await flush();
+    if (findButton(view.container, 'Установить фото')) {
+      click(view.container, 'Установить фото');
+      await flush();
+    }
     const profileB = response('APPROVED', 'DRAFT', '2026-09-30T00:00:00.000Z');
     profileB.sellerProfile = { ...profileB.sellerProfile, city: 'Hrodna' };
     harness.getMyProfile.mockResolvedValue(profileB);
@@ -2601,6 +2613,12 @@ describe('seller profile validation freshness', () => {
     click(view.container, 'Загрузить фото');
     await until(
       view.container,
+      () => Boolean(findButton(view.container, 'Установить фото')),
+      'editor',
+    );
+    click(view.container, 'Установить фото');
+    await until(
+      view.container,
       () => Boolean(findButton(view.container, 'Изменить фото')),
       'selected photo',
     );
@@ -2702,6 +2720,12 @@ describe('seller profile validation freshness', () => {
     click(view.container, 'Загрузить фото');
     await until(
       view.container,
+      () => Boolean(findButton(view.container, 'Установить фото')),
+      'editor',
+    );
+    click(view.container, 'Установить фото');
+    await until(
+      view.container,
       () =>
         findButton(view.container, 'Изменить фото') instanceof
         HTMLButtonElement,
@@ -2798,6 +2822,12 @@ describe('seller profile validation freshness', () => {
     selectCountry(view.container, 'Беларусь');
     setInput(view.container, 'Город', 'Minsk');
     click(view.container, 'Загрузить фото');
+    await until(
+      view.container,
+      () => Boolean(findButton(view.container, 'Установить фото')),
+      'editor',
+    );
+    click(view.container, 'Установить фото');
     await until(
       view.container,
       () =>

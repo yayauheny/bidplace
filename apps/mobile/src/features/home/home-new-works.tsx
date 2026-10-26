@@ -69,6 +69,7 @@ export function HomeNewWorks({ works }: { works: HomeWorkItem[] }) {
                 <WorkCoverCard
                   href={`/product/${item.work.publicId}`}
                   imageUrl={image?.url ?? ''}
+                  imagePresentation={image}
                   imageLabel={item.work.title}
                   title={item.work.title}
                   authorSlug={item.author.slug}
