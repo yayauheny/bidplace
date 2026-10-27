@@ -16,7 +16,14 @@ const harness = vi.hoisted(() => ({
   frames: [] as { width: number; height: number }[],
   gestures: [] as {
     begin?: () => void;
-    update?: (event: { translationX: number; translationY: number }) => void;
+    start?: (event: { absoluteY: number }) => void;
+    end?: (event: { translationX: number }) => void;
+    finalize?: () => void;
+    update?: (event: {
+      translationX: number;
+      translationY: number;
+      absoluteY?: number;
+    }) => void;
   }[],
 }));
 vi.mock('react-native', () => ({
@@ -107,14 +114,39 @@ vi.mock('react-native-zoom-toolkit', () => ({
     return null;
   },
 }));
+vi.mock('../../lib/layout-transition', () => ({ sheetTimingConfig: {} }));
+vi.mock('react-native-reanimated', () => ({
+  default: {
+    View: ({ children }: { children?: ReactNode }) =>
+      createElement('div', null, children),
+  },
+  useSharedValue: (value: unknown) => useRef({ value }).current,
+  useAnimatedStyle: () => ({}),
+  withTiming: (value: number) => value,
+}));
 vi.mock('react-native-gesture-handler', () => ({
-  GestureDetector: ({ children }: { children?: ReactNode }) => children,
+  GestureDetector: ({ children }: { children?: ReactNode }) =>
+    createElement('div', { 'data-gesture': true }, children),
   Gesture: {
     Pan: () => {
       const callbacks: (typeof harness.gestures)[number] = {};
       harness.gestures.push(callbacks);
       const gesture = {
         runOnJS: () => gesture,
+        enabled: () => gesture,
+        activateAfterLongPress: () => gesture,
+        onStart: (cb: NonNullable<typeof callbacks.start>) => {
+          callbacks.start = cb;
+          return gesture;
+        },
+        onEnd: (cb: NonNullable<typeof callbacks.end>) => {
+          callbacks.end = cb;
+          return gesture;
+        },
+        onFinalize: (cb: NonNullable<typeof callbacks.finalize>) => {
+          callbacks.finalize = cb;
+          return gesture;
+        },
         onBegin: (cb: () => void) => {
           callbacks.begin = cb;
           return gesture;
@@ -256,4 +288,157 @@ describe('photo sorting preview', () => {
       ).toEqual([0, 1, 2, 3]);
     },
   );
+});
+
+describe('native photo drag integration', () => {
+  it('keeps buttons outside the drag surface, includes scroll distance and cancels without committing', async () => {
+    const { SortablePhotoTile } = await vi.importActual<
+      typeof import('./SortablePhotoTile')
+    >('./SortablePhotoTile');
+    const { PhotoDragSurface } = await import('./photo-drag-surface');
+    const { FormDragScrollContext } =
+      await import('../../components/layout/form-drag-scroll');
+    const move = vi.fn();
+    const preview = vi.fn();
+    let scrolled!: (delta: number) => void;
+    const scroll = {
+      begin: vi.fn((_pointer: number, callback: (delta: number) => void) => {
+        scrolled = callback;
+      }),
+      update: vi.fn(),
+      end: vi.fn(),
+    };
+    const container = document.createElement('div');
+    const root = createRoot(container);
+    try {
+      act(() =>
+        root.render(
+          createElement(
+            FormDragScrollContext,
+            { value: scroll },
+            createElement(SortablePhotoTile, {
+              id: 'first',
+              index: 0,
+              count: 6,
+              columns: 2,
+              disabled: false,
+              onMove: move,
+              onPreview: preview,
+              children: createElement(
+                'div',
+                null,
+                createElement(
+                  PhotoDragSurface,
+                  null,
+                  createElement('div', { 'data-photo-source': true }),
+                ),
+                createElement('button', null, 'Edit'),
+                createElement('button', null, 'Delete'),
+                createElement('button', null, 'Retry'),
+              ),
+            }),
+          ),
+        ),
+      );
+      expect(
+        container.querySelector('[data-gesture] [data-photo-source]'),
+      ).not.toBeNull();
+      expect(container.querySelector('[data-gesture] button')).toBeNull();
+      const gesture = harness.gestures.at(-1)!;
+      act(() => gesture.start!({ absoluteY: 380 }));
+      act(() =>
+        gesture.update!({ translationX: 0, translationY: 10, absoluteY: 390 }),
+      );
+      act(() => scrolled(240));
+      expect(preview).toHaveBeenLastCalledWith({ id: 'first', from: 0, to: 2 });
+      act(() => gesture.finalize!());
+      expect(move).not.toHaveBeenCalled();
+      expect(scroll.end).toHaveBeenCalledOnce();
+      expect(preview).toHaveBeenLastCalledWith(null);
+      act(() => gesture.start!({ absoluteY: 380 }));
+      act(() =>
+        gesture.update!({ translationX: 0, translationY: 250, absoluteY: 390 }),
+      );
+      act(() => gesture.end!({ translationX: 0 }));
+      act(() => gesture.finalize!());
+      expect(move).toHaveBeenCalledWith('first', 2);
+    } finally {
+      act(() => root.unmount());
+    }
+  });
+});
+
+describe('form drag scrolling', () => {
+  it('scrolls at either edge, reports actual distance and stops on cancellation/unmount', async () => {
+    const { useFormDragScrollOwner } =
+      await import('../../components/layout/form-drag-scroll');
+    let owner!: ReturnType<typeof useFormDragScrollOwner>;
+    let tick!: FrameRequestCallback;
+    vi.stubGlobal(
+      'requestAnimationFrame',
+      vi.fn((callback: FrameRequestCallback) => {
+        tick = callback;
+        return 7;
+      }),
+    );
+    const cancel = vi.fn();
+    vi.stubGlobal('cancelAnimationFrame', cancel);
+    const root = createRoot(document.createElement('div'));
+    const scrollTo = vi.fn();
+    const notify = vi.fn();
+    function Probe() {
+      owner = useFormDragScrollOwner();
+      return null;
+    }
+    try {
+      act(() => root.render(createElement(Probe)));
+      Object.assign(owner.ref, {
+        current: {
+          scrollTo,
+          getNativeScrollRef: () => ({
+            measureInWindow: (
+              callback: (
+                x: number,
+                y: number,
+                width: number,
+                height: number,
+              ) => void,
+            ) => callback(0, 100, 390, 400),
+          }),
+        },
+      });
+      owner.onLayout();
+      owner.onContentSizeChange(390, 1000);
+      owner.value.begin(480, notify);
+      expect(scrollTo).toHaveBeenLastCalledWith({ y: 8, animated: false });
+      const scrollEvent = (
+        offset: number,
+      ): Parameters<typeof owner.onScroll>[0] => ({
+        nativeEvent: {
+          contentInset: { top: 0, left: 0, bottom: 0, right: 0 },
+          contentOffset: { x: 0, y: offset },
+          contentSize: { width: 390, height: 1000 },
+          layoutMeasurement: { width: 390, height: 400 },
+          zoomScale: 1,
+        },
+      });
+      owner.onScroll(scrollEvent(8));
+      expect(notify).toHaveBeenLastCalledWith(8);
+      owner.value.update(110);
+      tick(16);
+      expect(scrollTo).toHaveBeenLastCalledWith({ y: 0, animated: false });
+      owner.value.end();
+      expect(cancel).toHaveBeenLastCalledWith(7);
+      scrollTo.mockClear();
+      tick(32);
+      expect(scrollTo).not.toHaveBeenCalled();
+      owner.value.begin(480, notify);
+      act(() => root.unmount());
+      scrollTo.mockClear();
+      tick(48);
+      expect(scrollTo).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
 });

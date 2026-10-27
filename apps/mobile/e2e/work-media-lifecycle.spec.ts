@@ -1342,7 +1342,7 @@ test('previews photo insertion, cancels it and commits only on drop with keyboar
     ).toEqual(ids);
     await source.dispatchEvent('dragstart', { dataTransfer });
     await target.dispatchEvent('dragover', hover);
-    await target.dispatchEvent('drop', { dataTransfer });
+    await target.dispatchEvent('drop', hover);
     await expect
       .poll(() =>
         tiles.evaluateAll((nodes) =>
@@ -1424,5 +1424,90 @@ test('previews photo insertion, cancels it and commits only on drop with keyboar
     );
   } finally {
     await context.close();
+  }
+});
+
+test('mouse drop commits over the vacant slot, grid gap and add slot, and cancels outside', async ({
+  browser,
+}) => {
+  const { seller, categoryId } = await createSellerFixture();
+  const { context, page } = await authenticatedPage(browser, seller, {
+    dir: resolve(e2eEvidenceDir, '2026-10-27-photo-drag-final'),
+    size: { width: 390, height: 874 },
+  });
+  try {
+    await page.setViewportSize({ width: 390, height: 874 });
+    const response = await context.request.post(
+      `${e2eApiBaseURL}/api/products`,
+      { data: { title: 'Mouse drop areas', categoryId } },
+    );
+    expect(response.status()).toBe(201);
+    const { product } = await response.json();
+    await page.goto(`/products/${product.id}?flow=creation&step=2`);
+    const chooser = page.waitForEvent('filechooser');
+    await page.getByRole('button', { name: 'Добавить изображения' }).click();
+    await (
+      await chooser
+    ).setFiles([1, 2, 3].map((i) => `e2e/fixtures/portfolio-photo-${i}.png`));
+    const tiles = page.locator('[data-photo-id]');
+    await expect(tiles).toHaveCount(3);
+    const ids = () =>
+      tiles.evaluateAll((nodes) =>
+        nodes.map((n) => n.getAttribute('data-photo-id')),
+      );
+    const initial = await ids();
+    const slots = await tiles.evaluateAll((nodes) =>
+      nodes.map((n) => {
+        const r = n.parentElement!.getBoundingClientRect();
+        return { x: r.x, y: r.y, width: r.width, height: r.height };
+      }),
+    );
+    let requests = 0;
+    page.on('request', (request) => {
+      if (request.url().includes('/images/order')) requests++;
+    });
+    const dragTo = async (x: number, y: number) => {
+      const box = await tiles.nth(0).boundingBox();
+      await page.mouse.move(box!.x + 60, box!.y + 60);
+      await page.mouse.down();
+      await page.mouse.move(box!.x + 75, box!.y + 65, { steps: 5 });
+      await page.mouse.move(x, y, { steps: 20 });
+      await page.mouse.move(x + 1, y + 1);
+      await expect(tiles.nth(0)).toHaveCSS('opacity', '0.35');
+      // Hold the real drag so the recording shows its insertion preview.
+      await page.waitForTimeout(400);
+    };
+    const last = slots[2]!;
+    await dragTo(last.x + last.width / 2, last.y + last.height / 2);
+    expect(await ids()).toEqual(initial);
+    await expect
+      .poll(() => tiles.nth(1).evaluate((n) => getComputedStyle(n).transform))
+      .not.toBe('matrix(1, 0, 0, 1, 0, 0)');
+    await page.mouse.up();
+    await expect.poll(ids).toEqual([initial[1], initial[2], initial[0]]);
+    const gapX = slots[0]!.x + slots[0]!.width + 6;
+    await dragTo(gapX, slots[0]!.y + 100);
+    await page.mouse.up();
+    await expect.poll(ids).toEqual([initial[2], initial[1], initial[0]]);
+    const add = await page
+      .getByRole('button', { name: 'Добавить изображения' })
+      .boundingBox();
+    await dragTo(add!.x + add!.width / 2, add!.y + add!.height / 2);
+    await page.mouse.up();
+    await expect.poll(ids).toEqual([initial[1], initial[0], initial[2]]);
+    await dragTo(last.x + last.width / 2, last.y + last.height / 2);
+    await page.mouse.move(2, 20, { steps: 10 });
+    await page.mouse.up();
+    await expect.poll(ids).toEqual([initial[1], initial[0], initial[2]]);
+    expect(requests).toBe(0);
+  } finally {
+    const video = page.video();
+    await context.close();
+    await video?.saveAs(
+      resolve(
+        e2eEvidenceDir,
+        `2026-10-27-photo-drag-final/${test.info().project.name}-mouse-drop.webm`,
+      ),
+    );
   }
 });

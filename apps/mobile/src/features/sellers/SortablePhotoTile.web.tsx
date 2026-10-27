@@ -91,6 +91,8 @@ export function SortablePhotoTile({
         borderRadius: 22,
         zIndex: source ? 2 : 0,
         opacity: source && !touch.current?.active ? 0.35 : 1,
+        // Mouse drop targets must stay on fixed cells while visual tiles move.
+        pointerEvents: preview && !source ? 'none' : 'auto',
         transform: `translate(${offset.x + translation.x}px, ${offset.y + translation.y}px)`,
         transition:
           reduced || source
@@ -121,38 +123,6 @@ export function SortablePhotoTile({
           event.clientY - box.y,
         );
         onPreview?.({ id, from: index, to: index });
-      }}
-      onDragOver={(event) => {
-        if (disabled || !preview) return;
-        event.preventDefault();
-        event.dataTransfer.dropEffect = 'move';
-        const slots = node.current
-          ?.closest('[data-testid="photo-grid"]')
-          ?.querySelectorAll<HTMLElement>('[data-photo-index]');
-        let target = index;
-        let distance = Infinity;
-        for (const tile of slots ?? []) {
-          const box = tile.parentElement!.getBoundingClientRect();
-          const candidate = Math.hypot(
-            event.clientX - box.x - box.width / 2,
-            event.clientY - box.y - box.height / 2,
-          );
-          if (candidate < distance) {
-            target = Number(tile.dataset.photoIndex);
-            distance = candidate;
-          }
-        }
-        if (preview.to !== target) onPreview?.({ ...preview, to: target });
-      }}
-      onDrop={(event) => {
-        event.preventDefault();
-        if (
-          !disabled &&
-          preview &&
-          event.dataTransfer.getData('text/plain') === preview.id
-        )
-          onMove(preview.id, preview.to);
-        onPreview?.(null);
       }}
       onDragEnd={() => onPreview?.(null)}
       onPointerDown={(event) => {

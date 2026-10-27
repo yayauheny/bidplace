@@ -27,6 +27,8 @@ import { productMediaStyle } from '../../components/ui/product-media-style';
 import { FigmaIconButton } from '../../components/figma/FigmaIconButton';
 import { CroppedPhoto } from '../../components/shared/CroppedPhoto';
 import { getImageUploadErrorMessage } from '../../errors/image-upload-error';
+import { PhotoDragSurface } from './photo-drag-surface';
+import { PhotoDropArea } from './PhotoDropArea';
 import { SortablePhotoTile } from './SortablePhotoTile';
 import type { PhotoDragPreview } from './sortable-photo-tile';
 import type { WorkPhotoCard } from './work-photo-session';
@@ -104,7 +106,13 @@ export function DraftImageGrid({
   images,
   renderItem,
   addAction,
+  preview,
+  onPreview,
+  onMove,
 }: {
+  preview?: PhotoDragPreview | null;
+  onPreview?: (value: PhotoDragPreview | null) => void;
+  onMove?: (id: string, index: number) => void;
   addAction?: ReactNode;
   images: DraftImage[];
   renderItem: (image: DraftImage, columns: number) => ReactNode;
@@ -120,33 +128,36 @@ export function DraftImageGrid({
   });
   if (addAction) items.push({ id: 'add-image' });
   return (
-    <View
-      testID="photo-grid"
-      onLayout={(event) => setWidth(event.nativeEvent.layout.width)}
-      style={{ gap: designTokens.space.x3 }}
-    >
-      {images.length === 0 && addAction ? (
-        <View
-          style={{
-            width: photoTile.emptyWidth,
-            maxWidth: '100%',
-            alignSelf: 'center',
-          }}
-        >
-          {addAction}
-        </View>
-      ) : (
-        <PaddedGrid
-          items={items}
-          columns={columns}
-          gap={designTokens.space.x3}
-          keyExtractor={(item) => item.id}
-          renderItem={(item) =>
-            item.image ? renderItem(item.image, columns) : addAction
-          }
-        />
-      )}
-    </View>
+    <PhotoDropArea preview={preview} onPreview={onPreview} onMove={onMove}>
+      <View
+        testID="photo-grid"
+        onLayout={(event) => setWidth(event.nativeEvent.layout.width)}
+        style={{ gap: designTokens.space.x3, overflow: 'visible' }}
+      >
+        {images.length === 0 && addAction ? (
+          <View
+            style={{
+              width: photoTile.emptyWidth,
+              maxWidth: '100%',
+              alignSelf: 'center',
+            }}
+          >
+            {addAction}
+          </View>
+        ) : (
+          <PaddedGrid
+            items={items}
+            activeItemId={preview?.id}
+            columns={columns}
+            gap={designTokens.space.x3}
+            keyExtractor={(item) => item.id}
+            renderItem={(item) =>
+              item.image ? renderItem(item.image, columns) : addAction
+            }
+          />
+        )}
+      </View>
+    </PhotoDropArea>
   );
 }
 
@@ -257,6 +268,9 @@ export function ProductDraftImagesStep({
           </View>
         ) : null}
         <DraftImageGrid
+          preview={dragPreview}
+          onPreview={setDragPreview}
+          onMove={onMovePhotoTo}
           images={photoCards.map((card, index) => ({
             id: card.id,
             url: card.uri,
@@ -315,22 +329,25 @@ export function ProductDraftImagesStep({
                     backgroundColor: palette.surfaceMuted,
                   }}
                 >
-                  <CroppedPhoto
-                    uri={
-                      card.uri.startsWith('/api/')
-                        ? getApiAssetUrl(card.uri)
-                        : card.uri
-                    }
-                    component="ProductGallery"
-                    accessibilityLabel={`Фото ${image.position + 1}`}
-                    fallbackLabel="Фото недоступно"
-                    crop={card.edit.crop}
-                    sourceWidth={card.width}
-                    sourceHeight={card.height}
-                    style={{ width: '100%', height: '100%' }}
-                  />
+                  <PhotoDragSurface>
+                    <CroppedPhoto
+                      uri={
+                        card.uri.startsWith('/api/')
+                          ? getApiAssetUrl(card.uri)
+                          : card.uri
+                      }
+                      component="ProductGallery"
+                      accessibilityLabel={`Фото ${image.position + 1}`}
+                      fallbackLabel="Фото недоступно"
+                      crop={card.edit.crop}
+                      sourceWidth={card.width}
+                      sourceHeight={card.height}
+                      style={{ width: '100%', height: '100%' }}
+                    />
+                  </PhotoDragSurface>
                   {image.position === 0 ? (
                     <View
+                      pointerEvents="none"
                       style={{
                         position: 'absolute',
                         top: 10,

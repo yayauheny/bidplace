@@ -1036,3 +1036,21 @@ add-slot label (`7329:819`). They are retained despite the pasted review's contr
 visual description. Toolbar/tab weights already match the live Medium/Semibold
 roles; no weight reduction is inferred from screenshots. Wide exact parity and
 physical Native remain outside the completed visual claim.
+
+
+### Photo drag ownership follow-up — 2026-10-27
+
+`PhotoDropArea.web` owns mouse dragover/drop for the entire existing grid,
+including gaps and the add slot; insertion uses each photo's untransformed
+PaddedGrid cell bounds. Card handlers no longer own mouse drop. During mouse drag the moving visual
+tiles leave pointer hit-testing, so a held pointer remains over a stable grid
+cell after neighbors finish moving. Exit clears the
+insertion preview; only drop commits canonical local order, never server order.
+Native keeps the same PaddedGrid and Gesture Handler/Reanimated path:
+`PhotoDragSurface` limits gesture attachment to the image; edit/delete/Retry
+remain siblings. `PaddedGrid.activeItemId` lifts the active row and permits
+cross-row overflow only during drag. `FormPageShell` owns the measured scroll
+viewport/ref and exposes drag scrolling through `FormDragScrollContext`;
+actual contentOffset feeds back into tile translation/insertion, with bounds and
+cancel/unmount cleanup. No Figma styling, button, Safe Area or CTA geometry changes
+in this follow-up. Physical Native rendering/gesture acceptance remains Partial.

@@ -16,6 +16,31 @@
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
 | Commerce, избранное/подписки, смена email/password из settings | Not implemented в launch scope / post-MVP; [следующая волна](15-POST-MVP-BACKLOG.md). Старый commerce runtime не разрешает включать продажи. |
 
+## 2026-10-27 — Drag boundary and Native integration
+
+**Partial.** Follow-up above `c96d3f3f`: whole-grid `PhotoDropArea.web` handles
+mouse drop on vacant cells/gaps/add tile using fixed parent-cell geometry; outside
+release restores order. `SortablePhotoTile.web` no longer owns mouse drop.
+Native gesture attaches only to `PhotoDragSurface`, excluding edit/delete/Retry;
+`FormPageShell` now supplies bounded edge scrolling and actual scroll delta.
+`PaddedGrid.activeItemId` raises the active row across neighboring rows. This
+supersedes the earlier “no native edge scroll integration” limitation in code;
+physical Native overlap/gesture/cancel acceptance is still **Needs verification**.
+
+Local checks: 1114 unit tests, media14/14 and shared-consumer6/6 Chromium/WebKit,
+affected typecheck/lint and e2e fence passed. Final held-mouse/touch/keyboard
+rerun4/4 and Web export passed; Web/iOS/Android export also passed.
+[Mouse recordings](../audits/evidence/2026-10-27-photo-drag-final/README.md).
+
+Owner tests check button exclusion, scroll-adjusted row insertion, commit/cancel,
+scroll edges and cleanup. Browser mouse checks use down/move/up rather than direct
+drop dispatch. Recordings and final checks are in the
+[follow-up audit](../audits/2026-10-26-PHOTO-WORKFLOW.md).
+No route/API/media contract or Figma styling change. Native runtime unavailable
+(`simctl` absent). System drag ghost and true browser zoom 200% remain unverified;
+original CTA disappearance remains **not reproduced**, not declared fixed by the
+scroll padding or CSS zoom test. No user window closed; no merge/deploy.
+
 ## 2026-10-27 — Photo interaction corrections
 
 **Implemented for tested local Web corrections; overall workflow Partial.**

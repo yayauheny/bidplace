@@ -5,6 +5,10 @@ import { designTokens } from '@bidplace/design-tokens';
 
 import { PageScrollView } from './PageScrollView';
 import { AppShell } from './AppShell';
+import {
+  FormDragScrollContext,
+  useFormDragScrollOwner,
+} from './form-drag-scroll';
 import { useDockInset } from './use-dock-inset';
 
 export function FormPageShell({
@@ -28,53 +32,65 @@ export function FormPageShell({
     | 'settings';
 }) {
   const { reserve } = useDockInset();
+  const dragScroll = useFormDragScrollOwner();
   const Scroller = footer ? PageScrollView : ScrollView;
 
   return (
-    <AppShell
-      hideDock={hideDock}
-      bottomAction={bottomAction}
-      contentLayout={footer ? 'bleed' : 'column'}
-    >
-      <Scroller
-        {...(footer ? { reserveDock: !hideDock } : {})}
-        testID="form-page"
-        contentContainerStyle={{
-          paddingBottom: bottomAction
-            ? designTokens.space.x3
-            : footer
-              ? 0
-              : hideDock
-                ? designTokens.space.x8
-                : reserve,
-          paddingTop:
-            variant === 'authorApplication' || variant === 'creation'
-              ? designTokens.authorApplication.contentTop
-              : variant === 'account'
-                ? designTokens.space.x3
-                : variant === 'settings'
-                  ? designTokens.space.x5
-                  : designTokens.space.x6,
-        }}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="on-drag"
-        showsVerticalScrollIndicator={false}
+    <FormDragScrollContext value={dragScroll.value}>
+      <AppShell
+        hideDock={hideDock}
+        bottomAction={bottomAction}
+        contentLayout={footer ? 'bleed' : 'column'}
       >
-        <View
-          style={{
-            width: '100%',
-            maxWidth,
-            alignSelf: maxWidth ? 'center' : undefined,
-            gap:
-              variant === 'creation'
-                ? designTokens.space.x5
-                : designTokens.space.sectionGap,
+        <Scroller
+          {...(!footer
+            ? {
+                ref: dragScroll.ref,
+                onScroll: dragScroll.onScroll,
+                onLayout: dragScroll.onLayout,
+                onContentSizeChange: dragScroll.onContentSizeChange,
+                scrollEventThrottle: 16,
+              }
+            : {})}
+          {...(footer ? { reserveDock: !hideDock } : {})}
+          testID="form-page"
+          contentContainerStyle={{
+            paddingBottom: bottomAction
+              ? designTokens.space.x3
+              : footer
+                ? 0
+                : hideDock
+                  ? designTokens.space.x8
+                  : reserve,
+            paddingTop:
+              variant === 'authorApplication' || variant === 'creation'
+                ? designTokens.authorApplication.contentTop
+                : variant === 'account'
+                  ? designTokens.space.x3
+                  : variant === 'settings'
+                    ? designTokens.space.x5
+                    : designTokens.space.x6,
           }}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          showsVerticalScrollIndicator={false}
         >
-          {children}
-        </View>
-      </Scroller>
-    </AppShell>
+          <View
+            style={{
+              width: '100%',
+              maxWidth,
+              alignSelf: maxWidth ? 'center' : undefined,
+              gap:
+                variant === 'creation'
+                  ? designTokens.space.x5
+                  : designTokens.space.sectionGap,
+            }}
+          >
+            {children}
+          </View>
+        </Scroller>
+      </AppShell>
+    </FormDragScrollContext>
   );
 }
 

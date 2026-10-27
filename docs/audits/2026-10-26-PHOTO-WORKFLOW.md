@@ -301,3 +301,102 @@ ID in the tile layout effect after the position commits; the unchanged focus
 assertion and touch/keyboard/cancel cases passed 2/2 Chromium/WebKit. Native
 Web/Android/iOS export completed successfully; physical runtime limits above
 remain unchanged. Save-race/preflight owner rerun: 75/75 passed.
+
+
+## 2026-10-27 — Drag acceptance follow-up above c96d3f3f
+
+**Partial.** Prior fixes remain; this follow-up addresses the review's drop-boundary
+and Native functional gaps. Durable fix selected: stable whole-grid mouse drop
+owner and existing form-scroll owner for Native. Acceptable workaround would be
+to retain the gaps explicitly; that cannot establish acceptance. Enlarged invisible
+card targets over vacant slots would be a hack and were rejected. No dependency
+or universal drag engine added.
+
+- `PhotoDropArea.web.tsx` owns mouse dragover/drop over the whole grid, gaps and
+  add tile. Geometry is read from unchanged PaddedGrid parent cells, not transformed
+  photo boxes; the add tile never becomes an ordered photo. Leaving the grid resets
+  the candidate; outside release/cancel never mutates order.
+- `SortablePhotoTile.web.tsx` moves mouse drop handling out (260 → 230 lines).
+  It retains the existing start/preview/touch/keyboard mechanisms. The dedicated
+  drop owner is 71 lines; it does not own another grid or persist order.
+- Native `PhotoDragSurface` attaches GestureDetector to the image only, with
+  edit/delete/Retry outside it. `FormPageShell` supplies its ScrollView ref, measured
+  viewport, content bounds and actual scroll delta through `form-drag-scroll.ts`.
+  The active gesture drives edge scrolling and includes its delta in row insertion.
+  End/cancel/unmount stop scrolling. `PaddedGrid.activeItemId` lifts the active row
+  and makes rows/cells overflow-visible only during drag, so the card can cross rows.
+- Native callbacks use Gesture Handler's existing JS execution option, with
+  Reanimated shared values for transforms; no additional thread bridge or library.
+
+Changed runtime scope: photo grid/tile/drop/surface, opt-in PaddedGrid active-item
+presentation, FormPageShell and its internal drag-scroll owner. No route, API,
+revision/crop contract, storage, operation key, bytes or server lifecycle changes.
+Added code is for the demonstrated Native edge-scroll and gesture-boundary gaps;
+canonical order still has one owner and changes only at commit.
+
+Verification: existing owner `photo-editor.spec.ts` adds Native surface exclusion
+for all three buttons, cross-row insertion with actual scroll delta, cancel vs end,
+both scroll edges and cancel/unmount cleanup. These are mocked integration/unit
+checks, not physical Native evidence. The prior synthetic drag test now supplies
+real drop coordinates (its initial omitted-coordinate assertion failed after drop
+became coordinate-based; the assertion was kept). A new browser mouse sequence
+uses down/move/up from image pixels, proves neighbor movement before commit,
+releases over a vacant slot, gap and add tile, cancels outside and checks no reorder
+request during drag. Videos are page recordings, not OS drag-ghost captures.
+
+CTA: no geometry patch in this follow-up. Existing two-entry short-height and CSS
+zoom regressions are rerun; they do not establish the cause of the original
+user-reported disappearance. That original condition remains **not reproduced**.
+True browser zoom 200% remains **Needs verification**, distinct from CSS body.zoom.
+Attempted a dedicated headed Chromium test window for OS inspection; the available
+CUA app binding selected another pre-existing sign-in window and returned screenshot
+unavailable for the test app. Browser connector is disabled in Work settings. No
+user tab/window was closed and no setting was changed. System drag-ghost rounding
+therefore remains unverified even though the code supplies the whole rounded card.
+`xcrun simctl list devices booted` failed because simctl/Xcode runtime is unavailable;
+physical Native cross-row overlap, button-origin gestures, edge scroll and cancel
+remain required acceptance. Do not mark this workflow complete from unit/export.
+
+
+Checked on Node 22.20.0: mobile 141 files / 1114 unit tests; final full media
+14/14 Chromium/WebKit; shared-consumer Work/author/admin cases 6/6; affected Turbo
+typecheck/lint 8 tasks; e2e fence and Markdown links passed. The first post-change
+unit run found six suites pulling Native Gesture Handler through the shared
+surface. The surface now passes only its render function through context; Native
+owns the GestureDetector import, and the full suite passed. The first auxiliary
+synthetic drop run lacked drop coordinates; the test was corrected to send its
+existing measured pointer position, retaining all order/cancel assertions.
+
+[Unedited short mouse recordings](evidence/2026-10-27-photo-drag-final/README.md)
+([player](evidence/2026-10-27-photo-drag-final/index.html)). They use real input
+sequences from the browser automation driver, without dispatching drag/drop events.
+The separate headed attempt passed the same functional assertions but did not
+establish OS ghost/zoom evidence. No temporary manual wait/environment branch is
+kept in source. Runtime controls have no new artificial delay; recording tests
+hold the pointer400ms so neighbor insertion is visible.
+
+
+The recorded400ms hold exposed an additional Chromium defect (the quicker full
+media run had passed): after the pointer's target image moved away, Chromium
+emitted dragleave/dragend without drop at the vacant position. A temporary event
+trace confirmed unchanged pointer coordinates and no drop. The moving neighbor
+tiles now leave pointer hit-testing during drag; the stationary source retains it, fixed cells and the grid stay
+the event targets. This separates presentation from drop geometry instead of
+adding invisible card hitboxes. The400ms hold and all order assertions are kept.
+
+
+The first hit-test correction also excluded the source and cancelled WebKit's
+native drag immediately; it was rejected. The final rule excludes only moving
+neighbors, leaving the stationary source intact. With the400ms hold retained,
+the actual mouse scenarios then passed2/2 Chromium/WebKit. Temporary event logging
+was removed. Native Web/iOS/Android export passed; the final mouse-only Web change
+is separately exported. No timeout, retry or assertion was relaxed.
+
+
+Final source without diagnostics: insertion/cancel/keyboard/reduced-motion/touch
+and held mouse-drop cases passed4/4 Chromium/WebKit. Copied the final unedited
+recordings to the linked evidence folder. Final Web export, affected typecheck/
+lint, owner7/7, e2e fence, docs links and diff check passed. Full native export
+passed earlier in this follow-up; no physical-device claim. Overall verdict remains
+Partial: code fixes and local regressions are reviewable, but required physical
+Native, OS ghost and true zoom acceptance remain open.

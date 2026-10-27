@@ -15,7 +15,9 @@ export function PaddedGrid<T>({
   gap,
   keyExtractor,
   renderItem,
+  activeItemId,
 }: {
+  activeItemId?: string;
   items: readonly T[];
   columns: 1 | 2 | 3 | 4;
   gap: number;
@@ -29,14 +31,31 @@ export function PaddedGrid<T>({
         return (
           <View
             key={first ? keyExtractor(first) : `row-${rowIndex}`}
-            style={{ flexDirection: 'row', gap }}
+            style={{
+              flexDirection: 'row',
+              gap,
+              ...(activeItemId
+                ? {
+                    overflow: 'visible',
+                    zIndex: row.some(
+                      (item) => item && keyExtractor(item) === activeItemId,
+                    )
+                      ? 1
+                      : 0,
+                  }
+                : {}),
+            }}
           >
             {row.map((item, cellIndex) => (
               <View
                 key={
                   item ? keyExtractor(item) : `spacer-${rowIndex}-${cellIndex}`
                 }
-                style={{ flex: 1, minWidth: 0 }}
+                style={{
+                  flex: 1,
+                  minWidth: 0,
+                  ...(activeItemId ? { overflow: 'visible' } : {}),
+                }}
               >
                 {item ? renderItem(item) : null}
               </View>
