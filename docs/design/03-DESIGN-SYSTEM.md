@@ -1054,3 +1054,24 @@ viewport/ref and exposes drag scrolling through `FormDragScrollContext`;
 actual contentOffset feeds back into tile translation/insertion, with bounds and
 cancel/unmount cleanup. No Figma styling, button, Safe Area or CTA geometry changes
 in this follow-up. Physical Native rendering/gesture acceptance remains Partial.
+
+### Stable photo status and editorial controls — 2026-10-27
+
+`ProductDraftImagesStep` reserves one media-caption line for status; file progress
+is an overlay in the existing card. `WorkPhotoCard.preview` retains local
+geometry/resources through accepted upload until the matching remote image loads.
+The existing resilient-image owner reports load/start/exhausted events; centered
+Retry avoids gallery controls, while other consumers retain bottom placement.
+
+Figma `4563:33344` is the compact absolute story action panel, with a shared
+`FigmaIconButton` compact visual (`size.compactIconButton`34, Native hit slop to44)
+and danger glyph tone. Defaults are unchanged. The button explicitly exposes
+`aria-expanded` on the installed Web renderer. One open story block key owns the
+panel across movement; usable action focus survives boundaries and Escape.
+
+Figma `4562:32461`/`4563:32768` supply the existing story toolbar and text
+composition. By the user's selected scope, empty story now exposes a virtual
+text input and the hint pill, without autofocus; explicit text/heading insertion
+focuses its new block. Inputs grow with content and retain keyboard focus styling
+and browser spellcheck. Gallery list, intermediate picker button and lower back
+button are removed. No additional editor, portal, focus trap or DnD engine.

@@ -54,6 +54,15 @@ resizable frame. Native CropZoom embeds the approved screen; a modal-only native
 cropper would replace it. Chromium/WebKit isolated prototype checked transform,
 reset/cancel, crop output and PNG transparency. Device calibration remains open.
 
+Client refinement2026-10-27: `WorkPhotoCard` keeps a session-only source SHA-256
+(`expo-crypto`, computed before app transforms) and a transient local preview
+until remote decode. It is not an authoritative server checksum or shared-asset
+lookup. Load callbacks are guarded by session/card/current URI; generated and
+picker blob resources retire after switch/removal/session cleanup. Existing
+resilient-image retries still own remote failures. `useProductStoryEditor` omits
+blank text at serialization while retaining meaningful block keys. No server,
+database, API or media-ownership contract changed; server reuse remains deferred.
+
 ## 2026-10-05 — Cloudflare application deployment (Partial)
 
 `deploy/cloudflare` owns the thin Worker routing `/api/*` to one private Nest

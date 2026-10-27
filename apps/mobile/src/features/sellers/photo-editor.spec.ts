@@ -331,6 +331,7 @@ describe('native photo drag integration', () => {
                   PhotoDragSurface,
                   null,
                   createElement('div', { 'data-photo-source': true }),
+                  createElement('div', { 'data-local-preview': true }),
                 ),
                 createElement('button', null, 'Edit'),
                 createElement('button', null, 'Delete'),
@@ -342,6 +343,12 @@ describe('native photo drag integration', () => {
       );
       expect(
         container.querySelector('[data-gesture] [data-photo-source]'),
+      ).not.toBeNull();
+      expect(container.querySelector('[data-gesture]')?.childElementCount).toBe(
+        1,
+      );
+      expect(
+        container.querySelector('[data-gesture] [data-local-preview]'),
       ).not.toBeNull();
       expect(container.querySelector('[data-gesture] button')).toBeNull();
       const gesture = harness.gestures.at(-1)!;

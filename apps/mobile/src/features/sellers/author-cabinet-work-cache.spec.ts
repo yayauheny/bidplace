@@ -104,6 +104,7 @@ vi.mock('expo-image', () => ({
 }));
 
 vi.mock('react-native', () => ({
+  TextInput: () => null,
   Platform: { OS: 'web' },
   View: ({ children }: { children?: ReactNode }) =>
     createElement('div', null, children),

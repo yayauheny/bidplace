@@ -663,7 +663,7 @@ describe('ProductDraftScreen recovered story copy', () => {
 });
 
 describe('ordered block actions', () => {
-  it('opens only on request, blocks boundary movement, closes after an action and guards pending writes', async () => {
+  it('opens only on request, blocks boundary movement, keeps movement open, closes on delete and guards pending writes', async () => {
     const { ProductBlockActions } = await import('./product-block-actions');
     const container = document.createElement('div');
     document.body.append(container);
@@ -699,8 +699,7 @@ describe('ordered block actions', () => {
       expect(button('Выше').disabled).toBe(true);
       act(() => button('Ниже').click());
       expect(onMove).toHaveBeenCalledExactlyOnceWith(1);
-      expect(hasButton(container, 'Ниже')).toBe(false);
-      act(() => button('Действия с блоком').click());
+      expect(hasButton(container, 'Ниже')).toBe(true);
       render(true);
       act(() => button('Удалить').click());
       expect(onDelete).not.toHaveBeenCalled();

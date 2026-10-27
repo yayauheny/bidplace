@@ -16,6 +16,19 @@
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
 | Commerce, избранное/подписки, смена email/password из settings | Not implemented в launch scope / post-MVP; [следующая волна](15-POST-MVP-BACKLOG.md). Старый commerce runtime не разрешает включать продажи. |
 
+## 2026-10-27 — Photo status and story interaction follow-up
+
+**Partial.** User-selected UI/client scope: `product-draft-images` keeps stable
+status geometry and local previews until server decode; session SHA-256 avoids
+rereading prior selected files (`expo-crypto`). Duplicate text is explicit.
+`ProductBlockActions` keeps a compact menu/focus attached to a block during
+movement. `product-draft-story` has a virtual empty text field, direct picker,
+growing inputs and no redundant gallery/back controls; blank text is omitted by
+`useProductStoryEditor` without changing meaningful block keys. Server media reuse
+is deferred, explicit gallery upload retained. No backend/schema/API change.
+[Implementation, checks and evidence](../audits/evidence/2026-10-27-photo-story-followup/README.md).
+Manual user drag, rounded OS ghost, physical Native and live CDN remain unverified.
+
 ## 2026-10-27 — Connected Chrome photo acceptance
 
 **Partial.** Existing test API/Expo Web and an isolated author fixture allowed

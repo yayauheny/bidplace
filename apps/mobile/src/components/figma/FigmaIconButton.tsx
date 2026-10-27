@@ -22,6 +22,7 @@ export function FigmaIconButton({
   strokeWidthPx = designTokens.stroke.iconHeavy,
   surface = 'plain',
   size = 'default',
+  tone = 'default',
 }: {
   ref?: Ref<ElementRef<typeof MotionPressable>>;
   icon: FigmaIconName;
@@ -33,7 +34,8 @@ export function FigmaIconButton({
   iconSize?: number;
   strokeWidthPx?: number;
   surface?: 'plain' | 'muted' | 'outline' | 'destructive';
-  size?: 'default' | 'settingsHeader';
+  size?: 'default' | 'settingsHeader' | 'compact';
+  tone?: 'default' | 'danger';
 }) {
   const palette = useAppTheme();
   return (
@@ -42,17 +44,25 @@ export function FigmaIconButton({
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ disabled, selected, expanded }}
+      aria-expanded={expanded}
       disabled={disabled}
       hitSlop={
-        size === 'settingsHeader'
-          ? (designTokens.size.touch - designTokens.size.settingsHeaderGlyph) /
-            2
-          : figmaIconButtonHitSlop
+        size === 'compact'
+          ? (designTokens.size.touch - designTokens.size.compactIconButton) / 2
+          : size === 'settingsHeader'
+            ? (designTokens.size.touch -
+                designTokens.size.settingsHeaderGlyph) /
+              2
+            : figmaIconButtonHitSlop
       }
       onPress={onPress}
       preset="icon"
       style={({ pressed }) => [
         figmaIconButtonStyle(pressed, surface, palette),
+        size === 'compact' && {
+          width: designTokens.size.compactIconButton,
+          height: designTokens.size.compactIconButton,
+        },
         size === 'settingsHeader' && {
           width: designTokens.size.settingsHeaderGlyph,
           height: designTokens.size.settingsHeaderGlyph,
@@ -66,9 +76,11 @@ export function FigmaIconButton({
         color={
           surface === 'destructive'
             ? palette.white
-            : selected
-              ? palette.solid
-              : palette.ink
+            : tone === 'danger'
+              ? palette.destructiveFill
+              : selected
+                ? palette.solid
+                : palette.ink
         }
       />
     </MotionPressable>

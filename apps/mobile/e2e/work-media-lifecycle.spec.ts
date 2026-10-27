@@ -239,9 +239,8 @@ test('Work waits for CDN media, publishes revisions atomically, loads FULL only 
     await expect(
       page.locator('[data-editor-block="text"]').first().getByRole('textbox'),
     ).toHaveValue('Вторая строка');
-    await page.getByRole('button', { name: 'Добавить изображение' }).click();
     const storyFileChooser = page.waitForEvent('filechooser');
-    await page.getByRole('button', { name: 'Загрузить новое фото' }).click();
+    await page.getByRole('button', { name: 'Добавить изображение' }).click();
     await (await storyFileChooser).setFiles('e2e/fixtures/profile-photo.png');
     const photoBlock = page.locator('[data-editor-block="image"]');
     await expect(
@@ -255,6 +254,16 @@ test('Work waits for CDN media, publishes revisions atomically, loads FULL only 
     await expect(
       photoBlock.getByRole('button', { name: 'Ниже', exact: true }),
     ).toBeDisabled();
+    const description = photoBlock.getByRole('textbox', {
+      name: 'Описание фото',
+      exact: true,
+    });
+    await description.click();
+    await description.fill('Описание для проверки панели');
+    await expect(description).toHaveValue('Описание для проверки панели');
+    await expect(
+      photoBlock.getByRole('button', { name: 'Действия с изображением' }),
+    ).toHaveAttribute('aria-expanded', 'true');
     await photoBlock
       .getByRole('button', { name: 'Удалить', exact: true })
       .click();
@@ -1151,7 +1160,7 @@ test('records photo selection, limits, upload and order confirmation states', as
     ).toBeDisabled();
     await (await chooser).setFiles('e2e/fixtures/portfolio-photo-1.png');
     await expect(
-      page.getByText('Это фото уже выбрано.', { exact: true }),
+      page.getByText('Фото уже добавлено.', { exact: true }),
     ).toBeVisible();
     await photoEvidence(page, 'duplicate-390');
     chooser = page.waitForEvent('filechooser');
@@ -1509,5 +1518,211 @@ test('mouse drop commits over the vacant slot, grid gap and add slot, and cancel
         `2026-10-27-photo-drag-final/${test.info().project.name}-mouse-drop.webm`,
       ),
     );
+  }
+});
+
+test('keeps photo status geometry stable and story controls attached to their block', async ({
+  browser,
+}) => {
+  const { seller, categoryId } = await createSellerFixture();
+  const { context, page } = await authenticatedPage(browser, seller);
+  let releaseImages: () => void = () => undefined;
+  const imageGate = new Promise<void>((resolveGate) => {
+    releaseImages = resolveGate;
+  });
+  let failImageReads = false;
+  try {
+    await page.setViewportSize({ width: 390, height: 874 });
+    const created = await context.request.post(
+      `${e2eApiBaseURL}/api/products`,
+      { data: { title: 'Stable photo and story controls', categoryId } },
+    );
+    expect(created.status()).toBe(201);
+    const { product } = await created.json();
+    await page.goto(`/products/${product.id}?flow=creation&step=2`);
+    const choose = async (files: string[]) => {
+      const picker = page.waitForEvent('filechooser');
+      await page
+        .getByRole('button', { name: 'Добавить изображения', exact: true })
+        .click();
+      await (await picker).setFiles(files);
+    };
+    await choose([
+      'e2e/fixtures/portfolio-photo-1.png',
+      'e2e/fixtures/portfolio-photo-2.png',
+    ]);
+    await expect(page.locator('[data-photo-id]')).toHaveCount(2);
+    const gridBefore = await page.getByTestId('photo-grid').boundingBox();
+    await choose(['e2e/fixtures/portfolio-photo-1.png']);
+    await expect(page.getByRole('alert')).toContainText('Фото уже добавлено');
+    await expect(page.getByRole('alert')).not.toContainText(
+      'Не удалось выбрать',
+    );
+    await expect(page.locator('[data-photo-id]')).toHaveCount(2);
+    await page.route(/\/api\/images\/[^/?]+(?:\?.*)?$/, async (route) => {
+      if (route.request().method() === 'GET') {
+        await imageGate;
+        if (failImageReads) {
+          await route.abort('failed');
+          return;
+        }
+      }
+      await route.continue();
+    });
+    await page
+      .getByRole('button', { name: 'Загрузить 2 фото', exact: true })
+      .click();
+    await expect(
+      page.getByText('Загрузка', { exact: true }).first(),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('img', { name: 'Локальное превью фото', exact: true }),
+    ).toHaveCount(2);
+    const followupDir = resolve(
+      e2eEvidenceDir,
+      '2026-10-27-photo-story-followup',
+    );
+    await mkdir(followupDir, { recursive: true });
+    await page.screenshot({
+      path: resolve(followupDir, `${test.info().project.name}-loading-390.png`),
+    });
+    const gridDuring = await page.getByTestId('photo-grid').boundingBox();
+    expect(gridDuring!.y).toBeCloseTo(gridBefore!.y, 1);
+    failImageReads = true;
+    releaseImages();
+    const cards = page.locator('[data-photo-id]');
+    await expect(
+      cards.nth(0).getByRole('button', { name: 'Повторить', exact: true }),
+    ).toBeVisible({ timeout: 20000 });
+    await expect(
+      cards.nth(1).getByRole('button', { name: 'Повторить', exact: true }),
+    ).toBeVisible();
+    await expect(page.getByText('Загрузка', { exact: true })).toHaveCount(0);
+    failImageReads = false;
+    await cards
+      .nth(0)
+      .getByRole('button', { name: 'Повторить', exact: true })
+      .click();
+    await cards
+      .nth(1)
+      .getByRole('button', { name: 'Повторить', exact: true })
+      .click();
+    await expect(
+      page.getByRole('img', { name: 'Локальное превью фото', exact: true }),
+    ).toHaveCount(0);
+    await expect(
+      page.getByRole('button', { name: 'Продолжить', exact: true }),
+    ).toBeEnabled();
+    expect((await page.getByTestId('photo-grid').boundingBox())!.y).toBeCloseTo(
+      gridBefore!.y,
+      1,
+    );
+    await page
+      .getByRole('button', { name: '3. История создания', exact: true })
+      .click();
+    await expect(
+      page.getByRole('textbox', { name: 'Текст истории', exact: true }),
+    ).toHaveCount(1);
+    await expect(
+      page.getByRole('button', { name: 'Пропустить', exact: true }),
+    ).toBeVisible();
+    await page.screenshot({
+      path: resolve(
+        followupDir,
+        `${test.info().project.name}-empty-story-390.png`,
+      ),
+    });
+    await expect(
+      page.getByRole('button', { name: 'Назад к изображениям', exact: true }),
+    ).toHaveCount(1); // Header arrow only.
+    await expect(
+      page.getByRole('button', { name: /Из галереи:|Загрузить новое фото/ }),
+    ).toHaveCount(0);
+    const paragraph = page.getByRole('textbox', {
+      name: 'Текст истории',
+      exact: true,
+    });
+    await paragraph.fill(
+      'Первая строка\nВторая строка\nТретья строка\nЧетвёртая строка\nПятая строка\nШестая строка',
+    );
+    await expect(paragraph).toBeFocused();
+    const textSize = await paragraph.evaluate((el) => ({
+      height: el.clientHeight,
+      scroll: el.scrollHeight,
+    }));
+    expect(textSize.height).toBeGreaterThan(44);
+    expect(textSize.scroll).toBeLessThanOrEqual(textSize.height + 1);
+    await page
+      .getByRole('button', { name: 'Добавить заголовок', exact: true })
+      .click();
+    const heading = page.getByRole('textbox', {
+      name: 'Заголовок истории',
+      exact: true,
+    });
+    await expect(heading).toBeFocused();
+    await heading.fill('Заголовок');
+    const block = page
+      .locator('[data-editor-block="text"]')
+      .filter({ has: heading });
+    const trigger = block.getByRole('button', {
+      name: 'Действия с блоком',
+      exact: true,
+    });
+    const toolbar = page.getByRole('button', {
+      name: 'Добавить текст',
+      exact: true,
+    });
+    const beforeMenu = await toolbar.boundingBox();
+    await trigger.click();
+    await page.screenshot({
+      path: resolve(
+        followupDir,
+        `${test.info().project.name}-story-menu-390.png`,
+      ),
+    });
+    expect((await toolbar.boundingBox())!.y).toBeCloseTo(beforeMenu!.y, 1);
+    await block.getByRole('button', { name: 'Выше', exact: true }).click();
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    await expect(
+      block.getByRole('button', { name: 'Выше', exact: true }),
+    ).toBeDisabled();
+    await expect(
+      block.getByRole('button', { name: 'Ниже', exact: true }),
+    ).toBeFocused();
+    await block.getByRole('button', { name: 'Ниже', exact: true }).click();
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    await expect(
+      block.getByRole('button', { name: 'Выше', exact: true }),
+    ).toBeFocused();
+    await block
+      .getByRole('button', { name: 'Выше', exact: true })
+      .press('Escape');
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    await expect(trigger).toBeFocused();
+    const directory = resolve(
+      e2eEvidenceDir,
+      '2026-10-27-photo-story-followup',
+    );
+    await mkdir(directory, { recursive: true });
+    for (const width of [390, 1024, 1440]) {
+      await page.setViewportSize({ width, height: 874 });
+      await expect
+        .poll(() =>
+          page.evaluate(
+            () => document.documentElement.scrollWidth <= innerWidth,
+          ),
+        )
+        .toBe(true);
+      await page.screenshot({
+        path: resolve(
+          directory,
+          `${test.info().project.name}-story-${width}.png`,
+        ),
+        fullPage: true,
+      });
+    }
+  } finally {
+    releaseImages();
+    await context.close();
   }
 });

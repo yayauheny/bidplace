@@ -505,6 +505,7 @@ export function ProductDraftScreen({
               }
               photoOrderConfirmed={imageActions.photoOrderConfirmed}
               onEditPhoto={(id) => void imageActions.editPhoto(id)}
+              onPhotoLoadState={imageActions.photoLoadState}
               onMovePhotoTo={imageActions.movePhotoTo}
               onStartUpload={() => void imageActions.startUpload()}
               onRemovePhoto={(id) => void imageActions.removePhoto(id)}
@@ -553,16 +554,12 @@ export function ProductDraftScreen({
               saveError={storyEditor.error}
               retryUpload={storyEditor.retryUpload}
               onAddText={storyEditor.addText}
-              onAddGalleryImage={storyEditor.addGalleryImage}
               onEditText={storyEditor.editText}
               onEditAlt={storyEditor.editAlt}
               onRemove={storyEditor.remove}
               onMove={storyEditor.move}
               onChooseImage={() => void imageActions.chooseStoryImage()}
               onRetryUpload={() => void storyEditor.addImage()}
-              onBackToImages={() =>
-                void wizardNavigation.moveToWizardStep(productWizardStep.images)
-              }
               onSaveAndContinue={() =>
                 void wizardNavigation.saveStoryAndContinue()
               }

@@ -445,3 +445,72 @@ load and live CDN remain unverified; overall status stays Partial.
 [Addressed steps, measurements and screenshots](evidence/2026-10-27-photo-manual/README.md).
 No runtime checks were rerun without changes. Markdown links (197 files) and
 `git diff --check` passed. No merge/deploy or real-account credential use.
+
+## 2026-10-27 — Photo status / story UI and session fingerprint
+
+**Partial.** User chose UI corrections plus one source hash per selection in the
+preparation session; server reuse is explicitly separate. Read-only live Figma
+story `4562:32461`, `4563:32768`, panel `4563:33344` and photo `7329:704`/handoff
+`7388:723`. The visible default text field is the user-selected empty-state change.
+[Implementation and screenshots](evidence/2026-10-27-photo-story-followup/README.md).
+
+Stable status geometry replaces conditional rows above the photo grid; per-card
+spinner badges cover preparation/upload and pending server-image reads. A local
+preview survives acceptance until the current remote URI decodes; errors retain
+the existing manual retry and resource ownership. Client SHA-256 uses official
+SDK57 `expo-crypto`, stored only in the current preparation session, with no
+server trust/deduplication change. Duplicate feedback is «Фото уже добавлено.».
+
+Story uses a single open block key, compact absolute actions, focus at boundaries
+and Escape, direct image picker, growing text, virtual empty field and blank-text
+serialization. Extra gallery/upload/back controls and unused insertion API were
+removed. Shared icon button compact/danger roles and Web expanded semantics live
+at their existing owner. No parallel editor/DnD engine or backend/API/schema edits.
+
+The first unit run exposed the native Expo import in Node tests; the existing
+adapter now uses Node's real SHA-256. Cache-owner test doubles gained the newly
+visible empty TextInput. Owner checks cover one prior-file read, independent
+invalid inputs, retained/reconciled preview, stale callbacks, retry and cleanup,
+unchanged URI, blank filtering and stable meaningful keys. Existing important
+save/session/revision regressions were preserved.
+
+The media run passed14/16; two cases still asserted the old duplicate copy and
+passed after updating that exact assertion to the requested text. No existing
+timeout/retry/assertion was relaxed. The new scenario also uncovered invisible
+Web expanded state and Retry overlap with card controls; both were corrected and
+the ordinary-click checks passed in Chromium/WebKit. The exhausted-image scenario
+uses the existing1s/3s/8s backoff and a new20s assertion for that duration, without
+changing runtime delays or test timeout. One overlapping runner invocation lost
+temporary trace artifacts; subsequent isolated runs passed.
+
+Driver mouse down/move/up passed in both engines, including held pointer, empty
+slot/gap/add tile, unchanged order during movement and outside cancellation.
+No DnD code was expanded. This remains separate from the user's failing manual
+sequence and rounded OS ghost; browser connector reported local use disabled.
+Physical Native, smoothness under load, live CDN and original CTA cause stay
+open; overall status is Partial. Existing user test accounts/data were not reset:
+checks reused Web8081/API3017 without prepare/reset and created new fixtures only.
+
+Final owner/unit slice: **141 files / 1117 tests passed**; mobile typecheck and
+lint (without autofix), design-tokens build/typecheck, e2e fence,199-file Markdown
+links and `git diff --check` passed. Design-tokens has no package lint script;
+the explicit shared ESLint config with its tsconfig passed for `tokens.ts`.
+The missing-script/no-default-config attempts are not treated as successful lint.
+Native surface owner7/7 passed after adding the single root View; the full unit
+suite was then rerun successfully. Final browser/export results follow below.
+
+Final current-source Chromium/WebKit **4/4 passed**: mouse empty-slot/gap/add-slot
+drop/outside cancel, stable grid geometry, retained preview during decode and
+exhausted/retry, direct story picker controls, growing text, insertion focus,
+menu geometry/identity/boundary focus and Escape. Screenshots were refreshed from
+this run. Earlier full media coverage remains14/16 plus the corrected-copy
+selection cases2/2; the new stricter failure/Retry case2/2 also passed. No test
+database reset or window closure. The ordinary mixed-story/media lifecycle also
+passed2/2 Chromium/WebKit after checking that clicking/filling the image's
+description keeps its panel open. Latest guard passed mobile typecheck/lint and
+the15-test characterization owner; the prior full1117-test slice remains green.
+Final source exported successfully for Web/iOS/Android with `--no-bytecode`
+(`/tmp/bidplace-photo-story-final-source`); this includes the final Native
+surface wrapper and description-panel guard. A preceding full Hermes export
+also passed before those last guards (`/tmp/bidplace-photo-story-release-check`).
+No physical Native runtime or new manual ghost/zoom claim is inferred from export.

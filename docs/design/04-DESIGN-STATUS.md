@@ -5,6 +5,19 @@
 Полный прежний журнал, включая ограничения ранних экранов:
 [история](../archive/design/04-DESIGN-STATUS-through-2026-10-23.md).
 
+## 2026-10-27 — Stable photo states and compact story controls
+
+**Partial.** Live story nodes `4562:32461`, `4563:32768`, `4563:33344` and photo
+`7329:704`/handoff `7388:723` were read-only. Stable photo status area, retained
+local preview, loading badge and explicit duplicate text; compact absolute block
+menu with movement/Escape focus. Shared `FigmaIconButton` owns compact/danger
+roles and Web expanded semantics. The user-selected empty field is a deliberate
+change to Figma's empty story, without forced keyboard opening. Direct picker and
+growing text replace extra gallery/back controls and nested text scrolling.
+[390/1024/1440 evidence and addressed checks](../audits/evidence/2026-10-27-photo-story-followup/README.md).
+Wide exact parity stays NEEDS-FIGMA; manual user drag/OS ghost, physical Native,
+load smoothness and original missing CTA remain unverified/not reproduced.
+
 ## 2026-10-27 — Connected Chrome photo acceptance
 
 **Partial.** With the connected Chrome, actual browser zoom200% (Chrome label,

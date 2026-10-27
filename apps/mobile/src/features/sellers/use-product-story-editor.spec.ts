@@ -120,6 +120,25 @@ afterEach(() => {
 });
 
 describe('revision-backed Work Story editor', () => {
+  it('omits blank text from saving without changing the identity of meaningful blocks', async () => {
+    const view = mount();
+    view.replaceCreation.mockResolvedValue({
+      storyToken: 1,
+      blocks: [{ id: blockId, position: 0, type: 'PARAGRAPH', text: 'Текст' }],
+    });
+    let meaningful = '';
+    act(() => {
+      view.editor.addText('HEADING', '   ');
+      meaningful = view.editor.addText('PARAGRAPH', 'Текст')!;
+      view.editor.addText('PARAGRAPH');
+    });
+    await act(() => view.editor.save());
+    expect(view.replaceCreation.mock.calls[0]?.[1].blocks).toEqual([
+      { id: undefined, type: 'PARAGRAPH', text: 'Текст' },
+    ]);
+    expect(view.editor.blocks[0]?.key).toBe(meaningful);
+  });
+
   it('surfaces a storage error when the draft write fails', () => {
     vi.useFakeTimers();
     const view = mount('user-a');
@@ -330,7 +349,12 @@ describe('revision-backed Work Story editor', () => {
       {
         storyToken: 1,
         blocks: [
-          { id: blockId, position: 0, type: 'PARAGRAPH' as const, text: 'WRONG REVISION' },
+          {
+            id: blockId,
+            position: 0,
+            type: 'PARAGRAPH' as const,
+            text: 'WRONG REVISION',
+          },
         ],
       },
       revisionId,
@@ -345,7 +369,12 @@ describe('revision-backed Work Story editor', () => {
       {
         storyToken: 0,
         blocks: [
-          { id: blockId, position: 0, type: 'PARAGRAPH' as const, text: 'FOREIGN' },
+          {
+            id: blockId,
+            position: 0,
+            type: 'PARAGRAPH' as const,
+            text: 'FOREIGN',
+          },
         ],
       },
       'another-revision',
@@ -574,9 +603,7 @@ describe('revision-backed Work Story editor', () => {
     // again and still keeps the active draft authoritative.
     const legacyNow = window.localStorage.getItem(legacyStoryKey);
     const recoveryNow = window.localStorage.getItem(recoveryStoryKey);
-    expect(
-      legacyNow ?? recoveryNow ?? '',
-    ).toContain('OLD LEGACY');
+    expect(legacyNow ?? recoveryNow ?? '').toContain('OLD LEGACY');
     const again = mount('user-a');
     expect(
       again.editor.blocks.map((block) =>
@@ -969,8 +996,24 @@ describe('revision-backed Work Story editor', () => {
     ]);
   });
 
-  it('reuses a gallery media asset without duplicating its upload', async () => {
-    const view = mount();
+  it('restores a referenced media asset without duplicating its upload', async () => {
+    window.localStorage.setItem(
+      activeStoryKey,
+      JSON.stringify({
+        v: 2,
+        revisionId,
+        token: 0,
+        blocks: [
+          {
+            key: 'existing-media',
+            type: 'IMAGE',
+            mediaAssetId: assetId,
+            altText: null,
+          },
+        ],
+      }),
+    );
+    const view = mount('user-a');
     view.replaceCreation.mockResolvedValueOnce({
       storyToken: 1,
       blocks: [
@@ -983,7 +1026,6 @@ describe('revision-backed Work Story editor', () => {
         },
       ],
     });
-    act(() => view.editor.addGalleryImage(assetId));
     await act(async () => {
       expect(await view.editor.save()).toBe(true);
     });

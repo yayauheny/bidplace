@@ -469,9 +469,15 @@ afterEach(() => {
 
 async function selectAndUpload(container: HTMLElement) {
   act(() => button(container, 'Добавить изображения')?.click());
-  await flush();
-  const start = [...container.querySelectorAll('button')].find((node) =>
-    /^Загрузить(?: \d+)? фото$/.test(node.textContent ?? ''),
+  await until(
+    container,
+    () => button(container, 'Добавить изображения')?.disabled === false,
+    'selection ready',
+  );
+  const start = [...container.querySelectorAll('button')].find(
+    (node) =>
+      /^Загрузить(?: \d+)? фото$/.test(node.textContent ?? '') &&
+      !node.disabled,
   );
   if (start) act(() => start.click());
 }
@@ -599,6 +605,104 @@ describe('product draft submit lifecycle', () => {
     }
   });
 
+  it.each(['blob:local', '/api/images/accepted-image'])(
+    'waits for decoding only when reconciliation changes the source %s',
+    async (uri) => {
+      const client = new QueryClient();
+      const dispose = vi.fn();
+      const key = workPhotoSessionKey('user-a', productId);
+      const server = {
+        revisionId: 'revision',
+        slotId: 'slot',
+        imageId: 'accepted-image',
+        version: 0,
+        crop: null,
+      };
+      client.setQueryData<WorkPhotoSession>(key, {
+        cards: [
+          {
+            id: 'local',
+            uri,
+            source: { uri: 'blob:local' },
+            sourceDispose: dispose,
+            edit: { ...originalPhotoEdit },
+            operationKey: 'upload',
+            kind: 'add',
+            status: 'error',
+            uncertain: true,
+          },
+        ],
+        revisionId: 'revision',
+        orderConfirmed: false,
+        orderError: null,
+        busy: false,
+      });
+      harness.photoOperation.mockResolvedValue({ photo: server });
+      const view = mountImageActions('DRAFT', client);
+      const confirmed = detail();
+      confirmed.product.images = [
+        {
+          ...confirmed.product.images[0]!,
+          id: 'accepted-image',
+          slotId: 'slot',
+        },
+      ];
+      harness.getProduct.mockResolvedValue(confirmed);
+      try {
+        await flush();
+        if (uri === '/api/images/accepted-image') {
+          expect(view.actions.photoCards[0]?.preview).toBeUndefined();
+          expect(dispose).toHaveBeenCalledOnce();
+          return;
+        }
+        expect(view.actions.photoCards[0]).toMatchObject({
+          status: 'done',
+          uri: '/api/images/accepted-image',
+          preview: { uri: 'blob:local' },
+        });
+        expect(dispose).not.toHaveBeenCalled();
+        act(() =>
+          view.actions.photoLoadState(
+            'local',
+            '/api/images/accepted-image',
+            'failed',
+          ),
+        );
+        await flush();
+        expect(view.actions.photoCards[0]?.preview?.failed).toBe(true);
+        act(() =>
+          view.actions.photoLoadState(
+            'local',
+            '/api/images/accepted-image',
+            'loading',
+          ),
+        );
+        await flush();
+        expect(view.actions.photoCards[0]?.preview?.failed).toBe(false);
+        expect(dispose).not.toHaveBeenCalled();
+        act(() =>
+          view.actions.photoLoadState('local', '/api/images/stale', 'loaded'),
+        );
+        expect(dispose).not.toHaveBeenCalled();
+        act(() =>
+          view.actions.photoLoadState(
+            'local',
+            '/api/images/accepted-image',
+            'loaded',
+          ),
+        );
+        expect(dispose).toHaveBeenCalledOnce();
+        await flush();
+        expect(view.actions.photoCards[0]?.preview).toBeUndefined();
+        await act(() => clearAuthenticatedSession(client));
+        expect(dispose).toHaveBeenCalledOnce();
+      } finally {
+        view.unmount();
+        client.clear();
+      }
+    },
+  );
+
   it.each(['oversized', 'empty', 'unreadable'] as const)(
     'does not transfer a previous %s source error to a valid file in one batch or separate selections',
     async (invalid) => {
@@ -653,6 +757,7 @@ describe('product draft submit lifecycle', () => {
       file: new File([bytes], name, { type: 'image/png' }),
     });
     const first = asset('same', 'first.png');
+    const firstRead = vi.spyOn(first.file, 'arrayBuffer');
     harness.launchImageLibraryAsync.mockResolvedValueOnce({
       canceled: false,
       assets: [
@@ -666,7 +771,11 @@ describe('product draft submit lifecycle', () => {
       await act(() => view.actions.chooseImages());
       await flush();
       expect(view.actions.photoCards).toHaveLength(2);
-      expect(view.actions.imageSelectionError).toBe('Это фото уже выбрано.');
+      expect(view.actions.imageSelectionError).toBe('Фото уже добавлено.');
+      expect(firstRead).toHaveBeenCalledTimes(1);
+      expect(view.actions.photoCards[0]?.sourceChecksum).toMatch(
+        /^[a-f0-9]{64}$/,
+      );
       await act(() => view.actions.removePhoto(view.actions.photoCards[0]!.id));
       harness.launchImageLibraryAsync.mockResolvedValueOnce({
         canceled: false,
@@ -2286,12 +2395,12 @@ describe('photo failure feedback', () => {
           root.render(
             createElement(ProductDraftImagesStep, {
               ...props,
-              imageSelectionError: 'Это фото уже выбрано.',
+              imageSelectionError: 'Фото уже добавлено.',
             }),
           ),
         );
-        expect(container.textContent).toContain('Не удалось выбрать фото');
-        expect(container.textContent).toContain('Это фото уже выбрано.');
+        expect(container.textContent).not.toContain('Не удалось выбрать фото');
+        expect(container.textContent).toContain('Фото уже добавлено.');
         expect(container.textContent).not.toContain(message);
       } finally {
         act(() => root.unmount());

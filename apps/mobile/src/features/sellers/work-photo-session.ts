@@ -10,7 +10,14 @@ export type WorkPhotoCard = {
   height?: number | null;
   source?: ImageUploadInput;
   sourceDispose?: () => void;
-  selectedSource?: ImageUploadInput;
+  sourceChecksum?: string;
+  preview?: {
+    uri: string;
+    width?: number | null;
+    height?: number | null;
+    crop: PhotoEdit['crop'];
+    failed?: boolean;
+  };
   edit: PhotoEdit;
   server?: WorkPhotoResult;
   prepared?: { input: ImageUploadInput; blob: Blob; dispose: () => void };

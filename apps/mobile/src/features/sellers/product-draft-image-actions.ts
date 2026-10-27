@@ -1,3 +1,4 @@
+import { CryptoDigestAlgorithm, digest } from 'expo-crypto';
 import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, type QueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
@@ -243,8 +244,8 @@ export function useProductDraftImageActions({
       );
     updatePhotos((value) => {
       const cards = value.cards
-        .filter(
-          (card) =>
+        .filter((card) => {
+          const keep =
             card.kind !== 'saved' ||
             detail.product.images.some(
               (image) =>
@@ -252,8 +253,13 @@ export function useProductDraftImageActions({
                 image.id === card.server?.imageId ||
                 image.id === card.id ||
                 image.slotId === card.id,
-            ),
-        )
+            );
+          if (!keep) {
+            card.prepared?.dispose();
+            card.sourceDispose?.();
+          }
+          return keep;
+        })
         .map((card) => {
           const image = detail.product.images.find(
             (image) =>
@@ -324,19 +330,39 @@ export function useProductDraftImageActions({
     return detail;
   };
 
+  const acceptPhoto = (id: string, server: WorkPhotoResult) => {
+    const uri = `/api/images/${server.imageId}`;
+    const card = currentPhotos().cards.find((value) => value.id === id);
+    if (!card) return;
+    const changedSource = card.uri !== uri;
+    if (!changedSource) {
+      card.prepared?.dispose();
+      card.sourceDispose?.();
+    }
+    updateCard(id, (value) => ({
+      ...value,
+      preview: changedSource
+        ? (value.preview ?? {
+            uri: value.uri,
+            width: value.width,
+            height: value.height,
+            crop: value.edit.crop,
+          })
+        : undefined,
+      prepared: changedSource ? value.prepared : undefined,
+      source: changedSource ? value.source : undefined,
+      sourceDispose: changedSource ? value.sourceDispose : undefined,
+      server,
+      status: 'done',
+      kind: 'saved',
+      uncertain: false,
+      edit: { ...originalPhotoEdit, crop: server.crop },
+      uri,
+    }));
+  };
   const upload = useMutation({
     mutationFn: async (batch: UploadBatch) => {
       const active = () => ownsBatch(batch);
-      const accepted = (id: string, server: WorkPhotoResult) =>
-        updateCard(id, (card) => ({
-          ...card,
-          server,
-          status: 'done',
-          kind: 'saved',
-          uncertain: false,
-          edit: { ...originalPhotoEdit, crop: server.crop },
-          uri: `/api/images/${server.imageId}`,
-        }));
       try {
         for (const original of batch.cards) {
           if (!active()) return;
@@ -386,16 +412,9 @@ export function useProductDraftImageActions({
                     },
                   );
                   if (!active()) return;
-                  accepted(card.id, cropped.photo);
-                } else accepted(card.id, result.photo);
-                card.prepared?.dispose();
-                card.sourceDispose?.();
-                updateCard(card.id, (value) => ({
-                  ...value,
-                  source: undefined,
-                  prepared: undefined,
-                  sourceDispose: undefined,
-                }));
+                  acceptPhoto(card.id, cropped.photo);
+                } else acceptPhoto(card.id, result.photo);
+
                 continue;
               }
             }
@@ -472,15 +491,7 @@ export function useProductDraftImageActions({
                 }
               }
               if (!active()) return;
-              accepted(card.id, server);
-              prepared?.dispose();
-              card.sourceDispose?.();
-              updateCard(card.id, (value) => ({
-                ...value,
-                prepared: undefined,
-                source: undefined,
-                sourceDispose: undefined,
-              }));
+              acceptPhoto(card.id, server);
             } catch (error) {
               if (timedOut) throw new ImagePreparationError('UPLOAD_TIMEOUT');
               throw error;
@@ -571,36 +582,16 @@ export function useProductDraftImageActions({
           const server = result.photo;
           const pendingCrop =
             card.kind === 'add' && card.edit.crop && server.crop === null;
-          updateCard(card.id, (value) =>
-            pendingCrop
-              ? {
-                  ...value,
-                  server,
-                  kind: 'crop',
-                  status: 'local',
-                  uncertain: false,
-                  operationKey: `${card.operationKey}:crop`,
-                }
-              : {
-                  ...value,
-                  server,
-                  kind: 'saved',
-                  status: 'done',
-                  uncertain: false,
-                  uri: `/api/images/${server.imageId}`,
-                  edit: { ...originalPhotoEdit, crop: server.crop },
-                },
-          );
-          if (!pendingCrop) {
-            card.prepared?.dispose();
-            card.sourceDispose?.();
+          if (pendingCrop)
             updateCard(card.id, (value) => ({
               ...value,
-              source: undefined,
-              prepared: undefined,
-              sourceDispose: undefined,
+              server,
+              kind: 'crop',
+              status: 'local',
+              uncertain: false,
+              operationKey: `${card.operationKey}:crop`,
             }));
-          }
+          else acceptPhoto(card.id, server);
         }
       }
       if (active) await refreshPhotos();
@@ -719,13 +710,6 @@ export function useProductDraftImageActions({
     }
   };
 
-  const sameSource = async (source: Uint8Array, previous: ImageUploadInput) => {
-    const candidate = await readImageUpload(previous, workImageMaxInputBytes);
-    if (source.byteLength !== candidate.size) return false;
-    const second = new Uint8Array(await candidate.arrayBuffer());
-    return source.every((value, index) => value === second[index]);
-  };
-
   const addSelection = async (selected: SelectedWorkImages) => {
     if (
       selected.selection !== imageSelection.current ||
@@ -738,38 +722,31 @@ export function useProductDraftImageActions({
     )
       return false;
     const inputs = selected.images.map((input) => ({ ...input }));
+    const retained = new Set<ImageUploadInput>();
     const generation = ++imageSelection.current;
     pickerLock.current = true;
     setChoosingImages(true);
     try {
       for (const source of inputs) {
         if (currentPhotos().cards.length >= 10) break;
-        let duplicate = false;
+        let sourceChecksum: string | undefined;
         let selectionError: unknown;
         try {
-          const bytes = new Uint8Array(
-            await (
-              await readImageUpload(source, workImageMaxInputBytes)
-            ).arrayBuffer(),
-          );
-          for (const card of currentPhotos().cards) {
-            if (!card.selectedSource) continue;
-            try {
-              if (await sameSource(bytes, card.selectedSource)) {
-                duplicate = true;
-                break;
-              }
-            } catch {
-              // An unavailable earlier source cannot establish a duplicate.
-              updateCard(card.id, (value) => ({
-                ...value,
-                selectedSource: undefined,
-              }));
-            }
-          }
+          const sourceBytes = await (
+            await readImageUpload(source, workImageMaxInputBytes)
+          ).arrayBuffer();
+          const hash = await digest(CryptoDigestAlgorithm.SHA256, sourceBytes);
+          sourceChecksum = Array.from(new Uint8Array(hash), (byte) =>
+            byte.toString(16).padStart(2, '0'),
+          ).join('');
         } catch (error) {
           selectionError = error;
         }
+        const duplicate =
+          sourceChecksum !== undefined &&
+          currentPhotos().cards.some(
+            (card) => card.sourceChecksum === sourceChecksum,
+          );
         if (
           !mounted.current ||
           generation !== imageSelection.current ||
@@ -778,7 +755,7 @@ export function useProductDraftImageActions({
         )
           return false;
         if (duplicate) {
-          setImageSelectionError('Это фото уже выбрано.');
+          setImageSelectionError('Фото уже добавлено.');
           continue;
         }
         const id = crypto.randomUUID();
@@ -794,7 +771,11 @@ export function useProductDraftImageActions({
               width: source.width,
               height: source.height,
               source,
-              selectedSource: selectionError ? undefined : source,
+              sourceChecksum,
+              sourceDispose: () => {
+                if (source.file && source.uri.startsWith('blob:'))
+                  URL.revokeObjectURL(source.uri);
+              },
               edit: { ...originalPhotoEdit },
               kind: 'add',
               operationKey: crypto.randomUUID(),
@@ -805,6 +786,7 @@ export function useProductDraftImageActions({
             },
           ],
         }));
+        retained.add(source);
       }
       return true;
     } catch (error) {
@@ -817,6 +799,14 @@ export function useProductDraftImageActions({
         );
       return false;
     } finally {
+      for (const source of inputs) {
+        if (
+          !retained.has(source) &&
+          source.file &&
+          source.uri.startsWith('blob:')
+        )
+          URL.revokeObjectURL(source.uri);
+      }
       if (
         mounted.current &&
         canWritePrivateCache(queryClient, selected.epoch)
@@ -1260,6 +1250,7 @@ export function useProductDraftImageActions({
             ...card,
             kind: 'saved',
             status: 'done',
+            preview: undefined,
             source: undefined,
             prepared: undefined,
             sourceDispose: undefined,
@@ -1292,6 +1283,34 @@ export function useProductDraftImageActions({
       return false;
     }
   };
+  const photoLoadState = (
+    id: string,
+    uri: string,
+    state: 'loading' | 'loaded' | 'failed',
+  ) => {
+    if (!mounted.current || !canWritePrivateCache(queryClient, authEpoch))
+      return;
+    const card = currentPhotos().cards.find((item) => item.id === id);
+    if (!card?.preview || card.status !== 'done' || card.uri !== uri) return;
+    if (state !== 'loaded') {
+      const failed = state === 'failed';
+      if (Boolean(card.preview.failed) !== failed)
+        updateCard(id, (value) => ({
+          ...value,
+          preview: value.preview ? { ...value.preview, failed } : undefined,
+        }));
+      return;
+    }
+    card.prepared?.dispose();
+    card.sourceDispose?.();
+    updateCard(id, (value) => ({
+      ...value,
+      preview: undefined,
+      prepared: undefined,
+      source: undefined,
+      sourceDispose: undefined,
+    }));
+  };
   const retryUpload = (id?: string) => {
     void startUpload(undefined, id);
   };
@@ -1304,7 +1323,8 @@ export function useProductDraftImageActions({
       status: card.status,
     })),
     photoCards: photoState.data.cards,
-    photosBusy: photoState.data.busy,
+    photoLoadState,
+    photosBusy: photoState.data.busy || choosingImages,
     photoOrderConfirmed: photoState.data.orderConfirmed,
     photoOrderError: photoState.data.orderError,
     photoPreparationError: photoState.data.preparationError,

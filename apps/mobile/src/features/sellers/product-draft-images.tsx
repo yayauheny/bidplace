@@ -173,6 +173,11 @@ export type ProductDraftImagesStepProps = {
   photoPreparationError?: unknown;
   photoOrderConfirmed?: boolean;
   photoOperationPending?: boolean;
+  onPhotoLoadState?: (
+    id: string,
+    uri: string,
+    state: 'loading' | 'loaded' | 'failed',
+  ) => void;
   onEditPhoto?: (id: string) => void;
   onMovePhotoTo?: (id: string, index: number) => void;
   onRemovePhoto?: (id: string) => void;
@@ -206,6 +211,7 @@ export function ProductDraftImagesStep({
   photoOrderConfirmed = true,
   photoOperationPending = false,
   onEditPhoto,
+  onPhotoLoadState,
   onMovePhotoTo,
   onRemovePhoto,
   onStartUpload,
@@ -229,6 +235,7 @@ export function ProductDraftImagesStep({
   onDeleteImage,
 }: ProductDraftImagesStepProps) {
   const palette = useAppTheme();
+  const duplicateSelection = imageSelectionError === 'Фото уже добавлено.';
   const [dragPreview, setDragPreview] = useState<PhotoDragPreview | null>(null);
   if (photoCards) {
     const errors = photoCards.filter((card) => card.status === 'error');
@@ -239,34 +246,24 @@ export function ProductDraftImagesStep({
           paddingBottom: designTokens.space.x3,
         }}
       >
-        {photoCards.some((card) => card.status !== 'local') ? (
+        <View
+          style={{ minHeight: designTokens.typography.mediaCaption.lineHeight }}
+          accessibilityLiveRegion="polite"
+        >
           <AppText
             role="mediaCaption"
             tone="secondary"
             style={{ textAlign: 'center' }}
-            accessibilityLiveRegion="polite"
           >
-            Загружено{' '}
-            {photoCards.filter((card) => card.status === 'done').length} из{' '}
-            {photoCards.length}
-          </AppText>
-        ) : null}
-        {photoOperationPending &&
-        !photoCards.some(
-          (card) => card.status === 'preparing' || card.status === 'uploading',
-        ) ? (
-          <View
-            accessibilityLiveRegion="polite"
-            style={{ flexDirection: 'row', gap: 8 }}
-          >
-            <ActivityIndicator size="small" color={palette.textSecondary} />
-            <AppText role="feedbackBody">
-              {photoCards.every((card) => card.status === 'done')
+            {photoOperationPending
+              ? photoCards.every((card) => card.status === 'done')
                 ? 'Сохранение порядка'
-                : 'Подготовка фотографий'}
-            </AppText>
-          </View>
-        ) : null}
+                : 'Подготовка фотографий'
+              : photoCards.some((card) => card.status !== 'local')
+                ? `Загружено ${photoCards.filter((card) => card.status === 'done').length} из ${photoCards.length}`
+                : ' '}
+          </AppText>
+        </View>
         <DraftImageGrid
           preview={dragPreview}
           onPreview={setDragPreview}
@@ -301,14 +298,20 @@ export function ProductDraftImagesStep({
           renderItem={(image, columns) => {
             const card = photoCards.find((card) => card.id === image.id)!;
             const failed = card.status === 'error',
-              busy = card.status === 'uploading' || card.status === 'preparing';
+              busy =
+                card.status === 'uploading' ||
+                card.status === 'preparing' ||
+                (card.status === 'done' &&
+                  Boolean(card.preview && !card.preview.failed));
             return (
               <SortablePhotoTile
                 id={card.id}
                 index={image.position}
                 count={photoCards.length}
                 columns={columns}
-                disabled={!editable || uploadPending}
+                disabled={
+                  !editable || uploadPending || Boolean(card.preview?.failed)
+                }
                 preview={dragPreview}
                 onPreview={(next) =>
                   setDragPreview((previous) =>
@@ -339,11 +342,42 @@ export function ProductDraftImagesStep({
                       component="ProductGallery"
                       accessibilityLabel={`Фото ${image.position + 1}`}
                       fallbackLabel="Фото недоступно"
+                      retryPosition="center"
+                      onLoad={() =>
+                        onPhotoLoadState?.(card.id, card.uri, 'loaded')
+                      }
+                      onLoadStart={() =>
+                        onPhotoLoadState?.(card.id, card.uri, 'loading')
+                      }
+                      onLoadError={() =>
+                        onPhotoLoadState?.(card.id, card.uri, 'failed')
+                      }
                       crop={card.edit.crop}
                       sourceWidth={card.width}
                       sourceHeight={card.height}
                       style={{ width: '100%', height: '100%' }}
                     />
+                    {card.preview && !card.preview.failed ? (
+                      <View
+                        pointerEvents="none"
+                        style={{ position: 'absolute', inset: 0 }}
+                      >
+                        <CroppedPhoto
+                          uri={
+                            card.preview.uri.startsWith('/api/')
+                              ? getApiAssetUrl(card.preview.uri)
+                              : card.preview.uri
+                          }
+                          component="ProductGallery"
+                          accessibilityLabel="Локальное превью фото"
+                          fallbackLabel="Превью недоступно"
+                          crop={card.preview.crop}
+                          sourceWidth={card.preview.width}
+                          sourceHeight={card.preview.height}
+                          style={{ width: '100%', height: '100%' }}
+                        />
+                      </View>
+                    ) : null}
                   </PhotoDragSurface>
                   {image.position === 0 ? (
                     <View
@@ -492,27 +526,31 @@ export function ProductDraftImagesStep({
                 style={{ color: palette.feedbackDangerTitle }}
               >
                 {imageSelectionError
-                  ? 'Не удалось выбрать фото'
+                  ? duplicateSelection
+                    ? 'Фото уже добавлено.'
+                    : 'Не удалось выбрать фото'
                   : photoPreparationError
                     ? 'Не удалось начать загрузку'
                     : errors.length
                       ? 'Не удалось загрузить фото'
                       : 'Не удалось сохранить порядок'}
               </AppText>
-              <AppText
-                role="feedbackBody"
-                style={{ color: palette.feedbackDangerText }}
-              >
-                {imageSelectionError ??
-                  photoFailureMessage(
-                    photoPreparationError ??
-                      errors[0]?.error ??
-                      photoOrderError,
-                    Boolean(photoOrderError) &&
-                      !photoPreparationError &&
-                      !errors.length,
-                  )}
-              </AppText>
+              {!duplicateSelection ? (
+                <AppText
+                  role="feedbackBody"
+                  style={{ color: palette.feedbackDangerText }}
+                >
+                  {imageSelectionError ??
+                    photoFailureMessage(
+                      photoPreparationError ??
+                        errors[0]?.error ??
+                        photoOrderError,
+                      Boolean(photoOrderError) &&
+                        !photoPreparationError &&
+                        !errors.length,
+                    )}
+                </AppText>
+              ) : null}
             </View>
           </View>
         ) : null}

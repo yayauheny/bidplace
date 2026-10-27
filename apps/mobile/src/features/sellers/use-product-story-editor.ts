@@ -143,7 +143,8 @@ function snapshotOwnership(
   storyRevisionId: string | undefined,
 ): 'absent' | 'foreign' | 'belongs' {
   if (!story) return 'absent';
-  if (revisionId === undefined || storyRevisionId === undefined) return 'foreign';
+  if (revisionId === undefined || storyRevisionId === undefined)
+    return 'foreign';
   return storyRevisionId === revisionId ? 'belongs' : 'foreign';
 }
 
@@ -226,21 +227,23 @@ function fromServer(identity: string, story?: StorySnapshot): DraftState {
 function writeBlocks(
   blocks: readonly EditableStoryBlock[],
 ): StoryWriteRequest['blocks'] {
-  return blocks.map((block) => {
-    if (block.type === 'IMAGE') {
+  return blocks
+    .filter((block) => block.type === 'IMAGE' || Boolean(block.text.trim()))
+    .map((block) => {
+      if (block.type === 'IMAGE') {
+        return {
+          id: block.id,
+          type: 'IMAGE',
+          mediaAssetId: block.mediaAssetId,
+          altText: block.altText ?? null,
+        };
+      }
       return {
         id: block.id,
-        type: 'IMAGE',
-        mediaAssetId: block.mediaAssetId,
-        altText: block.altText ?? null,
+        type: block.type,
+        text: block.text,
       };
-    }
-    return {
-      id: block.id,
-      type: block.type,
-      text: block.text,
-    };
-  });
+    });
 }
 
 export function useProductStoryEditor({
@@ -277,7 +280,11 @@ export function useProductStoryEditor({
   // The baseline is held before mount when the served snapshot does not
   // belong to the active revision: a cold mount must not flash another
   // revision's blocks. A new work without any snapshot is not waiting.
-  const initialOwnership = snapshotOwnership(story, revisionId, storyRevisionId);
+  const initialOwnership = snapshotOwnership(
+    story,
+    revisionId,
+    storyRevisionId,
+  );
   const [state, setState] = useState<DraftState>(() => ({
     ...fromServer(identity, initialOwnership === 'belongs' ? story : undefined),
     awaitingOwnerSnapshot: initialOwnership === 'foreign',
@@ -387,7 +394,9 @@ export function useProductStoryEditor({
       storyDraftRecoveryKey(account, productId, revisionId),
       storyLocalDraftSchema,
     );
-    const text = recovery ? draftTextOf(recovery) : (recoverySourceText ?? null);
+    const text = recovery
+      ? draftTextOf(recovery)
+      : (recoverySourceText ?? null);
     if (!text) return state;
     return {
       ...state,
@@ -707,31 +716,16 @@ export function useProductStoryEditor({
     persistDraft();
   };
 
-  const addText = (type: 'HEADING' | 'PARAGRAPH') => {
+  const addText = (type: 'HEADING' | 'PARAGRAPH', text = '') => {
     const count = current.current.blocks.filter(
       (block) => block.type !== 'IMAGE',
     ).length;
     if (count >= STORY_LIMITS.maxTextBlocks) return;
-    change((blocks) => [
-      ...blocks,
-      { key: crypto.randomUUID(), type, text: '' },
-    ]);
-  };
-
-  const addGalleryImage = (mediaAssetId: string) => {
-    const count = current.current.blocks.filter(
-      (block) => block.type === 'IMAGE',
-    ).length;
-    if (count >= STORY_LIMITS.maxImages) return;
-    change((blocks) => [
-      ...blocks,
-      {
-        key: crypto.randomUUID(),
-        type: 'IMAGE',
-        mediaAssetId,
-        altText: null,
-      },
-    ]);
+    const key = crypto.randomUUID();
+    change((blocks) => [...blocks, { key, type, text }]);
+    return current.current.blocks.some((block) => block.key === key)
+      ? key
+      : undefined;
   };
 
   const editText = (key: string, text: string) =>
@@ -877,7 +871,12 @@ export function useProductStoryEditor({
         if (current.current.identity !== identity) return false;
         retry.current = null;
         const saved = result.blocks.map((block, index) =>
-          editableBlock(block, before.blocks[index]?.key ?? block.id),
+          editableBlock(
+            block,
+            before.blocks.filter(
+              (item) => item.type === 'IMAGE' || Boolean(item.text.trim()),
+            )[index]?.key ?? block.id,
+          ),
         );
         const removedAssets = [
           ...new Set([...persistedAssets.current, ...uploaded.current]),
@@ -953,7 +952,6 @@ export function useProductStoryEditor({
     isEffectivelyClean: () =>
       !current.current.dirty && !current.current.pending,
     addText,
-    addGalleryImage,
     editText,
     editAlt,
     remove,

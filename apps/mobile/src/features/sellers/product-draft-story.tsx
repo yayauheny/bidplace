@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { TextInput, View } from 'react-native';
+import { useLayoutEffect, useRef, useState } from 'react';
+import { Platform, TextInput, View } from 'react-native';
 
 import { STORY_LIMITS } from '@bidplace/contracts';
 import { designTokens } from '@bidplace/design-tokens';
@@ -34,15 +34,13 @@ export type ProductDraftStoryStepProps = {
   savePending: boolean;
   saveError: string | null;
   retryUpload: boolean;
-  onAddText: (type: 'HEADING' | 'PARAGRAPH') => void;
-  onAddGalleryImage: (mediaAssetId: string) => void;
+  onAddText: (type: 'HEADING' | 'PARAGRAPH', text?: string) => string | void;
   onEditText: (key: string, text: string) => void;
   onEditAlt: (key: string, text: string) => void;
   onRemove: (key: string) => void;
   onMove: (key: string, direction: -1 | 1) => void;
   onChooseImage: () => void;
   onRetryUpload: () => void;
-  onBackToImages: () => void;
   onSaveAndContinue: () => void;
 };
 
@@ -59,17 +57,20 @@ export function ProductDraftStoryStep({
   saveError,
   retryUpload,
   onAddText,
-  onAddGalleryImage,
   onEditText,
   onEditAlt,
   onRemove,
   onMove,
   onChooseImage,
   onRetryUpload,
-  onBackToImages,
   onSaveAndContinue,
 }: ProductDraftStoryStepProps) {
-  const [galleryOpen, setGalleryOpen] = useState(false);
+  const [openBlock, setOpenBlock] = useState<string | null>(null);
+  const [focusKey, setFocusKey] = useState<string | null>(null);
+  const addText = (type: 'HEADING' | 'PARAGRAPH', text?: string) => {
+    const key = onAddText(type, text);
+    if (typeof key === 'string') setFocusKey(key);
+  };
   const textCount = blocks.filter((block) => block.type !== 'IMAGE').length;
   const imageCount = blocks.length - textCount;
   const canAddText =
@@ -77,16 +78,18 @@ export function ProductDraftStoryStep({
   const canAddImage =
     editable && !savePending && imageCount < STORY_LIMITS.maxImages;
   const availableGallery = images.filter((image) => image.mediaAssetId);
-  const hasBlocks = blocks.length > 0;
+  const hasBlocks = blocks.some(
+    (block) => block.type === 'IMAGE' || Boolean(block.text.trim()),
+  );
   const palette = useAppTheme();
 
   return (
-    <View style={{ gap: designTokens.space.x10 }}>
+    <View
+      onTouchStart={() => setOpenBlock(null)}
+      style={{ gap: designTokens.space.x10 }}
+    >
       <View style={{ gap: designTokens.space.x2, alignItems: 'center' }}>
-        <AppText
-          role="mediaSheetTitle"
-          style={{ textAlign: 'center' }}
-        >
+        <AppText role="mediaSheetTitle" style={{ textAlign: 'center' }}>
           История создания
         </AppText>
         <AppText
@@ -115,10 +118,18 @@ export function ProductDraftStoryStep({
       <View
         style={{
           gap: designTokens.space.x5,
-          minHeight: hasBlocks ? undefined : 220,
-          justifyContent: hasBlocks ? 'flex-start' : 'center',
+          overflow: 'visible',
         }}
       >
+        {blocks.length === 0 && editable ? (
+          <StoryTextInput
+            heading={false}
+            value=""
+            placeholder="Начните писать здесь"
+            disabled={savePending}
+            onChange={(text) => addText('PARAGRAPH', text)}
+          />
+        ) : null}
         {blocks.map((block, index) => {
           const disabled = !editable || savePending;
           const galleryImageId =
@@ -130,13 +141,18 @@ export function ProductDraftStoryStep({
           return (
             <ProductBlockActions
               key={block.key}
+              open={openBlock === block.key}
+              onOpenChange={(open) => setOpenBlock(open ? block.key : null)}
               kind={block.type === 'IMAGE' ? 'image' : 'text'}
               editable={editable}
               disabled={disabled}
               first={index === 0}
               last={index === blocks.length - 1}
               onMove={(direction) => onMove(block.key, direction)}
-              onDelete={() => onRemove(block.key)}
+              onDelete={() => {
+                setOpenBlock(null);
+                onRemove(block.key);
+              }}
               details={
                 block.type === 'IMAGE' ? (
                   <TextInput
@@ -170,38 +186,14 @@ export function ProductDraftStoryStep({
                   }}
                 />
               ) : (
-                <TextInput
-                  accessibilityLabel={
-                    block.type === 'HEADING'
-                      ? 'Заголовок истории'
-                      : 'Текст истории'
-                  }
-                  placeholder={
-                    block.type === 'HEADING'
-                      ? 'Начните писать здесь'
-                      : 'Ваш текст'
-                  }
-                  placeholderTextColor={palette.fieldLabel}
+                <StoryTextInput
+                  heading={block.type === 'HEADING'}
                   value={block.text}
-                  onChangeText={(value) => onEditText(block.key, value)}
-                  editable={!disabled}
-                  multiline
-                  maxLength={
-                    block.type === 'HEADING'
-                      ? STORY_LIMITS.headingMaxLength
-                      : STORY_LIMITS.paragraphMaxLength
-                  }
-                  textAlignVertical="top"
-                  style={{
-                    ...(block.type === 'HEADING'
-                      ? designTokens.typography.storyHeading
-                      : designTokens.typography.bodySmall),
-                    color: palette.inkStrong,
-                    padding: 0,
-                    minHeight: designTokens.size.touch,
-                    paddingRight:
-                      designTokens.size.touch + designTokens.space.x2,
-                  }}
+                  placeholder="Начните писать здесь"
+                  disabled={disabled}
+                  focus={focusKey === block.key}
+                  onFocused={() => setFocusKey(null)}
+                  onChange={(value) => onEditText(block.key, value)}
                 />
               )}
             </ProductBlockActions>
@@ -229,25 +221,21 @@ export function ProductDraftStoryStep({
               label="Добавить заголовок"
               icon="heading"
               disabled={!canAddText}
-              onPress={() => onAddText('HEADING')}
+              onPress={() => addText('HEADING')}
             />
             <FigmaIconButton
               surface="muted"
               label="Добавить текст"
               icon="text"
               disabled={!canAddText}
-              onPress={() => onAddText('PARAGRAPH')}
+              onPress={() => addText('PARAGRAPH')}
             />
             <FigmaIconButton
               surface="muted"
               label="Добавить изображение"
               icon="image-01"
               disabled={!canAddImage || retryUpload}
-              onPress={() =>
-                availableGallery.length
-                  ? setGalleryOpen((open) => !open)
-                  : onChooseImage()
-              }
+              onPress={onChooseImage}
             />
             <FigmaButton
               label={
@@ -272,28 +260,18 @@ export function ProductDraftStoryStep({
           <AppText
             role="bodySmall"
             tone="subdued"
-            style={{ textAlign: 'center' }}
+            style={{
+              alignSelf: 'center',
+              paddingHorizontal: designTokens.space.x3,
+              paddingVertical: designTokens.space.x2,
+              borderRadius: 31,
+              backgroundColor: palette.surfaceMuted,
+              borderColor: palette.toolbarBorder,
+              borderWidth: 0.5,
+            }}
           >
             Начните создавать тут
           </AppText>
-        ) : null}
-        {galleryOpen && canAddImage ? (
-          <View style={{ gap: designTokens.space.x2 }}>
-            <SecondaryButton
-              label="Загрузить новое фото"
-              onPress={onChooseImage}
-            />
-            {availableGallery.map((image, index) => (
-              <SecondaryButton
-                key={image.id}
-                label={`Из галереи: фото ${index + 1}`}
-                onPress={() => {
-                  if (image.mediaAssetId) onAddGalleryImage(image.mediaAssetId);
-                  setGalleryOpen(false);
-                }}
-              />
-            ))}
-          </View>
         ) : null}
         {retryUpload ? (
           <SecondaryButton
@@ -307,18 +285,84 @@ export function ProductDraftStoryStep({
             {saveError}
           </AppText>
         ) : null}
-        {isCreationFlow ? (
-          <SecondaryButton
-            label="Назад к изображениям"
-            disabled={savePending}
-            onPress={onBackToImages}
-          />
-        ) : !editable && !storyNeedsDraft ? (
+        {!isCreationFlow && !editable && !storyNeedsDraft ? (
           <AppText role="bodySmall" tone="secondary">
             История сейчас недоступна для изменений.
           </AppText>
         ) : null}
       </View>
     </View>
+  );
+}
+
+function StoryTextInput({
+  heading,
+  value,
+  placeholder,
+  disabled,
+  focus,
+  onFocused,
+  onChange,
+}: {
+  heading: boolean;
+  value: string;
+  placeholder: string;
+  disabled: boolean;
+  focus?: boolean;
+  onFocused?: () => void;
+  onChange: (text: string) => void;
+}) {
+  const input = useRef<TextInput>(null);
+  const [height, setHeight] = useState<number>(designTokens.size.touch);
+  const palette = useAppTheme();
+  useLayoutEffect(() => {
+    if (Platform.OS === 'web') {
+      const node = input.current as unknown as HTMLTextAreaElement | null;
+      if (node) {
+        node.style.height = '0px';
+        node.style.height = `${Math.max(designTokens.size.touch, node.scrollHeight)}px`;
+      }
+    }
+    if (focus) {
+      input.current?.focus();
+      onFocused?.();
+    }
+  }, [value, focus, onFocused]);
+  return (
+    <TextInput
+      ref={input}
+      accessibilityLabel={heading ? 'Заголовок истории' : 'Текст истории'}
+      placeholder={placeholder}
+      placeholderTextColor={palette.fieldLabel}
+      value={value}
+      onChangeText={onChange}
+      editable={!disabled}
+      multiline
+      scrollEnabled={false}
+      onContentSizeChange={(event) =>
+        setHeight(
+          Math.max(
+            designTokens.size.touch,
+            event.nativeEvent.contentSize.height,
+          ),
+        )
+      }
+      maxLength={
+        heading
+          ? STORY_LIMITS.headingMaxLength
+          : STORY_LIMITS.paragraphMaxLength
+      }
+      textAlignVertical="top"
+      style={{
+        ...(heading
+          ? designTokens.typography.storyHeading
+          : designTokens.typography.bodySmall),
+        color: palette.inkStrong,
+        padding: 0,
+        minHeight: designTokens.size.touch,
+        height,
+        paddingRight: designTokens.size.touch + designTokens.space.x2,
+      }}
+    />
   );
 }
