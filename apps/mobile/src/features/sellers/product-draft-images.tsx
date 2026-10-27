@@ -388,7 +388,7 @@ export function ProductDraftImagesStep({
                           }}
                         >
                           <FigmaIconButton
-                            icon="pencil-edit-01"
+                            icon="edit-03"
                             iconSize={22}
                             surface="outline"
                             label={`Редактировать фото ${image.position + 1}`}

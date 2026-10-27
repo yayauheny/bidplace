@@ -5,6 +5,16 @@
 Полный прежний журнал, включая ограничения ранних экранов:
 [история](../archive/design/04-DESIGN-STATUS-through-2026-10-23.md).
 
+## 2026-10-27 — Photo edit icon reference
+
+**Partial.** Founder screenshot approves a diagonal
+pencil without an underline. Photo grid uses installed Hugeicons `Edit03Icon`
+via the shared registry; its 22px glyph, outline button and interaction stay
+unchanged. Other edit-icon consumers retain `PencilEdit01Icon`.
+Chromium/WebKit media checks passed (2/2), Web export passed, refreshed
+[preparation/error screenshots](../audits/2026-10-26-PHOTO-WORKFLOW.md) visually
+checked. Native rendering and 200% zoom were not checked.
+
 ## 2026-10-27 — Photo grid acceptance cleanup
 
 **Partial.** Removed the extra grid discard button; disabled upload/error CTA

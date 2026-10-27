@@ -16,6 +16,17 @@
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
 | Commerce, избранное/подписки, смена email/password из settings | Not implemented в launch scope / post-MVP; [следующая волна](15-POST-MVP-BACKLOG.md). Старый commerce runtime не разрешает включать продажи. |
 
+## 2026-10-27 — Photo edit icon reference
+
+**Implemented for tested local Web icon change; workflow remains Partial.** Photo grid edit controls now select
+Hugeicons `Edit03Icon` through the shared `FigmaIcon` registry, matching the
+founder-provided pencil without an underline. Existing `pencil-edit-01` consumers
+in CreatorHeader/CreatorWorkCard retain their icon. Button geometry, labels and
+callbacks are unchanged. Node 22: 53 targeted owner/icon tests and affected graph
+typecheck/lint, Web export, Chromium/WebKit media checks (2/2), formatting,
+docs links and diff check passed. Preparation/error screenshots refreshed and
+visually checked; Native rendering was not checked.
+
 ## 2026-10-27 — Photo grid acceptance cleanup
 
 **Implemented for tested local Web corrections; workflow remains Partial.**

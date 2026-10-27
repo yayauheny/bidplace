@@ -25,6 +25,7 @@ describe('Figma icon registry', () => {
       'flag-01',
       'link-01',
       'pencil-edit-01',
+      'edit-03',
       'qr-code-01',
       'lock-keyhole',
       'clock-04',

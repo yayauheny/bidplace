@@ -171,3 +171,17 @@ retained-settings rerun with Close assertions passed 2/2. E2E fence, docs links,
 formatting and diff check passed. Backend tests and native exports were not rerun
 for this client-only change. Overall Partial remains: physical Native gestures,
 200% zoom and live CDN are unverified. No merge/deploy.
+
+
+## 2026-10-27 — Founder photo edit icon
+
+The supplied screenshot replaces only the photo grid edit glyph with installed
+Hugeicons `Edit03Icon` (`edit-03`), a diagonal pencil without the underline.
+Shared FigmaIcon/Button still own rendering and interaction; existing
+`pencil-edit-01` consumers are unchanged. Preparation and upload/error screenshots
+above refreshed for both browsers; Chromium preparation and WebKit error
+visually checked against the supplied reference. No new dependency or SVG engine.
+Node 22: 53 targeted icon/lifecycle tests, affected graph typecheck/lint, Web
+export and 2/2 Chromium/WebKit retained-settings media checks passed. Formatting,
+193-file docs links and diff check passed. Physical Native rendering, 200% zoom
+and live CDN were not checked. Overall workflow remains Partial; no merge/deploy.

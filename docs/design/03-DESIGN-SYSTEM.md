@@ -1003,3 +1003,11 @@ shared controls. Native/zoom accessibility remains Needs verification in
 owns regular 13/18 metadata for Work/avatar. `FigmaIcon reset` uses the installed
 Hugeicons Undo vector, matching `7342:726`; no new icon renderer. Crop library
 styles are scoped to `photo-cropper` and preserve visible keyboard focus.
+
+
+### Photo edit glyph (2026-10-27)
+
+Founder-provided screenshot selects Hugeicons `Edit03Icon` (registry `edit-03`)
+for photo grid edit controls: diagonal pencil without an underline. Existing
+`pencil-edit-01` remains available to its other consumers. The existing
+FigmaIconButton owns size, focus, disabled state and hit target unchanged.
