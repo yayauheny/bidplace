@@ -16,6 +16,21 @@
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
 | Commerce, избранное/подписки, смена email/password из settings | Not implemented в launch scope / post-MVP; [следующая волна](15-POST-MVP-BACKLOG.md). Старый commerce runtime не разрешает включать продажи. |
 
+## 2026-10-27 — Photo state review pack
+
+**Implemented for local Web evidence; workflow remains Partial.** Existing
+`work-media-lifecycle.spec.ts` now records selection/duplicates/empty source,
+10-photo limit, editor original/crop/rotate/flip/reset/focus/processing failure,
+upload/partial failure/retry, discard dialog, order failure/saving/success,
+primary deletion, post-reload server gallery and avatar states.
+[86 PNG, 34 state categories, HTML gallery and manifest](../audits/evidence/2026-10-27-photo-states/README.md).
+Runtime `804fe830` unchanged. Node 22: partial/order scenarios 4/4 and final
+editor/avatar/reload rerun 2/2 Chromium/WebKit passed; affected typecheck/lint
+passed. Initial capture wrongly expected local recovery after a full page
+navigation; corrected to assert server-only gallery per the existing contract.
+Physical Native, 200% zoom, session/revision conflict variants and live CDN are
+not established by these images. No merge/deploy.
+
 ## 2026-10-27 — Photo edit icon reference
 
 **Implemented for tested local Web icon change; workflow remains Partial.** Photo grid edit controls now select

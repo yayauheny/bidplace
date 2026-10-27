@@ -5,6 +5,16 @@
 Полный прежний журнал, включая ограничения ранних экранов:
 [история](../archive/design/04-DESIGN-STATUS-through-2026-10-23.md).
 
+## 2026-10-27 — Photo state review pack
+
+**Partial.** [86 unretouched Web PNG and indexed gallery](../audits/evidence/2026-10-27-photo-states/README.md)
+cover 34 state categories across Chromium/WebKit. Primary viewport 390×874,
+short screen 390×600, selected empty/editor/error states also 320–1440.
+Runtime `804fe830` unchanged; new evidence adds no product styling decision.
+Representative error/dialog/editor/order snapshots visually checked; the pack
+is provided for further analysis, not a claim of exhaustive visual acceptance.
+Native, 200% zoom and exact wide Figma parity remain unverified/NEEDS-FIGMA.
+
 ## 2026-10-27 — Photo edit icon reference
 
 **Partial.** Founder screenshot approves a diagonal

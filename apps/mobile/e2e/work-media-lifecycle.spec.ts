@@ -583,6 +583,7 @@ test('shows a partial gallery upload and retries only the unfinished photo', asy
         path: testInfo.outputPath(`upload-partial-${width}.png`),
         fullPage: true,
       });
+      await photoEvidence(page, `partial-error-${width}`);
     }
     await page
       .getByRole('button', { name: /^Повторить загрузку фото/ })
@@ -597,6 +598,8 @@ test('shows a partial gallery upload and retries only the unfinished photo', asy
     await expect(
       page.getByRole('button', { name: 'Продолжить', exact: true }),
     ).toBeEnabled();
+    await page.setViewportSize({ width: 390, height: 874 });
+    await photoEvidence(page, 'retry-success-390');
     expect(attempts).toBe(3);
     expect(keys[2]).toBe(keys[1]);
     expect(keys[1]).not.toBe(keys[0]);
@@ -807,6 +810,7 @@ test('photo editor retains settings on Work and avatar preparation failure and r
     await page
       .getByRole('button', { name: 'Редактировать фото 2', exact: true })
       .click();
+    await photoEvidence(page, 'editor-original-390');
     await page.getByRole('tab', { name: 'Кадрировать', exact: true }).click();
     await expect(
       page.getByRole('tab', { name: 'Кадрировать', exact: true }),
@@ -819,8 +823,20 @@ test('photo editor retains settings on Work and avatar preparation failure and r
     await page.keyboard.press('ArrowRight');
     await expect(frame).toBeFocused();
     await expect(frame).toHaveCSS('outline-style', 'solid');
+    await photoEvidence(page, 'editor-keyboard-focus-390');
     await page.getByText('Настроить фото', { exact: true }).click();
     await photoEvidence(page, 'editor-390');
+    for (const width of [1024, 1440]) {
+      await page.setViewportSize({ width, height: 874 });
+      await photoEvidence(page, `editor-${width}`);
+    }
+    await page.setViewportSize({ width: 390, height: 874 });
+    await page.getByRole('button', { name: 'Повернуть 90°' }).click();
+    await photoEvidence(page, 'editor-rotated-390');
+    await page.getByRole('button', { name: 'Отразить' }).click();
+    await photoEvidence(page, 'editor-flipped-390');
+    await page.getByRole('button', { name: 'Сбросить' }).click();
+    await photoEvidence(page, 'editor-reset-390');
     await page.getByRole('button', { name: 'Повернуть 90°' }).click();
     await failNextPhotoRender(page);
     await page.getByRole('button', { name: 'Готово', exact: true }).click();
@@ -833,6 +849,7 @@ test('photo editor retains settings on Work and avatar preparation failure and r
     await expect(
       page.getByRole('button', { name: 'Готово', exact: true }),
     ).toBeEnabled();
+    await photoEvidence(page, 'editor-processing-error-390');
     await page.getByRole('button', { name: 'Готово', exact: true }).click();
     await expect(
       page.getByRole('button', { name: 'Загрузить 5 фото' }),
@@ -881,6 +898,7 @@ test('photo editor retains settings on Work and avatar preparation failure and r
       name: 'Отбросить локальные изменения фото?',
     });
     await expect(discardDialog).toBeVisible();
+    await photoEvidence(page, 'discard-confirmation-390');
     await discardDialog
       .getByRole('button', { name: 'Продолжить редактирование', exact: true })
       .click();
@@ -907,6 +925,15 @@ test('photo editor retains settings on Work and avatar preparation failure and r
       ).toBe(true);
       await photoEvidence(page, `last-row-${height}`);
     }
+    await page.setViewportSize({ width: 390, height: 874 });
+    await photoEvidence(page, 'upload-error-idle-390');
+    await page.goto('/profile');
+    await page.goto(`/products/${product.id}?flow=creation&step=2`);
+    await expect(page.getByRole('img', { name: /^Фото \d+$/ })).toHaveCount(3);
+    await expect(
+      page.getByRole('button', { name: /^Повторить загрузку фото/ }),
+    ).toHaveCount(0);
+    await photoEvidence(page, 'after-reload-server-gallery-390');
     await page.goto('/profile');
     await page.setViewportSize({ width: 390, height: 874 });
     const avatarPicker = page.waitForEvent('filechooser');
@@ -919,18 +946,172 @@ test('photo editor retains settings on Work and avatar preparation failure and r
     ).toBeVisible();
     await photoEvidence(page, 'avatar-390');
     await page.getByRole('button', { name: 'Повернуть 90°' }).click();
+    await photoEvidence(page, 'avatar-rotated-390');
     await failNextPhotoRender(page);
     await page.getByRole('button', { name: 'Установить фото' }).click();
     await expect(page.getByRole('alert')).toBeVisible();
     await expect(
       page.getByText('Фотография автора', { exact: true }),
     ).toBeVisible();
+    await photoEvidence(page, 'avatar-processing-error-390');
     await page.getByRole('button', { name: 'Установить фото' }).click();
     await expect(
       page.getByText('Фотография автора', { exact: true }),
     ).not.toBeVisible();
+    await photoEvidence(page, 'avatar-saved-390');
   } finally {
     releaseUpload();
+    await context.close();
+  }
+});
+
+test('records photo selection, limits, upload and order confirmation states', async ({
+  browser,
+}) => {
+  const { seller, categoryId } = await createSellerFixture();
+  const { context, page } = await authenticatedPage(browser, seller);
+  let releaseUpload = () => {};
+  let releaseOrder = () => {};
+  try {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    const created = await context.request.post(
+      `${e2eApiBaseURL}/api/products`,
+      {
+        data: { title: 'Photo state review', categoryId },
+      },
+    );
+    expect(created.status()).toBe(201);
+    const { product } = await created.json();
+    await page.goto(`/products/${product.id}?flow=creation&step=2`);
+    for (const width of [390, 1024, 1440]) {
+      await page.setViewportSize({ width, height: 874 });
+      await expect(
+        page.getByRole('button', { name: 'Добавить изображения' }),
+      ).toBeVisible();
+      await photoEvidence(page, `empty-${width}`);
+    }
+    await page.setViewportSize({ width: 390, height: 874 });
+    let chooser = page.waitForEvent('filechooser');
+    await page.getByRole('button', { name: 'Добавить изображения' }).click();
+    await (await chooser).setFiles('e2e/fixtures/portfolio-photo-1.png');
+    await expect(
+      page.getByRole('button', { name: 'Загрузить 1 фото' }),
+    ).toBeEnabled();
+    await photoEvidence(page, 'one-local-390');
+    chooser = page.waitForEvent('filechooser');
+    await page.getByRole('button', { name: 'Добавить изображения' }).click();
+    await (await chooser).setFiles('e2e/fixtures/portfolio-photo-1.png');
+    await expect(
+      page.getByText('Это фото уже выбрано.', { exact: true }),
+    ).toBeVisible();
+    await photoEvidence(page, 'duplicate-390');
+    chooser = page.waitForEvent('filechooser');
+    await page.getByRole('button', { name: 'Добавить изображения' }).click();
+    await (
+      await chooser
+    ).setFiles({
+      name: 'empty.png',
+      mimeType: 'image/png',
+      buffer: Buffer.alloc(0),
+    });
+    await expect(
+      page.getByText('Не удалось загрузить фото', { exact: true }),
+    ).toBeVisible();
+    await photoEvidence(page, 'unreadable-source-390');
+    await page
+      .getByRole('button', { name: 'Удалить фото 2', exact: true })
+      .click();
+    chooser = page.waitForEvent('filechooser');
+    await page.getByRole('button', { name: 'Добавить изображения' }).click();
+    await (
+      await chooser
+    ).setFiles(
+      Array.from({ length: 9 }, (_, i) => ({
+        name: `unique-${i}.png`,
+        mimeType: 'image/png',
+        buffer: Buffer.concat([
+          readFileSync(`e2e/fixtures/portfolio-photo-${(i % 5) + 1}.png`),
+          Buffer.from([i]),
+        ]),
+      })),
+    );
+    await expect(
+      page.getByRole('button', { name: 'Загрузить 10 фото' }),
+    ).toBeEnabled();
+    await expect(
+      page.getByRole('button', { name: 'Добавить изображения' }),
+    ).toHaveCount(0);
+    await photoEvidence(page, 'limit-ten-390');
+    await page.getByTestId('form-page').evaluate((node) => {
+      node.scrollTop = node.scrollHeight;
+    });
+    await photoEvidence(page, 'last-row-limit-ten-390');
+    const gate = new Promise<void>((resolve) => {
+      releaseUpload = resolve;
+    });
+    let first = true;
+    await page.route(`**/api/products/${product.id}/images`, async (route) => {
+      if (route.request().method() === 'POST' && first) {
+        first = false;
+        await gate;
+      }
+      await route.continue();
+    });
+    await page.route(
+      `**/api/products/${product.id}/images/order`,
+      async (route) => {
+        await route.fulfill({
+          status: 503,
+          contentType: 'application/json',
+          body: JSON.stringify({ message: 'Synthetic order save outage' }),
+        });
+      },
+    );
+    await page.getByRole('button', { name: 'Загрузить 10 фото' }).click();
+    await expect(page.getByText('Загрузка', { exact: true })).toBeVisible();
+    await photoEvidence(page, 'uploading-390');
+    releaseUpload();
+    await expect(
+      page.getByRole('button', { name: 'Сохранить порядок', exact: true }),
+    ).toBeEnabled();
+    await photoEvidence(page, 'order-save-error-390');
+    await page.getByTestId('form-page').evaluate((node) => {
+      node.scrollTop = node.scrollHeight;
+    });
+    await photoEvidence(page, 'last-row-order-save-error-390');
+    await page.unroute(`**/api/products/${product.id}/images/order`);
+    const orderGate = new Promise<void>((resolve) => {
+      releaseOrder = resolve;
+    });
+    await page.route(
+      `**/api/products/${product.id}/images/order`,
+      async (route) => {
+        await orderGate;
+        await route.continue();
+      },
+    );
+    await page
+      .getByRole('button', { name: 'Сохранить порядок', exact: true })
+      .click();
+    await expect(
+      page.getByRole('button', { name: 'Продолжить', exact: true }),
+    ).toBeDisabled();
+    await photoEvidence(page, 'order-saving-390');
+    releaseOrder();
+    await expect(
+      page.getByRole('button', { name: 'Продолжить', exact: true }),
+    ).toBeEnabled();
+    await photoEvidence(page, 'all-saved-390');
+    await page
+      .getByRole('button', { name: 'Удалить фото 1', exact: true })
+      .click();
+    await expect(
+      page.getByText('Загружено 9 из 9', { exact: true }),
+    ).toBeVisible();
+    await photoEvidence(page, 'primary-deleted-390');
+  } finally {
+    releaseUpload();
+    releaseOrder();
     await context.close();
   }
 });

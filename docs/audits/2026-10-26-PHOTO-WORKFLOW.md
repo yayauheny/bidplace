@@ -185,3 +185,24 @@ Node 22: 53 targeted icon/lifecycle tests, affected graph typecheck/lint, Web
 export and 2/2 Chromium/WebKit retained-settings media checks passed. Formatting,
 193-file docs links and diff check passed. Physical Native rendering, 200% zoom
 and live CDN were not checked. Overall workflow remains Partial; no merge/deploy.
+
+
+## 2026-10-27 — Extended state pack
+
+[Folder, gallery, manifest and scope](evidence/2026-10-27-photo-states/README.md):
+86 PNG / 34 categories, paired Chromium/WebKit. Runtime `804fe830`; changes only
+extend existing owner E2E captures and one selection/order scenario. Screens
+record actual UI, including empty/duplicate/unreadable/limit, editor transforms,
+keyboard focus and processing failure, partial upload/retry, close confirmation,
+order failure/pending/success, primary deletion, post-reload gallery and avatar.
+Media fault routes/request gates are test-only; original snapshots are not
+retouched. Screenshot names/viewport/checksums are in manifest.json.
+
+Node 22: first expanded run 6/6 passed. Final expanded run passed 4/6; two
+capture checks incorrectly expected in-memory recovery after full page navigation.
+Corrected to assert 3 accepted server images and no local retry card, matching
+the accepted reload contract; final focused Chromium/WebKit rerun passed 2/2.
+No timeout/assertion suppression or runtime change. Affected typecheck/lint,
+E2E fence, formatting, docs links and diff check passed. No additional native/API
+build claimed for evidence-only changes. Full constraints in pack README;
+overall Partial, no merge/deploy.
