@@ -16,6 +16,18 @@
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
 | Commerce, избранное/подписки, смена email/password из settings | Not implemented в launch scope / post-MVP; [следующая волна](15-POST-MVP-BACKLOG.md). Старый commerce runtime не разрешает включать продажи. |
 
+## 2026-10-27 — Manual photo acceptance availability
+
+**Partial.** Runtime `ee4b71fd` is unchanged. This pass checked environment only:
+local browser connector disabled; CUA Testing window shows `chrome://intro/`;
+checked Web ports8081/8087 are not listening. `simctl` is unavailable and
+`adb`/`emulator` are absent from PATH. Manual ghost, true zoom200%, both editor
+entries and Native interaction/performance scenarios were not executed.
+Original missing CTA remains **not reproduced**. Native `runOnJS(true)` smoothness
+under load is a device-check risk, not a proven defect. Existing tests/builds were
+not rerun or promoted to manual evidence. No implementation/infrastructure change.
+[Detailed acceptance record](../audits/2026-10-26-PHOTO-WORKFLOW.md).
+
 ## 2026-10-27 — Drag boundary and Native integration
 
 **Partial.** Follow-up above `c96d3f3f`: whole-grid `PhotoDropArea.web` handles

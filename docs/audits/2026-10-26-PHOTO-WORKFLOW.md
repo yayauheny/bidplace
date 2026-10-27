@@ -400,3 +400,23 @@ lint, owner7/7, e2e fence, docs links and diff check passed. Full native export
 passed earlier in this follow-up; no physical-device claim. Overall verdict remains
 Partial: code fixes and local regressions are reviewable, but required physical
 Native, OS ghost and true zoom acceptance remain open.
+
+
+## 2026-10-27 — Manual acceptance environment check for ee4b71fd
+
+**Partial / Needs verification.** Runtime remains fixed at `ee4b71fd` on
+`feature/photo-workflow`; no further implementation change was justified.
+Only environment availability was checked in this pass. No unit/E2E/build suite
+was rerun, and earlier automated evidence is not relabelled manual acceptance.
+
+| Manual criterion | Result in this pass | Concrete limitation |
+| --- | --- | --- |
+| Web system drag ghost / rounded card | Not executed | Browser connector reports local browser use disabled in Work settings. Available CUA Chrome for Testing window is `chrome://intro/`, not the photo application. |
+| True browser zoom 200%, short window, tools and Done through both editor entries | Not executed | Checked Web ports8081/8087 are not listening; no accessible photo application window. Prior CSS zoom and E2E remain separate evidence. |
+| iOS/Android row crossing, edge scroll both ways, cancel and button exclusion | Not executed | `xcrun simctl` is unavailable; `adb` and `emulator` are not found in PATH. No Native runtime was exercised. |
+| Native smoothness under load with `runOnJS(true)` | Needs verification | Requires a device/runtime. JS callbacks are a risk to measure, not an established performance defect or justification for a rewrite. |
+| Original missing-CTA scenario | Not reproduced | The original user environment/scenario was not available; this pass does not establish its cause or claim it fixed. |
+
+No environment/tool installation, settings changes, additional infrastructure,
+window/tab closure, merge or deployment. No runtime code changes. Manual Native,
+OS ghost, actual browser zoom and live CDN acceptance remain open.

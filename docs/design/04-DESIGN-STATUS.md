@@ -5,6 +5,18 @@
 Полный прежний журнал, включая ограничения ранних экранов:
 [история](../archive/design/04-DESIGN-STATUS-through-2026-10-23.md).
 
+## 2026-10-27 — Manual photo acceptance availability
+
+**Partial.** Runtime `ee4b71fd` is unchanged. This pass checked environment only:
+local browser connector disabled; CUA Testing window shows `chrome://intro/`;
+checked Web ports8081/8087 are not listening. `simctl` is unavailable and
+`adb`/`emulator` are absent from PATH. Manual ghost, true zoom200%, both editor
+entries and Native interaction/performance scenarios were not executed.
+Original missing CTA remains **not reproduced**. Native `runOnJS(true)` smoothness
+under load is a device-check risk, not a proven defect. Existing tests/builds were
+not rerun or promoted to manual evidence. No implementation/infrastructure change.
+[Detailed acceptance record](../audits/2026-10-26-PHOTO-WORKFLOW.md).
+
 ## 2026-10-27 — Drag boundary and Native integration
 
 **Partial.** Follow-up above `c96d3f3f`: whole-grid `PhotoDropArea.web` handles
