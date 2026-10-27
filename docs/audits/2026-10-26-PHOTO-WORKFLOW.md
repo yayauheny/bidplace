@@ -420,3 +420,28 @@ was rerun, and earlier automated evidence is not relabelled manual acceptance.
 No environment/tool installation, settings changes, additional infrastructure,
 window/tab closure, merge or deployment. No runtime code changes. Manual Native,
 OS ghost, actual browser zoom and live CDN acceptance remain open.
+
+## 2026-10-27 — Connected Chrome manual acceptance
+
+**Partial.** The browser connection and file-upload access became available after
+the user enabled them. This supersedes the environment-availability limitations
+above for Web only. Runtime remains `ee4b71fd`; no defect justified code changes.
+The existing test API and Expo Web were started with an isolated approved-author
+fixture; three repository photos were uploaded to a disposable draft.
+
+Actual browser zoom200% was set through native Chrome shortcuts and confirmed by
+Chrome's accessibility label, DPR4 and600×349 CSS viewport (body CSS zoom1).
+Creation step2 and account → ordinary draft editor both opened the photo editor:
+Done remained visible/clickable, scrolling exposed all tools, and Done returned
+to the respective form. Zoom was restored to100%. The apparent overlap during an
+incomplete scroll did not survive scrolling over the visible content to its limit.
+Original missing CTA remains **not reproduced**, with cause unknown.
+
+Native app drag and a CDP mouse attempt did not establish a completed manual
+reorder; movement stalled and release/Escape restored the gallery. Rounded system
+ghost and a new successful manual drag recording remain unverified. No speculative
+DnD patch followed this inconclusive attempt. Physical Native, smoothness under
+load and live CDN remain unverified; overall status stays Partial.
+[Addressed steps, measurements and screenshots](evidence/2026-10-27-photo-manual/README.md).
+No runtime checks were rerun without changes. Markdown links (197 files) and
+`git diff --check` passed. No merge/deploy or real-account credential use.

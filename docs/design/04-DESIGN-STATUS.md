@@ -5,6 +5,17 @@
 Полный прежний журнал, включая ограничения ранних экранов:
 [история](../archive/design/04-DESIGN-STATUS-through-2026-10-23.md).
 
+## 2026-10-27 — Connected Chrome photo acceptance
+
+**Partial.** With the connected Chrome, actual browser zoom200% (Chrome label,
+600×349 CSS viewport, DPR4, CSS zoom1) was checked through creation step2 and
+account → ordinary Work draft editor. Done stays accessible; tools are reachable
+by scrolling and Done returns to the form. Original missing CTA is **not
+reproduced**, cause unknown. Manual mouse attempts were inconclusive; rounded OS
+ghost, physical Native and JS-load smoothness remain unverified. Runtime
+`ee4b71fd` unchanged; no new UI mechanism or styling. Zoom restored100%.
+[Steps and screenshots](../audits/evidence/2026-10-27-photo-manual/README.md).
+
 ## 2026-10-27 — Manual photo acceptance availability
 
 **Partial.** Runtime `ee4b71fd` is unchanged. This pass checked environment only:

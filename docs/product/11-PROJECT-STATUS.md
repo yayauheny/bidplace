@@ -16,6 +16,17 @@
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
 | Commerce, избранное/подписки, смена email/password из settings | Not implemented в launch scope / post-MVP; [следующая волна](15-POST-MVP-BACKLOG.md). Старый commerce runtime не разрешает включать продажи. |
 
+## 2026-10-27 — Connected Chrome photo acceptance
+
+**Partial.** Existing test API/Expo Web and an isolated author fixture allowed
+three-photo upload and manual photo-editor checks through creation step2 and
+ordinary draft editing. Actual browser zoom200% at600×349 CSS viewport: Done is
+accessible, tools reachable by scrolling, Done returns to the form. Original CTA
+loss remains **not reproduced**, cause unknown. Manual mouse attempts did not
+confirm reorder/rounded ghost; physical Native, JS-load smoothness and live CDN
+remain unverified. Runtime `ee4b71fd` unchanged; no full test/build rerun.
+[Addressed acceptance and screenshots](../audits/evidence/2026-10-27-photo-manual/README.md).
+
 ## 2026-10-27 — Manual photo acceptance availability
 
 **Partial.** Runtime `ee4b71fd` is unchanged. This pass checked environment only:
