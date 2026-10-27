@@ -7,6 +7,7 @@ import { lightColorMap } from './theme';
 
 export const designTokens = {
   color: lightColorMap,
+  shadow: { primaryAction: '0px 4px 5.3px rgba(0, 0, 0, 0.35)' },
   space: {
     x1: 4,
     x2: 8,

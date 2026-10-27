@@ -28,6 +28,7 @@ import { FigmaIconButton } from '../../components/figma/FigmaIconButton';
 import { CroppedPhoto } from '../../components/shared/CroppedPhoto';
 import { getImageUploadErrorMessage } from '../../errors/image-upload-error';
 import { SortablePhotoTile } from './SortablePhotoTile';
+import type { PhotoDragPreview } from './sortable-photo-tile';
 import type { WorkPhotoCard } from './work-photo-session';
 import { ApiClientError } from '@bidplace/api-client';
 import type { UploadImageState } from './product-draft-image-actions';
@@ -120,6 +121,7 @@ export function DraftImageGrid({
   if (addAction) items.push({ id: 'add-image' });
   return (
     <View
+      testID="photo-grid"
       onLayout={(event) => setWidth(event.nativeEvent.layout.width)}
       style={{ gap: designTokens.space.x3 }}
     >
@@ -157,7 +159,9 @@ type DraftImage = {
 export type ProductDraftImagesStepProps = {
   photoCards?: WorkPhotoCard[];
   photoOrderError?: unknown;
+  photoPreparationError?: unknown;
   photoOrderConfirmed?: boolean;
+  photoOperationPending?: boolean;
   onEditPhoto?: (id: string) => void;
   onMovePhotoTo?: (id: string, index: number) => void;
   onRemovePhoto?: (id: string) => void;
@@ -187,7 +191,9 @@ export type ProductDraftImagesStepProps = {
 export function ProductDraftImagesStep({
   photoCards,
   photoOrderError,
+  photoPreparationError,
   photoOrderConfirmed = true,
+  photoOperationPending = false,
   onEditPhoto,
   onMovePhotoTo,
   onRemovePhoto,
@@ -212,6 +218,7 @@ export function ProductDraftImagesStep({
   onDeleteImage,
 }: ProductDraftImagesStepProps) {
   const palette = useAppTheme();
+  const [dragPreview, setDragPreview] = useState<PhotoDragPreview | null>(null);
   if (photoCards) {
     const errors = photoCards.filter((card) => card.status === 'error');
     return (
@@ -233,6 +240,22 @@ export function ProductDraftImagesStep({
             {photoCards.length}
           </AppText>
         ) : null}
+        {photoOperationPending &&
+        !photoCards.some(
+          (card) => card.status === 'preparing' || card.status === 'uploading',
+        ) ? (
+          <View
+            accessibilityLiveRegion="polite"
+            style={{ flexDirection: 'row', gap: 8 }}
+          >
+            <ActivityIndicator size="small" color={palette.textSecondary} />
+            <AppText role="feedbackBody">
+              {photoCards.every((card) => card.status === 'done')
+                ? 'Сохранение порядка'
+                : 'Подготовка фотографий'}
+            </AppText>
+          </View>
+        ) : null}
         <DraftImageGrid
           images={photoCards.map((card, index) => ({
             id: card.id,
@@ -240,7 +263,7 @@ export function ProductDraftImagesStep({
             position: index,
           }))}
           addAction={
-            editable && !uploadPending && photoCards.length < 10 ? (
+            editable && photoCards.length < 10 ? (
               <MotionPressable
                 accessibilityRole="button"
                 accessibilityLabel="Добавить изображения"
@@ -272,6 +295,16 @@ export function ProductDraftImagesStep({
                 count={photoCards.length}
                 columns={columns}
                 disabled={!editable || uploadPending}
+                preview={dragPreview}
+                onPreview={(next) =>
+                  setDragPreview((previous) =>
+                    previous?.id === next?.id &&
+                    previous?.from === next?.from &&
+                    previous?.to === next?.to
+                      ? previous
+                      : next,
+                  )
+                }
                 onMove={onMovePhotoTo ?? (() => undefined)}
               >
                 <View
@@ -353,14 +386,19 @@ export function ProductDraftImagesStep({
                         position: 'absolute',
                         left: 9,
                         bottom: 12,
-                        padding: 6,
+                        paddingHorizontal: 8,
+                        paddingVertical: 4,
                         borderRadius: 14,
                         backgroundColor: palette.overlayScrim,
                         flexDirection: 'row',
-                        gap: 6,
+                        gap: 5,
                       }}
                     >
-                      <ActivityIndicator size="small" color={palette.white} />
+                      <ActivityIndicator
+                        size="small"
+                        color={palette.white}
+                        style={{ width: 16, height: 16 }}
+                      />
                       <AppText
                         role="toolLabel"
                         style={{ color: palette.white }}
@@ -412,7 +450,10 @@ export function ProductDraftImagesStep({
             );
           }}
         />
-        {errors.length || photoOrderError ? (
+        {errors.length ||
+        photoOrderError ||
+        photoPreparationError ||
+        imageSelectionError ? (
           <View
             accessibilityRole="alert"
             style={{
@@ -433,35 +474,30 @@ export function ProductDraftImagesStep({
                 role="feedbackTitle"
                 style={{ color: palette.feedbackDangerTitle }}
               >
-                Не удалось загрузить фото
+                {imageSelectionError
+                  ? 'Не удалось выбрать фото'
+                  : photoPreparationError
+                    ? 'Не удалось начать загрузку'
+                    : errors.length
+                      ? 'Не удалось загрузить фото'
+                      : 'Не удалось сохранить порядок'}
               </AppText>
               <AppText
                 role="feedbackBody"
                 style={{ color: palette.feedbackDangerText }}
               >
-                {getImageUploadErrorMessage(
-                  errors[0]?.error ?? photoOrderError,
-                ) ??
-                  ((errors[0]?.error ?? photoOrderError) instanceof
-                    ApiClientError &&
-                  [401, 403, 409].includes(
-                    ((errors[0]?.error ?? photoOrderError) as ApiClientError)
-                      .status,
-                  )
-                    ? 'Сессия или данные работы изменились. Обновите страницу.'
-                    : 'Проверьте соединение')}
+                {imageSelectionError ??
+                  photoFailureMessage(
+                    photoPreparationError ??
+                      errors[0]?.error ??
+                      photoOrderError,
+                    Boolean(photoOrderError) &&
+                      !photoPreparationError &&
+                      !errors.length,
+                  )}
               </AppText>
             </View>
           </View>
-        ) : null}
-        {imageSelectionError ? (
-          <AppText
-            role="feedbackBody"
-            tone="danger"
-            accessibilityLiveRegion="polite"
-          >
-            {imageSelectionError}
-          </AppText>
         ) : null}
         {!isCreationFlow &&
         onStartUpload &&
@@ -639,5 +675,26 @@ export function ProductDraftImagesStep({
         ) : null}
       </View>
     </View>
+  );
+}
+
+function photoFailureMessage(error: unknown, order: boolean) {
+  if (error instanceof ApiClientError) {
+    if (error.status === 401)
+      return order
+        ? 'Войдите в аккаунт снова. Фото загружены, но порядок ещё не подтверждён.'
+        : 'Войдите в аккаунт снова. Не закрывайте страницу: локальные фото ещё не загружены.';
+    if (error.status === 403)
+      return 'Нет доступа к изменению фото этой работы. Локальные фото сохранены на этой странице.';
+    if (error.status === 409)
+      return 'Работа изменилась в другой сессии. Локальные фото остаются на этой странице. «Закрыть» предложит отменить их изменения; не закрывайте страницу, если они ещё нужны.';
+    if (error.status === 415)
+      return 'Этот формат изображения не поддерживается. Выберите JPG, PNG или WebP.';
+  }
+  return (
+    getImageUploadErrorMessage(error) ??
+    (order
+      ? 'Фото загружены. Проверьте соединение и повторите сохранение порядка.'
+      : 'Проверьте соединение и повторите загрузку проблемного фото.')
   );
 }

@@ -48,6 +48,7 @@ type ResilientRemoteImageProps = {
   fallbackLabel: string;
   style: StyleProp<ViewStyle>;
   contentFit?: ImageProps['contentFit'];
+  loading?: ImageProps['loading'];
   contentPosition?: ImageProps['contentPosition'];
   transition?: ImageProps['transition'];
   recyclingKey?: string;
@@ -73,6 +74,7 @@ function RemoteImageLifetime({
   fallbackLabel,
   style,
   contentFit = 'cover',
+  loading,
   contentPosition,
   transition,
   recyclingKey,
@@ -201,6 +203,7 @@ function RemoteImageLifetime({
         key={sourceUri}
         source={{ uri: sourceUri }}
         contentFit={contentFit}
+        loading={loading}
         contentPosition={contentPosition}
         transition={transition}
         recyclingKey={`${recyclingKey ?? uri}-${recovery.requestVersion}`}

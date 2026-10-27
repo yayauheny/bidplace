@@ -16,6 +16,33 @@
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
 | Commerce, избранное/подписки, смена email/password из settings | Not implemented в launch scope / post-MVP; [следующая волна](15-POST-MVP-BACKLOG.md). Старый commerce runtime не разрешает включать продажи. |
 
+## 2026-10-27 — Photo interaction corrections
+
+**Implemented for tested local Web corrections; overall workflow Partial.**
+`PhotoCropSurface.web.tsx`, `photo-editor.tsx`, `SortablePhotoTile` and
+`product-draft-images.tsx` correct Original hiding, eager avatar preview, stable
+picker slot, insertion preview/cancel and one error banner. Shared
+`FormPageShell` owns bottom-action clearance; semantic tokens/shared button own
+stage/preview surfaces and creation-action shadow/weight. No route/API/DB/media
+revision contract changed. `product-draft-image-actions.ts` owns early preflight
+busy, cleanup on unmount and targeted preparing before uncertain-result lookup;
+operation keys/bytes, successful-photo reuse and safe replacement remain covered.
+
+[Evidence and limits](../audits/evidence/2026-10-27-photo-fixes/README.md),
+[implementation review](../audits/2026-10-26-PHOTO-WORKFLOW.md).
+Node 22: media 12/12 + focused final media 8/8 + shared-consumer 6/6
+Chromium/WebKit passed; affected unit/typecheck/lint and export results are in the
+audit. Final keyboard-remount focus 2/2 and full Web/Android/iOS export passed.
+Initial extra onboarding check reproduced its missing editor-confirmation
+step on baseline `49831921`; helper corrected. Admin's broad acknowledgement
+selector conflicted with a transient notice; exact acknowledgement plus all
+public-revision checks passed. No assertion or timeout relaxed.
+
+Physical Native (including drag-button exclusion/edge scrolling), actual browser
+chrome/OS zoom, exact wide design and live R2/CDN remain Needs verification;
+local CSS zoom 2 and Chromium CDP touch are not physical-device acceptance.
+`.cursor/` untouched. No merge/deploy.
+
 ## 2026-10-27 — Photo state review pack
 
 **Implemented for local Web evidence; workflow remains Partial.** Existing

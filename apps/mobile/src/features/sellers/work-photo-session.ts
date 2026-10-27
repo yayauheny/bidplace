@@ -26,6 +26,7 @@ export type WorkPhotoSession = {
   revisionId: string | null;
   orderConfirmed: boolean;
   orderError: unknown;
+  preparationError?: unknown;
   busy: boolean;
 };
 

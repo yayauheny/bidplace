@@ -40,8 +40,9 @@ export function FormPageShell({
         {...(footer ? { reserveDock: !hideDock } : {})}
         testID="form-page"
         contentContainerStyle={{
-          paddingBottom:
-            footer || bottomAction
+          paddingBottom: bottomAction
+            ? designTokens.space.x3
+            : footer
               ? 0
               : hideDock
                 ? designTokens.space.x8

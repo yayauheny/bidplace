@@ -206,3 +206,98 @@ No timeout/assertion suppression or runtime change. Affected typecheck/lint,
 E2E fence, formatting, docs links and diff check passed. No additional native/API
 build claimed for evidence-only changes. Full constraints in pack README;
 overall Partial, no merge/deploy.
+
+
+## 2026-10-27 — Continuation after visual/interaction review
+
+**Partial acceptance.** Continued on `feature/photo-workflow` above `49831921`.
+[31 original captures, including sequential drag/retry frames](evidence/2026-10-27-photo-fixes/README.md)
+are available in the [gallery](evidence/2026-10-27-photo-fixes/index.html).
+
+### Causes and selected correction
+
+Durable fix: correct the existing operation state and shared component owners.
+Acceptable workaround: keep the known limits and mark acceptance Partial; this
+is not used to claim the missing checks. Hack: duplicate CTA/negative offsets,
+hiding a leftover stencil with a screenshot patch, or replaying accepted files;
+rejected. No upload infrastructure rewrite or new dependency.
+
+- `PhotoCropSurface.web.tsx`: inherited visibility was defeated by cropper child
+  visibility. Opacity of the complete measured layer, inert/tab exclusion and
+  pointer exclusion keep Original free of crop visuals/controls without losing
+  rotation/flip or the retained crop geometry.
+- `product-draft-image-actions.ts`: busy now covers form persistence and server
+  refresh. Targeted Retry becomes preparing before reconciliation; preflight is
+  released on failure/unmount and cannot leave the cached photo session locked.
+  `preparationError` distinguishes preflight failure from `orderError`; operation
+  keys, prepared bytes, sequential queue, revision checks and recovery stay owned
+  by the existing lifecycle.
+- `product-draft-images.tsx`: the disabled add tile keeps its grid slot through
+  picker/open/cancel. One alert explains selection, preparation, file or order
+  failures, with specific access/revision guidance and no unsafe reload advice.
+  Saving order is labelled as order work, without a file-upload animation.
+- `SortablePhotoTile` / `sortable-photo-tile.ts`: presentation-only insertion
+  positions, cancel/drop semantics, full-tile mouse drag image and button exclusion;
+  bounded touch long press/edge scrolling on Web, keyboard alternatives and
+  reduced-motion rendering. Native neighbor movement reuses Reanimated.
+- `FormPageShell`: short-height regression exposed contact between the last tool
+  and CTA because scroll content ended with no clearance. Shared 12px end padding
+  fixes it at the owner. `AppShell` remains unchanged.
+- Avatar: URI and crop geometry were present; the earlier capture raced Expo's
+  lazy local-image loading. The active preview requests eager loading and the
+  browser check waits for decoded image data. Its surface/padding/type, the editor
+  stage and shared creation-action shadow/weight follow the live Figma nodes.
+
+Live source discrepancies: `7329:822` contains square 8×8 handles, and `7329:704`
+contains the filled add-slot label. Both remain. Live toolbar/tab weights agree
+with existing semantic roles, so they were not reduced on screenshot inference.
+Dynamic user photos are never replaced/cropped to imitate the design sample.
+
+### Scope and maintenance
+
+Runtime changes are limited to `apps/mobile` photo/editor/grid/action owners,
+`FormPageShell`, optional `ResilientRemoteImage.loading`, the shared solid
+creation-action style, and semantic tokens in `packages/design-tokens`.
+Existing owner specs and `work-media-lifecycle.spec.ts` cover regressions.
+No API client/server/database/public contract, storage lifecycle, route, Figma,
+protected product document or `.cursor/` change. No merge/deploy.
+
+The one canonical photo order changes only on commit; insertion state is local
+presentation. The bounded ten-photo grid keeps its existing PaddedGrid owner.
+The touch code is scoped to that gallery, not a reusable drag engine. Shared
+shell/button changes also reach Work editing, author application and moderation;
+account/settings/no-action shell variants retain their prior padding rule.
+
+### Verification limits
+
+Node 22.20.0. Full media gate: 12/12 Chromium/WebKit; final focused gate after
+new touch/picker/regular-draft/frame coverage: 8/8. Mobile unit suite: 141 files,
+1112 tests. Affected Turbo typecheck/lint, Expo Web export and full Web/Android/iOS export passed; e2e fence
+passed. CSS body zoom 2 is tested, not physical browser-toolbar/OS zoom.
+
+Additional consumer checks and baseline comparison are recorded in project/design
+status. Physical Native drag-button exclusion/autoscroll, physical iOS browser
+chrome, native runtime, exact wide Figma parity and production CDN remain
+Needs verification. Mouse OS-owned drag ghost shape is not proven by browser PNG;
+the code uses the whole clipped card as drag image. Do not treat these snapshots
+as full native/production/visual acceptance.
+
+
+Shared consumer checks: Work regular save, author onboarding geometry/state,
+and admin product-review/public-revision cases passed 6/6 Chromium/WebKit.
+Initial extra run: 1 passed / 2 failed. Original `49831921` comparison reproduced
+the author helper timeout (it selected an avatar and looked for Continue without
+confirming the editor); helper now presses the sole Install-photo confirmation.
+Admin passed on the baseline rerun; inspection identified a broad acknowledgement
+prefix matching the success and transient-publication messages. Its locator now
+selects the exact existing acknowledgement; all subsequent public-media/revision
+assertions remain. The final 6/6 rerun preserves those assertions/timeouts.
+
+
+Final accessibility follow-up: the row-based grid can remount a keyboard-moved
+card. An initial requestAnimationFrame restoration ran before the asynchronous
+query commit in Chromium (1 failed / 1 passed). Focus now follows the stable photo
+ID in the tile layout effect after the position commits; the unchanged focus
+assertion and touch/keyboard/cancel cases passed 2/2 Chromium/WebKit. Native
+Web/Android/iOS export completed successfully; physical runtime limits above
+remain unchanged. Save-race/preflight owner rerun: 75/75 passed.

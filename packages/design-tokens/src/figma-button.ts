@@ -254,8 +254,10 @@ export function figmaButtonSizeMetrics(size: FigmaButtonSize = 'matrix') {
       paddingY: 14,
       typography: {
         ...figmaButtonTokens.typography,
-        fontFamily: 'Inter_500Medium',
-        fontWeight: '500' as const,
+        fontFamily:
+          size === 'creationAction' ? 'Inter_600SemiBold' : 'Inter_500Medium',
+        fontWeight:
+          size === 'creationAction' ? ('600' as const) : ('500' as const),
       },
     };
   }

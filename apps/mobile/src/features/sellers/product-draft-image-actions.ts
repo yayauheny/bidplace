@@ -91,6 +91,7 @@ export function useProductDraftImageActions({
   const deleteConfirmLock = useRef(false);
   const imageSelection = useRef(0);
   const pendingUpload = useRef<UploadBatch | null>(null);
+  const releaseUploadPreparation = useRef<(() => void) | null>(null);
   const pickerLock = useRef(false);
   const uploadController = useRef<AbortController | null>(null);
   const userId =
@@ -173,6 +174,8 @@ export function useProductDraftImageActions({
     mounted.current = true;
     return () => {
       mounted.current = false;
+      releaseUploadPreparation.current?.();
+      releaseUploadPreparation.current = null;
       editorSourceDispose.current?.();
       editorSourceDispose.current = undefined;
       imageSelection.current += 1;
@@ -347,6 +350,11 @@ export function useProductDraftImageActions({
           )
             continue;
           try {
+            updateCard(card.id, (value) => ({
+              ...value,
+              status: 'preparing',
+              error: undefined,
+            }));
             if (card.uncertain) {
               const result = await api.images.photoOperation(
                 batch.productId,
@@ -391,11 +399,6 @@ export function useProductDraftImageActions({
                 continue;
               }
             }
-            updateCard(card.id, (value) => ({
-              ...value,
-              status: 'preparing',
-              error: undefined,
-            }));
             let prepared = card.prepared;
             if (card.kind !== 'crop' && !prepared) {
               if (!card.source) throw new ImagePreparationError('READ_FAILED');
@@ -535,6 +538,7 @@ export function useProductDraftImageActions({
           ...value,
           orderConfirmed: true,
           orderError: null,
+          preparationError: null,
         }));
         await invalidateOwnerWorks(queryClient, batch.productId);
       } catch (error) {
@@ -781,6 +785,7 @@ export function useProductDraftImageActions({
         updatePhotos((value) => ({
           ...value,
           orderConfirmed: false,
+          preparationError: null,
           cards: [
             ...value.cards,
             {
@@ -845,8 +850,35 @@ export function useProductDraftImageActions({
     )
       return;
     pickerLock.current = true;
+    setImageSelectionError(null);
+    updatePhotos((value) => ({
+      ...value,
+      busy: true,
+      orderError: null,
+      preparationError: null,
+    }));
     const epoch = currentAuthEpoch(queryClient),
       operation = session.snapshotOperation();
+    const retryCard = onlyId
+      ? currentPhotos().cards.find((card) => card.id === onlyId)
+      : undefined;
+    if (retryCard?.status === 'error' && retryCard.retryable)
+      updateCard(retryCard.id, (card) => ({ ...card, status: 'preparing' }));
+    const releasePreparation = () => {
+      if (releaseUploadPreparation.current !== releasePreparation) return;
+      releaseUploadPreparation.current = null;
+      pickerLock.current = false;
+      updatePhotos((value) => ({
+        ...value,
+        busy: false,
+        cards: value.cards.map((card) =>
+          card.id === retryCard?.id && card.status === 'preparing'
+            ? { ...card, status: retryCard.status }
+            : card,
+        ),
+      }));
+    };
+    releaseUploadPreparation.current = releasePreparation;
     try {
       if (!(await session.persistDirtyForm())) return;
       if (
@@ -873,13 +905,24 @@ export function useProductDraftImageActions({
         revisionId: currentPhotos().revisionId,
       };
       pendingUpload.current = batch;
-      updatePhotos((value) => ({ ...value, busy: true, orderError: null }));
+      updatePhotos((value) => ({
+        ...value,
+        busy: true,
+        orderError: null,
+        preparationError: null,
+      }));
       upload.mutate(batch);
+      releaseUploadPreparation.current = null;
+      pickerLock.current = false;
     } catch (error) {
       if (mounted.current && canWritePrivateCache(queryClient, epoch))
-        updatePhotos((value) => ({ ...value, orderError: error }));
+        updatePhotos((value) =>
+          currentPhotos().cards.some((card) => card.status !== 'done')
+            ? { ...value, preparationError: error }
+            : { ...value, orderError: error },
+        );
     } finally {
-      pickerLock.current = false;
+      releasePreparation();
     }
   };
 
@@ -1092,6 +1135,7 @@ export function useProductDraftImageActions({
       card.sourceDispose?.();
       updatePhotos((value) => ({
         ...value,
+        preparationError: null,
         cards: value.cards.filter((card) => card.id !== id),
         orderConfirmed: false,
       }));
@@ -1238,6 +1282,7 @@ export function useProductDraftImageActions({
             ) ?? 0),
         ),
         orderError: null,
+        preparationError: null,
       }));
       upload.reset();
       return true;
@@ -1262,6 +1307,7 @@ export function useProductDraftImageActions({
     photosBusy: photoState.data.busy,
     photoOrderConfirmed: photoState.data.orderConfirmed,
     photoOrderError: photoState.data.orderError,
+    photoPreparationError: photoState.data.preparationError,
     editingPhoto,
     editPhoto,
     confirmPhotoEdit,

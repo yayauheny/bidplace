@@ -1,4 +1,5 @@
 import {
+  designTokens,
   figmaButtonMatrixCell,
   figmaButtonSizeMetrics,
   figmaButtonTokens,
@@ -36,6 +37,9 @@ export function figmaButtonStyle(
     borderRadius: cell.borderRadius,
     backgroundColor: 'transparent',
     opacity: cell.controlOpacity,
+    ...(size === 'creationAction' && variant === 'solid'
+      ? { boxShadow: designTokens.shadow.primaryAction }
+      : {}),
     justifyContent: 'center' as const,
     alignItems: (size === 'navigation' ? 'stretch' : 'center') as
       | 'center'

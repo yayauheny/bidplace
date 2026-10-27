@@ -1011,3 +1011,28 @@ Founder-provided screenshot selects Hugeicons `Edit03Icon` (registry `edit-03`)
 for photo grid edit controls: diagonal pencil without an underline. Existing
 `pencil-edit-01` remains available to its other consumers. The existing
 FigmaIconButton owns size, focus, disabled state and hit target unchanged.
+
+
+### Photo interaction corrections — 2026-10-27
+
+Read-only source `pAPQo6cADmG5XzVmBX76EE`, nodes `7329:704/822/823/824` and
+handoff `7388:723`. `FormPageShell` reserves 12px at the end of scroll content
+when a bottom action exists, so the last control clears the action frame.
+`FigmaButton` solid `creationAction` uses `shadow.primaryAction` and semibold
+label from `7330:749` / `7332:730`; other sizes retain their existing paint.
+`mediaStage`, `previewSurface`, `previewBorder` own the editor/inline-preview
+surfaces from `7332:715` / `7347:720`. The avatar preview uses eager image loading;
+ordinary image consumers retain Expo's default loading policy.
+
+The Original crop engine stays measured for transforms but its entire layer has
+opacity 0, no pointer events, no tab stop and is inert. The photo grid keeps its
+add slot while disabled; presentation-only insertion state shifts neighbors
+without changing the canonical order until drop. Native uses existing Gesture
+Handler/Reanimated; Web retains HTML DnD and a bounded touch long-press/edge-scroll
+path. No second grid renderer, server reorder on pointer movement, or dependency.
+
+Live Figma still specifies square 8×8 crop handles (`7330:730–733`) and the filled
+add-slot label (`7329:819`). They are retained despite the pasted review's contrary
+visual description. Toolbar/tab weights already match the live Medium/Semibold
+roles; no weight reduction is inferred from screenshots. Wide exact parity and
+physical Native remain outside the completed visual claim.

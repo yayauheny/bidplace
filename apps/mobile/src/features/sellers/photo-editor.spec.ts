@@ -237,3 +237,23 @@ describe('photo editor', () => {
     }
   });
 });
+
+describe('photo sorting preview', () => {
+  it.each([
+    [0, 2, [2, 0, 1, 3]],
+    [3, 1, [0, 2, 3, 1]],
+  ])(
+    'reserves one insertion position from %i to %i',
+    async (from, to, expected) => {
+      const { photoPreviewIndex } = await import('./sortable-photo-tile');
+      expect(
+        [0, 1, 2, 3].map((index) =>
+          photoPreviewIndex(index, { id: 'photo', from, to }),
+        ),
+      ).toEqual(expected);
+      expect(
+        [0, 1, 2, 3].map((index) => photoPreviewIndex(index, null)),
+      ).toEqual([0, 1, 2, 3]);
+    },
+  );
+});

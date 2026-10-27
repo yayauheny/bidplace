@@ -143,7 +143,7 @@ export function PhotoEditor({
             height: viewportHeight,
             borderRadius: 22,
             overflow: 'hidden',
-            backgroundColor: palette.surfaceStrong,
+            backgroundColor: palette.mediaStage,
           }}
         >
           <PhotoCropSurface
@@ -244,10 +244,11 @@ export function PhotoEditor({
           <View
             style={{
               borderWidth: 1,
-              borderColor: palette.border,
+              borderColor: palette.previewBorder,
               borderRadius: 16,
               marginTop: 12,
-              padding: designTokens.space.x2,
+              padding: 5,
+              backgroundColor: palette.previewSurface,
               gap: designTokens.space.x3,
               flexDirection: 'row',
               alignItems: 'center',
@@ -255,6 +256,7 @@ export function PhotoEditor({
           >
             <CroppedPhoto
               uri={input.uri}
+              loading="eager"
               component="AuthorPhoto"
               accessibilityLabel="Превью фото автора"
               fallbackLabel="Превью недоступно"
@@ -265,12 +267,13 @@ export function PhotoEditor({
               style={{
                 width: 48,
                 height: 48,
+                flexShrink: 0,
                 borderRadius: 24,
                 overflow: 'hidden',
               }}
             />
             <View style={{ flex: 1, gap: designTokens.space.x1 }}>
-              <AppText role="feedbackTitle">
+              <AppText role="segmentLabel">
                 Как будет выглядеть в профиле
               </AppText>
               <AppText role="feedbackBody" tone="secondary">

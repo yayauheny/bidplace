@@ -1,12 +1,15 @@
 import { useState } from 'react';
+import { sheetTimingConfig } from '../../lib/layout-transition';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
+  withTiming,
 } from 'react-native-reanimated';
 import {
   photoDropIndex,
+  photoPreviewIndex,
   type SortablePhotoTileProps,
 } from './sortable-photo-tile';
 export function SortablePhotoTile({
@@ -16,14 +19,39 @@ export function SortablePhotoTile({
   columns,
   disabled,
   onMove,
+  preview,
+  onPreview,
   children,
 }: SortablePhotoTileProps) {
   const [width, setWidth] = useState(177);
   const x = useSharedValue(0),
     y = useSharedValue(0),
     active = useSharedValue(false);
+  const position = photoPreviewIndex(index, preview);
+  const shiftX = ((position % columns) - (index % columns)) * (width + 12);
+  const shiftY =
+    (Math.floor(position / columns) - Math.floor(index / columns)) *
+    ((width * 4) / 3 + 12);
+  const reportPreview = (x: number, y: number) =>
+    onPreview?.({
+      id,
+      from: index,
+      to: photoDropIndex(index, count, columns, width, x, y),
+    });
+  const clearPreview = () => onPreview?.(null);
   const style = useAnimatedStyle(() => ({
-    transform: [{ translateX: x.value }, { translateY: y.value }],
+    transform: [
+      {
+        translateX: active.value
+          ? x.value
+          : withTiming(shiftX, sheetTimingConfig),
+      },
+      {
+        translateY: active.value
+          ? y.value
+          : withTiming(shiftY, sheetTimingConfig),
+      },
+    ],
     zIndex: active.value ? 1 : 0,
   }));
   const gesture = Gesture.Pan()
@@ -31,10 +59,12 @@ export function SortablePhotoTile({
     .activateAfterLongPress(250)
     .onStart(() => {
       active.value = true;
+      runOnJS(reportPreview)(0, 0);
     })
     .onUpdate((event) => {
       x.value = event.translationX;
       y.value = event.translationY;
+      runOnJS(reportPreview)(event.translationX, event.translationY);
     })
     .onEnd((event) => {
       runOnJS(onMove)(
@@ -53,6 +83,7 @@ export function SortablePhotoTile({
       x.value = 0;
       y.value = 0;
       active.value = false;
+      runOnJS(clearPreview)();
     });
   return (
     <GestureDetector gesture={gesture}>

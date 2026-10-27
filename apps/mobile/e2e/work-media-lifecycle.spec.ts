@@ -585,9 +585,38 @@ test('shows a partial gallery upload and retries only the unfinished photo', asy
       });
       await photoEvidence(page, `partial-error-${width}`);
     }
+    let releaseCheck!: () => void;
+    const checkGate = new Promise<void>((resolve) => {
+      releaseCheck = resolve;
+    });
+    await page.route(
+      `**/api/products/${product.id}/image-operations/**`,
+      async (route) => {
+        await checkGate;
+        await route.continue();
+      },
+    );
     await page
       .getByRole('button', { name: /^Повторить загрузку фото/ })
       .click();
+    await expect(page.getByText('Подготовка', { exact: true })).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: /^Повторить загрузку фото/ }),
+    ).toHaveCount(0);
+    await expect(
+      page.getByRole('button', { name: 'Добавить изображения' }),
+    ).toBeDisabled();
+    await photoEvidence(page, 'retry-reconciling-390');
+    for (const frame of [1, 2, 3]) {
+      await page.screenshot({
+        path: resolve(
+          e2eEvidenceDir,
+          `2026-10-27-photo-review/${test.info().project.name}-retry-frame-${frame}.png`,
+        ),
+      });
+      await page.waitForTimeout(80);
+    }
+    releaseCheck();
     await expect(page.getByRole('img', { name: /^Фото \d+$/ })).toHaveCount(2);
     await expect(
       page.getByRole('img', { name: 'Фото 2', exact: true }),
@@ -810,7 +839,45 @@ test('photo editor retains settings on Work and avatar preparation failure and r
     await page
       .getByRole('button', { name: 'Редактировать фото 2', exact: true })
       .click();
+    const hiddenCrop = page.getByRole('group', {
+      name: /^Кадрирование:/,
+      includeHidden: true,
+    });
+    await expect(hiddenCrop).toHaveCSS('opacity', '0');
+    await expect(hiddenCrop).toHaveAttribute('inert', '');
     await photoEvidence(page, 'editor-original-390');
+    for (const height of [420, 600]) {
+      await page.setViewportSize({ width: 390, height });
+      await expect(
+        page.getByRole('button', { name: 'Готово', exact: true }),
+      ).toBeInViewport();
+      await page
+        .getByRole('button', { name: 'Сбросить' })
+        .scrollIntoViewIfNeeded();
+      const tool = await page
+        .getByRole('button', { name: 'Сбросить' })
+        .boundingBox();
+      const action = await page
+        .getByRole('button', { name: 'Готово', exact: true })
+        .boundingBox();
+      expect(tool!.y + tool!.height).toBeLessThanOrEqual(action!.y);
+    }
+    await page.setViewportSize({ width: 390, height: 874 });
+    await page.evaluate(() => {
+      document.body.style.zoom = '2';
+    });
+    await expect
+      .poll(() =>
+        page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+      )
+      .toBe(true);
+    await expect(
+      page.getByRole('button', { name: 'Готово', exact: true }),
+    ).toBeInViewport();
+    await photoEvidence(page, 'editor-zoom-200');
+    await page.evaluate(() => {
+      document.body.style.zoom = '';
+    });
     await page.getByRole('tab', { name: 'Кадрировать', exact: true }).click();
     await expect(
       page.getByRole('tab', { name: 'Кадрировать', exact: true }),
@@ -934,6 +1001,22 @@ test('photo editor retains settings on Work and avatar preparation failure and r
       page.getByRole('button', { name: /^Повторить загрузку фото/ }),
     ).toHaveCount(0);
     await photoEvidence(page, 'after-reload-server-gallery-390');
+    await page.goto(`/products/${product.id}`);
+    await page
+      .getByRole('button', { name: 'Редактировать фото 1', exact: true })
+      .click();
+    await page.setViewportSize({ width: 390, height: 420 });
+    await expect(
+      page.getByRole('button', { name: 'Готово', exact: true }),
+    ).toBeInViewport();
+    await page
+      .getByRole('button', { name: 'Сбросить' })
+      .scrollIntoViewIfNeeded();
+    await photoEvidence(page, 'existing-draft-editor-short-390');
+    await page.keyboard.press('Escape');
+    await expect(
+      page.getByRole('button', { name: 'Редактировать фото 1', exact: true }),
+    ).toBeFocused();
     await page.goto('/profile');
     await page.setViewportSize({ width: 390, height: 874 });
     const avatarPicker = page.waitForEvent('filechooser');
@@ -944,7 +1027,36 @@ test('photo editor retains settings on Work and avatar preparation failure and r
     await expect(
       page.getByText('Фотография автора', { exact: true }),
     ).toBeVisible();
+    await expect
+      .poll(() =>
+        page
+          .getByRole('img', { name: 'Превью фото автора' })
+          .locator('img')
+          .evaluate((img: HTMLImageElement) => ({
+            loaded: img.complete && img.naturalWidth > 0,
+            width: img.getBoundingClientRect().width,
+            height: img.getBoundingClientRect().height,
+          })),
+      )
+      .toMatchObject({ loaded: true });
     await photoEvidence(page, 'avatar-390');
+    await page.setViewportSize({ width: 390, height: 420 });
+    await expect(
+      page.getByRole('button', { name: 'Установить фото' }),
+    ).toBeInViewport();
+    await page
+      .getByText('Как будет выглядеть в профиле', { exact: true })
+      .scrollIntoViewIfNeeded();
+    const previewBox = await page
+      .getByText('Как будет выглядеть в профиле', { exact: true })
+      .boundingBox();
+    const avatarActionBox = await page
+      .getByRole('button', { name: 'Установить фото' })
+      .boundingBox();
+    expect(previewBox!.y + previewBox!.height).toBeLessThanOrEqual(
+      avatarActionBox!.y,
+    );
+    await page.setViewportSize({ width: 390, height: 874 });
     await page.getByRole('button', { name: 'Повернуть 90°' }).click();
     await photoEvidence(page, 'avatar-rotated-390');
     await failNextPhotoRender(page);
@@ -993,13 +1105,50 @@ test('records photo selection, limits, upload and order confirmation states', as
     await page.setViewportSize({ width: 390, height: 874 });
     let chooser = page.waitForEvent('filechooser');
     await page.getByRole('button', { name: 'Добавить изображения' }).click();
+    await expect(
+      page.getByRole('button', { name: 'Добавить изображения' }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: 'Добавить изображения' }),
+    ).toBeDisabled();
     await (await chooser).setFiles('e2e/fixtures/portfolio-photo-1.png');
     await expect(
       page.getByRole('button', { name: 'Загрузить 1 фото' }),
     ).toBeEnabled();
     await photoEvidence(page, 'one-local-390');
+    const firstBeforePicker = await page
+      .locator('[data-photo-id]')
+      .first()
+      .boundingBox();
+    const addBeforePicker = await page
+      .getByRole('button', { name: 'Добавить изображения' })
+      .boundingBox();
+    const cancelledPicker = page.waitForEvent('filechooser');
+    await page.getByRole('button', { name: 'Добавить изображения' }).click();
+    const cancelled = await cancelledPicker;
+    expect(await page.locator('[data-photo-id]').first().boundingBox()).toEqual(
+      firstBeforePicker,
+    );
+    expect(
+      await page
+        .getByRole('button', { name: 'Добавить изображения' })
+        .boundingBox(),
+    ).toEqual(addBeforePicker);
+    await cancelled.element().dispatchEvent('cancel');
+    await expect(
+      page.getByRole('button', { name: 'Добавить изображения' }),
+    ).toBeEnabled();
+    expect(await page.locator('[data-photo-id]').first().boundingBox()).toEqual(
+      firstBeforePicker,
+    );
     chooser = page.waitForEvent('filechooser');
     await page.getByRole('button', { name: 'Добавить изображения' }).click();
+    await expect(
+      page.getByRole('button', { name: 'Добавить изображения' }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: 'Добавить изображения' }),
+    ).toBeDisabled();
     await (await chooser).setFiles('e2e/fixtures/portfolio-photo-1.png');
     await expect(
       page.getByText('Это фото уже выбрано.', { exact: true }),
@@ -1074,6 +1223,12 @@ test('records photo selection, limits, upload and order confirmation states', as
     await expect(
       page.getByRole('button', { name: 'Сохранить порядок', exact: true }),
     ).toBeEnabled();
+    await expect(
+      page.getByText('Не удалось сохранить порядок', { exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByText('Не удалось загрузить фото', { exact: true }),
+    ).toHaveCount(0);
     await photoEvidence(page, 'order-save-error-390');
     await page.getByTestId('form-page').evaluate((node) => {
       node.scrollTop = node.scrollHeight;
@@ -1096,6 +1251,10 @@ test('records photo selection, limits, upload and order confirmation states', as
     await expect(
       page.getByRole('button', { name: 'Продолжить', exact: true }),
     ).toBeDisabled();
+    await expect(
+      page.getByText('Сохранение порядка', { exact: true }),
+    ).toBeVisible();
+    await expect(page.getByText('Загрузка', { exact: true })).toHaveCount(0);
     await photoEvidence(page, 'order-saving-390');
     releaseOrder();
     await expect(
@@ -1112,6 +1271,158 @@ test('records photo selection, limits, upload and order confirmation states', as
   } finally {
     releaseUpload();
     releaseOrder();
+    await context.close();
+  }
+});
+
+test('previews photo insertion, cancels it and commits only on drop with keyboard alternatives', async ({
+  browser,
+}) => {
+  const { seller, categoryId } = await createSellerFixture();
+  const { context, page } = await authenticatedPage(browser, seller);
+  try {
+    await page.setViewportSize({ width: 390, height: 874 });
+    const response = await context.request.post(
+      `${e2eApiBaseURL}/api/products`,
+      {
+        data: { title: 'Photo sorting', categoryId },
+      },
+    );
+    expect(response.status()).toBe(201);
+    const { product } = await response.json();
+    await page.goto(`/products/${product.id}?flow=creation&step=2`);
+    const chooser = page.waitForEvent('filechooser');
+    await page.getByRole('button', { name: 'Добавить изображения' }).click();
+    await (
+      await chooser
+    ).setFiles([1, 2, 3].map((i) => `e2e/fixtures/portfolio-photo-${i}.png`));
+    const tiles = page.locator('[data-photo-id]');
+    await expect(tiles).toHaveCount(3);
+    const ids = await tiles.evaluateAll((nodes) =>
+      nodes.map((node) => node.getAttribute('data-photo-id')),
+    );
+    const source = page.locator(`[data-photo-id="${ids[0]}"]`);
+    const target = page.locator(`[data-photo-id="${ids[2]}"]`);
+    const dataTransfer = await page.evaluateHandle(() => new DataTransfer());
+    const bounds = await target.boundingBox();
+    const hover = {
+      dataTransfer,
+      clientX: bounds!.x + bounds!.width / 2,
+      clientY: bounds!.y + bounds!.height / 2,
+    };
+    await source.dispatchEvent('dragstart', { dataTransfer });
+    await target.dispatchEvent('dragover', hover);
+    for (const frame of [1, 2, 3]) {
+      await page.screenshot({
+        path: resolve(
+          e2eEvidenceDir,
+          `2026-10-27-photo-review/${test.info().project.name}-drag-frame-${frame}.png`,
+        ),
+      });
+      await page.waitForTimeout(80);
+    }
+    await expect(source).toHaveCSS('opacity', '0.35');
+    await expect
+      .poll(() =>
+        tiles.nth(1).evaluate((node) => getComputedStyle(node).transform),
+      )
+      .not.toBe('matrix(1, 0, 0, 1, 0, 0)');
+    await photoEvidence(page, 'drag-insertion-390');
+    await source.dispatchEvent('dragend', { dataTransfer });
+    await expect(source).toHaveCSS('opacity', '1');
+    await expect
+      .poll(() =>
+        tiles.nth(1).evaluate((node) => getComputedStyle(node).transform),
+      )
+      .toBe('matrix(1, 0, 0, 1, 0, 0)');
+    expect(
+      await tiles.evaluateAll((nodes) =>
+        nodes.map((node) => node.getAttribute('data-photo-id')),
+      ),
+    ).toEqual(ids);
+    await source.dispatchEvent('dragstart', { dataTransfer });
+    await target.dispatchEvent('dragover', hover);
+    await target.dispatchEvent('drop', { dataTransfer });
+    await expect
+      .poll(() =>
+        tiles.evaluateAll((nodes) =>
+          nodes.map((node) => node.getAttribute('data-photo-id')),
+        ),
+      )
+      .toEqual([ids[1], ids[2], ids[0]]);
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await tiles.nth(0).focus();
+    await page.keyboard.press('Alt+ArrowRight');
+    await expect
+      .poll(() =>
+        tiles.evaluateAll((nodes) =>
+          nodes.map((node) => node.getAttribute('data-photo-id')),
+        ),
+      )
+      .toEqual([ids[2], ids[1], ids[0]]);
+    await expect(page.locator(`[data-photo-id="${ids[1]}"]`)).toBeFocused();
+    expect(
+      await tiles
+        .nth(0)
+        .evaluate((node) => getComputedStyle(node).transitionDuration),
+    ).toBe('0s');
+    if (test.info().project.name === 'chromium') {
+      const cdp = await context.newCDPSession(page);
+      await page.setViewportSize({ width: 390, height: 420 });
+      const first = await tiles.nth(0).boundingBox();
+      const x = first!.x + first!.width / 2;
+      const y = first!.y + 60;
+      await cdp.send('Input.dispatchTouchEvent', {
+        type: 'touchStart',
+        touchPoints: [{ x, y }],
+      });
+      await page.waitForTimeout(300);
+      await cdp.send('Input.dispatchTouchEvent', {
+        type: 'touchMove',
+        touchPoints: [{ x, y: 330 }],
+      });
+      await expect
+        .poll(() =>
+          page.getByTestId('form-page').evaluate((node) => node.scrollTop),
+        )
+        .toBeGreaterThan(0);
+      await photoEvidence(page, 'touch-drag-scroll-390');
+      await cdp.send('Input.dispatchTouchEvent', {
+        type: 'touchCancel',
+        touchPoints: [],
+      });
+      await expect
+        .poll(() =>
+          tiles.evaluateAll((nodes) =>
+            nodes.map((node) => node.getAttribute('data-photo-id')),
+          ),
+        )
+        .toEqual([ids[2], ids[1], ids[0]]);
+      await page.setViewportSize({ width: 390, height: 874 });
+      await page.getByTestId('form-page').evaluate((node) => {
+        node.scrollTop = 0;
+      });
+      await cdp.detach();
+    }
+    const edit = page.getByRole('button', {
+      name: 'Редактировать фото 1',
+      exact: true,
+    });
+    expect(
+      await edit.evaluate((node) =>
+        node.dispatchEvent(
+          new DragEvent('dragstart', {
+            bubbles: true,
+            cancelable: true,
+            dataTransfer: new DataTransfer(),
+          }),
+        ),
+      ),
+    ).toBe(false);
+    await expect(page.getByText('Настроить фото', { exact: true })).toHaveCount(
+      0,
+    );
+  } finally {
     await context.close();
   }
 });

@@ -499,6 +499,10 @@ export function ProductDraftScreen({
               uploadFiles={imageActions.uploadFiles}
               photoCards={imageActions.photoCards}
               photoOrderError={imageActions.photoOrderError}
+              photoPreparationError={imageActions.photoPreparationError}
+              photoOperationPending={
+                imageActions.photosBusy || imageActions.upload.isPending
+              }
               photoOrderConfirmed={imageActions.photoOrderConfirmed}
               onEditPhoto={(id) => void imageActions.editPhoto(id)}
               onMovePhotoTo={imageActions.movePhotoTo}

@@ -6,7 +6,11 @@ import { createRoot, type Root } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { workImageMaxInputBytes } from '@bidplace/contracts';
-import type { ApiClient } from '@bidplace/api-client';
+import { ApiClientError, type ApiClient } from '@bidplace/api-client';
+import {
+  ProductDraftImagesStep,
+  type ProductDraftImagesStepProps,
+} from './product-draft-images';
 import { useProductDraftImageActions } from './product-draft-image-actions';
 import type { ProductDraftSaveSession } from './product-draft-save';
 import type { ProductStoryEditor } from './use-product-story-editor';
@@ -715,7 +719,11 @@ describe('product draft submit lifecycle', () => {
       expect(harness.addImages).not.toHaveBeenCalled();
       expect(
         view.queryClient.getQueryData<WorkPhotoSession>(key),
-      ).toMatchObject({ cards: [{ server }], orderError: expect.any(Error) });
+      ).toMatchObject({
+        cards: [{ server }],
+        preparationError: expect.any(Error),
+        orderError: null,
+      });
     } finally {
       view.unmount();
     }
@@ -1580,6 +1588,7 @@ describe('product draft submit lifecycle', () => {
       });
       await act(() => view.actions.startUpload(selected));
       expect(harness.addImages).not.toHaveBeenCalled();
+      expect(view.actions.photosBusy).toBe(true);
       await act(async () => {
         finishSave(true);
         await start;
@@ -1614,8 +1623,14 @@ describe('product draft submit lifecycle', () => {
       });
       await flush();
       try {
-        if (reason === 'unmount') view.unmount();
-        else if (reason === 'session-change')
+        if (reason === 'unmount') {
+          view.unmount();
+          expect(
+            view.queryClient.getQueryData<WorkPhotoSession>(
+              workPhotoSessionKey('user-a', productId),
+            )?.busy,
+          ).toBe(false);
+        } else if (reason === 'session-change')
           await act(() => clearAuthenticatedSession(view.queryClient));
         await act(async () => {
           finishSave(reason !== 'failed-save');
@@ -2203,6 +2218,84 @@ describe('product draft submit lifecycle', () => {
         )?.disabled,
       ).toBe(false);
       view.unmount();
+    },
+  );
+});
+
+describe('photo failure feedback', () => {
+  it.each([
+    {
+      status: 401,
+      order: true,
+      title: 'Не удалось сохранить порядок',
+      message: 'Фото загружены, но порядок ещё не подтверждён.',
+    },
+    {
+      status: 403,
+      order: false,
+      title: 'Не удалось начать загрузку',
+      message: 'Нет доступа к изменению фото этой работы.',
+    },
+    {
+      status: 409,
+      order: false,
+      title: 'Не удалось начать загрузку',
+      message: 'Работа изменилась в другой сессии.',
+    },
+    {
+      status: 503,
+      order: true,
+      title: 'Не удалось сохранить порядок',
+      message:
+        'Фото загружены. Проверьте соединение и повторите сохранение порядка.',
+    },
+  ])(
+    'explains HTTP $status for order=$order without unsafe reload advice',
+    ({ status, order, title, message }) => {
+      const error = new ApiClientError('Synthetic failure', {
+        kind: status === 409 ? 'conflict' : 'server',
+        status,
+      });
+      const container = document.createElement('div');
+      const root = createRoot(container);
+      const props: ProductDraftImagesStepProps = {
+        photoCards: [],
+        images: [],
+        productStatus: 'DRAFT',
+        editable: true,
+        isCreationFlow: true,
+        wizardStep: 2,
+        reorderPending: false,
+        removePending: false,
+        uploadPending: false,
+        uploadError: false,
+        imageSelectionError: null,
+        removeOrReorderError: false,
+        photoOrderError: order ? error : null,
+        photoPreparationError: order ? null : error,
+        onChooseImages() {},
+        onMoveImage() {},
+        onDeleteImage() {},
+      };
+      try {
+        act(() => root.render(createElement(ProductDraftImagesStep, props)));
+        expect(container.textContent).toContain(title);
+        expect(container.textContent).toContain(message);
+        expect(container.textContent).not.toContain('Обновите страницу');
+        act(() =>
+          root.render(
+            createElement(ProductDraftImagesStep, {
+              ...props,
+              imageSelectionError: 'Это фото уже выбрано.',
+            }),
+          ),
+        );
+        expect(container.textContent).toContain('Не удалось выбрать фото');
+        expect(container.textContent).toContain('Это фото уже выбрано.');
+        expect(container.textContent).not.toContain(message);
+      } finally {
+        act(() => root.unmount());
+      }
     },
   );
 });

@@ -24,6 +24,14 @@ import {
 const light = lightColorMap;
 
 describe('figma button matrix', () => {
+  it('uses the shared creation action shadow without changing other buttons', () => {
+    expect(
+      figmaButtonStyle('solid', 'idle', 'creationAction', light).boxShadow,
+    ).toBe(designTokens.shadow.primaryAction);
+    expect(
+      figmaButtonStyle('solid', 'idle', 'matrix', light),
+    ).not.toHaveProperty('boxShadow');
+  });
   it('covers all 16 variant × interaction cells', () => {
     for (const variant of figmaButtonVariants) {
       for (const interaction of figmaButtonInteractions) {

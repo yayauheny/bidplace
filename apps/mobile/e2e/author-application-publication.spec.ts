@@ -26,6 +26,7 @@ async function choosePhoto(page: Page) {
   const chooserPromise = page.waitForEvent('filechooser');
   await page.getByRole('button', { name: 'Загрузить фото' }).click();
   await (await chooserPromise).setFiles('e2e/fixtures/profile-photo.png');
+  await page.getByRole('button', { name: 'Установить фото', exact: true }).click();
   await page.getByRole('button', { name: 'Продолжить', exact: true }).click();
   await expect(page).toHaveURL(/step=1/);
 }
@@ -56,6 +57,7 @@ test('author application without city continues and stores the city as null', as
     const chooserPromise = page.waitForEvent('filechooser');
     await page.getByRole('button', { name: 'Загрузить фото' }).click();
     await (await chooserPromise).setFiles('e2e/fixtures/profile-photo.png');
+    await page.getByRole('button', { name: 'Установить фото', exact: true }).click();
     await page.getByRole('button', { name: 'Продолжить', exact: true }).click();
     await page
       .getByRole('textbox', { name: 'Имя или название', exact: true })

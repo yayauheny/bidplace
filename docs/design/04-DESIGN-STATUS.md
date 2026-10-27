@@ -5,6 +5,34 @@
 Полный прежний журнал, включая ограничения ранних экранов:
 [история](../archive/design/04-DESIGN-STATUS-through-2026-10-23.md).
 
+## 2026-10-27 — Photo interaction corrections
+
+**Partial acceptance; local Web regressions verified.** Continued `feature/photo-workflow`
+above `49831921`. Original's complete crop layer is inert and transparent;
+Work/avatar CTA clears scroll content on 390×420, including ordinary-draft entry.
+Picker add slot remains in place. Upload preflight/targeted Retry are visibly busy;
+one alert distinguishes preparation/file/order/access/revision failures. Drop
+previews neighbors, cancellation retains order, keyboard/reduced motion remain;
+Chromium CDP touch covers long press, edge scroll and cancel. Avatar captures now
+wait for a decoded eagerly loaded local image. Shared stage/preview surfaces and
+creation-action shadow/label follow live `7329:704/822/823/824`, handoff `7388:723`.
+
+[31 original captures and sequential drag/Retry frames](../audits/evidence/2026-10-27-photo-fixes/README.md)
+([gallery](../audits/evidence/2026-10-27-photo-fixes/index.html)). Media 12/12, final
+focused media 8/8 and shared Work/author/moderation consumer 6/6 browser cases
+passed across Chromium/WebKit. Final keyboard-focus restoration after a row
+remount passed 2/2; full Web/Android/iOS export passed. Existing onboarding E2E helper now confirms the
+photo editor (its missing confirmation also failed on original HEAD); the admin
+acknowledgement locator is exact, avoiding ambiguity with a transient publication
+notice. No assertion/timeout was weakened.
+
+CSS body zoom 2 passed; physical toolbar/OS zoom, iOS browser chrome and physical
+Native drag/button/autoscroll acceptance remain Needs verification. Native uses
+existing Gesture Handler/Reanimated neighbor preview but has no new native edge
+scroll integration. OS-owned mouse drag-ghost shape is not proven by PNG. Exact
+wide Figma parity remains NEEDS-FIGMA. Live Figma square handles and filled add
+label are retained, contrary to those two pasted-review observations.
+
 ## 2026-10-27 — Photo state review pack
 
 **Partial.** [86 unretouched Web PNG and indexed gallery](../audits/evidence/2026-10-27-photo-states/README.md)

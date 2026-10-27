@@ -81,11 +81,14 @@ export function PhotoCropSurface({
       <div
         role="group"
         aria-label="Кадрирование: стрелки — перемещение, Alt и стрелки — размер, плюс и минус — масштаб"
-        tabIndex={0}
+        tabIndex={cropEnabled ? 0 : -1}
+        aria-hidden={!cropEnabled}
+        inert={!cropEnabled}
         style={{
           width: '100%',
           height: '100%',
-          visibility: cropEnabled ? 'visible' : 'hidden',
+          opacity: cropEnabled ? 1 : 0,
+          pointerEvents: cropEnabled ? 'auto' : 'none',
           touchAction: 'none',
         }}
         onKeyDown={(event) => {
