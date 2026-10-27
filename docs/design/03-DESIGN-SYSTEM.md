@@ -1071,7 +1071,15 @@ panel across movement; usable action focus survives boundaries and Escape.
 
 Figma `4562:32461`/`4563:32768` supply the existing story toolbar and text
 composition. By the user's selected scope, empty story now exposes a virtual
-text input and the hint pill, without autofocus; explicit text/heading insertion
+text input without autofocus; explicit text/heading insertion
 focuses its new block. Inputs grow with content and retain keyboard focus styling
 and browser spellcheck. Gallery list, intermediate picker button and lower back
 button are removed. No additional editor, portal, focus trap or DnD engine.
+
+First-input correction2026-10-27: the virtual empty paragraph uses the same keyed
+`ProductBlockActions`/`StoryTextInput` subtree as the adopted first block. Its key
+passes to the existing story owner when text becomes real; no remount or focus
+repair is needed for the first character. The duplicate hint pill is removed by
+explicit user request; only «Начните писать здесь» remains. The reserved photo
+status row distinguishes «Подготовка фотографий», «Загрузка фотографий» during
+actual sending, and «Сохранение порядка»; its geometry does not change.

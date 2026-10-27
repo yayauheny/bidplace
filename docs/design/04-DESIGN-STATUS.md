@@ -5,6 +5,17 @@
 Полный прежний журнал, включая ограничения ранних экранов:
 [история](../archive/design/04-DESIGN-STATUS-through-2026-10-23.md).
 
+## 2026-10-27 — Stable first story field and sending status
+
+**Partial.** Empty paragraph and first real paragraph share a keyed block/field
+subtree; typing no longer remounts the input. Only the field placeholder remains
+in the empty state; the second hint pill was removed at the user's request.
+Photo status distinguishes actual sending from preparation without changing the
+reserved row or grid geometry. Blank save filtering and existing mechanisms stay.
+[Addressed input/caret/status checks](../audits/evidence/2026-10-27-story-input-status/README.md).
+Server file reuse is **Not implemented**; session SHA-256 is not its implementation.
+Manual DnD/system ghost and physical Native acceptance remain open.
+
 ## 2026-10-27 — Stable photo states and compact story controls
 
 **Partial.** Live story nodes `4562:32461`, `4563:32768`, `4563:33344` and photo

@@ -716,12 +716,15 @@ export function useProductStoryEditor({
     persistDraft();
   };
 
-  const addText = (type: 'HEADING' | 'PARAGRAPH', text = '') => {
+  const addText = (
+    type: 'HEADING' | 'PARAGRAPH',
+    text = '',
+    key: string = crypto.randomUUID(),
+  ) => {
     const count = current.current.blocks.filter(
       (block) => block.type !== 'IMAGE',
     ).length;
     if (count >= STORY_LIMITS.maxTextBlocks) return;
-    const key = crypto.randomUUID();
     change((blocks) => [...blocks, { key, type, text }]);
     return current.current.blocks.some((block) => block.key === key)
       ? key

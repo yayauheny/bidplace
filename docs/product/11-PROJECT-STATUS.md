@@ -16,6 +16,18 @@
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
 | Commerce, избранное/подписки, смена email/password из settings | Not implemented в launch scope / post-MVP; [следующая волна](15-POST-MVP-BACKLOG.md). Старый commerce runtime не разрешает включать продажи. |
 
+## 2026-10-27 — First story input identity and upload status
+
+**Partial.** `product-draft-story` renders the virtual empty paragraph and first
+real block through the same keyed subtree; `useProductStoryEditor.addText`
+adopts that key. Initial typing preserves the field instance/focus/caret;
+blank content still filters out at save. Removed the duplicate empty-story hint.
+The existing fixed-height status area now says «Загрузка фотографий» while a card
+is sending, with distinct preparation/order/completed states. No DnD changes.
+**Not implemented:** automatic server reuse of an identical file selected in
+gallery and story. Session SHA-256 only detects repeated gallery selection;
+it does not implement shared server media reuse. [Evidence and checks](../audits/evidence/2026-10-27-story-input-status/README.md).
+
 ## 2026-10-27 — Photo status and story interaction follow-up
 
 **Partial.** User-selected UI/client scope: `product-draft-images` keeps stable

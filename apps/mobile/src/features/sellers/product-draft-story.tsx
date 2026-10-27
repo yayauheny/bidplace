@@ -34,7 +34,11 @@ export type ProductDraftStoryStepProps = {
   savePending: boolean;
   saveError: string | null;
   retryUpload: boolean;
-  onAddText: (type: 'HEADING' | 'PARAGRAPH', text?: string) => string | void;
+  onAddText: (
+    type: 'HEADING' | 'PARAGRAPH',
+    text?: string,
+    key?: string,
+  ) => string | void;
   onEditText: (key: string, text: string) => void;
   onEditAlt: (key: string, text: string) => void;
   onRemove: (key: string) => void;
@@ -67,8 +71,13 @@ export function ProductDraftStoryStep({
 }: ProductDraftStoryStepProps) {
   const [openBlock, setOpenBlock] = useState<string | null>(null);
   const [focusKey, setFocusKey] = useState<string | null>(null);
+  const [emptyKey] = useState(() => crypto.randomUUID());
+  const virtual = blocks.length === 0 && editable;
+  const renderedBlocks: EditableStoryBlock[] = virtual
+    ? [{ key: emptyKey, type: 'PARAGRAPH', text: '' }]
+    : blocks;
   const addText = (type: 'HEADING' | 'PARAGRAPH', text?: string) => {
-    const key = onAddText(type, text);
+    const key = onAddText(type, text, virtual ? emptyKey : undefined);
     if (typeof key === 'string') setFocusKey(key);
   };
   const textCount = blocks.filter((block) => block.type !== 'IMAGE').length;
@@ -121,16 +130,7 @@ export function ProductDraftStoryStep({
           overflow: 'visible',
         }}
       >
-        {blocks.length === 0 && editable ? (
-          <StoryTextInput
-            heading={false}
-            value=""
-            placeholder="Начните писать здесь"
-            disabled={savePending}
-            onChange={(text) => addText('PARAGRAPH', text)}
-          />
-        ) : null}
-        {blocks.map((block, index) => {
+        {renderedBlocks.map((block, index) => {
           const disabled = !editable || savePending;
           const galleryImageId =
             block.type === 'IMAGE'
@@ -144,7 +144,7 @@ export function ProductDraftStoryStep({
               open={openBlock === block.key}
               onOpenChange={(open) => setOpenBlock(open ? block.key : null)}
               kind={block.type === 'IMAGE' ? 'image' : 'text'}
-              editable={editable}
+              editable={editable && !virtual}
               disabled={disabled}
               first={index === 0}
               last={index === blocks.length - 1}
@@ -193,7 +193,10 @@ export function ProductDraftStoryStep({
                   disabled={disabled}
                   focus={focusKey === block.key}
                   onFocused={() => setFocusKey(null)}
-                  onChange={(value) => onEditText(block.key, value)}
+                  onChange={(value) => {
+                    if (virtual) onAddText('PARAGRAPH', value, emptyKey);
+                    else onEditText(block.key, value);
+                  }}
                 />
               )}
             </ProductBlockActions>
@@ -255,23 +258,6 @@ export function ProductDraftStoryStep({
               onPress={onSaveAndContinue}
             />
           </View>
-        ) : null}
-        {!hasBlocks && editable ? (
-          <AppText
-            role="bodySmall"
-            tone="subdued"
-            style={{
-              alignSelf: 'center',
-              paddingHorizontal: designTokens.space.x3,
-              paddingVertical: designTokens.space.x2,
-              borderRadius: 31,
-              backgroundColor: palette.surfaceMuted,
-              borderColor: palette.toolbarBorder,
-              borderWidth: 0.5,
-            }}
-          >
-            Начните создавать тут
-          </AppText>
         ) : null}
         {retryUpload ? (
           <SecondaryButton

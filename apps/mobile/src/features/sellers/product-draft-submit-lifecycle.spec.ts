@@ -2331,6 +2331,63 @@ describe('product draft submit lifecycle', () => {
   );
 });
 
+describe('photo status transitions', () => {
+  it('distinguishes preparation, sending, order confirmation and completion in one status area', () => {
+    const container = document.createElement('div');
+    const root = createRoot(container);
+    const props: ProductDraftImagesStepProps = {
+      images: [],
+      productStatus: 'DRAFT',
+      editable: true,
+      isCreationFlow: true,
+      wizardStep: 2,
+      reorderPending: false,
+      removePending: false,
+      uploadPending: false,
+      uploadError: false,
+      imageSelectionError: null,
+      removeOrReorderError: false,
+      onChooseImages() {},
+      onMoveImage() {},
+      onDeleteImage() {},
+    };
+    const transitions = [
+      ['local', true, 'Подготовка фотографий'],
+      ['preparing', true, 'Подготовка фотографий'],
+      ['uploading', true, 'Загрузка фотографий'],
+      ['done', true, 'Сохранение порядка'],
+      ['done', false, 'Загружено 1 из 1'],
+    ] as const;
+    try {
+      for (const [status, pending, expected] of transitions) {
+        act(() =>
+          root.render(
+            createElement(ProductDraftImagesStep, {
+              ...props,
+              photoOperationPending: pending,
+              photoCards: [
+                {
+                  id: 'photo',
+                  uri: 'blob:photo',
+                  kind: 'add',
+                  operationKey: 'upload',
+                  status,
+                  edit: { ...originalPhotoEdit },
+                },
+              ],
+            }),
+          ),
+        );
+        expect(container.textContent).toContain(expected);
+        if (status === 'uploading')
+          expect(container.textContent).not.toContain('Подготовка фотографий');
+      }
+    } finally {
+      act(() => root.unmount());
+    }
+  });
+});
+
 describe('photo failure feedback', () => {
   it.each([
     {

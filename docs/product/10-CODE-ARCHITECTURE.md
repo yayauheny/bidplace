@@ -61,7 +61,10 @@ lookup. Load callbacks are guarded by session/card/current URI; generated and
 picker blob resources retire after switch/removal/session cleanup. Existing
 resilient-image retries still own remote failures. `useProductStoryEditor` omits
 blank text at serialization while retaining meaningful block keys. No server,
-database, API or media-ownership contract changed; server reuse remains deferred.
+database, API or media-ownership contract changed. Automatic server reuse of an
+identical file selected for gallery and story is **Not implemented**; the session
+hash is not that feature. The story UI now supplies its virtual empty field key
+when adding the first block, preserving input identity through adoption.
 
 ## 2026-10-05 — Cloudflare application deployment (Partial)
 

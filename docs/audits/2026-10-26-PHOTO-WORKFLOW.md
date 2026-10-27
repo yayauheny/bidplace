@@ -514,3 +514,32 @@ Final source exported successfully for Web/iOS/Android with `--no-bytecode`
 surface wrapper and description-panel guard. A preceding full Hermes export
 also passed before those last guards (`/tmp/bidplace-photo-story-release-check`).
 No physical Native runtime or new manual ghost/zoom claim is inferred from export.
+
+## 2026-10-27 — First input identity and sending status
+
+Status: **Partial**. Follow-up to `6d51920d`; no DnD or server changes.
+The standalone empty story input was replaced on first typing by a keyed block
+subtree. It now uses that same subtree from the start and passes its stable key
+to `useProductStoryEditor.addText`. The original input, focus and caret survive
+adoption; blank/whitespace blocks remain excluded from saving. The duplicate
+empty-story hint was removed. Actual image POST now shows «Загрузка фотографий»
+in the existing reserved caption area, preserving grid/status geometry.
+
+Addressed Chromium/WebKit scenario passed **2/2**, including held image POST,
+status height/grid Y, original textarea identity after first typing, insertion
+at the caret, clearing to whitespace, Skip, and existing growth/menu checks.
+[Screenshots and scope](evidence/2026-10-27-story-input-status/README.md).
+The runner reused Web8081/API3017 without prepare/reset; only disposable fixtures
+were created. User accounts/data were not cleared.
+
+Mobile unit suite passed **141 files / 1119 tests**. Typecheck caught a duplicate
+field in a test mock; removing that duplicate preserved the existing mock.
+Final typecheck, lint without autofix, e2e fence and focused owners **90/90**
+passed. Web/iOS/Android JS export with `--no-bytecode` passed at
+`/tmp/bidplace-story-input-status`; export does not prove physical Native behavior.
+
+**Not implemented:** automatic server reuse of the same file between gallery
+and story. Session SHA-256 detects repeated gallery selection only and is not
+implementation or evidence of that server requirement. Physical Native, manual
+DnD/system ghost, live CDN and the original unreproduced CTA disappearance remain
+open. No new mechanism was added to address those unverified scenarios.

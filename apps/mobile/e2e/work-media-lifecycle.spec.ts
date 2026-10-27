@@ -1530,6 +1530,10 @@ test('keeps photo status geometry stable and story controls attached to their bl
   const imageGate = new Promise<void>((resolveGate) => {
     releaseImages = resolveGate;
   });
+  let releaseUpload: () => void = () => undefined;
+  const uploadGate = new Promise<void>((resolveGate) => {
+    releaseUpload = resolveGate;
+  });
   let failImageReads = false;
   try {
     await page.setViewportSize({ width: 390, height: 874 });
@@ -1559,6 +1563,11 @@ test('keeps photo status geometry stable and story controls attached to their bl
       'Не удалось выбрать',
     );
     await expect(page.locator('[data-photo-id]')).toHaveCount(2);
+    await page.route('**/api/products/*/images', async (route) => {
+      if (route.request().method() === 'POST') await uploadGate;
+      await route.continue();
+    });
+    const statusBefore = await page.getByTestId('photo-status').boundingBox();
     await page.route(/\/api\/images\/[^/?]+(?:\?.*)?$/, async (route) => {
       if (route.request().method() === 'GET') {
         await imageGate;
@@ -1569,20 +1578,34 @@ test('keeps photo status geometry stable and story controls attached to their bl
       }
       await route.continue();
     });
+    const followupDir = resolve(
+      e2eEvidenceDir,
+      '2026-10-27-photo-story-followup',
+    );
+    await mkdir(followupDir, { recursive: true });
     await page
       .getByRole('button', { name: 'Загрузить 2 фото', exact: true })
       .click();
+    await expect(page.getByTestId('photo-status')).toHaveText(
+      'Загрузка фотографий',
+    );
+    expect(
+      (await page.getByTestId('photo-status').boundingBox())!.height,
+    ).toBeCloseTo(statusBefore!.height, 1);
+    expect((await page.getByTestId('photo-grid').boundingBox())!.y).toBeCloseTo(
+      gridBefore!.y,
+      1,
+    );
+    await page.screenshot({
+      path: resolve(followupDir, `${test.info().project.name}-sending-390.png`),
+    });
+    releaseUpload();
     await expect(
       page.getByText('Загрузка', { exact: true }).first(),
     ).toBeVisible();
     await expect(
       page.getByRole('img', { name: 'Локальное превью фото', exact: true }),
     ).toHaveCount(2);
-    const followupDir = resolve(
-      e2eEvidenceDir,
-      '2026-10-27-photo-story-followup',
-    );
-    await mkdir(followupDir, { recursive: true });
     await page.screenshot({
       path: resolve(followupDir, `${test.info().project.name}-loading-390.png`),
     });
@@ -1642,6 +1665,37 @@ test('keeps photo status geometry stable and story controls attached to their bl
       name: 'Текст истории',
       exact: true,
     });
+    await expect(
+      page.getByText('Начните создавать тут', { exact: true }),
+    ).toHaveCount(0);
+    const initialInput = await paragraph.elementHandle();
+    await paragraph.click();
+    await paragraph.pressSequentially('А');
+    expect(
+      await initialInput!.evaluate(
+        (el) => el.isConnected && el === document.activeElement,
+      ),
+    ).toBe(true);
+    await paragraph.pressSequentially('БВ');
+    await paragraph.press('ArrowLeft');
+    await paragraph.pressSequentially('!');
+    await expect(paragraph).toHaveValue('АБ!В');
+    expect(
+      await initialInput!.evaluate((el) => ({
+        connected: el.isConnected,
+        caret: (el as HTMLTextAreaElement).selectionStart,
+      })),
+    ).toEqual({ connected: true, caret: 3 });
+    await paragraph.fill('   ');
+    await expect(
+      page.getByRole('button', { name: 'Пропустить', exact: true }),
+    ).toBeVisible();
+    expect(
+      await initialInput!.evaluate(
+        (el) => el.isConnected && el === document.activeElement,
+      ),
+    ).toBe(true);
+
     await paragraph.fill(
       'Первая строка\nВторая строка\nТретья строка\nЧетвёртая строка\nПятая строка\nШестая строка',
     );
@@ -1723,6 +1777,7 @@ test('keeps photo status geometry stable and story controls attached to their bl
     }
   } finally {
     releaseImages();
+    releaseUpload();
     await context.close();
   }
 });

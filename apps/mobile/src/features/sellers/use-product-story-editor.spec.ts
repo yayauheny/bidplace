@@ -120,6 +120,21 @@ afterEach(() => {
 });
 
 describe('revision-backed Work Story editor', () => {
+  it('adopts the empty input key and keeps it while editing and clearing its contents', async () => {
+    const view = mount();
+    const inputKey = 'empty-input';
+    act(() => {
+      expect(view.editor.addText('PARAGRAPH', 'А', inputKey)).toBe(inputKey);
+    });
+    act(() => view.editor.editText(inputKey, 'АБВ'));
+    expect(view.editor.blocks).toMatchObject([{ key: inputKey, text: 'АБВ' }]);
+    act(() => view.editor.editText(inputKey, '   '));
+    expect(view.editor.blocks).toMatchObject([{ key: inputKey, text: '   ' }]);
+    view.replaceCreation.mockResolvedValueOnce({ storyToken: 1, blocks: [] });
+    await act(() => view.editor.save());
+    expect(view.replaceCreation.mock.calls[0]?.[1].blocks).toEqual([]);
+  });
+
   it('omits blank text from saving without changing the identity of meaningful blocks', async () => {
     const view = mount();
     view.replaceCreation.mockResolvedValue({

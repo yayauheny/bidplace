@@ -247,6 +247,7 @@ export function ProductDraftImagesStep({
         }}
       >
         <View
+          testID="photo-status"
           style={{ minHeight: designTokens.typography.mediaCaption.lineHeight }}
           accessibilityLiveRegion="polite"
         >
@@ -256,9 +257,11 @@ export function ProductDraftImagesStep({
             style={{ textAlign: 'center' }}
           >
             {photoOperationPending
-              ? photoCards.every((card) => card.status === 'done')
-                ? 'Сохранение порядка'
-                : 'Подготовка фотографий'
+              ? photoCards.some((card) => card.status === 'uploading')
+                ? 'Загрузка фотографий'
+                : photoCards.every((card) => card.status === 'done')
+                  ? 'Сохранение порядка'
+                  : 'Подготовка фотографий'
               : photoCards.some((card) => card.status !== 'local')
                 ? `Загружено ${photoCards.filter((card) => card.status === 'done').length} из ${photoCards.length}`
                 : ' '}
