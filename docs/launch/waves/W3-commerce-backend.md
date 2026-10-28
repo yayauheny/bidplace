@@ -237,16 +237,20 @@ GET/PUT /api/me/notification-settings
 
 **Interfaces:**
 - Produces: `POST /api/works/:productId/listings`, `POST /api/listings/:id/cancel`,
-  `POST /api/admin/listings/:id/remove`; поле `lot: PublicLot | null` в
-  `GET /api/works/:publicId`.
+  `POST /api/admin/listings/:id/remove`; `GET /api/works/:publicId/lot` →
+  `PublicLot | null` с `serverNow` и `viewer` для вошедшего, `Cache-Control: no-store`
+  (ответ работы кэшируется Worker'ом 30 с — `deploy/cloudflare/src/router.ts`
+  `publicCacheTtl`; лот в него не кладётся).
   `dbNow(tx): Promise<Date>`; `assertBuyerEligible(tx, { userId, listing }): Promise<void>`.
 
 - [ ] **Шаг 1: падающие тесты** (`it.each` по причине отказа): чужая работа,
   скрытая работа, автор не одобрен, почта не подтверждена, уже есть лот,
   открытый заказ, проданная работа (`PRODUCT_ALREADY_SOLD`). Успех: фикс и
   аукцион (сейчас и по расписанию). Снятие: фикс — всегда до покупки; аукцион —
-  только без ставок; админ — любой, с `auditEvent`. Блок `lot` и метки
-  «Забронировано»/«Продано» по таблице COMMERCE §3.2. Скрыть работу с лотом → `PRODUCT_IN_SALE`.
+  только без ставок; админ — любой, с `auditEvent`. Ответ `/lot` и метки
+  «Забронировано»/«Продано» по таблице COMMERCE §3.2; `viewer.blockedReason` для
+  каждой причины отказа покупателю; ответ без сессии не содержит `viewer`;
+  заголовок `no-store`; тест Worker: `/api/works/x/lot` не кэшируется. Скрыть работу с лотом → `PRODUCT_IN_SALE`.
 - [ ] **Шаг 2:** FAIL → реализовать → PASS.
 - [ ] **Шаг 3:** коммит `feat: create and cancel listings`.
 

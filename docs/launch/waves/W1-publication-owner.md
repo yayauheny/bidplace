@@ -181,15 +181,25 @@ findSellerProductIdsInSale(tx: Prisma.TransactionClient, sellerId: string): Prom
 
 ### Task 4: Тексты новых кодов ошибок
 
-**Files:** Modify: место, где `apps/mobile` превращает `ApiErrorCode` в текст
-(найти по существующему коду, например `email_not_verified`); его спек.
+Общей таблицы «код → текст» в `apps/mobile` нет: экраны ветвятся по
+`classifyApiError(error).kind`. Эта задача создаёт таблицу; W4 добавляет в неё
+коды продаж.
 
-**Reuse:** существующий маппинг кодов.
+**Files:**
+- Create: `apps/mobile/src/lib/api-error-messages.ts`, `apps/mobile/src/lib/api-error-messages.spec.ts`
+- Modify: экраны черновика и кабинета, где показывается ошибка скрытия/сохранения работы
+
+**Reuse:** `getApiErrorCode` из `@bidplace/api-client`; существующий показ ошибки на экране.
+
+**Interfaces:**
+- Produces: `apiErrorMessage(error: unknown): string | null` — текст по
+  `ApiErrorCode` или `null` (экран оставляет свой общий текст).
 
 - [ ] **Шаг 1:** падающий тест: `PRODUCT_IN_SALE` → «Работа сейчас в продаже.
   Снимите лот, чтобы изменить или скрыть её»; `PRODUCT_STATE_CONFLICT` → «Работа
-  изменилась. Обновите страницу и попробуйте снова».
-- [ ] **Шаг 2:** добавить строки; PASS; коммит `feat: show in-sale and state conflict errors`.
+  изменилась. Обновите страницу и попробуйте снова»; неизвестный код → `null`.
+- [ ] **Шаг 2:** реализовать; экраны скрытия и сохранения работы показывают
+  `apiErrorMessage(error) ?? <прежний текст>`; PASS; коммит `feat: map work state errors to messages`.
 
 ## Документы и проверки
 

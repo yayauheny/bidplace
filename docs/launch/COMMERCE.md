@@ -419,7 +419,7 @@ CREATE UNIQUE INDEX one_open_report_per_reporter   ON reports(reporter_user_id, 
 | --- | --- | --- |
 | `POST /api/works/:productId/listings` | автор | создать лот |
 | `POST /api/listings/:id/cancel` | автор | снять |
-| `GET /api/works/:publicId` | все | + блок `lot` (тип, фактический статус, цена, мин. ставка, ставок, сроки, `viewerIsLeading`, метка) |
+| `GET /api/works/:publicId/lot` | все | лот работы: тип, фактический статус, цена, мин. ставка, ставок, сроки, метка, `serverNow`; для вошедшего — блок `viewer` (`role`, `isLeading`, `blockedReason`). `Cache-Control: no-store`. Ответ самой работы (кэш на краю 30 с) лот не содержит |
 | `GET /api/listings/:id/bids` | все | последние 20 ставок: сумма, время, «Участник N» (без имён) |
 | `POST /api/listings/:id/bids` | покупатель | `{ amountMinor, idempotencyKey }` |
 | `POST /api/listings/:id/purchase` | покупатель | `{ idempotencyKey, comment? }` |
@@ -447,7 +447,7 @@ CREATE UNIQUE INDEX one_open_report_per_reporter   ON reports(reporter_user_id, 
 `IDEMPOTENCY_KEY_REUSED`, `ORDER_TRANSITION_NOT_ALLOWED`, `PRODUCT_IN_SALE` (W1),
 `PRODUCT_ALREADY_SOLD`, `NO_NEXT_BIDDER`. Каждому — текст в клиенте (W4).
 
-Обновление без realtime: страница работы с лотом `LIVE` опрашивает `GET /api/works/:publicId`
+Обновление без realtime: страница работы с лотом `LIVE` опрашивает `GET /api/works/:publicId/lot`
 раз в 10 с, пока вкладка видна; последние 2 минуты аукциона — раз в 3 с. Заказы и
 «требует внимания» — при фокусе и раз в 60 с.
 
