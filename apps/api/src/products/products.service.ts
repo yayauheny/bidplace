@@ -765,6 +765,7 @@ export class ProductsService {
         throw new ConflictException('Product revision cannot be edited');
       }
       return replaceProductStory(tx, {
+        media: this.media,
         userId,
         productId,
         revisionId: product.editingRevisionId,

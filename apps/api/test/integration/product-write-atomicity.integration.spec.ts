@@ -410,14 +410,8 @@ describe('Product write atomicity against PostgreSQL', () => {
     );
 
     const storyPromise = products.replaceCreationStory(owner.id, product.id, {
-      intro: 'Late story',
-      steps: [
-        {
-          id: product.creationSteps[0]!.id,
-          title: 'Changed',
-          body: 'Should not persist',
-        },
-      ],
+      storyToken: 0,
+      blocks: [{ type: 'PARAGRAPH', text: 'Late story' }],
     });
     await waitThenRelease(release);
 
@@ -437,6 +431,7 @@ describe('Product write atomicity against PostgreSQL', () => {
     expect(step.title).toBe('Sketch');
     expect(step.body).toBe('First step');
     expect(persisted.creationIntro).toBeNull();
+    expect(await prisma.productRevisionStoryBlock.count({ where: { revision: { productId: product.id } } })).toBe(0);
   });
 
   it('lets a rejected Product stay editable and resubmit on the same id', async () => {

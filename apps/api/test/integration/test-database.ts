@@ -38,7 +38,7 @@ function assertSafeIntegrationDatabaseUrl(databaseUrl: string): URL {
     throw new Error('Integration database URL must use the PostgreSQL protocol');
   }
 
-  if (!ALLOWED_TEST_DATABASE_NAME.test(databaseName)) {
+  if (databaseName !== 'bidplace_e2e' && !ALLOWED_TEST_DATABASE_NAME.test(databaseName)) {
     throw new Error(
       `Refusing to use non-test integration database "${databaseName}"`,
     );

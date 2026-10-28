@@ -1120,6 +1120,32 @@ describe('ImagesService media gallery admission', () => {
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
+  it.each([false, true])('rejects a full story before stage or under the concurrent locked recheck (%s)', async (concurrent) => {
+    const product = createApprovedProduct([]);
+    const create = vi.fn();
+    const stage = vi.fn().mockResolvedValue({ id: 'story-asset' });
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ id: 'product-id' }]),
+      product: { findUnique: vi.fn().mockResolvedValue(product) },
+      productRevisionStoryAsset: {
+        findUnique: vi.fn().mockResolvedValue(null),
+        count: vi.fn().mockResolvedValue(5), create,
+      },
+    };
+    const prisma = {
+      product: { findUnique: vi.fn().mockResolvedValue(product) },
+      productRevisionStoryAsset: { count: vi.fn().mockResolvedValue(concurrent ? 4 : 5) },
+      mediaOperation: { findUnique: vi.fn().mockResolvedValue(null) },
+      $transaction: vi.fn(async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx)),
+    };
+    const service = new ImagesService(prisma as never, createImageStoreMock() as never, {
+      enabled: true, stage, assertNotPending: vi.fn(), attach: vi.fn(),
+    } as never);
+    await expect(service.addStoryImage('owner-id', 'product-id', file, 'new-story')).rejects.toMatchObject({ status: 409 });
+    expect(stage).toHaveBeenCalledTimes(concurrent ? 1 : 0);
+    expect(create).not.toHaveBeenCalled();
+  });
+
   it('rejects a full gallery before stage and provider writes', async () => {
     const { service, stage, prisma } = createMediaHarness({
       images: gallery(imagePolicy.productImageUploadLimits.maxFiles),

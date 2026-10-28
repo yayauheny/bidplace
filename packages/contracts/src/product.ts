@@ -6,6 +6,8 @@ import { workSelectionSchema } from './catalog';
 import { type ProductStatus, productStatusSchema } from './enums';
 import { isoDateTimeSchema, uuidSchema } from './primitives';
 
+export const WORK_PHOTO_LIMITS = { maxPhotos: 10 } as const;
+
 export const EDITABLE_PRODUCT_STATUSES = [
   'DRAFT',
   'CHANGES_REQUESTED',
@@ -49,7 +51,7 @@ export type WorkPhotoResult = z.infer<typeof workPhotoResultSchema>;
 export const workPhotoUploadResponseSchema = z
   .object({
     ok: z.literal(true),
-    photos: z.array(workPhotoResultSchema).nonempty().max(10),
+    photos: z.array(workPhotoResultSchema).nonempty().max(WORK_PHOTO_LIMITS.maxPhotos),
   })
   .strict();
 export const workPhotoEditRequestSchema = z
@@ -119,7 +121,7 @@ export const creationStepSchema = z
 
 export const productImageOrderRequestSchema = z
   .object({
-    imageIds: z.array(uuidSchema).min(1).max(10),
+    imageIds: z.array(uuidSchema).min(1).max(WORK_PHOTO_LIMITS.maxPhotos),
     revisionId: uuidSchema.optional(),
   })
   .strict();

@@ -18,6 +18,7 @@ import {
 import { Buffer } from 'node:buffer';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import {
+  STORY_LIMITS,
   productImageOrderRequestSchema,
   workPhotoEditRequestSchema,
   uuidSchema,
@@ -165,7 +166,7 @@ export class ImagesController {
   @UseInterceptors(
     FilesInterceptor('image', 1, {
       limits: {
-        fileSize: productImageUploadLimits.maxFileBytes,
+        fileSize: STORY_LIMITS.maxFileBytes + 1,
         files: 1,
       },
       fileFilter: (_request, file, done) =>

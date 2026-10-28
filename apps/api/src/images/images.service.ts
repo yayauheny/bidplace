@@ -11,6 +11,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
+  STORY_LIMITS,
   photoCropSchema,
   workPhotoResultSchema,
   type WorkPhotoResult,
@@ -1207,13 +1208,26 @@ export class ImagesService {
       throw new BadRequestException('Invalid idempotency key');
     }
     // Match gallery uploads: reject non-owners before staging bytes in R2.
-    await this.requireEditableOwner(this.prisma, userId, productId);
+    const product = await this.requireEditableOwner(this.prisma, userId, productId);
     const media = this.media;
     const scopedKey = idempotencyKey
       ? createHash('sha256')
           .update(`${productId}:story:${idempotencyKey}`)
           .digest('hex')
       : undefined;
+    if (!product.editingRevisionId) throw new ConflictException('Product editing revision is missing');
+    const holds = await this.prisma.productRevisionStoryAsset.count({ where: { revisionId: product.editingRevisionId } });
+    if (holds >= STORY_LIMITS.maxImages) {
+      const operation = scopedKey ? await this.prisma.mediaOperation.findUnique({
+        where: { identity: mediaUploadIdentity(userId, 'STORY_IMAGE', scopedKey) },
+        include: { objects: { include: { object: true } } },
+      }) : null;
+      const source = operation?.objects.find((item) => item.object.variant === 'SOURCE')?.object;
+      const held = source && await this.prisma.productRevisionStoryAsset.findUnique({
+        where: { revisionId_mediaAssetId: { revisionId: product.editingRevisionId, mediaAssetId: source.assetId } },
+      });
+      if (!held) throw new ConflictException('Story image holds are full');
+    }
     const asset = await media.stage(userId, 'STORY_IMAGE', file, scopedKey);
     return runReadCommittedTransaction(this.prisma, async (tx) => {
       const product = await this.requireWritableOwnerInTx(
@@ -1235,7 +1249,7 @@ export class ImagesService {
         const holds = await tx.productRevisionStoryAsset.count({
           where: { revisionId },
         });
-        if (holds >= 5) {
+        if (holds >= STORY_LIMITS.maxImages) {
           throw new ConflictException('Story image holds are full');
         }
         await tx.productRevisionStoryAsset.create({

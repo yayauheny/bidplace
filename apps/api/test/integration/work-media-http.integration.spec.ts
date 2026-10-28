@@ -217,6 +217,57 @@ describe('Work media lifecycle over authenticated HTTP and PostgreSQL', () => {
     }
   });
 
+  it('enforces the 10 MiB story multipart boundary and serializes concurrent sixth uploads', async () => {
+    const suffix = `story-limits-${randomUUID().slice(0, 8)}`;
+    const owner = await user('user', suffix);
+    const profile = await db.prisma.sellerProfile.create({ data: {
+      userId: owner.row.id, slug: suffix, sellerType: 'creator', fullName: 'Story limits',
+      country: 'BY', shortDescription: 'Story limits', status: 'APPROVED',
+      profilePhotoMimeType: 'image/png', profilePhotoByteLength: 1, profilePhotoChecksum: 'c'.repeat(64), profilePhotoData: Buffer.from('x'),
+    } });
+    const category = await db.prisma.category.findFirstOrThrow({ where: { active: true } });
+    const work = await owner.client.post('/products', { title: 'Story limits', categoryId: category.id });
+    expect(work.status).toBe(201);
+    const { product } = await work.json() as { product: { id: string; editingRevisionId: string } };
+    const png = await sharp({ create: { width: 64, height: 48, channels: 3, background: 'blue' } }).png().toBuffer();
+    const send = (size: number, key: string) => {
+      const form = new FormData();
+      form.append('image', new Blob([new Uint8Array(Buffer.concat([png, Buffer.alloc(size - png.length)]))], { type: 'image/png' }), 'story.png');
+      return owner.client.request(`/products/${product.id}/story-images`, { method: 'POST', headers: { 'Idempotency-Key': key }, body: form });
+    };
+    try {
+      const accepted = await send(10 * 1024 * 1024, 'story-boundary');
+      expect(accepted.status).toBe(201);
+      const { mediaAssetId } = await accepted.json() as { mediaAssetId: string };
+      expect((await send(10 * 1024 * 1024, 'story-boundary')).status).toBe(201);
+      expect([400, 413]).toContain((await send(10 * 1024 * 1024 + 1, 'too-large')).status);
+      expect((await owner.client.delete(`/products/${product.id}/story-images/${randomUUID()}`)).status).toBe(200);
+      for (let i = 0; i < 3; i += 1) expect((await send(png.length, `story-${i}`)).status).toBe(201);
+      const original = media.stage.bind(media);
+      const stage = vi.spyOn(media, 'stage');
+      let arrivals = 0;
+      let release!: () => void;
+      const bothStaged = new Promise<void>((resolve) => { release = resolve; });
+      stage.mockImplementation(async (...args) => {
+        // Both requests must pass admission before either can attach.
+        const asset = await original(...args);
+        arrivals += 1;
+        if (arrivals === 2) release();
+        await bothStaged;
+        return asset;
+      });
+      try {
+        const results = await Promise.all([send(png.length, 'race-a'), send(png.length, 'race-b')]);
+        expect(results.map((r) => r.status).sort()).toEqual([201, 409]);
+        expect(await db.prisma.productRevisionStoryAsset.count({ where: { revision: { productId: product.id } } })).toBe(5);
+      } finally { stage.mockRestore(); }
+      expect((await send(10 * 1024 * 1024, 'story-boundary')).status).toBe(201);
+      expect(await db.prisma.mediaAsset.findUniqueOrThrow({ where: { id: mediaAssetId } })).toMatchObject({ state: 'READY' });
+    } finally {
+      await db.prisma.sellerProfile.update({ where: { id: profile.id }, data: { status: 'DRAFT' } });
+    }
+  });
+
   it('creates, uploads once, submits, waits for delivery, publishes, revises atomically and revokes exact public objects', async () => {
     const author = await user('user', 'author');
     const admin = await user('admin', 'admin');
