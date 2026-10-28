@@ -294,6 +294,7 @@ import { HomeNewAuthors } from '../features/home/home-new-authors';
 import { AuthorShare } from '../features/sellers/AuthorShare';
 import { CreatorWorkCard } from '../features/sellers/CreatorWorkCard';
 import { ProductDraftStoryStep } from '../features/sellers/product-draft-story';
+import { storyTextMenuFrame } from '../features/sellers/product-block-actions';
 import { ThemeProvider, useAppTheme } from './theme-provider';
 
 let captured: SemanticColorMap | null = null;
@@ -798,6 +799,38 @@ describe('app theme owner', () => {
         parseFloat(node.style.minHeight || '0') === 52,
     ) as HTMLElement;
     expect(parseFloat(toolbar.style.marginTop)).toBe(designTokens.space.x5);
+    const paragraph = container.querySelector(
+      'textarea[aria-label="Текст истории"]',
+    ) as HTMLTextAreaElement;
+    const heading = container.querySelector(
+      'textarea[aria-label="Заголовок истории"]',
+    ) as HTMLTextAreaElement;
+    expect(parseFloat(paragraph.style.letterSpacing)).toBe(
+      designTokens.typography.bodySmall.letterSpacing,
+    );
+    expect(parseFloat(heading.style.lineHeight)).toBe(
+      designTokens.typography.storyHeading.lineHeight,
+    );
+    const intro = Array.from(container.querySelectorAll('span')).find(
+      (node) =>
+        node.textContent?.trim() ===
+        'Расскажите о том как создавалась ваша работа',
+    ) as HTMLElement;
+    expect(parseFloat(intro.style.letterSpacing)).toBe(0);
+    expect(storyTextMenuFrame(20)).toEqual({ top: 0, size: 20 });
+    expect(storyTextMenuFrame(24)).toEqual({ top: 0, size: 24 });
+    expect(storyTextMenuFrame(72)).toEqual({ top: 0, size: 42 });
+    const menuButtons = Array.from(
+      container.querySelectorAll('[aria-label="Действия с блоком"]'),
+    ) as HTMLElement[];
+    expect(menuButtons.map((button) => parseFloat(button.style.height))).toEqual([
+      storyTextMenuFrame(
+        designTokens.typography.storyHeading.lineHeight as number,
+      ).size,
+      storyTextMenuFrame(
+        designTokens.typography.bodySmall.lineHeight as number,
+      ).size,
+    ]);
     act(() => root.unmount());
     container.remove();
   });
@@ -838,7 +871,10 @@ describe('app theme owner', () => {
       'textarea[aria-label="Текст истории"]',
     ) as HTMLTextAreaElement;
     expect(parseFloat(field.style.minHeight)).toBe(
-      designTokens.typography.subtitle.lineHeight,
+      designTokens.typography.bodySmall.lineHeight,
+    );
+    expect(parseFloat(field.style.letterSpacing)).toBe(
+      designTokens.typography.bodySmall.letterSpacing,
     );
     act(() => root.unmount());
     container.remove();

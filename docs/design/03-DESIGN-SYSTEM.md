@@ -1071,12 +1071,19 @@ panel across movement; usable action focus survives boundaries and Escape.
 
 `FigmaButton` size `compactIcon` (Figma `4563:32794`) is height 43: padding
 8 vertical and 16/8 horizontal, gap 2 to the existing trailing icon frame,
-label Inter 600 14/26/−0.28. `event` stays height 47. Story subtitle copy uses
-`typography.subtitle` (14/20/400, letter-spacing 0); `bodySmall` stays −0.14.
-Destructive story ink is `destructiveInk` (`Red` `4337:12016`, `#731A06`);
-`destructiveFill` stays the photo-button fill. Toolbar and block-menu surfaces
-use `surfaceMuted` (`Gray 5` `#F3F3F3`). Story icon glyphs use existing
-`stroke.icon` 1.3; `FigmaIconButton` still defaults to `stroke.iconHeavy` 1.6.
+label Inter 600 14/26/−0.28. `event` stays height 47. The story intro stays
+`typography.subtitle` (14/20/400, letter-spacing 0). Story paragraphs use
+`bodySmall` (14/20/400/−0.14); that tracking is the 2026-10-28 review decision.
+Headings stay `storyHeading`. Destructive story ink is `destructiveInk`
+(`Red` `4337:12016`, `#731A06`); `destructiveFill` stays the photo-button fill.
+Toolbar and block-menu surfaces use `surfaceMuted` (`Gray 5` `#F3F3F3`). Story
+icon glyphs use existing `stroke.icon` 1.3; `FigmaIconButton` still defaults to
+`stroke.iconHeavy` 1.6. Story text ⋮ is `storyTextMenuFrame`: the square equals
+the block height, capped at the 42px muted frame, top 0. A 20px paragraph is a
+20px control. A 42px circle overlaps the next 20px line and 6px gap by 16px,
+and WebKit gives that shared edge to the neighbor. The open menu ring and
+divider are `react-native-svg` `LinearGradient` paint. `experimental_backgroundImage`
+does not paint on the installed RN Web.
 `FigmaIcon` `image-02` is Hugeicons `Image02Icon`; `image-01` is unchanged.
 
 Figma `4562:32461`/`4563:32768` supply the existing story toolbar and text

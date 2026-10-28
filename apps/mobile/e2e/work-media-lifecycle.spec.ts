@@ -1,6 +1,5 @@
-import { mkdir } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { e2eEvidenceDir } from './support/evidence-dir';
 import { expect, test, type Page } from '@playwright/test';
 import { PrismaClient } from '../../../packages/database/dist/index.js';
@@ -1786,13 +1785,17 @@ test('keeps photo status geometry stable and story controls attached to their bl
 test('story editor polish: geometry, keyboard, and evidence screenshots', async ({
   browser,
 }) => {
+  test.setTimeout(180_000);
   const { seller, categoryId } = await createSellerFixture();
   const { context, page } = await authenticatedPage(browser, seller);
   const evidenceDir = resolve(
-    fileURLToPath(new URL('.', import.meta.url)),
-    '../../../docs/audits/evidence/2026-10-28-story-editor-polish',
+    e2eEvidenceDir,
+    '2026-10-28-story-editor-controls',
   );
   await mkdir(evidenceDir, { recursive: true });
+  const referenceParagraph =
+    'Когда мы написали какой то текст и поле у нас активно то есть, мы находится внутри активного инпута';
+  const referenceHeading = 'Заголовок';
   try {
     await page.setViewportSize({ width: 390, height: 874 });
     const created = await context.request.post(
@@ -1801,9 +1804,32 @@ test('story editor polish: geometry, keyboard, and evidence screenshots', async 
     );
     expect(created.status()).toBe(201);
     const { product } = await created.json();
-    await page.goto(`/products/${product.id}?flow=creation&step=3`);
+    await page.goto(`/products/${product.id}?flow=creation&step=2`);
     await page.evaluate(() => document.fonts.ready);
-
+    const choose = async (files: string[]) => {
+      const picker = page.waitForEvent('filechooser');
+      await page
+        .getByRole('button', { name: 'Добавить изображения', exact: true })
+        .click();
+      await (await picker).setFiles(files);
+    };
+    await choose([
+      'e2e/fixtures/portfolio-photo-1.png',
+      'e2e/fixtures/portfolio-photo-2.png',
+      'e2e/fixtures/portfolio-photo-3.png',
+      'e2e/fixtures/portfolio-photo-4.png',
+      'e2e/fixtures/portfolio-photo-5.png',
+    ]);
+    await expect(page.locator('[data-photo-id]')).toHaveCount(5);
+    await page
+      .getByRole('button', { name: 'Загрузить 5 фото', exact: true })
+      .click();
+    await expect(
+      page.getByRole('img', { name: 'Локальное превью фото', exact: true }),
+    ).toHaveCount(0, { timeout: 30_000 });
+    await expect(
+      page.getByRole('button', { name: 'Продолжить', exact: true }),
+    ).toBeEnabled();
     const capture = async (name: string) => {
       await page.evaluate(() => document.fonts.ready);
       await page.screenshot({
@@ -1814,17 +1840,32 @@ test('story editor polish: geometry, keyboard, and evidence screenshots', async 
         fullPage: true,
       });
     };
+    await capture('photos-five-plus-add');
 
+    await page
+      .getByRole('button', { name: '3. История создания', exact: true })
+      .click();
+    await expect(page).toHaveURL(/[?&]step=3(?:&|$)/);
+    // Step dots expose the current step as "Шаг N из 4". RN Web does not map
+    // accessibilityState.selected on role=button to aria-selected.
+    await expect(page.getByLabel('Шаг 3 из 4')).toBeVisible();
+    await expect(
+      page.getByText('История создания', { exact: true }),
+    ).toBeVisible();
     await capture('story-empty');
     const paragraph = page.getByRole('textbox', {
       name: 'Текст истории',
       exact: true,
     });
+    await expect(paragraph).toHaveCount(1);
+    await expect(
+      page.getByRole('button', { name: 'Пропустить', exact: true }),
+    ).toBeVisible();
     const initialInput = await paragraph.elementHandle();
     await paragraph.pressSequentially('А');
     await paragraph.press('Tab');
     await expect(
-      page.getByRole('button', { name: 'Добавить заголовок', exact: true }),
+      page.getByRole('button', { name: 'Действия с блоком', exact: true }),
     ).toBeFocused();
     await paragraph.focus();
     await paragraph.press('Enter');
@@ -1838,62 +1879,324 @@ test('story editor polish: geometry, keyboard, and evidence screenshots', async 
     await expect(
       page.getByRole('button', { name: 'Пропустить', exact: true }),
     ).toBeVisible();
-    await paragraph.fill('Параграф');
+    expect(
+      await initialInput!.evaluate(
+        (el) => el.isConnected && el === document.activeElement,
+      ),
+    ).toBe(true);
+    await paragraph.fill('Первый');
+    await expect(
+      page.getByRole('button', { name: 'Закончить', exact: true }),
+    ).toBeVisible();
+
+    await page
+      .getByRole('button', { name: 'Добавить текст', exact: true })
+      .click();
+    const paragraphs = page.getByRole('textbox', {
+      name: 'Текст истории',
+      exact: true,
+    });
+    await expect(paragraphs).toHaveCount(2);
+    await paragraphs.nth(1).fill('Второй');
+    // Identity is the field value, so reordering does not retarget the locator.
+    const blockWithValue = async (label: string, value: string) => {
+      const blocks = page.locator('[data-block-key]').filter({
+        has: page.getByRole('textbox', { name: label, exact: true }),
+      });
+      const count = await blocks.count();
+      for (let index = 0; index < count; index += 1) {
+        const block = blocks.nth(index);
+        const current = await block
+          .getByRole('textbox', { name: label, exact: true })
+          .inputValue();
+        if (current !== value) continue;
+        const key = await block.getAttribute('data-block-key');
+        if (!key) throw new Error(`No key for ${label}`);
+        return page.locator(`[data-block-key="${key}"]`);
+      }
+      throw new Error(`No ${label} block with value ${value}`);
+    };
+    const first = await blockWithValue('Текст истории', 'Первый');
+    const second = await blockWithValue('Текст истории', 'Второй');
+    const firstMenu = first.getByRole('button', {
+      name: 'Действия с блоком',
+      exact: true,
+    });
+    const secondMenu = second.getByRole('button', {
+      name: 'Действия с блоком',
+      exact: true,
+    });
+    await expect(firstMenu).toBeEnabled({ timeout: 15_000 });
+    await expect(secondMenu).toBeEnabled();
+    const firstBox = (await firstMenu.boundingBox())!;
+    const secondBox = (await secondMenu.boundingBox())!;
+    const verticalOverlap =
+      Math.min(firstBox.y + firstBox.height, secondBox.y + secondBox.height) -
+      Math.max(firstBox.y, secondBox.y);
+    expect(verticalOverlap).toBeLessThanOrEqual(0);
+    const hitOwner = (x: number, y: number) =>
+      page.evaluate(({ x, y }) => {
+        const target = document.elementFromPoint(x, y);
+        const block = target?.closest('[data-block-key]');
+        const field = block?.querySelector('textarea, input');
+        const control = target?.closest('[role="button"], button');
+        return {
+          label: control?.getAttribute('aria-label') ?? '',
+          value:
+            field instanceof HTMLTextAreaElement ||
+            field instanceof HTMLInputElement
+              ? field.value
+              : '',
+        };
+      }, { x, y });
+    const firstCenter = {
+      x: firstBox.x + firstBox.width / 2,
+      y: firstBox.y + firstBox.height / 2,
+    };
+    const firstLower = {
+      x: firstCenter.x,
+      y: firstBox.y + firstBox.height - 1,
+    };
+    await expect.poll(() => hitOwner(firstCenter.x, firstCenter.y)).toEqual({
+      label: 'Действия с блоком',
+      value: 'Первый',
+    });
+    await expect.poll(() => hitOwner(firstLower.x, firstLower.y)).toEqual({
+      label: 'Действия с блоком',
+      value: 'Первый',
+    });
+    await expect
+      .poll(() => hitOwner(secondBox.x + secondBox.width / 2, secondBox.y + 1))
+      .toEqual({ label: 'Действия с блоком', value: 'Второй' });
+    await page.mouse.click(firstLower.x, firstLower.y);
+    await expect(firstMenu).toHaveAttribute('aria-expanded', 'true');
+    await expect(secondMenu).toHaveAttribute('aria-expanded', 'false');
+    await page.keyboard.press('Escape');
+    await page.mouse.click(secondBox.x + secondBox.width / 2, secondBox.y + 1);
+    await expect(secondMenu).toHaveAttribute('aria-expanded', 'true');
+    await expect(firstMenu).toHaveAttribute('aria-expanded', 'false');
+    await page.keyboard.press('Escape');
+    await capture('story-two-paragraphs');
+    await secondMenu.click();
+    await second.getByRole('button', { name: 'Удалить', exact: true }).click();
+    await expect(paragraphs).toHaveCount(1);
+
     await page
       .getByRole('button', { name: 'Добавить заголовок', exact: true })
       .click();
-    await capture('story-title-paragraph');
-    const toolbar = page.getByRole('button', {
-      name: 'Добавить текст',
+    const heading = page.getByRole('textbox', {
+      name: 'Заголовок истории',
       exact: true,
     });
-    const toolbarBox = await toolbar.boundingBox();
-    expect(toolbarBox!.height).toBeGreaterThanOrEqual(52);
-    const block = page.locator('[data-editor-block="text"]').first();
-    await block.getByRole('button', { name: 'Действия с блоком' }).click();
+    await expect(heading).toBeFocused();
+    await heading.fill(referenceHeading);
+    const headingBlock = await blockWithValue(
+      'Заголовок истории',
+      referenceHeading,
+    );
+    const headingMenu = headingBlock.getByRole('button', {
+      name: 'Действия с блоком',
+      exact: true,
+    });
+    const shortParagraph = await blockWithValue('Текст истории', 'Первый');
+    const shortParagraphMenu = shortParagraph.getByRole('button', {
+      name: 'Действия с блоком',
+      exact: true,
+    });
+    const headingBox = (await headingMenu.boundingBox())!;
+    const paragraphBox = (await shortParagraphMenu.boundingBox())!;
+    const headingOverlap =
+      Math.min(
+        headingBox.y + headingBox.height,
+        paragraphBox.y + paragraphBox.height,
+      ) - Math.max(headingBox.y, paragraphBox.y);
+    expect(headingOverlap).toBeLessThanOrEqual(0);
+    await headingMenu.click();
+    await headingBlock.getByRole('button', { name: 'Выше', exact: true }).click();
+    await expect(headingMenu).toHaveAttribute('aria-expanded', 'true');
+    const headingFirst = await blockWithValue(
+      'Заголовок истории',
+      referenceHeading,
+    );
+    expect((await headingFirst.boundingBox())!.y).toBeLessThan(
+      (await shortParagraph.boundingBox())!.y,
+    );
+    await headingFirst
+      .getByRole('button', { name: 'Выше', exact: true })
+      .press('Escape');
+    await expect(headingMenu).toBeFocused();
+    await shortParagraph
+      .getByRole('textbox', { name: 'Текст истории', exact: true })
+      .fill(referenceParagraph);
+
+    const toolbar = page.getByTestId('story-toolbar');
+    const beforeMenu = (await toolbar.boundingBox())!;
+    await headingMenu.click();
+    await expect(page.getByTestId('story-menu-stroke')).toBeVisible();
+    await expect(page.getByTestId('story-menu-divider')).toBeVisible();
+    const gradient = await page.evaluate(() => {
+      const paint = (id: string, property: 'stroke' | 'fill') => {
+        const node = document
+          .querySelector(`[data-testid="${id}"]`)
+          ?.querySelector('rect');
+        if (!node) return { attribute: '', computed: '' };
+        return {
+          attribute: node.getAttribute(property) ?? '',
+          computed: getComputedStyle(node)[property],
+        };
+      };
+      return { stroke: paint('story-menu-stroke', 'stroke'), divider: paint('story-menu-divider', 'fill') };
+    });
+    expect(gradient.stroke.attribute).toContain('url(#');
+    expect(gradient.stroke.computed).not.toBe('none');
+    expect(gradient.divider.attribute).toContain('url(#');
+    expect(gradient.divider.computed).not.toBe('none');
+    expect((await toolbar.boundingBox())!.y).toBeCloseTo(beforeMenu.y, 1);
     await capture('story-menu-open');
-    const toolbarAfterMenu = await toolbar.boundingBox();
-    expect(toolbarAfterMenu!.y).toBeCloseTo(toolbarBox!.y, 1);
-    await block.getByRole('button', { name: 'Ниже', exact: true }).click();
-    await block.getByRole('button', { name: 'Выше', exact: true }).press('Escape');
+    await headingBlock.getByRole('button', { name: 'Ниже', exact: true }).click();
+    await expect(headingMenu).toHaveAttribute('aria-expanded', 'true');
+    const headingLower = await blockWithValue(
+      'Заголовок истории',
+      referenceHeading,
+    );
+    const paragraphLower = await blockWithValue(
+      'Текст истории',
+      referenceParagraph,
+    );
+    expect((await headingLower.boundingBox())!.y).toBeGreaterThan(
+      (await paragraphLower.boundingBox())!.y,
+    );
+    await headingLower.getByRole('button', { name: 'Выше', exact: true }).click();
+    const headingAfterMove = await blockWithValue(
+      'Заголовок истории',
+      referenceHeading,
+    );
+    const paragraphAfterMove = await blockWithValue(
+      'Текст истории',
+      referenceParagraph,
+    );
+    expect((await headingAfterMove.boundingBox())!.y).toBeLessThan(
+      (await paragraphAfterMove.boundingBox())!.y,
+    );
+    await headingAfterMove
+      .getByRole('button', { name: 'Выше', exact: true })
+      .press('Escape');
+    await expect(headingMenu).toBeFocused();
+
+    await heading.focus();
+    const tabStops = [
+      { label: 'Действия с блоком', value: referenceHeading },
+      { label: 'Текст истории', value: referenceParagraph },
+      { label: 'Действия с блоком', value: referenceParagraph },
+      { label: 'Добавить заголовок', value: '' },
+      { label: 'Добавить текст', value: '' },
+      { label: 'Добавить изображение', value: '' },
+      { label: 'Закончить', value: '' },
+    ];
+    for (const stop of tabStops) {
+      await page.keyboard.press('Tab');
+      await expect
+        .poll(() =>
+          page.evaluate(() => {
+            const active = document.activeElement;
+            const block = active?.closest('[data-editor-block]');
+            const field = block?.querySelector('textarea, input');
+            return {
+              label: active?.getAttribute('aria-label') ?? '',
+              value:
+                field instanceof HTMLTextAreaElement ||
+                field instanceof HTMLInputElement
+                  ? field.value
+                  : '',
+            };
+          }),
+        )
+        .toEqual(stop);
+    }
+
+    await paragraphAfterMove
+      .getByRole('textbox', { name: 'Текст истории', exact: true })
+      .focus();
+    await paragraphAfterMove
+      .getByRole('textbox', { name: 'Текст истории', exact: true })
+      .blur();
     await expect(
-      block.getByRole('button', { name: 'Действия с блоком' }),
-    ).toBeFocused();
+      paragraphAfterMove.getByRole('textbox', {
+        name: 'Текст истории',
+        exact: true,
+      }),
+    ).not.toBeFocused();
+    await expect(
+      paragraphAfterMove.getByRole('textbox', {
+        name: 'Текст истории',
+        exact: true,
+      }),
+    ).toHaveValue(referenceParagraph);
+
+    const finishBox = (await toolbar.boundingBox())!;
+    const toolbarPaint = await toolbar.evaluate((node) => {
+      const style = getComputedStyle(node);
+      return {
+        borderTop: style.borderTopWidth,
+        borderBottom: style.borderBottomWidth,
+        boxSizing: style.boxSizing,
+        minHeight: style.minHeight,
+      };
+    });
+    // Figma frame is 52. minHeight 52 is border-box, but each 0.5px border
+    // snaps to a device pixel, so the used border box is 53.
+    expect(finishBox.height).toBeGreaterThanOrEqual(52);
+    expect(finishBox.height).toBeLessThanOrEqual(54);
+    await writeFile(
+      resolve(evidenceDir, `${test.info().project.name}-toolbar.json`),
+      JSON.stringify(
+        {
+          figma: { node: '4563:32790', width: 275, height: 52 },
+          measured: finishBox,
+          paint: toolbarPaint,
+          heightDelta:
+            'Used height 53. minHeight is 52. Computed border is 1px+1px from authored 0.5. The 43px compactIcon control, 8px padding and those borders exceed the minimum. Figma 4563:32790 is 52.',
+          widthDelta:
+            'Used width 272.22 versus Figma 275. Three muted icons are 42px rather than 43px, and padding is 4 rather than the 4.5 inset.',
+          gradient,
+        },
+        null,
+        2,
+      ),
+    );
+    await capture('story-heading-paragraph');
 
     await page.setViewportSize({ width: 390, height: 520 });
+    await toolbar.scrollIntoViewIfNeeded();
     await expect(
-      page.getByRole('button', { name: 'Пропустить', exact: true }),
+      page.getByRole('button', { name: 'Закончить', exact: true }),
     ).toBeVisible();
     await page.setViewportSize({ width: 390, height: 874 });
-    await page.evaluate(() => {
-      document.documentElement.style.fontSize = '200%';
-    });
-    await expect(
-      page.getByRole('button', { name: 'Пропустить', exact: true }),
-    ).toBeVisible();
 
-    await page.goto(`/products/${product.id}?flow=creation&step=2`);
-    const choose = async (files: string[]) => {
-      const picker = page.waitForEvent('filechooser');
-      await page
-        .getByRole('button', { name: 'Добавить изображения', exact: true })
-        .click();
-      await (await picker).setFiles(files);
-    };
-    await choose(['e2e/fixtures/portfolio-photo-1.png']);
-    await choose(['e2e/fixtures/portfolio-photo-2.png']);
-    await choose(['e2e/fixtures/portfolio-photo-3.png']);
-    await choose(['e2e/fixtures/portfolio-photo-4.png']);
-    await choose(['e2e/fixtures/portfolio-photo-5.png']);
-    await expect(page.locator('[data-photo-id]')).toHaveCount(5);
-    await page.evaluate(() => document.fonts.ready);
-    await page.screenshot({
-      path: resolve(
-        evidenceDir,
-        `${test.info().project.name}-photos-five-plus-add-390.png`,
-      ),
-      fullPage: true,
+    const storyPicker = page.waitForEvent('filechooser');
+    await page
+      .getByRole('button', { name: 'Добавить изображение', exact: true })
+      .click();
+    await (await storyPicker).setFiles('e2e/fixtures/portfolio-photo-1.png');
+    const imageBlock = page.locator('[data-editor-block="image"]');
+    await expect(imageBlock).toBeVisible({ timeout: 20_000 });
+    await imageBlock
+      .getByRole('button', { name: 'Действия с изображением', exact: true })
+      .click();
+    const description = page.getByRole('textbox', {
+      name: 'Описание фото',
+      exact: true,
     });
+    await expect(description).toBeVisible();
+    const descriptionBox = (await description.boundingBox())!;
+    await page.mouse.click(
+      descriptionBox.x + descriptionBox.width / 2,
+      descriptionBox.y + Math.min(12, descriptionBox.height / 2),
+    );
+    await expect(description).toBeFocused();
+    await description.fill('Описание кадра');
+    await expect(description).toHaveValue('Описание кадра');
+    await expect(headingMenu).toHaveAttribute('aria-expanded', 'false');
   } finally {
     await context.close();
   }

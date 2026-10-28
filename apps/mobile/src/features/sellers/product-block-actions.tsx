@@ -1,19 +1,15 @@
-import {
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-  type ElementRef,
-  type ReactNode,
-} from 'react';
+import { useId, useEffect, useLayoutEffect, useRef, useState, type ElementRef, type ReactNode } from 'react';
 import { Platform, View, type ViewStyle } from 'react-native';
+import { Defs, LinearGradient, Rect, Stop, Svg } from 'react-native-svg';
 import { designTokens } from '@bidplace/design-tokens';
-import { FigmaIcon } from '../../components/figma/FigmaIcon';
 import { FigmaIconButton } from '../../components/figma/FigmaIconButton';
-import { figmaIconButtonStyle } from '../../components/figma/figma-icon-button-style';
+import { figmaMutedIconButtonFrame } from '../../components/figma/figma-icon-button-style';
 import type { MotionPressable } from '../../components/ui/MotionPressable';
-import { MotionPressable as StoryBlockPressable } from '../../components/ui/MotionPressable';
 import { useAppTheme } from '../../providers/theme-provider';
+
+const menuPanelRadius = 31;
+const menuDividerLength = 26;
+const menuStroke = 0.5;
 
 const menuPanelShadowStyle = (
   palette: ReturnType<typeof useAppTheme>,
@@ -27,18 +23,75 @@ const menuPanelShadowStyle = (
         shadowRadius: 26,
       };
 
-const menuDividerStyle = (palette: ReturnType<typeof useAppTheme>): ViewStyle =>
-  Platform.OS === 'web'
-    ? ({
-        height: 26,
-        width: 1,
-        experimental_backgroundImage: `linear-gradient(to bottom, ${palette.outlineBorderGradientStart}, ${palette.outlineBorderGradientEnd})`,
-      } as ViewStyle)
-    : {
-        height: 26,
-        width: 1,
-        backgroundColor: palette.toolbarBorder,
-      };
+/**
+ * A 42px circle does not fit a 20px line. The following gap is excluded: WebKit
+ * assigns that shared edge to the next block. Top stays 0. Upgrade when the
+ * line can hold 42px.
+ */
+export function storyTextMenuFrame(contentHeight: number) {
+  return {
+    top: 0,
+    size: Math.min(figmaMutedIconButtonFrame, Math.max(0, contentHeight)),
+  };
+}
+
+function OutlineGradient({
+  width,
+  height,
+  radius,
+  start,
+  end,
+  testID,
+}: {
+  width: number;
+  height: number;
+  radius?: number;
+  start: string;
+  end: string;
+  testID: string;
+}) {
+  const gradientId = useId().replace(/:/g, '');
+  if (width <= 0 || height <= 0) return null;
+  const stroke = radius == null ? 0 : menuStroke;
+  return (
+    <Svg
+      pointerEvents="none"
+      testID={testID}
+      width={width}
+      height={height}
+      style={
+        radius == null
+          ? undefined
+          : { position: 'absolute', top: 0, left: 0 }
+      }
+    >
+      <Defs>
+        <LinearGradient
+          id={gradientId}
+          x1="0"
+          y1="0"
+          x2="0"
+          y2={height}
+          gradientUnits="userSpaceOnUse"
+        >
+          <Stop offset="0" stopColor={start} />
+          <Stop offset="1" stopColor={end} />
+        </LinearGradient>
+      </Defs>
+      <Rect
+        x={stroke / 2}
+        y={stroke / 2}
+        width={Math.max(0, width - stroke)}
+        height={Math.max(0, height - stroke)}
+        rx={radius}
+        ry={radius}
+        fill={radius == null ? `url(#${gradientId})` : 'none'}
+        stroke={radius == null ? undefined : `url(#${gradientId})`}
+        strokeWidth={radius == null ? undefined : stroke}
+      />
+    </Svg>
+  );
+}
 
 /** One action owner for story blocks and gallery photos; mutation ownership stays in the editor. */
 export function ProductBlockActions({
@@ -54,6 +107,9 @@ export function ProductBlockActions({
   presentation = 'menu',
   open: controlledOpen,
   onOpenChange,
+  textMenuFloor = 0,
+  triggerStrokeWidthPx,
+  blockKey,
 }: {
   children: ReactNode;
   kind: 'text' | 'image';
@@ -67,6 +123,11 @@ export function ProductBlockActions({
   presentation?: 'menu' | 'mediaTile';
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  /** Line height used until the block reports its layout height. */
+  textMenuFloor?: number;
+  /** Story ⋮ only. Photo tiles keep the icon-button default. */
+  triggerStrokeWidthPx?: number;
+  blockKey?: string;
 }) {
   const [localOpen, setLocalOpen] = useState(false);
   const open = controlledOpen ?? localOpen;
@@ -79,6 +140,15 @@ export function ProductBlockActions({
   const up = useRef<ElementRef<typeof MotionPressable>>(null);
   const down = useRef<ElementRef<typeof MotionPressable>>(null);
   const moved = useRef<-1 | 1 | null>(null);
+  const [contentHeight, setContentHeight] = useState(0);
+  const [panelBox, setPanelBox] = useState<{
+    width: number;
+    height: number;
+  } | null>(null);
+  const textFrame =
+    kind === 'text'
+      ? storyTextMenuFrame(contentHeight > 0 ? contentHeight : textMenuFloor)
+      : null;
   useEffect(() => {
     if (!open || Platform.OS !== 'web') return;
     const element = menu.current as unknown as HTMLElement | null;
@@ -123,10 +193,23 @@ export function ProductBlockActions({
   };
   return (
     <View
-      {...(Platform.OS === 'web' ? { dataSet: { editorBlock: kind } } : {})}
-      style={{ gap: designTokens.space.x2, zIndex: open ? 2 : 0 }}
+      {...(Platform.OS === 'web'
+        ? {
+            dataSet: {
+              editorBlock: kind,
+              ...(blockKey ? { blockKey } : {}),
+            },
+          }
+        : {})}
+      style={{ gap: designTokens.space.x2 }}
     >
-      <View style={{ position: 'relative' }}>
+      <View
+        style={{ position: 'relative' }}
+        onLayout={(event) => {
+          const next = event.nativeEvent.layout.height;
+          setContentHeight((prev) => (prev === next ? prev : next));
+        }}
+      >
         {children}
         {editable && presentation === 'mediaTile' ? (
           <View
@@ -160,8 +243,14 @@ export function ProductBlockActions({
               : {})}
             style={{
               position: 'absolute',
+              zIndex: 1,
+              // Enabled trigger still computed pointer-events:none and lost the click to the field.
+              pointerEvents: 'auto',
               right: kind === 'image' ? designTokens.space.x3 : 0,
-              top: kind === 'image' ? designTokens.space.x3 : -10,
+              top:
+                kind === 'image'
+                  ? designTokens.space.x3
+                  : (textFrame?.top ?? 0),
             }}
           >
             <FigmaIconButton
@@ -176,22 +265,28 @@ export function ProductBlockActions({
               disabled={disabled}
               expanded={open}
               onPress={() => setOpen(!open)}
+              {...(textFrame && textFrame.size > 0
+                ? { frame: textFrame.size }
+                : {})}
+              {...(triggerStrokeWidthPx != null
+                ? { strokeWidthPx: triggerStrokeWidthPx }
+                : {})}
             />
             {open ? (
               <View
+                onLayout={(event) => {
+                  const { width, height } = event.nativeEvent.layout;
+                  setPanelBox((prev) =>
+                    prev && prev.width === width && prev.height === height
+                      ? prev
+                      : { width, height },
+                  );
+                }}
                 style={{
                   position: 'absolute',
                   right: designTokens.space.x8,
                   top: -designTokens.space.x8,
-                  borderRadius: 31,
-                  padding: 0.5,
-                  ...(Platform.OS === 'web'
-                    ? ({
-                        experimental_backgroundImage: `linear-gradient(180deg, ${palette.outlineBorderGradientStart}, ${palette.outlineBorderGradientEnd})`,
-                      } as ViewStyle)
-                    : {
-                        backgroundColor: palette.toolbarBorder,
-                      }),
+                  borderRadius: menuPanelRadius,
                   ...menuPanelShadowStyle(palette),
                 }}
               >
@@ -203,59 +298,64 @@ export function ProductBlockActions({
                     alignItems: 'center',
                     gap: 10,
                     padding: designTokens.space.x1,
-                    borderRadius: 31,
+                    borderRadius: menuPanelRadius,
                     backgroundColor: palette.surfaceMuted,
                   }}
                 >
-                {presentation === 'menu' ? (
-                  <StoryBlockPressable
-                    accessibilityRole="button"
-                    accessibilityLabel="Удалить"
-                    disabled={disabled}
-                    onPress={() => run(onDelete)}
-                    preset="icon"
-                    style={({ pressed }) => [
-                      figmaIconButtonStyle(pressed, 'plain', palette),
-                      {
-                        width: designTokens.size.compactIconButton,
-                        height: designTokens.size.compactIconButton,
-                      },
-                    ]}
-                  >
-                    <FigmaIcon
-                      name="delete-02"
-                      size={18}
+                  {presentation === 'menu' ? (
+                    <FigmaIconButton
+                      size="compact"
+                      label="Удалить"
+                      icon="delete-02"
+                      iconSize={18}
                       strokeWidthPx={designTokens.stroke.icon}
-                      color={palette.destructiveInk}
+                      tone="danger"
+                      disabled={disabled}
+                      onPress={() => run(onDelete)}
                     />
-                  </StoryBlockPressable>
+                  ) : null}
+                  <OutlineGradient
+                    testID="story-menu-divider"
+                    width={1}
+                    height={menuDividerLength}
+                    start={palette.outlineBorderGradientStart}
+                    end={palette.outlineBorderGradientEnd}
+                  />
+                  <View
+                    style={{ flexDirection: 'row', gap: designTokens.space.x1 }}
+                  >
+                    <FigmaIconButton
+                      size="compact"
+                      ref={up}
+                      label="Выше"
+                      icon="arrow-up-01"
+                      iconSize={18}
+                      strokeWidthPx={designTokens.stroke.icon}
+                      disabled={disabled || first}
+                      onPress={() => run(() => move(-1), false)}
+                    />
+                    <FigmaIconButton
+                      size="compact"
+                      ref={down}
+                      label="Ниже"
+                      icon="arrow-down-01"
+                      iconSize={18}
+                      strokeWidthPx={designTokens.stroke.icon}
+                      disabled={disabled || last}
+                      onPress={() => run(() => move(1), false)}
+                    />
+                  </View>
+                </View>
+                {panelBox ? (
+                  <OutlineGradient
+                    testID="story-menu-stroke"
+                    width={panelBox.width}
+                    height={panelBox.height}
+                    radius={menuPanelRadius}
+                    start={palette.outlineBorderGradientStart}
+                    end={palette.outlineBorderGradientEnd}
+                  />
                 ) : null}
-                <View style={menuDividerStyle(palette)} />
-                <View
-                  style={{ flexDirection: 'row', gap: designTokens.space.x1 }}
-                >
-                  <FigmaIconButton
-                    size="compact"
-                    ref={up}
-                    label="Выше"
-                    icon="arrow-up-01"
-                    iconSize={18}
-                    strokeWidthPx={designTokens.stroke.icon}
-                    disabled={disabled || first}
-                    onPress={() => run(() => move(-1), false)}
-                  />
-                  <FigmaIconButton
-                    size="compact"
-                    ref={down}
-                    label="Ниже"
-                    icon="arrow-down-01"
-                    iconSize={18}
-                    strokeWidthPx={designTokens.stroke.icon}
-                    disabled={disabled || last}
-                    onPress={() => run(() => move(1), false)}
-                  />
-                </View>
-                </View>
               </View>
             ) : null}
           </View>

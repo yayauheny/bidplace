@@ -23,6 +23,7 @@ export function FigmaIconButton({
   surface = 'plain',
   size = 'default',
   tone = 'default',
+  frame,
 }: {
   ref?: Ref<ElementRef<typeof MotionPressable>>;
   icon: FigmaIconName;
@@ -36,6 +37,8 @@ export function FigmaIconButton({
   surface?: 'plain' | 'muted' | 'outline' | 'destructive';
   size?: 'default' | 'settingsHeader' | 'compact';
   tone?: 'default' | 'danger';
+  /** Square visual and hit box. Omits hit slop so the box stays inside a tight slot. */
+  frame?: number;
 }) {
   const palette = useAppTheme();
   return (
@@ -47,13 +50,16 @@ export function FigmaIconButton({
       aria-expanded={expanded}
       disabled={disabled}
       hitSlop={
-        size === 'compact'
-          ? (designTokens.size.touch - designTokens.size.compactIconButton) / 2
-          : size === 'settingsHeader'
-            ? (designTokens.size.touch -
-                designTokens.size.settingsHeaderGlyph) /
+        frame != null
+          ? 0
+          : size === 'compact'
+            ? (designTokens.size.touch - designTokens.size.compactIconButton) /
               2
-            : figmaIconButtonHitSlop
+            : size === 'settingsHeader'
+              ? (designTokens.size.touch -
+                  designTokens.size.settingsHeaderGlyph) /
+                2
+              : figmaIconButtonHitSlop
       }
       onPress={onPress}
       preset="icon"
@@ -67,6 +73,7 @@ export function FigmaIconButton({
           width: designTokens.size.settingsHeaderGlyph,
           height: designTokens.size.settingsHeaderGlyph,
         },
+        frame != null && { width: frame, height: frame },
       ]}
     >
       <FigmaIcon
@@ -77,7 +84,7 @@ export function FigmaIconButton({
           surface === 'destructive'
             ? palette.white
             : tone === 'danger'
-              ? palette.destructiveFill
+              ? palette.destructiveInk
               : selected
                 ? palette.solid
                 : palette.ink

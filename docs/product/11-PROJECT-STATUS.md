@@ -16,6 +16,21 @@
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
 | Commerce, избранное/подписки, смена email/password из settings | Not implemented в launch scope / post-MVP; [следующая волна](15-POST-MVP-BACKLOG.md). Старый commerce runtime не разрешает включать продажи. |
 
+## 2026-10-28 — Story editor control geometry
+
+**Partial.** `storyTextMenuFrame` sizes a text ⋮ to the block height (cap 42,
+top 0) so neighboring blocks do not receive the press. `ProductBlockActions`
+paints the menu ring and divider with `react-native-svg` `LinearGradient`.
+Delete returns to `FigmaIconButton` (`compact`, `tone="danger"` →
+`destructiveInk`). Story paragraphs use `bodySmall` (−0.14, review decision);
+the intro stays `subtitle`; story ⋮ stroke stays `stroke.icon` 1.3. Playwright
+Chromium and WebKit passed the new story scenario and the previous photo/story
+scenario against the prepared `bidplace_e2e` database, without `prepare.mjs`.
+Toolbar measured 272.22×53 versus Figma 275×52.
+[Evidence](../audits/evidence/2026-10-28-story-editor-controls/README.md).
+Browser zoom 200% and Native iOS/Android were not run. No upload, save, DnD,
+or server file-reuse change. Session SHA-256 is not server reuse.
+
 ## 2026-10-28 — Story toolbar shared primitives
 
 **Partial.** `figmaButtonSizes` includes `compactIcon` (`figma-button.ts`,

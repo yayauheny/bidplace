@@ -5,6 +5,21 @@
 Полный прежний журнал, включая ограничения ранних экранов:
 [история](../archive/design/04-DESIGN-STATUS-through-2026-10-23.md).
 
+## 2026-10-28 — Story editor controls, gradients, and toolbar measure
+
+**Partial.** Adjacent text ⋮ no longer overlap: the control is the block height
+(20px paragraph, 24px heading), top 0, capped at 42px. A full 42/44px target
+does not fit a 20px line plus the 6px gap. Delete is `FigmaIconButton` compact
+with `destructiveInk`; the Web DOM box stays 34px because RN Web ignores
+hitSlop, and Native hit slop still reaches 44px. Menu ring and divider paint
+through SVG gradients (computed `url(#)` in Chromium and WebKit). Paragraphs
+use `bodySmall` (−0.14, review decision); the intro stays `subtitle`. Toolbar
+at «Закончить» measures 272.22×53 against Figma `4563:32790` 275×52.
+[390×874 evidence](../audits/evidence/2026-10-28-story-editor-controls/README.md).
+Browser zoom 200% was not run. `simctl` is unavailable; Native iOS/Android
+unverified. Wide exact parity stays NEEDS-FIGMA. Server file reuse is
+**Not implemented**; session SHA-256 is not that implementation.
+
 ## 2026-10-28 — Story toolbar primitives
 
 **Partial.** Shared owners only: `FigmaButton` size `compactIcon` (43px,

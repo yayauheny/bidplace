@@ -157,17 +157,26 @@ export function ProductDraftStoryStep({
                   (item) => item.mediaAssetId === block.mediaAssetId,
                 )?.id
               : undefined;
+          const textBlock = block.type !== 'IMAGE';
           return (
             <View
               key={block.key}
               style={{
                 marginTop: storyBlockGapBefore(renderedBlocks[index - 1], block),
+                zIndex: openBlock === block.key ? 1 : 0,
               }}
             >
             <ProductBlockActions
               open={openBlock === block.key}
               onOpenChange={(open) => setOpenBlock(open ? block.key : null)}
-              kind={block.type === 'IMAGE' ? 'image' : 'text'}
+              kind={textBlock ? 'text' : 'image'}
+              textMenuFloor={
+                block.type === 'HEADING'
+                  ? (designTokens.typography.storyHeading.lineHeight as number)
+                  : (designTokens.typography.bodySmall.lineHeight as number)
+              }
+              triggerStrokeWidthPx={designTokens.stroke.icon}
+              blockKey={block.key}
               editable={editable && !virtual}
               disabled={disabled}
               first={index === 0}
@@ -230,6 +239,7 @@ export function ProductDraftStoryStep({
 
         {editable ? (
           <View
+            testID="story-toolbar"
             style={{
               marginTop: STORY_MIXED_BLOCK_GAP,
               alignSelf: 'center',
@@ -338,7 +348,7 @@ function StoryTextInput({
   const palette = useAppTheme();
   const typography = heading
     ? designTokens.typography.storyHeading
-    : designTokens.typography.subtitle;
+    : designTokens.typography.bodySmall;
   const lineHeight = typography.lineHeight as number;
   const [height, setHeight] = useState<number>(lineHeight);
   useLayoutEffect(() => {

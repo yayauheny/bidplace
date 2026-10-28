@@ -1,0 +1,31 @@
+{
+  "figma": {
+    "node": "4563:32790",
+    "width": 275,
+    "height": 52
+  },
+  "measured": {
+    "x": 58.890625,
+    "y": 281.21875,
+    "width": 272.21875,
+    "height": 53
+  },
+  "paint": {
+    "borderTop": "1px",
+    "borderBottom": "1px",
+    "boxSizing": "border-box",
+    "minHeight": "52px"
+  },
+  "heightDelta": "Used height 53. minHeight is 52. Computed border is 1px+1px from authored 0.5. The 43px compactIcon control, 8px padding and those borders exceed the minimum. Figma 4563:32790 is 52.",
+  "widthDelta": "Used width 272.22 versus Figma 275. Three muted icons are 42px rather than 43px, and padding is 4 rather than the 4.5 inset.",
+  "gradient": {
+    "stroke": {
+      "attribute": "url(#_r_1s_)",
+      "computed": "url(\"#_r_1s_\")"
+    },
+    "divider": {
+      "attribute": "url(#_r_1r_)",
+      "computed": "url(\"#_r_1r_\")"
+    }
+  }
+}
