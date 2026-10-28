@@ -5,16 +5,15 @@
 Полный прежний журнал, включая ограничения ранних экранов:
 [история](../archive/design/04-DESIGN-STATUS-through-2026-10-23.md).
 
-## 2026-10-28 — Story editor controls, gradients, and toolbar measure
+## 2026-10-28 — Story editor hit targets and menu radius
 
-**Partial.** Adjacent text ⋮ no longer overlap: the control is the block height
-(20px paragraph, 24px heading), top 0, capped at 42px. A full 42/44px target
-does not fit a 20px line plus the 6px gap. Delete is `FigmaIconButton` compact
-with `destructiveInk`; the Web DOM box stays 34px because RN Web ignores
-hitSlop, and Native hit slop still reaches 44px. Menu ring and divider paint
-through SVG gradients (computed `url(#)` in Chromium and WebKit). Paragraphs
-use `bodySmall` (−0.14, review decision); the intro stays `subtitle`. Toolbar
-at «Закончить» measures 272.22×53 against Figma `4563:32790` 275×52.
+**Partial.** Text ⋮ is a 24×24 Web box on a 20px line (pitch 26). Native hit
+slop makes that control 44px wide; vertical slop is half the free gap (1px on
+a 20px line), so the vertical target is 26px, not 44. Delete stays the compact
+34×34 Web box; Native hit slop still reaches 44. Both shortfalls from 44px
+need user agreement and are not treated as accepted. Menu stroke rx and ry are
+both 20.75 on the measured 134.5×41.5 rect. Toolbar allowance versus Figma
+`4563:32790` 275×52 is width −2.78125 and height +1 (measured 272.22×53).
 [390×874 evidence](../audits/evidence/2026-10-28-story-editor-controls/README.md).
 Browser zoom 200% was not run. `simctl` is unavailable; Native iOS/Android
 unverified. Wide exact parity stays NEEDS-FIGMA. Server file reuse is

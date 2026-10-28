@@ -817,18 +817,29 @@ describe('app theme owner', () => {
         'Расскажите о том как создавалась ваша работа',
     ) as HTMLElement;
     expect(parseFloat(intro.style.letterSpacing)).toBe(0);
-    expect(storyTextMenuFrame(20)).toEqual({ top: 0, size: 20 });
-    expect(storyTextMenuFrame(24)).toEqual({ top: 0, size: 24 });
-    expect(storyTextMenuFrame(72)).toEqual({ top: 0, size: 42 });
+    const headingLine = designTokens.typography.storyHeading.lineHeight as number;
+    const paragraphLine = designTokens.typography.bodySmall.lineHeight as number;
+    expect(storyTextMenuFrame(20, 6).size).toBe(24);
+    expect(storyTextMenuFrame(20, 6).hitSlop).toEqual({
+      top: 3,
+      bottom: 1,
+      left: 10,
+      right: 10,
+    });
+    expect(storyTextMenuFrame(20, 6, 6, 20).hitSlop.top).toBe(1);
+    expect(storyTextMenuFrame(24, 6).size).toBe(24);
+    expect(storyTextMenuFrame(72, 6).size).toBe(42);
+    expect(storyTextMenuFrame(72, 6).hitSlop.left).toBe(1);
     const menuButtons = Array.from(
       container.querySelectorAll('[aria-label="Действия с блоком"]'),
     ) as HTMLElement[];
     expect(menuButtons.map((button) => parseFloat(button.style.height))).toEqual([
+      storyTextMenuFrame(headingLine, designTokens.space.workChipGap, designTokens.space.x10).size,
       storyTextMenuFrame(
-        designTokens.typography.storyHeading.lineHeight as number,
-      ).size,
-      storyTextMenuFrame(
-        designTokens.typography.bodySmall.lineHeight as number,
+        paragraphLine,
+        designTokens.space.x5,
+        designTokens.space.workChipGap,
+        headingLine,
       ).size,
     ]);
     act(() => root.unmount());

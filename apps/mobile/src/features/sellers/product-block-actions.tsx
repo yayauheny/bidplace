@@ -2,6 +2,7 @@ import { useId, useEffect, useLayoutEffect, useRef, useState, type ElementRef, t
 import { Platform, View, type ViewStyle } from 'react-native';
 import { Defs, LinearGradient, Rect, Stop, Svg } from 'react-native-svg';
 import { designTokens } from '@bidplace/design-tokens';
+import { figmaButtonStrokeRadius } from '../../components/figma/figma-button-style';
 import { FigmaIconButton } from '../../components/figma/FigmaIconButton';
 import { figmaMutedIconButtonFrame } from '../../components/figma/figma-icon-button-style';
 import type { MotionPressable } from '../../components/ui/MotionPressable';
@@ -23,16 +24,56 @@ const menuPanelShadowStyle = (
         shadowRadius: 26,
       };
 
+/** WCAG 2.5.8 minimum. A 20px line on a 26px pitch cannot hold a 44px target. */
+const storyMenuMinTarget = 24;
+
+export type StoryTextMenuHitSlop = {
+  top: number;
+  bottom: number;
+  left: number;
+  right: number;
+};
+
 /**
- * A 42px circle does not fit a 20px line. The following gap is excluded: WebKit
- * assigns that shared edge to the next block. Top stays 0. Upgrade when the
- * line can hold 42px.
+ * Visual square is at least 24px and at most the 42px muted frame, and it
+ * stops before the next block. Native hit slop reaches 44px horizontally.
+ * Vertically each side stops at half the free gap, so neighbors meet without
+ * crossing. Top stays 0. The shortfall from 44px is not an agreed exception.
  */
-export function storyTextMenuFrame(contentHeight: number) {
-  return {
-    top: 0,
-    size: Math.min(figmaMutedIconButtonFrame, Math.max(0, contentHeight)),
+export function storyTextMenuFrame(
+  contentHeight: number,
+  gapAfter: number,
+  gapBefore = gapAfter,
+  previousContent = 0,
+) {
+  const size = Math.min(
+    figmaMutedIconButtonFrame,
+    Math.max(storyMenuMinTarget, contentHeight),
+    contentHeight + gapAfter,
+  );
+  const horizontal = (designTokens.size.touch - size) / 2;
+  const freeAfter = Math.max(0, gapAfter - Math.max(0, size - contentHeight));
+  const bottom = Math.min(gapAfter / 2, freeAfter / 2, horizontal);
+  const previousSize =
+    previousContent > 0
+      ? Math.min(
+          figmaMutedIconButtonFrame,
+          Math.max(storyMenuMinTarget, previousContent),
+          previousContent + gapBefore,
+        )
+      : 0;
+  const freeBefore =
+    previousContent > 0
+      ? Math.max(0, gapBefore - Math.max(0, previousSize - previousContent))
+      : gapBefore;
+  const top = Math.min(gapBefore / 2, freeBefore / 2, horizontal);
+  const hitSlop: StoryTextMenuHitSlop = {
+    top,
+    bottom,
+    left: horizontal,
+    right: horizontal,
   };
+  return { top: 0, size, hitSlop };
 }
 
 function OutlineGradient({
@@ -53,6 +94,15 @@ function OutlineGradient({
   const gradientId = useId().replace(/:/g, '');
   if (width <= 0 || height <= 0) return null;
   const stroke = radius == null ? 0 : menuStroke;
+  const capsule =
+    radius == null
+      ? 0
+      : figmaButtonStrokeRadius({
+          borderRadius: radius,
+          width,
+          height,
+          strokeWidth: stroke,
+        });
   return (
     <Svg
       pointerEvents="none"
@@ -83,8 +133,8 @@ function OutlineGradient({
         y={stroke / 2}
         width={Math.max(0, width - stroke)}
         height={Math.max(0, height - stroke)}
-        rx={radius}
-        ry={radius}
+        rx={radius == null ? undefined : capsule}
+        ry={radius == null ? undefined : capsule}
         fill={radius == null ? `url(#${gradientId})` : 'none'}
         stroke={radius == null ? undefined : `url(#${gradientId})`}
         strokeWidth={radius == null ? undefined : stroke}
@@ -107,6 +157,9 @@ export function ProductBlockActions({
   presentation = 'menu',
   open: controlledOpen,
   onOpenChange,
+  textMenuGap = designTokens.space.workChipGap,
+  textMenuGapBefore = textMenuGap,
+  textMenuPrevious = 0,
   textMenuFloor = 0,
   triggerStrokeWidthPx,
   blockKey,
@@ -123,6 +176,12 @@ export function ProductBlockActions({
   presentation?: 'menu' | 'mediaTile';
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  /** Gap before the next block. The control must stop short of that block. */
+  textMenuGap?: number;
+  /** Gap after the previous block. Limits the upward native hit slop. */
+  textMenuGapBefore?: number;
+  /** Previous text line height. Zero when the previous block is not text. */
+  textMenuPrevious?: number;
   /** Line height used until the block reports its layout height. */
   textMenuFloor?: number;
   /** Story ⋮ only. Photo tiles keep the icon-button default. */
@@ -147,7 +206,12 @@ export function ProductBlockActions({
   } | null>(null);
   const textFrame =
     kind === 'text'
-      ? storyTextMenuFrame(contentHeight > 0 ? contentHeight : textMenuFloor)
+      ? storyTextMenuFrame(
+          contentHeight > 0 ? contentHeight : textMenuFloor,
+          textMenuGap,
+          textMenuGapBefore,
+          textMenuPrevious,
+        )
       : null;
   useEffect(() => {
     if (!open || Platform.OS !== 'web') return;
@@ -266,7 +330,7 @@ export function ProductBlockActions({
               expanded={open}
               onPress={() => setOpen(!open)}
               {...(textFrame && textFrame.size > 0
-                ? { frame: textFrame.size }
+                ? { frame: textFrame.size, slop: textFrame.hitSlop }
                 : {})}
               {...(triggerStrokeWidthPx != null
                 ? { strokeWidthPx: triggerStrokeWidthPx }

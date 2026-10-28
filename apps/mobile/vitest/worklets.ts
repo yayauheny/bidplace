@@ -1,5 +1,26 @@
 import { vi } from 'vitest';
 
+// react-native-svg's package entry parses as Native code under plain Node.
+// Owner specs may replace this stub with a richer mock.
+vi.mock('react-native-svg', () => {
+  const stub = () => null;
+  return {
+    default: stub,
+    Svg: stub,
+    Circle: stub,
+    Ellipse: stub,
+    G: stub,
+    Path: stub,
+    Defs: stub,
+    LinearGradient: stub,
+    Rect: stub,
+    Stop: stub,
+    Line: stub,
+    Polyline: stub,
+    SvgXml: stub,
+  };
+});
+
 vi.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
   SafeAreaProvider: ({ children }: { children: unknown }) => children,

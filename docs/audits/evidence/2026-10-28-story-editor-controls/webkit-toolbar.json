@@ -21,11 +21,19 @@
   "gradient": {
     "stroke": {
       "attribute": "url(#_r_1s_)",
-      "computed": "url(\"#_r_1s_\")"
+      "computed": "url(\"#_r_1s_\")",
+      "rx": 20.75,
+      "ry": 20.75,
+      "width": 134.5,
+      "height": 41.5
     },
     "divider": {
       "attribute": "url(#_r_1r_)",
-      "computed": "url(\"#_r_1r_\")"
+      "computed": "url(\"#_r_1r_\")",
+      "rx": 0,
+      "ry": 0,
+      "width": 1,
+      "height": 26
     }
   }
 }

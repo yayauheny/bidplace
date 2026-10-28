@@ -1930,6 +1930,14 @@ test('story editor polish: geometry, keyboard, and evidence screenshots', async 
     await expect(secondMenu).toBeEnabled();
     const firstBox = (await firstMenu.boundingBox())!;
     const secondBox = (await secondMenu.boundingBox())!;
+    expect(firstBox.width).toBeGreaterThanOrEqual(24);
+    expect(firstBox.height).toBeGreaterThanOrEqual(24);
+    expect(secondBox.width).toBeGreaterThanOrEqual(24);
+    expect(secondBox.height).toBeGreaterThanOrEqual(24);
+    expect(firstBox.width).toBeCloseTo(24, 0);
+    expect(firstBox.height).toBeCloseTo(24, 0);
+    expect(secondBox.width).toBeCloseTo(24, 0);
+    expect(secondBox.height).toBeCloseTo(24, 0);
     const verticalOverlap =
       Math.min(firstBox.y + firstBox.height, secondBox.y + secondBox.height) -
       Math.max(firstBox.y, secondBox.y);
@@ -1949,26 +1957,35 @@ test('story editor polish: geometry, keyboard, and evidence screenshots', async 
               : '',
         };
       }, { x, y });
-    const firstCenter = {
-      x: firstBox.x + firstBox.width / 2,
-      y: firstBox.y + firstBox.height / 2,
-    };
-    const firstLower = {
-      x: firstCenter.x,
-      y: firstBox.y + firstBox.height - 1,
-    };
-    await expect.poll(() => hitOwner(firstCenter.x, firstCenter.y)).toEqual({
-      label: 'Действия с блоком',
-      value: 'Первый',
-    });
-    await expect.poll(() => hitOwner(firstLower.x, firstLower.y)).toEqual({
-      label: 'Действия с блоком',
-      value: 'Первый',
-    });
-    await expect
-      .poll(() => hitOwner(secondBox.x + secondBox.width / 2, secondBox.y + 1))
-      .toEqual({ label: 'Действия с блоком', value: 'Второй' });
-    await page.mouse.click(firstLower.x, firstLower.y);
+    const samples = (box: { x: number; y: number; width: number; height: number }) => [
+      ['center', box.x + box.width / 2, box.y + box.height / 2],
+      ['top', box.x + box.width / 2, box.y + 1],
+      ['bottom', box.x + box.width / 2, box.y + box.height - 1],
+      ['left', box.x + 1, box.y + box.height / 2],
+      ['right', box.x + box.width - 1, box.y + box.height / 2],
+      ['top-left', box.x + 1, box.y + 1],
+      ['top-right', box.x + box.width - 1, box.y + 1],
+      ['bottom-left', box.x + 1, box.y + box.height - 1],
+      ['bottom-right', box.x + box.width - 1, box.y + box.height - 1],
+    ] as const;
+    for (const [name, x, y] of samples(firstBox)) {
+      const hit = await hitOwner(x, y);
+      expect(hit.value, name).not.toBe('Второй');
+      if (!name.includes('-')) {
+        expect(hit, name).toEqual({ label: 'Действия с блоком', value: 'Первый' });
+      }
+    }
+    for (const [name, x, y] of samples(secondBox)) {
+      const hit = await hitOwner(x, y);
+      expect(hit.value, name).not.toBe('Первый');
+      if (!name.includes('-')) {
+        expect(hit, name).toEqual({ label: 'Действия с блоком', value: 'Второй' });
+      }
+    }
+    await page.mouse.click(
+      firstBox.x + firstBox.width / 2,
+      firstBox.y + firstBox.height - 1,
+    );
     await expect(firstMenu).toHaveAttribute('aria-expanded', 'true');
     await expect(secondMenu).toHaveAttribute('aria-expanded', 'false');
     await page.keyboard.press('Escape');
@@ -2039,10 +2056,14 @@ test('story editor polish: geometry, keyboard, and evidence screenshots', async 
         const node = document
           .querySelector(`[data-testid="${id}"]`)
           ?.querySelector('rect');
-        if (!node) return { attribute: '', computed: '' };
+        if (!node) return { attribute: '', computed: '', rx: 0, ry: 0, width: 0, height: 0 };
         return {
           attribute: node.getAttribute(property) ?? '',
           computed: getComputedStyle(node)[property],
+          rx: Number(node.getAttribute('rx') ?? 0),
+          ry: Number(node.getAttribute('ry') ?? 0),
+          width: Number(node.getAttribute('width') ?? 0),
+          height: Number(node.getAttribute('height') ?? 0),
         };
       };
       return { stroke: paint('story-menu-stroke', 'stroke'), divider: paint('story-menu-divider', 'fill') };
@@ -2051,6 +2072,16 @@ test('story editor polish: geometry, keyboard, and evidence screenshots', async 
     expect(gradient.stroke.computed).not.toBe('none');
     expect(gradient.divider.attribute).toContain('url(#');
     expect(gradient.divider.computed).not.toBe('none');
+    expect(gradient.stroke.rx).toBe(gradient.stroke.ry);
+    expect(gradient.stroke.rx).toBeCloseTo(
+      Math.min(31, gradient.stroke.width / 2, gradient.stroke.height / 2),
+      1,
+    );
+    const deleteBox = (await headingBlock
+      .getByRole('button', { name: 'Удалить', exact: true })
+      .boundingBox())!;
+    expect(deleteBox.width).toBeGreaterThanOrEqual(34);
+    expect(deleteBox.height).toBeGreaterThanOrEqual(34);
     expect((await toolbar.boundingBox())!.y).toBeCloseTo(beforeMenu.y, 1);
     await capture('story-menu-open');
     await headingBlock.getByRole('button', { name: 'Ниже', exact: true }).click();
@@ -2114,24 +2145,29 @@ test('story editor polish: geometry, keyboard, and evidence screenshots', async 
         .toEqual(stop);
     }
 
-    await paragraphAfterMove
-      .getByRole('textbox', { name: 'Текст истории', exact: true })
-      .focus();
-    await paragraphAfterMove
-      .getByRole('textbox', { name: 'Текст истории', exact: true })
-      .blur();
-    await expect(
-      paragraphAfterMove.getByRole('textbox', {
-        name: 'Текст истории',
-        exact: true,
-      }),
-    ).not.toBeFocused();
-    await expect(
-      paragraphAfterMove.getByRole('textbox', {
-        name: 'Текст истории',
-        exact: true,
-      }),
-    ).toHaveValue(referenceParagraph);
+    const paragraphField = paragraphAfterMove.getByRole('textbox', {
+      name: 'Текст истории',
+      exact: true,
+    });
+    const fieldMetrics = () =>
+      paragraphField.evaluate((node) => {
+        const style = getComputedStyle(node);
+        const box = node.getBoundingClientRect();
+        return {
+          fontSize: style.fontSize,
+          fontWeight: style.fontWeight,
+          lineHeight: style.lineHeight,
+          letterSpacing: style.letterSpacing,
+          height: box.height,
+          scrollHeight: node.scrollHeight,
+          value: node instanceof HTMLTextAreaElement ? node.value : '',
+        };
+      });
+    const beforeBlur = await fieldMetrics();
+    await paragraphField.focus();
+    await paragraphField.blur();
+    await expect(paragraphField).not.toBeFocused();
+    expect(await fieldMetrics()).toEqual(beforeBlur);
 
     const finishBox = (await toolbar.boundingBox())!;
     const toolbarPaint = await toolbar.evaluate((node) => {
@@ -2143,10 +2179,15 @@ test('story editor polish: geometry, keyboard, and evidence screenshots', async 
         minHeight: style.minHeight,
       };
     });
-    // Figma frame is 52. minHeight 52 is border-box, but each 0.5px border
-    // snaps to a device pixel, so the used border box is 53.
-    expect(finishBox.height).toBeGreaterThanOrEqual(52);
-    expect(finishBox.height).toBeLessThanOrEqual(54);
+    // Figma 4563:32790 is 275×52. Allowance is the measured chrome difference:
+    // three 42px icons instead of 43px and padding 4 instead of 4.5 (width
+    // −2.78125); height +1 because the 43px compactIcon row, 8px padding and
+    // 1px+1px snapped borders exceed minHeight 52.
+    const figmaToolbar = { width: 275, height: 52 };
+    const widthAllowance = 2.78125;
+    const heightAllowance = 1;
+    expect(figmaToolbar.width - finishBox.width).toBeCloseTo(widthAllowance, 2);
+    expect(finishBox.height - figmaToolbar.height).toBe(heightAllowance);
     await writeFile(
       resolve(evidenceDir, `${test.info().project.name}-toolbar.json`),
       JSON.stringify(

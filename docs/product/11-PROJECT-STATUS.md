@@ -16,17 +16,17 @@
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
 | Commerce, избранное/подписки, смена email/password из settings | Not implemented в launch scope / post-MVP; [следующая волна](15-POST-MVP-BACKLOG.md). Старый commerce runtime не разрешает включать продажи. |
 
-## 2026-10-28 — Story editor control geometry
+## 2026-10-28 — Story editor hit targets
 
-**Partial.** `storyTextMenuFrame` sizes a text ⋮ to the block height (cap 42,
-top 0) so neighboring blocks do not receive the press. `ProductBlockActions`
-paints the menu ring and divider with `react-native-svg` `LinearGradient`.
-Delete returns to `FigmaIconButton` (`compact`, `tone="danger"` →
-`destructiveInk`). Story paragraphs use `bodySmall` (−0.14, review decision);
-the intro stays `subtitle`; story ⋮ stroke stays `stroke.icon` 1.3. Playwright
-Chromium and WebKit passed the new story scenario and the previous photo/story
-scenario against the prepared `bidplace_e2e` database, without `prepare.mjs`.
-Toolbar measured 272.22×53 versus Figma 275×52.
+**Partial.** `storyTextMenuFrame` keeps a text ⋮ at least 24px and inside the
+gap before the next block. Native `hitSlop` reaches 44px horizontally and half
+the free gap vertically; it is not 0. Web still ignores hit slop, so the
+measured box is 24×24. Delete stays `FigmaIconButton` compact (Web 34×34,
+Native slop to 44). The gap from 44px needs user agreement. The menu ring uses
+`figmaButtonStrokeRadius` (measured rx=ry=20.75). Vitest loads
+`react-native-svg` through the existing setup stub. Playwright Chromium and
+WebKit passed both story scenarios on ports 3011/8091 without `prepare.mjs`.
+Toolbar allowance versus 275×52 is −2.78125 by +1.
 [Evidence](../audits/evidence/2026-10-28-story-editor-controls/README.md).
 Browser zoom 200% and Native iOS/Android were not run. No upload, save, DnD,
 or server file-reuse change. Session SHA-256 is not server reuse.

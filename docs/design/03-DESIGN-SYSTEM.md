@@ -1078,12 +1078,14 @@ Headings stay `storyHeading`. Destructive story ink is `destructiveInk`
 (`Red` `4337:12016`, `#731A06`); `destructiveFill` stays the photo-button fill.
 Toolbar and block-menu surfaces use `surfaceMuted` (`Gray 5` `#F3F3F3`). Story
 icon glyphs use existing `stroke.icon` 1.3; `FigmaIconButton` still defaults to
-`stroke.iconHeavy` 1.6. Story text ⋮ is `storyTextMenuFrame`: the square equals
-the block height, capped at the 42px muted frame, top 0. A 20px paragraph is a
-20px control. A 42px circle overlaps the next 20px line and 6px gap by 16px,
-and WebKit gives that shared edge to the neighbor. The open menu ring and
-divider are `react-native-svg` `LinearGradient` paint. `experimental_backgroundImage`
-does not paint on the installed RN Web.
+`stroke.iconHeavy` 1.6. Story text ⋮ is `storyTextMenuFrame`: the visual square
+is at least 24px (WCAG 2.5.8) and at most the 42px muted frame, and it stops
+before the next block. A 20px line on a 26px pitch is a 24px control. Native
+hit slop reaches 44px horizontally; vertically each side stops at half the free
+gap. That is short of a 44px square and needs user agreement. The open menu
+ring uses `figmaButtonStrokeRadius` so both SVG axes share one capsule radius.
+Divider and ring paint are `react-native-svg` `LinearGradient`.
+`experimental_backgroundImage` does not paint on the installed RN Web.
 `FigmaIcon` `image-02` is Hugeicons `Image02Icon`; `image-01` is unchanged.
 
 Figma `4562:32461`/`4563:32768` supply the existing story toolbar and text

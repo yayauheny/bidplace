@@ -24,6 +24,7 @@ export function FigmaIconButton({
   size = 'default',
   tone = 'default',
   frame,
+  slop,
 }: {
   ref?: Ref<ElementRef<typeof MotionPressable>>;
   icon: FigmaIconName;
@@ -37,8 +38,9 @@ export function FigmaIconButton({
   surface?: 'plain' | 'muted' | 'outline' | 'destructive';
   size?: 'default' | 'settingsHeader' | 'compact';
   tone?: 'default' | 'danger';
-  /** Square visual and hit box. Omits hit slop so the box stays inside a tight slot. */
+  /** Square visual box. Pair with `slop` so Native still grows the hit target. */
   frame?: number;
+  slop?: { top: number; bottom: number; left: number; right: number };
 }) {
   const palette = useAppTheme();
   return (
@@ -50,16 +52,14 @@ export function FigmaIconButton({
       aria-expanded={expanded}
       disabled={disabled}
       hitSlop={
-        frame != null
-          ? 0
-          : size === 'compact'
-            ? (designTokens.size.touch - designTokens.size.compactIconButton) /
+        slop ??
+        (size === 'compact'
+          ? (designTokens.size.touch - designTokens.size.compactIconButton) / 2
+          : size === 'settingsHeader'
+            ? (designTokens.size.touch -
+                designTokens.size.settingsHeaderGlyph) /
               2
-            : size === 'settingsHeader'
-              ? (designTokens.size.touch -
-                  designTokens.size.settingsHeaderGlyph) /
-                2
-              : figmaIconButtonHitSlop
+            : figmaIconButtonHitSlop)
       }
       onPress={onPress}
       preset="icon"

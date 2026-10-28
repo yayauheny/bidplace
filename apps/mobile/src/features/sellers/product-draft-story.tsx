@@ -20,6 +20,12 @@ const STORY_TOOLBAR_HEIGHT = 52;
 const STORY_TEXT_BLOCK_GAP = designTokens.space.workChipGap;
 const STORY_MIXED_BLOCK_GAP = designTokens.space.x5;
 
+function storyTextLine(block: EditableStoryBlock) {
+  return block.type === 'HEADING'
+    ? (designTokens.typography.storyHeading.lineHeight as number)
+    : (designTokens.typography.bodySmall.lineHeight as number);
+}
+
 function storyBlockGapBefore(
   previous: EditableStoryBlock | undefined,
   current: EditableStoryBlock,
@@ -158,6 +164,8 @@ export function ProductDraftStoryStep({
                 )?.id
               : undefined;
           const textBlock = block.type !== 'IMAGE';
+          const previous = renderedBlocks[index - 1];
+          const next = renderedBlocks[index + 1];
           return (
             <View
               key={block.key}
@@ -170,11 +178,26 @@ export function ProductDraftStoryStep({
               open={openBlock === block.key}
               onOpenChange={(open) => setOpenBlock(open ? block.key : null)}
               kind={textBlock ? 'text' : 'image'}
-              textMenuFloor={
-                block.type === 'HEADING'
-                  ? (designTokens.typography.storyHeading.lineHeight as number)
-                  : (designTokens.typography.bodySmall.lineHeight as number)
+              textMenuGap={
+                textBlock
+                  ? next
+                    ? storyBlockGapBefore(block, next)
+                    : STORY_MIXED_BLOCK_GAP
+                  : undefined
               }
+              textMenuGapBefore={
+                textBlock
+                  ? previous
+                    ? storyBlockGapBefore(previous, block)
+                    : designTokens.space.x10
+                  : undefined
+              }
+              textMenuPrevious={
+                textBlock && previous && previous.type !== 'IMAGE'
+                  ? storyTextLine(previous)
+                  : 0
+              }
+              textMenuFloor={textBlock ? storyTextLine(block) : undefined}
               triggerStrokeWidthPx={designTokens.stroke.icon}
               blockKey={block.key}
               editable={editable && !virtual}
