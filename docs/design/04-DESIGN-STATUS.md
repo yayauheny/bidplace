@@ -5,6 +5,14 @@
 Полный прежний журнал, включая ограничения ранних экранов:
 история.
 
+## 2026-10-29 — Story upload revision, same geometry
+
+**Partial.** No layout, token, or frame change. Story upload now sends the
+editing revision that was current when the photo was selected. Chromium/WebKit
+story matrix 12/12 still passes. Wide exact Figma parity and native acceptance
+remain outside the claim. Evidence stays in the
+[W0 journal](../launch/waves/W0-photo-and-trunk.md).
+
 ## 2026-10-29 — W0 regression acceptance refresh
 
 **Partial.** Runtime layout/tokens remain the previous story implementation. With

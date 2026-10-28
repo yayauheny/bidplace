@@ -69,7 +69,13 @@ save calls that same upload without the lock because the save owns it. Pending
 selection is dirty at staging, so Continue, close and submit do not skip the
 save. Replay failure prevents PUT and keeps text/file/key; identity and owner
 guards are checked again after waiting. This prevents cleanup of an unseen
-accepted upload during a text-only save. `story-local-draft.ts` owns mandatory-v2 serialization,
+accepted upload during a text-only save. Story upload also sends
+`X-Photo-Revision` (`8a6e3620`). The client captures the editing revision with
+the pending file. `ImagesService.addStoryImage` rejects a missing or different
+revision before staging and again after the Product lock; the operation row
+stores that revision without putting it in the idempotency hash. A replay for
+another revision is 409 and does not create a hold. The same revision can still
+replay a lost response, including at the five-photo limit. `story-local-draft.ts` owns mandatory-v2 serialization,
 identity restore and recovery-only quarantine of old unscoped v2 copies;
 v1/content merging and adoption from unscoped keys are removed. This quarantine
 preserves the protected revision recovery regression without applying old text.
@@ -80,7 +86,11 @@ transaction as `MediaLifecycleService.enqueueCleanup`. Gallery holds and other
 revisions are excluded; the client no longer issues post-save DELETEs.
 `ImagesService` checks five-hold admission before staging and repeats it under
 the Product lock; attached keyed uploads can replay at capacity. Cleanup retains
-its existing reference/asset-lock checks. `tick`, claim and outstanding-work
+its existing reference/asset-lock checks. One story asset referenced by two
+revisions stays `READY` with its bytes after the first revision releases its
+hold (`080bc7c6`); cleanup code did not change. `prepareImageUpload` deletes an
+encoding that is too large or cannot be read through `deleteGeneratedImage`
+(`ec860de9`) and keeps the source file and the URI it returns. `tick`, claim and outstanding-work
 selection exclude twenty-attempt operations; terminal failure preserves
 `nextAttemptAt` and logs only operation id/kind once. No database migration.
 Shared-byte lookup (`DEC-112`), story CDN and native acceptance remain open.

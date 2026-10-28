@@ -16,6 +16,30 @@
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
 | Commerce, избранное/подписки, смена email/password из settings | Not implemented в launch scope / post-MVP; [следующая волна](15-POST-MVP-BACKLOG.md). Старый commerce runtime не разрешает включать продажи. |
 
+## 2026-10-29 — Story revision binding and rejected encodings
+
+**Partial.** `8a6e3620` requires `X-Photo-Revision` on story upload. The client
+stores the editing revision when the photo is selected and sends it again on
+replay. The API checks that revision before staging and after the Product lock.
+A replay for a different revision returns 409 and does not create a hold. A
+lost response on the same revision still returns the existing hold, and the
+five-photo limit stays. The revision is not part of the idempotency hash.
+
+`080bc7c6` covers one `mediaAssetId` held by two revisions. Saving the first
+releases only its hold. After cleanup, the second reference, `READY`, and the
+stored bytes remain. Production cleanup was not changed: the defect did not
+reproduce. `ec860de9` deletes a rejected encoding through `deleteGeneratedImage`
+when the result is too large or cannot be read; the source file and an accepted
+URI stay. `b4af2da2` types that spy.
+
+Addressed checks: API image unit 34/34, api-client images 4/4, mobile
+prepare/editor/submit 131/131, integration `work-media-http` and
+`author-story-catalog` 18/18. Four-package typecheck, API/mobile lint, API
+build, and web export pass. Chromium/WebKit story matrix 12/12. Commands and
+the unchanged Partial scope are in the
+[W0 journal](../launch/waves/W0-photo-and-trunk.md). `DEC-112`, story CDN, and
+native acceptance stay open.
+
 ## 2026-10-29 — W0 acceptance and main workflow preparation
 
 **Partial.** Supersedes the previous W0 gate refusal: founder explicitly approved
