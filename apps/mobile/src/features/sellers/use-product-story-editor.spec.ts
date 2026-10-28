@@ -1046,6 +1046,8 @@ describe('revision-backed Work Story editor', () => {
     expect(view.addStoryImage.mock.calls[0]?.[2]).toBe(
       view.addStoryImage.mock.calls[1]?.[2],
     );
+    expect(view.addStoryImage.mock.calls[0]?.[3]).toBe(revisionId);
+    expect(view.addStoryImage.mock.calls[1]?.[3]).toBe(revisionId);
     expect(view.editor.blocks).toMatchObject([
       { type: 'IMAGE', mediaAssetId: assetId },
     ]);

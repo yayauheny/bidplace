@@ -2569,6 +2569,12 @@ describe('uncertain story upload during a draft transition', () => {
 
     expect(harness.addStoryImage).toHaveBeenCalledTimes(2);
     expect(harness.addStoryImage.mock.calls[1]?.[2]).toBe(harness.addStoryImage.mock.calls[0]?.[2]);
+    expect(harness.addStoryImage.mock.calls[0]?.[3]).toBe(
+      '22222222-2222-4222-8222-222222222222',
+    );
+    expect(harness.addStoryImage.mock.calls[1]?.[3]).toBe(
+      harness.addStoryImage.mock.calls[0]?.[3],
+    );
     expect(harness.addStoryImage.mock.invocationCallOrder[1])
       .toBeLessThan(harness.replaceCreation.mock.invocationCallOrder[0]!);
     expect(harness.replaceCreation.mock.calls[0]?.[1].blocks).toEqual(expect.arrayContaining([

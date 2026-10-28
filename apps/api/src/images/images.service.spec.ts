@@ -1114,7 +1114,13 @@ describe('ImagesService media gallery admission', () => {
   it('rejects story uploads from a non-owner before staging media', async () => {
     const { service, stage, prisma } = createMediaHarness({});
     await expect(
-      service.addStoryImage('stranger-id', 'product-id', file, 'story-upload'),
+      service.addStoryImage(
+        'stranger-id',
+        'product-id',
+        file,
+        'story-upload',
+        'revision-id',
+      ),
     ).rejects.toThrow(ForbiddenException);
     expect(stage).not.toHaveBeenCalled();
     expect(prisma.$transaction).not.toHaveBeenCalled();
@@ -1127,6 +1133,9 @@ describe('ImagesService media gallery admission', () => {
     const tx = {
       $queryRaw: vi.fn().mockResolvedValue([{ id: 'product-id' }]),
       product: { findUnique: vi.fn().mockResolvedValue(product) },
+      mediaOperation: {
+        findUnique: vi.fn().mockResolvedValue({ revisionId: 'revision-id' }),
+      },
       productRevisionStoryAsset: {
         findUnique: vi.fn().mockResolvedValue(null),
         count: vi.fn().mockResolvedValue(5), create,
@@ -1135,14 +1144,75 @@ describe('ImagesService media gallery admission', () => {
     const prisma = {
       product: { findUnique: vi.fn().mockResolvedValue(product) },
       productRevisionStoryAsset: { count: vi.fn().mockResolvedValue(concurrent ? 4 : 5) },
-      mediaOperation: { findUnique: vi.fn().mockResolvedValue(null) },
+      mediaOperation: {
+        findUnique: vi.fn().mockResolvedValue(null),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
       $transaction: vi.fn(async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx)),
     };
     const service = new ImagesService(prisma as never, createImageStoreMock() as never, {
       enabled: true, stage, assertNotPending: vi.fn(), attach: vi.fn(),
     } as never);
-    await expect(service.addStoryImage('owner-id', 'product-id', file, 'new-story')).rejects.toMatchObject({ status: 409 });
+    await expect(service.addStoryImage('owner-id', 'product-id', file, 'new-story', 'revision-id')).rejects.toMatchObject({ status: 409 });
     expect(stage).toHaveBeenCalledTimes(concurrent ? 1 : 0);
+    if (concurrent) {
+      expect(stage).toHaveBeenCalledWith(
+        'owner-id',
+        'STORY_IMAGE',
+        file,
+        createHash('sha256').update('product-id:story:new-story').digest('hex'),
+      );
+    }
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it('does not stage a story retry that belongs to an earlier revision', async () => {
+    const product = createApprovedProduct([]);
+    const stage = vi.fn();
+    const prisma = {
+      product: { findUnique: vi.fn().mockResolvedValue(product) },
+      mediaOperation: {
+        findUnique: vi.fn().mockResolvedValue({ revisionId: 'old-revision' }),
+      },
+      $transaction: vi.fn(),
+    };
+    const service = new ImagesService(prisma as never, createImageStoreMock() as never, {
+      enabled: true, stage, assertNotPending: vi.fn(), attach: vi.fn(),
+    } as never);
+    await expect(
+      service.addStoryImage('owner-id', 'product-id', file, 'same-story', 'revision-id'),
+    ).rejects.toMatchObject({ status: 409 });
+    expect(stage).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('does not create a story hold when the revision changes during staging', async () => {
+    const product = createApprovedProduct([]);
+    const locked = createApprovedProduct([]);
+    locked.editingRevisionId = 'revision-2';
+    const create = vi.fn();
+    const stage = vi.fn().mockResolvedValue({ id: 'story-asset' });
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ id: 'product-id' }]),
+      product: { findUnique: vi.fn().mockResolvedValue(locked) },
+      productRevisionStoryAsset: { create },
+    };
+    const prisma = {
+      product: { findUnique: vi.fn().mockResolvedValue(product) },
+      productRevisionStoryAsset: { count: vi.fn().mockResolvedValue(0) },
+      mediaOperation: {
+        findUnique: vi.fn().mockResolvedValue(null),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
+      $transaction: vi.fn(async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx)),
+    };
+    const service = new ImagesService(prisma as never, createImageStoreMock() as never, {
+      enabled: true, stage, assertNotPending: vi.fn(), attach: vi.fn(),
+    } as never);
+    await expect(
+      service.addStoryImage('owner-id', 'product-id', file, 'race-story', 'revision-id'),
+    ).rejects.toMatchObject({ status: 409 });
+    expect(stage).toHaveBeenCalledTimes(1);
     expect(create).not.toHaveBeenCalled();
   });
 

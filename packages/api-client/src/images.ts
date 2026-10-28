@@ -121,7 +121,12 @@ export function createImagesClient(context: RequestContext) {
         },
       );
     },
-    addStoryImage(productId: string, image: Blob, idempotencyKey: string) {
+    addStoryImage(
+      productId: string,
+      image: Blob,
+      idempotencyKey: string,
+      revisionId: string,
+    ) {
       return requestJson(
         context,
         `/api/products/${productId}/story-images`,
@@ -130,7 +135,10 @@ export function createImagesClient(context: RequestContext) {
           method: 'POST',
           body: { image },
           asFormData: true,
-          headers: { 'Idempotency-Key': idempotencyKey },
+          headers: {
+            'Idempotency-Key': idempotencyKey,
+            'X-Photo-Revision': revisionId,
+          },
         },
       );
     },

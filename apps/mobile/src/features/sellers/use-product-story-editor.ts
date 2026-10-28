@@ -158,7 +158,11 @@ export function useProductStoryEditor({
   const current = useRef(state);
   const outstanding = useRef<Promise<boolean> | null>(null);
   const retry = useRef<{ snapshot: string; key: string } | null>(null);
-  const pendingImage = useRef<{ image: Blob; key: string } | null>(null);
+  const pendingImage = useRef<{
+    image: Blob;
+    key: string;
+    revisionId: string;
+  } | null>(null);
   const writer = useRef(createDraftWriter());
   const accountRef = useRef(accountId);
   const productRef = useRef(productId);
@@ -514,9 +518,12 @@ export function useProductStoryEditor({
       });
       return false;
     }
+    const revisionAtStart = revisionRef.current;
     const pending =
       pendingImage.current ??
-      (image ? { image, key: crypto.randomUUID() } : null);
+      (image && revisionAtStart
+        ? { image, key: crypto.randomUUID(), revisionId: revisionAtStart }
+        : null);
     if (!pending) return false;
     pendingImage.current = pending;
     const previous = current.current;
@@ -526,6 +533,7 @@ export function useProductStoryEditor({
         productId,
         pending.image,
         pending.key,
+        pending.revisionId,
       );
       if (current.current.identity !== identity) return false;
       pendingImage.current = null;

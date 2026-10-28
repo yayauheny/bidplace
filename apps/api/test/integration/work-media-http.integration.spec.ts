@@ -3,7 +3,10 @@ import { createHash, randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import sharp from 'sharp';
 import { normalizeCatalogName } from '../../src/catalog/catalog-data';
-import { MediaLifecycleService } from '../../src/core/media/media-lifecycle.service';
+import {
+  MediaLifecycleService,
+  mediaUploadIdentity,
+} from '../../src/core/media/media-lifecycle.service';
 import {
   S3MediaObjectStore,
   type StoredMedia,
@@ -228,12 +231,20 @@ describe('Work media lifecycle over authenticated HTTP and PostgreSQL', () => {
     const category = await db.prisma.category.findFirstOrThrow({ where: { active: true } });
     const work = await owner.client.post('/products', { title: 'Story limits', categoryId: category.id });
     expect(work.status).toBe(201);
-    const { product } = await work.json() as { product: { id: string; editingRevisionId: string } };
+    const { product } = await work.json() as { product: { id: string } };
+    const originalRevisionId = (await db.prisma.product.findUniqueOrThrow({
+      where: { id: product.id },
+      select: { editingRevisionId: true },
+    })).editingRevisionId!;
     const png = await sharp({ create: { width: 64, height: 48, channels: 3, background: 'blue' } }).png().toBuffer();
     const send = (size: number, key: string) => {
       const form = new FormData();
       form.append('image', new Blob([new Uint8Array(Buffer.concat([png, Buffer.alloc(size - png.length)]))], { type: 'image/png' }), 'story.png');
-      return owner.client.request(`/products/${product.id}/story-images`, { method: 'POST', headers: { 'Idempotency-Key': key }, body: form });
+      return owner.client.request(`/products/${product.id}/story-images`, {
+        method: 'POST',
+        headers: { 'Idempotency-Key': key, 'X-Photo-Revision': originalRevisionId },
+        body: form,
+      });
     };
     try {
       const accepted = await send(10 * 1024 * 1024, 'story-boundary');
@@ -263,6 +274,85 @@ describe('Work media lifecycle over authenticated HTTP and PostgreSQL', () => {
       } finally { stage.mockRestore(); }
       expect((await send(10 * 1024 * 1024, 'story-boundary')).status).toBe(201);
       expect(await db.prisma.mediaAsset.findUniqueOrThrow({ where: { id: mediaAssetId } })).toMatchObject({ state: 'READY' });
+    } finally {
+      await db.prisma.sellerProfile.update({ where: { id: profile.id }, data: { status: 'DRAFT' } });
+    }
+  });
+
+  it('keeps a story upload on its original revision when that revision changes around staging', async () => {
+    const suffix = `story-revision-${randomUUID().slice(0, 8)}`;
+    const owner = await user('user', suffix);
+    const profile = await db.prisma.sellerProfile.create({ data: {
+      userId: owner.row.id, slug: suffix, sellerType: 'creator', fullName: 'Story revision',
+      country: 'BY', shortDescription: 'Story revision', status: 'APPROVED',
+      profilePhotoMimeType: 'image/png', profilePhotoByteLength: 1, profilePhotoChecksum: 'c'.repeat(64), profilePhotoData: Buffer.from('x'),
+    } });
+    const category = await db.prisma.category.findFirstOrThrow({ where: { active: true } });
+    const work = await owner.client.post('/products', { title: 'Story revision', categoryId: category.id });
+    expect(work.status).toBe(201);
+    const { product } = await work.json() as { product: { id: string } };
+    const originalRevisionId = (await db.prisma.product.findUniqueOrThrow({
+      where: { id: product.id },
+      select: { editingRevisionId: true },
+    })).editingRevisionId!;
+    const png = await sharp({ create: { width: 64, height: 48, channels: 3, background: 'blue' } }).png().toBuffer();
+    const send = (key: string, revisionId: string) => {
+      const form = new FormData();
+      form.append('image', new Blob([png], { type: 'image/png' }), 'story.png');
+      return owner.client.request(`/products/${product.id}/story-images`, {
+        method: 'POST',
+        headers: { 'Idempotency-Key': key, 'X-Photo-Revision': revisionId },
+        body: form,
+      });
+    };
+    const holds = (revisionId: string) => db.prisma.productRevisionStoryAsset.count({ where: { revisionId } });
+    try {
+      const lost = await send('story-replay', originalRevisionId);
+      expect(lost.status).toBe(201);
+      const replay = await send('story-replay', originalRevisionId);
+      expect(replay.status).toBe(201);
+      expect(await lost.json()).toEqual(await replay.json());
+      expect(await holds(originalRevisionId)).toBe(1);
+
+      const next = await db.prisma.productRevision.create({
+        data: { productId: product.id, version: 2, status: 'DRAFT', title: 'Next' },
+      });
+      await db.prisma.product.update({
+        where: { id: product.id },
+        data: { editingRevisionId: next.id },
+      });
+      expect((await send('story-replay', originalRevisionId)).status).toBe(409);
+      expect((await send('story-replay', next.id)).status).toBe(409);
+      expect(await holds(next.id)).toBe(0);
+      expect(await holds(originalRevisionId)).toBe(1);
+      const identity = mediaUploadIdentity(
+        owner.row.id,
+        'STORY_IMAGE',
+        createHash('sha256').update(`${product.id}:story:story-replay`).digest('hex'),
+      );
+      expect(await db.prisma.mediaOperation.count({ where: { identity } })).toBe(1);
+
+      await db.prisma.product.update({
+        where: { id: product.id },
+        data: { editingRevisionId: originalRevisionId },
+      });
+      const original = media.stage.bind(media);
+      const stage = vi.spyOn(media, 'stage');
+      stage.mockImplementation(async (...args) => {
+        const asset = await original(...args);
+        await db.prisma.product.update({
+          where: { id: product.id },
+          data: { editingRevisionId: next.id },
+        });
+        return asset;
+      });
+      try {
+        expect((await send('story-race', originalRevisionId)).status).toBe(409);
+      } finally {
+        stage.mockRestore();
+      }
+      expect(await holds(next.id)).toBe(0);
+      expect(await holds(originalRevisionId)).toBe(1);
     } finally {
       await db.prisma.sellerProfile.update({ where: { id: profile.id }, data: { status: 'DRAFT' } });
     }
