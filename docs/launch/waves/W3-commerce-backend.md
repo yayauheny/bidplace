@@ -41,6 +41,15 @@
 - Действия покупателя (ставка, покупка, принятие) — `SessionAuthGuard` +
   `VerifiedEmailGuard`; ставки — `RateLimit` `user-resource` 10/мин.
 - Админ-действия — `AdminGuard` + запись `auditEvent` (как в модерации).
+  `auditEvent` — только внутри той же транзакции, что и изменение (как
+  `admin-user.service.ts`, не как `catalog.service.ts`, который пишет после коммита).
+- Статус автора `APPROVED` перепроверяется внутри транзакции под блокировкой
+  работы (создание лота, ставка, покупка): `ProductsService.create` сейчас
+  проверяет до транзакции — этот приём не копировать.
+- `commerce` не импортирует `ProductsService` (он тянет каталог и медиа):
+  только `product-write-guard` и маленький читатель работы внутри `commerce`.
+- Лимиты частоты в памяти (`RateLimitService`) — только от спама; ни одно
+  правило денег и броней на них не держится.
 - Не делать: realtime/WebSocket, оплату, доставку, публичные рейтинги и отзывы,
   жалобы на работы и авторов в интерфейсе, автоставки, резервную цену, «купить сейчас».
 
@@ -129,6 +138,10 @@ apps/api/src/favorites/
   старых полей (по `rg`)
 - Test: `packages/database` проверка миграции (как принято), `commerce.spec.ts`
 
+В той же миграции: `AuditTargetType` += `REPORT`; удалить неиспользуемую
+`PhoneVerificationCode` и, если `rg` не находит читателей, `users.phone` /
+`phoneVerifiedAt` (телефон теперь — `contactPhone` без SMS). Каждое удаление — `Ruling:`.
+
 **Interfaces:**
 - Produces (контракты):
 
@@ -211,17 +224,22 @@ Test: `notification-outbox.spec.ts`, `apps/api/test/integration/notifications.in
 
 ```ts
 type NotificationKind = 'BID_WON' | 'PURCHASED' | 'LISTING_SOLD' | 'AUCTION_ENDED_NO_BIDS' | 'OFFER_RECEIVED'
-  | 'CONFIRM_DEAL_REMINDER' | 'ORDER_REPORTED' | 'LISTING_REMOVED' | 'OUTBID'
+  | 'CONFIRM_DEAL_REMINDER' | 'ORDER_REPORTED' | 'LISTING_REMOVED' | 'OUTBID' | 'CONTACTS_CHANGED'
 enqueueNotification(tx, input: { userId: string; kind: NotificationKind; payload: Record<string, string | number> }): Promise<void>
 renderNotification(kind, payload): MailMessage   // notification-templates.ts, тексты по COMMERCE §1 и §9
 GET/PUT /api/me/notification-settings
+POST /api/admin/notifications/retry-failed   // FAILED за 48 ч → PENDING, attemptCount = 0, auditEvent
+GET /api/admin/health → { lastTickAt, failedNotifications, openReports, oldestOpenReportAt }
 ```
 
 - [ ] **Шаг 1: падающие тесты:** `OUTBID` не ставится в очередь, если выключено;
   обязательные ставятся всегда; задача отправляет до 20, ошибка транспорта →
   ретрай с задержкой, после 10 попыток `FAILED` и один `error`-лог без адреса;
   тексты: `it.each` по виду — нет слов «выигр», «приз», «розыгрыш», есть ссылка
-  на заказ, нет контактов второй стороны.
+  на заказ, нет контактов второй стороны. Инъекция: название, комментарий и имя
+  с `\r\nBcc: a@b.c` → тема без CR/LF, один получатель; адрес без
+  `emailVerifiedAt` — не отправляется. `retry-failed` возвращает в очередь только
+  `FAILED` за 48 ч; `/api/admin/health` — только админу.
 - [ ] **Шаг 2:** FAIL → реализовать → PASS.
 - [ ] **Шаг 3:** коммит `feat: notification outbox and settings`.
 
@@ -251,6 +269,7 @@ GET/PUT /api/me/notification-settings
   «Забронировано»/«Продано» по таблице COMMERCE §3.2; `viewer.blockedReason` для
   каждой причины отказа покупателю; ответ без сессии не содержит `viewer`;
   заголовок `no-store`; тест Worker: `/api/works/x/lot` не кэшируется. Скрыть работу с лотом → `PRODUCT_IN_SALE`.
+  `startsAt` на час позже `now()` базы → `SCHEDULED`, ставка → `LISTING_NOT_OPEN`.
 - [ ] **Шаг 2:** FAIL → реализовать → PASS.
 - [ ] **Шаг 3:** коммит `feat: create and cancel listings`.
 
@@ -274,6 +293,11 @@ GET/PUT /api/me/notification-settings
   тот же ответ; ключ с другой суммой → `IDEMPOTENCY_KEY_REUSED`; ставка за 30 с
   до конца продлевает `endsAt`; предыдущему лидеру — письмо «перебили» в
   очереди, если не выключено. Список ставок без имён и контактов.
+  Лимит: 11-я ставка на этот лот за 60 с → 429, первая на другой лот → 200
+  (`RateLimit` `user-resource`, сбрасывается при рестарте — это записано в W6).
+  Лимит броней считает активные заказы **и** лоты, где пользователь сейчас лидер
+  (COMMERCE §7, C8). Ставка второго аккаунта автора не ловится — остаточный риск,
+  записать в отчёт, не «закрыто».
 - [ ] **Шаг 2:** FAIL → реализовать (блокировка работы → `dbNow` → проверки →
   вставка ставки → условное обновление `currentPriceMinor`, `bidCount`, `endsAt`) → PASS.
 - [ ] **Шаг 3:** коммит `feat: place bids`.
@@ -291,6 +315,10 @@ Test: `apps/api/test/integration/commerce-purchase.integration.spec.ts`.
 - [ ] **Шаг 1: падающие тесты:** успех (заказ `ACTIVE`, лот `ENDED`, метка
   «Забронировано», письма обоим); два параллельных `purchase` → один 200 и один
   `LISTING_NOT_OPEN`; покупка снятого лота; условия покупателя как в Task 5.
+  `publicId` заказа — `^[A-Za-z0-9_-]{11}$` (`PublicIdService.generate()`), пример
+  `BP-7K3M9Q` из макетов не использовать; код сделки — `crypto.randomInt`, ни один
+  маршрут не принимает его в пути или query. Два `purchase` с одним ключом —
+  один заказ и одинаковый ответ; с другим ключом — `LISTING_NOT_OPEN`.
 - [ ] **Шаг 2:** FAIL → реализовать → PASS.
 - [ ] **Шаг 3:** коммит `feat: fixed price purchase`.
 
@@ -306,12 +334,17 @@ Test: `apps/api/test/integration/commerce-purchase.integration.spec.ts`.
 - Produces: маршруты заказов из COMMERCE §12; `PUT /api/me/contacts`;
   `getTrustSignals(tx | prisma, userId): Promise<TrustSignals>`;
   `offerNext(sellerUserId, orderPublicId): Promise<OrderDetail>`;
+  `reopenAfterAutoComplete(sellerUserId, orderPublicId): Promise<OrderDetail>`;
   `POST /api/admin/orders/:publicId/void-strike`.
 
 - [ ] **Шаг 1: падающие тесты доступа** (`it.each` по роли: покупатель, автор,
   посторонний, админ, аноним): карточка — 200/200/404/200/401; контакты второй
   стороны есть только у участника и админа, в `FAILED` скрыты; заметка автора
-  только автору и админу.
+  только автору и админу. `GET /api/authors/:slug` и `GET /api/works/:publicId`
+  не содержат `contactPhone`/`contactTelegram`/`contactInstagram`. После
+  `revokeSessions` старая кука → 401 на заказе. `PUT /api/me/contacts` требует
+  сессию не старше 5 минут (как привязка входа) и ставит письмо
+  `CONTACTS_CHANGED` владельцу; после смены вторая сторона видит новые контакты.
 - [ ] **Шаг 2: падающие тесты переходов**: каждая строка COMMERCE §6.1 через
   API, включая «не выходит на связь» до/после 48 ч (время двигать через данные,
   не через sleep).
@@ -321,6 +354,11 @@ Test: `apps/api/test/integration/commerce-purchase.integration.spec.ts`.
   активных → `BUYER_ORDER_LIMIT`.
 - [ ] **Шаг 4: страйки:** два `FAILED` по вине покупателя → ставка, покупка,
   принятие → `BUYER_BLOCKED`; админ снимает страйк (`auditEvent`) → снова можно.
+  Страйк от автора (`BUYER_REFUSED`/`BUYER_NO_CONTACT`) начинает считаться через
+  72 ч и не считается, пока по заказу есть открытая жалоба покупателя (COMMERCE §7, C9).
+  `void-strike` без `reason` → 400; `auditEvent` хранит актора, `publicId` заказа,
+  прежний и новый `faultSide`. Автор после автозакрытия: «Вернуть в продажу» в
+  течение 30 дней → `FAILED BUYER_NO_CONTACT` без страйка (COMMERCE §6.3, C7).
   `getTrustSignals` считает по данным (it.each по набору заказов и жалоб).
 - [ ] **Шаг 5:** FAIL → реализовать → PASS.
 - [ ] **Шаг 6:** коммит `feat: order lifecycle, contacts and strikes`.
@@ -342,6 +380,7 @@ Test: `apps/api/test/integration/commerce-tick.integration.spec.ts`.
   заказа, письмо автору; два параллельных запуска → один заказ; предложение с
   истёкшим сроком → `FAILED OFFER_EXPIRED`; `ACTIVE` старше 14 дней без жалобы →
   `COMPLETED SYSTEM`; с открытой жалобой — остаётся; напоминание отправляется один раз.
+  `/api/admin/health.lastTickAt` = `TickService.lastSucceededAt()` (W2).
 - [ ] **Шаг 2:** FAIL → реализовать → PASS.
 - [ ] **Шаг 3:** коммит `feat: commerce tick jobs`.
 
@@ -357,7 +396,8 @@ Test: `apps/api/test/integration/commerce-reports.integration.spec.ts`.
   — 404; вторая открытая от того же — 409; вторая сторона получает письмо без
   текста жалобы; открытая жалоба блокирует автозакрытие; разбор админом меняет
   заказ по таблице и пишет `auditEvent`; `UPHELD` с виной автора учитывается в
-  `getTrustSignals`.
+  `getTrustSignals`. 6-я жалоба от одного пользователя за час → 429; `resolve`
+  без `adminNote` → 400.
 - [ ] **Шаг 2:** FAIL → реализовать → PASS.
 - [ ] **Шаг 3:** коммит `feat: order reports and admin resolution`.
 

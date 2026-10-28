@@ -123,7 +123,12 @@ Durable Object `POST /api/internal/tick` с внутренним секрето�
 type TickJob = { name: string; run(now: Date, budget: { deadline: number }): Promise<number> } // число обработанных
 class TickService { register(job: TickJob): void; run(now?: Date): Promise<TickResult> }
 type TickResult = { skipped: boolean; jobs: { name: string; processed: number; failed: boolean }[] }
+TickService.lastSucceededAt(): Promise<Date | null>   // для /api/admin/health (W3)
 ```
+
+  Каждый запуск без `skipped` и без упавших задач делает `upsert` строки
+  `system_heartbeats(name = 'tick', at = now())` — новая таблица из двух колонок,
+  миграция в этой задаче. Без неё основатель не узнает, что тик молчит (OPERATIONS §1).
 
   `POST /api/internal/tick` → `200 TickResult`. Задачи регистрируют модули-владельцы
   в `onModuleInit` (медиа — Task 3; продажи и письма — W3 Task 3 и Task 8).
@@ -135,7 +140,10 @@ type TickResult = { skipped: boolean; jobs: { name: string; processed: number; f
   пропущены и помечены `processed: 0`.
 - [ ] **Шаг 2:** FAIL → реализовать → PASS.
 - [ ] **Шаг 3: интеграция.** Без заголовка / с неверным → 404; с верным → 200
-  и `TickResult`; эндпоинт не требует сессии и не имеет rate limit.
+  и `TickResult`; эндпоинт не требует сессии и не имеет rate limit. CSRF-проверка
+  (Origin + `x-bidplace-request`) для этого маршрута отключена, проверка секрета —
+  нет. После успешного запуска `lastSucceededAt()` вернул его время; после
+  запуска с упавшей задачей — прежнее.
 - [ ] **Шаг 4:** `INTERNAL_TICK_SECRET` — обязателен при `NODE_ENV=production`
   (тест схемы env: отсутствие → ошибка запуска), ≥ 32 символов.
 - [ ] **Шаг 5:** коммит `feat: add internal tick endpoint`.

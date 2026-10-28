@@ -111,7 +111,14 @@ renderShareCard(template: CardLayer[], data: ShareCardData, size: { width; heigh
 - [ ] **Шаг 3:** `share-file.ts`: `navigator.canShare({ files })` → `navigator.share`;
   отмена пользователем — не ошибка; иначе скачивание `<a download>`; Object URL освобождается.
 - [ ] **Шаг 4:** FAIL → реализовать по Figma `5091:30095` → PASS.
-- [ ] **Шаг 5:** коммит `feat: share work as story, post, square or original`.
+- [ ] **Шаг 5:** `ShareCardData.coverUrl` — только опубликованная публичная версия
+  обложки; черновики и фото истории в данные карточки не попадают (тест на маппер).
+  Аналитика: событие `share_export_used { productPublicId, format }` (клиент,
+  без изображений и подписей) в `packages/contracts/src/analytics.ts` и
+  [analytics-contract.md](../../product/analytics-contract.md); там же удалить
+  неиспользуемые `bid_cta_clicked` и `bid_rejected` (вызовов нет, продажи
+  считаются по таблицам — [OPERATIONS.md](../OPERATIONS.md) §2).
+- [ ] **Шаг 6:** коммит `feat: share work as story, post, square or original`.
 
 ### Task 3: Чек заказа
 

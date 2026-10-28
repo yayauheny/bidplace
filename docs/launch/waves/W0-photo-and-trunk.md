@@ -265,7 +265,11 @@ git push origin --delete feature/portfolio-mvp-release            # после �
 
   Не удалять ветки с непомёрженными коммитами; `archive/commerce-v1` оставить
   (справочник для W3).
-- [ ] **Шаг 4:** коммит `ci: use main as the release branch`.
+- [ ] **Шаг 4:** `.env.example` и `scripts/doctor.mjs` называют `JWT_SECRET`,
+  который API не читает; заменить на `SESSION_SECRET` и `OTP_HASH_SECRET`
+  (`apps/api/src/core/config/env.ts`), только имена без значений. В README —
+  `SEED_ADMIN_PASSWORD` вместо `SEED_ADMIN_PASSWORD_HASH` (так читает сид).
+- [ ] **Шаг 5:** коммит `ci: use main as the release branch`.
 
 ### Task 6: Документы и полная проверка
 

@@ -115,16 +115,21 @@ apps/mobile/src/app/(account)/account/deals.tsx · orders/[publicId].tsx · favo
 
 ```ts
 export const portfolioKeys = { work: (publicId: string) => readonly unknown[]; works: (q) => ... }
-export const commerceKeys = { // все под auth-scoped корнем, кроме lot и bids
-  lot: (publicId: string), bids: (listingId: string), orders: (role, state), order: (publicId), attention: (),
+export const commerceKeys = { // все под корнем 'user' (чистится при выходе), кроме bids
+  lot: (publicId: string, viewerId: string | null), // ['user', viewerId ?? 'anonymous', 'lot', publicId]: ответ содержит viewer
+  bids: (listingId: string), orders: (role, state), order: (publicId), attention: (),
   favorites: (), favorite: (productId), contacts: (), notificationSettings: () }
 formatMoney(minor: number, currency: 'BYN' | 'RUB'): string   // Intl.NumberFormat вынесен на уровень модуля
 parseMoneyInput(text: string, currency): number | null        // в минимальные единицы
 useNow(intervalMs: number, enabled: boolean): number
+invalidateWorkSurfaces(queryClient, { publicId?, sellerSlug? }): Promise<void> // один список: work, lot, works, home, author, owner works
 ```
 
 - [ ] **Шаг 1: падающие тесты:** после `clearAuthenticatedSession` в кэше нет
-  ключей `commerceKeys.*` (кроме `lot` и `bids`); `formatMoney` — `it.each` (125000 BYN
+  ключей `commerceKeys.*` (кроме `bids`), закэшированный лот без `viewer`
+  у следующего пользователя не показывается; `invalidateWorkSurfaces` трогает ровно
+  свой список ключей (сейчас скрытие работы из кабинета, со страницы автора и
+  сохранение черновика сбрасывают разные наборы — заменить все три вызова); `formatMoney` — `it.each` (125000 BYN
   → «1 250 BYN», 1250 → «12,50 BYN», RUB → «₽»); `parseMoneyInput` («12,5», «12.50»,
   «1 250», мусор → null); все коды продаж COMMERCE §12 имеют текст.
 - [ ] **Шаг 2:** FAIL → реализовать → PASS.
@@ -203,6 +208,7 @@ idempotency-ключ создаётся при открытии листа/ди�
 - [ ] **Шаг 1: падающие тесты:** `it.each` по строкам таблицы DESIGN-BRIEF §6
   (роль × статус → кнопки); опасные действия требуют подтверждения; после
   действия инвалидируются `order`, `orders`, `attention`, `portfolioKeys.work`;
+  «Вернуть в продажу» только у автора автозакрытого заказа (30 дней);
   контакты как ссылки (`mailto:`, `tel:`, `https://t.me/…`); после `FAILED`
   контактов нет; жалоба — повторная показывает «уже на рассмотрении».
 - [ ] **Шаг 2:** FAIL → реализовать (DESIGN-BRIEF §5–7) → PASS.
@@ -249,7 +255,11 @@ idempotency-ключ создаётся при открытии листа/ди�
 ### Task 10: Админ
 
 **Files:** Modify/Create в `src/features/admin/` и `(admin)`: список жалоб,
-карточка жалобы, действия по заказу и лоту. Test: спеки.
+карточка жалобы, действия по заказу и лоту, блок «Здоровье» (`GET /api/admin/health`:
+последний тик, неотправленные письма с кнопкой «Повторить», открытые жалобы),
+недельные цифры продаж на экране аналитики (SQL по `listings`, `bids`, `orders`,
+`reports` — список в [OPERATIONS.md](../OPERATIONS.md) §2). Test: спеки.
+Действия «Снять страйк» и «Разобрать жалобу» без причины не отправляются.
 
 - [ ] Падающие тесты по действиям DESIGN-BRIEF §12 → реализовать на существующих
   примитивах админки → PASS → коммит `feat: admin reports and deal actions`.
