@@ -7,7 +7,7 @@
 
 `product-draft-image-actions.ts` owns selection, sequential preparation/upload,
 addressed retry and confirmed server order. Client byte-deduplication was removed
-by `DEC-150`; the server retains operation identity and input checksums.
+by `DEC-151`; the server retains operation identity and input checksums.
 `chooseImages()` now adds local cards; `startUpload()` is explicit. Save remains
 before picker; `persistDirtyForm()` waits for active saves and current React Hook
 Form dirtiness before delayed upload without duplicating the form state model.
@@ -55,7 +55,7 @@ resizable frame. Native CropZoom embeds the approved screen; a modal-only native
 cropper would replace it. Chromium/WebKit isolated prototype checked transform,
 reset/cancel, crop output and PNG transparency. Device calibration remains open.
 
-Client refinement 2026-10-28 (`DEC-150`): gallery after `preparePhotoEdit` and
+Client refinement 2026-10-28 (`DEC-151`): gallery after `preparePhotoEdit` and
 story selection both call `prepareImageUpload` with `WORK_PHOTO_PREPARE`
 (3840px / 10 MiB / 25 MiB source / quality0.85, PNG retained). Crops and avatar
 policy keep their existing owners. `WorkPhotoCard` retains the local preview until
@@ -712,7 +712,7 @@ resize oversized sources without cropping or flattening alpha. Derivatives are
 built from the persisted master, so upload recovery can reproduce their checksums.
 
 An idempotent gallery request accepts one JPEG/PNG/WebP up to 25 MiB; legacy
-multi-file requests retain 5 MiB; story input is 10 MiB (`DEC-150`). Gallery and
+multi-file requests retain 5 MiB; story input is 10 MiB (`DEC-151`). Gallery and
 story input is bounded at 8192px per edge / 50_331_648 pixels;
 stored masters and other purposes retain 4096px / 16_777_216 pixels. `WorkImageUploadInterceptor` keeps large
 input single-file, avoiding a ten-file 250 MiB buffered request. Gallery admission
@@ -734,7 +734,7 @@ Back/unload are guarded during preparation/upload. Preparation and per-file
 results use existing UI components; portrait preparation uses the Expo helper
 from PR #56, with a final 640px fallback instead of 256px.
 
-Review corrections (2026-10-23; story extended by `DEC-150`): gallery/story input is bounded at 8192px per edge /
+Review corrections (2026-10-23; story extended by `DEC-151`): gallery/story input is bounded at 8192px per edge /
 50_331_648 pixels; stored masters and other purposes retain 4096px / 16_777_216
 pixels. Compact 16-bit PNGs remain byte-identical. Oversized artwork is encoded
 at quality 90/82/70, then resized to 2560/1600px with a final 1600px quality-60

@@ -16,7 +16,7 @@
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
 | Commerce, избранное/подписки, смена email/password из settings | Not implemented в launch scope / post-MVP; [следующая волна](15-POST-MVP-BACKLOG.md). Старый commerce runtime не разрешает включать продажи. |
 
-## 2026-10-28 — W0 photo/story hardening (`DEC-150`)
+## 2026-10-28 — W0 photo/story hardening (`DEC-151`)
 
 **Partial.** Tasks1–4 changes: `replaceProductStory` atomically releases unused
 story-purpose revision holds; `ImagesService.addStoryImage` checks admission

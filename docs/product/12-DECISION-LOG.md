@@ -3431,11 +3431,12 @@ Mechanics, data, races and open defaults C1–C6:
 Nothing here is implemented yet; runtime status lives in `11-PROJECT-STATUS.md`.
 
 
-## DEC-150 — Story/Work photo limits unified
+## DEC-151 — Story/Work photo limits unified
 
 Date: 2026-10-28
 Status: Confirmed contract; implementation acceptance Partial
 Source: explicit instruction to execute W0 photo Tasks 1–4 and related Task 6.
+Number: `DEC-151`. Published `DEC-150` on `fix/launch-docs-review` (`54925364`) is the deals decision and stays that number.
 Revises: `DEC-116` story file/aggregate budget; `DEC-148` session byte-deduplication clause.
 
 Gallery and story use the same client preparation: 3840px, 10 MiB output,

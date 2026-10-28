@@ -409,7 +409,7 @@ Chromium/WebKit; пользовательский Chrome не использов
   нужны review step. Из E2E убран только дублирующий toolbar/SVG geometry-report;
   интерактивные/focus/session/permission проверки сохранены.
 - Ruling: RFC §10 и media security table обновлены узко вместе с обязательными
-  четырьмя owner-документами — явный контракт W0/DEC150 не должен противоречить
+  четырьмя owner-документами — явный контракт W0/DEC-151 не должен противоречить
   текущим владельцам. DEC148 duplicate clause также явно пересмотрена.
 - Ruling: grep-инварианты применяются к изменённым владельцам: SHA серверных
   fixtures/Metro cache и `presentation` несвязанных sheets необходимы и сохранены.
