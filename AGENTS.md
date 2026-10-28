@@ -36,7 +36,7 @@ Inspect local code, tests and prior decisions before assumptions; check installe
 
 ## Product and documentation
 
-Portfolio-first MVP is the launch contract. Product value is significant, authored, limited or personally connected items sold directly; general resale, resellers, mass-market goods and artificial bids conflict with it.
+The launch contract is the author portfolio plus direct sales (fixed price, auction, orders) per `DEC-149`; commerce rules live only in [docs/launch/COMMERCE.md](docs/launch/COMMERCE.md). Product value is significant, authored, limited or personally connected items sold directly; general resale, resellers, mass-market goods and artificial bids conflict with it.
 
 - Before product-changing code: read [01-PRODUCT-FOUNDATION.md](docs/product/01-PRODUCT-FOUNDATION.md) and relevant [05-MVP-RFC.md](docs/product/05-MVP-RFC.md) sections. Owners are mapped in [00-PROJECT-INDEX.md](docs/product/00-PROJECT-INDEX.md); keep one owner per claim, link elsewhere.
 - Protected product files: `01`–`04`, `06`–`09` in `docs/product/`; protected design principles: `docs/design/01-DESIGN-FOUNDATION.md`. Change only by explicit founder decision (design: founder or assigned designer). If requested behavior conflicts, identify the exact conflict, stop that part and request the decision.

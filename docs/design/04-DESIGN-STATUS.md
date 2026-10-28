@@ -3,7 +3,7 @@
 Срез: 2026-10-23, MVP `872f22fc`. Визуальная приёмка в целом **Partial**.
 Источник/правила — [design index](00-DESIGN-INDEX.md) и [design system](03-DESIGN-SYSTEM.md).
 Полный прежний журнал, включая ограничения ранних экранов:
-[история](../archive/design/04-DESIGN-STATUS-through-2026-10-23.md).
+история.
 
 ## 2026-10-28 — Story interaction and opening avatar acceptance
 
@@ -136,7 +136,7 @@ entries and Native interaction/performance scenarios were not executed.
 Original missing CTA remains **not reproduced**. Native `runOnJS(true)` smoothness
 under load is a device-check risk, not a proven defect. Existing tests/builds were
 not rerun or promoted to manual evidence. No implementation/infrastructure change.
-[Detailed acceptance record](../audits/2026-10-26-PHOTO-WORKFLOW.md).
+Detailed acceptance record.
 
 ## 2026-10-27 — Drag boundary and Native integration
 
@@ -157,7 +157,7 @@ rerun4/4 and Web export passed; Web/iOS/Android export also passed.
 Owner tests check button exclusion, scroll-adjusted row insertion, commit/cancel,
 scroll edges and cleanup. Browser mouse checks use down/move/up rather than direct
 drop dispatch. Recordings and final checks are in the
-[follow-up audit](../audits/2026-10-26-PHOTO-WORKFLOW.md).
+follow-up audit.
 No route/API/media contract or Figma styling change. Native runtime unavailable
 (`simctl` absent). System drag ghost and true browser zoom 200% remain unverified;
 original CTA disappearance remains **not reproduced**, not declared fixed by the
@@ -208,7 +208,7 @@ pencil without an underline. Photo grid uses installed Hugeicons `Edit03Icon`
 via the shared registry; its 22px glyph, outline button and interaction stay
 unchanged. Other edit-icon consumers retain `PencilEdit01Icon`.
 Chromium/WebKit media checks passed (2/2), Web export passed, refreshed
-[preparation/error screenshots](../audits/2026-10-26-PHOTO-WORKFLOW.md) visually
+preparation/error screenshots visually
 checked. Native rendering and 200% zoom were not checked.
 
 ## 2026-10-27 — Photo grid acceptance cleanup
@@ -217,7 +217,7 @@ checked. Native rendering and 200% zoom were not checked.
 reads «Продолжить» with unchanged availability. Existing confirmation is reached
 through Close for idle unfinished photos. Both refreshed 390×874 error images
 were visually checked: no extra action, correct disabled label, unchanged layout.
-[Evidence and checks](../audits/2026-10-26-PHOTO-WORKFLOW.md).
+Evidence and checks.
 Chromium/WebKit close/cancel and upload/error checks pass. Native gestures,
 200% zoom and live CDN remain unverified; no broader visual acceptance claimed.
 
@@ -232,7 +232,7 @@ single 42px rail; default glass consumers are unchanged. Caption is Inter regula
 insets once; browser screenshots exclude the Figma OS status bar. Failure is
 visible inside the open Work/avatar editor and settings survive retry.
 Representative four-state 390×874 and long/short viewport screenshots are
-[saved and visually checked](../audits/2026-10-26-PHOTO-WORKFLOW.md);
+saved and visually checked;
 wide checks are robustness, exact desktop parity remains NEEDS-FIGMA. Native
 resize behavior has JS-adapter coverage, device calibration remains unverified.
 Final 8/8 Chromium/WebKit media cases and 1104 mobile unit tests passed; graph
@@ -250,7 +250,7 @@ belong to design tokens. Existing four-step product wizard is retained; the
 six-dot sample does not change product routes. No Figma edits.
 Six Chromium/WebKit media E2E passed; real editor reset/cancel/focus, crop-only
 save and 390/1024/1440 overflow checks passed. Error tiles checked at 320–1440.
-[Evidence](../audits/2026-10-26-PHOTO-WORKFLOW.md). Native gestures/device
+Evidence. Native gestures/device
 output, accessibility at 200% zoom and exact visual parity remain Needs verification.
 Only 390px reference frames exist here; exact 1024/1440 parity is NEEDS-FIGMA.
 
@@ -297,7 +297,7 @@ native keyboard/motion remains unverified.
 
 **Partial / Needs verification.** `/explore`, inline animated search, rounded
 `FigmaTabs`, section filters and two-column caption Works replace catalog/overlay
-composition (`DEC-137`). See [implementation evidence](../audits/current/2026-10-25-EXPLORE.md).
+composition (`DEC-137`). See implementation evidence.
 Browser acceptance:70 E2E +8 geometry checks, Chromium/WebKit390/1024/1440, keyboard/reduced motion/200% zoom;1047 mobile unit tests and exports passed. Source390; 1024/1440 exact parity
 NEEDS-FIGMA, physical iOS/Android keyboard/Back/motion not verified. Category artwork
 has no public media mapping and retains existing placeholders.
@@ -306,16 +306,16 @@ has no public media mapping and retains existing placeholders.
 
 | Область | Статус | Проверенное основание / остаток |
 | --- | --- | --- |
-| Login, fullscreen registration, recovery | Partial visual acceptance | Responsive AuthViewport, одна форма, сохранение ввода/ошибок, Back/Forward и focus; [login audit](../audits/current/2026-10-20-LOGIN-SHEET-REVIEW.md), [UI completion](../audits/current/2026-10-21-UI-COMPLETION.md). Production Turnstile, real keyboard/zoom/device motion не подтверждены. |
-| Registration consent | Implemented по DEC-124/125 | Один explicit control, lazy документы, сбой GET не блокирует register; [document access](../audits/2026-10-20-REGISTRATION-DOCUMENT-ACCESS.md). Старые записи про четыре checkbox и disabled до загрузки superseded. |
-| Author application / Author Story / Work story | Implemented для проверенного web-среза, device parity Needs verification | Client/API cutover, ordered blocks, private media и сохранение перед переходом; [UI completion](../audits/current/2026-10-21-UI-COMPLETION.md). Старое «UI не переведён / B6 не начат» не текущее состояние. |
-| Work editor | Partial, updated 2026-10-23 | [Portfolio audit](../audits/current/2026-10-23-PORTFOLIO-DESIGN.md): сетка177×236/12, tile-local состояния и bottomAction; четыре визуальных этапа, Review metadata, photo tiles, ordered block menu и revision/save guards; [independent review](../audits/current/2026-10-21-INDEPENDENT-UI-REVIEW.md). Source frames 390; 1024/1440 exact parity NEEDS-FIGMA. |
-| Фото Work и автора | Browser acceptance, native Needs verification | [Portfolio audit](../audits/current/2026-10-23-PORTFOLIO-DESIGN.md): пять визуальных шагов автора, safe retry создания, Chromium/WebKit responsive evidence и 200% browser zoom.  Release-сетка/wizard, preview, пофайловый прогресс/retry/timeout/переходы объединены; 1023 mobile tests и 6 media E2E по merge-записи. Physical devices, live R2/CDN и Figma новых статусов Needs verification. |
-| Account / settings | Partial | Published identity, общий cabinet owner, navigation/scroll/long identity; [account acceptance](../audits/2026-10-20-ACCOUNT-FINAL-ACCEPTANCE.md). Settings title примерно +7 px при 390 — явное исключение BackButton/FigmaIconButton, 2 geometry failures сохранены. Desktop 1024/1440 и black parity NEEDS-FIGMA. Delete CTA отсутствует до API. |
-| Public author / category / sticky header | Partial | Bleed, identity, grid, About, action-row motion и focus; [author parity](../audits/current/2026-10-21-AUTHOR-PROFILE-PARITY.md). Master/MVP exclusions и desktop grid start 384 vs 387 px записаны там; 1024/1440 exact parity NEEDS-FIGMA. |
-| Public desktop navigation / footer / brand | Partial visual parity | Desktop header от 1024 CSS px, ordinary-page footer, shared chrome visibility; [footer audit](../audits/current/2026-10-21-SHARED-FOOTER.md). 44px targets/MVP legal labels отличаются от static source; unavailable commerce controls дают честный feedback. |
-| Home empty/loading/error и shared sheets | Implemented для проверенных browser states | Empty CTA capped 420; 390/1024/1440/1920 no-overflow, непрерывный drag, reduced motion/focus/dirty-busy guards; [UI completion](../audits/current/2026-10-21-UI-COMPLETION.md). Desktop empty-state exact parity NEEDS-FIGMA. |
-| DateSelection и общий focus | Implemented web; native Needs verification | React Aria web / native picker API, monochrome semantic focus DEC-126/127; [date audit](../audits/2026-10-20-DATE-SELECTION.md). Black palette остаётся provisional, не включена пользователям. |
+| Login, fullscreen registration, recovery | Partial visual acceptance | Responsive AuthViewport, одна форма, сохранение ввода/ошибок, Back/Forward и focus; login audit, UI completion. Production Turnstile, real keyboard/zoom/device motion не подтверждены. |
+| Registration consent | Implemented по DEC-124/125 | Один explicit control, lazy документы, сбой GET не блокирует register; document access. Старые записи про четыре checkbox и disabled до загрузки superseded. |
+| Author application / Author Story / Work story | Implemented для проверенного web-среза, device parity Needs verification | Client/API cutover, ordered blocks, private media и сохранение перед переходом; UI completion. Старое «UI не переведён / B6 не начат» не текущее состояние. |
+| Work editor | Partial, updated 2026-10-23 | Portfolio audit: сетка177×236/12, tile-local состояния и bottomAction; четыре визуальных этапа, Review metadata, photo tiles, ordered block menu и revision/save guards; independent review. Source frames 390; 1024/1440 exact parity NEEDS-FIGMA. |
+| Фото Work и автора | Browser acceptance, native Needs verification | Portfolio audit: пять визуальных шагов автора, safe retry создания, Chromium/WebKit responsive evidence и 200% browser zoom.  Release-сетка/wizard, preview, пофайловый прогресс/retry/timeout/переходы объединены; 1023 mobile tests и 6 media E2E по merge-записи. Physical devices, live R2/CDN и Figma новых статусов Needs verification. |
+| Account / settings | Partial | Published identity, общий cabinet owner, navigation/scroll/long identity; account acceptance. Settings title примерно +7 px при 390 — явное исключение BackButton/FigmaIconButton, 2 geometry failures сохранены. Desktop 1024/1440 и black parity NEEDS-FIGMA. Delete CTA отсутствует до API. |
+| Public author / category / sticky header | Partial | Bleed, identity, grid, About, action-row motion и focus; author parity. Master/MVP exclusions и desktop grid start 384 vs 387 px записаны там; 1024/1440 exact parity NEEDS-FIGMA. |
+| Public desktop navigation / footer / brand | Partial visual parity | Desktop header от 1024 CSS px, ordinary-page footer, shared chrome visibility; footer audit. 44px targets/MVP legal labels отличаются от static source; unavailable commerce controls дают честный feedback. |
+| Home empty/loading/error и shared sheets | Implemented для проверенных browser states | Empty CTA capped 420; 390/1024/1440/1920 no-overflow, непрерывный drag, reduced motion/focus/dirty-busy guards; UI completion. Desktop empty-state exact parity NEEDS-FIGMA. |
+| DateSelection и общий focus | Implemented web; native Needs verification | React Aria web / native picker API, monochrome semantic focus DEC-126/127; date audit. Black palette остаётся provisional, не включена пользователям. |
 
 ## Незакрытая приёмка
 
@@ -330,7 +330,7 @@ has no public media mapping and retains existing placeholders.
 - Старый Home Opening golden mismatch >0.12 остаётся историческим visual debt;
   проверки не ослаблялись. Новый полный visual suite здесь не запускался.
 - Ранние screen-specific `Needs verification` не объявлены закрытыми этой очисткой:
-  проверять по [истории](../archive/design/04-DESIGN-STATUS-through-2026-10-23.md)
+  проверять по истории
   и owner evidence перед изменением соответствующего экрана.
 
 ## Последние результаты и правило обновления
@@ -346,7 +346,7 @@ over the original `BlurTargetView` image, with SDK31+ Android blur and older
 Android tint/scrim fallback. The migration belongs to this PR, not the release base.
 Chromium/WebKit owner E2E 2/2, real catalogs at390/1024/1440, visible WebKit
 OS captures,1049 mobile unit tests, lint/typecheck and web/iOS/Android exports
-passed; [acceptance and screenshots](../audits/current/2026-10-25-COVER-GLASS.md).
+passed; acceptance and screenshots.
 Physical-device rendering and phone catalog smoothness remain Needs verification;
 wider exact Figma composition remains NEEDS-FIGMA.
 Review follow-up 2026-10-25: device tooling unavailable; Native acceptance now
@@ -368,7 +368,7 @@ WebKit focus/motion20/20. Фото merge 2026-10-23: 1023 mobile +6 media E2E.
 
 2026-10-23 portfolio design: scoped Figma frames получены через официальный MCP;
 shared CoverFrost и destructive controls обновлены, существующий footer проверен
-без второго владельца. [Audit и ограничения](../audits/current/2026-10-23-PORTFOLIO-DESIGN.md).
+без второго владельца. Audit и ограничения.
 Точный desktop/black parity для новых frames — NEEDS-FIGMA; физическая клавиатура
 мобильного устройства, системный text scaling и native rendering не подтверждены.
 ## 2026-10-22 — Registration before account creation
@@ -407,7 +407,7 @@ Chromium/WebKit completion owner: 14/14 passed, включая настоящи�
 2026-10-23 review follow-up: Add в галерее заблокирован при незавершённой пачке,
 retry и явная отмена остатка доступны на плитке. AuthorIntroDialog использует portfolio-only copy.
 Геометрия/shared controls не менялись; проверки и ограничения —
-[portfolio audit](../audits/current/2026-10-23-PORTFOLIO-DESIGN.md).
+portfolio audit.
 
 
 2026-10-23 final review P3: после partial upload error переход к истории/проверке
@@ -422,7 +422,7 @@ installed library. Screens cover truthful collection/coverage/cohort states, UTC
 dates and retry. Independent source/mobile screenshot review found no substantial
 blockers. Exact new admin/desktop composition has no supplied Figma frame
 (**NEEDS-FIGMA**); physical iOS/Android, keyboard and screen reader remain
-**Needs verification**. [Evidence/checks](../audits/current/2026-10-24-ADMIN-ANALYTICS-UI.md).
+**Needs verification**. Evidence/checks.
 
 Analytics accessibility follow-up links period/metric tabs to real labelled
 panels. The 90-day growth view now uses one `FigmaSelectField` and the existing
@@ -437,7 +437,7 @@ confirmation with return focus; browser acceptance extends the existing owner.
 private gallery/history and confirmed decisions. Mobile Chromium/WebKit states
 and independent source/UX review completed; adaptive/final verification pending.
 Admin uses five existing dock controls (no cart), ordinary users keep four; profile
-is account, moderation/analytics have separate selection. [Audit](../audits/current/2026-10-24-ADMIN-MODERATION-UI.md).
+is account, moderation/analytics have separate selection. Audit.
 Hardware keyboard/Safe Area/text scaling and exact desktop Figma parity unverified.
 
 Moderation review follow-up: decision success offers an explicit return to the

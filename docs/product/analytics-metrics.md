@@ -2,7 +2,7 @@
 
 Status: Confirmed for the accepted foundation scope, 2026-10-23.
 [Collection/proof/configuration owner](analytics-contract.md).
-[Implementation and checks](../audits/current/2026-10-23-ANALYTICS-FOUNDATION.md).
+Implementation and checks.
 
 ## Canonical foundation API
 

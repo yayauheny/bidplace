@@ -5,7 +5,7 @@ Scope selected by the user: UI corrections and one source hash per selection
 in the preparation session. Server media reuse is a separate task. Explicit
 gallery upload remains: select → prepare → Upload → Continue.
 [Original supplied review](user-review.txt),
-[original user screenshots](../2026-10-27-photo-user-review/README.md).
+original user screenshots.
 
 ## Implementation and source
 
@@ -101,4 +101,4 @@ system ghost and the user's original missing-CTA scenario remain open. Earlier
 actual zoom200% observations are historical evidence, not a rerun of this slice.
 
 Final command results are recorded in the linked
-[workflow audit](../../2026-10-26-PHOTO-WORKFLOW.md).
+workflow audit.

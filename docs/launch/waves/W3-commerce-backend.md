@@ -232,7 +232,7 @@ GET/PUT /api/me/notification-settings
   `listings.service.ts`, `commerce.mapper.ts`
 - Modify: `apps/api/src/products/product-write-guard.ts` (расширить
   `assertProductNotInSale` и `findSellerProductIdsInSale` открытыми заказами),
-  `apps/api/src/portfolio/*` (блок `lot` в ответе работы), `apps/api/src/app.module.ts`
+  `apps/api/src/app.module.ts` (ответ работы не меняется: лот — только в некэшируемом `/lot`)
 - Test: `apps/api/test/integration/commerce-listings.integration.spec.ts`
 
 **Interfaces:**
@@ -383,7 +383,7 @@ Test: `commerce-attention.integration.spec.ts`, `favorites.integration.spec.ts`.
 - [ ] **Шаг 1:** сценарии COMMERCE §11 через `Promise.all` на реальной БД:
   50 ставок разных пользователей с возрастающими суммами (итог: цена = максимум
   из принятых, `bidCount` = числу строк `bids`, у отклонённых — только
-  `BID_TOO_LOW`/`BID_ALREADY_LEADING`/`LISTING_CHANGED`); 10 одновременных
+  `BID_TOO_LOW`); 10 одновременных
   покупок; снятие против покупки; первая ставка против снятия; ставка против
   тика закрытия; два тика.
 - [ ] **Шаг 2:** прогнать 5 раз подряд — стабильно PASS. Нестабильность — дефект

@@ -159,7 +159,7 @@ publication completion are distinct facts in their existing owner transactions.
 Restore refreshes actor/manifest. Finalization locks target then operation and
 checks fresh ownership; bounded DELETE/purge renew leases between objects.
 Existing delivery DTOs stay unchanged and select by latest operation update.
-Migration, compatibility and evidence: [admin foundation audit](../audits/current/2026-10-23-ADMIN-FOUNDATION.md).
+Migration, compatibility and evidence: admin foundation audit.
 
 ## 2026-10-23 — Version 2 web analytics foundation
 
@@ -183,7 +183,7 @@ collection remain; legacy acquisition queries exclude v2. Corrected product,
 cohort, UTC growth and revision-age operations use a new protected foundation
 read in AdminAnalyticsService. `SellerProfile.firstPublishedAt` records only known
 first publication; no historical backfill. [Contracts/configuration](analytics-contract.md),
-[metric definitions](analytics-metrics.md), [audit](../audits/current/2026-10-23-ANALYTICS-FOUNDATION.md).
+[metric definitions](analytics-metrics.md), audit.
 
 ## Applications and shared boundaries
 
@@ -550,10 +550,10 @@ insert trigger. The earlier client-cutover warning described the 2026-10-11
 checkpoint. The current mobile story owner calls `api.products.replaceCreation`
 with revision blocks; client/API integration and its verification are tracked in
 [project status](11-PROJECT-STATUS.md) and the
-[UI completion audit](../audits/current/2026-10-21-UI-COMPLETION.md).
+UI completion audit.
 
 Contracts belong to [05-MVP-RFC.md](05-MVP-RFC.md); affected consumers, migration
-and API work are in [the backend plan](../archive/tasks/2026-10-11-author-story-backend/PLAN.md).
+and API work are in the backend plan.
 The next sales wave has its own [complete product plan](15-POST-MVP-BACKLOG.md)
 (`DEC-115`), without changing the active boot graph.
 

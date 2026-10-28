@@ -363,7 +363,7 @@ Portfolio variant сохраняет визуальную галерею и ин
 дата поддерживает месяц/год или точную дату, новая загрузка фото достижения не
 добавлена. Все шаги используют `AuthorApplicationStepShell`, действия находятся в
 `FormPageShell.bottomAction`. Источник и проверенные ограничения —
-[portfolio design audit](../audits/current/2026-10-23-PORTFOLIO-DESIGN.md).
+portfolio design audit.
 
 Никнейм принадлежит `User.slug`, а не заявке автора. Уже выбранное значение
 не редактируется и не отправляется в create/update профиля. Для аккаунта без

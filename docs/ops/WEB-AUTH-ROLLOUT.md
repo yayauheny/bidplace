@@ -1,7 +1,7 @@
 # Web auth rollout
 
 Status: local implementation; deployment and real-provider acceptance remain separate.
-Scope follows [the approved handoff](../tasks/2026-10-22-auth-media-handoff.md).
+Scope follows the approved handoff.
 
 ## Settings
 
@@ -55,6 +55,6 @@ approval are not claimed by this implementation.
 Synchronous SMTP remains the accepted MVP limitation in DEC-136. A known-address
 code request can wait for SMTP while an unknown address returns earlier; equal
 HTTP bodies do not close that enumeration channel. Local measurements and
-Cloudflare outbox trade-offs are in the [PR #58 verification](../audits/current/2026-10-23-PR58-MERGE-VERIFICATION.md).
+Cloudflare outbox trade-offs are in the PR #58 verification.
 Production readiness requires a separate timing/security acceptance on the target
 infrastructure, as well as real provider/mail/Turnstile and migration/rollback gates.

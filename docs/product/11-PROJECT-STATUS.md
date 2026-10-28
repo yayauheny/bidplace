@@ -1,20 +1,31 @@
 # bidplace — текущий статус проекта
 
-Срез документации: 2026-10-23, база `872f22fc`. Portfolio-only контракт:
-[05-MVP-RFC](05-MVP-RFC.md). Открытая работа — [active backlog](16-PORTFOLIO-ACTIVE-BACKLOG.md),
+Срез документации: 2026-10-23, база `872f22fc`. Контракт: [05-MVP-RFC](05-MVP-RFC.md) + продажи `DEC-149`
+([COMMERCE](../launch/COMMERCE.md)). Открытая работа — [план запуска](../launch/README.md),
 релизные gates и последние результаты — [release audit](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md).
 Здесь только текущая сводка; старые checkpoints не являются новым green.
 
 | Область | Статус и основание |
 | --- | --- |
 | Portfolio discovery, author/Work lifecycle и moderation | Implemented для проверенного локального среза: `portfolio`, `products`, `sellers`, `admin-moderation` в `apps/api/src`; revision/public guards и HTTP/media tests. Live acceptance остаётся отдельной. |
-| Auth и согласие | Partial (PR #58 синхронизируется и проверяется): серверные сессии, email-code/OIDC и proof до создания пользователя добавлены локально; полная CI-приёмка текущего merge ещё не завершена. Сохранены: одно явное подтверждение (DEC-124/125), атомарный User+evidence, lazy legal GET не блокирует регистрацию; [приёмка](../audits/2026-10-20-REGISTRATION-DOCUMENT-ACCESS.md). Это не юридическая готовность пакета. |
-| Author Story / каталоги / история Work | Implemented для проверенного client/API cutover: `use-product-story-editor.ts` вызывает `api.products.replaceCreation`, `ProductsController` → `ProductsService.replaceCreationStory`, revision-owned blocks; [UI completion](../audits/current/2026-10-21-UI-COMPLETION.md), [review](../audits/current/2026-10-21-INDEPENDENT-UI-REVIEW.md). Архивное «B6 не начат» — исторический checkpoint. |
+| Auth и согласие | Partial (PR #58 синхронизируется и проверяется): серверные сессии, email-code/OIDC и proof до создания пользователя добавлены локально; полная CI-приёмка текущего merge ещё не завершена. Сохранены: одно явное подтверждение (DEC-124/125), атомарный User+evidence, lazy legal GET не блокирует регистрацию; приёмка. Это не юридическая готовность пакета. |
+| Author Story / каталоги / история Work | Implemented для проверенного client/API cutover: `use-product-story-editor.ts` вызывает `api.products.replaceCreation`, `ProductsController` → `ProductsService.replaceCreationStory`, revision-owned blocks; UI completion, review. Архивное «B6 не начат» — исторический checkpoint. |
 | Responsive UI, account/settings, author/header/footer | Partial: реализация и browser evidence есть; настройки имеют исключённое смещение заголовка, физические устройства/zoom и точный desktop parity не закрыты. [Design status](../design/04-DESIGN-STATUS.md). |
 | Фото Work и автора (DEC-131/132) | Partial: `ImageProcessor`/Sharp и пофайловый upload объединены с release wizard; local verify/media E2E прошли. Live R2/CDN, устройства и Figma новых статусов — Needs verification. |
-| Удаление своей Work (DEC-123) | Not implemented: в `ProductsController` нет DELETE Work, в `Product` нет tombstone. Hide/unhide не удаляет работу. [Backlog и незакрытый backend/security-план](16-PORTFOLIO-ACTIVE-BACKLOG.md). |
+| Удаление своей Work (DEC-123) | Not implemented: в `ProductsController` нет DELETE Work, в `Product` нет tombstone. Hide/unhide не удаляет работу. План — [W6 Task 2](../launch/waves/W6-launch-legal-ops.md). |
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
 | Commerce, избранное/подписки, смена email/password из settings | Not implemented в launch scope / post-MVP; [следующая волна](15-POST-MVP-BACKLOG.md). Старый commerce runtime не разрешает включать продажи. |
+
+## 2026-10-28 — Launch plan and docs restructure
+
+- Not implemented: commerce (`DEC-149`): listings, bids, orders, reports, strikes,
+  notifications outbox, favorites, scheduler tick, share export. Plan:
+  [`docs/launch/`](../launch/README.md) waves W0–W7; rules: [COMMERCE](../launch/COMMERCE.md).
+  Runtime stays portfolio-only; old commerce stays off (`DEC-084`).
+- Docs: old plans, dated audits, `docs/tasks/`, `docs/archive/` and
+  `16-PORTFOLIO-ACTIVE-BACKLOG` deleted (recover: `git show 036d2cc4:<path>`);
+  `15-POST-MVP-BACKLOG` is post-launch only; `16-COMPONENT-OWNERS` →
+  `17-COMPONENT-OWNERS`. `pnpm docs:link-check` passes.
 
 ## 2026-10-28 — Story interaction and opening avatar acceptance
 
@@ -140,7 +151,7 @@ entries and Native interaction/performance scenarios were not executed.
 Original missing CTA remains **not reproduced**. Native `runOnJS(true)` smoothness
 under load is a device-check risk, not a proven defect. Existing tests/builds were
 not rerun or promoted to manual evidence. No implementation/infrastructure change.
-[Detailed acceptance record](../audits/2026-10-26-PHOTO-WORKFLOW.md).
+Detailed acceptance record.
 
 ## 2026-10-27 — Drag boundary and Native integration
 
@@ -161,7 +172,7 @@ rerun4/4 and Web export passed; Web/iOS/Android export also passed.
 Owner tests check button exclusion, scroll-adjusted row insertion, commit/cancel,
 scroll edges and cleanup. Browser mouse checks use down/move/up rather than direct
 drop dispatch. Recordings and final checks are in the
-[follow-up audit](../audits/2026-10-26-PHOTO-WORKFLOW.md).
+follow-up audit.
 No route/API/media contract or Figma styling change. Native runtime unavailable
 (`simctl` absent). System drag ghost and true browser zoom 200% remain unverified;
 original CTA disappearance remains **not reproduced**, not declared fixed by the
@@ -180,7 +191,7 @@ busy, cleanup on unmount and targeted preparing before uncertain-result lookup;
 operation keys/bytes, successful-photo reuse and safe replacement remain covered.
 
 [Evidence and limits](../audits/evidence/2026-10-27-photo-fixes/README.md),
-[implementation review](../audits/2026-10-26-PHOTO-WORKFLOW.md).
+implementation review.
 Node 22: media 12/12 + focused final media 8/8 + shared-consumer 6/6
 Chromium/WebKit passed; affected unit/typecheck/lint and export results are in the
 audit. Final keyboard-remount focus 2/2 and full Web/Android/iOS export passed.
@@ -231,7 +242,7 @@ Unknown upload responses prevent closing after refused discard; session operatio
 identity guards late completion. Existing active-upload close/recovery remains.
 Node 22.20.0: 1105 mobile tests, 45 targeted lifecycle tests, affected graph
 typecheck/lint, Web export, four targeted Chromium/WebKit media cases and two
-final close-dialog cases passed. [Checks and refreshed error evidence](../audits/2026-10-26-PHOTO-WORKFLOW.md).
+final close-dialog cases passed. Checks and refreshed error evidence.
 Backend/architecture unchanged; Native gestures, 200% zoom and live CDN remain
 Needs verification. No merge/deploy.
 
@@ -253,7 +264,7 @@ browser processing-failure/retry checks added. 1104 mobile tests, affected graph
 typecheck/lint and Web/iOS/Android export passed. Final sequential media suite:
 8/8 Chromium/WebKit E2E passed without changing assertions/timeouts. E2E fence,
 193-file docs link check, formatting and diff check passed.
-[Four-state screenshots and review](../audits/2026-10-26-PHOTO-WORKFLOW.md).
+Four-state screenshots and review.
 No backend/API/persistence changes or broad hook refactoring. Native simulator
 unavailable (`xcrun simctl` missing); physical gesture/output remains Needs
 verification. No merge/deploy.
@@ -278,7 +289,7 @@ stage, stable keyed replay, stale revision/order/delete, concurrent replacements
 staging rollback, controlled cleanup/attach and preserved published FULL. Six
 Chromium/WebKit media E2E passed with original timeouts; 390/1024/1440 editor and
 320–1440 error-layout evidence captured. E2E fence, docs links (193 files) and
-diff check passed. [Evidence and limits](../audits/2026-10-26-PHOTO-WORKFLOW.md).
+diff check passed. Evidence and limits.
 Native device gestures, HEIC, 200% zoom, full visual parity and live R2/CDN remain
 Needs verification; wider exact parity is NEEDS-FIGMA.
 No merge/deploy. Branch `feature/photo-workflow` starts at `9ef59acd` of
@@ -404,7 +415,7 @@ The migration is part of this PR; the earlier comparison used intermediate
 PR; the release-base theme test passes8/8.
 Owner style/browser regressions updated;1049 mobile tests, contracts48/client51,
 Chromium/WebKit E2E2/2,12 real catalog/viewport checks, lint/typecheck and
-web/iOS/Android exports passed. [Acceptance](../audits/current/2026-10-25-COVER-GLASS.md).
+web/iOS/Android exports passed. Acceptance.
 Review rerun:38 relevant unit tests passed; Verify/GitGuardian are green on
 runtime SHA `85ac01e0` (not a result for later documentation commits).
 No API, media pipeline, Dock or compact format changes; physical iOS/Android,
@@ -412,7 +423,7 @@ phone catalog smoothness and exact desktop Figma parity remain open.
 2026-10-25 review follow-up: **Needs verification** for device load/replacement,
 scroll/details return and background/resume (installed expo-blur 57.0.3;
 upstream #51845/#51848). Device tooling is unavailable on this host. The
-[acceptance owner](../audits/current/2026-10-25-COVER-GLASS.md) records the original
+acceptance owner records the original
 Blur-to-MVP then Explore synchronization procedure; normal merge `87a2ab68` now
 executes it and preserves both token sets.
 No dependency patch, Explore edit, merge or Native risk acceptance is recorded.
@@ -424,7 +435,7 @@ Verify/GitGuardian also passed on pre-follow-up documentation SHA `6633a3cd`.
 summary cards; protected detail routes share gallery, vertical comparison,
 history and captured-target decisions. Existing Users/catalog actions remain.
 Admin dock separates `/admin`, `/analytics`, `/account`; ordinary dock unchanged.
-Mobile source/UX review fixes and local checks are in the [UI audit](../audits/current/2026-10-24-ADMIN-MODERATION-UI.md).
+Mobile source/UX review fixes and local checks are in the UI audit.
 No role/migration/deploy. Hardware/exact desktop parity remain unverified.
 
 ## 2026-10-24 — Moderation filter contract clarification
@@ -447,7 +458,7 @@ existing lifecycle. Owner integration specs cover three restore cycles, outage,
 lease takeover, UTC/history and private preview. Full `pnpm verify` passed;
 follow-up API checks passed after the final inline-history correction.
 No production migration/deploy.
-[Scope, compatibility and verification](../audits/current/2026-10-23-ADMIN-FOUNDATION.md).
+Scope, compatibility and verification.
 
 ## 2026-10-24 — Analytics review corrections
 
@@ -469,7 +480,7 @@ Existing collection/dashboard remain legacy; new flags default off. Additive
 migration only; no production enabling, policy publication or consent UI.
 Full workspace verify, Cloudflare checks and Chromium/WebKit opt-in/off scenarios
 passed; independent review has no remaining substantial findings.
-[Definitions](analytics-metrics.md), [scope/checks](../audits/current/2026-10-23-ANALYTICS-FOUNDATION.md).
+[Definitions](analytics-metrics.md), scope/checks.
 
 ## 2026-10-23 — Оптимизация документации
 
@@ -477,7 +488,7 @@ passed; independent review has no remaining substantial findings.
 текущие design/project/release сводки отделены от полных исторических журналов.
 Убраны устаревшие execution-промпты с восстановлением из Git; DEC, security,
 legal, raw research и evidence сохранены. Изменений API/UI/БД/deploy нет.
-Измерения, список удалений и проверки — [cleanup report](../CLEANUP-REPORT.md).
+Измерения, список удалений и проверки — cleanup report.
 
 ## 2026-10-23 — Фото в объединённом MVP
 
@@ -502,12 +513,12 @@ PR #59. CI точного merge SHA в этой документационной
 ответа create. Общие CoverFrost, icon-button surface и creation chrome обновлены;
 существующий footer проверен на нужных routes. Backend/API/media lifecycle не менялись.
 Проверки, независимые ревью, Figma mapping и ограничения —
-[portfolio audit](../audits/current/2026-10-23-PORTFOLIO-DESIGN.md).
+portfolio audit.
 
 ## История и обновление
 
-- [Полный журнал 20–23 октября](../archive/product/11-PROJECT-STATUS-2026-10-20-23.md).
-- [Журнал до 19 октября](../archive/product/11-PROJECT-STATUS-historical.md).
+- Полный журнал 20–23 октября.
+- Журнал до 19 октября.
 
 После изменения поведения обновить нужную строку и добавить одну короткую запись
 со статусом, owner-модулями и фактически выполненными проверками. Детали приёмки
@@ -529,7 +540,7 @@ Expo/Vitest/Playwright при завершении и показывает Expo 
 Auth DEC-133–135 не перекрывают фото DEC-131/132. DEC-136 фиксирует синхронный
 SMTP и открытый request timing; verify оценивается отдельно.
 
-[Проверки, измерения, причины выбора SMTP и оставшиеся gates](../audits/current/2026-10-23-PR58-MERGE-VERIFICATION.md).
+Проверки, измерения, причины выбора SMTP и оставшиеся gates.
 Ready — только после полного зелёного CI итогового SHA; merge/deploy не выполняются.
 
 ## 2026-10-23 — PR #58: SMTP rejection/replay
@@ -543,7 +554,7 @@ rejected state и меняет ключ без reload, сохраняя ключ
 HTTP owner покрывает delayed SMTP, поздние outcomes, rollback и потерю commit
 acknowledgement; client submit owner — три класса отказа. Результаты итогового
 SHA и CI — [PR #58](https://github.com/yayauheny/bidplace/pull/58) и
-[отчёт](../audits/current/2026-10-23-PR58-MERGE-VERIFICATION.md).
+отчёт.
 DEC-136 и production gates сохраняются; merge/deploy не выполняются.
 
 
@@ -556,7 +567,7 @@ Add до её завершения либо явной отмены остатк
 существующие lifecycle unit/media browser owners проверяют блокировку и повторное
 разрешение выбора. Интро автора приглашает создать portfolio без обещания продаж.
 Backend/API/media contract не изменены; детали проверок —
-[portfolio audit](../audits/current/2026-10-23-PORTFOLIO-DESIGN.md).
+portfolio audit.
 
 
 ## 2026-10-23 — Завершение галереи перед продолжением
@@ -576,7 +587,7 @@ first-publication growth and current moderation. Existing read contract accepts
 opt-in activity fields; no persistence/dependency changes. Server collection
 permission and client build collector are distinct; unknown history/coverage and
 immature/empty cohorts stay explicit. PostgreSQL19 owner tests, period11 and client49
-pass. Mobile screenshots/review and final checks: [audit](../audits/current/2026-10-24-ADMIN-ANALYTICS-UI.md).
+pass. Mobile screenshots/review and final checks: audit.
 
 Analytics UI accessibility follow-up: labelled period/metric panels and
 keyboard/DOM associations use the existing public-screen pattern; no API change.
@@ -589,7 +600,7 @@ keyboard/DOM associations use the existing public-screen pattern; no API change.
 opt-in radio navigation; the group preserves ordering, one Tab entry and focus
 return. Independent source review found no remaining actionable issues.
 No API, service, table, migration or dependency changes in this correction.
-Checks and evidence: [analytics audit](../audits/current/2026-10-24-ADMIN-ANALYTICS-UI.md).
+Checks and evidence: analytics audit.
 
 Moderation UI accessibility follow-up: labelled detail tabpanel and queue selection
 toolbars replace dangling references; web keyboard/DOM acceptance4/4 passes. Native
@@ -616,4 +627,4 @@ are migrated; old overlay/provider/surfaces and standalone catalogs removed.
 No backend/API/auth/media changes. Owner regressions cover X/filter separation,
 section drafts, reload/Back/Forward, pagination/retry and result-tree identity.
 Verified:1047 mobile unit tests, typecheck/lint,70 Chromium/WebKit E2E +8 geometry checks, Web/iOS/Android exports, fence and docs links. PR44 reconciliation and remaining device/design gaps:
-[Explore report](../audits/current/2026-10-25-EXPLORE.md).
+Explore report.

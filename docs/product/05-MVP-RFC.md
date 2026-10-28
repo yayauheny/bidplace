@@ -1,9 +1,15 @@
 # bidplace — First MVP RFC
 
-Версия: 2.1
-Последнее обновление: 2026-10-11
+Версия: 2.2
+Последнее обновление: 2026-10-28
 Статус: Confirmed
-Основные решения: `DEC-082`, `DEC-083`, `DEC-084`; уточнения `DEC-112`–`DEC-114`
+Основные решения: `DEC-082`, `DEC-083`, `DEC-084`; уточнения `DEC-112`–`DEC-114`; расширение запуска продажами — `DEC-149`
+
+> `DEC-149`: публичный запуск включает прямые продажи (фиксированная цена, аукцион,
+> заказы, жалобы на заказ). Механика и данные — только
+> [`docs/launch/COMMERCE.md`](../launch/COMMERCE.md), порядок работ —
+> [`docs/launch/README.md`](../launch/README.md). Разделы ниже про отсутствие commerce
+> описывают портфолио-часть и текущий runtime до волны W3.
 
 ## 1. Что проверяет первый MVP
 
@@ -22,7 +28,8 @@
 - возвращается ли автор обновлять портфолио;
 - можно ли поддерживать качество контента небольшой ручной модерацией.
 
-Этот MVP не проверяет спрос, цену, ставки, оплату или завершение сделки.
+Портфолио-часть не проверяет спрос и цену; продажи без оплаты и доставки через площадку
+добавлены `DEC-149` и проверяются по [COMMERCE](../launch/COMMERCE.md).
 
 ## 2. Граница запуска
 
@@ -30,10 +37,11 @@
 - интерфейс первого запуска — русский;
 - просмотр публичных страниц не требует аккаунта;
 - авторы допускаются вручную;
-- деньги за работы и доставка отсутствуют в пользовательских сценариях;
+- оплата и доставка идут вне площадки: bidplace — технологический посредник (`DEC-149`);
 - подписки, комиссии и платное продвижение отсутствуют;
 - новый Figma-файл является read-only target будущей UI-реализации;
-- существующий commerce runtime сохраняется, но выключен fail-closed (`DEC-084`).
+- старый commerce runtime выключен fail-closed (`DEC-084`); новый строится по волнам W3–W4
+  (`DEC-149`).
 
 ## 3. Роли
 
@@ -263,7 +271,7 @@ portfolio-релиз. Основатель подтвердил их следу�
 зарегистрированных пользователей, пароль как альтернатива, только явная привязка
 провайдеров, реальный обязательный email и social-вход без обязательного пароля.
 См. DEC-133 в [реестре решений](12-DECISION-LOG.md) и
-[задание auth/media](../tasks/2026-10-22-auth-media-handoff.md).
+задание auth/media.
 Уточнение основателя 2026-10-22: подтверждение email предшествует созданию
 пользователя и social identity; авторитетный проверенный email провайдера может
 служить доказательством. Совпадение с существующим аккаунтом не даёт автопривязку.
@@ -285,7 +293,7 @@ transaction copy не блокируют portfolio MVP. Маркетингово
 
 ## 14. Commerce capability
 
-При выключенной capability:
+До включения новых продаж (волна W3, `DEC-149`) при выключенной capability:
 
 - client не показывает commerce routes, navigation, price, timer или actions;
 - прямой вызов commerce mutation/API fail-closed;
@@ -299,13 +307,14 @@ events является отдельной P0-задачей.
 
 ## 15. Не входит в First MVP
 
-- auction, bids и scheduled sale;
-- fixed price и buyer offer;
-- Orders, purchases/sales cabinet, handoff и second chance;
+Аукцион, фиксированная цена, заказы, second chance, жалобы на заказ и избранные работы
+входят в запуск по `DEC-149` и описаны в [COMMERCE](../launch/COMMERCE.md). Не входит:
+
+- buyer offer;
 - payment, escrow, commission и shipping;
 - transactional chat, reviews, rating и disputes;
-- likes, wishlist, follow и buyer collections;
-- notification center и marketing email;
+- likes, follow и buyer collections;
+- лента уведомлений и marketing email;
 - general reports и automatic session diagnostics;
 - subscriptions, promotions и seller analytics;
 - clickable tag discovery, recommendations и popularity ranking;
@@ -315,14 +324,12 @@ events является отдельной P0-задачей.
 - drops, presale, editions inventory и services;
 - multi-currency, conversion hint, localization и app-store release.
 
-Все направления сохранены в `15-POST-MVP-BACKLOG.md` и execution backlog.
-Следующая волна добавляет продажи через площадку (`DEC-115`); полный план цен,
-аукционов, сделок, жалоб, торговых экранов и gates находится в
-[15-POST-MVP-BACKLOG.md](15-POST-MVP-BACKLOG.md).
+Остальное — в [15-POST-MVP-BACKLOG.md](15-POST-MVP-BACKLOG.md).
 
 ## 16. Release gates
 
-1. Commerce выключен и с UI, и на сервере; обход URL/API не включает действие.
+1. Старый commerce выключен и с UI, и на сервере; новые продажи проходят gates
+   [COMMERCE](../launch/COMMERCE.md) и волны W7.
 2. Visitor может пройти Home → catalog → author → Work без регистрации.
 3. Author проходит email auth → application → moderation → Work draft → moderation →
    published profile.

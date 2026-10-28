@@ -126,7 +126,7 @@ type TickResult = { skipped: boolean; jobs: { name: string; processed: number; f
 ```
 
   `POST /api/internal/tick` → `200 TickResult`. Задачи регистрируют модули-владельцы
-  в `onModuleInit` (медиа — Task 3; продажи и письма — W3/W6).
+  в `onModuleInit` (медиа — Task 3; продажи и письма — W3 Task 3 и Task 8).
 
 - [ ] **Шаг 1: падающие тесты** (`tick.service.spec.ts`): задачи вызываются по
   порядку регистрации с одним `now`; упавшая задача → `failed: true`, следующие

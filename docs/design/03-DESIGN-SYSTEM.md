@@ -818,7 +818,7 @@ release offset; vetoed close returns to rest. Auth navigation waits for onExited
 UseReturnFocus restores only after the real FocusScope closes. Reduced motion
 uses the existing system timing policy. Shared sheet consumers, busy/dirty guards,
 background continuity and focus are covered by named browser/owner checks in
-the [execution audit](../audits/current/2026-10-21-UI-COMPLETION.md).
+the execution audit.
 
 ### 2026-10-21 — Shared filter selection and Back (DEC-128)
 
@@ -847,7 +847,7 @@ Reference: HRRtDp0bQlukw7ptTkuEZg /4980:15230. Header68px, search48px,
 provided combined logo, current button master.1024/1440: responsive adaptation,
 NEEDS-FIGMA for exact parity.12 unit cases, tsc/lint/build and4 Chromium/WebKit
 navigation cases pass. Author composition remains Partial; see
-[author parity audit](../audits/current/2026-10-21-AUTHOR-PROFILE-PARITY.md).
+author parity audit.
 
 
 ### Ordinary page chrome (2026-10-21)
@@ -882,7 +882,7 @@ input/close target. Existing overlay/focus owners remain the only mechanism.
 ### Portfolio design source update — 2026-10-23
 
 Scoped source: Figma `HRRtDp0bQlukw7ptTkuEZg`; exact nodes and mapping are in the
-[portfolio audit](../audits/current/2026-10-23-PORTFOLIO-DESIGN.md). Other handoffs remain applicable.
+portfolio audit. Other handoffs remain applicable.
 
 - `CoverFrost` owns one web `backdrop-filter: blur(16px) saturate(115%)`
   layer, masked from transparent to opaque at 35% of the content-driven panel.

@@ -225,7 +225,7 @@ idempotency-ключ создаётся при открытии листа/ди�
 **Files:** Create: `attention-dot.tsx`, `use-attention.ts`, `favorite-button.tsx`,
 `use-favorite.ts`, `favorites-screen.tsx`, маршрут `favorites.tsx`. Modify:
 шапка главной / `DesktopHeader` / док (место точки — по Figma), `WorkActions.tsx`,
-`product-screen.spec.ts` (Like теперь есть — обновить `Work top chrome`).
+`product-screen.spec.ts` (в шапке работы появилось сердце избранного — обновить `Work top chrome`).
 
 - [ ] Падающие тесты: точка видна при элементах и скрыта без них; аноним точку
   не запрашивает; избранное — оптимистичное переключение с откатом; аноним → вход

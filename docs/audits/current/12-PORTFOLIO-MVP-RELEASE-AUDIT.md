@@ -2,7 +2,7 @@
 
 Срез: 2026-10-23, release-база `872f22fc`. **Partial / Needs verification** для
 публичной готовности: локальный green не закрывает внешние gates. Этот файл —
-текущая сводка; [полный журнал](../../archive/audits/12-PORTFOLIO-MVP-RELEASE-through-2026-10-07.md)
+текущая сводка; полный журнал
 сохраняет checkpoints, evidence и историю исправлений без переобъявления их актуальными.
 
 ## Открытые gates и ограничения
@@ -15,7 +15,7 @@
 | Legal publication | Partial: незаполненные provider/country/backup/browser inventory facts, обещанные controls/cleanup и оставленный юристу вопрос об аналитике — по owner. Register evidence независим от lazy чтения DEC-125; это не legal readiness. | [Final legal audit](../../legal/00-FINAL-LEGAL-AUDIT.md) |
 | Deploy / migrations / restore | Needs verification: актуальный release SHA/CI, backup+restore/checksum/rollback и live portfolio loop. Обязательны две новые media migrations перед API release. Docs-задача ничего не деплоит. | [Release/backup](../../ops/00-RELEASE-AND-BACKUP.md), [Cloudflare](../../ops/CLOUDFLARE-DEPLOYMENT.md) |
 | Device / accessibility / visual | Partial: physical iOS/Android, Safe Area/native keyboard/motion, реальный zoom200%/text enlargement. Settings title geometry остаётся исключённой; desktop exact parity NEEDS-FIGMA по экрану. | [Design status](../../design/04-DESIGN-STATUS.md) |
-| Удаление своих Work | Not implemented (DEC-123); hide/restore не tombstone. Отдельная волна с backend/security review и HTTP/transaction tests, не подменять fake CTA. | [Active backlog](../../product/16-PORTFOLIO-ACTIVE-BACKLOG.md) |
+| Удаление своих Work | Not implemented (DEC-123); hide/restore не tombstone. Отдельная волна с backend/security review и HTTP/transaction tests, не подменять fake CTA. | [Active backlog](../../launch/README.md) |
 
 ## Последние сохранённые проверки
 
@@ -24,9 +24,9 @@ runtime/CI/live checks заново не выполнялись.
 
 | Checkpoint | Результат | Основание |
 | --- | --- | --- |
-| 2026-10-23, photo merge / PR #59 | `pnpm verify` passed: 479 API unit,1023 mobile,159 integration,28 прежних skips, web/iOS/Android export;6 media E2E Chromium/WebKit; production web build | [Project status](../../product/11-PROJECT-STATUS.md), [исходная запись](../../archive/product/11-PROJECT-STATUS-2026-10-20-23.md) |
-| 2026-10-22, responsive UI merge | Verify passed,988 mobile,155 integration /28 skips,8 build tasks; ошибка API legal-pack закрыта `cc4911e5` | [Merge review](2026-10-21-INDEPENDENT-UI-REVIEW.md) |
-| 2026-10-21, UI branch acceptance | Editor E2E26/26; UI68 passed /2 settings-title geometry failures; WebKit stress20/20. Geometry failures не скрыты, assertions/thresholds не ослаблены. | [Independent UI review](2026-10-21-INDEPENDENT-UI-REVIEW.md), [UI completion](2026-10-21-UI-COMPLETION.md) |
+| 2026-10-23, photo merge / PR #59 | `pnpm verify` passed: 479 API unit,1023 mobile,159 integration,28 прежних skips, web/iOS/Android export;6 media E2E Chromium/WebKit; production web build | [Project status](../../product/11-PROJECT-STATUS.md), исходная запись |
+| 2026-10-22, responsive UI merge | Verify passed,988 mobile,155 integration /28 skips,8 build tasks; ошибка API legal-pack закрыта `cc4911e5` | Merge review |
+| 2026-10-21, UI branch acceptance | Editor E2E26/26; UI68 passed /2 settings-title geometry failures; WebKit stress20/20. Geometry failures не скрыты, assertions/thresholds не ослаблены. | Independent UI review, UI completion |
 
 28 optional integration skips не считаются passes. Старые full-browser210/2 Home
 Opening failures — исторический visual debt, без нового полного rerun; лимит0.12
@@ -34,7 +34,7 @@ Opening failures — исторический visual debt, без нового �
 
 ## Действующий контракт и совместимость
 
-- Launch остаётся portfolio-only (DEC-082–084); commerce runtime не включать.
+- Запуск = портфолио + прямые продажи (DEC-149, механика — `docs/launch/COMMERCE.md`); старый commerce runtime остаётся выключенным (DEC-084), новый включается после волн W3–W4 и проверок W7.
 - Search восстанавливается Back/Forward по поздней revision DEC-096.
 - Регистрация fullscreen и единый `User.slug` следуют поздним revisions DEC-105;
   одно explicit согласие и lazy legal read — DEC-124/125.
@@ -51,8 +51,8 @@ Opening failures — исторический visual debt, без нового �
 
 Evidence остаётся на прежних путях `docs/audits/current/evidence/`; screenshots
 и videos не удаляются. Для расследования читать нужный checkpoint в
-[истории](../../archive/audits/12-PORTFOLIO-MVP-RELEASE-through-2026-10-07.md).
+истории.
 
 Обновлять gate/результат со ссылкой на точный SHA и owner evidence. Старые
 checkpoints не дописывать в этот файл; подробный новый audit хранить отдельно.
-План задач — [active backlog](../../product/16-PORTFOLIO-ACTIVE-BACKLOG.md).
+План задач — [active backlog](../../launch/README.md).

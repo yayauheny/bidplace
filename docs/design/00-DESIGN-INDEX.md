@@ -65,9 +65,9 @@ Node map, style measurements, source discrepancies и execution handoff нахо
 | `08-IMPLEMENTATION-LOG.md`                      | исторический Pen-журнал (не очередь задач)       |
 
 Live Figma `pAPQo6cADmG5XzVmBX76EE` — единственный visual source для текущего production UI.
-Текущие blockers: [`../product/16-PORTFOLIO-ACTIVE-BACKLOG.md`](../product/16-PORTFOLIO-ACTIVE-BACKLOG.md)
+Текущие blockers: [`../launch/README.md`](../launch/README.md)
 и [`../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md`](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md).
-Срез [`../audits/00-CURRENT-MVP-READINESS.md`](../audits/00-CURRENT-MVP-READINESS.md) — сентябрь 2026, не очередь работ.
+Срез `../audits/00-CURRENT-MVP-READINESS.md` — сентябрь 2026, не очередь работ.
 
 ## Обязательное чтение
 

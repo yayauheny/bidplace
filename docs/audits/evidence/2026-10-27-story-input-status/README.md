@@ -53,4 +53,4 @@ Existing Web8081/API3017 were reused with new disposable fixtures; no database
 reset or user-account cleanup. DnD was not expanded. Physical Native, system ghost,
 the user's manual DnD failure and live CDN acceptance remain open. Export is a
 build check, not physical-device acceptance. Final commands/results are recorded
-in the [workflow audit](../../2026-10-26-PHOTO-WORKFLOW.md).
+in the workflow audit.
