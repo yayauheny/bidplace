@@ -102,7 +102,7 @@
 
 Условия (проверяются в одной транзакции, время — `now()` базы):
 
-- пользователь `active`, почта подтверждена, не автор работы, не заблокирован
+- пользователь `active`, почта подтверждена, не автор работы, не админ, не заблокирован
   для покупок (§7), у него < 3 активных заказов;
 - лот фактически `LIVE` (`startsAt <= now < endsAt`);
 - пользователь не лидер сейчас (поднимать свою же ставку нельзя — `BID_ALREADY_LEADING`);
@@ -148,7 +148,7 @@ BYN — из `archive/commerce-v1` (`DEC-039`). RUB — пропорционал
 3. письма в очередь: покупателю «Ваша ставка лучшая», автору «Аукцион завершён»
    (или «без ставок»).
 
-Ставка после `endsAt` отклоняется (`LISTING_NOT_LIVE`) даже если тик ещё не
+Ставка после `endsAt` отклоняется (`LISTING_NOT_OPEN`) даже если тик ещё не
 прошёл. Победитель видит заказ после ближайшего тика (≤ 1 мин); до этого
 страница показывает «Аукцион завершён, подводим итоги».
 
@@ -178,7 +178,7 @@ BYN — из `archive/commerce-v1` (`DEC-039`). RUB — пропорционал
 3. лот `LIVE → ENDED` условно;
 4. письма в очередь обоим.
 
-Две одновременные покупки: вторая получает `LISTING_NOT_AVAILABLE` (блокировка
+Две одновременные покупки: вторая получает `LISTING_NOT_OPEN` (блокировка
 строки + частичный уникальный индекс «один открытый заказ на работу»).
 
 ## 6. Заказ
@@ -402,7 +402,7 @@ CREATE UNIQUE INDEX one_open_report_per_reporter   ON reports(reporter_user_id, 
 | --- | --- | --- |
 | 50 ставок одновременно на один лот | блокировка работы; каждая видит актуальную цену; лишние — `BID_TOO_LOW` | интеграция: 50 параллельных, итог — цена = максимум, `bidCount` = числу принятых, ни одной потерянной |
 | Ставка в последнюю секунду и тик закрытия | обе берут блокировку; кто второй — видит новый `endsAt` или `ENDED` | интеграция с двумя транзакциями |
-| Два покупателя «Купить» | блокировка + `one_open_order_per_product` | второй — `LISTING_NOT_AVAILABLE` |
+| Два покупателя «Купить» | блокировка + `one_open_order_per_product` | второй — `LISTING_NOT_OPEN` |
 | Автор снимает лот, а покупатель покупает | блокировка, условный переход | ровно одно действие проходит |
 | Автор снимает аукцион, а приходит первая ставка | проверка `bidCount = 0` под блокировкой | ровно одно |
 | Повтор ставки после обрыва сети | idempotency-ключ | один ряд, тот же ответ |
@@ -438,11 +438,14 @@ CREATE UNIQUE INDEX one_open_report_per_reporter   ON reports(reporter_user_id, 
 | `POST /api/admin/listings/:id/remove`, `POST /api/admin/orders/:publicId/void-strike` | админ | вмешательство |
 | `POST /api/internal/tick` | Worker Cron (W2) | закрытие, автозакрытие, истечение предложений, письма, медиа |
 
-Коды ошибок (`ApiErrorCode`, через `AppException`): `LISTING_NOT_LIVE`,
-`LISTING_NOT_AVAILABLE`, `BID_TOO_LOW`, `BID_ALREADY_LEADING`, `BID_AMOUNT_INVALID`,
-`BUYER_ORDER_LIMIT`, `BUYER_BLOCKED`, `SELF_PURCHASE`, `IDEMPOTENCY_KEY_REUSED`,
-`ORDER_TRANSITION_NOT_ALLOWED`, `PRODUCT_IN_SALE`, `PRODUCT_ALREADY_SOLD`,
-`NO_NEXT_BIDDER`. Каждому — текст в клиенте (W4).
+Коды ошибок (`ApiErrorCode`, через `AppException`). Уже есть в
+`packages/contracts/src/error.ts`, переиспользовать: `LISTING_NOT_FOUND`,
+`LISTING_NOT_OPEN` (лот не идёт: не начался, закончился, куплен, снят),
+`LISTING_CHANGED`, `BID_TOO_LOW`, `SELF_BID_FORBIDDEN` (ставка и покупка своей
+работы), `ADMIN_BID_FORBIDDEN` (админ не участвует в торгах). Новые:
+`BID_ALREADY_LEADING`, `BID_AMOUNT_INVALID`, `BUYER_ORDER_LIMIT`, `BUYER_BLOCKED`,
+`IDEMPOTENCY_KEY_REUSED`, `ORDER_TRANSITION_NOT_ALLOWED`, `PRODUCT_IN_SALE` (W1),
+`PRODUCT_ALREADY_SOLD`, `NO_NEXT_BIDDER`. Каждому — текст в клиенте (W4).
 
 Обновление без realtime: страница работы с лотом `LIVE` опрашивает `GET /api/works/:publicId`
 раз в 10 с, пока вкладка видна; последние 2 минуты аукциона — раз в 3 с. Заказы и
