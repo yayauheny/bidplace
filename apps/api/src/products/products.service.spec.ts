@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { portfolioWorksQuerySchema } from '@bidplace/contracts';
 
+import { Prisma } from '@bidplace/database';
 import { ProductsService } from './products.service';
 import {
   portfolioCatalogProductWhere,
@@ -127,6 +128,7 @@ function createWritePrisma(options: {
         ),
       update: vi.fn().mockResolvedValue(revision),
     },
+    productRevisionStoryAsset: { findMany: vi.fn().mockResolvedValue([]) },
     productRevisionStoryBlock: {
       findMany: vi.fn().mockResolvedValue([]),
       deleteMany: vi.fn(),
@@ -472,7 +474,13 @@ describe('ProductsService', () => {
         status: 'DRAFT',
         images: {
           createMany: {
-            data: [{ imageId: approvedProduct.images[0]!.id, position: 0 }],
+            data: [
+              {
+                imageId: approvedProduct.images[0]!.id,
+                position: 0,
+                crop: Prisma.DbNull,
+              },
+            ],
           },
         },
       }),
@@ -799,9 +807,9 @@ describe('ProductsService', () => {
     expect(portfolioCatalogProductSelect.sellerProfile.select).toBe(
       publicSellerProfileSelect,
     );
-    expect(portfolioCatalogProductSelect.publishedRevision.select).not.toHaveProperty(
-      'weight',
-    );
+    expect(
+      portfolioCatalogProductSelect.publishedRevision.select,
+    ).not.toHaveProperty('weight');
   });
 
   it('paginates public catalog rows before hydrating narrow image metadata', async () => {
@@ -1071,9 +1079,9 @@ describe('ProductsService', () => {
     expect(JSON.stringify(narrowPayload).includes(parentOnlyImage.id)).toBe(
       false,
     );
-    expect(JSON.stringify(baselinePayload).includes('PARENT_STORY_MARKER')).toBe(
-      true,
-    );
+    expect(
+      JSON.stringify(baselinePayload).includes('PARENT_STORY_MARKER'),
+    ).toBe(true);
 
     const prisma = {
       product: {
@@ -1227,11 +1235,13 @@ describe('ProductsService', () => {
   });
 
   it('reads distinct published materials without collapsing case in SQL', async () => {
-    const queryRaw = vi.fn().mockResolvedValue([
-      { materials: 'Холст' },
-      { materials: ' холст ' },
-      { materials: '\t' },
-    ]);
+    const queryRaw = vi
+      .fn()
+      .mockResolvedValue([
+        { materials: 'Холст' },
+        { materials: ' холст ' },
+        { materials: '\t' },
+      ]);
     const service = new ProductsService(
       { $queryRaw: queryRaw } as never,
       {} as never,

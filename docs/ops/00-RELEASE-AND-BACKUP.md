@@ -165,7 +165,7 @@ database alone is not a complete rollback. Do not delete old DB bytes or objects
 as part of this migration.
 
 Live R2/SMTP/CDN evidence remains a release prerequisite. Current verification
-and open choices: [launch audit](../audits/2026-10-04-PUBLIC-LAUNCH-READINESS.md).
+and open choices: launch audit.
 
 ## Backup
 

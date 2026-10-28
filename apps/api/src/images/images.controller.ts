@@ -9,6 +9,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
   Res,
   UploadedFiles,
   UseGuards,
@@ -16,7 +17,12 @@ import {
 } from '@nestjs/common';
 import { Buffer } from 'node:buffer';
 import { FilesInterceptor } from '@nestjs/platform-express';
-import { productImageOrderRequestSchema } from '@bidplace/contracts';
+import {
+  STORY_LIMITS,
+  productImageOrderRequestSchema,
+  workPhotoEditRequestSchema,
+  uuidSchema,
+} from '@bidplace/contracts';
 import {
   SessionAuthGuard,
   CurrentUser,
@@ -54,10 +60,99 @@ export class ImagesController {
     productId: string,
     @UploadedFiles() files: RawImageUpload[] = [],
     @Headers('idempotency-key') idempotencyKey?: string,
+    @Headers('x-photo-revision') expectedRevisionId?: string,
+    @Headers('x-photo-response') responseVersion?: string,
   ) {
     if (!files.length)
       throw new BadRequestException('At least one image is required');
-    return this.images.add(auth.sub, productId, files, idempotencyKey);
+    const result = await this.images.add(
+      auth.sub,
+      productId,
+      files,
+      idempotencyKey,
+      expectedRevisionId
+        ? parseBody(uuidSchema, expectedRevisionId)
+        : undefined,
+    );
+    if (!idempotencyKey || responseVersion !== 'slots') return result;
+    const { photo } = await this.images.photoOperation(
+      auth.sub,
+      productId,
+      idempotencyKey,
+    );
+    if (!photo) throw new Error('Accepted upload is missing its photo slot');
+    return { ok: true as const, photos: [photo] };
+  }
+
+  @Get('products/:productId/image-operations/:operationKey')
+  @UseGuards(SessionAuthGuard)
+  photoOperation(
+    @CurrentUser() auth: { sub: string },
+    @Param('productId', new ParseUUIDPipe({ version: '4' })) productId: string,
+    @Param('operationKey') operationKey: string,
+    @Query('slotId') slotId?: string,
+  ) {
+    return this.images.photoOperation(
+      auth.sub,
+      productId,
+      operationKey,
+      slotId ? parseBody(uuidSchema, slotId) : undefined,
+    );
+  }
+
+  @Patch('products/:productId/photos/:slotId')
+  @UseGuards(SessionAuthGuard, VerifiedEmailGuard)
+  editPhotoCrop(
+    @CurrentUser() auth: { sub: string },
+    @Param('productId', new ParseUUIDPipe({ version: '4' })) productId: string,
+    @Param('slotId', new ParseUUIDPipe({ version: '4' })) slotId: string,
+    @Body() body: unknown,
+  ) {
+    return this.images.editPhoto(
+      auth.sub,
+      productId,
+      slotId,
+      parseBody(workPhotoEditRequestSchema, body),
+    );
+  }
+
+  @Post('products/:productId/photos/:slotId')
+  @UseGuards(SessionAuthGuard, VerifiedEmailGuard, RateLimitGuard)
+  @RateLimit({
+    keyPrefix: 'images:product-upload',
+    limit: 20,
+    windowMs: 60_000,
+    scope: 'user',
+  })
+  @UseInterceptors(WorkImageUploadInterceptor)
+  replacePhoto(
+    @CurrentUser() auth: { sub: string },
+    @Param('productId', new ParseUUIDPipe({ version: '4' })) productId: string,
+    @Param('slotId', new ParseUUIDPipe({ version: '4' })) slotId: string,
+    @Headers('idempotency-key') operationKey: string | undefined,
+    @Body('data') data: string,
+    @UploadedFiles() files: RawImageUpload[] = [],
+  ) {
+    if (!operationKey || files.length !== 1)
+      throw new BadRequestException(
+        'Replacement requires one image and an idempotency key',
+      );
+    let body: unknown;
+    try {
+      body = JSON.parse(data);
+    } catch {
+      throw new BadRequestException('Invalid photo metadata');
+    }
+    const request = parseBody(workPhotoEditRequestSchema, body);
+    if (request.operationKey !== operationKey)
+      throw new BadRequestException('Image operation keys do not match');
+    return this.images.editPhoto(
+      auth.sub,
+      productId,
+      slotId,
+      request,
+      files[0],
+    );
   }
 
   @Post('products/:productId/story-images')
@@ -71,7 +166,7 @@ export class ImagesController {
   @UseInterceptors(
     FilesInterceptor('image', 1, {
       limits: {
-        fileSize: productImageUploadLimits.maxFileBytes,
+        fileSize: STORY_LIMITS.maxFileBytes + 1,
         files: 1,
       },
       fileFilter: (_request, file, done) =>
@@ -84,14 +179,18 @@ export class ImagesController {
     productId: string,
     @UploadedFiles() files: RawImageUpload[] = [],
     @Headers('idempotency-key') idempotencyKey?: string,
+    @Headers('x-photo-revision') expectedRevisionId?: string,
   ) {
     if (files.length !== 1)
       throw new BadRequestException('An image is required');
+    if (!expectedRevisionId)
+      throw new BadRequestException('Story upload requires a revision');
     return this.images.addStoryImage(
       auth.sub,
       productId,
       files[0]!,
       idempotencyKey,
+      parseBody(uuidSchema, expectedRevisionId),
     );
   }
 
@@ -175,8 +274,14 @@ export class ImagesController {
     @Param('productId', new ParseUUIDPipe({ version: '4' }))
     productId: string,
     @Param('imageId', new ParseUUIDPipe({ version: '4' })) imageId: string,
+    @Query('revisionId') revisionId?: string,
   ) {
-    return this.images.remove(auth.sub, productId, imageId);
+    return this.images.remove(
+      auth.sub,
+      productId,
+      imageId,
+      revisionId ? parseBody(uuidSchema, revisionId) : undefined,
+    );
   }
 
   @Patch('products/:productId/images/order')
@@ -187,10 +292,12 @@ export class ImagesController {
     productId: string,
     @Body() body: unknown,
   ) {
+    const request = parseBody(productImageOrderRequestSchema, body);
     return this.images.reorder(
       auth.sub,
       productId,
-      parseBody(productImageOrderRequestSchema, body).imageIds,
+      request.imageIds,
+      request.revisionId,
     );
   }
 
@@ -199,6 +306,7 @@ export class ImagesController {
   async get(
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
     @CurrentUser() auth: { sub: string; role: string } | undefined,
+    @Query('source') source: string | undefined,
     @Res()
     response: {
       setHeader(name: string, value: string): void;
@@ -206,7 +314,14 @@ export class ImagesController {
       send(value: Buffer): void;
     },
   ) {
-    const image = await this.images.get(id, auth?.sub, auth?.role);
+    if (source !== undefined && source !== 'true')
+      throw new BadRequestException('Invalid image source option');
+    const image = await this.images.get(
+      id,
+      auth?.sub,
+      auth?.role,
+      source === 'true',
+    );
     response.setHeader(
       'Cache-Control',
       getImageCacheControl({ isPublic: image.isPublic, kind: 'product' }),

@@ -7,7 +7,7 @@ description: Build or change Bidplace screens and shared UI in apps/mobile (Expo
 
 Goal: one way to do each UI job. Find the existing mechanism, extend it, delete what it replaces.
 
-Status: this is the **target contract** of the design-system waves (`docs/audits/2026-10-13-FRONTEND-DESIGN-SYSTEM-AUDIT.md` §17; execution prompts archived 2026-10-21) and it is implemented in code: the legacy `OverlayHost`, `AppIcon`/lucide, `DestructiveButton` and fixed-390-column patterns are removed. The remaining intentional deviations — do not copy or extend them: the private `expo-router/build` import for `usePreventRemove` (no public export in SDK 57; expected public in SDK 58) and the custom web history guards (`features/sellers/product-draft-browser-guard.ts`, `features/auth/auth-browser-history.ts`).
+Status: this is the **target contract** of the design-system waves (design-system audit of 2026-10-13 §17, recoverable with `git show 036d2cc4:docs/audits/2026-10-13-FRONTEND-DESIGN-SYSTEM-AUDIT.md`) and it is implemented in code: the legacy `OverlayHost`, `AppIcon`/lucide, `DestructiveButton` and fixed-390-column patterns are removed. The remaining intentional deviations — do not copy or extend them: the private `expo-router/build` import for `usePreventRemove` (no public export in SDK 57; expected public in SDK 58) and the custom web history guards (`features/sellers/product-draft-browser-guard.ts`, `features/auth/auth-browser-history.ts`).
 
 ## Read first (minimal — do not load whole status/audit journals)
 
@@ -17,7 +17,7 @@ Status: this is the **target contract** of the design-system waves (`docs/audits
 4. `docs/design/04-DESIGN-STATUS.md` — **grep the screen name**; do not read the full file unless you own a design-status update.
 5. Figma file `pAPQo6cADmG5XzVmBX76EE` (live); source priority in `AGENTS.md`. Missing node or product conflict → stop and record.
 6. Product limits `DEC-083`, `DEC-087` — grep `12-DECISION-LOG.md`; do not read the full decision log.
-7. Release blockers for the area — grep `docs/audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md` or `06-NEXT-REVIEWS.md`.
+7. Release blockers for the area — grep `docs/audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md`; for sales screens — `docs/launch/DESIGN-BRIEF.md`.
 
 ## Layout
 

@@ -199,4 +199,20 @@ describe('Figma semantic token contract', () => {
     expect(designTokens.color.border).toBe('#DEDEDE');
     expect(designTokens.color.divider).toBe('#E2E2E2');
   });
+
+  it('keeps story subtitle tracking, destructive ink, and the 1.3 icon stroke', () => {
+    expect(designTokens.typography.subtitle).toMatchObject({
+      fontFamily: 'Inter_400Regular',
+      fontSize: 14,
+      lineHeight: 20,
+      letterSpacing: 0,
+      fontWeight: '400',
+    });
+    expect(designTokens.typography.bodySmall.letterSpacing).toBe(-0.14);
+    expect(designTokens.color.destructiveInk).toBe('#731A06');
+    expect(designTokens.color.destructiveFill).toBe('#D22F0B');
+    expect(designTokens.color.surfaceMuted).toBe('#F3F3F3');
+    expect(designTokens.stroke.icon).toBe(1.3);
+    expect(designTokens.stroke.iconHeavy).toBe(1.6);
+  });
 });

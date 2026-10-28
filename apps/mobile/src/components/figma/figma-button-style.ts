@@ -1,4 +1,5 @@
 import {
+  designTokens,
   figmaButtonMatrixCell,
   figmaButtonSizeMetrics,
   figmaButtonTokens,
@@ -32,10 +33,16 @@ export function figmaButtonStyle(
     // Inside stroke sits in the frame. Matrix sample «Кнопка» is 83×43.
     paddingHorizontal: sizeMetrics.paddingX + strokeWidth,
     ...(size === 'navigation' ? { paddingRight: 10.5 } : {}),
+    ...(size === 'compactIcon'
+      ? { paddingRight: designTokens.space.x2 + strokeWidth }
+      : {}),
     paddingVertical: sizeMetrics.paddingY + strokeWidth,
     borderRadius: cell.borderRadius,
     backgroundColor: 'transparent',
     opacity: cell.controlOpacity,
+    ...(size === 'creationAction' && variant === 'solid'
+      ? { boxShadow: designTokens.shadow.primaryAction }
+      : {}),
     justifyContent: 'center' as const,
     alignItems: (size === 'navigation' ? 'stretch' : 'center') as
       | 'center'

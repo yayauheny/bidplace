@@ -6,6 +6,7 @@ import { designTokens } from '@bidplace/design-tokens';
 import { FigmaButton, WorkCoverCard } from '../../components/figma';
 import { AppText, ResilientRemoteImage } from '../../components/ui';
 import { getApiAssetUrl } from '../../lib/environment';
+import { useAppTheme } from '../../providers/theme-provider';
 import { type HomeCuratorSelection } from './home-sections';
 
 // RN web maps numberOfLines={1} to nowrap, which glues a seeded newline into
@@ -18,8 +19,13 @@ const openingBioWebClamp = {
   whiteSpace: 'pre-line',
 } as unknown as TextStyle;
 
-export function HomeOpening({ selection }: { selection: HomeCuratorSelection }) {
+export function HomeOpening({
+  selection,
+}: {
+  selection: HomeCuratorSelection;
+}) {
   const router = useRouter();
+  const palette = useAppTheme();
   const image = selection.work.images[0];
   const note = selection.note?.trim() || null;
 
@@ -75,11 +81,14 @@ export function HomeOpening({ selection }: { selection: HomeCuratorSelection }) 
                 component="AuthorPhoto"
                 accessibilityLabel={`Фото автора ${selection.curator.fullName}`}
                 fallbackLabel={`Фото автора недоступно: ${selection.curator.fullName}`}
+                fallback="plain"
+                retryable={false}
                 style={{
                   width: designTokens.size.openingAvatar,
                   height: designTokens.size.openingAvatar,
                   borderRadius: designTokens.radius.avatar,
                   overflow: 'hidden',
+                  backgroundColor: palette.accountAvatarPlaceholder,
                 }}
                 contentFit="cover"
               />
@@ -100,7 +109,9 @@ export function HomeOpening({ selection }: { selection: HomeCuratorSelection }) 
                     tone="subtle"
                     numberOfLines={Platform.OS === 'web' ? undefined : 1}
                     ellipsizeMode="tail"
-                    style={Platform.OS === 'web' ? openingBioWebClamp : undefined}
+                    style={
+                      Platform.OS === 'web' ? openingBioWebClamp : undefined
+                    }
                   >
                     {selection.curator.shortDescription}
                   </AppText>
@@ -140,6 +151,7 @@ export function HomeOpening({ selection }: { selection: HomeCuratorSelection }) 
             <WorkCoverCard
               href={`/product/${selection.work.publicId}`}
               imageUrl={image?.url ?? ''}
+              imagePresentation={image}
               imageLabel={selection.work.title}
               title={selection.work.title}
               authorSlug={selection.work.author.slug}

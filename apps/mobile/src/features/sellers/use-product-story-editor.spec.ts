@@ -109,6 +109,7 @@ function mount(
     render,
     replaceCreation,
     addStoryImage,
+    removeStoryImage,
   };
 }
 
@@ -120,6 +121,117 @@ afterEach(() => {
 });
 
 describe('revision-backed Work Story editor', () => {
+  it('keeps text edits during upload and saves whitespace alt as null without client hold release', async () => {
+    const view = mount();
+    let finish!: (value: { mediaAssetId: string }) => void;
+    view.addStoryImage.mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));
+    let key = '';
+    act(() => { key = view.editor.addText('PARAGRAPH', 'Before')!; });
+    let upload!: Promise<boolean>;
+    act(() => { upload = view.editor.addImage(new Blob(['png'], { type: 'image/png' })); });
+    act(() => view.editor.editText(key, 'Typed during upload'));
+    expect(view.editor.blocks[0]).toMatchObject({ text: 'Typed during upload' });
+    await act(async () => { finish({ mediaAssetId: assetId }); await upload; });
+    const image = view.editor.blocks.find((block) => block.type === 'IMAGE')!;
+    act(() => view.editor.editAlt(image.key, '   '));
+    view.replaceCreation.mockResolvedValueOnce({ storyToken: 1, blocks: [
+      { id: blockId, position: 0, type: 'PARAGRAPH', text: 'Typed during upload' },
+      { id: '85555555-5555-4555-8555-555555555555', position: 1, type: 'IMAGE', mediaAssetId: assetId, altText: null },
+    ] });
+    await act(async () => { expect(await view.editor.save()).toBe(true); });
+    expect(view.replaceCreation.mock.calls[0]?.[1].blocks[1]).toMatchObject({ altText: null });
+    act(() => view.editor.remove(image.key));
+    view.replaceCreation.mockResolvedValueOnce({ storyToken: 2, blocks: [{ id: blockId, position: 0, type: 'PARAGRAPH', text: 'Typed during upload' }] });
+    await act(async () => { expect(await view.editor.save()).toBe(true); });
+    expect(view.removeStoryImage).not.toHaveBeenCalled();
+  });
+
+  it('preserves spaces while typing a multiword image description and trims only on save', async () => {
+    const view = mount(null, { storyToken: 0, blocks: [{ id: blockId, position: 0, type: 'IMAGE', mediaAssetId: assetId, altText: null }] });
+    act(() => view.editor.editAlt(blockId, 'Синий '));
+    expect(view.editor.blocks[0]).toMatchObject({ altText: 'Синий ' });
+    act(() => view.editor.editAlt(blockId, 'Синий фон '));
+    view.replaceCreation.mockResolvedValueOnce({ storyToken: 1, blocks: [{ id: blockId, position: 0, type: 'IMAGE', mediaAssetId: assetId, altText: 'Синий фон' }] });
+    await act(async () => { expect(await view.editor.save()).toBe(true); });
+    expect(view.replaceCreation.mock.calls[0]?.[1].blocks[0]).toMatchObject({ altText: 'Синий фон' });
+  });
+
+  it.each([true, false])('reconciles an uncertain upload before story save and preserves text when replay succeeds=%s', async (succeeds) => {
+    const view = mount();
+    view.addStoryImage.mockRejectedValueOnce(new Error('response lost after server attach'));
+    await act(() => view.editor.addImage(new Blob(['image'], { type: 'image/png' })));
+    act(() => view.editor.addText('PARAGRAPH', 'Текст после ошибки'));
+    if (!succeeds) view.addStoryImage.mockRejectedValueOnce(new Error('still offline'));
+    view.replaceCreation.mockResolvedValueOnce({ storyToken: 1, blocks: [
+      { id: blockId, position: 0, type: 'PARAGRAPH', text: 'Текст после ошибки' },
+      { id: '85555555-5555-4555-8555-555555555555', position: 1, type: 'IMAGE', mediaAssetId: assetId, altText: null },
+    ] });
+    await act(async () => { expect(await view.editor.save()).toBe(succeeds); });
+    expect(view.addStoryImage).toHaveBeenCalledTimes(2);
+    expect(view.addStoryImage.mock.calls[1]?.[2]).toBe(view.addStoryImage.mock.calls[0]?.[2]);
+    expect(view.editor.blocks[0]).toMatchObject({ text: 'Текст после ошибки' });
+    if (succeeds) {
+      expect(view.replaceCreation.mock.calls[0]?.[1].blocks[1]).toMatchObject({ type: 'IMAGE', mediaAssetId: assetId });
+      expect(view.addStoryImage.mock.invocationCallOrder[1]).toBeLessThan(view.replaceCreation.mock.invocationCallOrder[0]!);
+    } else {
+      expect(view.replaceCreation).not.toHaveBeenCalled();
+      expect(view.editor.retryUpload).toBe(true);
+      expect(view.editor.dirty).toBe(true);
+    }
+  });
+
+  it('blocks parallel saves and retires an upload replay when the authentication epoch changes', async () => {
+    const view = mount();
+    view.addStoryImage.mockRejectedValueOnce(new Error('response lost'));
+    await act(() => view.editor.addImage(new Blob(['image'], { type: 'image/png' })));
+    act(() => view.editor.addText('PARAGRAPH', 'Private text'));
+    let finish!: (result: { mediaAssetId: string }) => void;
+    view.addStoryImage.mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));
+    let saving!: Promise<boolean>;
+    act(() => { saving = view.editor.save(); });
+    await act(async () => { expect(await view.editor.save()).toBe(false); });
+    expect(view.addStoryImage).toHaveBeenCalledTimes(2);
+    expect(view.replaceCreation).not.toHaveBeenCalled();
+    view.render(2, revisionId, emptyStory);
+    await act(async () => { finish({ mediaAssetId: assetId }); expect(await saving).toBe(false); });
+    expect(view.replaceCreation).not.toHaveBeenCalled();
+    expect(view.editor.blocks).toEqual([]);
+  });
+
+  it('adopts the empty input key and keeps it while editing and clearing its contents', async () => {
+    const view = mount();
+    const inputKey = 'empty-input';
+    act(() => {
+      expect(view.editor.addText('PARAGRAPH', 'А', inputKey)).toBe(inputKey);
+    });
+    act(() => view.editor.editText(inputKey, 'АБВ'));
+    expect(view.editor.blocks).toMatchObject([{ key: inputKey, text: 'АБВ' }]);
+    act(() => view.editor.editText(inputKey, '   '));
+    expect(view.editor.blocks).toMatchObject([{ key: inputKey, text: '   ' }]);
+    view.replaceCreation.mockResolvedValueOnce({ storyToken: 1, blocks: [] });
+    await act(() => view.editor.save());
+    expect(view.replaceCreation.mock.calls[0]?.[1].blocks).toEqual([]);
+  });
+
+  it('omits blank text from saving without changing the identity of meaningful blocks', async () => {
+    const view = mount();
+    view.replaceCreation.mockResolvedValue({
+      storyToken: 1,
+      blocks: [{ id: blockId, position: 0, type: 'PARAGRAPH', text: 'Текст' }],
+    });
+    let meaningful = '';
+    act(() => {
+      view.editor.addText('HEADING', '   ');
+      meaningful = view.editor.addText('PARAGRAPH', 'Текст')!;
+      view.editor.addText('PARAGRAPH');
+    });
+    await act(() => view.editor.save());
+    expect(view.replaceCreation.mock.calls[0]?.[1].blocks).toEqual([
+      { id: undefined, type: 'PARAGRAPH', text: 'Текст' },
+    ]);
+    expect(view.editor.blocks[0]?.key).toBe(meaningful);
+  });
+
   it('surfaces a storage error when the draft write fails', () => {
     vi.useFakeTimers();
     const view = mount('user-a');
@@ -178,8 +290,9 @@ describe('revision-backed Work Story editor', () => {
   it('clears the local draft after the server holds the saved blocks', async () => {
     // A stale draft with the same content must not survive the save.
     window.localStorage.setItem(
-      legacyStoryKey,
+      activeStoryKey,
       JSON.stringify({
+        v: 2,
         revisionId,
         token: 0,
         blocks: [{ key: 'stale-key', type: 'PARAGRAPH', text: 'Текст' }],
@@ -330,7 +443,12 @@ describe('revision-backed Work Story editor', () => {
       {
         storyToken: 1,
         blocks: [
-          { id: blockId, position: 0, type: 'PARAGRAPH' as const, text: 'WRONG REVISION' },
+          {
+            id: blockId,
+            position: 0,
+            type: 'PARAGRAPH' as const,
+            text: 'WRONG REVISION',
+          },
         ],
       },
       revisionId,
@@ -345,7 +463,12 @@ describe('revision-backed Work Story editor', () => {
       {
         storyToken: 0,
         blocks: [
-          { id: blockId, position: 0, type: 'PARAGRAPH' as const, text: 'FOREIGN' },
+          {
+            id: blockId,
+            position: 0,
+            type: 'PARAGRAPH' as const,
+            text: 'FOREIGN',
+          },
         ],
       },
       'another-revision',
@@ -428,11 +551,11 @@ describe('revision-backed Work Story editor', () => {
 
   it('keeps a recovered other-revision copy across editing and a confirmed save', async () => {
     vi.useFakeTimers();
-    // A copy left over from another revision sits under the legacy key.
-    const legacyKey = `bidplace:draft:user-a:product-story:${workId}`;
+    const legacyKey = activeStoryKey;
     window.localStorage.setItem(
       legacyKey,
       JSON.stringify({
+        v: 2,
         revisionId: '92222222-2222-4222-8222-222222222222',
         token: 2,
         blocks: [
@@ -498,7 +621,7 @@ describe('revision-backed Work Story editor', () => {
       token: 4,
       blocks: [{ key: 'old-key', type: 'PARAGRAPH', text: 'Old local draft' }],
     });
-    window.localStorage.setItem(legacyStoryKey, stored);
+    window.localStorage.setItem(activeStoryKey, stored);
     const view = mount('user-a', storyR2);
     const texts = view.editor.blocks.map((block) =>
       block.type === 'IMAGE' ? '' : block.text,
@@ -518,76 +641,11 @@ describe('revision-backed Work Story editor', () => {
     expect(view.editor.recoveryText).toContain('Old local draft');
   });
 
-  it('does not apply a legacy stored draft without a revision id', () => {
-    const serverStory = {
-      storyToken: 1,
-      blocks: [
-        {
-          id: blockId,
-          position: 0,
-          type: 'PARAGRAPH' as const,
-          text: 'Серверный абзац',
-        },
-      ],
-    };
-    const stored = JSON.stringify({
-      v: 2,
-      token: 1,
-      blocks: [
-        { key: 'legacy-key', type: 'PARAGRAPH', text: 'Старый черновик' },
-      ],
-    });
-    window.localStorage.setItem(legacyStoryKey, stored);
-    const view = mount('user-a', serverStory);
-    const texts = view.editor.blocks.map((block) =>
-      block.type === 'IMAGE' ? '' : block.text,
-    );
-    expect(texts).toEqual(['Серверный абзац']);
-    expect(view.editor.dirty).toBe(false);
-    expect(view.editor.storageError).toContain('другой редакции');
-    // A record without a revision id is ambiguous: never applied, preserved
-    // in the recovery namespace.
-    expect(window.localStorage.getItem(legacyStoryKey)).toBeNull();
-    expect(window.localStorage.getItem(recoveryStoryKey)).toContain(
-      'Старый черновик',
-    );
-    expect(view.editor.recoveryText).toContain('Старый черновик');
-  });
 
-  it('keeps active input when a legacy copy also exists', () => {
-    const payload = (text: string) =>
-      JSON.stringify({
-        v: 2,
-        revisionId,
-        token: 0,
-        blocks: [{ key: 'local', type: 'PARAGRAPH', text }],
-      });
-    window.localStorage.setItem(activeStoryKey, payload('NEW ACTIVE'));
-    window.localStorage.setItem(legacyStoryKey, payload('OLD LEGACY'));
-    const view = mount('user-a');
-    expect(
-      view.editor.blocks.map((block) =>
-        block.type === 'IMAGE' ? '' : block.text,
-      ),
-    ).toEqual(['NEW ACTIVE']);
-    // The differing legacy copy is preserved, not dropped: remounting finds it
-    // again and still keeps the active draft authoritative.
-    const legacyNow = window.localStorage.getItem(legacyStoryKey);
-    const recoveryNow = window.localStorage.getItem(recoveryStoryKey);
-    expect(
-      legacyNow ?? recoveryNow ?? '',
-    ).toContain('OLD LEGACY');
-    const again = mount('user-a');
-    expect(
-      again.editor.blocks.map((block) =>
-        block.type === 'IMAGE' ? '' : block.text,
-      ),
-    ).toEqual(['NEW ACTIVE']);
-  });
 
   it('offers the recovery source even when its migration cannot write', () => {
     window.localStorage.setItem(
-      legacyStoryKey,
+      activeStoryKey,
       JSON.stringify({
         v: 2,
         revisionId: 'old',
@@ -600,47 +658,13 @@ describe('revision-backed Work Story editor', () => {
     });
     const view = mount('user-a');
     // The source copy survives the failed write; the notice offers its text.
-    expect(window.localStorage.getItem(legacyStoryKey)).toContain(
+    expect(window.localStorage.getItem(activeStoryKey)).toContain(
       'RECOVERY TEXT',
     );
     expect(view.editor.recoveryText).toBe('RECOVERY TEXT');
     expect(view.editor.storageError).toBeTruthy();
   });
 
-  it('restores only the text the server does not have yet', () => {
-    const serverStory = {
-      storyToken: 1,
-      blocks: [
-        {
-          id: blockId,
-          position: 0,
-          type: 'PARAGRAPH' as const,
-          text: 'Серверный абзац',
-        },
-      ],
-    };
-    const view = mount('user-a', serverStory);
-    const draftKey = `bidplace:draft:user-a:product-story:${workId}`;
-    window.localStorage.setItem(
-      draftKey,
-      JSON.stringify({
-        revisionId,
-        token: 1,
-        blocks: [
-          // Saved earlier from a client session: same content, client-side key.
-          { key: 'client-key', type: 'PARAGRAPH', text: 'Серверный абзац' },
-          { key: 'client-key-2', type: 'PARAGRAPH', text: 'Новый абзац' },
-        ],
-      }),
-    );
-    // An auth-epoch bump re-runs the restore against the same story.
-    view.render(2, revisionId);
-    const texts = view.editor.blocks.map((block) =>
-      block.type === 'IMAGE' ? '' : block.text,
-    );
-    expect(texts).toEqual(['Серверный абзац', 'Новый абзац']);
-    expect(view.editor.dirty).toBe(true);
-  });
 
   it('saves blocks with a token and retains the server block identity', async () => {
     const view = mount();
@@ -660,7 +684,7 @@ describe('revision-backed Work Story editor', () => {
   });
 
   it('restores unfinished text blocks on a plain mount', () => {
-    const draftKey = `bidplace:draft:user-a:product-story:${workId}`;
+    const draftKey = activeStoryKey;
     window.localStorage.setItem(
       draftKey,
       JSON.stringify({
@@ -715,7 +739,7 @@ describe('revision-backed Work Story editor', () => {
         },
       ],
     };
-    const draftKey = `bidplace:draft:user-a:product-story:${workId}`;
+    const draftKey = activeStoryKey;
     window.localStorage.setItem(
       draftKey,
       JSON.stringify({
@@ -754,7 +778,7 @@ describe('revision-backed Work Story editor', () => {
         },
       ],
     };
-    const draftKey = `bidplace:draft:user-a:product-story:${workId}`;
+    const draftKey = activeStoryKey;
     window.localStorage.setItem(
       draftKey,
       JSON.stringify({
@@ -797,7 +821,7 @@ describe('revision-backed Work Story editor', () => {
         },
       ],
     };
-    const draftKey = `bidplace:draft:user-a:product-story:${workId}`;
+    const draftKey = activeStoryKey;
     window.localStorage.setItem(
       draftKey,
       JSON.stringify({
@@ -833,7 +857,7 @@ describe('revision-backed Work Story editor', () => {
         },
       ],
     };
-    const draftKey = `bidplace:draft:user-a:product-story:${workId}`;
+    const draftKey = activeStoryKey;
     window.localStorage.setItem(
       draftKey,
       JSON.stringify({ v: 2, revisionId, token: 1, blocks: [] }),
@@ -865,7 +889,7 @@ describe('revision-backed Work Story editor', () => {
         },
       ],
     };
-    const draftKey = `bidplace:draft:user-a:product-story:${workId}`;
+    const draftKey = activeStoryKey;
     window.localStorage.setItem(
       draftKey,
       JSON.stringify({
@@ -969,8 +993,24 @@ describe('revision-backed Work Story editor', () => {
     ]);
   });
 
-  it('reuses a gallery media asset without duplicating its upload', async () => {
-    const view = mount();
+  it('restores a referenced media asset without duplicating its upload', async () => {
+    window.localStorage.setItem(
+      activeStoryKey,
+      JSON.stringify({
+        v: 2,
+        revisionId,
+        token: 0,
+        blocks: [
+          {
+            key: 'existing-media',
+            type: 'IMAGE',
+            mediaAssetId: assetId,
+            altText: null,
+          },
+        ],
+      }),
+    );
+    const view = mount('user-a');
     view.replaceCreation.mockResolvedValueOnce({
       storyToken: 1,
       blocks: [
@@ -983,7 +1023,6 @@ describe('revision-backed Work Story editor', () => {
         },
       ],
     });
-    act(() => view.editor.addGalleryImage(assetId));
     await act(async () => {
       expect(await view.editor.save()).toBe(true);
     });
@@ -1007,6 +1046,8 @@ describe('revision-backed Work Story editor', () => {
     expect(view.addStoryImage.mock.calls[0]?.[2]).toBe(
       view.addStoryImage.mock.calls[1]?.[2],
     );
+    expect(view.addStoryImage.mock.calls[0]?.[3]).toBe(revisionId);
+    expect(view.addStoryImage.mock.calls[1]?.[3]).toBe(revisionId);
     expect(view.editor.blocks).toMatchObject([
       { type: 'IMAGE', mediaAssetId: assetId },
     ]);

@@ -4,7 +4,11 @@ import {
   publicVariant,
   type PublicMediaAsset,
 } from '../core/media/media.mapper';
-import { productResponseSchema, type Product } from '@bidplace/contracts';
+import {
+  photoCropSchema,
+  productResponseSchema,
+  type Product,
+} from '@bidplace/contracts';
 import { type Prisma } from '@bidplace/database';
 
 import { publicSellerProfileSelect } from '../sellers/seller-profile.mapper';
@@ -26,6 +30,9 @@ export const productImageMetadataSelect = {
 } satisfies Prisma.ProductImageSelect;
 
 export const productRevisionImageSelect = {
+  slotId: true,
+  version: true,
+  crop: true,
   position: true,
   image: { select: productImageBlobSelect },
 } satisfies Prisma.ProductRevisionImageSelect;
@@ -39,13 +46,16 @@ const selectedCategorySelect = {
 } satisfies Prisma.CategorySelect;
 
 export function selectedCategoryView(
-  category: {
-    id: string;
-    slug: string;
-    name: string;
-    description: string | null;
-    active: boolean;
-  } | null | undefined,
+  category:
+    | {
+        id: string;
+        slug: string;
+        name: string;
+        description: string | null;
+        active: boolean;
+      }
+    | null
+    | undefined,
 ) {
   if (!category) return null;
   const description = category.description?.trim();
@@ -87,38 +97,41 @@ export const revisionSelectionSelect = {
 } satisfies Prisma.ProductRevisionSelect;
 
 export function selectionFromRevision(
-  revision: {
-    category?: {
-      id: string;
-      slug: string;
-      name: string;
-      description: string | null;
-      active: boolean;
-    } | null;
-    terms?: Array<{
-      termId: string;
-      term: {
-        id: string;
-        role: string;
-        slug: string;
-        name: string;
-        active: boolean;
-      };
-    }>;
-    proposals?: Array<{
-      id: string;
-      productRevisionId: string;
-      kind: string;
-      rawName: string;
-      normalizedName: string;
-      status: string;
-      selected: boolean;
-      mappedCategoryId: string | null;
-      mappedTermId: string | null;
-      rejectionReason: string | null;
-      reviewedAt: Date | null;
-    }>;
-  } | null | undefined,
+  revision:
+    | {
+        category?: {
+          id: string;
+          slug: string;
+          name: string;
+          description: string | null;
+          active: boolean;
+        } | null;
+        terms?: Array<{
+          termId: string;
+          term: {
+            id: string;
+            role: string;
+            slug: string;
+            name: string;
+            active: boolean;
+          };
+        }>;
+        proposals?: Array<{
+          id: string;
+          productRevisionId: string;
+          kind: string;
+          rawName: string;
+          normalizedName: string;
+          status: string;
+          selected: boolean;
+          mappedCategoryId: string | null;
+          mappedTermId: string | null;
+          rejectionReason: string | null;
+          reviewedAt: Date | null;
+        }>;
+      }
+    | null
+    | undefined,
 ) {
   const terms = revision?.terms ?? [];
   const selectedTerms = (role: 'MATERIAL' | 'TECHNIQUE') =>
@@ -256,6 +269,9 @@ export type ProductRecord = Prisma.ProductGetPayload<{
 }>;
 
 type GalleryImage = {
+  slotId?: string;
+  slotVersion?: number;
+  crop?: Prisma.JsonValue;
   mediaAsset?: PublicMediaAsset | null;
   mediaAssetId?: string | null;
   id: string;
@@ -269,6 +285,9 @@ type GalleryImage = {
 
 type RevisionGallery = {
   images: Array<{
+    slotId?: string;
+    version?: number;
+    crop?: Prisma.JsonValue;
     position: number;
     image: Omit<GalleryImage, 'position'>;
   }>;
@@ -290,7 +309,16 @@ export function toImageContracts(
       throw new Error('Published media is not delivered');
     return {
       id: image.id,
-      ...(includeMediaAssetId && image.mediaAssetId ? { mediaAssetId: image.mediaAssetId } : {}),
+      ...(image.slotId
+        ? {
+            slotId: image.slotId,
+            slotVersion: image.slotVersion,
+            crop: photoCropSchema.nullable().parse(image.crop),
+          }
+        : {}),
+      ...(includeMediaAssetId && image.mediaAssetId
+        ? { mediaAssetId: image.mediaAssetId }
+        : {}),
       position: image.position,
       url: `/api/images/${image.id}`,
       mimeType: image.mimeType,
@@ -308,14 +336,18 @@ export function toRevisionGalleryImages(
   revision: RevisionGallery | null | undefined,
 ) {
   if (!revision) return null;
-  return revision.images.map(({ position, image }) => ({
+  return revision.images.map(({ position, image, slotId, version, crop }) => ({
     ...image,
     position,
+    ...(slotId ? { slotId, slotVersion: version, crop: crop ?? null } : {}),
   }));
 }
 
 export function projectedCatalogLabel(
-  terms: ReadonlyArray<{ term: { role: string; name?: string } }> | null | undefined,
+  terms:
+    | ReadonlyArray<{ term: { role: string; name?: string } }>
+    | null
+    | undefined,
   role: 'MATERIAL' | 'TECHNIQUE',
 ) {
   const names = (terms ?? [])
@@ -396,7 +428,9 @@ export function toOwnerContractProduct(
     city: editingRevision.city ?? null,
     packaging: editingRevision.packaging ?? null,
     deliveryInfo: editingRevision.deliveryInfo ?? null,
-    images: editingImages ? toImageContracts(editingImages, 'private', true) : base.images,
+    images: editingImages
+      ? toImageContracts(editingImages, 'private', true)
+      : base.images,
   };
 }
 

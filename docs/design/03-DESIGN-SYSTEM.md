@@ -709,7 +709,10 @@ This does not change control size, type, or the field success state.
   настроек и handle; `coverCaptionTitle` — типографика caption-заголовка
   (в tokens.ts). `gray2` не переиспользуется новыми consumers.
 - `ResilientRemoteImage`: prop `fallback: 'labelled' | 'plain'`
-  (plain — без текста плейсхолдера; default 'labelled' прежний).
+  (plain — без текста плейсхолдера; default 'labelled' прежний). Plain failure
+  keeps the image role and accessible failure description. Home opening uses
+  this fallback with the gray avatar surface and `retryable={false}`; automatic
+  retries remain enabled.
 - Back variant `settings` — шапка настроек (frame/glyph28, hitSlop до touch44).
   FigmaIconButton size=settingsHeader задаёт такой же frame для симметрии
   противоположного действия; default-потребители сохраняют прежний размер.
@@ -719,6 +722,7 @@ This does not change control size, type, or the field success state.
   длинное имя переносится, не масштабируется.
 - FormPageShell: варианты account/settings задают paddingTop12/20 через
   spacing-токены; default24 и authorApplication сохраняют поведение.
+- `FormPageShell`: Web retains input focus during scrolling (`keyboardDismissMode="none"`); Native keeps `on-drag`.
 - `FormPageShell` — testID `form-page` (единый scroll-owner форм;
   web-скоуп тестов поверх стека маршрутов).
 
@@ -814,7 +818,7 @@ release offset; vetoed close returns to rest. Auth navigation waits for onExited
 UseReturnFocus restores only after the real FocusScope closes. Reduced motion
 uses the existing system timing policy. Shared sheet consumers, busy/dirty guards,
 background continuity and focus are covered by named browser/owner checks in
-the [execution audit](../audits/current/2026-10-21-UI-COMPLETION.md).
+the execution audit.
 
 ### 2026-10-21 — Shared filter selection and Back (DEC-128)
 
@@ -843,7 +847,7 @@ Reference: HRRtDp0bQlukw7ptTkuEZg /4980:15230. Header68px, search48px,
 provided combined logo, current button master.1024/1440: responsive adaptation,
 NEEDS-FIGMA for exact parity.12 unit cases, tsc/lint/build and4 Chromium/WebKit
 navigation cases pass. Author composition remains Partial; see
-[author parity audit](../audits/current/2026-10-21-AUTHOR-PROFILE-PARITY.md).
+author parity audit.
 
 
 ### Ordinary page chrome (2026-10-21)
@@ -878,7 +882,7 @@ input/close target. Existing overlay/focus owners remain the only mechanism.
 ### Portfolio design source update — 2026-10-23
 
 Scoped source: Figma `HRRtDp0bQlukw7ptTkuEZg`; exact nodes and mapping are in the
-[portfolio audit](../audits/current/2026-10-23-PORTFOLIO-DESIGN.md). Other handoffs remain applicable.
+portfolio audit. Other handoffs remain applicable.
 
 - `CoverFrost` owns one web `backdrop-filter: blur(16px) saturate(115%)`
   layer, masked from transparent to opaque at 35% of the content-driven panel.
@@ -983,3 +987,129 @@ The confirmed separate-row header/segmented animation is unchanged. Independent
 Search entry starts fresh; only the same navigation entry restores drafts,
 filters, query, cached pages and scroll. Physical Native blur, return and
 background/resume acceptance remain Needs verification.
+
+## Photo controls — 2026-10-26
+
+Figma `7329:822–824`: `FigmaIcon` owns rotate/flip/reset/alert icons.
+`feedbackTitle` (Inter medium 13/16), `feedbackBody` (regular 12/16), and
+`toolLabel` (medium 12/16) belong to design tokens; error surface/title/text use
+`feedbackDangerSurface`/`feedbackDangerTitle`/`feedbackDangerText` from `theme.ts`.
+`CroppedPhoto` owns normalized crop presentation for cards; public fullscreen
+uses the full media source. Photo editor reuses FormPageShell, FigmaTabs and
+shared controls. Native/zoom accessibility remains Needs verification in
+[design status](04-DESIGN-STATUS.md).
+
+### Photo review controls — 2026-10-27
+
+`FigmaTabs appearance="plain"` with segmented variant is the single-border
+42px control from `7345:722`; existing glass/underline styles retain defaults.
+`segmentLabel`/`segmentSelected` own medium/semibold 14/18 labels; `mediaCaption`
+owns regular 13/18 metadata for Work/avatar. `FigmaIcon reset` uses the installed
+Hugeicons Undo vector, matching `7342:726`; no new icon renderer. Crop library
+styles are scoped to `photo-cropper` and preserve visible keyboard focus.
+
+
+### Photo edit glyph (2026-10-27)
+
+Founder-provided screenshot selects Hugeicons `Edit03Icon` (registry `edit-03`)
+for photo grid edit controls: diagonal pencil without an underline. Existing
+`pencil-edit-01` remains available to its other consumers. The existing
+FigmaIconButton owns size, focus, disabled state and hit target unchanged.
+
+
+### Photo interaction corrections — 2026-10-27
+
+Read-only source `pAPQo6cADmG5XzVmBX76EE`, nodes `7329:704/822/823/824` and
+handoff `7388:723`. `FormPageShell` reserves 12px at the end of scroll content
+when a bottom action exists, so the last control clears the action frame.
+`FigmaButton` solid `creationAction` uses `shadow.primaryAction` and semibold
+label from `7330:749` / `7332:730`; other sizes retain their existing paint.
+`mediaStage`, `previewSurface`, `previewBorder` own the editor/inline-preview
+surfaces from `7332:715` / `7347:720`. The avatar preview uses eager image loading;
+ordinary image consumers retain Expo's default loading policy.
+
+The Original crop engine stays measured for transforms but its entire layer has
+opacity 0, no pointer events, no tab stop and is inert. The photo grid keeps its
+add slot while disabled; presentation-only insertion state shifts neighbors
+without changing the canonical order until drop. Native uses existing Gesture
+Handler/Reanimated; Web retains HTML DnD and a bounded touch long-press/edge-scroll
+path. No second grid renderer, server reorder on pointer movement, or dependency.
+
+Live Figma still specifies square 8×8 crop handles (`7330:730–733`) and the filled
+add-slot label (`7329:819`). They are retained despite the pasted review's contrary
+visual description. Toolbar/tab weights already match the live Medium/Semibold
+roles; no weight reduction is inferred from screenshots. Wide exact parity and
+physical Native remain outside the completed visual claim.
+
+
+### Photo drag ownership follow-up — 2026-10-27
+
+`PhotoDropArea.web` owns mouse dragover/drop for the entire existing grid,
+including gaps and the add slot; insertion uses each photo's untransformed
+PaddedGrid cell bounds. Card handlers no longer own mouse drop. During mouse drag the moving visual
+tiles leave pointer hit-testing, so a held pointer remains over a stable grid
+cell after neighbors finish moving. Exit clears the
+insertion preview; only drop commits canonical local order, never server order.
+Native keeps the same PaddedGrid and Gesture Handler/Reanimated path:
+`PhotoDragSurface` limits gesture attachment to the image; edit/delete/Retry
+remain siblings. `PaddedGrid.activeItemId` lifts the active row and permits
+cross-row overflow only during drag. `FormPageShell` owns the measured scroll
+viewport/ref and exposes drag scrolling through `FormDragScrollContext`;
+actual contentOffset feeds back into tile translation/insertion, with bounds and
+cancel/unmount cleanup. No Figma styling, button, Safe Area or CTA geometry changes
+in this follow-up. Physical Native rendering/gesture acceptance remains Partial.
+
+### Stable photo status and editorial controls — 2026-10-27
+
+`ProductDraftImagesStep` reserves one media-caption line for status; file progress
+is an overlay in the existing card. `WorkPhotoCard.preview` retains local
+geometry/resources through accepted upload until the matching remote image loads.
+The existing resilient-image owner reports load/start/exhausted events; centered
+Retry avoids gallery controls, while other consumers retain bottom placement.
+
+Figma `4563:33344` is the compact absolute story action panel, with a shared
+`FigmaIconButton` compact visual (`size.compactIconButton`34, Native hit slop to44)
+and danger glyph tone. Defaults are unchanged. The button explicitly exposes
+`aria-expanded` on the installed Web renderer. One open story block key owns the
+panel across movement; usable action focus survives boundaries and Escape.
+
+`FigmaButton` size `compactIcon` (Figma `4563:32794`) is height 43: padding
+8 vertical and 16/8 horizontal, gap 2 to the existing trailing icon frame,
+label Inter 600 14/26/−0.28. `event` stays height 47. The story intro stays
+`typography.subtitle` (14/20/400, letter-spacing 0). Story paragraphs use
+`bodySmall` (14/20/400/−0.14); that tracking is the 2026-10-28 review decision.
+Headings stay `storyHeading`. Destructive story ink is `destructiveInk`
+(`Red` `4337:12016`, `#731A06`); `destructiveFill` stays the photo-button fill.
+Toolbar and block-menu surfaces use `surfaceMuted` (`Gray 5` `#F3F3F3`). Story
+icon glyphs use existing `stroke.icon` 1.3; `FigmaIconButton` still defaults to
+`stroke.iconHeavy` 1.6. Story ⋮ is shown only on the selected block. That is
+an accepted difference from Figma, where ⋮ is on every block. Line-height
+24/20 and the 6px text gap stay. The selected control is a real 44×44 box
+(`size.touch`); the muted 42px glyph stays centered inside it. The text field
+is a row: the input (`flex: 1`, plus `space.x2`) and a 44px strip
+(`story-control-gutter`) that is outside the textarea. Text width stays the
+previous content width. The active button sits in that strip. While the menu
+is closed the block is not raised, so the button may paint over the next
+strip and a press there selects that neighbor instead of opening this menu.
+An inactive strip has `pointerEvents="none"` and no control, so it does not
+take the press or stop scrolling. The menu delete control is the same real
+44×44 box. Native sizes are Needs verification on a device. The open menu ring uses
+`figmaButtonStrokeRadius` so both SVG axes share one capsule radius.
+Divider and ring paint are `react-native-svg` `LinearGradient`.
+`experimental_backgroundImage` does not paint on the installed RN Web.
+`FigmaIcon` `image-02` is Hugeicons `Image02Icon`; `image-01` is unchanged.
+
+Figma `4562:32461`/`4563:32768` supply the existing story toolbar and text
+composition. By the user's selected scope, empty story now exposes a virtual
+text input without autofocus; explicit text/heading insertion
+focuses its new block. Inputs grow with content and retain keyboard focus styling
+and browser spellcheck. Gallery list, intermediate picker button and lower back
+button are removed. No additional editor, portal, focus trap or DnD engine.
+
+First-input correction2026-10-27: the virtual empty paragraph uses the same keyed
+`ProductBlockActions`/`StoryTextInput` subtree as the adopted first block. Its key
+passes to the existing story owner when text becomes real; no remount or focus
+repair is needed for the first character. The duplicate hint pill is removed by
+explicit user request; only «Начните писать здесь» remains. The reserved photo
+status row distinguishes «Подготовка фотографий», «Загрузка фотографий» during
+actual sending, and «Сохранение порядка»; its geometry does not change.

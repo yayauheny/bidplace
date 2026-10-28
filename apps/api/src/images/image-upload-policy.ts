@@ -1,7 +1,8 @@
+import { WORK_PHOTO_LIMITS } from '@bidplace/contracts';
 import { BadRequestException } from '@nestjs/common';
 
 export const productImageUploadLimits = {
-  maxFiles: 10,
+  maxFiles: WORK_PHOTO_LIMITS.maxPhotos,
   maxFileBytes: 5 * 1024 * 1024,
   maxTotalBytes: 20 * 1024 * 1024,
 } as const;

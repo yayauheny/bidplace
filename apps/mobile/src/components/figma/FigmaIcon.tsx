@@ -4,6 +4,10 @@ import { HugeiconsIcon } from '@hugeicons/react-native';
 import { Platform } from 'react-native';
 import {
   AiMagicIcon,
+  RotateCwSquareIcon,
+  FlipHorizontalIcon,
+  UndoIcon,
+  Alert02Icon,
   ClipboardCheckIcon,
   ChartLineData01Icon,
   BellIcon,
@@ -29,10 +33,12 @@ import {
   Flag01Icon,
   Link01Icon,
   PencilEdit01Icon,
+  Edit03Icon,
   Delete02Icon,
   FilterHorizontalIcon,
   GoogleIcon,
   Image01Icon,
+  Image02Icon,
   InstagramIcon,
   InternetIcon,
   LockKeyholeIcon,
@@ -72,6 +78,10 @@ const checkIcon = [
 ] as const satisfies typeof Search01Icon;
 
 const icons = {
+  rotate: RotateCwSquareIcon,
+  flip: FlipHorizontalIcon,
+  reset: UndoIcon,
+  alert: Alert02Icon,
   bell: BellIcon,
   'shopping-bag-01': ShoppingBag01Icon,
   'filter-horizontal': FilterHorizontalIcon,
@@ -94,6 +104,7 @@ const icons = {
   'flag-01': Flag01Icon,
   'link-01': Link01Icon,
   'pencil-edit-01': PencilEdit01Icon,
+  'edit-03': Edit03Icon,
   'qr-code-01': QrCode01Icon,
   'lock-keyhole': LockKeyholeIcon,
   'clock-04': Clock04Icon,
@@ -105,6 +116,7 @@ const icons = {
   view: ViewIcon,
   'at-sign': AtSignIcon,
   'image-01': Image01Icon,
+  'image-02': Image02Icon,
   'calendar-01': Calendar01Icon,
   'home-01': Home01Icon,
   'ai-magic': AiMagicIcon,

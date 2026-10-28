@@ -20,9 +20,9 @@
 
 ## Текущий статус
 
-Репозиторий на ветке `feature/portfolio-mvp-release` готовится к первому публичному portfolio MVP.
+Готовится публичный запуск: портфолио автора и прямые продажи (фиксированная цена и аукцион, `DEC-149`). План по волнам — [`docs/launch/README.md`](docs/launch/README.md).
 
-Для агентов и разработчиков: начните с [`docs/AGENT-MAP.md`](docs/AGENT-MAP.md) и [`docs/product/16-PORTFOLIO-ACTIVE-BACKLOG.md`](docs/product/16-PORTFOLIO-ACTIVE-BACKLOG.md). Полный продуктовый индекс — `docs/product/`.
+Для агентов и разработчиков: начните с [`docs/AGENT-MAP.md`](docs/AGENT-MAP.md) и [`docs/launch/README.md`](docs/launch/README.md). Полный продуктовый индекс — `docs/product/`.
 
 Ключевой сценарий MVP:
 
@@ -39,7 +39,7 @@
 Начинать отсюда:
 
 1. [Карта для агентов](docs/AGENT-MAP.md)
-2. [Активный backlog](docs/product/16-PORTFOLIO-ACTIVE-BACKLOG.md)
+2. [План запуска](docs/launch/README.md)
 3. [Канонический индекс](docs/product/00-PROJECT-INDEX.md)
 4. [Продуктовая основа](docs/product/01-PRODUCT-FOUNDATION.md) — при продуктовых изменениях
 5. [MVP RFC](docs/product/05-MVP-RFC.md)

@@ -12,7 +12,12 @@ type Item = {
     id: string;
     publicId: string;
     title: string;
-    images: Array<{ url: string }>;
+    images: Array<{
+      url: string;
+      crop?: import('@bidplace/contracts').PhotoCrop | null;
+      width?: number | null;
+      height?: number | null;
+    }>;
   };
   author: { slug: string };
 };
@@ -47,6 +52,7 @@ export function CreatorWorkCard({
       <WorkCoverCard
         href={`/product/${item.work.publicId}`}
         imageUrl={image?.url ?? ''}
+        imagePresentation={image}
         imageLabel={item.work.title}
         title={item.work.title}
         authorSlug={item.author.slug}
@@ -79,7 +85,10 @@ export function CreatorWorkCard({
               accessibilityLabel={`Скрыть работу ${item.work.title}`}
               onPress={() => onHide(item.work.id)}
               preset="icon"
-              style={[actionStyle(palette), { backgroundColor: palette.danger }]}
+              style={[
+                actionStyle(palette),
+                { backgroundColor: palette.danger },
+              ]}
             >
               <FigmaIcon name="delete-02" size={20} color={palette.white} />
             </MotionPressable>
@@ -92,7 +101,11 @@ export function CreatorWorkCard({
           preset="icon"
           style={actionStyle(palette)}
         >
-          <FigmaIcon name="heart" size={20} strokeWidthPx={designTokens.stroke.iconHeavy} />
+          <FigmaIcon
+            name="heart"
+            size={20}
+            strokeWidthPx={designTokens.stroke.iconHeavy}
+          />
         </MotionPressable>
       </View>
     </View>

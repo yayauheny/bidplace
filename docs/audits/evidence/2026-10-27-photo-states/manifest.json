@@ -1,0 +1,782 @@
+{
+  "runtime_commit": "804fe830",
+  "date": "2026-10-27",
+  "environment": "Local Web, real API/database, media-server R2/CDN transport double; synthetic failure routes and request gates in owner E2E",
+  "count": 86,
+  "screenshots": [
+    {
+      "file": "chromium/after-reload-server-gallery-390.png",
+      "browser": "chromium",
+      "state": "after-reload-server-gallery",
+      "label": "После перезагрузки: только принятые сервером фото",
+      "width": 390,
+      "height": 874,
+      "sha256": "cbedb8f130008d1552d337ee9d370031620d9327945989f1c056c60d31009636"
+    },
+    {
+      "file": "chromium/all-saved-390.png",
+      "browser": "chromium",
+      "state": "all-saved",
+      "label": "Все 10 фото и порядок подтверждены сервером",
+      "width": 390,
+      "height": 874,
+      "sha256": "40c8f312259376b0596d06d9e511c6f365ed1429685020929bb3aa2b135fd5a9"
+    },
+    {
+      "file": "chromium/avatar-390.png",
+      "browser": "chromium",
+      "state": "avatar",
+      "label": "Редактор аватара: круглая область",
+      "width": 390,
+      "height": 874,
+      "sha256": "6efabac10d01a2d18b795a2e5f2305d664f2eb8379e4b447ed9e4fafb84c5a4f"
+    },
+    {
+      "file": "chromium/avatar-processing-error-390.png",
+      "browser": "chromium",
+      "state": "avatar-processing-error",
+      "label": "Редактор аватара: ошибка обработки",
+      "width": 390,
+      "height": 874,
+      "sha256": "b7220790ffeb502d6e341d299f60d695ad8243e23c7cef63eec947b76f58f0c4"
+    },
+    {
+      "file": "chromium/avatar-rotated-390.png",
+      "browser": "chromium",
+      "state": "avatar-rotated",
+      "label": "Редактор аватара: поворот",
+      "width": 390,
+      "height": 874,
+      "sha256": "e8ca37fa07a46660aafee8ae20ee19cc97da27eabcc42377027f406fa04c6928"
+    },
+    {
+      "file": "chromium/avatar-saved-390.png",
+      "browser": "chromium",
+      "state": "avatar-saved",
+      "label": "Профиль после успешного повторного сохранения аватара",
+      "width": 390,
+      "height": 874,
+      "sha256": "6013ce58211024c89ae19f74ba9b834c511f1cdaf43229812d36f381f73c4795"
+    },
+    {
+      "file": "chromium/discard-confirmation-390.png",
+      "browser": "chromium",
+      "state": "discard-confirmation",
+      "label": "Подтверждение отбрасывания при закрытии",
+      "width": 390,
+      "height": 874,
+      "sha256": "1c45a592b8441779fc67fd345fd684bae51e5de012fb00237da9c3bc213d5bbe"
+    },
+    {
+      "file": "chromium/duplicate-390.png",
+      "browser": "chromium",
+      "state": "duplicate",
+      "label": "Отклонён точный дубликат исходного файла",
+      "width": 390,
+      "height": 874,
+      "sha256": "1680413e8e925e8b263d4d9f4b864389a5efb6b3839e5e52f3b1ab7883e16ed4"
+    },
+    {
+      "file": "chromium/editor-1024.png",
+      "browser": "chromium",
+      "state": "editor",
+      "label": "Редактор Work: Кадрировать",
+      "width": 1024,
+      "height": 874,
+      "sha256": "16618e8af3c4f0fb23be776fa6fe870c121a3bd158eb84135bbd819f97ac85d7"
+    },
+    {
+      "file": "chromium/editor-1440.png",
+      "browser": "chromium",
+      "state": "editor",
+      "label": "Редактор Work: Кадрировать",
+      "width": 1440,
+      "height": 874,
+      "sha256": "60b6960d51c063724ada72b4f4965253c71ed3f18c6cda8b80119d43a666e929"
+    },
+    {
+      "file": "chromium/editor-390.png",
+      "browser": "chromium",
+      "state": "editor",
+      "label": "Редактор Work: Кадрировать",
+      "width": 390,
+      "height": 874,
+      "sha256": "ca6a730022cc28fa7255a5270189c5f2ea21c6fd71bf1fd9ccab1ef39248283e"
+    },
+    {
+      "file": "chromium/editor-flipped-390.png",
+      "browser": "chromium",
+      "state": "editor-flipped",
+      "label": "Редактор Work: поворот и отражение",
+      "width": 390,
+      "height": 874,
+      "sha256": "42f70dfcc9db5e3459c3f8ff1be30d28f729f46d2f7c09bd04c7bc535ef4a6f3"
+    },
+    {
+      "file": "chromium/editor-keyboard-focus-390.png",
+      "browser": "chromium",
+      "state": "editor-keyboard-focus",
+      "label": "Редактор Work: фокус рамки с клавиатуры",
+      "width": 390,
+      "height": 874,
+      "sha256": "5dfe75320b837ccbbe6e34a33bb9d2e81f7f9f44ce2213a521a14bbe86cd09e5"
+    },
+    {
+      "file": "chromium/editor-original-390.png",
+      "browser": "chromium",
+      "state": "editor-original",
+      "label": "Редактор Work: режим Оригинал",
+      "width": 390,
+      "height": 874,
+      "sha256": "73353fe4b3df07c22c5b7f2710942cffbea3575e3e1b366466e967b9b99d8279"
+    },
+    {
+      "file": "chromium/editor-processing-error-390.png",
+      "browser": "chromium",
+      "state": "editor-processing-error",
+      "label": "Редактор Work: ошибка обработки, настройки сохранены",
+      "width": 390,
+      "height": 874,
+      "sha256": "220372ac4d79a9997d360eae4f49a49789bb506d4c53791f191f481cbb040625"
+    },
+    {
+      "file": "chromium/editor-reset-390.png",
+      "browser": "chromium",
+      "state": "editor-reset",
+      "label": "Редактор Work: сброс к состоянию открытия",
+      "width": 390,
+      "height": 874,
+      "sha256": "a1088de3ee51544a462d63b529f26e70b198e3bd820438c10ccba75902b5569d"
+    },
+    {
+      "file": "chromium/editor-rotated-390.png",
+      "browser": "chromium",
+      "state": "editor-rotated",
+      "label": "Редактор Work: поворот на 90°",
+      "width": 390,
+      "height": 874,
+      "sha256": "42f70dfcc9db5e3459c3f8ff1be30d28f729f46d2f7c09bd04c7bc535ef4a6f3"
+    },
+    {
+      "file": "chromium/empty-1024.png",
+      "browser": "chromium",
+      "state": "empty",
+      "label": "Пустая сетка",
+      "width": 1024,
+      "height": 874,
+      "sha256": "bb5b7df433c55fe7d97bd6d2458eeadfbe2b9930bf57ff8037b0accdec2fc37c"
+    },
+    {
+      "file": "chromium/empty-1440.png",
+      "browser": "chromium",
+      "state": "empty",
+      "label": "Пустая сетка",
+      "width": 1440,
+      "height": 874,
+      "sha256": "98f654002fbb74f056b7822a4fa726c47fb09c87cfb5ee92f22573b24296c6a8"
+    },
+    {
+      "file": "chromium/empty-390.png",
+      "browser": "chromium",
+      "state": "empty",
+      "label": "Пустая сетка",
+      "width": 390,
+      "height": 874,
+      "sha256": "1f1c7edfda39889b741a438b5fc7048625eb7dd18fe112f43a455cf227ef59bb"
+    },
+    {
+      "file": "chromium/last-row-600.png",
+      "browser": "chromium",
+      "state": "last-row-600",
+      "label": "Частичный успех: низ сетки, короткий экран 600px",
+      "width": 390,
+      "height": 600,
+      "sha256": "846ed2b7ee6902a01686ed5d2784e9a6e03f1db6b5c8a1f3ddddcef2f9fa5261"
+    },
+    {
+      "file": "chromium/last-row-874.png",
+      "browser": "chromium",
+      "state": "last-row-874",
+      "label": "Частичный успех: низ сетки, экран 874px",
+      "width": 390,
+      "height": 874,
+      "sha256": "bffdcd97110f12a6ce085f000734305592edac717c67e0e03406ef478a75bc5f"
+    },
+    {
+      "file": "chromium/last-row-limit-ten-390.png",
+      "browser": "chromium",
+      "state": "last-row-limit-ten",
+      "label": "Лимит 10 фото: низ сетки",
+      "width": 390,
+      "height": 874,
+      "sha256": "975b8bdb64917c8be6cb549aeb093d73b477c2acb8e7c60e80d1d6afb48823cd"
+    },
+    {
+      "file": "chromium/last-row-long-600.png",
+      "browser": "chromium",
+      "state": "last-row-long-600",
+      "label": "Пять фото: низ сетки, короткий экран 600px",
+      "width": 390,
+      "height": 600,
+      "sha256": "cf3bab6c820a86c058286c27ac1b914cc617d5d32088884ca9693648024b3769"
+    },
+    {
+      "file": "chromium/last-row-long-874.png",
+      "browser": "chromium",
+      "state": "last-row-long-874",
+      "label": "Пять фото: низ сетки, экран 874px",
+      "width": 390,
+      "height": 874,
+      "sha256": "4b15026eaf768eebfc68c7b52a34fdf6e0bd1d3777da6c182917c2874da8b045"
+    },
+    {
+      "file": "chromium/last-row-order-save-error-390.png",
+      "browser": "chromium",
+      "state": "last-row-order-save-error",
+      "label": "Ошибка сохранения порядка: баннер внизу сетки",
+      "width": 390,
+      "height": 874,
+      "sha256": "27b7b42a34b3cc38e0af889c1affb5527e343514ec5003cee2ff804d0f8de41d"
+    },
+    {
+      "file": "chromium/limit-ten-390.png",
+      "browser": "chromium",
+      "state": "limit-ten",
+      "label": "Достигнут лимит 10 фото: верх сетки",
+      "width": 390,
+      "height": 874,
+      "sha256": "83b94347ecb49b86ce85c54f69645bd7e865214a6fe1c8fbb6cb07eea4aff797"
+    },
+    {
+      "file": "chromium/one-local-390.png",
+      "browser": "chromium",
+      "state": "one-local",
+      "label": "Одно локальное фото",
+      "width": 390,
+      "height": 874,
+      "sha256": "88f4e523e47b67c5a2e9b9bee9e7294c42c1451aa45edf0e8e1364b4b6587e2a"
+    },
+    {
+      "file": "chromium/order-save-error-390.png",
+      "browser": "chromium",
+      "state": "order-save-error",
+      "label": "Файлы приняты, итоговый порядок не сохранён: верх сетки",
+      "width": 390,
+      "height": 874,
+      "sha256": "12a0ad64ec9721862a6b3bb260eac7817b7cb44ca9ec4ffe3c8a2676ef5b5b1a"
+    },
+    {
+      "file": "chromium/order-saving-390.png",
+      "browser": "chromium",
+      "state": "order-saving",
+      "label": "Сохранение итогового порядка, CTA заблокирована",
+      "width": 390,
+      "height": 874,
+      "sha256": "3559a3ce851f0b762f4be4aa93e6772669797be2795a7bc117ad15db23f73786"
+    },
+    {
+      "file": "chromium/partial-error-1024.png",
+      "browser": "chromium",
+      "state": "partial-error",
+      "label": "Загрузка закончена с частичным успехом: доступен retry",
+      "width": 1024,
+      "height": 900,
+      "sha256": "ede85b3bb63283bfe0fff944a2544465626a977e690d0847c1e96ba7f304c0ef"
+    },
+    {
+      "file": "chromium/partial-error-1440.png",
+      "browser": "chromium",
+      "state": "partial-error",
+      "label": "Загрузка закончена с частичным успехом: доступен retry",
+      "width": 1440,
+      "height": 900,
+      "sha256": "527999a849c716e995cd6b48957dde58598fdc7af3a3463c5900fe8b6f1680bb"
+    },
+    {
+      "file": "chromium/partial-error-320.png",
+      "browser": "chromium",
+      "state": "partial-error",
+      "label": "Загрузка закончена с частичным успехом: доступен retry",
+      "width": 320,
+      "height": 900,
+      "sha256": "551cb09aaac7c7b269b5c08d83e399968a3a27c7301b5f65a89558ef388f5a34"
+    },
+    {
+      "file": "chromium/partial-error-390.png",
+      "browser": "chromium",
+      "state": "partial-error",
+      "label": "Загрузка закончена с частичным успехом: доступен retry",
+      "width": 390,
+      "height": 900,
+      "sha256": "6d520c0cac1bec8426995484d27ea6e23911194b75790c61d7017662517fffcc"
+    },
+    {
+      "file": "chromium/partial-error-414.png",
+      "browser": "chromium",
+      "state": "partial-error",
+      "label": "Загрузка закончена с частичным успехом: доступен retry",
+      "width": 414,
+      "height": 900,
+      "sha256": "4971e3a4cefd338cb3b9127fefdf1edf6b56103bee2487b9f4ee5b78132be364"
+    },
+    {
+      "file": "chromium/partial-error-440.png",
+      "browser": "chromium",
+      "state": "partial-error",
+      "label": "Загрузка закончена с частичным успехом: доступен retry",
+      "width": 440,
+      "height": 900,
+      "sha256": "cf3fdf83cd93360889b888abb6a4784652f0cdb5ed32e154986bb30d14132650"
+    },
+    {
+      "file": "chromium/preparation-390.png",
+      "browser": "chromium",
+      "state": "preparation",
+      "label": "Пять локальных фото до отправки",
+      "width": 390,
+      "height": 874,
+      "sha256": "a1e5b44f25d577c8681564dda34c25c8036ade322a8f760b775f8769500eeb92"
+    },
+    {
+      "file": "chromium/primary-deleted-390.png",
+      "browser": "chromium",
+      "state": "primary-deleted",
+      "label": "Главное фото удалено, следующая карточка стала главной",
+      "width": 390,
+      "height": 874,
+      "sha256": "f8eb9c6a1587543b15b5d53d81359ae974c8fbc69fec98a9c77fff05358dce58"
+    },
+    {
+      "file": "chromium/retry-success-390.png",
+      "browser": "chromium",
+      "state": "retry-success",
+      "label": "Успешный адресный retry: Продолжить доступно",
+      "width": 390,
+      "height": 874,
+      "sha256": "d809b54fd5982839856e5d7f72b482db0071e5545de54d1b56ced2bbfa419f83"
+    },
+    {
+      "file": "chromium/unreadable-source-390.png",
+      "browser": "chromium",
+      "state": "unreadable-source",
+      "label": "Пустой исходный файл: карточка и ошибка",
+      "width": 390,
+      "height": 874,
+      "sha256": "66ee9cf6dddafc9f40bc460527c530bdd5dd2f8d6811eb3c9c1793ca3923f430"
+    },
+    {
+      "file": "chromium/upload-error-390.png",
+      "browser": "chromium",
+      "state": "upload-error",
+      "label": "Одновременно успешные, ошибочный и загружаемый файлы",
+      "width": 390,
+      "height": 874,
+      "sha256": "575f8f87c3a8a41b68603749871f2e7808476299f994ecc33cceffbbf60f130b"
+    },
+    {
+      "file": "chromium/upload-error-idle-390.png",
+      "browser": "chromium",
+      "state": "upload-error-idle",
+      "label": "Ошибка после окончания активной отправки",
+      "width": 390,
+      "height": 874,
+      "sha256": "bffdcd97110f12a6ce085f000734305592edac717c67e0e03406ef478a75bc5f"
+    },
+    {
+      "file": "chromium/uploading-390.png",
+      "browser": "chromium",
+      "state": "uploading",
+      "label": "Отправка пачки, состав заблокирован",
+      "width": 390,
+      "height": 874,
+      "sha256": "0ac8040a83603b0c3484739c8f07eea5fbd272de39b36ee082ad9fc75aa0d1a3"
+    },
+    {
+      "file": "webkit/after-reload-server-gallery-390.png",
+      "browser": "webkit",
+      "state": "after-reload-server-gallery",
+      "label": "После перезагрузки: только принятые сервером фото",
+      "width": 390,
+      "height": 874,
+      "sha256": "9158113a7bb47c8669f55c587bceaf5fbf6b5f908b46323568eff8025066ddc7"
+    },
+    {
+      "file": "webkit/all-saved-390.png",
+      "browser": "webkit",
+      "state": "all-saved",
+      "label": "Все 10 фото и порядок подтверждены сервером",
+      "width": 390,
+      "height": 874,
+      "sha256": "784e527a2a0d74e973c9ef8405ee443d4bc85fc4986249b3be599f7557b4f580"
+    },
+    {
+      "file": "webkit/avatar-390.png",
+      "browser": "webkit",
+      "state": "avatar",
+      "label": "Редактор аватара: круглая область",
+      "width": 390,
+      "height": 874,
+      "sha256": "98e59fbef0b0b324b4aef796c1efb55c5520f006152c1f1a7961dac11db4433c"
+    },
+    {
+      "file": "webkit/avatar-processing-error-390.png",
+      "browser": "webkit",
+      "state": "avatar-processing-error",
+      "label": "Редактор аватара: ошибка обработки",
+      "width": 390,
+      "height": 874,
+      "sha256": "924a0754f5fcc69ba033845bf3f9af55e704df80d1886712947a872b79cb3a63"
+    },
+    {
+      "file": "webkit/avatar-rotated-390.png",
+      "browser": "webkit",
+      "state": "avatar-rotated",
+      "label": "Редактор аватара: поворот",
+      "width": 390,
+      "height": 874,
+      "sha256": "285f3ac856d5a1c29f490158a2a5b3ae4780b92be9d95f993a5fd1465cd9f84c"
+    },
+    {
+      "file": "webkit/avatar-saved-390.png",
+      "browser": "webkit",
+      "state": "avatar-saved",
+      "label": "Профиль после успешного повторного сохранения аватара",
+      "width": 390,
+      "height": 874,
+      "sha256": "8a5cc931b6b018fdf3758121ccbfff495bdd97ec2363fb5a875d9d4750a14f82"
+    },
+    {
+      "file": "webkit/discard-confirmation-390.png",
+      "browser": "webkit",
+      "state": "discard-confirmation",
+      "label": "Подтверждение отбрасывания при закрытии",
+      "width": 390,
+      "height": 874,
+      "sha256": "973d035d11abb480ee0bd7196c402502977d495e922f592b7db860012aa3c8de"
+    },
+    {
+      "file": "webkit/duplicate-390.png",
+      "browser": "webkit",
+      "state": "duplicate",
+      "label": "Отклонён точный дубликат исходного файла",
+      "width": 390,
+      "height": 874,
+      "sha256": "e9791b4ab52b76f368038eb11cc0df42bb01f96ad90ccec2148d34d4a6f17954"
+    },
+    {
+      "file": "webkit/editor-1024.png",
+      "browser": "webkit",
+      "state": "editor",
+      "label": "Редактор Work: Кадрировать",
+      "width": 1024,
+      "height": 874,
+      "sha256": "cfb50ba68e16c55758bc54d66c2df678e6f5290806c8075af13869452587119f"
+    },
+    {
+      "file": "webkit/editor-1440.png",
+      "browser": "webkit",
+      "state": "editor",
+      "label": "Редактор Work: Кадрировать",
+      "width": 1440,
+      "height": 874,
+      "sha256": "0bdcc7a1e8ff3b7ef34936a9638a026ad977f62838a94aab0584687c7048b88c"
+    },
+    {
+      "file": "webkit/editor-390.png",
+      "browser": "webkit",
+      "state": "editor",
+      "label": "Редактор Work: Кадрировать",
+      "width": 390,
+      "height": 874,
+      "sha256": "97f4b9b89710f66256602871c61ec895ef8422fabc5ae9430d53d646eca8c67b"
+    },
+    {
+      "file": "webkit/editor-flipped-390.png",
+      "browser": "webkit",
+      "state": "editor-flipped",
+      "label": "Редактор Work: поворот и отражение",
+      "width": 390,
+      "height": 874,
+      "sha256": "4e50c008fa7a596f3074043a8c0863e28822583ef4aeb76cd25595233ea80ed9"
+    },
+    {
+      "file": "webkit/editor-keyboard-focus-390.png",
+      "browser": "webkit",
+      "state": "editor-keyboard-focus",
+      "label": "Редактор Work: фокус рамки с клавиатуры",
+      "width": 390,
+      "height": 874,
+      "sha256": "4cc866b2ee4cc6fe6649b83cf249283fcf528dd93cbea13e5889ba018c576ce8"
+    },
+    {
+      "file": "webkit/editor-original-390.png",
+      "browser": "webkit",
+      "state": "editor-original",
+      "label": "Редактор Work: режим Оригинал",
+      "width": 390,
+      "height": 874,
+      "sha256": "6b5dca0d060187a3f92e389da31acaa49f56eaea731ddd007e8679e73b18e240"
+    },
+    {
+      "file": "webkit/editor-processing-error-390.png",
+      "browser": "webkit",
+      "state": "editor-processing-error",
+      "label": "Редактор Work: ошибка обработки, настройки сохранены",
+      "width": 390,
+      "height": 874,
+      "sha256": "516499440e80e1cb0e72a9779b251ddc7e6962ec9f7f05fa1e026f4719bb8f5f"
+    },
+    {
+      "file": "webkit/editor-reset-390.png",
+      "browser": "webkit",
+      "state": "editor-reset",
+      "label": "Редактор Work: сброс к состоянию открытия",
+      "width": 390,
+      "height": 874,
+      "sha256": "72f4661cb0aca869f81317759a3b0027dca3f57b51848e178a03b80baeb3f369"
+    },
+    {
+      "file": "webkit/editor-rotated-390.png",
+      "browser": "webkit",
+      "state": "editor-rotated",
+      "label": "Редактор Work: поворот на 90°",
+      "width": 390,
+      "height": 874,
+      "sha256": "4e50c008fa7a596f3074043a8c0863e28822583ef4aeb76cd25595233ea80ed9"
+    },
+    {
+      "file": "webkit/empty-1024.png",
+      "browser": "webkit",
+      "state": "empty",
+      "label": "Пустая сетка",
+      "width": 1024,
+      "height": 874,
+      "sha256": "fb6c68b14920cba15669ed96ad97571e74841ba02a339166b887d2b64ec403c4"
+    },
+    {
+      "file": "webkit/empty-1440.png",
+      "browser": "webkit",
+      "state": "empty",
+      "label": "Пустая сетка",
+      "width": 1440,
+      "height": 874,
+      "sha256": "93043bb308d8f4eac5f3fdf3dfc55313623aaa9e08c2f781ba4813f40de6d388"
+    },
+    {
+      "file": "webkit/empty-390.png",
+      "browser": "webkit",
+      "state": "empty",
+      "label": "Пустая сетка",
+      "width": 390,
+      "height": 874,
+      "sha256": "20b8aed0eaaabfbbb55409f36474d00102da8d41f3d0be6e8a29528581a92ea3"
+    },
+    {
+      "file": "webkit/last-row-600.png",
+      "browser": "webkit",
+      "state": "last-row-600",
+      "label": "Частичный успех: низ сетки, короткий экран 600px",
+      "width": 390,
+      "height": 600,
+      "sha256": "057139293a668f6cc7865aa56edde3f6a1f98084e53ae264398eda8d92cc6b97"
+    },
+    {
+      "file": "webkit/last-row-874.png",
+      "browser": "webkit",
+      "state": "last-row-874",
+      "label": "Частичный успех: низ сетки, экран 874px",
+      "width": 390,
+      "height": 874,
+      "sha256": "9b2c94706312255b0f0bc714e158016f425c97141df425a94ad0866fa3fa4b39"
+    },
+    {
+      "file": "webkit/last-row-limit-ten-390.png",
+      "browser": "webkit",
+      "state": "last-row-limit-ten",
+      "label": "Лимит 10 фото: низ сетки",
+      "width": 390,
+      "height": 874,
+      "sha256": "690bab2ea47929596c7049057d8fd1ec3d8259474a2dbc4dfdcd2780918cfabc"
+    },
+    {
+      "file": "webkit/last-row-long-600.png",
+      "browser": "webkit",
+      "state": "last-row-long-600",
+      "label": "Пять фото: низ сетки, короткий экран 600px",
+      "width": 390,
+      "height": 600,
+      "sha256": "f43431adaa4bdc42c9460f49b38b869b6eca7bb9a169648197dde3a35aaf384b"
+    },
+    {
+      "file": "webkit/last-row-long-874.png",
+      "browser": "webkit",
+      "state": "last-row-long-874",
+      "label": "Пять фото: низ сетки, экран 874px",
+      "width": 390,
+      "height": 874,
+      "sha256": "aebdc647fdcff38da922def7680b2211464cc7541d8f68e04ced06d7a918a6ea"
+    },
+    {
+      "file": "webkit/last-row-order-save-error-390.png",
+      "browser": "webkit",
+      "state": "last-row-order-save-error",
+      "label": "Ошибка сохранения порядка: баннер внизу сетки",
+      "width": 390,
+      "height": 874,
+      "sha256": "8bba480e2cc14ba47953c4e4abfdb38ef9642492e02e21181ad42133bbd2c899"
+    },
+    {
+      "file": "webkit/limit-ten-390.png",
+      "browser": "webkit",
+      "state": "limit-ten",
+      "label": "Достигнут лимит 10 фото: верх сетки",
+      "width": 390,
+      "height": 874,
+      "sha256": "e9b1ff39f8501fc6fffe4f6d14b1fac2f0c561c41de8406d91925de1b960c6e2"
+    },
+    {
+      "file": "webkit/one-local-390.png",
+      "browser": "webkit",
+      "state": "one-local",
+      "label": "Одно локальное фото",
+      "width": 390,
+      "height": 874,
+      "sha256": "42eac8e88e4931f86f48ffb75e8556967eab37d924d2d18f7934caab68e682a0"
+    },
+    {
+      "file": "webkit/order-save-error-390.png",
+      "browser": "webkit",
+      "state": "order-save-error",
+      "label": "Файлы приняты, итоговый порядок не сохранён: верх сетки",
+      "width": 390,
+      "height": 874,
+      "sha256": "2bd222d38e337bfb4770a7881206cb7ef0ccc5dd86bd3502ef1d23dd94f47db8"
+    },
+    {
+      "file": "webkit/order-saving-390.png",
+      "browser": "webkit",
+      "state": "order-saving",
+      "label": "Сохранение итогового порядка, CTA заблокирована",
+      "width": 390,
+      "height": 874,
+      "sha256": "293f1cd966ef949a32bf02c59c0b3f2bea13e2c1c39383ce0161eb5ec53a3b8b"
+    },
+    {
+      "file": "webkit/partial-error-1024.png",
+      "browser": "webkit",
+      "state": "partial-error",
+      "label": "Загрузка закончена с частичным успехом: доступен retry",
+      "width": 1024,
+      "height": 900,
+      "sha256": "0366e5471225add43a814b3702081515ae46011263f557a328265fc227537bea"
+    },
+    {
+      "file": "webkit/partial-error-1440.png",
+      "browser": "webkit",
+      "state": "partial-error",
+      "label": "Загрузка закончена с частичным успехом: доступен retry",
+      "width": 1440,
+      "height": 900,
+      "sha256": "bba8bddfcc5bf2ccafdd3693a2df43712489f245632906b84acee533f05f8ec9"
+    },
+    {
+      "file": "webkit/partial-error-320.png",
+      "browser": "webkit",
+      "state": "partial-error",
+      "label": "Загрузка закончена с частичным успехом: доступен retry",
+      "width": 320,
+      "height": 900,
+      "sha256": "25a161ea714d26f1258ad086e09ffe9810a5d9b47efdc6129ce6120bf679d515"
+    },
+    {
+      "file": "webkit/partial-error-390.png",
+      "browser": "webkit",
+      "state": "partial-error",
+      "label": "Загрузка закончена с частичным успехом: доступен retry",
+      "width": 390,
+      "height": 900,
+      "sha256": "39238e6f53bc41b741df929dee68bb55af9bebecb98362408bca6e866bfa16bd"
+    },
+    {
+      "file": "webkit/partial-error-414.png",
+      "browser": "webkit",
+      "state": "partial-error",
+      "label": "Загрузка закончена с частичным успехом: доступен retry",
+      "width": 414,
+      "height": 900,
+      "sha256": "0ad246bc74ebb2d2571900689baf2f25831a0b167ecfbf781df5dd3b36e07758"
+    },
+    {
+      "file": "webkit/partial-error-440.png",
+      "browser": "webkit",
+      "state": "partial-error",
+      "label": "Загрузка закончена с частичным успехом: доступен retry",
+      "width": 440,
+      "height": 900,
+      "sha256": "ec49a64da290181193decaec79972adddc869925460a27c44c13d5b3efb7f486"
+    },
+    {
+      "file": "webkit/preparation-390.png",
+      "browser": "webkit",
+      "state": "preparation",
+      "label": "Пять локальных фото до отправки",
+      "width": 390,
+      "height": 874,
+      "sha256": "05bb53b4ed5cf53b8109e1d62838fb4aacbd6f0a9af5fd3b0be3c278400120f2"
+    },
+    {
+      "file": "webkit/primary-deleted-390.png",
+      "browser": "webkit",
+      "state": "primary-deleted",
+      "label": "Главное фото удалено, следующая карточка стала главной",
+      "width": 390,
+      "height": 874,
+      "sha256": "43d4919e0111a76853486554c72f4ab32afc4b2e2951c04543d83b5c353a7566"
+    },
+    {
+      "file": "webkit/retry-success-390.png",
+      "browser": "webkit",
+      "state": "retry-success",
+      "label": "Успешный адресный retry: Продолжить доступно",
+      "width": 390,
+      "height": 874,
+      "sha256": "557e7b4c666470802ca7ce3f09913459abab62316127f876e946991524018d8c"
+    },
+    {
+      "file": "webkit/unreadable-source-390.png",
+      "browser": "webkit",
+      "state": "unreadable-source",
+      "label": "Пустой исходный файл: карточка и ошибка",
+      "width": 390,
+      "height": 874,
+      "sha256": "a9dfe7b0b5e921daaa7fe9c11be5d29d7caff01c6feee826875239431fd16ad7"
+    },
+    {
+      "file": "webkit/upload-error-390.png",
+      "browser": "webkit",
+      "state": "upload-error",
+      "label": "Одновременно успешные, ошибочный и загружаемый файлы",
+      "width": 390,
+      "height": 874,
+      "sha256": "f3d12adf475676f7a85bae8b22e14fdc558701f060ce988c486b40ad03734e10"
+    },
+    {
+      "file": "webkit/upload-error-idle-390.png",
+      "browser": "webkit",
+      "state": "upload-error-idle",
+      "label": "Ошибка после окончания активной отправки",
+      "width": 390,
+      "height": 874,
+      "sha256": "9b2c94706312255b0f0bc714e158016f425c97141df425a94ad0866fa3fa4b39"
+    },
+    {
+      "file": "webkit/uploading-390.png",
+      "browser": "webkit",
+      "state": "uploading",
+      "label": "Отправка пачки, состав заблокирован",
+      "width": 390,
+      "height": 874,
+      "sha256": "713d2776e2841dc502e87c71f6ddd712fc86affd9dc94fe8af8cc9ba53b2f369"
+    }
+  ]
+}

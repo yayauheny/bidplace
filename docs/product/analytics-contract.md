@@ -1,7 +1,7 @@
 # bidplace — Analytics contract
 
 Status: Confirmed for the accepted foundation scope, 2026-10-23. Implementation
-and deployment evidence: [analytics audit](../audits/current/2026-10-23-ANALYTICS-FOUNDATION.md).
+and deployment evidence: analytics audit.
 Definitions: [metrics owner](analytics-metrics.md). Earlier legacy scope: `DEC-046`, `DEC-067`.
 
 ## New public web collection — version 2

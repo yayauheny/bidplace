@@ -32,9 +32,15 @@ export function FigmaTabs({
   fill = false,
   selection = false,
   variant = 'underline',
+  appearance = 'glass',
 }: FigmaTabsProps) {
   const palette = useAppTheme();
   const segmented = variant === 'segmented';
+  // Plain segmented control, Figma 7345:722. Glass consumers retain their rail.
+  const plain = segmented && appearance === 'plain';
+  const tabHeight = plain ? 36 : searchChromeTokens.tab.height;
+  const railPadding = plain ? 2 : searchChromeTokens.rail.padding;
+  const railGap = plain ? 0 : searchChromeTokens.rail.gap;
   const { layout, onLayout } = useCssBorderBox();
   const reduced = useReducedMotion();
   const index = Math.max(
@@ -51,15 +57,11 @@ export function FigmaTabs({
   }, [index, position, reduced, segmented]);
   const width = Math.max(
     0,
-    (layout.width -
-      2 * searchChromeTokens.rail.padding -
-      (tabs.length - 1) * searchChromeTokens.rail.gap) /
+    (layout.width - 2 * railPadding - (tabs.length - 1) * railGap) /
       tabs.length,
   );
   const indicatorStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateX: position.value * (width + searchChromeTokens.rail.gap) },
-    ],
+    transform: [{ translateX: position.value * (width + railGap) }],
   }));
   const select = (index: number) => {
     onChange(tabs[index].value);
@@ -93,13 +95,11 @@ export function FigmaTabs({
       accessibilityRole={selection ? 'toolbar' : 'tablist'}
       accessibilityLabel={label}
       contentContainerStyle={{
-        gap: segmented ? searchChromeTokens.rail.gap : designTokens.space.x2,
+        gap: segmented ? railGap : designTokens.space.x2,
         flexGrow: 1,
         justifyContent: align === 'center' ? 'center' : 'flex-start',
-        paddingHorizontal: segmented
-          ? searchChromeTokens.rail.padding
-          : contentInset,
-        paddingVertical: segmented ? searchChromeTokens.rail.padding : 0,
+        paddingHorizontal: segmented ? railPadding : contentInset,
+        paddingVertical: segmented ? railPadding : 0,
       }}
     >
       {segmented && width > 0 ? (
@@ -109,10 +109,10 @@ export function FigmaTabs({
           style={[
             {
               position: 'absolute',
-              left: searchChromeTokens.rail.padding,
-              top: searchChromeTokens.rail.padding,
+              left: railPadding,
+              top: railPadding,
               width,
-              height: searchChromeTokens.tab.height,
+              height: tabHeight,
               borderRadius: searchChromeTokens.tab.radius,
               backgroundColor: palette.mutedFill,
             },
@@ -151,9 +151,9 @@ export function FigmaTabs({
               ? {
                   flex: 1,
                   minWidth: 0,
-                  height: searchChromeTokens.tab.height,
+                  height: tabHeight,
                   borderRadius: searchChromeTokens.tab.radius,
-                  borderWidth: searchChromeTokens.strokeWidth,
+                  borderWidth: plain ? 0 : searchChromeTokens.strokeWidth,
                   borderColor: palette.surface,
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -168,9 +168,25 @@ export function FigmaTabs({
           }
         >
           <AppText
-            role={segmented ? 'body' : 'profileTab'}
-            style={segmented ? searchChromeTokens.tab.typography : undefined}
-            tone={segmented || value === tab.value ? 'default' : 'subdued'}
+            role={
+              plain
+                ? value === tab.value
+                  ? 'segmentSelected'
+                  : 'segmentLabel'
+                : segmented
+                  ? 'body'
+                  : 'profileTab'
+            }
+            style={
+              segmented && !plain
+                ? searchChromeTokens.tab.typography
+                : undefined
+            }
+            tone={
+              (!plain && segmented) || value === tab.value
+                ? 'default'
+                : 'subdued'
+            }
           >
             {tab.label}
             {tab.count !== undefined ? (
@@ -191,8 +207,25 @@ export function FigmaTabs({
       ))}
     </ScrollView>
   );
-  return segmented ? (
-    <FigmaSearchGlass testID="segmented-tabs" kind="rail" style={{ width: '100%' }}>
+  return segmented && plain ? (
+    <View
+      testID="plain-segmented-tabs"
+      style={{
+        height: 42,
+        borderWidth: 1,
+        borderColor: palette.border,
+        borderRadius: 22,
+        overflow: 'hidden',
+      }}
+    >
+      {content}
+    </View>
+  ) : segmented ? (
+    <FigmaSearchGlass
+      testID="segmented-tabs"
+      kind="rail"
+      style={{ width: '100%' }}
+    >
       {content}
     </FigmaSearchGlass>
   ) : (

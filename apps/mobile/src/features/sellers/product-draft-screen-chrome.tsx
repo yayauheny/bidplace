@@ -80,7 +80,10 @@ export function ProductDraftScreenChrome({
         <View style={{ gap: designTokens.space.x2 }}>
           <View
             style={{
-              height: Platform.OS === 'web' ? designTokens.authorApplication.chromeFrame : designTokens.size.touch,
+              height:
+                Platform.OS === 'web'
+                  ? designTokens.authorApplication.chromeFrame
+                  : designTokens.size.touch,
               flexDirection: 'row',
               alignItems: 'center',
               justifyContent: 'space-between',
@@ -148,7 +151,7 @@ export function ProductDraftScreenChrome({
                 ? 'Работа отправлена'
                 : [
                     'Основная информация',
-                    'Фотографии',
+                    'Подготовка фотографий',
                     'История создания',
                     'Проверка',
                   ][wizardStep - 1]}

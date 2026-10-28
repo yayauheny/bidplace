@@ -1,3 +1,4 @@
+import { STORY_LIMITS } from '@bidplace/contracts';
 import type { MediaPurpose } from '@bidplace/database';
 import { BadRequestException, Injectable } from '@nestjs/common';
 import sharp, { type Metadata } from 'sharp';
@@ -30,11 +31,13 @@ export class SharpImageProcessor extends ImageProcessor {
       const maxInputBytes =
         purpose === 'WORK_IMAGE' && !preserveSource
           ? workImageMaxInputBytes
-          : productImageUploadLimits.maxFileBytes;
+          : purpose === 'STORY_IMAGE' && !preserveSource
+            ? STORY_LIMITS.maxFileBytes
+            : productImageUploadLimits.maxFileBytes;
       const metadata = await validateImage(
         file,
         maxInputBytes,
-        purpose === 'WORK_IMAGE' && !preserveSource
+        (purpose === 'WORK_IMAGE' || purpose === 'STORY_IMAGE') && !preserveSource
           ? workImageInputPixelBudgets
           : productImagePixelBudgets,
       );

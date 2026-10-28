@@ -27,9 +27,28 @@ describe('Work upload identity', () => {
       .mockImplementation(async (_url, init) => {
         requests.push(init!);
         if (requests.length === 2) throw new Error('response lost');
-        return new Response(JSON.stringify({ ok: true }), {
-          headers: { 'Content-Type': 'application/json' },
-        });
+        const index = new Headers(init?.headers)
+          .get('Idempotency-Key')
+          ?.endsWith(':1')
+          ? '2'
+          : '1';
+        return new Response(
+          JSON.stringify({
+            ok: true,
+            photos: [
+              {
+                revisionId: '81111111-1111-4111-8111-111111111111',
+                slotId: `82222222-2222-4222-8222-22222222222${index}`,
+                imageId: `83333333-3333-4333-8333-33333333333${index}`,
+                version: 0,
+                crop: null,
+              },
+            ],
+          }),
+          {
+            headers: { 'Content-Type': 'application/json' },
+          },
+        );
       });
     const client = createImagesClient(
       createRequestContext({ baseUrl: 'https://api.example.test', fetchImpl }),
@@ -76,6 +95,7 @@ describe('Work story image lifecycle', () => {
         'work-id',
         new Blob(['image'], { type: 'image/png' }),
         'one-upload',
+        '82222222-2222-4222-8222-222222222222',
       ),
     ).toEqual({
       mediaAssetId: id,
@@ -87,6 +107,9 @@ describe('Work story image lifecycle', () => {
     expect(requests[0]?.init.method).toBe('POST');
     expect(new Headers(requests[0]?.init.headers).get('Idempotency-Key')).toBe(
       'one-upload',
+    );
+    expect(new Headers(requests[0]?.init.headers).get('X-Photo-Revision')).toBe(
+      '82222222-2222-4222-8222-222222222222',
     );
     expect(requests[0]?.init.body).toBeInstanceOf(FormData);
     expect((requests[0]?.init.body as FormData).getAll('image')).toHaveLength(

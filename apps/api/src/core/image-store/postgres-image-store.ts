@@ -38,6 +38,7 @@ function storedObject(
 
 @Injectable()
 export class PostgresImageStore extends ImageStore {
+  override readonly transactionalWrites = true;
   constructor(private readonly prisma: PrismaService) {
     super();
   }

@@ -18,7 +18,7 @@ disposable test data очищаются до public pilot. Варианты D01�
 остаются в
 [итоговый юридический аудит](../legal/00-FINAL-LEGAL-AUDIT.md).
 Развёрнутые технические альтернативы сохранены отдельно в
-[`01-OPEN-ARCHITECTURE-GAPS.md`](../audits/01-OPEN-ARCHITECTURE-GAPS.md).
+`01-OPEN-ARCHITECTURE-GAPS.md`.
 
 ## Рекомендуемый выбор
 

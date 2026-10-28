@@ -10,7 +10,8 @@ import { useReducedMotion } from '../../lib/reduced-motion';
 import { useAppTheme } from '../../providers/theme-provider';
 import { coverHitDataset } from '../ui/interactive-hit-style';
 import { MotionPressable } from '../ui/MotionPressable';
-import { ResilientRemoteImage } from '../ui/ResilientRemoteImage';
+import type { Product } from '@bidplace/contracts';
+import { CroppedPhoto } from '../shared/CroppedPhoto';
 import { FigmaChip } from './FigmaChip';
 import { CoverFrost } from './CoverFrost';
 import {
@@ -65,6 +66,7 @@ export function WorkCoverCaption({
 export function WorkCoverCard({
   href,
   imageUrl,
+  imagePresentation,
   imageLabel,
   title,
   authorSlug,
@@ -74,6 +76,9 @@ export function WorkCoverCard({
 }: {
   href: `/product/${string}` | `/products/${string}`;
   imageUrl: string;
+  imagePresentation?: Partial<
+    Pick<Product['images'][number], 'url' | 'crop' | 'width' | 'height'>
+  >;
   imageLabel: string;
   title: string;
   authorSlug: string;
@@ -103,16 +108,17 @@ export function WorkCoverCard({
         >
           {({ hovered, focused }) => (
             <>
-              <View
-                style={coverCaptionCardFrameStyle(palette)}
-              >
+              <View style={coverCaptionCardFrameStyle(palette)}>
                 <View
                   style={coverArtworkFrameStyle(
                     !reducedMotion && (hovered || focused),
                     designTokens.radius.ownerCard,
                   )}
                 >
-                  <ResilientRemoteImage
+                  <CroppedPhoto
+                    crop={imagePresentation?.crop}
+                    sourceWidth={imagePresentation?.width}
+                    sourceHeight={imagePresentation?.height}
                     uri={getApiAssetUrl(imageUrl)}
                     component="WorkCoverCard"
                     accessibilityLabel={imageLabel}
@@ -154,7 +160,10 @@ export function WorkCoverCard({
                   !reducedMotion && (hovered || focused),
                 )}
               >
-                <ResilientRemoteImage
+                <CroppedPhoto
+                  crop={imagePresentation?.crop}
+                  sourceWidth={imagePresentation?.width}
+                  sourceHeight={imagePresentation?.height}
                   uri={getApiAssetUrl(imageUrl)}
                   component="WorkCoverCard"
                   accessibilityLabel={imageLabel}
@@ -169,10 +178,7 @@ export function WorkCoverCard({
               style={{ flex: 1, justifyContent: 'flex-end' }}
             >
               <View style={coverFrostZoneStyle()}>
-                <CoverFrost
-                  placement="workBottom"
-                  blurTarget={blurTarget}
-                />
+                <CoverFrost placement="workBottom" blurTarget={blurTarget} />
                 <View style={coverOverlayPadStyle()}>
                   <Text
                     numberOfLines={2}

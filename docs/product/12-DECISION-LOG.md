@@ -2121,7 +2121,7 @@ Portfolio Rules/Privacy are pending and do not stop technical implementation.
 
 Confirmed choices are not evidence of implementation. Current runtime still
 uses one ImageStore bucket and API media reads. Exact phased plan and remaining
-operational inputs: [R2/CDN second pass](../audits/2026-10-04-R2-MEDIA-IMPLEMENTATION-PLAN.md).
+operational inputs: R2/CDN second pass.
 Lazy FULL generation is not implicitly selected by the lazy loading requirement.
 
 ## DEC-098 — Cloudflare application deployment boundary
@@ -2684,7 +2684,7 @@ require a bounded implementation plan; the proposed 5/20 limits are not approved
 merely by accepting the block editor.
 
 Contract owner: [05-MVP-RFC.md](05-MVP-RFC.md). Execution plan:
-[author/story backend](../archive/tasks/2026-10-11-author-story-backend/PLAN.md).
+author/story backend.
 Deferred trade screens and video: [15-POST-MVP-BACKLOG.md](15-POST-MVP-BACKLOG.md).
 
 ## DEC-113 — Shared approved classifiers now; user proposals after MVP
@@ -2705,7 +2705,7 @@ in [15-POST-MVP-BACKLOG.md §5](15-POST-MVP-BACKLOG.md#5-медиа-и-creator-p
 This does not approve an arbitrary initial category list from an attached proposal.
 
 Contract owner: [05-MVP-RFC.md](05-MVP-RFC.md). Execution plan:
-[author/story backend](../archive/tasks/2026-10-11-author-story-backend/PLAN.md).
+author/story backend.
 
 ## DEC-114 — Country selection hides codes; city is optional
 
@@ -2725,7 +2725,7 @@ public author/work projections, search/facets and their consumers together.
 The old country strings need an explicit migration mapping, not silent guessing.
 
 Contract owner: [05-MVP-RFC.md](05-MVP-RFC.md). Execution plan:
-[author/story backend](../archive/tasks/2026-10-11-author-story-backend/PLAN.md).
+author/story backend.
 
 ## DEC-115 — Next wave adds sales; one complete post-MVP plan
 
@@ -2786,7 +2786,7 @@ Story limits are five images, twenty heading and paragraph blocks together,
 story-photo budget. An empty story and an image-only story are valid.
 
 Contract owner: [05-MVP-RFC.md](05-MVP-RFC.md). Client follow-up:
-[UI-HANDOFF.md](../archive/tasks/2026-10-11-author-story-backend/UI-HANDOFF.md).
+UI-HANDOFF.md.
 
 ---
 
@@ -3010,7 +3010,7 @@ relations требуют отдельного backend/security-плана пер
 Не менять server permissions ради визуального сходства.
 
 Дизайн/implementation handoff:
-[2026-10-19-account-ui](../archive/tasks/2026-10-19-account-ui/README.md).
+2026-10-19-account-ui.
 
 ## DEC-124 — Одно явное подтверждение регистрации
 
@@ -3078,7 +3078,7 @@ MVP-ограничения сохраняются. Общие FilterOptionRow �
 состояниями normal/pressed/disabled. Избранное/подписки и их экраны остаются после
 MVP; показ макета выбранного состояния не является решением включить backend.
 
-Implementation status: [author parity audit](../audits/current/2026-10-21-AUTHOR-PROFILE-PARITY.md).
+Implementation status: author parity audit.
 
 
 ### DEC-129 — Public desktop navigation threshold (2026-10-21)
@@ -3142,7 +3142,7 @@ Google -> email-код ведёт в тот же профиль. Email -> Google
 ником и подтверждением документов. Реальный email остаётся обязательным.
 
 Статус кода: Not implemented. Архитектура, порядок работ и проверки — в
-[задании auth/media](../tasks/2026-10-22-auth-media-handoff.md).
+задании auth/media.
 
 
 ## DEC-134 — Упростить MVP auth при сохранении базовой защиты
@@ -3356,3 +3356,104 @@ route управляет толщиной. Add остаётся 1.6px; Home/Prof
 Неактивный Search — 1.3px, Add в покое — 1.6px; оба frame 24px. Исходные Hugeicons
 outline, без заливок и масок; используется existing MotionPressable pressed state.
 Владелец — [design system](../design/03-DESIGN-SYSTEM.md).
+
+## DEC-148 — Photo Workflow MVP: crop, order and recovery
+
+Date: 2026-10-26
+Status: Confirmed
+Source: explicit founder approval of Q1–Q5 in Photo Workflow implementation chat
+Extends: `DEC-131`, `DEC-132`
+
+- Work retains the full file after rotate/flip. A nullable crop belongs to the
+  image of a particular revision, in coordinates of that transformed full file;
+  the server validates it. Cards use the crop; the full-screen viewer uses the
+  complete image. Crop-only edits do not upload/re-encode the image. Published
+  revisions remain isolated through existing moderation.
+- Reset restores the state at editor opening, including its starting crop.
+  Cancel discards only the current opening's edits. Reopened saved photos start
+  from the current server version; no original/history archive is introduced.
+- File selection stays local until explicit upload. Failures do not stop other
+  files; each failed card retains its place and has its own retry. The selected
+  first card remains the cover. Removing it promotes the next card. Continue
+  requires no unresolved errors and confirmation of the saved server order.
+- Preparing/uploading/final-order saving locks composition, editing, adding and
+  reordering. Closing remains available and does not undo accepted uploads.
+- Duplicate detection compares exact original selected bytes within the current
+  preparation session only. Names/sizes are not proof. Removing a card permits
+  reselecting its file. Retry and replacing one's own slot are not additions.
+- Recovery is scoped to user/Work and the current app process (Web: until tab
+  reload). Closing retains files/order/operation keys/server IDs; explicit
+  confirmed discard clears local edits. Logout/account change clears private
+  state and owned resources. Lost responses reconcile by operation key/ID, never
+  position. After restart use the server gallery and reselect unsent files;
+  unfinished local order is not guaranteed across restart.
+
+Native device verification, crop implementation and safe replacement are
+implementation acceptance work, not confirmed completed behavior.
+
+## DEC-149 — Запуск включает прямые продажи: фиксированная цена и аукцион
+
+Date: 2026-10-28
+Status: Confirmed
+Source: explicit founder answers Q1–Q28 in the launch-planning chat
+Revises: `DEC-082` (launch scope is no longer portfolio-only); `DEC-123` (favorite
+works enter the launch)
+Refines: `DEC-115` (the sales wave is the launch; its plan lives in `docs/launch/`)
+
+- Every Work has one mode: portfolio, fixed price or auction. The author changes
+  mode by ending a listing and creating a new one; the Work and its story stay.
+- bidplace is a technological intermediary: no payments, escrow, delivery or
+  commission. Wording must not present bids as gambling.
+- Auction: start price, optional scheduled start, 1–14 days, server step table,
+  soft close, no reserve, no buy-now and no autobids. Bids are irrevocable; the
+  author may cancel only before the first bid.
+- Fixed price: the first buyer creates an order; the author may withdraw the
+  listing before a purchase.
+- Public labels: «Забронировано» while an order is open, «Продано» after the
+  author confirms the deal or after 14 days of automatic completion.
+- Second chance: the author's «Предложить следующему» offers the Work to the 2nd,
+  then 3rd bidder at their own bid, 48 hours each.
+- Orders carry a number, a 6-digit deal code, both parties' contacts, a buyer
+  comment, a seller note and a receipt image. Phone is optional; no SMS.
+- Anti-abuse: at most 3 open orders per buyer; 2 strikes block buying; seller
+  strikes come only from upheld reports. Trust signals are real counts, not ratings.
+- Reports use one generic table; the launch UI reports orders only. Support is a
+  Telegram link. Listings are not pre-moderated.
+- Email: mandatory transactional messages plus optional «outbid» (on by default).
+  The header shows an attention dot from a derived list; no notification feed.
+- Currency: BYN or RUB, stored as integer minor units.
+- Scheduled work runs from a Cloudflare Cron trigger through one internal tick.
+- Share export: Story, Post, Square and Original formats, rendered on the client.
+- Header animations ship at launch, mobile first. Tests are trimmed per wave.
+
+Mechanics, data, races and open defaults C1–C6:
+[COMMERCE.md](../launch/COMMERCE.md). Order of work: [launch plan](../launch/README.md).
+Nothing here is implemented yet; runtime status lives in `11-PROJECT-STATUS.md`.
+
+
+## DEC-151 — Story/Work photo limits unified
+
+Date: 2026-10-28
+Status: Confirmed contract; implementation acceptance Partial
+Source: explicit instruction to execute W0 photo Tasks 1–4 and related Task 6.
+Number: `DEC-151`. Published `DEC-150` on `fix/launch-docs-review` (`54925364`) is the deals decision and stays that number.
+Revises: `DEC-116` story file/aggregate budget; `DEC-148` session byte-deduplication clause.
+
+Gallery and story use the same client preparation: 3840px, 10 MiB output,
+25 MiB source, quality 0.85; PNG remains PNG. Avatar keeps 1600px / 2 MiB.
+Server story input is 10 MiB, gallery input remains 25 MiB; both use
+8192px / 50_331_648 input pixels and a 5 MiB stored master. The separate
+20 MiB story-photo aggregate budget is removed. Story keeps five image blocks,
+twenty text blocks and 200/5000/300 character limits; gallery keeps ten photos.
+Client source SHA-256/session duplicate rejection and v1 story restore are removed;
+server operation identity and input-checksum conflict checks remain authoritative.
+
+Unused story-owned holds are released by the server in the locked story-save
+transaction and queued through the existing cleanup owner. Gallery assets and
+other revisions are excluded. Media operations stop at twenty attempts without
+clearing `nextAttemptAt`. No migration, shared-byte lookup (`DEC-112`), story CDN,
+Cron move, native acceptance or main/CI/deploy cutover is included.
+
+Owners: [RFC §10](05-MVP-RFC.md#10-создание-work),
+[architecture](10-CODE-ARCHITECTURE.md), [status](11-PROJECT-STATUS.md),
+[W0 verification journal](../launch/waves/W0-photo-and-trunk.md#журнал-исполнения-2026-10-28).

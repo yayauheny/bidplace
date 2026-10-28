@@ -37,7 +37,11 @@ import {
   type PublicWorkFacetRow,
 } from './products-catalog.query';
 import { missingProductApprovalFields } from './product-requirements';
-import { copyRevisionStory, readStory, replaceProductStory } from './product-story';
+import {
+  copyRevisionStory,
+  readStory,
+  replaceProductStory,
+} from './product-story';
 import { assertSelectableCategory, syncWorkSelection } from './work-selection';
 import {
   assertProductWritable,
@@ -290,6 +294,7 @@ export class ProductsService {
                   data: published.images.map((image) => ({
                     imageId: image.imageId,
                     position: image.position,
+                    crop: image.crop ?? Prisma.DbNull,
                   })),
                 },
               },
@@ -677,11 +682,17 @@ export class ProductsService {
           },
         });
         if (nextStatus === 'APPROVED') {
-          await tx.auditEvent.create({ data: {
-            actorUserId: userId, targetType: 'PRODUCT', targetId: id,
-            action: 'PUBLICATION_COMPLETED', revisionId: product.publishedRevisionId,
-            oldStatus: product.status, newStatus: 'APPROVED',
-          } });
+          await tx.auditEvent.create({
+            data: {
+              actorUserId: userId,
+              targetType: 'PRODUCT',
+              targetId: id,
+              action: 'PUBLICATION_COMPLETED',
+              revisionId: product.publishedRevisionId,
+              oldStatus: product.status,
+              newStatus: 'APPROVED',
+            },
+          });
         }
 
         const updated = await tx.product.findUniqueOrThrow({
@@ -754,6 +765,7 @@ export class ProductsService {
         throw new ConflictException('Product revision cannot be edited');
       }
       return replaceProductStory(tx, {
+        media: this.media,
         userId,
         productId,
         revisionId: product.editingRevisionId,

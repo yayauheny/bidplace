@@ -1,5 +1,8 @@
 import { designTokens, type SemanticColorMap } from '@bidplace/design-tokens';
 
+/** Muted circular control from the story/header frames. */
+export const figmaMutedIconButtonFrame = 42;
+
 export function figmaIconButtonStyle(
   pressed: boolean,
   surface: 'plain' | 'muted' | 'outline' | 'destructive' = 'plain',
@@ -11,13 +14,13 @@ export function figmaIconButtonStyle(
       surface === 'outline' || surface === 'destructive'
         ? 38
         : surface === 'muted'
-          ? 42
+          ? figmaMutedIconButtonFrame
           : designTokens.size.iconButton,
     height:
       surface === 'outline' || surface === 'destructive'
         ? 38
         : surface === 'muted'
-          ? 42
+          ? figmaMutedIconButtonFrame
           : designTokens.size.iconButton,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,

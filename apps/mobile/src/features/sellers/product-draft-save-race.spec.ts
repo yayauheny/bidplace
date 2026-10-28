@@ -13,13 +13,27 @@ import { flush, inputValue, setInput } from '../../testing/dom';
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 vi.mock('../../components/figma/FigmaIcon', () => ({ FigmaIcon: () => null }));
 vi.mock('../../components/ui/MotionPressable', () => ({
-  MotionPressable: ({ children, accessibilityLabel, disabled, onPress }: {
-    children?: ReactNode; accessibilityLabel?: string; disabled?: boolean; onPress?: () => void;
-  }) => createElement('button', { 'aria-label': accessibilityLabel, disabled, onClick: onPress }, children),
+  MotionPressable: ({
+    children,
+    accessibilityLabel,
+    disabled,
+    onPress,
+  }: {
+    children?: ReactNode;
+    accessibilityLabel?: string;
+    disabled?: boolean;
+    onPress?: () => void;
+  }) =>
+    createElement(
+      'button',
+      { 'aria-label': accessibilityLabel, disabled, onClick: onPress },
+      children,
+    ),
 }));
 
-
-vi.mock('../../components/shared/PrivateStoryImage', () => ({ PrivateStoryImage: () => null }));
+vi.mock('../../components/shared/PrivateStoryImage', () => ({
+  PrivateStoryImage: () => null,
+}));
 
 const productId = '11111111-1111-4111-8111-111111111111';
 const categoryId = '33333333-3333-4333-8333-333333333333';
@@ -37,7 +51,29 @@ const harness = vi.hoisted(() => ({
   removeImage: vi.fn(),
   pickImages: vi.fn(),
   reorderImages: vi.fn(),
+  imageActions: null as ReturnType<
+    typeof import('./product-draft-image-actions').useProductDraftImageActions
+  > | null,
+  imageSession: null as
+    | import('./product-draft-save').ProductDraftSaveSession
+    | null,
 }));
+
+vi.mock('./product-draft-image-actions', async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import('./product-draft-image-actions')>();
+  return {
+    ...actual,
+    useProductDraftImageActions: (
+      options: Parameters<typeof actual.useProductDraftImageActions>[0],
+    ) => {
+      const actions = actual.useProductDraftImageActions(options);
+      harness.imageActions = actions;
+      harness.imageSession = options.session;
+      return actions;
+    },
+  };
+});
 
 vi.mock('../../components/figma/FigmaIconButton', () => ({
   FigmaIconButton: ({
@@ -118,6 +154,13 @@ vi.mock('./product-catalog-term-sheet', () => ({
 }));
 
 vi.mock('react-native', () => ({
+  Image: ({
+    source,
+    accessibilityLabel,
+  }: {
+    source: { uri: string };
+    accessibilityLabel: string;
+  }) => createElement('img', { src: source.uri, alt: accessibilityLabel }),
   ActivityIndicator: () => createElement('span', { role: 'progressbar' }),
   Platform: { OS: 'web' },
   View: ({ children }: { children?: ReactNode }) =>
@@ -161,8 +204,13 @@ vi.mock('../../providers/api-provider', () => ({
 vi.mock('../../components/layout', () => ({
   AppShell: ({ children }: { children?: ReactNode }) =>
     createElement('div', null, children),
-  FormPageShell: ({ children, bottomAction }: { children?: ReactNode; bottomAction?: ReactNode }) =>
-    createElement('div', null, children, bottomAction),
+  FormPageShell: ({
+    children,
+    bottomAction,
+  }: {
+    children?: ReactNode;
+    bottomAction?: ReactNode;
+  }) => createElement('div', null, children, bottomAction),
   FormPageColumns: ({
     children,
     sidebar,
@@ -268,6 +316,9 @@ function product(title = 'Saved title', dimensions = '') {
     images: [
       {
         id: '55555555-5555-4555-8555-555555555555',
+        slotId: '55555555-5555-4555-8555-555555555555',
+        slotVersion: 0,
+        crop: null,
         position: 0,
         url: '/api/images/55555555-5555-4555-8555-555555555555',
         mimeType: 'image/png',
@@ -353,7 +404,9 @@ async function until(
 
 function findButton(container: ParentNode, label: string) {
   return [...container.querySelectorAll('button')].find(
-    (button) => button.textContent === label || button.getAttribute('aria-label') === label,
+    (button) =>
+      button.textContent === label ||
+      button.getAttribute('aria-label') === label,
   );
 }
 
@@ -364,7 +417,6 @@ function click(container: ParentNode, label: string) {
     target.click();
   });
 }
-
 
 function formIsDirty() {
   const event = new Event('beforeunload', { cancelable: true });
@@ -379,6 +431,8 @@ beforeEach(() => {
     window.history.replaceState({}, '');
     window.dispatchEvent(new PopStateEvent('popstate', { state: {} }));
   });
+  harness.imageActions = null;
+  harness.imageSession = null;
   harness.replace.mockReset();
   harness.setParams.mockReset();
   harness.dispatch.mockReset();
@@ -388,6 +442,7 @@ beforeEach(() => {
   harness.updateProduct.mockReset();
   harness.submitProduct.mockReset();
   harness.addImages.mockReset();
+  harness.addImages.mockResolvedValue({ ok: true });
   harness.removeImage.mockReset();
   harness.pickImages.mockReset();
   harness.pickImages.mockResolvedValue({ canceled: true, assets: [] });
@@ -512,7 +567,7 @@ describe('product draft save reconciliation', () => {
     expect(view.container.textContent).not.toContain(
       'Не удалось сохранить предмет',
     );
-    expect(view.container.textContent).toContain('1/10 изображений');
+    expect(view.container.textContent).toContain('Загружено 1 из 1');
     view.unmount();
   });
 
@@ -845,7 +900,11 @@ describe('product draft save reconciliation', () => {
     click(view.container, 'Сохранить изменения');
     await flush();
     expect(harness.updateProduct).toHaveBeenCalledTimes(1);
-    click(view.container, 'Удалить фото');
+    act(() =>
+      harness.imageActions!.setImagePendingDelete(
+        '55555555-5555-4555-8555-555555555555',
+      ),
+    );
     await flush();
     click(view.container, 'Удалить изображение');
     click(view.container, 'Удалить изображение');
@@ -902,7 +961,11 @@ describe('product draft save reconciliation', () => {
     setInput(view.container, 'Название', 'Revised title');
     click(view.container, 'Сохранить изменения');
     await flush();
-    click(view.container, 'Удалить фото');
+    act(() =>
+      harness.imageActions!.setImagePendingDelete(
+        '55555555-5555-4555-8555-555555555555',
+      ),
+    );
     await flush();
     click(view.container, 'Удалить изображение');
     await act(async () => {
@@ -956,7 +1019,11 @@ describe('product draft save reconciliation', () => {
     setInput(view.container, 'Название', 'Revised title');
     click(view.container, 'Сохранить изменения');
     await flush();
-    click(view.container, 'Удалить фото');
+    act(() =>
+      harness.imageActions!.setImagePendingDelete(
+        '55555555-5555-4555-8555-555555555555',
+      ),
+    );
     await flush();
     click(view.container, 'Удалить изображение');
     await act(async () => {
@@ -972,6 +1039,263 @@ describe('product draft save reconciliation', () => {
     expect(harness.removeImage).not.toHaveBeenCalled();
     view.unmount();
   });
+
+  it('saves an unchanged approved form once before picker and upload', async () => {
+    const approved = detail('Saved title', 'Oil');
+    approved.product.status = 'APPROVED';
+    approved.editingRevision.status = 'APPROVED';
+    harness.getProduct.mockResolvedValue(approved);
+    harness.updateProduct.mockResolvedValue({ product: approved.product });
+    harness.pickImages.mockResolvedValue({
+      canceled: false,
+      assets: [{
+        uri: 'blob:photo',
+        width: 100,
+        height: 100,
+        mimeType: 'image/png',
+        file: new File(['photo'], 'photo.png', { type: 'image/png' }),
+      }],
+    });
+    const view = mount({ productId });
+    try {
+      await until(
+        view.container,
+        () => Boolean(findButton(view.container, 'Добавить изображения')),
+        'images',
+      );
+      click(view.container, 'Добавить изображения');
+      await flush();
+      expect(harness.addImages).not.toHaveBeenCalled();
+      click(view.container, 'Загрузить фото');
+      await until(
+        view.container,
+        () => harness.addImages.mock.calls.length === 1,
+        'upload',
+      );
+      expect(harness.updateProduct).toHaveBeenCalledTimes(1);
+      expect(harness.updateProduct.mock.invocationCallOrder[0]).toBeLessThan(
+        harness.pickImages.mock.invocationCallOrder[0]!,
+      );
+      expect(harness.pickImages.mock.invocationCallOrder[0]).toBeLessThan(
+        harness.addImages.mock.invocationCallOrder[0]!,
+      );
+    } finally {
+      view.unmount();
+    }
+  });
+
+  it('saves edits made after selection before a deferred upload', async () => {
+    const approved = detail('Saved title', 'Oil');
+    approved.product.status = 'APPROVED';
+    approved.editingRevision.status = 'APPROVED';
+    harness.getProduct.mockResolvedValue(approved);
+    harness.updateProduct.mockResolvedValue({ product: approved.product });
+    harness.pickImages.mockResolvedValue({
+      canceled: false,
+      assets: [{
+        uri: 'blob:photo',
+        width: 100,
+        height: 100,
+        mimeType: 'image/png',
+        file: new File(['photo'], 'photo.png', { type: 'image/png' }),
+      }],
+    });
+    const view = mount({ productId });
+    try {
+      await until(
+        view.container,
+        () => Boolean(findButton(view.container, 'Добавить изображения')),
+        'images',
+      );
+      const selected = (await act(() => harness.imageActions!.selectImages()))!;
+      expect(harness.updateProduct).toHaveBeenCalledTimes(1);
+      expect(harness.addImages).not.toHaveBeenCalled();
+      setInput(view.container, 'Название', 'Edited after picker');
+      harness.updateProduct.mockResolvedValue({
+        product: { ...approved.product, title: 'Edited after picker' },
+      });
+      await act(async () => {
+        await Promise.all([
+          harness.imageActions!.startUpload(selected),
+          harness.imageActions!.startUpload(selected),
+        ]);
+      });
+      await until(
+        view.container,
+        () => harness.addImages.mock.calls.length === 1,
+        'upload',
+      );
+      await act(() => harness.imageActions!.startUpload(selected));
+      await flush();
+      expect(harness.addImages).toHaveBeenCalledTimes(1);
+      expect(harness.updateProduct).toHaveBeenCalledTimes(2);
+      expect(harness.updateProduct.mock.calls[1]?.[1]).toMatchObject({
+        title: 'Edited after picker',
+      });
+      expect(harness.updateProduct.mock.invocationCallOrder[1]).toBeLessThan(
+        harness.addImages.mock.invocationCallOrder[0]!,
+      );
+    } finally {
+      view.unmount();
+    }
+  });
+
+  it.each(['success', 'failure', 'newer-edit'] as const)(
+    'waits for a real in-flight save before deferred upload: %s',
+    async (outcome) => {
+      const approved = detail('Saved title', 'Oil');
+      approved.product.status = 'APPROVED';
+      approved.editingRevision.status = 'APPROVED';
+      harness.getProduct.mockResolvedValue(approved);
+      harness.updateProduct.mockResolvedValue({ product: approved.product });
+      harness.pickImages.mockResolvedValue({
+        canceled: false,
+        assets: [{
+          uri: 'blob:photo',
+          width: 100,
+          height: 100,
+          mimeType: 'image/png',
+          file: new File(['photo'], 'photo.png', { type: 'image/png' }),
+        }],
+      });
+      const view = mount({ productId });
+      try {
+        await until(
+          view.container,
+          () => Boolean(findButton(view.container, 'Добавить изображения')),
+          'images',
+        );
+        const selected = (await act(() =>
+          harness.imageActions!.selectImages(),
+        ))!;
+        setInput(view.container, 'Название', 'Saving now');
+        let finish!: () => void;
+        harness.updateProduct.mockImplementationOnce(
+          () =>
+            new Promise((resolve, reject) => {
+              finish = () =>
+                outcome === 'failure'
+                  ? reject(new Error('save failed'))
+                  : resolve({
+                      product: { ...approved.product, title: 'Saving now' },
+                    });
+            }),
+        );
+        click(view.container, 'Сохранить изменения');
+        await until(
+          view.container,
+          () => harness.updateProduct.mock.calls.length === 2,
+          'pending save',
+        );
+        let start!: Promise<void>;
+        act(() => {
+          start = harness.imageActions!.startUpload(selected);
+        });
+        await flush();
+        expect(harness.updateProduct).toHaveBeenCalledTimes(2);
+        expect(harness.addImages).not.toHaveBeenCalled();
+        if (outcome === 'newer-edit') {
+          setInput(view.container, 'Название', 'Latest edit');
+          harness.updateProduct.mockResolvedValue({
+            product: { ...approved.product, title: 'Latest edit' },
+          });
+        }
+        await act(async () => {
+          finish();
+          await start;
+        });
+        await flush();
+        expect(harness.addImages).toHaveBeenCalledTimes(
+          outcome === 'failure' ? 0 : 1,
+        );
+        expect(harness.updateProduct).toHaveBeenCalledTimes(
+          outcome === 'newer-edit' ? 3 : 2,
+        );
+        if (outcome === 'newer-edit') {
+          expect(harness.updateProduct.mock.calls[2]?.[1]).toMatchObject({
+            title: 'Latest edit',
+          });
+          expect(
+            harness.updateProduct.mock.invocationCallOrder[2],
+          ).toBeLessThan(harness.addImages.mock.invocationCallOrder[0]!);
+        }
+      } finally {
+        view.unmount();
+      }
+    },
+  );
+
+  it.each(['session', 'operation', 'product', 'unmount'] as const)(
+    'does not upload after %s changes during a real deferred save',
+    async (reason) => {
+      const approved = detail('Saved title', 'Oil');
+      approved.product.status = 'APPROVED';
+      approved.editingRevision.status = 'APPROVED';
+      harness.getProduct.mockResolvedValue(approved);
+      harness.updateProduct.mockResolvedValue({ product: approved.product });
+      harness.pickImages.mockResolvedValue({
+        canceled: false,
+        assets: [{
+          uri: 'blob:photo',
+          width: 100,
+          height: 100,
+          mimeType: 'image/png',
+          file: new File(['photo'], 'photo.png', { type: 'image/png' }),
+        }],
+      });
+      const view = mount({ productId });
+      try {
+        await until(
+          view.container,
+          () => Boolean(findButton(view.container, 'Добавить изображения')),
+          'images',
+        );
+        const selected = (await act(() =>
+          harness.imageActions!.selectImages(),
+        ))!;
+        setInput(view.container, 'Название', 'Deferred edit');
+        let finish!: () => void;
+        harness.updateProduct.mockImplementationOnce(
+          () =>
+            new Promise((resolve) => {
+              finish = () =>
+                resolve({
+                  product: { ...approved.product, title: 'Deferred edit' },
+                });
+            }),
+        );
+        let start!: Promise<void>;
+        act(() => {
+          start = harness.imageActions!.startUpload(selected);
+        });
+        await until(
+          view.container,
+          () => harness.updateProduct.mock.calls.length === 2,
+          'deferred save',
+        );
+        if (reason === 'session')
+          await act(() => clearAuthenticatedSession(view.queryClient));
+        else if (reason === 'operation')
+          vi.spyOn(harness.imageSession!, 'isCurrentOperation').mockReturnValue(
+            false,
+          );
+        else if (reason === 'product')
+          vi.spyOn(harness.imageSession!, 'persistedProductId').mockReturnValue(
+            'other-product',
+          );
+        else view.unmount();
+        await act(async () => {
+          finish();
+          await start;
+        });
+        await flush();
+        expect(harness.updateProduct).toHaveBeenCalledTimes(2);
+        expect(harness.addImages).not.toHaveBeenCalled();
+      } finally {
+        if (reason !== 'unmount') view.unmount();
+      }
+    },
+  );
 
   it('opens the image picker after an in-flight save instead of dropping the action', async () => {
     const approved = detail('Saved title', 'Oil');
@@ -1046,8 +1370,12 @@ describe('product draft save reconciliation', () => {
     setInput(view.container, 'Название', 'Revised title');
     click(view.container, 'Сохранить изменения');
     await flush();
-    click(view.container, 'Действия с изображением');
-    click(view.container, 'Ниже');
+    act(() => {
+      void harness.imageActions!.reorder(
+        '55555555-5555-4555-8555-555555555555',
+        1,
+      );
+    });
     await flush();
     expect(harness.reorderImages).not.toHaveBeenCalled();
     await act(async () => {
@@ -1098,7 +1426,7 @@ describe('product draft save reconciliation', () => {
       'first error',
     );
     expect(inputValue(view.container, 'Название')).toBe('Kept title');
-    expect(view.container.textContent).toContain('1/10 изображений');
+    expect(view.container.textContent).toContain('Загружено 1 из 1');
     click(view.container, 'Сохранить изменения');
     await until(
       view.container,

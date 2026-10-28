@@ -114,6 +114,7 @@ vi.mock('react-native', () => {
       : children;
   }
   return {
+    TextInput: () => null,
     Platform: { OS: 'web', select: (options: { web?: unknown }) => options.web },
     StyleSheet: {
       create: <T,>(styles: T) => styles,

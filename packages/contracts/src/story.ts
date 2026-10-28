@@ -8,8 +8,7 @@ export const STORY_LIMITS = {
   headingMaxLength: 200,
   paragraphMaxLength: 5000,
   altTextMaxLength: 300,
-  maxFileBytes: 5 * 1024 * 1024,
-  maxStoryImageBytes: 20 * 1024 * 1024,
+  maxFileBytes: 10 * 1024 * 1024,
 } as const;
 
 const headingBlockSchema = z
@@ -46,7 +45,7 @@ export const storyBlockWriteSchema = z.discriminatedUnion('type', [
 export const storyWriteRequestSchema = z
   .object({
     storyToken: z.number().int().nonnegative(),
-    idempotencyKey: z.string().trim().min(1).max(80).optional(),
+    idempotencyKey: z.string().regex(/^[a-zA-Z0-9:_-]{1,100}$/).optional(),
     blocks: z.array(storyBlockWriteSchema).max(STORY_LIMITS.maxImages + STORY_LIMITS.maxTextBlocks),
   })
   .strict()

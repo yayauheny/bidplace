@@ -3,6 +3,7 @@ import type { ElementRef, ReactNode, Ref } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import {
+  figmaButtonContentGap,
   figmaButtonContentHeight,
   figmaButtonHitSlop,
   figmaButtonSizeMetrics,
@@ -83,12 +84,7 @@ function FigmaButtonVisualContent({
           justifyContent: navigation ? 'space-between' : 'center',
           alignSelf: navigation ? 'stretch' : undefined,
           width: navigation ? '100%' : undefined,
-          gap:
-            iconNode || icon
-              ? size === 'event'
-                ? 2
-                : designTokens.space.x2
-              : 0,
+          gap: iconNode || icon ? figmaButtonContentGap(size) : 0,
           opacity: loading ? 0 : 1,
         }}
       >

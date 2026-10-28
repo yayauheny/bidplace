@@ -3,14 +3,23 @@ import { ImageProcessor } from './image-processor';
 
 import {
   Inject,
+  ServiceUnavailableException,
   ConflictException,
   BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { type ProductStatus, type SellerStatus } from '@bidplace/contracts';
-import { type Prisma } from '@bidplace/database';
+import {
+  STORY_LIMITS,
+  photoCropSchema,
+  workPhotoResultSchema,
+  type WorkPhotoResult,
+  type WorkPhotoEditRequest,
+  type ProductStatus,
+  type SellerStatus,
+} from '@bidplace/contracts';
+import { Prisma } from '@bidplace/database';
 
 import {
   MediaLifecycleService,
@@ -74,6 +83,7 @@ export class ImagesService {
     productId: string,
     files: readonly RawImageUpload[],
     idempotencyKey?: string,
+    expectedRevisionId?: string,
   ) {
     if (
       idempotencyKey !== undefined &&
@@ -88,26 +98,59 @@ export class ImagesService {
       productId,
     );
 
+    if (expectedRevisionId && product.editingRevisionId !== expectedRevisionId)
+      throw new ConflictException('Product editing revision changed');
     const uploadIdentity = idempotencyKey
-      ? createHash('sha256').update(`${userId}:${productId}:${idempotencyKey}`).digest('hex')
+      ? createHash('sha256')
+          .update(`${userId}:${productId}:${idempotencyKey}`)
+          .digest('hex')
       : null;
     const inputChecksum = uploadIdentity ? mediaInputChecksum(files[0]!) : null;
-    const replay = async (client: Prisma.TransactionClient, revisionId: string | null) => {
-      if (!uploadIdentity) return false;
+    const replay = async (
+      client: Prisma.TransactionClient,
+      revisionId: string | null,
+    ) => {
+      if (!uploadIdentity || !idempotencyKey || !revisionId) return false;
+      const recorded = await this.replayPhotoOperation(
+        client,
+        this.photoOperationIdentity(userId, productId, idempotencyKey),
+        revisionId,
+        inputChecksum ?? undefined,
+      );
+      if (recorded) return true;
       const existing = await client.productImage.findUnique({
         where: { uploadIdentity },
-        select: { inputChecksum: true, revisions: { select: { revisionId: true } } },
+        select: {
+          inputChecksum: true,
+          revisions: { select: { revisionId: true } },
+        },
       });
       if (!existing) return false;
       if (existing.inputChecksum !== inputChecksum)
-        throw new ConflictException('Idempotency identity has different content');
-      if (!existing.revisions.some((revision) => revision.revisionId === revisionId))
-        throw new ConflictException('Upload identity belongs to an earlier revision');
+        throw new ConflictException(
+          'Idempotency identity has different content',
+        );
+      if (
+        !existing.revisions.some(
+          (revision) => revision.revisionId === revisionId,
+        )
+      )
+        throw new ConflictException(
+          'Upload identity belongs to an earlier revision',
+        );
       return true;
     };
-    if (await replay(this.prisma, product.editingRevisionId)) return { ok: true as const };
+    if (await replay(this.prisma, product.editingRevisionId))
+      return { ok: true as const };
     if (this.media?.enabled) {
-      return this.addMedia(userId, productId, product, files, idempotencyKey);
+      return this.addMedia(
+        userId,
+        productId,
+        product,
+        files,
+        idempotencyKey,
+        expectedRevisionId,
+      );
     }
     assertProductImageCount(product.images.length, files.length);
     let validated;
@@ -117,12 +160,14 @@ export class ImagesService {
       // Legacy ImageStore is publicly served: persist the metadata-stripped variant.
       const preview = processed.find((image) => image.variant === 'PREVIEW');
       if (!preview) throw new Error('Processed image preview is missing');
-      validated = [{
-        buffer: preview.bytes,
-        mimeType: preview.mimeType,
-        width: preview.width,
-        height: preview.height,
-      }];
+      validated = [
+        {
+          buffer: preview.bytes,
+          mimeType: preview.mimeType,
+          width: preview.width,
+          height: preview.height,
+        },
+      ];
     } else {
       validated = await validateAndNormalizeProductImageUploads(files);
     }
@@ -134,6 +179,11 @@ export class ImagesService {
         productId,
       );
 
+      if (
+        expectedRevisionId &&
+        freshProduct.editingRevisionId !== expectedRevisionId
+      )
+        throw new ConflictException('Product editing revision changed');
       if (await replay(tx, freshProduct.editingRevisionId)) return;
       assertProductImageCapacity(
         freshProduct.images,
@@ -175,13 +225,22 @@ export class ImagesService {
         if (!freshProduct.editingRevisionId) {
           throw new ConflictException('Product editing revision is missing');
         }
-        await tx.productRevisionImage.create({
+        const slot = await tx.productRevisionImage.create({
           data: {
             revisionId: freshProduct.editingRevisionId,
             imageId: row.id,
             position: start + index,
           },
         });
+        if (idempotencyKey)
+          await this.recordPhotoOperation(
+            tx,
+            userId,
+            productId,
+            idempotencyKey,
+            this.photoResult(slot),
+            inputChecksum,
+          );
       }
     });
 
@@ -197,6 +256,7 @@ export class ImagesService {
     },
     files: readonly RawImageUpload[],
     idempotencyKey?: string,
+    expectedRevisionId?: string,
   ) {
     const media = this.media!;
     if (
@@ -235,6 +295,11 @@ export class ImagesService {
         userId,
         productId,
       );
+      if (
+        expectedRevisionId &&
+        product.editingRevisionId !== expectedRevisionId
+      )
+        throw new ConflictException('Product editing revision changed');
       await media.assertNotPending(tx, { productId });
       const attached = await tx.productImage.findMany({
         where: {
@@ -273,6 +338,14 @@ export class ImagesService {
             productId,
             position: product.nextProductImagePosition + index,
             mediaAssetId: asset.id,
+            uploadIdentity: idempotencyKey
+              ? createHash('sha256')
+                  .update(`${userId}:${productId}:${idempotencyKey}`)
+                  .digest('hex')
+              : null,
+            inputChecksum: idempotencyKey
+              ? mediaInputChecksum(files[index]!)
+              : null,
             objectKey: asset.preview.objectKey,
             mimeType: asset.preview.mimeType,
             byteLength: asset.source.byteLength,
@@ -282,13 +355,22 @@ export class ImagesService {
             data: emptyImageBytes,
           },
         });
-        await tx.productRevisionImage.create({
+        const slot = await tx.productRevisionImage.create({
           data: {
             revisionId: product.editingRevisionId,
             imageId: row.id,
             position: product.images.length + index,
           },
         });
+        if (idempotencyKey)
+          await this.recordPhotoOperation(
+            tx,
+            userId,
+            productId,
+            idempotencyKey,
+            this.photoResult(slot),
+            mediaInputChecksum(files[index]!),
+          );
       }
     });
     return { ok: true as const };
@@ -360,19 +442,416 @@ export class ImagesService {
     return attached.length > 0;
   }
 
-  async remove(userId: string, productId: string, imageId: string) {
+  private photoOperationIdentity(
+    userId: string,
+    productId: string,
+    key: string,
+    slotId?: string,
+  ) {
+    const scoped = createHash('sha256')
+      .update(
+        slotId
+          ? `${userId}:${productId}:${slotId}:${key}`
+          : `${productId}:${key}`,
+      )
+      .digest('hex');
+    return mediaUploadIdentity(userId, 'WORK_IMAGE', scoped);
+  }
+
+  private async replayPhotoOperation(
+    client: Pick<
+      Prisma.TransactionClient,
+      'mediaOperation' | 'productRevisionImage'
+    >,
+    identity: string,
+    revisionId: string,
+    inputChecksum?: string,
+    requestChecksum?: string,
+  ) {
+    const operation = await client.mediaOperation.findUnique({
+      where: { identity },
+    });
+    if (!operation?.photoResult) return undefined;
+    if (
+      (inputChecksum && operation.inputChecksum !== inputChecksum) ||
+      (requestChecksum && operation.photoRequestChecksum !== requestChecksum)
+    )
+      throw new ConflictException('Idempotency identity has different content');
+    if (operation.revisionId !== revisionId)
+      throw new ConflictException(
+        'Upload identity belongs to an earlier revision',
+      );
+    const result = workPhotoResultSchema.parse(operation.photoResult);
+    if (
+      !(await client.productRevisionImage.findUnique({
+        where: { slotId: result.slotId },
+      }))
+    )
+      throw new ConflictException('Photo slot was removed');
+    return result;
+  }
+
+  private async recordPhotoOperation(
+    tx: Prisma.TransactionClient,
+    userId: string,
+    productId: string,
+    key: string,
+    result: WorkPhotoResult,
+    inputChecksum: string | null,
+    requestChecksum?: string,
+    slotId?: string,
+  ) {
+    const identity = this.photoOperationIdentity(
+      userId,
+      productId,
+      key,
+      slotId,
+    );
+    const data = {
+      productId,
+      revisionId: result.revisionId,
+      photoResult: result,
+      photoRequestChecksum: requestChecksum ?? null,
+    };
+    await tx.mediaOperation.upsert({
+      where: { identity },
+      create: {
+        ...data,
+        identity,
+        kind: 'UPLOAD',
+        state: 'DONE',
+        inputChecksum,
+      },
+      update: {},
+    });
+    await tx.mediaOperation.updateMany({
+      where: { identity, photoResult: { equals: Prisma.DbNull } },
+      data,
+    });
+    const stored = await tx.mediaOperation.findUniqueOrThrow({
+      where: { identity },
+    });
+    return workPhotoResultSchema.parse(stored.photoResult);
+  }
+
+  private photoResult(slot: {
+    revisionId: string;
+    slotId: string;
+    imageId: string;
+    version: number;
+    crop: Prisma.JsonValue;
+  }) {
+    return {
+      revisionId: slot.revisionId,
+      slotId: slot.slotId,
+      imageId: slot.imageId,
+      version: slot.version,
+      crop: photoCropSchema.nullable().parse(slot.crop),
+    };
+  }
+
+  async photoOperation(
+    userId: string,
+    productId: string,
+    key: string,
+    slotId?: string,
+  ) {
+    if (!/^[a-zA-Z0-9:_-]{1,100}$/.test(key))
+      throw new BadRequestException('Invalid image operation');
+    const product = await this.prisma.product.findUnique({
+      where: { id: productId },
+      select: {
+        editingRevisionId: true,
+        sellerProfile: { select: { userId: true } },
+      },
+    });
+    if (!product) throw new NotFoundException('Product not found');
+    if (product.sellerProfile.userId !== userId)
+      throw new ForbiddenException('Product is not owned by user');
+    if (!product.editingRevisionId)
+      throw new ConflictException('Product editing revision is missing');
+    const recorded = await this.replayPhotoOperation(
+      this.prisma,
+      this.photoOperationIdentity(userId, productId, key, slotId),
+      product.editingRevisionId,
+    );
+    if (recorded) return { photo: recorded };
+    const identity = createHash('sha256')
+      .update(
+        slotId
+          ? `${userId}:${productId}:${slotId}:${key}`
+          : `${userId}:${productId}:${key}`,
+      )
+      .digest('hex');
+    const manifest = await this.prisma.mediaOperation.findUnique({
+      where: {
+        identity: this.photoOperationIdentity(userId, productId, key, slotId),
+      },
+      include: { objects: { include: { object: true } } },
+    });
+    const assetId = manifest?.objects.find(
+      (item) => item.object.variant === 'SOURCE',
+    )?.object.assetId;
+    const slot = await this.prisma.productRevisionImage.findFirst({
+      where: slotId
+        ? { slotId, operationKey: identity }
+        : {
+            image: {
+              productId,
+              OR: [
+                { uploadIdentity: identity },
+                ...(assetId ? [{ mediaAssetId: assetId }] : []),
+              ],
+            },
+          },
+      include: { image: { select: { inputChecksum: true } } },
+      orderBy: { revision: { version: 'asc' } },
+    });
+    if (!slot) return { photo: null };
+    if (slot.revisionId !== product.editingRevisionId)
+      throw new ConflictException(
+        'Upload identity belongs to an earlier revision',
+      );
+    const photo = this.photoResult(slot);
+    const recordedPhoto = await runReadCommittedTransaction(this.prisma, (tx) =>
+      this.recordPhotoOperation(
+        tx,
+        userId,
+        productId,
+        key,
+        photo,
+        manifest?.inputChecksum ?? slot.image.inputChecksum,
+        undefined,
+        slotId,
+      ),
+    );
+    return { photo: recordedPhoto };
+  }
+
+  async editPhoto(
+    userId: string,
+    productId: string,
+    slotId: string,
+    request: WorkPhotoEditRequest,
+    file?: RawImageUpload,
+  ) {
+    const product = await this.requireEditableOwner(
+      this.prisma,
+      userId,
+      productId,
+    );
+    if (product.editingRevisionId !== request.revisionId)
+      throw new ConflictException('Product editing revision changed');
+    const operationKey = createHash('sha256')
+      .update(`${userId}:${productId}:${slotId}:${request.operationKey}`)
+      .digest('hex');
+    const operationChecksum = createHash('sha256')
+      .update(JSON.stringify(request))
+      .update(file ? mediaInputChecksum(file) : 'crop-only')
+      .digest('hex');
+    const checkSlot = (
+      slot: {
+        revisionId: string;
+        version: number;
+        operationKey: string | null;
+        operationChecksum: string | null;
+      } | null,
+    ) => {
+      if (!slot || slot.revisionId !== request.revisionId)
+        throw new NotFoundException('Photo slot not found');
+      if (slot.operationKey === operationKey) {
+        if (slot.operationChecksum !== operationChecksum)
+          throw new ConflictException(
+            'Idempotency identity has different content',
+          );
+        return true;
+      }
+      if (slot.version !== request.version)
+        throw new ConflictException('Photo slot changed');
+      return false;
+    };
+    if (file && !this.media?.enabled && !this.imageStore.transactionalWrites)
+      throw new ServiceUnavailableException(
+        'Photo replacement requires media lifecycle storage',
+      );
+    const identity = this.photoOperationIdentity(
+      userId,
+      productId,
+      request.operationKey,
+      slotId,
+    );
+    const recorded = await this.replayPhotoOperation(
+      this.prisma,
+      identity,
+      request.revisionId,
+      undefined,
+      operationChecksum,
+    );
+    if (recorded) return { ok: true as const, photo: recorded };
+    const initial = await this.prisma.productRevisionImage.findUnique({
+      where: { slotId },
+    });
+    if (checkSlot(initial))
+      return { ok: true as const, photo: this.photoResult(initial!) };
+    let staged: Awaited<ReturnType<MediaLifecycleService['stage']>> | undefined;
+    let processed: Awaited<ReturnType<ImageProcessor['process']>> | undefined;
+    if (file) {
+      if (this.media?.enabled)
+        staged = await this.media.stage(
+          userId,
+          'WORK_IMAGE',
+          file,
+          operationKey,
+        );
+      else {
+        if (!this.processor) throw new Error('Image processor is missing');
+        processed = await this.processor.process(file, 'WORK_IMAGE');
+      }
+    }
+    try {
+      return await runReadCommittedTransaction(this.prisma, async (tx) => {
+        const fresh = await this.requireWritableOwnerInTx(
+          tx,
+          userId,
+          productId,
+        );
+        if (fresh.editingRevisionId !== request.revisionId)
+          throw new ConflictException('Product editing revision changed');
+        if (this.media?.enabled)
+          await this.media.assertNotPending(tx, { productId });
+        const replay = await this.replayPhotoOperation(
+          tx,
+          identity,
+          request.revisionId,
+          undefined,
+          operationChecksum,
+        );
+        if (replay) return { ok: true as const, photo: replay };
+        const slot = await tx.productRevisionImage.findUnique({
+          where: { slotId },
+        });
+        if (checkSlot(slot))
+          return { ok: true as const, photo: this.photoResult(slot!) };
+        const current = slot!;
+        let imageId = current.imageId;
+        if (file) {
+          const legacyPreview = processed?.find(
+            (image) => image.variant === 'PREVIEW',
+          );
+          const preview = staged?.preview ?? legacyPreview;
+          const sourceBytes =
+            staged?.source.byteLength ?? legacyPreview?.bytes.byteLength;
+          if (!preview || !sourceBytes)
+            throw new Error('Processed image preview is missing');
+          assertProductImageCapacity(
+            fresh.images.filter((image) => image.id !== current.imageId),
+            [{ byteLength: sourceBytes }],
+          );
+          if (staged) await this.media!.attach(tx, staged.id);
+          const next = await tx.productImage.create({
+            data: {
+              productId,
+              position: fresh.nextProductImagePosition,
+              mediaAssetId: staged?.id ?? null,
+              objectKey: staged?.preview.objectKey ?? null,
+              mimeType: preview.mimeType,
+              byteLength: sourceBytes,
+              checksum: staged
+                ? staged.preview.sha256
+                : mediaChecksum(legacyPreview!.bytes),
+              width: preview.width,
+              height: preview.height,
+              data: emptyImageBytes,
+            },
+          });
+          imageId = next.id;
+          if (!staged) {
+            const bytes = legacyPreview!.bytes;
+            const key = imageKey.productImage(imageId);
+            await tx.productImage.update({
+              where: { id: imageId },
+              data: { objectKey: key },
+            });
+            await this.imageStore.put(
+              key,
+              { bytes, mimeType: preview.mimeType },
+              tx,
+            );
+          }
+        }
+        const updated = await tx.productRevisionImage.update({
+          where: { slotId },
+          data: {
+            imageId,
+            crop: request.crop ?? Prisma.DbNull,
+            version: { increment: 1 },
+            operationKey,
+            operationChecksum,
+          },
+        });
+        if (
+          imageId !== current.imageId &&
+          !(await tx.productRevisionImage.count({
+            where: { imageId: current.imageId },
+          }))
+        ) {
+          const previous = await tx.productImage.findUniqueOrThrow({
+            where: { id: current.imageId },
+            select: { mediaAssetId: true },
+          });
+          await tx.productImage.delete({ where: { id: current.imageId } });
+          if (previous.mediaAssetId && this.media?.enabled)
+            await this.media.enqueueCleanup(tx, [previous.mediaAssetId]);
+          else
+            await this.imageStore.delete(
+              imageKey.productImage(current.imageId),
+              tx,
+            );
+        }
+        const result = this.photoResult(updated);
+        await this.recordPhotoOperation(
+          tx,
+          userId,
+          productId,
+          request.operationKey,
+          result,
+          file ? mediaInputChecksum(file) : null,
+          operationChecksum,
+          slotId,
+        );
+        return { ok: true as const, photo: result };
+      });
+    } catch (error) {
+      if (staged)
+        await runReadCommittedTransaction(this.prisma, (tx) =>
+          this.media!.enqueueCleanup(tx, [staged!.id]),
+        );
+      throw error;
+    }
+  }
+
+  async remove(
+    userId: string,
+    productId: string,
+    imageId: string,
+    revisionId?: string,
+  ) {
     const product = await this.requireEditableOwner(
       this.prisma,
       userId,
       productId,
     );
 
+    if (revisionId && product.editingRevisionId !== revisionId)
+      throw new ConflictException('Product editing revision changed');
     if (!product.images.some((image) => image.id === imageId)) {
       throw new NotFoundException('Image not found');
     }
 
     await runReadCommittedTransaction(this.prisma, async (tx) => {
       const locked = await this.requireWritableOwnerInTx(tx, userId, productId);
+      if (revisionId && locked.editingRevisionId !== revisionId)
+        throw new ConflictException('Product editing revision changed');
       if (!locked.images.some((image) => image.id === imageId)) {
         throw new NotFoundException('Image not found');
       }
@@ -442,13 +921,20 @@ export class ImagesService {
     return { ok: true as const };
   }
 
-  async reorder(userId: string, productId: string, imageIds: string[]) {
+  async reorder(
+    userId: string,
+    productId: string,
+    imageIds: string[],
+    revisionId?: string,
+  ) {
     const product = await this.requireEditableOwner(
       this.prisma,
       userId,
       productId,
     );
 
+    if (revisionId && product.editingRevisionId !== revisionId)
+      throw new ConflictException('Product editing revision changed');
     const knownIds = new Set(product.images.map((image) => image.id));
     if (
       imageIds.length !== knownIds.size ||
@@ -462,14 +948,16 @@ export class ImagesService {
 
     await runReadCommittedTransaction(this.prisma, async (tx) => {
       const locked = await this.requireWritableOwnerInTx(tx, userId, productId);
+      if (revisionId && locked.editingRevisionId !== revisionId)
+        throw new ConflictException('Product editing revision changed');
       const knownLockedIds = new Set(locked.images.map((image) => image.id));
       if (
         imageIds.length !== knownLockedIds.size ||
         new Set(imageIds).size !== imageIds.length ||
         imageIds.some((id) => !knownLockedIds.has(id))
       ) {
-        throw new BadRequestException(
-          'Image order must include every Product image exactly once',
+        throw new ConflictException(
+          'Product images changed while saving order',
         );
       }
       if (!locked.editingRevisionId) {
@@ -659,7 +1147,7 @@ export class ImagesService {
     };
   }
 
-  async get(imageId: string, userId?: string, role?: string) {
+  async get(imageId: string, userId?: string, role?: string, source = false) {
     const image: ProductImageAuthorizationRecord | null =
       await this.prisma.productImage.findUnique({
         where: { id: imageId },
@@ -685,9 +1173,13 @@ export class ImagesService {
       throw new NotFoundException('Image not found');
     }
 
+    if (source && !isOwner && !isAdmin)
+      throw new NotFoundException('Image not found');
     const stored =
       image.mediaAssetId && this.media?.enabled
-        ? await this.media.readPreview(image.mediaAssetId)
+        ? source
+          ? await this.media.readSource(image.mediaAssetId)
+          : await this.media.readPreview(image.mediaAssetId)
         : await this.imageStore.get(imageKey.productImage(imageId));
     if (!stored) {
       throw new NotFoundException('Image not found');
@@ -696,7 +1188,7 @@ export class ImagesService {
     return {
       mimeType: stored.mimeType,
       data: stored.bytes,
-      isPublic,
+      isPublic: source ? false : isPublic,
     };
   }
 
@@ -704,7 +1196,8 @@ export class ImagesService {
     userId: string,
     productId: string,
     file: RawImageUpload,
-    idempotencyKey?: string,
+    idempotencyKey: string | undefined,
+    expectedRevisionId: string,
   ) {
     if (!this.media?.enabled) {
       throw new ConflictException('Story images require the media pipeline');
@@ -716,37 +1209,100 @@ export class ImagesService {
       throw new BadRequestException('Invalid idempotency key');
     }
     // Match gallery uploads: reject non-owners before staging bytes in R2.
-    await this.requireEditableOwner(this.prisma, userId, productId);
+    const product = await this.requireEditableOwner(this.prisma, userId, productId);
+    if (product.editingRevisionId !== expectedRevisionId) {
+      throw new ConflictException('Product editing revision changed');
+    }
     const media = this.media;
+    // The idempotency identity stays stable across retries. The revision is a
+    // separate check: putting it only in this hash would make a later revision
+    // look like a new upload and create a hold there.
     const scopedKey = idempotencyKey
       ? createHash('sha256')
           .update(`${productId}:story:${idempotencyKey}`)
           .digest('hex')
       : undefined;
-    const asset = await media.stage(userId, 'STORY_IMAGE', file, scopedKey);
+    const uploadIdentity = scopedKey
+      ? mediaUploadIdentity(userId, 'STORY_IMAGE', scopedKey)
+      : undefined;
+    if (uploadIdentity) {
+      const prior = await this.prisma.mediaOperation.findUnique({
+        where: { identity: uploadIdentity },
+        select: { revisionId: true },
+      });
+      if (prior?.revisionId && prior.revisionId !== expectedRevisionId) {
+        throw new ConflictException(
+          'Upload identity belongs to an earlier revision',
+        );
+      }
+    }
+    const holds = await this.prisma.productRevisionStoryAsset.count({
+      where: { revisionId: expectedRevisionId },
+    });
+    if (holds >= STORY_LIMITS.maxImages) {
+      const operation = uploadIdentity
+        ? await this.prisma.mediaOperation.findUnique({
+            where: { identity: uploadIdentity },
+            include: { objects: { include: { object: true } } },
+          })
+        : null;
+      const source = operation?.objects.find(
+        (item) => item.object.variant === 'SOURCE',
+      )?.object;
+      const held =
+        source &&
+        (await this.prisma.productRevisionStoryAsset.findUnique({
+          where: {
+            revisionId_mediaAssetId: {
+              revisionId: expectedRevisionId,
+              mediaAssetId: source.assetId,
+            },
+          },
+        }));
+      if (!held) throw new ConflictException('Story image holds are full');
+    }
+    const asset = await media.stage(
+      userId,
+      'STORY_IMAGE',
+      file,
+      scopedKey,
+      false,
+      expectedRevisionId,
+    );
     return runReadCommittedTransaction(this.prisma, async (tx) => {
-      const product = await this.requireWritableOwnerInTx(
-        tx,
-        userId,
-        productId,
-      );
-      if (!product.editingRevisionId) {
-        throw new ConflictException('Product editing revision is missing');
+      const locked = await this.requireWritableOwnerInTx(tx, userId, productId);
+      if (locked.editingRevisionId !== expectedRevisionId) {
+        throw new ConflictException('Product editing revision changed');
+      }
+      if (uploadIdentity) {
+        const operation = await tx.mediaOperation.findUnique({
+          where: { identity: uploadIdentity },
+          select: { revisionId: true },
+        });
+        if (operation?.revisionId && operation.revisionId !== expectedRevisionId) {
+          throw new ConflictException(
+            'Upload identity belongs to an earlier revision',
+          );
+        }
       }
       await media.assertNotPending(tx, { productId });
-      const revisionId = product.editingRevisionId;
       const held = await tx.productRevisionStoryAsset.findUnique({
-        where: { revisionId_mediaAssetId: { revisionId, mediaAssetId: asset.id } },
+        where: {
+          revisionId_mediaAssetId: {
+            revisionId: expectedRevisionId,
+            mediaAssetId: asset.id,
+          },
+        },
       });
       if (!held) {
         const holds = await tx.productRevisionStoryAsset.count({
-          where: { revisionId },
+          where: { revisionId: expectedRevisionId },
         });
-        if (holds >= 5) {
+        if (holds >= STORY_LIMITS.maxImages) {
           throw new ConflictException('Story image holds are full');
         }
         await tx.productRevisionStoryAsset.create({
-          data: { revisionId, mediaAssetId: asset.id },
+          data: { revisionId: expectedRevisionId, mediaAssetId: asset.id },
         });
       }
       await media.attach(tx, asset.id);
@@ -866,7 +1422,9 @@ export class ImagesService {
         product.publishedRevisionId === row.revisionId
       );
     };
-    const isDraftOwner = (row: (typeof links)[number] | (typeof holds)[number]) => {
+    const isDraftOwner = (
+      row: (typeof links)[number] | (typeof holds)[number],
+    ) => {
       const product = row.revision.product;
       return (
         product.sellerProfile.userId === userId &&
@@ -876,7 +1434,10 @@ export class ImagesService {
     const isPublic = links.some(isPublishedImage);
     const isAdmin = role === 'admin';
     const visible =
-      isAdmin || isPublic || links.some(isDraftOwner) || holds.some(isDraftOwner);
+      isAdmin ||
+      isPublic ||
+      links.some(isDraftOwner) ||
+      holds.some(isDraftOwner);
     if (!visible) throw new NotFoundException('Story image not found');
     if (!this.media?.enabled) {
       throw new NotFoundException('Story image not found');
@@ -1000,8 +1561,7 @@ export class ImagesService {
       ...product,
       images,
       nextProductImagePosition,
-      usesRevisionImageOrder:
-        product.status === 'APPROVED' || product.status === 'ARCHIVED',
+      usesRevisionImageOrder: Boolean(product.editingRevision),
     };
   }
 }

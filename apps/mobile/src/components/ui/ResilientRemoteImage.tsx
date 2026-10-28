@@ -42,17 +42,24 @@ export type ResilientRemoteImageComponent =
 
 type ResilientRemoteImageProps = {
   uri: string;
+  onLoad?: () => void;
+  onLoadStart?: () => void;
+  /** Reports exhausted automatic retries; the existing manual retry remains available. */
+  onLoadError?: () => void;
+  onDimensions?: (size: { width: number; height: number }) => void;
   component: ResilientRemoteImageComponent;
   accessibilityLabel: string;
   fallbackLabel: string;
   style: StyleProp<ViewStyle>;
   contentFit?: ImageProps['contentFit'];
+  loading?: ImageProps['loading'];
   contentPosition?: ImageProps['contentPosition'];
   transition?: ImageProps['transition'];
   recyclingKey?: string;
   blurRadius?: number;
   /** Show the manual «Повторить» action after automatic retries exhaust. Default true. */
   retryable?: boolean;
+  retryPosition?: 'bottom' | 'center';
   /**
    * `plain` renders just the surface on failure — for round avatar discs
    * where the labelled placeholder text would be clipped by the circle.
@@ -72,12 +79,18 @@ function RemoteImageLifetime({
   fallbackLabel,
   style,
   contentFit = 'cover',
+  loading,
   contentPosition,
   transition,
   recyclingKey,
   blurRadius,
   retryable = true,
+  retryPosition = 'bottom',
   fallback = 'labelled',
+  onDimensions,
+  onLoad,
+  onLoadStart,
+  onLoadError,
 }: ResilientRemoteImageProps) {
   const [recovery, setRecovery] = useState(() => createMediaRecoveryState(uri));
   const recoveryRef = useRef(recovery);
@@ -124,9 +137,17 @@ function RemoteImageLifetime({
 
   const sourceUri = addMediaCacheBust(uri, recovery.requestVersion);
 
-  const handleLoad = () => {
+  const handleLoad = (event?: {
+    source: { width: number; height: number };
+  }) => {
     if (!mountedRef.current) return;
+    if (event?.source.width && event.source.height)
+      onDimensions?.({
+        width: event.source.width,
+        height: event.source.height,
+      });
     commit(markMediaLoaded(recoveryRef.current));
+    onLoad?.();
   };
 
   const handleError = (event: { error: string }) => {
@@ -134,6 +155,7 @@ function RemoteImageLifetime({
 
     const failure = recordMediaFailure(recoveryRef.current);
     commit(failure.state);
+    if (failure.state.exhausted) onLoadError?.();
 
     if (process.env.NODE_ENV !== 'production') {
       console.warn(
@@ -156,6 +178,9 @@ function RemoteImageLifetime({
   if (recovery.failed) {
     return (
       <View
+        accessible={fallback === 'plain'}
+        accessibilityRole={fallback === 'plain' ? 'image' : undefined}
+        accessibilityLabel={fallback === 'plain' ? fallbackLabel : undefined}
         style={[
           style,
           {
@@ -173,7 +198,19 @@ function RemoteImageLifetime({
           />
         ) : null}
         {retryable && recovery.exhausted ? (
-          <View style={{ position: 'absolute', bottom: designTokens.space.x2 }}>
+          <View
+            pointerEvents="box-none"
+            style={
+              retryPosition === 'center'
+                ? {
+                    position: 'absolute',
+                    inset: 0,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }
+                : { position: 'absolute', bottom: designTokens.space.x2 }
+            }
+          >
             <SecondaryButton label="Повторить" onPress={handleManualRetry} />
           </View>
         ) : null}
@@ -192,12 +229,14 @@ function RemoteImageLifetime({
         key={sourceUri}
         source={{ uri: sourceUri }}
         contentFit={contentFit}
+        loading={loading}
         contentPosition={contentPosition}
         transition={transition}
         recyclingKey={`${recyclingKey ?? uri}-${recovery.requestVersion}`}
         accessible={false}
         blurRadius={blurRadius}
         onLoad={handleLoad}
+        onLoadStart={onLoadStart}
         onError={handleError}
         style={[
           StyleSheet.absoluteFill,

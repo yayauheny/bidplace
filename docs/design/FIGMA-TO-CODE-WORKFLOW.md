@@ -68,7 +68,7 @@ Expo/React Native Web не требует переписывать прилож�
 
 ## Централизация без новой свалки переменных
 
-Целевой поток: Figma roles → один публичный semantic token contract → active theme → shared component variants → screen composition. Роли живут в packages/design-tokens, runtime theme — у одного provider. CSS focus, SVG gradients, shadow colors, кнопки/поиск и navigation получают значения от него. См. AR-01/02 в [аудите](../audits/2026-10-16-DRAFT-RESTORE-REVIEW.md).
+Целевой поток: Figma roles → один публичный semantic token contract → active theme → shared component variants → screen composition. Роли живут в packages/design-tokens, runtime theme — у одного provider. CSS focus, SVG gradients, shadow colors, кнопки/поиск и navigation получают значения от него. См. AR-01/02 в аудите.
 
 Цвет, типографика, radius, повторяемые spacing/control states централизуются. Уникальное положение декоративного элемента допустимо как локальная named constant с node provenance. Не надо превращать каждый x/y в global token, запрещать каждое число или сливать роли лишь по hex. Component variants могут иметь собственную геометрию, но не независимую палитру. Большой файл не обязательно плох; два владельца одной обязанности — реальная причина очистки.
 

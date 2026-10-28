@@ -11,7 +11,11 @@ import {
   type OnModuleDestroy,
   type OnModuleInit,
 } from '@nestjs/common';
-import type { MediaOperation, MediaPurpose, Prisma } from '@bidplace/database';
+import {
+  type MediaOperation,
+  type MediaPurpose,
+  Prisma,
+} from '@bidplace/database';
 import { SERVER_ENV, type ServerEnv } from '../config';
 import { PrismaService, runReadCommittedTransaction } from '../database';
 import type { RawImageUpload } from '../../images/image-policy';
@@ -22,6 +26,8 @@ import {
   MediaObjectStore,
 } from './media-object-store';
 import { PublicMediaCache, publicMediaUrl } from './public-media-cache';
+
+export const MEDIA_OPERATION_MAX_ATTEMPTS = 20;
 
 const activeStates = ['PENDING', 'RUNNING', 'FAILED'] as const;
 
@@ -115,6 +121,7 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
       (await this.prisma.mediaOperation.count({
         where: {
           kind: { in: ['REVOKE', 'CLEANUP'] },
+          attemptCount: { lt: MEDIA_OPERATION_MAX_ATTEMPTS },
           state: { in: ['PENDING', 'RUNNING', 'FAILED'] },
         },
       })) > 0
@@ -148,6 +155,7 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
     const operations = await this.prisma.mediaOperation.findMany({
       where: {
         kind: { in: ['REVOKE', 'CLEANUP'] },
+          attemptCount: { lt: MEDIA_OPERATION_MAX_ATTEMPTS },
         OR: [
           { state: { in: ['PENDING', 'FAILED'] }, nextAttemptAt: { lte: now } },
           { state: 'RUNNING', leaseUntil: { lt: now } },
@@ -183,6 +191,7 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
     file: RawImageUpload,
     idempotencyKey: string = randomUUID(),
     preserveSource = false,
+    revisionId?: string,
   ) {
     if (!this.enabled) throw new Error('Media lifecycle is disabled');
     if (!/^[a-zA-Z0-9:_-]{1,100}$/.test(idempotencyKey))
@@ -192,6 +201,10 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
       where: { identity },
       include: objectInclude,
     });
+    if (
+      revisionId && operation?.revisionId && operation.revisionId !== revisionId
+    )
+      throw new ConflictException('Upload identity belongs to an earlier revision');
     const keepSource =
       preserveSource ||
       Boolean(
@@ -203,17 +216,22 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
     const priorSource = operation?.objects.find(
       ({ object }) => object.variant === 'SOURCE',
     )?.object;
-    const stored = priorSource && operation?.inputChecksum === mediaInputChecksum(file)
-      ? await this.store.get('PRIVATE', priorSource.objectKey)
-      : null;
-    const canReuse = stored && priorSource &&
+    const stored =
+      priorSource && operation?.inputChecksum === mediaInputChecksum(file)
+        ? await this.store.get('PRIVATE', priorSource.objectKey)
+        : null;
+    const canReuse =
+      stored &&
+      priorSource &&
       stored.mimeType === priorSource.mimeType &&
       stored.bytes.byteLength === priorSource.byteLength &&
       mediaChecksum(stored.bytes) === priorSource.sha256;
     // A retry after a codec upgrade must reproduce the already persisted master.
     const pipeline = canReuse
       ? await this.imageProcessor.process(
-          { buffer: Buffer.from(stored.bytes), mimetype: stored.mimeType }, purpose, true,
+          { buffer: Buffer.from(stored.bytes), mimetype: stored.mimeType },
+          purpose,
+          true,
         )
       : await this.imageProcessor.process(file, purpose, keepSource);
     const pipelineVersion = keepSource ? 'p1' : 'p2';
@@ -252,6 +270,8 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
             data: {
               kind: 'UPLOAD',
               identity,
+              // Bind before object writes: failed uploads must keep their owner.
+              revisionId: revisionId ?? null,
               inputChecksum: mediaInputChecksum(file),
               objects: {
                 create: objects.map((object) => ({ objectId: object.id })),
@@ -273,6 +293,17 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
           include: objectInclude,
         });
       }
+    }
+    if (revisionId) {
+      const bound = await this.prisma.mediaOperation.updateMany({
+        where: {
+          id: operation.id,
+          OR: [{ revisionId: null }, { revisionId }],
+        },
+        data: { revisionId },
+      });
+      if (bound.count !== 1)
+        throw new ConflictException('Upload identity belongs to an earlier revision');
     }
     this.armOrphanScan();
     const source = operation.objects.find(
@@ -391,7 +422,7 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
     actorUserId: string,
     restore = false,
     reason: string | null = null,
-  ) {
+  ): Promise<MediaOperation> {
     const identity = restore
       ? `restore:${target.profileId ?? target.productId}:${revision.id}:${revision.updatedAt.toISOString()}`
       : `publish:${revision.id}:${revision.updatedAt.toISOString()}`;
@@ -711,6 +742,12 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
     });
     return this.store.get('PRIVATE', preview.objectKey);
   }
+  async readSource(assetId: string) {
+    const source = await this.prisma.mediaObject.findFirstOrThrow({
+      where: { assetId, tier: 'PRIVATE', variant: 'SOURCE', state: 'READY' },
+    });
+    return this.store.get('PRIVATE', source.objectKey);
+  }
   private async claim(id: string) {
     const now = new Date();
     const token = randomUUID();
@@ -733,6 +770,7 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
       const result = await tx.mediaOperation.updateMany({
         where: {
           id,
+          attemptCount: { lt: MEDIA_OPERATION_MAX_ATTEMPTS },
           OR: [
             { state: { in: ['PENDING', 'FAILED'] } },
             { state: 'RUNNING', leaseUntil: { lt: now } },
@@ -764,16 +802,21 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
     token: string,
     errorCode = 'MEDIA_DELIVERY_FAILED',
   ) {
-    await this.prisma.mediaOperation.updateMany({
+    const operation = await this.prisma.mediaOperation.findUniqueOrThrow({
+      where: { id }, select: { attemptCount: true, kind: true },
+    });
+    const exhausted = operation.attemptCount >= MEDIA_OPERATION_MAX_ATTEMPTS;
+    const result = await this.prisma.mediaOperation.updateMany({
       where: { id, leaseToken: token, state: 'RUNNING' },
       data: {
         state: 'FAILED',
         errorCode,
-        nextAttemptAt: new Date(Date.now() + 15_000),
+        ...(!exhausted ? { nextAttemptAt: new Date(Date.now() + 15_000) } : {}),
         leaseUntil: null,
         leaseToken: null,
       },
     });
+    if (exhausted && result.count) this.logger.warn(`Media operation exhausted retries: ${id} ${operation.kind}`);
   }
   private async writeVerified(
     object: {
@@ -1156,7 +1199,12 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
       await runReadCommittedTransaction(this.prisma, async (tx) => {
         await tx.$queryRaw`SELECT id FROM media_operations WHERE id = ${operation.id}::uuid FOR UPDATE`;
         const renewed = await tx.mediaOperation.updateMany({
-          where: { id: operation.id, leaseToken: token, state: 'RUNNING', leaseUntil: { gt: new Date() } },
+          where: {
+            id: operation.id,
+            leaseToken: token,
+            state: 'RUNNING',
+            leaseUntil: { gt: new Date() },
+          },
           data: { leaseUntil: new Date(Date.now() + 5 * 60_000) },
         });
         if (!renewed.count) throw new Error('Media deletion lease was lost');
@@ -1186,12 +1234,25 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
         })
       )
         throw new Error('Media write is still active');
+      if (operation.kind === 'CLEANUP') {
+        const retired = await runReadCommittedTransaction(
+          this.prisma,
+          async (tx) => {
+            await tx.$queryRaw(
+              Prisma.sql`SELECT id FROM media_assets WHERE id = ${item.object.assetId}::uuid FOR UPDATE`,
+            );
+            if (await this.hasReference(tx, item.object.assetId)) return false;
+            await tx.mediaAsset.update({
+              where: { id: item.object.assetId },
+              data: { state: 'FAILED' },
+            });
+            return true;
+          },
+        );
+        if (!retired) continue;
+      }
       if (
-        operation.kind === 'CLEANUP' &&
-        (await this.hasReference(this.prisma, item.object.assetId))
-      )
-        continue;
-      if (
+        operation.kind !== 'CLEANUP' &&
         item.object.variant === 'SOURCE' &&
         (
           await this.prisma.mediaAsset.findUniqueOrThrow({

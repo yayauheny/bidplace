@@ -410,14 +410,8 @@ describe('Product write atomicity against PostgreSQL', () => {
     );
 
     const storyPromise = products.replaceCreationStory(owner.id, product.id, {
-      intro: 'Late story',
-      steps: [
-        {
-          id: product.creationSteps[0]!.id,
-          title: 'Changed',
-          body: 'Should not persist',
-        },
-      ],
+      storyToken: 0,
+      blocks: [{ type: 'PARAGRAPH', text: 'Late story' }],
     });
     await waitThenRelease(release);
 
@@ -437,6 +431,7 @@ describe('Product write atomicity against PostgreSQL', () => {
     expect(step.title).toBe('Sketch');
     expect(step.body).toBe('First step');
     expect(persisted.creationIntro).toBeNull();
+    expect(await prisma.productRevisionStoryBlock.count({ where: { revision: { productId: product.id } } })).toBe(0);
   });
 
   it('lets a rejected Product stay editable and resubmit on the same id', async () => {
@@ -575,14 +570,21 @@ describe('Product write atomicity against PostgreSQL', () => {
     await expect(removePromise).resolves.toEqual({ ok: true });
     await finished;
 
-    const remaining = await prisma.productImage.findMany({
-      where: { productId: product.id },
+    const remaining = await prisma.productRevisionImage.findMany({
+      where: { revisionId: product.editingRevisionId },
       orderBy: { position: 'asc' },
-      select: { id: true, position: true },
+      select: { imageId: true, position: true },
     });
     expect(remaining.map((row) => row.position)).toEqual([0, 1]);
-    expect(remaining.map((row) => row.id)).not.toContain(product.images[0]!.id);
-    expect(remaining.some((row) => row.id === second.id)).toBe(true);
+    expect(remaining.map((row) => row.imageId)).not.toContain(product.images[0]!.id);
+    expect(remaining.some((row) => row.imageId === second.id)).toBe(true);
+    const stored = await prisma.productImage.findMany({
+      where: { productId: product.id },
+      select: { id: true },
+    });
+    expect(stored.map((row) => row.id).sort()).toEqual(
+      remaining.map((row) => row.imageId).sort(),
+    );
   });
 
   it('rejects reorder after a concurrent add changes the locked image set', async () => {
@@ -618,18 +620,19 @@ describe('Product write atomicity against PostgreSQL', () => {
     );
     await waitThenRelease(release);
 
-    await expect(reorderPromise).rejects.toThrow(
-      'Image order must include every Product image exactly once',
-    );
+    await expect(reorderPromise).rejects.toMatchObject({
+      status: 409,
+      message: 'Product images changed while saving order',
+    });
     await finished;
 
-    const remaining = await prisma.productImage.findMany({
-      where: { productId: product.id },
+    const remaining = await prisma.productRevisionImage.findMany({
+      where: { revisionId: product.editingRevisionId },
       orderBy: { position: 'asc' },
-      select: { id: true, position: true },
+      select: { imageId: true, position: true },
     });
     expect(remaining.map((row) => row.position)).toEqual([0, 1]);
-    expect(remaining.some((row) => row.id === product.images[0]!.id)).toBe(
+    expect(remaining.some((row) => row.imageId === product.images[0]!.id)).toBe(
       true,
     );
   });

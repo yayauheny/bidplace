@@ -40,8 +40,8 @@ jobs:
 
       - name: Require the release branch
         run: |
-          if [ "$GITHUB_REF" != "refs/heads/feature/portfolio-mvp-release" ]; then
-            echo "Production deploy requires feature/portfolio-mvp-release"
+          if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+            echo "Production deploy requires main"
             exit 1
           fi
 
@@ -250,7 +250,7 @@ jobs:
           TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
           RELEASE_CONTROL: ${{ secrets.RELEASE_CONTROL }}
           NEON_DIRECT_URL: ${{ secrets.NEON_DIRECT_URL }}
-          WORKERS_CI_BRANCH: feature/portfolio-mvp-release
+          WORKERS_CI_BRANCH: main
           RELEASE_HOLD: ${{ inputs.release_hold }}
           KEEP_CONTAINER: ${{ inputs.keep_container }}
           CONFIRM_MIGRATION: ${{ inputs.confirm_migration }}

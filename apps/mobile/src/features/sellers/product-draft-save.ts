@@ -115,6 +115,11 @@ export function useProductDraftSaveSession({
     endLockedTransition();
   }, [authEpoch]);
 
+  useEffect(() => () => {
+    sessionOperation.current += 1;
+    saveGeneration.current += 1;
+  }, []);
+
   const applyPersistedForm = (
     product: Product,
     submitted: ProductDraftFormValues,
@@ -292,10 +297,30 @@ export function useProductDraftSaveSession({
     [form, save],
   );
 
+  const persistDirtyForm = async () => {
+    const operation = sessionOperation.current;
+    const epoch = currentAuthEpoch(queryClient);
+    const id = persistedProductId.current;
+    const stillOwnsForm = () =>
+      persistedProductId.current === id &&
+      sessionOperation.current === operation &&
+      !transitionLock.current &&
+      canWritePrivateCache(queryClient, epoch);
+    while (stillOwnsForm()) {
+      const pending = pendingSave.current;
+      if (
+        !pending &&
+        !productDraftFieldOrder.some((field) => form.getFieldState(field).isDirty)
+      ) return true;
+      if (!(await (pending ?? persistCurrentForm()))) return false;
+    }
+    return false;
+  };
+
   const persistAll = async (mode: 'ordinary' | 'transition' = 'ordinary') => {
     const storyEditor = storyEditorSlot.current;
     // Never release a route guard while another transition or save is in flight.
-    if (transitionLock.current || saveInFlight.current || storyEditor?.pending)
+    if (transitionLock.current || saveInFlight.current || (storyEditor?.saving || storyEditor?.uploading))
       return false;
     if (form.formState.isDirty) {
       if (!(await persistCurrentForm(mode))) return false;
@@ -317,7 +342,7 @@ export function useProductDraftSaveSession({
     const storyEditor = storyEditorSlot.current;
     if (
       saveInFlight.current ||
-      storyEditor?.pending ||
+      (storyEditor?.saving || storyEditor?.uploading) ||
       !beginLockedTransition()
     )
       return;
@@ -401,6 +426,7 @@ export function useProductDraftSaveSession({
     save,
     submit,
     persistCurrentForm,
+    persistDirtyForm,
     persistAll,
     persistForTransitionRef,
     submitCurrentForm,

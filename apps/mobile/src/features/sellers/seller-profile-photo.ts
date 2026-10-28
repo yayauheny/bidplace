@@ -3,10 +3,18 @@ import type { QueryClient } from '@tanstack/react-query';
 import { useQuery } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 
+import {
+  localPhotoBlob,
+  preparePhotoEdit,
+  type PhotoEdit,
+} from '../../lib/media/photo-edit';
+import { deleteGeneratedImage } from '../../lib/media/temporary-image';
+import type { ImageUploadInput } from '../../lib/media/prepare-image-upload';
 import { prepareImageUpload } from '../../lib/media/prepare-image-upload';
 
 import type { SellerProfileResponse } from '@bidplace/contracts';
 
+import { rememberPendingOpener } from '../../components/ui/use-return-focus';
 import { getApiAssetUrl } from '../../lib/environment';
 import { canWritePrivateCache, currentAuthEpoch } from '../../lib/query-cache';
 import type { useApiClient } from '../../providers/api-provider';
@@ -59,6 +67,15 @@ export function useProfilePhoto({
   const preparingRef = useRef(false);
   const photoBlobRef = useRef<Blob | null>(null);
   const seenAuthEpoch = useRef(guard.authEpoch);
+  const photoResource = useRef<(() => void) | undefined>(undefined);
+  const [editor, setEditor] = useState<{
+    input: ImageUploadInput;
+    epoch: number;
+    operation: number;
+    focusTurn: number;
+    selection: number;
+  } | null>(null);
+  useEffect(() => () => photoResource.current?.(), []);
 
   const applicationPhoto = useQuery({
     queryKey: ['seller', 'application-photo', profile?.id, hydrationToken],
@@ -78,6 +95,9 @@ export function useProfilePhoto({
     if (seenAuthEpoch.current === guard.authEpoch) return;
     seenAuthEpoch.current = guard.authEpoch;
     photoSelection.current += 1;
+    photoResource.current?.();
+    photoResource.current = undefined;
+    setEditor(null);
     photoBlobRef.current = null;
     setPhotoBlob(null);
     setPhotoUri(null);
@@ -126,16 +146,17 @@ export function useProfilePhoto({
       });
       if (!stillOwnsPhoto()) return;
       if (result.canceled || !result.assets[0]) return;
-      const asset = result.assets[0];
-      preparingRef.current = true;
-      setPreparing(true);
-      const prepared = await prepareImageUpload(asset, profilePhotoOptions);
-      if (!stillOwnsPhoto()) return;
-      photoBlobRef.current = prepared.blob;
-      setPhotoUri(prepared.uri);
-      setPhotoFailed(false);
-      setPhotoBlob(prepared.blob);
       clearAlert();
+      rememberPendingOpener(
+        '[aria-label="Изменить фото"], [aria-label="Загрузить фото"]',
+      );
+      setEditor({
+        input: result.assets[0],
+        epoch,
+        operation,
+        focusTurn: startedInFocus,
+        selection,
+      });
     } catch (error) {
       if (stillOwnsPhoto()) {
         reportError(
@@ -156,6 +177,71 @@ export function useProfilePhoto({
     }
   };
 
+  const cancelEditor = () => {
+    photoSelection.current += 1;
+    clearAlert();
+    setEditor(null);
+    preparingRef.current = false;
+    setPreparing(false);
+  };
+  const confirmEditor = async (edit: PhotoEdit) => {
+    const opened = editor;
+    if (!opened || preparingRef.current) return;
+    const stillOwns = () =>
+      photoSelection.current === opened.selection &&
+      guard.focusTurn.current === opened.focusTurn &&
+      !guard.transitionLock.current &&
+      guard.screenStillOwns(opened.operation, opened.epoch);
+    preparingRef.current = true;
+    clearAlert();
+    setPreparing(true);
+    try {
+      const transformed = await preparePhotoEdit(opened.input, edit, 'avatar');
+      try {
+        const prepared = await prepareImageUpload(
+          transformed.input,
+          profilePhotoOptions,
+        );
+        const local = await localPhotoBlob(prepared.blob);
+        if (
+          prepared.uri !== transformed.input.uri &&
+          prepared.uri !== opened.input.uri
+        )
+          await deleteGeneratedImage(prepared.uri);
+        if (!stillOwns()) {
+          local.dispose();
+          return;
+        }
+        photoResource.current?.();
+        photoResource.current = local.dispose;
+        photoBlobRef.current = prepared.blob;
+        setPhotoUri(local.uri);
+        setPhotoFailed(false);
+        setPhotoBlob(prepared.blob);
+        setEditor(null);
+        clearAlert();
+      } finally {
+        transformed.dispose();
+      }
+    } catch (error) {
+      if (stillOwns())
+        reportError(
+          error,
+          'seller-profile-photo',
+          'Не удалось подготовить фото',
+          opened.operation,
+        );
+    } finally {
+      if (
+        photoSelection.current === opened.selection &&
+        guard.sessionStillOwns(opened.operation, opened.epoch)
+      ) {
+        preparingRef.current = false;
+        setPreparing(false);
+      }
+    }
+  };
+
   const preview =
     photoUri ?? (profile ? getApiAssetUrl(profile.profilePhotoUrl) : null);
 
@@ -166,6 +252,9 @@ export function useProfilePhoto({
     photoFailed,
     setPhotoFailed,
     choosePhoto,
+    editor,
+    confirmEditor,
+    cancelEditor,
     preview,
     clearIfCurrent: (blob: Blob | null) => {
       if (photoBlobRef.current === blob) {

@@ -62,6 +62,7 @@ export function OwnerWorkCard({
           href={`/products/${work.id}`}
           variant="caption"
           imageUrl={work.coverImage.url}
+          imagePresentation={work.coverImage}
           imageLabel={title}
           title={title}
           authorSlug={authorSlug}

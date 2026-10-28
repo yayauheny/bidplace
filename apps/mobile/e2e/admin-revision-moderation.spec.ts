@@ -129,7 +129,7 @@ test('admin reviews a pending seller revision without exposing it publicly', asy
   await page.getByRole('button', { name: 'Одобрить', exact: true }).click();
   await page.screenshot({path:`/private/tmp/bidplace-admin-ui-evidence/confirm-${test.info().project.name}-${fixture.publicId}.png`});
   await page.getByRole('button', { name: 'Подтвердить решение' }).click();
-  await expect(page.getByText('Решение принято.', {exact:false})).toBeVisible();
+  await expect(page.getByText('Решение принято. Фактический статус публикации показан ниже.', {exact:true})).toBeVisible();
 
   await guest.reload();
   await expect(guest.getByText(fixture.pendingName).first()).toBeVisible();
@@ -241,7 +241,7 @@ test('admin reviews a pending product revision without exposing its gallery publ
   await page.getByRole('button', { name: 'Одобрить', exact: true }).click();
   await page.screenshot({path:`/private/tmp/bidplace-admin-ui-evidence/confirm-${test.info().project.name}-${fixture.publicId}.png`});
   await page.getByRole('button', { name: 'Подтвердить решение' }).click();
-  await expect(page.getByText('Решение принято.', {exact:false})).toBeVisible();
+  await expect(page.getByText('Решение принято. Фактический статус публикации показан ниже.', {exact:true})).toBeVisible();
 
   await guest.reload();
   await expect(guest.getByText(fixture.pendingTitle).first()).toBeVisible();

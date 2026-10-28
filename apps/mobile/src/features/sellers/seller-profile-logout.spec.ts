@@ -99,8 +99,13 @@ vi.mock('../../providers/api-provider', () => ({
 vi.mock('../../components/layout', () => ({
   AppShell: ({ children }: { children?: ReactNode }) =>
     createElement('div', null, children),
-  FormPageShell: ({ children, bottomAction }: { children?: ReactNode; bottomAction?: ReactNode }) =>
-    createElement('div', null, children, bottomAction),
+  FormPageShell: ({
+    children,
+    bottomAction,
+  }: {
+    children?: ReactNode;
+    bottomAction?: ReactNode;
+  }) => createElement('div', null, children, bottomAction),
   FormPageColumns: ({
     children,
     sidebar,
@@ -427,7 +432,9 @@ describe('seller profile logout', () => {
     });
     vi.stubGlobal(
       'fetch',
-      vi.fn(async () => ({ blob: async () => new Blob(['photo'], { type: 'image/png' }) })),
+      vi.fn(async () => ({
+        blob: async () => new Blob(['photo'], { type: 'image/png' }),
+      })),
     );
     const view = mount();
     await until(
@@ -440,6 +447,7 @@ describe('seller profile logout', () => {
     );
     click(view.container, 'Изменить фото');
     await flush();
+    click(view.container, 'Установить фото');
     await flush();
     click(view.container, 'Выйти');
     expect(harness.logout).not.toHaveBeenCalled();

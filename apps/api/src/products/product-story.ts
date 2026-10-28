@@ -1,5 +1,6 @@
 import { STORY_LIMITS, storyResponseSchema, type StoryWriteRequest } from '@bidplace/contracts';
 import { ConflictException, NotFoundException } from '@nestjs/common';
+import type { MediaLifecycleService } from '../core/media/media-lifecycle.service';
 import type { Prisma } from '@bidplace/database';
 
 type StoryRow = {
@@ -79,6 +80,7 @@ export async function replaceProductStory(
     productId: string;
     revisionId: string;
     request: StoryWriteRequest;
+    media: Pick<MediaLifecycleService, 'enqueueCleanup'> | undefined;
   },
 ) {
   const revision = await tx.productRevision.findUniqueOrThrow({
@@ -143,6 +145,21 @@ export async function replaceProductStory(
       });
     }
   }
+  const unused = await tx.productRevisionStoryAsset.findMany({
+    where: {
+      revisionId: input.revisionId,
+      mediaAssetId: { notIn: imageIds },
+      mediaAsset: { purpose: 'STORY_IMAGE' },
+    },
+    select: { mediaAssetId: true },
+  });
+  if (unused.length > 0) {
+    if (!input.media) throw new ConflictException('Story images require the media pipeline');
+    await tx.productRevisionStoryAsset.deleteMany({
+      where: { revisionId: input.revisionId, mediaAssetId: { in: unused.map((asset) => asset.mediaAssetId) } },
+    });
+    for (const asset of unused) await input.media.enqueueCleanup(tx, [asset.mediaAssetId]);
+  }
   await tx.productRevision.update({
     where: { id: input.revisionId },
     data: {
@@ -172,7 +189,6 @@ async function assertStoryImages(
       ownerUserId: true,
       purpose: true,
       state: true,
-      objects: { where: { variant: 'SOURCE' }, select: { byteLength: true } },
       storyAssets: { where: { revisionId }, select: { revisionId: true } },
       images: {
         where: { productId },
@@ -183,7 +199,6 @@ async function assertStoryImages(
   if (assets.length !== uniqueIds.length) {
     throw new NotFoundException('Story image not found');
   }
-  let bytes = 0;
   for (const asset of assets) {
     if (asset.ownerUserId !== userId || asset.state !== 'READY') {
       throw new ConflictException('Story image is not ready');
@@ -194,10 +209,6 @@ async function assertStoryImages(
       (asset.purpose === 'WORK_IMAGE' && gallery) ||
       (asset.purpose === 'STORY_IMAGE' && held);
     if (!allowed) throw new ConflictException('Story image is not attached to this draft');
-    bytes += asset.objects[0]?.byteLength ?? 0;
-  }
-  if (bytes > STORY_LIMITS.maxStoryImageBytes) {
-    throw new ConflictException('Story images exceed the byte budget');
   }
 }
 

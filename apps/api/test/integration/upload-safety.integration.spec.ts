@@ -10,6 +10,11 @@ import {
   vi,
 } from 'vitest';
 import sharp from 'sharp';
+import { Prisma } from '@bidplace/database';
+import {
+  workPhotoUploadResponseSchema,
+  type WorkPhotoEditRequest,
+} from '@bidplace/contracts';
 import { normalizeCatalogName } from '../../src/catalog/catalog-data';
 import { MediaLifecycleService } from '../../src/core/media/media-lifecycle.service';
 import {
@@ -383,6 +388,448 @@ describe('portfolio upload admission over HTTP and PostgreSQL', () => {
       'Upload identity belongs to an earlier revision',
     );
     expect(stage.mock.calls.length).toBe(beforeReplay);
+  });
+
+  it('returns stable slots and edits revision crop without uploading bytes or changing published media', async () => {
+    const f = await approvedAuthor('photo-crop');
+    const add = () =>
+      f.author.client.request(`/products/${f.workId}/images`, {
+        method: 'POST',
+        headers: {
+          'Idempotency-Key': 'crop-source',
+          'X-Photo-Response': 'slots',
+        },
+        body: upload(f.bytes),
+      });
+    const added = workPhotoUploadResponseSchema.parse(
+      await (await add()).json(),
+    );
+    const first = added.photos[0]!;
+    // Reconstruct pre-slot-contract uploads from their existing media manifest.
+    await db.prisma.mediaOperation.updateMany({
+      where: { productId: f.workId, kind: 'UPLOAD' },
+      data: { photoResult: Prisma.DbNull, revisionId: null },
+    });
+    await db.prisma.productImage.update({
+      where: { id: first.imageId },
+      data: { uploadIdentity: null, inputChecksum: null },
+    });
+    expect(
+      workPhotoUploadResponseSchema.parse(await (await add()).json()),
+    ).toEqual(added);
+    expect(
+      (
+        await (
+          await f.author.client.get(
+            `/products/${f.workId}/image-operations/crop-source`,
+          )
+        ).json()
+      ).photo,
+    ).toEqual(first);
+    const crop = { x: 0.1, y: 0.2, width: 0.5, height: 0.6 };
+    stage.mockClear();
+    const request: WorkPhotoEditRequest = {
+      revisionId: f.revisionId,
+      version: first.version,
+      crop,
+      operationKey: 'crop-only',
+    };
+    const patch = () =>
+      f.author.client.patch(
+        `/products/${f.workId}/photos/${first.slotId}`,
+        request,
+      );
+    const edited = await (await patch()).json();
+    expect(edited.photo).toMatchObject({ ...first, version: 1, crop });
+    expect(await (await patch()).json()).toEqual(edited);
+    expect(stage).not.toHaveBeenCalled();
+    expect(
+      (
+        await f.author.client.patch(
+          `/products/${f.workId}/photos/${first.slotId}`,
+          { ...request, crop: { ...crop, x: 0.9 }, operationKey: 'invalid' },
+        )
+      ).status,
+    ).toBe(400);
+    expect(
+      (
+        await f.author.client.patch(
+          `/products/${f.workId}/photos/${first.slotId}`,
+          { ...request, crop: null },
+        )
+      ).status,
+    ).toBe(409);
+    const other = await user('photo-crop-stranger');
+    expect(
+      (
+        await other.client.patch(
+          `/products/${f.workId}/photos/${first.slotId}`,
+          request,
+        )
+      ).status,
+    ).toBe(403);
+    const revision = await db.prisma.productRevision.update({
+      where: { id: f.revisionId },
+      data: { status: 'PENDING_REVIEW' },
+    });
+    await db.prisma.product.update({
+      where: { id: f.workId },
+      data: { status: 'PENDING_REVIEW' },
+    });
+    const publication = await db.prisma.$transaction((tx) =>
+      media.enqueuePublication(
+        tx,
+        { productId: f.workId },
+        revision,
+        null,
+        f.author.row.id,
+      ),
+    );
+    await media.run(publication.id);
+    const originalImage = await db.prisma.productImage.findUniqueOrThrow({
+      where: { id: first.imageId },
+    });
+    const full = await db.prisma.mediaObject.findFirstOrThrow({
+      where: {
+        assetId: originalImage.mediaAssetId!,
+        variant: 'FULL',
+        tier: 'PUBLIC',
+      },
+    });
+    const publishedBytes = objects.get(`PUBLIC:${full.objectKey}`)!.bytes;
+    expect(
+      (await other.client.get(`/images/${first.imageId}?source=true`)).status,
+    ).toBe(404);
+    expect(
+      (await f.author.client.get(`/images/${first.imageId}?source=true`))
+        .status,
+    ).toBe(200);
+    const fork = await f.author.client.patch(`/products/${f.workId}`, {
+      title: 'New revision',
+    });
+    expect(fork.status).toBe(200);
+    const current = await db.prisma.product.findUniqueOrThrow({
+      where: { id: f.workId },
+    });
+    const nextSlot = await db.prisma.productRevisionImage.findFirstOrThrow({
+      where: { revisionId: current.editingRevisionId! },
+    });
+    expect(nextSlot.slotId).not.toBe(first.slotId);
+    expect(nextSlot.crop).toEqual(crop);
+    const staleOrder = await f.author.client.patch(
+      `/products/${f.workId}/images/order`,
+      { imageIds: [first.imageId], revisionId: f.revisionId },
+    );
+    expect(staleOrder.status).toBe(409);
+    expect(
+      (
+        await f.author.client.request(
+          `/products/${f.workId}/images/${first.imageId}?revisionId=${f.revisionId}`,
+          { method: 'DELETE' },
+        )
+      ).status,
+    ).toBe(409);
+    const cleared = await f.author.client.patch(
+      `/products/${f.workId}/photos/${nextSlot.slotId}`,
+      {
+        revisionId: nextSlot.revisionId,
+        version: 0,
+        crop: null,
+        operationKey: 'clear-crop',
+      },
+    );
+    expect(cleared.status).toBe(200);
+    expect(
+      (
+        await db.prisma.productRevisionImage.findUniqueOrThrow({
+          where: { slotId: first.slotId },
+        })
+      ).crop,
+    ).toEqual(crop);
+    const replacement = upload(await png('purple'));
+    replacement.append(
+      'data',
+      JSON.stringify({
+        revisionId: nextSlot.revisionId,
+        version: 1,
+        crop: null,
+        operationKey: 'published-replace',
+      }),
+    );
+    expect(
+      (
+        await f.author.client.request(
+          `/products/${f.workId}/photos/${nextSlot.slotId}`,
+          {
+            method: 'POST',
+            headers: { 'Idempotency-Key': 'published-replace' },
+            body: replacement,
+          },
+        )
+      ).status,
+    ).toBe(201);
+    expect(
+      (
+        await db.prisma.productRevisionImage.findUniqueOrThrow({
+          where: { slotId: first.slotId },
+        })
+      ).imageId,
+    ).toBe(first.imageId);
+    expect(objects.get(`PUBLIC:${full.objectKey}`)!.bytes).toEqual(
+      publishedBytes,
+    );
+    expect(
+      (
+        await f.author.client.patch(
+          `/products/${f.workId}/photos/${first.slotId}`,
+          { ...request, operationKey: 'stale' },
+        )
+      ).status,
+    ).toBe(409);
+  });
+
+  it('replaces a full-gallery slot atomically, replays it and serializes concurrent replacements', async () => {
+    const f = await approvedAuthor('photo-replace');
+    const added = await f.author.client.request(
+      `/products/${f.workId}/images`,
+      {
+        method: 'POST',
+        headers: {
+          'Idempotency-Key': 'original-slot',
+          'X-Photo-Response': 'slots',
+        },
+        body: upload(f.bytes),
+      },
+    );
+    const first = workPhotoUploadResponseSchema.parse(await added.json())
+      .photos[0]!;
+    await fillRevision(f.workId, f.revisionId, 9);
+    const bytes = await png('green');
+    const replace = (operationKey: string, version = 0) => {
+      const form = upload(bytes);
+      form.append(
+        'data',
+        JSON.stringify({
+          revisionId: f.revisionId,
+          version,
+          crop: null,
+          operationKey,
+        }),
+      );
+      return f.author.client.request(
+        `/products/${f.workId}/photos/${first.slotId}`,
+        {
+          method: 'POST',
+          headers: { 'Idempotency-Key': operationKey },
+          body: form,
+        },
+      );
+    };
+    const result = await replace('replacement');
+    expect(result.status).toBe(201);
+    const body = await result.json();
+    expect(body.photo).toMatchObject({
+      slotId: first.slotId,
+      revisionId: f.revisionId,
+      version: 1,
+    });
+    expect(body.photo.imageId).not.toBe(first.imageId);
+    expect(await (await replace('replacement')).json()).toEqual(body);
+    const originalReplay = await f.author.client.request(
+      `/products/${f.workId}/images`,
+      {
+        method: 'POST',
+        headers: {
+          'Idempotency-Key': 'original-slot',
+          'X-Photo-Response': 'slots',
+        },
+        body: upload(f.bytes),
+      },
+    );
+    expect(originalReplay.status).toBe(201);
+    expect(
+      workPhotoUploadResponseSchema.parse(await originalReplay.json())
+        .photos[0],
+    ).toEqual(first);
+    expect(
+      (
+        await (
+          await f.author.client.get(
+            `/products/${f.workId}/image-operations/replacement?slotId=${first.slotId}`,
+          )
+        ).json()
+      ).photo,
+    ).toEqual(body.photo);
+    const raced = await Promise.all([
+      replace('race-one', 1),
+      replace('race-two', 1),
+    ]);
+    expect(raced.map((r) => r.status).sort()).toEqual([201, 409]);
+    const slots = await db.prisma.productRevisionImage.findMany({
+      where: { revisionId: f.revisionId },
+      orderBy: { position: 'asc' },
+    });
+    expect(slots).toHaveLength(10);
+    expect(slots.map((slot) => slot.position)).toEqual(
+      Array.from({ length: 10 }, (_, i) => i),
+    );
+    expect(slots[0]!.slotId).toBe(first.slotId);
+    expect(slots[0]!.version).toBe(2);
+    expect(
+      await db.prisma.productImage.count({ where: { productId: f.workId } }),
+    ).toBe(10);
+    const cleanups = await db.prisma.mediaOperation.findMany({
+      where: { kind: 'CLEANUP' },
+    });
+    expect(cleanups.length).toBeGreaterThan(0);
+    for (const cleanup of cleanups) await media.run(cleanup.id);
+    const failedAssets = await db.prisma.mediaAsset.findMany({
+      where: { ownerUserId: f.author.row.id, state: 'FAILED' },
+      include: { objects: true },
+    });
+    expect(failedAssets.length).toBeGreaterThan(0);
+    for (const asset of failedAssets)
+      for (const object of asset.objects) {
+        expect(object.state).toBe('DELETED');
+        expect(objects.has(`${object.tier}:${object.objectKey}`)).toBe(false);
+      }
+    expect(
+      (await f.author.client.get(`/images/${slots[0]!.imageId}?source=true`))
+        .status,
+    ).toBe(200);
+  });
+
+  it('rolls back a replacement after staging when the slot changes and cleans only the staged asset', async () => {
+    const f = await approvedAuthor('replace-rollback');
+    const added = await f.author.client.request(
+      `/products/${f.workId}/images`,
+      {
+        method: 'POST',
+        headers: {
+          'Idempotency-Key': 'rollback-original',
+          'X-Photo-Response': 'slots',
+        },
+        body: upload(f.bytes),
+      },
+    );
+    const first = workPhotoUploadResponseSchema.parse(await added.json())
+      .photos[0]!;
+    let stagedId: string | undefined;
+    stage.mockImplementationOnce(
+      async (...args: Parameters<MediaLifecycleService['stage']>) => {
+        const staged = await MediaLifecycleService.prototype.stage.apply(
+          media,
+          args,
+        );
+        stagedId = staged.id;
+        await db.prisma.productRevisionImage.update({
+          where: { slotId: first.slotId },
+          data: { version: { increment: 1 } },
+        });
+        return staged;
+      },
+    );
+    const form = upload(await png('blue'));
+    form.append(
+      'data',
+      JSON.stringify({
+        revisionId: f.revisionId,
+        version: 0,
+        crop: null,
+        operationKey: 'rollback',
+      }),
+    );
+    const result = await f.author.client.request(
+      `/products/${f.workId}/photos/${first.slotId}`,
+      {
+        method: 'POST',
+        headers: { 'Idempotency-Key': 'rollback' },
+        body: form,
+      },
+    );
+    expect(result.status).toBe(409);
+    expect(
+      await db.prisma.productImage.count({ where: { productId: f.workId } }),
+    ).toBe(1);
+    expect(
+      (
+        await db.prisma.productRevisionImage.findUniqueOrThrow({
+          where: { slotId: first.slotId },
+        })
+      ).imageId,
+    ).toBe(first.imageId);
+    const cleanup = await db.prisma.mediaOperation.findFirstOrThrow({
+      where: {
+        kind: 'CLEANUP',
+        objects: { some: { object: { assetId: stagedId! } } },
+      },
+    });
+    await media.run(cleanup.id);
+    expect(
+      (
+        await db.prisma.mediaAsset.findUniqueOrThrow({
+          where: { id: stagedId! },
+        })
+      ).state,
+    ).toBe('FAILED');
+    expect(
+      (await f.author.client.get(`/images/${first.imageId}?source=true`))
+        .status,
+    ).toBe(200);
+  });
+
+  it('rejects attach while cleanup is deleting a retired asset', async () => {
+    const f = await approvedAuthor('cleanup-attach');
+    const staged = await media.stage(
+      f.author.row.id,
+      'WORK_IMAGE',
+      { buffer: f.bytes, mimetype: 'image/png' },
+      'cleanup-attach',
+    );
+    await db.prisma.$transaction((tx) => media.enqueueCleanup(tx, [staged.id]));
+    const cleanup = await db.prisma.mediaOperation.findFirstOrThrow({
+      where: {
+        kind: 'CLEANUP',
+        objects: { some: { object: { assetId: staged.id } } },
+      },
+    });
+    let deleting!: () => void;
+    const started = new Promise<void>((resolve) => {
+      deleting = resolve;
+    });
+    let release!: () => void;
+    const blocked = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    vi.mocked(S3MediaObjectStore.prototype.delete).mockImplementationOnce(
+      async (tier, key) => {
+        deleting();
+        await blocked;
+        objects.delete(`${tier}:${key}`);
+      },
+    );
+    const running = media.run(cleanup.id);
+    try {
+      await started;
+      expect(
+        (
+          await db.prisma.mediaAsset.findUniqueOrThrow({
+            where: { id: staged.id },
+          })
+        ).state,
+      ).toBe('FAILED');
+      await expect(
+        db.prisma.$transaction((tx) => media.attach(tx, staged.id)),
+      ).rejects.toThrow('Media asset cannot be attached');
+    } finally {
+      release();
+      await running;
+    }
+    expect(
+      await db.prisma.mediaObject.count({
+        where: { assetId: staged.id, state: { not: 'DELETED' } },
+      }),
+    ).toBe(0);
   });
 
   it('does not let concurrent uploads exceed gallery capacity', async () => {

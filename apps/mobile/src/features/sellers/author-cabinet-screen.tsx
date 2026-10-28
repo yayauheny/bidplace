@@ -1,4 +1,5 @@
 import { PageScrollView } from '../../components/layout/PageScrollView';
+import { CroppedPhoto } from '../../components/shared/CroppedPhoto';
 import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
@@ -15,7 +16,6 @@ import {
   PageHeader,
   PageState,
   PrimaryButton,
-  ResilientRemoteImage,
   SecondaryButton,
 } from '../../components/ui';
 import { getApiAssetUrl } from '../../lib/environment';
@@ -164,7 +164,10 @@ export function AuthorCabinetScreen() {
               }}
             >
               {work.coverImage ? (
-                <ResilientRemoteImage
+                <CroppedPhoto
+                  crop={work.coverImage.crop}
+                  sourceWidth={work.coverImage.width}
+                  sourceHeight={work.coverImage.height}
                   uri={getApiAssetUrl(work.coverImage.url)}
                   component="WorkCoverCard"
                   accessibilityLabel={work.title ?? 'Работа'}

@@ -196,6 +196,7 @@ export function ProductScreen({ publicId }: { publicId: string }) {
                       <WorkCoverCard
                         href={`/product/${item.work.publicId}`}
                         imageUrl={item.work.images[0].url}
+                        imagePresentation={item.work.images[0]}
                         imageLabel={item.work.title}
                         title={item.work.title}
                         authorSlug={item.author.slug}

@@ -1,4 +1,5 @@
 import {
+  photoCropSchema,
   portfolioAuthorDetailResponseSchema,
   portfolioAuthorsResponseSchema,
   portfolioAuthorApplicationResponseSchema,
@@ -351,6 +352,9 @@ export class PortfolioService {
                   orderBy: { position: 'asc' },
                   take: 1,
                   select: {
+                    slotId: true,
+                    version: true,
+                    crop: true,
                     position: true,
                     image: {
                       select: {
@@ -381,7 +385,13 @@ export class PortfolioService {
         const revisionImage = revision?.images[0];
         const image = revision
           ? revisionImage
-            ? { ...revisionImage.image, position: revisionImage.position }
+            ? {
+                ...revisionImage.image,
+                position: revisionImage.position,
+                slotId: revisionImage.slotId,
+                slotVersion: revisionImage.version,
+                crop: photoCropSchema.nullable().parse(revisionImage.crop),
+              }
             : null
           : (product.images[0] ?? null);
         return [
@@ -490,7 +500,11 @@ function toPortfolioAuthor(profile: {
   achievements?:
     | Array<{
         id: string;
-        occurredDate: { year: number; month: number; day: number | null } | null;
+        occurredDate: {
+          year: number;
+          month: number;
+          day: number | null;
+        } | null;
         body: string;
         image?: {
           url: string;

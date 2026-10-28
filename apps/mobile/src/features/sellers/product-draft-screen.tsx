@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { FormProvider, useForm } from 'react-hook-form';
 
 import type { SellerProductDetailResponse, User } from '@bidplace/contracts';
+import { designTokens } from '@bidplace/design-tokens';
 
 import { AppShell, FormPageShell } from '../../components/layout';
 import { InfrastructurePageStatus } from '../../components/shared/InfrastructurePageStatus';
@@ -58,11 +59,12 @@ import { ProductDraftScreenChrome } from './product-draft-screen-chrome';
 import { useProductDraftData } from './product-draft-data';
 import { useProductDraftSaveSession } from './product-draft-save';
 import { useProductDraftBrowserHistoryGuard } from './product-draft-browser-guard';
+import { PhotoEditor } from './photo-editor';
 import { useProductDraftImageActions } from './product-draft-image-actions';
 import { useProductDraftNavigation } from './product-draft-navigation';
+import { storyLocalDraftSchema } from './story-local-draft';
 import {
   useProductStoryEditor,
-  storyLocalDraftSchema,
   type ProductStoryEditor,
 } from './use-product-story-editor';
 import {
@@ -103,6 +105,9 @@ export function ProductDraftScreen({
     data;
   const [copiedRecovery, setCopiedRecovery] = useState<string | null>(null);
   const [recoveryManualVisible, setRecoveryManualVisible] = useState(false);
+  const [discardPhotosOperation, setDiscardPhotosOperation] = useState<
+    number | null
+  >(null);
 
   // Read the installed session (not an auth context) so the owner specs can
   // mount the screen with only a query cache, like the rest of the save flow.
@@ -193,17 +198,19 @@ export function ProductDraftScreen({
     storyEditor,
   });
 
-  const uploadUnfinished = imageActions.uploadFiles.some(
-    (file) => file.status !== 'done',
-  );
+  const uploadUnfinished =
+    imageActions.photoCards.some((file) => file.status !== 'done') ||
+    !imageActions.photoOrderConfirmed;
   const uploadBusy =
-    imageActions.choosingImages || imageActions.upload.isPending;
+    imageActions.choosingImages ||
+    imageActions.upload.isPending ||
+    imageActions.photosBusy;
 
   const browserGuard = useProductDraftBrowserHistoryGuard({
     uploadPending: uploadBusy,
     isDirty: form.formState.isDirty,
     storyDirty: storyEditor.dirty,
-    storyPending: storyEditor.pending,
+    storyPending: (storyEditor.saving || storyEditor.uploading),
     draftEffectivelyClean: () =>
       !form.formState.isDirty && storyEditor.isEffectivelyClean(),
     productId,
@@ -287,31 +294,75 @@ export function ProductDraftScreen({
   const storyWizardView =
     isCreationFlow && wizardStep === productWizardStep.story;
 
+  if (imageActions.editingPhoto?.source) {
+    const card = imageActions.editingPhoto;
+    return (
+      <PhotoEditor
+        input={card.prepared?.input ?? card.source!}
+        confirmed={card.edit}
+        position={imageActions.photoCards.findIndex(
+          (photo) => photo.id === card.id,
+        )}
+        count={imageActions.photoCards.length}
+        pending={imageActions.choosingImages}
+        error={imageActions.imageSelectionError}
+        onConfirm={(edit) => void imageActions.confirmPhotoEdit(edit)}
+        onCancel={imageActions.closePhotoEdit}
+      />
+    );
+  }
+
   return (
     <FormProvider {...form}>
       <ProductDraftWriteGuard guard={session.transitionLock}>
         <FormPageShell
           hideDock
           variant={isCreationFlow ? 'creation' : 'default'}
+          contentGap={
+            storyWizardView ? designTokens.space.x3 : undefined
+          }
           bottomAction={
             isCreationFlow && wizardStep === productWizardStep.images ? (
               <PrimaryButton
-                label="Продолжить"
+                label={
+                  uploadBusy
+                    ? 'Продолжить'
+                    : uploadUnfinished
+                      ? imageActions.photoCards.some(
+                          (card) => card.status === 'local',
+                        )
+                        ? `Загрузить ${imageActions.photoCards.filter((card) => card.status === 'local').length} фото`
+                        : imageActions.photoCards.some(
+                              (card) => card.status === 'error',
+                            )
+                          ? 'Продолжить'
+                          : 'Сохранить порядок'
+                      : 'Продолжить'
+                }
                 width="block"
                 size="creationAction"
                 disabled={
                   uploadBusy ||
                   session.inputsLocked ||
-                  !canOpenProductWizardStep(
-                    productWizardStep.story,
-                    wizardDraft,
-                    uploadUnfinished,
-                  )
+                  (imageActions.photoCards.some(
+                    (card) => card.status === 'error',
+                  ) &&
+                    !imageActions.photoCards.some(
+                      (card) => card.status === 'local',
+                    )) ||
+                  (!uploadUnfinished &&
+                    !canOpenProductWizardStep(
+                      productWizardStep.story,
+                      wizardDraft,
+                      false,
+                    ))
                 }
                 onPress={() =>
-                  void wizardNavigation.moveToWizardStep(
-                    productWizardStep.story,
-                  )
+                  uploadUnfinished
+                    ? void imageActions.startUpload()
+                    : void wizardNavigation.moveToWizardStep(
+                        productWizardStep.story,
+                      )
                 }
               />
             ) : undefined
@@ -324,25 +375,29 @@ export function ProductDraftScreen({
             wizardStep={wizardStep}
             hasExistingProduct={Boolean(existingProduct)}
             canOpenStep={(step) =>
-              !uploadBusy && canOpenProductWizardStep(step, wizardDraft, uploadUnfinished)
+              !uploadBusy &&
+              canOpenProductWizardStep(step, wizardDraft, uploadUnfinished)
             }
             onStepPress={(step) => void wizardNavigation.moveToWizardStep(step)}
             storyBarDisabled={
-              storyEditor.pending || session.inputsLocked || uploadBusy
+              (storyEditor.saving || storyEditor.uploading) || session.inputsLocked || uploadBusy
             }
             closeLabel={
               form.formState.isDirty || storyEditor.dirty
                 ? 'Сохранить и закрыть'
                 : 'Закрыть'
             }
-            closeLoading={session.save.isPending || storyEditor.pending}
+            closeLoading={session.save.isPending || (storyEditor.saving || storyEditor.uploading)}
             closeDisabled={
               session.submit.isPending ||
-              uploadBusy ||
-              storyEditor.pending ||
+              (storyEditor.saving || storyEditor.uploading) ||
               session.inputsLocked
             }
-            onClose={() => void wizardNavigation.saveAndClose()}
+            onClose={() => {
+              if (!uploadBusy && uploadUnfinished)
+                setDiscardPhotosOperation(session.snapshotOperation());
+              else void wizardNavigation.saveAndClose();
+            }}
             delivery={productDetail.data?.publication}
             moderationNotice={moderationNotice}
             editorStatus={editorStatus}
@@ -355,6 +410,7 @@ export function ProductDraftScreen({
                 ? existingProduct.images.length < 1 ||
                   session.save.isPending ||
                   uploadBusy ||
+                  uploadUnfinished ||
                   session.inputsLocked
                 : false
             }
@@ -443,10 +499,19 @@ export function ProductDraftScreen({
               wizardStep={wizardStep}
               reorderPending={imageActions.reorderImages.isPending}
               removePending={imageActions.removeImage.isPending}
-              uploadPending={
-                imageActions.upload.isPending || imageActions.choosingImages
+              uploadPending={uploadBusy || imageActions.removeImage.isPending}
+              photoCards={imageActions.photoCards}
+              photoOrderError={imageActions.photoOrderError}
+              photoPreparationError={imageActions.photoPreparationError}
+              photoOperationPending={
+                imageActions.photosBusy || imageActions.upload.isPending
               }
-              uploadFiles={imageActions.uploadFiles}
+              photoOrderConfirmed={imageActions.photoOrderConfirmed}
+              onEditPhoto={(id) => void imageActions.editPhoto(id)}
+              onPhotoLoadState={imageActions.photoLoadState}
+              onMovePhotoTo={imageActions.movePhotoTo}
+              onStartUpload={() => void imageActions.startUpload()}
+              onRemovePhoto={(id) => void imageActions.removePhoto(id)}
               uploadError={imageActions.upload.isError}
               uploadMessage={
                 imageActions.upload.error
@@ -463,7 +528,7 @@ export function ProductDraftScreen({
                 imageActions.removeImage.isError ||
                 imageActions.reorderImages.isError
               }
-              onRetryUpload={() => imageActions.retryUpload()}
+              onRetryUpload={(id?: string) => imageActions.retryUpload(id)}
               onCancelUpload={imageActions.cancelUpload}
               onChooseImages={() => void imageActions.chooseImages()}
               onMoveImage={imageActions.reorder}
@@ -477,7 +542,7 @@ export function ProductDraftScreen({
           (!isCreationFlow || wizardStep === productWizardStep.story) ? (
             <ProductDraftStoryStep
               productId={existingProduct.id}
-              sessionEpoch={authEpoch}
+              authEpoch={authEpoch}
               isCreationFlow={isCreationFlow}
               images={existingProduct.images}
               blocks={storyEditor.blocks}
@@ -488,20 +553,19 @@ export function ProductDraftScreen({
                   : undefined
               }
               editable={editable && !session.inputsLocked && !storyNeedsDraft}
-              savePending={storyEditor.pending || session.save.isPending}
+              savePending={storyEditor.saving || session.save.isPending}
+              uploading={storyEditor.uploading}
               saveError={storyEditor.error}
               retryUpload={storyEditor.retryUpload}
+              canAddText={storyEditor.canAddText}
+              canAddImage={storyEditor.canAddImage}
               onAddText={storyEditor.addText}
-              onAddGalleryImage={storyEditor.addGalleryImage}
               onEditText={storyEditor.editText}
               onEditAlt={storyEditor.editAlt}
               onRemove={storyEditor.remove}
               onMove={storyEditor.move}
               onChooseImage={() => void imageActions.chooseStoryImage()}
               onRetryUpload={() => void storyEditor.addImage()}
-              onBackToImages={() =>
-                void wizardNavigation.moveToWizardStep(productWizardStep.images)
-              }
               onSaveAndContinue={() =>
                 void wizardNavigation.saveStoryAndContinue()
               }
@@ -519,7 +583,7 @@ export function ProductDraftScreen({
                 techniqueTerms: data.techniquesCatalog.data?.terms ?? [],
               }}
               productId={existingProduct.id}
-              sessionEpoch={authEpoch}
+              authEpoch={authEpoch}
               images={existingProduct.images}
               blocks={storyEditor.blocks}
               editable={editable && !session.inputsLocked}
@@ -528,7 +592,7 @@ export function ProductDraftScreen({
               submitPending={
                 session.submit.isPending ||
                 session.save.isPending ||
-                storyEditor.pending
+                (storyEditor.saving || storyEditor.uploading)
               }
               submitError={session.submit.isError}
               onSubmitPress={() => void session.submitCurrentForm()}
@@ -550,6 +614,43 @@ export function ProductDraftScreen({
             <SecondaryButton
               label="Закрыть"
               onPress={() => setRecoveryManualVisible(false)}
+            />
+          </AppDialog>
+
+          <AppDialog
+            open={
+              discardPhotosOperation !== null &&
+              session.isCurrentOperation(discardPhotosOperation)
+            }
+            title="Отбросить локальные изменения фото?"
+            description="Принятые сервером фотографии сохранятся. Незагруженные файлы и локальные правки будут удалены."
+            onClose={() => setDiscardPhotosOperation(null)}
+          >
+            {imageActions.imageSelectionError ? (
+              <AppText role="bodySmall" tone="danger" accessibilityRole="alert">
+                {imageActions.imageSelectionError}
+              </AppText>
+            ) : null}
+            <PrimaryButton
+              label="Отбросить изменения"
+              onPress={() => {
+                const operation = discardPhotosOperation;
+                if (
+                  operation === null ||
+                  !session.isCurrentOperation(operation)
+                )
+                  return;
+                void imageActions.cancelUpload().then((discarded) => {
+                  if (!discarded || !session.isCurrentOperation(operation))
+                    return;
+                  setDiscardPhotosOperation(null);
+                  void wizardNavigation.saveAndClose();
+                });
+              }}
+            />
+            <SecondaryButton
+              label="Продолжить редактирование"
+              onPress={() => setDiscardPhotosOperation(null)}
             />
           </AppDialog>
 
