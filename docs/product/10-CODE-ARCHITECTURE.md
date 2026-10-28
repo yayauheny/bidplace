@@ -1,6 +1,6 @@
 # bidplace — архитектура кода
 
-Последнее обновление: 2026-10-26
+Последнее обновление: 2026-10-29
 Статус: Confirmed technical boundaries for the portfolio-first MVP implementation.
 
 ## 2026-10-26 — Photo workflow (DEC-148)
@@ -184,6 +184,31 @@ cohort, UTC growth and revision-age operations use a new protected foundation
 read in AdminAnalyticsService. `SellerProfile.firstPublishedAt` records only known
 first publication; no historical backfill. [Contracts/configuration](analytics-contract.md),
 [metric definitions](analytics-metrics.md), audit.
+
+## Владельцы логики (2026-10-29, DEC-150)
+
+Rule: each topic has exactly one owner; callers use it instead of copying the
+logic. A topic is either one file of named functions (the TypeScript
+equivalent of a Java utility class) or a Nest service when it needs state, DB or
+DI. No scattered per-screen or per-controller helpers. Existing files are not
+rewritten for style; a wave moves only what it touches. Statuses below are code
+facts; "Planned" owners are created by the named launch wave.
+
+| Topic | Owner | Status |
+| --- | --- | --- |
+| Whether a user may act (auth abuse, rate limits, Turnstile, signals and holds, strikes, 3-booking cap, ban) | `apps/api/src/antifraud/` (`AntifraudService`); today `auth-abuse/` + `core/rate-limit` | Planned — W2b moves both in |
+| Product publication and visibility transitions | `apps/api/src/products/` publication module | Planned — W1 |
+| Lot and order transitions, pricing | `apps/api/src/commerce/` `listing-state.ts`, `order-state.ts`, `auction-pricing.ts` | Planned — W3 |
+| API errors | `apps/api/src/core/errors/` (`AppException` + mapper) | Implemented |
+| Business time | `apps/api/src/core/time/` (`Clock`; `dbNow(tx)` added in W3) | Partial |
+| Scheduled jobs | `TickService` (W2) | Planned — W2 |
+| Transactional emails | notification outbox, `enqueueNotification` | Planned — W3 |
+| Client cache keys and invalidation | `apps/mobile/src/lib/query-cache.ts` | Implemented; W4 adds commerce keys |
+| Client error texts | `apps/mobile/src/lib/api-error-messages.ts` | Planned — W1 |
+| Money formatting, ticking time | `apps/mobile/src/lib/money.ts`, `use-now.ts` | Planned — W4 |
+| Leave-screen guard | `apps/mobile/src/lib/use-prevent-remove.ts` | Planned — W7 |
+| Formats, limits, error codes | `packages/contracts` | Implemented |
+| Colors and sizes | `packages/design-tokens` via `useAppTheme` | Implemented |
 
 ## Applications and shared boundaries
 

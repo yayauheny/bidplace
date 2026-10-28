@@ -103,6 +103,11 @@ Neon TCP/5432, SMTP/587 или 465, R2 и purge HTTPS. Автоматическ�
 
 ## Vars и secrets
 
+Полный список переменных со ★ обязательных, без значений —
+[ENVIRONMENT.md](ENVIRONMENT.md); перед любым production deploy пройти его
+целиком. Расписание тика — `TICK_CRON` (W2): пусто по умолчанию, Cron Trigger
+не создаётся; `*/5 * * * *` при реальных аукционах.
+
 Owner — `deploy/cloudflare/wrangler.jsonc`, allowlist Container —
 `deploy/cloudflare/src/environment.ts`, server validation — `apps/api/src/core/config/env.ts`.
 `.env.example` — schema-derived local template с пустыми secrets; не production env file.
