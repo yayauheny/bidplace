@@ -231,6 +231,85 @@ describe('author story, catalog, and proposals', () => {
     }
   });
 
+  it('keeps a shared story asset after one revision releases its hold', async () => {
+    await bootstrapCatalog(prisma as never);
+    const { owner, profile, painting } = await authorWithoutCity();
+    const work = await draftWork(owner.id, profile.id, 'Shared asset', painting.id);
+    const shared = await storyAsset(owner.id, work.revision.id);
+    const otherRevision = await prisma.productRevision.create({
+      data: {
+        productId: work.product.id,
+        version: 2,
+        status: 'DRAFT',
+        title: 'Shared revision',
+        categoryId: painting.id,
+      },
+    });
+    await prisma.productRevisionStoryAsset.create({
+      data: { revisionId: otherRevision.id, mediaAssetId: shared.id },
+    });
+    await prisma.productRevisionStoryBlock.create({
+      data: {
+        revisionId: otherRevision.id,
+        position: 0,
+        type: 'IMAGE',
+        mediaAssetId: shared.id,
+      },
+    });
+    const object = await prisma.mediaObject.findFirstOrThrow({
+      where: { assetId: shared.id, variant: 'SOURCE' },
+    });
+    const bytes = Buffer.from('shared-story-bytes');
+    const stored = new Map<string, Buffer>([
+      [`${object.tier}:${object.objectKey}`, bytes],
+    ]);
+    http.app.get(MediaLifecycleService).onModuleDestroy();
+    const media = new MediaLifecycleService(
+      prisma as never,
+      {
+        delete: async (tier: string, key: string) => {
+          stored.delete(`${tier}:${key}`);
+        },
+      } as never,
+      { purge: vi.fn() } as never,
+      syntheticServerEnv(),
+      new SharpImageProcessor(),
+    );
+    media.onModuleDestroy();
+    try {
+      const saved = await owner.client.put(`/products/${work.product.id}/creation`, {
+        storyToken: 0,
+        blocks: [],
+      });
+      expect(saved.status).toBe(200);
+      expect(
+        await prisma.productRevisionStoryAsset.count({
+          where: { revisionId: work.revision.id, mediaAssetId: shared.id },
+        }),
+      ).toBe(0);
+      expect(
+        await prisma.productRevisionStoryAsset.count({
+          where: { revisionId: otherRevision.id, mediaAssetId: shared.id },
+        }),
+      ).toBe(1);
+      await media.tick();
+      expect(
+        await prisma.mediaAsset.findUniqueOrThrow({ where: { id: shared.id } }),
+      ).toMatchObject({ state: 'READY' });
+      expect(
+        await prisma.mediaObject.findUniqueOrThrow({ where: { id: object.id } }),
+      ).toMatchObject({ state: 'READY' });
+      expect(stored.get(`${object.tier}:${object.objectKey}`)).toEqual(bytes);
+      expect(
+        await prisma.productRevisionStoryBlock.count({
+          where: { revisionId: otherRevision.id, mediaAssetId: shared.id },
+        }),
+      ).toBe(1);
+    } finally {
+      media.onModuleDestroy();
+    }
+  });
+
   it('bootstraps starter dictionaries without overwriting admin edits', async () => {
     await bootstrapCatalog(prisma as never);
     const before = await prisma.category.findUniqueOrThrow({
