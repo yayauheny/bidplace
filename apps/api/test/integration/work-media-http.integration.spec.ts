@@ -353,6 +353,25 @@ describe('Work media lifecycle over authenticated HTTP and PostgreSQL', () => {
       }
       expect(await holds(next.id)).toBe(0);
       expect(await holds(originalRevisionId)).toBe(1);
+
+      await db.prisma.product.update({
+        where: { id: product.id },
+        data: { editingRevisionId: originalRevisionId },
+      });
+      vi.mocked(S3MediaObjectStore.prototype.put).mockRejectedValueOnce(new Error('private upload interrupted'));
+      expect((await send('story-partial', originalRevisionId)).status).toBe(500);
+      await db.prisma.product.update({
+        where: { id: product.id },
+        data: { editingRevisionId: next.id },
+      });
+      expect((await send('story-partial', next.id)).status).toBe(409);
+      expect(await holds(next.id)).toBe(0);
+      await db.prisma.product.update({
+        where: { id: product.id },
+        data: { editingRevisionId: originalRevisionId },
+      });
+      expect((await send('story-partial', originalRevisionId)).status).toBe(201);
+      expect(await holds(originalRevisionId)).toBe(2);
     } finally {
       await db.prisma.sellerProfile.update({ where: { id: profile.id }, data: { status: 'DRAFT' } });
     }

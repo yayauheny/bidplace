@@ -16,6 +16,18 @@
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
 | Commerce, избранное/подписки, смена email/password из settings | Not implemented в launch scope / post-MVP; [следующая волна](15-POST-MVP-BACKLOG.md). Старый commerce runtime не разрешает включать продажи. |
 
+## 2026-10-29 — Partial staging keeps its original story revision
+
+**Partial.** Follow-up review reproduced a remaining `ImagesService` /
+`MediaLifecycleService.stage` boundary: after a private object write failed in
+R1, replay of its operation key in R2 returned201 and created a hold there.
+The upload operation now records its revision in the creation transaction before
+object writes. Retry retains that binding, and a conditional update supports
+existing unbound operations. The HTTP regression requires409 in R2, no hold in
+R2, and successful recovery in R1. No migration, UI or limits changed.
+API unit478/478, integration61/61, API typecheck/lint and dependency build pass.
+Verification results are recorded in the [W0 journal](../launch/waves/W0-photo-and-trunk.md).
+
 ## 2026-10-29 — Story revision binding and rejected encodings
 
 **Partial.** `8a6e3620` requires `X-Photo-Revision` on story upload. The client

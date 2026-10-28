@@ -1161,6 +1161,8 @@ describe('ImagesService media gallery admission', () => {
         'STORY_IMAGE',
         file,
         createHash('sha256').update('product-id:story:new-story').digest('hex'),
+        false,
+        'revision-id',
       );
     }
     expect(create).not.toHaveBeenCalled();

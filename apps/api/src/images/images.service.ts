@@ -1261,21 +1261,14 @@ export class ImagesService {
         }));
       if (!held) throw new ConflictException('Story image holds are full');
     }
-    const asset = await media.stage(userId, 'STORY_IMAGE', file, scopedKey);
-    if (uploadIdentity) {
-      const bound = await this.prisma.mediaOperation.updateMany({
-        where: {
-          identity: uploadIdentity,
-          OR: [{ revisionId: null }, { revisionId: expectedRevisionId }],
-        },
-        data: { revisionId: expectedRevisionId },
-      });
-      if (bound.count !== 1) {
-        throw new ConflictException(
-          'Upload identity belongs to an earlier revision',
-        );
-      }
-    }
+    const asset = await media.stage(
+      userId,
+      'STORY_IMAGE',
+      file,
+      scopedKey,
+      false,
+      expectedRevisionId,
+    );
     return runReadCommittedTransaction(this.prisma, async (tx) => {
       const locked = await this.requireWritableOwnerInTx(tx, userId, productId);
       if (locked.editingRevisionId !== expectedRevisionId) {

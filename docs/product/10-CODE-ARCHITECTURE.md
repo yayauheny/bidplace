@@ -73,7 +73,9 @@ accepted upload during a text-only save. Story upload also sends
 `X-Photo-Revision` (`8a6e3620`). The client captures the editing revision with
 the pending file. `ImagesService.addStoryImage` rejects a missing or different
 revision before staging and again after the Product lock; the operation row
-stores that revision without putting it in the idempotency hash. A replay for
+stores that revision atomically when the upload operation is created, before
+object writes, without putting it in the idempotency hash. Failed staging keeps
+the binding; existing unbound operations are bound conditionally before writes. A replay for
 another revision is 409 and does not create a hold. The same revision can still
 replay a lost response, including at the five-photo limit. `story-local-draft.ts` owns mandatory-v2 serialization,
 identity restore and recovery-only quarantine of old unscoped v2 copies;

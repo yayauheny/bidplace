@@ -191,6 +191,7 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
     file: RawImageUpload,
     idempotencyKey: string = randomUUID(),
     preserveSource = false,
+    revisionId?: string,
   ) {
     if (!this.enabled) throw new Error('Media lifecycle is disabled');
     if (!/^[a-zA-Z0-9:_-]{1,100}$/.test(idempotencyKey))
@@ -200,6 +201,10 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
       where: { identity },
       include: objectInclude,
     });
+    if (
+      revisionId && operation?.revisionId && operation.revisionId !== revisionId
+    )
+      throw new ConflictException('Upload identity belongs to an earlier revision');
     const keepSource =
       preserveSource ||
       Boolean(
@@ -265,6 +270,8 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
             data: {
               kind: 'UPLOAD',
               identity,
+              // Bind before object writes: failed uploads must keep their owner.
+              revisionId: revisionId ?? null,
               inputChecksum: mediaInputChecksum(file),
               objects: {
                 create: objects.map((object) => ({ objectId: object.id })),
@@ -286,6 +293,17 @@ export class MediaLifecycleService implements OnModuleInit, OnModuleDestroy {
           include: objectInclude,
         });
       }
+    }
+    if (revisionId) {
+      const bound = await this.prisma.mediaOperation.updateMany({
+        where: {
+          id: operation.id,
+          OR: [{ revisionId: null }, { revisionId }],
+        },
+        data: { revisionId },
+      });
+      if (bound.count !== 1)
+        throw new ConflictException('Upload identity belongs to an earlier revision');
     }
     this.armOrphanScan();
     const source = operation.objects.find(
