@@ -482,13 +482,12 @@ export function useProductStoryEditor({
       return next;
     });
 
-  const addImage = async (image?: Blob): Promise<boolean> => {
+  const uploadImage = async (image?: Blob): Promise<boolean> => {
     if (
       !productId ||
       (current.current.saving || current.current.uploading) ||
       current.current.identity !== identity ||
-      current.current.awaitingOwnerSnapshot ||
-      canChange?.() === false
+      current.current.awaitingOwnerSnapshot
     )
       return false;
     if (
@@ -521,7 +520,7 @@ export function useProductStoryEditor({
     if (!pending) return false;
     pendingImage.current = pending;
     const previous = current.current;
-    replace({ ...previous, uploading: true, error: null });
+    replace({ ...previous, uploading: true, dirty: true, error: null });
     try {
       const result = await api.images.addStoryImage(
         productId,
@@ -559,6 +558,11 @@ export function useProductStoryEditor({
     }
   };
 
+  const addImage = async (image?: Blob): Promise<boolean> => {
+    if (canChange?.() === false) return false;
+    return uploadImage(image);
+  };
+
   const save = async (): Promise<boolean> => {
     let before = current.current;
     if (before.identity !== identity || (before.saving || before.uploading) || !productId)
@@ -567,12 +571,12 @@ export function useProductStoryEditor({
     // reach the API, even if a dirty draft predates the identity change.
     if (before.awaitingOwnerSnapshot || outstanding.current) return false;
     if (pendingImage.current) {
-      if (!(await addImage())) return false;
+      // The save may own the transition lock; replay belongs to that save.
+      if (!(await uploadImage())) return false;
       before = current.current;
       if (
         before.identity !== identity ||
-        before.awaitingOwnerSnapshot ||
-        canChange?.() === false
+        before.awaitingOwnerSnapshot
       ) return false;
     }
     if (!before.dirty) return true;

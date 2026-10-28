@@ -5,7 +5,11 @@ import { act, createElement, type ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { workImageMaxInputBytes } from '@bidplace/contracts';
+import {
+  workImageMaxInputBytes,
+  type StoryWriteRequest,
+} from '@bidplace/contracts';
+import type { ProductDraftStoryStepProps } from './product-draft-story';
 import { ApiClientError, type ApiClient } from '@bidplace/api-client';
 import {
   ProductDraftImagesStep,
@@ -72,6 +76,7 @@ const harness = vi.hoisted(() => ({
   submitProduct: vi.fn(),
   addImages: vi.fn(),
   addStoryImage: vi.fn(),
+  replaceCreation: vi.fn(),
   storyError: vi.fn(),
   launchImageLibraryAsync: vi.fn(),
   reorderImages: vi.fn(),
@@ -102,7 +107,26 @@ vi.mock('../../components/figma/FigmaIconButton', () => ({
 }));
 
 vi.mock('./product-draft-story', () => ({
-  ProductDraftStoryStep: () => null,
+  ProductDraftStoryStep: ({
+    onChooseImage,
+    onAddText,
+    onSaveAndContinue,
+    retryUpload,
+    blocks,
+  }: ProductDraftStoryStepProps) =>
+    createElement(
+      'div',
+      null,
+      createElement('button', { onClick: onChooseImage }, 'Выбрать фото истории'),
+      createElement('button', {
+        onClick: () => onAddText('PARAGRAPH', 'Текст после ошибки'),
+      }, 'Добавить текст истории'),
+      createElement('button', { onClick: onSaveAndContinue }, 'Продолжить историю'),
+      retryUpload ? createElement('span', null, 'Фото ожидает повтора') : null,
+      ...blocks.map((block) => createElement(
+        'span', { key: block.key }, block.type === 'IMAGE' ? 'Фото истории' : block.text,
+      )),
+    ),
 }));
 
 vi.mock('../../components/figma/FigmaChoiceChip', () => ({
@@ -193,9 +217,11 @@ vi.mock('../../providers/api-provider', () => ({
       create: vi.fn(),
       update: harness.updateProduct,
       submit: harness.submitProduct,
+      replaceCreation: harness.replaceCreation,
     },
     images: {
       add: harness.addImages,
+      addStoryImage: harness.addStoryImage,
       reorder: harness.reorderImages,
       photoOperation: harness.photoOperation,
       remove: harness.removeImages,
@@ -366,7 +392,7 @@ function detail(
   };
 }
 
-function mount(props: { flow?: string; stepParam?: '4' | '2' } = {}) {
+function mount(props: { flow?: string; stepParam?: '4' | '3' | '2' } = {}) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
@@ -431,6 +457,7 @@ beforeEach(() => {
   harness.addImages.mockReset();
   vi.mocked(prepareImageUpload).mockImplementation(async (input) => ({ uri: input.uri, blob: input.file ?? await (await fetch(input.uri)).blob() }));
   harness.addStoryImage.mockReset();
+  harness.replaceCreation.mockReset();
   harness.storyError.mockReset();
   harness.launchImageLibraryAsync.mockReset();
   harness.addImages.mockImplementation(async () => ({
@@ -2492,4 +2519,96 @@ describe('photo failure feedback', () => {
       }
     },
   );
+});
+
+describe('uncertain story upload during a draft transition', () => {
+  async function chooseStoryPhoto(view: ReturnType<typeof mount>) {
+    await until(view.container, () => Boolean(button(view.container, 'Выбрать фото истории')), 'story');
+    harness.launchImageLibraryAsync.mockResolvedValueOnce({
+      canceled: false,
+      assets: [{
+        uri: 'blob:story',
+        file: new File(['photo'], 'photo.png', { type: 'image/png' }),
+        width: 100,
+        height: 100,
+        mimeType: 'image/png',
+      }],
+    });
+    act(() => button(view.container, 'Выбрать фото истории')!.click());
+    await until(
+      view.container,
+      () => view.container.textContent?.includes('Фото ожидает повтора') === true,
+      'uncertain upload',
+    );
+  }
+
+  it.each([
+    ['continue', false],
+    ['continue', true],
+    ['close', false],
+    ['close', true],
+    ['submit', false],
+    ['submit', true],
+  ] as const)('replays the first photo before %s with dirty text=%s', async (action, withText) => {
+    const mediaAssetId = '66666666-6666-4666-8666-666666666666';
+    harness.addStoryImage
+      .mockRejectedValueOnce(new Error('response lost after attach'))
+      .mockResolvedValueOnce({ mediaAssetId });
+    harness.replaceCreation.mockImplementation(async (_id: string, request: StoryWriteRequest) => ({
+      storyToken: 1,
+      blocks: request.blocks.map((block, position) => ({ ...block, id: crypto.randomUUID(), position })),
+    }));
+    harness.submitProduct.mockResolvedValue({ product: product('PENDING_REVIEW') });
+    const view = mount(action === 'submit' ? {} : { flow: 'creation', stepParam: '3' });
+    await chooseStoryPhoto(view);
+    if (withText) act(() => button(view.container, 'Добавить текст истории')!.click());
+    const label = action === 'continue' ? 'Продолжить историю'
+      : action === 'close' ? 'Сохранить и закрыть' : 'Отправить на модерацию';
+    act(() => (button(view.container, label) ?? button(view.container, 'Закрыть'))!.click());
+    await until(view.container, () => harness.replaceCreation.mock.calls.length === 1, 'replayed story save');
+
+    expect(harness.addStoryImage).toHaveBeenCalledTimes(2);
+    expect(harness.addStoryImage.mock.calls[1]?.[2]).toBe(harness.addStoryImage.mock.calls[0]?.[2]);
+    expect(harness.addStoryImage.mock.invocationCallOrder[1])
+      .toBeLessThan(harness.replaceCreation.mock.invocationCallOrder[0]!);
+    expect(harness.replaceCreation.mock.calls[0]?.[1].blocks).toEqual(expect.arrayContaining([
+      expect.objectContaining({ type: 'IMAGE', mediaAssetId }),
+    ]));
+    if (withText) {
+      expect(harness.replaceCreation.mock.calls[0]?.[1].blocks).toEqual(expect.arrayContaining([
+        expect.objectContaining({ text: 'Текст после ошибки' }),
+      ]));
+    }
+    if (action === 'continue') {
+      await until(view.container, () => harness.setParams.mock.calls.some(([params]) => params.step === '4'), 'review step');
+    }
+    if (action === 'close') {
+      await until(view.container, () => harness.replace.mock.calls.some(([path]) => path === '/profile'), 'close after save');
+    }
+    if (action === 'submit') {
+      await until(view.container, () => harness.submitProduct.mock.calls.length === 1, 'submit after save');
+      expect(harness.replaceCreation.mock.invocationCallOrder[0])
+        .toBeLessThan(harness.submitProduct.mock.invocationCallOrder[0]!);
+    }
+    view.unmount();
+  });
+
+  it('retains a failed photo and text when replay fails during Continue', async () => {
+    harness.addStoryImage.mockRejectedValue(new Error('offline'));
+    const view = mount({ flow: 'creation', stepParam: '3' });
+    await chooseStoryPhoto(view);
+    act(() => button(view.container, 'Добавить текст истории')!.click());
+    act(() => button(view.container, 'Продолжить историю')!.click());
+    await flush();
+
+    expect(harness.addStoryImage).toHaveBeenCalledTimes(2);
+    expect(harness.replaceCreation).not.toHaveBeenCalled();
+    expect(harness.submitProduct).not.toHaveBeenCalled();
+    expect(harness.setParams).not.toHaveBeenCalledWith(expect.objectContaining({ step: '4' }));
+    expect(harness.replace).not.toHaveBeenCalled();
+    expect(view.container.textContent).toContain('Фото ожидает повтора');
+    expect(view.container.textContent).toContain('Текст после ошибки');
+    expect(button(view.container, 'Сохранить и закрыть')?.disabled).toBe(false);
+    view.unmount();
+  });
 });
