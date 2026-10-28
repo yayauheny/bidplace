@@ -1,292 +1,324 @@
-# W0 — Фото и история, основная ветка, чистка
+# W0 — Фото и история, основная ветка — план реализации
 
-## 0. Шапка
+> **Для агентов:** выполнять через superpowers `subagent-driven-development`
+> (рекомендуется) или `executing-plans`. Шаги — чекбоксы `- [ ]`. Общие правила —
+> [AGENT-RULES.md](../AGENT-RULES.md).
 
-- Статус: не начато. Зависит от: —. Факты проверены на `6720b7af`
-  (`feature/photo-workflow`).
-- Ветка: `fix/photo-story-hardening` от `feature/photo-workflow`.
-- Источник: план Fable 2026-10-28 + независимая проверка (четыре поправки ниже
-  уже внесены).
+**Goal:** один путь подготовки фото для галереи и истории, один набор серверных
+лимитов, сервер — владелец холдов истории, редактор истории на токенах; затем
+одна основная ветка `main`.
 
-## 1. Зачем
+**Architecture:** клиент готовит любое фото работы через `prepareImageUpload` с
+одним объектом опций; сервер пропускает фото истории через тот же `process()`,
+что и галерею; неиспользованные холды истории снимаются в транзакции
+сохранения истории под блокировкой работы. HTTP attach/remove остаются в
+`ImagesService`, байты/stage/cleanup — в `MediaLifecycleService`.
 
-Загрузка фото в историю и галерею идёт двумя разными путями с разными лимитами;
-сервер оставляет неиспользованные «холды» фото истории; клиент удаляет их сам
-после сохранения; ввод текста блокируется во время загрузки. Последние восемь
-коммитов правят вёрстку редактора истории в одних и тех же файлах. После волны:
-один путь подготовки фото, один набор серверных лимитов, сервер — владелец
-холдов, редактор истории на токенах. Затем — одна основная ветка `main`.
+**Spec:** решения этого файла (раздел Global Constraints) + `DEC-116` (лимиты
+истории), `DEC-148` (photo workflow).
 
-## 2. Промпт исполнителю
+**Ветка:** `fix/photo-story-hardening` от `feature/photo-workflow`. Факты
+проверены на `6720b7af`. Зависимости: нет.
 
-```text
-Работай в /Users/yayauheny/projects/bidplace. Создай ветку fix/photo-story-hardening
-от feature/photo-workflow. Прочитай AGENTS.md, docs/launch/AGENT-RULES.md и целиком
-docs/launch/waves/W0-photo-and-trunk.md — это ТЗ. Выполни пакеты строго по порядку
-B1 → B2 → F1 → F2 → T1 → R1 → D1, один коммит на пакет. Перед каждым пакетом
-перепроверь факты §5. Ничего сверх пакетов. Критерии приёмки обязательны; если
-недостижим — остановись и опиши. Финальный отчёт по AGENT-RULES §5.
-```
+## Global Constraints
 
-## 3. Решения (не перерешивать)
+- Клиент, галерея и история: `maxDimension 3840`, `maxBytes 10 MiB`,
+  `maxSourceBytes 25 MiB`, `quality 0.85`, PNG остаётся PNG. Аватар не меняется
+  (`profilePhotoOptions`, 1600 px / 2 MiB).
+- Сервер, вход истории: ≤ 10 MiB, сторона ≤ 8192, пикселей ≤ 50 331 648. Вход
+  галереи остаётся 25 MiB (`workImageMaxInputBytes`). Хранимый мастер — 5 MiB.
+- `STORY_LIMITS`: 5 фото, 20 текстовых блоков, длины без изменений;
+  `maxFileBytes = 10 MiB`; `maxStoryImageBytes` удалён.
+- `WORK_PHOTO_LIMITS.maxPhotos = 10` в `packages/contracts`; литералов `10` нет.
+- Idempotency-ключ заголовка и тела: `^[a-zA-Z0-9:_-]{1,100}$`.
+- Ретраи медиа: потолок 20 попыток; `nextAttemptAt` не обнулять; без миграций.
+- Клиентский SHA-256 и восстановление черновиков v1 удаляются (прод пуст).
+- Не делать: повторное использование байтов галерея ↔ история (`DEC-112`), CDN
+  для фото истории, нативную проверку, перенос `tick` на Cron (W2),
+  объединение `ImagesService` и `MediaLifecycleService`.
 
-| Тема | Решение |
-| --- | --- |
-| Подготовка на клиенте | Галерея и история идут через `lib/media/prepare-image-upload.ts`. Других путей ресайза нет. Аватар остаётся на своих опциях (`profilePhotoOptions`, 1600 px / 2 MiB). |
-| Выход клиента | `maxDimension 3840`, `maxBytes 10 MiB`, `maxSourceBytes 25 MiB`, `quality 0.85`, PNG остаётся PNG. Одинаково для галереи и истории. |
-| Вход сервера | История: файл ≤ 10 MiB, сторона ≤ 8192, пикселей ≤ 50 331 648 — через тот же `process()`, что галерея. Вход галереи остаётся 25 MiB (`workImageMaxInputBytes`). Хранимый мастер — 5 MiB для обоих, как сейчас. |
-| Бюджет истории | `STORY_LIMITS.maxStoryImageBytes` (20 MiB) и проверка удаляются. |
-| Лимиты истории | 5 фото, 20 текстовых блоков, длины — без изменений (`DEC-116`). |
-| Галерея | Константа `WORK_PHOTO_LIMITS.maxPhotos = 10` в `packages/contracts`; литералы заменить. |
-| Холды | Владелец — сервер: `replaceProductStory` снимает неиспользованные холды `STORY_IMAGE` в той же транзакции. Клиент не вызывает `removeStoryImage` после сохранения. |
-| SHA-256 на клиенте | Удаляется. Это была только подсказка «фото уже добавлено»; идемпотентность сервера на нём не держится (`images.service.ts` ~378–408 использует `sha256(productId:idempotencyKey)` и контрольную сумму загруженных байтов). |
-| Старые черновики v1 | Удаляются: ветка не развёрнута, прод пуст. |
-| Ретраи медиа | Потолок 20 попыток. `nextAttemptAt` обязательное поле — не обнулять; исключить из `tick` по `attemptCount`, в `fail` не перепланировать. Без миграции. |
-| Будущее | Новые потребители фото добавляют значение `MediaPurpose` и ссылаются на `MediaAsset.id`; новых путей подготовки и таблиц размеров не создают. |
+## Review Focus
 
-## 4. Скоуп
+1. Автор удалил фото из истории и сохранил — объект в R2 должен уйти в cleanup,
+   а фото галереи, вставленное в историю, — никогда. → Task 1, шаг 1.
+2. Шестое фото истории при двух одновременных загрузках — второе отклоняется,
+   даже если обе прошли предпроверку. → Task 1, шаг 4.
+3. Фото 12 Мп с телефона (4032×3024, ~8 MB) в истории — принимается без ошибки
+   «слишком большое». → Task 1, шаг 6; Task 3, шаг 1.
+4. Автор печатает текст, пока фото истории ещё грузится — фокус и текст не
+   пропадают. → Task 3, шаг 4.
+5. Alt-текст из одних пробелов — сохраняется как пустой, сохранение не падает. → Task 3, шаг 3.
 
-Входит: пакеты ниже. Не входит: повторное использование байтов галерея ↔ история
-(`DEC-112`), CDN вместо прокси для фото истории, нативная проверка, zoom 200 %,
-паритет 1024/1440, механизм `gcTime: Infinity` у photo-session, перенос `tick` на
-Cron (это W2), объединение `ImagesService` и `MediaLifecycleService` (не делать:
-HTTP attach/remove остаётся в `ImagesService`, байты/stage/cleanup — в
-`MediaLifecycleService`).
-
-## 5. Факты из кода
+## Facts
 
 - `apps/api/src/images/images.service.ts`: `addStoryImage` ~1194–1248 сначала
-  `media.stage`, потом проверяет `holds >= 5` (~1217–1239) — неверный порядок;
-  `removeStoryImage` ~1250–1293; заголовок idempotency ~1204 допускает 100
-  символов, а `packages/contracts/src/story.ts` ~49 — 80.
-- `apps/api/src/core/media/media-pipeline.ts` ~30–44 и `image-upload-policy.ts`:
-  история — 5 MiB / 4096 px / 16 Мп; работа — 25 MiB / 8192 px / 50 331 648 px.
-- `packages/contracts/src/story.ts`: `STORY_LIMITS` 5 фото / 20 блоков /
-  5 MiB / 20 MiB сумма; сумма проверяется в `apps/api/src/products/product-story.ts` ~175–201.
-- `packages/contracts/src/product.ts` ~52, ~122: литерал `10`.
-- `apps/mobile/src/features/sellers/product-draft-image-actions.ts`: история берёт
-  сырой blob (~1141–1167); галерея — `preparePhotoEdit` + SHA-256 и «Фото уже
-  добавлено» (~732–759).
-- `apps/mobile/src/features/sellers/use-product-story-editor.ts`: `editAlt` не
-  обрезает пробелы (~743); `addImage` пишет «5 МиБ» (~784–787); `save` вызывает
-  `removeStoryImage` в проглатывающем `catch` (~884–918); `restoreLegacy`,
-  `storyDraftLegacyKey`, `v: z.literal(2).optional()` (~51–52, ~428–474, ~532).
-- `apps/mobile/src/features/sellers/product-draft-screen.tsx` ~557 и
-  `product-draft-story.tsx` ~158: `savePending = storyEditor.pending` блокирует ввод.
-- `product-draft-story.tsx` (459 строк, 17 inline `style={{`) и
-  `product-block-actions.tsx` (367, свой SVG-меню) — менялись восемью коммитами
-  `6d51920d…6720b7af`.
+  `media.stage`, потом `holds >= 5` (~1217–1239); `removeStoryImage` ~1250–1293;
+  idempotency заголовка ~1204 — 100 символов, тело (`packages/contracts/src/story.ts` ~49) — 80.
+  Идемпотентность сервера: `sha256(productId:idempotencyKey)` + контрольная сумма
+  загруженных байтов (~378–408) — клиентский хеш не нужен.
+- `apps/api/src/core/media/media-pipeline.ts` ~30–44, `image-upload-policy.ts`:
+  история 5 MiB / 4096 / 16 Мп; работа 25 MiB / 8192 / 50 331 648.
+- `apps/api/src/products/product-story.ts` ~175–201 — сумма 20 MiB;
+  `products.service.ts` ~727 вызывает `replaceProductStory` под `FOR UPDATE`.
+- `packages/contracts/src/product.ts` ~52, ~122 — литерал `10`.
 - `apps/api/src/core/media/media-lifecycle.service.ts`: `fail` ~777–791
-  перепланирует на +15 с; `tick` ~150–161 берёт FAILED с `nextAttemptAt <= now`,
-  по 8; потолка попыток нет. `nextAttemptAt` в схеме обязательный (~882).
+  (+15 с), `tick` ~150–161 (FAILED и `nextAttemptAt <= now`, по 8), потолка нет;
+  `nextAttemptAt` обязательный (`schema.prisma` ~882).
+- `apps/mobile/src/features/sellers/product-draft-image-actions.ts`: история —
+  сырой blob (~1141–1167); галерея — `preparePhotoEdit` + SHA-256 + «Фото уже
+  добавлено» (~732–759).
+- `apps/mobile/src/features/sellers/use-product-story-editor.ts`: `editAlt` ~743;
+  «5 МиБ» ~784–787; `save` с `removeStoryImage` в проглатывающем `catch`
+  ~884–918; `restoreLegacy`, `storyDraftLegacyKey`, `v: z.literal(2).optional()`
+  ~51–52, ~428–474, ~532.
+- `product-draft-screen.tsx` ~557 и `product-draft-story.tsx` ~158:
+  `savePending = storyEditor.pending` блокирует ввод.
+- `product-draft-story.tsx` (459 строк, 17 inline `style={{`),
+  `product-block-actions.tsx` (367, свой SVG-меню) — восемь коммитов
+  `6d51920d…6720b7af` правили только их.
+- E2E `apps/mobile/e2e/work-media-lifecycle.spec.ts` ~1166 и ~1564 проверяют
+  «Фото уже добавлено».
+- Ветки: `feature/photo-workflow` = `feature/portfolio-mvp-release` + 21 коммит;
+  `origin/main` на 860 коммитов позади и не предок. CI/деплой привязаны к
+  `feature/portfolio-mvp-release`: `.github/workflows/verify.yml` ~14,
+  `production-deploy.yml` ~41–44 и `WORKERS_CI_BRANCH` ~253.
 
-## 6. Бэкенд
+## Бэкенд
 
-### B1 — Холды, лимиты, литералы (`apps/api`, `packages/contracts`)
+### Task 1: Холды и лимиты истории на сервере
 
-Переиспользовать: блокировку продукта `FOR UPDATE` в транзакции сохранения
-истории (`products.service.ts` ~727 вызывает `replaceProductStory`),
-`media.enqueueCleanup(tx, ids)`, существующий `process()` пайплайна.
-Создавать: только константу `WORK_PHOTO_LIMITS` в `packages/contracts/src/product.ts`.
+**Files:**
+- Modify: `apps/api/src/products/product-story.ts`, `apps/api/src/images/images.service.ts`,
+  `apps/api/src/images/image-upload-policy.ts`, `apps/api/src/core/media/media-pipeline.ts`,
+  `packages/contracts/src/story.ts`, `packages/contracts/src/product.ts`
+- Test: `apps/api/test/integration/author-story-catalog.integration.spec.ts`,
+  `apps/api/src/images/images.service.spec.ts`,
+  `apps/api/test/integration/work-media-http.integration.spec.ts`,
+  `apps/api/src/core/media/media-pipeline.spec.ts`,
+  `apps/api/test/integration/product-write-atomicity.integration.spec.ts`
 
-1. `replaceProductStory`: после записи блоков в той же транзакции найти холды
-   ревизии с `mediaAsset.purpose = 'STORY_IMAGE'`, на которые не ссылается ни один
-   блок этой ревизии → `deleteMany` + `enqueueCleanup`. Холды других назначений и
-   других ревизий не трогать.
-2. Удалить сумму `maxStoryImageBytes` и константу. Проверки ассета (существует,
-   владелец, READY, из галереи ревизии или холд ревизии) оставить.
-3. `addStoryImage`: дешёвый `count` до `media.stage` (409, тот же текст) +
-   проверка под блокировкой; лимит из `STORY_LIMITS.maxImages`.
-4. История в `process()` использует бюджеты работы (байты/пиксели входа).
-   Multer `/story-images` = `STORY_LIMITS.maxFileBytes` (10 MiB). Цель
-   `optimizeSource` для истории — та же, что у галереи.
-5. `WORK_PHOTO_LIMITS = { maxPhotos: 10 } as const`; два `.max(10)` и `maxFiles`
-   читают её.
-6. Idempotency: один regex `^[a-zA-Z0-9:_-]{1,100}$` для заголовка и тела.
+**Reuse:** транзакция и `FOR UPDATE` сохранения истории; `media.enqueueCleanup(tx, ids)`;
+существующий `process()`; `AppException`.
 
-Приёмка:
-- интеграция `author-story-catalog.integration.spec.ts`: история из 5 холдов, в
-  блоках 3 фото → после PUT 3 холда, 2 операции CLEANUP, после тика ассеты
-  `FAILED`, объекты `DELETED`; повторный PUT без одного фото → 2 холда; ассет
-  галереи в блоке никогда не теряет холд и не попадает в cleanup;
-- шестая загрузка отклоняется до `media.stage` (spy не вызван) и под блокировкой;
-- JPEG 4032×3024 ≤ 10 MiB принят для истории; 10 MiB + 1 байт → 413/400 на
-  multer; сторона 8193 → тот же текст ошибки, что у галереи;
-- `rg "holds >= 5|\.max\(10\)|maxStoryImageBytes" apps packages` → пусто;
-- `product-write-atomicity.integration.spec.ts` ~412 (`{intro, steps}`)
-  переписан на блоки или удалён как дубль.
+**Interfaces:**
+- Produces: `WORK_PHOTO_LIMITS = { maxPhotos: 10 } as const` (`packages/contracts/src/product.ts`);
+  `STORY_LIMITS.maxFileBytes = 10 * 1024 * 1024`; `STORY_LIMITS.maxStoryImageBytes` — удалён.
 
-### B2 — Потолок ретраев (`media-lifecycle.service.ts`)
+- [ ] **Шаг 1: падающий тест снятия холдов.** В `author-story-catalog.integration.spec.ts`:
+  история с 5 холдами, в блоках 3 фото → после PUT в БД 3 холда, 2 операции
+  CLEANUP; после тика ассеты `FAILED`, объекты `DELETED`; повторный PUT без одного
+  фото → 2 холда; ассет галереи в блоке сохраняет холд и не попадает в cleanup.
+- [ ] **Шаг 2:** прогнать — FAIL.
+- [ ] **Шаг 3:** в `replaceProductStory` после записи блоков в той же транзакции
+  удалить холды ревизии с `purpose = 'STORY_IMAGE'` без ссылающегося блока и
+  вызвать `enqueueCleanup`. Холды других назначений и ревизий не трогать.
+- [ ] **Шаг 4: падающий тест шестой загрузки.** `images.service.spec.ts`: при 5
+  холдах `addStoryImage` отклоняет с 409 и `stage` spy не вызван; при гонке
+  (предпроверка пропустила) отказ под блокировкой; лимит равен `STORY_LIMITS.maxImages`.
+- [ ] **Шаг 5:** дешёвый `count` до `media.stage` + проверка под блокировкой.
+- [ ] **Шаг 6: падающие тесты входа.** `work-media-http.integration.spec.ts`:
+  10 MiB — 200, 10 MiB + 1 байт — 413/400 на multer, `DELETE` отсутствующего холда — 200.
+  `media-pipeline.spec.ts`: кейс 48 Мп параметризовать — принят для `WORK_IMAGE`
+  и `STORY_IMAGE`; потолок истории ~233 → 10 MiB; 4032×3024 принят; сторона 8193 —
+  тот же текст ошибки, что у галереи.
+- [ ] **Шаг 7:** история в `process()` использует входные бюджеты работы; multer
+  `/story-images` = `STORY_LIMITS.maxFileBytes`; цель `optimizeSource` для истории
+  та же, что у галереи.
+- [ ] **Шаг 8:** удалить `maxStoryImageBytes` и проверку суммы; из
+  `author-story-catalog` удалить только блок бюджета (~1069–1082, `byteLength: 4_194_305` × 5),
+  не весь тест ~1031; добавить случай «5 × 9 MiB принимаются».
+- [ ] **Шаг 9:** `WORK_PHOTO_LIMITS` вместо двух `.max(10)` и `maxFiles`;
+  единый regex idempotency.
+- [ ] **Шаг 10:** `product-write-atomicity.integration.spec.ts` ~412 (`{intro, steps}`)
+  переписать на блоки или удалить, если дублирует `author-story-catalog`.
+- [ ] **Шаг 11:** прогнать спеки Task 1 — PASS;
+  `rg "holds >= 5|\.max\(10\)|maxStoryImageBytes" apps packages` → пусто.
+- [ ] **Шаг 12:** коммит `fix: release unused story holds and unify photo limits`.
 
-1. `tick` не берёт операции с `attemptCount >= 20`.
-2. `fail` при достижении потолка ставит `FAILED` без перепланирования и пишет
-   один warn с id и видом операции (без ключей объектов и URL).
+### Task 2: Потолок ретраев медиа
 
-Приёмка: `media-lifecycle.recovery.spec.ts` — операция, упавшая 20 раз, не берётся
-на 21-м тике; соседняя выполняется; warn ровно один. Лимит 8 за тик и таймер
-не меняются. Без миграции.
+**Files:**
+- Modify: `apps/api/src/core/media/media-lifecycle.service.ts`
+- Test: `apps/api/src/core/media/media-lifecycle.recovery.spec.ts`
 
-## 7. Фронтенд (`apps/mobile`)
+**Interfaces:**
+- Produces: константа `MEDIA_OPERATION_MAX_ATTEMPTS = 20` рядом с `tick`.
 
-### F1 — Один путь подготовки, исправление загрузки истории
+- [ ] **Шаг 1: падающий тест.** Операция, упавшая 20 раз, не берётся на 21-м
+  тике; соседняя выполняется; warn с id и видом операции — ровно один раз; лимит
+  8 за тик не меняется.
+- [ ] **Шаг 2:** прогнать — FAIL.
+- [ ] **Шаг 3:** `tick` исключает `attemptCount >= MEDIA_OPERATION_MAX_ATTEMPTS`;
+  `fail` на потолке ставит `FAILED` без перепланирования и пишет один warn без
+  ключей объектов и URL.
+- [ ] **Шаг 4:** PASS; `git diff --stat packages/database` → пусто.
+- [ ] **Шаг 5:** коммит `fix: cap media operation retries`.
 
-Переиспользовать: `prepareImageUpload` из `src/lib/media/prepare-image-upload.ts`,
-`preparePhotoEdit` из `src/lib/media/photo-edit.ts` (кадрирование остаётся там).
-Создавать: только экспорт `WORK_PHOTO_PREPARE` рядом с `prepareImageUpload`.
+## Фронтенд
 
-1. `chooseStoryImage`: ассет пикера → `prepareImageUpload(asset,
-   WORK_PHOTO_PREPARE)`, отправлять `.blob`; `blob:` URI пикера освобождать в
-   `finally`.
-2. Галерея: после `preparePhotoEdit` — `prepareImageUpload` с теми же опциями
-   (неотредактированные оригиналы больше не уходят сырыми). Удалить SHA-256
-   (`addSelection` ~732–748), `sourceChecksum`, ветку «Фото уже добавлено»,
-   импорт `expo-crypto`, если он больше нигде не нужен.
-3. `use-product-story-editor.ts`: `editAlt` → `altText.trim() || null`;
-   сообщение «не больше 10 МиБ» из `STORY_LIMITS.maxFileBytes`; удалить цикл
-   `removedAssets` и refs `persistedAssets`/`uploaded`, если других читателей нет.
-4. Ввод текста не блокируется во время загрузки фото: хук отдаёт `saving` и
-   `uploading` (или `pending` + `uploading`, третьего флага нет); текстовые поля
-   выключаются только при `!editable || saving`; тулбар и «добавить» — при любом.
+### Task 3: Один путь подготовки фото и загрузка истории
 
-Приёмка:
-- юнит (`product-draft-submit-lifecycle.spec.ts`): JPEG 6000×4000 9 MB для
-  истории → `addStoryImage` получает blob ≤ 10 MiB, `prepareImageUpload` вызван с
-  `WORK_PHOTO_PREPARE`; галерея — тело ≤ 10 MiB; PNG остаётся `image/png`;
-- `rg "digest\(|CryptoDigestAlgorithm|sourceChecksum|Фото уже добавлено" apps/mobile` → пусто
-  (включая `e2e/work-media-lifecycle.spec.ts` ~1166 и ~1564 — эти проверки
-  удалить или заменить);
-- `rg "removeStoryImage" apps/mobile/src` → пусто; метод в
-  `packages/api-client/src/images.ts` удалить, если других потребителей нет;
-- alt `"   "` → `altText: null`, сохранение успешно;
-- e2e: пока POST фото истории задержан, ввод в абзац сохраняет фокус и текст.
+**Files:**
+- Modify: `apps/mobile/src/lib/media/prepare-image-upload.ts`,
+  `apps/mobile/src/features/sellers/product-draft-image-actions.ts`,
+  `apps/mobile/src/features/sellers/use-product-story-editor.ts`,
+  `apps/mobile/src/features/sellers/product-draft-story.tsx`,
+  `apps/mobile/src/features/sellers/product-draft-screen.tsx`,
+  `packages/api-client/src/images.ts` (удалить `removeStoryImage`, если нет потребителей)
+- Test: `apps/mobile/src/features/sellers/product-draft-submit-lifecycle.spec.ts`,
+  `apps/mobile/src/features/sellers/use-product-story-editor.spec.ts`,
+  `apps/mobile/e2e/work-media-lifecycle.spec.ts`
 
-### F2 — Упрощение и редактор истории на токенах
+**Reuse:** `prepareImageUpload`; `preparePhotoEdit` из `src/lib/media/photo-edit.ts`
+(кадрирование остаётся там).
 
-Переиспользовать: токены `packages/design-tokens`, существующие примитивы
-`src/components/ui` (кнопки, меню/листы), `StyleSheet.create`.
-Создавать: `src/features/sellers/story-local-draft.ts` — чистые функции
-черновика истории (перенос, не новый код).
+**Interfaces:**
+- Consumes: `STORY_LIMITS.maxFileBytes`, `WORK_PHOTO_LIMITS.maxPhotos` (Task 1).
+- Produces: `export const WORK_PHOTO_PREPARE` в `prepare-image-upload.ts`
+  (значения из Global Constraints); хук истории отдаёт `saving: boolean` и
+  `uploading: boolean` вместо одного `pending`.
 
-1. Удалить старую сетку загрузки в `product-draft-images.tsx` (~581–736, ветка
-   без `photoCards`), сделать `photoCards` обязательным, удалить
-   `uploadFiles`/`UploadImageState`/статус `'queued'`, если других читателей нет.
-2. Переименовать проп `sessionEpoch` → `authEpoch` в `ProductDraftStoryStep`,
-   `ProductDraftReviewStep`, `PrivateStoryImage`.
-3. Чистые функции черновика (`storyDraftKey`, `storyDraftRecoveryKey`,
-   `storedBlocksOf`, `draftTextOf`, `restoreV2`, `moveStoredDraft`, схема) — в
-   `story-local-draft.ts`; удалить `restoreLegacy`, `storyDraftLegacyKey`, ветку
-   миграции ключа; `v: z.literal(2)` без `optional`. Хук — только состояние и эффекты.
-4. `product-block-actions.tsx`: вместо `presentation` + `menuVisible` +
-   `triggerFrame` + `triggerStrokeWidthPx` — `variant: 'story' | 'tile'`;
-   геометрия внутри компонента.
-5. `product-draft-story.tsx`: все inline `style={{…}}` → `StyleSheet.create` с
-   токенами; лимиты `canAddText`/`canAddImage` берутся из хука (один владелец),
-   дубли подсчёта в шаге удалить. Визуально ничего не меняется.
-6. Литерал `10` галереи → `WORK_PHOTO_LIMITS.maxPhotos` (пикер, `addSelection`, шаг).
+- [ ] **Шаг 1: падающий тест подготовки.** JPEG 6000×4000 9 MB для истории →
+  `addStoryImage` получает blob ≤ 10 MiB, `prepareImageUpload` вызван с
+  `WORK_PHOTO_PREPARE`; галерея — тело ≤ 10 MiB; PNG остаётся `image/png`.
+- [ ] **Шаг 2:** FAIL.
+- [ ] **Шаг 3:** `chooseStoryImage` → `prepareImageUpload(asset, WORK_PHOTO_PREPARE)`,
+  отправлять `.blob`, `blob:` URI пикера освобождать в `finally`; галерея после
+  `preparePhotoEdit` → `prepareImageUpload` с теми же опциями. `editAlt` →
+  `altText.trim() || null` (тест: `"   "` → `altText: null`, сохранение успешно).
+- [ ] **Шаг 4: падающий тест ввода.** `use-product-story-editor.spec.ts`: после
+  сохранения `removeStoryImage` не вызывается; при `uploading = true` текст
+  редактируется. E2E: пока POST фото истории задержан, ввод в абзац держит фокус и текст.
+- [ ] **Шаг 5:** удалить цикл `removedAssets` и refs `persistedAssets`/`uploaded`
+  (если нет других читателей); хук отдаёт `saving`/`uploading`; текстовые поля
+  выключаются только при `!editable || saving`, тулбар и «добавить» — при любом.
+- [ ] **Шаг 6:** удалить SHA-256 (`addSelection` ~732–748), `sourceChecksum`,
+  ветку «Фото уже добавлено», импорт `expo-crypto` (если не нужен); удалить
+  e2e-проверки ~1166 и ~1564; сообщение размера — «не больше 10 МиБ».
+- [ ] **Шаг 7:** PASS; `rg "digest\(|CryptoDigestAlgorithm|sourceChecksum|Фото уже добавлено" apps/mobile` → пусто;
+  `rg "removeStoryImage" apps/mobile/src` → пусто.
+- [ ] **Шаг 8:** коммит `fix: prepare story and gallery photos through one pipeline`.
 
-Приёмка:
-- чистый дифф F2 отрицательный (удалено больше, чем добавлено) — цифры в отчёте;
-- `rg "'queued'|uploadFiles|sessionEpoch|restoreLegacy|storyDraftLegacyKey|presentation=|menuVisible|triggerFrame" apps/mobile/src` → пусто;
-- `rg -c "style=\{\{" apps/mobile/src/features/sellers/product-draft-story.tsx` → 0;
-- `use-product-story-editor.spec.ts`: legacy-случаи удалены, остальные проходят
-  без правки утверждений;
-- скриншоты редактора истории до/после на 390 px совпадают (e2e media-конфиг).
+### Task 4: Упрощение черновика и редактор истории на токенах
 
-## 8. Тесты, основная ветка, документы
+**Files:**
+- Create: `apps/mobile/src/features/sellers/story-local-draft.ts` (перенос чистых
+  функций черновика), `apps/mobile/src/features/sellers/product-draft-story.spec.tsx`
+  (owner-спек шага истории)
+- Modify: `product-draft-images.tsx`, `use-product-story-editor.ts`,
+  `product-block-actions.tsx`, `product-draft-story.tsx`, шаги `ProductDraftStoryStep`,
+  `ProductDraftReviewStep`, `PrivateStoryImage`
+- Test: `use-product-story-editor.spec.ts`, спеки старой сетки,
+  `product-draft-screen.characterization.spec.ts`, `theme.spec.ts`
 
-### T1 — Тесты
+**Reuse:** токены `packages/design-tokens`; примитивы `src/components/ui`;
+`StyleSheet.create`.
 
-Добавить (в существующие спеки):
+**Interfaces:**
+- Produces: `story-local-draft.ts` экспортирует `storyDraftKey`,
+  `storyDraftRecoveryKey`, `storedBlocksOf`, `draftTextOf`, `restoreV2`,
+  `moveStoredDraft`, схему черновика с `v: z.literal(2)`;
+  `ProductBlockActions` принимает `variant: 'story' | 'tile'`;
+  проп `authEpoch` вместо `sessionEpoch`; хук отдаёт `canAddText`, `canAddImage`.
 
-| Спек | Случай |
-| --- | --- |
-| `apps/api/test/integration/author-story-catalog.integration.spec.ts` | снятие холдов при PUT; ассет галереи не чистится; 5 × 9 MiB принимаются |
-| `apps/api/src/images/images.service.spec.ts` | шестая загрузка до `stage`; лимит равен `STORY_LIMITS.maxImages` |
-| `apps/api/test/integration/work-media-http.integration.spec.ts` | 10 MiB ок / 10 MiB+1 отказ; `DELETE` отсутствующего холда → 200 |
-| `apps/api/src/core/media/media-pipeline.spec.ts` | история и работа делят входные бюджеты (параметризовать кейс 48 Мп: оба приняты) |
-| `apps/api/src/core/media/media-lifecycle.recovery.spec.ts` | потолок ретраев |
-| `apps/mobile/src/features/sellers/product-draft-submit-lifecycle.spec.ts` | prepare для галереи и истории; PNG; trim alt |
-| `apps/mobile/src/features/sellers/use-product-story-editor.spec.ts` | нет `removeStoryImage` после сохранения; ввод при `uploading` |
-| новый `apps/mobile/src/features/sellers/product-draft-story.spec.tsx` (один owner-спек) | первый символ в виртуальном блоке создаёт абзац и держит фокус; «добавить» выключено на лимитах; ввод включён при загрузке, тулбар выключен |
-| `apps/mobile/e2e/work-media-lifecycle.spec.ts` (тест истории) | фокус переживает задержку загрузки |
+- [ ] **Шаг 1: падающий owner-спек шага истории** (`product-draft-story.spec.tsx`):
+  первый символ в виртуальном блоке создаёт абзац с тем же ключом и держит фокус;
+  «добавить» выключено на лимитах; при загрузке ввод включён, тулбар выключен.
+- [ ] **Шаг 2:** FAIL (или PASS там, где Task 3 уже обеспечил — отметить).
+- [ ] **Шаг 3:** удалить старую сетку в `product-draft-images.tsx` (~581–736),
+  `photoCards` обязательный, удалить `uploadFiles`/`UploadImageState`/`'queued'`;
+  спеки старой сетки передают `photoCards`.
+- [ ] **Шаг 4:** перенести чистые функции в `story-local-draft.ts`; удалить
+  `restoreLegacy`, `storyDraftLegacyKey`, ветку миграции ключа, `optional` у `v`;
+  удалить legacy-случаи в `use-product-story-editor.spec.ts`, остальные не менять.
+- [ ] **Шаг 5:** `ProductBlockActions` → `variant`; геометрия внутри компонента.
+- [ ] **Шаг 6:** `product-draft-story.tsx`: inline-стили → `StyleSheet.create` с
+  токенами; лимиты — из хука; дубли подсчёта удалить; переименовать `sessionEpoch`.
+  Визуально ничего не меняется.
+- [ ] **Шаг 7:** литерал `10` → `WORK_PHOTO_LIMITS.maxPhotos` (пикер, `addSelection`, шаг).
+- [ ] **Шаг 8:** PASS; `rg "'queued'|uploadFiles|sessionEpoch|restoreLegacy|storyDraftLegacyKey|presentation=|menuVisible|triggerFrame" apps/mobile/src` → пусто;
+  `rg -c "style=\{\{" apps/mobile/src/features/sellers/product-draft-story.tsx` → 0;
+  скриншоты редактора истории 390 px до/после совпадают; дифф задачи отрицательный.
+- [ ] **Шаг 9:** удалить хвост проверок геометрии в `e2e/work-media-lifecycle.spec.ts`,
+  которые дублируют скриншот (оставить один скриншот на состояние).
+- [ ] **Шаг 10:** коммит `refactor: simplify story draft and move editor styles to tokens`.
 
-Удалить / переписать:
+## Ветка и документы
 
-| Спек | Действие |
-| --- | --- |
-| `author-story-catalog.integration.spec.ts` блок бюджета 20 MiB (~1069–1082, `byteLength: 4_194_305` × 5) | удалить только этот блок, не весь тест ~1031 |
-| `media-pipeline.spec.ts` ~117 «48 Мп отклонено для STORY_IMAGE» | инвертировать/параметризовать |
-| `media-pipeline.spec.ts` ~233 потолок 5 MiB истории | обновить до 10 MiB |
-| `use-product-story-editor.spec.ts` legacy v1 и без revision | удалить |
-| `product-draft-submit-lifecycle.spec.ts` случаи дубля по checksum | удалить |
-| спеки старой сетки без `photoCards` | передать `photoCards` |
-| хвост `e2e/work-media-lifecycle.spec.ts` с проверками геометрии, дублирующими скриншот | удалить, оставить один скриншот на состояние |
+### Task 5: Основная ветка `main`
 
-Не трогать (регрессионные ворота): save-race, route-guard, browser-sentinel,
-local-draft-restore e2e, `product-story-revision.spec.ts`, publish/revoke CDN e2e,
-удаление EXIF, magic-byte policy, admission cap, `media-lifecycle.integration.spec.ts`.
+**Files:** Modify: `.github/workflows/verify.yml`, `.github/workflows/production-deploy.yml`.
 
-### R1 — Основная ветка `main` (готовит агент, выполняет основатель)
-
-Факт: `feature/photo-workflow` = `feature/portfolio-mvp-release` + 21 коммит;
-`origin/main` отстаёт на 860 коммитов и не является предком. Деплой и CI
-привязаны к `feature/portfolio-mvp-release`: `.github/workflows/verify.yml` ~14,
-`production-deploy.yml` ~41–44 и `WORKERS_CI_BRANCH` ~253.
-
-Агент:
-1. Проверяет, что уникальные коммиты `origin/main` (`git log feature/photo-workflow..origin/main`)
-   уже по содержанию есть в ветке (workflow-файлы); перечисляет в отчёте.
-2. Меняет в трёх местах workflow `feature/portfolio-mvp-release` → `main`.
-3. Пишет в отчёт точные команды для основателя (не выполняет):
+- [ ] **Шаг 1:** `git log feature/photo-workflow..origin/main` — перечислить
+  уникальные коммиты `origin/main` и подтвердить, что их содержимое уже в ветке.
+- [ ] **Шаг 2:** заменить `feature/portfolio-mvp-release` на `main` в трёх местах
+  (Facts). `rg "portfolio-mvp-release" .github deploy` → пусто.
+- [ ] **Шаг 3:** записать в отчёт команды для основателя (агент их не выполняет):
 
 ```bash
 git switch main && git reset --hard fix/photo-story-hardening   # после ревью W0
 git push --force-with-lease origin main
 # GitHub → Settings → Default branch: main; Cloudflare Workers CI branch: main
 git branch --merged main | grep -v '^\*\|main' | xargs git branch -d
-git push origin --delete feature/portfolio-mvp-release            # после первого зелёного деплоя с main
+git push origin --delete feature/portfolio-mvp-release            # после зелёного деплоя с main
 ```
 
-Не удалять ветки с непомёрженными коммитами (`archive/commerce-v1` — справочник
-для W3). Список удаляемых — в отчёт.
+  Не удалять ветки с непомёрженными коммитами; `archive/commerce-v1` оставить
+  (справочник для W3).
+- [ ] **Шаг 4:** коммит `ci: use main as the release branch`.
 
-### D1 — Документы и проверки
+### Task 6: Документы и полная проверка
 
-1. `docs/product/12-DECISION-LOG.md`: одна запись «Story/Work photo limits
-   unified» со следующим свободным номером, явно `Revises: DEC-116` (5 MiB → 10 MiB
-   вход истории, бюджет 20 MiB удалён).
-2. `11-PROJECT-STATUS.md`: одна датированная запись (фото — `Partial`: открыты
-   DEC-112, CDN истории, native).
-3. `10-CODE-ARCHITECTURE.md`: только изменённые инварианты лимитов и холдов.
-4. `docs/design/04-DESIGN-STATUS.md`: редактор истории переведён на токены.
+**Files:** Modify: `docs/product/12-DECISION-LOG.md`, `docs/product/11-PROJECT-STATUS.md`,
+`docs/product/10-CODE-ARCHITECTURE.md`, `docs/design/04-DESIGN-STATUS.md`.
 
-Обязательные проверки (фактический вывод в отчёт):
+- [ ] **Шаг 1:** журнал — запись «Story/Work photo limits unified», следующий
+  свободный номер, `Revises: DEC-116` (вход истории 10 MiB, бюджет 20 MiB удалён).
+- [ ] **Шаг 2:** статус — одна запись, фото `Partial` (открыты `DEC-112`, CDN
+  истории, native); архитектура — только инварианты лимитов и холдов; дизайн-статус —
+  редактор истории на токенах.
+- [ ] **Шаг 3:** проверки (вывод в отчёт):
+  `pnpm --filter @bidplace/contracts --filter @bidplace/api-client --filter @bidplace/api --filter @bidplace/mobile typecheck` и `lint`;
+  API unit + интеграция (`author-story-catalog`, `work-media-http`, `media-lifecycle`,
+  `product-write-atomicity`, `upload-safety`) на `bidplace_e2e`; mobile unit полностью;
+  e2e `playwright.media.config.ts` (истории) + `product-story-revision.spec.ts` +
+  `local-draft-restore.spec.ts`, Chromium и WebKit; `pnpm --filter @bidplace/mobile build:web`;
+  `git diff --check`; `pnpm docs:link-check`.
+- [ ] **Шаг 4:** коммит `docs: record unified photo limits`.
 
-- `pnpm --filter @bidplace/contracts --filter @bidplace/api-client --filter @bidplace/api --filter @bidplace/mobile typecheck` и `lint` (без autofix);
-- API unit + интеграция (`author-story-catalog`, `work-media-http`,
-  `media-lifecycle`, `product-write-atomicity`, `upload-safety`) на `bidplace_e2e`;
-- mobile unit полностью; e2e `playwright.media.config.ts` (истории) +
-  `product-story-revision.spec.ts` + `local-draft-restore.spec.ts`, Chromium и WebKit;
-- `pnpm --filter @bidplace/mobile build:web`; `git diff --check`; `pnpm docs:link-check`.
+Не трогать (регрессионные ворота): save-race, route-guard, browser-sentinel,
+local-draft-restore e2e, `product-story-revision.spec.ts`, publish/revoke CDN e2e,
+удаление EXIF, magic-byte policy, admission cap, `media-lifecycle.integration.spec.ts`.
 
-## 9. Промпт ревьюеру
+## Промпт исполнителю
 
 ```text
-Прочитай docs/launch/AGENT-RULES.md §6 и этот файл. Ревью ветки
-fix/photo-story-hardening против feature/photo-workflow. Проверь сам каждый критерий
-приёмки B1–D1 (команды rg, тесты). Вердикт по AGENT-RULES §6.
+Работай в /Users/yayauheny/projects/bidplace. Создай ветку fix/photo-story-hardening
+от feature/photo-workflow. Прочитай AGENTS.md, docs/launch/AGENT-RULES.md и целиком
+docs/launch/waves/W0-photo-and-trunk.md — это план. Выполни его через
+subagent-driven-development (или executing-plans), задачи Task 1 → Task 6 по
+порядку, шаги TDD как написаны, один коммит на задачу. Перед каждой задачей
+перепроверь Facts. Ничего сверх задач. Push/merge/deploy не делать. Отчёт по
+AGENT-RULES §6.
+```
+
+## Промпт ревьюеру
+
+```text
+Прочитай docs/launch/AGENT-RULES.md §7 и docs/launch/waves/W0-photo-and-trunk.md.
+Ревью ветки fix/photo-story-hardening против feature/photo-workflow. Сам выполни
+команды приёмки (rg, тесты) каждой задачи и проверь Review Focus. Вердикт по
+AGENT-RULES §7.
 ```
 
 Инварианты:
-- один путь подготовки фото на клиенте (поиск `canvas`, `ImageManipulator`,
-  `manipulateAsync` вне `lib/media` → пусто);
+- один путь подготовки фото на клиенте: `rg "manipulateAsync|ImageManipulator|canvas" apps/mobile/src -g '!lib/media/**'` → пусто;
 - одна таблица входных лимитов на сервере; история и галерея идут через один `process()`;
 - холды истории снимает только сервер и только в транзакции сохранения;
-- `nextAttemptAt` не обнулялся, миграций нет;
-- аватар не изменён.
+- миграций нет, `nextAttemptAt` не обнуляется, аватар не изменён.
 
 Красные флаги: новый сервис или слой загрузки; объединение `ImagesService` и
-`MediaLifecycleService`; ослабленные или удалённые тесты из списка «не трогать»;
-`catch` без обработки; изменения вне `apps/api`, `apps/mobile`,
-`packages/contracts`, `packages/api-client`, workflow и документов волны;
-визуальная разница редактора истории.
+`MediaLifecycleService`; ослабленные или удалённые тесты из «не трогать»; `catch`
+без обработки; изменения вне `apps/api`, `apps/mobile`, `packages/contracts`,
+`packages/api-client`, `.github/workflows` и документов задачи 6; визуальная
+разница редактора истории.
