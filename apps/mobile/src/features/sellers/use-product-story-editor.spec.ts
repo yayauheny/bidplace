@@ -146,6 +146,58 @@ describe('revision-backed Work Story editor', () => {
     expect(view.removeStoryImage).not.toHaveBeenCalled();
   });
 
+  it('preserves spaces while typing a multiword image description and trims only on save', async () => {
+    const view = mount(null, { storyToken: 0, blocks: [{ id: blockId, position: 0, type: 'IMAGE', mediaAssetId: assetId, altText: null }] });
+    act(() => view.editor.editAlt(blockId, 'Синий '));
+    expect(view.editor.blocks[0]).toMatchObject({ altText: 'Синий ' });
+    act(() => view.editor.editAlt(blockId, 'Синий фон '));
+    view.replaceCreation.mockResolvedValueOnce({ storyToken: 1, blocks: [{ id: blockId, position: 0, type: 'IMAGE', mediaAssetId: assetId, altText: 'Синий фон' }] });
+    await act(async () => { expect(await view.editor.save()).toBe(true); });
+    expect(view.replaceCreation.mock.calls[0]?.[1].blocks[0]).toMatchObject({ altText: 'Синий фон' });
+  });
+
+  it.each([true, false])('reconciles an uncertain upload before story save and preserves text when replay succeeds=%s', async (succeeds) => {
+    const view = mount();
+    view.addStoryImage.mockRejectedValueOnce(new Error('response lost after server attach'));
+    await act(() => view.editor.addImage(new Blob(['image'], { type: 'image/png' })));
+    act(() => view.editor.addText('PARAGRAPH', 'Текст после ошибки'));
+    if (!succeeds) view.addStoryImage.mockRejectedValueOnce(new Error('still offline'));
+    view.replaceCreation.mockResolvedValueOnce({ storyToken: 1, blocks: [
+      { id: blockId, position: 0, type: 'PARAGRAPH', text: 'Текст после ошибки' },
+      { id: '85555555-5555-4555-8555-555555555555', position: 1, type: 'IMAGE', mediaAssetId: assetId, altText: null },
+    ] });
+    await act(async () => { expect(await view.editor.save()).toBe(succeeds); });
+    expect(view.addStoryImage).toHaveBeenCalledTimes(2);
+    expect(view.addStoryImage.mock.calls[1]?.[2]).toBe(view.addStoryImage.mock.calls[0]?.[2]);
+    expect(view.editor.blocks[0]).toMatchObject({ text: 'Текст после ошибки' });
+    if (succeeds) {
+      expect(view.replaceCreation.mock.calls[0]?.[1].blocks[1]).toMatchObject({ type: 'IMAGE', mediaAssetId: assetId });
+      expect(view.addStoryImage.mock.invocationCallOrder[1]).toBeLessThan(view.replaceCreation.mock.invocationCallOrder[0]!);
+    } else {
+      expect(view.replaceCreation).not.toHaveBeenCalled();
+      expect(view.editor.retryUpload).toBe(true);
+      expect(view.editor.dirty).toBe(true);
+    }
+  });
+
+  it('blocks parallel saves and retires an upload replay when the authentication epoch changes', async () => {
+    const view = mount();
+    view.addStoryImage.mockRejectedValueOnce(new Error('response lost'));
+    await act(() => view.editor.addImage(new Blob(['image'], { type: 'image/png' })));
+    act(() => view.editor.addText('PARAGRAPH', 'Private text'));
+    let finish!: (result: { mediaAssetId: string }) => void;
+    view.addStoryImage.mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));
+    let saving!: Promise<boolean>;
+    act(() => { saving = view.editor.save(); });
+    await act(async () => { expect(await view.editor.save()).toBe(false); });
+    expect(view.addStoryImage).toHaveBeenCalledTimes(2);
+    expect(view.replaceCreation).not.toHaveBeenCalled();
+    view.render(2, revisionId, emptyStory);
+    await act(async () => { finish({ mediaAssetId: assetId }); expect(await saving).toBe(false); });
+    expect(view.replaceCreation).not.toHaveBeenCalled();
+    expect(view.editor.blocks).toEqual([]);
+  });
+
   it('adopts the empty input key and keeps it while editing and clearing its contents', async () => {
     const view = mount();
     const inputKey = 'empty-input';

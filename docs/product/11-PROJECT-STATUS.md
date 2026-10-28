@@ -24,15 +24,19 @@ before staging and under lock; `SharpImageProcessor` shares gallery/story pixel
 budgets. Contracts own 10MiB story input and ten gallery photos; 20MiB story
 aggregate budget removed. Media retries stop at20 without resetting timestamps.
 Client uploads use `WORK_PHOTO_PREPARE`; upload preserves story text/focus, blank
-alt saves as null, server owns hold release. `story-local-draft.ts` owns v2;
+alt becomes null at serialization while typing keeps spaces; server owns hold release.
+A save reconciles an uncertain upload by its existing key before PUT; failure
+preserves text and never releases an unseen hold. `story-local-draft.ts` owns v2;
 editor uses StyleSheet/tokens, old optional gallery branch removed.
 
 API unit476/476, addressed frontend119/119, four-package typecheck and web export
 pass. Integration57/59 (two gallery atomicity failures also on base). Story UI
 Chromium/WebKit4/4 pass, before/after390×874 stable (one frame has46 toolbar-edge pixels differing by1 RGB level).
 Mandatory browser gates6/12 pass; protected old selectors fail. Full mobile gate
-has four synthetic picker fixtures without image metadata; permission to update
-only those fixtures is pending, assertions remain intact. Shared lint finds two
+1127/1131 passes; four synthetic picker fixtures lack image metadata. The founder
+explicitly declined fixture changes; the protected gate remains unclosed. Assertions
+and timeouts remain intact. Independent review stopped at its usage limit; two
+concrete findings were reproduced and fixed (upload replay before save, alt typing). Shared lint finds two
 pre-existing duplicate enum imports in contracts/admin.ts. Full evidence and
 rulings: [W0 journal](../launch/waves/W0-photo-and-trunk.md#журнал-исполнения-2026-10-28).
 Task5 (main/CI/deploy) explicitly deferred. `DEC-112` reuse, story CDN and native

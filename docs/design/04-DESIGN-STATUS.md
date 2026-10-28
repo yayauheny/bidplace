@@ -13,6 +13,9 @@ locks input. `ProductBlockActions` owns story/tile geometry through `variant`;
 PrivateStoryImage consumers share `authEpoch`. Styles moved to StyleSheet with
 existing typography, spacing, palette and accepted local Figma4563:32790 geometry;
 no new composition or DnD behavior. Empty virtual paragraph keeps its key/focus.
+Alt input keeps intermediate spaces and normalizes only on save; sequential
+keyboard entry is verified in Chromium/WebKit. Unknown upload outcomes reconcile
+before save or retain local text on failure.
 
 Owner/consumer119 tests and Chromium/WebKit story checks pass. Captures390×874
 before/after retain layout; all story states are pixel-identical except46 toolbar-edge pixels at1 RGB level in one Chromium frame. Existing toolbar deviations from Figma275×52 remain;

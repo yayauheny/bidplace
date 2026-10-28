@@ -123,7 +123,7 @@ export function writeBlocks(
           id: block.id,
           type: 'IMAGE',
           mediaAssetId: block.mediaAssetId,
-          altText: block.altText ?? null,
+          altText: block.altText?.trim() || null,
         };
       }
       return {

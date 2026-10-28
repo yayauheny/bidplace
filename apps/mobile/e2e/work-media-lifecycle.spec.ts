@@ -2323,7 +2323,7 @@ test('story editor polish: geometry, keyboard, and evidence screenshots', async 
       descriptionBox.y + Math.min(12, descriptionBox.height / 2),
     );
     await expect(description).toBeFocused();
-    await description.fill('Описание кадра');
+    await description.pressSequentially('Описание кадра');
     await expect(description).toHaveValue('Описание кадра');
     await expect(headingMenu).toHaveCount(0);
     await expect(imageMenu).toHaveAttribute('aria-expanded', 'true');

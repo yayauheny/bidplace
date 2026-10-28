@@ -464,7 +464,7 @@ export function useProductStoryEditor({
     change((blocks) =>
       blocks.map((block) =>
         block.key === key && block.type === 'IMAGE'
-          ? { ...block, altText: altText.trim() || null }
+          ? { ...block, altText: altText || null }
           : block,
       ),
     );
@@ -560,14 +560,22 @@ export function useProductStoryEditor({
   };
 
   const save = async (): Promise<boolean> => {
-    const before = current.current;
+    let before = current.current;
     if (before.identity !== identity || (before.saving || before.uploading) || !productId)
       return false;
     // Waiting for the owner's snapshot of this revision: nothing here may
     // reach the API, even if a dirty draft predates the identity change.
-    if (before.awaitingOwnerSnapshot) return false;
+    if (before.awaitingOwnerSnapshot || outstanding.current) return false;
+    if (pendingImage.current) {
+      if (!(await addImage())) return false;
+      before = current.current;
+      if (
+        before.identity !== identity ||
+        before.awaitingOwnerSnapshot ||
+        canChange?.() === false
+      ) return false;
+    }
     if (!before.dirty) return true;
-    if (outstanding.current) return false;
     const blocks = writeBlocks(before.blocks);
     const parsed = storyWriteRequestSchema.safeParse({
       storyToken: before.token,

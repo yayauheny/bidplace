@@ -338,7 +338,7 @@ Task5 **отложена по прямому указанию**: main, CI, push,
 | Task3 | `52e978bb` | +174/−171 | Общая подготовка, upload/saving, alt trim, удаление клиентского cleanup/hash;120 адресных unit и2 browser pass |
 | Task4 | `689af0c0` | +609/−848 | v2 owner, StyleSheet, variants, удаление старой сетки;119 адресных проверок и2 browser pass; полный mobile gate требует решения по фикстурам |
 | Task5 | — | — | Отложена; никакого cutover |
-| Task6 | см. историю этого файла | — | Документы/проверки; общий статус Partial |
+| Task6 | `566a63d1` | +232/−55 | Документы/проверки; общий статус Partial |
 
 Facts перечитаны перед каждой задачей. Позиции строк с `6720b7af` устарели,
 названные дефекты подтверждены на базе. TDD: 5 холдов вместо3; 5×9MiB давали409;
@@ -368,9 +368,9 @@ Chromium/WebKit; пользовательский Chrome не использов
   На отдельном checkout базы — те же2 fail /9 pass. Assertions не менялись.
 - Contracts48/48 и api-client51/51 unit — pass.
 - Mobile owner/consumer suite — **119/119 pass**. Полный `pnpm --filter @bidplace/mobile test`:
-  **1123 pass /4 fail**: четыре save-race фикстуры не содержат width/height/MIME; новая обязательная
-  подготовка отклоняет их. На базе save-race26/26 pass. Запрошено разрешение
-  изменить только метаданные фикстур; защищённый файл пока не изменён.
+  **1127 pass /4 fail**: четыре save-race фикстуры не содержат width/height/MIME; новая обязательная
+  подготовка отклоняет их. На базе save-race26/26 pass. Основатель явно отказался менять
+  фикстуры; защищённый файл не изменён и gate остаётся незакрытым.
 - Playwright, media story cases + `product-story-revision.spec.ts` +
   `local-draft-restore.spec.ts`, оба движка — **6 pass /6 fail**. Отдельный прогон
   базового UI воспроизводит те же6 fail: старое поле имени в первом шаге заявки
@@ -414,7 +414,37 @@ Chromium/WebKit; пользовательский Chrome не использов
 - Ruling: grep-инварианты применяются к изменённым владельцам: SHA серверных
   fixtures/Metro cache и `presentation` несвязанных sheets необходимы и сохранены.
 
-Не закрыты: обязательные baseline gates/два shared-lint дефекта, решение по
-четырём save-race metadata fixtures; `DEC-112` shared bytes, story CDN, native.
+Не закрыты: обязательные baseline gates/два shared-lint дефекта, четыре save-race metadata fixtures,
+которые основатель решил не менять; `DEC-112` shared bytes, story CDN, native.
 Статус не повышать до Implemented. Полные логи и trace — в игнорируемом workspace
 `.superpowers/sdd/W0-photo-and-trunk/`; файлы БД/миграций не менялись.
+
+
+### Финальные замечания ревью
+
+Независимый reviewer выполнил backend62/62 и frontend115pass/4fail и нашёл два
+существенных дефекта. Полное ревью/вердикт не завершены: reviewer остановлен
+лимитом использования. Оба замечания проверены по исходникам и воспроизведены
+новыми тестами перед исправлением:
+
+- `save()` после потерянного upload-ответа мог PUT-ом снять холд ещё невидимого
+  клиенту ассета. Теперь до snapshot/PUT выполняется один существующий keyed
+  replay; при отказе PUT не вызывается, текст/blob/key остаются. После await
+  повторно проверяются identity/owner/change guards. Параллельный save и смена
+  auth epoch не обходят защиту.
+- `editAlt.trim()` на каждом символе удалял пробел между словами. Raw input
+  сохраняется до serialization; `writeBlocks` trim-ит alt или отдаёт null.
+  Случай whitespace-only→null сохранён; E2E вводит подпись посимвольно.
+
+Ruling: нормализация alt перенесена из указанного в плане editAlt в writeBlocks
+— иначе controlled input не позволяет естественный multiword-ввод; контракт API
+не меняется. Ruling: перед save используется один явный retry существующей
+pending-загрузки — иначе server cleanup уничтожает её после потерянного ответа;
+нового слоя загрузки или бесконечного retry нет.
+
+Финальный mobile unit: **1127 pass /4 fail**, все четыре — неизменённые save-race
+metadata fixtures. Story polish с посимвольным alt: **2/2 pass**, mobile typecheck
+и lint pass. Один промежуточный прогон поймал timing-сбой существующей gallery
+reconciliation-проверки; без правок/таймаутов следующий адресный и полный прогон
+прошли этот случай. Это не объявлено новой гарантией стабильности.
+Основатель явно отказался разрешить metadata-изменения: статус Partial сохраняется.

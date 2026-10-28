@@ -62,7 +62,11 @@ policy keep their existing owners. `WorkPhotoCard` retains the local preview unt
 remote decode; URI callbacks and disposal remain session-scoped.
 `useProductStoryEditor` separates saving from uploading: text stays editable
 during upload, composition actions wait, and save still blocks mutations.
-Whitespace alt becomes null. `story-local-draft.ts` owns mandatory-v2 serialization,
+Editable alt retains spaces; serialization trims it or produces null.
+Before story PUT, an uncertain upload is reconciled once via the existing keyed
+retry. Replay failure prevents PUT and keeps text/file/key; identity/owner/change
+guards are checked again after waiting. This prevents cleanup of an unseen
+accepted upload during a text-only save. `story-local-draft.ts` owns mandatory-v2 serialization,
 identity restore and recovery-only quarantine of old unscoped v2 copies;
 v1/content merging and adoption from unscoped keys are removed. This quarantine
 preserves the protected revision recovery regression without applying old text.
