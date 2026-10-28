@@ -5,6 +5,22 @@
 Полный прежний журнал, включая ограничения ранних экранов:
 [история](../archive/design/04-DESIGN-STATUS-through-2026-10-23.md).
 
+## 2026-10-28 — Story editor active block controls
+
+**Partial.** The user accepted variant A: Figma density stays (line-height
+24/20, 6px between text blocks). ⋮ is shown only on the selected block, which
+differs from Figma (⋮ on every block) and is accepted. Chromium and WebKit
+measure a real 44×44 box for the selected ⋮ and for menu delete; the muted
+42px glyph stays centered. Menu stroke is 144.5×51.5 with rx=ry=25.75.
+Toolbar versus Figma 275×52 stays 272.21875×53 (allowance −2.78125 and +1).
+Native 44×44 is **Needs verification** on a device: tap ⋮ on adjacent
+single-line blocks, type in the gutter, scroll across the control, and check
+Android does not clip the box.
+[390×874 evidence](../audits/evidence/2026-10-28-story-editor-controls/README.md).
+Browser zoom 200% was not run. `simctl` is unavailable. Wide exact parity stays
+NEEDS-FIGMA. Server file reuse is **Not implemented**; session SHA-256 is not
+that implementation.
+
 ## 2026-10-28 — Story editor hit targets and menu radius
 
 **Partial.** Text ⋮ is a 24×24 Web box on a 20px line (pitch 26). Native hit

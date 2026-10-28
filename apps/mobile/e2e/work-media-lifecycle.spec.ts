@@ -1,7 +1,7 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { e2eEvidenceDir } from './support/evidence-dir';
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import { PrismaClient } from '../../../packages/database/dist/index.js';
 import { authenticatedPage, e2eRequestHeaders } from './support/auth-session';
 import { fillControl } from './support/fill-control';
@@ -226,7 +226,7 @@ test('Work waits for CDN media, publishes revisions atomically, loads FULL only 
       .getByRole('textbox', { name: 'Заголовок истории' })
       .fill('Вторая строка');
     const paragraphBlock = page.locator('[data-editor-block="text"]').first();
-    await paragraphBlock.hover();
+    await paragraphBlock.getByRole('textbox').click();
     await paragraphBlock
       .getByRole('button', { name: 'Действия с блоком' })
       .click();
@@ -243,6 +243,9 @@ test('Work waits for CDN media, publishes revisions atomically, loads FULL only 
     await page.getByRole('button', { name: 'Добавить изображение' }).click();
     await (await storyFileChooser).setFiles('e2e/fixtures/profile-photo.png');
     const photoBlock = page.locator('[data-editor-block="image"]');
+    await photoBlock
+      .getByRole('button', { name: 'Выбрать изображение истории' })
+      .click();
     await expect(
       photoBlock.getByRole('button', { name: 'Действия с изображением' }),
     ).toBeVisible();
@@ -268,7 +271,7 @@ test('Work waits for CDN media, publishes revisions atomically, loads FULL only 
       .getByRole('button', { name: 'Удалить', exact: true })
       .click();
     const headingBlock = page.locator('[data-editor-block="text"]').first();
-    await headingBlock.hover();
+    await headingBlock.getByRole('textbox').click();
     await headingBlock
       .getByRole('button', { name: 'Действия с блоком' })
       .focus();
@@ -1787,7 +1790,9 @@ test('story editor polish: geometry, keyboard, and evidence screenshots', async 
 }) => {
   test.setTimeout(180_000);
   const { seller, categoryId } = await createSellerFixture();
-  const { context, page } = await authenticatedPage(browser, seller);
+  const { context, page } = await authenticatedPage(browser, seller, undefined, {
+    hasTouch: true,
+  });
   const evidenceDir = resolve(
     e2eEvidenceDir,
     '2026-10-28-story-editor-controls',
@@ -1853,6 +1858,9 @@ test('story editor polish: geometry, keyboard, and evidence screenshots', async 
       page.getByText('История создания', { exact: true }),
     ).toBeVisible();
     await capture('story-empty');
+    await expect(
+      page.getByRole('button', { name: 'Действия с блоком', exact: true }),
+    ).toHaveCount(0);
     const paragraph = page.getByRole('textbox', {
       name: 'Текст истории',
       exact: true,
@@ -1863,6 +1871,9 @@ test('story editor polish: geometry, keyboard, and evidence screenshots', async 
     ).toBeVisible();
     const initialInput = await paragraph.elementHandle();
     await paragraph.pressSequentially('А');
+    await expect(
+      page.getByRole('button', { name: 'Действия с блоком', exact: true }),
+    ).toBeVisible();
     await paragraph.press('Tab');
     await expect(
       page.getByRole('button', { name: 'Действия с блоком', exact: true }),
@@ -1918,30 +1929,15 @@ test('story editor polish: geometry, keyboard, and evidence screenshots', async 
     };
     const first = await blockWithValue('Текст истории', 'Первый');
     const second = await blockWithValue('Текст истории', 'Второй');
-    const firstMenu = first.getByRole('button', {
-      name: 'Действия с блоком',
-      exact: true,
-    });
-    const secondMenu = second.getByRole('button', {
-      name: 'Действия с блоком',
-      exact: true,
-    });
-    await expect(firstMenu).toBeEnabled({ timeout: 15_000 });
-    await expect(secondMenu).toBeEnabled();
-    const firstBox = (await firstMenu.boundingBox())!;
+    const menuOf = (block: Locator) =>
+      block.getByRole('button', { name: 'Действия с блоком', exact: true });
+    // Filling the second field selects that block. Inactive blocks hide ⋮.
+    await expect(menuOf(first)).toHaveCount(0);
+    const secondMenu = menuOf(second);
+    await expect(secondMenu).toBeEnabled({ timeout: 15_000 });
     const secondBox = (await secondMenu.boundingBox())!;
-    expect(firstBox.width).toBeGreaterThanOrEqual(24);
-    expect(firstBox.height).toBeGreaterThanOrEqual(24);
-    expect(secondBox.width).toBeGreaterThanOrEqual(24);
-    expect(secondBox.height).toBeGreaterThanOrEqual(24);
-    expect(firstBox.width).toBeCloseTo(24, 0);
-    expect(firstBox.height).toBeCloseTo(24, 0);
-    expect(secondBox.width).toBeCloseTo(24, 0);
-    expect(secondBox.height).toBeCloseTo(24, 0);
-    const verticalOverlap =
-      Math.min(firstBox.y + firstBox.height, secondBox.y + secondBox.height) -
-      Math.max(firstBox.y, secondBox.y);
-    expect(verticalOverlap).toBeLessThanOrEqual(0);
+    expect(secondBox.width).toBeCloseTo(44, 0);
+    expect(secondBox.height).toBeCloseTo(44, 0);
     const hitOwner = (x: number, y: number) =>
       page.evaluate(({ x, y }) => {
         const target = document.elementFromPoint(x, y);
@@ -1968,33 +1964,72 @@ test('story editor polish: geometry, keyboard, and evidence screenshots', async 
       ['bottom-left', box.x + 1, box.y + box.height - 1],
       ['bottom-right', box.x + box.width - 1, box.y + box.height - 1],
     ] as const;
-    for (const [name, x, y] of samples(firstBox)) {
-      const hit = await hitOwner(x, y);
-      expect(hit.value, name).not.toBe('Второй');
-      if (!name.includes('-')) {
-        expect(hit, name).toEqual({ label: 'Действия с блоком', value: 'Первый' });
-      }
-    }
     for (const [name, x, y] of samples(secondBox)) {
       const hit = await hitOwner(x, y);
-      expect(hit.value, name).not.toBe('Первый');
-      if (!name.includes('-')) {
-        expect(hit, name).toEqual({ label: 'Действия с блоком', value: 'Второй' });
-      }
+      expect(hit, name).toEqual({ label: 'Действия с блоком', value: 'Второй' });
     }
-    await page.mouse.click(
-      firstBox.x + firstBox.width / 2,
-      firstBox.y + firstBox.height - 1,
+    const secondField = second.getByRole('textbox', {
+      name: 'Текст истории',
+      exact: true,
+    });
+    const secondFieldBox = (await secondField.boundingBox())!;
+    const neighborText = await hitOwner(
+      secondFieldBox.x + 12,
+      secondFieldBox.y + secondFieldBox.height / 2,
     );
-    await expect(firstMenu).toHaveAttribute('aria-expanded', 'true');
-    await expect(secondMenu).toHaveAttribute('aria-expanded', 'false');
-    await page.keyboard.press('Escape');
-    await page.mouse.click(secondBox.x + secondBox.width / 2, secondBox.y + 1);
+    expect(neighborText.value).toBe('Второй');
+    expect(neighborText.label).not.toBe('Действия с блоком');
+    const secondCenter = {
+      x: secondBox.x + secondBox.width / 2,
+      y: secondBox.y + secondBox.height / 2,
+    };
+    await page.touchscreen.tap(secondCenter.x, secondCenter.y);
     await expect(secondMenu).toHaveAttribute('aria-expanded', 'true');
-    await expect(firstMenu).toHaveAttribute('aria-expanded', 'false');
     await page.keyboard.press('Escape');
+    await expect(secondMenu).toBeFocused();
+    await page.mouse.click(secondCenter.x, secondCenter.y);
+    await expect(secondMenu).toHaveAttribute('aria-expanded', 'true');
+    await page.keyboard.press('Escape');
+    await expect(secondMenu).toBeFocused();
+    await secondMenu.press('Enter');
+    await expect(secondMenu).toHaveAttribute('aria-expanded', 'true');
+    await page.keyboard.press('Escape');
+    await expect(secondMenu).toBeFocused();
+    const firstField = first.getByRole('textbox', {
+      name: 'Текст истории',
+      exact: true,
+    });
+    const firstFieldBox = (await firstField.boundingBox())!;
+    await page.mouse.click(
+      firstFieldBox.x + 12,
+      firstFieldBox.y + firstFieldBox.height / 2,
+    );
+    await expect(firstField).toBeFocused();
+    await expect(menuOf(second)).toHaveCount(0);
+    const firstMenu = menuOf(first);
+    await expect(firstMenu).toBeVisible();
+    const firstBox = (await firstMenu.boundingBox())!;
+    expect(firstBox.width).toBeCloseTo(44, 0);
+    expect(firstBox.height).toBeCloseTo(44, 0);
+    for (const [name, x, y] of samples(firstBox)) {
+      const hit = await hitOwner(x, y);
+      expect(hit, name).toEqual({ label: 'Действия с блоком', value: 'Первый' });
+    }
+    const firstText = await hitOwner(
+      firstFieldBox.x + 12,
+      firstFieldBox.y + firstFieldBox.height / 2,
+    );
+    expect(firstText.value).toBe('Первый');
+    expect(firstText.label).not.toBe('Действия с блоком');
     await capture('story-two-paragraphs');
-    await secondMenu.click();
+    await secondField.click();
+    await expect(menuOf(second)).toBeVisible();
+    await menuOf(second).click();
+    const deleteBox = (await second
+      .getByRole('button', { name: 'Удалить', exact: true })
+      .boundingBox())!;
+    expect(deleteBox.width).toBeCloseTo(44, 0);
+    expect(deleteBox.height).toBeCloseTo(44, 0);
     await second.getByRole('button', { name: 'Удалить', exact: true }).click();
     await expect(paragraphs).toHaveCount(1);
 
@@ -2016,18 +2051,16 @@ test('story editor polish: geometry, keyboard, and evidence screenshots', async 
       exact: true,
     });
     const shortParagraph = await blockWithValue('Текст истории', 'Первый');
-    const shortParagraphMenu = shortParagraph.getByRole('button', {
-      name: 'Действия с блоком',
-      exact: true,
-    });
+    await expect(headingMenu).toBeVisible();
+    await expect(
+      shortParagraph.getByRole('button', {
+        name: 'Действия с блоком',
+        exact: true,
+      }),
+    ).toHaveCount(0);
     const headingBox = (await headingMenu.boundingBox())!;
-    const paragraphBox = (await shortParagraphMenu.boundingBox())!;
-    const headingOverlap =
-      Math.min(
-        headingBox.y + headingBox.height,
-        paragraphBox.y + paragraphBox.height,
-      ) - Math.max(headingBox.y, paragraphBox.y);
-    expect(headingOverlap).toBeLessThanOrEqual(0);
+    expect(headingBox.width).toBeCloseTo(44, 0);
+    expect(headingBox.height).toBeCloseTo(44, 0);
     await headingMenu.click();
     await headingBlock.getByRole('button', { name: 'Выше', exact: true }).click();
     await expect(headingMenu).toHaveAttribute('aria-expanded', 'true');
@@ -2048,6 +2081,8 @@ test('story editor polish: geometry, keyboard, and evidence screenshots', async 
 
     const toolbar = page.getByTestId('story-toolbar');
     const beforeMenu = (await toolbar.boundingBox())!;
+    await heading.focus();
+    await expect(headingMenu).toBeVisible();
     await headingMenu.click();
     await expect(page.getByTestId('story-menu-stroke')).toBeVisible();
     await expect(page.getByTestId('story-menu-divider')).toBeVisible();
@@ -2077,11 +2112,11 @@ test('story editor polish: geometry, keyboard, and evidence screenshots', async 
       Math.min(31, gradient.stroke.width / 2, gradient.stroke.height / 2),
       1,
     );
-    const deleteBox = (await headingBlock
+    const headingDeleteBox = (await headingBlock
       .getByRole('button', { name: 'Удалить', exact: true })
       .boundingBox())!;
-    expect(deleteBox.width).toBeGreaterThanOrEqual(34);
-    expect(deleteBox.height).toBeGreaterThanOrEqual(34);
+    expect(headingDeleteBox.width).toBeCloseTo(44, 0);
+    expect(headingDeleteBox.height).toBeCloseTo(44, 0);
     expect((await toolbar.boundingBox())!.y).toBeCloseTo(beforeMenu.y, 1);
     await capture('story-menu-open');
     await headingBlock.getByRole('button', { name: 'Ниже', exact: true }).click();
@@ -2115,6 +2150,7 @@ test('story editor polish: geometry, keyboard, and evidence screenshots', async 
     await expect(headingMenu).toBeFocused();
 
     await heading.focus();
+    await expect(headingMenu).toBeVisible();
     const tabStops = [
       { label: 'Действия с блоком', value: referenceHeading },
       { label: 'Текст истории', value: referenceParagraph },
@@ -2222,8 +2258,17 @@ test('story editor polish: geometry, keyboard, and evidence screenshots', async 
     const imageBlock = page.locator('[data-editor-block="image"]');
     await expect(imageBlock).toBeVisible({ timeout: 20_000 });
     await imageBlock
-      .getByRole('button', { name: 'Действия с изображением', exact: true })
+      .getByRole('button', { name: 'Выбрать изображение истории', exact: true })
       .click();
+    const imageMenu = imageBlock.getByRole('button', {
+      name: 'Действия с изображением',
+      exact: true,
+    });
+    await expect(imageMenu).toBeVisible();
+    const imageMenuBox = (await imageMenu.boundingBox())!;
+    expect(imageMenuBox.width).toBeCloseTo(44, 0);
+    expect(imageMenuBox.height).toBeCloseTo(44, 0);
+    await imageMenu.click();
     const description = page.getByRole('textbox', {
       name: 'Описание фото',
       exact: true,
@@ -2237,7 +2282,8 @@ test('story editor polish: geometry, keyboard, and evidence screenshots', async 
     await expect(description).toBeFocused();
     await description.fill('Описание кадра');
     await expect(description).toHaveValue('Описание кадра');
-    await expect(headingMenu).toHaveAttribute('aria-expanded', 'false');
+    await expect(headingMenu).toHaveCount(0);
+    await expect(imageMenu).toHaveAttribute('aria-expanded', 'true');
   } finally {
     await context.close();
   }

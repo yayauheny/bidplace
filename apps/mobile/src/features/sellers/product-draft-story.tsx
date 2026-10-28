@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, useState } from 'react';
-import { Platform, TextInput, View } from 'react-native';
+import { Platform, Pressable, TextInput, View } from 'react-native';
 
 import { STORY_LIMITS } from '@bidplace/contracts';
 import { designTokens } from '@bidplace/design-tokens';
@@ -19,12 +19,6 @@ import type { EditableStoryBlock } from './use-product-story-editor';
 const STORY_TOOLBAR_HEIGHT = 52;
 const STORY_TEXT_BLOCK_GAP = designTokens.space.workChipGap;
 const STORY_MIXED_BLOCK_GAP = designTokens.space.x5;
-
-function storyTextLine(block: EditableStoryBlock) {
-  return block.type === 'HEADING'
-    ? (designTokens.typography.storyHeading.lineHeight as number)
-    : (designTokens.typography.bodySmall.lineHeight as number);
-}
 
 function storyBlockGapBefore(
   previous: EditableStoryBlock | undefined,
@@ -92,7 +86,12 @@ export function ProductDraftStoryStep({
   onSaveAndContinue,
 }: ProductDraftStoryStepProps) {
   const [openBlock, setOpenBlock] = useState<string | null>(null);
+  const [activeBlock, setActiveBlock] = useState<string | null>(null);
   const [focusKey, setFocusKey] = useState<string | null>(null);
+  const selectBlock = (key: string) => {
+    setActiveBlock(key);
+    setOpenBlock((open) => (open === key ? open : null));
+  };
   const [emptyKey] = useState(() => crypto.randomUUID());
   const virtual = blocks.length === 0 && editable;
   const renderedBlocks: EditableStoryBlock[] = virtual
@@ -164,40 +163,22 @@ export function ProductDraftStoryStep({
                 )?.id
               : undefined;
           const textBlock = block.type !== 'IMAGE';
-          const previous = renderedBlocks[index - 1];
-          const next = renderedBlocks[index + 1];
+          const selected = activeBlock === block.key;
           return (
             <View
               key={block.key}
               style={{
                 marginTop: storyBlockGapBefore(renderedBlocks[index - 1], block),
-                zIndex: openBlock === block.key ? 1 : 0,
+                zIndex: openBlock === block.key ? 2 : selected ? 1 : 0,
+                overflow: 'visible',
               }}
             >
             <ProductBlockActions
               open={openBlock === block.key}
               onOpenChange={(open) => setOpenBlock(open ? block.key : null)}
               kind={textBlock ? 'text' : 'image'}
-              textMenuGap={
-                textBlock
-                  ? next
-                    ? storyBlockGapBefore(block, next)
-                    : STORY_MIXED_BLOCK_GAP
-                  : undefined
-              }
-              textMenuGapBefore={
-                textBlock
-                  ? previous
-                    ? storyBlockGapBefore(previous, block)
-                    : designTokens.space.x10
-                  : undefined
-              }
-              textMenuPrevious={
-                textBlock && previous && previous.type !== 'IMAGE'
-                  ? storyTextLine(previous)
-                  : 0
-              }
-              textMenuFloor={textBlock ? storyTextLine(block) : undefined}
+              menuVisible={selected}
+              triggerFrame={designTokens.size.touch}
               triggerStrokeWidthPx={designTokens.stroke.icon}
               blockKey={block.key}
               editable={editable && !virtual}
@@ -230,17 +211,26 @@ export function ProductDraftStoryStep({
               }
             >
               {block.type === 'IMAGE' ? (
-                <PrivateStoryImage
-                  productId={productId}
-                  mediaAssetId={block.mediaAssetId}
-                  galleryImageId={galleryImageId}
-                  sessionEpoch={sessionEpoch}
-                  label={block.altText ?? 'Фото истории работы'}
-                  style={{
-                    ...productMediaStyle('100%', palette),
-                    borderRadius: 0,
-                  }}
-                />
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Выбрать изображение истории"
+                  disabled={disabled}
+                  onFocus={() => selectBlock(block.key)}
+                  onPress={() => selectBlock(block.key)}
+                  style={{ width: '100%' }}
+                >
+                  <PrivateStoryImage
+                    productId={productId}
+                    mediaAssetId={block.mediaAssetId}
+                    galleryImageId={galleryImageId}
+                    sessionEpoch={sessionEpoch}
+                    label={block.altText ?? 'Фото истории работы'}
+                    style={{
+                      ...productMediaStyle('100%', palette),
+                      borderRadius: 0,
+                    }}
+                  />
+                </Pressable>
               ) : (
                 <StoryTextInput
                   heading={block.type === 'HEADING'}
@@ -249,6 +239,7 @@ export function ProductDraftStoryStep({
                   disabled={disabled}
                   focus={focusKey === block.key}
                   onFocused={() => setFocusKey(null)}
+                  onActivate={() => selectBlock(block.key)}
                   onChange={(value) => {
                     if (virtual) onAddText('PARAGRAPH', value, emptyKey);
                     else onEditText(block.key, value);
@@ -357,6 +348,7 @@ function StoryTextInput({
   disabled,
   focus,
   onFocused,
+  onActivate,
   onChange,
 }: {
   heading: boolean;
@@ -365,6 +357,7 @@ function StoryTextInput({
   disabled: boolean;
   focus?: boolean;
   onFocused?: () => void;
+  onActivate?: () => void;
   onChange: (text: string) => void;
 }) {
   const input = useRef<TextInput>(null);
@@ -395,6 +388,7 @@ function StoryTextInput({
       placeholderTextColor={palette.fieldLabel}
       value={value}
       onChangeText={onChange}
+      onFocus={() => onActivate?.()}
       editable={!disabled}
       multiline
       scrollEnabled={false}

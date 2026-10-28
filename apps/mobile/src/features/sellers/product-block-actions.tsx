@@ -4,7 +4,6 @@ import { Defs, LinearGradient, Rect, Stop, Svg } from 'react-native-svg';
 import { designTokens } from '@bidplace/design-tokens';
 import { figmaButtonStrokeRadius } from '../../components/figma/figma-button-style';
 import { FigmaIconButton } from '../../components/figma/FigmaIconButton';
-import { figmaMutedIconButtonFrame } from '../../components/figma/figma-icon-button-style';
 import type { MotionPressable } from '../../components/ui/MotionPressable';
 import { useAppTheme } from '../../providers/theme-provider';
 
@@ -23,58 +22,6 @@ const menuPanelShadowStyle = (
         shadowOpacity: 0.05,
         shadowRadius: 26,
       };
-
-/** WCAG 2.5.8 minimum. A 20px line on a 26px pitch cannot hold a 44px target. */
-const storyMenuMinTarget = 24;
-
-export type StoryTextMenuHitSlop = {
-  top: number;
-  bottom: number;
-  left: number;
-  right: number;
-};
-
-/**
- * Visual square is at least 24px and at most the 42px muted frame, and it
- * stops before the next block. Native hit slop reaches 44px horizontally.
- * Vertically each side stops at half the free gap, so neighbors meet without
- * crossing. Top stays 0. The shortfall from 44px is not an agreed exception.
- */
-export function storyTextMenuFrame(
-  contentHeight: number,
-  gapAfter: number,
-  gapBefore = gapAfter,
-  previousContent = 0,
-) {
-  const size = Math.min(
-    figmaMutedIconButtonFrame,
-    Math.max(storyMenuMinTarget, contentHeight),
-    contentHeight + gapAfter,
-  );
-  const horizontal = (designTokens.size.touch - size) / 2;
-  const freeAfter = Math.max(0, gapAfter - Math.max(0, size - contentHeight));
-  const bottom = Math.min(gapAfter / 2, freeAfter / 2, horizontal);
-  const previousSize =
-    previousContent > 0
-      ? Math.min(
-          figmaMutedIconButtonFrame,
-          Math.max(storyMenuMinTarget, previousContent),
-          previousContent + gapBefore,
-        )
-      : 0;
-  const freeBefore =
-    previousContent > 0
-      ? Math.max(0, gapBefore - Math.max(0, previousSize - previousContent))
-      : gapBefore;
-  const top = Math.min(gapBefore / 2, freeBefore / 2, horizontal);
-  const hitSlop: StoryTextMenuHitSlop = {
-    top,
-    bottom,
-    left: horizontal,
-    right: horizontal,
-  };
-  return { top: 0, size, hitSlop };
-}
 
 function OutlineGradient({
   width,
@@ -157,10 +104,8 @@ export function ProductBlockActions({
   presentation = 'menu',
   open: controlledOpen,
   onOpenChange,
-  textMenuGap = designTokens.space.workChipGap,
-  textMenuGapBefore = textMenuGap,
-  textMenuPrevious = 0,
-  textMenuFloor = 0,
+  menuVisible = true,
+  triggerFrame,
   triggerStrokeWidthPx,
   blockKey,
 }: {
@@ -176,14 +121,10 @@ export function ProductBlockActions({
   presentation?: 'menu' | 'mediaTile';
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
-  /** Gap before the next block. The control must stop short of that block. */
-  textMenuGap?: number;
-  /** Gap after the previous block. Limits the upward native hit slop. */
-  textMenuGapBefore?: number;
-  /** Previous text line height. Zero when the previous block is not text. */
-  textMenuPrevious?: number;
-  /** Line height used until the block reports its layout height. */
-  textMenuFloor?: number;
+  /** Story shows ⋮ only on the selected block. Photo tiles stay visible. */
+  menuVisible?: boolean;
+  /** Real square hit box for the story ⋮. Photo tiles keep the default frame. */
+  triggerFrame?: number;
   /** Story ⋮ only. Photo tiles keep the icon-button default. */
   triggerStrokeWidthPx?: number;
   blockKey?: string;
@@ -199,20 +140,10 @@ export function ProductBlockActions({
   const up = useRef<ElementRef<typeof MotionPressable>>(null);
   const down = useRef<ElementRef<typeof MotionPressable>>(null);
   const moved = useRef<-1 | 1 | null>(null);
-  const [contentHeight, setContentHeight] = useState(0);
   const [panelBox, setPanelBox] = useState<{
     width: number;
     height: number;
   } | null>(null);
-  const textFrame =
-    kind === 'text'
-      ? storyTextMenuFrame(
-          contentHeight > 0 ? contentHeight : textMenuFloor,
-          textMenuGap,
-          textMenuGapBefore,
-          textMenuPrevious,
-        )
-      : null;
   useEffect(() => {
     if (!open || Platform.OS !== 'web') return;
     const element = menu.current as unknown as HTMLElement | null;
@@ -265,15 +196,9 @@ export function ProductBlockActions({
             },
           }
         : {})}
-      style={{ gap: designTokens.space.x2 }}
+      style={{ gap: designTokens.space.x2, overflow: 'visible' }}
     >
-      <View
-        style={{ position: 'relative' }}
-        onLayout={(event) => {
-          const next = event.nativeEvent.layout.height;
-          setContentHeight((prev) => (prev === next ? prev : next));
-        }}
-      >
+      <View style={{ position: 'relative', overflow: 'visible' }}>
         {children}
         {editable && presentation === 'mediaTile' ? (
           <View
@@ -298,7 +223,7 @@ export function ProductBlockActions({
             />
           </View>
         ) : null}
-        {editable ? (
+        {editable && menuVisible ? (
           <View
             ref={menu}
             onTouchStart={(event) => event.stopPropagation()}
@@ -310,11 +235,9 @@ export function ProductBlockActions({
               zIndex: 1,
               // Enabled trigger still computed pointer-events:none and lost the click to the field.
               pointerEvents: 'auto',
+              overflow: 'visible',
               right: kind === 'image' ? designTokens.space.x3 : 0,
-              top:
-                kind === 'image'
-                  ? designTokens.space.x3
-                  : (textFrame?.top ?? 0),
+              top: kind === 'image' ? designTokens.space.x3 : 0,
             }}
           >
             <FigmaIconButton
@@ -329,9 +252,7 @@ export function ProductBlockActions({
               disabled={disabled}
               expanded={open}
               onPress={() => setOpen(!open)}
-              {...(textFrame && textFrame.size > 0
-                ? { frame: textFrame.size, slop: textFrame.hitSlop }
-                : {})}
+              {...(triggerFrame != null ? { frame: triggerFrame } : {})}
               {...(triggerStrokeWidthPx != null
                 ? { strokeWidthPx: triggerStrokeWidthPx }
                 : {})}
@@ -368,7 +289,7 @@ export function ProductBlockActions({
                 >
                   {presentation === 'menu' ? (
                     <FigmaIconButton
-                      size="compact"
+                      frame={designTokens.size.touch}
                       label="Удалить"
                       icon="delete-02"
                       iconSize={18}

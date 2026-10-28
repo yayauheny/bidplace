@@ -130,11 +130,13 @@ vi.mock('react-native', () => ({
     style,
     accessibilityLabel,
     multiline,
+    onFocus,
   }: {
     value?: string;
     style?: unknown;
     accessibilityLabel?: string;
     multiline?: boolean;
+    onFocus?: () => void;
   }) => {
     const flat: Record<string, unknown> = {};
     for (const item of Array.isArray(style) ? style : [style]) {
@@ -145,6 +147,7 @@ vi.mock('react-native', () => ({
       'aria-label': accessibilityLabel,
       style: flat as React.CSSProperties,
       readOnly: true,
+      onFocus,
     });
   },
   ScrollView: ({
@@ -294,7 +297,6 @@ import { HomeNewAuthors } from '../features/home/home-new-authors';
 import { AuthorShare } from '../features/sellers/AuthorShare';
 import { CreatorWorkCard } from '../features/sellers/CreatorWorkCard';
 import { ProductDraftStoryStep } from '../features/sellers/product-draft-story';
-import { storyTextMenuFrame } from '../features/sellers/product-block-actions';
 import { ThemeProvider, useAppTheme } from './theme-provider';
 
 let captured: SemanticColorMap | null = null;
@@ -817,31 +819,38 @@ describe('app theme owner', () => {
         'Расскажите о том как создавалась ваша работа',
     ) as HTMLElement;
     expect(parseFloat(intro.style.letterSpacing)).toBe(0);
-    const headingLine = designTokens.typography.storyHeading.lineHeight as number;
-    const paragraphLine = designTokens.typography.bodySmall.lineHeight as number;
-    expect(storyTextMenuFrame(20, 6).size).toBe(24);
-    expect(storyTextMenuFrame(20, 6).hitSlop).toEqual({
-      top: 3,
-      bottom: 1,
-      left: 10,
-      right: 10,
-    });
-    expect(storyTextMenuFrame(20, 6, 6, 20).hitSlop.top).toBe(1);
-    expect(storyTextMenuFrame(24, 6).size).toBe(24);
-    expect(storyTextMenuFrame(72, 6).size).toBe(42);
-    expect(storyTextMenuFrame(72, 6).hitSlop.left).toBe(1);
-    const menuButtons = Array.from(
-      container.querySelectorAll('[aria-label="Действия с блоком"]'),
-    ) as HTMLElement[];
-    expect(menuButtons.map((button) => parseFloat(button.style.height))).toEqual([
-      storyTextMenuFrame(headingLine, designTokens.space.workChipGap, designTokens.space.x10).size,
-      storyTextMenuFrame(
-        paragraphLine,
-        designTokens.space.x5,
-        designTokens.space.workChipGap,
-        headingLine,
-      ).size,
-    ]);
+    expect(parseFloat(paragraph.style.paddingRight)).toBe(
+      designTokens.size.touch + designTokens.space.x2,
+    );
+    expect(container.querySelector('[aria-label="Действия с блоком"]')).toBeNull();
+    const focusField = (field: HTMLTextAreaElement) => {
+      act(() => {
+        field.focus();
+        field.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+      });
+    };
+    focusField(heading);
+    const headingMenu = container.querySelector(
+      '[data-block-key="h"] [aria-label="Действия с блоком"]',
+    ) as HTMLElement;
+    expect(parseFloat(headingMenu.style.width)).toBe(designTokens.size.touch);
+    expect(parseFloat(headingMenu.style.height)).toBe(designTokens.size.touch);
+    expect(
+      container.querySelector('[data-block-key="p"] [aria-label="Действия с блоком"]'),
+    ).toBeNull();
+    focusField(paragraph);
+    const paragraphMenu = container.querySelector(
+      '[data-block-key="p"] [aria-label="Действия с блоком"]',
+    ) as HTMLElement;
+    expect(parseFloat(paragraphMenu.style.width)).toBe(designTokens.size.touch);
+    expect(parseFloat(paragraphMenu.style.height)).toBe(designTokens.size.touch);
+    expect(
+      container.querySelector('[data-block-key="h"] [aria-label="Действия с блоком"]'),
+    ).toBeNull();
+    act(() => paragraphMenu.click());
+    const remove = container.querySelector('[aria-label="Удалить"]') as HTMLElement;
+    expect(parseFloat(remove.style.width)).toBe(designTokens.size.touch);
+    expect(parseFloat(remove.style.height)).toBe(designTokens.size.touch);
     act(() => root.unmount());
     container.remove();
   });

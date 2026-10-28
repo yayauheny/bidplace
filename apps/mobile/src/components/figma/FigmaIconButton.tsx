@@ -1,4 +1,5 @@
 import type { ElementRef, Ref } from 'react';
+import { View } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
 
 import { MotionPressable } from '../ui/MotionPressable';
@@ -38,11 +39,42 @@ export function FigmaIconButton({
   surface?: 'plain' | 'muted' | 'outline' | 'destructive';
   size?: 'default' | 'settingsHeader' | 'compact';
   tone?: 'default' | 'danger';
-  /** Square visual box. Pair with `slop` so Native still grows the hit target. */
+  /**
+   * Real square hit box. The surface glyph stays its own size and is centered.
+   * RN Web ignores hit slop, and Android does not deliver touches outside the
+   * parent, so this box is the target on both.
+   */
   frame?: number;
   slop?: { top: number; bottom: number; left: number; right: number };
 }) {
   const palette = useAppTheme();
+  const glyph = (
+    <FigmaIcon
+      name={icon}
+      size={iconSize}
+      strokeWidthPx={strokeWidthPx}
+      color={
+        surface === 'destructive'
+          ? palette.white
+          : tone === 'danger'
+            ? palette.destructiveInk
+            : selected
+              ? palette.solid
+              : palette.ink
+      }
+    />
+  );
+  const visual = (pressed: boolean) => [
+    figmaIconButtonStyle(pressed, surface, palette),
+    size === 'compact' && {
+      width: designTokens.size.compactIconButton,
+      height: designTokens.size.compactIconButton,
+    },
+    size === 'settingsHeader' && {
+      width: designTokens.size.settingsHeaderGlyph,
+      height: designTokens.size.settingsHeaderGlyph,
+    },
+  ];
   return (
     <MotionPressable
       ref={ref}
@@ -52,44 +84,41 @@ export function FigmaIconButton({
       aria-expanded={expanded}
       disabled={disabled}
       hitSlop={
-        slop ??
-        (size === 'compact'
-          ? (designTokens.size.touch - designTokens.size.compactIconButton) / 2
-          : size === 'settingsHeader'
-            ? (designTokens.size.touch -
-                designTokens.size.settingsHeaderGlyph) /
-              2
-            : figmaIconButtonHitSlop)
+        frame != null
+          ? slop
+          : (slop ??
+            (size === 'compact'
+              ? (designTokens.size.touch -
+                  designTokens.size.compactIconButton) /
+                2
+              : size === 'settingsHeader'
+                ? (designTokens.size.touch -
+                    designTokens.size.settingsHeaderGlyph) /
+                  2
+                : figmaIconButtonHitSlop))
       }
       onPress={onPress}
       preset="icon"
-      style={({ pressed }) => [
-        figmaIconButtonStyle(pressed, surface, palette),
-        size === 'compact' && {
-          width: designTokens.size.compactIconButton,
-          height: designTokens.size.compactIconButton,
-        },
-        size === 'settingsHeader' && {
-          width: designTokens.size.settingsHeaderGlyph,
-          height: designTokens.size.settingsHeaderGlyph,
-        },
-        frame != null && { width: frame, height: frame },
-      ]}
+      style={
+        frame != null
+          ? {
+              width: frame,
+              height: frame,
+              alignItems: 'center',
+              justifyContent: 'center',
+              overflow: 'visible',
+              backgroundColor: 'transparent',
+            }
+          : ({ pressed }) => visual(pressed)
+      }
     >
-      <FigmaIcon
-        name={icon}
-        size={iconSize}
-        strokeWidthPx={strokeWidthPx}
-        color={
-          surface === 'destructive'
-            ? palette.white
-            : tone === 'danger'
-              ? palette.destructiveInk
-              : selected
-                ? palette.solid
-                : palette.ink
-        }
-      />
+      {frame != null
+        ? (state) => (
+            <View pointerEvents="none" style={visual(state.pressed)}>
+              {glyph}
+            </View>
+          )
+        : glyph}
     </MotionPressable>
   );
 }

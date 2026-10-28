@@ -1078,12 +1078,14 @@ Headings stay `storyHeading`. Destructive story ink is `destructiveInk`
 (`Red` `4337:12016`, `#731A06`); `destructiveFill` stays the photo-button fill.
 Toolbar and block-menu surfaces use `surfaceMuted` (`Gray 5` `#F3F3F3`). Story
 icon glyphs use existing `stroke.icon` 1.3; `FigmaIconButton` still defaults to
-`stroke.iconHeavy` 1.6. Story text ⋮ is `storyTextMenuFrame`: the visual square
-is at least 24px (WCAG 2.5.8) and at most the 42px muted frame, and it stops
-before the next block. A 20px line on a 26px pitch is a 24px control. Native
-hit slop reaches 44px horizontally; vertically each side stops at half the free
-gap. That is short of a 44px square and needs user agreement. The open menu
-ring uses `figmaButtonStrokeRadius` so both SVG axes share one capsule radius.
+`stroke.iconHeavy` 1.6. Story ⋮ is shown only on the selected block. That is
+an accepted difference from Figma, where ⋮ is on every block. Line-height
+24/20 and the 6px text gap stay. The selected control is a real 44×44 box
+(`size.touch`); the muted 42px glyph stays centered inside it. Text keeps a
+right gutter (`size.touch` plus `space.x2`) so the line does not run under the
+control. The menu delete control is the same real 44×44 box. Native sizes are
+Needs verification on a device. The open menu ring uses
+`figmaButtonStrokeRadius` so both SVG axes share one capsule radius.
 Divider and ring paint are `react-native-svg` `LinearGradient`.
 `experimental_backgroundImage` does not paint on the installed RN Web.
 `FigmaIcon` `image-02` is Hugeicons `Image02Icon`; `image-01` is unchanged.

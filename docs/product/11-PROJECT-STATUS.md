@@ -16,6 +16,21 @@
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
 | Commerce, избранное/подписки, смена email/password из settings | Not implemented в launch scope / post-MVP; [следующая волна](15-POST-MVP-BACKLOG.md). Старый commerce runtime не разрешает включать продажи. |
 
+## 2026-10-28 — Story editor active block controls
+
+**Partial.** User decision, variant A: keep Figma text density (line-height
+24/20, 6px gap) and show ⋮ only on the selected block. Hiding ⋮ on inactive
+blocks differs from Figma and is accepted. `FigmaIconButton` `frame` is a real
+44×44 hit box with the existing glyph centered; story ⋮ and menu delete use it.
+Chromium and WebKit measured both at 44×44. Menu stroke is 144.5×51.5,
+rx=ry=25.75. Toolbar stays 272.21875×53 against Figma 275×52.
+The text field keeps its right gutter. Selection is the block press or Web
+focus, and choosing another block closes the previous menu. Native 44×44 is
+**Needs verification** on a device (adjacent single-line ⋮, typing beside the
+control, scrolling across it, Android parent clip). No upload, save, DnD, or
+server file-reuse change. Session SHA-256 is not server reuse.
+[Evidence](../audits/evidence/2026-10-28-story-editor-controls/README.md).
+
 ## 2026-10-28 — Story editor hit targets
 
 **Partial.** `storyTextMenuFrame` keeps a text ⋮ at least 24px and inside the

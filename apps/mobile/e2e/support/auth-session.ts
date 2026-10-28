@@ -17,10 +17,12 @@ export async function authenticatedPage(
   browser: Browser,
   user: E2EUser,
   recordVideo?: BrowserContextOptions['recordVideo'],
+  options?: { hasTouch?: boolean },
 ): Promise<{ context: BrowserContext; page: Page }> {
   const context = await browser.newContext({
     baseURL: e2eWebBaseURL,
     recordVideo,
+    hasTouch: options?.hasTouch,
     extraHTTPHeaders: e2eRequestHeaders,
   });
   const login = await context.request.post(`${apiBaseURL}/api/auth/login`, {
