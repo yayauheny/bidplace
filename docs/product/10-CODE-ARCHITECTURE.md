@@ -1,6 +1,6 @@
 # bidplace — архитектура кода
 
-Последнее обновление: 2026-10-28
+Последнее обновление: 2026-10-29
 Статус: Confirmed technical boundaries for the portfolio-first MVP implementation.
 
 ## 2026-10-26 — Photo workflow (DEC-148)
@@ -63,8 +63,11 @@ remote decode; URI callbacks and disposal remain session-scoped.
 `useProductStoryEditor` separates saving from uploading: text stays editable
 during upload, composition actions wait, and save still blocks mutations.
 Editable alt retains spaces; serialization trims it or produces null.
-Before story PUT, an uncertain upload is reconciled once via the existing keyed
-retry. Replay failure prevents PUT and keeps text/file/key; identity/owner/change
+Before story PUT, an uncertain upload is reconciled once via the internal keyed
+upload (`8a5de85a`). Public `addImage` still refuses a user transition lock;
+save calls that same upload without the lock because the save owns it. Pending
+selection is dirty at staging, so Continue, close and submit do not skip the
+save. Replay failure prevents PUT and keeps text/file/key; identity and owner
 guards are checked again after waiting. This prevents cleanup of an unseen
 accepted upload during a text-only save. `story-local-draft.ts` owns mandatory-v2 serialization,
 identity restore and recovery-only quarantine of old unscoped v2 copies;

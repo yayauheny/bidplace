@@ -16,6 +16,33 @@
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
 | Commerce, избранное/подписки, смена email/password из settings | Not implemented в launch scope / post-MVP; [следующая волна](15-POST-MVP-BACKLOG.md). Старый commerce runtime не разрешает включать продажи. |
 
+## 2026-10-29 — W0 acceptance and main workflow preparation
+
+**Partial.** Supersedes the previous W0 gate refusal: founder explicitly approved
+metadata-only save-race fixture corrections, current browser flow/locators and
+main-only push checks. `d701f87a` keeps the same save/lease/concurrency assertions
+and uses revision-owned gallery positions; backing image identity and exact
+locked409 are checked. Browser flows explicitly upload photos and retain
+draft/revision recovery and no-extra-write assertions. Shared contract lint is
+clean. `8f610267` prepares Verify/production workflow and Workers CI branch for
+main; ops32/32 pass. No switch/reset/push/merge/deploy was performed. Actual
+cutover remains a founder action (W0 Task5).
+
+Review of `9a2bdf97..8f610267` required one fix. A pending first upload was not
+dirty, so transition owners skipped save, and keyed replay called public
+`addImage`, which the save's own transition lock blocked. `8a5de85a` marks that
+pending intent dirty at staging; public `addImage` still checks the user lock,
+and save calls the internal upload. Identity, owner and session guards stay.
+Photo limits are `DEC-151`. Published `DEC-150` on `fix/launch-docs-review`
+(`54925364`) is the deals decision.
+
+Mobile1138/1138, API476/476, integration59/59, contracts48/48, api-client51/51,
+Chromium/WebKit12/12 and ops32/32 pass. Four-package typecheck, API/mobile/shared
+lint and API/web builds pass. [W0 journal](../launch/waves/W0-photo-and-trunk.md)
+owns commands and results. Overall photos remain Partial: shared-byte reuse
+(`DEC-112`), story CDN and native acceptance are outside W0. Merge
+`fix/launch-docs-review` after this W0 review and before W1.
+
 ## 2026-10-28 — W0 photo/story hardening (`DEC-151`)
 
 **Partial.** Tasks1–4 changes: `replaceProductStory` atomically releases unused

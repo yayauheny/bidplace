@@ -5,6 +5,18 @@
 Полный прежний журнал, включая ограничения ранних экранов:
 история.
 
+## 2026-10-29 — W0 regression acceptance refresh
+
+**Partial.** Runtime layout/tokens remain the previous story implementation. With
+explicit founder approval, browser specs now follow the separate author photo
+step and explicit Work photo upload before the story step. Text recovery, no
+duplicate writes and revision isolation assertions remain. save-race fixture
+changes add dimensions/MIME only. Story matrix12/12 passes on Chromium/WebKit.
+`8a5de85a` keeps an uncertain story photo across Continue, close and submit when
+the save owns the transition lock; geometry is unchanged. Final390×874 evidence
+and results belong to the [W0 journal](../launch/waves/W0-photo-and-trunk.md).
+Wide exact Figma parity and native acceptance remain outside the claim.
+
 ## 2026-10-28 — W0 story editor ownership and styles
 
 **Partial.** `ProductDraftStoryStep` reads capacity from `useProductStoryEditor`,

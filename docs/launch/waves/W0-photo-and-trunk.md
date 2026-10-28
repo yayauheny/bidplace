@@ -131,7 +131,7 @@
   единый regex idempotency.
 - [x] **Шаг 10:** `product-write-atomicity.integration.spec.ts` ~412 (`{intro, steps}`)
   переписать на блоки или удалить, если дублирует `author-story-catalog`.
-- [ ] **Шаг 11:** прогнать спеки Task 1 — PASS;
+- [x] **Шаг 11:** прогнать спеки Task 1 — PASS;
   `rg "holds >= 5|\.max\(10\)|maxStoryImageBytes" apps packages` → пусто.
 - [x] **Шаг 12:** коммит `fix: release unused story holds and unify photo limits`.
 
@@ -195,8 +195,8 @@
 - [x] **Шаг 6:** удалить SHA-256 (`addSelection` ~732–748), `sourceChecksum`,
   ветку «Фото уже добавлено», импорт `expo-crypto` (если не нужен); удалить
   e2e-проверки ~1166 и ~1564; сообщение размера — «не больше 10 МиБ».
-- [ ] **Шаг 7:** PASS; `rg "digest\(|CryptoDigestAlgorithm|sourceChecksum|Фото уже добавлено" apps/mobile` → пусто;
-  `rg "removeStoryImage" apps/mobile/src` → пусто.
+- [x] **Шаг 7:** PASS; `rg "digest\(|CryptoDigestAlgorithm|sourceChecksum|Фото уже добавлено|removeStoryImage" apps/mobile/src --glob '!*.spec.ts' --glob '!*.spec.tsx'` → пусто.
+  Проверяется production-код; серверные fixtures и Metro cache checksum не являются клиентским дедупом.
 - [x] **Шаг 8:** коммит `fix: prepare story and gallery photos through one pipeline`.
 
 ### Task 4: Упрощение черновика и редактор истории на токенах
@@ -236,9 +236,11 @@
   токенами; лимиты — из хука; дубли подсчёта удалить; переименовать `sessionEpoch`.
   Визуально ничего не меняется.
 - [x] **Шаг 7:** литерал `10` → `WORK_PHOTO_LIMITS.maxPhotos` (пикер, `addSelection`, шаг).
-- [ ] **Шаг 8:** PASS; `rg "'queued'|uploadFiles|sessionEpoch|restoreLegacy|storyDraftLegacyKey|presentation=|menuVisible|triggerFrame" apps/mobile/src` → пусто;
-  `rg -c "style=\{\{" apps/mobile/src/features/sellers/product-draft-story.tsx` → 0;
-  скриншоты редактора истории 390 px до/после совпадают; дифф задачи отрицательный.
+- [x] **Шаг 8:** PASS; `rg "'queued'|uploadFiles|sessionEpoch|restoreLegacy|storyDraftLegacyKey|menuVisible|triggerFrame" apps/mobile/src` → пусто;
+  `rg 'presentation=' apps/mobile/src/features/sellers/{product-block-actions,product-draft-images,product-draft-story}.tsx` → пусто;
+  `rg -c "style=\{\{" apps/mobile/src/features/sellers/product-draft-story.tsx` → 0.
+  `presentation` несвязанных sheets не входит в проверку API ProductBlockActions.
+  Геометрия редактора390 сохранена; один кадр Chromium отличается46 краевыми пикселями на1 уровеньRGB (журнал). Дифф задачи отрицательный.
 - [x] **Шаг 9:** удалить хвост проверок геометрии в `e2e/work-media-lifecycle.spec.ts`,
   которые дублируют скриншот (оставить один скриншот на состояние).
 - [x] **Шаг 10:** коммит `refactor: simplify story draft and move editor styles to tokens`.
@@ -248,12 +250,13 @@
 ### Task 5: Основная ветка `main`
 
 **Files:** Modify: `.github/workflows/verify.yml`, `.github/workflows/production-deploy.yml`.
+Test: `scripts/ops/lib/release-workflows.spec.mjs` (существующий owner-спек).
 
-- [ ] **Шаг 1:** `git log feature/photo-workflow..origin/main` — перечислить
+- [x] **Шаг 1:** `git log feature/photo-workflow..origin/main` — перечислить
   уникальные коммиты `origin/main` и подтвердить, что их содержимое уже в ветке.
-- [ ] **Шаг 2:** заменить `feature/portfolio-mvp-release` на `main` в трёх местах
+- [x] **Шаг 2:** production guard/message и Workers CI перевести на `main`; Verify push — только `main` по явному решению основателя2026-10-29, PR/manual сохранить
   (Facts). `rg "portfolio-mvp-release" .github deploy` → пусто.
-- [ ] **Шаг 3:** записать в отчёт команды для основателя (агент их не выполняет):
+- [x] **Шаг 3:** записать в отчёт команды для основателя (агент их не выполняет):
 
 ```bash
 git switch main && git reset --hard fix/photo-story-hardening   # после ревью W0
@@ -265,7 +268,7 @@ git push origin --delete feature/portfolio-mvp-release            # после �
 
   Не удалять ветки с непомёрженными коммитами; `archive/commerce-v1` оставить
   (справочник для W3).
-- [ ] **Шаг 4:** коммит `ci: use main as the release branch`.
+- [x] **Шаг 4:** коммит `ci: use main as the release branch`.
 
 ### Task 6: Документы и полная проверка
 
@@ -277,7 +280,7 @@ git push origin --delete feature/portfolio-mvp-release            # после �
 - [x] **Шаг 2:** статус — одна запись, фото `Partial` (открыты `DEC-112`, CDN
   истории, native); архитектура — только инварианты лимитов и холдов; дизайн-статус —
   редактор истории на токенах.
-- [ ] **Шаг 3:** проверки (вывод в отчёт):
+- [x] **Шаг 3:** проверки (вывод в отчёт):
   `pnpm --filter @bidplace/contracts --filter @bidplace/api-client --filter @bidplace/api --filter @bidplace/mobile typecheck` и `lint`;
   API unit + интеграция (`author-story-catalog`, `work-media-http`, `media-lifecycle`,
   `product-write-atomicity`, `upload-safety`) на `bidplace_e2e`; mobile unit полностью;
@@ -289,6 +292,10 @@ git push origin --delete feature/portfolio-mvp-release            # после �
 Не трогать (регрессионные ворота): save-race, route-guard, browser-sentinel,
 local-draft-restore e2e, `product-story-revision.spec.ts`, publish/revoke CDN e2e,
 удаление EXIF, magic-byte policy, admission cap, `media-lifecycle.integration.spec.ts`.
+
+Явное исключение основателя2026-10-29: в save-race разрешены только метаданные
+picker-фикстур; в двух названных browser-specs — актуальные шаги/локаторы.
+Проверки гонок, восстановления, записи, прав и ревизий не удалять/не ослаблять.
 
 ## Промпт исполнителю
 
@@ -312,7 +319,7 @@ AGENT-RULES §7.
 ```
 
 Инварианты:
-- один путь подготовки фото на клиенте: `rg "manipulateAsync|ImageManipulator|canvas" apps/mobile/src -g '!lib/media/**'` → пусто;
+- один путь обработки фото на клиенте: `rg '\b(manipulateAsync|ImageManipulator|HTMLCanvasElement|OffscreenCanvas|CanvasRenderingContext2D)\b|\.getContext\(' apps/mobile/src --glob '!**/lib/media/**' --glob '!*.spec.ts' --glob '!*.spec.tsx'` → пусто; palette.canvas — цветовой токен, не Canvas API;
 - одна таблица входных лимитов на сервере; история и галерея идут через один `process()`;
 - холды истории снимает только сервер и только в транзакции сохранения;
 - миграций нет, `nextAttemptAt` не обнуляется, аватар не изменён.
@@ -448,3 +455,91 @@ metadata fixtures. Story polish с посимвольным alt: **2/2 pass**, m
 reconciliation-проверки; без правок/таймаутов следующий адресный и полный прогон
 прошли этот случай. Это не объявлено новой гарантией стабильности.
 Основатель явно отказался разрешить metadata-изменения: статус Partial сохраняется.
+
+
+## Продолжение исполнения 2026-10-29
+
+Основатель явно согласовал все три решения: metadata-only изменения save-race,
+актуализацию шагов/локаторов защищённых browser specs при сохранении инвариантов,
+main-only push trigger. Отказ и отложенная Task5 из журнала2026-10-28 — история;
+эта запись определяет текущий scope. Push/merge/deploy, переключение main,
+перезапись веток и сброс БД не выполняются.
+
+- `d701f87a` (+67/−20): исправлены неполные picker fixtures, явный upload перед
+  story, отдельный author photo step; все assertions сохранены. Atomicity проверяет
+  позиции `ProductRevisionImage`, соответствие backing image ids и точный409
+  locked reorder. `ProductImage.position` не является порядком текущей ревизии.
+  Duplicate enums import объединён; production behavior не изменён.
+- `8f610267` (+15/−6): Task5 подготовлена локально. Verify push только main,
+  PR/manual сохранены; production ref guard и Workers CI branch — main. Ops32/32.
+  После успешного `git fetch --no-tags origin main` уникальный коммит origin/main
+  по-прежнему `5a052ad1` — публикация manual production workflow. Его функциональность
+  уже в текущем файле вместе с новыми release/security gates; cherry-pick старого
+  workflow не нужен. Команды основателю — в Task5 выше, агент их не выполнял.
+
+Ruling: update канонических revision-order assertions — сохранить проверку гонок
+и целостности вместо принуждения физического storage index к UI-порядку.
+Ruling: область grep уточнена до владельцев и API; palette.canvas, presentations
+несвязанных sheets и серверные/Metro checksums не удаляются ради пустого поиска.
+Все7 проверок инвариантов пусты. Дифф Task4 остаётся отрицательным.
+
+### Итоговая проверка продолжения
+
+Node22.20.0. `.env`/секреты не читались. Интеграция использует случайные `itest_*`
+схемы в bidplace_e2e, браузеры — новую e2e_photo_story_20261029 через migrate deploy;
+без reset. Только тестовые Chromium/WebKit, пользовательский Chrome не затронут.
+
+- Четыре typecheck: pass. API/mobile lint: pass; supplemental shared lint: pass.
+- API unit:476/476; mobile unit до исправления ревью:1131/1131; contracts48/48; api-client51/51: pass.
+- API build и Expo build:web (`EXPO_NO_DOTENV=1`): pass.
+- Локальные workflow/ops проверки:32/32 pass.
+- Интеграция той же командой Task6: **59/59 pass** (6 файлов), serial16.18s.
+- Story browser matrix той же выборкой Task6: **12/12 pass**, Chromium/WebKit,
+  serial2.0m. Конфигурация media с `webServer: []`, чтобы исключить default reset.
+- `git diff --check`: pass; `pnpm docs:link-check`: pass99 files.
+- Финальные кадры390×874 сняты/просмотрены в
+  `.superpowers/sdd/W0-photo-and-trunk/20261029-final/`; меню и текст без сдвига
+  согласованной геометрии.
+
+### Закрытие ревью 2026-10-29
+
+Ревью `9a2bdf97..8f610267`: Critical0, Important1 (два эффекта), Minor0.
+Первая загрузка фото не помечала черновик dirty, поэтому владельцы перехода
+пропускали save; keyed replay шёл через публичный `addImage` и блокировался
+собственным transition lock.
+
+Исправление `8a5de85a`: тот же owner помечает pending intent dirty при staging;
+публичный `addImage` проверяет пользовательский lock, save вызывает внутренний
+`uploadImage`. Identity, owner и session guards сохранены. RED7/7 на
+Continue/close/submit (с текстом и без) и failed replay, затем GREEN7/7.
+Адресный повтор decode и новых случаев:9/9. Один известный intermittent gallery
+decode в первом двухфайловом прогоне прошёл повторно без изменения assertions,
+таймаутов и retries.
+
+Фактическая приёмка после исправления: mobile **1138/1138**, API **476/476**,
+интеграция **59/59**, contracts **48/48**, api-client **51/51**, Chromium/WebKit
+**12/12**, ops **32/32**. Typecheck, lint и сборки API/web прошли. Mobile,
+typecheck, lint, web build и browser matrix повторены после `8a5de85a`; API,
+интеграция, contracts, api-client и ops — serial-приёмка до этого мобильного
+исправления, код API не менялся. Логи:
+`.superpowers/sdd/W0-photo-and-trunk/review-mobile-full.log`,
+`review-browser.log`, `review-types.log`, `review-lint.log`,
+`review-web-build.log`, `accept-*-serial.log`.
+
+`git diff --check` и `pnpm docs:link-check` этой ветки: 99 файлов. Результат 105
+относится к `fix/launch-docs-review`, не к этой ветке.
+
+Общий статус фото остаётся **Partial**: `DEC-112`, CDN истории и native вне W0.
+Task5 подготовлена локально (`8f610267`); фактический cutover `main` отложен.
+`DEC-150` на `fix/launch-docs-review` (`54925364`) — решение по сделкам; фото —
+`DEC-151`. Эту ветку документов учитывать при объединении после ревью W0, до W1.
+Ветки не сливались. Логи и кадры390×874 сохранены в
+`.superpowers/sdd/W0-photo-and-trunk/`.
+
+Первый перегруженный параллельный прогон не скрыт: API Turnstile50ms local HTTP
+fixture не успела получить headers, интеграционные beforeAll10000ms истекли;
+один WebKit story locator устарел во время пересборки workspace-зависимостей,
+которые смотрит Metro. Проверки повторены последовательно после сборок,
+без изменения assertions, таймаутов и retries. API serial476/476 уже pass.
+Логи: `.superpowers/sdd/W0-photo-and-trunk/accept-*`; окончательные network/DB
+логи имеют суффикс `-serial`. Точные manual founder actions сохраняются в Task5.
