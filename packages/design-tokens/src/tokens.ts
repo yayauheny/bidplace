@@ -290,6 +290,14 @@ export const designTokens = {
       letterSpacing: -0.14,
       fontWeight: '400' as const,
     },
+    // 14/20 regular with tracking 0. `bodySmall` keeps −0.14.
+    subtitle: {
+      fontFamily: 'Inter_400Regular',
+      fontSize: 14,
+      lineHeight: 20,
+      letterSpacing: 0,
+      fontWeight: '400' as const,
+    },
     label: {
       fontFamily: 'Inter_500Medium',
       fontSize: 16,

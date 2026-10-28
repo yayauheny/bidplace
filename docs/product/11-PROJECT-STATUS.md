@@ -16,6 +16,18 @@
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
 | Commerce, избранное/подписки, смена email/password из settings | Not implemented в launch scope / post-MVP; [следующая волна](15-POST-MVP-BACKLOG.md). Старый commerce runtime не разрешает включать продажи. |
 
+## 2026-10-28 — Story toolbar shared primitives
+
+**Partial.** `figmaButtonSizes` includes `compactIcon` (`figma-button.ts`,
+`FigmaButton`). `FigmaIcon` registers `image-02` beside `image-01`.
+`typography.subtitle` is 14/20/400/0; `bodySmall` tracking stays −0.14.
+`destructiveInk` is `#731A06`; `destructiveFill` is unchanged. Toolbar/menu
+surface role remains `surfaceMuted`. Story glyphs use `stroke.icon` (1.3).
+`product-draft-story`, `product-block-actions`, `FormPageShell.contentGap`
+apply the story geometry (12/6/20 gaps, 52px toolbar, menu styling); `theme.spec`
+and `work-media-lifecycle.spec` extended. Typecheck, lint, unit, e2e-fence,
+web build pass; Playwright and Native not run (Needs verification). No API change.
+
 ## 2026-10-27 — First story input identity and upload status
 
 **Partial.** `product-draft-story` renders the virtual empty paragraph and first

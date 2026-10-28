@@ -37,6 +37,7 @@ describe('Figma icon registry', () => {
       'view',
       'at-sign',
       'image-01',
+      'image-02',
       'calendar-01',
       'home-01',
       'ai-magic',

@@ -1,5 +1,6 @@
 import { mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { e2eEvidenceDir } from './support/evidence-dir';
 import { expect, test, type Page } from '@playwright/test';
 import { PrismaClient } from '../../../packages/database/dist/index.js';
@@ -1778,6 +1779,122 @@ test('keeps photo status geometry stable and story controls attached to their bl
   } finally {
     releaseImages();
     releaseUpload();
+    await context.close();
+  }
+});
+
+test('story editor polish: geometry, keyboard, and evidence screenshots', async ({
+  browser,
+}) => {
+  const { seller, categoryId } = await createSellerFixture();
+  const { context, page } = await authenticatedPage(browser, seller);
+  const evidenceDir = resolve(
+    fileURLToPath(new URL('.', import.meta.url)),
+    '../../../docs/audits/evidence/2026-10-28-story-editor-polish',
+  );
+  await mkdir(evidenceDir, { recursive: true });
+  try {
+    await page.setViewportSize({ width: 390, height: 874 });
+    const created = await context.request.post(
+      `${e2eApiBaseURL}/api/products`,
+      { data: { title: 'Story editor polish', categoryId } },
+    );
+    expect(created.status()).toBe(201);
+    const { product } = await created.json();
+    await page.goto(`/products/${product.id}?flow=creation&step=3`);
+    await page.evaluate(() => document.fonts.ready);
+
+    const capture = async (name: string) => {
+      await page.evaluate(() => document.fonts.ready);
+      await page.screenshot({
+        path: resolve(
+          evidenceDir,
+          `${test.info().project.name}-${name}-390.png`,
+        ),
+        fullPage: true,
+      });
+    };
+
+    await capture('story-empty');
+    const paragraph = page.getByRole('textbox', {
+      name: 'Текст истории',
+      exact: true,
+    });
+    const initialInput = await paragraph.elementHandle();
+    await paragraph.pressSequentially('А');
+    await paragraph.press('Tab');
+    await expect(
+      page.getByRole('button', { name: 'Добавить заголовок', exact: true }),
+    ).toBeFocused();
+    await paragraph.focus();
+    await paragraph.press('Enter');
+    await paragraph.pressSequentially('Б');
+    expect(
+      await initialInput!.evaluate(
+        (el) => el.isConnected && el === document.activeElement,
+      ),
+    ).toBe(true);
+    await paragraph.fill('   ');
+    await expect(
+      page.getByRole('button', { name: 'Пропустить', exact: true }),
+    ).toBeVisible();
+    await paragraph.fill('Параграф');
+    await page
+      .getByRole('button', { name: 'Добавить заголовок', exact: true })
+      .click();
+    await capture('story-title-paragraph');
+    const toolbar = page.getByRole('button', {
+      name: 'Добавить текст',
+      exact: true,
+    });
+    const toolbarBox = await toolbar.boundingBox();
+    expect(toolbarBox!.height).toBeGreaterThanOrEqual(52);
+    const block = page.locator('[data-editor-block="text"]').first();
+    await block.getByRole('button', { name: 'Действия с блоком' }).click();
+    await capture('story-menu-open');
+    const toolbarAfterMenu = await toolbar.boundingBox();
+    expect(toolbarAfterMenu!.y).toBeCloseTo(toolbarBox!.y, 1);
+    await block.getByRole('button', { name: 'Ниже', exact: true }).click();
+    await block.getByRole('button', { name: 'Выше', exact: true }).press('Escape');
+    await expect(
+      block.getByRole('button', { name: 'Действия с блоком' }),
+    ).toBeFocused();
+
+    await page.setViewportSize({ width: 390, height: 520 });
+    await expect(
+      page.getByRole('button', { name: 'Пропустить', exact: true }),
+    ).toBeVisible();
+    await page.setViewportSize({ width: 390, height: 874 });
+    await page.evaluate(() => {
+      document.documentElement.style.fontSize = '200%';
+    });
+    await expect(
+      page.getByRole('button', { name: 'Пропустить', exact: true }),
+    ).toBeVisible();
+
+    await page.goto(`/products/${product.id}?flow=creation&step=2`);
+    const choose = async (files: string[]) => {
+      const picker = page.waitForEvent('filechooser');
+      await page
+        .getByRole('button', { name: 'Добавить изображения', exact: true })
+        .click();
+      await (await picker).setFiles(files);
+    };
+    await choose(['e2e/fixtures/portfolio-photo-1.png']);
+    await choose(['e2e/fixtures/portfolio-photo-2.png']);
+    await choose(['e2e/fixtures/portfolio-photo-3.png']);
+    await choose(['e2e/fixtures/portfolio-photo-4.png']);
+    await choose(['e2e/fixtures/portfolio-photo-5.png']);
+    await expect(page.locator('[data-photo-id]')).toHaveCount(5);
+    await page.evaluate(() => document.fonts.ready);
+    await page.screenshot({
+      path: resolve(
+        evidenceDir,
+        `${test.info().project.name}-photos-five-plus-add-390.png`,
+      ),
+      fullPage: true,
+    });
+  } finally {
     await context.close();
   }
 });

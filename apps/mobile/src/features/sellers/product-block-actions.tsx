@@ -6,11 +6,39 @@ import {
   type ElementRef,
   type ReactNode,
 } from 'react';
-import { Platform, View } from 'react-native';
+import { Platform, View, type ViewStyle } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
+import { FigmaIcon } from '../../components/figma/FigmaIcon';
 import { FigmaIconButton } from '../../components/figma/FigmaIconButton';
+import { figmaIconButtonStyle } from '../../components/figma/figma-icon-button-style';
 import type { MotionPressable } from '../../components/ui/MotionPressable';
+import { MotionPressable as StoryBlockPressable } from '../../components/ui/MotionPressable';
 import { useAppTheme } from '../../providers/theme-provider';
+
+const menuPanelShadowStyle = (
+  palette: ReturnType<typeof useAppTheme>,
+): ViewStyle =>
+  Platform.OS === 'web'
+    ? { boxShadow: '0 4px 26px rgba(0, 0, 0, 0.05)' }
+    : {
+        shadowColor: palette.ink,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.05,
+        shadowRadius: 26,
+      };
+
+const menuDividerStyle = (palette: ReturnType<typeof useAppTheme>): ViewStyle =>
+  Platform.OS === 'web'
+    ? ({
+        height: 26,
+        width: 1,
+        experimental_backgroundImage: `linear-gradient(to bottom, ${palette.outlineBorderGradientStart}, ${palette.outlineBorderGradientEnd})`,
+      } as ViewStyle)
+    : {
+        height: 26,
+        width: 1,
+        backgroundColor: palette.toolbarBorder,
+      };
 
 /** One action owner for story blocks and gallery photos; mutation ownership stays in the editor. */
 export function ProductBlockActions({
@@ -151,41 +179,58 @@ export function ProductBlockActions({
             />
             {open ? (
               <View
-                accessibilityRole="toolbar"
-                accessibilityLabel="Порядок блока"
                 style={{
-                  // Figma4563:33344: panel sits beside the trigger, outside content flow.
                   position: 'absolute',
                   right: designTokens.space.x8,
                   top: -designTokens.space.x8,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 10,
-                  padding: designTokens.space.x1,
                   borderRadius: 31,
-                  backgroundColor: palette.surfaceMuted,
-                  borderColor: palette.toolbarBorder,
-                  borderWidth: 0.5,
+                  padding: 0.5,
+                  ...(Platform.OS === 'web'
+                    ? ({
+                        experimental_backgroundImage: `linear-gradient(180deg, ${palette.outlineBorderGradientStart}, ${palette.outlineBorderGradientEnd})`,
+                      } as ViewStyle)
+                    : {
+                        backgroundColor: palette.toolbarBorder,
+                      }),
+                  ...menuPanelShadowStyle(palette),
                 }}
               >
+                <View
+                  accessibilityRole="toolbar"
+                  accessibilityLabel="Порядок блока"
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 10,
+                    padding: designTokens.space.x1,
+                    borderRadius: 31,
+                    backgroundColor: palette.surfaceMuted,
+                  }}
+                >
                 {presentation === 'menu' ? (
-                  <FigmaIconButton
-                    label="Удалить"
-                    size="compact"
-                    tone="danger"
-                    icon="delete-02"
-                    iconSize={18}
+                  <StoryBlockPressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Удалить"
                     disabled={disabled}
                     onPress={() => run(onDelete)}
-                  />
+                    preset="icon"
+                    style={({ pressed }) => [
+                      figmaIconButtonStyle(pressed, 'plain', palette),
+                      {
+                        width: designTokens.size.compactIconButton,
+                        height: designTokens.size.compactIconButton,
+                      },
+                    ]}
+                  >
+                    <FigmaIcon
+                      name="delete-02"
+                      size={18}
+                      strokeWidthPx={designTokens.stroke.icon}
+                      color={palette.destructiveInk}
+                    />
+                  </StoryBlockPressable>
                 ) : null}
-                <View
-                  style={{
-                    height: 26,
-                    width: 1,
-                    backgroundColor: palette.toolbarBorder,
-                  }}
-                />
+                <View style={menuDividerStyle(palette)} />
                 <View
                   style={{ flexDirection: 'row', gap: designTokens.space.x1 }}
                 >
@@ -195,6 +240,7 @@ export function ProductBlockActions({
                     label="Выше"
                     icon="arrow-up-01"
                     iconSize={18}
+                    strokeWidthPx={designTokens.stroke.icon}
                     disabled={disabled || first}
                     onPress={() => run(() => move(-1), false)}
                   />
@@ -204,9 +250,11 @@ export function ProductBlockActions({
                     label="Ниже"
                     icon="arrow-down-01"
                     iconSize={18}
+                    strokeWidthPx={designTokens.stroke.icon}
                     disabled={disabled || last}
                     onPress={() => run(() => move(1), false)}
                   />
+                </View>
                 </View>
               </View>
             ) : null}

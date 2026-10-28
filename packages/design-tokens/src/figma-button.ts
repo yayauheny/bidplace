@@ -22,6 +22,7 @@ export const figmaButtonSizes = [
   'creationAction',
   'event',
   'pickerAction',
+  'compactIcon',
 ] as const;
 export type FigmaButtonVariant = (typeof figmaButtonVariants)[number];
 
@@ -279,11 +280,25 @@ export function figmaButtonSizeMetrics(size: FigmaButtonSize = 'matrix') {
       },
     };
   }
+  // Trailing-icon action `4563:32794`: same 14/26 label as matrix, right inset 8.
+  if (size === 'compactIcon') {
+    return {
+      paddingX: figmaButtonTokens.metrics.paddingX,
+      paddingY: figmaButtonTokens.metrics.paddingY,
+      typography: figmaButtonTokens.typography,
+    };
+  }
   return {
     paddingX: figmaButtonTokens.metrics.paddingX,
     paddingY: figmaButtonTokens.metrics.paddingY,
     typography: figmaButtonTokens.typography,
   };
+}
+
+/** Space between the label and the icon frame. `event` and `compactIcon` use 2. */
+export function figmaButtonContentGap(size: FigmaButtonSize = 'matrix') {
+  if (size === 'event' || size === 'compactIcon') return 2;
+  return designTokens.space.x2;
 }
 
 export function figmaButtonContentHeight(size: FigmaButtonSize = 'matrix') {

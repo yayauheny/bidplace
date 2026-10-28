@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { FormProvider, useForm } from 'react-hook-form';
 
 import type { SellerProductDetailResponse, User } from '@bidplace/contracts';
+import { designTokens } from '@bidplace/design-tokens';
 
 import { AppShell, FormPageShell } from '../../components/layout';
 import { InfrastructurePageStatus } from '../../components/shared/InfrastructurePageStatus';
@@ -317,6 +318,9 @@ export function ProductDraftScreen({
         <FormPageShell
           hideDock
           variant={isCreationFlow ? 'creation' : 'default'}
+          contentGap={
+            storyWizardView ? designTokens.space.x3 : undefined
+          }
           bottomAction={
             isCreationFlow && wizardStep === productWizardStep.images ? (
               <PrimaryButton

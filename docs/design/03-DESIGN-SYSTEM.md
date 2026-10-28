@@ -1069,6 +1069,16 @@ and danger glyph tone. Defaults are unchanged. The button explicitly exposes
 `aria-expanded` on the installed Web renderer. One open story block key owns the
 panel across movement; usable action focus survives boundaries and Escape.
 
+`FigmaButton` size `compactIcon` (Figma `4563:32794`) is height 43: padding
+8 vertical and 16/8 horizontal, gap 2 to the existing trailing icon frame,
+label Inter 600 14/26/−0.28. `event` stays height 47. Story subtitle copy uses
+`typography.subtitle` (14/20/400, letter-spacing 0); `bodySmall` stays −0.14.
+Destructive story ink is `destructiveInk` (`Red` `4337:12016`, `#731A06`);
+`destructiveFill` stays the photo-button fill. Toolbar and block-menu surfaces
+use `surfaceMuted` (`Gray 5` `#F3F3F3`). Story icon glyphs use existing
+`stroke.icon` 1.3; `FigmaIconButton` still defaults to `stroke.iconHeavy` 1.6.
+`FigmaIcon` `image-02` is Hugeicons `Image02Icon`; `image-01` is unchanged.
+
 Figma `4562:32461`/`4563:32768` supply the existing story toolbar and text
 composition. By the user's selected scope, empty story now exposes a virtual
 text input without autofocus; explicit text/heading insertion

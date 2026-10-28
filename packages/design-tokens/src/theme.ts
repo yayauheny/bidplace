@@ -56,6 +56,9 @@ export const lightColorMap = {
   danger: '#FF0000',
   dangerHover: '#C40000',
   destructiveFill: '#D22F0B',
+  // Figma variable `Red` `4337:12016`. Destructive text and glyphs.
+  // `destructiveFill` stays the photo-button fill.
+  destructiveInk: '#731A06',
   feedbackDangerSurface: '#FFF0F0',
   feedbackDangerTitle: '#A51E28',
   feedbackDangerText: '#9D4D52',
@@ -179,6 +182,8 @@ export const blackColorMap: SemanticColorMap = {
   danger: '#FF4D4D',
   dangerHover: '#FF7070',
   destructiveFill: '#D22F0B',
+  // Provisional black — NEEDS-FIGMA. Same stand-in as `report`.
+  destructiveInk: '#FF7A5C',
   feedbackDangerSurface: '#3A1B20',
   feedbackDangerTitle: '#FF7070',
   feedbackDangerText: '#FFB4B4',

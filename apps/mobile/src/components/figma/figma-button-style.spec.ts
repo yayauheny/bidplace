@@ -1,9 +1,11 @@
 import {
   blackColorMap,
   designTokens,
+  figmaButtonContentGap,
   figmaButtonContentHeight,
   figmaButtonInteractions,
   figmaButtonMatrixCell,
+  figmaButtonSizeMetrics,
   figmaButtonTokens,
   figmaButtonVariants,
   lightColorMap,
@@ -118,6 +120,37 @@ describe('figma button matrix', () => {
       designTokens.auth.suggestionY + figmaButtonTokens.metrics.strokeWidth,
     );
     expect(suggestion.borderRadius).toBe(figmaButtonTokens.metrics.radius);
+  });
+
+  it('uses a 43px trailing-icon size without changing event', () => {
+    const compact = figmaButtonStyle('solid', 'idle', 'compactIcon', light);
+    expect(figmaButtonContentHeight('compactIcon')).toBe(43);
+    expect(compact.paddingHorizontal).toBe(
+      figmaButtonTokens.metrics.paddingX +
+        figmaButtonTokens.metrics.strokeWidth,
+    );
+    expect(compact.paddingRight).toBe(
+      designTokens.space.x2 + figmaButtonTokens.metrics.strokeWidth,
+    );
+    expect(compact.paddingVertical).toBe(
+      figmaButtonTokens.metrics.paddingY +
+        figmaButtonTokens.metrics.strokeWidth,
+    );
+    expect(figmaButtonSizeMetrics('compactIcon').typography).toEqual(
+      figmaButtonTokens.typography,
+    );
+    expect(figmaButtonContentGap('compactIcon')).toBe(2);
+    const event = figmaButtonStyle('solid', 'idle', 'event', light);
+    expect(figmaButtonContentHeight('event')).toBe(47);
+    expect(event.paddingHorizontal).toBe(
+      16 + figmaButtonTokens.metrics.strokeWidth,
+    );
+    expect(event.paddingVertical).toBe(
+      10 + figmaButtonTokens.metrics.strokeWidth,
+    );
+    expect(event).not.toHaveProperty('paddingRight');
+    expect(figmaButtonContentGap('event')).toBe(2);
+    expect(figmaButtonContentGap('matrix')).toBe(designTokens.space.x2);
   });
 
   it('uses shared metrics and label colors', () => {

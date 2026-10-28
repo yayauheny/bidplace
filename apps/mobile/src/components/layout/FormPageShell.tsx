@@ -17,12 +17,14 @@ export function FormPageShell({
   maxWidth,
   hideDock = false,
   variant = 'default',
+  contentGap,
   footer = variant === 'account' || variant === 'settings',
 }: {
   children: ReactNode;
   bottomAction?: ReactNode;
   maxWidth?: number;
   hideDock?: boolean;
+  contentGap?: number;
   footer?: boolean;
   variant?:
     | 'default'
@@ -81,9 +83,10 @@ export function FormPageShell({
               maxWidth,
               alignSelf: maxWidth ? 'center' : undefined,
               gap:
-                variant === 'creation'
+                contentGap ??
+                (variant === 'creation'
                   ? designTokens.space.x5
-                  : designTokens.space.sectionGap,
+                  : designTokens.space.sectionGap),
             }}
           >
             {children}

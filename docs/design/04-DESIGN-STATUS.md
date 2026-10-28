@@ -5,6 +5,21 @@
 Полный прежний журнал, включая ограничения ранних экранов:
 [история](../archive/design/04-DESIGN-STATUS-through-2026-10-23.md).
 
+## 2026-10-28 — Story toolbar primitives
+
+**Partial.** Shared owners only: `FigmaButton` size `compactIcon` (43px,
+trailing inset), `FigmaIcon` `image-02`, `typography.subtitle`, and
+`destructiveInk`. Toolbar and block-menu fill stays `surfaceMuted`. Story icon
+stroke is existing `stroke.icon` 1.3; icon-button default stays 1.6. Story
+composition now uses them: creation story gap 12 (`FormPageShell.contentGap`),
+text blocks 6 apart / 20 to images and toolbar, Web fields start at line-height,
+52px in-flow toolbar, block-menu gradient ring/divider/shadow. Photo screen
+unchanged; persistent status row (+38px vs Figma) and 44px step hit zones are
+accepted differences. Black-theme `destructiveInk` is provisional
+(`NEEDS-FIGMA`). Playwright Chromium/WebKit 390x874 snapshots not captured
+(no local Postgres; run resets the e2e DB); Native iOS/Android unverified. Wide
+parity stays open.
+
 ## 2026-10-27 — Stable first story field and sending status
 
 **Partial.** Empty paragraph and first real paragraph share a keyed block/field

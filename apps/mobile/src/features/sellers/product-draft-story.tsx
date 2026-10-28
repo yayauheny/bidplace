@@ -16,6 +16,22 @@ import { PrivateStoryImage } from '../../components/shared/PrivateStoryImage';
 import { useAppTheme } from '../../providers/theme-provider';
 import type { EditableStoryBlock } from './use-product-story-editor';
 
+const STORY_TOOLBAR_HEIGHT = 52;
+const STORY_TEXT_BLOCK_GAP = designTokens.space.workChipGap;
+const STORY_MIXED_BLOCK_GAP = designTokens.space.x5;
+
+function storyBlockGapBefore(
+  previous: EditableStoryBlock | undefined,
+  current: EditableStoryBlock,
+): number {
+  if (!previous) return 0;
+  const previousText = previous.type !== 'IMAGE';
+  const currentText = current.type !== 'IMAGE';
+  return previousText && currentText
+    ? STORY_TEXT_BLOCK_GAP
+    : STORY_MIXED_BLOCK_GAP;
+}
+
 type GalleryImage = {
   id: string;
   mediaAssetId?: string | null;
@@ -93,16 +109,13 @@ export function ProductDraftStoryStep({
   const palette = useAppTheme();
 
   return (
-    <View
-      onTouchStart={() => setOpenBlock(null)}
-      style={{ gap: designTokens.space.x10 }}
-    >
+    <View>
       <View style={{ gap: designTokens.space.x2, alignItems: 'center' }}>
         <AppText role="mediaSheetTitle" style={{ textAlign: 'center' }}>
           История создания
         </AppText>
         <AppText
-          role="bodySmall"
+          role="subtitle"
           tone="subdued"
           style={{ textAlign: 'center' }}
         >
@@ -111,7 +124,12 @@ export function ProductDraftStoryStep({
       </View>
 
       {storyNeedsDraft ? (
-        <View style={{ gap: designTokens.space.x3 }}>
+        <View
+          style={{
+            gap: designTokens.space.x3,
+            marginTop: designTokens.space.x10,
+          }}
+        >
           <AppText role="bodySmall" tone="secondary">
             Для изменения опубликованной истории создайте новую редакцию работы.
             Опубликованная версия останется прежней до модерации.
@@ -125,8 +143,9 @@ export function ProductDraftStoryStep({
       ) : null}
 
       <View
+        onTouchStart={() => setOpenBlock(null)}
         style={{
-          gap: designTokens.space.x5,
+          marginTop: designTokens.space.x10,
           overflow: 'visible',
         }}
       >
@@ -139,8 +158,13 @@ export function ProductDraftStoryStep({
                 )?.id
               : undefined;
           return (
-            <ProductBlockActions
+            <View
               key={block.key}
+              style={{
+                marginTop: storyBlockGapBefore(renderedBlocks[index - 1], block),
+              }}
+            >
+            <ProductBlockActions
               open={openBlock === block.key}
               onOpenChange={(open) => setOpenBlock(open ? block.key : null)}
               kind={block.type === 'IMAGE' ? 'image' : 'text'}
@@ -200,18 +224,21 @@ export function ProductDraftStoryStep({
                 />
               )}
             </ProductBlockActions>
+            </View>
           );
         })}
 
         {editable ? (
           <View
             style={{
+              marginTop: STORY_MIXED_BLOCK_GAP,
               alignSelf: 'center',
               flexDirection: 'row',
               flexWrap: 'wrap',
               justifyContent: 'center',
               alignItems: 'center',
               gap: designTokens.space.x1,
+              minHeight: STORY_TOOLBAR_HEIGHT,
               backgroundColor: palette.surface,
               borderColor: palette.toolbarBorder,
               borderWidth: 0.5,
@@ -223,6 +250,7 @@ export function ProductDraftStoryStep({
               surface="muted"
               label="Добавить заголовок"
               icon="heading"
+              strokeWidthPx={designTokens.stroke.icon}
               disabled={!canAddText}
               onPress={() => addText('HEADING')}
             />
@@ -230,13 +258,15 @@ export function ProductDraftStoryStep({
               surface="muted"
               label="Добавить текст"
               icon="text"
+              strokeWidthPx={designTokens.stroke.icon}
               disabled={!canAddText}
               onPress={() => addText('PARAGRAPH')}
             />
             <FigmaIconButton
               surface="muted"
               label="Добавить изображение"
-              icon="image-01"
+              icon="image-02"
+              strokeWidthPx={designTokens.stroke.icon}
               disabled={!canAddImage || retryUpload}
               onPress={onChooseImage}
             />
@@ -253,28 +283,34 @@ export function ProductDraftStoryStep({
               variant="solid"
               icon="arrow-right-01"
               iconPosition="right"
-              size="event"
+              size="compactIcon"
               disabled={savePending}
               onPress={onSaveAndContinue}
             />
           </View>
         ) : null}
         {retryUpload ? (
-          <SecondaryButton
-            label="Повторить загрузку фото"
-            disabled={!editable || savePending}
-            onPress={onRetryUpload}
-          />
+          <View style={{ marginTop: designTokens.space.x3 }}>
+            <SecondaryButton
+              label="Повторить загрузку фото"
+              disabled={!editable || savePending}
+              onPress={onRetryUpload}
+            />
+          </View>
         ) : null}
         {saveError ? (
-          <AppText role="bodySmall" tone="danger">
-            {saveError}
-          </AppText>
+          <View style={{ marginTop: designTokens.space.x3 }}>
+            <AppText role="bodySmall" tone="danger">
+              {saveError}
+            </AppText>
+          </View>
         ) : null}
         {!isCreationFlow && !editable && !storyNeedsDraft ? (
-          <AppText role="bodySmall" tone="secondary">
-            История сейчас недоступна для изменений.
-          </AppText>
+          <View style={{ marginTop: designTokens.space.x3 }}>
+            <AppText role="bodySmall" tone="secondary">
+              История сейчас недоступна для изменений.
+            </AppText>
+          </View>
         ) : null}
       </View>
     </View>
@@ -299,21 +335,25 @@ function StoryTextInput({
   onChange: (text: string) => void;
 }) {
   const input = useRef<TextInput>(null);
-  const [height, setHeight] = useState<number>(designTokens.size.touch);
   const palette = useAppTheme();
+  const typography = heading
+    ? designTokens.typography.storyHeading
+    : designTokens.typography.subtitle;
+  const lineHeight = typography.lineHeight as number;
+  const [height, setHeight] = useState<number>(lineHeight);
   useLayoutEffect(() => {
     if (Platform.OS === 'web') {
       const node = input.current as unknown as HTMLTextAreaElement | null;
       if (node) {
         node.style.height = '0px';
-        node.style.height = `${Math.max(designTokens.size.touch, node.scrollHeight)}px`;
+        node.style.height = `${Math.max(lineHeight, node.scrollHeight)}px`;
       }
     }
     if (focus) {
       input.current?.focus();
       onFocused?.();
     }
-  }, [value, focus, onFocused]);
+  }, [value, focus, onFocused, lineHeight]);
   return (
     <TextInput
       ref={input}
@@ -325,13 +365,13 @@ function StoryTextInput({
       editable={!disabled}
       multiline
       scrollEnabled={false}
-      onContentSizeChange={(event) =>
-        setHeight(
-          Math.max(
-            designTokens.size.touch,
-            event.nativeEvent.contentSize.height,
-          ),
-        )
+      onContentSizeChange={
+        Platform.OS === 'web'
+          ? undefined
+          : (event) =>
+              setHeight(
+                Math.max(lineHeight, event.nativeEvent.contentSize.height),
+              )
       }
       maxLength={
         heading
@@ -340,14 +380,16 @@ function StoryTextInput({
       }
       textAlignVertical="top"
       style={{
-        ...(heading
-          ? designTokens.typography.storyHeading
-          : designTokens.typography.bodySmall),
+        ...typography,
         color: palette.inkStrong,
         padding: 0,
-        minHeight: designTokens.size.touch,
-        height,
         paddingRight: designTokens.size.touch + designTokens.space.x2,
+        ...(Platform.OS === 'web'
+          ? { minHeight: lineHeight }
+          : {
+              minHeight: lineHeight,
+              height,
+            }),
       }}
     />
   );

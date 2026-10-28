@@ -99,24 +99,50 @@ vi.mock('react-native', () => ({
       children,
     );
   },
-  View: ({ children, style }: { children?: ReactNode; style?: unknown }) => {
+  View: ({
+    children,
+    style,
+    dataSet,
+  }: {
+    children?: ReactNode;
+    style?: unknown;
+    dataSet?: Record<string, string | boolean>;
+  }) => {
     const flat: Record<string, unknown> = {};
     for (const item of Array.isArray(style) ? style : [style]) {
       if (item && typeof item === 'object') Object.assign(flat, item);
+    }
+    const dataAttrs: Record<string, string> = {};
+    if (dataSet) {
+      for (const [key, val] of Object.entries(dataSet)) {
+        dataAttrs[`data-${key.replace(/([A-Z])/g, '-$1').toLowerCase()}`] =
+          String(val);
+      }
     }
     return createElement(
       'div',
-      { style: flat as React.CSSProperties },
+      { style: flat as React.CSSProperties, ...dataAttrs },
       children,
     );
   },
-  TextInput: ({ value, style }: { value?: string; style?: unknown }) => {
+  TextInput: ({
+    value,
+    style,
+    accessibilityLabel,
+    multiline,
+  }: {
+    value?: string;
+    style?: unknown;
+    accessibilityLabel?: string;
+    multiline?: boolean;
+  }) => {
     const flat: Record<string, unknown> = {};
     for (const item of Array.isArray(style) ? style : [style]) {
       if (item && typeof item === 'object') Object.assign(flat, item);
     }
-    return createElement('input', {
+    return createElement(multiline ? 'textarea' : 'input', {
       value,
+      'aria-label': accessibilityLabel,
       style: flat as React.CSSProperties,
       readOnly: true,
     });
@@ -722,6 +748,98 @@ describe('app theme owner', () => {
       }
     }
 
+    act(() => root.unmount());
+    container.remove();
+  });
+
+  it('uses 6px between story text blocks and 20px before the in-flow toolbar', () => {
+    const container = document.createElement('div');
+    document.body.append(container);
+    const root = createRoot(container);
+    const noop = () => undefined;
+    act(() =>
+      root.render(
+        createElement(ThemeProvider, {
+          theme: 'light',
+          children: createElement(ProductDraftStoryStep, {
+            productId: 'p1',
+            sessionEpoch: 1,
+            isCreationFlow: true,
+            storyNeedsDraft: false,
+            blocks: [
+              { key: 'h', type: 'HEADING', text: 'Title' },
+              { key: 'p', type: 'PARAGRAPH', text: 'Body' },
+            ],
+            images: [],
+            editable: true,
+            savePending: false,
+            saveError: null,
+            retryUpload: false,
+            onAddText: noop,
+            onEditText: noop,
+            onEditAlt: noop,
+            onRemove: noop,
+            onMove: noop,
+            onChooseImage: noop,
+            onRetryUpload: noop,
+            onSaveAndContinue: noop,
+          }),
+        }),
+      ),
+    );
+    const blocks = container.querySelectorAll('[data-editor-block="text"]');
+    const secondBlock = blocks[1]!.parentElement as HTMLElement;
+    expect(parseFloat(secondBlock.style.marginTop)).toBe(
+      designTokens.space.workChipGap,
+    );
+    const toolbar = Array.from(container.querySelectorAll('div')).find(
+      (node) =>
+        node.style.borderRadius === '31px' &&
+        parseFloat(node.style.minHeight || '0') === 52,
+    ) as HTMLElement;
+    expect(parseFloat(toolbar.style.marginTop)).toBe(designTokens.space.x5);
+    act(() => root.unmount());
+    container.remove();
+  });
+
+  it('starts empty web story fields at paragraph line height', () => {
+    const container = document.createElement('div');
+    document.body.append(container);
+    const root = createRoot(container);
+    const noop = () => undefined;
+    act(() =>
+      root.render(
+        createElement(ThemeProvider, {
+          theme: 'light',
+          children: createElement(ProductDraftStoryStep, {
+            productId: 'p1',
+            sessionEpoch: 1,
+            isCreationFlow: true,
+            storyNeedsDraft: false,
+            blocks: [],
+            images: [],
+            editable: true,
+            savePending: false,
+            saveError: null,
+            retryUpload: false,
+            onAddText: noop,
+            onEditText: noop,
+            onEditAlt: noop,
+            onRemove: noop,
+            onMove: noop,
+            onChooseImage: noop,
+            onRetryUpload: noop,
+            onSaveAndContinue: noop,
+          }),
+        }),
+      ),
+    );
+    const field = container.querySelector(
+      'textarea[aria-label="Текст истории"]',
+    ) as HTMLTextAreaElement;
+    expect(parseFloat(field.style.minHeight)).toBe(
+      designTokens.typography.subtitle.lineHeight,
+    );
     act(() => root.unmount());
     container.remove();
   });
