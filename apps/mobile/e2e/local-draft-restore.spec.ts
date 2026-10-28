@@ -51,6 +51,12 @@ test.describe('local draft restore in a real browser', () => {
         }
       });
       await page.goto('/profile');
+      const photoChooser = page.waitForEvent('filechooser');
+      await page.getByRole('button', { name: 'Загрузить фото', exact: true }).click();
+      await (await photoChooser).setFiles('e2e/fixtures/profile-photo.png');
+      await page.getByRole('button', { name: 'Установить фото', exact: true }).click();
+      await page.getByRole('button', { name: 'Продолжить', exact: true }).click();
+      await expect(page).toHaveURL(/step=1/);
       const name = page.getByRole('textbox', {
         name: 'Имя или название',
         exact: true,
@@ -130,7 +136,10 @@ test.describe('local draft restore in a real browser', () => {
       const chooserPromise = page.waitForEvent('filechooser');
       await page.getByRole('button', { name: 'Добавить изображения' }).click();
       await (await chooserPromise).setFiles('e2e/fixtures/profile-photo.png');
-      await expect(page.getByText('1/10 изображений')).toBeVisible();
+      await expect(page.locator('[data-photo-id]')).toHaveCount(1);
+      await page.getByRole('button', { name: 'Загрузить 1 фото', exact: true }).click();
+      await expect(page.getByRole('button', { name: 'Продолжить', exact: true })).toBeEnabled();
+      await expect(page.getByRole('img', { name: 'Локальное превью фото', exact: true })).toHaveCount(0);
 
       await page.goto(`/products/${product.id}?flow=creation&step=3`);
       await page.getByRole('button', { name: 'Добавить текст' }).click();

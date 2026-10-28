@@ -49,7 +49,10 @@ test('published work → new editing revision keeps the story; a stale draft is 
     const chooserPromise = page.waitForEvent('filechooser');
     await page.getByRole('button', { name: 'Добавить изображения' }).click();
     await (await chooserPromise).setFiles('e2e/fixtures/profile-photo.png');
-    await expect(page.getByText('1/10 изображений')).toBeVisible();
+    await expect(page.locator('[data-photo-id]')).toHaveCount(1);
+    await page.getByRole('button', { name: 'Загрузить 1 фото', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Продолжить', exact: true })).toBeEnabled();
+    await expect(page.getByRole('img', { name: 'Локальное превью фото', exact: true })).toHaveCount(0);
 
     await page.goto(`/products/${product.id}?flow=creation&step=3`);
     await page.getByRole('button', { name: 'Добавить текст' }).click();
@@ -164,7 +167,9 @@ test('published work → new editing revision keeps the story; a stale draft is 
 
     // Late wizard steps still work on the new revision.
     await page.goto(`/products/${product.id}?flow=creation&step=2`);
-    await expect(page.getByText('1/10 изображений')).toBeVisible();
+    await expect(page.locator('[data-photo-id]')).toHaveCount(1);
+    await expect(page.getByRole('img', { name: 'Локальное превью фото', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Загрузить 1 фото', exact: true })).toHaveCount(0);
   } finally {
     await context.close();
   }

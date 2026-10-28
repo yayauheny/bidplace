@@ -1,9 +1,10 @@
 import { mediaDeliverySchema } from './media';
 import { z } from 'zod';
 
-import { userRoleSchema, userStatusSchema } from './enums';
 import {
   authorApplicationStageSchema,
+  userRoleSchema,
+  userStatusSchema,
   productStatusSchema,
   sellerProfileRevisionStatusSchema,
   sellerStatusSchema,

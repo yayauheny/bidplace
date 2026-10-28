@@ -1048,7 +1048,13 @@ describe('product draft save reconciliation', () => {
     harness.updateProduct.mockResolvedValue({ product: approved.product });
     harness.pickImages.mockResolvedValue({
       canceled: false,
-      assets: [{ uri: 'blob:photo', file: new File(['photo'], 'photo.png') }],
+      assets: [{
+        uri: 'blob:photo',
+        width: 100,
+        height: 100,
+        mimeType: 'image/png',
+        file: new File(['photo'], 'photo.png', { type: 'image/png' }),
+      }],
     });
     const view = mount({ productId });
     try {
@@ -1086,7 +1092,13 @@ describe('product draft save reconciliation', () => {
     harness.updateProduct.mockResolvedValue({ product: approved.product });
     harness.pickImages.mockResolvedValue({
       canceled: false,
-      assets: [{ uri: 'blob:photo', file: new File(['photo'], 'photo.png') }],
+      assets: [{
+        uri: 'blob:photo',
+        width: 100,
+        height: 100,
+        mimeType: 'image/png',
+        file: new File(['photo'], 'photo.png', { type: 'image/png' }),
+      }],
     });
     const view = mount({ productId });
     try {
@@ -1138,7 +1150,13 @@ describe('product draft save reconciliation', () => {
       harness.updateProduct.mockResolvedValue({ product: approved.product });
       harness.pickImages.mockResolvedValue({
         canceled: false,
-        assets: [{ uri: 'blob:photo', file: new File(['photo'], 'photo.png') }],
+        assets: [{
+          uri: 'blob:photo',
+          width: 100,
+          height: 100,
+          mimeType: 'image/png',
+          file: new File(['photo'], 'photo.png', { type: 'image/png' }),
+        }],
       });
       const view = mount({ productId });
       try {
@@ -1217,7 +1235,13 @@ describe('product draft save reconciliation', () => {
       harness.updateProduct.mockResolvedValue({ product: approved.product });
       harness.pickImages.mockResolvedValue({
         canceled: false,
-        assets: [{ uri: 'blob:photo', file: new File(['photo'], 'photo.png') }],
+        assets: [{
+          uri: 'blob:photo',
+          width: 100,
+          height: 100,
+          mimeType: 'image/png',
+          file: new File(['photo'], 'photo.png', { type: 'image/png' }),
+        }],
       });
       const view = mount({ productId });
       try {
