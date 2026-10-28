@@ -1967,10 +1967,8 @@ test('story editor polish: geometry, keyboard, and evidence screenshots', async 
     const assertMenuHits = async (
       box: { x: number; y: number; width: number; height: number },
       value: string,
-      coveredFromY?: number,
     ) => {
       for (const [name, x, y] of samples(box)) {
-        if (coveredFromY != null && y >= coveredFromY - 1) continue;
         const hit = await hitOwner(x, y);
         expect(hit, name).toEqual({ label: 'Действия с блоком', value });
       }
@@ -1987,20 +1985,17 @@ test('story editor polish: geometry, keyboard, and evidence screenshots', async 
       activeField: Locator,
     ) => {
       const field = neighbor.getByRole('textbox', { name: label, exact: true });
-      for (const place of ['right-12', 'right-4', 'strip'] as const) {
+      for (const place of ['right-12', 'right-4'] as const) {
         await focusByLeftEdge(activeField);
         await expect(
           page.locator('[aria-label="Действия с блоком"][aria-expanded="true"]'),
         ).toHaveCount(0);
         const fieldBox = (await field.boundingBox())!;
-        const rowBox = (await neighbor.boundingBox())!;
         const y = fieldBox.y + Math.min(fieldBox.height, 20) / 2;
         const x =
           place === 'right-12'
             ? fieldBox.x + fieldBox.width - 12
-            : place === 'right-4'
-              ? fieldBox.x + fieldBox.width - 4
-              : rowBox.x + rowBox.width - 22;
+            : fieldBox.x + fieldBox.width - 4;
         const hit = await hitOwner(x, y);
         expect(hit.label, place).not.toBe('Действия с блоком');
         expect(hit.value, place).toBe(value);
@@ -2011,12 +2006,7 @@ test('story editor polish: geometry, keyboard, and evidence screenshots', async 
         ).toHaveCount(0);
       }
     };
-    const toolbarForHits = page.getByTestId('story-toolbar');
-    await assertMenuHits(
-      secondBox,
-      'Второй',
-      (await toolbarForHits.boundingBox())!.y,
-    );
+    await assertMenuHits(secondBox, 'Второй');
     const secondField = second.getByRole('textbox', {
       name: 'Текст истории',
       exact: true,
@@ -2060,7 +2050,7 @@ test('story editor polish: geometry, keyboard, and evidence screenshots', async 
     const firstBox = (await firstMenu.boundingBox())!;
     expect(firstBox.width).toBeCloseTo(44, 0);
     expect(firstBox.height).toBeCloseTo(44, 0);
-    await assertMenuHits(firstBox, 'Первый', (await second.boundingBox())!.y);
+    await assertMenuHits(firstBox, 'Первый');
     const firstText = await hitOwner(
       firstFieldBox.x + 12,
       firstFieldBox.y + firstFieldBox.height / 2,
@@ -2070,6 +2060,19 @@ test('story editor polish: geometry, keyboard, and evidence screenshots', async 
     await assertNeighborRightEdge(second, 'Текст истории', 'Второй', firstField);
     await assertNeighborRightEdge(first, 'Текст истории', 'Первый', secondField);
     await secondField.fill(`${'Строка истории для прокрутки. '.repeat(40)}`);
+    const narrowHeight = (await secondField.boundingBox())!.height;
+    for (const width of [1024, 1440]) {
+      await page.setViewportSize({ width, height: 874 });
+      await expect.poll(async () => (await secondField.boundingBox())!.height)
+        .toBeLessThan(narrowHeight);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      await page.screenshot({
+        path: resolve(evidenceDir, `${test.info().project.name}-story-long-${width}.png`),
+      });
+    }
+    await page.setViewportSize({ width: 390, height: 874 });
+    await expect.poll(async () => (await secondField.boundingBox())!.height)
+      .toBe(narrowHeight);
     await focusByLeftEdge(firstField);
     const inactiveGutter = second.getByTestId('story-control-gutter');
     await expect(inactiveGutter.locator('button, [role="button"]')).toHaveCount(0);
@@ -2082,68 +2085,28 @@ test('story editor polish: geometry, keyboard, and evidence screenshots', async 
     const gutterBox = (await inactiveGutter.boundingBox())!;
     const gutterPoint = {
       x: gutterBox.x + gutterBox.width / 2,
-      y: gutterBox.y + 8,
+      y: gutterBox.y + 80,
     };
     const gutterHit = await hitOwner(gutterPoint.x, gutterPoint.y);
     expect(gutterHit.label).not.toBe('Действия с блоком');
-    const scrollTop = () =>
-      page.evaluate(() => {
-        let max = document.scrollingElement?.scrollTop ?? 0;
-        for (const node of document.querySelectorAll('*')) {
-          if (node instanceof HTMLElement && node.scrollTop > max) {
-            max = node.scrollTop;
-          }
-        }
-        return max;
-      });
+    const scroller = page.getByTestId('form-page');
+    const scrollTop = () => scroller.evaluate((node) => node.scrollTop);
+    await expect
+      .poll(() => scroller.evaluate((node) => node.scrollHeight - node.clientHeight))
+      .toBeGreaterThan(0);
     const scrollBefore = await scrollTop();
-    const scrollChain = await page.evaluate(({ x, y }) => {
-      const hit = document.elementFromPoint(x, y);
-      const chain: Array<Record<string, string | number>> = [];
-      let node: Element | null = hit;
-      while (node && chain.length < 8) {
-        const style = getComputedStyle(node);
-        const element = node as HTMLElement;
-        chain.push({
-          tag: node.tagName,
-          overflowY: style.overflowY,
-          clientHeight: element.clientHeight,
-          scrollHeight: element.scrollHeight,
-          scrollTop: element.scrollTop,
-          pointerEvents: style.pointerEvents,
-        });
-        node = node.parentElement;
-      }
-      return {
-        docScrollHeight: document.scrollingElement?.scrollHeight ?? 0,
-        innerHeight: window.innerHeight,
-        chain,
-      };
-    }, gutterPoint);
     await page.mouse.move(gutterPoint.x, gutterPoint.y);
     await page.mouse.wheel(0, 400);
-    const scrollAfter = await scrollTop();
-    const canScroll =
-      scrollChain.docScrollHeight > scrollChain.innerHeight + 1 ||
-      scrollChain.chain.some(
-        (item) => Number(item.scrollHeight) > Number(item.clientHeight) + 1,
-      );
-    if (canScroll) expect(scrollAfter).toBeGreaterThan(scrollBefore);
-    expect(scrollChain.chain[0]?.overflowY).toBe('visible');
-    expect(scrollChain.chain[0]?.pointerEvents).not.toBe('none');
+    await expect.poll(scrollTop).toBeGreaterThan(scrollBefore);
     await expect(
       page.locator('[aria-label="Действия с блоком"][aria-expanded="true"]'),
     ).toHaveCount(0);
-    await page.evaluate(() => window.scrollTo(0, 0));
-    await secondField.evaluate((node) => {
-      if (!(node instanceof HTMLTextAreaElement)) return;
-      const setter = Object.getOwnPropertyDescriptor(
-        HTMLTextAreaElement.prototype,
-        'value',
-      )?.set;
-      setter?.call(node, 'Второй');
-      node.dispatchEvent(new Event('input', { bubbles: true }));
-    });
+    await scroller.evaluate((node) => node.scrollTo(0, 0));
+    await secondField.click({ position: { x: 12, y: 4 } });
+    await expect(secondField).toBeFocused();
+    await secondField.press('ControlOrMeta+A');
+    await secondField.pressSequentially('Второй');
+    await scroller.evaluate((node) => node.scrollTo(0, 0));
     await expect(secondField).toHaveValue('Второй');
     await expect
       .poll(async () => (await secondField.boundingBox())?.height ?? 999)

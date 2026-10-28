@@ -6,6 +6,7 @@ import { designTokens } from '@bidplace/design-tokens';
 import { FigmaButton, WorkCoverCard } from '../../components/figma';
 import { AppText, ResilientRemoteImage } from '../../components/ui';
 import { getApiAssetUrl } from '../../lib/environment';
+import { useAppTheme } from '../../providers/theme-provider';
 import { type HomeCuratorSelection } from './home-sections';
 
 // RN web maps numberOfLines={1} to nowrap, which glues a seeded newline into
@@ -24,6 +25,7 @@ export function HomeOpening({
   selection: HomeCuratorSelection;
 }) {
   const router = useRouter();
+  const palette = useAppTheme();
   const image = selection.work.images[0];
   const note = selection.note?.trim() || null;
 
@@ -79,11 +81,14 @@ export function HomeOpening({
                 component="AuthorPhoto"
                 accessibilityLabel={`Фото автора ${selection.curator.fullName}`}
                 fallbackLabel={`Фото автора недоступно: ${selection.curator.fullName}`}
+                fallback="plain"
+                retryable={false}
                 style={{
                   width: designTokens.size.openingAvatar,
                   height: designTokens.size.openingAvatar,
                   borderRadius: designTokens.radius.avatar,
                   overflow: 'hidden',
+                  backgroundColor: palette.accountAvatarPlaceholder,
                 }}
                 contentFit="cover"
               />

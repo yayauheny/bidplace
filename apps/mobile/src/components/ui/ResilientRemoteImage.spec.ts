@@ -179,6 +179,8 @@ function imageElement(
     transition?: number;
     recyclingKey?: string;
     blurRadius?: number;
+    fallback?: 'labelled' | 'plain';
+    retryable?: boolean;
   } = {},
 ) {
   return createElement(ResilientRemoteImage, {
@@ -192,6 +194,8 @@ function imageElement(
     transition: extra.transition,
     recyclingKey: extra.recyclingKey,
     blurRadius: extra.blurRadius,
+    fallback: extra.fallback,
+    retryable: extra.retryable,
   });
 }
 
@@ -295,6 +299,23 @@ describe('ResilientRemoteImage lifetime', () => {
     expect(shownImage().getAttribute('src')).toContain('media_retry=4');
     expect(shownImage().getAttribute('data-recycling')).toBe(`${imageA}-4`);
     expect(retryButton()).toBeUndefined();
+    view.unmount();
+  });
+
+  it('keeps a plain avatar placeholder without controls after automatic retries', () => {
+    const view = mount(imageElement(imageA, {
+      fallback: 'plain',
+      retryable: false,
+      accessibilityLabel: 'Фото автора',
+    }));
+    for (const delay of [1_000, 3_000, 8_000]) {
+      fail(latestImage());
+      advance(delay);
+    }
+    fail(latestImage());
+    expect(recorded.images.at(-1)?.sourceUri).toContain('media_retry=3');
+    expect(view.container.querySelector('button')).toBeNull();
+    expect(view.container.textContent).not.toContain('Повторить');
     view.unmount();
   });
 

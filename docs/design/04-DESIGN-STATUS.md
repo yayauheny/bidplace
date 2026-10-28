@@ -5,6 +5,29 @@
 Полный прежний журнал, включая ограничения ранних экранов:
 [история](../archive/design/04-DESIGN-STATUS-through-2026-10-23.md).
 
+## 2026-10-28 — Story interaction and opening avatar acceptance
+
+**Partial.** Supersedes the control-gutter claims below: the selected story block
+is raised so the whole 44×44 trigger receives hits; the neighboring textarea
+stays outside that gutter. `product-draft-story.tsx` separates focus from height
+measurement and recalculates height only on text/width changes. This prevents
+scroll resets caused by transient zero height and handles 390→1024→1440→390
+without reloading. `FormPageShell` uses Web keyboard dismissal `none`: RN Web's
+`on-drag` blurs on programmatic scroll as well, losing focus while revealing a
+field. Native keeps `on-drag`. The inactive gutter still has `pointerEvents="none"`.
+`HomeOpening` now uses the existing plain avatar fallback and gray theme surface,
+without manual retry controls; automatic retries remain. Plain fallbacks retain
+an accessible image description through `ResilientRemoteImage`.
+
+Chromium/WebKit checks cover all nine trigger hit points, independent neighboring
+textareas, real wheel scrolling in a short viewport, subsequent keyboard input,
+responsive textarea height, and pending/failed avatar requests. Existing photo/
+story regression checks remain in scope. Upload/save/DnD and server contracts are
+unchanged. [Evidence and actual checks](../audits/evidence/2026-10-28-story-interaction-final/README.md).
+Native devices and actual browser zoom 200% remain **Needs verification**; wide
+Figma parity stays **NEEDS-FIGMA**. Server gallery/story file reuse remains
+**Not implemented**; session SHA-256 does not implement it.
+
 ## 2026-10-28 — Story editor control gutter
 
 **Partial.** The text field no longer keeps the 44px control inside

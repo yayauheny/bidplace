@@ -54,3 +54,41 @@ test('guest author photo logs a failed request and keeps a safe fallback', async
   expect(mediaLogs.some((entry) => entry.includes('AuthorPhoto'))).toBe(true);
   expect(mediaLogs.every((entry) => !entry.includes('token'))).toBe(true);
 });
+
+test('opening avatar stays a gray circle while loading and after failure', async ({ page }) => {
+  let release: () => void = () => undefined;
+  const pending = new Promise<void>((resolve) => { release = resolve; });
+  let attempts = 0;
+  await page.route('**/api/sellers/*/photo*', async (route) => {
+    attempts += 1;
+    await pending;
+    await route.abort('failed');
+  });
+  await page.setViewportSize({ width: 390, height: 874 });
+  await page.goto('/');
+  const author = page.locator('#home-opening-author');
+  const avatar = author.getByLabel(/^Фото автора /).first();
+  await expect(avatar).toBeVisible();
+  await expect.poll(() => attempts).toBeGreaterThan(0);
+  const geometry = await avatar.evaluate((node) => {
+    const style = getComputedStyle(node);
+    return {
+      width: node.getBoundingClientRect().width,
+      height: node.getBoundingClientRect().height,
+      background: style.backgroundColor,
+      radius: parseFloat(style.borderRadius),
+    };
+  });
+  expect(geometry.width).toBe(geometry.height);
+  expect(geometry.radius).toBeGreaterThanOrEqual(geometry.width / 2);
+  expect(geometry.background).not.toBe('rgba(0, 0, 0, 0)');
+  await page.screenshot({ path: test.info().outputPath('opening-avatar-loading-390.png') });
+  release();
+  const fallback = author.getByLabel(/^Фото автора недоступно:/).first();
+  await expect(fallback).toBeVisible();
+  await expect(fallback.locator('button, [role="button"], svg')).toHaveCount(0);
+  await expect(fallback).toHaveText('');
+  expect(await fallback.evaluate((node) => getComputedStyle(node).backgroundColor))
+    .toBe(geometry.background);
+  await page.screenshot({ path: test.info().outputPath('opening-avatar-failed-390.png') });
+});

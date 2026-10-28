@@ -178,6 +178,9 @@ function RemoteImageLifetime({
   if (recovery.failed) {
     return (
       <View
+        accessible={fallback === 'plain'}
+        accessibilityRole={fallback === 'plain' ? 'image' : undefined}
+        accessibilityLabel={fallback === 'plain' ? fallbackLabel : undefined}
         style={[
           style,
           {

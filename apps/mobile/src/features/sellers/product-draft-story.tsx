@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { Platform, Pressable, TextInput, View } from 'react-native';
 
 import { STORY_LIMITS } from '@bidplace/contracts';
@@ -169,7 +169,7 @@ export function ProductDraftStoryStep({
               key={block.key}
               style={{
                 marginTop: storyBlockGapBefore(renderedBlocks[index - 1], block),
-                zIndex: openBlock === block.key ? 2 : 0,
+                zIndex: openBlock === block.key ? 2 : selected ? 1 : 0,
                 overflow: 'visible',
               }}
             >
@@ -361,13 +361,14 @@ function StoryTextInput({
   onChange: (text: string) => void;
 }) {
   const input = useRef<TextInput>(null);
+  const inputWidth = useRef(0);
   const palette = useAppTheme();
   const typography = heading
     ? designTokens.typography.storyHeading
     : designTokens.typography.bodySmall;
   const lineHeight = typography.lineHeight as number;
   const [height, setHeight] = useState<number>(lineHeight);
-  useLayoutEffect(() => {
+  const resizeWebInput = useCallback(() => {
     if (Platform.OS === 'web') {
       const node = input.current as unknown as HTMLTextAreaElement | null;
       if (node) {
@@ -375,11 +376,16 @@ function StoryTextInput({
         node.style.height = `${Math.max(lineHeight, node.scrollHeight)}px`;
       }
     }
+  }, [lineHeight]);
+  useLayoutEffect(() => {
+    resizeWebInput();
+  }, [value, resizeWebInput]);
+  useLayoutEffect(() => {
     if (focus) {
       input.current?.focus();
       onFocused?.();
     }
-  }, [value, focus, onFocused, lineHeight]);
+  }, [focus, onFocused]);
   return (
     <View
       style={{ flexDirection: 'row' }}
@@ -405,6 +411,12 @@ function StoryTextInput({
           placeholderTextColor={palette.fieldLabel}
           value={value}
           onChangeText={onChange}
+          onLayout={Platform.OS === 'web' ? (event) => {
+            const width = event.nativeEvent.layout.width;
+            if (inputWidth.current === width) return;
+            inputWidth.current = width;
+            resizeWebInput();
+          } : undefined}
           onFocus={() => onActivate?.()}
           editable={!disabled}
           multiline

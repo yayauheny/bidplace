@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import { ScrollView, View } from 'react-native';
+import { Platform, ScrollView, View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
@@ -74,7 +74,7 @@ export function FormPageShell({
                     : designTokens.space.x6,
           }}
           keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
+          keyboardDismissMode={Platform.OS === 'web' ? 'none' : 'on-drag'}
           showsVerticalScrollIndicator={false}
         >
           <View

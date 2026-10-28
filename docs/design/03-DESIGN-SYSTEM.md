@@ -709,7 +709,10 @@ This does not change control size, type, or the field success state.
   настроек и handle; `coverCaptionTitle` — типографика caption-заголовка
   (в tokens.ts). `gray2` не переиспользуется новыми consumers.
 - `ResilientRemoteImage`: prop `fallback: 'labelled' | 'plain'`
-  (plain — без текста плейсхолдера; default 'labelled' прежний).
+  (plain — без текста плейсхолдера; default 'labelled' прежний). Plain failure
+  keeps the image role and accessible failure description. Home opening uses
+  this fallback with the gray avatar surface and `retryable={false}`; automatic
+  retries remain enabled.
 - Back variant `settings` — шапка настроек (frame/glyph28, hitSlop до touch44).
   FigmaIconButton size=settingsHeader задаёт такой же frame для симметрии
   противоположного действия; default-потребители сохраняют прежний размер.
@@ -719,6 +722,7 @@ This does not change control size, type, or the field success state.
   длинное имя переносится, не масштабируется.
 - FormPageShell: варианты account/settings задают paddingTop12/20 через
   spacing-токены; default24 и authorApplication сохраняют поведение.
+- `FormPageShell`: Web retains input focus during scrolling (`keyboardDismissMode="none"`); Native keeps `on-drag`.
 - `FormPageShell` — testID `form-page` (единый scroll-owner форм;
   web-скоуп тестов поверх стека маршрутов).
 
