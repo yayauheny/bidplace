@@ -708,7 +708,11 @@ describe('product draft submit lifecycle', () => {
       ];
       harness.getProduct.mockResolvedValue(confirmed);
       try {
-        await flush();
+        await until(
+          document.body,
+          () => view.actions.photoCards[0]?.status === 'done',
+          'confirmed photo reconciliation',
+        );
         if (uri === '/api/images/accepted-image') {
           expect(view.actions.photoCards[0]?.preview).toBeUndefined();
           expect(dispose).toHaveBeenCalledOnce();

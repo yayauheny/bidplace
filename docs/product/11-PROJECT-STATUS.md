@@ -22,8 +22,9 @@
 `feature/photo-workflow` at `8f49d646` (merged PR70) and merges `main` at
 `5a052ad1` with both histories retained. The sole add/add production workflow
 conflict keeps the current W0 file: manual-only deploy, main guard, main Workers
-CI branch and existing release/security gates. Runtime files are unchanged from
-W0. Local ops32/32, docs links99 and diff checks pass; PR CI and actual main
+CI branch and existing release/security gates. Production runtime files are unchanged from
+W0. PR71 CI exposed the previously recorded async reconciliation test race;
+the test now waits through its existing owner helper before unchanged assertions. Local ops32/32, docs links99 and diff checks pass; PR CI and actual main
 integration are tracked by the integration PR. No production deploy occurs.
 Stage B is reserved for separate integration of `fix/launch-docs-review`
 (`54925364`); W0 Complete and W1 readiness are not claimed before that work.

@@ -624,3 +624,18 @@ Ruling: сохраняется текущий hardened workflow W0 — он вк
 Этап B не начат; документы `54925364` передаются отдельному исполнителю.
 После A нельзя объявлять W0 Complete или W1 ready до согласования документов.
 Production deploy, удаление веток и изменения БД/секретов не выполняются.
+
+
+PR71 Verify на `50d500ae` воспроизвёл ранее отмеченную гонку теста
+`waits for decoding only when reconciliation changes the source blob:local`:
+один flush не гарантировал доставку обновления React Query, проверка видела
+ещё error вместо done. Использован существующий owner-helper until для
+ожидания confirmed reconciliation перед прежними assertions. Проверки preview,
+decode failure/loading/ready и disposal сохранены, testTimeout и параметры
+существующего helper не менялись. Production-код и workflows не менялись.
+Полный diff старого main содержит исторические whitespace diagnostics в raw,
+архиве, Expo patch и AdminRevisionPhoto.spec.ts: вывод побайтово совпадает с
+main..W0; эти файлы не правились. Собственный integration delta diff-check clean.
+
+После исправления ожидания: mobile1141/1141, mobile typecheck/lint, docs links99
+и integration-delta diff check pass. CI актуального PR остаётся merge gate.
