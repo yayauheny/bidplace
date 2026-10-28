@@ -16,6 +16,18 @@
 | Legal / операции / live abuse protection | Partial / Needs verification: [legal owner](../legal/00-FINAL-LEGAL-AUDIT.md), [operations](../ops/00-RELEASE-AND-BACKUP.md), [release gates](../audits/current/12-PORTFOLIO-MVP-RELEASE-AUDIT.md). Локальные tests не доказывают SMTP delivery, production Turnstile или CDN purge. |
 | Commerce, избранное/подписки, смена email/password из settings | Not implemented в launch scope / post-MVP; [следующая волна](15-POST-MVP-BACKLOG.md). Старый commerce runtime не разрешает включать продажи. |
 
+## 2026-10-29 — W0 integration into main, stage A
+
+**Needs verification.** Integration branch `fix/w0-main-integration` starts from
+`feature/photo-workflow` at `8f49d646` (merged PR70) and merges `main` at
+`5a052ad1` with both histories retained. The sole add/add production workflow
+conflict keeps the current W0 file: manual-only deploy, main guard, main Workers
+CI branch and existing release/security gates. Runtime files are unchanged from
+W0. Local ops32/32, docs links99 and diff checks pass; PR CI and actual main
+integration are tracked by the integration PR. No production deploy occurs.
+Stage B is reserved for separate integration of `fix/launch-docs-review`
+(`54925364`); W0 Complete and W1 readiness are not claimed before that work.
+
 ## 2026-10-29 — Partial staging keeps its original story revision
 
 **Partial.** Follow-up review reproduced a remaining `ImagesService` /

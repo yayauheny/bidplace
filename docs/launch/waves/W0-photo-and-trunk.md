@@ -603,3 +603,24 @@ exactOptionalPropertyTypes для optional revision; запись отсутст
 API-only исправления; UI/browser повторно не запускались, клиент не менялся.
 Полный `pnpm verify` на новом HEAD не заявляется: full Verify на bf570ebf был
 зелёный, новая CI-проверка относится к следующему push. Общий статус Partial.
+
+
+### Этап A — обычное объединение истории main 2026-10-29
+
+Подтверждены remote refs: main `5a052ad1`, feature/photo-workflow `8f49d646`,
+fix/launch-docs-review `54925364`; PR70 merged. Merge-base main/W0 — `08b916eb`.
+Единственный уникальный main commit `5a052ad1` публикует manual production
+workflow. `fix/w0-main-integration` создана от W0, в неё обычным merge включён
+main без reset/force. Add/add конфликт production-deploy разрешён сохранением
+актуального W0 файла; сразу после разрешения дерево совпадало с W0 целиком.
+Проверки: ops32/32; docs links99; diff check pass; старые release guards в
+.github/deploy отсутствуют. Verify push main-only, PR/manual сохранены;
+production deploy manual-only и main guard/Workers CI main сохранены.
+PR CI и фактический итог main необходимо проверить перед завершением этапа A.
+
+Ruling: сохраняется текущий hardened workflow W0 — он включает назначение
+уникального main commit и более новые release/security gates; цена выбора
+старой версии была бы восстановлением устаревшего guard и конфигурации auth.
+Этап B не начат; документы `54925364` передаются отдельному исполнителю.
+После A нельзя объявлять W0 Complete или W1 ready до согласования документов.
+Production deploy, удаление веток и изменения БД/секретов не выполняются.
